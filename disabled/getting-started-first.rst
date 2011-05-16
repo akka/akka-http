@@ -19,19 +19,22 @@ We will be using an algorithm that is called "embarrassingly parallel" which jus
 
 Here is the formula for the algorithm we will use:
 
-.. image:: pi-formula.png
+.. image:: ../images/pi-formula.png
 
 In this particular algorithm the master splits the series into chunks which are sent out to each worker actor to be processed. When each worker has processed its chunk it sends a result back to the master which aggregates the total result.
 
 Tutorial source code
 --------------------
 
-If you want don't want to type in the code and/or set up an SBT project then you can check out the full tutorial from the Akka GitHub repository. It is in the ``akka-tutorials/akka-tutorial-first`` module. You can also browse it online `here <https://github.com/jboner/akka/tree/master/akka-tutorials/akka-tutorial-first>`_, with the actual source code `here <https://github.com/jboner/akka/blob/master/akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala>`_.
+If you want don't want to type in the code and/or set up an SBT project then you can check out the full tutorial from the Akka GitHub repository. It is in the ``akka-tutorials/akka-tutorial-first`` module. You can also browse it online `here`__, with the actual source code `here`__.
+
+__ https://github.com/jboner/akka/tree/master/akka-tutorials/akka-tutorial-first
+__ https://github.com/jboner/akka/blob/master/akka-tutorials/akka-tutorial-first/src/main/scala/Pi.scala
 
 Prerequisites
 -------------
 
-This tutorial assumes that you have Jave 1.6 or later installed on you machine and ``java`` on your ``PATH``. You also need to know how to run commands in a shell (ZSH, Bash, DOS etc.) and a decent text editor or IDE to type in the Scala code.
+This tutorial assumes that you have Java 1.6 or later installed on you machine and ``java`` on your ``PATH``. You also need to know how to run commands in a shell (ZSH, Bash, DOS etc.) and a decent text editor or IDE to type in the Scala code.
 
 Downloading and installing Akka
 -------------------------------
@@ -77,7 +80,7 @@ Akka is very modular and has many JARs for containing different features. The co
 - ``akka-slf4j-1.1.jar`` -- SLF4J Event Handler Listener
 - ``akka-testkit-1.1.jar`` -- Toolkit for testing Actors
 
-We also have Akka Modules containing add-on modules outside the core of Akka. You can download the Akka Modules distribution from TODO. It contains Akka core as well. We will not be needing any modules there today, but for your information the module JARs are these:
+We also have Akka Modules containing add-on modules outside the core of Akka. You can download the Akka Modules distribution from `<http://akka.io/downloads/>`_. It contains Akka core as well. We will not be needing any modules there today, but for your information the module JARs are these:
 
 - ``akka-kernel-1.1.jar`` -- Akka microkernel for running a bare-bones mini application server (embeds Jetty etc.)
 - ``akka-amqp-1.1.jar`` -- AMQP integration
@@ -92,16 +95,16 @@ Downloading and installing Scala
 
 To build and run the tutorial sample from the command line, you have to install the Scala distribution. If you prefer to use SBT to build and run the sample then you can skip this section and jump to the next one.
 
-Scala can be downloaded from `http://www.scala-lang.org/downloads <http://www.scala-lang.org/downloads>`_. Browse there and download the Scala 2.9.0.RC1 release. If you pick the ``tgz`` or ``zip`` distribution then just unzip it where you want it installed. If you pick the IzPack Installer then double click on it and follow the instructions.
+Scala can be downloaded from `http://www.scala-lang.org/downloads <http://www.scala-lang.org/downloads>`_. Browse there and download the Scala 2.9.0 release. If you pick the ``tgz`` or ``zip`` distribution then just unzip it where you want it installed. If you pick the IzPack Installer then double click on it and follow the instructions.
 
-You also need to make sure that the ``scala-2.9.0.RC1/bin`` (if that is the directory where you installed Scala) is on your ``PATH``::
+You also need to make sure that the ``scala-2.9.0/bin`` (if that is the directory where you installed Scala) is on your ``PATH``::
 
-    $ export PATH=$PATH:scala-2.9.0.RC1/bin
+    $ export PATH=$PATH:scala-2.9.0/bin
 
 You can test your installation by invoking scala::
 
     $ scala -version
-    Scala code runner version 2.9.0.RC1 -- Copyright 2002-2011, LAMP/EPFL
+    Scala code runner version 2.9.0.final -- Copyright 2002-2011, LAMP/EPFL
 
 Looks like we are all good. Finally let's create a source file ``Pi.scala`` for the tutorial and put it in the root of the Akka distribution in the ``tutorial`` directory (you have to create it first).
 
@@ -130,7 +133,7 @@ If you have not already done so, now is the time to create an SBT project for ou
     Name: Tutorial 1
     Organization: Hakkers Inc
     Version [1.0]:
-    Scala version [2.9.0.RC1]:
+    Scala version [2.9.0]:
     sbt version [0.7.6.RC0]:
 
 Now we have the basis for an SBT project. Akka has an SBT Plugin making it very easy to use Akka is an SBT-based project so let's use that.
