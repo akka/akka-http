@@ -4,17 +4,21 @@
 
 package akka.http.impl.util
 
-import java.nio.charset.Charset
-
-import akka.stream.scaladsl.{ Keep, Flow, BidiFlow }
-import akka.stream.stage.{ TerminationDirective, SyncDirective, Context, PushPullStage }
-import akka.util.ByteString
-
 import pprint._
 import pprint.Config.Defaults._
 import pprint.Colors
 
+import java.nio.charset.Charset
+
+import akka.stream.TLSProtocol.SessionBytes
+import akka.stream.scaladsl.{ BidiFlow, Flow, Keep }
+import akka.stream.stage.{ Context, PushPullStage, SyncDirective, TerminationDirective }
+import akka.util.ByteString
+import akka.NotUsed
+
 object PPrintDebug {
+  //implicit def sessionBytesPrinter: PPrinter[SessionBytes] = ???
+
   implicit def bytestringPrinter: PPrinter[ByteString] =
     PPrinter[ByteString] { (bs: ByteString, c: Config) ⇒
       val maxBytes = 16 * 5
@@ -49,12 +53,12 @@ object PPrintDebug {
       formatBytes(bs)
     }
 
-  def layer[L: PPrint, R: PPrint](tag: String): BidiFlow[L, L, R, R, Unit] =
-    BidiFlow.wrap(Flow[L].via(flow(tag + "-up")), Flow[R].via(flow(tag + "-down")))(Keep.none)
+  def layer[L: PPrint, R: PPrint](tag: String): BidiFlow[L, L, R, R, NotUsed] =
+    BidiFlow.fromFlows(Flow[L].via(flow(tag + "-up")), Flow[R].via(flow(tag + "-down")))
 
-  val Enabled = false
+  val Enabled = true
 
-  private[http] def flow[T: PPrint](marker: String): Flow[T, T, Unit] =
+  private[http] def flow[T: PPrint](marker: String): Flow[T, T, Any] =
     if (Enabled)
       Flow[T].transform(() ⇒ new PushPullStage[T, T] {
         def println(str: String): Unit = scala.Console.println(str)
