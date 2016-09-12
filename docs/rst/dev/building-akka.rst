@@ -1,11 +1,10 @@
 
 .. highlightlang:: none
 
-.. _building-akka:
+.. _building-akka-http:
 
-###############
- Building Akka
-###############
+Building Akka HTTP
+##################
 
 This page describes how to build and run Akka from the latest source code.
 

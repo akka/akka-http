@@ -8,16 +8,7 @@ Java Documentation
 
    intro/index-java
    general/index
-   java/index-actors
-   java/lambda-index-actors
-   java/index-futures
-   java/index-network
-   java/index-utilities
-   java/stream/index
    java/http/index
-   java/howto
-   experimental/index-java
    dev/index
    project/index
-   additional/index
 

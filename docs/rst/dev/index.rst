@@ -4,9 +4,7 @@ Information for Akka Developers
 .. toctree::
    :maxdepth: 2
 
-   building-akka
-   multi-jvm-testing
-   io-layer
+   building-akka-http
    developer-guidelines
    documentation
 
