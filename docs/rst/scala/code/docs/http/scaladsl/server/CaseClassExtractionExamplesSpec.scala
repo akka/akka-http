@@ -55,7 +55,7 @@ class CaseClassExtractionExamplesSpec extends RoutingSpec with Inside {
     Get("/color/abc?r=1&g=2&b=3") ~> route ~> check { responseAs[String] shouldEqual "Color(abc,1,2,3)" } // hide
   }
 
-  //# example-4
+  //#example-4
   case class Color(name: String, red: Int, green: Int, blue: Int) {
     require(!name.isEmpty, "color name must not be empty")
     require(0 <= red && red <= 255, "red color component must be between 0 and 255")

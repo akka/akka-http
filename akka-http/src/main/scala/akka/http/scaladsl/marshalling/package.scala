@@ -9,7 +9,7 @@ import akka.http.scaladsl.model._
 import akka.util.ByteString
 
 package object marshalling {
-  //# marshaller-aliases
+  //#marshaller-aliases
   type ToEntityMarshaller[T] = Marshaller[T, MessageEntity]
   type ToByteStringMarshaller[T] = Marshaller[T, ByteString]
   type ToHeadersAndEntityMarshaller[T] = Marshaller[T, (immutable.Seq[HttpHeader], MessageEntity)]

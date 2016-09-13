@@ -9,12 +9,12 @@ import docs.http.scaladsl.server.RoutingSpec
 
 class PathDirectivesExamplesSpec extends RoutingSpec {
 
-  //# path-matcher
+  //#path-matcher
   val matcher: PathMatcher1[Option[Int]] =
     "foo" / "bar" / "X" ~ IntNumber.? / ("edit" | "create")
   //#
 
-  //# path-dsl
+  //#path-dsl
   // matches /foo/
   path("foo"./)
 
@@ -40,7 +40,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
   pathPrefix("foo" ~ !"bar")
   //#
 
-  //# pathPrefixTest-, rawPathPrefix-, rawPathPrefixTest-, pathSuffix-, pathSuffixTest-
+  //#pathPrefixTest-, rawPathPrefix-, rawPathPrefixTest-, pathSuffix-, pathSuffixTest-
   val completeWithUnmatchedPath =
     extractUnmatchedPath { p =>
       complete(p.toString)

@@ -49,7 +49,7 @@ private[http] class RequestContextImpl(
     FastFuture.successful(RouteResult.Rejected(rejections.toList))
 
   override def redirect(uri: Uri, redirectionType: Redirection): Future[RouteResult] = {
-    //# red-impl
+    //#red-impl
     complete(HttpResponse(
       status = redirectionType,
       headers = headers.Location(uri) :: Nil,

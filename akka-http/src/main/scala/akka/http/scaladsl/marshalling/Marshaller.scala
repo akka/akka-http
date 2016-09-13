@@ -76,7 +76,7 @@ sealed abstract class Marshaller[-A, +B] {
     Marshaller(implicit ec ⇒ c ⇒ apply(f(ec)(c)))
 }
 
-//# marshaller-creation
+//#marshaller-creation
 object Marshaller
   extends GenericMarshallers
   with PredefinedToEntityMarshallers

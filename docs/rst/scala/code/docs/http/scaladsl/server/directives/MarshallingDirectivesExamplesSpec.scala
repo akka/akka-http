@@ -10,10 +10,10 @@ import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model._
 import spray.json.{ JsValue, DefaultJsonProtocol }
 
-//# person-case-class
+//#person-case-class
 case class Person(name: String, favoriteNumber: Int)
 
-//# person-json-support
+//#person-json-support
 object PersonJsonSupport extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val PortofolioFormats = jsonFormat2(Person)
 }
