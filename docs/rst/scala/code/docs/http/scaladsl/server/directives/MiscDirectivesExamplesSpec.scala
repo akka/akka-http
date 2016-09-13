@@ -13,6 +13,7 @@ import java.net.InetAddress
 class MiscDirectivesExamplesSpec extends RoutingSpec {
 
   "extractClientIP-example" in {
+    //#extractClientIP-example
     val route = extractClientIP { ip =>
       complete("Client's ip is " + ip.toOption.map(_.getHostAddress).getOrElse("unknown"))
     }
@@ -21,9 +22,11 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
     Get("/").withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("192.168.3.12")))) ~> route ~> check {
       responseAs[String] shouldEqual "Client's ip is 192.168.3.12"
     }
+    //#extractClientIP-example
   }
 
   "rejectEmptyResponse-example" in {
+    //#rejectEmptyResponse-example
     val route = rejectEmptyResponse {
       path("even" / IntNumber) { i =>
         complete {
@@ -42,9 +45,11 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
     Get("/even/28") ~> route ~> check {
       responseAs[String] shouldEqual "Number 28 is even."
     }
+    //#rejectEmptyResponse-example
   }
 
   "requestEntityEmptyPresent-example" in {
+    //#requestEntityEmptyPresent-example
     val route =
       requestEntityEmpty {
         complete("request entity empty")
@@ -60,9 +65,11 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
     Post("/") ~> route ~> check {
       responseAs[String] shouldEqual "request entity empty"
     }
+    //#requestEntityEmptyPresent-example
   }
 
   "selectPreferredLanguage-example" in {
+    //#selectPreferredLanguage-example
     val request = Get() ~> `Accept-Language`(
       Language("en-US"),
       Language("en") withQValue 0.7f,
@@ -80,9 +87,11 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
         complete(lang.toString)
       }
     } ~> check { responseAs[String] shouldEqual "de-DE" }
+    //#selectPreferredLanguage-example
   }
 
   "validate-example" in {
+    //#validate-example
     val route =
       extractUri { uri =>
         validate(uri.path.toString.size < 5, s"Path too long: '${uri.path.toString}'") {
@@ -97,9 +106,11 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
     Get("/abcdefghijkl") ~> route ~> check {
       rejection shouldEqual ValidationRejection("Path too long: '/abcdefghijkl'", None)
     }
+    //#validate-example
   }
 
   "withSizeLimit-example" in {
+    //#withSizeLimit-example
     val route = withSizeLimit(500) {
       entity(as[String]) { _ ⇒
         complete(HttpResponse())
@@ -118,9 +129,11 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
       status shouldEqual StatusCodes.BadRequest
     }
 
+    //#withSizeLimit-example
   }
 
   "withSizeLimit-execution-moment-example" in {
+    //#withSizeLimit-execution-moment-example
     val route = withSizeLimit(500) {
       complete(HttpResponse())
     }
@@ -136,9 +149,11 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
     Post("/abc", entityOfSize(501)) ~> route ~> check {
       status shouldEqual StatusCodes.OK
     }
+    //#withSizeLimit-execution-moment-example
   }
 
   "withSizeLimit-nested-example" in {
+    //#withSizeLimit-nested-example
     val route =
       withSizeLimit(500) {
         withSizeLimit(800) {
@@ -158,9 +173,11 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
     Post("/abc", entityOfSize(801)) ~> Route.seal(route) ~> check {
       status shouldEqual StatusCodes.BadRequest
     }
+    //#withSizeLimit-nested-example
   }
 
   "withoutSizeLimit-example" in {
+    //#withoutSizeLimit-example
     val route =
       withoutSizeLimit {
         entity(as[String]) { _ ⇒
@@ -176,6 +193,7 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
     Post("/abc", entityOfSize(501)) ~> route ~> check {
       status shouldEqual StatusCodes.OK
     }
+    //#withoutSizeLimit-example
   }
 
 }

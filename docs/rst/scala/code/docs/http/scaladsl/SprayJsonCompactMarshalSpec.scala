@@ -35,7 +35,7 @@ class SprayJsonCompactMarshalSpec extends WordSpec with Matchers {
           }
         }
       // format: ON
-      //#
+      //#example
     }
   }
 }

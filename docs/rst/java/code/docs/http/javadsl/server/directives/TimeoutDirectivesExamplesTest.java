@@ -88,7 +88,7 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
 
         return responseOptional;
     }
-    //#
+    //#testSetup
 
     @After
     public void shutDown() {
@@ -110,7 +110,7 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
         // test:
         StatusCode statusCode = runRoute(system, materializer, route, "timeout").get().status();
         assert (StatusCodes.SERVICE_UNAVAILABLE.equals(statusCode));
-        //#
+        //#withRequestTimeout-plain
     }
 
     @Test
@@ -127,7 +127,7 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
         // test:
         Boolean receivedReply = runRoute(system, materializer, route, "timeout").isPresent();
         assert (!receivedReply); // timed-out
-        //#
+        //#withoutRequestTimeout-1
     }
 
     @Test
@@ -149,7 +149,7 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
         // test:
         StatusCode statusCode = runRoute(system, materializer, route, "timeout").get().status();
         assert (StatusCodes.ENHANCE_YOUR_CALM.equals(statusCode));
-        //#
+        //#withRequestTimeout-with-handler
     }
 
     // make it compile only to avoid flaking in slow builds
@@ -175,6 +175,6 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
         // test:
         StatusCode statusCode = runRoute(system, materializer, route, "timeout").get().status();
         assert (StatusCodes.ENHANCE_YOUR_CALM.equals(statusCode));
-        //#
+        //#withRequestTimeoutResponse
     }
 }

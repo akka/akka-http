@@ -31,6 +31,7 @@ class FutureDirectivesExamplesSpec extends RoutingSpec {
   implicit val responseTimeout = Timeout(2, TimeUnit.SECONDS)
 
   "onComplete" in {
+    //#onComplete
     def divide(a: Int, b: Int): Future[Int] = Future {
       a / b
     }
@@ -52,9 +53,11 @@ class FutureDirectivesExamplesSpec extends RoutingSpec {
       status shouldEqual InternalServerError
       responseAs[String] shouldEqual "An error occurred: / by zero"
     }
+    //#onComplete
   }
 
   "onCompleteWithBreaker" in {
+    //#onCompleteWithBreaker
     def divide(a: Int, b: Int): Future[Int] = Future {
       a / b
     }
@@ -93,9 +96,11 @@ class FutureDirectivesExamplesSpec extends RoutingSpec {
     Get("/divide/10/2") ~> route ~> check {
       responseAs[String] shouldEqual "The result was 5"
     }
+    //#onCompleteWithBreaker
   }
 
   "onSuccess" in {
+    //#onSuccess
     val route =
       path("success") {
         onSuccess(Future { "Ok" }) { extraction =>
@@ -117,9 +122,11 @@ class FutureDirectivesExamplesSpec extends RoutingSpec {
       status shouldEqual InternalServerError
       responseAs[String] shouldEqual "Unsuccessful future!"
     }
+    //#onSuccess
   }
 
   "completeOrRecoverWith" in {
+    //#completeOrRecoverWith
     val route =
       path("success") {
         completeOrRecoverWith(Future { "Ok" }) { extraction =>
@@ -141,5 +148,6 @@ class FutureDirectivesExamplesSpec extends RoutingSpec {
       status shouldEqual InternalServerError
       responseAs[String] shouldEqual "Unsuccessful future!"
     }
+    //#completeOrRecoverWith
   }
 }

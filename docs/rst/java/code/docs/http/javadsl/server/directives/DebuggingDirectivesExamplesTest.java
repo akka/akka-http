@@ -163,7 +163,7 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
       () -> complete("logged")));
     // tests:
     testRoute(route).run(HttpRequest.GET("/")).assertEntity("logged");
-    //#logRequestResult
+    //#logRequestResultWithResponseTime
   }
 
   // A function for the logging of Time

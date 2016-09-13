@@ -34,7 +34,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/abcdef") ~> route ~> check {
       responseAs[String] shouldEqual "The length of the request URI is 25"
     }
-    //#
+    //#0extract
   }
   "0extractLog" in {
     //#0extractLog
@@ -48,7 +48,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/abcdef") ~> route ~> check {
       responseAs[String] shouldEqual "It's amazing!"
     }
-    //#
+    //#0extractLog
   }
   "withMaterializer-0" in {
     //#withMaterializer-0
@@ -79,7 +79,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/special/sample") ~> route ~> check {
       responseAs[String] shouldEqual s"Materialized by ${special.##}!"
     }
-    //#
+    //#withMaterializer-0
   }
   "extractMaterializer-0" in {
     //#extractMaterializer-0
@@ -98,7 +98,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/sample") ~> route ~> check {
       responseAs[String] shouldEqual s"Materialized by ${materializer.##}!"
     }
-    //#
+    //#extractMaterializer-0
   }
   "withExecutionContext-0" in compileOnlySpec {
     //#withExecutionContext-0
@@ -127,7 +127,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/special/sample") ~> route ~> check {
       responseAs[String] shouldEqual s"Run on ${special.##}!"
     }
-    //#
+    //#withExecutionContext-0
   }
   "extractExecutionContext-0" in compileOnlySpec {
     //#extractExecutionContext-0
@@ -149,7 +149,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/sample") ~> route ~> check {
       responseAs[String] shouldEqual s"Run on ${system.dispatcher.##}!"
     }
-    //#
+    //#extractExecutionContext-0
   }
   "0withLog" in {
     //#0withLog
@@ -180,7 +180,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/special/sample") ~> route ~> check {
       responseAs[String] shouldEqual s"Logging using $special!"
     }
-    //#
+    //#0withLog
   }
   "withSettings-0" in compileOnlySpec {
     //#withSettings-0
@@ -211,7 +211,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/sample") ~> route ~> check {
       responseAs[String] shouldEqual "{}"
     }
-    //#
+    //#withSettings-0
   }
   "textract" in {
     //#textract
@@ -228,7 +228,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/abcdef?ghi=12") ~> route ~> check {
       responseAs[String] shouldEqual "The path is /abcdef and the query is ghi=12"
     }
-    //#
+    //#textract
   }
   "tprovide" in {
     //#tprovide
@@ -242,7 +242,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual "Value is test and its length is 4"
     }
-    //#
+    //#tprovide
   }
   "0mapResponse" in {
     //#0mapResponse
@@ -254,7 +254,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/abcdef?ghi=12") ~> route ~> check {
       status shouldEqual StatusCodes.BadGateway
     }
-    //#
+    //#0mapResponse
   }
   "1mapResponse-advanced-json" in {
     //#1mapResponse-advanced
@@ -277,7 +277,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
       def apiRoute(innerRoutes: => Route): Route =
         mapResponse(nonSuccessToEmptyJsonEntity)(innerRoutes)
     }
-    //#
+    //#1mapResponse-advanced
 
     import StatusCodes._
     val __system = system
@@ -298,7 +298,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual "{}"
     }
-    //#
+    //#1mapResponse-advanced
   }
   "mapRouteResult" in {
     //#mapRouteResult
@@ -320,7 +320,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       status shouldEqual StatusCodes.OK
     }
-    //#
+    //#mapRouteResult
   }
   "mapRouteResultFuture" in {
     //#mapRouteResultFuture
@@ -344,7 +344,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
       status shouldEqual StatusCodes.OK
       header[Server] shouldEqual Some(Server("MyServer 1.0"))
     }
-    //#
+    //#mapRouteResultFuture
   }
   "mapResponseEntity" in {
     //#mapResponseEntity
@@ -361,7 +361,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual "testabc"
     }
-    //#
+    //#mapResponseEntity
   }
   "mapResponseHeaders" in {
     //#mapResponseHeaders
@@ -381,7 +381,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
       header("id") shouldEqual None
       header("id2").get.value shouldEqual "67890"
     }
-    //#
+    //#mapResponseHeaders
   }
   "mapInnerRoute" in {
     //#mapInnerRoute
@@ -403,7 +403,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual "Got IllegalArgumentException 'BLIP! BLOP! Everything broke'"
     }
-    //#
+    //#mapInnerRoute
   }
   "mapRejections" in {
     //#mapRejections
@@ -422,7 +422,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/abc") ~> route ~> check {
       status shouldEqual StatusCodes.OK
     }
-    //#
+    //#mapRejections
   }
   "recoverRejections" in {
     //#recoverRejections
@@ -466,7 +466,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
       status shouldEqual StatusCodes.NotFound
       responseAs[String] shouldEqual "Literally nothing to see here."
     }
-    //#
+    //#recoverRejections
   }
   "recoverRejectionsWith" in {
     //#recoverRejectionsWith
@@ -497,7 +497,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
       status shouldEqual StatusCodes.OK
       responseAs[String] shouldEqual "Nothing to see here, move along."
     }
-    //#
+    //#recoverRejectionsWith
   }
   "0mapRequest" in {
     //#0mapRequest
@@ -512,7 +512,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual "The request method was POST"
     }
-    //#
+    //#0mapRequest
   }
   "mapRequestContext" in {
     //#mapRequestContext
@@ -530,7 +530,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/abc/def/ghi") ~> route ~> check {
       responseAs[String] shouldEqual "POST"
     }
-    //#
+    //#mapRequestContext
   }
   "0mapRouteResult" in {
     //#0mapRouteResult
@@ -547,7 +547,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       rejections.nonEmpty shouldEqual true
     }
-    //#
+    //#0mapRouteResult
   }
   "mapRouteResultPF" in {
     //#mapRouteResultPF
@@ -565,7 +565,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       rejection shouldEqual AuthorizationFailedRejection
     }
-    //#
+    //#mapRouteResultPF
   }
   "mapRouteResultWithPF-0" in {
     //#mapRouteResultWithPF-0
@@ -583,7 +583,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       rejection shouldEqual AuthorizationFailedRejection
     }
-    //#
+    //#mapRouteResultWithPF-0
   }
   "mapRouteResultWith-0" in {
     //#mapRouteResultWith-0
@@ -602,7 +602,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       rejection shouldEqual AuthorizationFailedRejection
     }
-    //#
+    //#mapRouteResultWith-0
   }
   "pass" in {
     //#pass
@@ -612,7 +612,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual "abc"
     }
-    //#
+    //#pass
   }
   "0provide" in {
     //#0provide
@@ -626,7 +626,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual "prefix:test"
     }
-    //#
+    //#0provide
   }
   "cancelRejections-filter-example" in {
     //#cancelRejections-filter-example
@@ -647,7 +647,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
       rejections shouldEqual Nil
       handled shouldEqual false
     }
-    //#
+    //#cancelRejections-filter-example
   }
   "cancelRejection-example" in {
     //#cancelRejection-example
@@ -663,7 +663,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
       rejections shouldEqual Nil
       handled shouldEqual false
     }
-    //#
+    //#cancelRejection-example
   }
   "extractRequest-example" in {
     //#extractRequest-example
@@ -679,7 +679,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual "Request method is GET and content-type is none/none"
     }
-    //#
+    //#extractRequest-example
   }
   "extractSettings-examples" in {
     //#extractSettings-examples
@@ -692,7 +692,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual "RoutingSettings.renderVanityFooter = true"
     }
-    //#
+    //#extractSettings-examples
   }
   "mapSettings-examples" in {
     //#mapSettings-examples
@@ -711,7 +711,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual s"RoutingSettings.fileGetConditional = false"
     }
-    //#
+    //#mapSettings-examples
   }
   "extractRequestContext-example" in {
     //#extractRequestContext-example
@@ -729,7 +729,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual "Request method is GET and content-type is none/none"
     }
-    //#
+    //#extractRequestContext-example
   }
   "extractUri-example" in {
     //#extractUri-example
@@ -746,7 +746,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/test") ~> route ~> check {
       responseAs[String] shouldEqual "Full URI: http://example.com/test"
     }
-    //#
+    //#extractUri-example
   }
   "mapUnmatchedPath-example" in {
     //#mapUnmatchedPath-example
@@ -775,7 +775,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/123456/abc") ~> route ~> check {
       responseAs[String] shouldEqual "Content"
     }
-    //#
+    //#mapUnmatchedPath-example
   }
   "extractUnmatchedPath-example" in {
     //#extractUnmatchedPath-example
@@ -793,7 +793,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/abc/456") ~> route ~> check {
       responseAs[String] shouldEqual "Unmatched: '/456'"
     }
-    //#
+    //#extractUnmatchedPath-example
   }
   "extractRequestEntity-example" in {
     //#extractRequestEntity-example
@@ -807,7 +807,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Post("/abc", httpEntity) ~> route ~> check {
       responseAs[String] shouldEqual "Request entity content-type is text/plain; charset=UTF-8"
     }
-    //#
+    //#extractRequestEntity-example
   }
   "extractDataBytes-example" in {
     //#extractDataBytes-example
@@ -824,7 +824,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Post("/abc", HttpEntity(ContentTypes.`text/plain(UTF-8)`, data = dataBytes)) ~> route ~> check {
       responseAs[String] shouldEqual "45"
     }
-    //#
+    //#extractDataBytes-example
   }
   "extractStrictEntity-example" in {
     //#extractStrictEntity-example
@@ -838,7 +838,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Post("/", HttpEntity(ContentTypes.`text/plain(UTF-8)`, data = dataBytes)) ~> route ~> check {
       responseAs[String] shouldEqual "123456789"
     }
-    //#
+    //#extractStrictEntity-example
   }
   "toStrictEntity-example" in {
     //#toStrictEntity-example
@@ -859,7 +859,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Post("/", HttpEntity(ContentTypes.`text/plain(UTF-8)`, data = dataBytes)) ~> route ~> check {
       responseAs[String] shouldEqual "Request entity is strict, data=123456789"
     }
-    //#
+    //#toStrictEntity-example
   }
 
   "extractActorSystem-example" in {
@@ -872,7 +872,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual s"Actor System extracted, hash=${system.hashCode()}"
     }
-    //#
+    //#extractActorSystem-example
   }
 
 }

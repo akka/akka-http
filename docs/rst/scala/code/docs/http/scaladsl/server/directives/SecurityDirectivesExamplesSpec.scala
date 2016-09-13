@@ -15,6 +15,7 @@ import docs.http.scaladsl.server.RoutingSpec
 class SecurityDirectivesExamplesSpec extends RoutingSpec {
 
   "authenticateBasic-0" in {
+    //#authenticateBasic-0
     def myUserPassAuthenticator(credentials: Credentials): Option[String] =
       credentials match {
         case p @ Credentials.Provided(id) if p.verify("p4ssw0rd") => Some(id)
@@ -51,8 +52,10 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
         responseAs[String] shouldEqual "The supplied authentication is invalid"
         header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", Some("secure site"))
       }
+      //#authenticateBasic-0
   }
   "authenticateBasicPF-0" in {
+    //#authenticateBasicPF-0
     val myUserPassAuthenticator: AuthenticatorPF[String] = {
       case p @ Credentials.Provided(id) if p.verify("p4ssw0rd")         => id
       case p @ Credentials.Provided(id) if p.verify("p4ssw0rd-special") => s"$id-admin"
@@ -94,8 +97,10 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
         responseAs[String] shouldEqual "The supplied authentication is invalid"
         header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", Some("secure site"))
       }
+    //#authenticateBasicPF-0
   }
   "authenticateBasicPFAsync-0" in {
+    //#authenticateBasicPFAsync-0
     case class User(id: String)
     def fetchUser(id: String): Future[User] = {
       // some fancy logic to obtain a User
@@ -137,8 +142,10 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
         responseAs[String] shouldEqual "The supplied authentication is invalid"
         header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", Some("secure site"))
       }
+    //#authenticateBasicPFAsync-0
   }
   "authenticateBasicAsync-0" in {
+    //#authenticateBasicAsync-0
     def myUserPassAuthenticator(credentials: Credentials): Future[Option[String]] =
       credentials match {
         case p @ Credentials.Provided(id) =>
@@ -180,8 +187,10 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
         responseAs[String] shouldEqual "The supplied authentication is invalid"
         header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", Some("secure site"))
       }
+    //#authenticateBasicAsync-0
   }
   "authenticateOrRejectWithChallenge-0" in {
+    //#authenticateOrRejectWithChallenge-0
     val challenge = HttpChallenge("MyAuth", Some("MyRealm"))
 
     // your custom authentication logic:
@@ -217,9 +226,11 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
         status shouldEqual StatusCodes.OK
         responseAs[String] shouldEqual "Authenticated!"
       }
+    //#authenticateOrRejectWithChallenge-0
   }
 
   "0authorize-0" in {
+    //#0authorize-0
     case class User(name: String)
 
     // authenticate the user:
@@ -258,9 +269,11 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
       route ~> check {
         responseAs[String] shouldEqual "'Peter' visited Peter's lair"
       }
+    //#0authorize-0
   }
 
   "0authorizeAsync" in {
+    //#0authorizeAsync
     case class User(name: String)
 
     // authenticate the user:
@@ -300,9 +313,11 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
       route ~> check {
         responseAs[String] shouldEqual "'Peter' visited Peter's lair"
       }
+    //#0authorizeAsync
   }
 
   "0extractCredentials" in {
+    //#0extractCredentials
     val route =
       extractCredentials { creds =>
         complete {
@@ -323,6 +338,6 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual "No credentials"
     }
+    //#0extractCredentials
   }
 }
-

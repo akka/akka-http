@@ -12,16 +12,18 @@ import spray.json.{ JsValue, DefaultJsonProtocol }
 
 //#person-case-class
 case class Person(name: String, favoriteNumber: Int)
+//#person-case-class
 
 //#person-json-support
 object PersonJsonSupport extends DefaultJsonProtocol with SprayJsonSupport {
   implicit val PortofolioFormats = jsonFormat2(Person)
 }
-//#
+//#person-json-support
 
 class MarshallingDirectivesExamplesSpec extends RoutingSpec {
 
   "example-entity-with-json" in {
+    //#example-entity-with-json
     import PersonJsonSupport._
 
     val route = post {
@@ -35,9 +37,11 @@ class MarshallingDirectivesExamplesSpec extends RoutingSpec {
       route ~> check {
         responseAs[String] shouldEqual "Person: Jane - favorite number: 42"
       }
+    //#example-entity-with-json
   }
 
   "example-entity-with-raw-json" in {
+    //#example-entity-with-raw-json
     import PersonJsonSupport._
 
     val route = post {
@@ -51,9 +55,11 @@ class MarshallingDirectivesExamplesSpec extends RoutingSpec {
       route ~> check {
         responseAs[String] shouldEqual """Person: "Jane" - favorite number: 42"""
       }
+    //#example-entity-with-raw-json
   }
 
   "example-completeWith-with-json" in {
+    //#example-completeWith-with-json
     import PersonJsonSupport._
 
     val findPerson = (f: Person => Unit) => {
@@ -74,9 +80,11 @@ class MarshallingDirectivesExamplesSpec extends RoutingSpec {
       responseAs[String] should include(""""name":"Jane"""")
       responseAs[String] should include(""""favoriteNumber":42""")
     }
+    //#example-completeWith-with-json
   }
 
   "example-handleWith-with-json" in {
+    //#example-handleWith-with-json
     import PersonJsonSupport._
 
     val updatePerson = (person: Person) => {
@@ -98,5 +106,6 @@ class MarshallingDirectivesExamplesSpec extends RoutingSpec {
         responseAs[String] should include(""""name":"Jane"""")
         responseAs[String] should include(""""favoriteNumber":42""")
       }
+    //#example-handleWith-with-json
   }
 }

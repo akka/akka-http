@@ -11,6 +11,7 @@ import akka.http.scaladsl.model.DateTime
 
 class CookieDirectivesExamplesSpec extends RoutingSpec {
   "cookie" in {
+    //#cookie
     val route =
       cookie("userName") { nameCookie =>
         complete(s"The logged in user is '${nameCookie.value}'")
@@ -27,8 +28,10 @@ class CookieDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> Route.seal(route) ~> check {
       responseAs[String] shouldEqual "Request is missing required cookie 'userName'"
     }
+    //#cookie
   }
   "optionalCookie" in {
+    //#optionalCookie
     val route =
       optionalCookie("userName") {
         case Some(nameCookie) => complete(s"The logged in user is '${nameCookie.value}'")
@@ -42,8 +45,10 @@ class CookieDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> route ~> check {
       responseAs[String] shouldEqual "No user logged in"
     }
+    //#optionalCookie
   }
   "deleteCookie" in {
+    //#deleteCookie
     val route =
       deleteCookie("userName") {
         complete("The user was logged out")
@@ -54,8 +59,10 @@ class CookieDirectivesExamplesSpec extends RoutingSpec {
       responseAs[String] shouldEqual "The user was logged out"
       header[`Set-Cookie`] shouldEqual Some(`Set-Cookie`(HttpCookie("userName", value = "deleted", expires = Some(DateTime.MinValue))))
     }
+    //#deleteCookie
   }
   "setCookie" in {
+    //#setCookie
     val route =
       setCookie(HttpCookie("userName", value = "paul")) {
         complete("The user was logged in")
@@ -66,5 +73,6 @@ class CookieDirectivesExamplesSpec extends RoutingSpec {
       responseAs[String] shouldEqual "The user was logged in"
       header[`Set-Cookie`] shouldEqual Some(`Set-Cookie`(HttpCookie("userName", value = "paul")))
     }
+    //#setCookie
   }
 }

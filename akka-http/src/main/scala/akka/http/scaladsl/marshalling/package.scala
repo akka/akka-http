@@ -15,5 +15,5 @@ package object marshalling {
   type ToHeadersAndEntityMarshaller[T] = Marshaller[T, (immutable.Seq[HttpHeader], MessageEntity)]
   type ToResponseMarshaller[T] = Marshaller[T, HttpResponse]
   type ToRequestMarshaller[T] = Marshaller[T, HttpRequest]
-  //#
+  //#marshaller-aliases
 }

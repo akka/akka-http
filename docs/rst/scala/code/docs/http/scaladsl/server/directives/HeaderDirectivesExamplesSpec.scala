@@ -13,6 +13,7 @@ import org.scalatest.Inside
 
 class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
   "headerValueByName-0" in {
+    //#headerValueByName-0
     val route =
       headerValueByName("X-User-Id") { userId =>
         complete(s"The user is $userId")
@@ -27,8 +28,10 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
       status shouldEqual BadRequest
       responseAs[String] shouldEqual "Request is missing required HTTP header 'X-User-Id'"
     }
+    //#headerValueByName-0
   }
   "headerValue-0" in {
+    //#headerValue-0
     def extractHostPort: HttpHeader => Option[Int] = {
       case h: `Host` => Some(h.port)
       case x         => None
@@ -47,8 +50,10 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
       status shouldEqual NotFound
       responseAs[String] shouldEqual "The requested resource could not be found."
     }
+    //#headerValue-0
   }
   "optionalHeaderValue-0" in {
+    //#optionalHeaderValue-0
     def extractHostPort: HttpHeader => Option[Int] = {
       case h: `Host` => Some(h.port)
       case x         => None
@@ -75,8 +80,10 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
     Get("/") ~> Route.seal(route) ~> check {
       responseAs[String] shouldEqual "The port was not provided explicitly"
     }
+    //#optionalHeaderValue-0
   }
   "optionalHeaderValueByName-0" in {
+    //#optionalHeaderValueByName-0
     val route =
       optionalHeaderValueByName("X-User-Id") {
         case Some(userId) => complete(s"The user is $userId")
@@ -98,8 +105,10 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
     Get("/") ~> Route.seal(route) ~> check {
       responseAs[String] shouldEqual "No user was provided"
     }
+    //#optionalHeaderValueByName-0
   }
   "headerValuePF-0" in {
+    //#headerValuePF-0
     def extractHostPort: PartialFunction[HttpHeader, Int] = {
       case h: `Host` => h.port
     }
@@ -117,8 +126,10 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
       status shouldEqual NotFound
       responseAs[String] shouldEqual "The requested resource could not be found."
     }
+    //#headerValuePF-0
   }
   "optionalHeaderValuePF-0" in {
+    //#optionalHeaderValuePF-0
     def extractHostPort: PartialFunction[HttpHeader, Int] = {
       case h: `Host` => h.port
     }
@@ -144,8 +155,10 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
     Get("/") ~> Route.seal(route) ~> check {
       responseAs[String] shouldEqual "The port was not provided explicitly"
     }
+    //#optionalHeaderValuePF-0
   }
   "headerValueByType-0" in {
+    //#headerValueByType-0
     val route =
       headerValueByType[Origin]() { origin =>
         complete(s"The first origin was ${origin.origins.head}")
@@ -163,8 +176,10 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
     Get("abc") ~> route ~> check {
       inside(rejection) { case MissingHeaderRejection("Origin") => }
     }
+    //#headerValueByType-0
   }
   "optionalHeaderValueByType-0" in {
+    //#optionalHeaderValueByType-0
     val route =
       optionalHeaderValueByType[Origin]() {
         case Some(origin) => complete(s"The first origin was ${origin.origins.head}")
@@ -183,8 +198,10 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
     Get("abc") ~> route ~> check {
       responseAs[String] shouldEqual "No Origin header found."
     }
+    //#optionalHeaderValueByType-0
   }
   "checkSameOrigin-0" in {
+    //#checkSameOrigin-0
     val correctOrigin = HttpOrigin("http://localhost:8080")
     val route = checkSameOrigin(HttpOriginRange(correctOrigin)) {
       complete("Result")
@@ -217,5 +234,6 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
       status shouldEqual StatusCodes.Forbidden
       responseAs[String] should include(s"${correctOrigin.value}")
     }
+    //#checkSameOrigin-0
   }
 }

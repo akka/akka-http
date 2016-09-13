@@ -19,6 +19,7 @@ class RangeDirectivesExamplesSpec extends RoutingSpec {
     ConfigFactory.parseString("akka.http.routing.range-coalescing-threshold=2").withFallback(super.testConfig)
 
   "withRangeSupport" in {
+    //#withRangeSupport
     val route =
       withRangeSupport {
         complete("ABCDEFGH")
@@ -53,6 +54,7 @@ class RangeDirectivesExamplesSpec extends RoutingSpec {
         case HttpEntity.Strict(_, bytes) if bytes.utf8String == "GH" =>
       }
     }
+    //#withRangeSupport
   }
 
 }

@@ -28,7 +28,7 @@ class BlockingInHttpExamplesSpec extends WordSpec with CompileOnlySpec
         }
       }
     }
-    //#
+    //#blocking-example-in-default-dispatcher
   }
 
   compileOnlySpec {
@@ -47,7 +47,7 @@ class BlockingInHttpExamplesSpec extends WordSpec with CompileOnlySpec
         }
       }
     }
-    //#
+    //#blocking-example-in-dedicated-dispatcher
   }
 
 }

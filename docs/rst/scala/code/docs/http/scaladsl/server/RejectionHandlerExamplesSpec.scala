@@ -45,13 +45,14 @@ object MyRejectionHandler {
 
     Http().bindAndHandle(route, "localhost", 8080)
   }
-  //#
+  //#custom-handler-example
 }
 
 class RejectionHandlerExamplesSpec extends RoutingSpec {
   import MyRejectionHandler._
 
   "example-1" in {
+    //#example-1
     import akka.http.scaladsl.coding.Gzip
 
     val route =
@@ -65,6 +66,7 @@ class RejectionHandlerExamplesSpec extends RoutingSpec {
           }
         }
       }
+    //#example-1
   }
 
   "test custom handler example" in {

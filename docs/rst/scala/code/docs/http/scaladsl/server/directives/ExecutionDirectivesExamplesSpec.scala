@@ -10,6 +10,7 @@ import docs.http.scaladsl.server.RoutingSpec
 
 class ExecutionDirectivesExamplesSpec extends RoutingSpec {
   "handleExceptions" in {
+    //#handleExceptions
     val divByZeroHandler = ExceptionHandler {
       case _: ArithmeticException => complete((StatusCodes.BadRequest, "You've got your arithmetic wrong, fool!"))
     }
@@ -28,8 +29,10 @@ class ExecutionDirectivesExamplesSpec extends RoutingSpec {
       status shouldEqual StatusCodes.BadRequest
       responseAs[String] shouldEqual "You've got your arithmetic wrong, fool!"
     }
+    //#handleExceptions
   }
   "handleRejections" in {
+    //#handleRejections
     val totallyMissingHandler = RejectionHandler.newBuilder()
       .handleNotFound { complete((StatusCodes.NotFound, "Oh man, what you are looking for is long gone.")) }
       .handle { case ValidationRejection(msg, _) => complete((StatusCodes.InternalServerError, msg)) }
@@ -58,5 +61,6 @@ class ExecutionDirectivesExamplesSpec extends RoutingSpec {
       status shouldEqual StatusCodes.InternalServerError
       responseAs[String] shouldEqual "This didn't work."
     }
+    //#handleRejections
   }
 }

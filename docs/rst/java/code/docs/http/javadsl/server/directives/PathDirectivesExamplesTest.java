@@ -27,7 +27,7 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   //#path-prefix-test, path-suffix, raw-path-prefix, raw-path-prefix-test
   Supplier<RouteAdapter> completeWithUnmatchedPath = ()->
     extractUnmatchedPath((path) -> complete(path.toString()));
-  //#
+  //#path-prefix-test, path-suffix, raw-path-prefix, raw-path-prefix-test
 
   @Test
   public void testPathExamples() {

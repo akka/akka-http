@@ -13,6 +13,7 @@ import docs.http.scaladsl.server.RoutingSpec
 
 class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
   "getFromFile-examples" in compileOnlySpec {
+    //#getFromFile-examples
     import akka.http.scaladsl.server.directives._
     import ContentTypeResolver.Default
 
@@ -25,8 +26,10 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
     Get("/logs/example") ~> route ~> check {
       responseAs[String] shouldEqual "example file contents"
     }
+    //#getFromFile-examples
   }
   "getFromResource-examples" in compileOnlySpec {
+    //#getFromResource-examples
     import akka.http.scaladsl.server.directives._
     import ContentTypeResolver.Default
 
@@ -39,8 +42,10 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
     Get("/logs/example") ~> route ~> check {
       responseAs[String] shouldEqual "example file contents"
     }
+    //#getFromResource-examples
   }
   "listDirectoryContents-examples" in compileOnlySpec {
+    //#listDirectoryContents-examples
     val route =
       path("tmp") {
         listDirectoryContents("/tmp")
@@ -57,8 +62,10 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
     Get("/logs/example") ~> route ~> check {
       responseAs[String] shouldEqual "example file contents"
     }
+    //#listDirectoryContents-examples
   }
   "getFromBrowseableDirectory-examples" in compileOnlySpec {
+    //#getFromBrowseableDirectory-examples
     val route =
       path("tmp") {
         getFromBrowseableDirectory("/tmp")
@@ -68,8 +75,10 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
     Get("/tmp") ~> route ~> check {
       status shouldEqual StatusCodes.OK
     }
+    //#getFromBrowseableDirectory-examples
   }
   "getFromBrowseableDirectories-examples" in compileOnlySpec {
+    //#getFromBrowseableDirectories-examples
     val route =
       path("tmp") {
         getFromBrowseableDirectories("/main", "/backups")
@@ -79,8 +88,10 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
     Get("/tmp") ~> route ~> check {
       status shouldEqual StatusCodes.OK
     }
+    //#getFromBrowseableDirectories-examples
   }
   "getFromDirectory-examples" in compileOnlySpec {
+    //#getFromDirectory-examples
     val route =
       pathPrefix("tmp") {
         getFromDirectory("/tmp")
@@ -90,8 +101,10 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
     Get("/tmp/example") ~> route ~> check {
       responseAs[String] shouldEqual "example file contents"
     }
+    //#getFromDirectory-examples
   }
   "getFromResourceDirectory-examples" in compileOnlySpec {
+    //#getFromResourceDirectory-examples
     val route =
       pathPrefix("examples") {
         getFromResourceDirectory("/examples")
@@ -101,6 +114,7 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
     Get("/examples/example-1") ~> route ~> check {
       responseAs[String] shouldEqual "example file contents"
     }
+    //#getFromResourceDirectory-examples
   }
 
 }

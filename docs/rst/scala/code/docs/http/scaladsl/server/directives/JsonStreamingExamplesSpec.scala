@@ -21,7 +21,7 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
   //#models
   case class Tweet(uid: Int, txt: String)
   case class Measurement(id: String, value: Int)
-  //#
+  //#models
 
   val tweets = List(
     Tweet(1, "#Akka rocks!"),
@@ -37,9 +37,10 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
     implicit val tweetFormat = jsonFormat2(Tweet.apply)
     implicit val measurementFormat = jsonFormat2(Measurement.apply)
   }
-  //#
+  //#formats
 
   "spray-json-response-streaming" in {
+    //#spray-json-response-streaming
     // [1] import "my protocol", for marshalling Tweet objects:
     import MyJsonProtocol._
 
@@ -72,9 +73,11 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
       handled should ===(false)
       rejection should ===(UnacceptedResponseContentTypeRejection(Set(ContentTypes.`application/json`)))
     }
+    //#spray-json-response-streaming
   }
 
   "line-by-line-json-response-streaming" in {
+    //#line-by-line-json-response-streaming
     import MyJsonProtocol._
 
     // Configure the EntityStreamingSupport to render the elements as:
@@ -105,9 +108,11 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
         """{"uid":2,"txt":"Streaming is so hot right now!"}""" + "\n" +
         """{"uid":3,"txt":"You cannot enter the same river twice."}"""
     }
+    //#line-by-line-json-response-streaming
   }
 
   "csv-example" in {
+    //#csv-example
     // [1] provide a marshaller to ByteString
     implicit val tweetAsCsv = Marshaller.strict[Tweet, ByteString] { t =>
       Marshalling.WithFixedContentType(ContentTypes.`text/csv(UTF-8)`, () => {
@@ -135,12 +140,13 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
         "2,Streaming is so hot right now!" + "\n" +
         "3,You cannot enter the same river twice."
     }
+    //#csv-example
   }
 
   "response-streaming-modes" in {
 
     {
-      //#async-rendering 
+      //#async-rendering
       import MyJsonProtocol._
       implicit val jsonStreamingSupport: JsonEntityStreamingSupport =
         EntityStreamingSupport.json()
@@ -150,7 +156,7 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
         val tweets: Source[Tweet, NotUsed] = getTweets
         complete(tweets)
       }
-      //#
+      //#async-rendering
     }
 
     {
@@ -165,11 +171,12 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
         val tweets: Source[Tweet, NotUsed] = getTweets
         complete(tweets)
       }
-      //#
+      //#async-unordered-rendering
     }
   }
 
   "spray-json-request-streaming" in {
+    //#spray-json-request-streaming
     // [1] import "my protocol", for unmarshalling Measurement objects:
     import MyJsonProtocol._
 
@@ -221,6 +228,7 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
       handled should ===(false)
       rejection should ===(UnsupportedRequestContentTypeRejection(Set(ContentTypes.`application/json`)))
     }
+    //#spray-json-request-streaming
   }
 
 }

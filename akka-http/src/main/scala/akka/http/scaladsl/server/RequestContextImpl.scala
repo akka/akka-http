@@ -57,7 +57,7 @@ private[http] class RequestContextImpl(
         case ""       ⇒ HttpEntity.Empty
         case template ⇒ HttpEntity(ContentTypes.`text/html(UTF-8)`, template format uri)
       }))
-    //#
+    //#red-impl
   }
 
   override def fail(error: Throwable): Future[RouteResult] =

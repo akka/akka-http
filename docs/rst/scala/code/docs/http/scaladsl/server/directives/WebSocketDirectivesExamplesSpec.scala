@@ -17,6 +17,7 @@ import akka.http.scaladsl.testkit.WSProbe
 
 class WebSocketDirectivesExamplesSpec extends RoutingSpec {
   "greeter-service" in {
+    //#greeter-service
     def greeter: Flow[Message, Message, Any] =
       Flow[Message].mapConcat {
         case tm: TextMessage =>
@@ -54,9 +55,11 @@ class WebSocketDirectivesExamplesSpec extends RoutingSpec {
         wsClient.sendCompletion()
         wsClient.expectCompletion()
       }
+    //#greeter-service
   }
 
   "handle-multiple-protocols" in {
+    //#handle-multiple-protocols
     def greeterService: Flow[Message, Message, Any] =
       Flow[Message].mapConcat {
         case tm: TextMessage =>
@@ -101,5 +104,6 @@ class WebSocketDirectivesExamplesSpec extends RoutingSpec {
           wsClient.expectCompletion()
         }
       }
+    //#handle-multiple-protocols
   }
 }

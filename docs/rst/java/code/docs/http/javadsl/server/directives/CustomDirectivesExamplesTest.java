@@ -23,7 +23,7 @@ public class CustomDirectivesExamplesTest extends JUnitRouteTest {
   public Route getOrPut(Supplier<Route> inner) {
     return get(inner).orElse(put(inner));
   }
-  //#
+  //#labeling-1
 
   @Test
   public void testLabeling() {
@@ -31,7 +31,7 @@ public class CustomDirectivesExamplesTest extends JUnitRouteTest {
 
     //#labeling-2
     Route route = getOrPut(() -> complete("ok"));
-    //#
+    //#labeling-2
 
     testRoute(route).run(HttpRequest.GET("/"))
       .assertStatusCode(StatusCodes.OK);
@@ -85,7 +85,7 @@ public class CustomDirectivesExamplesTest extends JUnitRouteTest {
       });
     });
   }
-  //#
+  //#composition-1
 
   @Test
   public void testComposition() {
@@ -107,7 +107,7 @@ public class CustomDirectivesExamplesTest extends JUnitRouteTest {
         headerBasedAuth(authLogic, MyRole.ADMIN, () -> complete(StatusCodes.OK, "admin stuff"))
       )
     );
-    //#
+    //#composition-2
 
 
     testRoute(route).run(HttpRequest.GET("/admin"))

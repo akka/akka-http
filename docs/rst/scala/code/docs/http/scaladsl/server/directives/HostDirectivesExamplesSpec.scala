@@ -12,6 +12,7 @@ import StatusCodes._
 class HostDirectivesExamplesSpec extends RoutingSpec {
 
   "extractHost" in {
+    //#extractHost
     val route =
       extractHost { hn =>
         complete(s"Hostname: $hn")
@@ -22,9 +23,11 @@ class HostDirectivesExamplesSpec extends RoutingSpec {
       status shouldEqual OK
       responseAs[String] shouldEqual "Hostname: company.com"
     }
+    //#extractHost
   }
 
   "list-of-hosts" in {
+    //#list-of-hosts
     val route =
       host("api.company.com", "rest.company.com") {
         complete("Ok")
@@ -39,9 +42,11 @@ class HostDirectivesExamplesSpec extends RoutingSpec {
     Get() ~> Host("notallowed.company.com") ~> route ~> check {
       handled shouldBe false
     }
+    //#list-of-hosts
   }
 
   "predicate" in {
+    //#predicate
     val shortOnly: String => Boolean = (hostname) => hostname.length < 10
 
     val route =
@@ -58,9 +63,11 @@ class HostDirectivesExamplesSpec extends RoutingSpec {
     Get() ~> Host("verylonghostname.com") ~> route ~> check {
       handled shouldBe false
     }
+    //#predicate
   }
 
   "using-regex" in {
+    //#using-regex
     val route =
       host("api|rest".r) { prefix =>
         complete(s"Extracted prefix: $prefix")
@@ -79,14 +86,17 @@ class HostDirectivesExamplesSpec extends RoutingSpec {
       status shouldEqual OK
       responseAs[String] shouldEqual "You came through my company"
     }
+    //#using-regex
   }
 
   "failing-regex" in {
+    //#failing-regex
     an[IllegalArgumentException] should be thrownBy {
       host("server-([0-9]).company.(com|net|org)".r) { target =>
         complete("Will never complete :'(")
       }
     }
+    //#failing-regex
   }
 
 }

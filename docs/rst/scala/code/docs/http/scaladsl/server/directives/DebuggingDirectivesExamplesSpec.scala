@@ -14,6 +14,7 @@ import docs.http.scaladsl.server.RoutingSpec
 
 class DebuggingDirectivesExamplesSpec extends RoutingSpec {
   "logRequest-0" in {
+    //#logRequest-0
     // different possibilities of using logRequest
 
     // The first alternatives use an implicitly available LoggingContext for logging
@@ -39,8 +40,10 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> logRequestPrintln(complete("logged")) ~> check {
       responseAs[String] shouldEqual "logged"
     }
+    //#logRequest-0
   }
   "logRequestResult" in {
+    //#logRequestResult
     // different possibilities of using logRequestResponse
 
     // The first alternatives use an implicitly available LoggingContext for logging
@@ -66,8 +69,10 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> logRequestResultPrintln(complete("logged")) ~> check {
       responseAs[String] shouldEqual "logged"
     }
+    //#logRequestResult
   }
   "logResult" in {
+    //#logResult
     // different possibilities of using logResponse
 
     // The first alternatives use an implicitly available LoggingContext for logging
@@ -96,8 +101,10 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> logResultPrintln(complete("logged")) ~> check {
       responseAs[String] shouldEqual "logged"
     }
+    //#logResult
   }
   "logRequestResultWithResponseTime" in {
+    //#logRequestResultWithResponseTime
 
     def akkaResponseTimeLoggingFunction(
       loggingAdapter:   LoggingAdapter,
@@ -124,5 +131,6 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> logResponseTime(complete("logged")) ~> check {
       responseAs[String] shouldEqual "logged"
     }
+    //#logRequestResultWithResponseTime
   }
 }

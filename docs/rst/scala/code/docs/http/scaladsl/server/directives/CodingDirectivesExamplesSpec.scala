@@ -15,6 +15,7 @@ import org.scalatest.matchers.Matcher
 
 class CodingDirectivesExamplesSpec extends RoutingSpec {
   "responseEncodingAccepted" in {
+    //#responseEncodingAccepted
     val route = responseEncodingAccepted(gzip) { complete("content") }
 
     Get("/") ~> route ~> check {
@@ -23,8 +24,10 @@ class CodingDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> `Accept-Encoding`(deflate) ~> route ~> check {
       rejection shouldEqual UnacceptedResponseEncodingRejection(gzip)
     }
+    //#responseEncodingAccepted
   }
   "encodeResponse" in {
+    //#encodeResponse
     val route = encodeResponse { complete("content") }
 
     // tests:
@@ -40,8 +43,10 @@ class CodingDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> `Accept-Encoding`(identity) ~> route ~> check {
       response should haveContentEncoding(identity)
     }
+    //#encodeResponse
   }
   "encodeResponseWith" in {
+    //#encodeResponseWith
     val route = encodeResponseWith(Gzip) { complete("content") }
 
     // tests:
@@ -57,6 +62,7 @@ class CodingDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> `Accept-Encoding`(identity) ~> route ~> check {
       rejection shouldEqual UnacceptedResponseEncodingRejection(gzip)
     }
+    //#encodeResponseWith
   }
 
   val helloGzipped = compress("Hello", Gzip)
@@ -81,6 +87,7 @@ class CodingDirectivesExamplesSpec extends RoutingSpec {
     }
   }
   "decodeRequestWith-0" in {
+    //#decodeRequestWith
     val route =
       decodeRequestWith(Gzip) {
         entity(as[String]) { content: String =>
@@ -98,8 +105,10 @@ class CodingDirectivesExamplesSpec extends RoutingSpec {
     Post("/", "hello") ~> `Content-Encoding`(identity) ~> route ~> check {
       rejection shouldEqual UnsupportedRequestEncodingRejection(gzip)
     }
+    //#decodeRequestWith
   }
   "decodeRequestWith-1" in {
+    //#decodeRequestWith
     val route =
       decodeRequestWith(Gzip, NoCoding) {
         entity(as[String]) { content: String =>
@@ -117,6 +126,7 @@ class CodingDirectivesExamplesSpec extends RoutingSpec {
     Post("/", "hello uncompressed") ~> `Content-Encoding`(identity) ~> route ~> check {
       responseAs[String] shouldEqual "Request content: 'hello uncompressed'"
     }
+    //#decodeRequestWith
   }
 
   def haveContentEncoding(encoding: HttpEncoding): Matcher[HttpResponse] =

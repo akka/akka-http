@@ -20,6 +20,7 @@ class FileUploadDirectivesExamplesSpec extends RoutingSpec {
   implicit val routeTimeout = RouteTestTimeout(3.seconds.dilated)
 
   "uploadedFile" in {
+    //#uploadedFile
 
     val route =
       uploadedFile("csv") {
@@ -41,9 +42,11 @@ class FileUploadDirectivesExamplesSpec extends RoutingSpec {
       status shouldEqual StatusCodes.OK
     }
 
+    //#uploadedFile
   }
 
   "fileUpload" in {
+    //#fileUpload
 
     // adding integers as a service ;)
     val route =
@@ -78,6 +81,7 @@ class FileUploadDirectivesExamplesSpec extends RoutingSpec {
       responseAs[String] shouldEqual "Sum: 178"
     }
 
+    //#fileUpload
   }
 
 }

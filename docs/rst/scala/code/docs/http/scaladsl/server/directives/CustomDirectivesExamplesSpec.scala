@@ -24,6 +24,7 @@ class CustomDirectivesExamplesSpec extends RoutingSpec {
   }
 
   "map-0" in {
+    //#map-0
     val textParam: Directive1[String] =
       parameter("text".as[String])
 
@@ -34,9 +35,11 @@ class CustomDirectivesExamplesSpec extends RoutingSpec {
     Get("/?text=abcdefg") ~> lengthDirective(x => complete(x.toString)) ~> check {
       responseAs[String] === "7"
     }
+    //#map-0
   }
 
   "tmap-1" in {
+    //#tmap-1
     val twoIntParameters: Directive[(Int, Int)] =
       parameters(("a".as[Int], "b".as[Int]))
 
@@ -49,9 +52,11 @@ class CustomDirectivesExamplesSpec extends RoutingSpec {
     Get("/?a=2&b=5") ~> myDirective(x => complete(x)) ~> check {
       responseAs[String] === "7"
     }
+    //#tmap-1
   }
 
   "flatMap-0" in {
+    //#flatMap-0
     val intParameter: Directive1[Int] = parameter("a".as[Int])
 
     val myDirective: Directive1[Int] =
@@ -67,6 +72,7 @@ class CustomDirectivesExamplesSpec extends RoutingSpec {
     Get("/?a=-18") ~> myDirective(i => complete(i.toString)) ~> check {
       handled === false
     }
+    //#flatMap-0
   }
 
 }

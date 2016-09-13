@@ -14,6 +14,7 @@ import docs.http.scaladsl.server.RoutingSpec
 class RouteDirectivesExamplesSpec extends RoutingSpec {
 
   "complete-examples" in {
+    //#complete-examples
     val route =
       path("a") {
         complete(HttpResponse(entity = "foo"))
@@ -72,9 +73,11 @@ class RouteDirectivesExamplesSpec extends RoutingSpec {
       status shouldEqual StatusCodes.OK
       responseAs[String] shouldEqual "baz"
     }
+    //#complete-examples
   }
 
   "reject-examples" in {
+    //#reject-examples
     val route =
       path("a") {
         reject // don't handle here, continue on
@@ -96,9 +99,11 @@ class RouteDirectivesExamplesSpec extends RoutingSpec {
     Get("/b") ~> route ~> check {
       rejection shouldEqual ValidationRejection("Restricted!")
     }
+    //#reject-examples
   }
 
   "redirect-examples" in {
+    //#redirect-examples
     val route =
       pathPrefix("foo") {
         pathSingleSlash {
@@ -118,9 +123,11 @@ class RouteDirectivesExamplesSpec extends RoutingSpec {
       status shouldEqual StatusCodes.PermanentRedirect
       responseAs[String] shouldEqual """The request, and all future requests should be repeated using <a href="/foo/">this URI</a>."""
     }
+    //#redirect-examples
   }
 
   "failwith-examples" in EventFilter[RuntimeException](start = "Error during processing of request", occurrences = 1).intercept {
+    //#failwith-examples
     val route =
       path("foo") {
         failWith(new RuntimeException("Oops."))
@@ -131,6 +138,7 @@ class RouteDirectivesExamplesSpec extends RoutingSpec {
       status shouldEqual StatusCodes.InternalServerError
       responseAs[String] shouldEqual "There was an internal server error."
     }
+    //#failwith-examples
   }
 
 }

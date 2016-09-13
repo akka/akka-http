@@ -37,7 +37,7 @@ object MyExplicitExceptionHandler {
 
     Http().bindAndHandle(route, "localhost", 8080)
   }
-  //#
+  //#explicit-handler-example
 }
 
 object MyImplicitExceptionHandler {
@@ -70,7 +70,7 @@ object MyImplicitExceptionHandler {
 
     Http().bindAndHandle(route, "localhost", 8080)
   }
-  //#
+  //#implicit-handler-example
 }
 
 class ExceptionHandlerExamplesSpec extends RoutingSpec {

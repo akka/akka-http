@@ -14,7 +14,7 @@ trait TestFrameworkInterface {
 
   def failTest(msg: String): Nothing
 }
-//#
+//#source-quote
 
 object TestFrameworkInterface {
 

@@ -10,6 +10,7 @@ import docs.http.scaladsl.server.RoutingSpec
 class RespondWithDirectivesExamplesSpec extends RoutingSpec {
 
   "respondWithHeader-0" in {
+    //#respondWithHeader-0
     val route =
       path("foo") {
         respondWithHeader(RawHeader("Funky-Muppet", "gonzo")) {
@@ -22,9 +23,11 @@ class RespondWithDirectivesExamplesSpec extends RoutingSpec {
       header("Funky-Muppet") shouldEqual Some(RawHeader("Funky-Muppet", "gonzo"))
       responseAs[String] shouldEqual "beep"
     }
+    //#respondWithHeader-0
   }
 
   "respondWithDefaultHeader-0" in {
+    //#respondWithDefaultHeader-0
     // custom headers
     val blippy = RawHeader("X-Fish-Name", "Blippy")
     val elTonno = RawHeader("X-Fish-Name", "El Tonno")
@@ -61,10 +64,12 @@ class RespondWithDirectivesExamplesSpec extends RoutingSpec {
       header("X-Fish-Name") shouldEqual Some(RawHeader("X-Fish-Name", "El Tonno"))
       responseAs[String] shouldEqual "¡Ay ay blippy!"
     }
+    //#respondWithDefaultHeader-0
   }
   // format: ON
 
   "respondWithHeaders-0" in {
+    //#respondWithHeaders-0
     val route =
       path("foo") {
         respondWithHeaders(RawHeader("Funky-Muppet", "gonzo"), Origin(HttpOrigin("http://akka.io"))) {
@@ -78,6 +83,7 @@ class RespondWithDirectivesExamplesSpec extends RoutingSpec {
       header[Origin] shouldEqual Some(Origin(HttpOrigin("http://akka.io")))
       responseAs[String] shouldEqual "beep"
     }
+    //#respondWithHeaders-0
   }
 
 }

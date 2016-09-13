@@ -44,8 +44,8 @@ class SprayJsonExampleSpec extends WordSpec with Matchers {
           }
         }
       // format: ON
-      //#
     }
+    //#minimal-spray-json-example
   }
 
   "second-spray-json-example" in compileOnlySpec {

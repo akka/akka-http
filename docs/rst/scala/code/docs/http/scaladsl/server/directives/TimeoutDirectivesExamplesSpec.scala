@@ -47,7 +47,7 @@ class TimeoutDirectivesExamplesSpec extends AkkaSpec(TimeoutDirectivesInfiniteTi
     response
   }
 
-  //#
+  //#testSetup
 
   // demonstrates that timeout is correctly set despite infinite initial value of akka.http.server.request-timeout
   "Request Timeout" should {
@@ -63,10 +63,10 @@ class TimeoutDirectivesExamplesSpec extends AkkaSpec(TimeoutDirectivesInfiniteTi
 
       // check
       runRoute(route, "timeout").status should ===(StatusCodes.ServiceUnavailable) // the timeout response
-      //#
+      //#withRequestTimeout-plain
     }
     "without timeout" in compileOnlySpec {
-      //#withoutRequestTimeout-1
+      //#withoutRequestTimeout
       val route =
         path("timeout") {
           withoutRequestTimeout {
@@ -76,7 +76,7 @@ class TimeoutDirectivesExamplesSpec extends AkkaSpec(TimeoutDirectivesInfiniteTi
         }
 
       // no check as there is no time-out, the future would time out failing the test
-      //#
+      //#withoutRequestTimeout
     }
 
     "allow mapping the response while setting the timeout" in {
@@ -96,7 +96,7 @@ class TimeoutDirectivesExamplesSpec extends AkkaSpec(TimeoutDirectivesInfiniteTi
 
       // check
       runRoute(route, "timeout").status should ===(StatusCodes.EnhanceYourCalm) // the timeout response
-      //#
+      //#withRequestTimeout-with-handler
     }
 
     // make it compile only to avoid flaking in slow builds
@@ -118,7 +118,7 @@ class TimeoutDirectivesExamplesSpec extends AkkaSpec(TimeoutDirectivesInfiniteTi
 
       // check
       runRoute(route, "timeout").status should ===(StatusCodes.EnhanceYourCalm) // the timeout response
-      //#
+      //#withRequestTimeoutResponse
     }
   }
 

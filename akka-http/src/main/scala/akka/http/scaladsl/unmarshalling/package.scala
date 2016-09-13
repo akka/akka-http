@@ -17,5 +17,5 @@ package object unmarshalling {
   type FromByteStringUnmarshaller[T] = Unmarshaller[ByteString, T]
   type FromStringUnmarshaller[T] = Unmarshaller[String, T]
   type FromStrictFormFieldUnmarshaller[T] = Unmarshaller[StrictForm.Field, T]
-  //#
+  //#unmarshaller-aliases
 }
