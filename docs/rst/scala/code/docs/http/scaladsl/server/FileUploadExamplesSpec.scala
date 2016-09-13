@@ -24,6 +24,7 @@ class FileUploadExamplesSpec extends RoutingSpec {
   }
 
   "simple-upload" in {
+    //#simple-upload
     val uploadVideo =
       path("video") {
         entity(as[Multipart.FormData]) { formData =>
@@ -61,6 +62,7 @@ class FileUploadExamplesSpec extends RoutingSpec {
           }
         }
       }
+    //#simple-upload
   }
 
   object MetadataActor {
@@ -69,6 +71,7 @@ class FileUploadExamplesSpec extends RoutingSpec {
   val metadataActor: ActorRef = system.deadLetters
 
   "stream-csv-upload" in {
+    //#stream-csv-upload
     val splitLines = Framing.delimiter(ByteString("\n"), 256)
 
     val csvUploads =
@@ -92,6 +95,7 @@ class FileUploadExamplesSpec extends RoutingSpec {
           }
         }
       }
+    //#stream-csv-upload
   }
 
 }

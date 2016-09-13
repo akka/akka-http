@@ -10,6 +10,7 @@ import akka.testkit.AkkaSpec
 class UnmarshalSpec extends AkkaSpec {
 
   "use unmarshal" in {
+    //#use-unmarshal
     import akka.http.scaladsl.unmarshalling.Unmarshal
     import system.dispatcher // ExecutionContext
     implicit val materializer: Materializer = ActorMaterializer()
@@ -24,6 +25,7 @@ class UnmarshalSpec extends AkkaSpec {
     val boolFuture = Unmarshal("off").to[Boolean]
     val bool = Await.result(boolFuture, 1.second) // don't block in non-test code!
     bool shouldBe false
+    //#use-unmarshal
   }
 
 }

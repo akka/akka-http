@@ -120,5 +120,5 @@ The best entry point for this is the ``akka.http.scaladsl.unmarshalling.Unmarsha
 
 .. TODO rewrite for java
 .. .. includecode2:: ../../code/docs/http/scaladsl/UnmarshalSpec.scala
-   :snippet: use unmarshal
+   :snippet: use-unmarshal
 

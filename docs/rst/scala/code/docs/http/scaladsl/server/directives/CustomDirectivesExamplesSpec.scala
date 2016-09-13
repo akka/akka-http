@@ -9,6 +9,7 @@ import docs.http.scaladsl.server.RoutingSpec
 class CustomDirectivesExamplesSpec extends RoutingSpec {
 
   "labeling" in {
+    //#labeling
     val getOrPut = get | put
 
     // tests:
@@ -21,6 +22,7 @@ class CustomDirectivesExamplesSpec extends RoutingSpec {
     Put("/") ~> route ~> check {
       responseAs[String] shouldEqual "ok"
     }
+    //#labeling
   }
 
   "map-0" in {

@@ -161,4 +161,4 @@ However, you can also use the marshalling infrastructure directly if you wish, w
 The best entry point for this is the ``akka.http.scaladsl.marshalling.Marshal`` object, which you can use like this:
 
 .. includecode2:: ../../code/docs/http/scaladsl/MarshalSpec.scala
-   :snippet: use marshal
+   :snippet: use-marshal

@@ -21,6 +21,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
   val log: LoggingAdapter = null
 
   "binding-example" in compileOnlySpec {
+    //#binding-example
     import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
     import akka.stream.ActorMaterializer
@@ -37,9 +38,11 @@ class HttpServerExampleSpec extends WordSpec with Matchers
         println("Accepted new connection from " + connection.remoteAddress)
         // ... and then actually handle the connection
       }).run()
+    //#binding-example
   }
 
   "binding-failure-high-level-example" in compileOnlySpec {
+    //#binding-failure-high-level-example
     import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.Http.ServerBinding
@@ -70,6 +73,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
         }
       }
     }
+    //#binding-failure-high-level-example
   }
 
   // mock values:
@@ -79,6 +83,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
   }
 
   "binding-failure-handling" in compileOnlySpec {
+    //#binding-failure-handling
     import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.Http.ServerBinding
@@ -103,6 +108,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
       case ex: Exception =>
         log.error(ex, "Failed to bind to {}:{}!", host, port)
     }
+    //#binding-failure-handling
   }
 
   object MyExampleMonitoringActor {
@@ -110,6 +116,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
   }
 
   "incoming-connections-source-failure-handling" in compileOnlySpec {
+    //#incoming-connections-source-failure-handling
     import akka.actor.ActorSystem
     import akka.actor.ActorRef
     import akka.http.scaladsl.Http
@@ -135,9 +142,11 @@ class HttpServerExampleSpec extends WordSpec with Matchers
       .via(reactToTopLevelFailures)
       .to(handleConnections) // Sink[Http.IncomingConnection, _]
       .run()
+    //#incoming-connections-source-failure-handling
   }
 
   "connection-stream-failure-handling" in compileOnlySpec {
+    //#connection-stream-failure-handling
     import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model._
@@ -169,9 +178,11 @@ class HttpServerExampleSpec extends WordSpec with Matchers
       .runForeach { con =>
         con.handleWith(httpEcho)
       }
+    //#connection-stream-failure-handling
   }
 
   "full-server-example" in compileOnlySpec {
+    //#full-server-example
     import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model.HttpMethods._
@@ -210,9 +221,11 @@ class HttpServerExampleSpec extends WordSpec with Matchers
         // this is equivalent to
         // connection handleWith { Flow[HttpRequest] map requestHandler }
       }).run()
+    //#full-server-example
   }
 
   "low-level-server-example" in compileOnlySpec {
+    //#low-level-server-example
     import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model.HttpMethods._
@@ -254,11 +267,13 @@ class HttpServerExampleSpec extends WordSpec with Matchers
 
       }
     }
+    //#low-level-server-example
   }
 
   // format: OFF
 
   "high-level-server-example" in compileOnlySpec {
+    //#high-level-server-example
     import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
@@ -295,9 +310,11 @@ class HttpServerExampleSpec extends WordSpec with Matchers
           .onComplete(_ => system.terminate()) // and shutdown when done
       }
     }
+    //#high-level-server-example
   }
 
   "minimal-routing-example" in compileOnlySpec {
+    //#minimal-routing-example
     import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model._
@@ -329,6 +346,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
           .onComplete(_ => system.terminate()) // and shutdown when done
       }
     }
+    //#minimal-routing-example
   }
 
   "long-routing-example" in compileOnlySpec {
@@ -438,6 +456,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
         redirect("http://oldapi.example.com/" + pathRest, MovedPermanently)
       }
     }
+    //#long-routing-example
   }
 
   "stream random numbers" in compileOnlySpec {
@@ -557,7 +576,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
     }
     //#actor-interaction
   }
-  
+
   "consume entity using entity directive" in compileOnlySpec {
     //#consume-entity-directive
     import akka.actor.ActorSystem
@@ -575,7 +594,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
 
     // these are from spray-json
     implicit val bidFormat = jsonFormat2(Bid)
-    
+
     val route =
       path("bid") {
         put {
@@ -587,7 +606,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
       }
     //#consume-entity-directive
   }
-  
+
   "consume entity using raw dataBytes to file" in compileOnlySpec {
     //#consume-raw-dataBytes
     import akka.actor.ActorSystem
@@ -606,7 +625,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
         withoutSizeLimit {
           extractDataBytes { bytes =>
             val finishedWriting = bytes.runWith(FileIO.toPath(new File("/tmp/example.out").toPath))
-            
+
             // we only want to respond once the incoming data has been handled:
             onComplete(finishedWriting) { ioResult =>
               complete("Finished writing data: " + ioResult)
@@ -616,7 +635,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
       }
     //#consume-raw-dataBytes
   }
-  
+
   "drain entity using request#discardEntityBytes" in compileOnlySpec {
     //#discard-discardEntityBytes
     import akka.actor.ActorSystem
@@ -635,7 +654,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
         withoutSizeLimit {
           extractRequest { r: HttpRequest =>
             val finishedWriting = r.discardEntityBytes().future
-            
+
             // we only want to respond once the incoming data has been handled:
             onComplete(finishedWriting) { done =>
               complete("Drained all data from connection... (" + done + ")")
@@ -645,7 +664,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
       }
     //#discard-discardEntityBytes
   }
-  
+
   "discard entity manually" in compileOnlySpec {
     //#discard-close-connections
     import akka.actor.ActorSystem
@@ -662,11 +681,11 @@ class HttpServerExampleSpec extends WordSpec with Matchers
     val route =
       (put & path("lines")) {
         withoutSizeLimit {
-          extractDataBytes { data => 
+          extractDataBytes { data =>
             // Closing connections, method 1 (eager):
             // we deem this request as illegal, and close the connection right away:
             data.runWith(Sink.cancelled) // "brutally" closes the connection
-            
+
             // Closing connections, method 2 (graceful):
             // consider draining connection and replying with `Connection: Close` header
             // if you want the client to close after this request/reply cycle instead:

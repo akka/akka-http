@@ -163,4 +163,4 @@ The best entry point for this is the ``akka.http.scaladsl.marshalling.Marshal`` 
 
 .. TODO rewrite for Java
 .. .. includecode2:: ../../code/docs/http/scaladsl/MarshalSpec.scala
-   :snippet: use marshal
+   :snippet: use-marshal

@@ -9,6 +9,7 @@ import akka.testkit.AkkaSpec
 class MarshalSpec extends AkkaSpec {
 
   "use marshal" in {
+    //#use-marshal
     import scala.concurrent.Await
     import scala.concurrent.duration._
     import akka.http.scaladsl.marshalling.Marshal
@@ -33,6 +34,7 @@ class MarshalSpec extends AkkaSpec {
     a[Marshal.UnacceptableResponseContentTypeException] should be thrownBy {
       Await.result(respFuture, 1.second) // client requested JSON, we only have text/plain!
     }
+    //#use-marshal
   }
 
 }

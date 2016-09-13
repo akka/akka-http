@@ -21,12 +21,12 @@ The basic technique is explained in the chapter about Composing Directives, wher
 ``getOrPut`` is defined like this:
 
 .. includecode2:: ../../../code/docs/http/javadsl/server/directives/CustomDirectivesExamplesTest.java
-   :snippet: labeling
+   :snippet: labeling-1,labeling-2
 
 Multiple directives can be nested to produce a single directive out of multiple like this:
 
 .. includecode2:: ../../../code/docs/http/javadsl/server/directives/CustomDirectivesExamplesTest.java
-   :snippet: composition
+   :snippet: composition-1,composition-2
 
 
 Another example is the :ref:`MethodDirectives-java` which are simply instances of a preconfigured :ref:`-method-java-` directive.
