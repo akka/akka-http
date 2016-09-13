@@ -19,7 +19,7 @@ import akka.http.impl.engine.ws.FrameHandler.UserHandlerErredOut
  *
  * INTERNAL API
  */
-private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDuration, log: LoggingAdapter) extends StatefulStage[FrameOutHandler.Input, FrameStart] {
+private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDuration, log: LoggingAdapter) extends StatefulStage[FrameOutHandler.Input, FrameStart] { // FIXME reimplement as GraphStage
   def initial: StageState[AnyRef, FrameStart] = Idle
   def closeTimeout: Timestamp = Timestamp.now + _closeTimeout
 
