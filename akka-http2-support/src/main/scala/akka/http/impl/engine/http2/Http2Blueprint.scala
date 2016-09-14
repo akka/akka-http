@@ -18,6 +18,9 @@ import akka.util.ByteString
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
+import akka.http.impl.util.PPrintDebug
+import akka.http.impl.util.PPrintDebug.bytestringPrinter
+
 /** Represents one direction of an Http2 substream */
 final case class Http2SubStream(initialFrame: StreamFrameEvent, frames: Source[StreamFrameEvent, _]) {
   def streamId: Int = initialFrame.streamId
@@ -25,9 +28,13 @@ final case class Http2SubStream(initialFrame: StreamFrameEvent, frames: Source[S
 
 object Http2Blueprint {
   def serverStack(): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
-    httpLayer() atop
+    PPrintDebug.layer[HttpResponse, HttpRequest]("user") atop
+      httpLayer() atop
+      PPrintDebug.layer[Http2SubStream, Http2SubStream]("demuxed") atop
       demux() atop
-      framing()
+      PPrintDebug.layer[FrameEvent, FrameEvent]("framed2") atop
+      framing() atop
+      PPrintDebug.layer[ByteString, ByteString]("net-plain")
 
   def framing(): BidiFlow[FrameEvent, ByteString, ByteString, FrameEvent, NotUsed] =
     BidiFlow.fromFlows(
