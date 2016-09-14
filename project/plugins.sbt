@@ -34,3 +34,4 @@ addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.3.3")
 // addSbtPlugin("com.typesafe.sbt" % "sbt-site" % "0.7.1")
 // addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.9.1")
 
+addSbtPlugin("net.virtual-void" % "sbt-optimizer" % "0.1.2")
