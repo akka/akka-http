@@ -25,6 +25,6 @@ For simply extracting the scheme name, see the :ref:`-extractScheme-` directive.
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/SchemeDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/SchemeDirectivesExamplesSpec.scala
    :snippet: example-2
 

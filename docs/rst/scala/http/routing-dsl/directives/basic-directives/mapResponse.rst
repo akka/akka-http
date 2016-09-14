@@ -21,11 +21,11 @@ See also :ref:`-mapResponseHeaders-` or :ref:`-mapResponseEntity-` for more spec
 Example: Override status
 ------------------------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
    :snippet: 0mapResponse
 
 Example: Default to empty JSON response on errors
 -------------------------------------------------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
    :snippet: 1mapResponse-advanced

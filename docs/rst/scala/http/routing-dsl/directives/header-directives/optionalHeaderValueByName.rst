@@ -19,5 +19,5 @@ an ``Option`` value instead of rejecting the request if no matching header could
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala
    :snippet: optionalHeaderValueByName-0

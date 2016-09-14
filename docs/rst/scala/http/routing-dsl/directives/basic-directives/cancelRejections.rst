@@ -25,5 +25,5 @@ which provides a nicer DSL for building rejection handlers.
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
    :snippet: cancelRejections-filter-example

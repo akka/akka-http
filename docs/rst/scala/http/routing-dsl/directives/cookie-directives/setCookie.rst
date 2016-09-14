@@ -19,5 +19,5 @@ Use the :ref:`-deleteCookie-` directive to delete a cookie.
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/CookieDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/CookieDirectivesExamplesSpec.scala
    :snippet: setCookie

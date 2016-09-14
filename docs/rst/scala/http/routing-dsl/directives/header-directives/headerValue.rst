@@ -26,5 +26,5 @@ See also :ref:`-headerValuePF-` for a nicer syntactic alternative.
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala
    :snippet: headerValue-0

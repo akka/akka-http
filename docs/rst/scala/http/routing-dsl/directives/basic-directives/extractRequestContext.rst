@@ -23,5 +23,5 @@ See also :ref:`-extractRequest-` if only interested in the :class:`HttpRequest` 
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
    :snippet: extractRequestContext-example

@@ -24,5 +24,5 @@ It is equivalent to ``pathEnd | pathSingleSlash`` but slightly more efficient.
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
    :snippet: pathEndOrSingleSlash-

@@ -21,5 +21,5 @@ To complete with a successful result automatically and just handle the failure r
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala
    :snippet: onComplete

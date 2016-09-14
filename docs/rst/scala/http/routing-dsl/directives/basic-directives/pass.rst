@@ -18,5 +18,5 @@ It is usually used as a "neutral element" when combining directives generically.
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
    :snippet: pass

@@ -21,5 +21,5 @@ The directive returns a ``RequestEntity`` without unmarshalling the request. To 
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala
    :snippet: extractRequestEntity-example

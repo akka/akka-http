@@ -23,5 +23,5 @@ Otherwise, the same behaviour provided by :ref:`-onComplete-` is to be expected.
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala
    :snippet: onCompleteWithBreaker

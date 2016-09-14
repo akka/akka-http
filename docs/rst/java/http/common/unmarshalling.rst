@@ -119,6 +119,6 @@ However, you can also use the unmarshalling infrastructure directly if you wish,
 The best entry point for this is the ``akka.http.scaladsl.unmarshalling.Unmarshal`` object, which you can use like this:
 
 .. TODO rewrite for java
-.. .. includecode2:: ../../code/docs/http/scaladsl/UnmarshalSpec.scala
+.. .. includecode2:: ../../../../../test/java/docs/http/scaladsl/UnmarshalSpec.scala
    :snippet: use-unmarshal
 

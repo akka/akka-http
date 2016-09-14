@@ -19,5 +19,5 @@ Otherwise, rejects the request with a ``ValidationRejection`` containing the giv
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala
   :snippet: validate-example

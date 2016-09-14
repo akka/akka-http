@@ -162,5 +162,5 @@ However, you can also use the marshalling infrastructure directly if you wish, w
 The best entry point for this is the ``akka.http.scaladsl.marshalling.Marshal`` object, which you can use like this:
 
 .. TODO rewrite for Java
-.. .. includecode2:: ../../code/docs/http/scaladsl/MarshalSpec.scala
+.. .. includecode2:: ../../../../../test/java/docs/http/scaladsl/MarshalSpec.scala
    :snippet: use-marshal

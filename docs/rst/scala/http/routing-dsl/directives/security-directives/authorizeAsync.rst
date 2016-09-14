@@ -32,5 +32,5 @@ See also :ref:`-authorize-` for the synchronous version of this directive.
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/SecurityDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/SecurityDirectivesExamplesSpec.scala
    :snippet: 0authorizeAsync

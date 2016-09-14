@@ -21,7 +21,7 @@ named configurations of more low-level directives.
 The basic technique is explained in the chapter about Composing Directives, where, for example, a new directive
 ``getOrPut`` is defined like this:
 
-.. includecode2:: ../../../code/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../test/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala
    :snippet: labeling
 
 Another example is the :ref:`MethodDirectives` which are simply instances of a preconfigured :ref:`-method-` directive.
@@ -52,7 +52,7 @@ map and tmap
 If the Directive is a single-value ``Directive``, the ``map`` method allows
 for simple transformations:
 
-.. includecode2:: ../../../code/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../test/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala
    :snippet: map-0
 
 One example of a predefined directive relying on ``map`` is the `optionalHeaderValue`__ directive.
@@ -68,7 +68,7 @@ The number and/or types of the extractions can be changed arbitrarily. For examp
 if ``R`` is ``Tuple2[A, B]`` then the result will be a ``Directive[(A, B)]``. Here is a
 somewhat contrived example:
 
-.. includecode2:: ../../../code/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../test/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala
    :snippet: tmap-1
 
 
@@ -95,7 +95,7 @@ variant called ``flatMap``, which simplifies the operation for Directives only e
 
 Here is the (contrived) example from above, which doubles positive Int values and rejects all others:
 
-.. includecode2:: ../../../code/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../test/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala
    :snippet: flatMap-0
 
 A common pattern that relies on flatMap is to first extract a value

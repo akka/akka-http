@@ -20,12 +20,12 @@ named configurations of more low-level directives.
 The basic technique is explained in the chapter about Composing Directives, where, for example, a new directive
 ``getOrPut`` is defined like this:
 
-.. includecode2:: ../../../code/docs/http/javadsl/server/directives/CustomDirectivesExamplesTest.java
+.. includecode2:: ../../../../../../test/java/docs/http/javadsl/server/directives/CustomDirectivesExamplesTest.java
    :snippet: labeling-1,labeling-2
 
 Multiple directives can be nested to produce a single directive out of multiple like this:
 
-.. includecode2:: ../../../code/docs/http/javadsl/server/directives/CustomDirectivesExamplesTest.java
+.. includecode2:: ../../../../../../test/java/docs/http/javadsl/server/directives/CustomDirectivesExamplesTest.java
    :snippet: composition-1,composition-2
 
 

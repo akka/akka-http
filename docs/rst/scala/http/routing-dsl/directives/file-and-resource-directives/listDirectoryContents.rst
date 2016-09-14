@@ -27,5 +27,5 @@ Note that it's not required to wrap this directive with ``get`` as this directiv
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/FileAndResourceDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/FileAndResourceDirectivesExamplesSpec.scala
    :snippet: listDirectoryContents-examples

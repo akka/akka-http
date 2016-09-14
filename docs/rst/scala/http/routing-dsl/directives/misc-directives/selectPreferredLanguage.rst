@@ -21,5 +21,5 @@ If there are several best language alternatives that the client has equal prefer
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala
   :snippet: selectPreferredLanguage-example

@@ -27,5 +27,5 @@ This directive is useful for:
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MethodDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/MethodDirectivesExamplesSpec.scala
    :snippet: overrideMethodWithParameter-0

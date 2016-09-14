@@ -37,7 +37,7 @@ is shown in the example below, however it allows including multiple default head
 
 The semantics remain the same however, as explained by the following example:
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala
    :snippet: respondWithDefaultHeader-0
 
 See the :ref:`-respondWithDefaultHeader-` directive for an example with only one header.

@@ -114,6 +114,6 @@ of a request using the :ref:`Routing DSL <http-high-level-server-side-api>`.
 However, you can also use the unmarshalling infrastructure directly if you wish, which can be useful for example in tests.
 The best entry point for this is the ``akka.http.scaladsl.unmarshalling.Unmarshal`` object, which you can use like this:
 
-.. includecode2:: ../../code/docs/http/scaladsl/UnmarshalSpec.scala
+.. includecode2:: ../../../../../test/scala/docs/http/scaladsl/UnmarshalSpec.scala
    :snippet: use-unmarshal
 

@@ -39,7 +39,7 @@ SSL Config settings used by Akka HTTP (as well as Streaming TCP) are located und
 In order to use SSL-Config in Akka so it logs to the right ActorSystem-wise logger etc., the
 ``AkkaSSLConfig`` extension is provided. Obtaining it is as simple as:
 
-.. includecode2:: ../code/docs/http/javadsl/server/HttpsServerExampleTest.java
+.. includecode2:: ../../../../test/java/docs/http/javadsl/server/HttpsServerExampleTest.java
    :snippet: akka-ssl-config
 
 While typical usage, for example for configuring http client settings would be applied globally by configuring

@@ -30,5 +30,5 @@ To learn more about various timeouts in Akka HTTP and how to configure them see 
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/TimeoutDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/TimeoutDirectivesExamplesSpec.scala
    :snippet: withRequestTimeoutResponse

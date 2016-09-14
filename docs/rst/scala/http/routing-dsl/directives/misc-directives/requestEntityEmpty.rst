@@ -22,5 +22,5 @@ See also :ref:`-requestEntityPresent-` for the opposite effect.
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala
   :snippet: requestEntityEmptyPresent-example

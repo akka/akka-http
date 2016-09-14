@@ -19,5 +19,5 @@ Extract the hostname part of the ``Host`` request header and expose it as a ``St
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala
    :snippet: extractHost

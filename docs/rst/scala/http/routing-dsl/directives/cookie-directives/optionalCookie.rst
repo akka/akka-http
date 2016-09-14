@@ -19,5 +19,5 @@ Use the :ref:`-cookie-` directive instead if the inner route does not handle a m
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/CookieDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/CookieDirectivesExamplesSpec.scala
    :snippet: optionalCookie

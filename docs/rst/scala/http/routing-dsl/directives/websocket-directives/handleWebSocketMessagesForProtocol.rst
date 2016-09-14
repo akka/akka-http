@@ -27,5 +27,5 @@ For more information about the WebSocket support, see :ref:`server-side-websocke
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/WebSocketDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/WebSocketDirectivesExamplesSpec.scala
    :snippet: handle-multiple-protocols

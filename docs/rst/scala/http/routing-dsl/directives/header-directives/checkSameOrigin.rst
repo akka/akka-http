@@ -19,5 +19,5 @@ and ``StatusCodes.Forbidden`` status.
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala
    :snippet: checkSameOrigin-0

@@ -26,5 +26,5 @@ can cause performance issues or even an ``OutOfMemoryError`` s.
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala
    :snippet: formFieldSeq

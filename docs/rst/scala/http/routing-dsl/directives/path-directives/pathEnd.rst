@@ -23,5 +23,5 @@ inner-level to discriminate "path already fully matched" from other alternatives
 Example
 -------
 
-.. includecode2:: ../../../../code/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
+.. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
    :snippet: pathEnd-
