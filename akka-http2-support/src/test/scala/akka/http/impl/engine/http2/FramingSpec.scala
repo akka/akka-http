@@ -1,16 +1,13 @@
 /**
  * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
  */
-
 package akka.http.impl.engine.http2
 
-import akka.http.impl.engine.ws.BitBuilder
-import akka.http.impl.engine.ws.WithMaterializerSpec
+import akka.http.impl.engine.ws.{ BitBuilder, WithMaterializerSpec }
 import akka.http.impl.util._
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import org.scalatest.FreeSpec
-import org.scalatest.Matchers
+import org.scalatest.{ FreeSpec, Matchers }
 import org.scalatest.matchers.Matcher
 
 import scala.collection.immutable

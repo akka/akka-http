@@ -1,15 +1,18 @@
-package akka.http.scaladsl.impl.parsing
+/*
+ * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ */
 
+package akka.http.impl.engine.http2.parsing
+
+import akka.http.impl.engine.http2.HeadersFrame
 import akka.http.scaladsl.model.{ HttpMethods, HttpRequest }
-import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.model2.HeadersFrame
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
 
-class RequestHeaderDecompressionSpec extends AkkaSpec with ScalaFutures {
+class HttpRequestHeaderDecompressionSpec extends AkkaSpec with ScalaFutures {
 
   implicit val mat = ActorMaterializer()
 
@@ -18,7 +21,7 @@ class RequestHeaderDecompressionSpec extends AkkaSpec with ScalaFutures {
   val encodedPOST = "83"
   val encodedPathSamplePath = "040c 2f73 616d 706c 652f 7061 7468"
 
-  "RequestHeaderDecompression" must {
+  "RequestHeaderHpackDecompression" must {
     "decompress spec-example-1 to right path (Uri)" in {
       val headerBlock = encodedPathSamplePath
       val headers = Map(":path" → "/sample/path")
@@ -51,17 +54,13 @@ class RequestHeaderDecompressionSpec extends AkkaSpec with ScalaFutures {
       request.method should ===(HttpMethods.POST)
       request.uri.toString should ===("/sample/path")
     }
-
-    // FIXME: should test data spanning over multiple Headers frames (to make sure we handle completion properly) 
   }
 
   def runToRequest(frames: List[HeadersFrame]): HttpRequest = {
-    val request =
-      Source.fromIterator(() ⇒ frames.iterator)
-        .via(new RequestHeaderDecompression)
-        .runWith(Sink.head)
-        .futureValue
-    request
+    Source.fromIterator(() ⇒ frames.iterator)
+      .via(new HttpRequestHeaderHpackDecompression)
+      .runWith(Sink.head)
+      .futureValue
   }
 
   def parseHeaderBlock(data: String): ByteString = {
