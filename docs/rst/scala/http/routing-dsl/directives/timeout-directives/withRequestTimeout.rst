@@ -6,7 +6,7 @@ withRequestTimeout
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/TimeoutDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/TimeoutDirectives.scala
    :snippet: withRequestTimeout
 
 Description

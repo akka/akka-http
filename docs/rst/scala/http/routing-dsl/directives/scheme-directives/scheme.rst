@@ -6,7 +6,7 @@ scheme
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SchemeDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SchemeDirectives.scala
    :snippet: scheme
 
 Description

@@ -6,7 +6,7 @@ failWith
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/RouteDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/RouteDirectives.scala
    :snippet: failWith
 
 

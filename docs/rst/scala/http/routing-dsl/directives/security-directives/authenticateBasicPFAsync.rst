@@ -6,9 +6,9 @@ authenticateBasicPFAsync
 Signature
 ---------
 
-.. includecode:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala#async-authenticator-pf
+.. includecode:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala#async-authenticator-pf
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala
    :snippet: authenticateBasicPFAsync
 
 Description

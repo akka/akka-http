@@ -90,7 +90,7 @@ some other source. Potential scenarios where this might be useful include tests,
 
 On the client-side the stand-alone HTTP layer forms a ``BidiStage`` that is defined like this:
 
-.. includecode2:: /../../akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala
+.. includecode2:: ../../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala
    :snippet: client-layer
 
 You create an instance of ``Http.ClientLayer`` by calling one of the two overloads of the ``Http().clientLayer`` method,

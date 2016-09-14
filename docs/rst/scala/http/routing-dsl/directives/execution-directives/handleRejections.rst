@@ -6,7 +6,7 @@ handleRejections
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/ExecutionDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/ExecutionDirectives.scala
    :snippet: handleRejections
 
 Description

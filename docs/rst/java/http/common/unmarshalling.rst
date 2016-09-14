@@ -18,7 +18,7 @@ Basic Design
 Unmarshalling of instances of type ``A`` into instances of type ``B`` is performed by an ``Unmarshaller[A, B]``.
 Akka HTTP also predefines a number of helpful aliases for the types of unmarshallers that you'll likely work with most:
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/package.scala
+.. includecode2:: ../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/package.scala
    :snippet: unmarshaller-aliases
 
 At its core an ``Unmarshaller[A, B]`` is very similar to a ``Function<A, CompletionStage<B>>`` and as such quite a bit simpler
@@ -83,7 +83,7 @@ companion:
 TODO rewrite sample for Java
 
 ..
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/Unmarshaller.scala
+.. includecode2:: ../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/Unmarshaller.scala
    :snippet: unmarshaller-creation
 
 

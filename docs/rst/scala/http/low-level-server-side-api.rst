@@ -159,7 +159,7 @@ some other source. Potential scenarios where this might be useful include tests,
 
 On the server-side the stand-alone HTTP layer forms a ``BidiFlow`` that is defined like this:
 
-.. includecode2:: /../../akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala
+.. includecode2:: ../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala
    :snippet: server-layer
 
 You create an instance of ``Http.ServerLayer`` by calling one of the two overloads of the ``Http().serverLayer`` method,

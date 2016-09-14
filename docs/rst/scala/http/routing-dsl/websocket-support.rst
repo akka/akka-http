@@ -18,7 +18,7 @@ i.e. a sequence of octets or a text message, i.e. a sequence of unicode code poi
 
 Akka HTTP provides a straight-forward model for this abstraction:
 
-.. includecode:: /../../akka-http-core/src/main/scala/akka/http/scaladsl/model/ws/Message.scala
+.. includecode:: ../../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/model/ws/Message.scala
    :include: message-model
 
 The data of a message is provided as a stream because WebSocket messages do not have a predefined size and could

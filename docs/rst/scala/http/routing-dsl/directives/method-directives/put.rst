@@ -6,7 +6,7 @@ put
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala
    :snippet: put
 
 Description

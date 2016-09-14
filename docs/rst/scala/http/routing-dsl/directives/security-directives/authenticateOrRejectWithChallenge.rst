@@ -6,9 +6,9 @@ authenticateOrRejectWithChallenge
 Signature
 ---------
 
-.. includecode:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala#authentication-result
+.. includecode:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala#authentication-result
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala
    :snippet: authenticateOrRejectWithChallenge
 
 Description

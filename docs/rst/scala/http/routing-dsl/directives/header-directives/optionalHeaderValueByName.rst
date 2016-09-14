@@ -6,7 +6,7 @@ optionalHeaderValueByName
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala
    :snippet: optionalHeaderValueByName
 
 Description

@@ -6,7 +6,7 @@ uploadedFile
 Signature
 ---------
 
-.. includecode2:: /../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileUploadDirectives.scala
+.. includecode2:: ../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileUploadDirectives.scala
    :snippet: uploadedFile
 
 Description

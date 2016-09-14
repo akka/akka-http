@@ -24,7 +24,7 @@ methods to cast a message.
 The subclasses ``BinaryMessage`` and ``TextMessage`` contain methods to access the data. Take the API of
 ``TextMessage`` as an example (``BinaryMessage`` is very similar with ``String`` replaced by ``ByteString``):
 
-.. includecode:: /../../akka-http-core/src/main/scala/akka/http/javadsl/model/ws/Message.scala
+.. includecode:: ../../../../../../../akka-http-core/src/main/scala/akka/http/javadsl/model/ws/Message.scala
    :include: message-model
 
 The data of a message is provided as a stream because WebSocket messages do not have a predefined size and could

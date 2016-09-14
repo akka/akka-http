@@ -103,7 +103,7 @@ from the RequestContext with the extract directive and then flatMap with
 some kind of filtering logic. For example, this is the implementation
 of the method directive:
 
-.. includecode2:: ../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala
+.. includecode2:: ../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala
    :snippet: method
 
 The explicit type parameter ``[Unit]`` on the flatMap i`s needed in this case
@@ -126,7 +126,7 @@ The signature of require is this::
 
 One example of a predefined directive relying on require is the first overload of the host directive:
 
-.. includecode2:: ../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HostDirectives.scala
+.. includecode2:: ../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HostDirectives.scala
    :snippet: require-host
 
 You can only call require on single-extraction directives. The trequire modifier is the
@@ -155,7 +155,7 @@ easier to use since it doesn’t require the handling of all rejections::
 
 One example of a predefined directive relying ``recoverPF`` is the optionalHeaderValue directive:
 
-.. includecode2:: ../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala
+.. includecode2:: ../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala
    :snippet: optional-header
 
 
@@ -167,7 +167,7 @@ The third option for creating custom directives is to do it “from scratch”,
 by directly subclassing the Directive class. The Directive is defined like this
 (leaving away operators and modifiers):
 
-.. includecode2:: ../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/Directive.scala
+.. includecode2:: ../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/Directive.scala
    :snippet: basic
 
 It only has one abstract member that you need to implement, the happly method, which creates
