@@ -34,7 +34,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
   path("foo" ~ Slash.?)
 
   // matches /red or /green or /blue and extracts 1, 2 or 3 respectively
-  path(Map("red" -> 1, "green" -> 2, "blue" -> 3))
+  path(Map("red" → 1, "green" → 2, "blue" → 3))
 
   // matches anything starting with "/foo" except for /foobar
   pathPrefix("foo" ~ !"bar")
@@ -42,7 +42,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
 
   //#completeWithUnmatchedPath
   val completeWithUnmatchedPath =
-    extractUnmatchedPath { p =>
+    extractUnmatchedPath { p ⇒
       complete(p.toString)
     }
 
@@ -61,7 +61,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
           pathEnd {
             complete("/ball")
           } ~
-            path(IntNumber) { int =>
+            path(IntNumber) { int ⇒
               complete(if (int % 2 == 0) "even ball" else "odd ball")
             }
         }
@@ -146,7 +146,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
         pathEnd {
           complete("/ball")
         } ~
-          path(IntNumber) { int =>
+          path(IntNumber) { int ⇒
             complete(if (int % 2 == 0) "even ball" else "odd ball")
           }
       }
@@ -195,7 +195,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
           pathSingleSlash {
             complete("/ball/")
           } ~
-            path(IntNumber) { int =>
+            path(IntNumber) { int ⇒
               complete(if (int % 2 == 0) "even ball" else "odd ball")
             }
         }

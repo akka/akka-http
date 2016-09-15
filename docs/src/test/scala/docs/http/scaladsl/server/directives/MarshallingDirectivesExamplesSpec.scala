@@ -27,7 +27,7 @@ class MarshallingDirectivesExamplesSpec extends RoutingSpec {
     import PersonJsonSupport._
 
     val route = post {
-      entity(as[Person]) { person =>
+      entity(as[Person]) { person ⇒
         complete(s"Person: ${person.name} - favorite number: ${person.favoriteNumber}")
       }
     }
@@ -45,7 +45,7 @@ class MarshallingDirectivesExamplesSpec extends RoutingSpec {
     import PersonJsonSupport._
 
     val route = post {
-      entity(as[JsValue]) { json =>
+      entity(as[JsValue]) { json ⇒
         complete(s"Person: ${json.asJsObject.fields("name")} - favorite number: ${json.asJsObject.fields("favoriteNumber")}")
       }
     }
@@ -62,7 +62,7 @@ class MarshallingDirectivesExamplesSpec extends RoutingSpec {
     //#example-completeWith-with-json
     import PersonJsonSupport._
 
-    val findPerson = (f: Person => Unit) => {
+    val findPerson = (f: Person ⇒ Unit) ⇒ {
 
       //... some processing logic...
 
@@ -71,7 +71,7 @@ class MarshallingDirectivesExamplesSpec extends RoutingSpec {
     }
 
     val route = get {
-      completeWith(instanceOf[Person]) { completionFunction => findPerson(completionFunction) }
+      completeWith(instanceOf[Person]) { completionFunction ⇒ findPerson(completionFunction) }
     }
 
     // tests:
@@ -87,7 +87,7 @@ class MarshallingDirectivesExamplesSpec extends RoutingSpec {
     //#example-handleWith-with-json
     import PersonJsonSupport._
 
-    val updatePerson = (person: Person) => {
+    val updatePerson = (person: Person) ⇒ {
 
       //... some processing logic...
 

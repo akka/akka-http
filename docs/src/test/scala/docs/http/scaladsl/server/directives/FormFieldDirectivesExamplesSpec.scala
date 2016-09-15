@@ -12,12 +12,12 @@ class FormFieldDirectivesExamplesSpec extends RoutingSpec {
   "formFields" in {
     //#formFields
     val route =
-      formFields('color, 'age.as[Int]) { (color, age) =>
+      formFields('color, 'age.as[Int]) { (color, age) ⇒
         complete(s"The color is '$color' and the age ten years ago was ${age - 10}")
       }
 
     // tests:
-    Post("/", FormData("color" -> "blue", "age" -> "68")) ~> route ~> check {
+    Post("/", FormData("color" → "blue", "age" → "68")) ~> route ~> check {
       responseAs[String] shouldEqual "The color is 'blue' and the age ten years ago was 58"
     }
 
@@ -30,15 +30,15 @@ class FormFieldDirectivesExamplesSpec extends RoutingSpec {
   "formField" in {
     //#formField
     val route =
-      formField('color) { color =>
+      formField('color) { color ⇒
         complete(s"The color is '$color'")
       } ~
-        formField('id.as[Int]) { id =>
+        formField('id.as[Int]) { id ⇒
           complete(s"The id is '$id'")
         }
 
     // tests:
-    Post("/", FormData("color" -> "blue")) ~> route ~> check {
+    Post("/", FormData("color" → "blue")) ~> route ~> check {
       responseAs[String] shouldEqual "The color is 'blue'"
     }
 
@@ -51,17 +51,17 @@ class FormFieldDirectivesExamplesSpec extends RoutingSpec {
   "formFieldMap" in {
     //#formFieldMap
     val route =
-      formFieldMap { fields =>
+      formFieldMap { fields ⇒
         def formFieldString(formField: (String, String)): String =
           s"""${formField._1} = '${formField._2}'"""
         complete(s"The form fields are ${fields.map(formFieldString).mkString(", ")}")
       }
 
     // tests:
-    Post("/", FormData("color" -> "blue", "count" -> "42")) ~> route ~> check {
+    Post("/", FormData("color" → "blue", "count" → "42")) ~> route ~> check {
       responseAs[String] shouldEqual "The form fields are color = 'blue', count = '42'"
     }
-    Post("/", FormData("x" -> "1", "x" -> "5")) ~> route ~> check {
+    Post("/", FormData("x" → "1", "x" → "5")) ~> route ~> check {
       responseAs[String] shouldEqual "The form fields are x = '5'"
     }
     //#formFieldMap
@@ -69,16 +69,16 @@ class FormFieldDirectivesExamplesSpec extends RoutingSpec {
   "formFieldMultiMap" in {
     //#formFieldMultiMap
     val route =
-      formFieldMultiMap { fields =>
+      formFieldMultiMap { fields ⇒
         complete("There are " +
-          s"form fields ${fields.map(x => x._1 + " -> " + x._2.size).mkString(", ")}")
+          s"form fields ${fields.map(x ⇒ x._1 + " -> " + x._2.size).mkString(", ")}")
       }
 
     // tests:
-    Post("/", FormData("color" -> "blue", "count" -> "42")) ~> route ~> check {
+    Post("/", FormData("color" → "blue", "count" → "42")) ~> route ~> check {
       responseAs[String] shouldEqual "There are form fields color -> 1, count -> 1"
     }
-    Post("/", FormData("x" -> "23", "x" -> "4", "x" -> "89")) ~> route ~> check {
+    Post("/", FormData("x" → "23", "x" → "4", "x" → "89")) ~> route ~> check {
       responseAs[String] shouldEqual "There are form fields x -> 3"
     }
     //#formFieldMultiMap
@@ -86,17 +86,17 @@ class FormFieldDirectivesExamplesSpec extends RoutingSpec {
   "formFieldSeq" in {
     //#formFieldSeq
     val route =
-      formFieldSeq { fields =>
+      formFieldSeq { fields ⇒
         def formFieldString(formField: (String, String)): String =
           s"""${formField._1} = '${formField._2}'"""
         complete(s"The form fields are ${fields.map(formFieldString).mkString(", ")}")
       }
 
     // tests:
-    Post("/", FormData("color" -> "blue", "count" -> "42")) ~> route ~> check {
+    Post("/", FormData("color" → "blue", "count" → "42")) ~> route ~> check {
       responseAs[String] shouldEqual "The form fields are color = 'blue', count = '42'"
     }
-    Post("/", FormData("x" -> "23", "x" -> "4", "x" -> "89")) ~> route ~> check {
+    Post("/", FormData("x" → "23", "x" → "4", "x" → "89")) ~> route ~> check {
       responseAs[String] shouldEqual "The form fields are x = '23', x = '4', x = '89'"
     }
     //#formFieldSeq

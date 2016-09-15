@@ -29,7 +29,7 @@ class WebSocketClientExampleSpec extends WordSpec with Matchers with CompileOnly
         // print each incoming strict text message
         val printSink: Sink[Message, Future[Done]] =
           Sink.foreach {
-            case message: TextMessage.Strict =>
+            case message: TextMessage.Strict ⇒
               println(message.text)
           }
 
@@ -47,7 +47,7 @@ class WebSocketClientExampleSpec extends WordSpec with Matchers with CompileOnly
         val (upgradeResponse, closed) =
           Http().singleWebSocketRequest(WebSocketRequest("ws://echo.websocket.org"), flow)
 
-        val connected = upgradeResponse.map { upgrade =>
+        val connected = upgradeResponse.map { upgrade ⇒
           // just like a regular http request we can access response status which is available via upgrade.response.status
           // status code 101 (Switching Protocols) indicates that server support WebSockets
           if (upgrade.response.status == StatusCodes.SwitchingProtocols) {
@@ -60,7 +60,7 @@ class WebSocketClientExampleSpec extends WordSpec with Matchers with CompileOnly
         // in a real application you would not side effect here
         // and handle errors more carefully
         connected.onComplete(println)
-        closed.foreach(_ => println("closed"))
+        closed.foreach(_ ⇒ println("closed"))
       }
     }
     //#single-WebSocket-request
@@ -207,7 +207,7 @@ class WebSocketClientExampleSpec extends WordSpec with Matchers with CompileOnly
         // emitted when the stream completes
         val incoming: Sink[Message, Future[Done]] =
           Sink.foreach[Message] {
-            case message: TextMessage.Strict =>
+            case message: TextMessage.Strict ⇒
               println(message.text)
           }
 
@@ -229,7 +229,7 @@ class WebSocketClientExampleSpec extends WordSpec with Matchers with CompileOnly
 
         // just like a regular http request we can access response status which is available via upgrade.response.status
         // status code 101 (Switching Protocols) indicates that server support WebSockets
-        val connected = upgradeResponse.flatMap { upgrade =>
+        val connected = upgradeResponse.flatMap { upgrade ⇒
           if (upgrade.response.status == StatusCodes.SwitchingProtocols) {
             Future.successful(Done)
           } else {
@@ -239,7 +239,7 @@ class WebSocketClientExampleSpec extends WordSpec with Matchers with CompileOnly
 
         // in a real application you would not side effect here
         connected.onComplete(println)
-        closed.foreach(_ => println("closed"))
+        closed.foreach(_ ⇒ println("closed"))
       }
     }
     //#WebSocket-client-flow

@@ -18,7 +18,7 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
     import ContentTypeResolver.Default
 
     val route =
-      path("logs" / Segment) { name =>
+      path("logs" / Segment) { name ⇒
         getFromFile(s"$name.log") // uses implicit ContentTypeResolver
       }
 
@@ -34,7 +34,7 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
     import ContentTypeResolver.Default
 
     val route =
-      path("logs" / Segment) { name =>
+      path("logs" / Segment) { name ⇒
         getFromResource(s"$name.log") // uses implicit ContentTypeResolver
       }
 

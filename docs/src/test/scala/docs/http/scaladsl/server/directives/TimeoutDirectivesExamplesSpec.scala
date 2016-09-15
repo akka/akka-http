@@ -88,7 +88,7 @@ class TimeoutDirectivesExamplesSpec extends AkkaSpec(TimeoutDirectivesInfiniteTi
       val route =
         path("timeout") {
           // updates timeout and handler at
-          withRequestTimeout(1.milli, request => timeoutResponse) {
+          withRequestTimeout(1.milli, request ⇒ timeoutResponse) {
             val response: Future[String] = slowFuture() // very slow
             complete(response)
           }
@@ -109,7 +109,7 @@ class TimeoutDirectivesExamplesSpec extends AkkaSpec(TimeoutDirectivesInfiniteTi
       val route =
         path("timeout") {
           withRequestTimeout(100.milli) { // racy! for a very short timeout like 1.milli you can still get 503
-            withRequestTimeoutResponse(request => timeoutResponse) {
+            withRequestTimeoutResponse(request ⇒ timeoutResponse) {
               val response: Future[String] = slowFuture() // very slow
               complete(response)
             }

@@ -13,12 +13,12 @@ class CookieDirectivesExamplesSpec extends RoutingSpec {
   "cookie" in {
     //#cookie
     val route =
-      cookie("userName") { nameCookie =>
+      cookie("userName") { nameCookie ⇒
         complete(s"The logged in user is '${nameCookie.value}'")
       }
 
     // tests:
-    Get("/") ~> Cookie("userName" -> "paul") ~> route ~> check {
+    Get("/") ~> Cookie("userName" → "paul") ~> route ~> check {
       responseAs[String] shouldEqual "The logged in user is 'paul'"
     }
     // missing cookie
@@ -34,12 +34,12 @@ class CookieDirectivesExamplesSpec extends RoutingSpec {
     //#optionalCookie
     val route =
       optionalCookie("userName") {
-        case Some(nameCookie) => complete(s"The logged in user is '${nameCookie.value}'")
-        case None             => complete("No user logged in")
+        case Some(nameCookie) ⇒ complete(s"The logged in user is '${nameCookie.value}'")
+        case None             ⇒ complete("No user logged in")
       }
 
     // tests:
-    Get("/") ~> Cookie("userName" -> "paul") ~> route ~> check {
+    Get("/") ~> Cookie("userName" → "paul") ~> route ~> check {
       responseAs[String] shouldEqual "The logged in user is 'paul'"
     }
     Get("/") ~> route ~> check {

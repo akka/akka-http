@@ -80,7 +80,7 @@ class ModelSpec extends AkkaSpec {
     // a method that extracts basic HTTP credentials from a request
     def credentialsOfRequest(req: HttpRequest): Option[User] =
       for {
-        Authorization(BasicHttpCredentials(user, pass)) <- req.header[Authorization]
+        Authorization(BasicHttpCredentials(user, pass)) ← req.header[Authorization]
       } yield User(user, pass)
     //#headers
 

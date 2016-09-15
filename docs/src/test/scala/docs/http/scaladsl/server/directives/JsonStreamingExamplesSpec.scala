@@ -114,8 +114,8 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
   "csv-example" in {
     //#csv-example
     // [1] provide a marshaller to ByteString
-    implicit val tweetAsCsv = Marshaller.strict[Tweet, ByteString] { t =>
-      Marshalling.WithFixedContentType(ContentTypes.`text/csv(UTF-8)`, () => {
+    implicit val tweetAsCsv = Marshaller.strict[Tweet, ByteString] { t ⇒
+      Marshalling.WithFixedContentType(ContentTypes.`text/csv(UTF-8)`, () ⇒ {
         val txt = t.txt.replaceAll(",", ".")
         val uid = t.uid
         ByteString(List(uid, txt).mkString(","))
@@ -189,16 +189,16 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
     val route =
       path("metrics") {
         // [3] extract Source[Measurement, _]
-        entity(asSourceOf[Measurement]) { measurements =>
+        entity(asSourceOf[Measurement]) { measurements ⇒
           // alternative syntax:
           // entity(as[Source[Measurement, NotUsed]]) { measurements =>
           val measurementsSubmitted: Future[Int] =
             measurements
               .via(persistMetrics)
-              .runFold(0) { (cnt, _) => cnt + 1 }
+              .runFold(0) { (cnt, _) ⇒ cnt + 1 }
 
           complete {
-            measurementsSubmitted.map(n => Map("msg" -> s"""Total metrics received: $n"""))
+            measurementsSubmitted.map(n ⇒ Map("msg" → s"""Total metrics received: $n"""))
           }
         }
       }

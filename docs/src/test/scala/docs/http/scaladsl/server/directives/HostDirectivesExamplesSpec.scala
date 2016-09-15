@@ -14,7 +14,7 @@ class HostDirectivesExamplesSpec extends RoutingSpec {
   "extractHost" in {
     //#extractHost
     val route =
-      extractHost { hn =>
+      extractHost { hn ⇒
         complete(s"Hostname: $hn")
       }
 
@@ -47,7 +47,7 @@ class HostDirectivesExamplesSpec extends RoutingSpec {
 
   "predicate" in {
     //#predicate
-    val shortOnly: String => Boolean = (hostname) => hostname.length < 10
+    val shortOnly: String ⇒ Boolean = (hostname) ⇒ hostname.length < 10
 
     val route =
       host(shortOnly) {
@@ -69,10 +69,10 @@ class HostDirectivesExamplesSpec extends RoutingSpec {
   "using-regex" in {
     //#using-regex
     val route =
-      host("api|rest".r) { prefix =>
+      host("api|rest".r) { prefix ⇒
         complete(s"Extracted prefix: $prefix")
       } ~
-        host("public.(my|your)company.com".r) { captured =>
+        host("public.(my|your)company.com".r) { captured ⇒
           complete(s"You came through $captured company")
         }
 
@@ -92,7 +92,7 @@ class HostDirectivesExamplesSpec extends RoutingSpec {
   "failing-regex" in {
     //#failing-regex
     an[IllegalArgumentException] should be thrownBy {
-      host("server-([0-9]).company.(com|net|org)".r) { target =>
+      host("server-([0-9]).company.(com|net|org)".r) { target ⇒
         complete("Will never complete :'(")
       }
     }

@@ -8,7 +8,7 @@ import org.scalatest.{ Matchers, WordSpec }
 
 class SprayJsonExampleSpec extends WordSpec with Matchers {
 
-  def compileOnlySpec(body: => Unit) = ()
+  def compileOnlySpec(body: ⇒ Unit) = ()
 
   "spray-json example" in compileOnlySpec {
     //#minimal-spray-json-example
@@ -88,21 +88,21 @@ class SprayJsonExampleSpec extends WordSpec with Matchers {
 
         val route: Route =
           get {
-            pathPrefix("item" / LongNumber) { id =>
+            pathPrefix("item" / LongNumber) { id ⇒
               // there might be no item for a given id
               val maybeItem: Future[Option[Item]] = fetchItem(id)
 
               onSuccess(maybeItem) {
-                case Some(item) => complete(item)
-                case None       => complete(StatusCodes.NotFound)
+                case Some(item) ⇒ complete(item)
+                case None       ⇒ complete(StatusCodes.NotFound)
               }
             }
           } ~
             post {
               path("create-order") {
-                entity(as[Order]) { order =>
+                entity(as[Order]) { order ⇒
                   val saved: Future[Done] = saveOrder(order)
-                  onComplete(saved) { done =>
+                  onComplete(saved) { done ⇒
                     complete("order created")
                   }
                 }

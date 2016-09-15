@@ -18,14 +18,14 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
     //#authenticateBasic-0
     def myUserPassAuthenticator(credentials: Credentials): Option[String] =
       credentials match {
-        case p @ Credentials.Provided(id) if p.verify("p4ssw0rd") => Some(id)
-        case _ => None
+        case p @ Credentials.Provided(id) if p.verify("p4ssw0rd") ⇒ Some(id)
+        case _ ⇒ None
       }
 
     val route =
       Route.seal {
         path("secured") {
-          authenticateBasic(realm = "secure site", myUserPassAuthenticator) { userName =>
+          authenticateBasic(realm = "secure site", myUserPassAuthenticator) { userName ⇒
             complete(s"The user is '$userName'")
           }
         }
@@ -52,19 +52,19 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
         responseAs[String] shouldEqual "The supplied authentication is invalid"
         header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", Some("secure site"))
       }
-      //#authenticateBasic-0
+    //#authenticateBasic-0
   }
   "authenticateBasicPF-0" in {
     //#authenticateBasicPF-0
     val myUserPassAuthenticator: AuthenticatorPF[String] = {
-      case p @ Credentials.Provided(id) if p.verify("p4ssw0rd")         => id
-      case p @ Credentials.Provided(id) if p.verify("p4ssw0rd-special") => s"$id-admin"
+      case p @ Credentials.Provided(id) if p.verify("p4ssw0rd")         ⇒ id
+      case p @ Credentials.Provided(id) if p.verify("p4ssw0rd-special") ⇒ s"$id-admin"
     }
 
     val route =
       Route.seal {
         path("secured") {
-          authenticateBasicPF(realm = "secure site", myUserPassAuthenticator) { userName =>
+          authenticateBasicPF(realm = "secure site", myUserPassAuthenticator) { userName ⇒
             complete(s"The user is '$userName'")
           }
         }
@@ -108,14 +108,14 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
     }
 
     val myUserPassAuthenticator: AsyncAuthenticatorPF[User] = {
-      case p @ Credentials.Provided(id) if p.verify("p4ssw0rd") =>
+      case p @ Credentials.Provided(id) if p.verify("p4ssw0rd") ⇒
         fetchUser(id)
     }
 
     val route =
       Route.seal {
         path("secured") {
-          authenticateBasicPFAsync(realm = "secure site", myUserPassAuthenticator) { user =>
+          authenticateBasicPFAsync(realm = "secure site", myUserPassAuthenticator) { user ⇒
             complete(s"The user is '${user.id}'")
           }
         }
@@ -148,19 +148,19 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
     //#authenticateBasicAsync-0
     def myUserPassAuthenticator(credentials: Credentials): Future[Option[String]] =
       credentials match {
-        case p @ Credentials.Provided(id) =>
+        case p @ Credentials.Provided(id) ⇒
           Future {
             // potentially
             if (p.verify("p4ssw0rd")) Some(id)
             else None
           }
-        case _ => Future.successful(None)
+        case _ ⇒ Future.successful(None)
       }
 
     val route =
       Route.seal {
         path("secured") {
-          authenticateBasicAsync(realm = "secure site", myUserPassAuthenticator) { userName =>
+          authenticateBasicAsync(realm = "secure site", myUserPassAuthenticator) { userName ⇒
             complete(s"The user is '$userName'")
           }
         }
@@ -199,15 +199,15 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
     def myUserPassAuthenticator(credentials: Option[HttpCredentials]): Future[AuthenticationResult[String]] =
       Future {
         credentials match {
-          case Some(creds) if auth(creds) => Right("some-user-name-from-creds")
-          case _                          => Left(challenge)
+          case Some(creds) if auth(creds) ⇒ Right("some-user-name-from-creds")
+          case _                          ⇒ Left(challenge)
         }
       }
 
     val route =
       Route.seal {
         path("secured") {
-          authenticateOrRejectWithChallenge(myUserPassAuthenticator _) { userName =>
+          authenticateOrRejectWithChallenge(myUserPassAuthenticator _) { userName ⇒
             complete("Authenticated!")
           }
         }
@@ -236,8 +236,8 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
     // authenticate the user:
     def myUserPassAuthenticator(credentials: Credentials): Option[User] =
       credentials match {
-        case Credentials.Provided(id) => Some(User(id))
-        case _                        => None
+        case Credentials.Provided(id) ⇒ Some(User(id))
+        case _                        ⇒ None
       }
 
     // check if user is authorized to perform admin actions:
@@ -247,7 +247,7 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
 
     val route =
       Route.seal {
-        authenticateBasic(realm = "secure site", myUserPassAuthenticator) { user =>
+        authenticateBasic(realm = "secure site", myUserPassAuthenticator) { user ⇒
           path("peters-lair") {
             authorize(hasAdminPermissions(user)) {
               complete(s"'${user.name}' visited Peter's lair")
@@ -279,8 +279,8 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
     // authenticate the user:
     def myUserPassAuthenticator(credentials: Credentials): Option[User] =
       credentials match {
-        case Credentials.Provided(id) => Some(User(id))
-        case _                        => None
+        case Credentials.Provided(id) ⇒ Some(User(id))
+        case _                        ⇒ None
       }
 
     // check if user is authorized to perform admin actions,
@@ -291,9 +291,9 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
 
     val route =
       Route.seal {
-        authenticateBasic(realm = "secure site", myUserPassAuthenticator) { user =>
+        authenticateBasic(realm = "secure site", myUserPassAuthenticator) { user ⇒
           path("peters-lair") {
-            authorizeAsync(_ => hasAdminPermissions(user)) {
+            authorizeAsync(_ ⇒ hasAdminPermissions(user)) {
               complete(s"'${user.name}' visited Peter's lair")
             }
           }
@@ -319,11 +319,11 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
   "0extractCredentials" in {
     //#0extractCredentials
     val route =
-      extractCredentials { creds =>
+      extractCredentials { creds ⇒
         complete {
           creds match {
-            case Some(c) => "Credentials: " + c
-            case _       => "No credentials"
+            case Some(c) ⇒ "Credentials: " + c
+            case _       ⇒ "No credentials"
           }
         }
       }

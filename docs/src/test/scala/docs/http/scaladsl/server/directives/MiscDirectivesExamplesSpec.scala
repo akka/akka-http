@@ -14,7 +14,7 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
 
   "extractClientIP-example" in {
     //#extractClientIP-example
-    val route = extractClientIP { ip =>
+    val route = extractClientIP { ip ⇒
       complete("Client's ip is " + ip.toOption.map(_.getHostAddress).getOrElse("unknown"))
     }
 
@@ -28,10 +28,10 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
   "rejectEmptyResponse-example" in {
     //#rejectEmptyResponse-example
     val route = rejectEmptyResponse {
-      path("even" / IntNumber) { i =>
+      path("even" / IntNumber) { i ⇒
         complete {
           // returns Some(evenNumberDescription) or None
-          Option(i).filter(_ % 2 == 0).map { num =>
+          Option(i).filter(_ % 2 == 0).map { num ⇒
             s"Number $num is even."
           }
         }
@@ -77,13 +77,13 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
       Language("de") withQValue 0.5f)
 
     request ~> {
-      selectPreferredLanguage("en", "en-US") { lang =>
+      selectPreferredLanguage("en", "en-US") { lang ⇒
         complete(lang.toString)
       }
     } ~> check { responseAs[String] shouldEqual "en-US" }
 
     request ~> {
-      selectPreferredLanguage("de-DE", "hu") { lang =>
+      selectPreferredLanguage("de-DE", "hu") { lang ⇒
         complete(lang.toString)
       }
     } ~> check { responseAs[String] shouldEqual "de-DE" }
@@ -93,7 +93,7 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
   "validate-example" in {
     //#validate-example
     val route =
-      extractUri { uri =>
+      extractUri { uri ⇒
         validate(uri.path.toString.size < 5, s"Path too long: '${uri.path.toString}'") {
           complete(s"Full URI: $uri")
         }

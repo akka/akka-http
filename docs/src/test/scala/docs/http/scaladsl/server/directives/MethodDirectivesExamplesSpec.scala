@@ -109,7 +109,7 @@ class MethodDirectivesExamplesSpec extends RoutingSpec {
       get {
         complete("This is a GET request.")
       } ~
-        extractMethod { method =>
+        extractMethod { method ⇒
           complete(s"This ${method.name} request, clearly is not a GET!")
         }
 

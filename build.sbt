@@ -123,7 +123,10 @@ def httpMarshallersJavaSubproject(name: String) =
 
 lazy val docs = project("docs")
   .enablePlugins(ParadoxPlugin)
-  .dependsOn(httpCore, http, httpTestkit)
+  .dependsOn(
+    httpCore, http, httpXml, httpMarshallersJava, httpMarshallersScala,
+    httpTests % "compile;test->test", httpTestkit % "compile;test->test"
+  )
   .settings(commonSettings)
   .settings(Dependencies.docs)
   .settings(

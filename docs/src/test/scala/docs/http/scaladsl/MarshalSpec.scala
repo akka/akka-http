@@ -23,7 +23,7 @@ class MarshalSpec extends AkkaSpec {
     entity.contentType shouldEqual ContentTypes.`text/plain(UTF-8)`
 
     val errorMsg = "Easy, pal!"
-    val responseFuture = Marshal(420 -> errorMsg).to[HttpResponse]
+    val responseFuture = Marshal(420 → errorMsg).to[HttpResponse]
     val response = Await.result(responseFuture, 1.second) // don't block in non-test code!
     response.status shouldEqual StatusCodes.EnhanceYourCalm
     response.entity.contentType shouldEqual ContentTypes.`text/plain(UTF-8)`

@@ -9,7 +9,7 @@ class SchemeDirectivesExamplesSpec extends RoutingSpec {
   "example-1" in {
     //#example-1
     val route =
-      extractScheme { scheme =>
+      extractScheme { scheme ⇒
         complete(s"The scheme is '${scheme}'")
       }
 
@@ -28,7 +28,7 @@ class SchemeDirectivesExamplesSpec extends RoutingSpec {
 
     val route =
       scheme("http") {
-        extract(_.request.uri) { uri =>
+        extract(_.request.uri) { uri ⇒
           redirect(uri.copy(scheme = "https"), MovedPermanently)
         }
       } ~

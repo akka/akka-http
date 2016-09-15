@@ -4,6 +4,7 @@
 
 package docs.http.javadsl.server.directives;
 
+import java.util.Arrays;
 import java.util.List;
 import akka.http.javadsl.model.HttpHeader;
 import akka.http.javadsl.model.HttpRequest;
@@ -12,7 +13,6 @@ import akka.http.javadsl.model.headers.Origin;
 import akka.http.javadsl.model.headers.RawHeader;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.testkit.JUnitRouteTest;
-import com.google.common.collect.Lists;
 import org.junit.Test;
 
 public class RespondWithDirectivesExamplesTest extends JUnitRouteTest {
@@ -77,7 +77,7 @@ public class RespondWithDirectivesExamplesTest extends JUnitRouteTest {
         final HttpHeader akka = Origin.create(HttpOrigin.parse("http://akka.io"));
 
         final Route route = path("foo", () ->
-                respondWithHeaders(Lists.newArrayList(gonzo, akka), () ->
+                respondWithHeaders(Arrays.asList(gonzo, akka), () ->
                         complete("beep")
                 )
         );
@@ -96,7 +96,7 @@ public class RespondWithDirectivesExamplesTest extends JUnitRouteTest {
         //custom headers
         final RawHeader blippy = RawHeader.create("X-Fish-Name", "Blippy");
         final HttpHeader akka = Origin.create(HttpOrigin.parse("http://akka.io"));
-        final List<HttpHeader> defaultHeaders = Lists.newArrayList(blippy, akka);
+        final List<HttpHeader> defaultHeaders = Arrays.asList(blippy, akka);
         final RawHeader elTonno = RawHeader.create("X-Fish-Name", "El Tonno");
 
         // format: OFF

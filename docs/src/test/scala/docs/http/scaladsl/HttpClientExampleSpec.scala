@@ -65,9 +65,9 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
 
     // while API remains the same to consume dataBytes, now they're in memory already:
     val transformedData: Future[ExamplePerson] =
-      strictEntity flatMap { e =>
+      strictEntity flatMap { e ⇒
         e.dataBytes
-          .runFold(ByteString.empty) { case (acc, b) => acc ++ b }
+          .runFold(ByteString.empty) { case (acc, b) ⇒ acc ++ b }
           .map(parse)
       }
 
@@ -87,7 +87,7 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
     val response1: HttpResponse = ??? // obtained from an HTTP call (see examples below)
 
     val discarded: DiscardedEntity = response1.discardEntityBytes()
-    discarded.future.onComplete { case done => println("Entity discarded completely!") }
+    discarded.future.onComplete { case done ⇒ println("Entity discarded completely!") }
 
     //#manual-entity-discard-example-1
   }
@@ -104,7 +104,7 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
     val response1: HttpResponse = ??? // obtained from an HTTP call (see examples below)
 
     val discardingComplete: Future[Done] = response1.entity.dataBytes.runWith(Sink.ignore)
-    discardingComplete.onComplete { case done => println("Entity discarded completely!") }
+    discardingComplete.onComplete { case done ⇒ println("Entity discarded completely!") }
     //#manual-entity-discard-example-2
   }
 
@@ -133,10 +133,10 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
             .runWith(Sink.head)
 
         responseFuture.andThen {
-          case Success(_) => println("request succeded")
-          case Failure(_) => println("request failed")
+          case Success(_) ⇒ println("request succeded")
+          case Failure(_) ⇒ println("request failed")
         }.andThen {
-          case _ => system.terminate()
+          case _ ⇒ system.terminate()
         }
       }
     }
@@ -158,7 +158,7 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
     // construct a pool client flow with context type `Int`
     val poolClientFlow = Http().cachedHostConnectionPool[Int]("akka.io")
     val responseFuture: Future[(Try[HttpResponse], Int)] =
-      Source.single(HttpRequest(uri = "/") -> 42)
+      Source.single(HttpRequest(uri = "/") → 42)
         .via(poolClientFlow)
         .runWith(Sink.head)
     //#host-level-example
@@ -205,9 +205,9 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
       }
 
       def receive = {
-        case HttpResponse(StatusCodes.OK, headers, entity, _) =>
+        case HttpResponse(StatusCodes.OK, headers, entity, _) ⇒
           log.info("Got response, body: " + entity.dataBytes.runFold(ByteString(""))(_ ++ _))
-        case resp @ HttpResponse(code, _, _, _) =>
+        case resp @ HttpResponse(code, _, _, _) ⇒
           log.info("Request failed, response code: " + code)
           resp.discardEntityBytes()
       }
