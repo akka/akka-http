@@ -40,14 +40,13 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
   pathPrefix("foo" ~ !"bar")
   //#path-dsl
 
-  //FIXME: break down the snippets
-  //#pathPrefixTest-, rawPathPrefix-, rawPathPrefixTest-, pathSuffix-, pathSuffixTest-
+  //#completeWithUnmatchedPath
   val completeWithUnmatchedPath =
     extractUnmatchedPath { p =>
       complete(p.toString)
     }
 
-  //#pathPrefixTest-, rawPathPrefix-, rawPathPrefixTest-, pathSuffix-, pathSuffixTest-
+  //#completeWithUnmatchedPath
 
   "path-example" in {
     //#path-example

@@ -30,4 +30,4 @@ Example
 -------
 
 .. includecode2:: ../../../../../../../test/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala
-   :snippet: rawPathPrefix-
+   :snippet: completeWithUnmatchedPath,rawPathPrefix-
