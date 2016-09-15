@@ -5,100 +5,71 @@ All predefined directives are organized into traits that form one part of the ov
 <a id="request-directives"></a>
 ## Directives filtering or extracting from the request
 
-:ref:
-*MethodDirectives*
-: Filter and extract based on the request method.
+@ref[MethodDirectives](method-directives/index.md#methoddirectives)
+:   Filter and extract based on the request method.
 
-:ref:
-*HeaderDirectives*
-: Filter and extract based on request headers.
+@ref[HeaderDirectives](header-directives/index.md#headerdirectives)
+:   Filter and extract based on request headers.
 
-:ref:
-*PathDirectives*
-: Filter and extract from the request URI path.
+@ref[PathDirectives](path-directives/index.md#pathdirectives)
+:   Filter and extract from the request URI path.
 
-:ref:
-*HostDirectives*
-: Filter and extract based on the target host.
+@ref[HostDirectives](host-directives/index.md#hostdirectives)
+:   Filter and extract based on the target host.
 
-:ref:
-*ParameterDirectives*
-, :ref:
-*FormFieldDirectives*
-: Filter and extract based on query parameters or form fields.
+@ref[ParameterDirectives](parameter-directives/index.md#parameterdirectives), @ref[FormFieldDirectives](form-field-directives/index.md#formfielddirectives)
+:   Filter and extract based on query parameters or form fields.
 
-:ref:
-*CodingDirectives*
-: Filter and decode compressed request content.
+@ref[CodingDirectives](coding-directives/index.md#codingdirectives)
+:   Filter and decode compressed request content.
 
-:ref:
-*MarshallingDirectives*
-: Extract the request entity.
+@ref[Marshalling Directives](marshalling-directives/index.md#marshallingdirectives)
+:   Extract the request entity.
 
-:ref:
-*SchemeDirectives*
-: Filter and extract based on the request scheme.
+@ref[SchemeDirectives](scheme-directives/index.md#schemedirectives)
+:   Filter and extract based on the request scheme.
 
-:ref:
-*SecurityDirectives*
-: Handle authentication data from the request.
+@ref[SecurityDirectives](security-directives/index.md#securitydirectives)
+:   Handle authentication data from the request.
 
-:ref:
-*CookieDirectives*
-: Filter and extract cookies.
+@ref[CookieDirectives](cookie-directives/index.md#cookiedirectives)
+:   Filter and extract cookies.
 
-:ref:
-*BasicDirectives*
- and :ref:
-*MiscDirectives*
-: Directives handling request properties.
+@ref[BasicDirectives](basic-directives/index.md#basicdirectives) and @ref[MiscDirectives](misc-directives/index.md#miscdirectives)
+:   Directives handling request properties.
 
-:ref:
-*FileUploadDirectives*
-: Handle file uploads.
-
+@ref[FileUploadDirectives](file-upload-directives/index.md#fileuploaddirectives)
+:   Handle file uploads.
 
 <a id="response-directives"></a>
 ## Directives creating or transforming the response
 
-:ref:
-*CacheConditionDirectives*
-: Support for conditional requests (`304 Not Modified` responses).
+@ref[CacheConditionDirectives](cache-condition-directives/index.md#cacheconditiondirectives)
+:   Support for conditional requests (`304 Not Modified` responses).
 
-:ref:
-*CookieDirectives*
-: Set, modify, or delete cookies.
+@ref[CookieDirectives](cookie-directives/index.md#cookiedirectives)
+:   Set, modify, or delete cookies.
 
-:ref:
-*CodingDirectives*
-: Compress responses.
+@ref[CodingDirectives](coding-directives/index.md#codingdirectives)
+:   Compress responses.
 
-:ref:
-*FileAndResourceDirectives*
-: Deliver responses from files and resources.
+@ref[FileAndResourceDirectives](file-and-resource-directives/index.md#fileandresourcedirectives)
+:   Deliver responses from files and resources.
 
-:ref:
-*RangeDirectives*
-: Support for range requests (`206 Partial Content` responses).
+@ref[RangeDirectives](range-directives/index.md#rangedirectives)
+:   Support for range requests (`206 Partial Content` responses).
 
-:ref:
-*RespondWithDirectives*
-: Change response properties.
+@ref[RespondWithDirectives](respond-with-directives/index.md#respondwithdirectives)
+:   Change response properties.
 
-:ref:
-*RouteDirectives*
-: Complete or reject a request with a response.
+@ref[RouteDirectives](route-directives/index.md#routedirectives)
+:   Complete or reject a request with a response.
 
-:ref:
-*BasicDirectives*
- and :ref:
-*MiscDirectives*
-: Directives handling or transforming response properties.
+@ref[BasicDirectives](basic-directives/index.md#basicdirectives) and @ref[MiscDirectives](misc-directives/index.md#miscdirectives)
+:   Directives handling or transforming response properties.
 
-:ref:
-*TimeoutDirectives*
-: Configure request timeouts and automatic timeout responses.
-
+@ref[TimeoutDirectives](timeout-directives/index.md#timeoutdirectives)
+:   Configure request timeouts and automatic timeout responses.
 
 ## List of predefined directives by trait
 

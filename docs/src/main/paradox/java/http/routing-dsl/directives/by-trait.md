@@ -5,100 +5,71 @@ All predefined directives are organized into traits that form one part of the ov
 <a id="request-directives-java"></a>
 ## Directives filtering or extracting from the request
 
-:ref:
-*MethodDirectives-java*
-: Filter and extract based on the request method.
+@ref[MethodDirectives](method-directives/index.md#methoddirectives-java)
+:   Filter and extract based on the request method.
 
-:ref:
-*HeaderDirectives-java*
-: Filter and extract based on request headers.
+@ref[HeaderDirectives](header-directives/index.md#headerdirectives-java)
+:   Filter and extract based on request headers.
 
-:ref:
-*PathDirectives-java*
-: Filter and extract from the request URI path.
+@ref[PathDirectives](path-directives/index.md#pathdirectives-java)
+:   Filter and extract from the request URI path.
 
-:ref:
-*HostDirectives-java*
-: Filter and extract based on the target host.
+@ref[HostDirectives](host-directives/index.md#hostdirectives-java)
+:   Filter and extract based on the target host.
 
-:ref:
-*ParameterDirectives-java*
-, :ref:
-*FormFieldDirectives-java*
-: Filter and extract based on query parameters or form fields.
+@ref[ParameterDirectives](parameter-directives/index.md#parameterdirectives-java), @ref[FormFieldDirectives](form-field-directives/index.md#formfielddirectives-java)
+:   Filter and extract based on query parameters or form fields.
 
-:ref:
-*CodingDirectives-java*
-: Filter and decode compressed request content.
+@ref[CodingDirectives](coding-directives/index.md#codingdirectives-java)
+:   Filter and decode compressed request content.
 
-:ref:
-*MarshallingDirectives-java*
-: Extract the request entity.
+@ref[Marshalling Directives](marshalling-directives/index.md#marshallingdirectives-java)
+:   Extract the request entity.
 
-:ref:
-*SchemeDirectives-java*
-: Filter and extract based on the request scheme.
+@ref[SchemeDirectives](scheme-directives/index.md#schemedirectives-java)
+:   Filter and extract based on the request scheme.
 
-:ref:
-*SecurityDirectives-java*
-: Handle authentication data from the request.
+@ref[SecurityDirectives](security-directives/index.md#securitydirectives-java)
+:   Handle authentication data from the request.
 
-:ref:
-*CookieDirectives-java*
-: Filter and extract cookies.
+@ref[CookieDirectives](cookie-directives/index.md#cookiedirectives-java)
+:   Filter and extract cookies.
 
-:ref:
-*BasicDirectives-java*
- and :ref:
-*MiscDirectives-java*
-: Directives handling request properties.
+@ref[BasicDirectives](basic-directives/index.md#basicdirectives-java) and @ref[MiscDirectives](misc-directives/index.md#miscdirectives-java)
+:   Directives handling request properties.
 
-:ref:
-*FileUploadDirectives-java*
-: Handle file uploads.
-
+@ref[FileUploadDirectives](file-upload-directives/index.md#fileuploaddirectives-java)
+:   Handle file uploads.
 
 <a id="response-directives-java"></a>
 ## Directives creating or transforming the response
 
-:ref:
-*CacheConditionDirectives-java*
-: Support for conditional requests (`304 Not Modified` responses).
+@ref[CacheConditionDirectives](cache-condition-directives/index.md#cacheconditiondirectives-java)
+:   Support for conditional requests (`304 Not Modified` responses).
 
-:ref:
-*CookieDirectives-java*
-: Set, modify, or delete cookies.
+@ref[CookieDirectives](cookie-directives/index.md#cookiedirectives-java)
+:   Set, modify, or delete cookies.
 
-:ref:
-*CodingDirectives-java*
-: Compress responses.
+@ref[CodingDirectives](coding-directives/index.md#codingdirectives-java)
+:   Compress responses.
 
-:ref:
-*FileAndResourceDirectives-java*
-: Deliver responses from files and resources.
+@ref[FileAndResourceDirectives](file-and-resource-directives/index.md#fileandresourcedirectives-java)
+:   Deliver responses from files and resources.
 
-:ref:
-*RangeDirectives-java*
-: Support for range requests (`206 Partial Content` responses).
+@ref[RangeDirectives](range-directives/index.md#rangedirectives-java)
+:   Support for range requests (`206 Partial Content` responses).
 
-:ref:
-*RespondWithDirectives-java*
-: Change response properties.
+@ref[RespondWithDirectives](respond-with-directives/index.md#respondwithdirectives-java)
+:   Change response properties.
 
-:ref:
-*RouteDirectives-java*
-: Complete or reject a request with a response.
+@ref[RouteDirectives](route-directives/index.md#routedirectives-java)
+:   Complete or reject a request with a response.
 
-:ref:
-*BasicDirectives-java*
- and :ref:
-*MiscDirectives-java*
-: Directives handling or transforming response properties.
+@ref[BasicDirectives](basic-directives/index.md#basicdirectives-java) and @ref[MiscDirectives](misc-directives/index.md#miscdirectives-java)
+:   Directives handling or transforming response properties.
 
-:ref:
-*TimeoutDirectives-java*
-: Configure request timeouts and automatic timeout responses.
-
+@ref[TimeoutDirectives](timeout-directives/index.md#timeoutdirectives-java)
+:   Configure request timeouts and automatic timeout responses.
 
 ## List of predefined directives by trait
 
