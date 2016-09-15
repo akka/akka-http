@@ -34,9 +34,9 @@ class RangeDirectivesExamplesSpec extends RoutingSpec {
     // we set "akka.http.routing.range-coalescing-threshold = 2"
     // above to make sure we get two BodyParts
     Get() ~> addHeader(Range(ByteRange(0, 1), ByteRange(1, 2), ByteRange(6, 7))) ~> route ~> check {
-      headers.collectFirst { case `Content-Range`(_, _) ⇒ true } shouldBe None
+      headers.collectFirst { case `Content-Range`(_, _) => true } shouldBe None
       val responseF = responseAs[Multipart.ByteRanges].parts
-        .runFold[List[Multipart.ByteRanges.BodyPart]](Nil)((acc, curr) ⇒ curr :: acc)
+        .runFold[List[Multipart.ByteRanges.BodyPart]](Nil)((acc, curr) => curr :: acc)
 
       val response = Await.result(responseF, 3.seconds).reverse
 
@@ -45,13 +45,13 @@ class RangeDirectivesExamplesSpec extends RoutingSpec {
       val part1 = response(0)
       part1.contentRange === ContentRange(0, 2, 8)
       part1.entity should matchPattern {
-        case HttpEntity.Strict(_, bytes) if bytes.utf8String == "ABC" ⇒
+        case HttpEntity.Strict(_, bytes) if bytes.utf8String == "ABC" =>
       }
 
       val part2 = response(1)
       part2.contentRange === ContentRange(6, 7, 8)
       part2.entity should matchPattern {
-        case HttpEntity.Strict(_, bytes) if bytes.utf8String == "GH" ⇒
+        case HttpEntity.Strict(_, bytes) if bytes.utf8String == "GH" =>
       }
     }
     //#withRangeSupport

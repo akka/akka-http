@@ -154,7 +154,6 @@ object Dependencies {
 
   lazy val httpJackson = l ++= Seq(jackson)
   
-  //lazy val docs = l ++= Seq(Test.scalatest.value, Test.junit, Test.junitIntf, Docs.sprayJson, Docs.gson)
   lazy val docs = l ++= Seq(Docs.sprayJson, Docs.gson)
 
 }

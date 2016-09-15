@@ -139,7 +139,8 @@ lazy val docs = project("docs")
       "akka.version" -> Dependencies.akkaVersion,
       "scala.binaryVersion" -> scalaBinaryVersion.value,
       "scala.version" -> scalaVersion.value
-    )
+    ),
+    akka.Formatting.docFormatSettings
   )
 
 

@@ -34,7 +34,7 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
 
     // This one doesn't use the implicit LoggingContext but uses `println` for logging
     def printRequestMethod(req: HttpRequest): Unit = println(req.method.name)
-    val logRequestPrintln = DebuggingDirectives.logRequest(LoggingMagnet(_ ⇒ printRequestMethod))
+    val logRequestPrintln = DebuggingDirectives.logRequest(LoggingMagnet(_ => printRequestMethod))
 
     // tests:
     Get("/") ~> logRequestPrintln(complete("logged")) ~> check {
@@ -54,16 +54,16 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
     DebuggingDirectives.logRequestResult(("get-user", Logging.InfoLevel))
 
     // logs just the request method and response status at info level
-    def requestMethodAndResponseStatusAsInfo(req: HttpRequest): RouteResult ⇒ Option[LogEntry] = {
-      case RouteResult.Complete(res) ⇒ Some(LogEntry(req.method.name + ": " + res.status, Logging.InfoLevel))
-      case _                         ⇒ None // no log entries for rejections
+    def requestMethodAndResponseStatusAsInfo(req: HttpRequest): RouteResult => Option[LogEntry] = {
+      case RouteResult.Complete(res) => Some(LogEntry(req.method.name + ": " + res.status, Logging.InfoLevel))
+      case _                         => None // no log entries for rejections
     }
     DebuggingDirectives.logRequestResult(requestMethodAndResponseStatusAsInfo _)
 
     // This one doesn't use the implicit LoggingContext but uses `println` for logging
     def printRequestMethodAndResponseStatus(req: HttpRequest)(res: RouteResult): Unit =
       println(requestMethodAndResponseStatusAsInfo(req)(res).map(_.obj.toString).getOrElse(""))
-    val logRequestResultPrintln = DebuggingDirectives.logRequestResult(LoggingMagnet(_ ⇒ printRequestMethodAndResponseStatus))
+    val logRequestResultPrintln = DebuggingDirectives.logRequestResult(LoggingMagnet(_ => printRequestMethodAndResponseStatus))
 
     // tests:
     Get("/") ~> logRequestResultPrintln(complete("logged")) ~> check {
@@ -84,8 +84,8 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
 
     // logs just the response status at debug level
     def responseStatus(res: RouteResult): String = res match {
-      case RouteResult.Complete(x)          ⇒ x.status.toString
-      case RouteResult.Rejected(rejections) ⇒ "Rejected: " + rejections.mkString(", ")
+      case RouteResult.Complete(x)          => x.status.toString
+      case RouteResult.Rejected(rejections) => "Rejected: " + rejections.mkString(", ")
     }
     DebuggingDirectives.logResult(responseStatus _)
 
@@ -95,7 +95,7 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
 
     // This one doesn't use the implicit LoggingContext but uses `println` for logging
     def printResponseStatus(res: RouteResult): Unit = println(responseStatus(res))
-    val logResultPrintln = DebuggingDirectives.logResult(LoggingMagnet(_ ⇒ printResponseStatus))
+    val logResultPrintln = DebuggingDirectives.logResult(LoggingMagnet(_ => printResponseStatus))
 
     // tests:
     Get("/") ~> logResultPrintln(complete("logged")) ~> check {
@@ -111,12 +111,12 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
       requestTimestamp: Long,
       level:            LogLevel       = Logging.InfoLevel)(req: HttpRequest)(res: Any): Unit = {
       val entry = res match {
-        case Complete(resp) ⇒
+        case Complete(resp) =>
           val responseTimestamp: Long = System.nanoTime
           val elapsedTime: Long = (responseTimestamp - requestTimestamp) / 1000000
           val loggingString = s"""Logged Request:${req.method}:${req.uri}:${resp.status}:${elapsedTime}"""
           LogEntry(loggingString, level)
-        case Rejected(reason) ⇒
+        case Rejected(reason) =>
           LogEntry(s"Rejected Reason: ${reason.mkString(",")}", level)
       }
       entry.logTo(loggingAdapter)

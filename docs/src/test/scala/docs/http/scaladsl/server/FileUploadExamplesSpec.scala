@@ -27,26 +27,26 @@ class FileUploadExamplesSpec extends RoutingSpec {
     //#simple-upload
     val uploadVideo =
       path("video") {
-        entity(as[Multipart.FormData]) { formData ⇒
+        entity(as[Multipart.FormData]) { formData =>
 
           // collect all parts of the multipart as it arrives into a map
           val allPartsF: Future[Map[String, Any]] = formData.parts.mapAsync[(String, Any)](1) {
 
-            case b: BodyPart if b.name == "file" ⇒
+            case b: BodyPart if b.name == "file" =>
               // stream into a file as the chunks of it arrives and return a future
               // file to where it got stored
               val file = File.createTempFile("upload", "tmp")
-              b.entity.dataBytes.runWith(FileIO.toPath(file.toPath)).map(_ ⇒
-                (b.name → file))
+              b.entity.dataBytes.runWith(FileIO.toPath(file.toPath)).map(_ =>
+                (b.name -> file))
 
-            case b: BodyPart ⇒
+            case b: BodyPart =>
               // collect form field values
-              b.toStrict(2.seconds).map(strict ⇒
-                (b.name → strict.entity.data.utf8String))
+              b.toStrict(2.seconds).map(strict =>
+                (b.name -> strict.entity.data.utf8String))
 
-          }.runFold(Map.empty[String, Any])((map, tuple) ⇒ map + tuple)
+          }.runFold(Map.empty[String, Any])((map, tuple) => map + tuple)
 
-          val done = allPartsF.map { allParts ⇒
+          val done = allPartsF.map { allParts =>
             // You would have some better validation/unmarshalling here
             db.create(Video(
               file = allParts("file").asInstanceOf[File],
@@ -55,7 +55,7 @@ class FileUploadExamplesSpec extends RoutingSpec {
           }
 
           // when processing have finished create a response for the user
-          onSuccess(allPartsF) { allParts ⇒
+          onSuccess(allPartsF) { allParts =>
             complete {
               "ok!"
             }
@@ -75,20 +75,20 @@ class FileUploadExamplesSpec extends RoutingSpec {
     val splitLines = Framing.delimiter(ByteString("\n"), 256)
 
     val csvUploads =
-      path("metadata" / LongNumber) { id ⇒
-        entity(as[Multipart.FormData]) { formData ⇒
+      path("metadata" / LongNumber) { id =>
+        entity(as[Multipart.FormData]) { formData =>
           val done: Future[Done] = formData.parts.mapAsync(1) {
-            case b: BodyPart if b.filename.exists(_.endsWith(".csv")) ⇒
+            case b: BodyPart if b.filename.exists(_.endsWith(".csv")) =>
               b.entity.dataBytes
                 .via(splitLines)
                 .map(_.utf8String.split(",").toVector)
-                .runForeach(csv ⇒
+                .runForeach(csv =>
                   metadataActor ! MetadataActor.Entry(id, csv))
-            case _ ⇒ Future.successful(Done)
+            case _ => Future.successful(Done)
           }.runWith(Sink.ignore)
 
           // when processing have finished create a response for the user
-          onSuccess(done) { _ ⇒
+          onSuccess(done) { _ =>
             complete {
               "ok!"
             }

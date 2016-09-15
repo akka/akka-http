@@ -21,7 +21,7 @@ class HttpsExamplesSpec extends WordSpec with Matchers with CompileOnlySpec {
     implicit val mat = ActorMaterializer()
 
     // WARNING: disabling SNI is a very bad idea, please don't unless you have a very good reason to.
-    val badSslConfig = AkkaSSLConfig().mapSettings(s ⇒ s.withLoose(s.loose.withDisableSNI(true)))
+    val badSslConfig = AkkaSSLConfig().mapSettings(s => s.withLoose(s.loose.withDisableSNI(true)))
     val badCtx = Http().createClientHttpsContext(badSslConfig)
     Http().outgoingConnectionHttps(unsafeHost, connectionContext = badCtx)
     //#disable-sni-connection
