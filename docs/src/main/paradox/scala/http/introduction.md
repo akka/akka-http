@@ -25,7 +25,7 @@ Akka HTTP was designed specifically as “not-a-framework”, not because we don
 
 Akka HTTP is provided in a separate jar file, to use it make sure to include the following dependency:
 
-```
+```sbt
 "com.typesafe.akka" %% "akka-http-experimental" % "@version@" @crossString@
 ```
 

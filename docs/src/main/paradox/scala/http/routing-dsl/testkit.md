@@ -5,7 +5,7 @@ For services built with the Routing DSL Akka HTTP provides a dedicated testkit t
 route logic easy and convenient. This "route test DSL" is made available with the *akka-http-testkit* module.
 To use it include the following dependency:
 
-```
+```sbt
 "com.typesafe.akka" %% "akka-http-testkit" % "@version@"
 ```
 
@@ -39,7 +39,7 @@ against it using the test DSL provided by your test framework. For example, with
 your route responds to the request with a status 200 response, you'd use the `status` inspector and express an
 assertion like this:
 
-```
+```scala
 status shouldEqual 200
 ```
 
