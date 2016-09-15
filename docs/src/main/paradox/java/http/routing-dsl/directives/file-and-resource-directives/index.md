@@ -10,7 +10,7 @@ elements of a route structure, do) but rather form the actual route structure **
 So in most cases the inner-most element of a route structure branch is one of the @ref[RouteDirectives](../route-directives/index.md#routedirectives-java) or
 `FileAndResourceDirectives`.
 
-@@toc{ depth=1 }
+@@toc { depth=1 }
 
 @@@ index
 

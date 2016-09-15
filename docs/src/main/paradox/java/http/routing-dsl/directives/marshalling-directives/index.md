@@ -9,7 +9,7 @@ serialization (also known as pickling) guidance.
 
 Marshalling directives usually rely on an in-scope implicit marshaller to handle conversion.  
 
-@@toc{ depth=1 }
+@@toc { depth=1 }
 
 @@@ index
 

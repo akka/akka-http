@@ -1,7 +1,7 @@
 <a id="websocketdirectives"></a>
 # WebSocketDirectives
 
-@@toc{ depth=1 }
+@@toc { depth=1 }
 
 @@@ index
 

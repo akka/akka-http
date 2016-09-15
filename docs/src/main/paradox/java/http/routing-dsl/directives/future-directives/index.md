@@ -3,7 +3,7 @@
 
 Future directives can be used to run inner routes once the provided `Future[T]` has been completed.
 
-@@toc{ depth=1 }
+@@toc { depth=1 }
 
 @@@ index
 

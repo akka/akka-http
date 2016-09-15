@@ -4,7 +4,7 @@
 A "Directive" is a small building block used for creating arbitrarily complex @ref[route structures](../routes.md#routes).
 Akka HTTP already pre-defines a large number of directives and you can easily construct your own:
 
-@@toc{ depth=1 }
+@@toc { depth=1 }
 
 @@@ index
 

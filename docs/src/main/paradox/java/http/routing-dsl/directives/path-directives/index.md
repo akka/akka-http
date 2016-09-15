@@ -1,7 +1,7 @@
 <a id="pathdirectives-java"></a>
 # PathDirectives
 
-@@toc{ depth=1 }
+@@toc { depth=1 }
 
 @@@ index
 

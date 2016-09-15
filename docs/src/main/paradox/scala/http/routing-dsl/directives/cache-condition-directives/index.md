@@ -1,7 +1,7 @@
 <a id="cacheconditiondirectives"></a>
 # CacheConditionDirectives
 
-@@toc{ depth=1 }
+@@toc { depth=1 }
 
 @@@ index
 

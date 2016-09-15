@@ -1,7 +1,7 @@
 <a id="codingdirectives"></a>
 # CodingDirectives
 
-@@toc{ depth=1 }
+@@toc { depth=1 }
 
 @@@ index
 

@@ -1,7 +1,7 @@
 <a id="debuggingdirectives-java"></a>
 # DebuggingDirectives
 
-@@toc{ depth=1 }
+@@toc { depth=1 }
 
 @@@ index
 

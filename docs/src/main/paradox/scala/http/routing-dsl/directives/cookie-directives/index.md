@@ -1,7 +1,7 @@
 <a id="cookiedirectives"></a>
 # CookieDirectives
 
-@@toc{ depth=1 }
+@@toc { depth=1 }
 
 @@@ index
 

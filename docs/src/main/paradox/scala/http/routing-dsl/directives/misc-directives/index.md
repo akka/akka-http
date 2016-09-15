@@ -1,7 +1,7 @@
 <a id="miscdirectives"></a>
 # MiscDirectives
 
-@@toc{ depth=1 }
+@@toc { depth=1 }
 
 @@@ index
 

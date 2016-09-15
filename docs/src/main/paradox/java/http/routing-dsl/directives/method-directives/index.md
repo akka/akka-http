@@ -1,7 +1,7 @@
 <a id="methoddirectives-java"></a>
 # MethodDirectives
 
-@@toc{ depth=1 }
+@@toc { depth=1 }
 
 @@@ index
 

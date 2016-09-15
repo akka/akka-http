@@ -79,7 +79,7 @@ These directives allow to transform the RouteResult of the inner route.
 
 ## Alphabetically
 
-@@toc{ depth=1 }
+@@toc { depth=1 }
 
 @@@ index
 

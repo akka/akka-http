@@ -1,7 +1,7 @@
 <a id="executiondirectives"></a>
 # ExecutionDirectives
 
-@@toc{ depth=1 }
+@@toc { depth=1 }
 
 @@@ index
 

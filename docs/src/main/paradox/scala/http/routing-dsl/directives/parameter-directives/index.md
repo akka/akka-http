@@ -1,7 +1,7 @@
 <a id="parameterdirectives"></a>
 # ParameterDirectives
 
-@@toc{ depth=1 }
+@@toc { depth=1 }
 
 @@@ index
 

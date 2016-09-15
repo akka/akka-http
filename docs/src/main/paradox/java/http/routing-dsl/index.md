@@ -8,7 +8,7 @@ static content serving.
 
 To use the high-level API you need to add a dependency to the `akka-http-experimental` module.
 
-@@toc{ depth=1 }
+@@toc { depth=1 }
 
 @@@ index
 

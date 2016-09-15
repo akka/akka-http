@@ -1,7 +1,7 @@
 <a id="fileuploaddirectives-java"></a>
 # FileUploadDirectives
 
-@@toc{ depth=1 }
+@@toc { depth=1 }
 
 @@@ index
 

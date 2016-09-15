@@ -73,7 +73,7 @@ All predefined directives are organized into traits that form one part of the ov
 
 ## List of predefined directives by trait
 
-@@toc{ depth=1 }
+@@toc { depth=1 }
 
 @@@ index
 

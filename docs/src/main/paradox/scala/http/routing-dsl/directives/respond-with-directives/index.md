@@ -1,7 +1,7 @@
 <a id="respondwithdirectives"></a>
 # RespondWithDirectives
 
-@@toc{ depth=1 }
+@@toc { depth=1 }
 
 @@@ index
 

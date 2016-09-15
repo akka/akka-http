@@ -1,7 +1,7 @@
 <a id="rangedirectives-java"></a>
 # RangeDirectives
 
-@@toc{ depth=1 }
+@@toc { depth=1 }
 
 @@@ index
 

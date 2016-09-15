@@ -11,7 +11,7 @@ It is recommended to read the @ref[Implications of the streaming nature of Reque
 as it explains the underlying full-stack streaming concepts, which may be unexpected when coming
 from a background with non-"streaming first" HTTP Servers.
 
-@@toc{ depth=1 }
+@@toc { depth=1 }
 
 @@@ index
 
