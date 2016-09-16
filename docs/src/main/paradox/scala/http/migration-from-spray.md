@@ -8,7 +8,7 @@ Features which are not ported to the akka-http:
 as it has been seen mostly as an anti-pattern. More information here: [https://github.com/akka/akka/issues/18626](https://github.com/akka/akka/issues/18626)
  * `respondWithMediaType` was considered an anti-pattern in spray and is not ported to Akka HTTP.
 Instead users should rely on content type negotiation as Akka HTTP implements it.
-More information here: [https://github.com/akka/akka/issues/18625](https://github.com/akka/akka/issues/18625)
+More information here: [https://github.com/akka/akka-http/issues/190](https://github.com/akka/akka-http/issues/190)
  * @ref[Registering Custom Media Types](common/http-model.md#registeringcustommediatypes) changed from Spray in order not to rely on global state.
 
 ## Removed HttpService
