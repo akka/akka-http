@@ -4,7 +4,7 @@
 
 package akka.http.impl.engine.http2.parsing
 
-import akka.http.impl.engine.http2.HeadersFrame
+import akka.http.impl.engine.http2.{ ByteFlag, HeadersFrame, Http2Protocol, Http2SubStream }
 import akka.http.scaladsl.model.{ HttpMethods, HttpRequest }
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Sink, Source }
@@ -12,7 +12,7 @@ import akka.testkit.AkkaSpec
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
 
-class HttpRequestHeaderDecompressionSpec extends AkkaSpec with ScalaFutures {
+class HttpRequestHeaderHpackDecompressionSpec extends AkkaSpec with ScalaFutures {
 
   implicit val mat = ActorMaterializer()
 
@@ -27,42 +27,49 @@ class HttpRequestHeaderDecompressionSpec extends AkkaSpec with ScalaFutures {
       val headers = Map(":path" → "/sample/path")
 
       val bytes = parseHeaderBlock(headerBlock)
-      val frames = List(HeadersFrame(0, false, true, bytes))
+      val http2SubStreams = List(Http2SubStream(HeadersFrame(Http2Protocol.Flags.END_HEADERS, 0, bytes), Source.empty))
 
-      val request = runToRequest(frames)
+      val request = runToRequest(http2SubStreams)
       request.uri.toString should ===("/sample/path")
     }
     "decompress spec-example-2 to POST HttpMethod" in {
       val headerBlock = encodedPOST
 
       val bytes = parseHeaderBlock(headerBlock)
-      val frames = List(HeadersFrame(0, false, true, bytes))
+      val http2SubStreams = List(Http2SubStream(HeadersFrame(Http2Protocol.Flags.END_HEADERS, 0, bytes), Source.empty))
 
-      val request = runToRequest(frames)
+      val request = runToRequest(http2SubStreams)
       request.method should ===(HttpMethods.POST)
     }
     "decompress given CONTINUATION Headers frames" in {
       val streamId = 0
       val frames = List(
-        HeadersFrame(streamId, false, endHeaders = false, headerBlockFragment = parseHeaderBlock(encodedPathSamplePath)),
-        HeadersFrame(streamId, false, endHeaders = true, headerBlockFragment = parseHeaderBlock(encodedPOST)),
-        // this would be a new request (should NOT apply to the first emitted request):
-        HeadersFrame(streamId, false, endHeaders = true, headerBlockFragment = parseHeaderBlock(encodedGET))
+        Http2SubStream(
+          HeadersFrame(Http2Protocol.Flags.NO_FLAGS, streamId, parseHeaderBlock(encodedGET)), // the header here is nog interesting, we'll override it
+          Source.fromIterator(() ⇒ List(
+            HeadersFrame(Http2Protocol.Flags.NO_FLAGS, streamId, parseHeaderBlock(encodedPOST)),
+            HeadersFrame(Http2Protocol.Flags.END_HEADERS, streamId, parseHeaderBlock(encodedPathSamplePath))
+          ).iterator
+          )
+        )
       )
 
       val request = runToRequest(frames)
       request.method should ===(HttpMethods.POST)
       request.uri.toString should ===("/sample/path")
     }
+
+    // TODO a test that has different streamIds
   }
 
-  def runToRequest(frames: List[HeadersFrame]): HttpRequest = {
+  def runToRequest(frames: List[Http2SubStream]): HttpRequest = {
     Source.fromIterator(() ⇒ frames.iterator)
       .via(new HttpRequestHeaderHpackDecompression)
       .runWith(Sink.head)
       .futureValue
   }
 
+  // TODO a string interpolator called `hexByteString` would be nice for this?
   def parseHeaderBlock(data: String): ByteString = {
     val bytes = data.replaceAll(" ", "").toCharArray.grouped(2).map(ch ⇒ Integer.parseInt(new String(ch), 16).toByte).toVector
     ByteString(bytes: _*)

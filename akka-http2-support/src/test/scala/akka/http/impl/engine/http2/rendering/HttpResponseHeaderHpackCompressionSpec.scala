@@ -4,7 +4,7 @@
 
 package akka.http.impl.engine.http2.rendering
 
-import akka.http.impl.engine.http2.HeadersFrame
+import akka.http.impl.engine.http2.{ HeadersFrame, Http2SubStream, StreamFrameEvent }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.stream.ActorMaterializer
@@ -34,7 +34,7 @@ class HttpResponseHeaderHpackCompressionSpec extends AkkaSpec with ScalaFutures 
       val response = HttpResponse(status = StatusCodes.Found)
         .withHeaders(headers)
 
-      val event = runToFrameEvents(List(response)).head
+      val initialFrame = runToFrameEvents(List(response)).head.initialFrame
 
       val expectedHeaderBlockFragment =
         """|4882 6402 5885 aec3 771a 4b61 96d0 7abe 
@@ -42,7 +42,7 @@ class HttpResponseHeaderHpackCompressionSpec extends AkkaSpec with ScalaFutures 
            |2d1b ff6e 919d 29ad 1718 63c7 8f0b 97c8 
            |e9ae 82ae 43d3
            |"""
-      assertBlockFragment(event, expectedHeaderBlockFragment)
+      assertRenderedHeaderBlockFragment(initialFrame, expectedHeaderBlockFragment)
     }
     "compress two responses in same stage" in {
       val responses =
@@ -55,8 +55,8 @@ class HttpResponseHeaderHpackCompressionSpec extends AkkaSpec with ScalaFutures 
 
       val event = runToFrameEvents(responses)
 
-      assertBlockFragment(event(0), """88""")
-      assertBlockFragment(event(1), """|4882 6402 5885 aec3 771a 4b61 96d0 7abe 
+      assertRenderedHeaderBlockFragment(event(0).initialFrame, """88""")
+      assertRenderedHeaderBlockFragment(event(1).initialFrame, """|4882 6402 5885 aec3 771a 4b61 96d0 7abe 
            |9410 54d4 44a8 2005 9504 0b81 66e0 82a6 
            |2d1b ff6e 919d 29ad 1718 63c7 8f0b 97c8 
            |e9ae 82ae 43d3
@@ -64,7 +64,7 @@ class HttpResponseHeaderHpackCompressionSpec extends AkkaSpec with ScalaFutures 
     }
   }
 
-  def runToFrameEvents(responses: List[HttpResponse]): List[HeadersFrame] = {
+  def runToFrameEvents(responses: List[HttpResponse]): List[Http2SubStream] = {
     Source.fromIterator(() ⇒ responses.iterator)
       .via(new HttpResponseHeaderHpackCompression)
       .runWith(Sink.seq)
@@ -72,10 +72,12 @@ class HttpResponseHeaderHpackCompressionSpec extends AkkaSpec with ScalaFutures 
       .toList
   }
 
-  def assertBlockFragment(event: HeadersFrame, expectedHeaderBlockFragment: String): Unit = {
-    val got = event.headerBlockFragment.map(_ formatted "%02x").grouped(2).map(e ⇒ e.mkString).mkString(" ")
-    val expected = expectedHeaderBlockFragment.stripMargin.replaceAll("\n", "").trim
-    got should ===(expected)
-  }
+  def assertRenderedHeaderBlockFragment(event: StreamFrameEvent, expectedHeaderBlockFragment: String): Unit =
+    event match {
+      case h: HeadersFrame ⇒
+        val got = h.headerBlockFragment.map(_ formatted "%02x").grouped(2).map(e ⇒ e.mkString).mkString(" ")
+        val expected = expectedHeaderBlockFragment.stripMargin.replaceAll("\n", "").trim
+        got should ===(expected)
+    }
 
 }

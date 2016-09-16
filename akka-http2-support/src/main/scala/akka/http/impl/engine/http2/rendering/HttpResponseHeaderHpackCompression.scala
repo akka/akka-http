@@ -7,15 +7,16 @@ package akka.http.impl.engine.http2.rendering
 import java.io.OutputStream
 import java.nio.{ ByteBuffer, ByteOrder }
 
-import akka.http.impl.engine.http2.HeadersFrame
+import akka.http.impl.engine.http2.{ HeadersFrame, Http2Protocol, Http2SubStream }
 import akka.http.impl.util._
 import akka.http.scaladsl.model.HttpResponse
+import akka.stream.scaladsl.Source
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.util.ByteString
 
 /** INTERNAL API */
-final class HttpResponseHeaderHpackCompression extends GraphStage[FlowShape[HttpResponse, HeadersFrame]] {
+final class HttpResponseHeaderHpackCompression extends GraphStage[FlowShape[HttpResponse, Http2SubStream]] {
 
   import HttpResponseHeaderHpackCompression._
 
@@ -27,7 +28,7 @@ final class HttpResponseHeaderHpackCompression extends GraphStage[FlowShape[Http
   //  final val forceHuffmanOff = false
 
   val in = Inlet[HttpResponse]("HeaderDecompression.in")
-  val out = Outlet[HeadersFrame]("HeaderDecompression.out")
+  val out = Outlet[Http2SubStream]("HeaderDecompression.out")
 
   override def shape = FlowShape.of(in, out)
 
@@ -60,11 +61,14 @@ final class HttpResponseHeaderHpackCompression extends GraphStage[FlowShape[Http
 
       // FIXME: In order to render a REAL HeadersFrame we need to know the streamId and more info like that
       val streamId = 0 // FIXME we need to know the streamId here
-      val endStream = false // FIXME, no idea, probably not decided by this stage?
-      val endHeaders = true // TODO in our simple impl we always render all into one frame, but we may need to support rendering continuations
 
-      val event = HeadersFrame(streamId, endStream, endHeaders, headerBlockFragment)
-      push(out, event)
+      // FIXME, no idea if END_STREAM too - probably not decided by this stage?
+      // TODO in our simple impl we always render all into one frame, but we may need to support rendering continuations
+      val flags = Http2Protocol.Flags.END_HEADERS
+
+      val headers = HeadersFrame(flags, streamId, headerBlockFragment)
+      val http2SubStream = Http2SubStream(headers, Source.empty)
+      push(out, http2SubStream)
     }
 
     def encodeAllHeaders(response: HttpResponse): ByteString = {
