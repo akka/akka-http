@@ -5,11 +5,11 @@ inThisBuild(Def.settings(
   organization := "com.typesafe.akka",
   organizationName := "Lightbend",
   organizationHomepage := Some(url("https://www.lightbend.com")),
-  homepage := Some(url("http://doc.akka.io")),
+  homepage := Some(url("http://akka.io")),
   scmInfo := Some(
     ScmInfo(url("https://github.com/akka/akka-http"), "git@github.com:akka/akka-http.git")),
   developers := List(
-    Developer("contributors", "Contributors", "akka-dev@googlegroups.com",
+    Developer("contributors", "Contributors", "akka-user@googlegroups.com",
       url("https://github.com/akka/akka-http/graphs/contributors"))
   ),
   startYear := Some(2014),
