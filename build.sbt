@@ -1,8 +1,6 @@
 import com.typesafe.sbt.pgp.PgpKeys._
 import akka._
 
-name := "akka-http"
-
 inThisBuild(Def.settings(
   organization := "com.typesafe.akka",
   organizationName := "Lightbend",
