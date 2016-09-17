@@ -41,3 +41,17 @@ object Publish extends AutoPlugin {
     Option(System.getProperty("akka.publish.credentials", null)).map(f => Credentials(new File(f))).toSeq
 
 }
+
+/**
+ * For projects that are not published.
+ */
+object NoPublish extends AutoPlugin {
+  override def requires = plugins.JvmPlugin
+
+  override def projectSettings = Seq(
+    publishArtifact := false,
+    publish := (),
+    publishLocal := ()
+  )
+
+}

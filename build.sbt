@@ -31,23 +31,11 @@ inThisBuild(Def.settings(
   akka.Formatting.formatSettings
 ))
 
-val dontPublishSettings = Seq(
-  publishSigned := (),
-  publish := (),
-  publishArtifact /* in Compile */ := false
-)
-
-lazy val parentSettings = Seq(
-  publishArtifact := false
-) ++ dontPublishSettings
-
 lazy val root = Project(
     id = "akka-http-root",
     base = file(".")
   )
-  .settings(
-    publishArtifact := false,
-    publishTo := Some(Resolver.file("Unused transient repository", file("target/unusedrepo"))))
+  .enablePlugins(NoPublish)
   .aggregate(
     parsing,
     httpCore,
@@ -87,7 +75,7 @@ lazy val httpTests = project("akka-http-tests")
 
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
   //.disablePlugins(MimaPlugin)
-  .settings(parentSettings)
+  .enablePlugins(NoPublish)
   .aggregate(httpSprayJson, httpXml)
 
 lazy val httpXml =
@@ -98,7 +86,7 @@ lazy val httpSprayJson =
 
 lazy val httpMarshallersJava = project("akka-http-marshallers-java")
   //.disablePlugins(MimaPlugin)
-  .settings(parentSettings)
+  .enablePlugins(NoPublish)
   .aggregate(httpJackson)
 
 lazy val httpJackson =
@@ -124,7 +112,7 @@ def httpMarshallersJavaSubproject(name: String) =
   //.disablePlugins(MimaPlugin)
 
 lazy val docs = project("docs")
-  .enablePlugins(ParadoxPlugin)
+  .enablePlugins(ParadoxPlugin, NoPublish)
   .dependsOn(
     httpCore, http, httpXml, httpMarshallersJava, httpMarshallersScala,
     httpTests % "compile;test->test", httpTestkit % "compile;test->test"
@@ -132,7 +120,6 @@ lazy val docs = project("docs")
   .settings(Dependencies.docs)
   .settings(
     name := "akka-http-docs",
-    publishArtifact := false,
     paradoxTheme := Some(builtinParadoxTheme("generic")),
     paradoxNavigationDepth := 3,
     paradoxProperties ++= Map(
