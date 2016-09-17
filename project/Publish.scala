@@ -15,32 +15,13 @@ object Publish extends AutoPlugin {
 
   override lazy val projectSettings = Seq(
     crossPaths := false,
-    pomExtra := akkaPomExtra,
     publishTo := akkaPublishTo.value,
     credentials ++= akkaCredentials,
-    organizationName := "Typesafe Inc.",
-    organizationHomepage := Some(url("http://www.lightbend.com")),
-    homepage := Some(url("https://github.com/akka/reactive-kafka")),
     publishMavenStyle := true,
     pomIncludeRepository := { x => false },
     defaultPublishTo := crossTarget.value / "repository",
     releasePublishArtifactsAction := PgpKeys.publishSigned.value
   )
-
-  def akkaPomExtra = {
-    <scm>
-      <url>git@github.com:akka/reactive-kafka.git</url>
-      <connection>scm:git:git@github.com:akka/reactive-kafka.git</connection>
-    </scm>
-    <developers>
-      <developer>
-        <id>contributors</id>
-        <name>Contributors</name>
-        <email>akka-dev@googlegroups.com</email>
-        <url>https://github.com/akka/reactive-kafka/graphs/contributors</url>
-      </developer>
-    </developers>
-  }
 
   private def akkaPublishTo = Def.setting {
     sonatypeRepo(version.value) orElse localRepo(defaultPublishTo.value)

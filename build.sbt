@@ -4,9 +4,17 @@ import akka._
 inThisBuild(Def.settings(
   organization := "com.typesafe.akka",
   organizationName := "Lightbend",
+  organizationHomepage := Some(url("https://www.lightbend.com")),
+  homepage := Some(url("http://doc.akka.io")),
+  scmInfo := Some(
+    ScmInfo(url("https://github.com/akka/akka-http"), "git@github.com:akka/akka-http.git")),
+  developers := List(
+    Developer("contributors", "Contributors", "akka-dev@googlegroups.com",
+      url("https://github.com/akka/akka-http/graphs/contributors"))
+  ),
   startYear := Some(2014),
   test in assembly := {},
-  licenses := Seq("Apache License 2.0" -> url("http://opensource.org/licenses/Apache-2.0")),
+  licenses := Seq("Apache License 2.0" -> url("https://opensource.org/licenses/Apache-2.0")),
   scalaVersion := "2.11.8",
   crossVersion := CrossVersion.binary,
   scalacOptions ++= Seq(
