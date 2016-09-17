@@ -1,6 +1,3 @@
-import sbt._
-import Keys._
-
 import com.typesafe.sbt.pgp.PgpKeys._
 import akka._
 
@@ -42,9 +39,9 @@ lazy val root = Project(
     base = file(".")
   )
   .settings(commonSettings)
-  .settings(Seq(
+  .settings(
     publishArtifact := false,
-    publishTo := Some(Resolver.file("Unused transient repository", file("target/unusedrepo")))))
+    publishTo := Some(Resolver.file("Unused transient repository", file("target/unusedrepo"))))
   .aggregate(
     parsing,
     httpCore,
@@ -58,9 +55,9 @@ lazy val root = Project(
 
 lazy val parsing = project("akka-parsing")
   .settings(Dependencies.parsing)
-  .settings(Seq(
+  .settings(
     scalacOptions := scalacOptions.value.filterNot(_ == "-Xfatal-warnings")
-  ))
+  )
 
 lazy val httpCore = project("akka-http-core")
   .settings(Dependencies.httpCore)
@@ -84,7 +81,7 @@ lazy val httpTests = project("akka-http-tests")
 
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
   //.disablePlugins(MimaPlugin)
-  .settings(parentSettings: _*)
+  .settings(parentSettings)
   .aggregate(httpSprayJson, httpXml)
 
 lazy val httpXml =
@@ -95,7 +92,7 @@ lazy val httpSprayJson =
 
 lazy val httpMarshallersJava = project("akka-http-marshallers-java")
   //.disablePlugins(MimaPlugin)
-  .settings(parentSettings: _*)
+  .settings(parentSettings)
   .aggregate(httpJackson)
 
 lazy val httpJackson =
