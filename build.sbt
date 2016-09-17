@@ -41,20 +41,20 @@ lazy val root = Project(
     id = "akka-http-root",
     base = file(".")
   )
-    .settings(commonSettings)
-    .settings(Seq(
-      publishArtifact := false,
-      publishTo := Some(Resolver.file("Unused transient repository", file("target/unusedrepo")))))
-    .aggregate(
-      parsing,
-      httpCore, 
-      http, 
-      httpTestkit, 
-      httpTests, 
-      httpMarshallersScala, 
-      httpMarshallersJava, 
-      docs
-    )
+  .settings(commonSettings)
+  .settings(Seq(
+    publishArtifact := false,
+    publishTo := Some(Resolver.file("Unused transient repository", file("target/unusedrepo")))))
+  .aggregate(
+    parsing,
+    httpCore,
+    http,
+    httpTestkit,
+    httpTests,
+    httpMarshallersScala,
+    httpMarshallersJava,
+    docs
+  )
 
 lazy val parsing = project("akka-parsing")
   .settings(Dependencies.parsing)
@@ -79,7 +79,7 @@ lazy val httpTests = project("akka-http-tests")
   .settings(Dependencies.httpTests)
   .dependsOn(httpSprayJson, httpXml, httpJackson,
     httpTestkit % "test", httpCore % "test->test")
- //.configs(MultiJvm) //.disablePlugins(MimaPlugin)
+  //.configs(MultiJvm) //.disablePlugins(MimaPlugin)
 
 
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
@@ -93,7 +93,7 @@ lazy val httpXml =
 lazy val httpSprayJson =
   httpMarshallersScalaSubproject("spray-json")
 
-lazy val httpMarshallersJava = project("akka-http-marshallers-java") 
+lazy val httpMarshallersJava = project("akka-http-marshallers-java")
   //.disablePlugins(MimaPlugin)
   .settings(parentSettings: _*)
   .aggregate(httpJackson)
