@@ -28,7 +28,7 @@ inThisBuild(Def.settings(
   ),
   testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v"),
   Dependencies.Versions,
-  akka.Formatting.formatSettings
+  Formatting.formatSettings
 ))
 
 lazy val root = Project(
@@ -131,7 +131,7 @@ lazy val docs = project("docs")
         case _                  => "cross CrossVersion.full"
       })
     ),
-    akka.Formatting.docFormatSettings
+    Formatting.docFormatSettings
   )
 
 
