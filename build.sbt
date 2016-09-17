@@ -3,26 +3,27 @@ import akka._
 
 name := "akka-http"
 
-val commonSettings =
-  Seq(
-    organization := "com.typesafe.akka",
-    organizationName := "Lightbend",
-    startYear := Some(2014),
-    test in assembly := {},
-    licenses := Seq("Apache License 2.0" -> url("http://opensource.org/licenses/Apache-2.0")),
-    scalaVersion := "2.11.8",
-    crossVersion := CrossVersion.binary,
-    scalacOptions ++= Seq(
-      "-deprecation",
-      "-encoding", "UTF-8", // yes, this is 2 args
-      "-unchecked",
-      "-Xlint",
-      // "-Yno-adapted-args", //akka-http heavily depends on adapted args and => Unit implicits break otherwise
-      "-Ywarn-dead-code"
-      // "-Xfuture" // breaks => Unit implicits
-    ),
-    testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v")) ++
-      Dependencies.Versions ++ akka.Formatting.formatSettings
+inThisBuild(Def.settings(
+  organization := "com.typesafe.akka",
+  organizationName := "Lightbend",
+  startYear := Some(2014),
+  test in assembly := {},
+  licenses := Seq("Apache License 2.0" -> url("http://opensource.org/licenses/Apache-2.0")),
+  scalaVersion := "2.11.8",
+  crossVersion := CrossVersion.binary,
+  scalacOptions ++= Seq(
+    "-deprecation",
+    "-encoding", "UTF-8", // yes, this is 2 args
+    "-unchecked",
+    "-Xlint",
+    // "-Yno-adapted-args", //akka-http heavily depends on adapted args and => Unit implicits break otherwise
+    "-Ywarn-dead-code"
+    // "-Xfuture" // breaks => Unit implicits
+  ),
+  testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v"),
+  Dependencies.Versions,
+  akka.Formatting.formatSettings
+))
 
 val dontPublishSettings = Seq(
   publishSigned := (),
@@ -38,7 +39,6 @@ lazy val root = Project(
     id = "akka-http-root",
     base = file(".")
   )
-  .settings(commonSettings)
   .settings(
     publishArtifact := false,
     publishTo := Some(Resolver.file("Unused transient repository", file("target/unusedrepo"))))
@@ -100,14 +100,13 @@ lazy val httpJackson =
 
 def project(name: String) =
   Project(id = name, base = file(name))
-    .settings(commonSettings)
 
 def httpMarshallersScalaSubproject(name: String) =
   Project(
     id = s"akka-http-$name",
     base = file(s"akka-http-marshallers-scala/akka-http-$name"),
     dependencies = Seq(http)
-  ).settings(commonSettings)
+  )
   //.disablePlugins(MimaPlugin)
 
 def httpMarshallersJavaSubproject(name: String) =
@@ -115,7 +114,7 @@ def httpMarshallersJavaSubproject(name: String) =
     id = s"akka-http-$name",
     base = file(s"akka-http-marshallers-java/akka-http-$name"),
     dependencies = Seq(http)
-  ).settings(commonSettings)
+  )
   //.disablePlugins(MimaPlugin)
 
 lazy val docs = project("docs")
@@ -124,7 +123,6 @@ lazy val docs = project("docs")
     httpCore, http, httpXml, httpMarshallersJava, httpMarshallersScala,
     httpTests % "compile;test->test", httpTestkit % "compile;test->test"
   )
-  .settings(commonSettings)
   .settings(Dependencies.docs)
   .settings(
     name := "akka-http-docs",
