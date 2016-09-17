@@ -12,6 +12,7 @@ import akka.stream.scaladsl._
 import akka.stream.{ ActorAttributes, ActorMaterializer }
 import akka.util.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
+import scala.io.StdIn
 
 object TcpLeakApp extends App {
   val testConf: Config = ConfigFactory.parseString(
@@ -35,12 +36,12 @@ object TcpLeakApp extends App {
         .toMat(Sink.head)(Keep.right).run())
     .last
     .onComplete {
-      case error ⇒
+      error ⇒
         println(s"Error: $error")
         Thread.sleep(10000)
         println("===================== \n\n" + system.asInstanceOf[ActorSystemImpl].printTree + "\n\n========================")
     }
 
-  readLine()
+  StdIn.readLine()
   system.terminate()
 }

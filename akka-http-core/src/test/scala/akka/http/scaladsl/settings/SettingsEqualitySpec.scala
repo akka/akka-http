@@ -11,17 +11,18 @@ import org.scalatest.WordSpec
 
 class SettingsEqualitySpec extends WordSpec with Matchers {
 
-  val config = ConfigFactory.parseString("""
-    akka.http.routing {
-      verbose-error-messages = off
-      file-get-conditional = on
-      render-vanity-footer = yes
-      range-coalescing-threshold = 80
-      range-count-limit = 16
-      decode-max-bytes-per-chunk = 1m
-      file-io-dispatcher = ${akka.stream.blocking-io-dispatcher}
-    }
-  """).withFallback(ConfigFactory.load).resolve
+  val config = ConfigFactory.parseString(
+    """
+      |    akka.http.routing {
+      |      verbose-error-messages = off
+      |      file-get-conditional = on
+      |      render-vanity-footer = yes
+      |      range-coalescing-threshold = 80
+      |      range-count-limit = 16
+      |      decode-max-bytes-per-chunk = 1m
+      |      file-io-dispatcher = ${akka.stream.blocking-io-dispatcher}
+      |    }
+    """.stripMargin).withFallback(ConfigFactory.load).resolve
 
   "equality" should {
     "hold for ConnectionPoolSettings" in {
