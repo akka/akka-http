@@ -55,6 +55,7 @@ lazy val root = Project(
       httpMarshallersJava, 
       docs
     )
+    .enablePlugins(net.virtualvoid.optimizer.SbtOptimizerPlugin)
 
 lazy val parsing = project("akka-parsing")
   .settings(Dependencies.parsing)
