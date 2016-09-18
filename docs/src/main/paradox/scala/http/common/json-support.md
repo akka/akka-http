@@ -27,12 +27,15 @@ Once you have done this (un)marshalling between JSON and your type `T` should wo
 
 @@snip [SprayJsonExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/SprayJsonExampleSpec.scala) { #minimal-spray-json-example }
 
- 4. By default, spray-json marshals your types to pretty printed json by implicit conversion using PrettyPrinter, as defined in
-`implicit def sprayJsonMarshallerConverter[T](writer: RootJsonWriter[T])(implicit printer: JsonPrinter = PrettyPrinter): ToEntityMarshaller[T]`.
-Alternately to marshal your types to compact printed json, bring a `CompactPrinter` in scope to perform implicit conversion.
+### Pretty printing
 
-@@snip [SprayJsonCompactMarshalSpec.scala](../../../../../test/scala/docs/http/scaladsl/SprayJsonCompactMarshalSpec.scala) { #example }
+By default, spray-json marshals your types to compact printed JSON by implicit conversion using `CompactPrinter`, as defined in:
 
+@@snip [SprayJsonSupport.scala](../../../../../../../akka-http-marshallers-scala/akka-http-spray-json/src/main/scala/akka/http/scaladsl/marshallers/sprayjson/SprayJsonSupport.scala) { #sprayJsonMarshallerConverter }
+
+Alternatively to marshal your types to pretty printed JSON, bring a `PrettyPrinter` in scope to perform implicit conversion.
+
+@@snip [SprayJsonPrettyMarshalSpec.scala](../../../../../test/scala/docs/http/scaladsl/SprayJsonPrettyMarshalSpec.scala) { #example }
 
 To learn more about how spray-json works please refer to its [documentation][spray-json].
 
