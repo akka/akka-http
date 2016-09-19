@@ -7,7 +7,7 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.server.Directives
 import org.scalatest.{ Matchers, WordSpec }
 
-class SprayJsonPrettyMarshalSpec extends WordSpec with Matchers {
+class SprayJsonPrettyMarshalSpec extends server.RoutingSpec {
 
   "spray-json example" in {
     //#example
@@ -29,13 +29,23 @@ class SprayJsonPrettyMarshalSpec extends WordSpec with Matchers {
         get {
           pathSingleSlash {
             complete {
-              // should complete with spray.json.JsValue = { "name": "akka", "id": 42 }
               PrettyPrintedItem("akka", 42) // will render as JSON
             }
           }
         }
       // format: ON
-      //#example
     }
+
+    val service = new MyJsonService
+
+    // verify the pretty printed JSON
+    Get("/") ~> service.route ~> check {
+      responseAs[String] shouldEqual
+        """{
+          |  "name": "akka",
+          |  "id": 42
+          |}""".stripMargin
+    }
+    //#example
   }
 }
