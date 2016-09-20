@@ -36,12 +36,13 @@ object TcpLeakApp extends App {
         .toMat(Sink.head)(Keep.right).run())
     .last
     .onComplete {
-      error ⇒
-        println(s"Error: $error")
+      result ⇒
+        println(s"Result: $result")
         Thread.sleep(10000)
         println("===================== \n\n" + system.asInstanceOf[ActorSystemImpl].printTree + "\n\n========================")
     }
 
-  StdIn.readLine()
+  Thread.sleep(11000)
+  StdIn.readLine("Press Enter to stop the application")
   system.terminate()
 }
