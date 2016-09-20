@@ -11,9 +11,11 @@ import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.marshalling.Marshaller;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.testkit.TestRouteResult;
 import akka.http.scaladsl.model.StatusCodes;
 import akka.japi.pf.PFBuilder;
 import akka.pattern.CircuitBreaker;
+import akka.testkit.JavaTestKit;
 import org.junit.Test;
 import scala.concurrent.duration.FiniteDuration;
 
@@ -68,9 +70,15 @@ public class FutureDirectivesExamplesTest extends JUnitRouteTest {
     testRoute(route).run(HttpRequest.GET("/success"))
       .assertEntity("Ok");
 
-    testRoute(route).run(HttpRequest.GET("/failure"))
-      .assertStatusCode(StatusCodes.InternalServerError())
-      .assertEntity("There was an internal server error.");
+    new JavaTestKit(system()) {{
+      new JavaTestKit.EventFilter<TestRouteResult>(RuntimeException.class) {
+        protected TestRouteResult run() {
+          return testRoute(route).run(HttpRequest.GET("/failure"))
+            .assertStatusCode(StatusCodes.InternalServerError())
+            .assertEntity("There was an internal server error.");
+        }
+      }.exec();
+    }};
     //#onSuccess
   }
 
@@ -95,9 +103,15 @@ public class FutureDirectivesExamplesTest extends JUnitRouteTest {
     testRoute(route).run(HttpRequest.GET("/success"))
       .assertEntity("Ok");
 
-    testRoute(route).run(HttpRequest.GET("/failure"))
-      .assertStatusCode(StatusCodes.InternalServerError())
-      .assertEntity("There was an internal server error.");
+    new JavaTestKit(system()) {{
+      new JavaTestKit.EventFilter<TestRouteResult>(RuntimeException.class) {
+        protected TestRouteResult run() {
+          return testRoute(route).run(HttpRequest.GET("/failure"))
+            .assertStatusCode(StatusCodes.InternalServerError())
+            .assertEntity("There was an internal server error.");
+        }
+      }.exec();
+    }};
     //#completeOrRecoverWith
   }
   
