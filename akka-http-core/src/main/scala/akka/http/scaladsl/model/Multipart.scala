@@ -56,6 +56,15 @@ sealed trait Multipart extends jm.Multipart {
   /**
    * Creates a [[akka.http.scaladsl.model.MessageEntity]] from this multipart object.
    */
+  @deprecated("Use `toEntityWithLog` instead", "10.0.0")
+  def toEntity(
+    charset:  HttpCharset = HttpCharsets.`UTF-8`,
+    boundary: String      = BodyPartRenderer.randomBoundary())(implicit log: LoggingAdapter = NoLogging): MessageEntity =
+    toEntityWithLog(boundary)
+
+  /**
+   * Creates a [[akka.http.scaladsl.model.MessageEntity]] from this multipart object.
+   */
   def toEntityWithLog(
     boundary: String = BodyPartRenderer.randomBoundary())(implicit log: LoggingAdapter = NoLogging): MessageEntity = {
     val chunks =
@@ -79,6 +88,11 @@ sealed trait Multipart extends jm.Multipart {
   /** Java API */
   def toEntity(boundary: String): jm.RequestEntity =
     toEntityWithLog(boundary)
+
+  /** Java API */
+  @deprecated("Use `toEntity(String)` instead", "10.0.0")
+  def toEntity(charset: jm.HttpCharset, boundary: String): jm.RequestEntity =
+    toEntity(boundary)
 }
 
 object Multipart {
