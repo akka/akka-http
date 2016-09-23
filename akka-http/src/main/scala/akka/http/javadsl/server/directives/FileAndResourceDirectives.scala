@@ -5,6 +5,7 @@
 package akka.http.javadsl.server.directives
 
 import java.io.File
+import java.nio.file.Path
 
 import akka.http.javadsl.marshalling.Marshaller
 
@@ -144,6 +145,14 @@ abstract class FileAndResourceDirectives extends ExecutionDirectives {
    */
   def getFromFile(file: File, contentType: ContentType): Route = RouteAdapter {
     D.getFromFile(file, contentType.asScala)
+  }
+
+  /**
+   * Completes GET requests with the content of the given file, using the content type.
+   * If the file cannot be found or read the request is rejected.
+   */
+  def getFromFile(path: Path, contentType: ContentType): Route = RouteAdapter {
+    D.getFromFile(path, contentType.asScala)
   }
 
   /**

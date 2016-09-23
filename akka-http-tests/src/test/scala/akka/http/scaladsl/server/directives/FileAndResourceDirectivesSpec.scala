@@ -5,7 +5,9 @@
 package akka.http.scaladsl.server
 package directives
 
-import java.io.File
+import java.nio.file.Files.{ delete ⇒ rm, _ }
+import java.nio.file.Paths
+import java.nio.file.attribute.BasicFileAttributes
 
 import akka.http.scaladsl.settings.RoutingSettings
 import akka.http.scaladsl.testkit.RouteTestTimeout
@@ -39,30 +41,32 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       Get() ~> getFromFile(Properties.javaHome) ~> check { handled shouldEqual false }
     }
     "return the file content with the MediaType matching the file extension" in {
-      val file = File.createTempFile("akka Http Test", ".PDF")
+      val file = createTempFile("akka Http Test", ".PDF")
       try {
         writeAllText("This is PDF", file)
-        Get() ~> getFromFile(file.getPath) ~> check {
+        Get() ~> getFromFile(file) ~> check {
           mediaType shouldEqual `application/pdf`
           charsetOption shouldEqual None
           responseAs[String] shouldEqual "This is PDF"
-          headers should contain(`Last-Modified`(DateTime(file.lastModified)))
+          val lastModified =
+            readAttributes(file, classOf[BasicFileAttributes]).lastModifiedTime().toMillis
+          headers should contain(`Last-Modified`(DateTime(lastModified)))
         }
-      } finally file.delete
+      } finally rm(file)
     }
     "return the file content with MediaType 'application/octet-stream' on unknown file extensions" in {
-      val file = File.createTempFile("akkaHttpTest", null)
+      val file = createTempFile("akkaHttpTest", null)
       try {
         writeAllText("Some content", file)
         Get() ~> getFromFile(file) ~> check {
           mediaType shouldEqual `application/octet-stream`
           responseAs[String] shouldEqual "Some content"
         }
-      } finally file.delete
+      } finally rm(file)
     }
 
     "return a single range from a file" in {
-      val file = File.createTempFile("akkaHttpTest", null)
+      val file = createTempFile("akkaHttpTest", null)
       try {
         writeAllText("ABCDEFGHIJKLMNOPQRSTUVWXYZ", file)
         Get() ~> addHeader(Range(ByteRange(0, 10))) ~> getFromFile(file) ~> check {
@@ -70,11 +74,11 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
           headers should contain(`Content-Range`(ContentRange(0, 10, 26)))
           responseAs[String] shouldEqual "ABCDEFGHIJK"
         }
-      } finally file.delete
+      } finally rm(file)
     }
 
     "return multiple ranges from a file at once" in {
-      val file = File.createTempFile("akkaHttpTest", null)
+      val file = createTempFile("akkaHttpTest", null)
       try {
         writeAllText("ABCDEFGHIJKLMNOPQRSTUVWXYZ", file)
         val rangeHeader = Range(ByteRange(1, 10), ByteRange.suffix(10))
@@ -86,21 +90,21 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
           val parts = responseAs[Multipart.ByteRanges].toStrict(1.second).awaitResult(3.seconds).strictParts
           parts.map(_.entity.data.utf8String) should contain theSameElementsAs List("BCDEFGHIJK", "QRSTUVWXYZ")
         }
-      } finally file.delete
+      } finally rm(file)
     }
 
     "properly handle zero-byte files" in {
-      val file = File.createTempFile("akkaHttpTest", null)
+      val file = createTempFile("akkaHttpTest", null)
       try {
         Get() ~> getFromFile(file) ~> check {
           mediaType shouldEqual NoMediaType
           responseAs[String] shouldEqual ""
         }
-      } finally file.delete
+      } finally rm(file)
     }
 
     "support precompressed files with registered MediaType" in {
-      val file = File.createTempFile("akkaHttpTest", ".svgz")
+      val file = createTempFile("akkaHttpTest", ".svgz")
       try {
         writeAllText("123", file)
         Get() ~> getFromFile(file) ~> check {
@@ -108,11 +112,11 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
           header[`Content-Encoding`] shouldEqual Some(`Content-Encoding`(HttpEncodings.gzip))
           responseAs[String] shouldEqual "123"
         }
-      } finally file.delete
+      } finally rm(file)
     }
 
     "support files with registered MediaType and .gz suffix" in {
-      val file = File.createTempFile("akkaHttpTest", ".js.gz")
+      val file = createTempFile("akkaHttpTest", ".js.gz")
       try {
         writeAllText("456", file)
         Get() ~> getFromFile(file) ~> check {
@@ -120,7 +124,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
           header[`Content-Encoding`] shouldEqual Some(`Content-Encoding`(HttpEncodings.gzip))
           responseAs[String] shouldEqual "456"
         }
-      } finally file.delete
+      } finally rm(file)
     }
   }
 
@@ -233,8 +237,8 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
   }
 
   "listDirectoryContents" should {
-    val base = new File(getClass.getClassLoader.getResource("").toURI).getPath
-    new File(base, "subDirectory/emptySub").mkdir()
+    val base = Paths.get(getClass.getClassLoader.getResource("").toURI)
+    createDirectories(base.resolve("subDirectory/emptySub"))
     def eraseDateTime(s: String) = s.replaceAll("""\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d""", "xxxx-xx-xx xx:xx:xx")
     implicit val settings = RoutingSettings.default.withRenderVanityFooter(false)
 
