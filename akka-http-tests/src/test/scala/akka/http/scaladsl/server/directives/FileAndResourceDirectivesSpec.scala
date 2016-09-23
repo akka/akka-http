@@ -5,7 +5,7 @@
 package akka.http.scaladsl.server
 package directives
 
-import java.nio.file.Files.{ delete ⇒ rm, _ }
+import java.nio.file.Files._
 import java.nio.file.Paths
 import java.nio.file.attribute.BasicFileAttributes
 
@@ -21,110 +21,86 @@ import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
-import akka.http.scaladsl.TestUtils.writeAllText
 
 class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Inside {
 
   // operations touch files, can be randomly hit by slowness
   implicit val routeTestTimeout = RouteTestTimeout(3.seconds)
 
+  val testRoot = Paths.get(getClass.getClassLoader.getResource("").toURI)
+
   override def testConfigSource = "akka.http.routing.range-coalescing-threshold = 1"
 
   "getFromFile" should {
+    def _getFromFile(file: String) = getFromFile(testRoot.resolve(file))
+
     "reject non-GET requests" in {
-      Put() ~> getFromFile("some") ~> check { handled shouldEqual false }
+      Put() ~> _getFromFile("some") ~> check { handled shouldEqual false }
     }
     "reject requests to non-existing files" in {
-      Get() ~> getFromFile("nonExistentFile") ~> check { handled shouldEqual false }
+      Get() ~> _getFromFile("nonExistentFile") ~> check { handled shouldEqual false }
     }
     "reject requests to directories" in {
-      Get() ~> getFromFile(Properties.javaHome) ~> check { handled shouldEqual false }
+      Get() ~> _getFromFile(Properties.javaHome) ~> check { handled shouldEqual false }
     }
     "return the file content with the MediaType matching the file extension" in {
-      val file = createTempFile("akka Http Test", ".PDF")
-      try {
-        writeAllText("This is PDF", file)
-        Get() ~> getFromFile(file) ~> check {
-          mediaType shouldEqual `application/pdf`
-          charsetOption shouldEqual None
-          responseAs[String] shouldEqual "This is PDF"
-          val lastModified =
-            readAttributes(file, classOf[BasicFileAttributes]).lastModifiedTime().toMillis
-          headers should contain(`Last-Modified`(DateTime(lastModified)))
-        }
-      } finally rm(file)
+      Get() ~> _getFromFile("sample space.PDF") ~> check {
+        mediaType shouldEqual `application/pdf`
+        charsetOption shouldEqual None
+        responseAs[String] shouldEqual "This is PDF"
+        val lastModified =
+          readAttributes(testRoot.resolve("sample space.PDF"), classOf[BasicFileAttributes]).lastModifiedTime().toMillis
+        headers should contain(`Last-Modified`(DateTime(lastModified)))
+      }
     }
     "return the file content with MediaType 'application/octet-stream' on unknown file extensions" in {
-      val file = createTempFile("akkaHttpTest", null)
-      try {
-        writeAllText("Some content", file)
-        Get() ~> getFromFile(file) ~> check {
-          mediaType shouldEqual `application/octet-stream`
-          responseAs[String] shouldEqual "Some content"
-        }
-      } finally rm(file)
+      Get() ~> _getFromFile("content") ~> check {
+        mediaType shouldEqual `application/octet-stream`
+        responseAs[String] shouldEqual "Some content"
+      }
     }
 
     "return a single range from a file" in {
-      val file = createTempFile("akkaHttpTest", null)
-      try {
-        writeAllText("ABCDEFGHIJKLMNOPQRSTUVWXYZ", file)
-        Get() ~> addHeader(Range(ByteRange(0, 10))) ~> getFromFile(file) ~> check {
-          status shouldEqual StatusCodes.PartialContent
-          headers should contain(`Content-Range`(ContentRange(0, 10, 26)))
-          responseAs[String] shouldEqual "ABCDEFGHIJK"
-        }
-      } finally rm(file)
+      Get() ~> addHeader(Range(ByteRange(0, 10))) ~> _getFromFile("abcd") ~> check {
+        status shouldEqual StatusCodes.PartialContent
+        headers should contain(`Content-Range`(ContentRange(0, 10, 26)))
+        responseAs[String] shouldEqual "ABCDEFGHIJK"
+      }
     }
 
     "return multiple ranges from a file at once" in {
-      val file = createTempFile("akkaHttpTest", null)
-      try {
-        writeAllText("ABCDEFGHIJKLMNOPQRSTUVWXYZ", file)
-        val rangeHeader = Range(ByteRange(1, 10), ByteRange.suffix(10))
-        Get() ~> addHeader(rangeHeader) ~> getFromFile(file, ContentTypes.`text/plain(UTF-8)`) ~> check {
-          status shouldEqual StatusCodes.PartialContent
-          header[`Content-Range`] shouldEqual None
-          mediaType.withParams(Map.empty) shouldEqual `multipart/byteranges`
+      val rangeHeader = Range(ByteRange(1, 10), ByteRange.suffix(10))
+      Get() ~> addHeader(rangeHeader) ~> getFromFile(testRoot.resolve("abcd"), ContentTypes.`text/plain(UTF-8)`) ~> check {
+        status shouldEqual StatusCodes.PartialContent
+        header[`Content-Range`] shouldEqual None
+        mediaType.withParams(Map.empty) shouldEqual `multipart/byteranges`
 
-          val parts = responseAs[Multipart.ByteRanges].toStrict(1.second).awaitResult(3.seconds).strictParts
-          parts.map(_.entity.data.utf8String) should contain theSameElementsAs List("BCDEFGHIJK", "QRSTUVWXYZ")
-        }
-      } finally rm(file)
+        val parts = responseAs[Multipart.ByteRanges].toStrict(1.second).awaitResult(3.seconds).strictParts
+        parts.map(_.entity.data.utf8String) should contain theSameElementsAs List("BCDEFGHIJK", "QRSTUVWXYZ")
+      }
     }
 
     "properly handle zero-byte files" in {
-      val file = createTempFile("akkaHttpTest", null)
-      try {
-        Get() ~> getFromFile(file) ~> check {
-          mediaType shouldEqual NoMediaType
-          responseAs[String] shouldEqual ""
-        }
-      } finally rm(file)
+      Get() ~> _getFromFile("empty") ~> check {
+        mediaType shouldEqual NoMediaType
+        responseAs[String] shouldEqual ""
+      }
     }
 
     "support precompressed files with registered MediaType" in {
-      val file = createTempFile("akkaHttpTest", ".svgz")
-      try {
-        writeAllText("123", file)
-        Get() ~> getFromFile(file) ~> check {
-          mediaType shouldEqual `image/svg+xml`
-          header[`Content-Encoding`] shouldEqual Some(`Content-Encoding`(HttpEncodings.gzip))
-          responseAs[String] shouldEqual "123"
-        }
-      } finally rm(file)
+      Get() ~> _getFromFile("sample.svgz") ~> check {
+        mediaType shouldEqual `image/svg+xml`
+        header[`Content-Encoding`] shouldEqual Some(`Content-Encoding`(HttpEncodings.gzip))
+        responseAs[String] shouldEqual "123"
+      }
     }
 
     "support files with registered MediaType and .gz suffix" in {
-      val file = createTempFile("akkaHttpTest", ".js.gz")
-      try {
-        writeAllText("456", file)
-        Get() ~> getFromFile(file) ~> check {
-          mediaType shouldEqual `application/javascript`
-          header[`Content-Encoding`] shouldEqual Some(`Content-Encoding`(HttpEncodings.gzip))
-          responseAs[String] shouldEqual "456"
-        }
-      } finally rm(file)
+      Get() ~> _getFromFile("sample.js.gz") ~> check {
+        mediaType shouldEqual `application/javascript`
+        header[`Content-Encoding`] shouldEqual Some(`Content-Encoding`(HttpEncodings.gzip))
+        responseAs[String] shouldEqual "456"
+      }
     }
   }
 
@@ -237,13 +213,12 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
   }
 
   "listDirectoryContents" should {
-    val base = Paths.get(getClass.getClassLoader.getResource("").toURI)
-    createDirectories(base.resolve("subDirectory/emptySub"))
+    createDirectories(testRoot.resolve("subDirectory/emptySub"))
     def eraseDateTime(s: String) = s.replaceAll("""\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d""", "xxxx-xx-xx xx:xx:xx")
     implicit val settings = RoutingSettings.default.withRenderVanityFooter(false)
 
     "properly render a simple directory" in {
-      Get() ~> listDirectoryContents(base + "/someDir") ~> check {
+      Get() ~> listDirectoryContents(testRoot + "/someDir") ~> check {
         eraseDateTime(responseAs[String]) shouldEqual prep {
           """<html>
             |<head><title>Index of /</title></head>
@@ -263,7 +238,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       }
     }
     "properly render a sub directory" in {
-      Get("/sub/") ~> listDirectoryContents(base + "/someDir") ~> check {
+      Get("/sub/") ~> listDirectoryContents(testRoot + "/someDir") ~> check {
         eraseDateTime(responseAs[String]) shouldEqual prep {
           """<html>
             |<head><title>Index of /sub/</title></head>
@@ -282,7 +257,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       }
     }
     "properly render the union of several directories" in {
-      Get() ~> listDirectoryContents(base + "/someDir", base + "/subDirectory") ~> check {
+      Get() ~> listDirectoryContents(testRoot + "/someDir", testRoot + "/subDirectory") ~> check {
         eraseDateTime(responseAs[String]) shouldEqual prep {
           """<html>
             |<head><title>Index of /</title></head>
@@ -305,7 +280,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     }
     "properly render an empty sub directory with vanity footer" in {
       val settings = 0 // shadow implicit
-      Get("/emptySub/") ~> listDirectoryContents(base + "/subDirectory") ~> check {
+      Get("/emptySub/") ~> listDirectoryContents(testRoot + "/subDirectory") ~> check {
         eraseDateTime(responseAs[String]) shouldEqual prep {
           """<html>
             |<head><title>Index of /emptySub/</title></head>
@@ -326,7 +301,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       }
     }
     "properly render an empty top-level directory" in {
-      Get() ~> listDirectoryContents(base + "/subDirectory/emptySub") ~> check {
+      Get() ~> listDirectoryContents(testRoot + "/subDirectory/emptySub") ~> check {
         eraseDateTime(responseAs[String]) shouldEqual prep {
           """<html>
             |<head><title>Index of /</title></head>
@@ -344,7 +319,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       }
     }
     "properly render a simple directory with a path prefix" in {
-      Get("/files/") ~> pathPrefix("files")(listDirectoryContents(base + "/someDir")) ~> check {
+      Get("/files/") ~> pathPrefix("files")(listDirectoryContents(testRoot + "/someDir")) ~> check {
         eraseDateTime(responseAs[String]) shouldEqual prep {
           """<html>
             |<head><title>Index of /files/</title></head>
@@ -364,7 +339,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       }
     }
     "properly render a sub directory with a path prefix" in {
-      Get("/files/sub/") ~> pathPrefix("files")(listDirectoryContents(base + "/someDir")) ~> check {
+      Get("/files/sub/") ~> pathPrefix("files")(listDirectoryContents(testRoot + "/someDir")) ~> check {
         eraseDateTime(responseAs[String]) shouldEqual prep {
           """<html>
             |<head><title>Index of /files/sub/</title></head>
@@ -383,7 +358,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       }
     }
     "properly render an empty top-level directory with a path prefix" in {
-      Get("/files/") ~> pathPrefix("files")(listDirectoryContents(base + "/subDirectory/emptySub")) ~> check {
+      Get("/files/") ~> pathPrefix("files")(listDirectoryContents(testRoot + "/subDirectory/emptySub")) ~> check {
         eraseDateTime(responseAs[String]) shouldEqual prep {
           """<html>
             |<head><title>Index of /files/</title></head>
@@ -401,7 +376,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       }
     }
     "reject requests to file resources" in {
-      Get() ~> listDirectoryContents(base + "subDirectory/empty.pdf") ~> check { handled shouldEqual false }
+      Get() ~> listDirectoryContents(testRoot + "subDirectory/empty.pdf") ~> check { handled shouldEqual false }
     }
   }
 
