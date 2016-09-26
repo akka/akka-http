@@ -21,6 +21,7 @@ import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
+import akka.http.scaladsl.model.Uri.Path
 
 class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Inside {
 
@@ -100,6 +101,53 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
         mediaType shouldEqual `application/javascript`
         header[`Content-Encoding`] shouldEqual Some(`Content-Encoding`(HttpEncodings.gzip))
         responseAs[String] shouldEqual "456"
+      }
+    }
+  }
+
+  "getFromDirectory" should {
+    def _getFromDirectory(directory: String) = getFromDirectory(testRoot.resolve(directory))
+
+    "reject non-GET requests" in {
+      Put() ~> _getFromDirectory("someDir") ~> check { handled shouldEqual false }
+    }
+    "reject requests to non-existing files" in {
+      Get("nonExistentFile") ~> _getFromDirectory("subDirectory") ~> check { handled shouldEqual false }
+    }
+    "reject requests to directories" in {
+      Get("sub") ~> _getFromDirectory("someDir") ~> check { handled shouldEqual false }
+    }
+    "reject path traversal attempts" in {
+      def route(uri: String) =
+        mapRequestContext(_.withUnmatchedPath(Path("/" + uri))) { _getFromDirectory("someDir/sub") }
+
+      Get() ~> route("file.html") ~> check { handled shouldEqual true }
+
+      def shouldReject(prefix: String) =
+        Get() ~> route(prefix + "fileA.txt") ~> check { handled shouldEqual false }
+      shouldReject("../") // resolved
+      shouldReject("%5c../")
+      shouldReject("%2e%2e%2f")
+      shouldReject("%2e%2e/") // resolved
+      shouldReject("..%2f")
+      shouldReject("%2e%2e%5c")
+      shouldReject("%2e%2e\\")
+      shouldReject("..\\")
+      shouldReject("\\")
+      shouldReject("%5c")
+      shouldReject("..%5c")
+      shouldReject("..%255c")
+      shouldReject("..%c0%af")
+      shouldReject("..%c1%9c")
+    }
+    "return the file content with the MediaType matching the file extension" in {
+      Get("fileA.txt") ~> _getFromDirectory("someDir") ~> check {
+        mediaType shouldEqual `text/plain`
+        charsetOption shouldEqual Some(HttpCharsets.`UTF-8`)
+        responseAs[String] shouldEqual "123"
+        val lastModified =
+          readAttributes(testRoot.resolve("someDir/fileA.txt"), classOf[BasicFileAttributes]).lastModifiedTime().toMillis
+        headers should contain(`Last-Modified`(DateTime(lastModified)))
       }
     }
   }
