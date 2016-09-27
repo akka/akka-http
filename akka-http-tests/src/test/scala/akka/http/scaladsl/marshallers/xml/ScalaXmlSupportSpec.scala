@@ -4,17 +4,18 @@
 
 package akka.http.scaladsl.marshallers.xml
 
-import java.io.File
+import java.nio.file.{ Files, Path }
 
 import akka.http.scaladsl.TestUtils
 import org.xml.sax.SAXParseException
+
 import scala.xml.NodeSeq
-import scala.concurrent.{ Future, Await }
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
-import org.scalatest.{ Inside, FreeSpec, Matchers }
+import org.scalatest.{ FreeSpec, Inside, Matchers }
 import akka.util.ByteString
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import akka.http.scaladsl.unmarshalling.{ Unmarshaller, Unmarshal }
+import akka.http.scaladsl.unmarshalling.{ Unmarshal, Unmarshaller }
 import akka.http.scaladsl.model._
 import MediaTypes._
 
@@ -40,7 +41,7 @@ class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest
           val xml = s"""<?xml version="1.0" encoding="ISO-8859-1"?>
                      | <!DOCTYPE foo [
                      |   <!ELEMENT foo ANY >
-                     |   <!ENTITY xxe SYSTEM "${f.toURI}">]><foo>hello&xxe;</foo>""".stripMargin
+                     |   <!ENTITY xxe SYSTEM "${f.toUri}">]><foo>hello&xxe;</foo>""".stripMargin
 
           shouldHaveFailedWithSAXParseException(Unmarshal(HttpEntity(ContentTypes.`text/xml(UTF-8)`, xml)).to[NodeSeq])
         }
@@ -48,12 +49,12 @@ class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest
       "parse XML bodies without loading in a related schema from a parameter" in {
         withTempFile("I shouldnt be there!") { generalEntityFile ⇒
           withTempFile {
-            s"""<!ENTITY % xge SYSTEM "${generalEntityFile.toURI}">
+            s"""<!ENTITY % xge SYSTEM "${generalEntityFile.toUri}">
              |<!ENTITY % pe "<!ENTITY xxe '%xge;'>">""".stripMargin
           } { parameterEntityFile ⇒
             val xml = s"""<?xml version="1.0" encoding="ISO-8859-1"?>
                        | <!DOCTYPE foo [
-                       |   <!ENTITY % xpe SYSTEM "${parameterEntityFile.toURI}">
+                       |   <!ENTITY % xpe SYSTEM "${parameterEntityFile.toUri}">
                        |   %xpe;
                        |   %pe;
                        |   ]><foo>hello&xxe;</foo>""".stripMargin
@@ -92,13 +93,13 @@ class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest
       case _: SAXParseException ⇒
     }
 
-  def withTempFile[T](content: String)(f: File ⇒ T): T = {
-    val file = File.createTempFile("xxe", ".txt")
+  def withTempFile[T](content: String)(f: Path ⇒ T): T = {
+    val file = Files.createTempFile("xxe", ".txt")
     try {
       TestUtils.writeAllText(content, file)
       f(file)
     } finally {
-      file.delete()
+      Files.delete(file)
     }
   }
 }

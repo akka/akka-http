@@ -9,7 +9,6 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.directives.DirectoryListing
 import akka.http.scaladsl.server.directives.FileAndResourceDirectives.DirectoryRenderer
 import docs.http.scaladsl.server.RoutingSpec
-import docs.http.scaladsl.server.RoutingSpec
 
 class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
   "getFromFile-examples" in compileOnlySpec {

@@ -7,6 +7,9 @@ package directives
 
 import java.io.File
 import java.net.{ URI, URL }
+import java.nio.file.Files._
+import java.nio.file.{ Path, Paths }
+import java.nio.file.attribute.BasicFileAttributes
 
 import akka.http.javadsl.{ marshalling, model }
 import akka.stream.ActorAttributes
@@ -44,7 +47,7 @@ trait FileAndResourceDirectives {
    * @group fileandresource
    */
   def getFromFile(fileName: String)(implicit resolver: ContentTypeResolver): Route =
-    getFromFile(new File(fileName))
+    getFromFile(Paths.get(fileName))
 
   /**
    * Completes GET requests with the content of the given file.
@@ -53,7 +56,16 @@ trait FileAndResourceDirectives {
    * @group fileandresource
    */
   def getFromFile(file: File)(implicit resolver: ContentTypeResolver): Route =
-    getFromFile(file, resolver(file.getName))
+    getFromFile(file.toPath, resolver(file.getName))
+
+  /**
+   * Completes GET requests with the content of the given file.
+   * If the file cannot be found or read the request is rejected.
+   *
+   * @group fileandresource
+   */
+  def getFromFile(path: Path)(implicit resolver: ContentTypeResolver): Route =
+    getFromFile(path, resolver(path.getFileName.toString))
 
   /**
    * Completes GET requests with the content of the given file.
@@ -62,19 +74,29 @@ trait FileAndResourceDirectives {
    * @group fileandresource
    */
   def getFromFile(file: File, contentType: ContentType): Route =
+    getFromFile(file.toPath, contentType)
+
+  /**
+   * Completes GET requests with the content of the given file.
+   * If the file cannot be found or read the request is rejected.
+   *
+   * @group fileandresource
+   */
+  def getFromFile(path: Path, contentType: ContentType): Route =
     get {
-      if (file.isFile && file.canRead)
-        conditionalFor(file.length, file.lastModified) {
-          if (file.length > 0) {
+      if (!isDirectory(path) && isReadable(path)) {
+        val length = size(path)
+        conditionalFor(length, lastModified(path)) {
+          if (size(path) > 0) {
             withRangeSupportAndPrecompressedMediaTypeSupportAndExtractSettings { settings ⇒
               complete {
-                HttpEntity.Default(contentType, file.length,
-                  FileIO.fromPath(file.toPath).withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher)))
+                HttpEntity.Default(contentType, length,
+                  FileIO.fromPath(path).withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher)))
               }
             }
           } else complete(HttpEntity.Empty)
         }
-      else reject
+      } else reject
     }
 
   private def conditionalFor(length: Long, lastModified: Long): Directive0 =
@@ -127,14 +149,28 @@ trait FileAndResourceDirectives {
    *
    * @group fileandresource
    */
-  def getFromDirectory(directoryName: String)(implicit resolver: ContentTypeResolver): Route = {
-    val base = withTrailingSlash(directoryName)
-    extractUnmatchedPath { path ⇒
+  def getFromDirectory(directoryName: String)(implicit resolver: ContentTypeResolver): Route =
+    getFromDirectory(Paths.get(withTrailingSlash(directoryName)))(resolver)
+
+  /**
+   * Completes GET requests with the content of a file underneath the given directory.
+   * If the file cannot be read the Route rejects the request.
+   *
+   * @group fileandresource
+   */
+  def getFromDirectory(path: Path)(implicit resolver: ContentTypeResolver): Route = {
+    val base = path.toRealPath()
+    extractUnmatchedPath { unmatchedPath ⇒
       extractLog { log ⇒
-        fileSystemPath(base, path, log) match {
-          case ""       ⇒ reject
-          case fileName ⇒ getFromFile(fileName)
-        }
+        val pathString = (if (unmatchedPath.startsWithSlash) unmatchedPath.tail else unmatchedPath).toString
+        val file = base.resolve(pathString)
+        if (!exists(file))
+          reject
+        else if (!file.toRealPath().startsWith(base)) {
+          log.warning(s"[$pathString] points to a location that is not part of [$base]")
+          reject
+        } else
+          getFromFile(file)
       }
     }
   }
@@ -157,9 +193,9 @@ trait FileAndResourceDirectives {
         val dirs = directories flatMap { dir ⇒
           fileSystemPath(withTrailingSlash(dir), path, ctx.log) match {
             case "" ⇒ None
-            case fileName ⇒
-              val file = new File(fileName)
-              if (file.isDirectory && file.canRead) Some(file) else None
+            case directoryName ⇒
+              val directory = Paths.get(directoryName)
+              if (isReadableDir(directory)) Some(directory.toFile) else None
           }
         }
         implicit val marshaller: ToEntityMarshaller[DirectoryListing] = renderer.marshaller(ctx.settings.renderVanityFooter)
@@ -233,12 +269,18 @@ object FileAndResourceDirectives extends FileAndResourceDirectives {
     rec(if (path.startsWithSlash) path.tail else path)
   }
 
+  def lastModified(path: Path) =
+    readAttributes(path, classOf[BasicFileAttributes]).lastModifiedTime().toMillis
+
+  def isReadableDir(path: Path) =
+    isDirectory(path) && isReadable(path)
+
   object ResourceFile {
     def apply(url: URL): Option[ResourceFile] = url.getProtocol match {
       case "file" ⇒
-        val file = new File(url.toURI)
-        if (file.isDirectory) None
-        else Some(ResourceFile(url, file.length(), file.lastModified()))
+        val path = Paths.get(url.toURI)
+        if (isDirectory(path)) None
+        else Some(ResourceFile(url, size(path), lastModified(path)))
       case "jar" ⇒
         val path = new URI(url.getPath).getPath // remove "file:" prefix and normalize whitespace
         val bangIndex = path.indexOf('!')
@@ -356,13 +398,13 @@ object DirectoryListing {
   def directoryMarshaller(renderVanityFooter: Boolean): ToEntityMarshaller[DirectoryListing] =
     Marshaller.StringMarshaller.wrapWithEC(MediaTypes.`text/html`) { implicit ec ⇒ listing ⇒
       val DirectoryListing(path, isRoot, files) = listing
-      val filesAndNames = files.map(file ⇒ file → file.getName).sortBy(_._2)
+      val filesAndNames = files.map(file ⇒ file.toPath → file.getName).sortBy(_._2)
       val deduped = filesAndNames.zipWithIndex.flatMap {
         case (fan @ (file, name), ix) ⇒
           if (ix == 0 || filesAndNames(ix - 1)._2 != name) Some(fan) else None
       }
-      val (directoryFilesAndNames, fileFilesAndNames) = deduped.partition(_._1.isDirectory)
-      def maxNameLength(seq: Seq[(File, String)]) = if (seq.isEmpty) 0 else seq.map(_._2.length).max
+      val (directoryFilesAndNames, fileFilesAndNames) = deduped.partition(f ⇒ isDirectory(f._1))
+      def maxNameLength(seq: Seq[(Path, String)]) = if (seq.isEmpty) 0 else seq.map(_._2.length).max
       val maxNameLen = math.max(maxNameLength(directoryFilesAndNames) + 1, maxNameLength(fileFilesAndNames))
       val sb = new java.lang.StringBuilder
       sb.append(html(0)).append(path).append(html(1)).append(path).append(html(2))
@@ -370,16 +412,16 @@ object DirectoryListing {
         val secondToLastSlash = path.lastIndexOf('/', path.lastIndexOf('/', path.length - 1) - 1)
         sb.append("<a href=\"%s/\">../</a>\n" format path.substring(0, secondToLastSlash))
       }
-      def lastModified(file: File) = DateTime(file.lastModified).toIsoLikeDateTimeString
+      def lastModified(p: Path) = DateTime(FileAndResourceDirectives.lastModified(p)).toIsoLikeDateTimeString
       def start(name: String) =
         sb.append("<a href=\"").append(path + name).append("\">").append(name).append("</a>")
           .append(" " * (maxNameLen - name.length))
-      def renderDirectory(file: File, name: String) =
-        start(name + '/').append("        ").append(lastModified(file)).append('\n')
-      def renderFile(file: File, name: String) = {
-        val size = akka.http.impl.util.humanReadableByteCount(file.length, si = true)
+      def renderDirectory(dir: Path, name: String) =
+        start(name + '/').append("        ").append(lastModified(dir)).append('\n')
+      def renderFile(file: Path, name: String) = {
+        val bytes = akka.http.impl.util.humanReadableByteCount(size(file), si = true)
         start(name).append("        ").append(lastModified(file))
-        sb.append("                ".substring(size.length)).append(size).append('\n')
+        sb.append("                ".substring(bytes.length)).append(bytes).append('\n')
       }
       for ((file, name) ← directoryFilesAndNames) renderDirectory(file, name)
       for ((file, name) ← fileFilesAndNames) renderFile(file, name)
