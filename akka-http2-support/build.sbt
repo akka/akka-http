@@ -34,3 +34,9 @@ resourceGenerators in Test += Def.task {
   }
   Seq(h2spec)
 }.taskValue
+
+libraryDependencies +=
+  //"io.netty" % "netty-tcnative" % "1.1.33.Fork22" % Runtime classifier "linux-x86_64"
+  "io.netty" % "netty-tcnative-boringssl-static" % "1.1.33.Fork22" % Runtime classifier "linux-x86_64"
+
+libraryDependencies += Dependencies.Compile.nettyHandler
