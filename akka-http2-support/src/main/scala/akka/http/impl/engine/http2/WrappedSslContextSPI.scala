@@ -6,15 +6,7 @@ package akka.http.impl.engine.http2
 
 import java.security.SecureRandom
 import java.{ util ⇒ ju }
-import javax.net.ssl.KeyManager
-import javax.net.ssl.SSLContext
-import javax.net.ssl.SSLContextSpi
-import javax.net.ssl.SSLEngine
-import javax.net.ssl.SSLException
-import javax.net.ssl.SSLServerSocketFactory
-import javax.net.ssl.SSLSessionContext
-import javax.net.ssl.SSLSocketFactory
-import javax.net.ssl.TrustManager
+import javax.net.ssl._
 
 import akka.http.scaladsl.HttpsConnectionContext
 import org.eclipse.jetty.alpn.ALPN

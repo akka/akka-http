@@ -68,6 +68,7 @@ object Dependencies {
     val hpack       = "com.twitter"                   % "hpack"                        % "1.0.2"       // ApacheV2
 
     val alpnApi     = "org.eclipse.jetty.alpn"        % "alpn-api"                     % "1.1.3.v20160715" // ApacheV2
+    val nettyHandler = "io.netty"                     % "netty-handler"                % "4.1.5.Final" // ApacheV2
 
     object Docs {
       val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.2"             % "test"
@@ -148,7 +149,7 @@ object Dependencies {
 
   lazy val http = l ++= Seq()
 
-  lazy val http2 = l ++= Seq(hpack, alpnApi, Test.akkaStreamTestkit)
+  lazy val http2 = l ++= Seq(hpack, alpnApi, Test.akkaStreamTestkit, nettyHandler)
 
   lazy val httpTestkit = l ++= Seq(
     akkaStreamTestkit,
