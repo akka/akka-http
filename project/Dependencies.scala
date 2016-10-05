@@ -93,6 +93,9 @@ object Dependencies {
       val hdrHistogram    = "org.hdrhistogram"            % "HdrHistogram"                 % "2.1.9"            % "test" // CC0
       val metricsAll      = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
 
+      val gatling         = "io.gatling"                  % "gatling-test-framework"       % "2.1.7"            % "test" exclude("com.typesafe.akka", "akka-actor_2.11") // ApacheV2
+      val gatlingHc       = "io.gatling.highcharts"       % "gatling-charts-highcharts"    % "2.1.7"            % "test" exclude("com.typesafe.akka", "akka-actor_2.11")
+
       // sigar logging
       val slf4jJul      = "org.slf4j"                   % "jul-to-slf4j"                 % "1.7.16"    % "test"    // MIT
       val slf4jLog4j    = "org.slf4j"                   % "log4j-over-slf4j"             % "1.7.16"    % "test"    // MIT
@@ -145,7 +148,7 @@ object Dependencies {
     Test.scalatest.value.copy(configurations = Some("provided; test"))
   )
 
-  lazy val httpTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.junitIntf)
+  lazy val httpTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.junitIntf, Test.gatling, Test.gatlingHc)
 
   lazy val httpXml = versionDependentDeps(scalaXml)
 

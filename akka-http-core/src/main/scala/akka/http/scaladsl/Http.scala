@@ -17,7 +17,6 @@ import akka.http.impl.engine.client._
 import akka.http.impl.engine.server._
 import akka.http.impl.engine.ws.WebSocketClientBlueprint
 import akka.http.impl.settings.{ ConnectionPoolSetup, HostConnectionPoolSetup }
-import akka.http.impl.util.{ MapError, StreamUtils }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.ws.{ Message, WebSocketRequest, WebSocketUpgradeResponse }
@@ -137,8 +136,8 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
     val fullLayer: Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(Fusing.aggressive(
       Flow[HttpRequest]
-        .watchTermination()(Keep.right)
         .viaMat(handler)(Keep.left)
+        .watchTermination()(Keep.right)
         .joinMat(fuseServerLayer(settings, connectionContext, log))(Keep.left)))
 
     val connections: Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
