@@ -242,7 +242,7 @@ are made possible by Tuple extraction internally. Let's see how this works with 
 val futureOfInt: Future[Int] = Future.successful(1)
 val route =
   path("success") {
-    onSuccess(futureOfInt) { //: Dirctive[Tuple1[Int]]
+    onSuccess(futureOfInt) { //: Directive[Tuple1[Int]]
       i => complete("Future was completed.")
     }
   }
@@ -253,7 +253,7 @@ Looking at the above code, onSuccess(futureOfInt) returns a Directive1[Int] = Di
 val futureOfTuple2: Future[Tuple2[Int,Int]] = Future.successful( (1,2) )
 val route =
   path("success") {
-    onSuccess(futureOfTuple2) { //: Dirctive[Tuple2[Int,Int]]
+    onSuccess(futureOfTuple2) { //: Directive[Tuple2[Int,Int]]
       (i, j) => complete("Future was completed.")
     }
   }
@@ -266,7 +266,7 @@ but this will be automatically converted to Directive[Tuple2[Int,Int]] to avoid 
 val futureOfUnit: Future[Unit] = Future.successful( () )
 val route =
   path("success") {
-    onSuccess(futureOfUnit) { //: Dirctive0
+    onSuccess(futureOfUnit) { //: Directive0
         complete("Future was completed.")
     }
   }
