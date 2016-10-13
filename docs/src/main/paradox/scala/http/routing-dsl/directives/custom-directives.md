@@ -113,7 +113,7 @@ def require(predicate: T ⇒ Boolean, rejections: Rejection*): Directive0
 
 One example of a predefined directive relying on require is the first overload of the host directive:
 
-@@signature [HostDirectives.scala](../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HostDirectives.scala) { #require-host }
+@@snip[HostDirectives.scala](../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HostDirectives.scala) { #require-host }
 
 You can only call require on single-extraction directives. The trequire modifier is the
 more general variant, which takes a predicate of type `Tuple => Boolean`.
@@ -139,9 +139,9 @@ def recoverPF[R >: L: Tuple](
   recovery: PartialFunction[Seq[Rejection], Directive[R]]): Directive[R]
 ```
 
-One example of a predefined directive relying `recoverPF` is the optionalHeaderValue directive:
+One example of a predefined directive relying `recoverPF` is the `optionalHeaderValue` directive:
 
-@@signature [HeaderDirectives.scala](../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala) { #optional-header }
+@@signature [HeaderDirectives.scala](../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala) { #optionalHeaderValue }
 
 ## Directives from Scratch
 
