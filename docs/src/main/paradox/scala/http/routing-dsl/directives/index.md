@@ -247,7 +247,7 @@ val route =
     }
   }
 ```
-Looking at the above code, onSuccess(futureOfInt) returns a Directive1[Int] = Directive[Tuple1[Int]].
+Looking at the above code, `onSuccess(futureOfInt)` returns a `Directive1[Int] = Directive[Tuple1[Int]]`.
 
 ```scala
 val futureOfTuple2: Future[Tuple2[Int,Int]] = Future.successful( (1,2) )
@@ -258,9 +258,9 @@ val route =
     }
   }
 ```
-Similarly, onSuccess(futureOfTuple2) returns a Directive1[Tuple2[Int,Int]] = Directive[Tuple1[Tuple2[Int,Int]]],
-but this will be automatically converted to Directive[Tuple2[Int,Int]] to avoid nested Tuples.
 
+Similarly, `onSuccess(futureOfTuple2)` returns a `Directive1[Tuple2[Int,Int]] = Directive[Tuple1[Tuple2[Int,Int]]]`,
+but this will be automatically converted to `Directive[Tuple2[Int,Int]]` to avoid nested Tuples.
 
 ```scala
 val futureOfUnit: Future[Unit] = Future.successful( () )
@@ -271,7 +271,7 @@ val route =
     }
   }
 ```
-If the future returns Future[Unit], it is a bit special case as it results in Directive0.
-Looking at the above code, onSuccess(futureOfUnit) returns a Directive1[Unit] = Directive[Tuple1[Unit]].
-However, the DSL interprets Unit as Tuple0, and automatically converts the result to Directive[Unit] = Directive0,
+If the future returns `Future[Unit]`, it is a bit special case as it results in `Directive0`.
+Looking at the above code, `onSuccess(futureOfUnit)` returns a `Directive1[Unit] = Directive[Tuple1[Unit]]`.
+However, the DSL interprets `Unit` as `Tuple0`, and automatically converts the result to `Directive[Unit] = Directive0`,
 
