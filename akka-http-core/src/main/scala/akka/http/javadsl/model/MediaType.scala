@@ -27,11 +27,34 @@ object MediaType {
     def toContentType(charset: HttpCharset): ContentType.WithCharset
   }
 
-  trait Multipart extends WithOpenCharset {
+  trait Multipart extends Binary {
   }
 
   trait Compressibility {
     def compressible: Boolean
+  }
+
+  import java.util.Optional
+  def binaryAdaptedToWithOpenCharset(b: Binary): WithOpenCharset = new WithOpenCharset {
+    def toContentType(_charset: HttpCharset): ContentType.WithCharset = new ContentType.WithCharset {
+      def charset: HttpCharset = _charset
+      def mediaType: MediaType = b
+      def binary: Boolean = false
+      def getCharsetOption: Optional[HttpCharset] = Optional.of(charset)
+    }
+    def mainType: String = b.mainType
+    def subType: String = b.subType
+    def isCompressible: Boolean = b.isCompressible
+    def binary: Boolean = b.binary
+    def isApplication: Boolean = b.isApplication
+    def isAudio: Boolean = b.isAudio
+    def isImage: Boolean = b.isImage
+    def isMessage: Boolean = b.isMessage
+    def isMultipart: Boolean = b.isMultipart
+    def isText: Boolean = b.isText
+    def isVideo: Boolean = b.isVideo
+    def toRange: MediaRange = b.toRange
+    def toRange(qValue: Float): MediaRange = b.toRange(qValue)
   }
 }
 

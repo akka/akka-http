@@ -39,6 +39,14 @@ public interface Multipart {
     /**
      * Creates an entity from this multipart object.
      */
+    RequestEntity toEntity(String boundary);
+
+    /**
+     * Creates an entity from this multipart object.
+     *
+     * @deprecated use {@link toEntity(String)} instead.
+     */
+    @Deprecated
     RequestEntity toEntity(HttpCharset charset, String boundary);
 
     interface Strict extends Multipart {
