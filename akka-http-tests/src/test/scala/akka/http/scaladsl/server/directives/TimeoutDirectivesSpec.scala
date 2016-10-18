@@ -4,8 +4,10 @@
 
 package akka.http.scaladsl.server.directives
 
-import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
+import akka.http.scaladsl.model.{ ContentTypes, HttpEntity, HttpResponse, StatusCodes }
 import akka.http.scaladsl.server.IntegrationRoutingSpec
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
@@ -23,6 +25,44 @@ class TimeoutDirectivesSpec extends IntegrationRoutingSpec {
       }
 
       Get("/timeout") ~!> route ~!> { response ⇒
+        import response._
+
+        status should ===(StatusCodes.ServiceUnavailable)
+      }
+    }
+    "trigger when request is properly consumed" in {
+
+      val route = path("timeout") {
+        extractRequest { req ⇒
+          req.discardEntityBytes()
+          withRequestTimeout(3.seconds) {
+            val response: Future[String] = slowFuture() // very slow
+            complete(response)
+          }
+        }
+      }
+
+      val bytes = HttpEntity(ContentTypes.`text/plain(UTF-8)`, Source.repeat("abcdef ").take(100).map(ByteString(_)))
+      Post("/timeout", bytes) ~!> route ~!> { response ⇒
+        import response._
+
+        status should ===(StatusCodes.ServiceUnavailable)
+      }
+    }
+    "trigger even when request is properly consumed" in pendingUntilFixed {
+
+      val route = path("timeout") {
+        extractRequest { req ⇒
+          // Intentionally forget to consume entity: req.discardEntityBytes()
+          withRequestTimeout(3.seconds) {
+            val response: Future[String] = slowFuture() // very slow
+            complete(response)
+          }
+        }
+      }
+
+      val bytes = HttpEntity(ContentTypes.`text/plain(UTF-8)`, Source.repeat("abcdef ").take(100).map(ByteString(_)))
+      Post("/timeout", bytes) ~!> route ~!> { response ⇒
         import response._
 
         status should ===(StatusCodes.ServiceUnavailable)
