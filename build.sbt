@@ -30,6 +30,7 @@ inThisBuild(Def.settings(
   Formatting.formatSettings
 ))
 
+
 lazy val root = Project(
     id = "akka-http-root",
     base = file(".")
