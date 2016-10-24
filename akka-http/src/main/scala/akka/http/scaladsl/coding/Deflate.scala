@@ -21,6 +21,7 @@ class Deflate(val messageFilter: HttpMessage ⇒ Boolean) extends Coder with Str
 }
 object Deflate extends Deflate(Encoder.DefaultFilter)
 
+@deprecated("Use `akka.stream.scaladsl.Compression.inflate` instead", "3.0.0-RC2")
 class DeflateCompressor extends Compressor {
   import DeflateCompressor._
 
@@ -70,6 +71,7 @@ class DeflateCompressor extends Compressor {
   }
 }
 
+@deprecated("Use `akka.stream.scaladsl.Compression.inflate` instead", "3.0.0-RC2")
 private[http] object DeflateCompressor {
   val MinBufferSize = 1024
 
@@ -86,6 +88,7 @@ private[http] object DeflateCompressor {
   }
 }
 
+@deprecated("Use `akka.stream.scaladsl.Compression.inflate` instead", "3.0.0-RC2")
 class DeflateDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) extends DeflateDecompressorBase(maxBytesPerChunk) {
 
   override def createLogic(attr: Attributes) = new DecompressorParsingLogic {
@@ -102,6 +105,7 @@ class DeflateDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefaul
   }
 }
 
+@deprecated("Use `akka.stream.scaladsl.Compression.inflate` instead", "3.0.0-RC2")
 abstract class DeflateDecompressorBase(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault)
   extends ByteStringParser[ByteString] {
 
