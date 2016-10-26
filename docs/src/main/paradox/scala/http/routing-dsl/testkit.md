@@ -79,11 +79,11 @@ The section above describes how to test a "regular" branch of your route structu
 with HTTP response parts or rejections. Sometimes, however, you will want to verify that your service also translates
 @ref[Rejections](rejections.md#rejections-scala) to HTTP responses in the way you expect.
 
-You do this by wrapping your route with the `akka.http.scaladsl.server.Route.seal`. The `seal` wrapper applies the logic of the in-scope implicit @ref[ExceptionHandler](exception-handling.md#exception-handling-scala) and
+You do this by wrapping your route with the `akka.http.scaladsl.server.Route.seal`. The `seal` wrapper applies the logic of the in-scope @ref[ExceptionHandler](exception-handling.md#exception-handling-scala) and
 @ref[RejectionHandler](rejections.md#the-rejectionhandler) to all exceptions and rejections coming back from the route,
 and translates them to the respective `HttpResponse`.
 
-Note that `akka.http.scaladsl.server.Route.seal` is only needed in test code, but not in your application code.
+Note that explicit call on the `akka.http.scaladsl.server.Route.seal` method is needed in test code, but in your application code it is not necessary.
 As described in @ref[Sealing a Route](routes.md#sealing-a-route), your application code only needs to bring 
 implicit rejection and exception handlers in scope.
 

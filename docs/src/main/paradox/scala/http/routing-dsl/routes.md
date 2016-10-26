@@ -124,3 +124,27 @@ there are generally two ways to handle rejections and exceptions.
 
 In the first case your handlers will be "sealed", (which means that it will receive the default handler as a fallback for all cases your handler doesn't handle itself) 
 and used for all rejections/exceptions that are not handled within the route structure itself.
+
+### Route.seal() method to modify HttpResponse
+
+In application code, unlike @ref[test code](testkit.md#testing-sealed-routes), you don't need to use the `Route.seal()` method to seal a route.
+As long as you bring implicit rejection and/or exception handlers to the top-level scope, your route is sealed. 
+
+However, you can use `Route.seal()` to perform modification on HttpResponse from the route.
+For example, if you want to add a special header, but still use the default rejection handler, then you can do the following.
+In the below case, the special header is added to rejected responses which did not match the route, as well as successful responses which matched the route.
+
+```scala
+    def addSpecialHeader(response: HttpResponse): HttpResponse =
+      response.addHeader(RawHeader("special-header","you always have this even in 404"))
+
+    val route = mapResponse(addSpecialHeader){
+      Route.seal(
+        get {
+          pathSingleSlash {
+            complete {"Captain on the bridge!"}
+          } 
+        }
+      )
+    }
+```
