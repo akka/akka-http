@@ -21,7 +21,7 @@ class Deflate(val messageFilter: HttpMessage ⇒ Boolean) extends Coder with Str
 }
 object Deflate extends Deflate(Encoder.DefaultFilter)
 
-@deprecated("Use `akka.stream.scaladsl.Compression.inflate` instead", "3.0.0-RC2")
+@deprecated("Use `akka.stream.scaladsl.Compression.deflate` instead", "3.0.0-RC2")
 class DeflateCompressor extends Compressor {
   import DeflateCompressor._
 
