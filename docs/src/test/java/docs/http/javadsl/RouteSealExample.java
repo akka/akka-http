@@ -38,8 +38,8 @@ public class RouteSealExample extends AllDirectives {
       )
     ).seal(system, materializer);
 
-    Route route = mapResponse(
-      response -> response.addHeader(RawHeader.create("special-header", "you always have this even in 404")),
+    Route route = respondWithHeader(
+      RawHeader.create("special-header", "you always have this even in 404"),
       () -> sealedRoute
     );
 
