@@ -16,7 +16,6 @@ inThisBuild(Def.settings(
   startYear := Some(2014),
   //  test in assembly := {},
   licenses := Seq("Apache License 2.0" -> url("https://opensource.org/licenses/Apache-2.0")),
-  scalaVersion := "2.11.8",
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8", // yes, this is 2 args
@@ -36,7 +35,11 @@ lazy val root = Project(
     id = "akka-http-root",
     base = file(".")
   )
-  .enablePlugins(NoPublish)
+  .enablePlugins(UnidocRoot, NoPublish)
+  .settings(
+    // Unidoc doesn't like macros
+    unidocProjectExcludes := Seq(parsing)
+  )
   .aggregate(
     parsing,
     httpCore,
