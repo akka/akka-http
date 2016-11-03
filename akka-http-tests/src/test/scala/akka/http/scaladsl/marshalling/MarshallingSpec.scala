@@ -89,7 +89,7 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
             contentType = `multipart/alternative` withBoundary randomBoundary withCharset `UTF-8`,
             string = s"""--$randomBoundary
                         |Content-Type: text/plain; charset=UTF-8
-                        |Content-Disposition: form-data; name=email
+                        |Content-Disposition: form-data; name="email"
                         |
                         |test@there.com
                         |--$randomBoundary--""".stripMarginWithNewline("\r\n"))
@@ -126,12 +126,12 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
             contentType = `multipart/form-data` withBoundary randomBoundary withCharset `UTF-8`,
             string = s"""--$randomBoundary
                       |Content-Type: text/plain; charset=UTF-8
-                      |Content-Disposition: form-data; name=surname
+                      |Content-Disposition: form-data; name="surname"
                       |
                       |Mike
                       |--$randomBoundary
                       |Content-Type: text/xml; charset=UTF-8
-                      |Content-Disposition: form-data; name=age
+                      |Content-Disposition: form-data; name="age"
                       |
                       |<int>42</int>
                       |--$randomBoundary--""".stripMarginWithNewline("\r\n"))
@@ -147,14 +147,14 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
             contentType = `multipart/form-data` withBoundary randomBoundary withCharset `UTF-8`,
             string = s"""--$randomBoundary
                         |Content-Type: text/csv; charset=UTF-8
-                        |Content-Disposition: form-data; filename=attachment.csv; name="attachment[0]"
+                        |Content-Disposition: form-data; filename="attachment.csv"; name="attachment[0]"
                         |
                         |name,age
                         |"John Doe",20
                         |
                         |--$randomBoundary
                         |Content-Type: application/octet-stream
-                        |Content-Disposition: form-data; filename=attachment2.csv; name="attachment[1]"
+                        |Content-Disposition: form-data; filename="attachment2.csv"; name="attachment[1]"
                         |Content-Transfer-Encoding: binary
                         |
                         |naice!
