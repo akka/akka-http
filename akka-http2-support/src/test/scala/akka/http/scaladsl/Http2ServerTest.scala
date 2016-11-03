@@ -35,7 +35,7 @@ import scala.util.Random
 
 object Http2ServerTest extends App {
   val testConf: Config = ConfigFactory.parseString("""
-    akka.loglevel = INFO
+    akka.loglevel = DEBUG
     akka.log-dead-letters = off
     akka.stream.materializer.debug.fuzzing-mode = off
     akka.actor.serialize-creators = off
@@ -160,8 +160,9 @@ object Http2ServerTest extends App {
     val bindings =
       for {
         binding1 ← Http().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9000, ExampleHttpContexts.exampleServerContext)
-        binding2 ← Http2().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9001, context)
-      } yield (binding1, binding2)
+        binding2 ← Http2().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9001, ExampleHttpContexts.exampleServerContext)
+        binding3 ← Http2().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9002, context)
+      } yield (binding1, binding2, binding3)
 
     Await.result(bindings, 1.second) // throws if binding fails
     println("Server online at http://localhost:9001")

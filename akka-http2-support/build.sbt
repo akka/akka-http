@@ -9,4 +9,4 @@ javaOptions in run in Test += "-javaagent:jetty-alpn-agent-2.0.4.jar"
 
 libraryDependencies +=
   //"io.netty" % "netty-tcnative" % "1.1.33.Fork22" % Runtime classifier "linux-x86_64"
-  "io.netty" % "netty-tcnative-boringssl-static" % "1.1.33.Fork22" % Runtime classifier "linux-x86_64"
+  "io.netty" % "netty-tcnative-boringssl-static" % "1.1.33.Fork23" % Runtime classifier "linux-x86_64"

@@ -16,6 +16,7 @@ import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.Http2Blueprint
 import akka.http.impl.engine.http2.WrappedSslContextSPI
 import akka.http.impl.engine.server.HttpAttributes
+import akka.http.impl.util.{ LogByteStringBidiStage, PPrintDebug }
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
@@ -71,7 +72,9 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem) ext
 
       Http2Blueprint.serverStack() atop
         unwrapTls atop
-        tls
+        LogByteStringBidiStage.logTLSBidi("plain") atop
+        tls atop
+        LogByteStringBidiStage.logByteStringBidi("net")
     }
 
     val fullLayer: Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(Fusing.aggressive(
@@ -91,7 +94,10 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem) ext
             if (settings.remoteAddressHeader) fullLayer.addAttributes(HttpAttributes.remoteAddress(Some(incoming.remoteAddress)))
             else fullLayer
 
-          layer.joinMat(incoming.flow)(Keep.left)
+          layer.joinMat(
+            incoming.flow
+          //.mapConcat(bs ⇒ bs.map(ByteString(_)))
+          )(Keep.left)
             .run().recover {
               // Ignore incoming errors from the connection as they will cancel the binding.
               // As far as it is known currently, these errors can only happen if a TCP error bubbles up
