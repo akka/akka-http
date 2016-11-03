@@ -132,7 +132,7 @@ class TLSActor(
 
   // These are Netty's default values
   // 16665 + 1024 (room for compressed data) + 1024 (for OpenJDK compatibility)
-  private val transportOutBuffer = ByteBuffer.allocate(16665 + 2048)
+  private val transportOutBuffer = ByteBuffer.allocate(16665 + 2048 + 58)
   /*
    * deviating here: chopping multiple input packets into this buffer can lead to
    * an OVERFLOW signal that also is an UNDERFLOW; avoid unnecessary copying by
@@ -161,6 +161,8 @@ class TLSActor(
   }
 
   var currentSession = engine.getSession
+  println("app buf size: " + currentSession.getApplicationBufferSize)
+  println("packet buf size: " + currentSession.getPacketBufferSize)
   applySessionParameters(firstSession)
 
   def applySessionParameters(params: NegotiateNewSession): Unit = {
@@ -366,6 +368,7 @@ class TLSActor(
   }
 
   private def doWrap(): Unit = {
+    val previousSpace = transportOutBuffer.limit()
     val result = engine.wrap(userInBuffer, transportOutBuffer)
     lastHandshakeStatus = result.getHandshakeStatus
     if (tracing) log.debug(s"wrap: status=${result.getStatus} handshake=$lastHandshakeStatus remaining=${userInBuffer.remaining} out=${transportOutBuffer.position}")
@@ -379,6 +382,8 @@ class TLSActor(
         flushToTransport()
         if (engine.isInboundDone) nextPhase(completedPhase)
         else nextPhase(awaitingClose)
+      case BUFFER_OVERFLOW ⇒
+        fail(new IllegalStateException(s"BUFFER_OVERFLOW in doWrap() space in packet buffer: $previousSpace vs. session.getPacketBufferSize ${currentSession.getPacketBufferSize} consumed: ${result.bytesConsumed()} produced: ${result.bytesProduced()}"))
       case s ⇒ fail(new IllegalStateException(s"unexpected status $s in doWrap()"))
     }
   }
