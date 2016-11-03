@@ -6,7 +6,7 @@ defining RESTful web services. It picks up where the low-level API leaves off an
 functionality of typical web servers or frameworks, like deconstruction of URIs, content negotiation or
 static content serving.
 
-To use the high-level API you need to add a dependency to the `akka-http-experimental` module.
+To use the high-level API you need to add a dependency to the `akka-http` module.
 
 @@toc { depth=1 }
 
@@ -38,9 +38,10 @@ In this case the "binding future" will fail immediately, and we can react to it 
 
 @@snip [HighLevelServerBindFailureExample.java](../../../../../test/java/docs/http/javadsl/server/HighLevelServerBindFailureExample.java) { #binding-failure-high-level-example }
 
-> **Note:**
+@@@ note
 For a more low-level overview of the kinds of failures that can happen and also more fine-grained control over them
 refer to the @ref[Handling HTTP Server failures in the Low-Level API](../server-side/low-level-server-side-api.md#handling-http-server-failures-low-level-java) documentation.
+@@@
 
 ### Failures and exceptions inside the Routing DSL
 

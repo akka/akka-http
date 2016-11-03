@@ -15,14 +15,19 @@ If all of the available threads are blocked, the routing infrastructure will end
 Therefore, routing infrastructure should not be blocked. Instead, a dedicated dispatcher
 for blocking operations should be used.
 
-> **Note:**
+@@@ note
+
 Blocking APIs should also be avoided if possible. Try to find or build Reactive APIs,
 such that blocking is minimised, or moved over to dedicated dispatchers.
+
 Often when integrating with existing libraries or systems it is not possible to
 avoid blocking APIs. The following solution explains how to handle blocking
 operations properly.
+
 Note that the same hints apply to managing blocking operations anywhere in Akka,
 including in Actors etc.
+
+@@@
 
 In the thread state diagrams below the colours have the following meaning:
 
@@ -37,7 +42,7 @@ has this feature (including the free and bundled with the Oracle JDK VisualVM, a
 
 @@snip [BlockingInHttpExamplesSpec.scala](../../../../test/scala/docs/http/scaladsl/server/BlockingInHttpExamplesSpec.scala) { #blocking-example-in-default-dispatcher }
 
-Here the app is exposed to a load of continous GET requests and large numbers
+Here the app is exposed to a load of continuous GET requests and large numbers
 of akka.actor.default-dispatcher threads are handling requests. The orange
 portion of the thread shows that it is idle. Idle threads are fine -
 they're ready to accept new work. However, large amounts of Turquoise (sleeping) threads are very bad!
@@ -58,7 +63,7 @@ infra has no thread available to handle the other requests.
 
 In essence, the `Thread.sleep` operation has dominated all threads and caused anything 
 executing on the default dispatcher to starve for resources (including any Actors
-that you have not configured an explicit dispatcher for (sic!)).
+that you have not configured an explicit dispatcher for).
 
 ## Solution: Dedicated dispatcher for blocking operations
 
@@ -89,7 +94,7 @@ instead of the default one:
 @@snip [BlockingInHttpExamplesSpec.scala](../../../../test/scala/docs/http/scaladsl/server/BlockingInHttpExamplesSpec.scala) { #blocking-example-in-dedicated-dispatcher }
 
 This forces the app to use the same load, initially normal requests and then
-the blocking requests. The thread pool behaviour is shown in the figrue.
+the blocking requests. The thread pool behaviour is shown in the figure.
 
 ![DispatcherBehaviourOnGoodCode.png](DispatcherBehaviourOnGoodCode.png)
 

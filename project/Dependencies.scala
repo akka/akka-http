@@ -6,40 +6,29 @@ import sbt.Keys._
 object Dependencies {
   import DependencyHelpers._
 
-  val akkaVersion = "2.4.10"
+  val akkaVersion = "2.4.12"
   val junitVersion = "4.12"
-  
+
   lazy val scalaTestVersion = settingKey[String]("The version of ScalaTest to use.")
   lazy val scalaStmVersion = settingKey[String]("The version of ScalaSTM to use.")
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
 
   val Versions = Seq(
-      crossScalaVersions := Seq("2.11.8"), // "2.12.0-RC1"
+      crossScalaVersions := Seq("2.11.8", "2.12.0"),
       scalaVersion := crossScalaVersions.value.head,
-      scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.13.2"),
-      scalaTestVersion := {
-        scalaVersion.value match {
-          case "2.12.0-M5" => "3.0.0"
-          case _           => "3.0.0"
-        }
-      },
-      java8CompatVersion := {
-        scalaVersion.value match {
-          case "2.12.0-M4" => "0.8.0-RC1"
-          case "2.12.0-M5" => "0.8.0-RC3"
-          case _           => "0.7.0"
-        }
-      }
+      scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.13.4"),
+      scalaTestVersion := "3.0.0",
+      java8CompatVersion := "0.8.0"
     )
   import Versions._
-  
-  
+
+
   object Compile {
     // Compile
     val akkaStream        = "com.typesafe.akka"      %% "akka-stream"                  % akkaVersion // Apache v2
     val akkaStreamTestkit = "com.typesafe.akka"      %% "akka-stream-testkit"          % akkaVersion // Apache v2
-    
+
     // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
     val netty         = "io.netty"                    % "netty"                        % "3.10.6.Final" // ApacheV2
 
@@ -60,9 +49,13 @@ object Dependencies {
 
     // For Java 8 Conversions
     val java8Compat = Def.setting {"org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value} // Scala License
-    
+
     val aeronDriver = "io.aeron"                      % "aeron-driver"                 % "1.0.1"       // ApacheV2
     val aeronClient = "io.aeron"                      % "aeron-client"                 % "1.0.1"       // ApacheV2
+
+    val hpack       = "com.twitter"                   % "hpack"                        % "1.0.2"       // ApacheV2
+
+    val alpnApi     = "org.eclipse.jetty.alpn"        % "alpn-api"                     % "1.1.3.v20160715" // ApacheV2
 
     object Docs {
       val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.2"             % "test"
@@ -70,7 +63,9 @@ object Dependencies {
     }
 
     object Test {
-      val akkaTestkit  = "com.typesafe.akka"          %% "akka-testkit"                 % akkaVersion        % "test" // Apache v2
+      val akkaTestkit          = "com.typesafe.akka"      %% "akka-testkit"                % akkaVersion        % "test" // Apache v2
+      val akkaMmltinodeTestKit = "com.typesafe.akka"      %% "akka-multi-node-testkit"     % akkaVersion        % "test" // Apache v2
+      val akkaStreamTestkit = Compile.akkaStreamTestkit % "test"
 
       val junit        = "junit"                       % "junit"                        % junitVersion       % "test" // Common Public License 1.0
       val logback      = "ch.qos.logback"              % "logback-classic"              % "1.1.3"            % "test" // EPL 1.0 / LGPL 2.1
@@ -112,16 +107,16 @@ object Dependencies {
     }
 
   }
-  
+
   import Compile._
-  
+
   lazy val l = libraryDependencies
-  
+
   lazy val common = l ++= Seq(
     akkaStream,
     Test.scalatest.value
   )
-  
+
   lazy val core = l ++=  Seq(
     Test.sprayJson, // for WS Autobahn test metadata
     Test.junitIntf, Test.junit, Test.scalatest.value
@@ -133,26 +128,30 @@ object Dependencies {
     ),
     addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.fullMapped(nominalScalaVersion))
   )
-  
-  lazy val httpCore = l ++= Seq(akkaStream, akkaStreamTestkit,
+
+  lazy val httpCore = l ++= Seq(akkaStream,
+    Test.akkaStreamTestkit,
     Test.sprayJson, // for WS Autobahn test metadata
     Test.scalatest.value, Test.scalacheck.value, Test.junit)
-  
+
   lazy val http = l ++= Seq()
 
+  lazy val http2 = l ++= Seq(hpack, alpnApi, Test.akkaStreamTestkit)
+
   lazy val httpTestkit = l ++= Seq(
-    Test.junit, Test.junitIntf, Compile.junit % "provided", 
+    akkaStreamTestkit,
+    Test.junit, Test.junitIntf, Compile.junit % "provided",
     Test.scalatest.value.copy(configurations = Some("provided; test"))
   )
 
-  lazy val httpTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.junitIntf)
+  lazy val httpTests = l ++= Seq(Test.akkaMmltinodeTestKit, Test.junit, Test.scalatest.value, Test.junitIntf)
 
   lazy val httpXml = versionDependentDeps(scalaXml)
 
   lazy val httpSprayJson = versionDependentDeps(sprayJson)
 
   lazy val httpJackson = l ++= Seq(jackson)
-  
+
   lazy val docs = l ++= Seq(Docs.sprayJson, Docs.gson)
 
 }

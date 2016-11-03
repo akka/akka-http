@@ -1,3 +1,4 @@
+import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import com.typesafe.sbt.pgp.PgpKeys._
 import akka._
 
@@ -13,10 +14,8 @@ inThisBuild(Def.settings(
       url("https://github.com/akka/akka-http/graphs/contributors"))
   ),
   startYear := Some(2014),
-  test in assembly := {},
+  //  test in assembly := {},
   licenses := Seq("Apache License 2.0" -> url("https://opensource.org/licenses/Apache-2.0")),
-  scalaVersion := "2.11.8",
-  crossVersion := CrossVersion.binary,
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8", // yes, this is 2 args
@@ -31,14 +30,20 @@ inThisBuild(Def.settings(
   Formatting.formatSettings
 ))
 
+
 lazy val root = Project(
     id = "akka-http-root",
     base = file(".")
   )
-  .enablePlugins(NoPublish)
+  .enablePlugins(UnidocRoot, NoPublish)
+  .settings(
+    // Unidoc doesn't like macros
+    unidocProjectExcludes := Seq(parsing)
+  )
   .aggregate(
     parsing,
     httpCore,
+    http2Support,
     http,
     httpTestkit,
     httpTests,
@@ -59,8 +64,10 @@ lazy val httpCore = project("akka-http-core")
   //.disablePlugins(MimaPlugin)
 
 lazy val http = project("akka-http")
-  .settings(Dependencies.http)
   .dependsOn(httpCore)
+
+lazy val http2Support = project("akka-http2-support")
+  .dependsOn(httpCore, httpTestkit % "test", httpCore % "test->test")
 
 lazy val httpTestkit = project("akka-http-testkit")
   .settings(Dependencies.httpTestkit)
@@ -70,7 +77,9 @@ lazy val httpTests = project("akka-http-tests")
   .settings(Dependencies.httpTests)
   .dependsOn(httpSprayJson, httpXml, httpJackson,
     httpTestkit % "test", httpCore % "test->test")
-  //.configs(MultiJvm) //.disablePlugins(MimaPlugin)
+  .enablePlugins(MultiNode)
+  .disablePlugins(MimaPlugin) // this is only tests
+  .configs(MultiJvm)
 
 
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
@@ -135,6 +144,5 @@ lazy val docs = project("docs")
     ),
     Formatting.docFormatSettings
   )
-
 
 shellPrompt := { s => Project.extract(s).currentProject.id + " > " }

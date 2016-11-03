@@ -25,7 +25,7 @@ A `Route` can be "sealed" using `Route.seal`, which relies on the in-scope `Reje
 instances to convert rejections and exceptions into appropriate HTTP responses for the client.
 
 Using `Route.handlerFlow` or `Route.asyncHandler` a `Route` can be lifted into a handler `Flow` or async handler
-function to be used with a `bindAndHandleXXX` call from the @ref[Low-Level Server-Side API](../../../scala/http/low-level-server-side-api.md#http-low-level-server-side-api).
+function to be used with a `bindAndHandleXXX` call from the @ref[Low-Level Server-Side API](../server-side/low-level-server-side-api.md#http-low-level-server-side-api-java).
 
 <a id="request-context-java"></a>
 ## RequestContext
@@ -106,3 +106,23 @@ Here five directives form a routing tree.
 Route 3 can therefore be seen as a "catch-all" route that only kicks in, if routes chained into preceding positions
 reject. This mechanism can make complex filtering logic quite easy to implement: simply put the most
 specific cases up front and the most general cases in the back.
+
+## Sealing a Route
+
+As described in @ref[Rejections](rejections.md#rejections-java) and @ref[Exception Handling](exception-handling.md#exception-handling-java),
+there are generally two ways to handle rejections and exceptions.
+
+ * Pass rejection/exception handlers to the `seal()` method of the `Route`
+ * Supply handlers as arguments to @ref[handleRejections](directives/execution-directives/handleRejections.md#handlerejections) and @ref[handleExceptions](directives/execution-directives/handleExceptions.md#handleexceptions) directives 
+
+In the first case your handlers will be "sealed", (which means that it will receive the default handler as a fallback for all cases your handler doesn't handle itself) 
+and used for all rejections/exceptions that are not handled within the route structure itself.
+
+### Modify HttpResponse from a sealed Route
+
+You can use `Route` class's `seal()` method to perform modification on HttpResponse from the route.
+For example, if you want to add a special header, but still use the default rejection handler, then you can do the following.
+In the below case, the special header is added to rejected responses which did not match the route, as well as successful responses which matched the route.
+
+@@snip [RouteSealExample.java](../../../../../test/java/docs/http/javadsl/RouteSealExample.java) { #route-seal-example }
+                               
