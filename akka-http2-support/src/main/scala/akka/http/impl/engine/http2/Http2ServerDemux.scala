@@ -187,7 +187,10 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
                 incomingStreams(streamId).outboundWindowLeft -= size
               } else {
                 println(s"Couldn't send because no window left. Size: ${pl.size} total: $totalOutboundWindowLeft per stream: ${incomingStreams(streamId).outboundWindowLeft}")
-                buffer.add(d)
+                // adding to end of the queue only works if there's only ever one frame per
+                // substream in the queue (which is the case since backpressure was introduced)
+                // TODO: we should try to find another stream to push data in this case
+                buffer.add(elem)
               }
 
             //println(f"After sending $size%6d bytes to stream [$streamId%3d] totalWindow: $totalOutboundWindowLeft stream: ${incomingStreams(streamId).outboundWindowLeft}")
