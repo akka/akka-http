@@ -166,10 +166,8 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
           incomingStreams = incomingStreams.updated(sub.streamId, incomingStreams(sub.streamId).copy(inlet = Some(subIn)))
           subIn.pull()
           subIn.setHandler(new InHandler {
-            def onPush(): Unit = {
-              bufferedFrameOut.push(subIn.grab())
-              subIn.pull() // FIXME: this is too greedy, we should wait until the next one is sent out
-            }
+            def onPush(): Unit = bufferedFrameOut.pushWithTrigger(subIn.grab(), () ⇒
+              if (!subIn.isClosed) subIn.pull())
 
             override def onUpstreamFinish(): Unit = () // FIXME: check for truncation (last frame must have endStream / endHeaders set)
           })
@@ -177,15 +175,9 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         }
       })
 
-      val bufferedFrameOut = new BufferedOutlet[FrameEvent](frameOut) {
-        override def push(elem: FrameEvent): Unit = {
-          super.push(elem)
-
-          if (buffer.size > 0) println(s"Now buffered: ${buffer.size()}")
-        }
-
-        override def doPush(elem: FrameEvent): Unit = {
-          elem match {
+      val bufferedFrameOut = new BufferedOutletExtended[FrameEvent](frameOut) {
+        override def doPush(elem: ElementAndTrigger): Unit = {
+          elem.element match {
             case d @ DataFrame(streamId, _, pl) ⇒
               if (pl.size <= totalOutboundWindowLeft && pl.size <= incomingStreams(streamId).outboundWindowLeft) {
                 super.doPush(elem)
