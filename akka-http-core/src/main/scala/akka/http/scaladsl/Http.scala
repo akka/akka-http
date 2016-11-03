@@ -151,7 +151,8 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    * [[akka.stream.scaladsl.Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
-   * the `akka.http.server.max-connections` setting.
+   * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
+   * information about what kind of guarantees to expect.
    *
    * To configure additional settings for a server started using this method,
    * use the `akka.http.server` config section or pass in a [[akka.http.scaladsl.settings.ServerSettings]] explicitly.
@@ -195,7 +196,8 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    * [[akka.stream.scaladsl.Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
-   * the `akka.http.server.max-connections` setting.
+   * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
+   * information about what kind of guarantees to expect.
    *
    * To configure additional settings for a server started using this method,
    * use the `akka.http.server` config section or pass in a [[akka.http.scaladsl.settings.ServerSettings]] explicitly.
@@ -213,7 +215,8 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    * [[akka.stream.scaladsl.Flow]] for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
-   * the `akka.http.server.max-connections` setting.
+   * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
+   * information about what kind of guarantees to expect.
    *
    * To configure additional settings for a server started using this method,
    * use the `akka.http.server` config section or pass in a [[akka.http.scaladsl.settings.ServerSettings]] explicitly.
