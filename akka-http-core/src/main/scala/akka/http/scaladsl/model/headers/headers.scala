@@ -384,9 +384,9 @@ final case class `Content-Length` private[http] (length: Long) extends jm.header
 }
 
 /**
- * Document http://tools.ietf.org/html/rfc6266 updates document https://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html. Between this
- * two there is slight but important difference regarding how parameter values are formatted. In rfc6266 this values are without quotes and
- * in rfc2616 they are quoted. Since common practice among http servers is to understand quoted values, we use older document
+ * Document http://tools.ietf.org/html/rfc6266 updates document https://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html. Between these
+ * two there is slight but important difference regarding how parameter values are formatted. In RFC6266 parameters values are without quotes and
+ * in RFC2616 they are quoted. Since common practice among http servers is to understand quoted values, we use older document
  * as reference here.
  */
 object `Content-Disposition` extends ModeledCompanion[`Content-Disposition`]
