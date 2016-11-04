@@ -117,31 +117,31 @@ private object PoolConductor {
   private class SlotSelector(slotSettings: PoolSlotsSetting, pipeliningLimit: Int, log: LoggingAdapter)
     extends GraphStage[FanInShape2[RequestContext, SlotEvent, SwitchSlotCommand]] {
 
-    private val requestContextsIn = Inlet[RequestContext]("requestContexts.In")
-    private val slotEventsIn = Inlet[SlotEvent]("slotEvents.In")
-    private val slotCommandsOut = Outlet[SwitchSlotCommand]("slotCommands.Out")
+    private val ctxIn = Inlet[RequestContext]("requestContext")
+    private val slotIn = Inlet[SlotEvent]("slotEvents")
+    private val out = Outlet[SwitchSlotCommand]("slotCommand")
 
     override def initialAttributes = Attributes.name("SlotSelector")
 
-    override val shape = new FanInShape2(requestContextsIn, slotEventsIn, slotCommandsOut)
+    override val shape = new FanInShape2(ctxIn, slotIn, out)
 
     override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
       val slotStates = Array.fill[SlotState](slotSettings.maxSlots)(Unconnected)
       var nextSlot = 0
 
-      setHandler(requestContextsIn, new InHandler {
+      setHandler(ctxIn, new InHandler {
         override def onPush(): Unit = {
-          val ctx = grab(requestContextsIn)
+          val ctx = grab(ctxIn)
           val slot = nextSlot
           slotStates(slot) = slotStateAfterDispatch(slotStates(slot), ctx.request.method)
           nextSlot = bestSlot()
-          emit(slotCommandsOut, SwitchSlotCommand(DispatchCommand(ctx), slot), tryPullCtx)
+          emit(out, SwitchSlotCommand(DispatchCommand(ctx), slot), tryPullCtx)
         }
       })
 
-      setHandler(slotEventsIn, new InHandler {
+      setHandler(slotIn, new InHandler {
         override def onPush(): Unit = {
-          grab(slotEventsIn) match {
+          grab(slotIn) match {
             case SlotEvent.RequestCompleted(slotIx) ⇒
               slotStates(slotIx) = slotStateAfterRequestCompleted(slotStates(slotIx))
             case SlotEvent.Disconnected(slotIx, failed) ⇒
@@ -150,28 +150,28 @@ private object PoolConductor {
             case SlotEvent.ConnectedEagerly(slotIx) ⇒
             // do nothing ...
           }
-          pull(slotEventsIn)
+          pull(slotIn)
           val wasBlocked = nextSlot == -1
           nextSlot = bestSlot()
           val nowUnblocked = nextSlot != -1
-          if (wasBlocked && nowUnblocked) pull(requestContextsIn) // get next request context
+          if (wasBlocked && nowUnblocked) pull(ctxIn) // get next request context
         }
       })
 
-      setHandler(slotCommandsOut, eagerTerminateOutput)
+      setHandler(out, eagerTerminateOutput)
 
-      val tryPullCtx = () ⇒ if (nextSlot != -1 && !hasBeenPulled(requestContextsIn)) pull(requestContextsIn)
+      val tryPullCtx = () ⇒ if (nextSlot != -1 && !hasBeenPulled(ctxIn)) pull(ctxIn)
 
       override def preStart(): Unit = {
-        pull(requestContextsIn)
-        pull(slotEventsIn)
+        pull(ctxIn)
+        pull(slotIn)
 
         // eagerly start at least slotSettings.minSlots connections
         (0 until slotSettings.minSlots).foreach { connect }
       }
 
       def connect(slotIx: Int): Unit = {
-        emit(slotCommandsOut, SwitchSlotCommand(ConnectEagerlyCommand, slotIx))
+        emit(out, SwitchSlotCommand(ConnectEagerlyCommand, slotIx))
         slotStates(slotIx) = Idle
       }
 
