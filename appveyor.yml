@@ -1,0 +1,25 @@
+version: '{build}'
+os: Windows Server 2012
+install:
+  - ps: |
+      Add-Type -AssemblyName System.IO.Compression.FileSystem
+      if (!(Test-Path -Path "C:\sbt" )) {
+        (new-object System.Net.WebClient).DownloadFile(
+          'https://dl.bintray.com/sbt/native-packages/sbt/0.13.12/sbt-0.13.12.zip',
+          'C:\sbt-bin.zip'
+        )
+        [System.IO.Compression.ZipFile]::ExtractToDirectory("C:\sbt-bin.zip", "C:\sbt")
+      }
+  - cmd: SET JAVA_HOME=C:\Program Files\Java\jdk1.8.0
+  - cmd: SET PATH=C:\sbt\sbt\bin;%JAVA_HOME%\bin;%PATH%
+environment:
+  SBT_OPTS: -Dfile.encoding=UTF8 -Xmx4g
+  JAVA_OPTS: -Dfile.encoding=UTF8
+build_script:
+  - sbt clean compile
+test_script:
+  - sbt test
+cache:
+  - C:\sbt\
+  - C:\Users\appveyor\.m2
+  - C:\Users\appveyor\.ivy2
