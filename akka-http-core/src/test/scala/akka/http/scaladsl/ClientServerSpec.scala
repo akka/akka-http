@@ -241,7 +241,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
             // waiting for the timeout to happen on the client
             intercept[StreamTcpException] {
-              Await.result(clientsResponseFuture, 2.second)
+              Await.result(clientsResponseFuture, 3.second)
             }
 
             (System.nanoTime() - serverReceivedRequestAtNanos).millis should be >= serverTimeout
