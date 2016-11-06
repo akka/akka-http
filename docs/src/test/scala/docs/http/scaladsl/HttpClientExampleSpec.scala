@@ -173,7 +173,6 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
     import akka.stream.ActorMaterializer
 
     import scala.concurrent.Future
-    import scala.util.{ Failure, Success }
 
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
