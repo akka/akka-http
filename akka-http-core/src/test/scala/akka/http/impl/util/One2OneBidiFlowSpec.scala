@@ -99,6 +99,7 @@ class One2OneBidiFlowSpec extends AkkaSpec with Eventually {
 
     "backpressure the input side if the maximum number of pending output elements has been reached" in assertAllStagesStopped {
       val MAX_PENDING = 24
+      val EMIT_ELEMENTS = 8
 
       val out = TestPublisher.probe[Int]()
       val seen = new AtomicInteger
@@ -109,14 +110,14 @@ class One2OneBidiFlowSpec extends AkkaSpec with Eventually {
         .runWith(Sink.ignore)
 
       eventually(timeout(500.millis)) {
-        seen.get === MAX_PENDING
+        seen.get should be (MAX_PENDING)
       }
 
-      val counterBeforeProbe = seen.get()
-      (1 to 8) foreach out.sendNext
+      val counterBeforeProbe = seen.get
+      (1 to EMIT_ELEMENTS) foreach out.sendNext
 
       eventually(timeout(500.millis)) {
-        seen.get should ===(counterBeforeProbe + 8)
+        seen.get should be (counterBeforeProbe + EMIT_ELEMENTS)
       }
 
       out.sendComplete() // To please assertAllStagesStopped
