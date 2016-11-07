@@ -4,17 +4,20 @@
 package akka.http.impl.util
 
 import java.util.concurrent.atomic.AtomicInteger
+
 import akka.NotUsed
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import org.scalactic.ConversionCheckedTripleEquals
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.testkit.AkkaSpec
+import org.scalatest.concurrent.Eventually
 
-class One2OneBidiFlowSpec extends AkkaSpec {
+class One2OneBidiFlowSpec extends AkkaSpec with Eventually {
   implicit val materializer = ActorMaterializer()
 
   "A One2OneBidiFlow" must {
@@ -105,11 +108,16 @@ class One2OneBidiFlowSpec extends AkkaSpec {
         .via(One2OneBidiFlow[Int, Int](MAX_PENDING) join Flow.fromSinkAndSourceMat(Sink.ignore, Source.fromPublisher(out))(Keep.left))
         .runWith(Sink.ignore)
 
-      Thread.sleep(200)
-      val x = seen.get()
+      eventually(timeout(500.millis)) {
+        seen.get === MAX_PENDING
+      }
+
+      val counterBeforeProbe = seen.get()
       (1 to 8) foreach out.sendNext
-      Thread.sleep(200)
-      seen.get should ===(x + 8)
+
+      eventually(timeout(500.millis)) {
+        seen.get should ===(counterBeforeProbe + 8)
+      }
 
       out.sendComplete() // To please assertAllStagesStopped
     }
