@@ -188,7 +188,6 @@ class ConnectionPoolSpec extends AkkaSpec("""
 
       override def asyncTestServerHandler(connNr: Int): HttpRequest ⇒ Future[HttpResponse] = { req ⇒
         req.discardEntityBytes()
-        println(req.uri.path.toString)
         if (req.uri.path.toString contains "a")
           Future.successful(HttpResponse(200, entity = HttpEntity.CloseDelimited(ContentTypes.`application/octet-stream`, crashingEntity)))
         else {
@@ -219,10 +218,10 @@ class ConnectionPoolSpec extends AkkaSpec("""
       // now fail the first one
       errorOnConnection1.failure(new RuntimeException)
 
-      println("Waiting for error to trigger connection pool failure")
+      // waiting for error to trigger connection pool failure
       Thread.sleep(2000)
-      println("Now respond to request 2")
 
+      // now respond to request 2
       handlerSetter(req ⇒ Future.successful(HttpResponse()))
 
       val (Success(response2), _) = responseOut.expectNext()
