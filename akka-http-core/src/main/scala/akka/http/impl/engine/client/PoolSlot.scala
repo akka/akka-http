@@ -127,7 +127,8 @@ private object PoolSlot {
           //    SlotEvent.Disconnected(slot, 0); transitions from Idle => Unconnected
           // the result is that the final state of the slot is usually Idle which results in this slot interpreted as hot
           // and being preferred by the scheduler instead of more correct Unconnected
-          // FIXME: enhance the event & processing in the connection pool state machine to allow proper transition
+          // FIXME: enhance the event & processing in the connection pool state machine to allow proper transition, see
+          // https://github.com/akka/akka-http/issues/490
           val completed = whenCompleted.map(_ ⇒ SlotEvent.RequestCompleted(slotIx))
             .recoverWith { case _ ⇒ FastFuture.successful(SlotEvent.RequestCompleted(slotIx)) }
           push(eventsOut, SlotEvent.RequestCompletedFuture(completed))
