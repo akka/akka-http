@@ -101,6 +101,12 @@ lazy val httpMarshallersJava = project("akka-http-marshallers-java")
 lazy val httpJackson =
   httpMarshallersJavaSubproject("jackson")
 
+lazy val httpClusterManagement = project("akka-http-cluster-management")
+  //.disablePlugins(MimaPlugin)
+  .settings(Dependencies.httpClusterManagement)
+  .dependsOn(httpSprayJson,
+    httpTestkit % "test", httpCore % "test->test")
+
 def project(name: String) =
   Project(id = name, base = file(name))
 
