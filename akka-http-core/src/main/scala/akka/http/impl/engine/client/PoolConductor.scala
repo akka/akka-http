@@ -117,9 +117,9 @@ private object PoolConductor {
   private class SlotSelector(slotSettings: PoolSlotsSetting, pipeliningLimit: Int, log: LoggingAdapter)
     extends GraphStage[FanInShape2[RequestContext, SlotEvent, SwitchSlotCommand]] {
 
-    private val requestContextsIn = Inlet[RequestContext]("requestContexts.In")
-    private val slotEventsIn = Inlet[SlotEvent]("slotEvents.In")
-    private val slotCommandsOut = Outlet[SwitchSlotCommand]("slotCommands.Out")
+    private val requestContextsIn = Inlet[RequestContext]("SlotSelector.requestContextsIn")
+    private val slotEventsIn = Inlet[SlotEvent]("SlotSelector.slotEventsIn")
+    private val slotCommandsOut = Outlet[SwitchSlotCommand]("SlotSelector.slotCommandsOut")
 
     override def initialAttributes = Attributes.name("SlotSelector")
 
