@@ -91,6 +91,11 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
         Flow[HttpRequest]
           .watchTermination()(Keep.right)
           .viaMat(handler)(Keep.left)
+          .watchTermination() { (termWatchBefore, termWatchAfter) ⇒
+            // flag termination when the user handler has gotten (or has emitted) termination
+            // signals in both directions
+            termWatchBefore.flatMap(_ ⇒ termWatchAfter)(ExecutionContexts.sameThreadExecutionContext)
+          }
           .joinMat(baseFlow)(Keep.left)
       )
     )
@@ -177,8 +182,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
               // As far as it is known currently, these errors can only happen if a TCP error bubbles up
               // from the TCP layer through the HTTP layer to the Http.IncomingConnection.flow.
               // See https://github.com/akka/akka/issues/17992
-              case NonFatal(ex) ⇒
-                Done
+              case NonFatal(ex) ⇒ Done
             }(ExecutionContexts.sameThreadExecutionContext)
         } catch {
           case NonFatal(e) ⇒
