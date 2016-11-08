@@ -3,6 +3,8 @@
  */
 package akka.cluster.http.management
 
+import java.util.concurrent.atomic.AtomicReference
+
 import akka.actor.AddressFromURIString
 import akka.cluster.{ Cluster, Member }
 import akka.http.scaladsl.{ ConnectionContext, Http }
@@ -19,6 +21,7 @@ final case class ClusterUnreachableMember(node: String, observedBy: Seq[String])
 final case class ClusterMember(node: String, nodeUid: String, status: String, roles: Set[String])
 final case class ClusterMembers(selfNode: String, members: Set[ClusterMember], unreachable: Seq[ClusterUnreachableMember])
 final case class ClusterHttpManagementMessage(message: String)
+final case class ClusterHttpManagementServerInfo(hostname: String, port: Int, alreadyStarted: Boolean)
 
 sealed trait ClusterHttpManagementOperation
 case object Down extends ClusterHttpManagementOperation
@@ -114,8 +117,18 @@ object ClusterHttpManagementRoutes extends ClusterHttpManagementHelper {
       }
     }
 
+  /**
+   * Creates an instance of [[akka.cluster.http.management.ClusterHttpManagementRoutes]] to manage the specified
+   * [[akka.cluster.Cluster]] instance. This version does not provide Basic Authentication. It uses
+   * the default path "members".
+   */
   def apply(cluster: Cluster): Route = apply(cluster, "members")
 
+  /**
+   * Creates an instance of [[akka.cluster.http.management.ClusterHttpManagementRoutes]] to manage the specified
+   * [[akka.cluster.Cluster]] instance. This version does not provide Basic Authentication. It uses
+   * the specified path `pathPrefixName`.
+   */
   def apply(cluster: Cluster, pathPrefixName: String): Route =
     pathPrefix(pathPrefixName) {
       pathEndOrSingleSlash {
@@ -124,12 +137,22 @@ object ClusterHttpManagementRoutes extends ClusterHttpManagementHelper {
         routesMember(cluster)
     }
 
+  /**
+   * Creates an instance of [[akka.cluster.http.management.ClusterHttpManagementRoutes]] to manage the specified
+   * [[akka.cluster.Cluster]] instance. This version provides Basic Authentication through the specified
+   * AsyncAuthenticator. It uses the default path "members".
+   */
   def apply(cluster: Cluster, asyncAuthenticator: AsyncAuthenticator[String]): Route = {
     authenticateBasicAsync[String](realm = "secured", asyncAuthenticator) { _ ⇒
       apply(cluster)
     }
   }
 
+  /**
+   * Creates an instance of [[akka.cluster.http.management.ClusterHttpManagementRoutes]] to manage the specified
+   * [[akka.cluster.Cluster]] instance. This version provides Basic Authentication through the specified
+   * AsyncAuthenticator. It uses the specified path `pathPrefixName`.
+   */
   def apply(cluster: Cluster, pathPrefixName: String, asyncAuthenticator: AsyncAuthenticator[String]): Route = {
     authenticateBasicAsync[String](realm = "secured", asyncAuthenticator) { _ ⇒
       apply(cluster, pathPrefixName)
@@ -138,53 +161,134 @@ object ClusterHttpManagementRoutes extends ClusterHttpManagementHelper {
 }
 
 object ClusterHttpManagement {
+
+  /**
+   * Creates an instance of [[akka.cluster.http.management.ClusterHttpManagement]] to manage the specified
+   * [[akka.cluster.Cluster]] instance. This version does not provide security (Basic Authentication or SSL)
+   * and uses the default path "members".
+   */
   def apply(cluster: Cluster): ClusterHttpManagement =
     new ClusterHttpManagement(cluster)
 
+  /**
+   * Creates an instance of [[akka.cluster.http.management.ClusterHttpManagement]] to manage the specified
+   * [[akka.cluster.Cluster]] instance. This version does not provide security (Basic Authentication or SSL).
+   * It uses the specified path `pathPrefix`.
+   */
   def apply(cluster: Cluster, pathPrefix: String): ClusterHttpManagement =
     new ClusterHttpManagement(cluster, Some(pathPrefix), None, None)
 
+  /**
+   * Creates an instance of [[akka.cluster.http.management.ClusterHttpManagement]] to manage the specified
+   * [[akka.cluster.Cluster]] instance. This version provides Basic Authentication with the specified
+   * AsyncAuthenticator. It does not provide SSL security. It uses the default path "members".
+   */
   def apply(cluster: Cluster, asyncAuthenticator: AsyncAuthenticator[String]): ClusterHttpManagement =
     new ClusterHttpManagement(cluster, None, Some(asyncAuthenticator), None)
 
+  /**
+   * Creates an instance of [[akka.cluster.http.management.ClusterHttpManagement]] to manage the specified
+   * [[akka.cluster.Cluster]] instance. This version provides SSL with the specified ConnectionContext.
+   * It does not provide Basic Authentication. It uses the default path "members".
+   */
   def apply(cluster: Cluster, https: ConnectionContext): ClusterHttpManagement =
     new ClusterHttpManagement(cluster, None, None, Some(https))
 
+  /**
+   * Creates an instance of [[akka.cluster.http.management.ClusterHttpManagement]] to manage the specified
+   * [[akka.cluster.Cluster]] instance. This version provides Basic Authentication with the specified
+   * AsyncAuthenticator. It does not provide SSL security. It uses the specified path `pathPrefix`.
+   */
   def apply(cluster: Cluster, pathPrefix: String, asyncAuthenticator: AsyncAuthenticator[String]): ClusterHttpManagement =
     new ClusterHttpManagement(cluster, Some(pathPrefix), Some(asyncAuthenticator), None)
 
+  /**
+   * Creates an instance of [[akka.cluster.http.management.ClusterHttpManagement]] to manage the specified
+   * [[akka.cluster.Cluster]] instance. This version provides SSL with the specified ConnectionContext.
+   * It does not provide Basic Authentication. It uses the specified path `pathPrefix`.
+   */
   def apply(cluster: Cluster, pathPrefix: String, https: ConnectionContext) =
     new ClusterHttpManagement(cluster, Some(pathPrefix), None, Some(https))
 
+  /**
+   * Creates an instance of [[akka.cluster.http.management.ClusterHttpManagement]] to manage the specified
+   * [[akka.cluster.Cluster]] instance. This version provides Basic Authentication with the specified
+   * AsyncAuthenticator. It provide SSL with the specified ConnectionContext. It uses the default path "members".
+   */
   def apply(cluster: Cluster, asyncAuthenticator: AsyncAuthenticator[String], https: ConnectionContext): ClusterHttpManagement =
     new ClusterHttpManagement(cluster, None, Some(asyncAuthenticator), Some(https))
 
+  /**
+   * Creates an instance of [[akka.cluster.http.management.ClusterHttpManagement]] to manage the specified
+   * [[akka.cluster.Cluster]] instance. This version provides Basic Authentication with the specified
+   * AsyncAuthenticator. It provide SSL with the specified ConnectionContext. It uses the specified path `pathPrefix`.
+   */
   def apply(cluster: Cluster, pathPrefix: String, asyncAuthenticator: AsyncAuthenticator[String], https: ConnectionContext): ClusterHttpManagement =
     new ClusterHttpManagement(cluster, Some(pathPrefix), Some(asyncAuthenticator), Some(https))
 
+  /**
+   * Creates an instance of [[akka.cluster.http.management.ClusterHttpManagement]] to manage the specified
+   * [[akka.cluster.Cluster]] instance. This version does not provide security (Basic Authentication or SSL)
+   * and uses the default path "members".
+   */
   def create(cluster: Cluster): ClusterHttpManagement =
-    new ClusterHttpManagement(cluster)
+    apply(cluster)
 
+  /**
+   * Creates an instance of [[akka.cluster.http.management.ClusterHttpManagement]] to manage the specified
+   * [[akka.cluster.Cluster]] instance. This version does not provide security (Basic Authentication or SSL).
+   * It uses the specified path `pathPrefix`.
+   */
   def create(cluster: Cluster, pathPrefix: String): ClusterHttpManagement =
-    new ClusterHttpManagement(cluster, Some(pathPrefix), None, None)
+    apply(cluster, pathPrefix)
 
+  /**
+   * Creates an instance of [[akka.cluster.http.management.ClusterHttpManagement]] to manage the specified
+   * [[akka.cluster.Cluster]] instance. This version provides Basic Authentication with the specified
+   * AsyncAuthenticator. It does not provide SSL security. It uses the default path "members".
+   */
   def create(cluster: Cluster, asyncAuthenticator: AsyncAuthenticator[String]): ClusterHttpManagement =
-    new ClusterHttpManagement(cluster, None, Some(asyncAuthenticator), None)
+    apply(cluster, asyncAuthenticator)
 
+  /**
+   * Creates an instance of [[akka.cluster.http.management.ClusterHttpManagement]] to manage the specified
+   * [[akka.cluster.Cluster]] instance. This version provides SSL with the specified ConnectionContext.
+   * It does not provide Basic Authentication. It uses the default path "members".
+   */
   def create(cluster: Cluster, https: ConnectionContext): ClusterHttpManagement =
-    new ClusterHttpManagement(cluster, None, None, Some(https))
+    apply(cluster, https)
 
+  /**
+   * Creates an instance of [[akka.cluster.http.management.ClusterHttpManagement]] to manage the specified
+   * [[akka.cluster.Cluster]] instance. This version provides Basic Authentication with the specified
+   * AsyncAuthenticator. It does not provide SSL security. It uses the specified path `pathPrefix`.
+   */
   def create(cluster: Cluster, pathPrefix: String, asyncAuthenticator: AsyncAuthenticator[String]): ClusterHttpManagement =
-    new ClusterHttpManagement(cluster, Some(pathPrefix), Some(asyncAuthenticator), None)
+    apply(cluster, pathPrefix, asyncAuthenticator)
 
+  /**
+   * Creates an instance of [[akka.cluster.http.management.ClusterHttpManagement]] to manage the specified
+   * [[akka.cluster.Cluster]] instance. This version provides SSL with the specified ConnectionContext.
+   * It does not provide Basic Authentication. It uses the specified path `pathPrefix`.
+   */
   def create(cluster: Cluster, pathPrefix: String, https: ConnectionContext) =
-    new ClusterHttpManagement(cluster, Some(pathPrefix), None, Some(https))
+    apply(cluster, pathPrefix, https)
 
+  /**
+   * Creates an instance of [[akka.cluster.http.management.ClusterHttpManagement]] to manage the specified
+   * [[akka.cluster.Cluster]] instance. This version provides Basic Authentication with the specified
+   * AsyncAuthenticator. It provide SSL with the specified ConnectionContext. It uses the default path "members".
+   */
   def create(cluster: Cluster, asyncAuthenticator: AsyncAuthenticator[String], https: ConnectionContext): ClusterHttpManagement =
-    new ClusterHttpManagement(cluster, None, Some(asyncAuthenticator), Some(https))
+    apply(cluster, asyncAuthenticator, https)
 
+  /**
+   * Creates an instance of [[akka.cluster.http.management.ClusterHttpManagement]] to manage the specified
+   * [[akka.cluster.Cluster]] instance. This version provides Basic Authentication with the specified
+   * AsyncAuthenticator. It provide SSL with the specified ConnectionContext. It uses the specified path `pathPrefix`.
+   */
   def create(cluster: Cluster, pathPrefix: String, asyncAuthenticator: AsyncAuthenticator[String], https: ConnectionContext): ClusterHttpManagement =
-    new ClusterHttpManagement(cluster, Some(pathPrefix), Some(asyncAuthenticator), Some(https))
+    apply(cluster, pathPrefix, asyncAuthenticator, https)
 }
 
 /**
@@ -202,9 +306,17 @@ class ClusterHttpManagement(
   private implicit val materializer = ActorMaterializer()
   import system.dispatcher
 
-  private var bindingFuture: Future[Http.ServerBinding] = _
+  private val bindingFuture = new AtomicReference[Future[Http.ServerBinding]]()
 
-  def start(): Unit = {
+  def start(): ClusterHttpManagementServerInfo = {
+    if (bindingFuture.get() != null) {
+      ClusterHttpManagementServerInfo(
+        settings.ClusterHttpManagementHostname,
+        settings.ClusterHttpManagementPort,
+        true
+      )
+    }
+
     val clusterHttpManagementRoutes = (pathPrefix, asyncAuthenticator) match {
       case (Some(pp), Some(aa)) ⇒ ClusterHttpManagementRoutes(cluster, pp, aa)
       case (Some(pp), None)     ⇒ ClusterHttpManagementRoutes(cluster, pp)
@@ -214,23 +326,41 @@ class ClusterHttpManagement(
 
     val routes = RouteResult.route2HandlerFlow(clusterHttpManagementRoutes)
 
-    https match {
+    val serverFutureBinding = https match {
       case Some(context) ⇒
-        bindingFuture = Http().bindAndHandle(
+        Http().bindAndHandle(
           routes,
-          settings.clusterHttpManagementHostname,
-          settings.clusterHttpManagementPort,
+          settings.ClusterHttpManagementHostname,
+          settings.ClusterHttpManagementPort,
           connectionContext = context)
       case None ⇒
-        bindingFuture = Http().bindAndHandle(
+        Http().bindAndHandle(
           routes,
-          settings.clusterHttpManagementHostname,
-          settings.clusterHttpManagementPort)
+          settings.ClusterHttpManagementHostname,
+          settings.ClusterHttpManagementPort)
     }
+
+    bindingFuture.set(serverFutureBinding)
+
+    ClusterHttpManagementServerInfo(
+      settings.ClusterHttpManagementHostname,
+      settings.ClusterHttpManagementPort,
+      false
+    )
   }
 
   def stop() = {
-    bindingFuture.flatMap(_.unbind())
+    if (bindingFuture.get() == null) {
+      ClusterHttpManagementServerInfo(
+        settings.ClusterHttpManagementHostname,
+        settings.ClusterHttpManagementPort,
+        false
+      )
+    }
+
+    val stopFuture = bindingFuture.get().flatMap(_.unbind())
+    bindingFuture.set(null)
+    stopFuture
   }
 }
 

@@ -2,6 +2,7 @@ package akka.cluster.http.management;
 
 import akka.actor.ActorSystem;
 import akka.cluster.Cluster;
+import org.junit.Test;
 
 public class ClusterHttpManagementJavaCompileTest {
 
@@ -11,4 +12,7 @@ public class ClusterHttpManagementJavaCompileTest {
         ClusterHttpManagement x = ClusterHttpManagement.create(cluster);
         x.start();
     }
+
+    @Test
+    public void compileOnly() {}
 }
