@@ -24,44 +24,45 @@ import akka.stream.stage.OutHandler
  * outgoing frames.
  *
  * (An alternative API would just push a BidiHttp2SubStream(subStreamFlow: Flow[StreamFrameEvent, StreamFrameEvent])
- *  similarly to IncomingConnection. This would more accurately model the one-to-one relation between incoming and
- *  outgoing Http2Substream directions but wouldn't stack so nicely with other BidiFlows.)
+ * similarly to IncomingConnection. This would more accurately model the one-to-one relation between incoming and
+ * outgoing Http2Substream directions but wouldn't stack so nicely with other BidiFlows.)
  *
  * Backpressure logic:
  *
- *  * read all incoming frames without applying backpressure
- *    * this ensures that all "control" frames are read in a timely manner
- *    * though, make sure limits are not exceeded
- *      * max connection limit (which limits number of parallel requests)
- *      * window sizes for incoming data frames
- *    * that means we need to buffer incoming substream data until the user handler (consuming the source in the Http2SubStream)
- *      will read it
- *    * per-connection and per-stream window updates should reflect how much data was (not) yet passed
- *      into the user handler and therefore are the main backpressure mechanism towards the peer
- *  * for the outgoing frame side we need to decide which frames to send per incoming demand
- *    * control frames (settings, ping, acks, window updates etc.) -> responses to incoming frames
- *    * substream frames -> incoming frame data from substreams
- *    * to be able to make a decision some data must already be buffered for those two sources of incoming frames
+ * read all incoming frames without applying backpressure
+ * this ensures that all "control" frames are read in a timely manner
+ * though, make sure limits are not exceeded
+ * max connection limit (which limits number of parallel requests)
+ * window sizes for incoming data frames
+ * that means we need to buffer incoming substream data until the user handler (consuming the source in the Http2SubStream)
+ * will read it
+ * per-connection and per-stream window updates should reflect how much data was (not) yet passed
+ * into the user handler and therefore are the main backpressure mechanism towards the peer
+ * for the outgoing frame side we need to decide which frames to send per incoming demand
+ * control frames (settings, ping, acks, window updates etc.) -> responses to incoming frames
+ * substream frames -> incoming frame data from substreams
+ * to be able to make a decision some data must already be buffered for those two sources of incoming frames
  *
  * Demultiplexing:
- *  * distribute incoming frames to their respective targets:
- *    * control frames: handled internally, may generate outgoing control frames directly
- *    * incoming HEADERS frames: creates a new Http2SubStream including a SubSource that will receive all upcoming
- *      data frames
- *    * incoming data frames: buffered and pushed to the SubSource of the respective substream
+ * distribute incoming frames to their respective targets:
+ * control frames: handled internally, may generate outgoing control frames directly
+ * incoming HEADERS frames: creates a new Http2SubStream including a SubSource that will receive all upcoming
+ * data frames
+ * incoming data frames: buffered and pushed to the SubSource of the respective substream
  *
  * Multiplexing:
- *  * schedule incoming frames from multiple sources to be pushed onto the shared medium
- *    * control frames: as generated from the stage itself (should probably preferred over everything else)
- *    * Http2SubStream produced by the user handler: read and push initial frame ASAP
- *    * outgoing data frames for each of the substreams: will comprise the bulk of the data and is
- *      where any clever, prioritizing, etc. i.e. tbd later sending strategies will apply
+ * schedule incoming frames from multiple sources to be pushed onto the shared medium
+ * control frames: as generated from the stage itself (should probably preferred over everything else)
+ * Http2SubStream produced by the user handler: read and push initial frame ASAP
+ * outgoing data frames for each of the substreams: will comprise the bulk of the data and is
+ * where any clever, prioritizing, etc. i.e. tbd later sending strategies will apply
  *
  * In the best case we could just flattenMerge the outgoing side (hoping for the best) but this will probably
  * not work because the sending decision relies on dynamic window size and settings information that will be
  * only available in this stage.
  */
 class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] {
+
   import Http2ServerDemux._
 
   val frameIn = Inlet[FrameEvent]("Demux.frameIn")
@@ -74,9 +75,12 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
     BidiShape(substreamIn, frameOut, frameIn, substreamOut)
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with BufferedOutletSupport { logic ⇒
-      case class SubStream(
+    new GraphStageLogic(shape) with BufferedOutletSupport {
+      logic ⇒
+
+      final case class SubStream(
         streamId:                  Int,
+        headers:                   HeadersFrame,
         state:                     StreamState,
         outlet:                    SubSourceOutlet[StreamFrameEvent],
         inlet:                     Option[SubSinkInlet[FrameEvent]],
@@ -100,17 +104,31 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
 
       setHandler(frameIn, new InHandler {
         def onPush(): Unit = {
-          grab(frameIn) match {
+          val in = grab(frameIn)
+          in match {
             case headers @ HeadersFrame(streamId, endStream, endHeaders, fragment) ⇒
               val subSource = new SubSourceOutlet[StreamFrameEvent](s"substream-out-$streamId")
-              val handler = new SubStream(streamId, StreamState.Open /* FIXME */ , subSource, None, streamLevelWindow)
-              incomingStreams += streamId → handler
+              val handler = SubStream(streamId, headers, StreamState.Open /* FIXME stream state */ , subSource, None, streamLevelWindow)
+              incomingStreams += streamId → handler // TODO optimise for lookup later on
 
-              val sub =
-                if (endStream && endHeaders) Http2SubStream(headers, Source.empty)
-                else Http2SubStream(headers, Source.fromGraph(subSource.source))
+              val sub = makeHttp2SubStream(handler)
+              if (sub.initialFrame.endHeaders) dispatchSubstream(sub)
+            // else we're expecting some continuation frames before we kick off the dispatch
 
-              dispatchSubstream(sub)
+            case cont: ContinuationFrame ⇒
+              // continue to build up headers (CONTINUATION come directly after HEADERS frame, and before DATA)
+              val streamId = cont.streamId
+              incomingStreams.get(streamId) match {
+                case Some(handler) ⇒
+                  val updatedHandler = concatContinuationIntoHeaders(handler, cont)
+                  val sub = makeHttp2SubStream(updatedHandler)
+                  if (updatedHandler.headers.endHeaders) dispatchSubstream(sub)
+                case None ⇒
+                  throw ContinuationFrameForUnknownStreamEncounteredException(streamId)
+              }
+
+            case data: DataFrame ⇒ // TODO technically not needed since StreamFrameEvent, but having it higher up here
+              incomingStreams(data.streamId).push(data) // pushing http entity, handle flow control from here somehow?
 
             case RstStreamFrame(streamId, errorCode) ⇒
               // FIXME: also need to handle the other case when no response has been produced yet (inlet still None)
@@ -155,6 +173,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
       })
 
       val bufferedSubStreamOutput = new BufferedOutlet[Http2SubStream](substreamOut)
+
       def dispatchSubstream(sub: Http2SubStream): Unit = bufferedSubStreamOutput.push(sub)
 
       setHandler(substreamIn, new InHandler {
@@ -204,7 +223,33 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
           }
         }
       }
+
+      private def concatContinuationIntoHeaders(handler: SubStream, cont: ContinuationFrame) = {
+        val concatHeaderBlockFragment = handler.headers.headerBlockFragment ++ cont.payload
+        val moreCompleteHeadersFrame = HeadersFrame(handler.streamId, cont.endHeaders, cont.endHeaders, concatHeaderBlockFragment)
+        // update the SubStream we keep around
+        val moreCompleteHandler = handler.copy(headers = moreCompleteHeadersFrame)
+        incomingStreams += handler.streamId → moreCompleteHandler
+        moreCompleteHandler
+      }
+
+      def makeHttp2SubStream(handler: SubStream): Http2SubStream = {
+        val headers = handler.headers
+        val subStream = handler.outlet
+        if (headers.endStream && headers.endHeaders) {
+          Http2SubStream(headers, Source.empty)
+        } else {
+          // FIXME a bit naive but correct I think -- todo check the spec 
+          val remainingFrames = Source.fromGraph(subStream.source)
+            .collect({
+              case d: DataFrame ⇒ d
+              case f            ⇒ throw new Exception("Unexpected frame type! We thought only DataFrames are accepted from here on. Was: " + f)
+            })
+          Http2SubStream(headers, remainingFrames)
+        }
+      }
     }
+
 }
 
 object Http2ServerDemux {
@@ -220,4 +265,7 @@ object Http2ServerDemux {
     // case object ReservedLocal extends StreamState
     // case object ReservedRemote extends StreamState
   }
+
+  final case class ContinuationFrameForUnknownStreamEncounteredException(streamId: Int)
+    extends IllegalArgumentException(s"Received ContinuationFrame for unknown streamId ($streamId)!")
 }

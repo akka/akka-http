@@ -10,6 +10,7 @@ import akka.http.impl.engine.http2.Http2Protocol.Flags
 import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.http.impl.engine.http2.parsing.HttpRequestHeaderHpackDecompression
 import akka.http.impl.engine.ws.ByteStringSinkProbe
+import akka.http.scaladsl.{ConnectionContext, Http2, HttpConnectionContext}
 import akka.http.scaladsl.model.ContentTypes
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.HttpMethods
@@ -26,7 +27,7 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
-import akka.testkit.AkkaSpec
+import akka.testkit.{AkkaSpec, SocketUtil}
 import akka.util.ByteString
 import akka.util.ByteStringBuilder
 import com.twitter.hpack.Decoder
@@ -126,7 +127,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
       "parse headers to modeled headers" in pending
     }
 
-    "support stream support for request entity data" should {
+    "support stream for request entity data" should {
       abstract class WaitingForRequestData extends TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
         val request = HttpRequest(method = HttpMethods.POST, uri = "https://example.com/upload", protocol = HttpProtocols.`HTTP/2.0`)
         sendRequest(1, request, endStream = false)
@@ -138,7 +139,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed {
         entityDataIn.ensureSubscription()
       }
 
-      "send data frames to entity stream" inPendingUntilFixed new WaitingForRequestData {
+      "send data frames to entity stream" in new WaitingForRequestData {
         val data1 = ByteString("abcdef")
         sendDATA(1, endStream = false, data1)
         entityDataIn.expectBytes(data1)
