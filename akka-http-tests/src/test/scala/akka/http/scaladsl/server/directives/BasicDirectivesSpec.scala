@@ -53,4 +53,60 @@ class BasicDirectivesSpec extends RoutingSpec {
       } ~> check { responseEntity shouldEqual httpEntity }
     }
   }
+
+  "The `extractMatchedUri` directive" should {
+    val httpEntity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "req")
+
+    "extract bar if /foo has been matched for /foo/bar" in {
+      Post("/foo", httpEntity) ~> {
+        pathPrefix("foo") {
+          extractMatchedPath { matched ⇒
+            complete(matched.toString)
+          }
+        }
+      } ~> check { responseAs[String] shouldEqual "/foo" }
+    }
+
+    "extract bar with slash if /foo/ with slash has been matched for /foo/bar" in {
+      Post("/foo/", httpEntity) ~> {
+        pathPrefix("foo"/) {
+          extractMatchedPath { matched ⇒
+            complete(matched.toString)
+          }
+        }
+      } ~> check { responseAs[String] shouldEqual "/foo/" }
+    }
+
+    "extract bar with slash if /foo/ with slash has been matched for /foo/bar if nested directives used" in {
+      Post("/foo/bar/car", httpEntity) ~> {
+        pathPrefix("foo") {
+          pathPrefix("bar") {
+            extractMatchedPath { matched ⇒
+              complete(matched.toString)
+            }
+          }
+        }
+      } ~> check { responseAs[String] shouldEqual "/foo/bar" }
+    }
+
+    "extract all if fully matched" in {
+      Post("/foo/bar", httpEntity) ~> {
+        pathPrefix("foo") {
+          pathPrefix("bar") {
+            extractMatchedPath { matched ⇒
+              complete(matched.toString)
+            }
+          }
+        }
+      } ~> check { responseAs[String] shouldEqual "/foo/bar" }
+    }
+
+    "extract nothing if root path" in {
+      Post("/foo/bar", httpEntity) ~> {
+        extractMatchedPath { matched ⇒
+          complete(matched.toString)
+        }
+      } ~> check { responseAs[String] shouldEqual "" }
+    }
+  }
 }
