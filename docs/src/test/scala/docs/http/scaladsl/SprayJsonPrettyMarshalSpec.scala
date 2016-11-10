@@ -42,10 +42,10 @@ class SprayJsonPrettyMarshalSpec extends server.RoutingSpec {
     // verify the pretty printed JSON
     Get("/") ~> service.route ~> check {
       responseAs[String] shouldEqual
-        "{" + "\n" +
-        "  \"name\": \"akka\"," + "\n" +
-        "  \"id\": 42" + "\n" +
-        "}"
+        """{""" + "\n" +
+        """  "name": "akka",""" + "\n" +
+        """  "id": 42""" + "\n" +
+        """}"""
     }
     //#example
   }
