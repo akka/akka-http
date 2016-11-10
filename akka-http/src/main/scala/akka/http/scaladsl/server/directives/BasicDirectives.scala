@@ -386,17 +386,16 @@ object BasicDirectives extends BasicDirectives {
   private val _extractDataBytes: Directive1[Source[ByteString, Any]] = extract(_.request.entity.dataBytes)
 
   private def extractMatched(ctx: RequestContext) = {
-    val unmatchedPath = ctx.unmatchedPath
+    val unmatchedPath = ctx.unmatchedPath.toString
     val fullPath = ctx.request.uri.path.toString
-    val matchedLength = fullPath.lastIndexOf(unmatchedPath.toString)
 
     require(
-      matchedLength >= 0,
+      fullPath.endsWith(unmatchedPath),
       s"Unmatched path '$unmatchedPath' wasn't a suffix of full path '$fullPath'. " +
         "This usually means that ctx.unmatchedPath was manipulated inconsistently " +
         "with ctx.request.uri.path"
     )
 
-    Path(fullPath.substring(0, matchedLength))
+    Path(fullPath.substring(0, fullPath.length - unmatchedPath.length))
   }
 }

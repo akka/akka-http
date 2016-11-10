@@ -54,11 +54,9 @@ class BasicDirectivesSpec extends RoutingSpec {
     }
   }
 
-  "The `extractMatchedUri` directive" should {
-    val httpEntity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "req")
-
+  "The `extractMatchedPath` directive" should {
     "extract bar if /foo has been matched for /foo/bar" in {
-      Post("/foo", httpEntity) ~> {
+      Get("/foo") ~> {
         pathPrefix("foo") {
           extractMatchedPath { matched ⇒
             complete(matched.toString)
@@ -68,7 +66,7 @@ class BasicDirectivesSpec extends RoutingSpec {
     }
 
     "extract bar with slash if /foo/ with slash has been matched for /foo/bar" in {
-      Post("/foo/", httpEntity) ~> {
+      Get("/foo/") ~> {
         pathPrefix("foo"/) {
           extractMatchedPath { matched ⇒
             complete(matched.toString)
@@ -78,7 +76,7 @@ class BasicDirectivesSpec extends RoutingSpec {
     }
 
     "extract bar with slash if /foo/ with slash has been matched for /foo/bar if nested directives used" in {
-      Post("/foo/bar/car", httpEntity) ~> {
+      Get("/foo/bar/car") ~> {
         pathPrefix("foo") {
           pathPrefix("bar") {
             extractMatchedPath { matched ⇒
@@ -90,7 +88,7 @@ class BasicDirectivesSpec extends RoutingSpec {
     }
 
     "extract all if fully matched" in {
-      Post("/foo/bar", httpEntity) ~> {
+      Get("/foo/bar") ~> {
         pathPrefix("foo") {
           pathPrefix("bar") {
             extractMatchedPath { matched ⇒
@@ -102,7 +100,7 @@ class BasicDirectivesSpec extends RoutingSpec {
     }
 
     "extract nothing if root path" in {
-      Post("/foo/bar", httpEntity) ~> {
+      Get("/foo/bar") ~> {
         extractMatchedPath { matched ⇒
           complete(matched.toString)
         }
