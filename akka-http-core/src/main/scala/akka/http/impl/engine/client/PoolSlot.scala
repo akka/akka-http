@@ -49,11 +49,11 @@ private object PoolSlot {
   private class SlotProcessor(slotIx: Int, connectionFlow: Flow[HttpRequest, HttpResponse, Any], log: LoggingAdapter)(implicit fm: Materializer)
     extends GraphStage[FanOutShape2[SlotCommand, ResponseContext, RawSlotEvent]] {
 
-    val in: Inlet[SlotCommand] = Inlet("SlotProcessor.in")
+    val slotCommandsIn: Inlet[SlotCommand] = Inlet("SlotProcessor.slotCommandsIn")
     val responsesOut: Outlet[ResponseContext] = Outlet("SlotProcessor.responsesOut")
     val eventsOut: Outlet[RawSlotEvent] = Outlet("SlotProcessor.eventsOut")
 
-    override def shape: FanOutShape2[SlotCommand, ResponseContext, RawSlotEvent] = new FanOutShape2(in, responsesOut, eventsOut)
+    override def shape: FanOutShape2[SlotCommand, ResponseContext, RawSlotEvent] = new FanOutShape2(slotCommandsIn, responsesOut, eventsOut)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler {
       private var firstRequest: RequestContext = _
@@ -81,7 +81,7 @@ private object PoolSlot {
           inflightRequests.clear()
 
           emitMultiple(responsesOut, failures)
-          emitMultiple(eventsOut, SlotEvent.Disconnected(slotIx, retries.size + failures.size) :: retries, () ⇒ if (failures.isEmpty && !hasBeenPulled(in)) pull(in))
+          emitMultiple(eventsOut, SlotEvent.Disconnected(slotIx, retries.size + failures.size) :: retries, () ⇒ if (failures.isEmpty && !hasBeenPulled(slotCommandsIn)) pull(slotCommandsIn))
         }
       }
 
@@ -94,7 +94,7 @@ private object PoolSlot {
             inflightRequests.add(firstRequest)
             connectionFlowSource.push(firstRequest.request)
             firstRequest = null
-          } else pull(in)
+          } else pull(slotCommandsIn)
         }
 
         override def onDownstreamFinish(): Unit = connectionFlowSource.complete()
@@ -142,10 +142,10 @@ private object PoolSlot {
       // upstream pushes we create the inner stream if necessary or push if we're already connected
       override def onPush(): Unit = {
         def establishConnectionFlow() = {
-          connectionFlowSource = new SubSourceOutlet[HttpRequest]("RequestSource")
+          connectionFlowSource = new SubSourceOutlet[HttpRequest]("SlotProcessor.RequestSource")
           connectionFlowSource.setHandler(connectionOutFlowHandler)
 
-          connectionFlowSink = new SubSinkInlet[HttpResponse]("ResponseSink")
+          connectionFlowSink = new SubSinkInlet[HttpResponse]("SlotProcessor.ResponseSink")
           connectionFlowSink.setHandler(connectionInFlowHandler)
 
           isConnected = true
@@ -156,7 +156,7 @@ private object PoolSlot {
           connectionFlowSink.pull()
         }
 
-        grab(in) match {
+        grab(slotCommandsIn) match {
           case ConnectEagerlyCommand ⇒
             if (!isConnected) establishConnectionFlow()
 
@@ -173,13 +173,13 @@ private object PoolSlot {
         }
       }
 
-      setHandler(in, this)
+      setHandler(slotCommandsIn, this)
 
       setHandler(responsesOut, new OutHandler {
         override def onPull(): Unit = {
           // downstream pulls, if connected we pull inner
           if (isConnected) connectionFlowSink.pull()
-          else if (!hasBeenPulled(in)) pull(in)
+          else if (!hasBeenPulled(slotCommandsIn)) pull(slotCommandsIn)
         }
       })
 

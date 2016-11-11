@@ -328,28 +328,28 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
       // Note that this GraphStage mutates the HttpMessageParser instance, use with caution.
       new GraphStage[FlowShape[SessionBytes, ResponseOutput]] {
-        val in: Inlet[SessionBytes] = Inlet("HttpResponseParser.in")
-        val out: Outlet[ResponseOutput] = Outlet("HttpResponseParser.out")
-        override val shape: FlowShape[SessionBytes, ResponseOutput] = FlowShape(in, out)
+        val sessionBytesIn: Inlet[SessionBytes] = Inlet("HttpResponseParser.sessionBytesIn")
+        val responsesOut: Outlet[ResponseOutput] = Outlet("HttpResponseParser.responsesOut")
+        override val shape: FlowShape[SessionBytes, ResponseOutput] = FlowShape(sessionBytesIn, responsesOut)
 
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
           new GraphStageLogic(shape) with InHandler with OutHandler {
-            override def onPush(): Unit = handleParserOutput(parser.parseSessionBytes(grab(in)))
+            override def onPush(): Unit = handleParserOutput(parser.parseSessionBytes(grab(sessionBytesIn)))
             override def onPull(): Unit = handleParserOutput(parser.onPull())
 
             override def onUpstreamFinish(): Unit =
               if (parser.onUpstreamFinish()) completeStage()
-              else if (isAvailable(out)) handleParserOutput(parser.onPull())
+              else if (isAvailable(responsesOut)) handleParserOutput(parser.onPull())
 
             private def handleParserOutput(output: ResponseOutput): Unit = {
               output match {
                 case StreamEnd    ⇒ completeStage()
-                case NeedMoreData ⇒ pull(in)
-                case x            ⇒ push(out, x)
+                case NeedMoreData ⇒ pull(sessionBytesIn)
+                case x            ⇒ push(responsesOut, x)
               }
             }
 
-            setHandlers(in, out, this)
+            setHandlers(sessionBytesIn, responsesOut, this)
           }
       }
 

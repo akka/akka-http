@@ -26,17 +26,17 @@ final class HttpResponseHeaderHpackCompression extends GraphStage[FlowShape[Http
   // FIXME Make configurable
   final val maxHeaderTableSize = 4096
 
-  val in = Inlet[HttpResponse]("HeaderDecompression.in")
-  val out = Outlet[Http2SubStream]("HeaderDecompression.out")
+  val httpResponsesIn = Inlet[HttpResponse]("HeaderDecompression.httpResponsesIn")
+  val http2SubStreamsOut = Outlet[Http2SubStream]("HeaderDecompression.http2SubStreamsOut")
 
-  override def shape = FlowShape.of(in, out)
+  override def shape = FlowShape.of(httpResponsesIn, http2SubStreamsOut)
 
   override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
     val encoder = new com.twitter.hpack.Encoder(maxHeaderTableSize)
     val os = new ByteArrayOutputStream() // FIXME: use a reasonable default size
 
     override def onPush(): Unit = {
-      val response = grab(in)
+      val response = grab(httpResponsesIn)
       // TODO possibly specialize static table? https://http2.github.io/http2-spec/compression.html#static.table.definition
       val headerBlockFragment = encodeResponse(response)
 
@@ -55,7 +55,7 @@ final class HttpResponseHeaderHpackCompression extends GraphStage[FlowShape[Http
 
       val headers = HeadersFrame(streamId, endStream = dataFrames == Source.empty, endHeaders = true, headerBlockFragment)
       val http2SubStream = Http2SubStream(headers, dataFrames)
-      push(out, http2SubStream)
+      push(http2SubStreamsOut, http2SubStream)
     }
 
     def encodeResponse(response: HttpResponse): ByteString = {
@@ -73,9 +73,9 @@ final class HttpResponseHeaderHpackCompression extends GraphStage[FlowShape[Http
       res
     }
 
-    override def onPull(): Unit = pull(in)
+    override def onPull(): Unit = pull(httpResponsesIn)
 
-    setHandlers(in, out, this)
+    setHandlers(httpResponsesIn, http2SubStreamsOut, this)
   }
 
 }

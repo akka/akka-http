@@ -32,9 +32,9 @@ private[http] object BodyPartRenderer {
     new GraphStage[FlowShape[Multipart.BodyPart, Source[ChunkStreamPart, Any]]] {
       var firstBoundaryRendered = false
 
-      val in: Inlet[Multipart.BodyPart] = Inlet("BodyPartRenderer.in")
-      val out: Outlet[Source[ChunkStreamPart, Any]] = Outlet("BodyPartRenderer.out")
-      override val shape: FlowShape[Multipart.BodyPart, Source[ChunkStreamPart, Any]] = FlowShape(in, out)
+      val bodyPartsIn: Inlet[Multipart.BodyPart] = Inlet("BodyPartRenderer.bodyPartsIn")
+      val chunkedStreamPartsOut: Outlet[Source[ChunkStreamPart, Any]] = Outlet("BodyPartRenderer.chunkedStreamPartsOut")
+      override val shape: FlowShape[Multipart.BodyPart, Source[ChunkStreamPart, Any]] = FlowShape(bodyPartsIn, chunkedStreamPartsOut)
 
       override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
         new GraphStageLogic(shape) with InHandler with OutHandler with StageLoggingWithOverride {
@@ -59,30 +59,30 @@ private[http] object BodyPartRenderer {
             renderBoundary(r, boundary, suppressInitialCrLf = !firstBoundaryRendered)
             firstBoundaryRendered = true
 
-            val bodyPart = grab(in)
+            val bodyPart = grab(bodyPartsIn)
             renderEntityContentType(r, bodyPart.entity)
             renderHeaders(r, bodyPart.headers, log)
 
-            push(out, completePartRendering(bodyPart.entity))
+            push(chunkedStreamPartsOut, completePartRendering(bodyPart.entity))
           }
 
           override def onPull(): Unit =
-            if (isClosed(in) && firstBoundaryRendered)
+            if (isClosed(bodyPartsIn) && firstBoundaryRendered)
               completeRendering()
-            else if (isClosed(in)) completeStage()
-            else pull(in)
+            else if (isClosed(bodyPartsIn)) completeStage()
+            else pull(bodyPartsIn)
 
           override def onUpstreamFinish(): Unit =
-            if (isAvailable(out) && firstBoundaryRendered) completeRendering()
+            if (isAvailable(chunkedStreamPartsOut) && firstBoundaryRendered) completeRendering()
 
           private def completeRendering(): Unit = {
             val r = new ByteStringRendering(boundary.length + 4)
             renderFinalBoundary(r, boundary)
-            push(out, chunkStream(r.get))
+            push(chunkedStreamPartsOut, chunkStream(r.get))
             completeStage()
           }
 
-          setHandlers(in, out, this)
+          setHandlers(bodyPartsIn, chunkedStreamPartsOut, this)
         }
 
       private def chunkStream(byteString: ByteString): Source[ChunkStreamPart, Any] =

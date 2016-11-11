@@ -60,9 +60,9 @@ private[http] class HttpResponseRendererFactory(
   def renderer: Flow[ResponseRenderingContext, ResponseRenderingOutput, NotUsed] = Flow.fromGraph(HttpResponseRenderer)
 
   object HttpResponseRenderer extends GraphStage[FlowShape[ResponseRenderingContext, ResponseRenderingOutput]] {
-    val in = Inlet[ResponseRenderingContext]("in")
-    val out = Outlet[ResponseRenderingOutput]("out")
-    val shape: FlowShape[ResponseRenderingContext, ResponseRenderingOutput] = FlowShape(in, out)
+    val renderingContextsIn = Inlet[ResponseRenderingContext]("HttpResponseRenderer.renderingContextsIn")
+    val renderingOutputsOut = Outlet[ResponseRenderingOutput]("HttpResponseRenderer.renderingOutputsOut")
+    val shape: FlowShape[ResponseRenderingContext, ResponseRenderingOutput] = FlowShape(renderingContextsIn, renderingOutputsOut)
 
     def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
       new GraphStageLogic(shape) {
@@ -71,11 +71,11 @@ private[http] class HttpResponseRendererFactory(
         def closeIf(cond: Boolean): Unit = if (cond) closeMode = CloseConnection
         var transferring = false
 
-        setHandler(in, new InHandler {
+        setHandler(renderingContextsIn, new InHandler {
           override def onPush(): Unit =
-            render(grab(in)) match {
+            render(grab(renderingContextsIn)) match {
               case Strict(outElement) ⇒
-                push(out, outElement)
+                push(renderingOutputsOut, outElement)
                 if (close) completeStage()
               case Streamed(outStream) ⇒ transfer(outStream)
             }
@@ -85,23 +85,23 @@ private[http] class HttpResponseRendererFactory(
             else completeStage()
         })
         val waitForDemandHandler = new OutHandler {
-          def onPull(): Unit = pull(in)
+          def onPull(): Unit = pull(renderingContextsIn)
         }
-        setHandler(out, waitForDemandHandler)
+        setHandler(renderingOutputsOut, waitForDemandHandler)
         def transfer(outStream: Source[ResponseRenderingOutput, Any]): Unit = {
           transferring = true
           val sinkIn = new SubSinkInlet[ResponseRenderingOutput]("RenderingSink")
           sinkIn.setHandler(new InHandler {
-            override def onPush(): Unit = push(out, sinkIn.grab())
+            override def onPush(): Unit = push(renderingOutputsOut, sinkIn.grab())
             override def onUpstreamFinish(): Unit =
               if (close) completeStage()
               else {
                 transferring = false
-                setHandler(out, waitForDemandHandler)
-                if (isAvailable(out)) pull(in)
+                setHandler(renderingOutputsOut, waitForDemandHandler)
+                if (isAvailable(renderingOutputsOut)) pull(renderingContextsIn)
               }
           })
-          setHandler(out, new OutHandler {
+          setHandler(renderingOutputsOut, new OutHandler {
             override def onPull(): Unit = sinkIn.pull()
             override def onDownstreamFinish(): Unit = {
               completeStage()

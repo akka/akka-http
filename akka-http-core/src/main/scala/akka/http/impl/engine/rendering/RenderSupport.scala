@@ -79,26 +79,26 @@ private object RenderSupport {
   }
 
   class ChunkTransformer extends GraphStage[FlowShape[HttpEntity.ChunkStreamPart, ByteString]] {
-    val out: Outlet[ByteString] = Outlet("ChunkTransformer.out")
-    val in: Inlet[HttpEntity.ChunkStreamPart] = Inlet("ChunkTransformer.in")
-    val shape: FlowShape[HttpEntity.ChunkStreamPart, ByteString] = FlowShape.of(in, out)
+    val chunkedStreamPartsIn: Inlet[HttpEntity.ChunkStreamPart] = Inlet("ChunkTransformer.chunkedStreamPartsIn")
+    val byteStringsOut: Outlet[ByteString] = Outlet("ChunkTransformer.byteStringsOut")
+    val shape: FlowShape[HttpEntity.ChunkStreamPart, ByteString] = FlowShape.of(chunkedStreamPartsIn, byteStringsOut)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
       new GraphStageLogic(shape) with InHandler with OutHandler {
         override def onPush(): Unit = {
-          val chunk = grab(in)
+          val chunk = grab(chunkedStreamPartsIn)
           val bytes = renderChunk(chunk)
-          push(out, bytes)
+          push(byteStringsOut, bytes)
           if (chunk.isLastChunk) completeStage()
         }
 
-        override def onPull(): Unit = pull(in)
+        override def onPull(): Unit = pull(chunkedStreamPartsIn)
 
         override def onUpstreamFinish(): Unit = {
-          emit(out, defaultLastChunkBytes)
+          emit(byteStringsOut, defaultLastChunkBytes)
           completeStage()
         }
-        setHandlers(in, out, this)
+        setHandlers(chunkedStreamPartsIn, byteStringsOut, this)
       }
   }
 

@@ -590,8 +590,8 @@ object HttpEntity {
   private val limitableDefaults = Attributes.name("limitable")
 
   private final class Limitable[T](sizeOf: T ⇒ Int) extends GraphStage[FlowShape[T, T]] {
-    val in = Inlet[T]("Limitable.in")
-    val out = Outlet[T]("Limitable.out")
+    val in = Inlet[T]("Limitable.In")
+    val out = Outlet[T]("Limitable.Out")
     override val shape = FlowShape.of(in, out)
     override protected val initialAttributes: Attributes = limitableDefaults
 

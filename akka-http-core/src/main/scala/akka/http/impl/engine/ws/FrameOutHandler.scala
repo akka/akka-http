@@ -22,48 +22,48 @@ import scala.concurrent.duration.FiniteDuration
  */
 private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDuration, log: LoggingAdapter)
   extends GraphStage[FlowShape[FrameOutHandler.Input, FrameStart]] {
-  val in = Inlet[FrameOutHandler.Input]("in")
-  val out = Outlet[FrameStart]("out")
+  val handlerInputsIn = Inlet[FrameOutHandler.Input]("FrameOutHandler.handlerInputsIn")
+  val frameStartsOut = Outlet[FrameStart]("FrameOutHandler.frameStartsOut")
 
-  override def shape = FlowShape(in, out)
+  override def shape = FlowShape(handlerInputsIn, frameStartsOut)
 
   private def closeTimeout: Timestamp = Timestamp.now + _closeTimeout
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
 
     private def absorbTermination() =
-      if (isAvailable(out)) getHandler(out).onPull()
+      if (isAvailable(frameStartsOut)) getHandler(frameStartsOut).onPull()
 
     private object Idle extends InHandler with ProcotolExceptionHandling {
       override def onPush() =
-        grab(in) match {
-          case start: FrameStart   ⇒ push(out, start)
-          case DirectAnswer(frame) ⇒ push(out, frame)
+        grab(handlerInputsIn) match {
+          case start: FrameStart   ⇒ push(frameStartsOut, start)
+          case DirectAnswer(frame) ⇒ push(frameStartsOut, frame)
           case PeerClosed(code, reason) if !code.exists(Protocol.CloseCodes.isError) ⇒
             // let user complete it, FIXME: maybe make configurable? immediately, or timeout
-            setHandler(in, new WaitingForUserHandlerClosed(FrameEvent.closeFrame(code.getOrElse(Protocol.CloseCodes.Regular), reason)))
-            pull(in)
+            setHandler(handlerInputsIn, new WaitingForUserHandlerClosed(FrameEvent.closeFrame(code.getOrElse(Protocol.CloseCodes.Regular), reason)))
+            pull(handlerInputsIn)
           case PeerClosed(code, reason) ⇒
             val closeFrame = FrameEvent.closeFrame(code.getOrElse(Protocol.CloseCodes.Regular), reason)
             if (serverSide) {
-              push(out, closeFrame)
+              push(frameStartsOut, closeFrame)
               completeStage()
             } else {
-              setHandler(in, new WaitingForTransportClose)
-              push(out, closeFrame)
+              setHandler(handlerInputsIn, new WaitingForTransportClose)
+              push(frameStartsOut, closeFrame)
             }
           case ActivelyCloseWithCode(code, reason) ⇒
             val closeFrame = FrameEvent.closeFrame(code.getOrElse(Protocol.CloseCodes.Regular), reason)
-            setHandler(in, new WaitingForPeerCloseFrame())
-            push(out, closeFrame)
+            setHandler(handlerInputsIn, new WaitingForPeerCloseFrame())
+            push(frameStartsOut, closeFrame)
           case UserHandlerCompleted ⇒
-            setHandler(in, new WaitingForPeerCloseFrame())
-            push(out, FrameEvent.closeFrame(Protocol.CloseCodes.Regular))
+            setHandler(handlerInputsIn, new WaitingForPeerCloseFrame())
+            push(frameStartsOut, FrameEvent.closeFrame(Protocol.CloseCodes.Regular))
           case UserHandlerErredOut(e) ⇒
             log.error(e, s"Websocket handler failed with ${e.getMessage}")
-            setHandler(in, new WaitingForPeerCloseFrame())
-            push(out, FrameEvent.closeFrame(Protocol.CloseCodes.UnexpectedCondition, "internal error"))
-          case Tick ⇒ pull(in) // ignore
+            setHandler(handlerInputsIn, new WaitingForPeerCloseFrame())
+            push(frameStartsOut, FrameEvent.closeFrame(Protocol.CloseCodes.UnexpectedCondition, "internal error"))
+          case Tick ⇒ pull(handlerInputsIn) // ignore
         }
 
       override def onUpstreamFinish(): Unit = {
@@ -77,26 +77,26 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
      */
     private class WaitingForUserHandlerClosed(closeFrame: FrameStart) extends InHandler {
       def onPush() =
-        grab(in) match {
+        grab(handlerInputsIn) match {
           case UserHandlerCompleted ⇒ sendOutLastFrame()
           case UserHandlerErredOut(e) ⇒
             log.error(e, s"Websocket handler failed while waiting for handler completion with ${e.getMessage}")
             sendOutLastFrame()
-          case start: FrameStart ⇒ push(out, start)
-          case _                 ⇒ pull(in) // ignore
+          case start: FrameStart ⇒ push(frameStartsOut, start)
+          case _                 ⇒ pull(handlerInputsIn) // ignore
         }
 
       private def sendOutLastFrame(): Unit =
         if (serverSide) {
-          push(out, closeFrame)
+          push(frameStartsOut, closeFrame)
           completeStage()
         } else {
-          setHandler(in, new WaitingForTransportClose())
-          push(out, closeFrame)
+          setHandler(handlerInputsIn, new WaitingForTransportClose())
+          push(frameStartsOut, closeFrame)
         }
 
       override def onUpstreamFinish(): Unit =
-        fail(out, new IllegalStateException("Mustn't complete before user has completed"))
+        fail(frameStartsOut, new IllegalStateException("Mustn't complete before user has completed"))
     }
 
     /**
@@ -104,17 +104,17 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
      */
     private class WaitingForPeerCloseFrame(timeout: Timestamp = closeTimeout) extends InHandler with ProcotolExceptionHandling {
       override def onPush() =
-        grab(in) match {
+        grab(handlerInputsIn) match {
           case Tick ⇒
             if (timeout.isPast) completeStage()
-            else pull(in)
+            else pull(handlerInputsIn)
           case PeerClosed(code, reason) ⇒
             if (serverSide) completeStage()
             else {
-              setHandler(in, new WaitingForTransportClose())
-              pull(in)
+              setHandler(handlerInputsIn, new WaitingForTransportClose())
+              pull(handlerInputsIn)
             }
-          case _ ⇒ pull(in) // ignore
+          case _ ⇒ pull(handlerInputsIn) // ignore
         }
     }
 
@@ -123,11 +123,11 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
      */
     private class WaitingForTransportClose(timeout: Timestamp = closeTimeout) extends InHandler with ProcotolExceptionHandling {
       override def onPush() = {
-        grab(in) match {
+        grab(handlerInputsIn) match {
           case Tick ⇒
             if (timeout.isPast) completeStage()
-            else pull(in)
-          case _ ⇒ pull(in) // ignore
+            else pull(handlerInputsIn)
+          case _ ⇒ pull(handlerInputsIn) // ignore
         }
       }
     }
@@ -135,10 +135,10 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
     /** If upstream has already failed we just wait to be able to deliver our close frame and complete */
     private class SendOutCloseFrameAndComplete(closeFrame: FrameStart) extends InHandler with OutHandler with ProcotolExceptionHandling {
       override def onPush() =
-        fail(out, new IllegalStateException("Didn't expect push after completion"))
+        fail(frameStartsOut, new IllegalStateException("Didn't expect push after completion"))
 
       override def onPull(): Unit = {
-        push(out, closeFrame)
+        push(frameStartsOut, closeFrame)
         completeStage()
       }
 
@@ -148,8 +148,8 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
 
     def becomeSendOutCloseFrameAndComplete(frameStart: FrameStart): Unit = {
       val inNOutHandler = new SendOutCloseFrameAndComplete(frameStart)
-      setHandler(in, inNOutHandler)
-      setHandler(out, inNOutHandler)
+      setHandler(handlerInputsIn, inNOutHandler)
+      setHandler(frameStartsOut, inNOutHandler)
     }
 
     /** We handle [[ProtocolException]] in a special way (by terminating with a ProtocolError) */
@@ -165,9 +165,9 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
 
     // init handlers
 
-    setHandler(in, Idle)
-    setHandler(out, new OutHandler {
-      override def onPull(): Unit = pull(in)
+    setHandler(handlerInputsIn, Idle)
+    setHandler(frameStartsOut, new OutHandler {
+      override def onPull(): Unit = pull(handlerInputsIn)
     })
 
   }
