@@ -267,13 +267,13 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
           xxxxxxxx
           xxxxxxxx
           xxxxxxxx=23  # stream ID = 23
-          0            # E flag unset
+          1            # E flag set
            xxxxxxx
           xxxxxxxx
           xxxxxxxx
           xxxxxxxx=100 # stream dependency
           xxxxxxxx=55  # weight
-         """ should parseTo(PriorityFrame(0x23, exclusiveFlag = false, streamDependency = 0x100, weight = 0x55), checkRendering = false)
+         """ should parseTo(PriorityFrame(0x23, exclusiveFlag = true, streamDependency = 0x100, weight = 0x55), checkRendering = false)
     }
   }
 

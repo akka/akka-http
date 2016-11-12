@@ -121,7 +121,7 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
 
       case PRIORITY ⇒
         val streamDependency = payload.readIntBE()         // whole word
-        val exclusiveFlag = (streamDependency >> 31) == 1  // most significant bit for exclusive flag
+        val exclusiveFlag = (streamDependency >>> 31) == 1 // most significant bit for exclusive flag
         val dependencyPart = streamDependency & 0x7fffffff // remaining 31 bits for the dependency part
         val priority = payload.readByte()
         PriorityFrame(streamId, exclusiveFlag, dependencyPart, priority)
