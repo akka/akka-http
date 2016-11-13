@@ -34,13 +34,14 @@ public class HttpServerMinimalExampleTest extends AllDirectives {
     final CompletionStage<ServerBinding> binding = http.bindAndHandle(routeFlow,
         ConnectHttp.toHost("localhost", 8080), materializer);
 
-    System.out.println("Server online at http://localhost:8080/\\nPress RETURN to stop...");
+    System.out.println("Server online at http://localhost:8080/\nPress RETURN to stop...");
     System.in.read(); // let it run until user presses return
 
     binding
         .thenCompose(ServerBinding::unbind) // trigger unbinding from the port
         .thenAccept(unbound -> system.terminate()); // and shutdown when done
   }
+
   private Route createRoute() {
     return route(
         path("hello", () ->
