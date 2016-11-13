@@ -62,10 +62,10 @@ private[http] final class BodyPartParser(
     if (illegalHeaderWarnings) log.warning(errorInfo.withSummaryPrepended("Illegal multipart header").formatPretty)
   }
 
-  val byteStringsIn = Inlet[ByteString]("BodyPartParser.byteStringsIn")
-  val bodyPartsOut = Outlet[BodyPartParser.Output]("BodyPartParser.bodyPartsOut")
+  val in = Inlet[ByteString]("BodyPartParser.in")
+  val out = Outlet[BodyPartParser.Output]("BodyPartParser.out")
 
-  override val shape = FlowShape(byteStringsIn, bodyPartsOut)
+  override val shape = FlowShape(in, out)
 
   override def createLogic(attributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler {
@@ -75,7 +75,7 @@ private[http] final class BodyPartParser(
 
       override def onPush(): Unit = {
         if (!shouldTerminate) {
-          val elem = grab(byteStringsIn)
+          val elem = grab(in)
           try state(elem)
           catch {
             case e: ParsingException ⇒ fail(e.info)
@@ -83,25 +83,25 @@ private[http] final class BodyPartParser(
               // we are missing a try/catch{continue} wrapper somewhere
               throw new IllegalStateException("unexpected NotEnoughDataException", NotEnoughDataException)
           }
-          if (output.nonEmpty) push(bodyPartsOut, dequeue())
-          else if (!shouldTerminate) pull(byteStringsIn)
+          if (output.nonEmpty) push(out, dequeue())
+          else if (!shouldTerminate) pull(in)
           else completeStage()
         } else completeStage()
       }
 
       override def onPull(): Unit = {
-        if (output.nonEmpty) push(bodyPartsOut, dequeue())
-        else if (isClosed(byteStringsIn)) {
-          if (!shouldTerminate) push(bodyPartsOut, ParseError(ErrorInfo("Unexpected end of multipart entity")))
+        if (output.nonEmpty) push(out, dequeue())
+        else if (isClosed(in)) {
+          if (!shouldTerminate) push(out, ParseError(ErrorInfo("Unexpected end of multipart entity")))
           completeStage()
-        } else pull(byteStringsIn)
+        } else pull(in)
       }
 
       override def onUpstreamFinish(): Unit = {
-        if (isAvailable(bodyPartsOut)) onPull()
+        if (isAvailable(out)) onPull()
       }
 
-      setHandlers(byteStringsIn, bodyPartsOut, this)
+      setHandlers(in, out, this)
 
       def warnOnIllegalHeader(errorInfo: ErrorInfo): Unit =
         if (illegalHeaderWarnings) log.warning(errorInfo.withSummaryPrepended("Illegal multipart header").formatPretty)

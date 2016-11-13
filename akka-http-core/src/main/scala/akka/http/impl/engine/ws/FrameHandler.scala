@@ -26,22 +26,22 @@ private[http] object FrameHandler {
     Flow[FrameEventOrError].via(new HandlerStage(server))
 
   private class HandlerStage(server: Boolean) extends GraphStage[FlowShape[FrameEventOrError, Output]] {
-    val frameEventsOrErrorsIn = Inlet[FrameEventOrError](Logging.simpleName(this) + ".frameEventsOrErrorsIn")
-    val outputsOut = Outlet[Output](Logging.simpleName(this) + ".outputsOut")
-    override val shape = FlowShape(frameEventsOrErrorsIn, outputsOut)
+    val in = Inlet[FrameEventOrError](Logging.simpleName(this) + ".in")
+    val out = Outlet[Output](Logging.simpleName(this) + ".out")
+    override val shape = FlowShape(in, out)
 
     override def toString: String = s"HandlerStage(server=$server)"
 
     override def createLogic(attributes: Attributes): GraphStageLogic =
       new GraphStageLogic(shape) with OutHandler {
-        setHandler(outputsOut, this)
-        setHandler(frameEventsOrErrorsIn, IdleHandler)
+        setHandler(out, this)
+        setHandler(in, IdleHandler)
 
-        override def onPull(): Unit = pull(frameEventsOrErrorsIn)
+        override def onPull(): Unit = pull(in)
 
         private object IdleHandler extends ControlFrameStartHandler {
           def setAndHandleFrameStartWith(newHandler: ControlFrameStartHandler, start: FrameStart): Unit = {
-            setHandler(frameEventsOrErrorsIn, newHandler)
+            setHandler(in, newHandler)
             newHandler.handleFrameStart(start)
           }
 
@@ -113,7 +113,7 @@ private[http] object FrameHandler {
           override def handleFrameData(data: FrameData): Unit = {
             this.data ++= data.data
             if (data.lastPart) handleControlFrame(opcode, this.data, nextHandler)
-            else pull(frameEventsOrErrorsIn)
+            else pull(in)
           }
 
           override def handleFrameStart(start: FrameStart): Unit =
@@ -125,15 +125,15 @@ private[http] object FrameHandler {
           def handleFrameStart(start: FrameStart): Unit
 
           def handleControlFrame(opcode: Opcode, data: ByteString, nextHandler: InHandler): Unit = {
-            setHandler(frameEventsOrErrorsIn, nextHandler)
+            setHandler(in, nextHandler)
             opcode match {
               case Opcode.Ping ⇒ publishDirectResponse(FrameEvent.fullFrame(Opcode.Pong, None, data, fin = true))
               case Opcode.Pong ⇒
                 // ignore unsolicited Pong frame
-                pull(frameEventsOrErrorsIn)
+                pull(in)
               case Opcode.Close ⇒
-                setHandler(frameEventsOrErrorsIn, WaitForPeerTcpClose)
-                push(outputsOut, PeerClosed.parse(data))
+                setHandler(in, WaitForPeerTcpClose)
+                push(out, PeerClosed.parse(data))
               case Opcode.Other(o) ⇒ closeWithCode(Protocol.CloseCodes.ProtocolError, "Unsupported opcode")
               case other ⇒ failStage(
                 new IllegalStateException(s"unexpected message of type [${other.getClass.getName}] when expecting ControlFrame")
@@ -144,23 +144,23 @@ private[http] object FrameHandler {
           def pushProtocolError(): Unit = closeWithCode(Protocol.CloseCodes.ProtocolError)
 
           def closeWithCode(closeCode: Int, reason: String = ""): Unit = {
-            setHandler(frameEventsOrErrorsIn, CloseAfterPeerClosed)
-            push(outputsOut, ActivelyCloseWithCode(Some(closeCode), reason))
+            setHandler(in, CloseAfterPeerClosed)
+            push(out, ActivelyCloseWithCode(Some(closeCode), reason))
           }
 
           def collectControlFrame(start: FrameStart, nextHandler: InHandler): Unit = {
             require(!start.isFullMessage)
-            setHandler(frameEventsOrErrorsIn, new ControlFrameDataHandler(start.header.opcode, start.data, nextHandler))
-            pull(frameEventsOrErrorsIn)
+            setHandler(in, new ControlFrameDataHandler(start.header.opcode, start.data, nextHandler))
+            pull(in)
           }
 
           def publishMessagePart(part: MessageDataPart): Unit =
-            if (part.last) emitMultiple(outputsOut, Iterator(part, MessageEnd), () ⇒ setHandler(frameEventsOrErrorsIn, IdleHandler))
-            else push(outputsOut, part)
+            if (part.last) emitMultiple(out, Iterator(part, MessageEnd), () ⇒ setHandler(in, IdleHandler))
+            else push(out, part)
 
-          def publishDirectResponse(frame: FrameStart): Unit = push(outputsOut, DirectAnswer(frame))
+          def publishDirectResponse(frame: FrameStart): Unit = push(out, DirectAnswer(frame))
 
-          override def onPush(): Unit = grab(frameEventsOrErrorsIn) match {
+          override def onPush(): Unit = grab(in) match {
             case data: FrameData   ⇒ handleFrameData(data)
             case start: FrameStart ⇒ handleFrameStart(start)
             case FrameError(ex)    ⇒ failStage(ex)
@@ -168,16 +168,16 @@ private[http] object FrameHandler {
         }
 
         private object CloseAfterPeerClosed extends InHandler {
-          override def onPush(): Unit = grab(frameEventsOrErrorsIn) match {
+          override def onPush(): Unit = grab(in) match {
             case FrameStart(FrameHeader(Opcode.Close, _, length, _, _, _, _), data) ⇒
-              setHandler(frameEventsOrErrorsIn, WaitForPeerTcpClose)
-              push(outputsOut, PeerClosed.parse(data))
-            case _ ⇒ pull(frameEventsOrErrorsIn) // ignore all other data
+              setHandler(in, WaitForPeerTcpClose)
+              push(out, PeerClosed.parse(data))
+            case _ ⇒ pull(in) // ignore all other data
           }
         }
 
         private object WaitForPeerTcpClose extends InHandler {
-          override def onPush(): Unit = pull(frameEventsOrErrorsIn) // ignore
+          override def onPush(): Unit = pull(in) // ignore
         }
       }
   }

@@ -26,17 +26,17 @@ final class HttpResponseHeaderHpackCompression extends GraphStage[FlowShape[Http
   // FIXME Make configurable
   final val maxHeaderTableSize = 4096
 
-  val httpResponsesIn = Inlet[HttpResponse]("HeaderDecompression.httpResponsesIn")
-  val http2SubStreamsOut = Outlet[Http2SubStream]("HeaderDecompression.http2SubStreamsOut")
+  val httpResponseIn = Inlet[HttpResponse]("HeaderDecompression.httpResponseIn")
+  val http2SubStreamOut = Outlet[Http2SubStream]("HeaderDecompression.http2SubStreamOut")
 
-  override def shape = FlowShape.of(httpResponsesIn, http2SubStreamsOut)
+  override def shape = FlowShape.of(httpResponseIn, http2SubStreamOut)
 
   override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
     val encoder = new com.twitter.hpack.Encoder(maxHeaderTableSize)
     val os = new ByteArrayOutputStream() // FIXME: use a reasonable default size
 
     override def onPush(): Unit = {
-      val response = grab(httpResponsesIn)
+      val response = grab(httpResponseIn)
       // TODO possibly specialize static table? https://http2.github.io/http2-spec/compression.html#static.table.definition
       val headerBlockFragment = encodeResponse(response)
 
@@ -55,7 +55,7 @@ final class HttpResponseHeaderHpackCompression extends GraphStage[FlowShape[Http
 
       val headers = HeadersFrame(streamId, endStream = dataFrames == Source.empty, endHeaders = true, headerBlockFragment)
       val http2SubStream = Http2SubStream(headers, dataFrames)
-      push(http2SubStreamsOut, http2SubStream)
+      push(http2SubStreamOut, http2SubStream)
     }
 
     def encodeResponse(response: HttpResponse): ByteString = {
@@ -73,9 +73,9 @@ final class HttpResponseHeaderHpackCompression extends GraphStage[FlowShape[Http
       res
     }
 
-    override def onPull(): Unit = pull(httpResponsesIn)
+    override def onPull(): Unit = pull(httpResponseIn)
 
-    setHandlers(httpResponsesIn, http2SubStreamsOut, this)
+    setHandlers(httpResponseIn, http2SubStreamOut, this)
   }
 
 }

@@ -32,10 +32,10 @@ private[http] final class HttpRequestParser(
   import HttpMessageParser._
   import settings._
 
-  val sessionBytesIn = Inlet[SessionBytes]("HttpRequestParser.sessionBytesIn")
-  val requestsOut = Outlet[RequestOutput]("HttpRequestParser.requestsOut")
+  val in = Inlet[SessionBytes]("HttpRequestParser.in")
+  val out = Outlet[RequestOutput]("HttpRequestParser.out")
 
-  val shape = FlowShape.of(sessionBytesIn, requestsOut)
+  val shape = FlowShape.of(in, out)
 
   override protected def initialAttributes: Attributes = Attributes.name("HttpRequestParser")
 
@@ -50,20 +50,20 @@ private[http] final class HttpRequestParser(
     private[this] var uri: Uri = _
     private[this] var uriBytes: ByteString = _
 
-    override def onPush(): Unit = handleParserOutput(parseSessionBytes(grab(sessionBytesIn)))
+    override def onPush(): Unit = handleParserOutput(parseSessionBytes(grab(in)))
     override def onPull(): Unit = handleParserOutput(doPull())
 
     override def onUpstreamFinish(): Unit =
       if (super.shouldComplete()) completeStage()
-      else if (isAvailable(requestsOut)) handleParserOutput(doPull())
+      else if (isAvailable(out)) handleParserOutput(doPull())
 
-    setHandlers(sessionBytesIn, requestsOut, this)
+    setHandlers(in, out, this)
 
     private def handleParserOutput(output: RequestOutput): Unit = {
       output match {
         case StreamEnd    ⇒ completeStage()
-        case NeedMoreData ⇒ pull(sessionBytesIn)
-        case x            ⇒ push(requestsOut, x)
+        case NeedMoreData ⇒ pull(in)
+        case x            ⇒ push(out, x)
       }
     }
 

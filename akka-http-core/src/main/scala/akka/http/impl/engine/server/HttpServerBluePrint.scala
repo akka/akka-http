@@ -243,10 +243,10 @@ private[http] object HttpServerBluePrint {
 
   class RequestTimeoutSupport(initialTimeout: Duration)
     extends GraphStage[BidiShape[HttpRequest, HttpRequest, HttpResponse, HttpResponse]] {
-    private val requestIn = Inlet[HttpRequest]("requestIn")
-    private val requestOut = Outlet[HttpRequest]("requestOut")
-    private val responseIn = Inlet[HttpResponse]("responseIn")
-    private val responseOut = Outlet[HttpResponse]("responseOut")
+    private val requestIn = Inlet[HttpRequest]("RequestTimeoutSupport.requestIn")
+    private val requestOut = Outlet[HttpRequest]("RequestTimeoutSupport.requestOut")
+    private val responseIn = Inlet[HttpResponse]("RequestTimeoutSupport.responseIn")
+    private val responseOut = Outlet[HttpResponse]("RequestTimeoutSupport.responseOut")
 
     override def initialAttributes = Attributes.name("RequestTimeoutSupport")
 
@@ -359,15 +359,15 @@ private[http] object HttpServerBluePrint {
     extends GraphStage[BidiShape[RequestOutput, RequestOutput, HttpResponse, ResponseRenderingContext]] {
     private val requestParsingIn = Inlet[RequestOutput]("ControllerStage.requestParsingIn")
     private val requestPrepOut = Outlet[RequestOutput]("ControllerStage.requestPrepOut")
-    private val httpResponsesIn = Inlet[HttpResponse]("ControllerStage.httpResponsesIn")
-    private val responseCtxsOut = Outlet[ResponseRenderingContext]("ControllerStage.responseCtxsOut")
+    private val httpResponseIn = Inlet[HttpResponse]("ControllerStage.httpResponseIn")
+    private val responseCtxOut = Outlet[ResponseRenderingContext]("ControllerStage.responseCtxOut")
 
     override def initialAttributes = Attributes.name("ControllerStage")
 
-    val shape = new BidiShape(requestParsingIn, requestPrepOut, httpResponsesIn, responseCtxsOut)
+    val shape = new BidiShape(requestParsingIn, requestPrepOut, httpResponseIn, responseCtxOut)
 
     def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
-      val pullHttpResponseIn = () ⇒ pull(httpResponsesIn)
+      val pullHttpResponseIn = () ⇒ pull(httpResponseIn)
       var openRequests = immutable.Queue[RequestStart]()
       var oneHundredContinueResponsePending = false
       var pullSuppressed = false
@@ -406,9 +406,9 @@ private[http] object HttpServerBluePrint {
         override def onDownstreamFinish() = cancel(requestParsingIn)
       })
 
-      setHandler(httpResponsesIn, new InHandler {
+      setHandler(httpResponseIn, new InHandler {
         def onPush(): Unit = {
-          val response = grab(httpResponsesIn)
+          val response = grab(httpResponseIn)
           val requestStart = openRequests.head
           openRequests = openRequests.tail
           val isEarlyResponse = messageEndPending && openRequests.isEmpty
@@ -422,13 +422,13 @@ private[http] object HttpServerBluePrint {
             (isClosed(requestParsingIn) && openRequests.isEmpty) ||
             isEarlyResponse
 
-          emit(responseCtxsOut, ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close),
+          emit(responseCtxOut, ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close),
             pullHttpResponseIn)
           if (!isClosed(requestParsingIn) && close && requestStart.expect100Continue) pull(requestParsingIn)
         }
         override def onUpstreamFinish() =
           if (openRequests.isEmpty && isClosed(requestParsingIn)) completeStage()
-          else complete(responseCtxsOut)
+          else complete(responseCtxOut)
         override def onUpstreamFailure(ex: Throwable): Unit =
           ex match {
             case EntityStreamException(errorInfo) ⇒
@@ -452,13 +452,13 @@ private[http] object HttpServerBluePrint {
       class ResponseCtxOutHandler extends OutHandler {
         override def onPull() = {}
         override def onDownstreamFinish() =
-          cancel(httpResponsesIn) // we cannot fully completeState() here as the websocket pipeline would not complete properly
+          cancel(httpResponseIn) // we cannot fully completeState() here as the websocket pipeline would not complete properly
       }
-      setHandler(responseCtxsOut, new ResponseCtxOutHandler {
+      setHandler(responseCtxOut, new ResponseCtxOutHandler {
         override def onPull() = {
-          pull(httpResponsesIn)
+          pull(httpResponseIn)
           // after the initial pull here we only ever pull after having emitted in `onPush` of `httpResponseIn`
-          setHandler(responseCtxsOut, new ResponseCtxOutHandler)
+          setHandler(responseCtxOut, new ResponseCtxOutHandler)
         }
       })
 
@@ -471,7 +471,7 @@ private[http] object HttpServerBluePrint {
       }
 
       def emitErrorResponse(response: HttpResponse): Unit =
-        emit(responseCtxsOut, ResponseRenderingContext(response, closeRequested = true), () ⇒ completeStage())
+        emit(responseCtxOut, ResponseRenderingContext(response, closeRequested = true), () ⇒ completeStage())
 
       /**
        * The `Expect: 100-continue` header has a special status in HTTP.
@@ -509,7 +509,7 @@ private[http] object HttpServerBluePrint {
       val emit100ContinueResponse =
         getAsyncCallback[Unit] { _ ⇒
           oneHundredContinueResponsePending = false
-          emit(responseCtxsOut, ResponseRenderingContext(HttpResponse(StatusCodes.Continue)))
+          emit(responseCtxOut, ResponseRenderingContext(HttpResponse(StatusCodes.Continue)))
           if (pullSuppressed) {
             pullSuppressed = false
             pull(requestParsingIn)
@@ -517,9 +517,9 @@ private[http] object HttpServerBluePrint {
         }
 
       case object OneHundredContinueStage extends GraphStage[FlowShape[ParserOutput, ParserOutput]] {
-        val parserOutputsIn: Inlet[ParserOutput] = Inlet("OneHundredContinueStage.parserOutputsIn")
-        val parserOutputsOut: Outlet[ParserOutput] = Outlet("OneHundredContinueStage.parserOutputsOut")
-        override val shape: FlowShape[ParserOutput, ParserOutput] = FlowShape(parserOutputsIn, parserOutputsOut)
+        val in: Inlet[ParserOutput] = Inlet("OneHundredContinueStage.in")
+        val out: Outlet[ParserOutput] = Outlet("OneHundredContinueStage.out")
+        override val shape: FlowShape[ParserOutput, ParserOutput] = FlowShape(in, out)
 
         override def initialAttributes = Attributes.name("expect100continueTrigger")
 
@@ -527,16 +527,16 @@ private[http] object HttpServerBluePrint {
           new GraphStageLogic(shape) with InHandler with OutHandler {
             private var oneHundredContinueSent = false
 
-            override def onPush(): Unit = push(parserOutputsOut, grab(parserOutputsIn))
+            override def onPush(): Unit = push(out, grab(in))
             override def onPull(): Unit = {
               if (!oneHundredContinueSent) {
                 oneHundredContinueSent = true
                 emit100ContinueResponse.invoke(())
               }
-              pull(parserOutputsIn)
+              pull(in)
             }
 
-            setHandlers(parserOutputsIn, parserOutputsOut, this)
+            setHandlers(in, out, this)
           }
       }
 
@@ -560,15 +560,15 @@ private[http] object HttpServerBluePrint {
   private class ProtocolSwitchStage(settings: ServerSettings, log: LoggingAdapter)
     extends GraphStage[BidiShape[ResponseRenderingOutput, ByteString, SessionBytes, SessionBytes]] {
 
-    private val fromNetIn = Inlet[SessionBytes]("ProtocolSwitchStage.fromNetIn")
-    private val toNetOut = Outlet[ByteString]("ProtocolSwitchStage.toNetOut")
+    private val fromNet = Inlet[SessionBytes]("ProtocolSwitchStage.fromNet")
+    private val toNet = Outlet[ByteString]("ProtocolSwitchStage.toNet")
 
-    private val toHttpOut = Outlet[SessionBytes]("ProtocolSwitchStage.toHttpOut")
-    private val fromHttpIn = Inlet[ResponseRenderingOutput]("ProtocolSwitchStage.fromHttpIn")
+    private val toHttp = Outlet[SessionBytes]("ProtocolSwitchStage.toHttp")
+    private val fromHttp = Inlet[ResponseRenderingOutput]("ProtocolSwitchStage.fromHttp")
 
     override def initialAttributes = Attributes.name("ProtocolSwitchStage")
 
-    override val shape = BidiShape(fromHttpIn, toNetOut, fromNetIn, toHttpOut)
+    override val shape = BidiShape(fromHttp, toNet, fromNet, toHttp)
 
     def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
       import akka.http.impl.engine.rendering.ResponseRenderingOutput._
@@ -578,32 +578,32 @@ private[http] object HttpServerBluePrint {
        * are replaced.
        */
 
-      setHandler(fromHttpIn, new InHandler {
+      setHandler(fromHttp, new InHandler {
         override def onPush(): Unit =
-          grab(fromHttpIn) match {
-            case HttpData(b) ⇒ push(toNetOut, b)
+          grab(fromHttp) match {
+            case HttpData(b) ⇒ push(toNet, b)
             case SwitchToWebSocket(bytes, handlerFlow) ⇒
-              push(toNetOut, bytes)
-              complete(toHttpOut)
-              cancel(fromHttpIn)
+              push(toNet, bytes)
+              complete(toHttp)
+              cancel(fromHttp)
               switchToWebSocket(handlerFlow)
           }
-        override def onUpstreamFinish(): Unit = complete(toNetOut)
-        override def onUpstreamFailure(ex: Throwable): Unit = fail(toNetOut, ex)
+        override def onUpstreamFinish(): Unit = complete(toNet)
+        override def onUpstreamFailure(ex: Throwable): Unit = fail(toNet, ex)
       })
-      setHandler(toNetOut, new OutHandler {
-        override def onPull(): Unit = pull(fromHttpIn)
+      setHandler(toNet, new OutHandler {
+        override def onPull(): Unit = pull(fromHttp)
         override def onDownstreamFinish(): Unit = completeStage()
       })
 
-      setHandler(fromNetIn, new InHandler {
-        override def onPush(): Unit = push(toHttpOut, grab(fromNetIn))
-        override def onUpstreamFinish(): Unit = complete(toHttpOut)
-        override def onUpstreamFailure(ex: Throwable): Unit = fail(toHttpOut, ex)
+      setHandler(fromNet, new InHandler {
+        override def onPush(): Unit = push(toHttp, grab(fromNet))
+        override def onUpstreamFinish(): Unit = complete(toHttp)
+        override def onUpstreamFailure(ex: Throwable): Unit = fail(toHttp, ex)
       })
-      setHandler(toHttpOut, new OutHandler {
-        override def onPull(): Unit = pull(fromNetIn)
-        override def onDownstreamFinish(): Unit = cancel(fromNetIn)
+      setHandler(toHttp, new OutHandler {
+        override def onPull(): Unit = pull(fromNet)
+        override def onDownstreamFinish(): Unit = cancel(fromNet)
       })
 
       private var activeTimers = 0
@@ -638,13 +638,13 @@ private[http] object HttpServerBluePrint {
 
         val sinkIn = new SubSinkInlet[ByteString]("FrameSink")
         sinkIn.setHandler(new InHandler {
-          override def onPush(): Unit = push(toNetOut, sinkIn.grab())
-          override def onUpstreamFinish(): Unit = complete(toNetOut)
-          override def onUpstreamFailure(ex: Throwable): Unit = fail(toNetOut, ex)
+          override def onPush(): Unit = push(toNet, sinkIn.grab())
+          override def onUpstreamFinish(): Unit = complete(toNet)
+          override def onUpstreamFailure(ex: Throwable): Unit = fail(toNet, ex)
         })
 
-        if (isClosed(fromNetIn)) {
-          setHandler(toNetOut, new OutHandler {
+        if (isClosed(fromNet)) {
+          setHandler(toNet, new OutHandler {
             override def onPull(): Unit = sinkIn.pull()
             override def onDownstreamFinish(): Unit = {
               completeStage()
@@ -661,7 +661,7 @@ private[http] object HttpServerBluePrint {
           })
           addTimeout(timeoutKey)
 
-          setHandler(toNetOut, new OutHandler {
+          setHandler(toNet, new OutHandler {
             override def onPull(): Unit = sinkIn.pull()
             override def onDownstreamFinish(): Unit = {
               completeStage()
@@ -670,21 +670,21 @@ private[http] object HttpServerBluePrint {
             }
           })
 
-          setHandler(fromNetIn, new InHandler {
-            override def onPush(): Unit = sourceOut.push(grab(fromNetIn).bytes)
+          setHandler(fromNet, new InHandler {
+            override def onPush(): Unit = sourceOut.push(grab(fromNet).bytes)
             override def onUpstreamFinish(): Unit = sourceOut.complete()
             override def onUpstreamFailure(ex: Throwable): Unit = sourceOut.fail(ex)
           })
           sourceOut.setHandler(new OutHandler {
             override def onPull(): Unit = {
-              if (!hasBeenPulled(fromNetIn)) pull(fromNetIn)
+              if (!hasBeenPulled(fromNet)) pull(fromNet)
               cancelTimeout(timeoutKey)
               sourceOut.setHandler(new OutHandler {
-                override def onPull(): Unit = if (!hasBeenPulled(fromNetIn)) pull(fromNetIn)
-                override def onDownstreamFinish(): Unit = cancel(fromNetIn)
+                override def onPull(): Unit = if (!hasBeenPulled(fromNet)) pull(fromNet)
+                override def onDownstreamFinish(): Unit = cancel(fromNet)
               })
             }
-            override def onDownstreamFinish(): Unit = cancel(fromNetIn)
+            override def onDownstreamFinish(): Unit = cancel(fromNet)
           })
 
           WebSocket.framing.join(frameHandler).runWith(sourceOut.source, sinkIn.sink)(subFusingMaterializer)

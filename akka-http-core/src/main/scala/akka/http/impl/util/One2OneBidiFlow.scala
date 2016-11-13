@@ -44,13 +44,13 @@ private[http] object One2OneBidiFlow {
    *    +--------------------+
    */
   class One2OneBidi[I, O](maxPending: Int) extends GraphStage[BidiShape[I, I, O, O]] {
-    val in = Inlet[I]("One2OneBidi.In")
-    val out = Outlet[O]("One2OneBidi.Out")
-    val toWrappedOut = Outlet[I]("One2OneBidi.toWrappedOut")
-    val fromWrappedIn = Inlet[O]("One2OneBidi.fromWrappedIn")
+    val in = Inlet[I]("One2OneBidi.in")
+    val out = Outlet[O]("One2OneBidi.out")
+    val toWrapped = Outlet[I]("One2OneBidi.toWrapped")
+    val fromWrapped = Inlet[O]("One2OneBidi.fromWrapped")
 
     override def initialAttributes = Attributes.name("One2OneBidi")
-    val shape = BidiShape(in, toWrappedOut, fromWrappedIn, out)
+    val shape = BidiShape(in, toWrapped, fromWrapped, out)
 
     override def toString = "One2OneBidi"
 
@@ -61,21 +61,21 @@ private[http] object One2OneBidiFlow {
       setHandler(in, new InHandler {
         override def onPush(): Unit = {
           insideWrappedFlow += 1
-          push(toWrappedOut, grab(in))
+          push(toWrapped, grab(in))
         }
-        override def onUpstreamFinish(): Unit = complete(toWrappedOut)
+        override def onUpstreamFinish(): Unit = complete(toWrapped)
       })
 
-      setHandler(toWrappedOut, new OutHandler {
+      setHandler(toWrapped, new OutHandler {
         override def onPull(): Unit =
           if (insideWrappedFlow < maxPending || maxPending == -1) pull(in)
           else pullSuppressed = true
         override def onDownstreamFinish(): Unit = cancel(in)
       })
 
-      setHandler(fromWrappedIn, new InHandler {
+      setHandler(fromWrapped, new InHandler {
         override def onPush(): Unit = {
-          val element = grab(fromWrappedIn)
+          val element = grab(fromWrapped)
           if (insideWrappedFlow > 0) {
             insideWrappedFlow -= 1
             push(out, element)
@@ -92,8 +92,8 @@ private[http] object One2OneBidiFlow {
       })
 
       setHandler(out, new OutHandler {
-        override def onPull(): Unit = pull(fromWrappedIn)
-        override def onDownstreamFinish(): Unit = cancel(fromWrappedIn)
+        override def onPull(): Unit = pull(fromWrapped)
+        override def onDownstreamFinish(): Unit = cancel(fromWrapped)
       })
     }
   }

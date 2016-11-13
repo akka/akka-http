@@ -62,14 +62,14 @@ private[http] object WebSocket {
 
   /* Completes this branch of the flow if no more messages are expected and converts close codes into errors */
   private object PrepareForUserHandler extends GraphStage[FlowShape[MessagePart, MessagePart]] {
-    val messagePartsIn = Inlet[MessagePart]("prepareForUserHandler.messagePartsIn")
-    val messagePartsOut = Outlet[MessagePart]("prepareForUserHandler.messagePartsOut")
-    override val shape = FlowShape(messagePartsIn, messagePartsOut)
+    val in = Inlet[MessagePart]("PrepareForUserHandler.in")
+    val out = Outlet[MessagePart]("PrepareForUserHandler.out")
+    override val shape = FlowShape(in, out)
     override def initialAttributes: Attributes = Attributes.name("PrepareForUserHandler")
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
       var inMessage = false
-      override def onPush(): Unit = grab(messagePartsIn) match {
+      override def onPush(): Unit = grab(in) match {
         case PeerClosed(code, reason) ⇒
           if (code.exists(Protocol.CloseCodes.isError)) failStage(new PeerClosedConnectionException(code.get, reason))
           else if (inMessage) failStage(new ProtocolException(s"Truncated message, peer closed connection in the middle of message."))
@@ -79,11 +79,11 @@ private[http] object WebSocket {
           else failStage(new IllegalStateException("Regular close from FrameHandler is unexpected"))
         case x: MessageDataPart ⇒
           inMessage = !x.last
-          push(messagePartsOut, x)
-        case x ⇒ push(messagePartsOut, x)
+          push(out, x)
+        case x ⇒ push(out, x)
       }
-      override def onPull(): Unit = pull(messagePartsIn)
-      setHandlers(messagePartsIn, messagePartsOut, this)
+      override def onPull(): Unit = pull(in)
+      setHandlers(in, out, this)
     }
   }
 
@@ -229,21 +229,21 @@ private[http] object WebSocket {
   }
 
   private case object LiftCompletions extends GraphStage[FlowShape[FrameStart, AnyRef]] {
-    private val frameStartsIn = Inlet[FrameStart]("LiftCompletions.frameStartsIn")
-    private val messagesOut = Outlet[AnyRef]("LiftCompletions.messagesOut")
+    private val in = Inlet[FrameStart]("LiftCompletions.in")
+    private val out = Outlet[AnyRef]("LiftCompletions.out")
 
     override def initialAttributes = Attributes.name("LiftCompletions")
 
-    val shape = new FlowShape(frameStartsIn, messagesOut)
+    val shape = new FlowShape(in, out)
 
     def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
-      setHandler(messagesOut, new OutHandler {
-        override def onPull(): Unit = pull(frameStartsIn)
+      setHandler(out, new OutHandler {
+        override def onPull(): Unit = pull(in)
       })
-      setHandler(frameStartsIn, new InHandler {
-        override def onPush(): Unit = push(messagesOut, grab(frameStartsIn))
-        override def onUpstreamFinish(): Unit = emit(messagesOut, UserHandlerCompleted, () ⇒ completeStage())
-        override def onUpstreamFailure(ex: Throwable): Unit = emit(messagesOut, UserHandlerErredOut(ex), () ⇒ completeStage())
+      setHandler(in, new InHandler {
+        override def onPush(): Unit = push(out, grab(in))
+        override def onUpstreamFinish(): Unit = emit(out, UserHandlerCompleted, () ⇒ completeStage())
+        override def onUpstreamFailure(ex: Throwable): Unit = emit(out, UserHandlerErredOut(ex), () ⇒ completeStage())
       })
     }
   }
