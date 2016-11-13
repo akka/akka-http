@@ -89,9 +89,9 @@ private[http] object HttpServerBluePrint {
    * entity).
    */
   final class PrepareRequests(settings: ServerSettings) extends GraphStage[FlowShape[RequestOutput, HttpRequest]] {
-    val requestOutputsIn = Inlet[RequestOutput]("PrepareRequests.requestOutputsIn")
-    val httpRequestsOut = Outlet[HttpRequest]("PrepareRequests.httpRequestsOut")
-    override val shape: FlowShape[RequestOutput, HttpRequest] = FlowShape.of(requestOutputsIn, httpRequestsOut)
+    val in = Inlet[RequestOutput]("PrepareRequests.in")
+    val out = Outlet[HttpRequest]("PrepareRequests.out")
+    override val shape: FlowShape[RequestOutput, HttpRequest] = FlowShape.of(in, out)
 
     override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
       val remoteAddress = inheritedAttributes.get[HttpAttributes.RemoteAddress].flatMap(_.address)
@@ -101,7 +101,7 @@ private[http] object HttpServerBluePrint {
 
       // optimization: to avoid allocations the "idle" case in and out handlers are put directly on the GraphStageLogic itself
       override def onPull(): Unit = {
-        pull(requestOutputsIn)
+        pull(in)
       }
 
       // optimization: this callback is used to handle entity substream cancellation to avoid allocating a dedicated handler
@@ -114,7 +114,7 @@ private[http] object HttpServerBluePrint {
         completeStage()
       }
 
-      override def onPush(): Unit = grab(requestOutputsIn) match {
+      override def onPush(): Unit = grab(in) match {
         case RequestStart(method, uri, protocol, hdrs, entityCreator, _, _) ⇒
           val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
           val effectiveHeaders =
@@ -123,7 +123,7 @@ private[http] object HttpServerBluePrint {
             else hdrs
 
           val entity = createEntity(entityCreator) withSizeLimit settings.parserSettings.maxContentLength
-          push(httpRequestsOut, HttpRequest(effectiveMethod, uri, effectiveHeaders, entity, protocol))
+          push(out, HttpRequest(effectiveMethod, uri, effectiveHeaders, entity, protocol))
         case other ⇒
           throw new IllegalStateException(s"unexpected element of type ${other.getClass}")
       }
@@ -134,11 +134,11 @@ private[http] object HttpServerBluePrint {
         if (completionDeferred) {
           completeStage()
         } else {
-          setHandler(requestOutputsIn, this)
-          setHandler(httpRequestsOut, this)
+          setHandler(in, this)
+          setHandler(out, this)
           if (downstreamPullWaiting) {
             downstreamPullWaiting = false
-            pull(requestOutputsIn)
+            pull(in)
           }
         }
       }
@@ -160,7 +160,7 @@ private[http] object HttpServerBluePrint {
         // optimization: handlers are combined to reduce allocations
         val chunkedRequestHandler = new InHandler with OutHandler {
           def onPush(): Unit = {
-            grab(requestOutputsIn) match {
+            grab(in) match {
               case MessageEnd ⇒
                 entitySource.complete()
                 entitySource = null
@@ -190,8 +190,8 @@ private[http] object HttpServerBluePrint {
           }
         }
 
-        setHandler(requestOutputsIn, chunkedRequestHandler)
-        setHandler(httpRequestsOut, chunkedRequestHandler)
+        setHandler(in, chunkedRequestHandler)
+        setHandler(out, chunkedRequestHandler)
         creator(Source.fromGraph(entitySource.source))
       }
 
