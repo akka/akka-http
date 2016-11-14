@@ -88,7 +88,7 @@ public class SprayJsonExampleTest extends AllDirectives {
     );
   }
 
-  private class Item {
+  private static class Item {
 
     final String name;
     final long id;
@@ -109,7 +109,7 @@ public class SprayJsonExampleTest extends AllDirectives {
     }
   }
 
-  private class Order {
+  private static class Order {
 
     final List<Item> items;
 
