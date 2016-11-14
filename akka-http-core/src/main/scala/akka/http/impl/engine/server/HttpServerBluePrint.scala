@@ -379,7 +379,7 @@ private[http] object HttpServerBluePrint {
             case r: RequestStart ⇒
               openRequests = openRequests.enqueue(r)
               messageEndPending = r.createEntity.isInstanceOf[StreamedEntityCreator[_, _]]
-              val rs = if (r.expect100Continue && !settings.proxyMode) {
+              val rs = if (r.expect100Continue) {
                 oneHundredContinueResponsePending = true
                 r.copy(createEntity = with100ContinueTrigger(r.createEntity))
               } else r
