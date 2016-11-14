@@ -379,7 +379,7 @@ private[http] object HttpServerBluePrint {
             case r: RequestStart ⇒
               openRequests = openRequests.enqueue(r)
               messageEndPending = r.createEntity.isInstanceOf[StreamedEntityCreator[_, _]]
-              val rs = if (r.expect100Continue) {
+              val rs = if (r.expect100Continue && !settings.proxyMode) {
                 oneHundredContinueResponsePending = true
                 r.copy(createEntity = with100ContinueTrigger(r.createEntity))
               } else r
@@ -411,16 +411,23 @@ private[http] object HttpServerBluePrint {
           val response = grab(httpResponseIn)
           val requestStart = openRequests.head
           openRequests = openRequests.tail
-          val isEarlyResponse = messageEndPending && openRequests.isEmpty
-          if (isEarlyResponse && response.status.isSuccess)
+          val (isEarlyResponse, close) = if (settings.proxyMode) {
+            val early = (messageEndPending && openRequests.isEmpty) && !requestStart.expect100Continue
+            val close = requestStart.closeRequested || (isClosed(requestParsingIn) && openRequests.isEmpty)
+            (early, close)
+          } else {
+            val early = messageEndPending && openRequests.isEmpty
+            val close = requestStart.closeRequested ||
+              (requestStart.expect100Continue && oneHundredContinueResponsePending) ||
+              (isClosed(requestParsingIn) && openRequests.isEmpty) || early
+            (early, close)
+          }
+
+          if (isEarlyResponse && response.status.isSuccess && !requestStart.expect100Continue)
             log.warning(
-              "Sending an 2xx 'early' response before end of request was received... " +
+              "Sending a {} 'early' response before end of request was received... " +
                 "Note that the connection will be closed after this response. Also, many clients will not read early responses! " +
-                "Consider only issuing this response after the request data has been completely read!")
-          val close = requestStart.closeRequested ||
-            (requestStart.expect100Continue && oneHundredContinueResponsePending) ||
-            (isClosed(requestParsingIn) && openRequests.isEmpty) ||
-            isEarlyResponse
+                "Consider only issuing this response after the request data has been completely read!", response.status.intValue)
 
           emit(responseCtxOut, ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close),
             pullHttpResponseIn)

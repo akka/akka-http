@@ -32,6 +32,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def rawRequestUriHeader: Boolean
   def transparentHeadRequests: Boolean
   def verboseErrorMessages: Boolean
+  def proxyMode: Boolean
   def responseHeaderSizeHint: Int
   def backlog: Int
   def socketOptions: immutable.Seq[SocketOption]
@@ -49,6 +50,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   override def getTransparentHeadRequests = transparentHeadRequests
   override def getResponseHeaderSizeHint = responseHeaderSizeHint
   override def getVerboseErrorMessages = verboseErrorMessages
+  override def getProxyMode = proxyMode
   override def getSocketOptions = socketOptions.asJava
   override def getServerHeader = OptionConverters.toJava(serverHeader.map(_.asJava))
   override def getTimeouts = timeouts
@@ -67,6 +69,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   override def withRawRequestUriHeader(newValue: Boolean): ServerSettings = self.copy(rawRequestUriHeader = newValue)
   override def withTransparentHeadRequests(newValue: Boolean): ServerSettings = self.copy(transparentHeadRequests = newValue)
   override def withVerboseErrorMessages(newValue: Boolean): ServerSettings = self.copy(verboseErrorMessages = newValue)
+  override def withProxyMode(newValue: Boolean): ServerSettings = self.copy(proxyMode = newValue)
   override def withResponseHeaderSizeHint(newValue: Int): ServerSettings = self.copy(responseHeaderSizeHint = newValue)
   override def withBacklog(newValue: Int): ServerSettings = self.copy(backlog = newValue)
   override def withSocketOptions(newValue: java.lang.Iterable[SocketOption]): ServerSettings = self.copy(socketOptions = newValue.asScala.toList)
