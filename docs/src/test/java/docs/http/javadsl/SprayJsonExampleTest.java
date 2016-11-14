@@ -54,11 +54,12 @@ public class SprayJsonExampleTest extends AllDirectives {
       .thenAccept(unbound -> system.terminate()); // and shutdown when done
   }
 
-
+  // (fake) async database query api
   private CompletionStage<Optional<Item>> fetchItem(long itemId) {
     return CompletableFuture.completedFuture(Optional.of(new Item("foo", itemId)));
   }
 
+  // (fake) async database query api
   private CompletionStage<Done> saveOrder(final Order order) {
     return CompletableFuture.completedFuture(Done.getInstance());
   }
@@ -70,12 +71,10 @@ public class SprayJsonExampleTest extends AllDirectives {
         pathPrefix("item", () ->
           path(longSegment(), (Long id) -> {
             final CompletionStage<Optional<Item>> futureMaybeItem = fetchItem(id);
-            return onSuccess(() -> futureMaybeItem, maybeItem -> {
-              if (!maybeItem.isPresent()) {
-                return complete(StatusCodes.NOT_FOUND);
-              }
-              return completeOK(maybeItem.get(), Jackson.marshaller());
-            });
+            return onSuccess(() -> futureMaybeItem, maybeItem ->
+              maybeItem.map(item -> completeOK(item, Jackson.marshaller()))
+                .orElseGet(() -> complete(StatusCodes.NOT_FOUND, "Not Found"))
+            );
           }))),
       post(() ->
         path("create-order", () ->
