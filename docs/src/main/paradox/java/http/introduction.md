@@ -21,6 +21,8 @@ However, if your application is not primarily a web application because its core
 
 Akka HTTP was designed specifically as “not-a-framework”, not because we don’t like frameworks, but for use cases where a framework is not the right choice. Akka HTTP is made for building integration layers based on HTTP and as such tries to “stay on the sidelines”. Therefore you normally don’t build your application “on top of” Akka HTTP, but you build your application on top of whatever makes sense and use Akka HTTP merely for the HTTP integration needs.
 
+On the other hand, if you prefer to build your applications with the guidance of a framework, you should give Play Framework or Lagom a try, which both use Akka internally.
+
 ## Using Akka HTTP
 
 Akka HTTP is provided in a separate jar file, to use it make sure to include the following dependency:
