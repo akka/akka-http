@@ -3,7 +3,6 @@
  */
 package docs.http.javadsl;
 //#minimal-routing-example
-
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.ConnectHttp;

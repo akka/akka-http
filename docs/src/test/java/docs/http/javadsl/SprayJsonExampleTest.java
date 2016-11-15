@@ -4,8 +4,6 @@
 
 package docs.http.javadsl;
 //#second-spray-json-example
-
-
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;

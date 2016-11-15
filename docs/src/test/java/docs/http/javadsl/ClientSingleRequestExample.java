@@ -23,6 +23,7 @@ public class ClientSingleRequestExample {
     final CompletionStage<HttpResponse> responseFuture =
       Http.get(system)
         .singleRequest(HttpRequest.create("http://akka.io"), materializer);
-    //#single-request-example
   }
 }
+//#single-request-example
+

@@ -5,7 +5,6 @@
 package docs.http.javadsl;
 
 //#actor-interaction
-
 import akka.NotUsed;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;

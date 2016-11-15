@@ -5,7 +5,6 @@
 package docs.http.javadsl;
 
 //#low-level-server-example
-
 import akka.actor.ActorSystem;
 import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
