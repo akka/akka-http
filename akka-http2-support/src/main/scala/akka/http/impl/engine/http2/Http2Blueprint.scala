@@ -5,6 +5,7 @@
 package akka.http.impl.engine.http2
 
 import akka.NotUsed
+import akka.event.Logging
 import akka.http.impl.engine.http2.parsing.HttpRequestHeaderHpackDecompression
 import akka.http.impl.engine.http2.rendering.HttpResponseHeaderHpackCompression
 import akka.http.scaladsl.model.HttpRequest
@@ -31,10 +32,11 @@ private[http2] final case class Http2SubStream(initialFrame: HeadersFrame, frame
 
 object Http2Blueprint {
   // format: OFF
-  def serverStack(): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
+  def serverStack(): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
     httpLayer() atop
     demux() atop
     framing()
+  }
   // format: ON
 
   def framing(): BidiFlow[FrameEvent, ByteString, ByteString, FrameEvent, NotUsed] =
@@ -59,7 +61,7 @@ object Http2Blueprint {
    */
   def httpLayer(): BidiFlow[HttpResponse, Http2SubStream, Http2SubStream, HttpRequest, NotUsed] = {
     val incomingRequests = Flow[Http2SubStream].via(new HttpRequestHeaderHpackDecompression)
-      .log(getClass.getSimpleName)
+      .log(Logging.simpleName(getClass)) //FIXME replace with a proper `atop logging()`
     val outgoingResponses = Flow[HttpResponse].via(new HttpResponseHeaderHpackCompression)
     BidiFlow.fromFlows(outgoingResponses, incomingRequests)
   }

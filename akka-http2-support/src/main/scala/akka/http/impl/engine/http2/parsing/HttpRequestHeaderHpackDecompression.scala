@@ -58,7 +58,7 @@ private[http2] final class HttpRequestHeaderHpackDecompression extends GraphStag
           } else {
             // FIXME fix the size and entity type according to info from headers
             val data = http2SubStream.frames.completeAfter(_.endStream).map(_.payload)
-            HttpEntity.Default(ContentTypes.NoContentType, 1000, data)
+            HttpEntity.Default(ContentTypes.NoContentType, Long.MaxValue, data) // FIXME that 1 is a hack, since it must be positive, and we're awaiting a real content length...
           }
 
         beingBuiltRequest = beingBuiltRequest.copy(entity = entity)
@@ -122,8 +122,36 @@ private[http2] final class HttpRequestHeaderHpackDecompression extends GraphStag
               throw new Exception(s": prefixed header should be emitted well-typed! Was: '${new String(unknown)}'. This is a bug.")
           }
         } else {
-          // FIXME handle all typed headers
-          beingBuiltRequest = beingBuiltRequest.addHeader(RawHeader(nameString, new String(value)))
+          nameString match {
+            case "content-type" ⇒
+
+              val entity = beingBuiltRequest.entity
+              ContentType.parse(valueString) match {
+                case Right(ct) ⇒
+                  val len = entity.contentLengthOption.getOrElse(0L)
+                  // FIXME instead of putting in random 1, this should become a builder, that emits the right type of entity (with known size or not)
+                  val newEntity =
+                    if (len == 0) HttpEntity.Strict(ct, ByteString.empty) // HttpEntity.empty(entity.contentType)
+                    else HttpEntity.Default(ct, len, entity.dataBytes)
+
+                  beingBuiltRequest = beingBuiltRequest.copy(entity = newEntity) // FIXME not quite correct still
+                case Left(errorInfos) ⇒ throw new ParsingException(errorInfos.head)
+              }
+
+            case "content-length" ⇒
+              val entity = beingBuiltRequest.entity
+              val len = java.lang.Long.parseLong(valueString)
+              val newEntity =
+                if (len == 0) HttpEntity.Strict(entity.contentType, ByteString.empty) // HttpEntity.empty(entity.contentType)
+                else HttpEntity.Default(entity.contentType, len, entity.dataBytes)
+
+              beingBuiltRequest = beingBuiltRequest.copy(entity = newEntity) // FIXME not quite correct still
+
+            case _ ⇒
+              // other headers we simply expose as RawHeader
+              // FIXME handle all typed headers
+              beingBuiltRequest = beingBuiltRequest.addHeader(RawHeader(nameString, new String(value)))
+          }
         }
       }
 
@@ -173,7 +201,7 @@ private[http2] final class HttpRequestHeaderHpackDecompression extends GraphStag
 /** INTERNAL API */
 private[http2] object HttpRequestHeaderHpackDecompression {
 
-  implicit class CompleteIfSource[T](val s: Source[T, _]) extends AnyVal {
+  implicit class CompleteAfterSource[T](val s: Source[T, _]) extends AnyVal {
     /**
      * Passes through elements until the test returns `true`.
      * The element that triggered this is then passed through, and *after* that completion is signalled.

@@ -72,7 +72,6 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
       case DATA ⇒
         val pad = Flags.PADDED.isSet(flags)
         val endStream = Flags.END_STREAM.isSet(flags)
-        println("parse endStream = " + endStream)
 
         val paddingLength =
           if (pad) payload.readByte() & 0xff
