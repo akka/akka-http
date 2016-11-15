@@ -18,6 +18,19 @@ object FrameRenderer {
 
   def render(frame: FrameEvent): ByteString =
     frame match {
+      case GoAwayFrame(lastStreamId, errorCode, debug) ⇒
+        val bb = new ByteStringBuilder
+        bb.putInt(lastStreamId)
+        bb.putInt(errorCode.id)
+        bb.putBytes(debug.getOrElse("").getBytes)
+
+        renderFrame(
+          Http2Protocol.FrameType.GOAWAY,
+          Http2Protocol.Flags.NO_FLAGS,
+          Http2Protocol.NoStreamId,
+          bb.result
+        )
+
       case DataFrame(streamId, endStream, payload) ⇒
         // TODO: should padding be emitted? In which cases?
 

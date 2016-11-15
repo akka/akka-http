@@ -4,15 +4,17 @@
 
 package akka.http.impl.engine.http2
 
+import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.stream.Attributes
 import akka.stream.BidiShape
 import akka.stream.Inlet
 import akka.stream.Outlet
 import akka.stream.scaladsl.Source
-import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.GraphStage
 import akka.stream.stage.InHandler
-import akka.stream.stage.OutHandler
+
+import scala.collection.mutable
 
 /**
  * This stage contains all control logic for handling frames and (de)muxing data to/from substreams.
@@ -88,7 +90,13 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
       ) extends BufferedOutlet[StreamFrameEvent](outlet) {
         var outboundWindowLeft = initialOutboundWindowLeft
 
-        override def onDownstreamFinish(): Unit = () // FIXME: when substream (= request entity) is cancelled, we need to RST_STREAM
+        override def onDownstreamFinish(): Unit = {
+          // FIXME: when substream (= request entity) is cancelled, we need to RST_STREAM
+
+          // if the stream is finished and sent a RST_STREAM we can just remove the incoming stream from our map
+          incomingStreams.remove(streamId)
+          ()
+        }
       }
 
       override def preStart(): Unit = {
@@ -98,15 +106,39 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         bufferedFrameOut.push(SettingsFrame(Nil)) // server side connection preface
       }
 
-      var incomingStreams = Map.empty[Int, SubStream]
+      var closedAfter: Option[Int] = None
+      var incomingStreams = mutable.Map.empty[Int, SubStream]
       var totalOutboundWindowLeft = Http2Protocol.InitialWindowSize
       var streamLevelWindow = Http2Protocol.InitialWindowSize
+
+      def lastStreamId: Int = {
+        incomingStreams.lastOption.map(_._1).getOrElse(0)
+      }
+
+      def goAwayFrame(errorCode: ErrorCode = Http2Protocol.ErrorCode.PROTOCOL_ERROR): Unit = {
+        // http://httpwg.org/specs/rfc7540.html#rfc.section.6.8
+        val last = lastStreamId
+        closedAfter = Some(last)
+        bufferedFrameOut.push(GoAwayFrame(last, errorCode))
+        // FIXME: handle the connection closing according to the specification
+      }
 
       setHandler(frameIn, new InHandler {
         def onPush(): Unit = {
           val in = grab(frameIn)
           in match {
-            case headers @ HeadersFrame(streamId, endStream, endHeaders, fragment) ⇒
+            case WindowUpdateFrame(0, increment) ⇒
+              totalOutboundWindowLeft += increment
+              debug(f"outbound window is now $totalOutboundWindowLeft%10d after increment $increment%6d")
+              bufferedFrameOut.tryFlush()
+
+            case e: StreamFrameEvent if !Http2Compliance.clientInitiatedStreamId(e.streamId) ⇒
+              goAwayFrame()
+
+            case e: StreamFrameEvent if e.streamId > closedAfter.getOrElse(Int.MaxValue) ⇒
+            // streams that will have a greater stream id than the one we sent with GO_AWAY will be ignored
+
+            case headers @ HeadersFrame(streamId, endStream, endHeaders, fragment) if lastStreamId < streamId ⇒
               val subSource = new SubSourceOutlet[StreamFrameEvent](s"substream-out-$streamId")
               val handler = SubStream(streamId, headers, StreamState.Open /* FIXME stream state */ , subSource, None, streamLevelWindow)
               incomingStreams += streamId → handler // TODO optimise for lookup later on
@@ -115,17 +147,20 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               if (sub.initialFrame.endHeaders) dispatchSubstream(sub)
             // else we're expecting some continuation frames before we kick off the dispatch
 
+            case h: HeadersFrame ⇒
+              goAwayFrame()
+
             case cont: ContinuationFrame ⇒
               // continue to build up headers (CONTINUATION come directly after HEADERS frame, and before DATA)
               val streamId = cont.streamId
-              incomingStreams.get(streamId) match {
-                case Some(handler) ⇒
-                  val updatedHandler = concatContinuationIntoHeaders(handler, cont)
-                  val sub = makeHttp2SubStream(updatedHandler)
-                  if (updatedHandler.headers.endHeaders) dispatchSubstream(sub)
-                case None ⇒
-                  throw ContinuationFrameForUnknownStreamEncounteredException(streamId)
-              }
+              val streamHandler = incomingStreams(streamId)
+              val updatedHandler = concatContinuationIntoHeaders(streamHandler, cont)
+              val sub = makeHttp2SubStream(updatedHandler)
+              if (updatedHandler.headers.endHeaders) dispatchSubstream(sub)
+
+            case e: StreamFrameEvent if !incomingStreams.contains(e.streamId) ⇒
+              // if a stream is invalid we will GO_AWAY
+              goAwayFrame()
 
             case data: DataFrame ⇒
               // technically this case is the same as StreamFrameEvent, however we're handling it earlier in the match here for efficiency
@@ -135,17 +170,12 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               // FIXME: also need to handle the other case when no response has been produced yet (inlet still None)
               incomingStreams(streamId).inlet.foreach(_.cancel())
 
-            case WindowUpdateFrame(0, increment) ⇒
-              totalOutboundWindowLeft += increment
-              debug(f"outbound window is now $totalOutboundWindowLeft%10d after increment $increment%6d")
-              bufferedFrameOut.tryFlush()
-
             case WindowUpdateFrame(streamId, increment) ⇒
               incomingStreams(streamId).outboundWindowLeft += increment
               debug(f"outbound window for [$streamId%3d] is now ${incomingStreams(streamId).outboundWindowLeft}%10d after increment $increment%6d")
               bufferedFrameOut.tryFlush()
 
-            case e: StreamFrameEvent if e.streamId > 0 ⇒
+            case e: StreamFrameEvent ⇒
               incomingStreams(e.streamId).push(e)
 
             case SettingsFrame(settings) ⇒
@@ -235,7 +265,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         if (headers.endStream && headers.endHeaders) {
           Http2SubStream(headers, Source.empty)
         } else {
-          // FIXME a bit naive but correct I think -- todo check the spec 
+          // FIXME a bit naive but correct I think -- todo check the spec
           val remainingFrames = Source.fromGraph(subStream.source)
             .collect({
               case d: DataFrame ⇒ d
@@ -264,6 +294,4 @@ object Http2ServerDemux {
     // case object ReservedRemote extends StreamState
   }
 
-  final case class ContinuationFrameForUnknownStreamEncounteredException(streamId: Int)
-    extends IllegalArgumentException(s"Received ContinuationFrame for unknown streamId ($streamId)!")
 }
