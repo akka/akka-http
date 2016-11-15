@@ -101,7 +101,7 @@ APIs for handling such request-responses as function calls and as a `Flow<HttpRe
 
 @@snip [HttpServerLowLevelExample.java](../../../../test/java/docs/http/javadsl/HttpServerLowLevelExample.java) { #low-level-server-example }
 
-Read more details about the low level APIs in the section @ref[Low-Level Server-Side API](low-level-server-side-api.md#http-low-level-server-side-api).
+Read more details about the low level APIs in the section @ref[Low-Level Server-Side API](server-side/low-level-server-side-api.md#http-low-level-server-side-api).
 
 ## HTTP client API
 
@@ -126,7 +126,7 @@ with Akka HTTP. Details can be found in the section @ref[High-level Server-Side 
 
 akka-http-core
 : A complete, mostly low-level, server- and client-side implementation of HTTP (incl. WebSockets)
-Details can be found in sections @ref[Low-Level Server-Side API](low-level-server-side-api.md#http-low-level-server-side-api) and @ref[Consuming HTTP-based Services (Client-Side)](client-side/index.md#http-client-side)
+Details can be found in sections @ref[Low-Level Server-Side API](server-side/low-level-server-side-api.md#http-low-level-server-side-api) and @ref[Consuming HTTP-based Services (Client-Side)](client-side/index.md#http-client-side)
 
 akka-http-testkit
 : A test harness and set of utilities for verifying server-side service implementations
@@ -135,6 +135,3 @@ akka-http-spray-json
 : Predefined glue-code for (de)serializing custom types from/to JSON with [spray-json](https://github.com/spray/spray-json)
 Details can be found here: @ref[JSON Support](common/json-support.md#akka-http-spray-json)
 
-akka-http-xml
-: Predefined glue-code for (de)serializing custom types from/to XML with [scala-xml](https://github.com/scala/scala-xml)
-Details can be found here: @ref[XML Support](common/xml-support.md#akka-http-xml-marshalling)
