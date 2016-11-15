@@ -117,7 +117,7 @@ private[http] class HttpRequestRendererFactory(
       RequestRenderingOutput.Streamed(stream)
     }
 
-    def completeRequestRendering(): RequestRenderingOutput =
+    def completeRequestRendering(containsExpect100: Boolean): RequestRenderingOutput =
       entity match {
         case x if x.isKnownEmpty ⇒
           renderContentLength(0) ~~ CrLf
@@ -130,7 +130,12 @@ private[http] class HttpRequestRendererFactory(
 
         case HttpEntity.Default(_, contentLength, data) ⇒
           renderContentLength(contentLength) ~~ CrLf
-          renderStreamed(data.via(CheckContentLengthTransformer.flow(contentLength)))
+          renderStreamed(
+            if (containsExpect100)
+              data
+            else
+              data.via(CheckContentLengthTransformer.flow(contentLength))
+          )
 
         case HttpEntity.Chunked(_, chunks) ⇒
           r ~~ CrLf
@@ -140,7 +145,7 @@ private[http] class HttpRequestRendererFactory(
     renderRequestLine()
     renderHeaders(headers.toList)
     renderEntityContentType(r, entity)
-    completeRequestRendering()
+    completeRequestRendering(headers.contains(Expect.`100-continue`))
   }
 
   def renderStrict(ctx: RequestRenderingContext): ByteString =

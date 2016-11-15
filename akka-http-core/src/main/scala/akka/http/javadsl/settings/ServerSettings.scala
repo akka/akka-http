@@ -29,6 +29,7 @@ abstract class ServerSettings { self: ServerSettingsImpl ⇒
   def getRawRequestUriHeader: Boolean
   def getTransparentHeadRequests: Boolean
   def getVerboseErrorMessages: Boolean
+  def getProxyMode: Boolean
   def getResponseHeaderSizeHint: Int
   def getBacklog: Int
   def getSocketOptions: java.lang.Iterable[SocketOption]
@@ -46,6 +47,7 @@ abstract class ServerSettings { self: ServerSettingsImpl ⇒
   def withRawRequestUriHeader(newValue: Boolean): ServerSettings = self.copy(rawRequestUriHeader = newValue)
   def withTransparentHeadRequests(newValue: Boolean): ServerSettings = self.copy(transparentHeadRequests = newValue)
   def withVerboseErrorMessages(newValue: Boolean): ServerSettings = self.copy(verboseErrorMessages = newValue)
+  def withProxyMode(newValue: Boolean): ServerSettings = self.copy(proxyMode = newValue)
   def withResponseHeaderSizeHint(newValue: Int): ServerSettings = self.copy(responseHeaderSizeHint = newValue)
   def withBacklog(newValue: Int): ServerSettings = self.copy(backlog = newValue)
   def withSocketOptions(newValue: java.lang.Iterable[SocketOption]): ServerSettings = self.copy(socketOptions = newValue.asScala.toList)
