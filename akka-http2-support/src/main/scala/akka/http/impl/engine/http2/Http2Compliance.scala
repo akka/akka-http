@@ -20,6 +20,6 @@ private[akka] object Http2Compliance {
     if (id != 0) throw new IllegalHttp2StreamIdException(id, "MUST BE == 0.")
 
   /** checks if the stream id was client initiated, by checking if the stream id was odd-numbered */
-  final def clientInitiatedStreamId(id: Int): Boolean = id % 2 != 0
+  final def isClientInitiatedStreamId(id: Int): Boolean = id % 2 != 0
 
 }

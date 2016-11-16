@@ -52,7 +52,7 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
       case GOAWAY ⇒
         Http2Compliance.requireZeroStreamId(streamId)
         GoAwayFrame(payload.readIntBE(), ErrorCode.byId(payload.readIntBE()),
-          if (payload.hasRemaining) Some(payload.takeAll().utf8String) else None)
+          if (payload.hasRemaining) Some(payload.takeAll()) else None)
 
       case HEADERS ⇒
         val pad = Flags.PADDED.isSet(flags)

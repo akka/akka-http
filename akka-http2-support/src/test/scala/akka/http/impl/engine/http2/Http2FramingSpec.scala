@@ -331,7 +331,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
             xxxxxxxx
             xxxxxxxx=1   # error code = 0x1 = PROTOCOL_ERROR
             xxxxxxxx=1
-         """ should parseTo(GoAwayFrame(0x21, ErrorCode.PROTOCOL_ERROR, Some("1".parseHexByteString.utf8String)))
+         """ should parseTo(GoAwayFrame(0x21, ErrorCode.PROTOCOL_ERROR, Some("1".parseHexByteString)))
       }
     }
   }

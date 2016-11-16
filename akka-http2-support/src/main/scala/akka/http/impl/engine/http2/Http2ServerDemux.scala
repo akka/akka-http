@@ -9,12 +9,14 @@ import akka.stream.Attributes
 import akka.stream.BidiShape
 import akka.stream.Inlet
 import akka.stream.Outlet
+import akka.stream.impl.fusing.GraphInterpreter
 import akka.stream.scaladsl.Source
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.GraphStage
 import akka.stream.stage.InHandler
 
 import scala.collection.mutable
+import scala.util.control.NonFatal
 
 /**
  * This stage contains all control logic for handling frames and (de)muxing data to/from substreams.
@@ -106,16 +108,17 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         bufferedFrameOut.push(SettingsFrame(Nil)) // server side connection preface
       }
 
-      var closedAfter: Option[Int] = None
-      var incomingStreams = mutable.Map.empty[Int, SubStream]
-      var totalOutboundWindowLeft = Http2Protocol.InitialWindowSize
-      var streamLevelWindow = Http2Protocol.InitialWindowSize
+      // we should not handle streams later than the GOAWAY told us about with lastStreamId
+      private var closedAfter: Option[Int] = None
+      private var incomingStreams = mutable.Map.empty[Int, SubStream]
+      private var totalOutboundWindowLeft = Http2Protocol.InitialWindowSize
+      private var streamLevelWindow = Http2Protocol.InitialWindowSize
 
       def lastStreamId: Int = {
         incomingStreams.lastOption.map(_._1).getOrElse(0)
       }
 
-      def goAwayFrame(errorCode: ErrorCode = Http2Protocol.ErrorCode.PROTOCOL_ERROR): Unit = {
+      def pushGOAWAY(errorCode: ErrorCode = Http2Protocol.ErrorCode.PROTOCOL_ERROR): Unit = {
         // http://httpwg.org/specs/rfc7540.html#rfc.section.6.8
         val last = lastStreamId
         closedAfter = Some(last)
@@ -127,6 +130,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         def onPush(): Unit = {
           val in = grab(frameIn)
           in match {
+<<<<<<< c93c52ac3003703dc26e37f70f8d58190280aaff
             case WindowUpdateFrame(0, increment) ⇒
               totalOutboundWindowLeft += increment
               debug(f"outbound window is now $totalOutboundWindowLeft%10d after increment $increment%6d")
@@ -134,6 +138,10 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
 
             case e: StreamFrameEvent if !Http2Compliance.clientInitiatedStreamId(e.streamId) ⇒
               goAwayFrame()
+=======
+            case e: StreamFrameEvent if !Http2Compliance.isClientInitiatedStreamId(e.streamId) ⇒
+              pushGOAWAY()
+>>>>>>> addressed comments
 
             case e: StreamFrameEvent if e.streamId > closedAfter.getOrElse(Int.MaxValue) ⇒
             // streams that will have a greater stream id than the one we sent with GO_AWAY will be ignored
@@ -146,9 +154,14 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               val sub = makeHttp2SubStream(handler)
               if (sub.initialFrame.endHeaders) dispatchSubstream(sub)
             // else we're expecting some continuation frames before we kick off the dispatch
+            // FIXME: handle the correct order of frames
 
             case h: HeadersFrame ⇒
-              goAwayFrame()
+              pushGOAWAY()
+
+            case e: StreamFrameEvent if !incomingStreams.contains(e.streamId) ⇒
+              // if a stream is invalid we will GO_AWAY
+              pushGOAWAY()
 
             case cont: ContinuationFrame ⇒
               // continue to build up headers (CONTINUATION come directly after HEADERS frame, and before DATA)
@@ -157,10 +170,6 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               val updatedHandler = concatContinuationIntoHeaders(streamHandler, cont)
               val sub = makeHttp2SubStream(updatedHandler)
               if (updatedHandler.headers.endHeaders) dispatchSubstream(sub)
-
-            case e: StreamFrameEvent if !incomingStreams.contains(e.streamId) ⇒
-              // if a stream is invalid we will GO_AWAY
-              goAwayFrame()
 
             case data: DataFrame ⇒
               // technically this case is the same as StreamFrameEvent, however we're handling it earlier in the match here for efficiency
@@ -200,6 +209,18 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
             // ignore unknown frames
           }
           pull(frameIn)
+        }
+
+        override def onUpstreamFailure(ex: Throwable): Unit = {
+          ex match {
+            // every IllegalHttp2StreamIdException will be a GOAWAY with PROTOCOL_ERROR
+            case e: Http2Compliance.IllegalHttp2StreamIdException ⇒
+              pushGOAWAY()
+
+            // handle every unhandled exception
+            case NonFatal(e) ⇒
+              super.onUpstreamFailure(e)
+          }
         }
       })
 

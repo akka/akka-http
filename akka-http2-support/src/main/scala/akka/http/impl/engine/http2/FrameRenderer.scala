@@ -22,7 +22,8 @@ object FrameRenderer {
         val bb = new ByteStringBuilder
         bb.putInt(lastStreamId)
         bb.putInt(errorCode.id)
-        bb.putBytes(debug.getOrElse("").getBytes)
+        // appends debug data, if any
+        debug.foreach(bb.append)
 
         renderFrame(
           Http2Protocol.FrameType.GOAWAY,
