@@ -3,7 +3,7 @@
  */
 
 package docs.http.javadsl;
-//#second-spray-json-example
+//#second-jackson-example
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
@@ -28,7 +28,7 @@ import java.util.concurrent.CompletionStage;
 
 import static akka.http.javadsl.server.PathMatchers.longSegment;
 
-public class SprayJsonExampleTest extends AllDirectives {
+public class JacksonExampleTest extends AllDirectives {
 
   public static void main(String[] args) throws Exception {
     // boot up server using the route as defined below
@@ -38,7 +38,7 @@ public class SprayJsonExampleTest extends AllDirectives {
     final ActorMaterializer materializer = ActorMaterializer.create(system);
 
     //In order to access all directives we need an instance where the routes are define.
-    SprayJsonExampleTest app = new SprayJsonExampleTest();
+    JacksonExampleTest app = new JacksonExampleTest();
 
     final Flow<HttpRequest, HttpResponse, NotUsed> routeFlow = app.createRoute().flow(system, materializer);
     final CompletionStage<ServerBinding> binding = http.bindAndHandle(routeFlow,
@@ -120,4 +120,4 @@ public class SprayJsonExampleTest extends AllDirectives {
     }
   }
 }
-//#second-spray-json-example
+//#second-jackson-example
