@@ -4,8 +4,9 @@
 
 package akka.http.scaladsl.server.directives
 
-import akka.http.scaladsl.model.{ ContentTypes, HttpEntity, StatusCodes, HttpMethods }
+import akka.http.scaladsl.model.{ ContentTypes, HttpEntity, HttpMethods, StatusCodes }
 import akka.http.scaladsl.server._
+import akka.http.scaladsl.settings.RoutingSettings
 import akka.stream.scaladsl.Source
 
 import scala.concurrent.Await
@@ -28,21 +29,60 @@ class MethodDirectivesSpec extends RoutingSpec {
   }
 
   "head" should {
-    val headRoute = head {
-      complete(HttpEntity.Default(
+    val emptyComplete = complete(
+      HttpEntity.Default(
         ContentTypes.`application/octet-stream`,
         12345L,
         Source.empty
-      ))
+      )
+    )
+
+    val headRoute = head {
+      emptyComplete
     }
 
-    "allow manual complete" in {
+    val getRoute = get {
+      emptyComplete
+    }
+
+    def responseEntityEmpty() = {
+      val lengthF = response._3.dataBytes.runFold(0)((c, _) ⇒ c + 1)
+      val length = Await.result(lengthF, Duration(100, "millis"))
+      length shouldEqual 0
+    }
+
+    "allow manual complete if transparent head is enabled" in {
+      implicit val settings = RoutingSettings.default.withTransparentHeadRequests(true)
+
       Head() ~> headRoute ~> check {
         status shouldEqual StatusCodes.OK
+        responseEntityEmpty()
+      }
+    }
 
-        val lengthF = response._3.dataBytes.runFold(0)((c, _) ⇒ c + 1)
-        val length = Await.result(lengthF, Duration(100, "millis"))
-        length shouldEqual 0
+    "allow manual complete if transparent head is disabled" in {
+      implicit val settings = RoutingSettings.default.withTransparentHeadRequests(false)
+
+      Head() ~> headRoute ~> check {
+        status shouldEqual StatusCodes.OK
+        responseEntityEmpty()
+      }
+    }
+
+    "allow transparent complete if transparent head is enabled" in {
+      implicit val settings = RoutingSettings.default.withTransparentHeadRequests(true)
+
+      Head() ~> getRoute ~> check {
+        status shouldEqual StatusCodes.OK
+        responseEntityEmpty()
+      }
+    }
+
+    "forbid transparent complete if transparent head is disabled" in {
+      implicit val settings = RoutingSettings.default.withTransparentHeadRequests(false)
+
+      Head() ~> getRoute ~> check {
+        rejections shouldEqual List(MethodRejection(HttpMethods.GET))
       }
     }
   }

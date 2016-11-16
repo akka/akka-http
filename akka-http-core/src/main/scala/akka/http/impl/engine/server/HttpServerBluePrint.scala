@@ -117,14 +117,13 @@ private[http] object HttpServerBluePrint {
 
       override def onPush(): Unit = grab(in) match {
         case RequestStart(method, uri, protocol, hdrs, entityCreator, _, _) ⇒
-          val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
           val effectiveHeaders =
             if (settings.remoteAddressHeader && remoteAddress.isDefined)
               headers.`Remote-Address`(RemoteAddress(remoteAddress.get)) +: hdrs
             else hdrs
 
           val entity = createEntity(entityCreator) withSizeLimit settings.parserSettings.maxContentLength
-          push(out, HttpRequest(effectiveMethod, uri, effectiveHeaders, entity, protocol))
+          push(out, HttpRequest(method, uri, effectiveHeaders, entity, protocol))
         case other ⇒
           throw new IllegalStateException(s"unexpected element of type ${other.getClass}")
       }

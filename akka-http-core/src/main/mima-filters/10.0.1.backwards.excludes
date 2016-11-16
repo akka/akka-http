@@ -1,3 +1,13 @@
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.server.HttpServerBluePrint.parsingRendering")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.server.HttpServerBluePrint.apply")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.server.HttpServerBluePrint.parsing")
+
+# Added and removed properties in scope of #40, but classes not intended to subclassing.
+FilterAnyProblemStartingWith("akka.http.javadsl.settings.RoutingSettings")
+FilterAnyProblemStartingWith("akka.http.scaladsl.settings.RoutingSettings")
+FilterAnyProblemStartingWith("akka.http.javadsl.settings.ServerSettings")
+FilterAnyProblemStartingWith("akka.http.scaladsl.settings.ServerSettings")
+
+# Added and removed properties in scope of #40, but internal API.
+FilterAnyProblemStartingWith("akka.http.impl.settings.ServerSettingsImpl")
+FilterAnyProblemStartingWith("akka.http.impl.settings.RoutingSettingsImpl")

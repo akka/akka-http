@@ -28,7 +28,6 @@ abstract class ServerSettings { self: ServerSettingsImpl ⇒
   def getPipeliningLimit: Int
   def getRemoteAddressHeader: Boolean
   def getRawRequestUriHeader: Boolean
-  def getTransparentHeadRequests: Boolean
   def getVerboseErrorMessages: Boolean
   def getResponseHeaderSizeHint: Int
   def getBacklog: Int
@@ -46,7 +45,6 @@ abstract class ServerSettings { self: ServerSettingsImpl ⇒
   def withPipeliningLimit(newValue: Int): ServerSettings = self.copy(pipeliningLimit = newValue)
   def withRemoteAddressHeader(newValue: Boolean): ServerSettings = self.copy(remoteAddressHeader = newValue)
   def withRawRequestUriHeader(newValue: Boolean): ServerSettings = self.copy(rawRequestUriHeader = newValue)
-  def withTransparentHeadRequests(newValue: Boolean): ServerSettings = self.copy(transparentHeadRequests = newValue)
   def withVerboseErrorMessages(newValue: Boolean): ServerSettings = self.copy(verboseErrorMessages = newValue)
   def withResponseHeaderSizeHint(newValue: Int): ServerSettings = self.copy(responseHeaderSizeHint = newValue)
   def withBacklog(newValue: Int): ServerSettings = self.copy(backlog = newValue)

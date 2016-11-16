@@ -5,7 +5,7 @@
 package akka.http.scaladsl.server
 package directives
 
-import akka.http.scaladsl.model.{ StatusCodes, HttpMethod }
+import akka.http.scaladsl.model.{ HttpMethod, StatusCodes }
 import akka.http.scaladsl.model.HttpMethods._
 
 /**
@@ -78,10 +78,14 @@ trait MethodDirectives {
   /**
    * Rejects all requests whose HTTP method does not match the given one.
    *
+   * Note: HEAD request might has transparency enabled. When enabled
+   * the HEAD request will not be rejected for GET method.
+   *
    * @group method
    */
   def method(httpMethod: HttpMethod): Directive0 =
     extractMethod.flatMap[Unit] {
+      case HEAD         ⇒ headMethod(httpMethod)
       case `httpMethod` ⇒ pass
       case _            ⇒ reject(MethodRejection(httpMethod))
     } & cancelRejections(classOf[MethodRejection])
@@ -106,6 +110,15 @@ trait MethodDirectives {
           case _       ⇒ complete(StatusCodes.NotImplemented)
         }
       case None ⇒ pass
+    }
+
+  private def headMethod(httpMethod: HttpMethod): Directive0 =
+    if (httpMethod == HEAD) pass else transparentHead(httpMethod)
+
+  private def transparentHead(httpMethod: HttpMethod): Directive0 =
+    extractSettings.flatMap { settings ⇒
+      if (httpMethod == GET && settings.transparentHeadRequests) pass
+      else reject(MethodRejection(httpMethod))
     }
 }
 

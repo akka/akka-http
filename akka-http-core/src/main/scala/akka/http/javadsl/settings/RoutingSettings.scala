@@ -14,6 +14,7 @@ abstract class RoutingSettings private[akka] () { self: RoutingSettingsImpl ⇒
   def getVerboseErrorMessages: Boolean
   def getFileGetConditional: Boolean
   def getRenderVanityFooter: Boolean
+  def getTransparentHeadRequests: Boolean
   def getRangeCountLimit: Int
   def getRangeCoalescingThreshold: Long
   def getDecodeMaxBytesPerChunk: Int
@@ -22,6 +23,7 @@ abstract class RoutingSettings private[akka] () { self: RoutingSettingsImpl ⇒
   def withVerboseErrorMessages(verboseErrorMessages: Boolean): RoutingSettings = self.copy(verboseErrorMessages = verboseErrorMessages)
   def withFileGetConditional(fileGetConditional: Boolean): RoutingSettings = self.copy(fileGetConditional = fileGetConditional)
   def withRenderVanityFooter(renderVanityFooter: Boolean): RoutingSettings = self.copy(renderVanityFooter = renderVanityFooter)
+  def withTransparentHeadRequests(newValue: Boolean): RoutingSettings = self.copy(transparentHeadRequests = newValue)
   def withRangeCountLimit(rangeCountLimit: Int): RoutingSettings = self.copy(rangeCountLimit = rangeCountLimit)
   def withRangeCoalescingThreshold(rangeCoalescingThreshold: Long): RoutingSettings = self.copy(rangeCoalescingThreshold = rangeCoalescingThreshold)
   def withDecodeMaxBytesPerChunk(decodeMaxBytesPerChunk: Int): RoutingSettings = self.copy(decodeMaxBytesPerChunk = decodeMaxBytesPerChunk)

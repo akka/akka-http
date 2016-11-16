@@ -20,6 +20,7 @@ class SettingsEqualitySpec extends WordSpec with Matchers {
       range-count-limit = 16
       decode-max-bytes-per-chunk = 1m
       file-io-dispatcher = ${akka.stream.blocking-io-dispatcher}
+      transparent-head-requests = on
     }
   """).withFallback(ConfigFactory.load).resolve
 

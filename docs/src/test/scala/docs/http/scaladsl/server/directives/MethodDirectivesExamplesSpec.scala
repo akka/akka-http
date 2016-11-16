@@ -4,12 +4,14 @@
 
 package docs.http.scaladsl.server.directives
 
+import akka.http.impl.settings.RoutingSettingsImpl
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.settings.RoutingSettings
+import com.typesafe.config.ConfigFactory
 import docs.http.scaladsl.server.RoutingSpec
 
 class MethodDirectivesExamplesSpec extends RoutingSpec {
-
   "delete-method" in {
     //#delete-method
     val route = delete { complete("This is a DELETE request.") }
@@ -104,6 +106,8 @@ class MethodDirectivesExamplesSpec extends RoutingSpec {
   }
 
   "extractMethod-example" in {
+    implicit val settings = RoutingSettings.default.withTransparentHeadRequests(false)
+
     //#extractMethod-example
     val route =
       get {

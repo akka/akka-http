@@ -31,7 +31,6 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def pipeliningLimit: Int
   def remoteAddressHeader: Boolean
   def rawRequestUriHeader: Boolean
-  def transparentHeadRequests: Boolean
   def verboseErrorMessages: Boolean
   def responseHeaderSizeHint: Int
   def backlog: Int
@@ -48,7 +47,6 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   override def getPipeliningLimit = pipeliningLimit
   override def getParserSettings: js.ParserSettings = parserSettings
   override def getMaxConnections = maxConnections
-  override def getTransparentHeadRequests = transparentHeadRequests
   override def getResponseHeaderSizeHint = responseHeaderSizeHint
   override def getVerboseErrorMessages = verboseErrorMessages
   override def getSocketOptions = socketOptions.asJava
@@ -68,7 +66,6 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   override def withPipeliningLimit(newValue: Int): ServerSettings = self.copy(pipeliningLimit = newValue)
   override def withRemoteAddressHeader(newValue: Boolean): ServerSettings = self.copy(remoteAddressHeader = newValue)
   override def withRawRequestUriHeader(newValue: Boolean): ServerSettings = self.copy(rawRequestUriHeader = newValue)
-  override def withTransparentHeadRequests(newValue: Boolean): ServerSettings = self.copy(transparentHeadRequests = newValue)
   override def withVerboseErrorMessages(newValue: Boolean): ServerSettings = self.copy(verboseErrorMessages = newValue)
   override def withResponseHeaderSizeHint(newValue: Int): ServerSettings = self.copy(responseHeaderSizeHint = newValue)
   override def withBacklog(newValue: Int): ServerSettings = self.copy(backlog = newValue)

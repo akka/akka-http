@@ -4,6 +4,8 @@
 
 package docs.http.javadsl.server.directives;
 
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 import org.junit.Test;
 
 import akka.http.javadsl.model.HttpMethods;
@@ -13,6 +15,11 @@ import akka.http.javadsl.server.Route;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 
 public class MethodDirectivesExamplesTest extends JUnitRouteTest {
+  @Override
+  public Config additionalConfig() {
+    return ConfigFactory.parseString("akka.http.routing.transparent-head-requests = off");
+  }
+
   @Test
   public void testDelete() {
     //#delete

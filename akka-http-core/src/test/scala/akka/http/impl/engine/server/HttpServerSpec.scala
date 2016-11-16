@@ -440,33 +440,13 @@ class HttpServerSpec extends AkkaSpec(
       shutdownBlueprint()
     })
 
-    "translate HEAD request to GET request when transparent-head-requests are enabled" in assertAllStagesStopped(new TestSetup {
-      override def settings = ServerSettings(system).withTransparentHeadRequests(true)
-      send("""HEAD / HTTP/1.1
-             |Host: example.com
-             |
-             |""")
-      expectRequest() mapHeaders (_.filterNot(_.is("timeout-access"))) shouldEqual HttpRequest(GET, uri = "http://example.com/", headers = List(Host("example.com")))
-      shutdownBlueprint()
-    })
-
-    "keep HEAD request when transparent-head-requests are disabled" in assertAllStagesStopped(new TestSetup {
-      override def settings = ServerSettings(system).withTransparentHeadRequests(false)
-      send("""HEAD / HTTP/1.1
-             |Host: example.com
-             |
-             |""")
-      expectRequest() mapHeaders (_.filterNot(_.is("timeout-access"))) shouldEqual HttpRequest(HEAD, uri = "http://example.com/", headers = List(Host("example.com")))
-      shutdownBlueprint()
-    })
-
     "not emit entities when responding to HEAD requests if transparent-head-requests is enabled (with Strict)" in assertAllStagesStopped(new TestSetup {
       send("""HEAD / HTTP/1.1
              |Host: example.com
              |
              |""")
       inside(expectRequest()) {
-        case HttpRequest(GET, _, _, _, _) ⇒
+        case HttpRequest(HEAD, _, _, _, _) ⇒
           responses.sendNext(HttpResponse(entity = HttpEntity.Strict(ContentTypes.`text/plain(UTF-8)`, ByteString("abcd"))))
           expectResponseWithWipedDate(
             """|HTTP/1.1 200 OK
@@ -489,7 +469,7 @@ class HttpServerSpec extends AkkaSpec(
              |""")
       val data = TestPublisher.manualProbe[ByteString]()
       inside(expectRequest()) {
-        case HttpRequest(GET, _, _, _, _) ⇒
+        case HttpRequest(HEAD, _, _, _, _) ⇒
           responses.sendNext(HttpResponse(entity = HttpEntity.Default(ContentTypes.`text/plain(UTF-8)`, 4, Source.fromPublisher(data))))
           val dataSub = data.expectSubscription()
           dataSub.expectCancellation()
@@ -514,7 +494,7 @@ class HttpServerSpec extends AkkaSpec(
              |""")
       val data = TestPublisher.manualProbe[ByteString]()
       inside(expectRequest()) {
-        case HttpRequest(GET, _, _, _, _) ⇒
+        case HttpRequest(HEAD, _, _, _, _) ⇒
           responses.sendNext(HttpResponse(entity = HttpEntity.CloseDelimited(ContentTypes.`text/plain(UTF-8)`, Source.fromPublisher(data))))
           val dataSub = data.expectSubscription()
           dataSub.expectCancellation()
@@ -540,7 +520,7 @@ class HttpServerSpec extends AkkaSpec(
              |""")
       val data = TestPublisher.manualProbe[ChunkStreamPart]()
       inside(expectRequest()) {
-        case HttpRequest(GET, _, _, _, _) ⇒
+        case HttpRequest(HEAD, _, _, _, _) ⇒
           responses.sendNext(HttpResponse(entity = HttpEntity.Chunked(ContentTypes.`text/plain(UTF-8)`, Source.fromPublisher(data))))
           val dataSub = data.expectSubscription()
           dataSub.expectCancellation()
@@ -566,7 +546,7 @@ class HttpServerSpec extends AkkaSpec(
              |""")
       val data = TestPublisher.manualProbe[ByteString]()
       inside(expectRequest()) {
-        case HttpRequest(GET, _, _, _, _) ⇒
+        case HttpRequest(HEAD, _, _, _, _) ⇒
           responses.sendNext(HttpResponse(entity = CloseDelimited(ContentTypes.`text/plain(UTF-8)`, Source.fromPublisher(data))))
           val dataSub = data.expectSubscription()
           dataSub.expectCancellation()

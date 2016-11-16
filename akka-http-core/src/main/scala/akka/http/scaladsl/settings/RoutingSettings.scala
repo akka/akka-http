@@ -13,6 +13,7 @@ abstract class RoutingSettings private[akka] () extends akka.http.javadsl.settin
   def verboseErrorMessages: Boolean
   def fileGetConditional: Boolean
   def renderVanityFooter: Boolean
+  def transparentHeadRequests: Boolean
   def rangeCountLimit: Int
   def rangeCoalescingThreshold: Long
   def decodeMaxBytesPerChunk: Int
@@ -22,6 +23,7 @@ abstract class RoutingSettings private[akka] () extends akka.http.javadsl.settin
   def getVerboseErrorMessages: Boolean = verboseErrorMessages
   def getFileGetConditional: Boolean = fileGetConditional
   def getRenderVanityFooter: Boolean = renderVanityFooter
+  def getTransparentHeadRequests = transparentHeadRequests
   def getRangeCountLimit: Int = rangeCountLimit
   def getRangeCoalescingThreshold: Long = rangeCoalescingThreshold
   def getDecodeMaxBytesPerChunk: Int = decodeMaxBytesPerChunk
@@ -30,6 +32,7 @@ abstract class RoutingSettings private[akka] () extends akka.http.javadsl.settin
   override def withVerboseErrorMessages(verboseErrorMessages: Boolean): RoutingSettings = self.copy(verboseErrorMessages = verboseErrorMessages)
   override def withFileGetConditional(fileGetConditional: Boolean): RoutingSettings = self.copy(fileGetConditional = fileGetConditional)
   override def withRenderVanityFooter(renderVanityFooter: Boolean): RoutingSettings = self.copy(renderVanityFooter = renderVanityFooter)
+  override def withTransparentHeadRequests(newValue: Boolean): RoutingSettings = self.copy(transparentHeadRequests = newValue)
   override def withRangeCountLimit(rangeCountLimit: Int): RoutingSettings = self.copy(rangeCountLimit = rangeCountLimit)
   override def withRangeCoalescingThreshold(rangeCoalescingThreshold: Long): RoutingSettings = self.copy(rangeCoalescingThreshold = rangeCoalescingThreshold)
   override def withDecodeMaxBytesPerChunk(decodeMaxBytesPerChunk: Int): RoutingSettings = self.copy(decodeMaxBytesPerChunk = decodeMaxBytesPerChunk)
