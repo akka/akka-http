@@ -52,8 +52,7 @@ done separately from the route declarations, in marshallers, which are pulled in
 This means that you can `complete` a request with any kind of object a as long as there is an implicit marshaller
 available in scope.
 
-Default marshallers are provided for simple objects like String or ByteString, and you can define your own for example
-for JSON. An additional module provides JSON serialization using the spray-json library (see @ref[JSON Support](common/json-support.md#akka-http-spray-json)
+JSON support is possible in `akka-http` by the use of Jackson, an external artifact (see @ref[JSON Support](common/json-support.md#json-support-via-jackson)
 for details).
 
 The `Route` created using the Route DSL is then "bound" to a port to start serving HTTP requests:
@@ -65,10 +64,10 @@ this case shown by two separate routes. The first route queries an asynchronous 
 `CompletionStage<Optional<Item>>` result into a JSON response. The second unmarshalls an `Order` from the incoming request
 saves it to the database and replies with an OK when done.
 
-@@snip [SprayJsonExampleTest.java](../../../../test/java/docs/http/javadsl/SprayJsonExampleTest.java) { #second-spray-json-example }
+@@snip [JacksonExampleTest.java](../../../../test/java/docs/http/javadsl/JacksonExampleTest.java) { #second-jackson-example }
 
-The logic for the marshalling and unmarshalling JSON in this example is provided by the "spray-json" library
-(details on how to use that here: @ref[JSON Support](common/json-support.md#akka-http-spray-json)).
+The logic for the marshalling and unmarshalling JSON in this example is provided by the "Jackson" library
+(details on how to use that here: @ref[JSON Support](common/json-support.md#json-support-via-jackson)).
 
 One of the strengths of Akka HTTP is that streaming data is at its heart meaning that both request and response bodies
 can be streamed through the server achieving constant memory usage even for very large requests or responses. Streaming
@@ -90,8 +89,8 @@ as json and returned when the response arrives from the actor.
 
 @@snip [HttpServerActorInteractionExample.java](../../../../test/java/docs/http/javadsl/HttpServerActorInteractionExample.java) { #actor-interaction }
 
-Again the logic for the marshalling and unmarshalling JSON in this example is provided by the "spray-json" library
-(details on how to use that here: @ref[JSON Support](common/json-support.md#akka-http-spray-json))
+Again the logic for the marshalling and unmarshalling JSON in this example is provided by the "Jackson" library
+(details on how to use that here: @ref[JSON Support](common/json-support.md#json-support-via-jackson))
 
 Read more about the details of the high level APIs in the section @ref[High-level Server-Side API](routing-dsl/index.md#http-high-level-server-side-api).
 
@@ -132,8 +131,3 @@ Details can be found in sections @ref[Low-Level Server-Side API](server-side/low
 
 akka-http-testkit
 : A test harness and set of utilities for verifying server-side service implementations
-
-akka-http-spray-json
-: Predefined glue-code for (de)serializing custom types from/to JSON with [spray-json](https://github.com/spray/spray-json)
-Details can be found here: @ref[JSON Support](common/json-support.md#akka-http-spray-json)
-
