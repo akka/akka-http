@@ -17,6 +17,9 @@ cache:
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot
 
+script:
+  - sbt -J-XX:ReservedCodeCacheSize=256m +test:compile 'set concurrentRestrictions in Global += Tags.limit(Tags.Test, 1)' test
+
 deploy:
   provider: script
   script:
