@@ -70,6 +70,7 @@ public class MarshallingDirectivesExamplesTest extends JUnitRouteTest {
     final Marshaller<Person, HttpResponse> marshaller = Marshaller.entityToOKResponse(Jackson.<Person>marshaller());
 
     final Consumer<Consumer<Person>> findPerson = completionFunction -> {
+
       //... some processing logic...
 
       //complete the request
@@ -84,6 +85,36 @@ public class MarshallingDirectivesExamplesTest extends JUnitRouteTest {
     );
     routeResult.assertMediaType(MediaTypes.APPLICATION_JSON);
     routeResult.assertEntity("{\"favoriteNumber\":42,\"name\":\"Jane\"}");
-  }
     //#example-completeWith-with-json
+  }
+
+  @Test
+  public void testHandleWith() {
+    //#example-handleWith-with-json
+    final Unmarshaller<HttpEntity, Person> unmarshaller = Jackson.unmarshaller(Person.class);
+    final Marshaller<Person, HttpResponse> marshaller = Marshaller.entityToOKResponse(Jackson.<Person>marshaller());
+
+    final Function<Person, Person> updatePerson = person -> {
+
+      //... some processing logic...
+
+      //return the person
+      return person;
+    };
+
+    final Route route = handleWith(unmarshaller, marshaller, updatePerson);
+
+    // tests:
+    final TestRouteResult routeResult = testRoute(route).run(
+      HttpRequest.POST("/")
+        .withEntity(
+          HttpEntities.create(
+            ContentTypes.APPLICATION_JSON, "{\"name\":\"Jane\",\"favoriteNumber\":42}"
+          )
+        )
+    );
+    routeResult.assertMediaType(MediaTypes.APPLICATION_JSON);
+    routeResult.assertEntity("{\"favoriteNumber\":42,\"name\":\"Jane\"}");
+    //#example-handleWith-with-json
+  }
 }
