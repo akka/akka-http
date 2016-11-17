@@ -14,7 +14,7 @@ sealed trait StreamFrameEvent extends FrameEvent {
   def streamId: Int
 }
 
-final case class GoAwayFrame(lastStreamId: Int, errorCode: ErrorCode, debug: Option[ByteString] = None) extends FrameEvent {
+final case class GoAwayFrame(lastStreamId: Int, errorCode: ErrorCode, debug: ByteString = ByteString.empty) extends FrameEvent {
   override def toString: String = s"GoAwayFrame($lastStreamId,$errorCode,debug:<hidden>)"
 }
 final case class DataFrame(

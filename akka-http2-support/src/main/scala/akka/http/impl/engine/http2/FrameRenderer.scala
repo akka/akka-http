@@ -23,7 +23,7 @@ object FrameRenderer {
         bb.putInt(lastStreamId)
         bb.putInt(errorCode.id)
         // appends debug data, if any
-        debug.foreach(bb.append)
+        bb.append(debug)
 
         renderFrame(
           Http2Protocol.FrameType.GOAWAY,

@@ -310,7 +310,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
             xxxxxxxx
             xxxxxxxx
             xxxxxxxx=2   # error code = 0x2 = INTERNAL_ERROR
-         """ should parseTo(GoAwayFrame(0x21, ErrorCode.INTERNAL_ERROR, None))
+         """ should parseTo(GoAwayFrame(0x21, ErrorCode.INTERNAL_ERROR))
       }
       "with debug data" in {
         b"""xxxxxxxx
@@ -331,7 +331,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
             xxxxxxxx
             xxxxxxxx=1   # error code = 0x1 = PROTOCOL_ERROR
             xxxxxxxx=1
-         """ should parseTo(GoAwayFrame(0x21, ErrorCode.PROTOCOL_ERROR, Some("1".parseHexByteString)))
+         """ should parseTo(GoAwayFrame(0x21, ErrorCode.PROTOCOL_ERROR, "1".parseHexByteString))
       }
     }
   }
