@@ -5,11 +5,16 @@
 package docs.http.javadsl.server.directives;
 
 import akka.http.javadsl.marshallers.jackson.Jackson;
+import akka.http.javadsl.marshalling.Marshaller;
 import akka.http.javadsl.model.*;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.testkit.TestRouteResult;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
 import org.junit.Test;
+
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class MarshallingDirectivesExamplesTest extends JUnitRouteTest {
 
@@ -58,4 +63,27 @@ public class MarshallingDirectivesExamplesTest extends JUnitRouteTest {
     ).assertEntity("Person:Jane - favoriteNumber:42");
     //#example-entity-with-json
   }
+
+  @Test
+  public void testCompleteWith() {
+    //#example-completeWith-with-json
+    final Marshaller<Person, HttpResponse> marshaller = Marshaller.entityToOKResponse(Jackson.<Person>marshaller());
+
+    final Consumer<Consumer<Person>> findPerson = completionFunction -> {
+      //... some processing logic...
+
+      //complete the request
+      completionFunction.accept(new Person("Jane", 42));
+    };
+
+    final Route route = completeWith(marshaller, findPerson);
+
+    // tests:
+    final TestRouteResult routeResult = testRoute(route).run(
+            HttpRequest.GET("/")
+    );
+    routeResult.assertMediaType(MediaTypes.APPLICATION_JSON);
+    routeResult.assertEntity("{\"favoriteNumber\":42,\"name\":\"Jane\"}");
+  }
+    //#example-completeWith-with-json
 }

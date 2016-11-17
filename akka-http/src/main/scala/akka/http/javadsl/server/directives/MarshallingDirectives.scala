@@ -3,12 +3,11 @@
  */
 package akka.http.javadsl.server.directives
 
-import akka.http.javadsl.model.HttpRequest
-import akka.http.javadsl.model.HttpEntity
+import akka.http.javadsl.marshalling.Marshaller
+import akka.http.javadsl.model.{HttpEntity, HttpRequest, HttpResponse}
 import akka.http.javadsl.server.Route
 import akka.http.javadsl.unmarshalling.Unmarshaller
-
-import akka.http.scaladsl.server.directives.{ MarshallingDirectives ⇒ D }
+import akka.http.scaladsl.server.directives.{MarshallingDirectives => D}
 
 abstract class MarshallingDirectives extends HostDirectives {
   /**
@@ -36,6 +35,15 @@ abstract class MarshallingDirectives extends HostDirectives {
       inner.apply(value).delegate
     }
   }
-
   // If you want the raw entity, use BasicDirectives.extractEntity
+
+  def completeWith[T](
+    marshaller: Marshaller[T, _ <: HttpResponse],
+    inner:      java.util.function.Consumer[java.util.function.Consumer[T]]): Route = RouteAdapter {
+    D.completeWith[T](marshaller) { f ⇒
+      inner.accept(new java.util.function.Consumer[T]() {
+        def accept(t: T): Unit = f(t)
+      })
+    }
+  }
 }
