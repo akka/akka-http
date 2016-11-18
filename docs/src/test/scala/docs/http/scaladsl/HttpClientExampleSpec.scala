@@ -4,13 +4,6 @@
 
 package docs.http.scaladsl
 
-import akka.Done
-import akka.actor.{ ActorLogging, ActorSystem }
-import akka.http.scaladsl.model.HttpEntity.Strict
-import akka.http.scaladsl.model.HttpMessage.DiscardedEntity
-import akka.stream.{ IOResult, Materializer }
-import akka.stream.scaladsl.{ Framing, Sink }
-import akka.util.ByteString
 import docs.CompileOnlySpec
 import org.scalatest.{ Matchers, WordSpec }
 
@@ -26,6 +19,7 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
     import akka.stream.scaladsl.Framing
     import akka.stream.scaladsl.FileIO
     import akka.http.scaladsl.model._
+    import akka.util.ByteString
 
     implicit val system = ActorSystem()
     implicit val dispatcher = system.dispatcher
@@ -45,11 +39,11 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
 
   "manual-entity-consume-example-2" in compileOnlySpec {
     //#manual-entity-consume-example-2
-    import java.io.File
     import akka.actor.ActorSystem
     import akka.stream.ActorMaterializer
     import akka.http.scaladsl.model._
     import scala.concurrent.duration._
+    import akka.util.ByteString
 
     implicit val system = ActorSystem()
     implicit val dispatcher = system.dispatcher
@@ -79,6 +73,7 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
     import akka.actor.ActorSystem
     import akka.stream.ActorMaterializer
     import akka.http.scaladsl.model._
+    import akka.http.scaladsl.model.HttpMessage.DiscardedEntity
 
     implicit val system = ActorSystem()
     implicit val dispatcher = system.dispatcher
@@ -92,9 +87,11 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
     //#manual-entity-discard-example-1
   }
   "manual-entity-discard-example-2" in compileOnlySpec {
+    import akka.Done
     import akka.actor.ActorSystem
     import akka.stream.ActorMaterializer
     import akka.http.scaladsl.model._
+    import akka.stream.scaladsl.Sink
 
     implicit val system = ActorSystem()
     implicit val dispatcher = system.dispatcher
@@ -184,11 +181,13 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
 
   "single-request-in-actor-example" in compileOnlySpec {
     //#single-request-in-actor-example
+    import akka.actor.ActorLogging
     import akka.actor.Actor
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model._
     import akka.stream.ActorMaterializer
     import akka.stream.ActorMaterializerSettings
+    import akka.util.ByteString
 
     class Myself extends Actor
       with ActorLogging {
