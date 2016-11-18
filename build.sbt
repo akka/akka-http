@@ -30,12 +30,19 @@ inThisBuild(Def.settings(
   ),
   testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v"),
   Dependencies.Versions,
-  Formatting.formatSettings
+  Formatting.formatSettings,
+  shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 ))
+
+val dontPublishSettings = Seq(
+  publishSigned := (),
+  publish := (),
+  publishArtifact in Compile := false
+)
 
 
 lazy val root = Project(
-    id = "akka-http-root",
+    id = "root",
     base = file(".")
   )
   .enablePlugins(UnidocRoot, NoPublish)
@@ -44,6 +51,7 @@ lazy val root = Project(
     // Unidoc doesn't like macros
     unidocProjectExcludes := Seq(parsing)
   )
+  .settings(dontPublishSettings)
   .aggregate(
     parsing,
     httpCore,
@@ -80,6 +88,7 @@ lazy val httpTestkit = project("akka-http-testkit")
 
 lazy val httpTests = project("akka-http-tests")
   .settings(Dependencies.httpTests)
+  .settings(dontPublishSettings)
   .dependsOn(httpSprayJson, httpXml, httpJackson,
     httpTestkit % "test", httpCore % "test->test")
   .enablePlugins(MultiNode)
@@ -152,5 +161,3 @@ lazy val docs = project("docs")
     ),
     Formatting.docFormatSettings
   )
-
-shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
