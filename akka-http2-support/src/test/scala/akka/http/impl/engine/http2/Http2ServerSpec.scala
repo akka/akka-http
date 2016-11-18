@@ -12,6 +12,13 @@ import akka.http.impl.engine.http2.hpack.HeaderDecompression
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.StringRendering
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.ContentTypes
+import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.HttpMethods
+import akka.http.scaladsl.model.HttpProtocols
+import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.stream.{ ActorMaterializer, Materializer }
@@ -207,6 +214,21 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
           remainingToServerWindowFor(TheStreamId) shouldBe 0
           expectNoWindowUpdates(100.millis) // might fail here until all buffers have been filled
         }
+      "fail if advertised content-length doesn't match (actual entity is longer)" in new WaitingForRequest(
+        HttpRequest(
+          method = HttpMethods.POST,
+          uri = "https://example.com/upload",
+          entity = HttpEntity(ContentTypes.`application/json`, 10, Source.repeat("x").take(100).map(ByteString(_))),
+          protocol = HttpProtocols.`HTTP/2.0`)) {
+
+        receivedRequest.entity.contentType should ===(ContentTypes.`application/json`)
+        receivedRequest.entity.isIndefiniteLength should ===(false)
+        receivedRequest.entity.contentLengthOption should ===(Some(10L))
+        entityDataIn.request(10)
+        val ex = entityDataIn.expectError()
+        ex shouldBe a[EntityStreamSizeException]
+        ex.getMessage should include("actual entity size (Some(100)) exceeded content length limit (10 bytes)")
+      }
 
         // now drain entity source
         entityDataIn.expectBytes(totallySentBytes)
@@ -292,7 +314,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
         entityDataOut.sendError(new RuntimeException with NoStackTrace)
         expectRST_STREAM(1, ErrorCode.INTERNAL_ERROR)
       }
-      "fail if advertised content-length doesn't match" in pending
+      "fail if advertised content-length doesn't match" in {
 
       "backpressure response entity stream until WINDOW_UPDATE was received" in new WaitingForResponseDataSetup {
         var totalSentBytes = 0
