@@ -34,13 +34,6 @@ inThisBuild(Def.settings(
   shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
 ))
 
-val dontPublishSettings = Seq(
-  publishSigned := (),
-  publish := (),
-  publishArtifact in Compile := false
-)
-
-
 lazy val root = Project(
     id = "root",
     base = file(".")
@@ -51,7 +44,6 @@ lazy val root = Project(
     // Unidoc doesn't like macros
     unidocProjectExcludes := Seq(parsing)
   )
-  .settings(dontPublishSettings)
   .aggregate(
     parsing,
     httpCore,
@@ -88,9 +80,9 @@ lazy val httpTestkit = project("akka-http-testkit")
 
 lazy val httpTests = project("akka-http-tests")
   .settings(Dependencies.httpTests)
-  .settings(dontPublishSettings)
   .dependsOn(httpSprayJson, httpXml, httpJackson,
     httpTestkit % "test", httpCore % "test->test")
+  .enablePlugins(NoPublish).disablePlugins(BintrayPlugin) // don't release tests
   .enablePlugins(MultiNode)
   .disablePlugins(MimaPlugin) // this is only tests
   .configs(MultiJvm)
