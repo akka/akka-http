@@ -130,18 +130,13 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         def onPush(): Unit = {
           val in = grab(frameIn)
           in match {
-<<<<<<< c93c52ac3003703dc26e37f70f8d58190280aaff
             case WindowUpdateFrame(0, increment) ⇒
               totalOutboundWindowLeft += increment
               debug(f"outbound window is now $totalOutboundWindowLeft%10d after increment $increment%6d")
               bufferedFrameOut.tryFlush()
 
-            case e: StreamFrameEvent if !Http2Compliance.clientInitiatedStreamId(e.streamId) ⇒
-              goAwayFrame()
-=======
             case e: StreamFrameEvent if !Http2Compliance.isClientInitiatedStreamId(e.streamId) ⇒
               pushGOAWAY()
->>>>>>> addressed comments
 
             case e: StreamFrameEvent if e.streamId > closedAfter.getOrElse(Int.MaxValue) ⇒
             // streams that will have a greater stream id than the one we sent with GO_AWAY will be ignored

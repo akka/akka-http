@@ -456,17 +456,6 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
     }
 
     "respect the substream state machine" should {
-<<<<<<< c93c52ac3003703dc26e37f70f8d58190280aaff
-      "reject other frame than HEADERS/PUSH_PROMISE in idle state with connection-level PROTOCOL_ERROR (5.1)" in pending
-      "reject incoming frames on already half-closed substream" in pending
-
-      "reject even-numbered client-initiated substreams" in pending
-
-      "reject all other frames while waiting for CONTINUATION frames" in pending
-
-      "reject double sub-streams creation" in pending
-      "reject substream creation for streams invalidated by skipped substream IDs" in pending
-=======
       abstract class SimpleRequestResponseRoundtripSetup extends TestSetup with RequestResponseProbes
 
       "reject other frame than HEADERS/PUSH_PROMISE in idle state with connection-level PROTOCOL_ERROR (5.1)" inPendingUntilFixed new SimpleRequestResponseRoundtripSetup {
@@ -504,7 +493,6 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
         // TODO: completion logic, wait?!
         expectGracefulCompletion()
       }
->>>>>>> addressed comments
     }
 
     "must not swallow errors / warnings" in pending
@@ -569,6 +557,12 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
 
         if (streamId == 0) updateToServerWindowForConnection(_ + windowSizeIncrement)
         else updateToServerWindows(streamId, _ + windowSizeIncrement)
+    }
+
+    def expectGOAWAY(streamId: Int): (Int, ErrorCode) = {
+      val payload = expectFramePayload(FrameType.GOAWAY, ByteFlag.Zero, streamId)
+      val reader = new ByteReader(payload)
+      (reader.readIntBE(), ErrorCode.byId(reader.readIntBE()))
     }
 
     @tailrec
