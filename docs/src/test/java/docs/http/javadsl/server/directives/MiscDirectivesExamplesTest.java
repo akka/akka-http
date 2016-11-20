@@ -105,18 +105,4 @@ public class MiscDirectivesExamplesTest extends JUnitRouteTest {
     //#rejectEmptyResponse
   }
 
-  @Test
-  @Ignore
-  public void foo() {
-
-    final Route route = path("foo", () -> completeOK(Optional.empty(), Jackson.marshaller()));
-    final Route route2 = rejectEmptyResponse(() -> path("/foo", () -> completeOK(Optional.empty(), Jackson.marshaller())));
-    final Route route3 = path("foo", () -> completeOK(Optional.of(3), Jackson.marshaller()));
-
-    testRoute(route).run(HttpRequest.GET("/foo")).assertEntity("");
-    testRoute(route2).run(HttpRequest.GET("/foo")).assertStatusCode(StatusCodes.NOT_FOUND);
-    testRoute(route3).run(HttpRequest.GET("/foo")).assertEntity("3");
-
-  }
-
 }
