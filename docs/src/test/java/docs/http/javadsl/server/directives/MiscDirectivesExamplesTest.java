@@ -3,15 +3,22 @@
  */
 package docs.http.javadsl.server.directives;
 
+import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.http.javadsl.testkit.JUnitRouteTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Optional;
+import java.util.Optional;
 import java.util.function.Function;
+
+import static akka.http.javadsl.server.PathMatchers.integerSegment;
+import static akka.http.javadsl.server.PathMatchers.segment;
 
 public class MiscDirectivesExamplesTest extends JUnitRouteTest {
 
@@ -59,6 +66,57 @@ public class MiscDirectivesExamplesTest extends JUnitRouteTest {
     testRoute(route).run(withEntityOfSize.apply(501))
       .assertStatusCode(StatusCodes.OK);
     //#withoutSizeLimitExample
+  }
+
+    //#rejectEmptyResponse
+    private String explainIfEven(int i) {
+      if (i % 2 == 0) return "Number " + i + " is even";
+      else return "";
+    }
+
+    //#rejectEmptyResponse
+
+  @Test
+  public void testRejectEmptyResponse() {
+    //#rejectEmptyResponse
+    //This route responds with empty responses
+    final Route routeEmptyResponse = path(segment("even").slash(integerSegment()), (Integer i) ->
+      complete(explainIfEven(i))
+    );
+    //This route rejects when response is empty
+    final Route routeRejected = rejectEmptyResponse(() ->
+      path(segment("even").slash(integerSegment()), (Integer i) ->
+        complete(explainIfEven(i))
+      ));
+
+    //tests:
+    testRoute(routeEmptyResponse).run(HttpRequest.GET("/even/2"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("Number 2 is even");
+    testRoute(routeEmptyResponse).run(HttpRequest.GET("/even/1"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("");
+
+    testRoute(routeRejected).run(HttpRequest.GET("/even/2"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("Number 2 is even");
+    testRoute(routeRejected).run(HttpRequest.GET("/even/1"))
+      .assertStatusCode(StatusCodes.NOT_FOUND);
+    //#rejectEmptyResponse
+  }
+
+  @Test
+  @Ignore
+  public void foo() {
+
+    final Route route = path("foo", () -> completeOK(Optional.empty(), Jackson.marshaller()));
+    final Route route2 = rejectEmptyResponse(() -> path("/foo", () -> completeOK(Optional.empty(), Jackson.marshaller())));
+    final Route route3 = path("foo", () -> completeOK(Optional.of(3), Jackson.marshaller()));
+
+    testRoute(route).run(HttpRequest.GET("/foo")).assertEntity("");
+    testRoute(route2).run(HttpRequest.GET("/foo")).assertStatusCode(StatusCodes.NOT_FOUND);
+    testRoute(route3).run(HttpRequest.GET("/foo")).assertEntity("3");
+
   }
 
 }

@@ -5,10 +5,17 @@
 
 Replaces a response with no content with an empty rejection.
 
-The `rejectEmptyResponse` directive is mostly used with marshalling `Option[T]` instances. The value `None` is
-usually marshalled to an empty but successful result. In many cases `None` should instead be handled as
-`404 Not Found` which is the effect of using `rejectEmptyResponse`.
+The `rejectEmptyResponse` directive is can be used whenever responding with an empty `Entity` should be a rejection 
+instead of an `OK` response. One easy example where this can be used is when the entity is a `String` and the 
+empty `String` should be handled as `404 Not Found`.
+
+## Warning
+
+Java's `Optional<T>` does not behave like Scala's `Option[T]` as it's rendered as an own `Entity` instead of being 
+rendered according the parametrized `T` type, if present.
+
+This implies that, a non-empty `Optional` is rendered like `{"present":true}` and an empty one like `{"present":false}`.
 
 ## Example
 
-TODO: Example snippets for JavaDSL are subject to community contributions! Help us complete the docs, read more about it here: [write example snippets for Akka HTTP Java DSL #218](https://github.com/akka/akka-http/issues/218).
+@@snip [MiscDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/MiscDirectivesExamplesTest.java) { #rejectEmptyResponse }
