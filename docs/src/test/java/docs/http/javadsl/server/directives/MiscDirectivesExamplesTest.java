@@ -3,26 +3,21 @@
  */
 package docs.http.javadsl.server.directives;
 
-import akka.http.impl.model.parser.AcceptLanguageHeader;
-import akka.http.javadsl.marshallers.jackson.Jackson;
-import akka.http.javadsl.model.HttpHeader;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.StatusCodes;
-import akka.http.javadsl.model.headers.*;
+import akka.http.javadsl.model.headers.AcceptLanguage;
+import akka.http.javadsl.model.headers.Language;
+import akka.http.javadsl.model.headers.LanguageRanges;
+import akka.http.javadsl.model.headers.RemoteAddress;
 import akka.http.javadsl.server.Route;
-import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.http.javadsl.testkit.JUnitRouteTest;
-import jdk.nashorn.internal.runtime.FunctionInitializer;
+import akka.http.javadsl.unmarshalling.Unmarshaller;
 import org.junit.Test;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Supplier;
-
-import static akka.http.javadsl.server.PathMatchers.*;
 
 
 public class MiscDirectivesExamplesTest extends JUnitRouteTest {
@@ -132,4 +127,20 @@ public class MiscDirectivesExamplesTest extends JUnitRouteTest {
     //#selectPreferredLanguage
   }
 
+  @Test
+  public void testValidate() {
+    //#validate-example
+    final Route route = extractUri(uri ->
+      validate(() -> uri.path().length() < 5,
+        "Path too long: " + uri.path(),
+        () -> complete("Full URI: " + uri.toString()))
+    );
+
+    //tests:
+    testRoute(route).run(HttpRequest.GET("/234"))
+      .assertEntity("Full URI: http://example.com/234");
+    testRoute(route).run(HttpRequest.GET("/abcdefghijkl"))
+      .assertEntity("Path too long: /abcdefghijkl");
+    //#validate-example
+  }
 }
