@@ -3,6 +3,7 @@
  */
 package docs.http.javadsl.server.directives;
 
+import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.http.javadsl.model.HttpHeader;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.StatusCodes;
@@ -10,13 +11,18 @@ import akka.http.javadsl.model.headers.RemoteAddress;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.http.javadsl.testkit.JUnitRouteTest;
+import jdk.nashorn.internal.runtime.FunctionInitializer;
 import org.junit.Test;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
+
+import static akka.http.javadsl.server.PathMatchers.*;
+
 
 public class MiscDirectivesExamplesTest extends JUnitRouteTest {
 
@@ -83,6 +89,22 @@ public class MiscDirectivesExamplesTest extends JUnitRouteTest {
     testRoute(route).run(HttpRequest.GET("/"))
       .assertEntity("Client's IP is unknown");
     //#extractClientIPExample
+  }
+
+  @Test
+  public void testRequestEntityEmpty() {
+    //#requestEntity-empty-present-example
+    final Route route = requestEntityEmpty(() ->
+      complete("request entity empty")
+    ).orElse(requestEntityPresent(() ->
+      complete("request entity present")
+    ));
+
+    testRoute(route).run(HttpRequest.POST("/"))
+      .assertEntity("request entity empty");
+    testRoute(route).run(HttpRequest.POST("/").withEntity("foo"))
+      .assertEntity("request entity present");
+    //#requestEntity-empty-present-example
   }
 
 }
