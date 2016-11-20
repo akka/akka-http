@@ -76,6 +76,7 @@ public class MiscDirectivesExamplesTest extends JUnitRouteTest {
         .orElseGet(() -> "unknown"))
     );
 
+    //tests:
     final String ip = "192.168.1.2";
     testRoute(route).run(HttpRequest.GET("/")
         .addHeader(RemoteAddress
@@ -96,6 +97,7 @@ public class MiscDirectivesExamplesTest extends JUnitRouteTest {
       complete("request entity present")
     ));
 
+    //tests:
     testRoute(route).run(HttpRequest.POST("/"))
       .assertEntity("request entity empty");
     testRoute(route).run(HttpRequest.POST("/").withEntity("foo"))
@@ -115,13 +117,15 @@ public class MiscDirectivesExamplesTest extends JUnitRouteTest {
         complete(lang.toString())
     );
 
+
+    //tests:
     final HttpRequest request = HttpRequest.GET("/").addHeader(AcceptLanguage.create(
       Language.create("en-US").withQValue(1f),
       Language.create("en").withQValue(0.7f),
       LanguageRanges.ALL.withQValue(0.1f),
       Language.create("de-DE").withQValue(0.5f)
     ));
-
+    
     testRoute(enRoute).run(request).assertEntity("en-US");
     testRoute(deHuRoute).run(request).assertEntity("de-DE");
     //#selectPreferredLanguage
