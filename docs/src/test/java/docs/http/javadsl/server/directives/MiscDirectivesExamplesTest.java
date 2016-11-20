@@ -3,11 +3,12 @@
  */
 package docs.http.javadsl.server.directives;
 
+import akka.http.impl.model.parser.AcceptLanguageHeader;
 import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.http.javadsl.model.HttpHeader;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.StatusCodes;
-import akka.http.javadsl.model.headers.RemoteAddress;
+import akka.http.javadsl.model.headers.*;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.http.javadsl.testkit.JUnitRouteTest;
@@ -105,6 +106,30 @@ public class MiscDirectivesExamplesTest extends JUnitRouteTest {
     testRoute(route).run(HttpRequest.POST("/").withEntity("foo"))
       .assertEntity("request entity present");
     //#requestEntity-empty-present-example
+  }
+
+  @Test
+  public void testSelectPreferredLanguage() {
+    //#selectPreferredLanguage
+    final Route enRoute = selectPreferredLanguage(
+      Arrays.asList(Language.create("en"), Language.create("en-US")), lang ->
+        complete(lang.toString())
+    );
+    final Route deHuRoute = selectPreferredLanguage(
+      Arrays.asList(Language.create("de-DE"), Language.create("hu")), lang ->
+        complete(lang.toString())
+    );
+
+    final HttpRequest request = HttpRequest.GET("/").addHeader(AcceptLanguage.create(
+      Language.create("en-US").withQValue(1f),
+      Language.create("en").withQValue(0.7f),
+      LanguageRanges.ALL.withQValue(0.1f),
+      Language.create("de-DE").withQValue(0.5f)
+    ));
+
+    testRoute(enRoute).run(request).assertEntity("en-US");
+    testRoute(deHuRoute).run(request).assertEntity("de-DE");
+    //#selectPreferredLanguage
   }
 
 }
