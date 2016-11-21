@@ -70,7 +70,9 @@ trait SprayJsonSupport {
 object SprayJsonSupport extends SprayJsonSupport
 
 /**
- * Entity streaming support, independent of used Json parsing library etc.
+ * Entity streaming support, implemented using spray-json.
+ *
+ * See also <a href="https://github.com/spray/spray-json">github.com/spray/spray-json</a> for details about Spray JSON itself
  */
 object SprayJsonEntityStreamingSupport {
 
@@ -111,8 +113,6 @@ final class JsonEntityStreamingSupport private[akka] (
   val unordered:       Boolean
 ) extends common.JsonEntityStreamingSupport {
   import akka.http.impl.util.JavaMapping.Implicits._
-
-  println("this = " + this)
 
   def this(maxObjectSize: Int) =
     this(
