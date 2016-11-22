@@ -24,7 +24,7 @@ The `challengeFor` directive was actually more like a factory for `HttpChallenge
 thus it was moved to become such. It is now available as `akka.http.javadsl.model.headers.HttpChallenge#create[Basic|OAuth2]`
 for JavaDSL and `akka.http.scaladsl.model.headers.HttpChallenges#[basic|oAuth2]` for ScalaDSL.
 
-## Akka HTTP 2.4.11 -> 3.0.0
+## Akka HTTP 2.4.11 -> 10.0.0
 
 ### Java DSL `PathDirectives` used Scala Function type
 
@@ -50,7 +50,7 @@ but are now available from the packages `akka.http.javadsl.unmarshalling` and `a
 
 `akka.http.javadsl.server.RegexConverters` is now `akka.http.javadsl.common.RegexConverters`.
 
-## Akka HTTP 2.4.11 -> 3.0.0
+## Akka HTTP 2.4.11 -> 10.0.0
 
 ### Java DSL `PathDirectives` used Scala Function type
 
