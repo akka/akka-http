@@ -300,7 +300,11 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     log:               LoggingAdapter): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
     val hostHeader = if (port == connectionContext.defaultPort) Host(host) else Host(host, port)
     val layer = clientLayer(hostHeader, settings, log)
-    layer.joinMat(_outgoingTlsConnectionLayer(host, port, localAddress, settings, connectionContext, log))(Keep.right)
+    val (targetHost, targetPort) = settings.proxyHost match {
+      case Some(proxy) => (proxy, settings.proxyPort)
+      case None => (host, port)
+    }
+    layer.joinMat(_outgoingTlsConnectionLayer(targetHost, targetPort, localAddress, settings, connectionContext, log))(Keep.right)
   }
 
   private def _outgoingTlsConnectionLayer(host: String, port: Int, localAddress: Option[InetSocketAddress],

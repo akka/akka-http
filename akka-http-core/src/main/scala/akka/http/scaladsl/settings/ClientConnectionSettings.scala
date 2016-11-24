@@ -32,6 +32,8 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   def socketOptions: immutable.Seq[SocketOption]
   def parserSettings: ParserSettings
   def logUnencryptedNetworkBytes: Option[Int]
+  def proxyHost: Option[String]
+  def proxyPort: Int
 
   /* JAVA APIs */
 
@@ -41,6 +43,8 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   final override def getSocketOptions: Iterable[SocketOption] = socketOptions.asJava
   final override def getUserAgentHeader: Optional[UserAgent] = OptionConverters.toJava(userAgentHeader)
   final override def getLogUnencryptedNetworkBytes: Optional[Int] = OptionConverters.toJava(logUnencryptedNetworkBytes)
+  final override def getProxyHost: Optional[String] = OptionConverters.toJava(proxyHost)
+  final override def getProxyPort: Int = proxyPort
   final override def getRequestHeaderSizeHint: Int = requestHeaderSizeHint
   final override def getWebsocketRandomFactory: Supplier[Random] = new Supplier[Random] {
     override def get(): Random = websocketRandomFactory()

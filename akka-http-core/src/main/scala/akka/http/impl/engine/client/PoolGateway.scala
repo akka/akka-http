@@ -73,10 +73,20 @@ private[http] final class PoolGateway(gatewayRef: ActorRef, val hcps: HostConnec
 
   override def equals(that: Any): Boolean =
     that match {
-      case p: PoolGateway ⇒ p.hcps == hcps && p.gatewayId == gatewayId
+      case p: PoolGateway ⇒ equalOrToSameProxy(p.hcps, hcps) && p.gatewayId == gatewayId
       case _              ⇒ false
     }
 
+  // We want requests that use the same proxy to go through the same gateway, so that maxConnections
+  // is maintained for that proxy, instead of for the (target host + proxy) which would hold
+  // if we'd just compare equality of the HostConnectionPoolSetup directly.
+  private def equalOrToSameProxy(a: HostConnectionPoolSetup, b: HostConnectionPoolSetup): Boolean =
+    (a == b) || (
+      a.setup.settings.connectionSettings.proxyHost.isDefined &&
+      a.setup.settings.connectionSettings.proxyHost == b.setup.settings.connectionSettings.proxyHost &&
+      a.setup.settings.connectionSettings.proxyPort == b.setup.settings.connectionSettings.proxyPort
+    )
+  
   override def hashCode(): Int = hcps.hashCode() ^ gatewayId.hashCode()
 }
 

@@ -29,6 +29,8 @@ abstract class ClientConnectionSettings private[akka] () { self: ClientConnectio
   def getSocketOptions: java.lang.Iterable[SocketOption]
   def getParserSettings: ParserSettings
   def getLogUnencryptedNetworkBytes: Optional[Int]
+  def getProxyHost: Optional[String]
+  def getProxyPort: Int
 
   // ---
 
