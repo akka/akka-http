@@ -43,7 +43,8 @@ object Dependencies {
     val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.2"       // ApacheV2
 
     // For akka-http-jackson support
-    val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % "2.7.6"       // ApacheV2
+    val jackson         = "com.fasterxml.jackson.core"      % "jackson-databind"            % "2.8.5"       // ApacheV2
+    val jacksonModules  = "com.fasterxml.jackson.datatype"  % "jackson-datatype-jdk8"       % "2.8.5"       // ApacheV2
 
     // For akka-http-testkit-java
     val junit       = "junit"                         % "junit"                        % junitVersion  // Common Public License 1.0
@@ -151,7 +152,7 @@ object Dependencies {
 
   lazy val httpSprayJson = versionDependentDeps(sprayJson)
 
-  lazy val httpJackson = l ++= Seq(jackson)
+  lazy val httpJackson = l ++= Seq(jackson, jacksonModules)
 
   lazy val docs = l ++= Seq(Docs.sprayJson, Docs.gson)
 
