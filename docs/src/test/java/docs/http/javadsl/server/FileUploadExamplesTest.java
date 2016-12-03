@@ -3,12 +3,19 @@
  */
 package docs.http.javadsl.server;
 
+import akka.Done;
+import akka.NotUsed;
+import akka.actor.ActorRef;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.japi.Pair;
 import akka.stream.Materializer;
 import akka.stream.javadsl.FileIO;
+import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Framing;
+import akka.stream.javadsl.Sink;
+import akka.util.ByteString;
 import org.junit.Test;
 
 import java.io.File;
@@ -17,9 +24,14 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import static akka.http.javadsl.server.PathMatchers.longSegment;
+import static akka.http.javadsl.server.PathMatchers.segment;
+
 public class FileUploadExamplesTest extends JUnitRouteTest {
 
   private final Materializer materializer = materializer();
+
+  private final ActorRef metadataActor = system().deadLetters();
 
   @Test
   public void compileOnlySpec() throws Exception {
@@ -71,10 +83,48 @@ public class FileUploadExamplesTest extends JUnitRouteTest {
   }
   //#simple-upload
 
-
   static class DB {
     static CompletionStage<Void> create(final File file, final String title, final String author) {
       return CompletableFuture.completedFuture(null);
     }
   }
+
+  //#stream-csv-upload
+  Route csvUploads() {
+    final Flow<ByteString, ByteString, NotUsed> splitLines =
+      Framing.delimiter(ByteString.fromString("\n"), 256);
+
+    return path(segment("metadata").slash(longSegment()), id ->
+      entity(Unmarshaller.entityToMultipartFormData(), formData -> {
+
+        CompletionStage<Done> done = formData.getParts().mapAsync(1, bodyPart ->
+          bodyPart.getFilename().filter(name -> name.endsWith(".csv")).map(ignored ->
+            bodyPart.getEntity().getDataBytes()
+              .via(splitLines)
+              .map(bs -> bs.utf8String().split(","))
+              .runForeach(csv ->
+                  metadataActor.tell(new Entry(id, csv), ActorRef.noSender()),
+                materializer)
+          ).orElseGet(() ->
+            // in case the uploaded file is not a CSV
+            CompletableFuture.completedFuture(Done.getInstance()))
+        ).runWith(Sink.ignore(), materializer);
+
+        // when processing have finished create a response for the user
+        return onComplete(() -> done, ignored -> complete("ok!"));
+      })
+    );
+  }
+  //#stream-csv-upload
+
+  static class Entry {
+    final Long id;
+    final String[] values;
+
+    Entry(Long id, String[] values) {
+      this.id = id;
+      this.values = values;
+    }
+  }
+
 }
