@@ -43,7 +43,7 @@ public class FileUploadExamplesTest extends JUnitRouteTest {
     return path("video", () ->
       entity(Unmarshaller.entityToMultipartFormData(), formData -> {
         // collect all parts of the multipart as it arrives into a map
-        CompletionStage<Map<String, Object>> allParts =
+        final CompletionStage<Map<String, Object>> allParts =
           formData.getParts().mapAsync(1, bodyPart -> {
             if ("file".equals(bodyPart.getName())) {
               // stream into a file as the chunks of it arrives and return a CompletionStage
@@ -68,7 +68,7 @@ public class FileUploadExamplesTest extends JUnitRouteTest {
           }, materializer);
 
         // simulate a DB call
-        CompletionStage<Void> done = allParts.thenCompose(map ->
+        final CompletionStage<Void> done = allParts.thenCompose(map ->
           // You would have some better validation/unmarshalling here
           DB.create((File) map.get("file"),
             (String) map.get("title"),
@@ -97,7 +97,7 @@ public class FileUploadExamplesTest extends JUnitRouteTest {
     return path(segment("metadata").slash(longSegment()), id ->
       entity(Unmarshaller.entityToMultipartFormData(), formData -> {
 
-        CompletionStage<Done> done = formData.getParts().mapAsync(1, bodyPart ->
+        final CompletionStage<Done> done = formData.getParts().mapAsync(1, bodyPart ->
           bodyPart.getFilename().filter(name -> name.endsWith(".csv")).map(ignored ->
             bodyPart.getEntity().getDataBytes()
               .via(splitLines)
