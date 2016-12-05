@@ -59,8 +59,9 @@ object Dependencies {
     val alpnApi     = "org.eclipse.jetty.alpn"        % "alpn-api"                     % "1.1.3.v20160715" // ApacheV2
 
     object Docs {
-      val sprayJson   = "io.spray"                   %%  "spray-json"                  % "1.3.2"             % "test"
+      val sprayJson   = "io.spray"                   %% "spray-json"                   % "1.3.2"             % "test"
       val gson        = "com.google.code.gson"        % "gson"                         % "2.3.1"             % "test"
+      val scalaMeta   = "org.scalameta"              %% "scalameta"                    % "1.3.0"             % "test" // BSD-3
     }
 
     object Test {
@@ -156,7 +157,7 @@ object Dependencies {
 
   lazy val httpJackson = l ++= Seq(jackson)
 
-  lazy val docs = l ++= Seq(Docs.sprayJson, Docs.gson)
+  lazy val docs = l ++= Seq(Docs.sprayJson, Docs.gson, Docs.scalaMeta)
 
 }
 
