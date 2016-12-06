@@ -28,6 +28,9 @@ inThisBuild(Def.settings(
     "-Ywarn-dead-code"
     // "-Xfuture" // breaks => Unit implicits
   ),
+  javacOptions ++= Seq(
+    "-encoding", "UTF-8"
+  ),
   testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v"),
   Dependencies.Versions,
   Formatting.formatSettings,
