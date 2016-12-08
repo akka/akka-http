@@ -88,6 +88,7 @@ lazy val httpTests = project("akka-http-tests")
   .enablePlugins(MultiNode)
   .disablePlugins(MimaPlugin) // this is only tests
   .configs(MultiJvm)
+  .settings(testOptions in Test += Tests.Argument("-oF"))
 
 
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
