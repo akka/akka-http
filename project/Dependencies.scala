@@ -113,16 +113,6 @@ object Dependencies {
 
   lazy val l = libraryDependencies
 
-  lazy val common = l ++= Seq(
-    akkaStream,
-    Test.scalatest.value
-  )
-
-  lazy val core = l ++=  Seq(
-    Test.sprayJson, // for WS Autobahn test metadata
-    Test.junitIntf, Test.junit, Test.scalatest.value
-  )
-
   lazy val parsing = Seq(
     DependencyHelpers.versionDependentDeps(
       Dependencies.Compile.scalaReflect % "provided"
@@ -157,7 +147,6 @@ object Dependencies {
   lazy val httpJackson = l ++= Seq(jackson)
 
   lazy val docs = l ++= Seq(Docs.sprayJson, Docs.gson)
-
 }
 
 
