@@ -391,9 +391,7 @@ object Multipart {
     }
     /** INTERNAL API */
     private[akka] def createSource(parts: Source[akka.http.javadsl.model.Multipart.FormData.BodyPart, Any]): Multipart.FormData = {
-      apply(parts.map {
-        case bp: Multipart.FormData.BodyPart ⇒ bp
-      })
+      apply(parts.asInstanceOf[Source[Multipart.FormData.BodyPart, Any]])
     }
 
     def apply(fields: Map[String, HttpEntity.Strict]): Multipart.FormData.Strict = Multipart.FormData.Strict {
