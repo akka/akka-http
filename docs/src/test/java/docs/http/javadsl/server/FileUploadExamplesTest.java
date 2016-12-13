@@ -19,6 +19,8 @@ import akka.util.ByteString;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.Serializable;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -117,13 +119,21 @@ public class FileUploadExamplesTest extends JUnitRouteTest {
   }
   //#stream-csv-upload
 
-  static class Entry {
+  static class Entry implements Serializable {
     final Long id;
     final String[] values;
 
     Entry(Long id, String[] values) {
       this.id = id;
       this.values = values;
+    }
+
+    @Override
+    public String toString() {
+      return "Entry{" +
+        "id=" + id +
+        ", values=" + Arrays.toString(values) +
+        '}';
     }
   }
 
