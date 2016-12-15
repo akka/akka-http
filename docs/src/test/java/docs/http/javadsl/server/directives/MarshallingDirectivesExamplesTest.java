@@ -69,6 +69,13 @@ public class MarshallingDirectivesExamplesTest extends JUnitRouteTest {
     //#example-completeWith-with-json
     final Marshaller<Person, HttpResponse> marshaller = Marshaller.entityToOKResponse(Jackson.<Person>marshaller());
 
+    //Please note that you can also pass completionFunction to another thread and use it there to complete the request.
+    //For example:
+    //final Consumer<Consumer<Person>> findPerson = completionFunction -> {
+    //  CompletableFuture.runAsync(() ->
+    //   /* ... some processing logic... */
+    //   completionFunction.accept(new Person("Jane", 42)));
+    //};
     final Consumer<Consumer<Person>> findPerson = completionFunction -> {
 
       //... some processing logic...
