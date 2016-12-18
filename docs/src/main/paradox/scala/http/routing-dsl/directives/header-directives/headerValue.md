@@ -23,7 +23,7 @@ See also @ref[headerValuePF](headerValuePF.md#headervaluepf) for a nicer syntact
 
 @@snip [HeaderDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala) { #headerValue-0 }
 
-## Get headerValue or return a default
+### Get headerValue or return a default
 
 Using @ref[provide](../basic-directives/provide.md#provide) and @ref[composing directives](../index.md#composing-directives) one can build a pattern where a headerValue is extracted if available or a default is returned. 
 
