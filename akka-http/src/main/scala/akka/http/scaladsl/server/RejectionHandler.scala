@@ -28,7 +28,7 @@ trait RejectionHandler extends (immutable.Seq[Rejection] ⇒ Option[Route]) { se
           isDefault = false)
 
       case other ⇒
-        throw new IllegalArgumentException("Can only mapRejectionResult on BuiltRejectionHandler " +
+        throw new IllegalArgumentException("Can only mapRejectionResponse on BuiltRejectionHandler " +
           s"(e.g. obtained by calling `.result()` on the `RejectionHandler` builder). Type was: ${other.getClass}")
     }
   }
