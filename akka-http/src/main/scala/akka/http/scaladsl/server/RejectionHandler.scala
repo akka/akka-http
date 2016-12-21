@@ -19,7 +19,7 @@ trait RejectionHandler extends (immutable.Seq[Rejection] ⇒ Option[Route]) { se
   import RejectionHandler._
 
   /** Map any HTTP response which was returned by this RejectionHandler to a different one before rendering it. */
-  def mapRejectionResponse(map: HttpResponse ⇒ HttpResponse)(implicit ec: ExecutionContext): RejectionHandler = {
+  def mapRejectionResponse(map: HttpResponse ⇒ HttpResponse): RejectionHandler = {
     this match {
       case a: BuiltRejectionHandler ⇒
         new BuiltRejectionHandler(
@@ -108,10 +108,10 @@ object RejectionHandler {
   }
 
   private sealed abstract class Handler {
-    def mapResponse(map: HttpResponse ⇒ HttpResponse)(implicit ec: ExecutionContext): Handler
+    def mapResponse(map: HttpResponse ⇒ HttpResponse): Handler
   }
   private final case class CaseHandler(pf: PartialFunction[Rejection, Route]) extends Handler {
-    override def mapResponse(map: HttpResponse ⇒ HttpResponse)(implicit ec: ExecutionContext): CaseHandler = {
+    override def mapResponse(map: HttpResponse ⇒ HttpResponse): CaseHandler = {
       copy(pf.andThen(route ⇒ BasicDirectives.mapResponse(map)(route)))
     }
   }
@@ -120,7 +120,7 @@ object RejectionHandler {
     def isDefinedAt(rejection: Rejection): Boolean = runtimeClass isInstance rejection
     def apply(rejection: Rejection): T = rejection.asInstanceOf[T]
 
-    override def mapResponse(map: HttpResponse ⇒ HttpResponse)(implicit ec: ExecutionContext): TypeHandler[T] = {
+    override def mapResponse(map: HttpResponse ⇒ HttpResponse): TypeHandler[T] = {
       copy(f = f.andThen(route ⇒ BasicDirectives.mapResponse(map)(route)))
     }
   }
