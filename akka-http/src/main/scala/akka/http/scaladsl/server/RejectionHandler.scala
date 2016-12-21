@@ -8,6 +8,7 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.AuthenticationFailedRejection._
+import akka.http.scaladsl.server.directives.BasicDirectives
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -19,12 +20,11 @@ trait RejectionHandler extends (immutable.Seq[Rejection] ⇒ Option[Route]) { se
 
   /** Map any HTTP response which was returned by this RejectionHandler to a different one before rendering it. */
   def mapRejectionResponse(map: HttpResponse ⇒ HttpResponse)(implicit ec: ExecutionContext): RejectionHandler = {
-    import akka.http.scaladsl.server.directives.BasicDirectives._
     this match {
       case a: BuiltRejectionHandler ⇒
         new BuiltRejectionHandler(
           a.cases.map { handler ⇒ handler.mapResponse(map) },
-          a.notFound.map { route ⇒ mapResponse(map)(route) },
+          a.notFound.map { route ⇒ BasicDirectives.mapResponse(map)(route) },
           isDefault = false)
 
       case other ⇒
@@ -112,10 +112,7 @@ object RejectionHandler {
   }
   private final case class CaseHandler(pf: PartialFunction[Rejection, Route]) extends Handler {
     override def mapResponse(map: HttpResponse ⇒ HttpResponse)(implicit ec: ExecutionContext): CaseHandler = {
-      copy(pf.andThen(r ⇒ r.andThen(f ⇒ f.collect {
-        case RouteResult.Complete(rejectionResponse) ⇒ RouteResult.Complete(map(rejectionResponse))
-        case x                                       ⇒ x
-      })))
+      copy(pf.andThen(route ⇒ BasicDirectives.mapResponse(map)(route)))
     }
   }
   private final case class TypeHandler[T <: Rejection](
@@ -124,10 +121,7 @@ object RejectionHandler {
     def apply(rejection: Rejection): T = rejection.asInstanceOf[T]
 
     override def mapResponse(map: HttpResponse ⇒ HttpResponse)(implicit ec: ExecutionContext): TypeHandler[T] = {
-      copy(f = f.andThen(r ⇒ r.andThen(f ⇒ f.collect {
-        case RouteResult.Complete(rejectionResponse) ⇒ RouteResult.Complete(map(rejectionResponse))
-        case x                                       ⇒ x
-      })))
+      copy(f = f.andThen(route ⇒ BasicDirectives.mapResponse(map)(route)))
     }
   }
 

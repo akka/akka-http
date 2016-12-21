@@ -41,14 +41,14 @@ class RejectionSpec extends RoutingSpec {
         }
       )
 
-    "mapResponse must not affect normal responses" in {
+    "mapRejectionResponse must not affect normal responses" in {
       Get("/hello") ~> route ~> check {
         status should ===(StatusCodes.OK)
         contentType should ===(ContentTypes.`text/plain(UTF-8)`)
         responseAs[String] should ===("""Hello there""")
       }
     }
-    "mapResponse should alter rejection response" in {
+    "mapRejectionResponse should alter rejection response" in {
       Get("/nope") ~> route ~> check {
         status should ===(StatusCodes.NotFound)
         contentType should ===(ContentTypes.`application/json`)
