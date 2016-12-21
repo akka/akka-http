@@ -61,11 +61,16 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   private type ServerLayerBidiFlow = BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed]
   private type ServerLayerFlow = Flow[ByteString, ByteString, Future[Done]]
 
+  private def isSecureConnection(connectionContext: ConnectionContext): Boolean = connectionContext match {
+    case hctx: HttpsConnectionContext ⇒ true
+    case _                            ⇒ false
+  }
+
   private def fuseServerBidiFlow(
     settings:          ServerSettings,
     connectionContext: ConnectionContext,
     log:               LoggingAdapter)(implicit mat: Materializer): ServerLayerBidiFlow = {
-    val httpLayer = serverLayer(settings, None, log)
+    val httpLayer = serverLayer(settings, None, log, isSecureConnection(connectionContext))
     val tlsStage = sslTlsStage(connectionContext, Server)
     BidiFlow.fromGraph(Fusing.aggressive(GraphDSL.create() { implicit b ⇒
       import GraphDSL.Implicits._
@@ -252,10 +257,11 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    * this layer produces if the `akka.http.server.remote-address-header` configuration option is enabled.
    */
   def serverLayer(
-    settings:      ServerSettings,
-    remoteAddress: Option[InetSocketAddress] = None,
-    log:           LoggingAdapter            = system.log)(implicit mat: Materializer): ServerLayer =
-    HttpServerBluePrint(settings, log)
+    settings:           ServerSettings,
+    remoteAddress:      Option[InetSocketAddress] = None,
+    log:                LoggingAdapter            = system.log,
+    isSecureConnection: Boolean                   = false)(implicit mat: Materializer): ServerLayer =
+    HttpServerBluePrint(settings, log, isSecureConnection)
 
   // ** CLIENT ** //
 

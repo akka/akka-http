@@ -56,12 +56,12 @@ import akka.http.impl.util.LogByteStringTools._
  *                 +----------+                                   +-------------+  Context    +-----------+
  */
 private[http] object HttpServerBluePrint {
-  def apply(settings: ServerSettings, log: LoggingAdapter): Http.ServerLayer =
+  def apply(settings: ServerSettings, log: LoggingAdapter, isSecureConnection: Boolean): Http.ServerLayer =
     userHandlerGuard(settings.pipeliningLimit) atop
       requestTimeoutSupport(settings.timeouts.requestTimeout) atop
       requestPreparation(settings) atop
       controller(settings, log) atop
-      parsingRendering(settings, log) atop
+      parsingRendering(settings, log, isSecureConnection) atop
       websocketSupport(settings, log) atop
       tlsSupport atop
       logTLSBidiBySetting("server-plain-text", settings.logUnencryptedNetworkBytes)
@@ -72,8 +72,8 @@ private[http] object HttpServerBluePrint {
   def websocketSupport(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingOutput, ByteString, SessionBytes, SessionBytes, NotUsed] =
     BidiFlow.fromGraph(new ProtocolSwitchStage(settings, log))
 
-  def parsingRendering(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingContext, ResponseRenderingOutput, SessionBytes, RequestOutput, NotUsed] =
-    BidiFlow.fromFlows(rendering(settings, log), parsing(settings, log))
+  def parsingRendering(settings: ServerSettings, log: LoggingAdapter, isSecureConnection: Boolean): BidiFlow[ResponseRenderingContext, ResponseRenderingOutput, SessionBytes, RequestOutput, NotUsed] =
+    BidiFlow.fromFlows(rendering(settings, log), parsing(settings, log, isSecureConnection))
 
   def controller(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ResponseRenderingContext, RequestOutput, RequestOutput, NotUsed] =
     BidiFlow.fromGraph(new ControllerStage(settings, log)).reversed
@@ -200,7 +200,7 @@ private[http] object HttpServerBluePrint {
     }
   }
 
-  def parsing(settings: ServerSettings, log: LoggingAdapter): Flow[SessionBytes, RequestOutput, NotUsed] = {
+  def parsing(settings: ServerSettings, log: LoggingAdapter, isSecureConnection: Boolean): Flow[SessionBytes, RequestOutput, NotUsed] = {
     import settings._
 
     // the initial header parser we initially use for every connection,
@@ -214,7 +214,7 @@ private[http] object HttpServerBluePrint {
     def establishAbsoluteUri(requestOutput: RequestOutput): RequestOutput = requestOutput match {
       case start: RequestStart ⇒
         try {
-          val effectiveUri = HttpRequest.effectiveUri(start.uri, start.headers, securedConnection = false, defaultHostHeader)
+          val effectiveUri = HttpRequest.effectiveUri(start.uri, start.headers, isSecureConnection, defaultHostHeader)
           start.copy(uri = effectiveUri)
         } catch {
           case e: IllegalUriException ⇒
