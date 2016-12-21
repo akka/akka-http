@@ -18,32 +18,20 @@ trait RejectionHandler extends (immutable.Seq[Rejection] ⇒ Option[Route]) { se
   import RejectionHandler._
 
   /** Map any HTTP response which was returned by this RejectionHandler to a different one before rendering it. */
-  def mapRejectionResponse(map: HttpResponse ⇒ HttpResponse)(implicit ec: ExecutionContext): RejectionHandler =
+  def mapRejectionResponse(map: HttpResponse ⇒ HttpResponse)(implicit ec: ExecutionContext): RejectionHandler = {
+    import akka.http.scaladsl.server.directives.BasicDirectives._
     this match {
       case a: BuiltRejectionHandler ⇒
         new BuiltRejectionHandler(
-          a.cases.collect {
-            case ch: CaseHandler ⇒
-              CaseHandler(ch.pf.andThen(r ⇒ r.andThen(f ⇒ f.collect {
-                case RouteResult.Complete(rejectionResponse) ⇒ RouteResult.Complete(map(rejectionResponse))
-                case x                                       ⇒ x
-              })))
-            case th: TypeHandler[_] ⇒
-              th.copy(f = th.f.andThen(r ⇒ r.andThen(f ⇒ f.collect {
-                case RouteResult.Complete(rejectionResponse) ⇒ RouteResult.Complete(map(rejectionResponse))
-                case x                                       ⇒ x
-              })))
-          },
-          a.notFound.map(route ⇒ route.andThen(f ⇒ f.collect {
-            case RouteResult.Complete(rejectionResponse) ⇒ RouteResult.Complete(map(rejectionResponse))
-            case x                                       ⇒ x
-          })),
+          a.cases.map { handler ⇒ handler.mapResponse(map) },
+          a.notFound.map { route ⇒ mapResponse(map)(route) },
           isDefault = false)
 
       case other ⇒
         throw new IllegalArgumentException("Can only mapRejectionResult on BuiltRejectionHandler " +
           s"(e.g. obtained by calling `.result()` on the `RejectionHandler` builder). Type was: ${other.getClass}")
     }
+  }
 
   /**
    * Creates a new [[RejectionHandler]] which uses the given one as fallback for this one.
@@ -119,12 +107,28 @@ object RejectionHandler {
       new BuiltRejectionHandler(cases.result(), notFound, isDefault)
   }
 
-  private sealed abstract class Handler
-  private final case class CaseHandler(pf: PartialFunction[Rejection, Route]) extends Handler
+  private sealed abstract class Handler {
+    def mapResponse(map: HttpResponse ⇒ HttpResponse)(implicit ec: ExecutionContext): Handler
+  }
+  private final case class CaseHandler(pf: PartialFunction[Rejection, Route]) extends Handler {
+    override def mapResponse(map: HttpResponse ⇒ HttpResponse)(implicit ec: ExecutionContext): CaseHandler = {
+      copy(pf.andThen(r ⇒ r.andThen(f ⇒ f.collect {
+        case RouteResult.Complete(rejectionResponse) ⇒ RouteResult.Complete(map(rejectionResponse))
+        case x                                       ⇒ x
+      })))
+    }
+  }
   private final case class TypeHandler[T <: Rejection](
     runtimeClass: Class[_], f: immutable.Seq[T] ⇒ Route) extends Handler with PartialFunction[Rejection, T] {
-    def isDefinedAt(rejection: Rejection) = runtimeClass isInstance rejection
-    def apply(rejection: Rejection) = rejection.asInstanceOf[T]
+    def isDefinedAt(rejection: Rejection): Boolean = runtimeClass isInstance rejection
+    def apply(rejection: Rejection): T = rejection.asInstanceOf[T]
+
+    override def mapResponse(map: HttpResponse ⇒ HttpResponse)(implicit ec: ExecutionContext): TypeHandler[T] = {
+      copy(f = f.andThen(r ⇒ r.andThen(f ⇒ f.collect {
+        case RouteResult.Complete(rejectionResponse) ⇒ RouteResult.Complete(map(rejectionResponse))
+        case x                                       ⇒ x
+      })))
+    }
   }
 
   private class BuiltRejectionHandler(
