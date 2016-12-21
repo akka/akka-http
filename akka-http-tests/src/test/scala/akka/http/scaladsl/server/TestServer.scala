@@ -15,8 +15,10 @@ import akka.stream.scaladsl._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.common.EntityStreamingSupport
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.io.StdIn
+import scala.util.Failure
 
 object TestServer extends App {
   val testConf: Config = ConfigFactory.parseString("""

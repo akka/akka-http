@@ -11,10 +11,39 @@ import akka.http.scaladsl.server.AuthenticationFailedRejection._
 
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
 
 trait RejectionHandler extends (immutable.Seq[Rejection] ⇒ Option[Route]) { self ⇒
   import RejectionHandler._
+
+  /** Map any HTTP response which was returned by this RejectionHandler to a different one before rendering it. */
+  def mapRejectionResponse(map: HttpResponse ⇒ HttpResponse)(implicit ec: ExecutionContext): RejectionHandler =
+    this match {
+      case a: BuiltRejectionHandler ⇒
+        new BuiltRejectionHandler(
+          a.cases.collect {
+            case ch: CaseHandler ⇒
+              CaseHandler(ch.pf.andThen(r ⇒ r.andThen(f ⇒ f.collect {
+                case RouteResult.Complete(rejectionResponse) ⇒ RouteResult.Complete(map(rejectionResponse))
+                case x                                       ⇒ x
+              })))
+            case th: TypeHandler[_] ⇒
+              th.copy(f = th.f.andThen(r ⇒ r.andThen(f ⇒ f.collect {
+                case RouteResult.Complete(rejectionResponse) ⇒ RouteResult.Complete(map(rejectionResponse))
+                case x                                       ⇒ x
+              })))
+          },
+          a.notFound.map(route ⇒ route.andThen(f ⇒ f.collect {
+            case RouteResult.Complete(rejectionResponse) ⇒ RouteResult.Complete(map(rejectionResponse))
+            case x                                       ⇒ x
+          })),
+          isDefault = false)
+
+      case other ⇒
+        throw new IllegalArgumentException("Can only mapRejectionResult on BuiltRejectionHandler " +
+          s"(e.g. obtained by calling `.result()` on the `RejectionHandler` builder). Type was: ${other.getClass}")
+    }
 
   /**
    * Creates a new [[RejectionHandler]] which uses the given one as fallback for this one.
