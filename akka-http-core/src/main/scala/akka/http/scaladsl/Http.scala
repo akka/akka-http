@@ -256,6 +256,13 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     isSecureConnection: Boolean                   = false)(implicit mat: Materializer): ServerLayer =
     HttpServerBluePrint(settings, log, isSecureConnection)
 
+  // for binary-compatibility, since 10.0.0
+  def serverLayer(
+    settings:      ServerSettings,
+    remoteAddress: Option[InetSocketAddress],
+    log:           LoggingAdapter)(implicit mat: Materializer): ServerLayer =
+    HttpServerBluePrint(settings, log, false)
+
   // ** CLIENT ** //
 
   private[this] val poolMasterActorRef = system.actorOf(PoolMasterActor.props, "pool-master")
