@@ -18,15 +18,14 @@ object NoPublish extends AutoPlugin {
 }
 
 object Publish extends AutoPlugin {
-  import bintray.BintrayPlugin
-  import bintray.BintrayPlugin.autoImport._
-
   override def trigger = allRequirements
-  override def requires = BintrayPlugin
 
   override def projectSettings = Seq(
-    bintrayOrganization := Some("akka"),
-    bintrayPackage := "com.typesafe.akka:akka-http_2.11"
+    publishTo := Some("akka-bintray-repo" at "https://api.bintray.com/maven/akka/maven/com.typesafe.akka%3Aakka-http_2.11"),
+    credentials ++=
+      sys.env.get("BINTRAY_USER").zip(sys.env.get("BINTRAY_PASS")).toList.map { case (user, pass) =>
+        Credentials("Bintray API Realm", "api.bintray.com", user, pass)
+      }
   )
 }
 
