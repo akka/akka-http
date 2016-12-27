@@ -12,6 +12,7 @@ import Directives._
 class TestKitFragmentSpec extends WordSpec with Matchers with ScalatestRouteTest {
 
   val routeFragment =
+//#fragment
       pathEnd {
         get {
           complete {
@@ -19,6 +20,7 @@ class TestKitFragmentSpec extends WordSpec with Matchers with ScalatestRouteTest
           }
         }
       }
+//#fragment
 
   // Synthetic route to enable pathEnd testing
   val testRoute = {
@@ -38,8 +40,7 @@ class TestKitFragmentSpec extends WordSpec with Matchers with ScalatestRouteTest
     "return a MethodNotAllowed error for PUT requests to the root path" in {
       // tests:
       Put("/test") ~> Route.seal(testRoute) ~> check {
-        status === StatusCodes.MethodNotAllowed
-        responseAs[String] shouldEqual "HTTP method not allowed, supported methods: GET"
+        status shouldEqual StatusCodes.MethodNotAllowed
       }
     }
   }

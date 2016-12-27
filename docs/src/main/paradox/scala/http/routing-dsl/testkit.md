@@ -92,28 +92,19 @@ implicit rejection and exception handlers in scope.
 Since the testkit is request-based, you cannot test requests that are illegal or impossible in HTTP. One
 such instance is testing a route that begins with the `pathEnd` directive, such as `routeFragment` here:
 
-@@snip [TestKitFragmentExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/TestKitFragmentExampleSpec.scala) { #source-quote }
+@@snip [TestKitFragmentSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/TestKitFragmentSpec.scala) { #fragment }
 
 You might create a route such as this to be able to compose it into another route such as:
 
-```scala
-object VersionRoute {
-  val route: Route = pathEnd {
-    get {
-      complete(VersionInfo.info)
-    }
-  }
-}
-
-object API {
-  pathPrefix("version") {
-    VersionRoute.route
-  }
-}
-```
+@@snip [FragmentExample.scala](../../../../../test/scala/docs/http/scaladsl/server/FragmentExample.scala) { #source-quote }
 
 However, it is impossible to unit test this Route directly using testkit, since it is impossible to create an
 empty HTTP request. To test this type of route, embed it in a synthetic route in your test, such as `testRoute` in the example above.
+
+This is what the full working test looks like:
+
+@@snip [TestKitFragmentSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/TestKitFragmentSpec.scala) { #source-quote }
+
 
 ## Examples
 
