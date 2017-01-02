@@ -25,7 +25,7 @@ import akka.{ Done, NotUsed, stream }
 import akka.http.scaladsl.model.ContentType.{ Binary, NonBinary }
 import akka.http.scaladsl.util.FastFuture
 import akka.http.javadsl.{ model ⇒ jm }
-import akka.http.impl.util.{ JavaMapping, StreamUtils }
+import akka.http.impl.util.{ JavaMapping, StreamUtils, AggregateBytes }
 import akka.http.impl.util.JavaMapping.Implicits._
 
 import scala.compat.java8.OptionConverters._
@@ -70,10 +70,14 @@ sealed trait HttpEntity extends jm.HttpEntity {
    * Collects all possible parts and returns a potentially future Strict entity for easier processing.
    * The Future is failed with an TimeoutException if the stream isn't completed after the given timeout.
    */
-  def toStrict(timeout: FiniteDuration)(implicit fm: Materializer): Future[HttpEntity.Strict] =
+  def toStrict(timeout: FiniteDuration)(implicit fm: Materializer): Future[HttpEntity.Strict] = {
+    val maxBytes = ActorMaterializerHelper.downcast(fm).system.settings.config.getLong("akka.strict-entity-max-bytes")
+
     dataBytes
-      .via(new akka.http.impl.util.ToStrict(timeout, contentType))
+      .via(new AggregateBytes(timeout, maxBytes))
+      .map(HttpEntity(contentType, _))
       .runWith(Sink.head)
+  }
 
   /**
    * Discards the entities data bytes by running the `dataBytes` Source contained in this `entity`.

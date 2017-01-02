@@ -4,9 +4,6 @@
 
 package akka.http.impl
 
-import akka.NotUsed
-import akka.stream.{ Attributes, Outlet, Inlet, FlowShape }
-
 import language.implicitConversions
 import java.nio.charset.Charset
 import com.typesafe.config.Config
@@ -77,31 +74,30 @@ package object util {
 
 package util {
 
-  import akka.http.scaladsl.model.{ ContentType, HttpEntity }
-  import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-  import akka.stream.{ Attributes, Outlet, Inlet, FlowShape }
+  import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
+
   import scala.concurrent.duration.FiniteDuration
 
-  private[http] class ToStrict(timeout: FiniteDuration, contentType: ContentType)
-    extends GraphStage[FlowShape[ByteString, HttpEntity.Strict]] {
+  private[http] class AggregateBytes(timeout: FiniteDuration, maxBytes: Long)
+    extends GraphStage[FlowShape[ByteString, ByteString]] {
 
-    val byteStringIn = Inlet[ByteString]("ToStrict.byteStringIn")
-    val httpEntityOut = Outlet[HttpEntity.Strict]("ToStrict.httpEntityOut")
+    val byteStringIn = Inlet[ByteString]("AggregateBytes.byteStringIn")
+    val byteStringOut = Outlet[ByteString]("AggregateBytes.byteStringOut")
 
     override def initialAttributes = Attributes.name("ToStrict")
 
-    override val shape = FlowShape(byteStringIn, httpEntityOut)
+    override val shape = FlowShape(byteStringIn, byteStringOut)
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
       val bytes = ByteString.newBuilder
       private var emptyStream = false
 
-      override def preStart(): Unit = scheduleOnce("ToStrictTimeoutTimer", timeout)
+      override def preStart(): Unit = scheduleOnce("AggregateBytesTimeoutTimer", timeout)
 
-      setHandler(httpEntityOut, new OutHandler {
+      setHandler(byteStringOut, new OutHandler {
         override def onPull(): Unit = {
           if (emptyStream) {
-            push(httpEntityOut, HttpEntity.Strict(contentType, ByteString.empty))
+            push(byteStringOut, ByteString.empty)
             completeStage()
           } else pull(byteStringIn)
         }
@@ -110,11 +106,14 @@ package util {
       setHandler(byteStringIn, new InHandler {
         override def onPush(): Unit = {
           bytes ++= grab(byteStringIn)
-          pull(byteStringIn)
+          if (bytes.length > maxBytes)
+            failStage(new Exception(s"AggregateBytes received more than the configured maximum $maxBytes bytes of data"))
+          else
+            pull(byteStringIn)
         }
         override def onUpstreamFinish(): Unit = {
-          if (isAvailable(httpEntityOut)) {
-            push(httpEntityOut, HttpEntity.Strict(contentType, bytes.result()))
+          if (isAvailable(byteStringOut)) {
+            push(byteStringOut, bytes.result())
             completeStage()
           } else emptyStream = true
         }
@@ -122,10 +121,10 @@ package util {
 
       override def onTimer(key: Any): Unit =
         failStage(new java.util.concurrent.TimeoutException(
-          s"HttpEntity.toStrict timed out after $timeout while still waiting for outstanding data"))
+          s"AggregateBytes timed out after $timeout while still waiting for outstanding data"))
     }
 
-    override def toString = "ToStrict"
+    override def toString = "AggregateBytes"
   }
 
   private[http] class EventStreamLogger extends Actor with ActorLogging {
