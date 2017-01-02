@@ -1,0 +1,4 @@
+# Mima filters needed to check newer versions against 10.0.1
+
+# akka.http.impl.util.ToStrict was private[akka] and hence not indended for external use.
+ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.ToStrict")
