@@ -5,8 +5,7 @@
 package akka.http.impl.engine.http2
 
 import akka.NotUsed
-import akka.event.Logging
-import akka.http.impl.engine.http2.parsing.HttpRequestHeaderHpackDecompression
+import akka.http.impl.engine.http2.hpack.HeaderDecompression
 import akka.http.impl.engine.http2.rendering.HttpResponseHeaderHpackCompression
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
@@ -30,11 +29,16 @@ private[http2] final case class Http2SubStream(initialFrame: HeadersFrame, frame
   def streamId: Int = initialFrame.streamId
 }
 
+private[http2] final case class NewHttp2SubStream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any]) {
+  def streamId: Int = initialHeaders.streamId
+}
+
 object Http2Blueprint {
   // format: OFF
   def serverStack(): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
     httpLayer() atop
     demux() atop
+    headerProcessing() atop
     framing()
   }
   // format: ON
@@ -45,10 +49,24 @@ object Http2Blueprint {
       Flow[ByteString].via(new FrameParser(shouldReadPreface = true)))
 
   /**
+   * Runs hpack encoding and decoding. Incoming frames that are processed are HEADERS and CONTINUATION.
+   * Outgoing frame is ParsedHeadersFrame.
+   * Other frames are propagated unchanged.
+   *
+   * TODO: introduce another FrameEvent type that exclude HeadersFrame and ContinuationFrame from
+   * reaching the higher-level.
+   */
+  def headerProcessing(): BidiFlow[FrameEvent, FrameEvent, FrameEvent, FrameEvent, NotUsed] =
+    BidiFlow.fromFlows(
+      Flow[FrameEvent],
+      Flow[FrameEvent].via(HeaderDecompression)
+    )
+
+  /**
    * Creates substreams for every stream and manages stream state machines
    * and handles priorization (TODO: later)
    */
-  def demux(): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
+  def demux(): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, NewHttp2SubStream, NotUsed] =
     BidiFlow.fromGraph(new Http2ServerDemux)
 
   /**
@@ -59,11 +77,9 @@ object Http2Blueprint {
    * that must be reproduced in an HttpResponse. This can be done automatically for the bindAndHandleAsync API but for
    * bindAndHandle the user needs to take of this manually.
    */
-  def httpLayer(): BidiFlow[HttpResponse, Http2SubStream, Http2SubStream, HttpRequest, NotUsed] = {
-    val incomingRequests = Flow[Http2SubStream].via(new HttpRequestHeaderHpackDecompression)
-      .log(Logging.simpleName(getClass)) //FIXME replace with a proper `atop logging()`
+  def httpLayer(): BidiFlow[HttpResponse, Http2SubStream, NewHttp2SubStream, HttpRequest, NotUsed] = {
     val outgoingResponses = Flow[HttpResponse].via(new HttpResponseHeaderHpackCompression)
-    BidiFlow.fromFlows(outgoingResponses, incomingRequests)
+    BidiFlow.fromFlows(outgoingResponses, Flow[NewHttp2SubStream].map(RequestParsing.parseRequest))
   }
 
   /**

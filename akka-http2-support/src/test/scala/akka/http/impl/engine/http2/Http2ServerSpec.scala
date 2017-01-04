@@ -8,7 +8,7 @@ import akka.NotUsed
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.Flags
 import akka.http.impl.engine.http2.Http2Protocol.FrameType
-import akka.http.impl.engine.http2.parsing.HttpRequestHeaderHpackDecompression
+import akka.http.impl.engine.http2.hpack.HeaderDecompression
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.StringRendering
 import akka.http.scaladsl.model.ContentTypes
@@ -651,7 +651,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
       decodeHeaders(headerBlockBytes)
     }
 
-    val encoder = new Encoder(HttpRequestHeaderHpackDecompression.maxHeaderTableSize)
+    val encoder = new Encoder(HeaderDecompression.maxHeaderTableSize)
     def encodeHeaders(request: HttpRequest): ByteString = {
       val bos = new ByteArrayOutputStream()
       def encode(name: String, value: String): Unit = encoder.encodeHeader(bos, name.getBytes, value.getBytes, false)
@@ -672,7 +672,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
       ByteString(bos.toByteArray)
     }
 
-    val decoder = new Decoder(HttpRequestHeaderHpackDecompression.maxHeaderSize, HttpRequestHeaderHpackDecompression.maxHeaderTableSize)
+    val decoder = new Decoder(HeaderDecompression.maxHeaderSize, HeaderDecompression.maxHeaderTableSize)
     def decodeHeaders(bytes: ByteString): HttpResponse = {
       val bis = new ByteArrayInputStream(bytes.toArray)
       var response = HttpResponse()
