@@ -31,10 +31,6 @@ import static akka.http.javadsl.server.PathMatchers.segment;
 
 public class FileUploadExamplesTest extends JUnitRouteTest {
 
-  private final Materializer materializer = materializer();
-
-  private final ActorRef metadataActor = system().deadLetters();
-
   @Test
   public void compileOnlySpec() throws Exception {
     // just making sure for it to be really compiled / run even if empty
