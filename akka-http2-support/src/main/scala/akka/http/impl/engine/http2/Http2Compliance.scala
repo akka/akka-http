@@ -10,6 +10,9 @@ private[akka] object Http2Compliance {
   final class IllegalHttp2StreamIdException(id: Int, expected: String)
     extends IllegalArgumentException(s"Illegal HTTP/2 stream id: [$id]. $expected!")
 
+  final class IllegalHttp2FrameSize(size: Int, expected: String)
+    extends IllegalArgumentException(s"Illegal HTTP/2 frame size: [$size]. $expected!")
+
   final class MissingHttpIdHeaderException extends IllegalArgumentException("Expected `Http2StreamIdHeader` header to be present but was missing!")
 
   final def missingHttpIdHeaderException = throw new MissingHttpIdHeaderException
@@ -21,5 +24,8 @@ private[akka] object Http2Compliance {
 
   /** checks if the stream id was client initiated, by checking if the stream id was odd-numbered */
   final def isClientInitiatedStreamId(id: Int): Boolean = id % 2 != 0
+
+  final def requireFramSize(size: Int, max: Int): Unit =
+    if (size != max) throw new IllegalHttp2FrameSize(size, "MUST BE == 8.")
 
 }

@@ -4,17 +4,19 @@
 
 package akka.http.impl.engine.http2
 
+import akka.http.impl.engine.http2.Http2Compliance.IllegalHttp2FrameSize
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.stream.Attributes
 import akka.stream.BidiShape
 import akka.stream.Inlet
 import akka.stream.Outlet
 import akka.stream.scaladsl.Source
-import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.GraphStage
+import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 
 import scala.collection.mutable
+import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
 /**
@@ -84,20 +86,20 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
       final case class SubStream(
         streamId:                  Int,
         headers:                   HeadersFrame,
-        state:                     StreamState,
+        initialStreamState:        StreamState,
         outlet:                    SubSourceOutlet[StreamFrameEvent],
         inlet:                     Option[SubSinkInlet[FrameEvent]],
         initialOutboundWindowLeft: Long
       ) extends BufferedOutlet[StreamFrameEvent](outlet) {
         var outboundWindowLeft = initialOutboundWindowLeft
+        var state = initialStreamState
+        var continuation: Boolean = false
 
         override def onDownstreamFinish(): Unit = {
-          // FIXME: when substream (= request entity) is cancelled, we need to RST_STREAM
-
-          // if the stream is finished and sent a RST_STREAM we can just remove the incoming stream from our map
-          incomingStreams.remove(streamId)
-          ()
+          debug(s"Stream completed")
+          completeStream(incomingStreams(streamId))
         }
+
       }
 
       override def preStart(): Unit = {
@@ -109,25 +111,87 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
 
       // we should not handle streams later than the GOAWAY told us about with lastStreamId
       private var closedAfter: Option[Int] = None
+      private var closing: Int = 0
       private var incomingStreams = mutable.Map.empty[Int, SubStream]
+      private var lastStreamId: Int = 0
       private var totalOutboundWindowLeft = Http2Protocol.InitialWindowSize
       private var streamLevelWindow = Http2Protocol.InitialWindowSize
+      // TODO: make me configurable
+      private val streamTimeout = 500.milliseconds
+      private val connectionTimeout = streamTimeout.plus(streamTimeout)
 
-      def lastStreamId: Int = {
-        incomingStreams.lastOption.map(_._1).getOrElse(0)
+      def connectionClose(): Unit = {
+        // FIXME: I'm not sure but this does not look working, any ideas?
+        // if this is not propagated we somehow need a way to kill the tcp connection from the demuxer?
+        debug("Closing the connection!")
+        completeStage()
       }
 
-      def pushGOAWAY(errorCode: ErrorCode = Http2Protocol.ErrorCode.PROTOCOL_ERROR): Unit = {
-        // http://httpwg.org/specs/rfc7540.html#rfc.section.6.8
-        val last = lastStreamId
-        closedAfter = Some(last)
-        bufferedFrameOut.push(GoAwayFrame(last, errorCode))
-        // FIXME: handle the connection closing according to the specification
+      def completeStream(stream: SubStream): Unit = {
+        incomingStreams(stream.streamId).state = StreamState.Closed
+        // WINDOW_UPDATE or RST_STREAM frames can be received in this state for a short period after a DATA or HEADERS
+        // frame containing an END_STREAM flag is sent. Until the remote peer receives and processes RST_STREAM or the
+        // frame bearing the END_STREAM flag, it might send frames of these types. Endpoints MUST ignore WINDOW_UPDATE
+        // or RST_STREAM frames received in this state, though endpoints MAY choose to treat frames that arrive a
+        // significant time after sending END_STREAM as a connection error (Section 5.4.1) of type PROTOCOL_ERROR.
+        materializer.scheduleOnce(streamTimeout, new Runnable {
+          override def run(): Unit = {
+            stream.inlet.foreach(_.cancel())
+            stream.outlet.complete()
+            incomingStreams.remove(stream.streamId)
+          }
+        })
+      }
+
+      def pushGOAWAY(errorCode: ErrorCode): Unit = {
+        def shutdownGraceful(): Unit = {
+          // waits for the termination of all substreams
+          if (incomingStreams.isEmpty) connectionClose()
+          else materializer.scheduleOnce(connectionTimeout, new Runnable {
+            override def run(): Unit = shutdownGraceful()
+          })
+        }
+        if (closing == 0) {
+          closing += 1
+          val last = lastStreamId
+          closedAfter = Some(last)
+          bufferedFrameOut.push(GoAwayFrame(last, errorCode))
+          // A GOAWAY frame might not immediately precede closing of the connection; a receiver of a GOAWAY that has
+          // no more use for the connection SHOULD still send a GOAWAY frame before terminating the connection.
+          materializer.scheduleOnce(connectionTimeout, new Runnable {
+            override def run(): Unit = {
+              debug(s"Graceful Shutdown ${incomingStreams.isEmpty}")
+              incomingStreams.foreach { case (id, _) ⇒ pushRST_STREAM(id, ErrorCode.CANCEL) }
+              shutdownGraceful()
+            }
+          })
+        } else if (closing == 3) {
+          // FIXME: actually I guess we should also kill the streams before we do that?
+          // An endpoint might choose to close a connection without sending a GOAWAY for misbehaving peers.
+          connectionClose()
+        }
+      }
+
+      def pushRST_STREAM(streamId: Int, errorCode: ErrorCode): Unit = {
+        debug(s"RST STREAM FOR $streamId")
+        bufferedFrameOut.push(RstStreamFrame(streamId, errorCode))
+        completeStream(incomingStreams(streamId))
+      }
+
+      def isContinuation(streamId: Int): Boolean = {
+        debug(s"Continuation state = ${incomingStreams(streamId).continuation}")
+        incomingStreams(streamId).continuation
+      }
+
+      def isOpen(streamId: Int): Boolean = {
+        val handler = incomingStreams(streamId)
+        handler.state.equals(StreamState.Open) && !handler.continuation
       }
 
       setHandler(frameIn, new InHandler {
         def onPush(): Unit = {
           val in = grab(frameIn)
+          debug(s"Incoming Frame: $in")
           in match {
             case WindowUpdateFrame(0, increment) ⇒
               totalOutboundWindowLeft += increment
@@ -135,54 +199,88 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               bufferedFrameOut.tryFlush()
 
             case e: StreamFrameEvent if !Http2Compliance.isClientInitiatedStreamId(e.streamId) ⇒
-              pushGOAWAY()
+              pushGOAWAY(ErrorCode.PROTOCOL_ERROR)
 
             case e: StreamFrameEvent if e.streamId > closedAfter.getOrElse(Int.MaxValue) ⇒
             // streams that will have a greater stream id than the one we sent with GO_AWAY will be ignored
 
             case headers @ HeadersFrame(streamId, endStream, endHeaders, fragment) if lastStreamId < streamId ⇒
+              lastStreamId = streamId
               val subSource = new SubSourceOutlet[StreamFrameEvent](s"substream-out-$streamId")
-              val handler = SubStream(streamId, headers, StreamState.Open /* FIXME stream state */ , subSource, None, streamLevelWindow)
+              // A HEADERS frame carries the END_STREAM flag that signals the end of a stream.
+              // However, a HEADERS frame with the END_STREAM flag set can be followed by CONTINUATION
+              // frames on the same stream. Logically, the CONTINUATION frames are part of the HEADERS frame.
+              val state = if (endStream) StreamState.HalfClosedRemote else StreamState.Open
+              val handler = SubStream(streamId, headers, state, subSource, None, streamLevelWindow)
+              if (!endHeaders) {
+                handler.continuation = true
+              }
               incomingStreams += streamId → handler // TODO optimise for lookup later on
 
               val sub = makeHttp2SubStream(handler)
               if (sub.initialFrame.endHeaders) dispatchSubstream(sub)
             // else we're expecting some continuation frames before we kick off the dispatch
-            // FIXME: handle the correct order of frames
-
-            case h: HeadersFrame ⇒
-              pushGOAWAY()
 
             case e: StreamFrameEvent if !incomingStreams.contains(e.streamId) ⇒
               // if a stream is invalid we will GO_AWAY
-              pushGOAWAY()
+              pushGOAWAY(ErrorCode.PROTOCOL_ERROR)
 
-            case cont: ContinuationFrame ⇒
+            case h: HeadersFrame if isOpen(h.streamId) ⇒
+              // stream is open
+              if (h.endStream) {
+                // FIXME: add support for trailing headers
+                incomingStreams(h.streamId).state = StreamState.HalfClosedRemote
+              } else {
+                pushGOAWAY(ErrorCode.PROTOCOL_ERROR)
+              }
+
+            case h: HeadersFrame ⇒
+              // stream is half-closed or closed
+              pushGOAWAY(ErrorCode.STREAM_CLOSED)
+
+            case cont: ContinuationFrame if isContinuation(cont.streamId) ⇒
               // continue to build up headers (CONTINUATION come directly after HEADERS frame, and before DATA)
               val streamId = cont.streamId
               val streamHandler = incomingStreams(streamId)
+              if (cont.endHeaders) {
+                streamHandler.continuation = false
+              }
               val updatedHandler = concatContinuationIntoHeaders(streamHandler, cont)
               val sub = makeHttp2SubStream(updatedHandler)
               if (updatedHandler.headers.endHeaders) dispatchSubstream(sub)
 
-            case data: DataFrame ⇒
+            case data: DataFrame if isOpen(data.streamId) ⇒
               // technically this case is the same as StreamFrameEvent, however we're handling it earlier in the match here for efficiency
-              incomingStreams(data.streamId).push(data) // pushing http entity, handle flow control from here somehow?
+              val stream = incomingStreams(data.streamId)
+              stream.push(data) // pushing http entity, handle flow control from here somehow?
+              if (data.endStream) {
+                incomingStreams(stream.streamId).state = StreamState.HalfClosedRemote
+              }
 
             case RstStreamFrame(streamId, errorCode) ⇒
-              // FIXME: also need to handle the other case when no response has been produced yet (inlet still None)
-              incomingStreams(streamId).inlet.foreach(_.cancel())
+              debug(s"Got an RST_STREAM: $streamId - $errorCode")
+              completeStream(incomingStreams(streamId))
 
             case WindowUpdateFrame(streamId, increment) ⇒
               incomingStreams(streamId).outboundWindowLeft += increment
               debug(f"outbound window for [$streamId%3d] is now ${incomingStreams(streamId).outboundWindowLeft}%10d after increment $increment%6d")
               bufferedFrameOut.tryFlush()
-
+            
+            case e: GoAwayFrame ⇒
+              // TODO: do we want to output the cause of connection close? only on NO_ERROR maybe?
+              connectionClose()
+            
             case PriorityFrame(streamId, exclusiveFlag, streamDependency, weight) ⇒
               debug(s"Received PriorityFrame for stream $streamId with ${if(exclusiveFlag) "exclusive " else "non-exclusive "} dependency on stream $streamDependency and weight $weight")
-
+            
             case e: StreamFrameEvent ⇒
-              incomingStreams(e.streamId).push(e)
+              // FIXME: this is nasty
+              e match {
+                case _: ContinuationFrame ⇒ pushGOAWAY(ErrorCode.PROTOCOL_ERROR)
+                case _ if incomingStreams(e.streamId).continuation ⇒ pushGOAWAY(ErrorCode.PROTOCOL_ERROR)
+                // TODO: decicde if we are more strict and send a GOAWAY instead of a RST_STREAM
+                case _ ⇒ pushRST_STREAM(e.streamId, ErrorCode.STREAM_CLOSED)
+              }
 
             case SettingsFrame(settings) ⇒
               debug(s"Got ${settings.length} settings!")
@@ -202,21 +300,29 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               bufferedFrameOut.push(PingFrame(ack = true, data))
 
             case e ⇒
-              println(s"Got unhandled event $e")
+              debug(s"Got unhandled event $e")
             // ignore unknown frames
           }
-          pull(frameIn)
+
+          if (!isClosed(frameIn)) {
+            // if we are in shutdown state
+            // we should not pull more frames
+            pull(frameIn)
+          }
         }
 
         override def onUpstreamFailure(ex: Throwable): Unit = {
+          // catches all compliance errors and handles them gracefully
           ex match {
             // every IllegalHttp2StreamIdException will be a GOAWAY with PROTOCOL_ERROR
             case e: Http2Compliance.IllegalHttp2StreamIdException ⇒
-              pushGOAWAY()
+              pushGOAWAY(ErrorCode.PROTOCOL_ERROR)
+            case e: IllegalHttp2FrameSize ⇒
+              pushGOAWAY(ErrorCode.FRAME_SIZE_ERROR)
 
-            // handle every unhandled exception
             case NonFatal(e) ⇒
-              super.onUpstreamFailure(e)
+              // handle every unhandled exception, by closing the connection
+              connectionClose()
           }
         }
       })
@@ -234,12 +340,17 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
           incomingStreams = incomingStreams.updated(sub.streamId, incomingStreams(sub.streamId).copy(inlet = Some(subIn)))
           subIn.pull()
           subIn.setHandler(new InHandler {
-            def onPush(): Unit = bufferedFrameOut.pushWithTrigger(subIn.grab(), () ⇒
-              if (!subIn.isClosed) subIn.pull())
+            def onPush(): Unit =
+              bufferedFrameOut.pushWithTrigger(subIn.grab(), () ⇒
+                if (!subIn.isClosed) subIn.pull())
 
-            override def onUpstreamFinish(): Unit = () // FIXME: check for truncation (last frame must have endStream / endHeaders set)
+            override def onUpstreamFinish(): Unit = {
+              // FIXME: check for truncation (last frame must have endStream / endHeaders set)
+              debug("UPSTREAM FINISH")
+            }
           })
           sub.frames.runWith(subIn.sink)(subFusingMaterializer)
+
         }
       })
 
@@ -257,10 +368,9 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
                 debug(s"Pushed $size bytes of data for stream $streamId total window left: $totalOutboundWindowLeft per stream window left: ${incomingStreams(streamId).outboundWindowLeft}")
               } else {
                 debug(s"Couldn't send because no window left. Size: ${pl.size} total: $totalOutboundWindowLeft per stream: ${incomingStreams(streamId).outboundWindowLeft}")
-                // adding to end of the queue only works if there's only ever one frame per
-                // substream in the queue (which is the case since backpressure was introduced)
-                // TODO: we should try to find another stream to push data in this case
-                buffer.add(elem)
+                // the resulting stream is in a error state
+                // this actually means we need to send a RST_STREAM
+                pushRST_STREAM(streamId, ErrorCode.FRAME_SIZE_ERROR)
               }
             case _ ⇒
               super.doPush(elem)
@@ -273,6 +383,9 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         val moreCompleteHeadersFrame = HeadersFrame(handler.streamId, cont.endHeaders, cont.endHeaders, concatHeaderBlockFragment)
         // update the SubStream we keep around
         val moreCompleteHandler = handler.copy(headers = moreCompleteHeadersFrame)
+        // FiXME: override copy?
+        moreCompleteHandler.state = handler.state
+        moreCompleteHandler.continuation = handler.continuation
         incomingStreams += handler.streamId → moreCompleteHandler
         moreCompleteHandler
       }

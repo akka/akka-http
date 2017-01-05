@@ -380,13 +380,14 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
         request1EntityProbe.expectUtf8EncodedString("def")
 
         // now fail stream 2
-        //sendRST_STREAM(3, ErrorCode.INTERNAL_ERROR)
-        //request2EntityProbe.expectError()
+        sendRST_STREAM(3, ErrorCode.INTERNAL_ERROR)
+        request2EntityProbe.expectComplete()
 
         // make sure that other stream is not affected
         sendDATA(1, endStream = true, ByteString("ghi"))
         request1EntityProbe.expectUtf8EncodedString("ghi")
         request1EntityProbe.expectComplete()
+
       }
       "send two responses concurrently" in new TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
         val theRequest = HttpRequest(protocol = HttpProtocols.`HTTP/2.0`)
