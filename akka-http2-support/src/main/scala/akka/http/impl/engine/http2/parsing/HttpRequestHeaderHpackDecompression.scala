@@ -52,7 +52,7 @@ private[http2] final class HttpRequestHeaderHpackDecompression extends GraphStag
             HttpEntity.Strict(ContentTypes.NoContentType, ByteString.empty)
           } else {
             // FIXME fix the size and entity type according to info from headers
-            val data = http2SubStream.frames.completeAfter(_.endStream).map(_.payload)
+            val data = http2SubStream.frames.takeWhile(_.endStream, inclusive = true).map(_.payload)
             HttpEntity.Default(ContentTypes.NoContentType, Long.MaxValue, data) // FIXME that 1 is a hack, since it must be positive, and we're awaiting a real content length...
           }
 
@@ -195,25 +195,6 @@ private[http2] final class HttpRequestHeaderHpackDecompression extends GraphStag
 
 /** INTERNAL API */
 private[http2] object HttpRequestHeaderHpackDecompression {
-
-  implicit class CompleteAfterSource[T](val s: Source[T, _]) extends AnyVal {
-    /**
-     * Passes through elements until the test returns `true`.
-     * The element that triggered this is then passed through, and *after* that completion is signalled.
-     */
-    def completeAfter(test: T ⇒ Boolean) =
-      s.via(new SimpleLinearGraphStage[T] {
-        override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
-          override def onPush(): Unit = {
-            val el = grab(in)
-            if (test(el)) emit(out, el, () ⇒ completeStage())
-            else push(out, el)
-          }
-          override def onPull(): Unit = pull(in)
-          setHandlers(in, out, this)
-        }
-      })
-  }
 
   final val maxHeaderSize = 4096
   final val maxHeaderTableSize = 4096
