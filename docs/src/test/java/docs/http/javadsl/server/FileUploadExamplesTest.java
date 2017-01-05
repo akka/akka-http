@@ -42,6 +42,10 @@ public class FileUploadExamplesTest extends JUnitRouteTest {
 
   //#simple-upload
   Route uploadVideo() {
+    //#simple-upload
+    final Materializer materializer = materializer();
+    final ActorRef metadataActor = system().deadLetters();
+    //#simple-upload
     return path("video", () ->
       entity(Unmarshaller.entityToMultipartFormData(), formData -> {
         // collect all parts of the multipart as it arrives into a map
@@ -83,7 +87,6 @@ public class FileUploadExamplesTest extends JUnitRouteTest {
     );
 
   }
-  //#simple-upload
 
   static class DB {
     static CompletionStage<Void> create(final File file, final String title, final String author) {
@@ -93,6 +96,10 @@ public class FileUploadExamplesTest extends JUnitRouteTest {
 
   //#stream-csv-upload
   Route csvUploads() {
+    //#stream-csv-upload
+    final Materializer materializer = materializer();
+    final ActorRef metadataActor = system().deadLetters();
+    //#stream-csv-upload
     final Flow<ByteString, ByteString, NotUsed> splitLines =
       Framing.delimiter(ByteString.fromString("\n"), 256);
 
