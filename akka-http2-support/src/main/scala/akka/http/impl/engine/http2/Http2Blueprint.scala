@@ -5,8 +5,7 @@
 package akka.http.impl.engine.http2
 
 import akka.NotUsed
-import akka.event.{ Logging, LoggingAdapter }
-import akka.http.impl.engine.http2.hpack.HeaderDecompression
+import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompression }
 import akka.http.impl.engine.http2.rendering.HttpResponseHeaderHpackCompression
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.scaladsl.model.HttpRequest
@@ -61,7 +60,7 @@ object Http2Blueprint {
    */
   def headerProcessing(): BidiFlow[FrameEvent, FrameEvent, FrameEvent, FrameEvent, NotUsed] =
     BidiFlow.fromFlows(
-      Flow[FrameEvent],
+      Flow[FrameEvent].via(HeaderCompression),
       Flow[FrameEvent].via(HeaderDecompression)
     )
 
@@ -69,7 +68,7 @@ object Http2Blueprint {
    * Creates substreams for every stream and manages stream state machines
    * and handles priorization (TODO: later)
    */
-  def demux(): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, NewHttp2SubStream, NotUsed] =
+  def demux(): BidiFlow[NewHttp2SubStream, FrameEvent, FrameEvent, NewHttp2SubStream, NotUsed] =
     BidiFlow.fromGraph(new Http2ServerDemux)
 
   /**
@@ -80,10 +79,10 @@ object Http2Blueprint {
    * that must be reproduced in an HttpResponse. This can be done automatically for the bindAndHandleAsync API but for
    * bindAndHandle the user needs to take of this manually.
    */
-  def httpLayer(): BidiFlow[HttpResponse, Http2SubStream, NewHttp2SubStream, HttpRequest, NotUsed] = {
-    val outgoingResponses = Flow[HttpResponse].via(new HttpResponseHeaderHpackCompression)
-    BidiFlow.fromFlows(outgoingResponses, Flow[NewHttp2SubStream].map(RequestParsing.parseRequest))
-  }
+  def httpLayer(): BidiFlow[HttpResponse, NewHttp2SubStream, NewHttp2SubStream, HttpRequest, NotUsed] =
+    BidiFlow.fromFlows(
+      Flow[HttpResponse].map(ResponseRendering.renderResponse),
+      Flow[NewHttp2SubStream].map(RequestParsing.parseRequest))
 
   /**
    * Returns a flow that handles `parallelism` requests in parallel, automatically keeping track of the

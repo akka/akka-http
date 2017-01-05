@@ -66,7 +66,7 @@ import scala.util.control.NonFatal
  * not work because the sending decision relies on dynamic window size and settings information that will be
  * only available in this stage.
  */
-class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, NewHttp2SubStream]] {
+class Http2ServerDemux extends GraphStage[BidiShape[NewHttp2SubStream, FrameEvent, FrameEvent, NewHttp2SubStream]] {
 
   import Http2ServerDemux._
 
@@ -74,7 +74,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
   val frameOut = Outlet[FrameEvent]("Demux.frameOut")
 
   val substreamOut = Outlet[NewHttp2SubStream]("Demux.substreamOut")
-  val substreamIn = Inlet[Http2SubStream]("Demux.substreamIn")
+  val substreamIn = Inlet[NewHttp2SubStream]("Demux.substreamIn")
 
   override val shape =
     BidiShape(substreamIn, frameOut, frameIn, substreamOut)
@@ -87,7 +87,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         streamId:                  Int,
         state:                     StreamState,
         outlet:                    Option[BufferedOutlet[ByteString]],
-        inlet:                     Option[SubSinkInlet[FrameEvent]],
+        inlet:                     Option[SubSinkInlet[ByteString]],
         initialOutboundWindowLeft: Long
       ) {
         var outboundWindowLeft = initialOutboundWindowLeft
@@ -222,17 +222,19 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         def onPush(): Unit = {
           val sub = grab(substreamIn)
           pull(substreamIn)
-          bufferedFrameOut.push(sub.initialFrame)
-          val subIn = new SubSinkInlet[FrameEvent](s"substream-in-${sub.streamId}")
-          incomingStreams = incomingStreams.updated(sub.streamId, incomingStreams(sub.streamId).copy(inlet = Some(subIn)))
-          subIn.pull()
-          subIn.setHandler(new InHandler {
-            def onPush(): Unit = bufferedFrameOut.pushWithTrigger(subIn.grab(), () ⇒
-              if (!subIn.isClosed) subIn.pull())
+          bufferedFrameOut.push(sub.initialHeaders)
+          if (!sub.initialHeaders.endStream) { // if endStream is set, the source is never read
+            val subIn = new SubSinkInlet[ByteString](s"substream-in-${sub.streamId}")
+            incomingStreams = incomingStreams.updated(sub.streamId, incomingStreams(sub.streamId).copy(inlet = Some(subIn)))
+            subIn.pull()
+            subIn.setHandler(new InHandler {
+              def onPush(): Unit = bufferedFrameOut.pushWithTrigger(DataFrame(sub.streamId, endStream = false, subIn.grab()), () ⇒
+                if (!subIn.isClosed) subIn.pull())
 
-            override def onUpstreamFinish(): Unit = () // FIXME: check for truncation (last frame must have endStream / endHeaders set)
-          })
-          sub.frames.runWith(subIn.sink)(subFusingMaterializer)
+              override def onUpstreamFinish(): Unit = bufferedFrameOut.push(DataFrame(sub.streamId, endStream = true, ByteString.empty))
+            })
+            sub.data.runWith(subIn.sink)(subFusingMaterializer)
+          }
         }
       })
 

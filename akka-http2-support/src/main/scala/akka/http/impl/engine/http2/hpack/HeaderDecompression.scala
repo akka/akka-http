@@ -7,7 +7,7 @@ package akka.http.impl.engine.http2.hpack
 import java.nio.charset.Charset
 
 import akka.http.impl.engine.http2.{ ContinuationFrame, FrameEvent, HeadersFrame, ParsedHeadersFrame }
-import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
+import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.util.ByteString
 import com.twitter.hpack.HeaderListener
@@ -30,7 +30,7 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
 
   val shape = FlowShape(eventsIn, eventsOut)
 
-  def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+  def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new HandleOrPassOnStage[FrameEvent, FrameEvent](shape) {
     val decoder = new com.twitter.hpack.Decoder(maxHeaderSize, maxHeaderTableSize)
     become(Idle)
 
@@ -61,6 +61,8 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
           }
         case c: ContinuationFrame ⇒
           protocolError(s"Received unexpected continuation frame: $c")
+
+        // FIXME: handle SETTINGS frames that change decompression parameters
       }
     }
     class ReceivingHeaders(streamId: Int, endStream: Boolean, initiallyReceivedData: ByteString) extends State {
@@ -77,16 +79,5 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
     }
 
     def protocolError(msg: String): Unit = failStage(new RuntimeException(msg)) // TODO: replace with right exception type
-
-    def become(state: State): Unit = setHandlers(eventsIn, eventsOut, state)
-    abstract class State extends InHandler with OutHandler {
-      val handleEvent: PartialFunction[FrameEvent, Unit]
-
-      def onPush(): Unit = {
-        val event = grab(eventsIn)
-        handleEvent.applyOrElse[FrameEvent, Unit](event, ev ⇒ push(eventsOut, ev))
-      }
-      def onPull(): Unit = pull(eventsIn)
-    }
   }
 }
