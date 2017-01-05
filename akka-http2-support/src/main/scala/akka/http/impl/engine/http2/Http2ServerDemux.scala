@@ -265,11 +265,14 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               incomingStreams(streamId).outboundWindowLeft += increment
               debug(f"outbound window for [$streamId%3d] is now ${incomingStreams(streamId).outboundWindowLeft}%10d after increment $increment%6d")
               bufferedFrameOut.tryFlush()
-
+            
             case e: GoAwayFrame ⇒
               // TODO: do we want to output the cause of connection close? only on NO_ERROR maybe?
               connectionClose()
-
+            
+            case PriorityFrame(streamId, exclusiveFlag, streamDependency, weight) ⇒
+              debug(s"Received PriorityFrame for stream $streamId with ${if(exclusiveFlag) "exclusive " else "non-exclusive "} dependency on stream $streamDependency and weight $weight")
+            
             case e: StreamFrameEvent ⇒
               // FIXME: this is nasty
               e match {

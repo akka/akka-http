@@ -11,12 +11,13 @@ import javax.net.ssl._
 import akka.actor._
 import akka.dispatch.ExecutionContexts
 import akka.event.{ Logging, LoggingAdapter }
-import akka.http.impl.engine.HttpConnectionTimeoutException
+import akka.http.impl.engine.HttpConnectionIdleTimeoutBidi
 import akka.http.impl.engine.client.PoolMasterActor.{ PoolSize, ShutdownAll }
 import akka.http.impl.engine.client._
 import akka.http.impl.engine.server._
 import akka.http.impl.engine.ws.WebSocketClientBlueprint
 import akka.http.impl.settings.{ ConnectionPoolSetup, HostConnectionPoolSetup }
+import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.ws.{ Message, WebSocketRequest, WebSocketUpgradeResponse }
@@ -36,6 +37,7 @@ import scala.concurrent._
 import scala.util.Try
 import scala.util.control.NonFatal
 import scala.compat.java8.FutureConverters._
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 class HttpExt(private val config: Config)(implicit val system: ActorSystem) extends akka.actor.Extension
   with DefaultSSLContextCreation {
@@ -67,22 +69,14 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     log:               LoggingAdapter)(implicit mat: Materializer): ServerLayerBidiFlow = {
     val httpLayer = serverLayer(settings, None, log)
     val tlsStage = sslTlsStage(connectionContext, Server)
-    BidiFlow.fromGraph(Fusing.aggressive(GraphDSL.create() { implicit b ⇒
-      import GraphDSL.Implicits._
-      val http = b.add(httpLayer)
-      val tls = b.add(tlsStage)
 
-      val timeouts = b.add(Flow[ByteString].recover {
-        case t: TimeoutException ⇒ throw new HttpConnectionTimeoutException(t.getMessage)
-      })
+    val serverBidiFlow =
+      settings.idleTimeout match {
+        case t: FiniteDuration ⇒ httpLayer atop tlsStage atop HttpConnectionIdleTimeoutBidi(t, None)
+        case _                 ⇒ httpLayer atop tlsStage
+      }
 
-      tls.out2 ~> http.in2
-      tls.in1 <~ http.out1
-
-      tls.out1 ~> timeouts.in
-
-      BidiShape(http.in1, timeouts.out, tls.in2, http.out2)
-    }))
+    serverBidiFlow
   }
 
   private def fuseServerFlow(
@@ -102,15 +96,30 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
       )
     )
 
-  private def tcpBind(interface: String, port: Int, settings: ServerSettings) = Tcp()
-    .bind(
-      interface,
-      port,
-      settings.backlog,
-      settings.socketOptions,
-      halfClose = false,
-      settings.timeouts.idleTimeout
-    )
+  private def tcpBind(interface: String, port: Int, settings: ServerSettings): Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] = {
+    Tcp()
+      .bind(
+        interface,
+        port,
+        settings.backlog,
+        settings.socketOptions,
+        halfClose = false,
+        idleTimeout = Duration.Inf // we knowingly disable idle-timeout on TCP level, as we handle it explicitly in Akka HTTP itself
+      )
+      .map { incoming ⇒
+        val newFlow =
+          incoming.flow
+            // Prevent cancellation from the Http implementation to reach the TCP streams to prevent
+            // completion / cancellation race towards TCP streams. See #459.
+            //
+            // This could create a potential resource leak, if, e.g. because of a bug, the HTTP implementation doesn't
+            // close the write-side of the connection at the same time as it cancels the read side and if the client
+            // never closes the connection after or while reading the response. Fortunately, this will be handled by
+            // the idle-timeout which will forcibly close the connection after a defined amount of inactivity.
+            .via(StreamUtils.absorbCancellation)
+        incoming.copy(flow = newFlow)
+      }
+  }
 
   private def choosePort(port: Int, connectionContext: ConnectionContext) = if (port >= 0) port else connectionContext.defaultPort
 
@@ -145,11 +154,14 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   def bind(interface: String, port: Int = DefaultPortForProtocol,
            connectionContext: ConnectionContext = defaultServerHttpContext,
            settings:          ServerSettings    = ServerSettings(system),
-           log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Source[IncomingConnection, Future[ServerBinding]] = {
+           log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Source[Http.IncomingConnection, Future[ServerBinding]] = {
     val fullLayer = fuseServerBidiFlow(settings, connectionContext, log)
 
     tcpBind(interface, choosePort(port, connectionContext), settings)
-      .map(incoming ⇒ IncomingConnection(incoming.localAddress, incoming.remoteAddress, fullLayer.addAttributes(prepareAttributes(settings, incoming.remoteAddress)) join incoming.flow))
+      .map(incoming ⇒ {
+        val serverFlow = fullLayer.addAttributes(prepareAttributes(settings, incoming.remoteAddress)) join incoming.flow
+        IncomingConnection(incoming.localAddress, incoming.remoteAddress, serverFlow)
+      })
       .mapMaterializedValue(materializeTcpBind)
   }
 

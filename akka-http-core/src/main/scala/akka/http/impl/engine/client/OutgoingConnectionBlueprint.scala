@@ -28,6 +28,8 @@ import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.{ InHandler, OutHandler }
 import akka.http.impl.util.LogByteStringTools._
 
+import scala.util.control.NoStackTrace
+
 /**
  * INTERNAL API
  */
@@ -98,7 +100,7 @@ private[http] object OutgoingConnectionBlueprint {
 
       val terminationFanout = b.add(Broadcast[HttpResponse](2))
 
-      val logger = b.add(MapError[ByteString] { case t ⇒ log.error(t, "Outgoing request stream error"); t }.named("errorLogger"))
+      val logger = b.add(Flow[ByteString].mapError { case t ⇒ log.error(t, "Outgoing request stream error"); t }.named("errorLogger"))
       val wrapTls = b.add(Flow[ByteString].map(SendBytes))
 
       val collectSessionBytes = b.add(Flow[SslTlsInbound].collect { case s: SessionBytes ⇒ s })
@@ -120,7 +122,10 @@ private[http] object OutgoingConnectionBlueprint {
         terminationFanout.out(1))
     })
 
-    One2OneBidiFlow[HttpRequest, HttpResponse](-1) atop
+    One2OneBidiFlow[HttpRequest, HttpResponse](
+      -1,
+      outputTruncationException = new UnexpectedConnectionClosureException(_)
+    ) atop
       core atop
       logTLSBidiBySetting("client-plain-text", settings.logUnencryptedNetworkBytes)
   }
@@ -352,4 +357,7 @@ private[http] object OutgoingConnectionBlueprint {
       override def preStart(): Unit = getNextMethod()
     }
   }
+
+  class UnexpectedConnectionClosureException(outstandingResponses: Int)
+    extends RuntimeException(s"The http server closed the connection unexpectedly before delivering responses for $outstandingResponses outstanding requests")
 }

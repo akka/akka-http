@@ -1,5 +1,6 @@
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import akka._
+import AkkaDependency._
 
 inThisBuild(Def.settings(
   organization := "com.typesafe.akka",
@@ -28,6 +29,9 @@ inThisBuild(Def.settings(
     "-Ywarn-dead-code"
     // "-Xfuture" // breaks => Unit implicits
   ),
+  javacOptions ++= Seq(
+    "-encoding", "UTF-8"
+  ),
   testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v"),
   Dependencies.Versions,
   Formatting.formatSettings,
@@ -39,7 +43,7 @@ lazy val root = Project(
     base = file(".")
   )
   .enablePlugins(UnidocRoot, NoPublish, DeployRsync)
-  .disablePlugins(BintrayPlugin)
+  .disablePlugins(BintrayPlugin, MimaPlugin)
   .settings(
     // Unidoc doesn't like macros
     unidocProjectExcludes := Seq(parsing),
@@ -68,17 +72,20 @@ lazy val httpCore = project("akka-http-core")
   .settings(Dependencies.httpCore)
   .settings(Version.versionSettings)
   .dependsOn(parsing)
-  //.disablePlugins(MimaPlugin)
+  .addAkkaModuleDependency("akka-stream")
+  .addAkkaModuleDependency("akka-stream-testkit", "test")
 
 lazy val http = project("akka-http")
   .dependsOn(httpCore)
 
 lazy val http2Support = project("akka-http2-support")
   .dependsOn(httpCore, httpTestkit % "test", httpCore % "test->test")
+  .addAkkaModuleDependency("akka-stream-testkit", "test")
 
 lazy val httpTestkit = project("akka-http-testkit")
   .settings(Dependencies.httpTestkit)
   .dependsOn(http)
+  .addAkkaModuleDependency("akka-stream-testkit")
 
 lazy val httpTests = project("akka-http-tests")
   .settings(Dependencies.httpTests)
@@ -88,12 +95,12 @@ lazy val httpTests = project("akka-http-tests")
   .enablePlugins(MultiNode)
   .disablePlugins(MimaPlugin) // this is only tests
   .configs(MultiJvm)
+  .addAkkaModuleDependency("akka-multi-node-testkit", "test")
 
 
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
-  //.disablePlugins(MimaPlugin)
   .enablePlugins(NoPublish)
-  .disablePlugins(BintrayPlugin)
+  .disablePlugins(BintrayPlugin, MimaPlugin)
   .aggregate(httpSprayJson, httpXml)
 
 lazy val httpXml =
@@ -103,9 +110,8 @@ lazy val httpSprayJson =
   httpMarshallersScalaSubproject("spray-json")
 
 lazy val httpMarshallersJava = project("akka-http-marshallers-java")
-  //.disablePlugins(MimaPlugin)
   .enablePlugins(NoPublish)
-  .disablePlugins(BintrayPlugin)
+  .disablePlugins(BintrayPlugin, MimaPlugin)
   .aggregate(httpJackson)
 
 lazy val httpJackson =
@@ -120,7 +126,6 @@ def httpMarshallersScalaSubproject(name: String) =
     base = file(s"akka-http-marshallers-scala/akka-http-$name"),
     dependencies = Seq(http)
   )
-  //.disablePlugins(MimaPlugin)
 
 def httpMarshallersJavaSubproject(name: String) =
   Project(
@@ -128,11 +133,10 @@ def httpMarshallersJavaSubproject(name: String) =
     base = file(s"akka-http-marshallers-java/akka-http-$name"),
     dependencies = Seq(http)
   )
-  //.disablePlugins(MimaPlugin)
 
 lazy val docs = project("docs")
   .enablePlugins(ParadoxPlugin, NoPublish, DeployRsync)
-  .disablePlugins(BintrayPlugin)
+  .disablePlugins(BintrayPlugin, MimaPlugin)
   .dependsOn(
     httpCore, http, httpXml, httpMarshallersJava, httpMarshallersScala,
     httpTests % "compile;test->test", httpTestkit % "compile;test->test"
@@ -146,11 +150,16 @@ lazy val docs = project("docs")
       "akka.version" -> Dependencies.akkaVersion,
       "scala.binaryVersion" -> scalaBinaryVersion.value,
       "scala.version" -> scalaVersion.value,
+      "scaladoc.version" -> scalaVersion.value,
       "crossString" -> (scalaVersion.value match {
         case akka.Doc.BinVer(_) => ""
         case _                  => "cross CrossVersion.full"
       }),
       "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${Dependencies.akkaVersion}/%s",
+      "javadoc.akka.http.base_url" -> {
+        val v = if (isSnapshot.value) "current" else version.value
+        s"http://doc.akka.io/japi/akka-http/$v"
+      },
       "github.base_url" -> GitHub.url(version.value)
     ),
     Formatting.docFormatSettings,

@@ -26,6 +26,7 @@ akka-http-testkit
 akka-http-jackson
 : Predefined glue-code for (de)serializing custom types from/to JSON with [jackson](https://github.com/FasterXML/jackson)
 
+Akka HTTP API - @javadoc:[Javadoc](akka.http.javadsl.package-summary)
 
 @@toc { depth=3 }
 
@@ -33,7 +34,7 @@ akka-http-jackson
 
 * [introduction](introduction.md)
 * [configuration](configuration.md)
-* [http-model](http-model.md)
+* [http-model](common/http-model.md)
 * [common/index](common/index.md)
 * [implications-of-streaming-http-entity](implications-of-streaming-http-entity.md)
 * [server-side/low-level-server-side-api](server-side/low-level-server-side-api.md)

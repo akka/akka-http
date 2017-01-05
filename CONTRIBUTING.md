@@ -60,12 +60,12 @@ The steps are exactly the same for everyone involved in the project (be it core 
 1. [Fork the project](https://github.com/akka/akka-http#fork-destination-box) on GitHub. You'll need to create a feature-branch for your work on your fork, as this way you'll be able to submit a PullRequest against the mainline Akka-http.
 1. Create a branch on your fork and work on the feature. For example: `git checkout -b wip-custom-headers-akka-http`
    - Please make sure to follow the general quality guidelines (specified below) when developing your patch.
-   - Please write additional tests covering your feature and adjust existing ones if needed before submitting your Pull Request. The `validatePullRequest` sbt task ([explained below](#validatePullRequest)) may come in handy to verify your changes are correct.
+   - Please write additional tests covering your feature and adjust existing ones if needed before submitting your Pull Request. The `validatePullRequest` sbt task ([explained below](#the-validatepullrequest-task)) may come in handy to verify your changes are correct.
 1. Once your feature is complete, prepare the commit following our [Creating Commits And Writing Commit Messages](#creating-commits-and-writing-commit-messages). For example, a good commit message would be: `Adding compression support for Manifests #22222` (note the reference to the ticket it aimed to resolve).
 1. Now it's finally time to [submit the Pull Request](https://help.github.com/articles/using-pull-requests)!
 1. If you have not already done so, you will be asked by our CLA bot to [sign the Lightbend CLA](http://www.lightbend.com/contribute/cla) online CLA stands for Contributor License Agreement and is a way of protecting intellectual property disputes from harming the project.
 1. If you're not already on the contributors white-list, the @akka-ci bot will ask `Can one of the repo owners verify this patch?`, to which a core member will reply by commenting `OK TO TEST`. This is just a sanity check to prevent malicious code from being run on the Jenkins cluster.
-1. Now both committers and interested people will review your code. This process is to ensure the code we merge is of the best possible quality, and that no silly mistakes slip though. You're expected to follow-up these comments by adding new commits to the same branch. The commit messages of those commits can be more lose, for example: `Removed debugging using printline`, as they all will be squashed into one commit before merging into the main branch.
+1. Now both committers and interested people will review your code. This process is to ensure the code we merge is of the best possible quality, and that no silly mistakes slip through. You're expected to follow-up these comments by adding new commits to the same branch. The commit messages of those commits can be more lose, for example: `Removed debugging using printline`, as they all will be squashed into one commit before merging into the main branch.
     - The community and team are really nice people, so don't be afraid to ask follow up questions if you didn't understand some comment, or would like to clarify how to continue with a given feature. We're here to help, so feel free to ask and discuss any kind of questions you might have during review!
 1. After the review you should fix the issues as needed (pushing a new commit for new review etc.), iterating until the reviewers give their thumbs up–which is signalled usually by a comment saying `LGTM`, which means "Looks Good To Me". 
     - In general a PR is expected to get 2 LGTMs from the team before it is merged. If the PR is trivial, or under under special circumstances (such as most of the team being on vacation, a PR was very thoroughly reviewed/tested and surely is correct) one LGTM may be fine as well.
@@ -109,6 +109,14 @@ target PR branch you can do so by setting the PR_TARGET_BRANCH environment varia
 PR_TARGET_BRANCH=origin/example sbt validatePullRequest
 ```
 
+## Developing against Akka `master`
+
+Since Akka HTTP is released separately to Akka "core" yet some features require changes in Akka itself, it is sometimes very useful
+to be able to develop Akka HTTP with Akka's sources used directly instead of the binary dependency. You can check out the Akka 
+repository and run sbt with `-Dakka.sources=$HOME/akka` to develop Akka HTTP with Akka as a source dependency instead of a binary one.
+
+This allows simple and fast iterations on changes that would need to be intoduced in Akka to develop a feature in HTTP that would require those.
+
 ## Binary compatibility
 Binary compatibility rules and guarantees are described in depth in the [Binary Compatibility Rules
 ](http://doc.akka.io/docs/akka/snapshot/common/binary-compatibility-rules.html) section of the documentation.
@@ -123,7 +131,8 @@ an error like this:
 [error]    filter with: ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.foldAsync")
 ```
 
-In such situations it's good to consult with a core team member if the violation can be safely ignored (by adding the above snippet to `project/MiMa.scala`), or if it would indeed break binary compatibility.
+In such situations it's good to consult with a core team member if the violation can be safely ignored (by adding the above snippet to the project's
+`src/main/mima-filters`), or if it would indeed break binary compatibility.
 
 Situations when it may be fine to ignore a MiMa issued warning include:
 
@@ -152,7 +161,7 @@ For a Pull Request to be considered at all it has to meet these requirements:
 
 Some additional guidelines regarding source code are:
 
-- files should start with a ``Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>`` copyright header 
+- files should start with a ``Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>`` copyright header 
 - keep the code [DRY](http://programmer.97things.oreilly.com/wiki/index.php/Don%27t_Repeat_Yourself)
 - apply the [Boy Scout Rule](http://programmer.97things.oreilly.com/wiki/index.php/The_Boy_Scout_Rule) whenever you have the chance to
 - Never delete or change existing copyright notices, just add additional info.  

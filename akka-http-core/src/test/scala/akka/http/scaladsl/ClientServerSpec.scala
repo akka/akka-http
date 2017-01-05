@@ -21,6 +21,7 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ Accept, Age, Date, Host, Server, `User-Agent` }
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
+import akka.io.Tcp.SO
 import akka.stream.scaladsl._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream.testkit._
@@ -352,28 +353,6 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     }
 
     "log materialization errors in `bindAndHandle`" which {
-
-      "are triggered in `transform`" in Utils.assertAllStagesStopped {
-        // FIXME racy feature, needs https://github.com/akka/akka/issues/17849 to be fixed
-        pending
-        val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
-        val flow = Flow[HttpRequest].transform[HttpResponse](() ⇒ sys.error("BOOM"))
-        val binding = Http(system2).bindAndHandle(flow, hostname, port)(materializer2)
-        val b1 = Await.result(binding, 3.seconds)
-
-        EventFilter[RuntimeException](message = "BOOM", occurrences = 1).intercept {
-          val (_, responseFuture) =
-            Http(system2).outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.head)(materializer2)
-          try Await.result(responseFuture, 5.second).status should ===(StatusCodes.InternalServerError)
-          catch {
-            case _: StreamTcpException ⇒
-            // Also fine, depends on the race between abort and 500, caused by materialization panic which
-            // tries to tear down everything, but the order is nondeterministic
-          }
-        }(system2)
-        Await.result(b1.unbind(), 1.second)
-      }(materializer2)
-
       "are triggered in `mapMaterialized`" in Utils.assertAllStagesStopped {
         // FIXME racy feature, needs https://github.com/akka/akka/issues/17849 to be fixed
         pending
@@ -517,6 +496,44 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
         connSourceSub.cancel()
       }
+    }
+    "complete a request/response when request has `Connection: close` set" in Utils.assertAllStagesStopped {
+      // In akka/akka#19542 / akka/akka-http#459 it was observed that when an akka-http closes the connection after
+      // a request, the TCP connection is sometimes aborted. Aborting means that `socket.close` is called with SO_LINGER = 0
+      // which removes the socket immediately from the OS network stack. This might happen with or without having sent
+      // a FIN frame first and with or without actively sending a RST frame. However, if the client has not received all data
+      // yet when the next ACK arrives at the server it will respond with a RST package. This will lead to a
+      // broken connection and a "Connection reset by peer" error on the client.
+      //
+      // The original cause for connection abortion was a race between connection completion and cancellation reaching
+      // each side of the Tcp connection stream.
+      //
+      // This reproducer tries to increase chances that bytes are still in flight when the connection is closed to trigger
+      // the error more reliably.
+
+      // The original reproducer suggested decreasing the MTU for the loopback device. We emulate a low
+      // MTU by setting super small network buffers. This means more TCP round-trips between server and client
+      // increasing the chances that the problem occurs.
+      val serverToClientNetworkBufferSize = 1000
+      val responseSize = 200000
+
+      val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+      val request = HttpRequest(uri = s"http://$hostname:$port", headers = headers.Connection("close") :: Nil)
+      val response = HttpResponse(entity = HttpEntity.Strict(ContentTypes.`text/plain(UTF-8)`, ByteString("t" * responseSize)))
+
+      // settings adapting network buffer sizes
+      val serverSettings = ServerSettings(system).withSocketOptions(SO.SendBufferSize(serverToClientNetworkBufferSize) :: Nil)
+      val clientSettings = ConnectionPoolSettings(system).withConnectionSettings(ClientConnectionSettings(system).withSocketOptions(SO.ReceiveBufferSize(serverToClientNetworkBufferSize) :: Nil))
+
+      val server = Http().bindAndHandleSync(_ ⇒ response, hostname, port, settings = serverSettings)
+      def runOnce() =
+        Http().singleRequest(request, settings = clientSettings).futureValue
+          .entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue
+          .size shouldBe responseSize
+
+      try {
+        (1 to 10).foreach(_ ⇒ runOnce())
+      } finally server.foreach(_.unbind())
     }
 
     "be able to deal with eager closing of the request stream on the client side" in Utils.assertAllStagesStopped {
