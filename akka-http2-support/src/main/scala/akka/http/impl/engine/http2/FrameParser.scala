@@ -118,14 +118,14 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
         PingFrame(ack, payload.remainingData)
 
       case RST_STREAM ⇒
-        // FIXME: ensure data size
+        Http2Compliance.requireFrameSize(payload.remainingSize, 4)
         RstStreamFrame(streamId, ErrorCode.byId(payload.readIntBE()))
 
       case PRIORITY ⇒
         val streamDependency = payload.readIntBE() // whole word
         val exclusiveFlag = (streamDependency >>> 31) == 1 // most significant bit for exclusive flag
         val dependencyPart = streamDependency & 0x7fffffff // remaining 31 bits for the dependency part
-        val priority = payload.readByte()
+        val priority = payload.readByte() & 0xff
         PriorityFrame(streamId, exclusiveFlag, dependencyPart, priority)
 
       case tpe ⇒ // TODO: remove once all stream types are defined

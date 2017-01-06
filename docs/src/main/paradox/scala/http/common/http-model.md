@@ -37,9 +37,8 @@ For example:
 
 An `HttpRequest` consists of
 
->
  * a method (GET, POST, etc.)
- * a URI
+ * a URI (see @ref[URI model](uri-model.md) for more information)
  * a seq of headers
  * an entity (body data)
  * a protocol
@@ -51,6 +50,23 @@ Here are some examples how to construct an `HttpRequest`:
 All parameters of `HttpRequest.apply` have default values set, so `headers` for example don't need to be specified
 if there are none. Many of the parameters types (like `HttpEntity` and `Uri`) define implicit conversions
 for common use cases to simplify the creation of request and response instances.
+
+<a id="synthetic-headers-scala"></a>
+### Synthetic Headers
+
+In some cases it may be necessary to deviate from fully RFC-Compliant behavior. For instance, Amazon S3 treats 
+the + character in the path part of the URL as a string, even though the RFC specifies that this behavior should
+be limited exclusively to the query portion of the URI.
+
+In order to work around these types of edge cases, Akka HTTP provides for the ability to provide extra, 
+non-standard information to the request via synthetic headers. These headers are not passed to the client
+but are instead consumed by the request engine and used to override default behavior.
+
+For instance, in order to provide a raw request uri, bypassing the default url normalization, you could do the
+following:
+
+    import akka.http.scaladsl.model.headers.`Raw-Request-URI`
+    val req = HttpRequest(uri = "/ignored", headers=List(`Raw-Request-URI`("/a/b%2Bc")))
 
 ## HttpResponse
 
