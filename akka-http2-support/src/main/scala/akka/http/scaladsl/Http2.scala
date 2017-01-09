@@ -21,6 +21,7 @@ import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Sink, TLS, Tcp }
 import akka.stream.{ Fusing, IgnoreComplete, Materializer }
 import akka.util.ByteString
 import com.typesafe.config.Config
+import io.netty.handler.ssl.{ ApplicationProtocolAccessor, NettySslAccess }
 
 import scala.concurrent.Future
 import scala.util.Success
@@ -69,17 +70,19 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem) ext
       def setChosenProtocol(protocol: String): Unit =
         if (chosenProtocol.isEmpty) chosenProtocol = Some(protocol)
         else throw new IllegalStateException("ChosenProtocol was set twice. Http2.serverLayer is not reusable.")
-      def getChosenProtocol(): String = chosenProtocol.getOrElse("h1") // default to http/1, e.g. when ALPN jar is missing
 
       def createEngine(): SSLEngine = {
-        val engine = httpsContext.sslContext.createSSLEngine()
+        val engine = httpsContext.createEngine()
         engine.setUseClientMode(false)
         Http2AlpnSupport.applySessionParameters(engine, httpsContext.firstSession)
         Http2AlpnSupport.enableForServer(engine, setChosenProtocol)
       }
-      val tls = TLS(createEngine, _ ⇒ Success(()), IgnoreComplete)
+      val theEngine = createEngine()
+      val tls = TLS(() ⇒ theEngine, _ ⇒ Success(()), IgnoreComplete)
+      //def getChosenProtocol(): String =
+      //        chosenProtocol.getOrElse("h1") // default to http/1, e.g. when ALPN jar is missing
 
-      AlpnSwitch(getChosenProtocol, Http().serverLayer(), http2Layer()) atop
+      AlpnSwitch(NettySslAccess.getChosenProtocol, Http().serverLayer(), http2Layer()) atop
         tls
     }
 

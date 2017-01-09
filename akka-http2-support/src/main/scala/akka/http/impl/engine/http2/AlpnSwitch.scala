@@ -3,7 +3,7 @@
  */
 package akka.http.impl.engine.http2
 
-import javax.net.ssl.SSLException
+import javax.net.ssl.{ SSLException, SSLSession }
 
 import akka.NotUsed
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
@@ -16,7 +16,7 @@ object AlpnSwitch {
   type HttpServerBidiFlow = BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed]
 
   def apply(
-    chosenProtocolAccessor: () ⇒ String,
+    chosenProtocolAccessor: SSLSession ⇒ String,
     http1Stack:             HttpServerBidiFlow,
     http2Stack:             HttpServerBidiFlow): HttpServerBidiFlow =
     BidiFlow.fromGraph(
@@ -37,7 +37,7 @@ object AlpnSwitch {
             def onPush(): Unit =
               grab(netIn) match {
                 case first @ SessionBytes(session, bytes) ⇒
-                  val chosen = chosenProtocolAccessor()
+                  val chosen = chosenProtocolAccessor(session)
                   chosen match {
                     case "h2" ⇒ install(http2Stack, first)
                     case _    ⇒ install(http1Stack, first)
