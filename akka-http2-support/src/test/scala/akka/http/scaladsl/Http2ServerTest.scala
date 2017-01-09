@@ -13,7 +13,6 @@ import javax.net.ssl.SSLEngineResult.HandshakeStatus
 import javax.net.ssl._
 
 import akka.actor.ActorSystem
-import akka.http.impl.engine.http2.WrappedSslContextSPI
 import akka.http.impl.util.ExampleHttpContexts
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model._
@@ -105,48 +104,13 @@ object Http2ServerTest extends App {
     }
 
     def wrapContext(context: HttpsConnectionContext): HttpsConnectionContext = {
-      val newContext = SSLContext.getInstance("TLS")
-      WrappedSslContextSPI.field.set(newContext, new WrappedSslContextSPI(context.sslContext) {
-        override def engineCreateSSLEngine(): SSLEngine = {
-          val delegate = nettySslContext.newEngine(PooledByteBufAllocator.DEFAULT)
-          new SSLEngine() {
-            def closeOutbound(): Unit = delegate.closeOutbound()
-            def beginHandshake(): Unit = delegate.beginHandshake()
-
-            def getNeedClientAuth: Boolean = delegate.getNeedClientAuth
-            def getWantClientAuth: Boolean = delegate.getWantClientAuth
-            def unwrap(byteBuffer: ByteBuffer, byteBuffers: Array[ByteBuffer], i: Int, i1: Int): SSLEngineResult =
-              delegate.unwrap(byteBuffer, byteBuffers, i, i1)
-
-            def getEnableSessionCreation: Boolean = delegate.getEnableSessionCreation
-            def getSupportedCipherSuites: Array[String] = delegate.getSupportedCipherSuites
-
-            def isInboundDone: Boolean = delegate.isInboundDone
-
-            def closeInbound(): Unit = delegate.closeInbound()
-            def getSupportedProtocols: Array[String] = delegate.getSupportedProtocols
-            def getDelegatedTask: Runnable = delegate.getDelegatedTask
-            def getHandshakeStatus: HandshakeStatus = delegate.getHandshakeStatus
-            def wrap(byteBuffers: Array[ByteBuffer], i: Int, i1: Int, byteBuffer: ByteBuffer): SSLEngineResult =
-              delegate.wrap(byteBuffers, i, i1, byteBuffer)
-            def getSession: SSLSession = delegate.getSession
-            def getEnabledProtocols: Array[String] = delegate.getEnabledProtocols
-            def isOutboundDone: Boolean = delegate.isOutboundDone
-            def getEnabledCipherSuites: Array[String] = delegate.getEnabledCipherSuites
-            def getUseClientMode: Boolean = delegate.getUseClientMode
-
-            def setEnableSessionCreation(b: Boolean): Unit = ()
-            def setNeedClientAuth(b: Boolean): Unit = ()
-            def setWantClientAuth(b: Boolean): Unit = ()
-            def setEnabledProtocols(strings: Array[String]): Unit = ()
-            def setEnabledCipherSuites(strings: Array[String]): Unit = ()
-            def setUseClientMode(b: Boolean): Unit = ()
-          }
-        }
-      })
+      def createEngine(): SSLEngine = nettySslContext.newEngine(PooledByteBufAllocator.DEFAULT)
 
       new HttpsConnectionContext(
-        newContext,
+        createEngine,
+        None,
+        None,
+        None,
         None,
         None,
         None

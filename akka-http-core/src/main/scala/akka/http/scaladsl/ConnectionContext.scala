@@ -45,15 +45,26 @@ object ConnectionContext {
 }
 
 final class HttpsConnectionContext(
-  val sslContext:          SSLContext,
-  val sslConfig:           Option[AkkaSSLConfig]         = None,
-  val enabledCipherSuites: Option[immutable.Seq[String]] = None,
-  val enabledProtocols:    Option[immutable.Seq[String]] = None,
-  val clientAuth:          Option[TLSClientAuth]         = None,
-  val sslParameters:       Option[SSLParameters]         = None)
+  val createEngine:        () ⇒ SSLEngine,
+  val optionalSslContext:  Option[SSLContext],
+  val sslConfig:           Option[AkkaSSLConfig],
+  val enabledCipherSuites: Option[immutable.Seq[String]],
+  val enabledProtocols:    Option[immutable.Seq[String]],
+  val clientAuth:          Option[TLSClientAuth],
+  val sslParameters:       Option[SSLParameters])
   extends akka.http.javadsl.HttpsConnectionContext with ConnectionContext {
+  def sslContext: SSLContext = optionalSslContext.get
 
-  // for binary-compatibility, since 2.4.7  
+  def this(
+    sslContext:          SSLContext,
+    sslConfig:           Option[AkkaSSLConfig]         = None,
+    enabledCipherSuites: Option[immutable.Seq[String]] = None,
+    enabledProtocols:    Option[immutable.Seq[String]] = None,
+    clientAuth:          Option[TLSClientAuth]         = None,
+    sslParameters:       Option[SSLParameters]         = None) =
+    this(() ⇒ sslContext.createSSLEngine(), Some(sslContext), None, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
+
+  // for binary-compatibility, since 2.4.7
   def this(
     sslContext:          SSLContext,
     enabledCipherSuites: Option[immutable.Seq[String]],
