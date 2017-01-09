@@ -6,19 +6,12 @@ package akka.http.impl.engine.http2
 
 import akka.NotUsed
 import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompression }
-import akka.event.{ Logging, LoggingAdapter }
-import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
-import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
-import akka.http.scaladsl.settings.ServerSettings
-import akka.stream.scaladsl.BidiFlow
-import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{ BidiFlow, Flow, Source }
 import akka.util.ByteString
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 
 /**
  * Represents one direction of an Http2 substream.
@@ -64,6 +57,12 @@ object Http2Blueprint {
     BidiFlow.fromGraph(new Http2ServerDemux)
 
   /**
+   * Translation between substream frames and Http messages (both directions)
+   *
+   * To make use of parallelism requests and responses need to be associated (other than by ordering), suggestion
+   * is to add a special (virtual) header containing the streamId (or any other kind of token) is added to the HttRequest
+   * that must be reproduced in an HttpResponse. This can be done automatically for the bindAndHandleAsync API but for
+   * bindAndHandle the user needs to take of this manually.
    * Translation between substream frames and Http messages (both directions)
    *
    * To make use of parallelism requests and responses need to be associated (other than by ordering), suggestion

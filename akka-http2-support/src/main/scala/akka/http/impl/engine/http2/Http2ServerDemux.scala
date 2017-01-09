@@ -97,7 +97,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         pull(frameIn)
         pull(substreamIn)
 
-        bufferedFrameOut.push(SettingsFrame(Nil)) // server side connection preface
+        bufferedFrameOut.buffer(SettingsFrame(Nil)) // server side connection preface // FIXME don't do this, since we want to GOAWAY right away 
       }
 
       // we should not handle streams later than the GOAWAY told us about with lastStreamId
@@ -113,7 +113,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         // http://httpwg.org/specs/rfc7540.html#rfc.section.6.8
         val last = lastStreamId
         closedAfter = Some(last)
-        bufferedFrameOut.push(GoAwayFrame(last, errorCode))
+        bufferedFrameOut.dropAll().push(GoAwayFrame(last, errorCode)) // FIXME random crazy idea, likely not final design
         // FIXME: handle the connection closing according to the specification
       }
 
@@ -153,7 +153,8 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               // if a stream is invalid we will GO_AWAY
               pushGOAWAY()
 
-            case h: ParsedHeadersFrame ⇒ pushGOAWAY()
+            case h: ParsedHeadersFrame ⇒
+              pushGOAWAY()
 
             case DataFrame(streamId, endStream, payload) ⇒
               // technically this case is the same as StreamFrameEvent, however we're handling it earlier in the match here for efficiency
@@ -193,6 +194,10 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
             case PingFrame(true, _) ⇒ // ignore for now (we don't send any pings)
             case PingFrame(false, data) ⇒
               bufferedFrameOut.push(PingFrame(ack = true, data))
+
+            case goAway: GoAwayFrame ⇒
+              debug(s"Propagating GoAway from upstream (${goAway})")
+              pushGOAWAY(goAway.errorCode) // by doing so we allow this stage decide/use the lastStreamId
 
             case e ⇒
               debug(s"Got unhandled event $e")
@@ -254,7 +259,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
                 // adding to end of the queue only works if there's only ever one frame per
                 // substream in the queue (which is the case since backpressure was introduced)
                 // TODO: we should try to find another stream to push data in this case
-                buffer.add(elem)
+                _buffer.add(elem)
               }
             case _ ⇒
               super.doPush(elem)
