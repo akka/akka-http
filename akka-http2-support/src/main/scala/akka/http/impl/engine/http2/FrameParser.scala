@@ -86,8 +86,13 @@ class FrameParser(shouldReadPreface: Boolean) extends ByteStringParser[FrameEven
         val ack = Flags.ACK.isSet(flags)
         Http2Compliance.requireZeroStreamId(streamId)
 
-        if (ack) SettingsAckFrame // TODO: validate that payload is empty
-        else {
+        if (ack) {
+          // validate that payload is empty: (6.5)
+          if (payload.hasRemaining)
+            throw new Http2Compliance.IllegalPayloadInSettingsAckFrame(payload.remainingSize, s"Payload in SETTINGS ACK frame was non-zero which is illegal (spec 6.5)!")
+
+          SettingsAckFrame
+        } else {
           def readSettings(read: List[Setting]): Seq[Setting] =
             if (payload.hasRemaining) {
               // TODO: fail if remaining size isn't exactly 3
