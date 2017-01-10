@@ -56,7 +56,6 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
         case ex: IOException ⇒
           // this is signalled by the decoder when it failed, we want to react to this by rendering a GOAWAY frame
           fail(eventsOut, new Http2Compliance.HeaderDecompressionFailed("Decompression failed."))
-        case ex: Throwable ⇒ throw ex // re-throw (unxepected exception)
       }
     }
 
