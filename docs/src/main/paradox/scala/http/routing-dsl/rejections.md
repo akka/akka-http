@@ -136,7 +136,7 @@ In order to customise the HTTP Responses of an existing handler you can call the
 
 #### Adding the unmatched route in handleNotFound
 
-Since rejection handlers are routes themselfs, it is possible to do anything you could possibly want inside such handler.
+Since rejection handlers are routes themselves, it is possible to do anything you could possibly want inside such handler.
 For example you may want to include the path which was not found in the response to the client, this is as simple as 
 using the `extractUnmatchedPath` and completing the route with it.
 
