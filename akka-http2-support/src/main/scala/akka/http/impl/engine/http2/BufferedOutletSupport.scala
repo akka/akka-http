@@ -64,7 +64,7 @@ trait BufferedOutletSupport { logic: GraphStageLogic ⇒
 
   class BufferedOutletExtended[T](outlet: GenericOutlet[T]) extends OutHandler {
     case class ElementAndTrigger(element: T, trigger: () ⇒ Unit)
-    final val _buffer: java.util.ArrayDeque[ElementAndTrigger] = new java.util.ArrayDeque[ElementAndTrigger]
+    final val buffer: java.util.ArrayDeque[ElementAndTrigger] = new java.util.ArrayDeque[ElementAndTrigger]
 
     /**
      * override to hook into actually pushing, e.g. to keep track how much
@@ -75,27 +75,18 @@ trait BufferedOutletSupport { logic: GraphStageLogic ⇒
       elem.trigger()
     }
 
-    /** Buffer an element to be used as initial element to be pushed once a second element arrives. */
-    final def buffer(element: T): Unit =
-      _buffer.addLast(ElementAndTrigger(element, () ⇒ ()))
-
     override def onPull(): Unit =
-      if (!_buffer.isEmpty) doPush(_buffer.pop())
+      if (!buffer.isEmpty) doPush(buffer.pop())
 
     outlet.setHandler(this)
 
-    final def dropAll(): BufferedOutletExtended[T] = {
-      _buffer.clear()
-      this
-    }
-
     final def push(element: T): Unit = pushWithTrigger(element, () ⇒ ())
     final def pushWithTrigger(elem: T, trigger: () ⇒ Unit): Unit =
-      if (outlet.canBePushed && _buffer.isEmpty) doPush(ElementAndTrigger(elem, trigger))
-      else _buffer.addLast(ElementAndTrigger(elem, trigger))
+      if (outlet.canBePushed && buffer.isEmpty) doPush(ElementAndTrigger(elem, trigger))
+      else buffer.addLast(ElementAndTrigger(elem, trigger))
 
     def tryFlush(): Unit =
-      if (outlet.canBePushed && !_buffer.isEmpty)
-        doPush(_buffer.pop())
+      if (outlet.canBePushed && !buffer.isEmpty)
+        doPush(buffer.pop())
   }
 }
