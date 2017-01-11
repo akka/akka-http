@@ -492,14 +492,9 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
         error should ===(ErrorCode.FRAME_SIZE_ERROR)
       }
       "received SETTINGs frame frame with a length other than a multiple of 6 octets (invalid 6.5)" in new TestSetup with RequestResponseProbes {
-        // we ACK the settings with an incorrect ACK (it must not have a payload)
-        val ackFlag = new ByteFlag(0x1)
+        val data = hex"00 00 02 04 00 00 00 00 00"
 
-        val p1 = hex"00 00 02 04 00 00 00 00 00"
-        val p2 = hex"00 00 01"
-        val data = p1 ++ p2
-
-        sendFrame(FrameType.SETTINGS, ackFlag, 0, data)
+        sendFrame(FrameType.SETTINGS, ByteFlag.Zero, 0, data)
 
         val (lastStreamId, error) = expectGOAWAY()
         error should ===(ErrorCode.FRAME_SIZE_ERROR)
