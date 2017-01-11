@@ -483,17 +483,23 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
          Receipt of a SETTINGS frame with the ACK flag set and a length field value other than 0
          MUST be treated as a connection error (Section 5.4.1) of type FRAME_SIZE_ERROR.
          */
-        val headerBlock = HPackSpecExamples.C41FirstRequestWithHuffman
-
-        sendHEADERS(1, endStream = true, endHeaders = true, headerBlock)
-
-        requestIn.ensureSubscription()
-        val request = expectRequestRaw()
-
         // we ACK the settings with an incorrect ACK (it must not have a payload)
         val ackFlag = new ByteFlag(0x1)
         val illegalPayload = hex"cafe babe"
         sendFrame(FrameType.SETTINGS, ackFlag, 0, illegalPayload)
+
+        val (lastStreamId, error) = expectGOAWAY()
+        error should ===(ErrorCode.FRAME_SIZE_ERROR)
+      }
+      "received SETTINGs frame frame with a length other than a multiple of 6 octets (invalid 6.5)" in new TestSetup with RequestResponseProbes {
+        // we ACK the settings with an incorrect ACK (it must not have a payload)
+        val ackFlag = new ByteFlag(0x1)
+
+        val p1 = hex"00 00 02 04 00 00 00 00 00"
+        val p2 = hex"00 00 01"
+        val data = p1 ++ p2
+
+        sendFrame(FrameType.SETTINGS, ackFlag, 0, data)
 
         val (lastStreamId, error) = expectGOAWAY()
         error should ===(ErrorCode.FRAME_SIZE_ERROR)
