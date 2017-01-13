@@ -5,13 +5,13 @@
 package akka.http.impl.engine.http2
 
 import akka.NotUsed
+import akka.http.impl.engine.http2.framing.Http2Framing
 import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompression }
-import akka.event.{ Logging, LoggingAdapter }
-import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
+import akka.http.impl.util.LogByteStringTools
+import akka.http.impl.util.LogByteStringTools.logToStringBidi
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
-import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.scaladsl.BidiFlow
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Source
@@ -32,16 +32,16 @@ object Http2Blueprint {
   def serverStack(): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
     httpLayer() atop
     demux() atop
-    // FrameLogger.bidi() atop // enable for debugging
+    // FrameLogger.bidi atop // enable for debugging
     hpackCoding() atop
-    framing()
+      // I think we might want to introduce another little bidistage between framing and hpack which associates received setting acks with sent-out SETTINGS frames
+      // and then include the changed settings in the ack frame
+    framing() 
   }
   // format: ON
 
   def framing(): BidiFlow[FrameEvent, ByteString, ByteString, FrameEvent, NotUsed] =
-    BidiFlow.fromFlows(
-      Flow[FrameEvent].map(FrameRenderer.render),
-      Flow[ByteString].via(new FrameParser(shouldReadPreface = true)))
+    BidiFlow.fromGraph(new Http2Framing(shouldReadPreface = true))
 
   /**
    * Runs hpack encoding and decoding. Incoming frames that are processed are HEADERS and CONTINUATION.
@@ -92,3 +92,4 @@ object Http2Blueprint {
         }
       }
 }
+/**/

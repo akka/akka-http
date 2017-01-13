@@ -5,9 +5,8 @@ import java.io.ByteArrayOutputStream
 import java.nio.ByteOrder
 
 import akka.NotUsed
-import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
-import akka.http.impl.engine.http2.Http2Protocol.Flags
-import akka.http.impl.engine.http2.Http2Protocol.FrameType
+import akka.http.impl.engine.http2.Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
+import akka.http.impl.engine.http2.framing.FrameRenderer
 import akka.http.impl.engine.http2.hpack.HeaderDecompression
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.{ LogByteStringTools, StringRendering }
@@ -35,9 +34,12 @@ import scala.annotation.tailrec
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.duration._
 import scala.concurrent.Future
+import scala.collection.immutable
 import scala.util.control.NoStackTrace
 
-class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventually {
+class Http2ServerSpec extends AkkaSpec(
+  "akka.loglevel = DEBUG"
+) with WithInPendingUntilFixed with Eventually {
   implicit val mat = ActorMaterializer()
 
   "The Http/2 server implementation" should {
@@ -478,7 +480,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
     "respect settings" should {
       "initial MAX_FRAME_SIZE" in pending
 
-      "received non-zero length payload Settings with ACK flag (invalid 6.5)" in new TestSetup with RequestResponseProbes {
+      "GoAway on received non-zero length payload SETTINGS with ACK flag (invalid 6.5) xoxo" in new TestSetup with RequestResponseProbes {
         /*
          Receipt of a SETTINGS frame with the ACK flag set and a length field value other than 0
          MUST be treated as a connection error (Section 5.4.1) of type FRAME_SIZE_ERROR.
@@ -500,7 +502,48 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
         error should ===(ErrorCode.FRAME_SIZE_ERROR)
       }
 
-      "received SETTINGS_MAX_FRAME_SIZE" in pending
+      "received SETTINGS_MAX_FRAME_SIZE should cause outgoing DATA to be chunked up into at-most-that-size parts " in new TestSetup with RequestResponseProbes {
+        def setMaxFrameSize(size: Int) = SettingsFrame(Setting(SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, size) :: Nil)
+
+        private val maxSize = Math.pow(2, 15).toInt // 32768, valid value (between 2^14 and 2^14 - 1)
+        sendFrame(setMaxFrameSize(maxSize))
+
+        expectSettingsAck()
+
+        sendWINDOW_UPDATE(0, maxSize * 3) // make sure we can receive such large response, on connection
+
+        sendHEADERS(1, endStream = false, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
+        sendWINDOW_UPDATE(1, maxSize * 3) // make sure we can receive such large response, on this stream
+
+        private val theTooLargeByteString = ByteString("x" * (maxSize * 2))
+        val tooLargeEntity = Source.single(theTooLargeByteString)
+        val tooLargeResponse = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, tooLargeEntity))
+        emitResponse(1, tooLargeResponse)
+
+        expectHeaderBlock(1, endStream = false)
+        sendWINDOW_UPDATE(1, maxSize * 3) // make sure we can receive such large response, on this stream
+        // FIXME we should not need to send this window update, the stream already has enough window I think, see above ^^^
+        // we receive the DATA in 2 parts, since the ByteString does not fit in a single frame
+        val d1 = expectDATA(1, endStream = false, numBytes = maxSize)
+        val d2 = expectDATA(1, endStream = true, numBytes = maxSize)
+        d1.toList should have length maxSize
+        d2.toList should have length maxSize
+        (d1 ++ d2) should ===(theTooLargeByteString) // makes sure we received the parts in the right order
+      }
+
+      // http://httpwg.org/specs/rfc7540.html#rfc.section.4.2
+      "received SETTINGS_MAX_FRAME_SIZE with too small value (spec 4.2)" in new TestSetup with RequestResponseProbes {
+        def setMaxFrameSize(size: Int) = SettingsFrame(Setting(SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, size) :: Nil)
+
+        /*
+          An endpoint MUST send an error code of FRAME_SIZE_ERROR if a frame exceeds the size defined in SETTINGS_MAX_FRAME_SIZE, 
+          exceeds any limit defined for the frame type, or is too small to contain mandatory frame data. 
+         */
+
+        sendFrame(setMaxFrameSize(8))
+        val (lastStreamId, errorCode) = expectGOAWAY()
+        errorCode should ===(ErrorCode.FRAME_SIZE_ERROR)
+      }
 
       "received SETTINGS_MAX_CONCURRENT_STREAMS" in pending
 
@@ -516,7 +559,12 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
     "support low-level features" should {
       "respond to PING frames" in pending
       "respond to PING frames giving precedence over any other kind pending frame" in pending
-      "acknowledge SETTINGS frames" in pending
+      "acknowledge SETTINGS frames" in new TestSetup with RequestResponseProbes {
+        def setMaxFrameSize(size: Int) = SettingsFrame(Setting(SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, size) :: Nil)
+
+        sendFrame(setMaxFrameSize(Math.pow(2, 16).toInt)) // valid setting
+        expectSettingsAck()
+      }
     }
 
     "respect the substream state machine" should {
@@ -655,7 +703,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
     }
     def expectFramePayload(frameType: FrameType, expectedFlags: ByteFlag, streamId: Int): ByteString = {
       val (flags, data) = expectFrameFlagsAndPayload(frameType, streamId)
-      expectedFlags shouldBe flags
+      expectedFlags should ===(flags)
       data
     }
 
@@ -671,10 +719,19 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
       FrameHeader(tpe, flags, streamId, length)
     }
 
+    def expectSettingsAck() = {
+      val (flags, payload) = expectFrameFlagsAndPayload(FrameType.SETTINGS, 0)
+      payload should be('empty)
+      flags.value should ===(Flags.ACK.value)
+    }
+
     /** Collect a header block maybe spanning several frames */
     def expectHeaderBlock(streamId: Int, endStream: Boolean = true): ByteString =
       // FIXME: also collect CONTINUATION frames as long as END_HEADERS is not set
       expectFramePayload(FrameType.HEADERS, Flags.END_STREAM.ifSet(endStream) | Flags.END_HEADERS, streamId)
+
+    def sendFrame(frame: FrameEvent): Unit =
+      sendBytes(FrameRenderer.render(frame))
 
     def sendFrame(frameType: FrameType, flags: ByteFlag, streamId: Int, payload: ByteString): Unit =
       sendBytes(FrameRenderer.renderFrame(frameType, flags, streamId, payload))

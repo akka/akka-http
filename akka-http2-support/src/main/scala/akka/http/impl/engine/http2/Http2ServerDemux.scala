@@ -7,11 +7,11 @@ package akka.http.impl.engine.http2
 import akka.NotUsed
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.{ COMPRESSION_ERROR, FRAME_SIZE_ERROR }
+import akka.http.impl.engine.http2.framing.HttpByteStringParser.ParsingException
 import akka.stream.Attributes
 import akka.stream.BidiShape
 import akka.stream.Inlet
 import akka.stream.Outlet
-import akka.stream.impl.io.ByteStringParser.ParsingException
 import akka.stream.scaladsl.Source
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, StageLogging }
 import akka.util.ByteString
@@ -114,11 +114,11 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         incomingStreams.keys.toList.sortBy(-_).headOption.getOrElse(0) // FIXME should be optimised
       }
 
-      def pushGOAWAY(errorCode: ErrorCode = Http2Protocol.ErrorCode.PROTOCOL_ERROR): Unit = {
+      def pushGOAWAY(errorCode: ErrorCode = Http2Protocol.ErrorCode.PROTOCOL_ERROR, debug: String = ""): Unit = {
         // http://httpwg.org/specs/rfc7540.html#rfc.section.6.8
         val last = lastStreamId
         closedAfter = Some(last)
-        val frame = GoAwayFrame(last, errorCode)
+        val frame = GoAwayFrame(last, errorCode, ByteString(debug))
         bufferedFrameOut.push(frame)
         // FIXME: handle the connection closing according to the specification
       }
@@ -159,7 +159,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
 
             case e: StreamFrameEvent if !incomingStreams.contains(e.streamId) ⇒
               // if a stream is invalid we will GO_AWAY
-              pushGOAWAY()
+              pushGOAWAY(debug = s"Incoming streamId:${e.streamId} not present in incomingStreams:${incomingStreams}")
 
             case h: ParsedHeadersFrame ⇒
               pushGOAWAY()
@@ -179,7 +179,9 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               incomingStreams(streamId).inlet.foreach(_.cancel())
 
             case WindowUpdateFrame(streamId, increment) ⇒
-              incomingStreams(streamId).outboundWindowLeft += increment
+              incomingStreams(streamId).outboundWindowLeft = (incomingStreams(streamId).outboundWindowLeft + increment)
+
+              println(s"incomingStreams(streamId) = ${incomingStreams(streamId)} ( added + $increment ) ")
               debug(f"outbound window for [$streamId%3d] is now ${incomingStreams(streamId).outboundWindowLeft}%10d after increment $increment%6d")
               bufferedFrameOut.tryFlush()
 
@@ -194,7 +196,10 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
                   val delta = value - streamLevelWindow
                   streamLevelWindow = value
                   incomingStreams.values.foreach(_.outboundWindowLeft += delta)
-                case Setting(id, value) ⇒ debug(s"Ignoring setting $id -> $value")
+                case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) ⇒
+                  debug(s"Already set client max frame size to ${value} in framing stage...")
+                case Setting(id, value) ⇒
+                  debug(s"Ignoring setting $id -> $value")
               }
 
               bufferedFrameOut.push(SettingsAckFrame)
@@ -211,16 +216,19 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         }
 
         override def onUpstreamFailure(ex: Throwable): Unit = {
+          println(s"ex = ${ex}")
           ex match {
             // every IllegalHttp2StreamIdException will be a GOAWAY with PROTOCOL_ERROR
             case e: Http2Compliance.IllegalHttp2StreamIdException ⇒
-              pushGOAWAY()
+              pushGOAWAY(debug = e.getMessage)
 
             case e: Http2Compliance.HeaderDecompressionFailed ⇒
-              pushGOAWAY(COMPRESSION_ERROR)
+              pushGOAWAY(COMPRESSION_ERROR, e.getMessage)
 
             case e: Http2Compliance.IllegalHttp2FrameSize ⇒
-              pushGOAWAY(FRAME_SIZE_ERROR)
+              pushGOAWAY(FRAME_SIZE_ERROR, e.getMessage)
+            case e: Http2Compliance.IllegalFrameSizeSettingException ⇒
+              pushGOAWAY(FRAME_SIZE_ERROR, e.getMessage)
 
             case e: ParsingException ⇒
               e.getCause match {
@@ -271,7 +279,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
 
                 debug(s"Pushed $size bytes of data for stream $streamId total window left: $totalOutboundWindowLeft per stream window left: ${incomingStreams(streamId).outboundWindowLeft}")
               } else {
-                debug(s"Couldn't send because no window left. Size: ${pl.size} total: $totalOutboundWindowLeft per stream: ${incomingStreams(streamId).outboundWindowLeft}")
+                debug(s"Couldn't send DATA to streamId: $streamId because no window left. Size: ${pl.size} total: $totalOutboundWindowLeft per stream: ${incomingStreams(streamId).outboundWindowLeft}")
                 // adding to end of the queue only works if there's only ever one frame per
                 // substream in the queue (which is the case since backpressure was introduced)
                 // TODO: we should try to find another stream to push data in this case
