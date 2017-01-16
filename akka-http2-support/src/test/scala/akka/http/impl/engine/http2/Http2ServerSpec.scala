@@ -5,15 +5,15 @@ import java.io.ByteArrayOutputStream
 import java.nio.ByteOrder
 
 import akka.NotUsed
-import akka.http.impl.engine.http2.Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
+import akka.http.impl.engine.http2.Http2Protocol.{ErrorCode, Flags, FrameType, SettingIdentifier}
 import akka.http.impl.engine.http2.framing.FrameRenderer
-import akka.http.impl.engine.http2.hpack.HeaderDecompression
+import akka.http.impl.engine.http2.hpack.{HeaderCompression, HeaderDecompression}
 import akka.http.impl.engine.ws.ByteStringSinkProbe
-import akka.http.impl.util.{ LogByteStringTools, StringRendering }
+import akka.http.impl.util.{LogByteStringTools, StringRendering}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
-import akka.stream.{ ActorMaterializer, Materializer }
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.stream.impl.io.ByteStringParser.ByteReader
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
@@ -21,7 +21,7 @@ import akka.stream.scaladsl.Source
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestPublisher.ManualProbe
 import akka.stream.testkit.TestSubscriber
-import akka.testkit.{ AkkaSpec, TestProbe }
+import akka.testkit.{AkkaSpec, TestProbe}
 import akka.util.ByteString
 import akka.util.ByteStringBuilder
 import com.twitter.hpack.Decoder
@@ -477,7 +477,7 @@ class Http2ServerSpec extends AkkaSpec(
       "eventually send WINDOW_UPDATE frames for received data" in pending
     }
 
-    "respect settings" should {
+    "respect SETTINGS" should {
       "initial MAX_FRAME_SIZE" in pending
 
       "GoAway on received non-zero length payload SETTINGS with ACK flag (invalid 6.5) xoxo" in new TestSetup with RequestResponseProbes {
@@ -547,12 +547,18 @@ class Http2ServerSpec extends AkkaSpec(
 
       "received SETTINGS_MAX_CONCURRENT_STREAMS" in pending
 
-      "received SETTINGS_HEADER_TABLE_SIZE" in {
+      "received SETTINGS_HEADER_TABLE_SIZE" in new TestSetup with RequestResponseProbes {
         // if the sender of the new size wants to shrink its decoding table, the encoding table on
         // our side needs to be shrunk *before* sending the SETTINGS ACK. So a mechanism needs to be
         // found that prevents race-conditions in the encoder between sending out an encoded message
         // which still uses the old table size and sending the SETTINGS ACK.
-        pending
+
+        def setHeaderTableSize(size: Int) = SettingsFrame(Setting(SettingIdentifier.SETTINGS_HEADER_TABLE_SIZE, size) :: Nil)
+
+        private val maxSize = Math.pow(2, 15).toInt // 32768, valid value (between 2^14 and 2^14 - 1)
+        sendFrame(setHeaderTableSize(maxSize))
+
+        expectSettingsAck()
       }
     }
 
@@ -824,7 +830,7 @@ class Http2ServerSpec extends AkkaSpec(
       decodeHeaders(headerBlockBytes)
     }
 
-    val encoder = new Encoder(HeaderDecompression.maxHeaderTableSize)
+    val encoder = new Encoder(HeaderCompression.InitialMaxHeaderTableSize)
     def encodeHeaders(request: HttpRequest): ByteString = {
       val bos = new ByteArrayOutputStream()
       def encode(name: String, value: String): Unit = encoder.encodeHeader(bos, name.getBytes, value.getBytes, false)
@@ -845,7 +851,7 @@ class Http2ServerSpec extends AkkaSpec(
       ByteString(bos.toByteArray)
     }
 
-    val decoder = new Decoder(HeaderDecompression.maxHeaderSize, HeaderDecompression.maxHeaderTableSize)
+    val decoder = new Decoder(HeaderDecompression.InitialMaxHeaderSize, HeaderDecompression.InitialMaxHeaderTableSize)
     def decodeHeaders(bytes: ByteString): Seq[(String, String)] = {
       val bis = new ByteArrayInputStream(bytes.toArray)
       val hs = new VectorBuilder[(String, String)]()

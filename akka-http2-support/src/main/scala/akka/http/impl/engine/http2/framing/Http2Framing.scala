@@ -33,12 +33,13 @@ private[http] final class Http2Framing(shouldReadPreface: Boolean)
     // active settings -------------------------------------------------------------------------------------------------
 
     // mutations of settings may only be done from within the rendering / parsing parts of this stage
-    object settings extends FramingSettings {
+    object settings extends FramingSettings with ParsingSettingsAccess with RenderingSettingsAccess {
       private var _outMaxFrameSize: Int = 16384 // default
       override def shouldReadPreface: Boolean = stage.shouldReadPreface
 
       override def maxOutFrameSize: Int = _outMaxFrameSize
 
+      /** Set directly in Parsing stage */
       override def updateMaxOutFrameSize(value: Int): Unit = {
         Http2Compliance.validateMaxFrameSize(value)
         _outMaxFrameSize = value
@@ -46,8 +47,8 @@ private[http] final class Http2Framing(shouldReadPreface: Boolean)
     }
 
     // frames -> network ----------------------------------------------------------------------------------------------- 
-    setHandlers(frameIn, netOut, new HttpFrameRendering(new LinearGraphStageLogicAccess[FrameEvent, ByteString] {
-      override def settings = logic.settings
+    setHandlers(frameIn, netOut, new HttpFrameRendering(new LinearGraphStageLogicAccess[FrameEvent, ByteString, RenderingSettingsAccess] {
+      override def settings: RenderingSettingsAccess = logic.settings
 
       override def push(el: ByteString): Unit = logic.push(netOut, el)
       override def emitMultiple(bytes: Iterator[ByteString], andThen: () ⇒ Unit): Unit = logic.emitMultiple(netOut, bytes, andThen)
@@ -65,8 +66,8 @@ private[http] final class Http2Framing(shouldReadPreface: Boolean)
       override def isOutAvailable(): Boolean = logic.isAvailable(netOut)
     }))
 
-    setHandlers(netIn, frameOut, new HttpFrameParsing(shouldReadPreface, new LinearGraphStageLogicAccess[ByteString, FrameEvent] {
-      override def settings = logic.settings
+    setHandlers(netIn, frameOut, new HttpFrameParsing(shouldReadPreface, new LinearGraphStageLogicAccess[ByteString, FrameEvent, ParsingSettingsAccess] {
+      override def settings: ParsingSettingsAccess = logic.settings
 
       override def push(frame: FrameEvent): Unit = logic.push(frameOut, frame)
       override def emitMultiple(frames: Iterator[FrameEvent], andThen: () ⇒ Unit): Unit = logic.emitMultiple(frameOut, frames, andThen)
@@ -86,11 +87,14 @@ private[http] final class Http2Framing(shouldReadPreface: Boolean)
   }
 }
 
-trait FramingSettings {
+/** INTERNAL API: Used to communicate settings between rendering and parsing sides of this stage. */
+private[akka] trait FramingSettings
+private[akka] trait ParsingSettingsAccess extends FramingSettings {
   def shouldReadPreface: Boolean
-
-  def maxOutFrameSize: Int
   def updateMaxOutFrameSize(l: Int): Unit
+}
+private[akka] trait RenderingSettingsAccess extends FramingSettings {
+  def maxOutFrameSize: Int
 }
 
 /**
@@ -98,8 +102,8 @@ trait FramingSettings {
  * Used to communicate with GraphStageLogic from outer class, since we otherwise can't do this since all these
  * methods are protected in GraphStageLogic
  */
-private[http] trait LinearGraphStageLogicAccess[In, Out] {
-  def settings: FramingSettings
+private[http] trait LinearGraphStageLogicAccess[In, Out, Settings <: FramingSettings] {
+  def settings: Settings
 
   def push(el: Out)
   def emitMultiple(elems: Iterator[Out], andThen: () ⇒ Unit): Unit

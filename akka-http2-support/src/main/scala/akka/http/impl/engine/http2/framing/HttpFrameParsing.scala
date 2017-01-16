@@ -10,12 +10,8 @@ import akka.NotUsed
 import akka.http.impl.engine.http2._
 import akka.http.impl.engine.http2.Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
 import akka.http.impl.engine.http2.Http2Protocol.FrameType._
-import akka.http.impl.engine.http2.framing.HttpByteStringParser.ParseResult
-import akka.http.impl.engine.http2.framing.HttpFrameParsing
 import akka.http.impl.util.LogByteStringTools
-import akka.japi.Effect
 import akka.stream._
-import akka.stream.scaladsl.{ BidiFlow, Flow }
 import akka.stream.stage._
 import akka.util.ByteString
 
@@ -23,7 +19,7 @@ import scala.collection.immutable
 import scala.collection.immutable.Iterable
 
 /** INTERNAL API */
-private[http] class HttpFrameParsing(shouldReadPreface: Boolean, stageAccess: LinearGraphStageLogicAccess[ByteString, FrameEvent])
+private[http] class HttpFrameParsing(shouldReadPreface: Boolean, stageAccess: LinearGraphStageLogicAccess[ByteString, FrameEvent, ParsingSettingsAccess])
   extends HttpByteStringParser(stageAccess) {
   import HttpByteStringParser._
 
@@ -162,6 +158,7 @@ private[http] class HttpFrameParsing(shouldReadPreface: Boolean, stageAccess: Li
           debug(s"Set outgoing SETTINGS_MAX_FRAME_SIZE to [${value}]")
         case setting ⇒
           debug(s"Not applying ${setting} in framing stage directly...") // TODO cleanup once complete handling done
+          setting
       }
     } catch {
       case ex: Throwable ⇒ stageAccess.failOut(ex)
@@ -189,7 +186,7 @@ private[akka] object HttpFrameParsing {
       override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) { logic ⇒
 
         // TODO should be able to de duplicate the settings
-        object settings extends FramingSettings {
+        object settings extends FramingSettings with ParsingSettingsAccess with RenderingSettingsAccess {
           private var _outMaxFrameSize: Int = 16384 // default
           override def shouldReadPreface: Boolean = itShouldReadPreface
 
@@ -201,7 +198,7 @@ private[akka] object HttpFrameParsing {
           }
         }
 
-        setHandlers(netIn, frameOut, new HttpFrameParsing(settings.shouldReadPreface, new LinearGraphStageLogicAccess[ByteString, FrameEvent] {
+        setHandlers(netIn, frameOut, new HttpFrameParsing(settings.shouldReadPreface, new LinearGraphStageLogicAccess[ByteString, FrameEvent, ParsingSettingsAccess] {
           override def settings = logic.settings
 
           override def push(frame: FrameEvent): Unit = logic.push(frameOut, frame)

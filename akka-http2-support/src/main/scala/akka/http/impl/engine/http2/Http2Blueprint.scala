@@ -32,10 +32,11 @@ object Http2Blueprint {
   def serverStack(): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
     httpLayer() atop
     demux() atop
-    // FrameLogger.bidi atop // enable for debugging
+      // FrameLogger.bidi atop // enable for debugging
     hpackCoding() atop
       // I think we might want to introduce another little bidistage between framing and hpack which associates received setting acks with sent-out SETTINGS frames
       // and then include the changed settings in the ack frame
+      // LogByteStringTools.logToStringBidi("framing") atop  // enable for debugging
     framing() 
   }
   // format: ON

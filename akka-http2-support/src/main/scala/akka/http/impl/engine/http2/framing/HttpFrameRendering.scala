@@ -12,7 +12,7 @@ import akka.util.ByteString
 import scala.collection.immutable
 
 /** INTERNAL API */
-private[http] class HttpFrameRendering(stageAccess: LinearGraphStageLogicAccess[FrameEvent, ByteString])
+private[http] class HttpFrameRendering(stageAccess: LinearGraphStageLogicAccess[FrameEvent, ByteString, RenderingSettingsAccess])
   extends InHandler with OutHandler {
   import stageAccess._
 

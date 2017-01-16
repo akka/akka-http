@@ -15,7 +15,7 @@ import scala.util.control.{ NoStackTrace, NonFatal }
  * INTERNAL API
  * Basically a copy of [[akka.stream.impl.io.ByteStringParser]] but possible to be used outside of a single stage.
  */
-private[akka] abstract class HttpByteStringParser(stageAccess: LinearGraphStageLogicAccess[ByteString, FrameEvent])
+private[akka] abstract class HttpByteStringParser(stageAccess: LinearGraphStageLogicAccess[ByteString, FrameEvent, ParsingSettingsAccess])
   extends InHandler with OutHandler {
   import HttpByteStringParser._
   import stageAccess._

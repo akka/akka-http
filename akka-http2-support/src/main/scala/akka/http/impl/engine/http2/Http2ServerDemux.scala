@@ -179,7 +179,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               incomingStreams(streamId).inlet.foreach(_.cancel())
 
             case WindowUpdateFrame(streamId, increment) ⇒
-              incomingStreams(streamId).outboundWindowLeft = (incomingStreams(streamId).outboundWindowLeft + increment)
+              incomingStreams(streamId).outboundWindowLeft = incomingStreams(streamId).outboundWindowLeft + increment
 
               println(s"incomingStreams(streamId) = ${incomingStreams(streamId)} ( added + $increment ) ")
               debug(f"outbound window for [$streamId%3d] is now ${incomingStreams(streamId).outboundWindowLeft}%10d after increment $increment%6d")
@@ -189,15 +189,21 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               debug(s"Received PriorityFrame for stream $streamId with ${if (exclusiveFlag) "exclusive " else "non-exclusive "} dependency on stream $streamDependency and weight $weight")
 
             case SettingsFrame(settings) ⇒
-              debug(s"Got ${settings.length} settings!")
+              if (settings.nonEmpty) debug(s"Got ${settings.length} settings!")
+              
               settings.foreach {
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE, value) ⇒
                   debug(s"Setting initial window to $value")
                   val delta = value - streamLevelWindow
                   streamLevelWindow = value
                   incomingStreams.values.foreach(_.outboundWindowLeft += delta)
+                  
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) ⇒
                   debug(s"Already set client max frame size to ${value} in framing stage...")
+                  
+                case tableSizeSetting @ Setting(Http2Protocol.SettingIdentifier.SETTINGS_HEADER_TABLE_SIZE, _) ⇒
+                  debug("Bouncing header table size update back to encoder...")
+                  bufferedFrameOut.push(SyntheticHpackEncoderSettingFrame(tableSizeSetting))
                 case Setting(id, value) ⇒
                   debug(s"Ignoring setting $id -> $value")
               }
@@ -208,15 +214,17 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
             case PingFrame(false, data) ⇒
               bufferedFrameOut.push(PingFrame(ack = true, data))
 
+            case SettingsAckFrame ⇒
+              log.info("Got Settings ACK...")
+
             case e ⇒
-              debug(s"Got unhandled event $e")
+              debug(s"Got unhandled event in Demux $e")
             // ignore unknown frames
           }
           pull(frameIn)
         }
 
         override def onUpstreamFailure(ex: Throwable): Unit = {
-          println(s"ex = ${ex}")
           ex match {
             // every IllegalHttp2StreamIdException will be a GOAWAY with PROTOCOL_ERROR
             case e: Http2Compliance.IllegalHttp2StreamIdException ⇒
