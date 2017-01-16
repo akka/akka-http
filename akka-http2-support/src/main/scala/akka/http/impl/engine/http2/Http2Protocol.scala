@@ -193,7 +193,7 @@ object Http2Protocol {
   }
 
   sealed abstract class ErrorCode(val id: Int) extends Product {
-    def name = Logging.simpleName(this).replaceAll("$", "")
+    def name = productPrefix
   }
   object ErrorCode {
     /**

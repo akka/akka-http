@@ -475,6 +475,20 @@ class Http2ServerSpec extends AkkaSpec(
       "not exceed stream-level window while sending after SETTINGS_INITIAL_WINDOW_SIZE changed when window became negative through setting" in pending
 
       "eventually send WINDOW_UPDATE frames for received data" in pending
+
+      "multiple WINDOW_UPDATEs exceeding total demand above 2^31-1 MUST cause FLOW_CONTROL_ERROR (spec 6.9.1)" in new TestSetup with RequestResponseProbes {
+        override def safeUpdate(update: Int ⇒ Int): Int ⇒ Int = { oldValue ⇒ update(oldValue) }
+
+        sendHEADERS(1, endStream = false, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
+
+        sendWINDOW_UPDATE(1, Math.pow(2, 30).toInt)
+        sendWINDOW_UPDATE(1, Math.pow(2, 30).toInt)
+        sendWINDOW_UPDATE(1, Math.pow(2, 30).toInt)
+
+        val (lastStreamId, errorCode) = expectGOAWAY()
+        errorCode should ===(ErrorCode.FLOW_CONTROL_ERROR)
+      }
+
     }
 
     "respect SETTINGS" should {
@@ -782,6 +796,9 @@ class Http2ServerSpec extends AkkaSpec(
 
     def sendDATA(streamId: Int, endStream: Boolean, data: ByteString): Unit =
       sendFrame(FrameType.DATA, Flags.END_STREAM.ifSet(endStream), streamId, data)
+
+    def sendSETTING(identifier: SettingIdentifier, value: Int): Unit =
+      sendFrame(SettingsFrame(Setting(identifier, value) :: Nil))
 
     def sendHEADERS(streamId: Int, endStream: Boolean, endHeaders: Boolean, headerBlockFragment: ByteString): Unit =
       sendBytes(FrameRenderer.render(HeadersFrame(streamId, endStream, endHeaders, headerBlockFragment, None)))

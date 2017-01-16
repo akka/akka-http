@@ -220,9 +220,7 @@ private[akka] object HttpFrameParsing {
           override def pull(): Unit = logic.pull(netIn)
           override def grab(): ByteString = {
 
-            val it = logic.grab(netIn)
-            println(s"LogByteStringTools.printByteString(it) = ${LogByteStringTools.printByteString(it)}")
-            it
+            logic.grab(netIn)
           }
 
           override def completeStage(): Unit = logic.completeStage()

@@ -5,6 +5,7 @@
 package akka.http.impl.engine.http2
 
 import akka.NotUsed
+import akka.http.impl.engine.http2.Http2Compliance.WindowSizeWithOverflowProtection
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.{ COMPRESSION_ERROR, FRAME_SIZE_ERROR, PROTOCOL_ERROR }
 import akka.http.impl.engine.http2.framing.HttpByteStringParser.ParsingException
@@ -88,7 +89,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         state:                     StreamState,
         outlet:                    Option[BufferedOutlet[ByteString]],
         inlet:                     Option[SubSinkInlet[ByteString]],
-        initialOutboundWindowLeft: Long
+        initialOutboundWindowLeft: WindowSizeWithOverflowProtection
       ) {
         var outboundWindowLeft = initialOutboundWindowLeft
       }
@@ -103,8 +104,8 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
       // we should not handle streams later than the GOAWAY told us about with lastStreamId
       private var closedAfter: Option[Int] = None
       private var incomingStreams = mutable.Map.empty[Int, SubStream]
-      private var totalOutboundWindowLeft = Http2Protocol.InitialWindowSize
-      private var streamLevelWindow = Http2Protocol.InitialWindowSize
+      private var totalOutboundWindowLeft = WindowSizeWithOverflowProtection(Http2Protocol.InitialWindowSize)
+      private var streamLevelWindow = WindowSizeWithOverflowProtection(Http2Protocol.InitialWindowSize)
 
       /**
        * The "last peer-initiated stream that was or might be processed on the sending endpoint in this connection"
@@ -130,7 +131,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
           in match {
             case WindowUpdateFrame(0, increment) ⇒
               totalOutboundWindowLeft += increment
-              debug(f"outbound window is now $totalOutboundWindowLeft%10d after increment $increment%6d")
+              debug(f"outbound window is now ${totalOutboundWindowLeft.value}%10d after increment $increment%6d")
               bufferedFrameOut.tryFlush()
 
             case e: StreamFrameEvent if !Http2Compliance.isClientInitiatedStreamId(e.streamId) ⇒
@@ -179,11 +180,16 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               incomingStreams(streamId).inlet.foreach(_.cancel())
 
             case WindowUpdateFrame(streamId, increment) ⇒
-              incomingStreams(streamId).outboundWindowLeft = incomingStreams(streamId).outboundWindowLeft + increment
+              try {
+                incomingStreams(streamId).outboundWindowLeft += increment
 
-              println(s"incomingStreams(streamId) = ${incomingStreams(streamId)} ( added + $increment ) ")
-              debug(f"outbound window for [$streamId%3d] is now ${incomingStreams(streamId).outboundWindowLeft}%10d after increment $increment%6d")
-              bufferedFrameOut.tryFlush()
+                println(s"incomingStreams(streamId) = ${incomingStreams(streamId)} ( added + $increment ) ")
+                debug(f"outbound window for [$streamId%3d] is now ${incomingStreams(streamId).outboundWindowLeft.value}%10d after increment $increment%6d")
+                bufferedFrameOut.tryFlush()
+              } catch {
+                case ex: ArithmeticException ⇒
+                  pushGOAWAY(ErrorCode.FLOW_CONTROL_ERROR, debug = ex.getMessage)
+              }
 
             case PriorityFrame(streamId, exclusiveFlag, streamDependency, weight) ⇒
               debug(s"Received PriorityFrame for stream $streamId with ${if (exclusiveFlag) "exclusive " else "non-exclusive "} dependency on stream $streamDependency and weight $weight")
@@ -194,9 +200,9 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               settings.foreach {
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE, value) ⇒
                   debug(s"Setting initial window to $value")
-                  val delta = value - streamLevelWindow
-                  streamLevelWindow = value
-                  incomingStreams.values.foreach(_.outboundWindowLeft += delta)
+                  val delta = WindowSizeWithOverflowProtection(value) - streamLevelWindow.value
+                  streamLevelWindow = WindowSizeWithOverflowProtection(value)
+                  incomingStreams.values.foreach(_.outboundWindowLeft += delta.value)
 
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) ⇒
                   debug(s"Already set client max frame size to ${value} in framing stage...")
@@ -287,7 +293,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         override def doPush(elem: ElementAndTrigger): Unit = {
           elem.element match {
             case d @ DataFrame(streamId, _, pl) ⇒
-              if (pl.size <= totalOutboundWindowLeft && pl.size <= incomingStreams(streamId).outboundWindowLeft) {
+              if (pl.size <= totalOutboundWindowLeft.value && pl.size <= incomingStreams(streamId).outboundWindowLeft.value) {
                 super.doPush(elem)
 
                 val size = pl.size

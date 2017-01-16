@@ -18,6 +18,10 @@ private[akka] object Http2Compliance {
   private val MinOutMaxFrameSize = Math.pow(2, 14).toInt // minimum allowed to be set
   private val MaxOutMaxFrameSize = (Math.pow(2, 24) - 1).toInt // maximum allowed to be set
 
+  final class WindowOverflowException(currentWindow: Int, increment: Int)
+    extends ArithmeticException(s"WINDOW overflow, must not exceed 2^31-1 nor go below 0. " +
+      s"Attempt to add increment ${increment} is illegal.")
+
   final class IllegalHttp2StreamIdException(id: Int, expected: String)
     extends IllegalArgumentException(s"Illegal HTTP/2 stream id: [$id]. $expected!")
 
@@ -70,4 +74,18 @@ private[akka] object Http2Compliance {
     if (value < MinOutMaxFrameSize) throw new IllegalFrameSizeSettingException(s"MAX_FRAME_SIZE MUST NOT be < than $MinOutMaxFrameSize, attempted setting to: $value!")
     if (value > MaxOutMaxFrameSize) throw new IllegalFrameSizeSettingException(s"MAX_FRAME_SIZE MUST NOT be > than $MaxOutMaxFrameSize, attempted setting to: $value!")
   }
+
+  final case class WindowSizeWithOverflowProtection(value: Int) extends AnyVal {
+    def +(increment: Int): WindowSizeWithOverflowProtection = {
+      val res = value.toLong + increment
+      val resi = res.toInt
+      if (res != resi) throw new Http2Compliance.WindowOverflowException(value, increment)
+      WindowSizeWithOverflowProtection(resi)
+    }
+
+    def -(decrement: Int): WindowSizeWithOverflowProtection = {
+      this + (-decrement)
+    }
+  }
+
 }
