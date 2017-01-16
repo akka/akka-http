@@ -5,15 +5,15 @@ import java.io.ByteArrayOutputStream
 import java.nio.ByteOrder
 
 import akka.NotUsed
-import akka.http.impl.engine.http2.Http2Protocol.{ErrorCode, Flags, FrameType, SettingIdentifier}
+import akka.http.impl.engine.http2.Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
 import akka.http.impl.engine.http2.framing.FrameRenderer
-import akka.http.impl.engine.http2.hpack.{HeaderCompression, HeaderDecompression}
+import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompression }
 import akka.http.impl.engine.ws.ByteStringSinkProbe
-import akka.http.impl.util.{LogByteStringTools, StringRendering}
+import akka.http.impl.util.{ LogByteStringTools, StringRendering }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.{ ActorMaterializer, Materializer }
 import akka.stream.impl.io.ByteStringParser.ByteReader
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
@@ -21,7 +21,7 @@ import akka.stream.scaladsl.Source
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestPublisher.ManualProbe
 import akka.stream.testkit.TestSubscriber
-import akka.testkit.{AkkaSpec, TestProbe}
+import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.util.ByteString
 import akka.util.ByteStringBuilder
 import com.twitter.hpack.Decoder
@@ -480,7 +480,7 @@ class Http2ServerSpec extends AkkaSpec(
     "respect SETTINGS" should {
       "initial MAX_FRAME_SIZE" in pending
 
-      "GoAway on received non-zero length payload SETTINGS with ACK flag (invalid 6.5) xoxo" in new TestSetup with RequestResponseProbes {
+      "GoAway on received non-zero length payload SETTINGS with ACK flag (invalid 6.5)" in new TestSetup with RequestResponseProbes {
         /*
          Receipt of a SETTINGS frame with the ACK flag set and a length field value other than 0
          MUST be treated as a connection error (Section 5.4.1) of type FRAME_SIZE_ERROR.
@@ -532,7 +532,7 @@ class Http2ServerSpec extends AkkaSpec(
       }
 
       // http://httpwg.org/specs/rfc7540.html#rfc.section.4.2
-      "received SETTINGS_MAX_FRAME_SIZE with too small value (spec 4.2)" in new TestSetup with RequestResponseProbes {
+      "receive SETTINGS_MAX_FRAME_SIZE with too small value (spec 4.2)" in new TestSetup with RequestResponseProbes {
         def setMaxFrameSize(size: Int) = SettingsFrame(Setting(SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, size) :: Nil)
 
         /*
@@ -541,13 +541,14 @@ class Http2ServerSpec extends AkkaSpec(
          */
 
         sendFrame(setMaxFrameSize(8))
+
         val (lastStreamId, errorCode) = expectGOAWAY()
         errorCode should ===(ErrorCode.FRAME_SIZE_ERROR)
       }
 
-      "received SETTINGS_MAX_CONCURRENT_STREAMS" in pending
+      "receive SETTINGS_MAX_CONCURRENT_STREAMS" in pending
 
-      "received SETTINGS_HEADER_TABLE_SIZE" in new TestSetup with RequestResponseProbes {
+      "receive SETTINGS_HEADER_TABLE_SIZE" in new TestSetup with RequestResponseProbes {
         // if the sender of the new size wants to shrink its decoding table, the encoding table on
         // our side needs to be shrunk *before* sending the SETTINGS ACK. So a mechanism needs to be
         // found that prevents race-conditions in the encoder between sending out an encoded message
@@ -559,6 +560,24 @@ class Http2ServerSpec extends AkkaSpec(
         sendFrame(setHeaderTableSize(maxSize))
 
         expectSettingsAck()
+      }
+
+      "received disable PUSH_PROMISE by received SETTINGS_ENABLE_PUSH (invalid 6.5)" in new TestSetup with RequestResponseProbes {
+        def setAllowPushPromise(value: Boolean) = SettingsFrame(Setting(SettingIdentifier.SETTINGS_ENABLE_PUSH, if (value) 1 else 0) :: Nil)
+
+        sendFrame(setAllowPushPromise(false))
+
+        expectSettingsAck()
+
+        // FIXME should send a PUSH_PROMISE from server side now, it should fail since it's not allowed
+      }
+      "received SETTINGS_ENABLE_PUSH with illegal value" in new TestSetup with RequestResponseProbes {
+        val illegalPushPromiseSettingFrame = SettingsFrame(Setting(SettingIdentifier.SETTINGS_ENABLE_PUSH, 12) :: Nil)
+
+        sendFrame(illegalPushPromiseSettingFrame)
+
+        val (lastStreamId, errorCode) = expectGOAWAY()
+        errorCode should ===(ErrorCode.PROTOCOL_ERROR)
       }
     }
 
@@ -881,6 +900,7 @@ class Http2ServerSpec extends AkkaSpec(
 
     def expectRequest(): HttpRequest = requestIn.requestNext().removeHeader("x-http2-stream-id")
     def expectRequestRaw(): HttpRequest = requestIn.requestNext() // TODO, make it so that internal headers are not listed in `headers` etc?
+
     def emitResponse(streamId: Int, response: HttpResponse): Unit =
       responseOut.sendNext(response.addHeader(Http2StreamIdHeader(streamId)))
 

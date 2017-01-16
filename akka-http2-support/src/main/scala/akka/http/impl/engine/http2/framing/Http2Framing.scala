@@ -35,11 +35,14 @@ private[http] final class Http2Framing(shouldReadPreface: Boolean)
     // mutations of settings may only be done from within the rendering / parsing parts of this stage
     object settings extends FramingSettings with ParsingSettingsAccess with RenderingSettingsAccess {
       private var _outMaxFrameSize: Int = 16384 // default
-      override def shouldReadPreface: Boolean = stage.shouldReadPreface
+      private var _pushPromiseEnabled: Boolean = true // default (spec 6.6)
 
+      override def shouldReadPreface: Boolean = stage.shouldReadPreface
+      override def pushPromiseEnabled: Boolean = _pushPromiseEnabled
       override def maxOutFrameSize: Int = _outMaxFrameSize
 
-      /** Set directly in Parsing stage */
+      override def updatePushPromiseEnabled(value: Boolean) =
+        _pushPromiseEnabled = value
       override def updateMaxOutFrameSize(value: Int): Unit = {
         Http2Compliance.validateMaxFrameSize(value)
         _outMaxFrameSize = value
@@ -91,9 +94,17 @@ private[http] final class Http2Framing(shouldReadPreface: Boolean)
 private[akka] trait FramingSettings
 private[akka] trait ParsingSettingsAccess extends FramingSettings {
   def shouldReadPreface: Boolean
+  def updatePushPromiseEnabled(value: Boolean): Unit
   def updateMaxOutFrameSize(l: Int): Unit
 }
 private[akka] trait RenderingSettingsAccess extends FramingSettings {
+  /**
+   * Returns if PUSH_PROMISE frames are allowed to be send to peer.
+   * Toggled by client sending SETTINGS_ENABLE_PUSH frames.
+   */
+  def pushPromiseEnabled: Boolean
+  /** See [[pushPromiseEnabled]] */
+  final def pushPromiseDisabled: Boolean = !pushPromiseEnabled
   def maxOutFrameSize: Int
 }
 

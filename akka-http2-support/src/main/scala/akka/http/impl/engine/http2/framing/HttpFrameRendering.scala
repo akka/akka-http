@@ -5,7 +5,9 @@
 package akka.http.impl.engine.http2.framing
 
 import akka.event.Logging
-import akka.http.impl.engine.http2.{ DataFrame, FrameEvent, Http2Compliance }
+import akka.http.impl.engine.http2.Http2Protocol.FrameType.PUSH_PROMISE
+import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
+import akka.http.impl.engine.http2._
 import akka.stream.stage.{ InHandler, OutHandler }
 import akka.util.ByteString
 
@@ -24,6 +26,9 @@ private[http] class HttpFrameRendering(stageAccess: LinearGraphStageLogicAccess[
         // payload too large, we must split it into multiple frames:
         val splitDataDrames = splitByPayloadSize(d, settings.maxOutFrameSize).iterator.map(FrameRenderer.render)
         emitMultiple(splitDataDrames, () ⇒ ()) // TODO would manual handling be more efficient? 
+
+      case p: PushPromiseFrame if stageAccess.settings.pushPromiseDisabled ⇒
+        failOut(new Http2Compliance.IllegalPushPromiseAttemptException)
 
       case _ ⇒
         // normal frame, just render it:

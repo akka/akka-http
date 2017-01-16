@@ -4,8 +4,16 @@
 
 package akka.http.impl.engine.http2
 
+import scala.annotation.switch
+
 /** INTERNAL API */
 private[akka] object Http2Compliance {
+  def parseSettungsEnablePushValue(incomingValue: Int): Boolean =
+    (incomingValue: @switch) match {
+      case 0 ⇒ false
+      case 1 ⇒ true
+      case _ ⇒ throw new IllegalEnablePushValueSettingException(s"Illegal value in SETTINGS_ENABLE_PUSH settings header! MUST BE 0 or 1, but was: [$incomingValue]")
+    }
 
   private val MinOutMaxFrameSize = Math.pow(2, 14).toInt // minimum allowed to be set
   private val MaxOutMaxFrameSize = (Math.pow(2, 24) - 1).toInt // maximum allowed to be set
@@ -15,10 +23,15 @@ private[akka] object Http2Compliance {
 
   final class MissingHttpIdHeaderException extends IllegalArgumentException("Expected `Http2StreamIdHeader` header to be present but was missing!")
 
+  final class IllegalPushPromiseAttemptException
+    extends IllegalStateException("Server attempted to write PUSH_PROMISE to connection which had disabled it. See spec 6.5.2")
+
   final class IllegalHttp2StreamDependency(id: Int)
     extends IllegalArgumentException(s"Illegal self dependency of stream for id: [$id]!")
 
   final class IllegalFrameSizeSettingException(msg: String) extends IllegalArgumentException(msg)
+
+  final class IllegalEnablePushValueSettingException(msg: String) extends IllegalArgumentException(msg)
 
   final class HeaderDecompressionFailed(msg: String) extends IllegalStateException(msg)
 

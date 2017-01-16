@@ -150,19 +150,27 @@ private[http] class HttpFrameParsing(shouldReadPreface: Boolean, stageAccess: Li
     }
   }
 
+  // FIXME this should be smarter, we need to somehow manage when we send back the ACK basically...
   private def applySetting(s: SettingsFrame): SettingsFrame = {
     try {
       s.settings.foreach {
         case Setting(SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) ⇒
           stageAccess.settings.updateMaxOutFrameSize(value)
           debug(s"Set outgoing SETTINGS_MAX_FRAME_SIZE to [${value}]")
+
+        case Setting(SettingIdentifier.SETTINGS_ENABLE_PUSH, value) ⇒
+          val pushFrameAllowed = Http2Compliance.parseSettungsEnablePushValue(value)
+          debug(s"Set ENABLE_PUSH to ${pushFrameAllowed}")
+          stageAccess.settings.updatePushPromiseEnabled(pushFrameAllowed)
+
         case setting ⇒
           debug(s"Not applying ${setting} in framing stage directly...") // TODO cleanup once complete handling done
-          setting
       }
     } catch {
-      case ex: Throwable ⇒ stageAccess.failOut(ex)
+      case ex: Throwable ⇒
+        stageAccess.failOut(ex)
     }
+
     s
   }
 
@@ -188,10 +196,14 @@ private[akka] object HttpFrameParsing {
         // TODO should be able to de duplicate the settings
         object settings extends FramingSettings with ParsingSettingsAccess with RenderingSettingsAccess {
           private var _outMaxFrameSize: Int = 16384 // default
+          private var _pushPromiseEnaled = true
+
           override def shouldReadPreface: Boolean = itShouldReadPreface
-
           override def maxOutFrameSize: Int = _outMaxFrameSize
+          override def pushPromiseEnabled: Boolean = _pushPromiseEnaled
 
+          override def updatePushPromiseEnabled(value: Boolean): Unit =
+            _pushPromiseEnaled = value
           override def updateMaxOutFrameSize(value: Int): Unit = {
             Http2Compliance.validateMaxFrameSize(value)
             _outMaxFrameSize = value

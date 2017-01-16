@@ -6,7 +6,7 @@ package akka.http.impl.engine.http2
 
 import akka.NotUsed
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
-import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.{ COMPRESSION_ERROR, FRAME_SIZE_ERROR }
+import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.{ COMPRESSION_ERROR, FRAME_SIZE_ERROR, PROTOCOL_ERROR }
 import akka.http.impl.engine.http2.framing.HttpByteStringParser.ParsingException
 import akka.stream.Attributes
 import akka.stream.BidiShape
@@ -190,17 +190,17 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
 
             case SettingsFrame(settings) ⇒
               if (settings.nonEmpty) debug(s"Got ${settings.length} settings!")
-              
+
               settings.foreach {
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE, value) ⇒
                   debug(s"Setting initial window to $value")
                   val delta = value - streamLevelWindow
                   streamLevelWindow = value
                   incomingStreams.values.foreach(_.outboundWindowLeft += delta)
-                  
+
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) ⇒
                   debug(s"Already set client max frame size to ${value} in framing stage...")
-                  
+
                 case tableSizeSetting @ Setting(Http2Protocol.SettingIdentifier.SETTINGS_HEADER_TABLE_SIZE, _) ⇒
                   debug("Bouncing header table size update back to encoder...")
                   bufferedFrameOut.push(SyntheticHpackEncoderSettingFrame(tableSizeSetting))
@@ -213,6 +213,10 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
             case PingFrame(true, _) ⇒ // ignore for now (we don't send any pings)
             case PingFrame(false, data) ⇒
               bufferedFrameOut.push(PingFrame(ack = true, data))
+
+            case AcknowladgeSettings(originalFrame) ⇒
+              log.info("Downstream applied setting {}, sending ACK back", originalFrame)
+              bufferedFrameOut.push(SettingsAckFrame) // TODO re-think these bouncing things... but since we applied in parser, we need a way to push ACK back
 
             case SettingsAckFrame ⇒
               log.info("Got Settings ACK...")
@@ -237,6 +241,10 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               pushGOAWAY(FRAME_SIZE_ERROR, e.getMessage)
             case e: Http2Compliance.IllegalFrameSizeSettingException ⇒
               pushGOAWAY(FRAME_SIZE_ERROR, e.getMessage)
+            case e: Http2Compliance.IllegalEnablePushValueSettingException ⇒
+              pushGOAWAY(PROTOCOL_ERROR, e.getMessage)
+            case e: Http2Compliance.IllegalPushPromiseAttemptException ⇒
+              pushGOAWAY(PROTOCOL_ERROR, e.getMessage)
 
             case e: ParsingException ⇒
               e.getCause match {

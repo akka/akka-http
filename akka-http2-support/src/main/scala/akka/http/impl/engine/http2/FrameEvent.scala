@@ -39,7 +39,7 @@ final case class ContinuationFrame(
 final case class RstStreamFrame(streamId: Int, errorCode: ErrorCode) extends StreamFrameEvent
 final case class SettingsFrame(settings: immutable.Seq[Setting]) extends FrameEvent
 case object SettingsAckFrame extends FrameEvent
-//case class PushPromiseFrame(streamId: Int) extends StreamFrameEvent
+case class PushPromiseFrame(streamId: Int) extends StreamFrameEvent
 case class PingFrame(ack: Boolean, data: ByteString) extends FrameEvent
 final case class WindowUpdateFrame(
   streamId:            Int,
@@ -80,3 +80,4 @@ final case class ParsedHeadersFrame(
  * MUST NOT be rendered to network.
  */
 private[http] final case class SyntheticHpackEncoderSettingFrame(setting: Setting) extends SyntheticFrameEvent
+private[http] final case class AcknowladgeSettings(originalFrame: SettingsFrame) extends SyntheticFrameEvent
