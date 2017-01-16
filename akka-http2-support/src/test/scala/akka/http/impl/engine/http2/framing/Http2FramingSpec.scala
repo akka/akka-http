@@ -1,21 +1,22 @@
-/**
+/*
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
-package akka.http.impl.engine.http2
+package akka.http.impl.engine.http2.framing
 
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.ws.{ BitBuilder, WithMaterializerSpec }
 import akka.http.impl.util._
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
-import org.scalatest.{ FreeSpec, Matchers }
 import org.scalatest.matchers.Matcher
+import org.scalatest.{ FreeSpec, Matchers }
 
 import scala.collection.immutable
 import scala.concurrent.duration._
 
 class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec {
   import BitBuilder._
+  import akka.http.impl.engine.http2._
 
   "The HTTP/2 parser/renderer round-trip should work for" - {
     "DATA frames" - {
@@ -155,7 +156,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
             xxxxxxxx
             xxxxxxxx
             xxxxxxxx=20000
-         """ should parseTo(SettingsFrame(Seq(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE → 0x20000)))
+         """ should parseTo(SettingsFrame(List(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE → 0x20000)))
       }
       "with two settings" in {
         b"""xxxxxxxx
@@ -179,7 +180,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
             xxxxxxxx
             xxxxxxxx
             xxxxxxxx=123
-         """ should parseTo(SettingsFrame(Seq(
+         """ should parseTo(SettingsFrame(List(
           Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE → 0x424242,
           Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS → 0x123
         )))
@@ -216,7 +217,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
             xxxxxxxx
             xxxxxxxx
             xxxxxxxx=1234567890abcdef
-         """ should parseTo(PingFrame(ack = false, "1234567890abcdef".parseHexByteString))
+         """ should parseTo(PingFrame(ack = false, hex"1234567890abcdef"))
       }
       "with ack" in {
         b"""xxxxxxxx
@@ -236,7 +237,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
             xxxxxxxx
             xxxxxxxx
             xxxxxxxx=87654321
-         """ should parseTo(PingFrame(ack = true, "fedcba0987654321".parseHexByteString))
+         """ should parseTo(PingFrame(ack = true, hex"fedcba0987654321"))
       }
     }
     "RST_FRAME" in {
@@ -347,7 +348,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
             xxxxxxxx
             xxxxxxxx=1   # error code = 0x1 = PROTOCOL_ERROR
             xxxxxxxx=1
-         """ should parseTo(GoAwayFrame(0x21, ErrorCode.PROTOCOL_ERROR, "1".parseHexByteString))
+         """ should parseTo(GoAwayFrame(0x21, ErrorCode.PROTOCOL_ERROR, hex"1"))
       }
     }
   }
@@ -359,7 +360,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
     parseMultipleTo(Seq(event), checkRendering).compose(Seq(_)) // TODO: try random chunkings
 
   private def parseMultipleTo(events: FrameEvent*): Matcher[Seq[ByteString]] =
-    parseMultipleTo(events, true)
+    parseMultipleTo(events, checkRendering = true)
 
   private def parseMultipleTo(events: Seq[FrameEvent], checkRendering: Boolean): Matcher[Seq[ByteString]] =
     equal(events).matcher[Seq[FrameEvent]].compose {
@@ -375,7 +376,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
     }
 
   private def parseToEvents(bytes: Seq[ByteString]): immutable.Seq[FrameEvent] =
-    Source(bytes.toVector).via(new FrameParser(shouldReadPreface = false)).runFold(Vector.empty[FrameEvent])(_ :+ _)
+    Source(bytes.toVector).via(HttpFrameParsing.flow(itShouldReadPreface = false)).runWith(Sink.seq)
       .awaitResult(1.second)
   private def renderToByteString(events: immutable.Seq[FrameEvent]): ByteString =
     Source(events).map(FrameRenderer.render).runFold(ByteString.empty)(_ ++ _)

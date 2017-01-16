@@ -7,9 +7,12 @@ package akka.http.impl.engine.http2
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
-import akka.util.ByteString
+import akka.util.{ ByteString, OptionVal }
+
+import scala.collection.immutable
 
 sealed trait FrameEvent
+sealed trait SyntheticFrameEvent extends FrameEvent
 sealed trait StreamFrameEvent extends FrameEvent {
   def streamId: Int
 }
@@ -34,9 +37,9 @@ final case class ContinuationFrame(
   payload:    ByteString) extends StreamFrameEvent
 
 final case class RstStreamFrame(streamId: Int, errorCode: ErrorCode) extends StreamFrameEvent
-final case class SettingsFrame(settings: Seq[Setting]) extends FrameEvent
+final case class SettingsFrame(settings: immutable.Seq[Setting]) extends FrameEvent
 case object SettingsAckFrame extends FrameEvent
-//case class PushPromiseFrame(streamId: Int) extends StreamFrameEvent
+case class PushPromiseFrame(streamId: Int) extends StreamFrameEvent
 case class PingFrame(ack: Boolean, data: ByteString) extends FrameEvent
 final case class WindowUpdateFrame(
   streamId:            Int,
@@ -70,3 +73,11 @@ final case class ParsedHeadersFrame(
   keyValuePairs: Seq[(String, String)],
   priorityInfo:  Option[PriorityFrame]
 ) extends FrameEvent
+
+// ------ internal frames, used for communicating settings between stages of our pipeline ----- 
+/**
+ * Special synthetic FrameEvent used to communicate enoder setting changes back to encoder.
+ * MUST NOT be rendered to network.
+ */
+private[http] final case class SyntheticHpackEncoderSettingFrame(setting: Setting) extends SyntheticFrameEvent
+private[http] final case class AcknowladgeSettings(originalFrame: SettingsFrame) extends SyntheticFrameEvent
