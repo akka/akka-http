@@ -11,6 +11,7 @@ object Dependencies {
   val junitVersion = "4.12"
 
   lazy val scalaTestVersion = settingKey[String]("The version of ScalaTest to use.")
+  lazy val specs2Version = settingKey[String]("The version of Specs2 to use")
   lazy val scalaStmVersion = settingKey[String]("The version of ScalaSTM to use.")
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
@@ -20,6 +21,7 @@ object Dependencies {
     scalaVersion := crossScalaVersions.value.head,
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.13.4"),
     scalaTestVersion := "3.0.0",
+    specs2Version := "3.8.5",
     java8CompatVersion := "0.8.0"
   )
   import Versions._
@@ -124,7 +126,8 @@ object Dependencies {
 
   lazy val httpTestkit = l ++= Seq(
     Test.junit, Test.junitIntf, Compile.junit % "provided",
-    Test.scalatest.value.copy(configurations = Some("provided; test"))
+    Test.scalatest.value.copy(configurations = Some("provided; test")),
+    "org.specs2" %% "specs2-core" % specs2Version.value % "provided"
   )
 
   lazy val httpTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.junitIntf)
