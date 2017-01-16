@@ -582,14 +582,33 @@ class Http2ServerSpec extends AkkaSpec(
     }
 
     "support low-level features" should {
-      "respond to PING frames" in pending
-      "respond to PING frames giving precedence over any other kind pending frame" in pending
+      "respond to PING frames (spec 6.7)" in new TestSetup with RequestResponseProbes {
+        sendFrame(FrameType.PING, new ByteFlag(0x0), 0, ByteString("data"))
+
+        val (flag, payload) = expectFrameFlagsAndPayload(FrameType.PING, 0) // must be on stream 0
+        flag should ===(new ByteFlag(0x1)) // a PING response
+        payload should ===(ByteString("data"))
+      }
+      "NOT respond to PING ACK frames (spec 6.7)" in new TestSetup with RequestResponseProbes {
+        val AckFlag = new ByteFlag(0x1)
+        sendFrame(FrameType.PING, AckFlag, 0, ByteString("data"))
+
+        expectNoMsg(100 millis)
+      }
+      "respond to invalid (not 0x0 streamId) PING with GOAWAY (spec 6.7)" in new TestSetup with RequestResponseProbes {
+        val invalidIdForPing = 1
+        sendFrame(FrameType.PING, ByteFlag.Zero, invalidIdForPing, ByteString.empty)
+
+        val (lastStreamId, errorCode) = expectGOAWAY()
+        errorCode should ===(ErrorCode.PROTOCOL_ERROR)
+      }
       "acknowledge SETTINGS frames" in new TestSetup with RequestResponseProbes {
         def setMaxFrameSize(size: Int) = SettingsFrame(Setting(SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, size) :: Nil)
 
         sendFrame(setMaxFrameSize(Math.pow(2, 16).toInt)) // valid setting
         expectSettingsAck()
       }
+      "respond to PING frames giving precedence over any other kind pending frame" in pending
     }
 
     "respect the substream state machine" should {
