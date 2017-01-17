@@ -78,3 +78,9 @@ final case class ParsedHeadersFrame(
   keyValuePairs: Seq[(String, String)],
   priorityInfo:  Option[PriorityFrame]
 ) extends FrameEvent
+
+final case class ParsedPushPromiseFrame(
+  streamId:         Int,
+  promisedStreamId: Int,
+  keyValuePairs:    Seq[(String, String)]
+) extends FrameEvent

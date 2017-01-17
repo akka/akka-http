@@ -28,41 +28,45 @@ private[http2] object HeaderCompression extends GraphStage[FlowShape[FrameEvent,
 
     val encoder = new com.twitter.hpack.Encoder(Http2Protocol.InitialMaxHeaderTableSize)
     val os = new ByteArrayOutputStream()
+    become(Default)
 
-    become(Idle)
-
-    object Idle extends State {
+    object Default extends State {
       val handleEvent: PartialFunction[FrameEvent, Unit] = {
         case ack @ SettingsAckFrame(s) ⇒
           applySettings(s)
           push(eventsOut, ack)
-
         case ParsedHeadersFrame(streamId, endStream, kvs, prioInfo) ⇒
-          os.reset()
-          kvs.foreach {
-            case (key, value) ⇒
-              encoder.encodeHeader(os, key.getBytes(HeaderDecompression.UTF8), value.getBytes(HeaderDecompression.UTF8), false)
-          }
-          val result = ByteString(os.toByteArray)
-          if (result.size <= currentMaxFrameSize) push(eventsOut, HeadersFrame(streamId, endStream, endHeaders = true, result, prioInfo))
-          else {
-            val first = HeadersFrame(streamId, endStream, endHeaders = false, result.take(currentMaxFrameSize), prioInfo)
+          encodeAndSendOut(streamId, kvs)((endHeaders, fragment) ⇒ HeadersFrame(streamId, endStream, endHeaders, fragment, prioInfo))
+        case ParsedPushPromiseFrame(streamId, promisedStreamId, kvs) ⇒
+          encodeAndSendOut(streamId, kvs)((endHeaders, fragment) ⇒ PushPromiseFrame(streamId, endHeaders, promisedStreamId, fragment))
+      }
 
-            emit(eventsOut, first)
-            setHandler(eventsOut, new OutHandler {
-              var remainingData = result.drop(currentMaxFrameSize)
+      def encodeAndSendOut(streamId: Int, kvs: Seq[(String, String)])(firstFrameCons: (Boolean, ByteString) ⇒ FrameEvent): Unit = {
+        os.reset()
+        kvs.foreach {
+          case (key, value) ⇒
+            encoder.encodeHeader(os, key.getBytes(HeaderDecompression.UTF8), value.getBytes(HeaderDecompression.UTF8), false)
+        }
+        val result = ByteString(os.toByteArray)
+        if (result.size <= currentMaxFrameSize) push(eventsOut, firstFrameCons(true, result))
+        else {
+          val first = firstFrameCons(false, result.take(currentMaxFrameSize))
 
-              def onPull(): Unit = {
-                val thisFragment = remainingData.take(currentMaxFrameSize)
-                val rest = remainingData.drop(currentMaxFrameSize)
-                val last = rest.isEmpty
+          emit(eventsOut, first)
+          setHandler(eventsOut, new OutHandler {
+            var remainingData = result.drop(currentMaxFrameSize)
 
-                push(eventsOut, ContinuationFrame(streamId, endHeaders = last, thisFragment))
-                if (last) become(Idle)
-                else remainingData = rest
-              }
-            })
-          }
+            def onPull(): Unit = {
+              val thisFragment = remainingData.take(currentMaxFrameSize)
+              val rest = remainingData.drop(currentMaxFrameSize)
+              val last = rest.isEmpty
+
+              push(eventsOut, ContinuationFrame(streamId, endHeaders = last, thisFragment))
+              if (last) become(Default)
+              else remainingData = rest
+            }
+          })
+        }
       }
 
       def applySettings(s: immutable.Seq[Setting]): Unit =
