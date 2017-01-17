@@ -75,12 +75,12 @@ final case class UnknownFrameEvent(
 final case class ParsedHeadersFrame(
   streamId:      Int,
   endStream:     Boolean,
-  keyValuePairs: Seq[(String, String)],
+  keyValuePairs: immutable.Seq[(String, String)],
   priorityInfo:  Option[PriorityFrame]
 ) extends FrameEvent
 
 final case class ParsedPushPromiseFrame(
   streamId:         Int,
   promisedStreamId: Int,
-  keyValuePairs:    Seq[(String, String)]
+  keyValuePairs:    immutable.Seq[(String, String)]
 ) extends FrameEvent

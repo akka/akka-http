@@ -67,7 +67,7 @@ import scala.util.control.NonFatal
  * not work because the sending decision relies on dynamic window size and settings information that will be
  * only available in this stage.
  */
-class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] {
+class Http2ServerDemux extends GraphStage[BidiShape[Http2ResponseSubStream, FrameEvent, FrameEvent, Http2SubStream]] {
 
   import Http2ServerDemux._
 
@@ -75,7 +75,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
   val frameOut = Outlet[FrameEvent]("Demux.frameOut")
 
   val substreamOut = Outlet[Http2SubStream]("Demux.substreamOut")
-  val substreamIn = Inlet[Http2SubStream]("Demux.substreamIn")
+  val substreamIn = Inlet[Http2ResponseSubStream]("Demux.substreamIn")
 
   override val shape =
     BidiShape(substreamIn, frameOut, frameIn, substreamOut)
@@ -234,11 +234,27 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
       val bufferedSubStreamOutput = new BufferedOutlet[Http2SubStream](substreamOut)
       def dispatchSubstream(sub: Http2SubStream): Unit = bufferedSubStreamOutput.push(sub)
 
+      var _nextPushedStreamId = 2
+      def getNextPushedStreamId(): Int = {
+        val res = _nextPushedStreamId
+        require(res > 0, "Pushed stream IDs overflowed") // FIXME: fail more gracefully
+        _nextPushedStreamId += 2
+        res
+      }
+
       setHandler(substreamIn, new InHandler {
         def onPush(): Unit = {
           val sub = grab(substreamIn)
           pull(substreamIn)
           multiplexer.registerSubStream(sub)
+
+          sub.pushedRequestsHeaders.foreach { kvs ⇒
+            val pushedStreamId = getNextPushedStreamId()
+            multiplexer.pushControlFrame(ParsedPushPromiseFrame(sub.streamId, pushedStreamId, kvs))
+            dispatchSubstream(Http2SubStream(ParsedHeadersFrame(pushedStreamId, endStream = true, kvs, None), Source.empty))
+
+            incomingStreams += pushedStreamId → SubStream(pushedStreamId, StreamState.HalfClosedRemote, None)
+          }
         }
       })
 

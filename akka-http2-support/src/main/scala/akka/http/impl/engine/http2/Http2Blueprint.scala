@@ -16,6 +16,7 @@ import akka.http.scaladsl.settings.{ ParserSettings, ServerSettings }
 import akka.stream.scaladsl.{ BidiFlow, Flow, Source }
 import akka.util.ByteString
 
+import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 
 /**
@@ -25,12 +26,16 @@ private[http2] final case class Http2SubStream(initialHeaders: ParsedHeadersFram
   def streamId: Int = initialHeaders.streamId
 }
 
+private[http2] final case class Http2ResponseSubStream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], pushedRequestsHeaders: immutable.Seq[immutable.Seq[(String, String)]] = Nil) {
+  def streamId: Int = initialHeaders.streamId
+}
+
 object Http2Blueprint {
   // format: OFF
   def serverStack(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
     httpLayer(settings, log) atop
       demux() atop
-      // FrameLogger.bidi atop // enable for debugging
+      FrameLogger.bidi atop // enable for debugging
       hpackCoding() atop
       // LogByteStringTools.logToStringBidi("framing") atop // enable for debugging
       framing()
@@ -60,7 +65,7 @@ object Http2Blueprint {
    * Creates substreams for every stream and manages stream state machines
    * and handles priorization (TODO: later)
    */
-  def demux(): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
+  def demux(): BidiFlow[Http2ResponseSubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
     BidiFlow.fromGraph(new Http2ServerDemux)
 
   /**
@@ -71,7 +76,7 @@ object Http2Blueprint {
    * that must be reproduced in an HttpResponse. This can be done automatically for the bindAndHandleAsync API but for
    * bindAndHandle the user needs to take of this manually.
    */
-  def httpLayer(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, Http2SubStream, Http2SubStream, HttpRequest, NotUsed] = {
+  def httpLayer(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, Http2ResponseSubStream, Http2SubStream, HttpRequest, NotUsed] = {
     val parserSettings = settings.parserSettings
     // This is master header parser, every other usage should do .createShallowCopy()
     // HttpHeaderParser is not thread safe and should not be called concurrently,

@@ -6,16 +6,15 @@ package akka.http.impl.engine.http2
 
 import akka.event.LoggingAdapter
 import akka.http.impl.util.StringRendering
-import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Date
-import akka.http.scaladsl.model.http2.Http2StreamIdHeader
+import akka.http.scaladsl.model.http2.{ Http2PushRequestsHeader, Http2StreamIdHeader }
+import akka.http.scaladsl.model.{ ContentTypes, HttpHeader, HttpResponse, _ }
 import akka.http.scaladsl.settings.ServerSettings
 
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 
 private[http2] object ResponseRendering {
-
   @volatile
   private var cachedDateHeader = (0L, ("", ""))
 
@@ -30,7 +29,7 @@ private[http2] object ResponseRendering {
     cachedDateHeader._2
   }
 
-  def renderResponse(settings: ServerSettings, log: LoggingAdapter): HttpResponse ⇒ Http2SubStream = {
+  def renderResponse(settings: ServerSettings, log: LoggingAdapter): HttpResponse ⇒ Http2ResponseSubStream = {
     def failBecauseOfMissingHeader: Nothing =
       // header is missing, shutting down because we will most likely otherwise miss a response and leak a substream
       // TODO: optionally a less drastic measure would be only resetting all the active substreams
@@ -56,9 +55,19 @@ private[http2] object ResponseRendering {
 
       val headers = ParsedHeadersFrame(streamId, endStream = response.entity.isKnownEmpty, headerPairs.result(), None)
 
-      Http2SubStream(
+      val pushed =
+        response
+          .headers
+          .flatMap {
+            case Http2PushRequestsHeader(reqs @ _*) ⇒ reqs
+            case _                                  ⇒ Nil
+          }
+          .map(RequestRendering.renderRequestToHeaderPairs)
+
+      Http2ResponseSubStream(
         headers,
-        response.entity.dataBytes
+        response.entity.dataBytes,
+        pushed
       )
     }
   }
@@ -129,7 +138,5 @@ private[http2] object ResponseRendering {
         case None              ⇒
       }
     }
-
   }
-
 }

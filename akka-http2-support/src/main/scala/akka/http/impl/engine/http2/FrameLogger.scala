@@ -61,10 +61,8 @@ private[http2] object FrameLogger {
 
         case ParsedHeadersFrame(streamId, endStream, kvPairs, prio) ⇒
           val prioInfo = if (prio.isDefined) display(entryForFrame(prio.get)) + " " else ""
-          val kvInfo = kvPairs.map {
-            case (key, value) ⇒ s"$key -> $value"
-          }.mkString(", ")
-          LogEntry(streamId, "HEAD", prioInfo + kvInfo, flag(endStream, "ES"))
+
+          LogEntry(streamId, "HEAD", prioInfo + kvInfo(kvPairs), flag(endStream, "ES"))
 
         case PriorityFrame(streamId, exclusive, streamDependency, weight) ⇒
           LogEntry(streamId, "PRIO", s"streamDependency = $streamDependency, weight: $weight", flag(exclusive, "EX"))
@@ -88,11 +86,19 @@ private[http2] object FrameLogger {
         case PushPromiseFrame(streamId, endHeaders, promisedStreamId, headerBlockFragment) ⇒
           LogEntry(streamId, "PUSH", s"promisedStreamId = $promisedStreamId, ${hex(headerBlockFragment)}", flag(endHeaders, "EH"))
 
+        case ParsedPushPromiseFrame(streamId, promisedStreamId, kvs) ⇒
+          LogEntry(streamId, "PUSH", s"promisedStreamId = $promisedStreamId " + kvInfo(kvs))
+
         case other: StreamFrameEvent ⇒
           LogEntry(other.streamId, "UNKN", other.toString)
         case other ⇒
           LogEntry(0, "UNKN", other.toString)
       }
+
+    def kvInfo(kvs: Seq[(String, String)]): String =
+      kvs.map {
+        case (key, value) ⇒ s"$key -> $value"
+      }.mkString(", ")
 
     def display(entry: LogEntry): String = {
       import entry._

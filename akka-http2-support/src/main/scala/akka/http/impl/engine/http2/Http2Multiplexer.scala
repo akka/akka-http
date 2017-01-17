@@ -15,7 +15,7 @@ import akka.util.ByteString
  */
 private[http2] trait Http2Multiplexer {
   def pushControlFrame(frame: FrameEvent): Unit
-  def registerSubStream(sub: Http2SubStream): Unit
+  def registerSubStream(sub: Http2ResponseSubStream): Unit
   def cancelSubStream(streamId: Int): Unit
   def updateWindow(streamId: Int, increment: Int): Unit
   def updateFrameSize(newFrameSize: Int): Unit
@@ -40,7 +40,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
       private val outStreams = mutable.Map.empty[Int, OutStream]
 
       def pushControlFrame(frame: FrameEvent): Unit = push(frame)
-      def registerSubStream(sub: Http2SubStream): Unit = {
+      def registerSubStream(sub: Http2ResponseSubStream): Unit = {
         pushControlFrame(sub.initialHeaders)
         if (!sub.initialHeaders.endStream) { // if endStream is set, the source is never read
           val subIn = new SubSinkInlet[ByteString](s"substream-in-${sub.streamId}")
