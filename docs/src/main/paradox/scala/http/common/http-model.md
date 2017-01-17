@@ -65,8 +65,7 @@ but are instead consumed by the request engine and used to override default beha
 For instance, in order to provide a raw request uri, bypassing the default url normalization, you could do the
 following:
 
-    import akka.http.scaladsl.model.headers.`Raw-Request-URI`
-    val req = HttpRequest(uri = "/ignored", headers=List(`Raw-Request-URI`("/a/b%2Bc")))
+@@snip [ModelSpec.scala](../../../../../test/scala/docs/http/scaladsl/ModelSpec.scala) { #synthetic-header-s3 }
 
 ## HttpResponse
 
