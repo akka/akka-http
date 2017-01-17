@@ -376,7 +376,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
     }
 
   private def parseToEvents(bytes: Seq[ByteString]): immutable.Seq[FrameEvent] =
-    Source(bytes.toVector).via(HttpFrameParsing.flow(itShouldReadPreface = false)).runWith(Sink.seq)
+    Source(bytes.toVector).via(new Http2FrameParsing(shouldReadPreface = false)).runWith(Sink.seq)
       .awaitResult(1.second)
   private def renderToByteString(events: immutable.Seq[FrameEvent]): ByteString =
     Source(events).map(FrameRenderer.render).runFold(ByteString.empty)(_ ++ _)

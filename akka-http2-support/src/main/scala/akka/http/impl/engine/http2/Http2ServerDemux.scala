@@ -8,11 +8,11 @@ import akka.NotUsed
 import akka.http.impl.engine.http2.Http2Compliance.WindowSizeWithOverflowProtection
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.{ COMPRESSION_ERROR, FRAME_SIZE_ERROR, PROTOCOL_ERROR }
-import akka.http.impl.engine.http2.framing.HttpByteStringParser.ParsingException
 import akka.stream.Attributes
 import akka.stream.BidiShape
 import akka.stream.Inlet
 import akka.stream.Outlet
+import akka.stream.impl.io.ByteStringParser.ParsingException
 import akka.stream.scaladsl.Source
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, StageLogging }
 import akka.util.ByteString

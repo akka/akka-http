@@ -5,7 +5,7 @@
 package akka.http.impl.engine.http2
 
 import akka.NotUsed
-import akka.http.impl.engine.http2.framing.Http2Framing
+import akka.http.impl.engine.http2.framing.{ Http2FrameParsing, Http2FrameRendering }
 import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompression }
 import akka.http.impl.util.LogByteStringTools
 import akka.http.impl.util.LogByteStringTools.logToStringBidi
@@ -42,7 +42,10 @@ object Http2Blueprint {
   // format: ON
 
   def framing(): BidiFlow[FrameEvent, ByteString, ByteString, FrameEvent, NotUsed] =
-    BidiFlow.fromGraph(new Http2Framing(shouldReadPreface = true))
+    BidiFlow.fromFlows(
+      Flow[FrameEvent].via(new Http2FrameRendering),
+      Flow[ByteString].via(new Http2FrameParsing(shouldReadPreface = true))
+    )
 
   /**
    * Runs hpack encoding and decoding. Incoming frames that are processed are HEADERS and CONTINUATION.
