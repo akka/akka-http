@@ -7,21 +7,43 @@ package framing
 
 import scala.collection.immutable
 
-import akka.stream.Attributes
+import akka.event.Logging
+import akka.stream._
 import akka.stream.impl.io.ByteStringParser
-import akka.stream.stage.GraphStageLogic
+import akka.stream.stage._
 
 import Http2Protocol.FrameType._
 import Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
 
 /** INTERNAL API */
-private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteStringParser[FrameEvent] {
+private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteStringParser[FrameEvent] { stage ⇒
   import ByteStringParser._
 
   abstract class Step extends ParseStep[FrameEvent]
 
+  override def initialAttributes = Attributes.name(Logging.simpleName(getClass))
+
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new ParsingLogic {
+
+      private var _outMaxFrameSize: Int = 16384 // default
+      private var _pushPromiseEnabled: Boolean = true // default (spec 6.6)
+
+      object settings {
+
+        def shouldReadPreface: Boolean = stage.shouldReadPreface
+        def pushPromiseEnabled: Boolean = _pushPromiseEnabled
+        def maxOutFrameSize: Int = _outMaxFrameSize
+
+        def updatePushPromiseEnabled(value: Boolean): Unit =
+          _pushPromiseEnabled = value
+
+        def updateMaxOutFrameSize(value: Int): Unit = {
+          Http2Compliance.validateMaxFrameSize(value)
+          _outMaxFrameSize = value
+        }
+      }
+
       startWith {
         if (shouldReadPreface) ReadPreface
         else ReadFrame
@@ -110,7 +132,7 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteS
                 } else read.reverse
 
               if (payload.remainingSize % 6 != 0) throw new Http2Compliance.IllegalPayloadLengthInSettingsFrame(payload.remainingSize, "SETTINGS payload MUDT be a multiple of multiple of 6 octets")
-              SettingsFrame(readSettings(Nil))
+              applySetting(SettingsFrame(readSettings(Nil)))
             }
 
           case WINDOW_UPDATE ⇒
@@ -138,13 +160,11 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteS
             RstStreamFrame(streamId, ErrorCode.byId(payload.readIntBE()))
 
           case PRIORITY ⇒
-            Http2Compliance.requireFrameSize(payload.remainingSize, 5)
             val streamDependency = payload.readIntBE() // whole word
             val exclusiveFlag = (streamDependency >>> 31) == 1 // most significant bit for exclusive flag
-            val dependencyId = streamDependency & 0x7fffffff // remaining 31 bits for the dependency part
+            val dependencyPart = streamDependency & 0x7fffffff // remaining 31 bits for the dependency part
             val priority = payload.readByte() & 0xff
-            Http2Compliance.requireNoSelfDependency(streamId, dependencyId)
-            PriorityFrame(streamId, exclusiveFlag, dependencyId, priority)
+            PriorityFrame(streamId, exclusiveFlag, dependencyPart, priority)
 
           case PUSH_PROMISE ⇒
             val pad = Flags.PADDED.isSet(flags)
@@ -162,5 +182,28 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteS
             UnknownFrameEvent(tpe, flags, streamId, payload.remainingData)
         }
       }
+
+      // FIXME this should be smarter, we need to somehow manage when we send back the ACK basically...
+      private def applySetting(s: SettingsFrame): SettingsFrame = {
+        s.settings.foreach {
+          case Setting(SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) ⇒
+            settings.updateMaxOutFrameSize(value)
+            debug(s"Set outgoing SETTINGS_MAX_FRAME_SIZE to [${value}]")
+
+          case Setting(SettingIdentifier.SETTINGS_ENABLE_PUSH, value) ⇒
+            val pushFrameAllowed = Http2Compliance.parseSettungsEnablePushValue(value)
+            debug(s"Set ENABLE_PUSH to ${pushFrameAllowed}")
+            settings.updatePushPromiseEnabled(pushFrameAllowed)
+
+          case setting ⇒
+            debug(s"Not applying ${setting} in framing stage directly...") // TODO cleanup once complete handling done
+        }
+
+        s
+      }
+
     }
+
+  private def debug(s: String) = println(s)
+
 }
