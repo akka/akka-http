@@ -191,7 +191,9 @@ object Http2Protocol {
     def byId(id: Int): SettingIdentifier = All(id - 1)
   }
 
-  sealed abstract class ErrorCode(val id: Int) extends Product
+  sealed abstract class ErrorCode(val id: Int) extends Product {
+    def name = productPrefix
+  }
   object ErrorCode {
     /**
      * NO_ERROR (0x0):  The associated condition is not a result of an

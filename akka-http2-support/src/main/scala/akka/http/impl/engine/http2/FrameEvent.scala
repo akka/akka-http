@@ -12,6 +12,7 @@ import akka.util.ByteString
 import scala.collection.immutable
 
 sealed trait FrameEvent
+sealed trait SyntheticFrameEvent extends FrameEvent
 sealed trait StreamFrameEvent extends FrameEvent {
   def streamId: Int
 }
@@ -78,3 +79,11 @@ final case class ParsedHeadersFrame(
   keyValuePairs: Seq[(String, String)],
   priorityInfo:  Option[PriorityFrame]
 ) extends FrameEvent
+
+// ------ internal frames, used for communicating settings between stages of our pipeline ----- 
+/**
+ * Special synthetic FrameEvent used to communicate enoder setting changes back to encoder.
+ * MUST NOT be rendered to network.
+ */
+private[http] final case class SyntheticHpackEncoderSettingFrame(setting: Setting) extends SyntheticFrameEvent
+private[http] final case class AcknowladgeSettings(originalFrame: SettingsFrame) extends SyntheticFrameEvent

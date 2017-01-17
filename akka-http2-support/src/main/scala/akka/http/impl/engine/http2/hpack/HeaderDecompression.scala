@@ -5,12 +5,12 @@
 package akka.http.impl.engine.http2.hpack
 
 import java.io.IOException
-import java.nio.charset.Charset
+import java.nio.charset.{ Charset, StandardCharsets }
 
-import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
+import akka.http.impl.engine.http2.Http2Protocol.{ ErrorCode, SettingIdentifier }
 import akka.http.impl.engine.http2._
 import akka.stream._
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+import akka.stream.stage._
 import akka.util.ByteString
 import com.twitter.hpack.HeaderListener
 
@@ -22,18 +22,17 @@ import scala.collection.immutable.VectorBuilder
  * Can be used on server and client side.
  */
 private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEvent, FrameEvent]] {
-  val UTF8 = Charset.forName("utf-8")
-
-  final val maxHeaderSize = 4096
-  final val maxHeaderTableSize = 4096
+  final val InitialMaxHeaderSize = 4096
+  final val InitialMaxHeaderTableSize = 4096 // according to spec 6.5.2
 
   val eventsIn = Inlet[FrameEvent]("HeaderDecompression.eventsIn")
   val eventsOut = Outlet[FrameEvent]("HeaderDecompression.eventsOut")
 
   val shape = FlowShape(eventsIn, eventsOut)
 
-  def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new HandleOrPassOnStage[FrameEvent, FrameEvent](shape) {
-    val decoder = new com.twitter.hpack.Decoder(maxHeaderSize, maxHeaderTableSize)
+  def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new HandleOrPassOnStage[FrameEvent, FrameEvent](shape) with StageLogging {
+
+    val decoder = new com.twitter.hpack.Decoder(InitialMaxHeaderSize, InitialMaxHeaderTableSize)
     become(Idle)
 
     // simple state machine
@@ -45,7 +44,7 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
       object Receiver extends HeaderListener {
         def addHeader(name: Array[Byte], value: Array[Byte], sensitive: Boolean): Unit =
           // TODO: optimization: use preallocated strings for well-known names, similar to what happens in HeaderParser
-          headers += new String(name, UTF8) → new String(value, UTF8)
+          headers += new String(name, StandardCharsets.UTF_8) → new String(value, StandardCharsets.UTF_8)
       }
       try {
         decoder.decode(ByteStringInputStream(payload), Receiver)
@@ -55,12 +54,24 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
       } catch {
         case ex: IOException ⇒
           // this is signalled by the decoder when it failed, we want to react to this by rendering a GOAWAY frame
-          fail(eventsOut, new Http2Compliance.HeaderDecompressionFailed("Decompression failed."))
+          fail(eventsOut, new Http2Compliance.HeaderDecompressionFailed("Header decompression failed."))
       }
     }
 
+    // TODO optimise this
+    def handleSettings: PartialFunction[FrameEvent, Unit] = {
+      case frame @ SettingsFrame(settings) ⇒
+        settings.collect {
+          case Setting(SettingIdentifier.SETTINGS_HEADER_TABLE_SIZE, size) ⇒
+            log.info("Setting HPack decoder HEADER_TABLE_SIZE to {}", size)
+            decoder.setMaxHeaderTableSize(size)
+        }
+        // TODO: we could avoid the bounce back dance if we made HPack a bidistage like we did with Framing, think what's better.
+        push(eventsOut, frame) // push through to Demux where it will be either ACKed or sent to compression side
+    }
+
     object Idle extends State {
-      val handleEvent: PartialFunction[FrameEvent, Unit] = {
+      val handleEvent: PartialFunction[FrameEvent, Unit] = handleSettings orElse {
         case HeadersFrame(streamId, endStream, endHeaders, fragment, prioInfo) ⇒
           if (endHeaders) parseAndEmit(streamId, endStream, fragment, prioInfo)
           else {
@@ -76,7 +87,7 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
     class ReceivingHeaders(streamId: Int, endStream: Boolean, initiallyReceivedData: ByteString, priorityInfo: Option[PriorityFrame]) extends State {
       var receivedData = initiallyReceivedData
 
-      val handleEvent: PartialFunction[FrameEvent, Unit] = {
+      val handleEvent: PartialFunction[FrameEvent, Unit] = handleSettings orElse {
         case ContinuationFrame(`streamId`, endHeaders, payload) ⇒
           if (endHeaders) {
             parseAndEmit(streamId, endStream, receivedData ++ payload, priorityInfo)

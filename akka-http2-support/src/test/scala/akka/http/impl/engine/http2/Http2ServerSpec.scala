@@ -7,7 +7,7 @@ import java.nio.ByteOrder
 import akka.NotUsed
 import akka.http.impl.engine.http2.Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
 import akka.http.impl.engine.http2.framing.FrameRenderer
-import akka.http.impl.engine.http2.hpack.HeaderDecompression
+import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompression }
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.{ LogByteStringTools, StringRendering }
 import akka.http.scaladsl.model._
@@ -34,9 +34,12 @@ import scala.annotation.tailrec
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.duration._
 import scala.concurrent.Future
+import scala.collection.immutable
 import scala.util.control.NoStackTrace
 
-class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventually {
+class Http2ServerSpec extends AkkaSpec(
+  "akka.loglevel = DEBUG"
+) with WithInPendingUntilFixed with Eventually {
   implicit val mat = ActorMaterializer()
 
   "The Http/2 server implementation" should {
@@ -472,12 +475,26 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
       "not exceed stream-level window while sending after SETTINGS_INITIAL_WINDOW_SIZE changed when window became negative through setting" in pending
 
       "eventually send WINDOW_UPDATE frames for received data" in pending
+
+      "multiple WINDOW_UPDATEs exceeding total demand above 2^31-1 MUST cause FLOW_CONTROL_ERROR (spec 6.9.1)" in new TestSetup with RequestResponseProbes {
+        override def safeUpdate(update: Int ⇒ Int): Int ⇒ Int = { oldValue ⇒ update(oldValue) }
+
+        sendHEADERS(1, endStream = false, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
+
+        sendWINDOW_UPDATE(1, Math.pow(2, 30).toInt)
+        sendWINDOW_UPDATE(1, Math.pow(2, 30).toInt)
+        sendWINDOW_UPDATE(1, Math.pow(2, 30).toInt)
+
+        val (lastStreamId, errorCode) = expectGOAWAY()
+        errorCode should ===(ErrorCode.FLOW_CONTROL_ERROR)
+      }
+
     }
 
-    "respect settings" should {
+    "respect SETTINGS" should {
       "initial MAX_FRAME_SIZE" in pending
 
-      "received non-zero length payload Settings with ACK flag (invalid 6.5)" in new TestSetup with RequestResponseProbes {
+      "GoAway on received non-zero length payload SETTINGS with ACK flag (invalid 6.5)" in new TestSetup with RequestResponseProbes {
         /*
          Receipt of a SETTINGS frame with the ACK flag set and a length field value other than 0
          MUST be treated as a connection error (Section 5.4.1) of type FRAME_SIZE_ERROR.
@@ -499,16 +516,82 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
         error should ===(ErrorCode.FRAME_SIZE_ERROR)
       }
 
-      "received SETTINGS_MAX_FRAME_SIZE" in pending
+      "received SETTINGS_MAX_FRAME_SIZE should cause outgoing DATA to be chunked up into at-most-that-size parts " in new TestSetup with RequestResponseProbes {
+        def setMaxFrameSize(size: Int) = SettingsFrame(Setting(SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, size) :: Nil)
 
-      "received SETTINGS_MAX_CONCURRENT_STREAMS" in pending
+        private val maxSize = Math.pow(2, 15).toInt // 32768, valid value (between 2^14 and 2^14 - 1)
+        sendFrame(setMaxFrameSize(maxSize))
 
-      "received SETTINGS_HEADER_TABLE_SIZE" in {
+        expectSettingsAck()
+
+        sendWINDOW_UPDATE(0, maxSize * 3) // make sure we can receive such large response, on connection
+
+        sendHEADERS(1, endStream = false, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
+        sendWINDOW_UPDATE(1, maxSize * 3) // make sure we can receive such large response, on this stream
+
+        private val theTooLargeByteString = ByteString("x" * (maxSize * 2))
+        val tooLargeEntity = Source.single(theTooLargeByteString)
+        val tooLargeResponse = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, tooLargeEntity))
+        emitResponse(1, tooLargeResponse)
+
+        expectHeaderBlock(1, endStream = false)
+        sendWINDOW_UPDATE(1, maxSize * 3) // make sure we can receive such large response, on this stream
+        // FIXME we should not need to send this window update, the stream already has enough window I think, see above ^^^
+        // we receive the DATA in 2 parts, since the ByteString does not fit in a single frame
+        val d1 = expectDATA(1, endStream = false, numBytes = maxSize)
+        val d2 = expectDATA(1, endStream = true, numBytes = maxSize)
+        d1.toList should have length maxSize
+        d2.toList should have length maxSize
+        (d1 ++ d2) should ===(theTooLargeByteString) // makes sure we received the parts in the right order
+      }
+
+      // http://httpwg.org/specs/rfc7540.html#rfc.section.4.2
+      "receive SETTINGS_MAX_FRAME_SIZE with too small value (spec 4.2)" in new TestSetup with RequestResponseProbes {
+        def setMaxFrameSize(size: Int) = SettingsFrame(Setting(SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, size) :: Nil)
+
+        /*
+          An endpoint MUST send an error code of FRAME_SIZE_ERROR if a frame exceeds the size defined in SETTINGS_MAX_FRAME_SIZE, 
+          exceeds any limit defined for the frame type, or is too small to contain mandatory frame data. 
+         */
+
+        sendFrame(setMaxFrameSize(8))
+
+        val (lastStreamId, errorCode) = expectGOAWAY()
+        errorCode should ===(ErrorCode.FRAME_SIZE_ERROR)
+      }
+
+      "receive SETTINGS_MAX_CONCURRENT_STREAMS" in pending
+
+      "receive SETTINGS_HEADER_TABLE_SIZE" in new TestSetup with RequestResponseProbes {
         // if the sender of the new size wants to shrink its decoding table, the encoding table on
         // our side needs to be shrunk *before* sending the SETTINGS ACK. So a mechanism needs to be
         // found that prevents race-conditions in the encoder between sending out an encoded message
         // which still uses the old table size and sending the SETTINGS ACK.
-        pending
+
+        def setHeaderTableSize(size: Int) = SettingsFrame(Setting(SettingIdentifier.SETTINGS_HEADER_TABLE_SIZE, size) :: Nil)
+
+        private val maxSize = Math.pow(2, 15).toInt // 32768, valid value (between 2^14 and 2^14 - 1)
+        sendFrame(setHeaderTableSize(maxSize))
+
+        expectSettingsAck()
+      }
+
+      "received disable PUSH_PROMISE by received SETTINGS_ENABLE_PUSH (invalid 6.5)" in new TestSetup with RequestResponseProbes {
+        def setAllowPushPromise(value: Boolean) = SettingsFrame(Setting(SettingIdentifier.SETTINGS_ENABLE_PUSH, if (value) 1 else 0) :: Nil)
+
+        sendFrame(setAllowPushPromise(false))
+
+        expectSettingsAck()
+
+        // FIXME should send a PUSH_PROMISE from server side now, it should fail since it's not allowed
+      }
+      "received SETTINGS_ENABLE_PUSH with illegal value" in new TestSetup with RequestResponseProbes {
+        val illegalPushPromiseSettingFrame = SettingsFrame(Setting(SettingIdentifier.SETTINGS_ENABLE_PUSH, 12) :: Nil)
+
+        sendFrame(illegalPushPromiseSettingFrame)
+
+        val (lastStreamId, errorCode) = expectGOAWAY()
+        errorCode should ===(ErrorCode.PROTOCOL_ERROR)
       }
     }
 
@@ -533,8 +616,13 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
         val (lastStreamId, errorCode) = expectGOAWAY()
         errorCode should ===(ErrorCode.PROTOCOL_ERROR)
       }
+      "acknowledge SETTINGS frames" in new TestSetup with RequestResponseProbes {
+        def setMaxFrameSize(size: Int) = SettingsFrame(Setting(SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, size) :: Nil)
+
+        sendSETTING(SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, 65536) // valid setting
+        expectSettingsAck()
+      }
       "respond to PING frames giving precedence over any other kind pending frame" in pending
-      "acknowledge SETTINGS frames" in pending
     }
 
     "respect the substream state machine" should {
@@ -678,7 +766,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
     }
     def expectFramePayload(frameType: FrameType, expectedFlags: ByteFlag, streamId: Int): ByteString = {
       val (flags, data) = expectFrameFlagsAndPayload(frameType, streamId)
-      expectedFlags shouldBe flags
+      expectedFlags should ===(flags)
       data
     }
 
@@ -796,7 +884,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
       decodeHeaders(headerBlockBytes)
     }
 
-    val encoder = new Encoder(HeaderDecompression.maxHeaderTableSize)
+    val encoder = new Encoder(HeaderCompression.InitialMaxHeaderTableSize)
     def encodeHeaders(request: HttpRequest): ByteString = {
       val bos = new ByteArrayOutputStream()
       def encode(name: String, value: String): Unit = encoder.encodeHeader(bos, name.getBytes, value.getBytes, false)
@@ -817,7 +905,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
       ByteString(bos.toByteArray)
     }
 
-    val decoder = new Decoder(HeaderDecompression.maxHeaderSize, HeaderDecompression.maxHeaderTableSize)
+    val decoder = new Decoder(HeaderDecompression.InitialMaxHeaderSize, HeaderDecompression.InitialMaxHeaderTableSize)
     def decodeHeaders(bytes: ByteString): Seq[(String, String)] = {
       val bis = new ByteArrayInputStream(bytes.toArray)
       val hs = new VectorBuilder[(String, String)]()
@@ -847,6 +935,7 @@ class Http2ServerSpec extends AkkaSpec with WithInPendingUntilFixed with Eventua
 
     def expectRequest(): HttpRequest = requestIn.requestNext().removeHeader("x-http2-stream-id")
     def expectRequestRaw(): HttpRequest = requestIn.requestNext() // TODO, make it so that internal headers are not listed in `headers` etc?
+
     def emitResponse(streamId: Int, response: HttpResponse): Unit =
       responseOut.sendNext(response.addHeader(Http2StreamIdHeader(streamId)))
 
