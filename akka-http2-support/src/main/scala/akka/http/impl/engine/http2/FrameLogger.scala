@@ -85,6 +85,9 @@ private[http2] object FrameLogger {
         case WindowUpdateFrame(streamId, windowSizeIncrement) ⇒
           LogEntry(streamId, "WIND", s"+ $windowSizeIncrement")
 
+        case PushPromiseFrame(streamId, endHeaders, promisedStreamId, headerBlockFragment) ⇒
+          LogEntry(streamId, "PUSH", s"promisedStreamId = $promisedStreamId, ${hex(headerBlockFragment)}", flag(endHeaders, "EH"))
+
         case other: StreamFrameEvent ⇒
           LogEntry(other.streamId, "UNKN", other.toString)
         case other ⇒
