@@ -33,8 +33,8 @@ private[http2] final case class Http2SubStream(initialHeaders: ParsedHeadersFram
 
 object Http2Blueprint {
   // format: OFF
-  def serverStack(): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
-    httpLayer(None) atop // TODO pick up server header from somewhere
+  def serverStack(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] = {
+    httpLayer(settings, log) atop // TODO pick up server header from somewhere
     demux() atop
     // FrameLogger.bidi atop // enable for debugging
     hpackCoding() atop
@@ -77,9 +77,9 @@ object Http2Blueprint {
    * that must be reproduced in an HttpResponse. This can be done automatically for the bindAndHandleAsync API but for
    * bindAndHandle the user needs to take of this manually.
    */
-  def httpLayer(server: Option[Server]): BidiFlow[HttpResponse, Http2SubStream, Http2SubStream, HttpRequest, NotUsed] =
+  def httpLayer(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, Http2SubStream, Http2SubStream, HttpRequest, NotUsed] =
     BidiFlow.fromFlows(
-      Flow[HttpResponse].map(ResponseRendering.renderResponse(server, NoLogging)), // TODO where to get LogAdapter from
+      Flow[HttpResponse].map(ResponseRendering.renderResponse(settings, log)),
       Flow[Http2SubStream].map(RequestParsing.parseRequest))
 
   /**

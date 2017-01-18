@@ -13,6 +13,7 @@ import akka.http.impl.util.{ LogByteStringTools, StringRendering }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
+import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.{ ActorMaterializer, Materializer }
 import akka.stream.impl.io.ByteStringParser.ByteReader
 import akka.stream.scaladsl.Flow
@@ -611,7 +612,7 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
     def handlerFlow: Flow[HttpRequest, HttpResponse, NotUsed]
 
     handlerFlow
-      .join(Http2Blueprint.serverStack())
+      .join(Http2Blueprint.serverStack(ServerSettings(system).withServerHeader(None), system.log))
       .runWith(Source.fromPublisher(fromNet), toNet.sink)
 
     def sendBytes(bytes: ByteString): Unit = fromNet.sendNext(bytes)
