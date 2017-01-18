@@ -21,7 +21,7 @@ object Dependencies {
     scalaVersion := crossScalaVersions.value.head,
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.13.4"),
     scalaTestVersion := "3.0.0",
-    specs2Version := "3.8.5",
+    specs2Version := "3.8.6",
     java8CompatVersion := "0.8.0"
   )
   import Versions._
@@ -67,8 +67,9 @@ object Dependencies {
       val junit        = "junit"                       % "junit"                        % junitVersion       % "test" // Common Public License 1.0
       val logback      = "ch.qos.logback"              % "logback-classic"              % "1.1.3"            % "test" // EPL 1.0 / LGPL 2.1
       val mockito      = "org.mockito"                 % "mockito-all"                  % "1.10.19"          % "test" // MIT
-      val scalatest    = Def.setting { "org.scalatest"  %% "scalatest"  % scalaTestVersion.value   % "test" } // ApacheV2
-      val scalacheck   = Def.setting { "org.scalacheck" %% "scalacheck" % scalaCheckVersion.value  % "test" } // New BSD
+      val scalatest    = Def.setting { "org.scalatest"  %% "scalatest"   % scalaTestVersion.value   % "test" }      // ApacheV2
+      val specs2       = Def.setting { "org.specs2"     %% "specs2-core" % specs2Version.value      % "provided"}   // MIT
+      val scalacheck   = Def.setting { "org.scalacheck" %% "scalacheck"  % scalaCheckVersion.value  % "test" }      // New BSD
       val pojosr       = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.2.1"            % "test" // ApacheV2
       val tinybundles  = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2
       val log4j        = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
@@ -127,7 +128,7 @@ object Dependencies {
   lazy val httpTestkit = l ++= Seq(
     Test.junit, Test.junitIntf, Compile.junit % "provided",
     Test.scalatest.value.copy(configurations = Some("provided; test")),
-    "org.specs2" %% "specs2-core" % specs2Version.value % "provided"
+    Test.specs2.value
   )
 
   lazy val httpTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.junitIntf)

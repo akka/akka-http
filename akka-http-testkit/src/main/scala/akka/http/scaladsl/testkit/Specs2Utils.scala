@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package akka.http.scaladsl.testkit
 
 import akka.http.scaladsl.model.HttpEntity
