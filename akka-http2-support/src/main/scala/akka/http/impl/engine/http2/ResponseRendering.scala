@@ -4,13 +4,33 @@
 
 package akka.http.impl.engine.http2
 
-import akka.http.scaladsl.model.{ ContentType, ContentTypes, HttpHeader, HttpResponse }
+import akka.event.LoggingAdapter
+import akka.http.impl.util.StringRendering
+import akka.http.scaladsl.model.headers.{ Date, Server }
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 
+import scala.annotation.tailrec
 import scala.collection.immutable.VectorBuilder
+import scala.collection.immutable
 
 private[http2] object ResponseRendering {
-  def renderResponse(response: HttpResponse): Http2SubStream = {
+
+  @volatile
+  private var cachedDateHeader = (0L, ("", ""))
+
+  private def dateHeader(): (String, String) = {
+    val cachedSeconds = cachedDateHeader._1
+    val now = System.currentTimeMillis()
+    if (now / 1000 > cachedSeconds) {
+      val r = new StringRendering
+      DateTime(now).renderRfc1123DateTimeString(r)
+      cachedDateHeader = (now, Date.lowercaseName → r.get)
+    }
+    cachedDateHeader._2
+  }
+
+  def renderResponse(serverHeader: Option[Server], log: LoggingAdapter)(response: HttpResponse): Http2SubStream = {
     def failBecauseOfMissingHeader: Nothing =
       // header is missing, shutting down because we will most likely otherwise miss a response and leak a substream
       // TODO: optionally a less drastic measure would be only resetting all the active substreams
@@ -29,10 +49,7 @@ private[http2] object ResponseRendering {
 
     response.entity.contentLengthOption.foreach(headerPairs += "content-length" → _.toString)
 
-    headerPairs ++=
-      response.headers.collect {
-        case header: HttpHeader if header.renderInResponses ⇒ header.lowercaseName → header.value
-      }
+    renderHeaders(response.headers, headerPairs, serverHeader, log)
 
     val headers = ParsedHeadersFrame(streamId, endStream = response.entity.isKnownEmpty, headerPairs.result(), None)
 
@@ -41,4 +58,68 @@ private[http2] object ResponseRendering {
       response.entity.dataBytes
     )
   }
+
+  private def renderHeaders(
+    headersSeq:   immutable.Seq[HttpHeader],
+    headerPairs:  VectorBuilder[(String, String)],
+    serverHeader: Option[Server],
+    log:          LoggingAdapter
+  ): Unit = {
+    def suppressionWarning(h: HttpHeader, msg: String): Unit =
+      log.warning("Explicitly set HTTP header '{}' is ignored, {}", h, msg)
+
+    // optimized, as it is done for every response
+    val headers = headersSeq.toArray
+    var serverSeen, dateSeen = false
+    var idx = 0
+    def addHeader(h: HttpHeader): Unit = {
+      headerPairs += h.lowercaseName → h.value
+    }
+
+    while (idx < headers.length) {
+      import akka.http.scaladsl.model.headers._
+      val header = headers(idx)
+      if (header.renderInResponses) {
+        header match {
+          case x: Server ⇒
+            addHeader(x)
+            serverSeen = true
+
+          case x: Date ⇒
+            addHeader(x)
+            dateSeen = true
+
+          case x: `Content-Length` ⇒
+            suppressionWarning(x, "explicit `Content-Length` header is not allowed. Use the appropriate HttpEntity subtype.")
+
+          case x: `Content-Type` ⇒
+            suppressionWarning(x, "explicit `Content-Type` header is not allowed. Set `HttpResponse.entity.contentType` instead.")
+
+          case x: CustomHeader ⇒
+            addHeader(x)
+
+          case x: RawHeader if (x is "content-type") || (x is "content-length") || (x is "transfer-encoding") ||
+            (x is "date") || (x is "server") || (x is "connection") ⇒
+            suppressionWarning(x, "illegal RawHeader")
+
+          case x ⇒
+            addHeader(x)
+        }
+      }
+      idx += 1
+    }
+
+    if (!dateSeen) {
+      headerPairs += dateHeader()
+    }
+
+    if (!serverSeen) {
+      serverHeader match {
+        case Some(server) ⇒ headerPairs += server.lowercaseName → server.value
+        case None         ⇒
+      }
+    }
+
+  }
+
 }

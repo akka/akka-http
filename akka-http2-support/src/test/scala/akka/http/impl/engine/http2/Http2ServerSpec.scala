@@ -811,7 +811,9 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
 
     def expectDecodedResponseHEADERS(streamId: Int, endStream: Boolean = true): HttpResponse = {
       val headerBlockBytes = expectHeaderBlock(streamId, endStream)
-      decodeHeadersToResponse(headerBlockBytes)
+      val decoded = decodeHeadersToResponse(headerBlockBytes)
+      // filter date to make it easier to test
+      decoded.withHeaders(decoded.headers.filterNot(_.is("date")))
     }
 
     def expectDecodedResponseHEADERSPairs(streamId: Int, endStream: Boolean = true): Seq[(String, String)] = {
