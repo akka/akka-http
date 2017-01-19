@@ -93,6 +93,13 @@ private[http2] object ResponseRendering {
             addHeader(x)
             dateSeen = true
 
+          case x: CustomHeader ⇒
+            addHeader(x)
+
+          case x: RawHeader if (x is "content-type") || (x is "content-length") || (x is "transfer-encoding") ||
+            (x is "date") || (x is "server") || (x is "connection") ⇒
+            suppressionWarning(x, "illegal RawHeader")
+
           case x: `Content-Length` ⇒
             suppressionWarning(x, "explicit `Content-Length` header is not allowed. Use the appropriate HttpEntity subtype.")
 
@@ -104,13 +111,6 @@ private[http2] object ResponseRendering {
 
           case x: Connection ⇒
             suppressionWarning(x, "`Connection` header is not allowed for HTTP/2")
-
-          case x: CustomHeader ⇒
-            addHeader(x)
-
-          case x: RawHeader if (x is "content-type") || (x is "content-length") || (x is "transfer-encoding") ||
-            (x is "date") || (x is "server") || (x is "connection") ⇒
-            suppressionWarning(x, "illegal RawHeader")
 
           case x ⇒
             addHeader(x)
