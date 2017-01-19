@@ -360,12 +360,11 @@ object HttpRequest {
   def verifyUri(uri: Uri): Unit =
     if (uri.isEmpty) throw new IllegalArgumentException("`uri` must not be empty")
     else {
-      def c(i: Int) = CharUtils.toLowerCase(uri.scheme charAt i)
-      uri.scheme.length match {
-        case 0 ⇒ // ok
-        case 4 if c(0) == 'h' && c(1) == 't' && c(2) == 't' && c(3) == 'p' ⇒ // ok
-        case 5 if c(0) == 'h' && c(1) == 't' && c(2) == 't' && c(3) == 'p' && c(4) == 's' ⇒ // ok
-        case _ ⇒ throw new IllegalArgumentException("""`uri` must have scheme "http", "https" or no scheme""")
+      uri.scheme.toLowerCase match {
+        case ""      ⇒
+        case "http"  ⇒
+        case "https" ⇒
+        case _       ⇒ throw new IllegalArgumentException("""`uri` must have scheme "http", "https" or no scheme""")
       }
     }
 
