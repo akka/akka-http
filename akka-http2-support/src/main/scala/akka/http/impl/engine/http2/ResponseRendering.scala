@@ -6,14 +6,13 @@ package akka.http.impl.engine.http2
 
 import akka.event.LoggingAdapter
 import akka.http.impl.util.StringRendering
-import akka.http.scaladsl.model.headers.{ Date, Server }
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.Date
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.http.scaladsl.settings.ServerSettings
 
-import scala.annotation.tailrec
-import scala.collection.immutable.VectorBuilder
 import scala.collection.immutable
+import scala.collection.immutable.VectorBuilder
 
 private[http2] object ResponseRendering {
 

@@ -612,7 +612,7 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
     def handlerFlow: Flow[HttpRequest, HttpResponse, NotUsed]
 
     handlerFlow
-      .join(Http2Blueprint.serverStack(ServerSettings(system).withServerHeader(None), system.log))
+      .join(Http2Blueprint.serverStack(ServerSettings(system), system.log))
       .runWith(Source.fromPublisher(fromNet), toNet.sink)
 
     def sendBytes(bytes: ByteString): Unit = fromNet.sendNext(bytes)
@@ -813,8 +813,8 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
     def expectDecodedResponseHEADERS(streamId: Int, endStream: Boolean = true): HttpResponse = {
       val headerBlockBytes = expectHeaderBlock(streamId, endStream)
       val decoded = decodeHeadersToResponse(headerBlockBytes)
-      // filter date to make it easier to test
-      decoded.withHeaders(decoded.headers.filterNot(_.is("date")))
+      // filter date and server to make it easier to test
+      decoded.withHeaders(decoded.headers.filterNot(h => h.is("date") || h.is("server")))
     }
 
     def expectDecodedResponseHEADERSPairs(streamId: Int, endStream: Boolean = true): Seq[(String, String)] = {
