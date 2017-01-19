@@ -64,7 +64,7 @@ private[http2] object ResponseRendering {
     }
   }
 
-  private def renderHeaders(
+  private[http2] def renderHeaders(
     headersSeq:   immutable.Seq[HttpHeader],
     headerPairs:  VectorBuilder[(String, String)],
     serverHeader: Option[(String, String)],
