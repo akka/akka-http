@@ -325,14 +325,14 @@ object HttpRequest {
    * include a valid [[akka.http.scaladsl.model.headers.Host]] header or if URI authority and [[akka.http.scaladsl.model.headers.Host]] header don't match.
    */
   def effectiveUri(uri: Uri, headers: immutable.Seq[HttpHeader], securedConnection: Boolean, defaultHostHeader: Host): Uri = {
-    def findHost(headers: immutable.Seq[HttpHeader]): OptionVal[Host] = {
-      val it = headers.iterator
-      while (it.hasNext) it.next() match {
-        case h: Host ⇒ return OptionVal.Some(h)
-        case _       ⇒ // continue ...
+    def findHost(headers: Seq[HttpHeader]): OptionVal[Host] = headers match {
+      case Nil ⇒ OptionVal.None
+      case head :: tail ⇒ head match {
+        case h: Host ⇒ OptionVal.Some(h)
+        case _       ⇒ findHost(tail)
       }
-      OptionVal.None
     }
+
     val hostHeader: OptionVal[Host] = findHost(headers)
     if (uri.isRelative) {
       def fail(detail: String) =
