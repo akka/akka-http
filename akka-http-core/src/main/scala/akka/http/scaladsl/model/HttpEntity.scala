@@ -605,11 +605,13 @@ object HttpEntity {
           // "no limit"
           case Some(SizeLimit(bytes, cl @ Some(contentLength))) ⇒
             if (contentLength > bytes) throw EntityStreamSizeException(bytes, cl)
-          // else we still count but never throw an error
+            maxBytes = bytes
+            bytesLeft = bytes
           case Some(SizeLimit(bytes, None)) ⇒
             maxBytes = bytes
             bytesLeft = bytes
           case None ⇒
+          // else we still count but never throw an error
         }
       }
 
@@ -617,7 +619,7 @@ object HttpEntity {
         val elem = grab(in)
         bytesLeft -= sizeOf(elem)
         if (bytesLeft >= 0) push(out, elem)
-        else failStage(EntityStreamSizeException(maxBytes))
+        else failStage(EntityStreamSizeException(maxBytes, Some(maxBytes - bytesLeft)))
       }
 
       override def onPull(): Unit = {
