@@ -204,7 +204,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     // tests:
     testRoute(route).run(HttpRequest.GET("/sample"))
       .assertEntity("Logging using " + system().log() + "!");
-    
+
     testRoute(route).run(HttpRequest.GET("/special/sample"))
       .assertEntity("Logging using " + special + "!");
     //#withLog
@@ -709,7 +709,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
   public void testExtractRequestContext() {
     //#extractRequestContext
     final Route route = extractRequestContext(ctx -> {
-      ctx.getLog().debug("Using access to additional context availablethings, like the logger.");
+      ctx.getLog().debug("Using access to additional context available, like the logger.");
       final HttpRequest request = ctx.getRequest();
       return complete("Request method is " + request.method().name() +
                         " and content-type is " + request.entity().getContentType());
