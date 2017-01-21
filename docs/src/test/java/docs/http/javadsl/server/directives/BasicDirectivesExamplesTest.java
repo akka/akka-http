@@ -724,6 +724,19 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
   }
 
   @Test
+  public void testExtractParserSettings() {
+    //#extractParserSettings
+    final Route route = extractParserSettings(parserSettings ->
+      complete("URI parsing mode is " + parserSettings.getUriParsingMode())
+    );
+
+    // tests:
+    testRoute(route).run(HttpRequest.GET("/"))
+      .assertEntity("URI parsing mode is Strict");
+    //#extractParserSettings
+  }
+
+  @Test
   public void testExtractMatchedPath() {
     //#extractMatchedPath
     final Route route = pathPrefix("abc", () -> extractMatchedPath(this::complete));
