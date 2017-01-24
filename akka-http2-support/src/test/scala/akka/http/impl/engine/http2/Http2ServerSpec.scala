@@ -9,7 +9,7 @@ import akka.http.impl.engine.http2.framing.FrameRenderer
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.StringRendering
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.model.headers.{ CacheDirectives, RawHeader }
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.impl.io.ByteStringParser.ByteReader
@@ -90,6 +90,8 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
         errorCode should ===(ErrorCode.COMPRESSION_ERROR)
       }
       "Three consecutive GET requests" in new SimpleRequestResponseRoundtripSetup {
+        import CacheDirectives._
+        import headers.`Cache-Control`
         requestResponseRoundtrip(
           streamId = 1,
           requestHeaderBlock = HPackSpecExamples.C41FirstRequestWithHuffman,
@@ -103,8 +105,7 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
           expectedRequest = HttpRequest(
             method = HttpMethods.GET,
             uri = "http://www.example.com/",
-            // FIXME: should be modeled header: headers.`Cache-Control`(CacheDirectives.`no-cache`()) :: Nil,
-            headers = RawHeader("cache-control", "no-cache") :: Nil,
+            headers = Vector(`Cache-Control`(`no-cache`)),
             protocol = HttpProtocols.`HTTP/2.0`),
           response = HPackSpecExamples.SecondResponse,
           // our hpack compressor chooses the non-huffman form probably because it seems to have same length
