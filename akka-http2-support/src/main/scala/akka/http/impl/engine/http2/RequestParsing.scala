@@ -4,10 +4,11 @@
 
 package akka.http.impl.engine.http2
 
+import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.stream.scaladsl.Source
+import akka.util.ByteString
 
 import scala.annotation.tailrec
 import scala.collection.immutable.VectorBuilder
@@ -16,7 +17,7 @@ import scala.collection.immutable.VectorBuilder
  * INTERNAL API
  */
 private[http2] object RequestParsing {
-  def parseRequest(subStream: Http2SubStream): HttpRequest = {
+  def parseRequest(httpHeaderParser: HttpHeaderParser)(subStream: Http2SubStream): HttpRequest = {
     @tailrec
     def rec(
       remainingHeaders: Seq[(String, String)],
@@ -66,8 +67,12 @@ private[http2] object RequestParsing {
           rec(remainingHeaders.tail, method, scheme, authority, path, contentType, contentLength, headers)
 
         case (name, value) ⇒
-          // FIXME: parse to real headers
-          rec(remainingHeaders.tail, method, scheme, authority, path, contentType, contentLength, headers += RawHeader(name, value))
+          // FIXME: later modify by adding HttpHeaderParser.parseHttp2Header that would use (name, value) pair directly
+          //        or use a separate, simpler, parser for Http2
+          val concHeaderLine = name + ": " + value + "\r\nx"
+          //          println("Parsing header line: " + concHeaderLine)
+          httpHeaderParser.parseHeaderLine(ByteString(concHeaderLine))()
+          rec(remainingHeaders.tail, method, scheme, authority, path, contentType, contentLength, headers += httpHeaderParser.resultHeader)
       }
 
     rec(subStream.initialHeaders.keyValuePairs)
