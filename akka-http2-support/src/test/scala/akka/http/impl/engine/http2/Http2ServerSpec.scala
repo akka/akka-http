@@ -581,6 +581,13 @@ class Http2ServerSpec extends AkkaSpec("" + "akka.loglevel = debug")
 
         expectSettingsAck() // TODO check that the setting was indeed applied
       }
+
+      "react on too large SETTINGS_INITIAL_WINDOW_SIZE with FLOW_CONTROL_ERROR" in new TestSetup with RequestResponseProbes {
+        sendSETTING(SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE, Math.pow(2, 31).toInt) // valid values are below 2^31 - 1)
+
+        val (_, code) = expectGOAWAY()
+        code should ===(ErrorCode.FLOW_CONTROL_ERROR)
+      }
     }
 
     "support low-level features" should {

@@ -27,6 +27,13 @@ object Http2Protocol {
   final val InitialWindowSize = 65535
 
   /**
+   * Max initial window size value (2^31 - 1)
+   *
+   * See https://tools.ietf.org/html/rfc7540#section-6.5.2
+   */
+  final val MaxInitialWindowSize = 2147483646
+
+  /**
    * The initial frame size for both incoming and outgoing frames as defined by the
    * specification.
    *
