@@ -183,11 +183,11 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
 
               settings.foreach {
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE, value) ⇒
-                  if (value <= Http2Protocol.MaxInitialWindowSize) {
+                  if (value >= 0) {
                     debug(s"Setting initial window to $value")
                     multiplexer.updateDefaultWindow(value)
                   } else {
-                    pushGOAWAY(FLOW_CONTROL_ERROR, s"Too large SETTINGS_INITIAL_WINDOW_SIZE: $value")
+                    pushGOAWAY(FLOW_CONTROL_ERROR, s"Invalid value for SETTINGS_INITIAL_WINDOW_SIZE: $value")
                     settingsAppliedOk = false
                   }
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) ⇒
