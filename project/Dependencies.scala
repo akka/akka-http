@@ -8,6 +8,7 @@ object Dependencies {
   import DependencyHelpers._
 
   val akkaVersion = "2.4.16"
+  val akka25Version = "2.5-M1" // should be compatible, only used in tests so far
   val junitVersion = "4.12"
   val h2specVersion = "1.5.0"
   val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
@@ -81,6 +82,9 @@ object Dependencies {
       val scalaXml     = "org.scala-lang.modules"     %% "scala-xml"                    % "1.0.4"            % "test"
       val sprayJson    = Compile.sprayJson                                                                   % "test" // ApacheV2
 
+      // for testing compatibility
+      val akka25       = "com.typesafe.akka"          %% "akka-stream"                  % akka25Version      % "test" // ApacheV2
+
       // in-memory filesystem for file related tests
       val jimfs        = "com.google.jimfs"            % "jimfs"                        % "1.1"              % "test" // ApacheV2
 
@@ -141,6 +145,7 @@ object Dependencies {
   )
 
   lazy val httpTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.junitIntf)
+  lazy val httpTestsAkka25 = l ++= Seq(Test.akka25)
 
   lazy val httpXml = versionDependentDeps(scalaXml)
 
