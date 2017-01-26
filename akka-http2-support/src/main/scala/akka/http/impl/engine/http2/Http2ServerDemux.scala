@@ -160,6 +160,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               pushGOAWAY(ErrorCode.PROTOCOL_ERROR, "Unknown stream id: " + e.streamId)
 
             case h: ParsedHeadersFrame ⇒
+              // TODO: probably a trailing header frame here which we currently don't support but which we should ignore. 
               pushGOAWAY(ErrorCode.PROTOCOL_ERROR, "Unexpected internal frame reached Demux! Was: " + h)
 
             case DataFrame(streamId, endStream, payload) ⇒
