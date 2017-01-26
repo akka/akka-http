@@ -22,6 +22,8 @@ object Route {
 
   /**
    * "Seals" a route by wrapping it with exception handling and rejection conversion.
+   *
+   * A "sealed" route accepts all requests making any routes after it unreachable at runtime.
    */
   def seal(route: Route)(implicit
     routingSettings: RoutingSettings,
