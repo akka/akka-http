@@ -54,6 +54,7 @@ object Encoder {
 }
 
 /** A stateful object representing ongoing compression. */
+@deprecated("Use `akka.stream.scaladsl.Compression` instead", "3.0.0-RC2")
 abstract class Compressor {
   /**
    * Compresses the given input and returns compressed data. The implementation

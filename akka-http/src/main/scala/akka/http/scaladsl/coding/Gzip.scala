@@ -26,6 +26,7 @@ object Gzip extends Gzip(Encoder.DefaultFilter) {
   def apply(messageFilter: HttpMessage ⇒ Boolean) = new Gzip(messageFilter)
 }
 
+@deprecated("Use `akka.stream.scaladsl.Compression.gzip` instead", "3.0.0-RC2")
 class GzipCompressor extends DeflateCompressor {
   override protected lazy val deflater = new Deflater(Deflater.BEST_COMPRESSION, true)
   private val checkSum = new CRC32 // CRC32 of uncompressed data
@@ -59,6 +60,7 @@ class GzipCompressor extends DeflateCompressor {
   }
 }
 
+@deprecated("Use `akka.stream.scaladsl.Compression.gunzip` instead", "3.0.0-RC2")
 class GzipDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) extends DeflateDecompressorBase(maxBytesPerChunk) {
   override def createLogic(attr: Attributes) = new DecompressorParsingLogic {
     override val inflater: Inflater = new Inflater(true)
@@ -112,6 +114,7 @@ class GzipDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) 
 }
 
 /** INTERNAL API */
+@deprecated("Use `akka.stream.scaladsl.Compression.gunzip` instead", "3.0.0-RC2")
 private[http] object GzipDecompressor {
   // RFC 1952: http://tools.ietf.org/html/rfc1952 section 2.2
   val Header = ByteString(
