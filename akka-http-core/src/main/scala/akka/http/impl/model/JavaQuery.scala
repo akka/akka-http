@@ -6,6 +6,8 @@ package akka.http.impl.model
 
 import java.util.Optional
 import java.{ util ⇒ ju }
+
+import akka.annotation.InternalApi
 import akka.http.impl.model.parser.CharacterClasses
 import akka.http.impl.util.StringRendering
 import akka.http.javadsl.model.HttpCharset
@@ -19,6 +21,7 @@ import scala.collection.JavaConverters._
 import akka.http.impl.util.JavaMapping.Implicits._
 
 /** INTERNAL API */
+@InternalApi
 case class JavaQuery(query: sm.Uri.Query) extends jm.Query {
   override def get(key: String): Optional[String] = query.get(key).asJava
   override def toMap: ju.Map[String, String] = query.toMap.asJava

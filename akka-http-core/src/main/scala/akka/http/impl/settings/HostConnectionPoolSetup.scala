@@ -4,6 +4,9 @@
 
 package akka.http.impl.settings
 
+import akka.annotation.InternalApi
+
 /** INTERNAL API */
+@InternalApi
 final case class HostConnectionPoolSetup(host: String, port: Int, setup: ConnectionPoolSetup)
 

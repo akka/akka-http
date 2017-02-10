@@ -1,9 +1,11 @@
 package akka.http.javadsl.settings
 
 import akka.actor.ActorSystem
+import akka.annotation.InternalApi
 import com.typesafe.config.Config
 
 /** INTERNAL API */
+@InternalApi
 trait SettingsCompanion[T] {
 
   /**

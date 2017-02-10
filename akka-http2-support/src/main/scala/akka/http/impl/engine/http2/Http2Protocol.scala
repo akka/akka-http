@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.http2
 
+import akka.annotation.InternalApi
 import akka.util.ByteString
 
 /**
@@ -13,6 +14,7 @@ import akka.util.ByteString
  *
  * https://tools.ietf.org/html/rfc7540
  */
+@InternalApi
 object Http2Protocol {
   // constants defined in the spec
 

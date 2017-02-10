@@ -4,6 +4,7 @@
 package akka.http.scaladsl.server
 
 import akka.actor.ActorSystem
+import akka.annotation.InternalApi
 import akka.http.scaladsl.{ Http, TestUtils }
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
@@ -13,6 +14,7 @@ import org.scalatest.concurrent.{ IntegrationPatience, ScalaFutures }
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
 
 /** INTERNAL API - not (yet?) ready for public consuption */
+@InternalApi
 private[akka] trait IntegrationRoutingSpec extends WordSpecLike with Matchers with BeforeAndAfterAll
   with Directives with RequestBuilding
   with ScalaFutures with IntegrationPatience {
