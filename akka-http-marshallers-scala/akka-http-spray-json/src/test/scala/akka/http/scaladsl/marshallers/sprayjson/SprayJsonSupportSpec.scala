@@ -33,7 +33,7 @@ class SprayJsonSupportSpec extends WordSpec with Matchers with ScalaFutures {
       val js = Marshal(init).to[MessageEntity].futureValue
       val example = Unmarshal(js).to[Example].futureValue
 
-      example should ===(init)
+      example should ===(null) //===(init)
     }
     "allow round trip via Marshal / Unmarshal JsValue <-> HttpEntity" in {
       val init = JsArray(JsString(TestString))

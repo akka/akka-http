@@ -43,7 +43,7 @@ lazy val root = Project(
     id = "akka-http-root",
     base = file(".")
   )
-  .enablePlugins(UnidocRoot, NoPublish, DeployRsync)
+  .enablePlugins(UnidocRoot, NoPublish, DeployRsync, AggregatePRValidation)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .settings(
     // Unidoc doesn't like macros
@@ -104,7 +104,7 @@ lazy val httpTests = project("akka-http-tests")
 
 
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
-  .enablePlugins(NoPublish)
+  .enablePlugins(NoPublish/*, AggregatePRValidation*/)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .aggregate(httpSprayJson, httpXml)
 
@@ -115,7 +115,7 @@ lazy val httpSprayJson =
   httpMarshallersScalaSubproject("spray-json")
 
 lazy val httpMarshallersJava = project("akka-http-marshallers-java")
-  .enablePlugins(NoPublish)
+  .enablePlugins(NoPublish/*, AggregatePRValidation*/)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .aggregate(httpJackson)
 

@@ -142,7 +142,10 @@ object Dependencies {
 
   lazy val httpTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.junitIntf)
 
-  lazy val httpXml = versionDependentDeps(scalaXml)
+  lazy val httpXml = Seq(
+    versionDependentDeps(scalaXml),
+    libraryDependencies += Test.scalatest.value
+  )
 
   lazy val httpSprayJson = Seq(
     versionDependentDeps(sprayJson),
