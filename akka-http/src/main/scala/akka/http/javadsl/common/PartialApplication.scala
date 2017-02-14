@@ -27,7 +27,7 @@ object PartialApplication {
    * @tparam R the type of the return
    * @return the function partially applied
    */
-  @akka.annotation.ApiMayChange
+  @ApiMayChange
   def bindParameter[A, B, R](f: BiFunction[A, B, R], a: A): Function[B, R] = {
     new Function[B, R] {
       override def apply(b: B): R = f.apply(a, b)

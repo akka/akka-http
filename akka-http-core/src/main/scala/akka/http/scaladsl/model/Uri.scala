@@ -18,7 +18,7 @@ import akka.http.impl.model.parser.UriParser
 import akka.http.impl.model.parser.CharacterClasses._
 import akka.http.impl.util._
 import Uri._
-import akka.annotation.InternalApi
+import akka.annotation.DoNotInherit
 
 /**
  * An immutable model of an internet URI as defined by http://tools.ietf.org/html/rfc3986.
@@ -878,12 +878,12 @@ object UriRendering {
 /**
  * INTERNAL API.
  */
-@InternalApi
+@DoNotInherit
 abstract class UriJavaAccessor
 /**
  * INTERNAL API.
  */
-@InternalApi
+@DoNotInherit
 object UriJavaAccessor {
   import collection.JavaConverters._
 

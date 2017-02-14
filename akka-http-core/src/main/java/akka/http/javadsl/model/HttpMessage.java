@@ -4,7 +4,7 @@
 
 package akka.http.javadsl.model;
 
-import akka.annotation.InternalApi;
+import akka.annotation.DoNotInherit;
 import akka.stream.Materializer;
 import akka.http.javadsl.model.headers.HttpCredentials;
 import akka.util.ByteString;
@@ -21,7 +21,7 @@ import java.util.Optional;
  *
  * Binary compatibility is only maintained for callers of this trait’s interface.
  */
-@InternalApi
+@DoNotInherit
 public interface HttpMessage {
     /**
      * Is this instance a request.
