@@ -379,11 +379,15 @@ private[http] object HttpServerBluePrint {
               push(requestPrepOut, rs)
             case MessageEnd ⇒
               messageEndPending = false
-              push(requestPrepOut, MessageEnd)
+              if (!oneHundredContinueResponsePending) push(requestPrepOut, MessageEnd)
             case MessageStartError(status, info) ⇒ finishWithIllegalRequestError(status, info)
             case x: EntityStreamError if messageEndPending && openRequests.isEmpty ⇒
               // client terminated the connection after receiving an early response to 100-continue
               completeStage()
+            case x if oneHundredContinueResponsePending ⇒
+              log.debug("Dropping incoming entity since `oneHundredContinueResponsePending` still active")
+              pull(requestParsingIn)
+
             case x ⇒
               push(requestPrepOut, x)
           }
