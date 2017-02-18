@@ -6,16 +6,14 @@ package akka.remote.testkit
 
 import java.io.File
 
-import akka.annotation.InternalApi
 import akka.remote.testconductor.RoleName
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
 /**
- * INTERNAL API: Support trait allowing trivially recording perf metrics from [[MultiNodeSpec]]s
+ * Support trait allowing trivially recording perf metrics from [[MultiNodeSpec]]s
  */
-@InternalApi
 private[akka] trait PerfFlamesSupport { _: MultiNodeSpec ⇒
 
   /**

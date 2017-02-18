@@ -49,11 +49,11 @@ private[akka] final case class ServerSettingsImpl(
   override def productPrefix = "ServerSettings"
 }
 
-object ServerSettingsImpl extends SettingsCompanion[ServerSettingsImpl]("akka.http.server") {
+/** INTERNAL API */
+@InternalApi
+private[http] object ServerSettingsImpl extends SettingsCompanion[ServerSettingsImpl]("akka.http.server") {
   implicit def timeoutsShortcut(s: js.ServerSettings): js.ServerSettings.Timeouts = s.getTimeouts
 
-  /** INTERNAL API */
-  @InternalApi
   final case class Timeouts(
     idleTimeout:    Duration,
     requestTimeout: Duration,

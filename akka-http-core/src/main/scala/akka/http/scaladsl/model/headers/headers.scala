@@ -40,7 +40,7 @@ sealed abstract class ModeledCompanion[T: ClassTag] extends Renderable {
     }
 }
 /** INTERNAL API */
-@DoNotInherit
+@InternalApi
 private[akka] object ModeledCompanion {
   def nameFromClass[T](clazz: Class[T]): String = {
     val name = {
@@ -471,12 +471,12 @@ final case class Date(date: DateTime) extends jm.headers.Date with RequestRespon
 /**
  * INTERNAL API
  */
-@DoNotInherit
+@InternalApi
 private[headers] object EmptyCompanion extends ModeledCompanion[EmptyHeader.type]
 /**
  * INTERNAL API
  */
-@DoNotInherit
+@InternalApi
 private[http] object EmptyHeader extends SyntheticHeader {
   def renderValue[R <: Rendering](r: R): r.type = r
   protected def companion: ModeledCompanion[EmptyHeader.type] = EmptyCompanion
@@ -700,7 +700,7 @@ final case class Referer(uri: Uri) extends jm.headers.Referer with RequestHeader
  * INTERNAL API
  */
 // http://tools.ietf.org/html/rfc6455#section-4.3
-@DoNotInherit
+@InternalApi
 private[http] object `Sec-WebSocket-Accept` extends ModeledCompanion[`Sec-WebSocket-Accept`] {
   // Defined at http://tools.ietf.org/html/rfc6455#section-4.2.2
   val MagicGuid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
@@ -728,7 +728,7 @@ private[http] final case class `Sec-WebSocket-Accept`(key: String) extends Respo
  * INTERNAL API
  */
 // http://tools.ietf.org/html/rfc6455#section-4.3
-@DoNotInherit
+@InternalApi
 private[http] object `Sec-WebSocket-Extensions` extends ModeledCompanion[`Sec-WebSocket-Extensions`] {
   implicit val extensionsRenderer = Renderer.defaultSeqRenderer[WebSocketExtension]
 }
@@ -748,7 +748,7 @@ private[http] final case class `Sec-WebSocket-Extensions`(extensions: immutable.
 /**
  * INTERNAL API
  */
-@DoNotInherit
+@InternalApi
 private[http] object `Sec-WebSocket-Key` extends ModeledCompanion[`Sec-WebSocket-Key`] {
   def apply(keyBytes: Array[Byte]): `Sec-WebSocket-Key` = {
     require(keyBytes.length == 16, s"Sec-WebSocket-Key keyBytes must have length 16 but had ${keyBytes.length}")
@@ -775,7 +775,7 @@ private[http] final case class `Sec-WebSocket-Key`(key: String) extends RequestH
 /**
  * INTERNAL API
  */
-@DoNotInherit
+@InternalApi
 private[http] object `Sec-WebSocket-Protocol` extends ModeledCompanion[`Sec-WebSocket-Protocol`] {
   implicit val protocolsRenderer = Renderer.defaultSeqRenderer[String]
 }
@@ -798,7 +798,7 @@ private[http] final case class `Sec-WebSocket-Protocol`(protocols: immutable.Seq
 /**
  * INTERNAL API
  */
-@DoNotInherit
+@InternalApi
 private[http] object `Sec-WebSocket-Version` extends ModeledCompanion[`Sec-WebSocket-Version`] {
   implicit val versionsRenderer = Renderer.defaultSeqRenderer[Int]
 }

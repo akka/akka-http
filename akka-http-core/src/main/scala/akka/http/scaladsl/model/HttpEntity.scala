@@ -10,8 +10,8 @@ import akka.http.impl.model.JavaInitialization
 
 import language.implicitConversions
 import java.io.File
-import java.nio.file.{Files, Path}
-import java.lang.{Iterable => JIterable}
+import java.nio.file.{ Files, Path }
+import java.lang.{ Iterable ⇒ JIterable }
 
 import scala.util.control.NonFatal
 import scala.concurrent.Future
@@ -21,18 +21,18 @@ import akka.util.ByteString
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream._
-import akka.{Done, NotUsed, stream}
-import akka.http.scaladsl.model.ContentType.{Binary, NonBinary}
+import akka.{ Done, NotUsed, stream }
+import akka.http.scaladsl.model.ContentType.{ Binary, NonBinary }
 import akka.http.scaladsl.util.FastFuture
-import akka.http.javadsl.{model => jm}
-import akka.http.impl.util.{JavaMapping, StreamUtils}
+import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.impl.util.{ JavaMapping, StreamUtils }
 import akka.http.impl.util.JavaMapping.Implicits._
 
 import scala.compat.java8.OptionConverters._
 import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
 
-import akka.annotation.{DoNotInherit, InternalApi}
+import akka.annotation.{ DoNotInherit, InternalApi }
 
 import scala.compat.java8.FutureConverters
 
@@ -584,10 +584,6 @@ object HttpEntity {
   def limitableChunkSource[Mat](source: Source[ChunkStreamPart, Mat]): Source[ChunkStreamPart, Mat] =
     source.via(new Limitable(sizeOfChunkStreamPart))
 
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
   private val sizeOfByteString: ByteString ⇒ Int = _.size
   private val sizeOfChunkStreamPart: ChunkStreamPart ⇒ Int = _.data.size
 
@@ -632,10 +628,6 @@ object HttpEntity {
     }
   }
 
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
   private final case class SizeLimit(maxBytes: Long, contentLength: Option[Long] = None) extends Attributes.Attribute {
     def isDisabled = maxBytes < 0
   }

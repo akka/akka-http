@@ -152,8 +152,6 @@ private[http] object PoolMasterActor {
   final case class Shutdown(gateway: PoolGateway, shutdownCompletedPromise: Promise[Done]) extends NoSerializationVerificationNeeded with DeadLetterSuppression
   final case class ShutdownAll(shutdownCompletedPromise: Promise[Done]) extends NoSerializationVerificationNeeded with DeadLetterSuppression
 
-  // INTERNAL API (for testing only)
-  @InternalApi
   final case class PoolStatus(gateway: PoolGateway, statusPromise: Promise[Option[PoolInterfaceStatus]]) extends NoSerializationVerificationNeeded
   final case class PoolSize(sizePromise: Promise[Int]) extends NoSerializationVerificationNeeded
 
