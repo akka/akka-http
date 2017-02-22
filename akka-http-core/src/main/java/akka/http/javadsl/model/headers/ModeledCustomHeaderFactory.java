@@ -9,7 +9,7 @@ import java.util.Optional;
  * Companion class for the {@link ModeledCustomHeader} class. It offers methods to create {@link ModeledCustomHeader}
  * from {@link String} or {@link HttpHeader}.
  */
-public abstract class ModeledCustomHeaderCompanion<H extends ModeledCustomHeader> {
+public abstract class ModeledCustomHeaderFactory<H extends ModeledCustomHeader> {
 
   public abstract String name();
 

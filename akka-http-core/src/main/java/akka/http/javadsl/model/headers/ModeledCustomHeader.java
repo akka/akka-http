@@ -5,7 +5,7 @@ import akka.util.Helpers;
 
 /**
  * Support class for building user-defined custom headers defined by implementing `name` and `value`.
- * By implementing a {@link ModeledCustomHeader} along with {@link ModeledCustomHeaderCompanion} instead of {@link CustomHeader} directly,
+ * By implementing a {@link ModeledCustomHeader} along with {@link ModeledCustomHeaderFactory} instead of {@link CustomHeader} directly,
  * convenience methods that allow parsing this user-defined header from {@link akka.http.javadsl.model.HttpHeader}  are
  * available to use.
  */
