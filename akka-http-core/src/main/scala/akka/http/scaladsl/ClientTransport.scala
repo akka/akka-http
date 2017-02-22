@@ -8,9 +8,10 @@ import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
 import akka.annotation.ApiMayChange
+import akka.http.impl.engine.client.ProxyGraphStage
 import akka.http.scaladsl.Http.OutgoingConnection
-import akka.http.scaladsl.settings.ClientConnectionSettings
-import akka.stream.scaladsl.{ Flow, Tcp }
+import akka.http.scaladsl.settings.{ ClientConnectionSettings }
+import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Tcp }
 import akka.util.ByteString
 
 import scala.concurrent.Future
@@ -36,5 +37,28 @@ object ClientTransport {
       Tcp().outgoingConnection(InetSocketAddress.createUnresolved(host, port), localAddress,
         settings.socketOptions, halfClose = true, settings.connectingTimeout, settings.idleTimeout)
         .mapMaterializedValue(_.map(tcpConn ⇒ OutgoingConnection(tcpConn.localAddress, tcpConn.remoteAddress))(system.dispatcher))
+  }
+
+  /**
+   * Returns [[ClientTransport]] that performs HTTP CONNECT tunnelling which is useful when you want to use HTTPS proxy.
+   *
+   * Using this kind of [[ClientTransport]] means that after the tunnel between client and target host has been
+   * established the subsequent communication is done on TCP level.
+   *
+   * To get know more about CONNECT tunnelling read https://tools.ietf.org/html/rfc7231#section-4.3.6
+   */
+  def proxy(localAddress: Option[InetSocketAddress], proxyAddress: InetSocketAddress, settings: ClientConnectionSettings): ClientTransport =
+    new ProxyTransport(localAddress, proxyAddress, settings)
+
+  private case class ProxyTransport(localAddress: Option[InetSocketAddress], proxyAddress: InetSocketAddress, settings: ClientConnectionSettings) extends ClientTransport {
+    def connectTo(host: String, port: Int)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
+      val networkFlow = Tcp().outgoingConnection(proxyAddress, localAddress,
+        settings.socketOptions, halfClose = true, settings.connectingTimeout, settings.idleTimeout)
+        .mapMaterializedValue(_.map(tcpConn ⇒ OutgoingConnection(tcpConn.localAddress, tcpConn.remoteAddress))(system.dispatcher))
+
+      val proxyBidiFlow = BidiFlow.fromGraph(new ProxyGraphStage(host, port, settings, system.log))
+
+      proxyBidiFlow.joinMat(networkFlow)(Keep.right)
+    }
   }
 }
