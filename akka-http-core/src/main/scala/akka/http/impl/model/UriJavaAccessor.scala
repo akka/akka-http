@@ -1,6 +1,6 @@
 package akka.http.impl.model
 
-import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Host
 import java.nio.charset.Charset
@@ -8,13 +8,13 @@ import java.nio.charset.Charset
 /**
  * INTERNAL API.
  */
-@DoNotInherit
-abstract class UriJavaAccessor
+@InternalApi
+private[http] abstract class UriJavaAccessor
 /**
  * INTERNAL API.
  */
-@DoNotInherit
-object UriJavaAccessor {
+@InternalApi
+private[http] object UriJavaAccessor {
   import collection.JavaConverters._
 
   def hostApply(string: String): Host = Uri.Host(string)
