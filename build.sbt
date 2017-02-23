@@ -101,7 +101,6 @@ lazy val httpTests = project("akka-http-tests")
   .configs(MultiJvm)
   .addAkkaModuleDependency("akka-multi-node-testkit", "test")
 
-
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
   .enablePlugins(NoPublish)
   .disablePlugins(BintrayPlugin, MimaPlugin)
@@ -170,3 +169,29 @@ lazy val docs = project("docs")
     additionalTasks in ValidatePR += paradox in Compile,
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka-http/${version.value}")
   )
+
+lazy val akka25CompatibilityTests = project("akka25-compatibility-tests")
+  .aggregate(
+    httpCoreTestsAkka25,
+    httpTestsAkka25,
+    http2TestsAkka25,
+    docsTestsAkka25
+  )
+
+// virtual projects that run the tests compiled with akka 2.4 against akka 2.5
+lazy val httpCoreTestsAkka25 = akka25TestsProject("akka-http-core-tests-akka25", httpCore)
+lazy val httpTestsAkka25 = akka25TestsProject("akka-http-tests-akka25", httpTests)
+// TODO: need to import settings for running h2spec first, otherwise it will fail
+// lazy val http2TestsAkka25 = akka25TestsProject("akka-http2-support-tests-akka25", http2Support)
+lazy val docsTestsAkka25 = akka25TestsProject("docs-tests-akka25", docs)
+
+def akka25TestsProject(name: String, dependency: Project): Project =
+  Project(name, file(s"akka25-compatibility-tests/$name"))
+    .settings(Dependencies.httpTestsAkka25)
+    .settings(
+      compile in Test := (compile in Test in dependency).value, // needed for test discovery
+      products in Test := (products in Test in dependency).value // needed for resources to be picked up
+    )
+    .dependsOn(dependency % "test->test")
+    .enablePlugins(NoPublish, BintrayPlugin)
+    .disablePlugins(MimaPlugin)
