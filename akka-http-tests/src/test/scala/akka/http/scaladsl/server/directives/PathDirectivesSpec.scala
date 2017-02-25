@@ -441,6 +441,10 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
   "the `redirectToNoTrailingSlashIfPresent` directive" should {
     val route = redirectToNoTrailingSlashIfPresent(Found) { completeOk }
 
+    "pass if the path is a single slash" in {
+      Get("/") ~> route ~> check { response shouldEqual Ok }
+    }
+
     "pass if the request path already doesn't have a trailing slash" in {
       Get("/foo/bar") ~> route ~> check { response shouldEqual Ok }
     }
@@ -457,10 +461,6 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
       Get("/foo/bar/") ~>
         redirectToNoTrailingSlashIfPresent(MovedPermanently) { completeOk } ~>
         check { status shouldEqual MovedPermanently }
-    }
-
-    "not loop infinitely when the path is a single slash" in {
-      Get("/") ~> route ~> check { response shouldEqual Ok }
     }
   }
 
