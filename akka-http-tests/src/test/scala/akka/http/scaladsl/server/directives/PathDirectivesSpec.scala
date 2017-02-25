@@ -423,7 +423,7 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
       Get("/foo/bar") ~> route ~> checkRedirectTo("/foo/bar/")
     }
 
-    "preserves the query and the frag when redirect" in {
+    "preserve the query and the frag when redirect" in {
       Get("/foo/bar?query#frag") ~> route ~> checkRedirectTo("/foo/bar/?query#frag")
     }
 
@@ -449,7 +449,7 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
       Get("/foo/bar/") ~> route ~> checkRedirectTo("/foo/bar")
     }
 
-    "preserves the query and the frag when redirect" in {
+    "preserve the query and the frag when redirect" in {
       Get("/foo/bar/?query#frag") ~> route ~> checkRedirectTo("/foo/bar?query#frag")
     }
 
@@ -457,6 +457,10 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
       Get("/foo/bar/") ~>
         redirectToNoTrailingSlashIfPresent(MovedPermanently) { completeOk } ~>
         check { status shouldEqual MovedPermanently }
+    }
+
+    "not loop infinitely when the path is a single slash" in {
+      Get("/") ~> route ~> check { response shouldEqual Ok }
     }
   }
 

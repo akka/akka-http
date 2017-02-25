@@ -177,13 +177,11 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
   /**
    * If the request path ends with a slash, redirect to the same uri without trailing slash in the path.
    *
-   * '''Caveat''': [[pathSingleSlash]] directive will not match inside of this directive.
-   *
    * @group path
    */
   def redirectToNoTrailingSlashIfPresent(redirectionType: StatusCodes.Redirection): Directive0 =
     extractUri.flatMap { uri ⇒
-      if (uri.path.endsWithSlash) {
+      if (uri.path.endsWithSlash && uri.path != Path.SingleSlash) {
         val newPath = uri.path.reverse.tail.reverse
         val newUri = uri.withPath(newPath)
         redirect(newUri, redirectionType)
