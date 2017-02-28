@@ -137,7 +137,7 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def withEntity(contentType: jm.ContentType, bytes: ByteString): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], bytes))
 
   @deprecated("Use withEntity(ContentType, Path) instead", "2.4.5")
-  def withEntity(contentType: jm.ContentType, file: File): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], file))
+  def withEntity(contentType: jm.ContentType, file: File): Self = withEntity(HttpEntity.fromPath(contentType.asInstanceOf[ContentType], file.toPath))
   def withEntity(contentType: jm.ContentType, file: Path): Self = withEntity(HttpEntity.fromPath(contentType.asInstanceOf[ContentType], file))
 
   import collection.JavaConverters._
@@ -334,17 +334,29 @@ object HttpRequest {
       OptionVal.None
     }
     val hostHeader: OptionVal[Host] = findHost(headers)
+    def findUpgrade(headers: immutable.Seq[HttpHeader]): OptionVal[Upgrade] = {
+      val it = headers.iterator
+      while (it.hasNext) it.next() match {
+        case u: Upgrade ⇒ return OptionVal.Some(u)
+        case _          ⇒ // continue ...
+      }
+      OptionVal.None
+    }
     if (uri.isRelative) {
       def fail(detail: String) =
         throw IllegalUriException(
           s"Cannot establish effective URI of request to `$uri`, request has a relative URI and $detail; " +
             "consider setting `akka.http.server.default-host-header`")
-      val Host(host, port) = hostHeader match {
+      val Host(hostHeaderHost, hostHeaderPort) = hostHeader match {
         case OptionVal.None                 ⇒ if (defaultHostHeader.isEmpty) fail("is missing a `Host` header") else defaultHostHeader
         case OptionVal.Some(x) if x.isEmpty ⇒ if (defaultHostHeader.isEmpty) fail("an empty `Host` header") else defaultHostHeader
         case OptionVal.Some(x)              ⇒ x
       }
-      uri.toEffectiveHttpRequestUri(host, port, securedConnection)
+      val defaultScheme = findUpgrade(headers) match {
+        case OptionVal.Some(upgrade) if upgrade.hasWebSocket ⇒ if (securedConnection) "wss" else "ws"
+        case _ ⇒ Uri.httpScheme(securedConnection)
+      }
+      uri.toEffectiveRequestUri(hostHeaderHost, hostHeaderPort, defaultScheme)
     } else // http://tools.ietf.org/html/rfc7230#section-5.4
     if (hostHeader.isEmpty || uri.authority.isEmpty && hostHeader.get.isEmpty ||
       hostHeader.get.host.equalsIgnoreCase(uri.authority.host) && hostHeader.get.port == uri.authority.port) uri
@@ -365,7 +377,9 @@ object HttpRequest {
         case 0 ⇒ // ok
         case 4 if c(0) == 'h' && c(1) == 't' && c(2) == 't' && c(3) == 'p' ⇒ // ok
         case 5 if c(0) == 'h' && c(1) == 't' && c(2) == 't' && c(3) == 'p' && c(4) == 's' ⇒ // ok
-        case _ ⇒ throw new IllegalArgumentException("""`uri` must have scheme "http", "https" or no scheme""")
+        case 2 if c(0) == 'w' && c(1) == 's' ⇒ // ok
+        case 3 if c(0) == 'w' && c(1) == 's' && c(2) == 's' ⇒ // ok
+        case _ ⇒ throw new IllegalArgumentException("""`uri` must have scheme "http", "https", "ws", "wss" or no scheme""")
       }
     }
 

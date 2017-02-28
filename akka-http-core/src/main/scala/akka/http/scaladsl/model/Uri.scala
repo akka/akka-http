@@ -18,7 +18,6 @@ import akka.http.impl.model.parser.UriParser
 import akka.http.impl.model.parser.CharacterClasses._
 import akka.http.impl.util._
 import Uri._
-import akka.annotation.DoNotInherit
 
 /**
  * An immutable model of an internet URI as defined by http://tools.ietf.org/html/rfc3986.
@@ -136,7 +135,15 @@ sealed abstract case class Uri(scheme: String, authority: Authority, path: Path,
    */
   def toEffectiveHttpRequestUri(hostHeaderHost: Host, hostHeaderPort: Int, securedConnection: Boolean = false,
                                 defaultAuthority: Authority = Authority.Empty): Uri =
-    effectiveHttpRequestUri(scheme, authority.host, authority.port, path, rawQueryString, fragment, securedConnection,
+    toEffectiveRequestUri(hostHeaderHost, hostHeaderPort, httpScheme(securedConnection), defaultAuthority)
+
+  /**
+   * Converts this URI to an "effective request URI" as defined by
+   * http://tools.ietf.org/html/rfc7230#section-5.5
+   */
+  def toEffectiveRequestUri(hostHeaderHost: Host, hostHeaderPort: Int, defaultScheme: String,
+                            defaultAuthority: Authority = Authority.Empty): Uri =
+    effectiveRequestUri(scheme, authority.host, authority.port, path, rawQueryString, fragment, defaultScheme,
       hostHeaderHost, hostHeaderPort, defaultAuthority)
 
   /**
@@ -289,12 +296,22 @@ object Uri {
    */
   def effectiveHttpRequestUri(scheme: String, host: Host, port: Int, path: Path, query: Option[String], fragment: Option[String],
                               securedConnection: Boolean, hostHeaderHost: Host, hostHeaderPort: Int,
-                              defaultAuthority: Authority = Authority.Empty): Uri = {
+                              defaultAuthority: Authority = Authority.Empty): Uri =
+    effectiveRequestUri(scheme, host, port, path, query, fragment, httpScheme(securedConnection), hostHeaderHost,
+      hostHeaderPort, defaultAuthority)
+
+  /**
+   * Converts a set of URI components to an "effective request URI" as defined by
+   * http://tools.ietf.org/html/rfc7230#section-5.5.
+   */
+  def effectiveRequestUri(scheme: String, host: Host, port: Int, path: Path, query: Option[String], fragment: Option[String],
+                          defaultScheme: String, hostHeaderHost: Host, hostHeaderPort: Int,
+                          defaultAuthority: Authority = Authority.Empty): Uri = {
     var _scheme = scheme
     var _host = host
     var _port = port
     if (_scheme.isEmpty) {
-      _scheme = httpScheme(securedConnection)
+      _scheme = defaultScheme
       if (_host.isEmpty) {
         if (hostHeaderHost.isEmpty) {
           _host = defaultAuthority.host
@@ -436,10 +453,10 @@ object Uri {
     def endsWithSlash: Boolean = {
       import Path.{ Empty ⇒ PEmpty, _ }
       @tailrec def check(path: Path): Boolean = path match {
-        case PEmpty              ⇒ false
-        case Slash(PEmpty)       ⇒ true
-        case Slash(tail)         ⇒ check(tail)
-        case Segment(head, tail) ⇒ check(tail)
+        case PEmpty           ⇒ false
+        case Slash(PEmpty)    ⇒ true
+        case Slash(tail)      ⇒ check(tail)
+        case Segment(_, tail) ⇒ check(tail)
       }
       check(this)
     }
@@ -858,9 +875,12 @@ object UriRendering {
       def appendEncoded(byte: Byte): Unit = r ~~ '%' ~~ CharUtils.upperHexDigit(byte >>> 4) ~~ CharUtils.upperHexDigit(byte)
       if (ix < string.length) {
         val charSize = string.charAt(ix) match {
-          case c if keep(c)                     ⇒ { r ~~ c; 1 }
-          case ' ' if replaceSpaces             ⇒ { r ~~ '+'; 1 }
-          case c if c <= 127 && asciiCompatible ⇒ { appendEncoded(c.toByte); 1 }
+          case c if keep(c) ⇒
+            r ~~ c; 1
+          case ' ' if replaceSpaces ⇒
+            r ~~ '+'; 1
+          case c if c <= 127 && asciiCompatible ⇒
+            appendEncoded(c.toByte); 1
           case c ⇒
             def append(s: String) = s.getBytes(charset).foreach(appendEncoded)
             if (Character.isHighSurrogate(c)) { append(new String(Array(string codePointAt ix), 0, 1)); 2 }
