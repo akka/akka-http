@@ -77,6 +77,10 @@ lazy val httpCore = project("akka-http-core")
   .addAkkaModuleDependency("akka-stream")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
 
+lazy val httpCoreBench = project("akka-http-core-bench")
+  .dependsOn(httpCore)
+  .enablePlugins(JmhPlugin)
+
 lazy val http = project("akka-http")
   .dependsOn(httpCore)
 

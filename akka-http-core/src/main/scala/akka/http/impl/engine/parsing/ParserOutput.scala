@@ -71,7 +71,7 @@ private[http] object ParserOutput {
   final case class StrictEntityCreator(entity: HttpEntity.Strict) extends EntityCreator[ParserOutput, HttpEntity.Strict] {
     def apply(parts: Source[ParserOutput, NotUsed]) = {
       // We might need to drain stray empty tail streams which will be read by no one.
-      SubSource.kill(parts)
+      //SubSource.kill(parts)
       entity
     }
   }

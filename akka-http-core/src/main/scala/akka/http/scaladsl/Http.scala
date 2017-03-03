@@ -84,17 +84,17 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     baseFlow: ServerLayerBidiFlow,
     handler:  Flow[HttpRequest, HttpResponse, Any])(implicit mat: Materializer): ServerLayerFlow =
     Flow.fromGraph(
-      Fusing.aggressive(
-        Flow[HttpRequest]
-          .watchTermination()(Keep.right)
-          .viaMat(handler)(Keep.left)
-          .watchTermination() { (termWatchBefore, termWatchAfter) ⇒
-            // flag termination when the user handler has gotten (or has emitted) termination
-            // signals in both directions
-            termWatchBefore.flatMap(_ ⇒ termWatchAfter)(ExecutionContexts.sameThreadExecutionContext)
-          }
-          .joinMat(baseFlow)(Keep.left)
-      )
+      //Fusing.aggressive(
+      Flow[HttpRequest]
+        .watchTermination()(Keep.right)
+        .viaMat(handler)(Keep.left)
+        .watchTermination() { (termWatchBefore, termWatchAfter) ⇒
+          // flag termination when the user handler has gotten (or has emitted) termination
+          // signals in both directions
+          termWatchBefore.flatMap(_ ⇒ termWatchAfter)(ExecutionContexts.sameThreadExecutionContext)
+        }
+        .joinMat(baseFlow)(Keep.left)
+    //)
     )
 
   private def tcpBind(interface: String, port: Int, settings: ServerSettings): Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] = {
