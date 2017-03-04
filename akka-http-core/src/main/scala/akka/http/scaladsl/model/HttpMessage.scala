@@ -325,7 +325,7 @@ object HttpRequest {
    * include a valid [[akka.http.scaladsl.model.headers.Host]] header or if URI authority and [[akka.http.scaladsl.model.headers.Host]] header don't match.
    */
   def effectiveUri(uri: Uri, headers: immutable.Seq[HttpHeader], securedConnection: Boolean, defaultHostHeader: Host): Uri = {
-    def findHost(headers: immutable.Seq[HttpHeader]): OptionVal[Host] = {
+    def findHost: OptionVal[Host] = {
       val it = headers.iterator
       while (it.hasNext) it.next() match {
         case h: Host ⇒ return OptionVal.Some(h)
@@ -333,15 +333,7 @@ object HttpRequest {
       }
       OptionVal.None
     }
-    val hostHeader: OptionVal[Host] = findHost(headers)
-    def findUpgrade(headers: immutable.Seq[HttpHeader]): OptionVal[Upgrade] = {
-      val it = headers.iterator
-      while (it.hasNext) it.next() match {
-        case u: Upgrade ⇒ return OptionVal.Some(u)
-        case _          ⇒ // continue ...
-      }
-      OptionVal.None
-    }
+    val hostHeader = findHost
     if (uri.isRelative) {
       def fail(detail: String) =
         throw IllegalUriException(
@@ -352,10 +344,17 @@ object HttpRequest {
         case OptionVal.Some(x) if x.isEmpty ⇒ if (defaultHostHeader.isEmpty) fail("an empty `Host` header") else defaultHostHeader
         case OptionVal.Some(x)              ⇒ x
       }
-      val defaultScheme = findUpgrade(headers) match {
-        case OptionVal.Some(upgrade) if upgrade.hasWebSocket ⇒ if (securedConnection) "wss" else "ws"
-        case _ ⇒ Uri.httpScheme(securedConnection)
+      def isWebsocket: Boolean = {
+        val it = headers.iterator
+        while (it.hasNext) it.next() match {
+          case u: Upgrade ⇒ return u.hasWebSocket
+          case _          ⇒ // continue ...
+        }
+        false
       }
+      val defaultScheme =
+        if (isWebsocket) (if (securedConnection) "wss" else "ws")
+        else Uri.httpScheme(securedConnection)
       uri.toEffectiveRequestUri(hostHeaderHost, hostHeaderPort, defaultScheme)
     } else // http://tools.ietf.org/html/rfc7230#section-5.4
     if (hostHeader.isEmpty || uri.authority.isEmpty && hostHeader.get.isEmpty ||
