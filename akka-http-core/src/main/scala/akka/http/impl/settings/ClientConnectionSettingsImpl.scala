@@ -28,7 +28,9 @@ private[akka] final case class ClientConnectionSettingsImpl(
   logUnencryptedNetworkBytes: Option[Int],
   websocketRandomFactory:     () ⇒ Random,
   socketOptions:              immutable.Seq[SocketOption],
-  parserSettings:             ParserSettings)
+  parserSettings:             ParserSettings,
+  proxyHost:                  Option[String],
+  proxyPort:                  Int)
   extends akka.http.scaladsl.settings.ClientConnectionSettings {
 
   require(connectingTimeout >= Duration.Zero, "connectingTimeout must be >= 0")
@@ -48,6 +50,8 @@ object ClientConnectionSettingsImpl extends SettingsCompanion[ClientConnectionSe
       logUnencryptedNetworkBytes = LogUnencryptedNetworkBytes(c getString "log-unencrypted-network-bytes"),
       websocketRandomFactory = Randoms.SecureRandomInstances, // can currently only be overridden from code
       socketOptions = SocketOptionSettings.fromSubConfig(root, c.getConfig("socket-options")),
-      parserSettings = ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")))
+      parserSettings = ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")),
+      proxyHost = c.getString("proxy-host").toOption,
+      proxyPort = c.getInt("proxy-port"))
   }
 }
