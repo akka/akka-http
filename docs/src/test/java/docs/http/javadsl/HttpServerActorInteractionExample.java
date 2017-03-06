@@ -25,6 +25,7 @@ import akka.stream.javadsl.Flow;
 import akka.util.Timeout;
 import scala.concurrent.duration.FiniteDuration;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -83,11 +84,11 @@ public class HttpServerActorInteractionExample extends AllDirectives {
 
   static class Bid {
     final String userId;
-    final int bid;
+    final int offer;
 
-    Bid(String userId, int bid) {
+    Bid(String userId, int offer) {
       this.userId = userId;
-      this.bid = bid;
+      this.offer = offer;
     }
   }
 
@@ -105,13 +106,20 @@ public class HttpServerActorInteractionExample extends AllDirectives {
 
   //#actor-interaction
   static class Auction extends UntypedActor {
+    List<Bid> bids = new ArrayList<>();
+
     static Props props() {
       return Props.create(Auction.class);
     }
 
     @Override
     public void onReceive(Object message) throws Throwable {
-
+      if (message instanceof Bid) {
+        bids.add((Bid) message);
+      } else if (message instanceof GetBids) {
+        getSender().tell(new Bids(bids), getSelf());
+      } else
+        unhandled(message);
     }
   }
   //#actor-interaction
