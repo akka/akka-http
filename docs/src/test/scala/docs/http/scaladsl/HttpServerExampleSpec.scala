@@ -510,7 +510,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
 
   "interact with an actor" in compileOnlySpec {
     //#actor-interaction
-    import akka.actor.{Actor, ActorSystem, Props}
+    import akka.actor.{Actor, ActorSystem, Props, ActorLogging}
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model.StatusCodes
     import akka.http.scaladsl.server.Directives._
@@ -528,14 +528,14 @@ class HttpServerExampleSpec extends WordSpec with Matchers
       case object GetBids
       case class Bids(bids: List[Bid])
 
-      class Auction extends Actor {
+      class Auction extends Actor with ActorLogging {
         var bids = List.empty[Bid]
         def receive = {
           case bid @ Bid(userId, offer) =>
             bids = bids :+ bid
-            println(s"Bid complete: $userId, $offer")
+            log.info(s"Bid complete: $userId, $offer")
           case GetBids => sender() ! Bids(bids)
-          case _ => println("Invalid message")
+          case _ => log.info("Invalid message")
         }
       }
 
