@@ -107,32 +107,29 @@ public class HttpServerActorInteractionExample extends AllDirectives {
     }
   }
 
-}
+  static class Auction extends AbstractActor {
 
-//#actor-interaction
-class Auction extends AbstractActor {
+    private final LoggingAdapter log = Logging.getLogger(context().system(), this);
 
-  private final LoggingAdapter log = Logging.getLogger(context().system(), this);
+    List<HttpServerActorInteractionExample.Bid> bids = new ArrayList<>();
 
-  List<HttpServerActorInteractionExample.Bid> bids = new ArrayList<>();
+    static Props props() {
+      return Props.create(Auction.class);
+    }
 
-  static Props props() {
-    return Props.create(Auction.class);
-  }
-
-  public Auction() {
-    receive(ReceiveBuilder.
-      match(HttpServerActorInteractionExample.Bid.class, bid -> {
-        bids.add(bid);
-        log.info("Bid complete: {}, {}", bid.userId, bid.offer);
-      }).
-      match(HttpServerActorInteractionExample.GetBids.class, m -> {
-        sender().tell(new HttpServerActorInteractionExample.Bids(bids), self());
-      }).
-      matchAny(o -> log.info("Invalid message")).
-      build()
-    );
+    public Auction() {
+      receive(ReceiveBuilder.
+        match(HttpServerActorInteractionExample.Bid.class, bid -> {
+          bids.add(bid);
+          log.info("Bid complete: {}, {}", bid.userId, bid.offer);
+        }).
+        match(HttpServerActorInteractionExample.GetBids.class, m -> {
+          sender().tell(new HttpServerActorInteractionExample.Bids(bids), self());
+        }).
+        matchAny(o -> log.info("Invalid message")).
+        build()
+      );
+    }
   }
 }
-//#actor-interaction
 //#actor-interaction
