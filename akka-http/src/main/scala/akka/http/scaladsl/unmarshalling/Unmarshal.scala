@@ -16,5 +16,9 @@ class Unmarshal[A](val value: A) {
   /**
    * Unmarshals the value to the given Type using the in-scope Unmarshaller.
    */
-  def to[B](implicit um: Unmarshaller[A, B], ec: ExecutionContext, mat: Materializer): Future[B] = um(value)
+  def to[B](implicit um: Unmarshaller[A, B], ec: ExecutionContext = null, mat: Materializer): Future[B] = {
+    val context: ExecutionContext = if (ec == null) mat.executionContext else ec
+
+    um(value)(context, mat)
+  }
 }
