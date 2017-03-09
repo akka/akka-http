@@ -529,11 +529,21 @@ class HttpServerExampleSpec extends WordSpec with Matchers
       case object GetBids
       case class Bids(bids: List[Bid])
 
-      class Auction extends Actor {
-        def receive = {
-          case Bid(userId, bid) => println(s"Bid complete: $userId, $bid")
-          case _ => println("Invalid message")
-        }
+      class Auction extends Actor {                                                      
+                                                                                     
+        var myBids = new Bids(List[Bid]())                                               
+
+        def receive = {                                                                  
+          case Bid(userId, bid) => {                                                     
+            myBids = new Bids(new Bid(userId, bid) :: myBids.bids)                       
+          }                                                                              
+          case GetBids => {                                                              
+            sender ! myBids                                                              
+          }                                                                              
+          case _ => {                                                                    
+            println("Invalid message")                                                   
+          }                                                                              
+        }                                                                                
       }
 
       // these are from spray-json
@@ -556,7 +566,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
                 auction ! Bid(user, bid)
                 complete((StatusCodes.Accepted, "bid placed"))
               }
-            }
+            } ~
             get {
               implicit val timeout: Timeout = 5.seconds
 
