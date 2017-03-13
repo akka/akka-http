@@ -252,11 +252,11 @@ as convenient as is possible with the built-in types.
 
 Because of the number of ways one may interact with headers (i.e. try to convert a `CustomHeader` to a `RawHeader`
 or the other way around etc), a couple of helper classes for custom Header types are provided by Akka HTTP.
-Thanks to extending `ModeledCustomHeader` instead of the plain `CustomHeader` some conversion methods are at your disposal ,
+Thanks to extending `ModeledCustomHeader` instead of the plain `CustomHeader` the following methods are at your disposal:
 
 @@snip [CustomHeaderExampleTest.java](../../../../../test/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #modeled-api-key-custom-header }
 
-Which allows the this CustomHeader to be used and created in the following ways:
+Which allows the this modeled custom header to be used and created in the following ways:
 
 @@snip [CustomHeaderExampleTest.java](../../../../../test/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #conversion-creation-custom-header }
 

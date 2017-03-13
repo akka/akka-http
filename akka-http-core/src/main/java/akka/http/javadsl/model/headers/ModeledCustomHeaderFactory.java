@@ -1,3 +1,7 @@
+/**
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
+
 package akka.http.javadsl.model.headers;
 
 import akka.http.javadsl.model.HttpHeader;
@@ -33,6 +37,7 @@ public abstract class ModeledCustomHeaderFactory<H extends ModeledCustomHeader> 
 
   /**
    * Transforms an {@code HttpHeader} to this {@code ModeledCustomHeader} if the name and value are correct.
+   * It may throw in case of malformed headers 
    */
   public Optional<H> from(final HttpHeader header) {
     if (header.lowercaseName().equals(lowercaseName())) {
