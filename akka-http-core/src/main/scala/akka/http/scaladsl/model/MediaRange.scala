@@ -92,7 +92,9 @@ object MediaRange {
     override def isText = mediaType.isText
     override def isVideo = mediaType.isVideo
     def matches(mediaType: MediaType) =
-      this.mediaType.mainType == mediaType.mainType && this.mediaType.subType == mediaType.subType
+      this.mediaType.mainType == mediaType.mainType &&
+        this.mediaType.subType == mediaType.subType &&
+        this.mediaType.params.forall { case (key, value) ⇒ mediaType.params.get(key).contains(value) }
     def withParams(params: Map[String, String]) = copy(mediaType = mediaType.withParams(params))
     def withQValue(qValue: Float) = copy(qValue = qValue)
     def render[R <: Rendering](r: R): r.type = if (qValue < 1.0f) r ~~ mediaType ~~ ";q=" ~~ qValue else r ~~ mediaType

@@ -6,6 +6,7 @@ package akka.http.scaladsl.marshalling
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import akka.http.scaladsl.server.MediaTypeNegotiator
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
 import akka.util.ByteString
 import org.scalatest.{ Matchers, FreeSpec }
@@ -136,6 +137,20 @@ class ContentNegotiationSpec extends FreeSpec with Matchers {
       accept(`text/plain`, `text/xml`) should select(`text/plain` withCharset `UTF-8`)
       accept(`text/xml`, `text/plain`) should select(`text/xml` withCharset `UTF-8`)
     }
+
+    // https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.1
+    "Correctly calculate qValues" in {
+      val negotiator = new MediaTypeNegotiator(parseHeaders(
+        "Accept: text/*;q=0.3, text/html;q=0.7, text/html;level=1, text/html;level=2;q=0.4, */*;q=0.5"
+      ))
+      negotiator.qValueFor(`text/html` withParams Map("level" → "1")) should be(1.0f)
+      negotiator.qValueFor(`text/html`) should be(0.7f)
+      negotiator.qValueFor(`text/plain`) should be(0.3f)
+
+      negotiator.qValueFor(`image/jpeg`) should be(0.5f)
+      negotiator.qValueFor(`text/html` withParams Map("level" → "2")) should be(0.4f)
+      negotiator.qValueFor(`text/html` withParams Map("level" → "3")) should be(0.7f)
+    }
   }
 
   def testHeaders[U](headers: HttpHeader*)(body: ((Alternative*) ⇒ Option[ContentType]) ⇒ U): U = {
@@ -161,21 +176,22 @@ class ContentNegotiationSpec extends FreeSpec with Matchers {
   def reject = equal(None)
   def select(contentType: ContentType) = equal(Some(contentType))
 
+  def parseHeaders(example: String): List[HttpHeader] = example.stripMarginWithNewline("\n").split('\n').toList map { rawHeader ⇒
+    val Array(name, value) = rawHeader.split(':')
+    HttpHeader.parse(name.trim, value) match {
+      case HttpHeader.ParsingResult.Ok(header, Nil) ⇒ header
+      case result                                   ⇒ fail(result.errors.head.formatPretty)
+    }
+  }
+
   implicit class AddStringToIn(example: String) {
     def test(body: ((Alternative*) ⇒ Option[ContentType]) ⇒ Unit): Unit = example in {
       val headers =
         if (example != "(without headers)") {
-          example.stripMarginWithNewline("\n").split('\n').toList map { rawHeader ⇒
-            val Array(name, value) = rawHeader.split(':')
-            HttpHeader.parse(name.trim, value) match {
-              case HttpHeader.ParsingResult.Ok(header, Nil) ⇒ header
-              case result                                   ⇒ fail(result.errors.head.formatPretty)
-            }
-          }
+          parseHeaders(example)
         } else Nil
 
       testHeaders(headers: _*)(accept ⇒ body(accept))
     }
   }
 }
-
