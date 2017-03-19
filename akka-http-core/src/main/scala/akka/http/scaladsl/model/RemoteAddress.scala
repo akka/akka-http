@@ -32,6 +32,9 @@ object RemoteAddress {
     def render[R <: Rendering](r: R): r.type = r ~~ "unknown"
 
     def isUnknown = true
+
+    JavaInitialization.initializeStaticFieldWith(
+      this, classOf[jm.RemoteAddress].getField("UNKNOWN"))
   }
 
   final case class IP(ip: InetAddress, port: Option[Int] = None) extends RemoteAddress {
@@ -55,8 +58,4 @@ object RemoteAddress {
     require(bytes.length == 4 || bytes.length == 16)
     try IP(InetAddress.getByAddress(bytes)) catch { case _: UnknownHostException ⇒ Unknown }
   }
-
-  JavaInitialization.initializeStaticFieldWith(
-    Unknown, classOf[jm.RemoteAddress].getField("UNKNOWN"))
-
 }
