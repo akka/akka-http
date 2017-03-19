@@ -1,0 +1,2 @@
+# Make UnexpectedConnectionClosureException public #768
+ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.engine.client.OutgoingConnectionBlueprint$UnexpectedConnectionClosureException")
