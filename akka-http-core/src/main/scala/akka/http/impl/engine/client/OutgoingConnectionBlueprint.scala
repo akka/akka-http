@@ -19,8 +19,7 @@ import akka.event.LoggingAdapter
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.headers
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, IllegalResponseException, ResponseEntity }
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, IllegalResponseException, ResponseEntity, UnexpectedConnectionClosureException, headers }
 import akka.http.impl.engine.rendering.{ HttpRequestRendererFactory, RequestRenderingContext }
 import akka.http.impl.engine.parsing._
 import akka.http.impl.util._
@@ -126,7 +125,7 @@ private[http] object OutgoingConnectionBlueprint {
 
     One2OneBidiFlow[HttpRequest, HttpResponse](
       -1,
-      outputTruncationException = new UnexpectedConnectionClosureException(_)
+      outputTruncationException = UnexpectedConnectionClosureException
     ) atop
       core atop
       logTLSBidiBySetting("client-plain-text", settings.logUnencryptedNetworkBytes)
@@ -359,7 +358,4 @@ private[http] object OutgoingConnectionBlueprint {
       override def preStart(): Unit = getNextMethod()
     }
   }
-
-  class UnexpectedConnectionClosureException(outstandingResponses: Int)
-    extends RuntimeException(s"The http server closed the connection unexpectedly before delivering responses for $outstandingResponses outstanding requests")
 }
