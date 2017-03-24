@@ -540,7 +540,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Fires a single [[HttpRequest]] across the (cached) host connection pool for the request's
    * effective URI to produce a response future.
    *
-   * The given [[HttpsConnectionContext]] will be used for encruption if the request is sent to an https endpoint.
+   * The given [[HttpsConnectionContext]] will be used for encryption if the request is sent to an https endpoint.
    *
    * Note that the request must have either an absolute URI or a valid `Host` header, otherwise
    * the future will be completed with an error.
@@ -709,8 +709,8 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     delegate.createDefaultClientHttpsContext()
 
   private def adaptTupleFlow[T, Mat](scalaFlow: stream.scaladsl.Flow[(scaladsl.model.HttpRequest, T), (Try[scaladsl.model.HttpResponse], T), Mat]): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], Mat] = {
-    implicit val _ = JavaMapping.identity[T]
-    JavaMapping.toJava(scalaFlow)(JavaMapping.flowMapping[Pair[HttpRequest, T], (scaladsl.model.HttpRequest, T), Pair[Try[HttpResponse], T], (Try[scaladsl.model.HttpResponse], T), Mat])
+    implicit def id[X] = JavaMapping.identity[X]
+    JavaMapping.toJava(scalaFlow)(JavaMapping.flowMapping[Pair[HttpRequest, T], (scaladsl.model.HttpRequest, T), Pair[Try[HttpResponse], T], (Try[scaladsl.model.HttpResponse], T), Mat, Mat])
   }
 
   private def adaptOutgoingFlow[T, Mat](scalaFlow: stream.scaladsl.Flow[scaladsl.model.HttpRequest, scaladsl.model.HttpResponse, Future[scaladsl.Http.OutgoingConnection]]): Flow[HttpRequest, HttpResponse, CompletionStage[OutgoingConnection]] =

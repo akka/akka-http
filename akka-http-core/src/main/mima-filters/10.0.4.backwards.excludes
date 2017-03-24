@@ -1,0 +1,29 @@
+# Internal classes, #912
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.client.PoolSlot#SlotProcessor.this")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.engine.client.PoolInterfaceActor")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.client.PoolSlot.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.client.PoolFlow.apply")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.engine.client.PoolGateway#GatewayIdentifier.name")
+
+# Added new member to ConnectionPoolSettings which shouldn't be implemented by user classes, #916
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.transport")
+
+# changes to internal classes, #916
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.JavaMapping.flowMapping")
+
+# changes to internal classes, #945
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.StreamUtils#ScheduleSupport.scheduleOnce")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.util.StreamUtils#ScheduleSupport.scheduleOnce")
+
+# removed unused internal methods
+ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.StreamUtils$ReadableCell")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.StreamUtils$OneTimeWriteCell")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.StreamUtils$OneTimePublisherSink")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.StreamUtils.oneTimeSource$default$2")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.StreamUtils.oneTimeSubscriberSource")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.StreamUtils.failedPublisher")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.StreamUtils.oneTimeSource")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.StreamUtils.oneTimePublisherSink")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.StreamUtils$OneTimeSubscriberSource")
