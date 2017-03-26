@@ -1,6 +1,7 @@
 package akka.http.scaladsl.server.directives
 
 import akka.actor.ActorRefFactory
+import akka.annotation.ApiMayChange
 import akka.http.caching.{ Cache, LfuCache }
 import akka.http.scaladsl.server.Directive0
 
@@ -12,6 +13,7 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.headers.CacheDirectives._
 import akka.http.scaladsl.server.RouteResult.Rejected
 
+@ApiMayChange
 trait CachingDirectives {
   import akka.http.scaladsl.server.directives.BasicDirectives._
   import akka.http.scaladsl.server.directives.RouteDirectives._
