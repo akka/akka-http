@@ -47,6 +47,7 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
         }
       }
       val future2 = cache(1)("")
+      Thread.sleep(50)
       cache.store.get(1).getNumberOfDependents should be(2)
 
       latch.countDown()
@@ -60,7 +61,7 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
       Await.result(cache(2)(Future.successful("B")), 3.seconds) should be("B")
       Await.result(cache(3)("C"), 3.seconds) should be("C")
       cache(4)("D")
-      Thread.sleep(10)
+      Thread.sleep(50)
       cache.size should be(3)
     }
     "expire old entries" in {
