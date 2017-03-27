@@ -58,4 +58,11 @@ object RemoteAddress {
     require(bytes.length == 4 || bytes.length == 16)
     try IP(InetAddress.getByAddress(bytes)) catch { case _: UnknownHostException ⇒ Unknown }
   }
+
+  private[akka] val renderWithoutPort = new Renderer[RemoteAddress] {
+    def render[R <: Rendering](r: R, address: RemoteAddress): r.type = address match {
+      case IP(ip, _) ⇒ r ~~ ip.getHostAddress
+      case _         ⇒ r ~~ address
+    }
+  }
 }
