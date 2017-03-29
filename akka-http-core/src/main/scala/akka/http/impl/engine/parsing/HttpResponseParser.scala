@@ -85,19 +85,27 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
         }
       }
     }
+
+    def isNewLine(idx: Int) = byteChar(input, idx) == '\n' || byteChar(input, idx) == '\r' && byteChar(input, idx + 1) == '\n'
+    def skipNewLine(idx: Int) = {
+      if (byteChar(input, idx) == '\r' && byteChar(input, idx + 1) == '\n') idx + 2
+      else if (byteChar(input, idx) == '\n') idx + 1
+      else idx
+    }
+
     if (byteChar(input, cursor + 3) == ' ') {
       parseStatusCode()
       val startIdx = cursor + 4
       @tailrec def skipReason(idx: Int): Int =
         if (idx - startIdx <= maxResponseReasonLength)
-          if (byteChar(input, idx) == '\r' && byteChar(input, idx + 1) == '\n') idx + 2
-          else if (byteChar(input, idx) == '\n') idx + 1
+          if (isNewLine(idx)) skipNewLine(idx)
           else skipReason(idx + 1)
         else throw new ParsingException("Response reason phrase exceeds the configured limit of " +
           maxResponseReasonLength + " characters")
       skipReason(startIdx)
-    } else if (byteChar(input, cursor + 3) == '\n' || byteChar(input, cursor + 3) == '\r' && byteChar(input, cursor + 4) == '\n') {
-      throw new ParsingException("Status code misses trailing space")
+    } else if (isNewLine(cursor + 3)) {
+      if (uriParsingMode == Uri.ParsingMode.Relaxed) skipNewLine(cursor + 3)
+      else throw new ParsingException("Status code misses trailing space")
     } else badStatusCode
   }
 

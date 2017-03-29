@@ -144,6 +144,14 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends FreeSpe
       }
     }
 
+    "properly parse in relaxed mode only" - {
+
+      "a response with no reason phrase and no trailing space" in new Test(Uri.ParsingMode.Relaxed) {
+        s"""HTTP/1.1 200${newLine}Content-Length: 0${newLine}${newLine}""".stripMargin should parseTo(HEAD, HttpResponse())
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+    }
+
     "properly parse a chunked" - {
       val start =
         """HTTP/1.1 200 OK
@@ -252,7 +260,7 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends FreeSpe
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
 
-  private class Test {
+  private class Test(parsingMode: Uri.ParsingMode = Uri.ParsingMode.Strict) {
     def awaitAtMost: FiniteDuration = 3.seconds.dilated
     var closeAfterResponseCompletion = Seq.empty[Boolean]
 
@@ -320,7 +328,7 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends FreeSpe
     def collectBlocking[T](source: Source[T, Any]): Seq[T] =
       Await.result(source.limit(100000).runWith(Sink.seq), 1000.millis.dilated)
 
-    protected def parserSettings: ParserSettings = ParserSettings(system)
+    protected def parserSettings: ParserSettings = ParserSettings(system).withUriParsingMode(parsingMode)
 
     def newParserStage(requestMethod: HttpMethod = GET) = {
       val parser = new HttpResponseParser(parserSettings, HttpHeaderParser(parserSettings, system.log)())
