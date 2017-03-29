@@ -1,3 +1,6 @@
+/*
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
 package akka.http.javadsl.server.directives;
 
 import akka.http.javadsl.model.ContentType;
