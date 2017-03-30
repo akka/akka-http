@@ -14,6 +14,7 @@ import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
+import akka.http.scaladsl.model.ContentTypes._
 import akka.stream.stage.GraphStage
 import akka.stream._
 import akka.stream.scaladsl.{ Flow, Sink, Source }
@@ -29,19 +30,14 @@ private[rendering] object RenderSupport {
   val KeepAliveBytes = "Keep-Alive".asciiBytes
   val CloseBytes = "close".asciiBytes
 
-  private[this] final val PreRenderedContentTypes = {
-    val m = new java.util.HashMap[ContentType, Array[Byte]](16)
-    def preRenderContentType(ct: ContentType) =
-      m.put(ct, (new ByteArrayRendering(32) ~~ headers.`Content-Type` ~~ ct ~~ CrLf).get)
+  private def preRenderContentType(ct: ContentType): Array[Byte] =
+    (new ByteArrayRendering(32) ~~ headers.`Content-Type` ~~ ct ~~ CrLf).get
 
-    import ContentTypes._
-    preRenderContentType(`application/json`)
-    preRenderContentType(`text/plain(UTF-8)`)
-    preRenderContentType(`text/xml(UTF-8)`)
-    preRenderContentType(`text/html(UTF-8)`)
-    preRenderContentType(`text/csv(UTF-8)`)
-    m
-  }
+  private val ApplicationJsonContentType = preRenderContentType(`application/json`)
+  private val TextPlainContentType = preRenderContentType(`text/plain(UTF-8)`)
+  private val TextXmlContentType = preRenderContentType(`text/xml(UTF-8)`)
+  private val TextHtmlContentType = preRenderContentType(`text/html(UTF-8)`)
+  private val TextCsvContentType = preRenderContentType(`text/csv(UTF-8)`)
 
   def CrLf = Rendering.CrLf
 
@@ -57,13 +53,17 @@ private[rendering] object RenderSupport {
     })
   }
 
-  def renderEntityContentType(r: Rendering, entity: HttpEntity) = {
+  def renderEntityContentType(r: Rendering, entity: HttpEntity): r.type = {
     val ct = entity.contentType
-    if (ct != ContentTypes.NoContentType) {
-      val preRendered = PreRenderedContentTypes.get(ct)
-      if (preRendered ne null) r ~~ preRendered // re-use pre-rendered
-      else r ~~ headers.`Content-Type` ~~ ct ~~ CrLf // render ad-hoc
-    } else r // don't render
+
+    if (ct eq NoContentType) r
+    else if (ct eq `application/json`) r ~~ ApplicationJsonContentType
+    else if (ct eq `text/plain(UTF-8)`) r ~~ TextPlainContentType
+    else if (ct eq `text/xml(UTF-8)`) r ~~ TextXmlContentType
+    else if (ct eq `text/html(UTF-8)`) r ~~ TextHtmlContentType
+    else if (ct eq `text/csv(UTF-8)`) r ~~ TextCsvContentType
+    else
+      r ~~ headers.`Content-Type` ~~ ct ~~ CrLf
   }
 
   def renderByteStrings(header: ByteString, entityBytes: ⇒ Source[ByteString, Any],
