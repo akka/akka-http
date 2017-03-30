@@ -56,7 +56,7 @@ public class HeaderDirectivesExamplesTest extends JUnitRouteTest {
   public void testHeaderValueWithDefault() {
     //#headerValue-with-default
     final Function<HttpHeader, Optional<String>> extractExampleHeader = header -> {
-      if (header.name().equalsIgnoreCase("exampleHeader")) {
+      if (header.is("x-example-header")) {
         return Optional.of(header.value());
       } else {
         return Optional.empty();
@@ -69,7 +69,7 @@ public class HeaderDirectivesExamplesTest extends JUnitRouteTest {
       (String value) -> complete("header is " + value));
 
     // tests:
-    final RawHeader exampleHeader = RawHeader.create("exampleHeader", "theHeaderValue");
+    final RawHeader exampleHeader = RawHeader.create("X-Example-Header", "theHeaderValue");
     testRoute(route).run(HttpRequest.GET("/").addHeader(exampleHeader))
       .assertEntity("header is theHeaderValue");
 
