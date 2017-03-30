@@ -26,6 +26,7 @@ object TestServer extends App {
     akka.actor.serialize-creators = off
     akka.actor.serialize-messages = off
     akka.actor.default-dispatcher.throughput = 1000
+    akka.actor.default-dispatcher.fork-join-executor.parallelism-max = 6
     """)
   implicit val system = ActorSystem("ServerTest", testConf)
 
