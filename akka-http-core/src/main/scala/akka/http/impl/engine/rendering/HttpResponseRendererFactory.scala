@@ -9,10 +9,9 @@ import java.util.Random
 import akka.NotUsed
 import akka.http.impl.engine.ws.{ FrameEvent, UpgradeToWebSocketResponseHeader }
 import akka.http.scaladsl.model.ws.Message
-import akka.stream.{ Attributes, FlowShape, Graph, Inlet, Outlet }
+import akka.stream.{ Server ⇒ _, _ }
 
 import scala.collection.immutable
-
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
 import akka.util.{ ByteString, OptionVal }
@@ -23,6 +22,7 @@ import akka.http.impl.util._
 import RenderSupport._
 import HttpProtocols._
 import akka.annotation.InternalApi
+import akka.io.{ BufferPool, DirectByteBufferPool, Tcp }
 import headers._
 
 import scala.concurrent.duration._
@@ -74,6 +74,10 @@ private[http] class HttpResponseRendererFactory(
           cachedBytes
         } else cachedDateHeader._2
 
+        var bufferPool: BufferPool = _
+
+        override def preStart(): Unit = bufferPool = Tcp(materializer.asInstanceOf[ActorMaterializer].system).bufferPool // TODO: configure from the outside
+
         var closeMode: CloseMode = DontClose // signals what to do after the current response
         def close: Boolean = closeMode != DontClose
         def closeIf(cond: Boolean): Unit = if (cond) closeMode = CloseConnection
@@ -121,7 +125,8 @@ private[http] class HttpResponseRendererFactory(
         }
 
         def render(ctx: ResponseRenderingContext): StrictOrStreamed = {
-          val r = new ByteArrayRendering(responseHeaderSizeHint)
+          val buffer = bufferPool.acquire()
+          val r = new ByteBufferRendering(buffer)
 
           import ctx.response._
           val noEntity = entity.isKnownEmpty || ctx.requestMethod == HttpMethods.HEAD
@@ -233,13 +238,8 @@ private[http] class HttpResponseRendererFactory(
                 renderEntityContentType(r, entity)
                 renderContentLengthHeader(data.length) ~~ CrLf
 
-                val finalBytes = {
-                  if (!noEntity)
-                    if (data.size < r.remainingCapacity) (r ~~ data).asByteString
-                    else r.asByteString ++ data
-                  else
-                    r.asByteString
-                }
+                if (!noEntity) r ~~ data
+                val finalBytes = r.asByteString
 
                 Strict {
                   closeMode match {
