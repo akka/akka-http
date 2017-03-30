@@ -64,18 +64,6 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
       Thread.sleep(50)
       cache.size should be(3)
     }
-    "expire old entries" in {
-      val cache = lfuCache[String](timeToLive = 75 millis span)
-      Await.result(cache(1)("A"), 3.seconds) should be("A")
-      Await.result(cache(2)("B"), 3.seconds) should be("B")
-      Thread.sleep(50)
-      Await.result(cache(3)("C"), 3.seconds) should be("C")
-      cache.size should be(3)
-      Thread.sleep(50)
-      cache.get(1) should be(None)
-      cache.get(2) should be(None)
-      cache.size should be(1)
-    }
     "not cache exceptions" in {
       val cache = lfuCache[String]()
       an[RuntimeException] shouldBe thrownBy {
