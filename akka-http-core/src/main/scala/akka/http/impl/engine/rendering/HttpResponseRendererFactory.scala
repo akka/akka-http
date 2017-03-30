@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.rendering
 
+import java.util.Random
+
 import akka.NotUsed
 import akka.http.impl.engine.ws.{ FrameEvent, UpgradeToWebSocketResponseHeader }
 import akka.http.scaladsl.model.ws.Message
@@ -43,20 +45,7 @@ private[http] class HttpResponseRendererFactory(
     }
 
   // as an optimization we cache the Date header of the last second here
-  @volatile private[this] var cachedDateHeader: (Long, Array[Byte]) = (0L, null)
-
-  private def dateHeader: Array[Byte] = {
-    var (cachedSeconds, cachedBytes) = cachedDateHeader
-    val now = currentTimeMillis()
-    if (now / 1000 > cachedSeconds) {
-      cachedSeconds = now / 1000
-      val r = new ByteArrayRendering(48)
-      DateTime(now).renderRfc1123DateTimeString(r ~~ headers.Date) ~~ CrLf
-      cachedBytes = r.get
-      cachedDateHeader = cachedSeconds → cachedBytes
-    }
-    cachedBytes
-  }
+  private[this] var cachedDateHeader: (Long, Array[Byte]) = (0L, null)
 
   // split out so we can stabilize by overriding in tests
   protected def currentTimeMillis(): Long = System.currentTimeMillis()
@@ -70,6 +59,21 @@ private[http] class HttpResponseRendererFactory(
 
     def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
       new GraphStageLogic(shape) {
+        val random = new Random
+
+        private def dateHeader: Array[Byte] = if (random.nextBoolean()) { // with 50 % chance don't check time
+          var (cachedSeconds, cachedBytes) = cachedDateHeader
+          val now = currentTimeMillis()
+          if (now / 1000 > cachedSeconds) {
+            cachedSeconds = now / 1000
+            val r = new ByteArrayRendering(48)
+            DateTime(now).renderRfc1123DateTimeString(r ~~ headers.Date) ~~ CrLf
+            cachedBytes = r.get
+            cachedDateHeader = cachedSeconds → cachedBytes
+          }
+          cachedBytes
+        } else cachedDateHeader._2
+
         var closeMode: CloseMode = DontClose // signals what to do after the current response
         def close: Boolean = closeMode != DontClose
         def closeIf(cond: Boolean): Unit = if (cond) closeMode = CloseConnection
