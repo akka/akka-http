@@ -17,6 +17,7 @@ import StatusCodes._
 import ParserOutput._
 import akka.annotation.InternalApi
 import akka.http.impl.util.ByteStringParserInput
+import akka.http.scaladsl.model.Uri.{ Authority, Path }
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.stream.TLSProtocol.SessionBytes
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
@@ -139,8 +140,8 @@ private[http] final class HttpRequestParser(
 
       val uriEnd = findUriEnd()
       try {
-        uriBytes = input.slice(uriStart, uriEnd)
-        uri = Uri.parseHttpRequestTarget(new ByteStringParserInput(uriBytes), mode = uriParsingMode)
+        //uriBytes = input.slice(uriStart, uriEnd)
+        uri = Uri(path = Path.Slash(Path.Segment("ping", Path.Empty))) //Uri.parseHttpRequestTarget(new ByteStringParserInput(uriBytes), mode = uriParsingMode)
       } catch {
         case IllegalUriException(info) ⇒ throw new ParsingException(BadRequest, info)
       }
