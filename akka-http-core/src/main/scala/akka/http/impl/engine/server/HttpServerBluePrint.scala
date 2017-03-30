@@ -289,7 +289,6 @@ private[http] object HttpServerBluePrint {
   }
 
   private class TimeoutSetup(
-    val timeoutBase:   Deadline,
     val scheduledTask: Cancellable,
     val timeout:       Duration,
     val handler:       HttpRequest ⇒ HttpResponse)
@@ -306,10 +305,11 @@ private[http] object HttpServerBluePrint {
 
     initialTimeout match {
       case timeout: FiniteDuration ⇒ set {
-        requestEnd.fast.map(_ ⇒ new TimeoutSetup(Deadline.now, schedule(timeout, this), timeout, this))
+        requestEnd.fast.map(_ ⇒ new TimeoutSetup(schedule(timeout, this), timeout, this))
       }
+
       case _ ⇒ set {
-        requestEnd.fast.map(_ ⇒ new TimeoutSetup(Deadline.now, DummyCancellable, Duration.Inf, this))
+        requestEnd.fast.map(_ ⇒ new TimeoutSetup(DummyCancellable, Duration.Inf, this))
       }
     }
 
@@ -332,10 +332,10 @@ private[http] object HttpServerBluePrint {
             val newHandler = if (handler eq null) old.handler else handler
             val newTimeout = if (timeout eq null) old.timeout else timeout
             val newScheduling = newTimeout match {
-              case x: FiniteDuration ⇒ schedule(old.timeoutBase + x - Deadline.now, newHandler)
+              case x: FiniteDuration ⇒ schedule(x, newHandler)
               case _                 ⇒ null // don't schedule a new timeout
             }
-            new TimeoutSetup(old.timeoutBase, newScheduling, newTimeout, newHandler)
+            new TimeoutSetup(newScheduling, newTimeout, newHandler)
           } else old // too late, the previously set timeout cannot be cancelled anymore
         }
     }
