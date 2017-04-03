@@ -29,6 +29,6 @@ object MiMa extends AutoPlugin {
           "10.0.9",
           "10.0.10"
       )
-        .map((version: String) => organization.value %% name.value % version)
+        .collect { case version if name.value != "akka-http-caching" => organization.value %% name.value % version }
   )
 }
