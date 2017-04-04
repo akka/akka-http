@@ -147,9 +147,14 @@ class ContentNegotiationSpec extends FreeSpec with Matchers {
       accept(`text/html` withParams Map("level" → "1"), `text/html` withParams Map("format" → "flowed")) should select(`text/html` withParams Map("level" → "1") withCharset `UTF-8`)
     }
 
-    /** when both acceptable media types are equally specific, we must select the one with the highest qValue */
+    /** when both acceptable media types are available as separate marshallers and equally specific, we must select the one with the highest qValue */
     "Accept: text/html;level=1;q=0.4, text/html;format=flowed;q=0.7" test { accept ⇒
       accept(`text/html` withParams Map("level" → "1"), `text/html` withParams Map("format" → "flowed")) should select(`text/html` withParams Map("format" → "flowed") withCharset `UTF-8`)
+    }
+
+    /** when there's 2 equally specific matching media types for the available marshaller, we should choose the one with the highest qValue */
+    "Accept: text/html;level=1;q=0.4, text/html;format=flowed;q=1, text/html;q=0.7" test { accept ⇒
+      accept(`text/html` withParams Map("level" → "1", "format" → "flowed"), `text/html`) should select(`text/html` withParams Map("level" → "1", "format" → "flowed") withCharset `UTF-8`)
     }
 
     // https://tools.ietf.org/html/rfc7231#section-5.3.2
