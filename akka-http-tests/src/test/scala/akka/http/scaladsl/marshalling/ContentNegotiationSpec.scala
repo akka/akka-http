@@ -18,7 +18,6 @@ import HttpCharsets._
 
 class ContentNegotiationSpec extends FreeSpec with Matchers {
   "Content Negotiation should work properly for requests with header(s)" - {
-
     "(without headers)" test { accept ⇒
       accept(`text/plain` withCharset `UTF-16`) should select(`text/plain` withCharset `UTF-16`)
       accept(`text/plain`, `text/html`) should select(`text/plain` withCharset `UTF-8`)
@@ -138,7 +137,22 @@ class ContentNegotiationSpec extends FreeSpec with Matchers {
       accept(`text/xml`, `text/plain`) should select(`text/xml` withCharset `UTF-8`)
     }
 
-    // https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.1
+    /** when both acceptable media types are equally specific and have the same qValue, we choose to send the first */
+    "Accept: text/html;level=1, text/html;format=flowed" test { accept ⇒
+      accept(`text/html` withParams Map("level" → "1"), `text/html` withParams Map("format" → "flowed")) should select(`text/html` withParams Map("level" → "1") withCharset `UTF-8`)
+    }
+
+    /** when an acceptable media type is more specific, it is matched even when it has a lower qValue */
+    "Accept: text/html;format=flowed;q=0.5, text/html;q=1" test { accept ⇒
+      accept(`text/html` withParams Map("level" → "1"), `text/html` withParams Map("format" → "flowed")) should select(`text/html` withParams Map("level" → "1") withCharset `UTF-8`)
+    }
+
+    /** when both acceptable media types are equally specific, we must select the one with the highest qValue */
+    "Accept: text/html;level=1;q=0.4, text/html;format=flowed;q=0.7" test { accept ⇒
+      accept(`text/html` withParams Map("level" → "1"), `text/html` withParams Map("format" → "flowed")) should select(`text/html` withParams Map("format" → "flowed") withCharset `UTF-8`)
+    }
+
+    // https://tools.ietf.org/html/rfc7231#section-5.3.2
     "Correctly calculate qValues" in {
       val negotiator = new MediaTypeNegotiator(parseHeaders(
         "Accept: text/*;q=0.3, text/html;q=0.7, text/html;level=1, text/html;level=2;q=0.4, */*;q=0.5"
