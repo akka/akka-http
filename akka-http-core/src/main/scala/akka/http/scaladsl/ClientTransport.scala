@@ -31,22 +31,10 @@ object ClientTransport {
   @InternalApi private[akka] case class TCPTransport(localAddress: Option[InetSocketAddress])
     extends ClientTransport {
 
-    //    new Exception(s"HERE: ${settings.idleTimeout}").printStackTrace()
-    //
-    //    println(s" bbb settings = ${settings}")
-    //    println(s" bbb settings.idleTimeout = ${settings.idleTimeout}")
-
     def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
       val s = settings.asInstanceOf[akka.http.scaladsl.settings.ClientConnectionSettings]
-      // The InetSocketAddress representing the remote address must be created unresolved because akka.io.TcpOutgoingConnection will
-      // not attempt DNS resolution if the InetSocketAddress is already resolved. That behavior is problematic when it comes to
-      // connection pools since it means that new connections opened by the pool in the future can end up using a stale IP address.
-      // By passing an unresolved InetSocketAddress instead, we ensure that DNS resolution is performed for every new connection.
-      println(s"  BBB ClientConnectionSettings: settings.idleTimeout = ${s.idleTimeout}")
-
-      val uri = InetSocketAddress.createUnresolved(host, port)
-      Tcp().outgoingConnection(uri, localAddress,
-        s.socketOptions, halfClose = true, s.connectingTimeout, s.idleTimeout) // FIXME does this work?
+      Tcp().outgoingConnection(InetSocketAddress.createUnresolved(host, port), localAddress,
+        s.socketOptions, halfClose = true, s.connectingTimeout, s.idleTimeout)
         .mapMaterializedValue(_.map(tcpConn ⇒ OutgoingConnection(tcpConn.localAddress, tcpConn.remoteAddress))(system.dispatcher))
     }
   }

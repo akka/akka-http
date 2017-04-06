@@ -74,17 +74,7 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
   private def initConnectionFlow() = {
     import context.system
     import hcps._
-    import setup.{ connectionContext, settings }
-
-    println(s"  vvv starting connection = ${settings.connectionSettings}")
-    println(s"  vvv starting connection IDLE TIMEOUT = ${settings.connectionSettings.idleTimeout}")
-
-    println(s"  vvv settings.transport = ${settings.transport}")
-    //    settings.transport match {
-    //      case t: ClientTransport.TCPTransport ⇒
-    //        println(s"  VVV t.settings.idleTimeout = ${t.idleTimeout}, APPLY THE HACK!!!!!!!!!!!")
-    //        t.copy(settings = t.settings.withIdleTimeout(hcps.setup.settings.idleTimeout))
-    //    }
+    import setup.settings
 
     val connectionFlow =
       Http().outgoingConnection(host, port, None, settings.connectionSettings, setup.log)

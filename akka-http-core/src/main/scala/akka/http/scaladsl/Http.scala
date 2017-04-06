@@ -540,8 +540,6 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     log:               LoggingAdapter         = system.log)(implicit fm: Materializer): Future[HttpResponse] =
     try {
       val gateway: PoolGateway = sharedGateway(request, settings, connectionContext, log)
-      println(s"  >>> gateway.hcps.setup.settings.idleTimeout = ${gateway.hcps.setup.settings.idleTimeout}")
-      println(s"  >>> settings.idleTimeout = ${settings.idleTimeout}")
       gateway(request)
     } catch {
       case e: IllegalUriException ⇒ FastFuture.failed(e)
@@ -664,7 +662,6 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
       val httpsCtx = if (request.uri.scheme.equalsIgnoreCase("https")) connectionContext else ConnectionContext.noEncryption()
       val setup = ConnectionPoolSetup(settings, httpsCtx, log)
       val host = request.uri.authority.host.toString()
-      println(s"  zzz setup.settings.connectionSettings.idleTimeout = ${setup.settings.connectionSettings.idleTimeout}")
       val hcps = HostConnectionPoolSetup(host, request.uri.effectivePort, setup)
       sharedGateway(hcps)
     } else {

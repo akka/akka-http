@@ -1,14 +1,13 @@
-/**
+/*
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.http.scaladsl.server
+package akka.http.scaladsl
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.{ Http, TestUtils }
 import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
 import com.typesafe.config.{ Config, ConfigFactory }

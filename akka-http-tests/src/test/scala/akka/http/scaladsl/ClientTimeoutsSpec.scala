@@ -2,14 +2,13 @@
  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
-package akka.http.scaladsl.server
+package akka.http.scaladsl
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings }
-import akka.http.scaladsl.{ Http, TestUtils }
 import akka.stream.ActorMaterializer
 import akka.testkit.{ SocketUtil, TestKit }
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -19,14 +18,14 @@ import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class TimeoutExceededSpec extends WordSpec with Matchers with RequestBuilding with BeforeAndAfterAll
+class ClientTimeoutsSpec extends WordSpec with Matchers with RequestBuilding with BeforeAndAfterAll
   with ScalaFutures {
 
   val testConf: Config = ConfigFactory.parseString(
     """
     akka.loggers = ["akka.testkit.TestEventListener"]
-    akka.loglevel = DEBUG
-    akka.stdout-loglevel = DEBUG
+    akka.loglevel = ERROR
+    akka.stdout-loglevel = ERROR
     """)
 
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
@@ -52,10 +51,6 @@ class TimeoutExceededSpec extends WordSpec with Matchers with RequestBuilding wi
             .withConnectingTimeout(testTimeout)
             .withIdleTimeout(testTimeout)
         )
-
-      println(s"  xxx poolSettings = ${poolSettings}")
-      println(s"  xxx poolSettings.idleTimeout = ${poolSettings.idleTimeout}")
-      println(s"  xxx ClientConnectionSettings: poolSettings.connectionSettings.idleTimeout = ${poolSettings.connectionSettings.idleTimeout}")
 
       val url = s"http://localhost:$port/"
       val ex = intercept[Exception] {
