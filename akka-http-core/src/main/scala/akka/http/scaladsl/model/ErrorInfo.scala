@@ -91,3 +91,6 @@ final case class EntityStreamSizeException(limit: Long, actualSize: Option[Long]
 }
 
 case class RequestTimeoutException(request: HttpRequest, message: String) extends RuntimeException(message)
+
+case class UnexpectedConnectionClosureException(outstandingResponses: Int)
+  extends RuntimeException(s"The http server closed the connection unexpectedly before delivering responses for $outstandingResponses outstanding requests")
