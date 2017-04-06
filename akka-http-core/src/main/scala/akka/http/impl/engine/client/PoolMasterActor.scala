@@ -53,6 +53,7 @@ private[http] final class PoolMasterActor extends Actor with ActorLogging {
     if (poolStatus.contains(gateway)) {
       throw new IllegalStateException(s"pool interface actor for $gateway already exists")
     }
+    println(s" ccc gateway = ${gateway.hcps.setup.settings.connectionSettings.idleTimeout}")
     val ref = context.actorOf(PoolInterfaceActor.props(gateway), PoolInterfaceActor.name.next())
     poolStatus += gateway → PoolInterfaceRunning(ref)
     poolInterfaces += ref → gateway
