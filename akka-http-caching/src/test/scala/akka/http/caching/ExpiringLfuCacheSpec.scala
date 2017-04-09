@@ -1,23 +1,18 @@
 package akka.http.caching
 
 import java.util.Random
-import java.util.concurrent.{ CountDownLatch, Executor }
+import java.util.concurrent.CountDownLatch
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
-import com.github.benmanes.caffeine.cache.AsyncCacheLoader
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 
-import scala.compat.java8.FutureConverters._
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
 
 class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   implicit val system = ActorSystem()
   import system.dispatcher
-
-  implicit def stringLoader = (k: Any) ⇒ Future.successful("")
-  implicit def intLoader = (k: Any) ⇒ Future.successful(0)
 
   "An LfuCache" should {
     "be initially empty" in {
@@ -67,7 +62,7 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
     "not cache exceptions" in {
       val cache = lfuCache[String]()
       an[RuntimeException] shouldBe thrownBy {
-        Await.result(cache.apply(1, () ⇒ (throw new RuntimeException("Naa")): String), 5.second)
+        Await.result(cache.apply(1, () ⇒ { throw new RuntimeException("Naa"); Future.successful("") }), 5.second)
       }
       Await.result(cache(1)("A"), 3.seconds) should be("A")
     }
@@ -111,13 +106,8 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
   }
 
   def lfuCache[T](maxCapacity: Int = 500, initialCapacity: Int = 16,
-                  timeToLive: Duration = Duration.Inf, timeToIdle: Duration = Duration.Inf)(implicit defaultLoader: Any ⇒ Future[T]) = {
-    val loader = new AsyncCacheLoader[Any, T] {
-      def asyncLoad(k: Any, e: Executor) = {
-        defaultLoader(k).toJava.toCompletableFuture
-      }
-    }
-    new ExpiringLfuCache[T](maxCapacity, initialCapacity, timeToLive, timeToIdle, loader)
+                  timeToLive: Duration = Duration.Inf, timeToIdle: Duration = Duration.Inf) = {
+    new ExpiringLfuCache[T](maxCapacity, initialCapacity, timeToLive, timeToIdle)
   }
 
 }
