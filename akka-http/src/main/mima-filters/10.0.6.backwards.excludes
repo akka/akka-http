@@ -1,0 +1,4 @@
+# Mima filters needed to check newer versions against 10.0.5
+
+# Path ignore trailing slash #880
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.PathDirectives.ignoreTrailingSlash")

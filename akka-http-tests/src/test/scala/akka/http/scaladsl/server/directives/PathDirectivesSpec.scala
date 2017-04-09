@@ -464,6 +464,75 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
     }
   }
 
+  "the `ignoreTrailingSlash` directive" should {
+    var passes = 0
+    val route = ignoreTrailingSlash {
+      passes = passes + 1
+      path("foo") {
+        completeOk
+      } ~
+        (pathPrefix("bar") & pathEndOrSingleSlash) {
+          completeOk
+        } ~
+        path("baz" /) {
+          completeOk
+        }
+    }
+
+    "pass if the request path doesn't have a trailing slash" in {
+      val oldPasses = passes
+      Get("/foo") ~> route ~> check {
+        passes shouldEqual (oldPasses + 1)
+        response shouldEqual Ok
+      }
+    }
+
+    "pass if the request path has a trailing slash by retrying the inner route" in {
+      val oldPasses = passes
+      Get("/foo/") ~> route ~> check {
+        passes shouldEqual (oldPasses + 2)
+        response shouldEqual Ok
+      }
+    }
+
+    "pass when the request contains parameters and fragments" in {
+      val oldPasses = passes
+      Get("/foo/?query#frag") ~> route ~> check {
+        passes shouldEqual (oldPasses + 2)
+        response shouldEqual Ok
+      }
+    }
+
+    "retry the inner route only once if path already checks for an optional trailing slash" in {
+      val oldPasses = passes
+      Get("/bar/") ~> route ~> check {
+        passes shouldEqual (oldPasses + 1)
+        response shouldEqual Ok
+      }
+    }
+
+    "retry accordingly if the path expects a trailing slash" in {
+      val oldPasses = passes
+      Get("/baz") ~> route ~> check {
+        passes shouldEqual (oldPasses + 2)
+        response shouldEqual Ok
+      }
+
+      Get("/baz/") ~> route ~> check {
+        passes shouldEqual (oldPasses + 3)
+        response shouldEqual Ok
+      }
+    }
+
+    "reject if request can't be matched with nor without a trailing slash" in {
+      val oldPasses = passes
+      Get("/foz") ~> route ~> check {
+        passes shouldEqual (oldPasses + 2)
+        handled shouldEqual false
+      }
+    }
+  }
+
   import akka.http.scaladsl.model.headers.Location
   import akka.http.scaladsl.model.Uri
 
