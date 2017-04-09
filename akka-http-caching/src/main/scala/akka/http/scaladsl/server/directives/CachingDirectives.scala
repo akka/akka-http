@@ -52,13 +52,10 @@ trait CachingDirectives {
     }
   }
 
-  //LfuCache requires a loader function on creation - this will not be used.
-  private val defaultLoader = (k: Any) ⇒ Future.successful(Rejected(Nil))
-
   //# route-Cache
   def routeCache(maxCapacity: Int = 500, initialCapacity: Int = 16, timeToLive: Duration = Duration.Inf,
                  timeToIdle: Duration = Duration.Inf): Cache[RouteResult] = {
-    LfuCache(defaultLoader, maxCapacity, initialCapacity, timeToLive, timeToIdle)
+    LfuCache(maxCapacity, initialCapacity, timeToLive, timeToIdle)
   }
   //#
 }
