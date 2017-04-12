@@ -59,12 +59,12 @@ trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImp
     fromStatusCodeAndHeadersAndValue[T] compose { case (status, headers, value) ⇒ (sConv(status), headers, value) }
 
   implicit def fromStatusCodeAndHeadersAndValue[T](implicit mt: ToEntityMarshaller[T]): TRM[(StatusCode, immutable.Seq[HttpHeader], T)] =
-    Marshaller(implicit ec ⇒ {
-      case (status, headers, value) ⇒ mt(value).fast map (_ map (_ map (statusCodeAndEntityResponse(status, headers, _))))
-    })
+    mt.wrapInAndOut {
+      case (status, headers, value) ⇒ (value, statusCodeAndEntityResponse(status, headers, _))
+    }
 
   implicit def fromEntityStreamingSupportAndByteStringMarshaller[T, M](implicit s: EntityStreamingSupport, m: ToByteStringMarshaller[T]): ToResponseMarshaller[Source[T, M]] = {
-    Marshaller[Source[T, M], HttpResponse] { implicit ec ⇒ source ⇒
+    Marshaller.dynamic[Source[T, M], HttpResponse] { implicit ec ⇒ source ⇒
       FastFuture successful {
         Marshalling.WithFixedContentType(s.contentType, () ⇒ {
           val availableMarshallingsPerElement = source.mapAsync(1) { t ⇒ m(t)(ec) }
@@ -107,7 +107,7 @@ trait LowPriorityToResponseMarshallerImplicits {
 
   // FIXME deduplicate this!!!
   implicit def fromEntityStreamingSupportAndEntityMarshaller[T, M](implicit s: EntityStreamingSupport, m: ToEntityMarshaller[T], tag: ClassTag[T]): ToResponseMarshaller[Source[T, M]] = {
-    Marshaller[Source[T, M], HttpResponse] { implicit ec ⇒ source ⇒
+    Marshaller.dynamic[Source[T, M], HttpResponse] { implicit ec ⇒ source ⇒
       FastFuture successful {
         Marshalling.WithFixedContentType(s.contentType, () ⇒ {
           val availableMarshallingsPerElement = source.mapAsync(1) { t ⇒ m(t)(ec) }

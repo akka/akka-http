@@ -99,7 +99,7 @@ class EntityStreamingSpec extends RoutingSpec {
   }
 
   "csv-example" in {
-    implicit val tweetAsCsv = Marshaller.strict[Tweet, ByteString] { t ⇒
+    implicit val tweetAsCsv = Marshaller.strictDynamic[Tweet, ByteString] { t ⇒
       Marshalling.WithFixedContentType(ContentTypes.`text/csv(UTF-8)`, () ⇒ {
         val txt = t.txt.replaceAll(",", ".")
         val uid = t.uid
@@ -203,13 +203,10 @@ class EntityStreamingSpec extends RoutingSpec {
     }
   }
   "render a JSON Source of raw Strings if String => JsValue is provided" in {
-    implicit val stringFormat = Marshaller[String, ByteString] { ec ⇒ s ⇒
-      Future.successful {
-        List(Marshalling.WithFixedContentType(ContentTypes.`application/json`, () ⇒
-          ByteString("\"" + s + "\"")) // "raw string" to be rendered as json element in our stream must be enclosed by ""
-        )
-      }
-    }
+    implicit val stringFormat =
+      Marshaller.withFixedContentType[String, ByteString](ContentTypes.`application/json`)(
+        s ⇒ ByteString("\"" + s + "\"") // "raw string" to be rendered as json element in our stream must be enclosed by ""
+      )
 
     implicit val jsonStreamingSupport =
       EntityStreamingSupport.json()

@@ -117,16 +117,19 @@ class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
         val jsonMarshaller =
           Marshaller.stringMarshaller(MediaTypes.`application/json`)
             .compose[MyClass] { mc ⇒
+              //Thread.dumpStack()
               println(s"jsonMarshaller marshall $mc")
+              Thread.dumpStack()
               mc.value
             }
         val textMarshaller = Marshaller.stringMarshaller(MediaTypes.`text/html`)
           .compose[MyClass] { mc ⇒
             println(s"textMarshaller marshall $mc")
+            Thread.dumpStack()
             throw new IllegalArgumentException(s"Unexpected value $mc")
           }
 
-        Marshaller.oneOf(jsonMarshaller, textMarshaller)
+        Marshaller.oneOf(textMarshaller, jsonMarshaller)
       }
       val request =
         HttpRequest(uri = "/test")
