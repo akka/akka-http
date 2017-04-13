@@ -57,7 +57,8 @@ object MediaRange {
   private final case class Custom(mainType: String, params: Map[String, String], qValue: Float)
     extends MediaRange with ValueRenderable {
     require(0.0f <= qValue && qValue <= 1.0f, "qValue must be >= 0 and <= 1.0")
-    def matches(mediaType: MediaType) = mainType == "*" || mediaType.mainType == mainType
+    def matches(mediaType: MediaType) = (mainType == "*" || mediaType.mainType == mainType) &&
+      this.params.forall { case (key, value) ⇒ mediaType.params.get(key).contains(value) }
     def withParams(params: Map[String, String]) = custom(mainType, params, qValue)
     def withQValue(qValue: Float) = if (qValue != this.qValue) custom(mainType, params, qValue) else this
     def render[R <: Rendering](r: R): r.type = {
