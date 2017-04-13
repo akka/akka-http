@@ -157,7 +157,7 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
     if (statusCode.allowsEntity) {
       contextForCurrentResponse.get.requestMethod match {
         case HttpMethods.HEAD ⇒ clh match {
-          case Some(`Content-Length`(contentLength)) ⇒
+          case Some(`Content-Length`(contentLength)) if contentLength > 0 ⇒
             emitResponseStart(defaultEntity(cth, contentLength))
             setCompletionHandling(HttpMessageParser.CompletionOk)
             emit(MessageEnd)
