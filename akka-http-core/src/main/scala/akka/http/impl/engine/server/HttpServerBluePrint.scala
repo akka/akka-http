@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.server
 
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.concurrent.{ Future, Promise }
@@ -33,6 +34,8 @@ import akka.http.javadsl.model
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws.Message
 import akka.http.impl.util.LogByteStringTools._
+
+import scala.util.Success
 
 /**
  * INTERNAL API
@@ -245,6 +248,12 @@ private[http] object HttpServerBluePrint {
 
     override def initialAttributes = Attributes.name("RequestTimeoutSupport")
 
+    // optimized because LightArrayRevolverScheduler will use toNanos
+    val timeoutInNanos = initialTimeout match {
+      case f: FiniteDuration ⇒ FiniteDuration(initialTimeout.toNanos, TimeUnit.NANOSECONDS)
+      case _                 ⇒ initialTimeout
+    }
+
     val shape = new BidiShape(requestIn, requestOut, responseIn, responseOut)
 
     def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
@@ -253,10 +262,10 @@ private[http] object HttpServerBluePrint {
         def onPush(): Unit = {
           val request = grab(requestIn)
           val (entity, requestEnd) = HttpEntity.captureTermination(request.entity)
-          val access = new TimeoutAccessImpl(request, initialTimeout, requestEnd,
+          val access = new TimeoutAccessImpl(request, timeoutInNanos, requestEnd,
             getAsyncCallback(emitTimeoutResponse), interpreter.materializer)
           openTimeouts = openTimeouts.enqueue(access)
-          push(requestOut, request.copy(headers = request.headers :+ `Timeout-Access`(access), entity = entity))
+          push(requestOut, request.copy(headers = `Timeout-Access`(access) +: request.headers, entity = entity))
         }
         override def onUpstreamFinish() = complete(requestOut)
         override def onUpstreamFailure(ex: Throwable) = fail(requestOut, ex)
@@ -289,7 +298,6 @@ private[http] object HttpServerBluePrint {
   }
 
   private class TimeoutSetup(
-    val timeoutBase:   Deadline,
     val scheduledTask: Cancellable,
     val timeout:       Duration,
     val handler:       HttpRequest ⇒ HttpResponse)
@@ -305,11 +313,18 @@ private[http] object HttpServerBluePrint {
     import materializer.executionContext
 
     initialTimeout match {
-      case timeout: FiniteDuration ⇒ set {
-        requestEnd.fast.map(_ ⇒ new TimeoutSetup(Deadline.now, schedule(timeout, this), timeout, this))
-      }
+      case timeout: FiniteDuration ⇒
+        requestEnd.value match {
+          case Some(Success(_)) ⇒
+            val task = schedule(timeout, this)
+            val setup = new TimeoutSetup(task, timeout, this)
+            set(Future.successful(setup))
+          case _ ⇒
+            set(requestEnd.map(_ ⇒ new TimeoutSetup(schedule(timeout, this), timeout, this)))
+        }
+
       case _ ⇒ set {
-        requestEnd.fast.map(_ ⇒ new TimeoutSetup(Deadline.now, DummyCancellable, Duration.Inf, this))
+        requestEnd.fast.map(_ ⇒ new TimeoutSetup(DummyCancellable, Duration.Inf, this))
       }
     }
 
@@ -332,10 +347,10 @@ private[http] object HttpServerBluePrint {
             val newHandler = if (handler eq null) old.handler else handler
             val newTimeout = if (timeout eq null) old.timeout else timeout
             val newScheduling = newTimeout match {
-              case x: FiniteDuration ⇒ schedule(old.timeoutBase + x - Deadline.now, newHandler)
+              case x: FiniteDuration ⇒ schedule(x, newHandler)
               case _                 ⇒ null // don't schedule a new timeout
             }
-            new TimeoutSetup(old.timeoutBase, newScheduling, newTimeout, newHandler)
+            new TimeoutSetup(newScheduling, newTimeout, newHandler)
           } else old // too late, the previously set timeout cannot be cancelled anymore
         }
     }

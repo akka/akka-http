@@ -26,6 +26,8 @@ object TestServer extends App {
     akka.actor.serialize-creators = off
     akka.actor.serialize-messages = off
     akka.actor.default-dispatcher.throughput = 1000
+    akka.actor.default-dispatcher.fork-join-executor.parallelism-max = 6
+    akka.http.server.request-timeout = infinite
     """)
   implicit val system = ActorSystem("ServerTest", testConf)
 
@@ -34,15 +36,19 @@ object TestServer extends App {
     //    .withSyncProcessingLimit(Int.MaxValue)
     .withInputBuffer(128, 128)
   implicit val fm = ActorMaterializer(settings)
+
+  val PingPath = Uri.Path("/ping")
+  val pingResponse = HttpResponse(entity = "PONG!")
+
   try {
     val binding = Http().bindAndHandleSync({
+      case HttpRequest(GET, Uri(_, _, PingPath, _, _), _, _, _) ⇒ pingResponse
       case req @ HttpRequest(GET, Uri.Path("/"), _, _, _) if req.header[UpgradeToWebSocket].isDefined ⇒
         req.header[UpgradeToWebSocket] match {
           case Some(upgrade) ⇒ upgrade.handleMessages(echoWebSocketService) // needed for running the autobahn test suite
           case None          ⇒ HttpResponse(400, entity = "Not a valid websocket request!")
         }
       case HttpRequest(GET, Uri.Path("/"), _, _, _)      ⇒ index
-      case HttpRequest(GET, Uri.Path("/ping"), _, _, _)  ⇒ HttpResponse(entity = "PONG!")
       case HttpRequest(GET, Uri.Path("/crash"), _, _, _) ⇒ sys.error("BOOM!")
       case req @ HttpRequest(GET, Uri.Path("/ws-greeter"), _, _, _) ⇒
         req.header[UpgradeToWebSocket] match {

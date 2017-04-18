@@ -4,13 +4,14 @@
 
 package akka.http.impl.engine.rendering
 
+import java.util.Random
+
 import akka.NotUsed
 import akka.http.impl.engine.ws.{ FrameEvent, UpgradeToWebSocketResponseHeader }
 import akka.http.scaladsl.model.ws.Message
-import akka.stream.{ Attributes, FlowShape, Graph, Inlet, Outlet }
+import akka.stream.{ Server ⇒ _, _ }
 
 import scala.collection.immutable
-
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
 import akka.util.{ ByteString, OptionVal }
@@ -21,6 +22,7 @@ import akka.http.impl.util._
 import RenderSupport._
 import HttpProtocols._
 import akka.annotation.InternalApi
+import akka.io.{ BufferPool, DirectByteBufferPool, Tcp }
 import headers._
 
 import scala.concurrent.duration._
@@ -43,20 +45,7 @@ private[http] class HttpResponseRendererFactory(
     }
 
   // as an optimization we cache the Date header of the last second here
-  @volatile private[this] var cachedDateHeader: (Long, Array[Byte]) = (0L, null)
-
-  private def dateHeader: Array[Byte] = {
-    var (cachedSeconds, cachedBytes) = cachedDateHeader
-    val now = currentTimeMillis()
-    if (now / 1000 > cachedSeconds) {
-      cachedSeconds = now / 1000
-      val r = new ByteArrayRendering(48)
-      DateTime(now).renderRfc1123DateTimeString(r ~~ headers.Date) ~~ CrLf
-      cachedBytes = r.get
-      cachedDateHeader = cachedSeconds → cachedBytes
-    }
-    cachedBytes
-  }
+  private[this] var cachedDateHeader: (Long, Array[Byte]) = (0L, null)
 
   // split out so we can stabilize by overriding in tests
   protected def currentTimeMillis(): Long = System.currentTimeMillis()
@@ -70,6 +59,25 @@ private[http] class HttpResponseRendererFactory(
 
     def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
       new GraphStageLogic(shape) {
+        val random = new Random
+
+        private def dateHeader: Array[Byte] = if (random.nextBoolean()) { // with 50 % chance don't check time
+          var (cachedSeconds, cachedBytes) = cachedDateHeader
+          val now = currentTimeMillis()
+          if (now / 1000 > cachedSeconds) {
+            cachedSeconds = now / 1000
+            val r = new ByteArrayRendering(48)
+            DateTime(now).renderRfc1123DateTimeString(r ~~ headers.Date) ~~ CrLf
+            cachedBytes = r.get
+            cachedDateHeader = cachedSeconds → cachedBytes
+          }
+          cachedBytes
+        } else cachedDateHeader._2
+
+        var bufferPool: BufferPool = _
+
+        override def preStart(): Unit = bufferPool = Tcp(materializer.asInstanceOf[ActorMaterializer].system).bufferPool // TODO: configure from the outside
+
         var closeMode: CloseMode = DontClose // signals what to do after the current response
         def close: Boolean = closeMode != DontClose
         def closeIf(cond: Boolean): Unit = if (cond) closeMode = CloseConnection
@@ -117,7 +125,8 @@ private[http] class HttpResponseRendererFactory(
         }
 
         def render(ctx: ResponseRenderingContext): StrictOrStreamed = {
-          val r = new ByteStringRendering(responseHeaderSizeHint)
+          val buffer = bufferPool.acquire()
+          val r = new ByteBufferRendering(buffer)
 
           import ctx.response._
           val noEntity = entity.isKnownEmpty || ctx.requestMethod == HttpMethods.HEAD
@@ -220,7 +229,7 @@ private[http] class HttpResponseRendererFactory(
             if (status.allowsEntity) r ~~ `Content-Length` ~~ contentLength ~~ CrLf else r
 
           def byteStrings(entityBytes: ⇒ Source[ByteString, Any]): Source[ResponseRenderingOutput, Any] =
-            renderByteStrings(r, entityBytes, skipEntity = noEntity).map(ResponseRenderingOutput.HttpData(_))
+            renderByteStrings(r.asByteString, entityBytes, skipEntity = noEntity).map(ResponseRenderingOutput.HttpData(_))
 
           @tailrec def completeResponseRendering(entity: ResponseEntity): StrictOrStreamed =
             entity match {
@@ -230,11 +239,12 @@ private[http] class HttpResponseRendererFactory(
                 renderContentLengthHeader(data.length) ~~ CrLf
 
                 if (!noEntity) r ~~ data
+                val finalBytes = r.asByteString
 
                 Strict {
                   closeMode match {
-                    case SwitchToWebSocket(handler) ⇒ ResponseRenderingOutput.SwitchToWebSocket(r.get, handler)
-                    case _                          ⇒ ResponseRenderingOutput.HttpData(r.get)
+                    case SwitchToWebSocket(handler) ⇒ ResponseRenderingOutput.SwitchToWebSocket(finalBytes, handler)
+                    case _                          ⇒ ResponseRenderingOutput.HttpData(finalBytes)
                   }
                 }
 

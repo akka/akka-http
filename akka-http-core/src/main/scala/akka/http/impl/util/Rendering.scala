@@ -4,7 +4,7 @@
 
 package akka.http.impl.util
 
-import java.nio.CharBuffer
+import java.nio.{ ByteBuffer, CharBuffer }
 import java.nio.charset.Charset
 import java.text.{ DecimalFormat, DecimalFormatSymbols }
 import java.util.Locale
@@ -247,6 +247,28 @@ private[http] class StringRendering extends Rendering {
   def get: String = sb.toString
 }
 
+private[http] class ByteBufferRendering(buffer: ByteBuffer) extends Rendering {
+  def ~~(char: Char): this.type = {
+    buffer.put(char.toByte)
+    this
+  }
+
+  def ~~(bytes: Array[Byte]): this.type = {
+    buffer.put(bytes)
+    this
+  }
+
+  def ~~(bytes: ByteString): this.type = {
+    buffer.put(bytes.toArray)
+    this
+  }
+
+  def asByteString: ByteString = {
+    buffer.flip()
+    new ByteString.ByteString1CByteBuffer(buffer)
+  }
+}
+
 /**
  * INTERNAL API
  */
@@ -294,6 +316,9 @@ private[http] class ByteArrayRendering(sizeHint: Int) extends Rendering {
     size = neededSize.toInt
     oldSize
   }
+
+  def remainingCapacity: Int = array.length - size
+  def asByteString: ByteString = ByteString.ByteString1(array, 0, size)
 }
 
 /**
