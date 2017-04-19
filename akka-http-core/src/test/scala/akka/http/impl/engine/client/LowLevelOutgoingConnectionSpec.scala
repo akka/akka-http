@@ -869,6 +869,28 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
       netInSub.sendComplete()
       responses.expectComplete()
     }
+
+    "receive Content-Length for HEAD requests" in new TestSetup {
+      requestsSub.sendNext(HttpRequest(method = HttpMethods.HEAD))
+      expectWireData(
+        """HEAD / HTTP/1.1
+          |Host: example.com
+          |User-Agent: akka-http/test
+          |
+          |""")
+      sendWireData(
+        """HTTP/1.1 200 OK
+          |Content-Length: 6
+          |
+          |abcdef
+          |""")
+
+      val HttpResponse(StatusCodes.OK, _, HttpEntity.Default(_, contentLength, _), _) = expectResponse()
+      contentLength shouldEqual 6
+
+      requestsSub.sendComplete()
+      netInSub.sendComplete()
+    }
   }
 
   class TestSetup(maxResponseContentLength: Int = -1, config: String = "") {
