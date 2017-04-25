@@ -35,7 +35,7 @@ public class ParameterDirectivesTest extends JUnitRouteTest {
     route
       .run(HttpRequest.create().withUri("/abc?stringParam=a=b"))
       .assertStatusCode(400)
-      .assertEntity("The request content was malformed:\nThe request's query string is invalid");
+      .assertEntity("The request content was malformed:\nThe request's query string is invalid: Illegal query: Invalid input '=', expected '+', query-char, 'EOI', '&' or pct-encoded (line 1, column 14): stringParam=a=b\n             ^");
   }
 
   @Test
