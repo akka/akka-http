@@ -15,7 +15,7 @@ import scala.concurrent.Promise
 import scala.collection.mutable.ListBuffer
 import akka.stream.TLSProtocol._
 import akka.util.ByteString
-import akka.event.LoggingAdapter
+import akka.event.{ Logging, LoggingAdapter }
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.http.scaladsl.Http
@@ -24,9 +24,7 @@ import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, IllegalResponseExce
 import akka.http.impl.engine.rendering.{ HttpRequestRendererFactory, RequestRenderingContext }
 import akka.http.impl.engine.parsing._
 import akka.http.impl.util._
-import akka.stream.stage.GraphStage
-import akka.stream.stage.GraphStageLogic
-import akka.stream.stage.{ InHandler, OutHandler }
+import akka.stream.stage._
 import akka.http.impl.util.LogByteStringTools._
 
 import scala.util.control.NoStackTrace
@@ -100,7 +98,7 @@ private[http] object OutgoingConnectionBlueprint {
         .mapConcat(ConstantFun.scalaIdentityFunction)
         .via(new PrepareResponse(parserSettings))
 
-      val terminationFanout = b.add(Broadcast[HttpResponse](2))
+      val terminationFanout = b.add(Broadcast[HttpResponse](2, eagerCancel = true))
 
       val logger = b.add(Flow[ByteString].mapError { case t ⇒ log.error(t, "Outgoing request stream error"); t }.named("errorLogger"))
       val wrapTls = b.add(Flow[ByteString].map(SendBytes))
@@ -176,16 +174,17 @@ private[http] object OutgoingConnectionBlueprint {
 
     val shape = new FlowShape(responseOutputIn, httpResponseOut)
 
-    override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
+    override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+
       private var entitySource: SubSourceOutlet[ResponseOutput] = _
       private def entitySubstreamStarted = entitySource ne null
       private def idle = this
-      private var completionDeferred = false
       private var completeOnMessageEnd = false
 
-      def setIdleHandlers(): Unit =
-        if (completeOnMessageEnd || completionDeferred) completeStage()
+      def setIdleHandlers(): Unit = {
+        if (completeOnMessageEnd) completeStage()
         else setHandlers(responseOutputIn, httpResponseOut, idle)
+      }
 
       def onPush(): Unit = grab(responseOutputIn) match {
         case ResponseStart(statusCode, protocol, headers, entityCreator, closeRequested) ⇒
@@ -205,14 +204,11 @@ private[http] object OutgoingConnectionBlueprint {
       }
 
       override def onDownstreamFinish(): Unit = {
-        // if downstream cancels while streaming entity,
-        // make sure we also cancel the entity source, but
-        // after being done with streaming the entity
         if (entitySubstreamStarted) {
-          completionDeferred = true
-        } else {
-          completeStage()
+          val ex = new RuntimeException("Connection stream cancelled while still reading incoming entity!")
+          entitySource.fail(ex)
         }
+        completeStage()
       }
 
       setIdleHandlers()
