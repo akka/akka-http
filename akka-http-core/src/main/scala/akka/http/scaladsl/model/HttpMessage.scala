@@ -331,14 +331,14 @@ object HttpRequest {
    * include a valid [[akka.http.scaladsl.model.headers.Host]] header or if URI authority and [[akka.http.scaladsl.model.headers.Host]] header don't match.
    */
   def effectiveUri(uri: Uri, headers: immutable.Seq[HttpHeader], securedConnection: Boolean, defaultHostHeader: Host): Uri = {
-    def findHost(headers: immutable.Seq[HttpHeader]): OptionVal[Host] = {
-      val it = headers.iterator
-      while (it.hasNext) it.next() match {
-        case h: Host ⇒ return OptionVal.Some(h)
-        case _       ⇒ // continue ...
+    def findHost(headers: Seq[HttpHeader]): OptionVal[Host] = headers match {
+      case Nil ⇒ OptionVal.None
+      case head :: tail ⇒ head match {
+        case h: Host ⇒ OptionVal.Some(h)
+        case _       ⇒ findHost(tail)
       }
-      OptionVal.None
     }
+
     val hostHeader: OptionVal[Host] = findHost(headers)
     if (uri.isRelative) {
       def fail(detail: String) =
@@ -366,12 +366,11 @@ object HttpRequest {
   def verifyUri(uri: Uri): Unit =
     if (uri.isEmpty) throw new IllegalArgumentException("`uri` must not be empty")
     else {
-      def c(i: Int) = CharUtils.toLowerCase(uri.scheme charAt i)
-      uri.scheme.length match {
-        case 0 ⇒ // ok
-        case 4 if c(0) == 'h' && c(1) == 't' && c(2) == 't' && c(3) == 'p' ⇒ // ok
-        case 5 if c(0) == 'h' && c(1) == 't' && c(2) == 't' && c(3) == 'p' && c(4) == 's' ⇒ // ok
-        case _ ⇒ throw new IllegalArgumentException("""`uri` must have scheme "http", "https" or no scheme""")
+      uri.scheme.toLowerCase match {
+        case ""      ⇒
+        case "http"  ⇒
+        case "https" ⇒
+        case _       ⇒ throw new IllegalArgumentException("""`uri` must have scheme "http", "https" or no scheme""")
       }
     }
 
