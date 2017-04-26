@@ -6,9 +6,13 @@ package akka.http.javadsl.coding;
 
 import java.util.concurrent.CompletionStage;
 
+import akka.http.javadsl.model.HttpRequest;
+import akka.http.javadsl.model.HttpResponse;
+import akka.http.javadsl.model.headers.ContentEncoding;
 import akka.http.scaladsl.coding.Deflate$;
 import akka.http.scaladsl.coding.Gzip$;
 import akka.http.scaladsl.coding.NoCoding$;
+import akka.http.scaladsl.model.HttpMessage;
 import akka.stream.Materializer;
 import akka.util.ByteString;
 import scala.compat.java8.FutureConverters;
@@ -25,9 +29,26 @@ public enum Coder {
         this.underlying = underlying;
     }
 
+    public HttpResponse encodeMessage(HttpResponse message) {
+        return (HttpResponse) underlying.encodeMessage((akka.http.scaladsl.model.HttpMessage) message);
+    }
+
+    public HttpRequest encodeMessage(HttpRequest message) {
+        return (HttpRequest) underlying.encodeMessage((akka.http.scaladsl.model.HttpMessage) message);
+    }
+
     public ByteString encode(ByteString input) {
         return underlying.encode(input);
     }
+
+    public HttpResponse decodeMessage(HttpResponse message) {
+        return (HttpResponse) underlying.decodeMessage((akka.http.scaladsl.model.HttpMessage) message);
+    }
+
+    public HttpRequest decodeMessage(HttpRequest message) {
+        return (HttpRequest) underlying.decodeMessage((akka.http.scaladsl.model.HttpMessage) message);
+    }
+
     public CompletionStage<ByteString> decode(ByteString input, Materializer mat) {
         return FutureConverters.toJava(underlying.decode(input, mat));
     }

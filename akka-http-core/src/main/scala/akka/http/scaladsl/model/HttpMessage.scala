@@ -4,6 +4,8 @@
 
 package akka.http.scaladsl.model
 
+import akka.stream.scaladsl.Flow
+import akka.stream.{ FlowShape, Graph }
 import java.io.File
 import java.nio.file.Path
 import java.lang.{ Iterable ⇒ JIterable }
@@ -29,7 +31,7 @@ import headers._
  * Common base class of HttpRequest and HttpResponse.
  */
 sealed trait HttpMessage extends jm.HttpMessage {
-  type Self <: HttpMessage
+  type Self <: HttpMessage { type Self = HttpMessage.this.Self }
   def self: Self
 
   def isRequest: Boolean
@@ -139,6 +141,8 @@ sealed trait HttpMessage extends jm.HttpMessage {
   @deprecated("Use withEntity(ContentType, Path) instead", "2.4.5")
   def withEntity(contentType: jm.ContentType, file: File): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], file))
   def withEntity(contentType: jm.ContentType, file: Path): Self = withEntity(HttpEntity.fromPath(contentType.asInstanceOf[ContentType], file))
+
+  def transformEntityDataBytes[M](transformer: Graph[FlowShape[ByteString, ByteString], M]): Self
 
   import collection.JavaConverters._
   /** Java API */
@@ -270,6 +274,8 @@ final class HttpRequest(
   override def withUri(path: String): HttpRequest = withUri(Uri(path))
   def withUri(uri: Uri): HttpRequest = copy(uri = uri)
 
+  def transformEntityDataBytes[M](transformer: Graph[FlowShape[ByteString, ByteString], M]): HttpRequest = copy(entity = entity.transformDataBytes(Flow.fromGraph(transformer)))
+
   import JavaMapping.Implicits._
   /** Java API */
   override def getUri: jm.Uri = uri.asJava
@@ -369,7 +375,7 @@ object HttpRequest {
       }
     }
 
-  /* Manual Case Class things, to easen bin-compat */
+  /* Manual Case Class things, to ease bin-compat */
 
   def apply(
     method:   HttpMethod                = HttpMethods.GET,
@@ -417,7 +423,9 @@ final class HttpResponse(
 
   def mapEntity(f: ResponseEntity ⇒ ResponseEntity): HttpResponse = withEntity(f(entity))
 
-  /* Manual Case Class things, to easen bin-compat */
+  def transformEntityDataBytes[T](transformer: Graph[FlowShape[ByteString, ByteString], T]): HttpResponse = copy(entity = entity.transformDataBytes(Flow.fromGraph(transformer)))
+
+  /* Manual Case Class things, to ease bin-compat */
 
   def copy(
     status:   StatusCode                = status,

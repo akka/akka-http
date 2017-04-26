@@ -100,7 +100,7 @@ HttpEntity.Default
 : The general, unchunked HTTP/1.1 message entity.
 It has a known length and presents its data as a `Source[ByteString]` which can be only materialized once.
 It is an error if the provided source doesn't produce exactly as many bytes as specified.
-The distinction of `Strict` and `Default` is an API-only one. One the wire, both kinds of entities look the same.
+The distinction of `Strict` and `Default` is an API-only one. On the wire, both kinds of entities look the same.
 
 HttpEntity.Chunked
 : The model for HTTP/1.1 [chunked content](http://tools.ietf.org/html/rfc7230#section-4.1) (i.e. sent with `Transfer-Encoding: chunked`).
@@ -358,6 +358,14 @@ well-known status codes, however sometimes you may need to use a custom one (or 
 Similarily to the media types registration, you can register custom status codes by configuring `ParserSettings` like this:
 
 @@snip [CustomStatusCodesSpec.scala](../../../../../../../akka-http-tests/src/test/scala/akka/http/scaladsl/CustomStatusCodesSpec.scala) { #application-custom }
+
+<a id="registeringcustommethod"></a>
+## Registering Custom HTTP Method
+
+Akka HTTP also allows you to define custome HTTP methods, other than the well-known methods @scaladoc[predefined](akka.http.scaladsl.model.HttpMethods$) in Akka HTTP.
+To use a custom HTTP method, you need to define it, and then add it to parser settings like below:
+
+@@snip [CustomHttpMethodSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/directives/CustomHttpMethodSpec.scala) { #application-custom }
 
 ## The URI model
 

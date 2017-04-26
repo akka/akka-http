@@ -23,7 +23,7 @@ import static org.junit.Assert.assertEquals;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 
-import static akka.http.javadsl.model.HttpProtocols.HTTP_1_0;
+import static akka.http.javadsl.model.HttpProtocols.HTTP_1_1;
 import static akka.http.javadsl.model.RequestEntityAcceptances.Expected;
 
 public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
@@ -38,8 +38,12 @@ public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
     String host = "127.0.0.1";
 
     //#customHttpMethod
+
+    // define custom method type:
     HttpMethod BOLT =
       HttpMethods.createCustom("BOLT", false, true, Expected);
+
+    // add custom method to parser settings:
     final ParserSettings parserSettings =
       ParserSettings.create(system).withCustomMethods(BOLT);
     final ServerSettings serverSettings =
@@ -63,7 +67,7 @@ public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
     HttpRequest request = HttpRequest.create()
       .withUri("http://" + host + ":" + Integer.toString(port))
       .withMethod(BOLT)
-      .withProtocol(HTTP_1_0);
+      .withProtocol(HTTP_1_1);
 
     CompletionStage<HttpResponse> response = http.singleRequest(request, materializer);
     //#customHttpMethod

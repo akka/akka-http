@@ -9,6 +9,8 @@ import akka.http.impl.engine.ws.{ FrameEvent, UpgradeToWebSocketResponseHeader }
 import akka.http.scaladsl.model.ws.Message
 import akka.stream.{ Attributes, FlowShape, Graph, Inlet, Outlet }
 
+import scala.collection.immutable
+
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
 import akka.util.{ ByteString, OptionVal }
@@ -115,7 +117,7 @@ private[http] class HttpResponseRendererFactory(
         }
 
         def render(ctx: ResponseRenderingContext): StrictOrStreamed = {
-          val r = new ByteStringRendering(responseHeaderSizeHint)
+          val r = new ByteArrayRendering(responseHeaderSizeHint)
 
           import ctx.response._
           val noEntity = entity.isKnownEmpty || ctx.requestMethod == HttpMethods.HEAD
@@ -131,124 +133,125 @@ private[http] class HttpResponseRendererFactory(
           def mustRenderTransferEncodingChunkedHeader =
             entity.isChunked && (!entity.isKnownEmpty || ctx.requestMethod == HttpMethods.HEAD) && (ctx.requestProtocol == `HTTP/1.1`)
 
-          @tailrec def renderHeaders(remaining: List[HttpHeader], alwaysClose: Boolean = false,
-                                     connHeader: Connection = null, serverSeen: Boolean = false,
-                                     transferEncodingSeen: Boolean = false, dateSeen: Boolean = false): Unit = {
-            remaining match {
-              case head :: tail ⇒ head match {
+          def renderHeaders(headers: immutable.Seq[HttpHeader], alwaysClose: Boolean = false): Unit = {
+            var connHeader: Connection = null
+            var serverSeen: Boolean = false
+            var transferEncodingSeen: Boolean = false
+            var dateSeen: Boolean = false
+
+            val it = headers.iterator
+            while (it.hasNext)
+              it.next() match {
                 case x: Server ⇒
                   render(x)
-                  renderHeaders(tail, alwaysClose, connHeader, serverSeen = true, transferEncodingSeen, dateSeen)
+                  serverSeen = true
 
                 case x: Date ⇒
                   render(x)
-                  renderHeaders(tail, alwaysClose, connHeader, serverSeen, transferEncodingSeen, dateSeen = true)
+                  dateSeen = true
 
                 case x: `Content-Length` ⇒
                   suppressionWarning(log, x, "explicit `Content-Length` header is not allowed. Use the appropriate HttpEntity subtype.")
-                  renderHeaders(tail, alwaysClose, connHeader, serverSeen, transferEncodingSeen, dateSeen)
 
                 case x: `Content-Type` ⇒
                   suppressionWarning(log, x, "explicit `Content-Type` header is not allowed. Set `HttpResponse.entity.contentType` instead.")
-                  renderHeaders(tail, alwaysClose, connHeader, serverSeen, transferEncodingSeen, dateSeen)
 
                 case x: `Transfer-Encoding` ⇒
                   x.withChunkedPeeled match {
                     case None ⇒
-                      suppressionWarning(log, head)
-                      renderHeaders(tail, alwaysClose, connHeader, serverSeen, transferEncodingSeen, dateSeen)
+                      suppressionWarning(log, x)
                     case Some(te) ⇒
                       // if the user applied some custom transfer-encoding we need to keep the header
                       render(if (mustRenderTransferEncodingChunkedHeader) te.withChunked else te)
-                      renderHeaders(tail, alwaysClose, connHeader, serverSeen, transferEncodingSeen = true, dateSeen)
+                      transferEncodingSeen = true
                   }
 
                 case x: Connection ⇒
-                  val connectionHeader = if (connHeader eq null) x else Connection(x.tokens ++ connHeader.tokens)
-                  renderHeaders(tail, alwaysClose, connectionHeader, serverSeen, transferEncodingSeen, dateSeen)
+                  connHeader = if (connHeader eq null) x else Connection(x.tokens ++ connHeader.tokens)
 
                 case x: CustomHeader ⇒
                   if (x.renderInResponses) render(x)
-                  renderHeaders(tail, alwaysClose, connHeader, serverSeen, transferEncodingSeen, dateSeen)
 
                 case x: RawHeader if (x is "content-type") || (x is "content-length") || (x is "transfer-encoding") ||
                   (x is "date") || (x is "server") || (x is "connection") ⇒
                   suppressionWarning(log, x, "illegal RawHeader")
-                  renderHeaders(tail, alwaysClose, connHeader, serverSeen, transferEncodingSeen, dateSeen)
 
                 case x ⇒
                   if (x.renderInResponses) render(x)
                   else log.warning("HTTP header '{}' is not allowed in responses", x)
-                  renderHeaders(tail, alwaysClose, connHeader, serverSeen, transferEncodingSeen, dateSeen)
               }
 
-              case Nil ⇒
-                if (!serverSeen) renderDefaultServerHeader(r)
-                if (!dateSeen) r ~~ dateHeader
+            if (!serverSeen) renderDefaultServerHeader(r)
+            if (!dateSeen) r ~~ dateHeader
 
-                // Do we close the connection after this response?
-                closeIf {
-                  // if we are prohibited to keep-alive by the spec
-                  alwaysClose ||
-                    // if the client wants to close and we don't override
-                    (ctx.closeRequested && ((connHeader eq null) || !connHeader.hasKeepAlive)) ||
-                    // if the application wants to close explicitly
-                    (protocol match {
-                      case `HTTP/1.1` ⇒ (connHeader ne null) && connHeader.hasClose
-                      case `HTTP/1.0` ⇒ if (connHeader eq null) ctx.requestProtocol == `HTTP/1.1` else !connHeader.hasKeepAlive
-                    })
-                }
-
-                // Do we render an explicit Connection header?
-                val renderConnectionHeader =
-                  protocol == `HTTP/1.0` && !close || protocol == `HTTP/1.1` && close || // if we don't follow the default behavior
-                    close != ctx.closeRequested || // if we override the client's closing request
-                    protocol != ctx.requestProtocol // if we reply with a mismatching protocol (let's be very explicit in this case)
-
-                if (renderConnectionHeader)
-                  r ~~ Connection ~~ (if (close) CloseBytes else KeepAliveBytes) ~~ CrLf
-                else if (connHeader != null && connHeader.hasUpgrade) {
-                  r ~~ connHeader ~~ CrLf
-                  HttpHeader.fastFind(classOf[UpgradeToWebSocketResponseHeader], headers) match {
-                    case OptionVal.Some(header) ⇒ closeMode = SwitchToWebSocket(header.handler)
-                    case _                      ⇒ // nothing to do here...
-                  }
-                }
-                if (mustRenderTransferEncodingChunkedHeader && !transferEncodingSeen)
-                  r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf
+            // Do we close the connection after this response?
+            closeIf {
+              // if we are prohibited to keep-alive by the spec
+              alwaysClose ||
+                // if the client wants to close and we don't override
+                (ctx.closeRequested && ((connHeader eq null) || !connHeader.hasKeepAlive)) ||
+                // if the application wants to close explicitly
+                (protocol match {
+                  case `HTTP/1.1` ⇒ (connHeader ne null) && connHeader.hasClose
+                  case `HTTP/1.0` ⇒ if (connHeader eq null) ctx.requestProtocol == `HTTP/1.1` else !connHeader.hasKeepAlive
+                })
             }
+
+            // Do we render an explicit Connection header?
+            val renderConnectionHeader =
+              protocol == `HTTP/1.0` && !close || protocol == `HTTP/1.1` && close || // if we don't follow the default behavior
+                close != ctx.closeRequested || // if we override the client's closing request
+                protocol != ctx.requestProtocol // if we reply with a mismatching protocol (let's be very explicit in this case)
+
+            if (renderConnectionHeader)
+              r ~~ Connection ~~ (if (close) CloseBytes else KeepAliveBytes) ~~ CrLf
+            else if (connHeader != null && connHeader.hasUpgrade) {
+              r ~~ connHeader ~~ CrLf
+              HttpHeader.fastFind(classOf[UpgradeToWebSocketResponseHeader], headers) match {
+                case OptionVal.Some(header) ⇒ closeMode = SwitchToWebSocket(header.handler)
+                case _                      ⇒ // nothing to do here...
+              }
+            }
+            if (mustRenderTransferEncodingChunkedHeader && !transferEncodingSeen)
+              r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf
           }
 
           def renderContentLengthHeader(contentLength: Long) =
             if (status.allowsEntity) r ~~ `Content-Length` ~~ contentLength ~~ CrLf else r
 
           def byteStrings(entityBytes: ⇒ Source[ByteString, Any]): Source[ResponseRenderingOutput, Any] =
-            renderByteStrings(r, entityBytes, skipEntity = noEntity).map(ResponseRenderingOutput.HttpData(_))
+            renderByteStrings(r.asByteString, entityBytes, skipEntity = noEntity).map(ResponseRenderingOutput.HttpData(_))
 
           @tailrec def completeResponseRendering(entity: ResponseEntity): StrictOrStreamed =
             entity match {
               case HttpEntity.Strict(_, data) ⇒
-                renderHeaders(headers.toList)
+                renderHeaders(headers)
                 renderEntityContentType(r, entity)
                 renderContentLengthHeader(data.length) ~~ CrLf
 
-                if (!noEntity) r ~~ data
+                val finalBytes = {
+                  if (!noEntity)
+                    if (data.size < r.remainingCapacity) (r ~~ data).asByteString
+                    else r.asByteString ++ data
+                  else
+                    r.asByteString
+                }
 
                 Strict {
                   closeMode match {
-                    case SwitchToWebSocket(handler) ⇒ ResponseRenderingOutput.SwitchToWebSocket(r.get, handler)
-                    case _                          ⇒ ResponseRenderingOutput.HttpData(r.get)
+                    case SwitchToWebSocket(handler) ⇒ ResponseRenderingOutput.SwitchToWebSocket(finalBytes, handler)
+                    case _                          ⇒ ResponseRenderingOutput.HttpData(finalBytes)
                   }
                 }
 
               case HttpEntity.Default(_, contentLength, data) ⇒
-                renderHeaders(headers.toList)
+                renderHeaders(headers)
                 renderEntityContentType(r, entity)
                 renderContentLengthHeader(contentLength) ~~ CrLf
                 Streamed(byteStrings(data.via(CheckContentLengthTransformer.flow(contentLength))))
 
               case HttpEntity.CloseDelimited(_, data) ⇒
-                renderHeaders(headers.toList, alwaysClose = ctx.requestMethod != HttpMethods.HEAD)
+                renderHeaders(headers, alwaysClose = ctx.requestMethod != HttpMethods.HEAD)
                 renderEntityContentType(r, entity) ~~ CrLf
                 Streamed(byteStrings(data))
 
@@ -256,7 +259,7 @@ private[http] class HttpResponseRendererFactory(
                 if (ctx.requestProtocol == `HTTP/1.0`)
                   completeResponseRendering(HttpEntity.CloseDelimited(contentType, chunks.map(_.data)))
                 else {
-                  renderHeaders(headers.toList)
+                  renderHeaders(headers)
                   renderEntityContentType(r, entity) ~~ CrLf
                   Streamed(byteStrings(chunks.via(ChunkTransformer.flow)))
                 }
