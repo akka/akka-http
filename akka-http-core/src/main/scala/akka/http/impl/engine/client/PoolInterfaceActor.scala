@@ -9,7 +9,7 @@ import akka.event.Logging
 import akka.http.impl.engine.client.PoolFlow._
 import akka.http.impl.util.RichHttpRequest
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.Http
+import akka.http.scaladsl.{ ClientTransport, Http }
 import akka.macros.LogHelper
 import akka.stream.actor.ActorPublisherMessage._
 import akka.stream.actor.ActorSubscriberMessage._
@@ -29,7 +29,8 @@ private object PoolInterfaceActor {
 
   val name = SeqActorName("PoolInterfaceActor")
 
-  def props(gateway: PoolGateway)(implicit fm: Materializer) = Props(new PoolInterfaceActor(gateway)).withDeploy(Deploy.local)
+  def props(gateway: PoolGateway)(implicit fm: Materializer) =
+    Props(new PoolInterfaceActor(gateway)).withDeploy(Deploy.local)
 }
 
 /**
@@ -73,10 +74,10 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
   private def initConnectionFlow() = {
     import context.system
     import hcps._
-    import setup.{ connectionContext, settings }
+    import setup.settings
 
     val connectionFlow =
-      Http().outgoingConnectionUsingTransport(host, port, settings.transport, connectionContext, settings.connectionSettings, setup.log)
+      Http().outgoingConnection(host, port, None, settings.connectionSettings, setup.log)
 
     val poolFlow = PoolFlow(connectionFlow, settings, log).named("PoolFlow")
     Source.fromPublisher(ActorPublisher(self)).via(poolFlow).runWith(Sink.fromSubscriber(ActorSubscriber[ResponseContext](self)))

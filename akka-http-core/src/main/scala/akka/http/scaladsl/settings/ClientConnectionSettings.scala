@@ -7,6 +7,7 @@ import java.lang.Iterable
 import java.util.{ Optional, Random }
 import java.util.function.Supplier
 
+import akka.annotation.DoNotInherit
 import akka.http.impl.util._
 import akka.http.impl.settings.ClientConnectionSettingsImpl
 import akka.http.javadsl.model.headers.UserAgent
@@ -17,15 +18,23 @@ import com.typesafe.config.Config
 
 import scala.collection.immutable
 import scala.compat.java8.OptionConverters
-import scala.concurrent.duration.{ FiniteDuration, Duration }
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.collection.JavaConverters._
 
 /**
  * Public API but not intended for subclassing
  */
+@DoNotInherit
 abstract class ClientConnectionSettings private[akka] () extends akka.http.javadsl.settings.ClientConnectionSettings { self: ClientConnectionSettingsImpl ⇒
   def userAgentHeader: Option[`User-Agent`]
   def connectingTimeout: FiniteDuration
+  /**
+   * Time of inactivity on connection (no data being passed either way through the connection),
+   * after which the connection should be assumed idle and terminated forcefully with an idle timeout exception.
+   *
+   * This is to prevent connection "leaks" as well as attacks on the server which may operate via opening many connections
+   * and never sending any data on them. Related topic and attack method, suggested reading: "Slow Loris" attacks.
+   */
   def idleTimeout: Duration
   def requestHeaderSizeHint: Int
   def websocketRandomFactory: () ⇒ Random

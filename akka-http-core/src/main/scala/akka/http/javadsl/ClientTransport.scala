@@ -15,17 +15,18 @@ import akka.http.javadsl.settings.ClientConnectionSettings
 import akka.http.impl.util.JavaMapping
 import JavaMapping._
 import JavaMapping.Implicits._
+import akka.annotation.ApiMayChange
 import akka.http.{ javadsl, scaladsl }
 
 import scala.concurrent.Future
 
-abstract class ClientTransport { outer ⇒
-  def connectTo(host: String, port: Int, system: ActorSystem): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]]
+@ApiMayChange abstract class ClientTransport {
+  def connectTo(host: String, port: Int, settings: ClientConnectionSettings, system: ActorSystem): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]]
 }
 
 object ClientTransport {
   def TCP(localAddress: Optional[InetSocketAddress], settings: ClientConnectionSettings): ClientTransport =
-    scaladsl.ClientTransport.TCP(localAddress.asScala, settings.asScala).asJava
+    scaladsl.ClientTransport.TCP(localAddress.asScala).asJava
 
   def fromScala(scalaTransport: scaladsl.ClientTransport): ClientTransport =
     scalaTransport match {
@@ -39,15 +40,15 @@ object ClientTransport {
     }
 
   private class ScalaWrapper(val delegate: scaladsl.ClientTransport) extends ClientTransport {
-    def connectTo(host: String, port: Int, system: ActorSystem): akka.stream.javadsl.Flow[ByteString, ByteString, CompletionStage[javadsl.OutgoingConnection]] = {
+    def connectTo(host: String, port: Int, settings: ClientConnectionSettings, system: ActorSystem): akka.stream.javadsl.Flow[ByteString, ByteString, CompletionStage[javadsl.OutgoingConnection]] = {
       import system.dispatcher
-      JavaMapping.toJava(delegate.connectTo(host, port)(system))
+      JavaMapping.toJava(delegate.connectTo(host, port, settings)(system))
     }
   }
   private class JavaWrapper(val delegate: ClientTransport) extends scaladsl.ClientTransport {
-    def connectTo(host: String, port: Int)(implicit system: ActorSystem): akka.stream.scaladsl.Flow[ByteString, ByteString, Future[scaladsl.Http.OutgoingConnection]] = {
+    def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): akka.stream.scaladsl.Flow[ByteString, ByteString, Future[scaladsl.Http.OutgoingConnection]] = {
       import system.dispatcher
-      JavaMapping.toScala(delegate.connectTo(host, port, system))
+      JavaMapping.toScala(delegate.connectTo(host, port, settings, system))
     }
   }
 }

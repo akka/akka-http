@@ -21,7 +21,9 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   def maxRetries: Int
   def maxOpenRequests: Int
   def pipeliningLimit: Int
+  /** Amount of time of inactivity after which the pool should shut-down. */
   def idleTimeout: Duration
+  /** Settings specific to connections, hosted by this conneciton pool. */
   def connectionSettings: ClientConnectionSettings
 
   /** The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used. */

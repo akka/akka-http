@@ -289,7 +289,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
                          localAddress: Option[InetSocketAddress] = None,
                          settings:     ClientConnectionSettings  = ClientConnectionSettings(system),
                          log:          LoggingAdapter            = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
-    _outgoingConnection(host, port, settings, ConnectionContext.noEncryption(), ClientTransport.TCP(localAddress, settings), log)
+    _outgoingConnection(host, port, settings, ConnectionContext.noEncryption(), ClientTransport.TCP(localAddress), log) //// CALLS THIS?
 
   /**
    * Same as [[#outgoingConnection]] but for encrypted (HTTPS) connections.
@@ -305,7 +305,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
                               localAddress:      Option[InetSocketAddress] = None,
                               settings:          ClientConnectionSettings  = ClientConnectionSettings(system),
                               log:               LoggingAdapter            = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
-    _outgoingConnection(host, port, settings, connectionContext, ClientTransport.TCP(localAddress, settings), log)
+    _outgoingConnection(host, port, settings, connectionContext, ClientTransport.TCP(localAddress), log)
 
   /**
    * Similar to `outgoingConnection` but allows to specify a user-defined transport layer to run the connection on.
@@ -338,12 +338,13 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   }
 
   private def _outgoingTlsConnectionLayer(host: String, port: Int,
-                                          settings: ClientConnectionSettings, connectionContext: ConnectionContext,
-                                          transport: ClientTransport,
-                                          log:       LoggingAdapter): Flow[SslTlsOutbound, SslTlsInbound, Future[OutgoingConnection]] = {
+                                          settings:          ClientConnectionSettings,
+                                          connectionContext: ConnectionContext,
+                                          transport:         ClientTransport,
+                                          log:               LoggingAdapter): Flow[SslTlsOutbound, SslTlsInbound, Future[OutgoingConnection]] = {
     val tlsStage = sslTlsStage(connectionContext, Client, Some(host → port))
 
-    tlsStage.joinMat(transport.connectTo(host, port))(Keep.right)
+    tlsStage.joinMat(transport.connectTo(host, port, settings))(Keep.right)
   }
 
   type ClientLayer = Http.ClientLayer
@@ -538,7 +539,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
     log:               LoggingAdapter         = system.log)(implicit fm: Materializer): Future[HttpResponse] =
     try {
-      val gateway = sharedGateway(request, settings, connectionContext, log)
+      val gateway: PoolGateway = sharedGateway(request, settings, connectionContext, log)
       gateway(request)
     } catch {
       case e: IllegalUriException ⇒ FastFuture.failed(e)
@@ -582,7 +583,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     val port = uri.effectivePort
 
     webSocketClientLayer(request, settings, log)
-      .joinMat(_outgoingTlsConnectionLayer(host, port, settings, ctx, ClientTransport.TCP(localAddress, settings), log))(Keep.left)
+      .joinMat(_outgoingTlsConnectionLayer(host, port, settings, ctx, ClientTransport.TCP(localAddress), log))(Keep.left)
   }
 
   /**
