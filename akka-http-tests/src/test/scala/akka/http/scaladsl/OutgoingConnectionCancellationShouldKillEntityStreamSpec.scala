@@ -23,7 +23,7 @@ import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
-import scala.util.Try
+import scala.util.{ Success, Try }
 
 /**
  * Spec for https://github.com/akka/akka-http/issues/983
@@ -38,10 +38,9 @@ class OutgoingConnectionCancellationShouldKillEntityStreamSpec extends AkkaSpec 
   val routes = get {
     val c = conn
     val verySlowSource = Source.repeat(ByteString("hello " * 1000))
-      .log(s"server-out-$c", _.utf8String.take(20))
       .withAttributes(ActorAttributes.logLevels(Logging.WarningLevel, Logging.WarningLevel, Logging.WarningLevel))
       .throttle(1, per = 1.second, 1, ThrottleMode.shaping)
-      .take(30).alsoTo(Sink.onComplete { done ⇒ println("DONE!") })
+      .take(30)
     complete(HttpResponse(entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, verySlowSource)))
   }
 
@@ -112,8 +111,7 @@ class OutgoingConnectionCancellationShouldKillEntityStreamSpec extends AkkaSpec 
         // the server pushes data for many seconds, 
         // so if we get a completion here after canceling it means the cancel has worked
         control ! "cancel"
-        val done = expectMsgType[Try[Done]]
-        done.failed.get.getMessage should include("Connection stream cancelled while still reading incoming entity")
+        expectMsgType[Try[Done]] should ===(Success(Done))
       }
     }
 

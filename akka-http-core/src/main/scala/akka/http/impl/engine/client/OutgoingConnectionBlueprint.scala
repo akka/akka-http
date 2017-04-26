@@ -204,10 +204,7 @@ private[http] object OutgoingConnectionBlueprint {
       }
 
       override def onDownstreamFinish(): Unit = {
-        if (entitySubstreamStarted) {
-          val ex = new RuntimeException("Connection stream cancelled while still reading incoming entity!")
-          entitySource.fail(ex)
-        }
+        if (entitySubstreamStarted) entitySource.complete()
         completeStage()
       }
 
