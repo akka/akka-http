@@ -4,8 +4,6 @@
 
 package akka.http.scaladsl.marshalling
 
-import akka.http.scaladsl.marshalling.Marshalling.Opaque
-
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.control.NonFatal
 import akka.http.scaladsl.model._
@@ -16,9 +14,6 @@ import akka.http.scaladsl.util.FastFuture._
 sealed abstract class Marshaller[-A, +B] {
 
   def apply(value: A)(implicit ec: ExecutionContext): Future[List[Marshalling[B]]]
-
-  def map[C](f: B ⇒ C): Marshaller[A, C] =
-    Marshaller(implicit ec ⇒ value ⇒ this(value).fast map (_ map (_ map f)))
 
   /**
    * Reuses this Marshaller's logic to produce a new Marshaller from another type `C` which overrides
@@ -38,7 +33,7 @@ sealed abstract class Marshaller[-A, +B] {
    * If the wrapping is illegal the [[scala.concurrent.Future]] produced by the resulting marshaller will contain a [[RuntimeException]].
    */
   def wrapWithEC[C, D >: B](newMediaType: MediaType)(f: ExecutionContext ⇒ C ⇒ A)(implicit cto: ContentTypeOverrider[D]): Marshaller[C, D] =
-    Marshaller { implicit ec ⇒ value ⇒
+    Marshaller.dynamic { implicit ec ⇒ value ⇒
       import Marshalling._
       this(f(ec)(value)).fast map {
         _ map {
@@ -69,11 +64,11 @@ sealed abstract class Marshaller[-A, +B] {
       }
     }
 
-  def compose[C](f: C ⇒ A): Marshaller[C, B] =
-    Marshaller(implicit ec ⇒ c ⇒ apply(f(c)))
+  def map[C](f: B ⇒ C): Marshaller[A, C] = wrapInAndOut(a ⇒ (a, f))
+  def compose[C](f: C ⇒ A): Marshaller[C, B] = wrapInAndOut(c ⇒ (f(c), identity))
 
-  def composeWithEC[C](f: ExecutionContext ⇒ C ⇒ A): Marshaller[C, B] =
-    Marshaller(implicit ec ⇒ c ⇒ apply(f(ec)(c)))
+  // TODO: an asynchronous version of this method would be nice but that cannot be implemented without making Marshalling asynchronous itself
+  def wrapInAndOut[A0, B1](f: A0 ⇒ (A, B ⇒ B1)): Marshaller[A0, B1]
 }
 
 //#marshaller-creation
@@ -86,18 +81,24 @@ object Marshaller
   /**
    * Creates a [[Marshaller]] from the given function.
    */
-  def apply[A, B](f: ExecutionContext ⇒ A ⇒ Future[List[Marshalling[B]]]): Marshaller[A, B] =
+  def dynamic[A, B](f: ExecutionContext ⇒ A ⇒ Future[List[Marshalling[B]]]): Marshaller[A, B] =
     new Marshaller[A, B] {
       def apply(value: A)(implicit ec: ExecutionContext) =
         try f(ec)(value)
         catch { case NonFatal(e) ⇒ FastFuture.failed(e) }
+
+      def wrapInAndOut[A0, B1](f: A0 ⇒ (A, B ⇒ B1)): Marshaller[A0, B1] =
+        Marshaller.dynamic[A0, B1] { implicit ec ⇒ a0 ⇒
+          val (a, f2) = f(a0)
+          apply(a).fast map (_ map (_ map f2))
+        }
     }
 
   /**
    * Helper for creating a [[Marshaller]] using the given function.
    */
-  def strict[A, B](f: A ⇒ Marshalling[B]): Marshaller[A, B] =
-    Marshaller { _ ⇒ a ⇒ FastFuture.successful(f(a) :: Nil) }
+  def strictDynamic[A, B](f: A ⇒ Marshalling[B]): Marshaller[A, B] =
+    dynamic { _ ⇒ a ⇒ FastFuture.successful(f(a) :: Nil) }
 
   /**
    * Helper for creating a "super-marshaller" from a number of "sub-marshallers".
@@ -109,7 +110,7 @@ object Marshaller
    * changed in later versions of Akka HTTP.
    */
   def oneOf[A, B](marshallers: Marshaller[A, B]*): Marshaller[A, B] =
-    Marshaller { implicit ec ⇒ a ⇒ FastFuture.sequence(marshallers.map(_(a))).fast.map(_.flatten.toList) }
+    dynamic { implicit ec ⇒ a ⇒ FastFuture.sequence(marshallers.map(_(a))).fast.map(_.flatten.toList) }
 
   /**
    * Helper for creating a "super-marshaller" from a number of values and a function producing "sub-marshallers"
@@ -127,26 +128,62 @@ object Marshaller
    * Helper for creating a synchronous [[Marshaller]] to content with a fixed charset from the given function.
    */
   def withFixedContentType[A, B](contentType: ContentType)(marshal: A ⇒ B): Marshaller[A, B] =
-    strict { value ⇒ Marshalling.WithFixedContentType(contentType, () ⇒ marshal(value)) }
+    new FixedContentTypeMarshaller(contentType, marshal)
+
+  final class FixedContentTypeMarshaller[A, B](contentType: ContentType, marshal: A ⇒ B) extends Marshaller[A, B] {
+    def apply(value: A)(implicit ec: ExecutionContext) =
+      try FastFuture.successful(Marshalling.WithFixedContentType(contentType, () ⇒ marshal(value)) :: Nil)
+      catch { case NonFatal(e) ⇒ FastFuture.failed(e) }
+
+    def wrapInAndOut[A0, B1](f: A0 ⇒ (A, B ⇒ B1)): Marshaller[A0, B1] =
+      new FixedContentTypeMarshaller[A0, B1](contentType, { a0 ⇒
+        val (a, f2) = f(a0)
+        f2(marshal(a))
+      })
+  }
 
   /**
    * Helper for creating a synchronous [[Marshaller]] to content with a negotiable charset from the given function.
    */
   def withOpenCharset[A, B](mediaType: MediaType.WithOpenCharset)(marshal: (A, HttpCharset) ⇒ B): Marshaller[A, B] =
-    strict { value ⇒ Marshalling.WithOpenCharset(mediaType, charset ⇒ marshal(value, charset)) }
+    new OpenCharsetMarshaller(mediaType, marshal)
+
+  final class OpenCharsetMarshaller[A, B](mediaType: MediaType.WithOpenCharset, marshal: (A, HttpCharset) ⇒ B) extends Marshaller[A, B] {
+    def apply(value: A)(implicit ec: ExecutionContext) =
+      try FastFuture.successful(Marshalling.WithOpenCharset(mediaType, charset ⇒ marshal(value, charset)) :: Nil)
+      catch { case NonFatal(e) ⇒ FastFuture.failed(e) }
+
+    def wrapInAndOut[A0, B1](f: A0 ⇒ (A, B ⇒ B1)): Marshaller[A0, B1] =
+      new OpenCharsetMarshaller[A0, B1](mediaType, { (a0, charset) ⇒
+        val (a, f2) = f(a0)
+        f2(marshal(a, charset))
+      })
+  }
 
   /**
    * Helper for creating a synchronous [[Marshaller]] to non-negotiable content from the given function.
    */
   def opaque[A, B](marshal: A ⇒ B): Marshaller[A, B] =
-    strict { value ⇒ Marshalling.Opaque(() ⇒ marshal(value)) }
+    new OpaqueMarshaller(marshal)
+
+  final class OpaqueMarshaller[A, B](marshal: A ⇒ B) extends Marshaller[A, B] {
+    def apply(value: A)(implicit ec: ExecutionContext) =
+      try FastFuture.successful(Marshalling.Opaque(() ⇒ marshal(value)) :: Nil)
+      catch { case NonFatal(e) ⇒ FastFuture.failed(e) }
+
+    def wrapInAndOut[A0, B1](f: A0 ⇒ (A, B ⇒ B1)): Marshaller[A0, B1] =
+      new OpaqueMarshaller[A0, B1]({ a0 ⇒
+        val (a, f2) = f(a0)
+        f2(marshal(a))
+      })
+  }
 
   /**
    * Helper for creating a [[Marshaller]] combined of the provided `marshal` function
    * and an implicit Marshaller which is able to produce the required final type.
    */
   def combined[A, B, C](marshal: A ⇒ B)(implicit m2: Marshaller[B, C]): Marshaller[A, C] =
-    Marshaller[A, C] { ec ⇒ a ⇒ m2.compose(marshal).apply(a)(ec) }
+    dynamic[A, C] { ec ⇒ a ⇒ m2.compose(marshal).apply(a)(ec) }
 }
 //#marshaller-creation
 
