@@ -14,6 +14,7 @@ import akka.http.scaladsl.model._
 import headers._
 import ParserOutput._
 import akka.annotation.InternalApi
+import akka.stream.scaladsl.Source
 
 /**
  * INTERNAL API
@@ -158,7 +159,9 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
       contextForCurrentResponse.get.requestMethod match {
         case HttpMethods.HEAD ⇒ clh match {
           case Some(`Content-Length`(contentLength)) if contentLength > 0 ⇒
-            emitResponseStart(defaultEntity(cth, contentLength))
+            emitResponseStart {
+              StrictEntityCreator(HttpEntity.Default(contentType(cth), contentLength, Source.empty))
+            }
             setCompletionHandling(HttpMessageParser.CompletionOk)
             emit(MessageEnd)
             startNewMessage(input, bodyStart)

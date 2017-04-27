@@ -25,6 +25,7 @@ import akka.testkit._
 
 class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF") with Inside {
   implicit val materializer = ActorMaterializer()
+  implicit val dispatcher = system.dispatcher
 
   "The connection-level client implementation" should {
 
@@ -882,14 +883,18 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         """HTTP/1.1 200 OK
           |Content-Length: 6
           |
-          |abcdef
           |""")
 
-      val HttpResponse(StatusCodes.OK, _, HttpEntity.Default(_, contentLength, _), _) = expectResponse()
+      val HttpResponse(StatusCodes.OK, _, HttpEntity.Default(_, contentLength, data), _) = expectResponse()
       contentLength shouldEqual 6
 
-      requestsSub.sendComplete()
-      netInSub.sendComplete()
+      data.runWith(Sink.seq).map { chunks ⇒
+        chunks.length shouldEqual 0
+        requestsSub.sendComplete()
+        netOut.expectComplete()
+        netInSub.sendComplete()
+        responses.expectComplete()
+      }
     }
   }
 

@@ -69,7 +69,7 @@ private[http] object ParserOutput {
 
   sealed abstract class EntityCreator[-A <: ParserOutput, +B >: HttpEntity.Strict <: HttpEntity] extends (Source[A, NotUsed] ⇒ B)
 
-  final case class StrictEntityCreator(entity: HttpEntity.Strict) extends EntityCreator[ParserOutput, HttpEntity.Strict] {
+  final case class StrictEntityCreator[+B >: HttpEntity.Strict <: HttpEntity](entity: B) extends EntityCreator[ParserOutput, B] {
     def apply(parts: Source[ParserOutput, NotUsed]) = {
       // We might need to drain stray empty tail streams which will be read by no one.
       StreamUtils.cancelSource(parts)(StreamUtils.OnlyRunInGraphInterpreterContext) // only called within Http graphs stages
