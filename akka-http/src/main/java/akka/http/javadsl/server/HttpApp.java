@@ -73,7 +73,7 @@ public abstract class HttpApp extends AllDirectives {
 
     CompletionStage<ServerBinding> bindingFuture = Http
       .get(theSystem)
-      .bindAndHandle(route().flow(theSystem, materializer),
+      .bindAndHandle(route().flow(theSystem, materializer), // uses the deprecated method to have an easy migration.
         ConnectHttp.toHost(host, port),
         settings,
         theSystem.log(),
@@ -161,8 +161,19 @@ public abstract class HttpApp extends AllDirectives {
 
   /**
    * Override to implement the route that will be served by this http server.
+   * @deprecated This method is deprecated please use `routes` instead.
    */
-  protected abstract Route route();
+  @Deprecated
+  protected Route route() {
+    return routes();
+  }
 
+
+  /**
+   * Override to implement the route that will be served by this http server.
+   */
+  protected Route routes() {
+    throw new RuntimeException("Please override `routes` to provide the route that will be served by this http server");
+  }
 
 }
