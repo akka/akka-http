@@ -270,6 +270,10 @@ trait ImplicitPathMatcherConstruction {
           case Some(m) ⇒ Matched(segment.substring(m.length) :: tail, Tuple1(m))
           case None    ⇒ Unmatched
         }
+        case Path.Empty ⇒ regex findPrefixOf "" match {
+          case Some(m) ⇒ Matched(Path.Empty, Tuple1(m))
+          case None    ⇒ Unmatched
+        }
         case _ ⇒ Unmatched
       }
     }
@@ -277,6 +281,10 @@ trait ImplicitPathMatcherConstruction {
       def apply(path: Path) = path match {
         case Path.Segment(segment, tail) ⇒ regex findPrefixMatchOf segment match {
           case Some(m) ⇒ Matched(segment.substring(m.end) :: tail, Tuple1(m.group(1)))
+          case None    ⇒ Unmatched
+        }
+        case Path.Empty ⇒ regex findPrefixOf "" match {
+          case Some(m) ⇒ Matched(Path.Empty, Tuple1(m))
           case None    ⇒ Unmatched
         }
         case _ ⇒ Unmatched
