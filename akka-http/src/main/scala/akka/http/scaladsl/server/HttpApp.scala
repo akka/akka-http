@@ -70,7 +70,7 @@ abstract class HttpApp extends Directives {
     implicit val executionContext = theSystem.dispatcher
 
     val bindingFuture = Http().bindAndHandle(
-      handler = route, // uses the deprecated method to have an easy migration.
+      handler = routes, // uses the deprecated method to have an easy migration.
       interface = host,
       port = port,
       settings = settings)
@@ -146,14 +146,7 @@ abstract class HttpApp extends Directives {
   }
 
   /**
-   * Override to implement the route that will be served by this http server.
-   * @deprecated This method is deprecated please use `routes` instead
-   */
-  @deprecated("This method is deprecated please use `routes` instead", since = "10.0.6")
-  protected def route: Route = routes
-
-  /**
    * Override to implement the routes that will be served by this http server.
    */
-  protected def routes: Route = throw new RuntimeException("Please override `routes` to provide the route that will be served by this http server")
+  protected def routes: Route
 }
