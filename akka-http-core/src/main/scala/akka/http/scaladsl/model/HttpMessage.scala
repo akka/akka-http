@@ -9,7 +9,7 @@ import akka.stream.{ FlowShape, Graph }
 import java.io.File
 import java.nio.file.Path
 import java.lang.{ Iterable ⇒ JIterable }
-import java.util.Optional
+import java.util.{ Locale, Optional }
 import java.util.concurrent.CompletionStage
 
 import scala.compat.java8.FutureConverters
@@ -19,6 +19,7 @@ import scala.collection.immutable
 import scala.compat.java8.OptionConverters._
 import scala.reflect.{ ClassTag, classTag }
 import akka.Done
+import akka.actor.ReflectiveDynamicAccess
 import akka.parboiled2.CharUtils
 import akka.stream.Materializer
 import akka.util.{ ByteString, HashCode, OptionVal }
@@ -26,6 +27,8 @@ import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.util.FastFuture._
 import headers._
+
+import scala.util.Success
 
 /**
  * Common base class of HttpRequest and HttpResponse.
@@ -106,11 +109,28 @@ sealed trait HttpMessage extends jm.HttpMessage {
   /** Returns the first header of the given type if there is one */
   def header[T >: Null <: jm.HttpHeader: ClassTag]: Option[T] = {
     val clazz = classTag[T].runtimeClass.asInstanceOf[Class[T]]
-    HttpHeader.fastFind[T](clazz, headers) match {
+    if (classOf[akka.http.scaladsl.model.headers.ModeledCustomHeader[T]].isAssignableFrom(clazz)) {
+      findHeaderViaModeledCompanion(clazz).asInstanceOf[Option[T]]
+    } else HttpHeader.fastFind[T](clazz, headers) match {
       case OptionVal.Some(h)                     ⇒ Some(h)
       case _ if clazz == classOf[`Content-Type`] ⇒ Some(`Content-Type`(entity.contentType)).asInstanceOf[Option[T]]
       case _                                     ⇒ None
     }
+  }
+
+  private def findHeaderViaModeledCompanion(clazz: Class[_]) = {
+    // allows locating "companion" without implicits, same trick is applied in javadsl
+    val refl = new ReflectiveDynamicAccess(getClass.getClassLoader)
+    refl.getObjectFor[ModeledCustomHeaderCompanion[_]](clazz.getName) match {
+      case Success(companion) ⇒
+        headers.collectFirst {
+          case RawHeader(name, value) if name.toLowerCase(Locale.ROOT) == companion.lowercaseName ⇒ companion(value)
+        }
+      case _ ⇒
+        throw new IllegalStateException("Attempted to find ModeledCustomHeader via `header[...]` method, " +
+          "however unable to locate the custom headers companion, which would be used to parse the header.") // TODO should we try to find the companion by name? 
+    }
+
   }
 
   /**
