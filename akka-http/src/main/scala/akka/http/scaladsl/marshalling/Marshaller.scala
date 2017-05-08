@@ -127,13 +127,33 @@ object Marshaller
    * Helper for creating a synchronous [[Marshaller]] to content with a fixed charset from the given function.
    */
   def withFixedContentType[A, B](contentType: ContentType)(marshal: A ⇒ B): Marshaller[A, B] =
-    strict { value ⇒ Marshalling.WithFixedContentType(contentType, () ⇒ marshal(value)) }
+    new Marshaller[A, B] {
+      def apply(value: A)(implicit ec: ExecutionContext) =
+        try FastFuture.successful {
+          Marshalling.WithFixedContentType(contentType, () ⇒ marshal(value)) :: Nil
+        } catch {
+          case NonFatal(e) ⇒ FastFuture.failed(e)
+        }
+
+      override def compose[C](f: C ⇒ A): Marshaller[C, B] =
+        Marshaller.withFixedContentType(contentType)(marshal compose f)
+    }
 
   /**
    * Helper for creating a synchronous [[Marshaller]] to content with a negotiable charset from the given function.
    */
   def withOpenCharset[A, B](mediaType: MediaType.WithOpenCharset)(marshal: (A, HttpCharset) ⇒ B): Marshaller[A, B] =
-    strict { value ⇒ Marshalling.WithOpenCharset(mediaType, charset ⇒ marshal(value, charset)) }
+    new Marshaller[A, B] {
+      def apply(value: A)(implicit ec: ExecutionContext) =
+        try FastFuture.successful {
+          Marshalling.WithOpenCharset(mediaType, charset ⇒ marshal(value, charset)) :: Nil
+        } catch {
+          case NonFatal(e) ⇒ FastFuture.failed(e)
+        }
+
+      override def compose[C](f: C ⇒ A): Marshaller[C, B] =
+        Marshaller.withOpenCharset(mediaType)((c: C, hc: HttpCharset) ⇒ marshal(f(c), hc))
+    }
 
   /**
    * Helper for creating a synchronous [[Marshaller]] to non-negotiable content from the given function.
@@ -156,6 +176,13 @@ object Marshaller
  */
 sealed trait Marshalling[+A] {
   def map[B](f: A ⇒ B): Marshalling[B]
+
+  /**
+   * Converts this marshalling to an opaque marshalling, i.e. a marshalling result that
+   * does not take part in content type negotiation. The given charset is used if this
+   * instance is a `WithOpenCharset` marshalling.
+   */
+  def toOpaque(charset: HttpCharset): Marshalling[A]
 }
 
 object Marshalling {
@@ -167,6 +194,7 @@ object Marshalling {
     contentType: ContentType,
     marshal:     () ⇒ A) extends Marshalling[A] {
     def map[B](f: A ⇒ B): WithFixedContentType[B] = copy(marshal = () ⇒ f(marshal()))
+    def toOpaque(charset: HttpCharset): Marshalling[A] = Opaque(marshal)
   }
 
   /**
@@ -176,6 +204,7 @@ object Marshalling {
     mediaType: MediaType.WithOpenCharset,
     marshal:   HttpCharset ⇒ A) extends Marshalling[A] {
     def map[B](f: A ⇒ B): WithOpenCharset[B] = copy(marshal = cs ⇒ f(marshal(cs)))
+    def toOpaque(charset: HttpCharset): Marshalling[A] = Opaque(() ⇒ marshal(charset))
   }
 
   /**
@@ -184,6 +213,7 @@ object Marshalling {
    */
   final case class Opaque[A](marshal: () ⇒ A) extends Marshalling[A] {
     def map[B](f: A ⇒ B): Opaque[B] = copy(marshal = () ⇒ f(marshal()))
+    def toOpaque(charset: HttpCharset): Marshalling[A] = this
   }
 }
 //#marshalling

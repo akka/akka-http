@@ -12,6 +12,7 @@ import akka.actor._
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.{ Logging, LoggingAdapter }
+import akka.http.impl.engine.Http2Shadow
 import akka.http.impl.engine.HttpConnectionIdleTimeoutBidi
 import akka.http.impl.engine.client.PoolMasterActor.{ PoolSize, ShutdownAll }
 import akka.http.impl.engine.client._
@@ -241,8 +242,19 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     connectionContext: ConnectionContext = defaultServerHttpContext,
     settings:          ServerSettings    = ServerSettings(system),
     parallelism:       Int               = 1,
-    log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] =
-    bindAndHandle(Flow[HttpRequest].mapAsync(parallelism)(handler), interface, port, connectionContext, settings, log)
+    log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
+    val enableHttp2 = settings.previewServerSettings.enableHttp2
+    if (enableHttp2 && connectionContext.isSecure) {
+      log.debug("Binding server using HTTP/2...")
+      Http2Shadow.bindAndHandleAsync(handler, interface, port, connectionContext, settings, parallelism, log)(fm)
+    } else {
+      if (enableHttp2)
+        log.debug("The akka.http.server.preview.enable-http2 flag was set, " +
+          "but a plain HttpConnectionContext (not Https) was given, binding using plain HTTP...")
+
+      bindAndHandle(Flow[HttpRequest].mapAsync(parallelism)(handler), interface, port, connectionContext, settings, log)
+    }
+  }
 
   type ServerLayer = Http.ServerLayer
 

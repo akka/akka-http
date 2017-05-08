@@ -6,13 +6,12 @@ package akka.http.javadsl.settings
 import java.util.{ Optional, Random }
 
 import akka.actor.ActorSystem
-import akka.annotation.InternalApi
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.http.impl.settings.ServerSettingsImpl
 import akka.http.javadsl.model.headers.Host
 import akka.http.javadsl.model.headers.Server
 import akka.io.Inet.SocketOption
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.scaladsl.settings
 import com.typesafe.config.Config
 
 import scala.collection.JavaConverters._
@@ -23,8 +22,9 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 /**
  * Public API but not intended for subclassing
  */
-abstract class ServerSettings { self: ServerSettingsImpl ⇒
+@DoNotInherit abstract class ServerSettings { self: ServerSettingsImpl ⇒
   def getServerHeader: Optional[Server]
+  def getPreviewServerSettings: PreviewServerSettings
   def getTimeouts: ServerSettings.Timeouts
   def getMaxConnections: Int
   def getPipeliningLimit: Int
@@ -43,6 +43,7 @@ abstract class ServerSettings { self: ServerSettingsImpl ⇒
   // ---
 
   def withServerHeader(newValue: Optional[Server]): ServerSettings = self.copy(serverHeader = newValue.asScala.map(_.asScala))
+  def withPreviewServerSettings(newValue: PreviewServerSettings): ServerSettings = self.copy(previewServerSettings = newValue.asScala)
   def withTimeouts(newValue: ServerSettings.Timeouts): ServerSettings = self.copy(timeouts = newValue.asScala)
   def withMaxConnections(newValue: Int): ServerSettings = self.copy(maxConnections = newValue)
   def withPipeliningLimit(newValue: Int): ServerSettings = self.copy(pipeliningLimit = newValue)
