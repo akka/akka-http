@@ -1,17 +1,14 @@
 package akka.http.scaladsl.server.directives
 
-import akka.actor.ActorRefFactory
 import akka.annotation.ApiMayChange
 import akka.http.caching.{ Cache, LfuCache }
 import akka.http.scaladsl.server.Directive0
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{ ExecutionContext, Future }
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.headers.CacheDirectives._
-import akka.http.scaladsl.server.RouteResult.Rejected
 
 @ApiMayChange
 trait CachingDirectives {
@@ -20,9 +17,14 @@ trait CachingDirectives {
 
   /**
    * Wraps its inner Route with caching support using the given [[akka.http.caching.Cache]] implementation and
-   * the in-scope keyer function.
+   * keyer function.
    */
-  def cache(csm: CacheSpecMagnet): Directive0 = cachingProhibited | alwaysCache(csm)
+  def cache(cache: Cache[RouteResult], keyer: PartialFunction[RequestContext, Any] = defaultKeyer): Directive0 =
+    cachingProhibited | alwaysCache(cache, keyer)
+
+  private val defaultKeyer: PartialFunction[RequestContext, Any] = {
+    case r: akka.http.scaladsl.server.RequestContext if r.request.method == GET ⇒ r.request.uri
+  }
 
   /**
    * Passes only requests to the inner route that explicitly forbid caching with a `Cache-Control` header with either
@@ -40,13 +42,12 @@ trait CachingDirectives {
 
   /**
    * Wraps its inner Route with caching support using the given [[akka.http.caching.Cache]] implementation and
-   * in-scope keyer function. Note that routes producing streaming responses cannot be wrapped with this directive.
+   * keyer function. Note that routes producing streaming responses cannot be wrapped with this directive.
    */
-  def alwaysCache(csm: CacheSpecMagnet): Directive0 = {
-    import csm._
+  def alwaysCache(cache: Cache[RouteResult], keyer: PartialFunction[RequestContext, Any] = defaultKeyer): Directive0 = {
     mapInnerRoute { route ⇒ ctx ⇒
-      liftedKeyer(ctx) match {
-        case Some(key) ⇒ responseCache.apply(key, () ⇒ route(ctx))
+      keyer.lift(ctx) match {
+        case Some(key) ⇒ cache.apply(key, () ⇒ route(ctx))
         case None      ⇒ route(ctx)
       }
     }
@@ -58,34 +59,4 @@ trait CachingDirectives {
     LfuCache(maxCapacity, initialCapacity, timeToLive, timeToIdle)
   }
   //#
-}
-
-object CachingDirectives extends CachingDirectives
-
-trait CacheSpecMagnet {
-  def responseCache: Cache[RouteResult]
-  def liftedKeyer: RequestContext ⇒ Option[Any]
-  implicit def executionContext: ExecutionContext
-}
-
-object CacheSpecMagnet {
-  implicit def apply(cache: Cache[RouteResult])(implicit keyer: CacheKeyer, factory: ActorRefFactory) = // # CacheSpecMagnet
-    new CacheSpecMagnet {
-      def responseCache = cache
-      def liftedKeyer = keyer.lift
-      implicit def executionContext = factory.dispatcher
-    }
-}
-
-trait CacheKeyer extends (PartialFunction[RequestContext, Any])
-
-object CacheKeyer {
-  implicit val Default: CacheKeyer = CacheKeyer {
-    case r: akka.http.scaladsl.server.RequestContext if r.request.method == GET ⇒ r.request.uri
-  }
-
-  def apply(f: PartialFunction[RequestContext, Any]) = new CacheKeyer {
-    def isDefinedAt(ctx: RequestContext) = f.isDefinedAt(ctx)
-    def apply(ctx: RequestContext) = f(ctx)
-  }
 }
