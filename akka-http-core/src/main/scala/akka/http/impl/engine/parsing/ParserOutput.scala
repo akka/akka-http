@@ -69,6 +69,9 @@ private[http] object ParserOutput {
 
   sealed abstract class EntityCreator[-A <: ParserOutput, +B <: HttpEntity] extends (Source[A, NotUsed] ⇒ B)
 
+  /**
+   * An entity creator that uses the given entity directly and ignores the passed-in source.
+   */
   final case class StrictEntityCreator[-A <: ParserOutput, +B <: HttpEntity](entity: B) extends EntityCreator[A, B] {
     def apply(parts: Source[A, NotUsed]) = {
       // We might need to drain stray empty tail streams which will be read by no one.
@@ -76,6 +79,10 @@ private[http] object ParserOutput {
       entity
     }
   }
+
+  /**
+   * An entity creator that creates the entity from the a source of parts.
+   */
   final case class StreamedEntityCreator[-A <: ParserOutput, +B <: HttpEntity](creator: Source[A, NotUsed] ⇒ B)
     extends EntityCreator[A, B] {
     def apply(parts: Source[A, NotUsed]) = creator(parts)
