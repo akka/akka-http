@@ -2,10 +2,14 @@
 
 ## General Notes
 Akka HTTP is binary backwards compatible within for all version within the 10.0.x range. However, there are a set of APIs
-that are marked with the special annotation `@ApiMayChange` where this binary backwards compatibility is not guaranteed.
-See @extref:[The @DoNotInherit and @ApiMayChange markers](akka-docs:common/binary-compatibility-rules.html#The_@DoNotInherit_and_@ApiMayChange_markers) in the Akka documentation for further information.
+that are marked with the special annotation `@ApiMayChange` which are exempt from this rule, in order to allow them to be 
+evolved more freely until stabilising them, by removing this annotation.
+See @extref:[The @DoNotInherit and @ApiMayChange markers](akka-docs:common/binary-compatibility-rules.html#The_@DoNotInherit_and_@ApiMayChange_markers) for further information.
 
-## Akka HTTP 10.0.x -> 10.0.6
+This migration guide aims to help developers who use these bleeding-edge APIs to migrate between their evolving versions
+within patch releases.
+
+## Akka HTTP 10.0.6 -> 10.0.7
 
 ### `AkkaHttp#route` has been renamed to `AkkaHttp#routes`
 
