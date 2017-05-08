@@ -67,16 +67,16 @@ private[http] object ParserOutput {
 
   //////////////////////////////////////
 
-  sealed abstract class EntityCreator[-A <: ParserOutput, +B >: HttpEntity.Strict <: HttpEntity] extends (Source[A, NotUsed] ⇒ B)
+  sealed abstract class EntityCreator[-A <: ParserOutput, +B <: HttpEntity] extends (Source[A, NotUsed] ⇒ B)
 
-  final case class StrictEntityCreator[+B >: HttpEntity.Strict <: HttpEntity](entity: B) extends EntityCreator[ParserOutput, B] {
-    def apply(parts: Source[ParserOutput, NotUsed]) = {
+  final case class StrictEntityCreator[-A <: ParserOutput, +B <: HttpEntity](entity: B) extends EntityCreator[A, B] {
+    def apply(parts: Source[A, NotUsed]) = {
       // We might need to drain stray empty tail streams which will be read by no one.
       StreamUtils.cancelSource(parts)(StreamUtils.OnlyRunInGraphInterpreterContext) // only called within Http graphs stages
       entity
     }
   }
-  final case class StreamedEntityCreator[-A <: ParserOutput, +B >: HttpEntity.Strict <: HttpEntity](creator: Source[A, NotUsed] ⇒ B)
+  final case class StreamedEntityCreator[-A <: ParserOutput, +B <: HttpEntity](creator: Source[A, NotUsed] ⇒ B)
     extends EntityCreator[A, B] {
     def apply(parts: Source[A, NotUsed]) = creator(parts)
   }

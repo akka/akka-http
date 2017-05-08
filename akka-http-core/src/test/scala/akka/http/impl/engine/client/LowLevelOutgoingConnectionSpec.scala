@@ -888,13 +888,13 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
       val HttpResponse(StatusCodes.OK, _, HttpEntity.Default(_, contentLength, data), _) = expectResponse()
       contentLength shouldEqual 6
 
-      data.runWith(Sink.seq).map { chunks ⇒
-        chunks.length shouldEqual 0
-        requestsSub.sendComplete()
-        netOut.expectComplete()
-        netInSub.sendComplete()
-        responses.expectComplete()
-      }
+      val chunks = data.runWith(Sink.seq).awaitResult(3.seconds.dilated)
+      chunks.length shouldEqual 0
+
+      requestsSub.sendComplete()
+      netOut.expectComplete()
+      netInSub.sendComplete()
+      responses.expectComplete()
     }
   }
 
