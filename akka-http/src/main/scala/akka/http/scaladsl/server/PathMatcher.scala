@@ -221,6 +221,9 @@ object PathMatcher extends ImplicitPathMatcherConstruction {
         def apply(value: T, more: Out) = Tuple1(mops(value, more._1))
       }
   }
+
+  /** The empty match returned when a Regex matcher matches the empty path */
+  private[http] val EmptyMatch = Matched(Path.Empty, Tuple1(""))
 }
 
 /**
@@ -254,8 +257,6 @@ trait ImplicitPathMatcherConstruction {
   implicit def _stringNameOptionReceptacle2PathMatcher(nr: NameOptionReceptacle[String]): PathMatcher0 =
     PathMatcher(nr.name).?
 
-  private val EmptyMatch = Matched(Path.Empty, Tuple1(""))
-
   /**
    * Creates a PathMatcher that consumes (a prefix of) the first path segment
    * if the path begins with a segment (a prefix of) which matches the given regex.
@@ -278,7 +279,7 @@ trait ImplicitPathMatcherConstruction {
             case Some(m) ⇒ Matched(segment.substring(m.length) :: tail, Tuple1(m))
             case None    ⇒ Unmatched
           }
-          case Path.Empty if matchesEmptyPath ⇒ EmptyMatch
+          case Path.Empty if matchesEmptyPath ⇒ PathMatcher.EmptyMatch
           case _                              ⇒ Unmatched
         }
       }
@@ -288,7 +289,7 @@ trait ImplicitPathMatcherConstruction {
             case Some(m) ⇒ Matched(segment.substring(m.end) :: tail, Tuple1(m.group(1)))
             case None    ⇒ Unmatched
           }
-          case Path.Empty if matchesEmptyPath ⇒ EmptyMatch
+          case Path.Empty if matchesEmptyPath ⇒ PathMatcher.EmptyMatch
           case _                              ⇒ Unmatched
         }
       }
