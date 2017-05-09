@@ -51,7 +51,7 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
       cache.size should be(1)
     }
     "properly limit capacity" in {
-      val cache = lfuCache[String](maxCapacity = 3)
+      val cache = lfuCache[String](maxCapacity = 3, initialCapacity = 1)
       Await.result(cache(1)("A"), 3.seconds) should be("A")
       Await.result(cache(2)(Future.successful("B")), 3.seconds) should be("B")
       Await.result(cache(3)("C"), 3.seconds) should be("C")
@@ -107,7 +107,7 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
   def lfuCache[T](maxCapacity: Int = 500, initialCapacity: Int = 16,
                   timeToLive: Duration = Duration.Inf, timeToIdle: Duration = Duration.Inf) = {
-    new ExpiringLfuCache[T](maxCapacity, initialCapacity, timeToLive, timeToIdle)
+    LfuCache[T](maxCapacity, initialCapacity, timeToLive, timeToIdle)
   }
 
 }

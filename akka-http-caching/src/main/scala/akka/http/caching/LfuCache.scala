@@ -6,7 +6,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.Future
 import com.github.benmanes.caffeine.cache.{ AsyncCacheLoader, AsyncLoadingCache, Caffeine }
-import akka.http.caching.LfuCache.{ toJavaMappingFunction, dummyLoader }
+import akka.http.caching.LfuCache.toJavaMappingFunction
 
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.FunctionConverters._
@@ -14,24 +14,56 @@ import scala.compat.java8.FunctionConverters._
 object LfuCache {
 
   /**
-   * Creates a new [[akka.http.caching.ExpiringLfuCache]] or
-   * [[akka.http.caching.SimpleLfuCache]] instance depending on whether
-   * a non-zero and finite timeToLive and/or timeToIdle is set or not.
+   * Creates a new [[akka.http.caching.LfuCache]], with optional expiration depending
+   * on whether a non-zero and finite timeToLive and/or timeToIdle is set or not.
    */
   def apply[V](
     maxCapacity:     Int      = 500,
     initialCapacity: Int      = 16,
     timeToLive:      Duration = Duration.Inf,
-    timeToIdle:      Duration = Duration.Inf): Cache[V] = {
+    timeToIdle:      Duration = Duration.Inf): LfuCache[V] = {
 
-    if (timeToLive.isFinite() || timeToIdle.isFinite())
-      new ExpiringLfuCache[V](maxCapacity, initialCapacity, timeToLive, timeToIdle)
-    else
-      new SimpleLfuCache[V](maxCapacity, initialCapacity)
+    require(maxCapacity >= 0, "maxCapacity must not be negative")
+    require(initialCapacity <= maxCapacity, "initialCapacity must be <= maxCapacity")
+
+    if (timeToLive.isFinite() || timeToIdle.isFinite()) expiringLfuCache(maxCapacity, initialCapacity, timeToLive, timeToIdle)
+    else simpleLfuCache(maxCapacity, initialCapacity)
+  }
+
+  private def simpleLfuCache[V](maxCapacity: Int, initialCapacity: Int): LfuCache[V] = {
+    val store = Caffeine.newBuilder().asInstanceOf[Caffeine[Any, V]]
+      .initialCapacity(initialCapacity)
+      .maximumSize(maxCapacity)
+      .buildAsync[Any, V](dummyLoader[V])
+    new LfuCache[V](store)
+  }
+
+  private def expiringLfuCache[V](maxCapacity: Long, initialCapacity: Int,
+                                  timeToLive: Duration, timeToIdle: Duration): LfuCache[V] = {
+    require(
+      !timeToLive.isFinite || !timeToIdle.isFinite || timeToLive > timeToIdle,
+      s"timeToLive($timeToLive) must be greater than timeToIdle($timeToIdle)")
+
+    def ttl: Caffeine[Any, V] ⇒ Caffeine[Any, V] = { builder ⇒
+      if (timeToLive.isFinite) builder.expireAfterWrite(timeToLive.toMillis, TimeUnit.MILLISECONDS)
+      else builder
+    }
+
+    def tti: Caffeine[Any, V] ⇒ Caffeine[Any, V] = { builder ⇒
+      if (timeToIdle.isFinite) builder.expireAfterAccess(timeToIdle.toMillis, TimeUnit.MILLISECONDS)
+      else builder
+    }
+
+    val builder = Caffeine.newBuilder().asInstanceOf[Caffeine[Any, V]]
+      .initialCapacity(initialCapacity)
+      .maximumSize(maxCapacity)
+
+    val store = (ttl andThen tti)(builder).buildAsync[Any, V](dummyLoader[V])
+    new LfuCache[V](store)
   }
 
   //LfuCache requires a loader function on creation - this will not be used.
-  def dummyLoader[V] = new AsyncCacheLoader[Any, V] {
+  private def dummyLoader[V] = new AsyncCacheLoader[Any, V] {
     def asyncLoad(k: Any, e: Executor) =
       Future.failed[V](new RuntimeException("Dummy loader should not be used by LfuCache")).toJava.toCompletableFuture
   }
@@ -40,9 +72,7 @@ object LfuCache {
     asJavaBiFunction[Any, Executor, CompletableFuture[V]]((k, e) ⇒ genValue().toJava.toCompletableFuture)
 }
 
-trait LfuCache[V] extends Cache[V] {
-
-  private[caching] val store: AsyncLoadingCache[Any, V]
+private[caching] class LfuCache[V](val store: AsyncLoadingCache[Any, V]) extends Cache[V] {
 
   def get(key: Any): Option[Future[V]] = Option(store.getIfPresent(key)).map(_.toScala)
 
@@ -55,37 +85,4 @@ trait LfuCache[V] extends Cache[V] {
   def keys: Set[Any] = store.synchronous().asMap().keySet().asScala.toSet
 
   def size: Int = store.synchronous().asMap().size()
-}
-
-final class SimpleLfuCache[V](val maxCapacity: Int, val initialCapacity: Int) extends LfuCache[V] {
-  require(maxCapacity >= 0, "maxCapacity must not be negative")
-  require(initialCapacity <= maxCapacity, "initialCapacity must be <= maxCapacity")
-
-  private[caching] val store = Caffeine.newBuilder().asInstanceOf[Caffeine[Any, V]]
-    .initialCapacity(initialCapacity)
-    .maximumSize(maxCapacity)
-    .buildAsync[Any, V](dummyLoader[V])
-}
-
-final class ExpiringLfuCache[V](maxCapacity: Long, initialCapacity: Int,
-                                timeToLive: Duration, timeToIdle: Duration) extends LfuCache[V] {
-  require(
-    !timeToLive.isFinite || !timeToIdle.isFinite || timeToLive > timeToIdle,
-    s"timeToLive($timeToLive) must be greater than timeToIdle($timeToIdle)")
-
-  private[caching] def ttl: Caffeine[Any, V] ⇒ Caffeine[Any, V] = { builder ⇒
-    if (timeToLive.isFinite) builder.expireAfterWrite(timeToLive.toMillis, TimeUnit.MILLISECONDS)
-    else builder
-  }
-
-  private[caching] def tti: Caffeine[Any, V] ⇒ Caffeine[Any, V] = { builder ⇒
-    if (timeToIdle.isFinite) builder.expireAfterAccess(timeToIdle.toMillis, TimeUnit.MILLISECONDS)
-    else builder
-  }
-
-  private[caching] val builder = Caffeine.newBuilder().asInstanceOf[Caffeine[Any, V]]
-    .initialCapacity(initialCapacity)
-    .maximumSize(maxCapacity)
-
-  private[caching] val store = (ttl andThen tti)(builder).buildAsync[Any, V](dummyLoader[V])
 }
