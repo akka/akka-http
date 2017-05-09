@@ -4,6 +4,8 @@
 
 package akka.http.scaladsl.server.directives
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import scala.collection.immutable.ListMap
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
@@ -465,69 +467,57 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
   }
 
   "the `ignoreTrailingSlash` directive" should {
-    var passes = 0
-    val route = ignoreTrailingSlash {
-      passes = passes + 1
+    def route(counter: AtomicInteger = new AtomicInteger(0)) = ignoreTrailingSlash {
+      counter.incrementAndGet()
       path("foo") {
-        completeOk
+        complete(s"${counter.get()}")
       } ~
         (pathPrefix("bar") & pathEndOrSingleSlash) {
-          completeOk
+          complete(s"${counter.get()}")
         } ~
         path("baz" /) {
-          completeOk
+          complete(s"${counter.get()}")
         }
     }
 
     "pass if the request path doesn't have a trailing slash" in {
-      val oldPasses = passes
-      Get("/foo") ~> route ~> check {
-        passes shouldEqual (oldPasses + 1)
-        response shouldEqual Ok
+      Get("/foo") ~> route() ~> check {
+        responseAs[String] shouldEqual "1"
       }
     }
 
     "pass if the request path has a trailing slash by retrying the inner route" in {
-      val oldPasses = passes
-      Get("/foo/") ~> route ~> check {
-        passes shouldEqual (oldPasses + 2)
-        response shouldEqual Ok
+      Get("/foo/") ~> route() ~> check {
+        responseAs[String] shouldEqual "2"
       }
     }
 
     "pass when the request contains parameters and fragments" in {
-      val oldPasses = passes
-      Get("/foo/?query#frag") ~> route ~> check {
-        passes shouldEqual (oldPasses + 2)
-        response shouldEqual Ok
+      Get("/foo/?query#frag") ~> route() ~> check {
+        responseAs[String] shouldEqual "2"
       }
     }
 
     "retry the inner route only once if path already checks for an optional trailing slash" in {
-      val oldPasses = passes
-      Get("/bar/") ~> route ~> check {
-        passes shouldEqual (oldPasses + 1)
-        response shouldEqual Ok
+      Get("/bar/") ~> route() ~> check {
+        responseAs[String] shouldEqual "1"
       }
     }
 
     "retry accordingly if the path expects a trailing slash" in {
-      val oldPasses = passes
-      Get("/baz") ~> route ~> check {
-        passes shouldEqual (oldPasses + 2)
-        response shouldEqual Ok
+      Get("/baz") ~> route() ~> check {
+        responseAs[String] shouldEqual "2"
       }
 
-      Get("/baz/") ~> route ~> check {
-        passes shouldEqual (oldPasses + 3)
-        response shouldEqual Ok
+      Get("/baz/") ~> route() ~> check {
+        responseAs[String] shouldEqual "1"
       }
     }
 
     "reject if request can't be matched with nor without a trailing slash" in {
-      val oldPasses = passes
-      Get("/foz") ~> route ~> check {
-        passes shouldEqual (oldPasses + 2)
+      val counter = new AtomicInteger(0)
+      Get("/foz") ~> route(counter) ~> check {
+        counter.get() shouldEqual 2
         handled shouldEqual false
       }
     }
