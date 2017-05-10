@@ -25,6 +25,8 @@ import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.util.FastFuture._
 import headers._
 
+import scala.annotation.tailrec
+
 /**
  * Common base class of HttpRequest and HttpResponse.
  */
@@ -325,15 +327,16 @@ object HttpRequest {
    * include a valid [[akka.http.scaladsl.model.headers.Host]] header or if URI authority and [[akka.http.scaladsl.model.headers.Host]] header don't match.
    */
   def effectiveUri(uri: Uri, headers: immutable.Seq[HttpHeader], securedConnection: Boolean, defaultHostHeader: Host): Uri = {
-    def findHost: OptionVal[Host] = {
-      val it = headers.iterator
-      while (it.hasNext) it.next() match {
-        case h: Host ⇒ return OptionVal.Some(h)
-        case _       ⇒ // continue ...
-      }
-      OptionVal.None
-    }
-    val hostHeader = findHost
+    @tailrec def findHostAndWsUpgrade(it: Iterator[HttpHeader], host: OptionVal[Host] = OptionVal.None, wsUpgrade: Option[Boolean] = None): (OptionVal[Host], Boolean) =
+      if (host.isDefined && wsUpgrade.isDefined || !it.hasNext)
+        (host, wsUpgrade.contains(true))
+      else
+        it.next() match {
+          case h: Host    ⇒ findHostAndWsUpgrade(it, OptionVal.Some(h), wsUpgrade)
+          case u: Upgrade ⇒ findHostAndWsUpgrade(it, host, Some(u.hasWebSocket))
+          case _          ⇒ findHostAndWsUpgrade(it, host, wsUpgrade)
+        }
+    val (hostHeader, isWebsocket) = findHostAndWsUpgrade(headers.iterator)
     if (uri.isRelative) {
       def fail(detail: String) =
         throw IllegalUriException(
@@ -343,14 +346,6 @@ object HttpRequest {
         case OptionVal.None                 ⇒ if (defaultHostHeader.isEmpty) fail("is missing a `Host` header") else defaultHostHeader
         case OptionVal.Some(x) if x.isEmpty ⇒ if (defaultHostHeader.isEmpty) fail("an empty `Host` header") else defaultHostHeader
         case OptionVal.Some(x)              ⇒ x
-      }
-      def isWebsocket: Boolean = {
-        val it = headers.iterator
-        while (it.hasNext) it.next() match {
-          case u: Upgrade ⇒ return u.hasWebSocket
-          case _          ⇒ // continue ...
-        }
-        false
       }
       val defaultScheme =
         if (isWebsocket) (if (securedConnection) "wss" else "ws")
