@@ -877,12 +877,9 @@ object UriRendering {
       def appendEncoded(byte: Byte): Unit = r ~~ '%' ~~ CharUtils.upperHexDigit(byte >>> 4) ~~ CharUtils.upperHexDigit(byte)
       if (ix < string.length) {
         val charSize = string.charAt(ix) match {
-          case c if keep(c) ⇒
-            r ~~ c; 1
-          case ' ' if replaceSpaces ⇒
-            r ~~ '+'; 1
-          case c if c <= 127 && asciiCompatible ⇒
-            appendEncoded(c.toByte); 1
+          case c if keep(c)                     ⇒ { r ~~ c; 1 }
+          case ' ' if replaceSpaces             ⇒ { r ~~ '+'; 1 }
+          case c if c <= 127 && asciiCompatible ⇒ { appendEncoded(c.toByte); 1 }
           case c ⇒
             def append(s: String) = s.getBytes(charset).foreach(appendEncoded)
             if (Character.isHighSurrogate(c)) { append(new String(Array(string codePointAt ix), 0, 1)); 2 }
