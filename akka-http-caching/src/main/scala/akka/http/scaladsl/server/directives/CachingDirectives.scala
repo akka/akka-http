@@ -1,7 +1,7 @@
 package akka.http.scaladsl.server.directives
 
 import akka.annotation.ApiMayChange
-import akka.http.caching.{ Cache, LfuCache }
+import akka.http.caching.{ Cache, LfuCache, LfuCacheSettings }
 import akka.http.scaladsl.server.Directive0
 
 import scala.concurrent.duration.Duration
@@ -56,7 +56,13 @@ trait CachingDirectives {
   //# route-Cache
   def routeCache(maxCapacity: Int = 500, initialCapacity: Int = 16, timeToLive: Duration = Duration.Inf,
                  timeToIdle: Duration = Duration.Inf): Cache[RouteResult] = {
-    LfuCache(maxCapacity, initialCapacity, timeToLive, timeToIdle)
+    LfuCache {
+      LfuCacheSettings()
+        .withMaxCapacity(maxCapacity)
+        .withInitialCapacity(initialCapacity)
+        .withTimeToLive(timeToLive)
+        .withTimeToIdle(timeToIdle)
+    }
   }
   //#
 }
