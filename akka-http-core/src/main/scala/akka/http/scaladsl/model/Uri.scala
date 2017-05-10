@@ -327,6 +327,8 @@ object Uri {
 
   def httpScheme(securedConnection: Boolean = false) = if (securedConnection) "https" else "http"
 
+  def websocketScheme(securedConnection: Boolean = false) = (if (securedConnection) "wss" else "ws")
+
   /**
    * @param port A port number that may be `0` to signal the default port of for scheme.
    *             In general what you want is not the value of this field but [[Uri.effectivePort]].

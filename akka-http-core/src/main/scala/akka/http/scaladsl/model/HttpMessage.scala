@@ -348,7 +348,7 @@ object HttpRequest {
         case OptionVal.Some(x)              ⇒ x
       }
       val defaultScheme =
-        if (isWebsocket) (if (securedConnection) "wss" else "ws")
+        if (isWebsocket) Uri.websocketScheme(securedConnection)
         else Uri.httpScheme(securedConnection)
       uri.toEffectiveRequestUri(hostHeaderHost, hostHeaderPort, defaultScheme)
     } else // http://tools.ietf.org/html/rfc7230#section-5.4
@@ -360,7 +360,7 @@ object HttpRequest {
   }
 
   /**
-   * Verifies that the given [[Uri]] is non-empty and has either scheme `http`, `https` or no scheme at all.
+   * Verifies that the given [[Uri]] is non-empty and has either scheme `http`, `https`, `ws`, `wss` or no scheme at all.
    * If any of these conditions is not met the method throws an [[IllegalArgumentException]].
    */
   def verifyUri(uri: Uri): Unit =
