@@ -73,7 +73,7 @@ public abstract class HttpApp extends AllDirectives {
 
     CompletionStage<ServerBinding> bindingFuture = Http
       .get(theSystem)
-      .bindAndHandle(routes().flow(theSystem, materializer), // uses the deprecated method to have an easy migration.
+      .bindAndHandle(routes().flow(theSystem, materializer),
         ConnectHttp.toHost(host, port),
         settings,
         theSystem.log(),

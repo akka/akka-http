@@ -70,7 +70,7 @@ abstract class HttpApp extends Directives {
     implicit val executionContext = theSystem.dispatcher
 
     val bindingFuture = Http().bindAndHandle(
-      handler = routes, // uses the deprecated method to have an easy migration.
+      handler = routes,
       interface = host,
       port = port,
       settings = settings)
