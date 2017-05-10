@@ -7,6 +7,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.Future
 import com.github.benmanes.caffeine.cache.{ AsyncCacheLoader, AsyncLoadingCache, Caffeine }
 import akka.http.caching.LfuCache.toJavaMappingFunction
+import akka.http.caching.LfuCacheSettings.LfuCacheSettingsImpl
 
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.FunctionConverters._
@@ -17,17 +18,13 @@ object LfuCache {
    * Creates a new [[akka.http.caching.LfuCache]], with optional expiration depending
    * on whether a non-zero and finite timeToLive and/or timeToIdle is set or not.
    */
-  def apply[V](
-    maxCapacity:     Int      = 500,
-    initialCapacity: Int      = 16,
-    timeToLive:      Duration = Duration.Inf,
-    timeToIdle:      Duration = Duration.Inf): LfuCache[V] = {
+  def apply[V](settings: LfuCacheSettings = LfuCacheSettings()): LfuCache[V] = {
 
-    require(maxCapacity >= 0, "maxCapacity must not be negative")
-    require(initialCapacity <= maxCapacity, "initialCapacity must be <= maxCapacity")
+    require(settings.maxCapacity >= 0, "maxCapacity must not be negative")
+    require(settings.initialCapacity <= settings.maxCapacity, "initialCapacity must be <= maxCapacity")
 
-    if (timeToLive.isFinite() || timeToIdle.isFinite()) expiringLfuCache(maxCapacity, initialCapacity, timeToLive, timeToIdle)
-    else simpleLfuCache(maxCapacity, initialCapacity)
+    if (settings.timeToLive.isFinite() || settings.timeToIdle.isFinite()) expiringLfuCache(settings.maxCapacity, settings.initialCapacity, settings.timeToLive, settings.timeToIdle)
+    else simpleLfuCache(settings.maxCapacity, settings.initialCapacity)
   }
 
   private def simpleLfuCache[V](maxCapacity: Int, initialCapacity: Int): LfuCache[V] = {
@@ -85,4 +82,27 @@ private[caching] class LfuCache[V](val store: AsyncLoadingCache[Any, V]) extends
   def keys: Set[Any] = store.synchronous().asMap().keySet().asScala.toSet
 
   def size: Int = store.synchronous().asMap().size()
+}
+
+abstract class LfuCacheSettings private[http] () { self: LfuCacheSettingsImpl ⇒
+  def maxCapacity: Int
+  def initialCapacity: Int
+  def timeToLive: Duration
+  def timeToIdle: Duration
+
+  def withMaxCapacity(newMaxCapacity: Int): LfuCacheSettings = copy(maxCapacity = newMaxCapacity)
+  def withInitialCapacity(newInitialCapacity: Int): LfuCacheSettings = copy(initialCapacity = newInitialCapacity)
+  def withTimeToLive(newTimeToLive: Duration): LfuCacheSettings = copy(timeToLive = newTimeToLive)
+  def withTimeToIdle(newTimeToIdle: Duration): LfuCacheSettings = copy(timeToIdle = newTimeToIdle)
+}
+
+object LfuCacheSettings {
+  def apply(): LfuCacheSettings = LfuCacheSettingsImpl()
+
+  private[http] case class LfuCacheSettingsImpl(
+    maxCapacity:     Int      = 500,
+    initialCapacity: Int      = 16,
+    timeToLive:      Duration = Duration.Inf,
+    timeToIdle:      Duration = Duration.Inf
+  ) extends LfuCacheSettings
 }
