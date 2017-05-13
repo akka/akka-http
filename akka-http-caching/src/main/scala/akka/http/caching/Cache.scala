@@ -1,7 +1,6 @@
 package akka.http.caching
 
-import scala.concurrent.{ ExecutionContext, Future, Promise }
-import scala.util.control.NonFatal
+import scala.concurrent.{ Future, Promise }
 
 /**
  * General interface implemented by all akka-http cache implementations.
@@ -9,31 +8,22 @@ import scala.util.control.NonFatal
 trait Cache[V] { cache ⇒
 
   /**
-   * Selects the (potentially non-existing) cache entry with the given key.
-   */
-  def apply(key: Any) = new Keyed(key)
-
-  class Keyed(key: Any) {
-    /**
-     * Returns either the cached Future for the key or evaluates the given call-by-name argument
-     * which produces either a value instance of type `V` or a `Future[V]`.
-     */
-    def apply(magnet: ⇒ ValueMagnet[V]): Future[V] =
-      cache.apply(key, () ⇒ try magnet.future catch { case NonFatal(e) ⇒ Future.failed(e) })
-
-    /**
-     * Returns either the cached Future for the key or evaluates the given function which
-     * should lead to eventual completion of the promise.
-     */
-    def apply[U](f: Promise[V] ⇒ U): Future[V] =
-      cache.apply(key, () ⇒ { val p = Promise[V](); f(p); p.future })
-  }
-
-  /**
    * Returns either the cached Future for the given key or evaluates the given value generating
    * function producing a `Future[V]`.
    */
   def apply(key: Any, genValue: () ⇒ Future[V]): Future[V]
+
+  /**
+   * Returns either the cached Future for the key or evaluates the given function which
+   * should lead to eventual completion of the promise.
+   */
+  def apply[U](key: Any, f: Promise[V] ⇒ U): Future[V] =
+    cache.apply(key, () ⇒ { val p = Promise[V](); f(p); p.future })
+
+  /**
+   * Returns either the cached Future for the given key or the given value as a Future
+   */
+  def get(key: Any, block: ⇒ V): Future[V] = apply(key, () ⇒ Future.successful(block))
 
   /**
    * Retrieves the future instance that is currently in the cache for the given key.
@@ -67,10 +57,4 @@ trait Cache[V] { cache ⇒
    * (or by being thrown out by a capacity constraint).
    */
   def size: Int
-}
-
-class ValueMagnet[V](val future: Future[V])
-object ValueMagnet {
-  implicit def fromAny[V](block: V): ValueMagnet[V] = fromFuture(Future.successful(block))
-  implicit def fromFuture[V](future: Future[V]): ValueMagnet[V] = new ValueMagnet(future)
 }
