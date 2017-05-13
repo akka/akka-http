@@ -18,7 +18,6 @@ import org.scalatest.exceptions.TestPendingException
 
 import scala.concurrent.duration._
 import scala.sys.process._
-import scala.util.control.NoStackTrace
 
 class H2SpecIntegrationSpec extends AkkaSpec(
   """
