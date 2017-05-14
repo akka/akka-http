@@ -14,15 +14,20 @@ import scala.concurrent.duration._
 import scala.util.DynamicVariable
 import scala.reflect.ClassTag
 import akka.actor.ActorSystem
+import akka.annotation.ApiMayChange
 import akka.stream.{ ActorMaterializer, Materializer }
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ Host, Upgrade, `Sec-WebSocket-Protocol` }
+import akka.http.scaladsl.client.RequestBuilding
+import akka.http.scaladsl.settings.ServerSettings
 import FastFuture._
 import akka.testkit.TestKit
+import akka.testkit.SocketUtil
 
 trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTestResultComponent with MarshallingTestUtils {
   this: TestFrameworkInterface ⇒
@@ -123,6 +128,17 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
      * Apply request to given routes for further inspection in `check { }` block.
      */
     def ~>[A, B](f: A ⇒ B)(implicit ta: TildeArrow[A, B]): ta.Out = ta(request, f)
+
+    /**
+     * Evaluate request against routes run in server mode for further
+     * inspection in `check { }` block.
+     *
+     * Compared to [[~>]], the given routes are run in a fully fledged
+     * server, which allows more types of directives to be tested at the
+     * cost of additional overhead related with server setup.
+     */
+    @ApiMayChange
+    def ~!>[A, B](f: A ⇒ B)(implicit tba: TildeBangArrow[A, B]): tba.Out = tba(request, f)
   }
 
   abstract class TildeArrow[A, B] {
@@ -163,6 +179,53 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
           val deferrableRouteResult = semiSealedRoute(ctx)
           deferrableRouteResult.fast.foreach(routeTestResult.handleResult)(executionContext)
           routeTestResult
+        }
+      }
+  }
+
+  @ApiMayChange
+  abstract class TildeBangArrow[A, B] {
+    type Out
+    def apply(request: HttpRequest, f: A ⇒ B): Out
+  }
+
+  @ApiMayChange
+  object TildeBangArrow {
+    implicit def injectIntoRoute(implicit
+      timeout: RouteTestTimeout,
+                                 routingSettings:  RoutingSettings,
+                                 serverSettings:   ServerSettings,
+                                 executionContext: ExecutionContext,
+                                 materializer:     Materializer,
+                                 routingLog:       RoutingLog,
+                                 rejectionHandler: RejectionHandler = RejectionHandler.default,
+                                 exceptionHandler: ExceptionHandler = null) =
+      new TildeBangArrow[RequestContext, Future[RouteResult]] {
+        type Out = RouteTestResult
+        def apply(request: HttpRequest, route: Route): Out = {
+          val routeTestResult = new RouteTestResult(timeout.duration)
+
+          val sealedExceptionHandler = ExceptionHandler.seal(exceptionHandler)
+          val semiSealedRoute = // sealed for exceptions but not for rejections
+            Directives.withSettings(routingSettings)(
+              Directives.handleExceptions(sealedExceptionHandler)(route))
+
+          val server = Http().bindAndHandle(
+            semiSealedRoute, "127.0.0.1", 0, settings = serverSettings)
+
+          val result =
+            for {
+              binding ← server
+              port = binding.localAddress.getPort
+              targetUri = request.uri.withHost("127.0.0.1").withPort(port).withScheme("http")
+
+              response ← Http().singleRequest(request.withUri(targetUri))
+            } yield {
+              routeTestResult.handleResponse(response)
+              routeTestResult
+            }
+          try Await.result(result, timeout.duration)
+          finally Await.result(server.flatMap(_.unbind()), timeout.duration)
         }
       }
   }
