@@ -46,6 +46,24 @@ public class JUnitRouteTestTest extends JUnitRouteTest {
   }
 
   @Test
+  public void testUsingADirectiveAndSomeChecksAndRunClientServer() {
+    RawHeader extraHeader = RawHeader.create("X-Forwarded-Proto", "abc");
+
+    TestRoute route =
+      testRoute(
+        respondWithHeader(extraHeader, () ->
+          complete("abc")
+        )
+      );
+
+    route.runClientServer(HttpRequest.GET("/").addHeader(extraHeader))
+      .assertStatusCode(StatusCodes.OK)
+      .assertContentType("text/plain; charset=UTF-8")
+      .assertEntity("abc")
+      .assertHeaderExists(XForwardedProto.create("abc"));
+  }
+
+  @Test
   public void testProperRejectionCollection() {
     TestRoute route =
       testRoute(

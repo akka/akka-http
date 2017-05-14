@@ -70,6 +70,14 @@ trait RouteTestResultComponent {
         } else failTest("Route completed/rejected more than once")
       }
 
+    private[testkit] def handleResponse(r: HttpResponse): Unit =
+      synchronized {
+        if (result.isEmpty) {
+          result = Some(Right(r))
+          latch.countDown()
+        } else failTest("Route completed/rejected more than once")
+      }
+
     private[testkit] def awaitResult: this.type = scala.concurrent.blocking {
       latch.await(timeout.toMillis, MILLISECONDS)
       this

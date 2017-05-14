@@ -15,6 +15,7 @@ import StatusCodes._
 import HttpMethods._
 import Directives._
 import org.scalatest.exceptions.TestFailedException
+import headers.`X-Forwarded-Proto`
 
 import scala.concurrent.Await
 import scala.concurrent.Future
@@ -39,6 +40,20 @@ class ScalatestRouteTestSpec extends AnyFreeSpec with Matchers with ScalatestRou
         status shouldEqual OK
         responseEntity shouldEqual HttpEntity(ContentTypes.`text/plain(UTF-8)`, "abc")
         header("Fancy") shouldEqual Some(pinkHeader)
+      }
+    }
+
+    "a test using ~!> and some checks" in {
+      // raw here, should have been parsed into modelled header when going through an actual server when using `~!>`
+      val extraHeader = RawHeader("X-Forwarded-Proto", "abc")
+      Get() ~!> {
+        respondWithHeader(extraHeader) {
+          complete("abc")
+        }
+      } ~> check {
+        status shouldEqual OK
+        responseEntity shouldEqual HttpEntity(ContentTypes.`text/plain(UTF-8)`, "abc")
+        header[`X-Forwarded-Proto`].get shouldEqual `X-Forwarded-Proto`("abc")
       }
     }
 
