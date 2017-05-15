@@ -2,6 +2,8 @@ package akka.http.caching
 
 import java.util.concurrent.{ CompletableFuture, Executor, TimeUnit }
 
+import akka.annotation.ApiMayChange
+
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.Future
@@ -12,6 +14,7 @@ import akka.http.caching.LfuCacheSettings.LfuCacheSettingsImpl
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.FunctionConverters._
 
+@ApiMayChange
 object LfuCache {
 
   /**

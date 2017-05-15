@@ -10,7 +10,7 @@ class CachingDirectivesExamplesSpec extends RoutingSpec with CachingDirectives {
     //#cache
     var i = 0
     val route =
-      cache(routeCache()) {
+      cache(routeCache(), simpleKeyer) {
         complete {
           i += 1
           i.toString
@@ -34,7 +34,7 @@ class CachingDirectivesExamplesSpec extends RoutingSpec with CachingDirectives {
     //#always-cache
     var i = 0
     val route =
-      alwaysCache(routeCache()) {
+      alwaysCache(routeCache(), simpleKeyer) {
         complete {
           i += 1
           i.toString

@@ -1,10 +1,13 @@
 package akka.http.caching
 
+import akka.annotation.ApiMayChange
+
 import scala.concurrent.{ Future, Promise }
 
 /**
  * General interface implemented by all akka-http cache implementations.
  */
+@ApiMayChange
 trait Cache[V] { cache ⇒
 
   /**
