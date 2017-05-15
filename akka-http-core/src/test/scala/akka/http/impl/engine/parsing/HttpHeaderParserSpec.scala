@@ -284,8 +284,8 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       val c = nextRandomPrintableChar()
       if (CharacterClasses.ALPHANUM(c)) c else nextRandomAlphaNumChar()
     }
-    @tailrec final def nextRandomString(charGen: ⇒ Char, len: Int, sb: JStringBuilder = new JStringBuilder): String =
-      if (sb.length < len) nextRandomString(charGen, len, sb.append(charGen)) else sb.toString
+    @tailrec final def nextRandomString(charGen: () ⇒ Char, len: Int, sb: JStringBuilder = new JStringBuilder): String =
+      if (sb.length < len) nextRandomString(charGen, len, sb.append(charGen())) else sb.toString
   }
 }
 
