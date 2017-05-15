@@ -14,7 +14,7 @@ class CachingDirectivesSpec extends WordSpec with Matchers with ScalatestRouteTe
 
   val countingService = {
     var i = 0
-    cache(routeCache()) {
+    cache(routeCache(), simpleKeyer) {
       complete {
         i += 1
         i.toString
@@ -23,7 +23,7 @@ class CachingDirectivesSpec extends WordSpec with Matchers with ScalatestRouteTe
   }
   val errorService = {
     var i = 0
-    cache(routeCache()) {
+    cache(routeCache(), simpleKeyer) {
       complete {
         i += 1
         HttpResponse(500 + i)
@@ -57,11 +57,11 @@ class CachingDirectivesSpec extends WordSpec with Matchers with ScalatestRouteTe
         case MyException ⇒ complete("Good")
       }
 
-      Get() ~> cache(routeCache()) {
+      Get() ~> cache(routeCache(), simpleKeyer) {
         _ ⇒ throw MyException // thrown directly
       } ~> check { responseAs[String] shouldEqual "Good" }
 
-      Get() ~> cache(routeCache()) {
+      Get() ~> cache(routeCache(), simpleKeyer) {
         _.fail(MyException) // bubbling up
       } ~> check { responseAs[String] shouldEqual "Good" }
     }

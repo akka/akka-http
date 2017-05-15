@@ -19,11 +19,15 @@ trait CachingDirectives {
    * Wraps its inner Route with caching support using the given [[akka.http.caching.Cache]] implementation and
    * keyer function.
    */
-  def cache(cache: Cache[RouteResult], keyer: PartialFunction[RequestContext, Any] = defaultKeyer): Directive0 =
+  def cache(cache: Cache[RouteResult], keyer: PartialFunction[RequestContext, Any]): Directive0 =
     cachingProhibited | alwaysCache(cache, keyer)
 
-  private val defaultKeyer: PartialFunction[RequestContext, Any] = {
-    case r: akka.http.scaladsl.server.RequestContext if r.request.method == GET ⇒ r.request.uri
+  /**
+   * A simple keyer function that will cache responses to *all* GET requests, with the URI as key.
+   * WARNING - consider whether you need special handling for e.g. authorised requests.
+   */
+  val simpleKeyer: PartialFunction[RequestContext, Any] = {
+    case r: RequestContext if r.request.method == GET ⇒ r.request.uri
   }
 
   /**
@@ -44,7 +48,7 @@ trait CachingDirectives {
    * Wraps its inner Route with caching support using the given [[akka.http.caching.Cache]] implementation and
    * keyer function. Note that routes producing streaming responses cannot be wrapped with this directive.
    */
-  def alwaysCache(cache: Cache[RouteResult], keyer: PartialFunction[RequestContext, Any] = defaultKeyer): Directive0 = {
+  def alwaysCache(cache: Cache[RouteResult], keyer: PartialFunction[RequestContext, Any]): Directive0 = {
     mapInnerRoute { route ⇒ ctx ⇒
       keyer.lift(ctx) match {
         case Some(key) ⇒ cache.apply(key, () ⇒ route(ctx))
