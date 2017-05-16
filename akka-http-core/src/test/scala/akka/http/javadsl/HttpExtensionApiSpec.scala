@@ -16,12 +16,11 @@ import akka.actor.ActorSystem
 import akka.event.NoLogging
 import akka.http.javadsl.model._
 import akka.http.javadsl.ServerBinding
-import akka.http.scaladsl.TestUtils
 import akka.japi.Function
 import akka.stream.ActorMaterializer
 import akka.stream.javadsl.{ Flow, Keep, Sink, Source }
 import akka.stream.testkit.TestSubscriber
-import akka.testkit.TestKit
+import akka.testkit.{ SocketUtil, TestKit }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 
@@ -70,7 +69,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
     // all four bind method overloads
     "properly bind a server (with three parameters)" in {
-      val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
+      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
       val probe = TestSubscriber.manualProbe[IncomingConnection]()
       val binding = http.bind(toHost(host, port), materializer)
         .toMat(Sink.fromSubscriber(probe), Keep.left)
@@ -81,7 +80,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
     }
 
     "properly bind a server (with four parameters)" in {
-      val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
+      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
       val probe = TestSubscriber.manualProbe[IncomingConnection]()
       val binding = http.bind(toHost(host, port), materializer)
         .toMat(Sink.fromSubscriber(probe), Keep.left)
@@ -92,7 +91,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
     }
 
     "properly bind a server (with five parameters)" in {
-      val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
+      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
       val probe = TestSubscriber.manualProbe[IncomingConnection]()
       val binding = http.bind(toHost(host, port), serverSettings, materializer)
         .toMat(Sink.fromSubscriber(probe), Keep.left)
@@ -103,7 +102,7 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
     }
 
     "properly bind a server (with six parameters)" in {
-      val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
+      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
       val probe = TestSubscriber.manualProbe[IncomingConnection]()
       val binding = http.bind(toHost(host, port), serverSettings, loggingAdapter, materializer)
         .toMat(Sink.fromSubscriber(probe), Keep.left)
@@ -116,7 +115,8 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
     abstract class TestSetup {
       def bind(): CompletionStage[ServerBinding]
 
-      val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
+      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
+
       val flow: Flow[HttpRequest, HttpResponse, NotUsed] = akka.stream.scaladsl.Flow[HttpRequest]
         .map(req ⇒ HttpResponse.create())
         .asJava
@@ -390,14 +390,14 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
   def get(host: Host, port: Port) = HttpRequest.GET("/").addHeader(headers.Host.create(host, port))
 
   def runServer(): (Host, Port, ServerBinding) = {
-    val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
+    val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
     val server = http.bindAndHandleSync(httpSuccessFunction, toHost(host, port), materializer)
 
     (host, port, waitFor(server))
   }
 
   def runWebsocketServer(): (Host, Port, ServerBinding) = {
-    val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
+    val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
     val server = http.bindAndHandleSync(new Function[HttpRequest, HttpResponse] {
 
       override def apply(request: HttpRequest): HttpResponse = {
