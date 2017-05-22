@@ -11,7 +11,7 @@ import java.{ lang ⇒ jl }
 import akka.annotation.InternalApi
 import akka.http.scaladsl.model.Uri.ParsingMode
 import akka.http.javadsl.{ model ⇒ jm }
-import akka.http.scaladsl.{ model ⇒ sm }
+import akka.http.scaladsl.{model ⇒ sm}
 import akka.http.impl.util.JavaMapping.Implicits._
 
 /** INTERNAL API */
