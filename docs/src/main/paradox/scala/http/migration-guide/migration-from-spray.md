@@ -114,7 +114,7 @@ ToResponseMarshaller.oneOf(
 }
 ```
 
-After:
+After: 
 
 ```scala
 Marshaller.oneOf(
