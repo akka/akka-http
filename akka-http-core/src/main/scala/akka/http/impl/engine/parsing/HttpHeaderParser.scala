@@ -11,6 +11,7 @@ import java.lang.{ StringBuilder ⇒ JStringBuilder }
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.settings.ParserSettings.IllegalResponseHeaderValueProcessingMode
+import akka.http.scaladsl.settings.ParserSettings.ErrorLoggingVerbosity
 import akka.http.scaladsl.settings.ParserSettings
 
 import scala.annotation.tailrec
@@ -425,6 +426,7 @@ private[http] object HttpHeaderParser {
     def headerValueCacheLimit(headerName: String): Int
     def customMediaTypes: MediaTypes.FindCustom
     def illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode
+    def errorLoggingVerbosity: ErrorLoggingVerbosity
   }
 
   private def predefinedHeaders = Seq(
@@ -438,8 +440,18 @@ private[http] object HttpHeaderParser {
     "Cache-Control: no-cache",
     "Expect: 100-continue")
 
-  def apply(settings: HttpHeaderParser.Settings, log: LoggingAdapter)(onIllegalHeader: ErrorInfo ⇒ Unit = info ⇒ throw IllegalHeaderException(info)) =
+  def apply(settings: HttpHeaderParser.Settings, log: LoggingAdapter)(onIllegalHeader: ErrorInfo ⇒ Unit = defaultIllegalHeaderHandler(settings, log)) =
     prime(unprimed(settings, log, onIllegalHeader))
+
+  def defaultIllegalHeaderHandler(settings: HttpHeaderParser.Settings, log: LoggingAdapter): ErrorInfo ⇒ Unit =
+    {
+      settings.illegalResponseHeaderValueProcessingMode match {
+        case IllegalResponseHeaderValueProcessingMode.Error ⇒ info ⇒ throw IllegalHeaderException(info)
+        case IllegalResponseHeaderValueProcessingMode.Warn ⇒ info ⇒ logParsingError(info withSummaryPrepended "Illegal response header", log, settings.errorLoggingVerbosity)
+        case IllegalResponseHeaderValueProcessingMode.Ignore ⇒ _ ⇒ // Does exactly what the label says - nothing
+        case _ ⇒ ??? //TODO what would be the appropriate way to handle an unexpected value here?
+      }
+    }
 
   def unprimed(settings: HttpHeaderParser.Settings, log: LoggingAdapter, warnOnIllegalHeader: ErrorInfo ⇒ Unit) =
     new HttpHeaderParser(settings, log, warnOnIllegalHeader)

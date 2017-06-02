@@ -14,10 +14,11 @@ import scala.util.Random
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import akka.util.ByteString
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpHeader
+import akka.http.scaladsl.model.{ ErrorInfo, HttpHeader, IllegalHeaderException }
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.model.parser.CharacterClasses
 import akka.http.impl.util._
+import akka.http.scaladsl.settings.ParserSettings.IllegalResponseHeaderValueProcessingMode
 import akka.testkit.TestKit
 
 abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordSpec with Matchers with BeforeAndAfterAll {
@@ -31,7 +32,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
   val system = ActorSystem(getClass.getSimpleName, testConf)
 
   s"The HttpHeaderParser (mode: $mode)" should {
-    "insert the 1st value" in new TestSetup(primed = false) {
+    "insert the 1st value" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
       insert("Hello", 'Hello)
       check {
         """nodes: 0/H, 0/e, 0/l, 0/l, 0/o, 1/Ω
@@ -44,7 +45,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       }
     }
 
-    "insert a new branch underneath a simple node" in new TestSetup(primed = false) {
+    "insert a new branch underneath a simple node" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
       insert("Hello", 'Hello)
       insert("Hallo", 'Hallo)
       check {
@@ -59,7 +60,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       }
     }
 
-    "insert a new branch underneath the root" in new TestSetup(primed = false) {
+    "insert a new branch underneath the root" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
       insert("Hello", 'Hello)
       insert("Hallo", 'Hallo)
       insert("Yeah", 'Yeah)
@@ -76,7 +77,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       }
     }
 
-    "insert a new branch underneath an existing branch node" in new TestSetup(primed = false) {
+    "insert a new branch underneath an existing branch node" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
       insert("Hello", 'Hello)
       insert("Hallo", 'Hallo)
       insert("Yeah", 'Yeah)
@@ -95,7 +96,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       }
     }
 
-    "support overriding of previously inserted values" in new TestSetup(primed = false) {
+    "support overriding of previously inserted values" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
       insert("Hello", 'Hello)
       insert("Hallo", 'Hallo)
       insert("Yeah", 'Yeah)
@@ -138,7 +139,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
     "parse and cache an X-Real-Ip with a hostname as it's value as a RawHeader" in new TestSetup() {
       parseAndCache(s"X-Real-Ip: akka.io${newLine}x")() shouldEqual RawHeader("x-real-ip", "akka.io")
     }
-    "parse and cache a raw header" in new TestSetup(primed = false) {
+    "parse and cache a raw header" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
       insert("hello: bob", 'Hello)
       val (ixA, headerA) = parseLine(s"Fancy-Pants: foo${newLine}x")
       val (ixB, headerB) = parseLine(s"Fancy-pants: foo${newLine}x")
@@ -184,6 +185,19 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       noException should be thrownBy parseLine(s"foo: ${nextRandomString(nextRandomAlphaNumChar, 1000)}${newLine}x")
       the[ParsingException] thrownBy parseLine(s"foo: ${nextRandomString(nextRandomAlphaNumChar, 1001)}${newLine}x") should have message
         "HTTP header value exceeds the configured limit of 1000 characters"
+    }
+
+    "produce an error when illegalResponseHeaderValueProcessingMode set to Error and a header contains illegal value" in new TestSetup(testSetupMode = TestSetupMode.Default, createParserSettings(system, illegalResponseHeaderValueProcessingMode = IllegalResponseHeaderValueProcessingMode.Error)) {
+      the[IllegalHeaderException] thrownBy parseLine(s"Server: something; something${newLine}x")
+    }
+
+    "continue parsing even if a header contains an invalid value when illegalResponseHeaderValueProcessingMode is set to Warn" in new TestSetup(testSetupMode = TestSetupMode.Default, createParserSettings(system, illegalResponseHeaderValueProcessingMode = IllegalResponseHeaderValueProcessingMode.Warn)) {
+      noException should be thrownBy parseLine(s"Server: something; something${newLine}x")
+    }
+
+    // TODO this test is almost identical to the test above, but has a different setup - what do?
+    "continue parsing even if a header contains an invalid value when illegalResponseHeaderValueProcessingMode is set to Ignore" in new TestSetup(testSetupMode = TestSetupMode.Default, createParserSettings(system, illegalResponseHeaderValueProcessingMode = IllegalResponseHeaderValueProcessingMode.Ignore)) {
+      noException should be thrownBy parseLine(s"Server: something; something${newLine}x")
     }
 
     "continue parsing raw headers even if the overall cache value capacity is reached" in new TestSetup() {
@@ -246,14 +260,28 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
     actual shouldEqual expected.stripMarginWithNewline("\n")
   }
 
-  abstract class TestSetup(primed: Boolean = true) {
-    val parser = {
-      val p = HttpHeaderParser.unprimed(
-        settings = ParserSettings(system),
-        system.log,
-        warnOnIllegalHeader = info ⇒ system.log.warning(info.formatPretty))
-      if (primed) HttpHeaderParser.prime(p) else p
+  sealed trait TestSetupMode
+  object TestSetupMode {
+    case object Primed extends TestSetupMode
+    case object Unprimed extends TestSetupMode
+    case object Default extends TestSetupMode // creates a test setup using the default HttpHeaderParser.apply()
+  }
+
+  def createParserSettings(actorSystem:                              ActorSystem,
+                           illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode = IllegalResponseHeaderValueProcessingMode.Error): ParserSettings =
+    ParserSettings(actorSystem)
+      .withIllegalResponseHeaderValueProcessingMode(illegalResponseHeaderValueProcessingMode)
+
+  abstract class TestSetup(testSetupMode: TestSetupMode = TestSetupMode.Primed, parserSettings: ParserSettings = createParserSettings(system)) {
+
+    val parser = testSetupMode match {
+      case TestSetupMode.Primed   ⇒ HttpHeaderParser.prime(HttpHeaderParser.unprimed(parserSettings, system.log, defaultIllegalHeaderHandler))
+      case TestSetupMode.Unprimed ⇒ HttpHeaderParser.unprimed(parserSettings, system.log, defaultIllegalHeaderHandler)
+      case TestSetupMode.Default  ⇒ HttpHeaderParser(parserSettings, system.log)()
     }
+
+    private def defaultIllegalHeaderHandler = (info: ErrorInfo) ⇒ system.log.warning(info.formatPretty)
+
     def insert(line: String, value: AnyRef): Unit =
       if (parser.isEmpty) HttpHeaderParser.insertRemainingCharsAsNewNodes(parser, ByteString(line), value)
       else HttpHeaderParser.insert(parser, ByteString(line), value)
