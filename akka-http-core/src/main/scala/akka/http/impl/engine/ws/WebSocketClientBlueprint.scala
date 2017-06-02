@@ -19,7 +19,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpMethods, HttpResponse }
 import akka.http.scaladsl.model.headers.Host
 import akka.http.impl.engine.parsing.HttpMessageParser.StateResult
-import akka.http.impl.engine.parsing.ParserOutput.{ NeedMoreData, RemainingBytes, ResponseStart }
+import akka.http.impl.engine.parsing.ParserOutput.{ MessageStartError, NeedMoreData, RemainingBytes, ResponseStart }
 import akka.http.impl.engine.parsing.{ HttpHeaderParser, HttpResponseParser, ParserOutput }
 import akka.http.impl.engine.rendering.{ HttpRequestRendererFactory, RequestRenderingContext }
 import akka.http.impl.engine.ws.Handshake.Client.NegotiatedWebSocketSettings
@@ -103,6 +103,8 @@ object WebSocketClientBlueprint {
                     result.success(InvalidUpgradeResponse(response, s"WebSocket server at $uri returned $problem"))
                     failStage(new IllegalArgumentException(s"WebSocket upgrade did not finish because of '$problem'"))
                 }
+              case MessageStartError(statusCode, errorInfo) ⇒
+                throw new IllegalStateException(s"Message failed with status code $statusCode; Error info: $errorInfo")
               case other ⇒
                 throw new IllegalStateException(s"unexpected element of type ${other.getClass}")
             }
