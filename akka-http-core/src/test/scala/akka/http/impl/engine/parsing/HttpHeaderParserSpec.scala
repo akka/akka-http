@@ -1,6 +1,6 @@
 /**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
- */
+  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+  */
 
 package akka.http.impl.engine.parsing
 
@@ -146,8 +146,8 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       val newLineWithHyphen = if (newLine == "\r\n") """\r-\n""" else """\n"""
       check {
         s""" ┌─f-a-n-c-y---p-a-n-t-s-:-(Fancy-Pants)- -f-o-o-${newLineWithHyphen}- *Fancy-Pants: foo
-          |-h-e-l-l-o-:- -b-o-b- 'Hello
-          |""" → parser.formatTrie
+           |-h-e-l-l-o-:- -b-o-b- 'Hello
+           |""" → parser.formatTrie
       }
       ixA shouldEqual ixB
       headerA shouldEqual RawHeader("Fancy-Pants", "foo")
@@ -267,8 +267,10 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
     case object Default extends TestSetupMode // creates a test setup using the default HttpHeaderParser.apply()
   }
 
-  def createParserSettings(actorSystem:                              ActorSystem,
-                           illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode = IllegalResponseHeaderValueProcessingMode.Error): ParserSettings =
+  def createParserSettings(
+                            actorSystem:                              ActorSystem,
+                            illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode = IllegalResponseHeaderValueProcessingMode.Error
+                          ): ParserSettings =
     ParserSettings(actorSystem)
       .withIllegalResponseHeaderValueProcessingMode(illegalResponseHeaderValueProcessingMode)
 
