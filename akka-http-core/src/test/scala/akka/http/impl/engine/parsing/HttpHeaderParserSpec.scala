@@ -1,6 +1,6 @@
 /**
-  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
-  */
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
 
 package akka.http.impl.engine.parsing
 
@@ -268,9 +268,8 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
   }
 
   def createParserSettings(
-                            actorSystem:                              ActorSystem,
-                            illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode = IllegalResponseHeaderValueProcessingMode.Error
-                          ): ParserSettings =
+    actorSystem:                              ActorSystem,
+    illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode = IllegalResponseHeaderValueProcessingMode.Error): ParserSettings =
     ParserSettings(actorSystem)
       .withIllegalResponseHeaderValueProcessingMode(illegalResponseHeaderValueProcessingMode)
 
