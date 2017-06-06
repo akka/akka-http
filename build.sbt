@@ -156,7 +156,7 @@ lazy val docs = project("docs")
       "akka.version" -> Dependencies.akkaVersion.value,
       "scala.binaryVersion" -> scalaBinaryVersion.value,
       "scala.version" -> scalaVersion.value,
-      "scaladoc.version" -> scalaVersion.value,
+      "scaladoc.version" -> (if (isSnapshot.value) crossScalaVersions.value.tail.head else crossScalaVersions.value.head),
       "crossString" -> (scalaVersion.value match {
         case akka.Doc.BinVer(_) => ""
         case _                  => "cross CrossVersion.full"
