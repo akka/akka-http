@@ -2,3 +2,6 @@
 
 # Added another parameter to HttpHeaderParser internal settings
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.engine.parsing.HttpHeaderParser#Settings.errorLoggingVerbosity")
+
+# Added a new method to this sealed trait
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.MediaType#WithOpenCharset.toContentTypeWithMissingCharset")
