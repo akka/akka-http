@@ -1,0 +1,4 @@
+# Mima filters needed to check newer versions against 10.0.7
+
+# Added another parameter to HttpHeaderParser internal settings
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.engine.parsing.HttpHeaderParser#Settings.errorLoggingVerbosity")
