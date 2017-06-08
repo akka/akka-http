@@ -3,6 +3,7 @@ import akka._
 import AkkaDependency._
 import akka.ValidatePullRequest._
 import sbtdynver.GitDescribeOutput
+import com.typesafe.sbt.SbtGit.GitKeys._
 
 inThisBuild(Def.settings(
   organization := "com.typesafe.akka",
@@ -25,11 +26,18 @@ inThisBuild(Def.settings(
   //  test in assembly := {},
   licenses := Seq("Apache-2.0" -> url("https://opensource.org/licenses/Apache-2.0")),
   whitesourceProduct := "Lightbend Reactive Platform",
-  whitesourceAggregateProjectName := { "akka-http-" + (if (isSnapshot.value) "master" else majorMinor(version.value).map(_ + "-current").getOrElse("snapshot")) },
+  whitesourceAggregateProjectName := {
+    "akka-http-" + (
+      if (isSnapshot.value)
+        if (gitCurrentBranch.value == "master") "master"
+        else "adhoc"
+      else majorMinor(version.value).map(_ + "-current").getOrElse("snapshot"))
+  },
   whitesourceAggregateProjectToken := {
     println(s"isSnapshot: ${isSnapshot.value}, projectName: ${whitesourceAggregateProjectName.value}")
     whitesourceAggregateProjectName.value match {
       case "akka-http-master" => "01a41a52-11bb-48bc-825f-24f25b5d7be5"
+      case "akka-http-adhoc" => "f6a93c5d-0fb0-4bfb-a012-3931c8dc860e"
       case other => throw new Exception(s"Please add project '$other' to whitesource and record the integration token here")
     }
   },
