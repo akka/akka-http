@@ -2,12 +2,15 @@ import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import akka._
 import AkkaDependency._
 import akka.ValidatePullRequest._
+import sbtdynver.GitDescribeOutput
 
 inThisBuild(Def.settings(
   organization := "com.typesafe.akka",
   organizationName := "Lightbend",
   organizationHomepage := Some(url("https://www.lightbend.com")),
   homepage := Some(url("http://akka.io")),
+  // https://github.com/dwijnand/sbt-dynver/issues/23
+  isSnapshot :=  { isSnapshot.value || hasCommitsAfterTag(dynverGitDescribeOutput.value) },
   apiURL := {
     val apiVersion = if (isSnapshot.value) "current" else version.value
     Some(url(s"http://doc.akka.io/api/akka-http/$apiVersion/"))
@@ -21,6 +24,15 @@ inThisBuild(Def.settings(
   startYear := Some(2014),
   //  test in assembly := {},
   licenses := Seq("Apache-2.0" -> url("https://opensource.org/licenses/Apache-2.0")),
+  whitesourceProduct := "Lightbend Reactive Platform",
+  whitesourceAggregateProjectName := { "akka-http-" + (if (isSnapshot.value) "master" else majorMinor(version.value).map(_ + "-current").getOrElse("snapshot")) },
+  whitesourceAggregateProjectToken := {
+    println(s"isSnapshot: ${isSnapshot.value}, projectName: ${whitesourceAggregateProjectName.value}")
+    whitesourceAggregateProjectName.value match {
+      case "akka-http-master" => "01a41a52-11bb-48bc-825f-24f25b5d7be5"
+      case other => throw new Exception(s"Please add project '$other' to whitesource and record the integration token here")
+    }
+  },
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8", // yes, this is 2 args
@@ -176,3 +188,10 @@ lazy val docs = project("docs")
     additionalTasks in ValidatePR += paradox in Compile,
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka-http/${version.value}")
   )
+
+def majorMinor(version: String): Option[String] ="""\d+\.\d+""".r.findFirstIn(version)
+def hasCommitsAfterTag(description: Option[GitDescribeOutput]): Boolean = {
+  val result = description.get.commitSuffix.distance > 0
+  println(s"returning $result")
+  result
+}
