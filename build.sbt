@@ -21,6 +21,14 @@ inThisBuild(Def.settings(
   startYear := Some(2014),
   //  test in assembly := {},
   licenses := Seq("Apache-2.0" -> url("https://opensource.org/licenses/Apache-2.0")),
+  whitesourceProduct := "Lightbend Reactive Platform",
+  whitesourceAggregateProjectName := { "akka-http-" + (if (isSnapshot.value) "master" else majorMinor(version.value).map(_ + "-current").getOrElse("snapshot")) },
+  whitesourceAggregateProjectToken := {
+    whitesourceAggregateProjectName.value match {
+      case "akka-http-master" => "01a41a52-11bb-48bc-825f-24f25b5d7be5"
+      case other => throw new Exception(s"Please add project '$other' to whitesource and record the integration token here")
+    }
+  },
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8", // yes, this is 2 args
@@ -176,3 +184,5 @@ lazy val docs = project("docs")
     additionalTasks in ValidatePR += paradox in Compile,
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka-http/${version.value}")
   )
+
+def majorMinor(version: String): Option[String] ="""\d+\.\d+""".r.findFirstIn(version)
