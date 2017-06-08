@@ -449,7 +449,6 @@ private[http] object HttpHeaderParser {
         case IllegalResponseHeaderValueProcessingMode.Error ⇒ info ⇒ throw IllegalHeaderException(info)
         case IllegalResponseHeaderValueProcessingMode.Warn ⇒ info ⇒ logParsingError(info withSummaryPrepended "Illegal response header", log, settings.errorLoggingVerbosity)
         case IllegalResponseHeaderValueProcessingMode.Ignore ⇒ _ ⇒ // Does exactly what the label says - nothing
-        case _ ⇒ ??? //TODO what would be the appropriate way to handle an unexpected value here?
       }
     }
 
