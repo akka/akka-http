@@ -195,7 +195,6 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       noException should be thrownBy parseLine(s"Server: something; something${newLine}x")
     }
 
-    // TODO this test is almost identical to the test above, but has a different setup - what do?
     "continue parsing even if a header contains an invalid value when illegalResponseHeaderValueProcessingMode is set to Ignore" in new TestSetup(testSetupMode = TestSetupMode.Default, createParserSettings(system, illegalResponseHeaderValueProcessingMode = IllegalResponseHeaderValueProcessingMode.Ignore)) {
       noException should be thrownBy parseLine(s"Server: something; something${newLine}x")
     }
