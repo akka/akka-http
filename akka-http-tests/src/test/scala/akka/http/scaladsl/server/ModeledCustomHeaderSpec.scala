@@ -4,7 +4,7 @@
 
 package akka.http.scaladsl.server
 
-import akka.http.scaladsl.model.{ HttpRequest, StatusCodes }
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, StatusCodes }
 import akka.http.scaladsl.model.headers._
 
 import scala.util.{ Failure, Success, Try }
@@ -12,7 +12,7 @@ import scala.util.{ Failure, Success, Try }
 object ModeledCustomHeaderSpec {
 
   //#modeled-api-key-custom-header
-  final class ApiTokenHeader(token: String) extends ModeledCustomHeader[ApiTokenHeader] {
+  final case class ApiTokenHeader(token: String) extends ModeledCustomHeader[ApiTokenHeader] {
     override def renderInRequests = false
     override def renderInResponses = false
     override val companion = ApiTokenHeader
@@ -24,17 +24,17 @@ object ModeledCustomHeaderSpec {
   }
   //#modeled-api-key-custom-header
 
-  final class DifferentHeader(token: String) extends ModeledCustomHeader[DifferentHeader] {
+  final case class DifferentHeader private (tokens: List[String]) extends ModeledCustomHeader[DifferentHeader] {
     override def renderInRequests = false
     override def renderInResponses = false
     override val companion = DifferentHeader
-    override def value = token
+    override def value = tokens.mkString("|")
   }
   object DifferentHeader extends ModeledCustomHeaderCompanion[DifferentHeader] {
     override val name = "different"
     override def parse(value: String) =
-      if (value contains " ") Failure(new Exception("Contains illegal whitespace!"))
-      else Success(new DifferentHeader(value))
+      if (value contains "x") Failure(new Exception("contained the letter x which is illegal!"))
+      else Success(new DifferentHeader(value.split(" ").toList))
   }
 
 }
@@ -75,9 +75,18 @@ class ModeledCustomHeaderSpec extends RoutingSpec {
     }
 
     "be able to be extracted using response.header[...] syntax" in {
-      val h = DifferentHeader("Hello")
+      val h: DifferentHeader = DifferentHeader("Hello")
+      val hraw = RawHeader("different", "Hello")
+
       val request = HttpRequest().addHeader(h)
       request.header[DifferentHeader] should ===(Some(h))
+      val requestRaw = HttpRequest().addHeader(hraw)
+      requestRaw.header[DifferentHeader] should ===(Some(h))
+
+      val response = HttpResponse().addHeader(h)
+      response.header[DifferentHeader] should ===(Some(h))
+      val responseRaw = HttpResponse().addHeader(hraw)
+      responseRaw.header[DifferentHeader] should ===(Some(h))
     }
 
     "be able to match from RawHeader" in {
@@ -131,11 +140,11 @@ class ModeledCustomHeaderSpec extends RoutingSpec {
 
     "fail with useful message when unable to parse" in {
       val ex = intercept[Exception] {
-        DifferentHeader("Hello world") // illegal " "
+        DifferentHeader("Hello xxx world") // illegal " "
       }
 
-      ex.getMessage should ===("Unable to construct custom header by parsing: 'Hello world'")
-      ex.getCause.getMessage should include("whitespace")
+      ex.getMessage should ===("Unable to construct custom header by parsing: 'Hello xxx world'")
+      ex.getCause.getMessage should include("x which is illegal")
     }
   }
 
