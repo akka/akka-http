@@ -24,9 +24,8 @@ cache:
 
 script:
   # need to override as the default is to test
-  - sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))'
   - sbt -J-XX:ReservedCodeCacheSize=256m +update
-  - if [[ "$TRAVIS_BRANCH" == "master" ]]; then sbt whitesourceCheckPolicies; fi
+  - if [[ "$TRAVIS_BRANCH" == "master" && "$TRAVIS_EVENT_TYPE" == "push" ]]; then sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies whitesourceUpdate; else sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies; fi 
 
 deploy:
   provider: script
