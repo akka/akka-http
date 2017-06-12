@@ -2,3 +2,7 @@
 
 # Added a new method to this sealed trait
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.MediaType#WithOpenCharset.toContentTypeWithMissingCharset")
+
+# akka.http.impl.model.parser.CharacterClasses is private[http].
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.model.parser.CharacterClasses.relaxed-query-char")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.model.parser.CharacterClasses.strict-query-char")
