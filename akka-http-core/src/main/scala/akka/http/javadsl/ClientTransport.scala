@@ -24,8 +24,12 @@ abstract class ClientTransport { outer ⇒
 }
 
 object ClientTransport {
-  def TCP(localAddress: Optional[InetSocketAddress], settings: ClientConnectionSettings): ClientTransport =
+  def TCP(localAddress: Optional[InetSocketAddress], settings: ClientConnectionSettings): ClientTransport = {
     scaladsl.ClientTransport.TCP(localAddress.asScala, settings.asScala).asJava
+  }
+
+  def proxy(localAddress: Optional[InetSocketAddress], proxyAddress: InetSocketAddress, settings: ClientConnectionSettings): ClientTransport =
+    scaladsl.ClientTransport.proxy(localAddress.asScala, proxyAddress, settings.asScala).asJava
 
   def fromScala(scalaTransport: scaladsl.ClientTransport): ClientTransport =
     scalaTransport match {
