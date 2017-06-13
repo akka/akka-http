@@ -4,18 +4,16 @@
 
 package akka.http.javadsl.server.values;
 
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 import org.junit.Test;
 
-import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.ScalaTestJunitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 
 import akka.http.javadsl.model.*;
 import akka.http.javadsl.model.headers.Age;
 import akka.http.javadsl.model.headers.RawHeader;
 
-public class HeadersTest extends JUnitRouteTest {
+public class HeadersTest extends ScalaTestJunitRouteTest {
   final RawHeader testHeaderInstance = RawHeader.create("X-Test-Header", "abcdef-test");
   final Age ageHeaderInstance = Age.create(1000);
 

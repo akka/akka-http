@@ -14,12 +14,12 @@ import akka.http.javadsl.server.ExceptionHandler;
 import akka.http.javadsl.server.RejectionHandler;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.unmarshalling.StringUnmarshallers;
-import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.ScalaTestJunitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import akka.http.scaladsl.server.MethodRejection;
 import akka.http.scaladsl.server.Rejection;
 
-public class ExecutionDirectivesTest extends JUnitRouteTest {
+public class ExecutionDirectivesTest extends ScalaTestJunitRouteTest {
   @Test
   public void testCatchExceptionThrownFromHandler() {
     Route divide =

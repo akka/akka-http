@@ -8,11 +8,11 @@ import static akka.http.javadsl.unmarshalling.StringUnmarshallers.INTEGER;
 
 import org.junit.Test;
 
-import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.ScalaTestJunitRouteTest;
 import akka.http.javadsl.testkit.TestRouteResult;
 import akka.http.scaladsl.model.HttpRequest;
 
-public class HandlerBindingTest extends JUnitRouteTest {
+public class HandlerBindingTest extends ScalaTestJunitRouteTest {
     
     @Test
     public void testHandlerWithoutExtractions() {

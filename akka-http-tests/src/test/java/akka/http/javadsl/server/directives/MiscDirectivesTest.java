@@ -8,11 +8,10 @@ import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.RemoteAddress;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.model.Uri;
-import akka.http.javadsl.model.headers.RawHeader;
 import akka.http.javadsl.model.headers.XForwardedFor;
 import akka.http.javadsl.model.headers.XRealIp;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
-import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.ScalaTestJunitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import org.junit.Test;
 
@@ -20,7 +19,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 
-public class MiscDirectivesTest extends JUnitRouteTest {
+public class MiscDirectivesTest extends ScalaTestJunitRouteTest {
 
   static boolean isShort(String str) {
     return str.length() < 5;

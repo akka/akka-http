@@ -5,14 +5,14 @@ package akka.http.javadsl.server.directives;
 
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.StatusCodes;
-import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.ScalaTestJunitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import org.junit.Test;
 
 import static akka.http.javadsl.server.Directives.*;
 import static akka.http.javadsl.common.PartialApplication.*;
 
-public class ComposingDirectivesTest extends JUnitRouteTest {
+public class ComposingDirectivesTest extends ScalaTestJunitRouteTest {
 
   @Test
   public void testAnyOf0Arg() {

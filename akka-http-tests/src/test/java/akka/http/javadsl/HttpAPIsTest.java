@@ -5,10 +5,9 @@
 package akka.http.javadsl;
 
 import akka.event.LoggingAdapter;
-import akka.http.javadsl.*;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
-import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.ScalaTestJunitRouteTest;
 import akka.http.scaladsl.settings.ConnectionPoolSettings;
 import akka.japi.Function;
 import akka.stream.javadsl.Flow;
@@ -21,7 +20,7 @@ import static akka.http.javadsl.ConnectHttp.toHost;
 import static akka.http.javadsl.ConnectHttp.toHostHttps;
 
 @SuppressWarnings("ConstantConditions")
-public class HttpAPIsTest extends JUnitRouteTest {
+public class HttpAPIsTest extends ScalaTestJunitRouteTest {
 
   @Test
   public void placeholderCompileTimeOnlyTest() {

@@ -19,10 +19,10 @@ import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.unmarshalling.StringUnmarshallers;
-import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.ScalaTestJunitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 
-public class HandlerExampleDocTest extends JUnitRouteTest {
+public class HandlerExampleDocTest extends ScalaTestJunitRouteTest {
   @Test
   public void testSimpleHandler() {
     //#simple-handler-example-full

@@ -13,10 +13,10 @@ import org.junit.Test;
 
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.unmarshalling.StringUnmarshallers;
-import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.ScalaTestJunitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 
-public class ParameterDirectivesTest extends JUnitRouteTest {
+public class ParameterDirectivesTest extends ScalaTestJunitRouteTest {
 
   @Test
   public void testStringParameterExtraction() {

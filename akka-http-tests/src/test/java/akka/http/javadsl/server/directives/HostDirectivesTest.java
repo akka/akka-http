@@ -7,14 +7,14 @@ package akka.http.javadsl.server.directives;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.model.Uri;
-import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.ScalaTestJunitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
-public class HostDirectivesTest extends JUnitRouteTest {
+public class HostDirectivesTest extends ScalaTestJunitRouteTest {
   @Test
   public void testHostFilterBySingleName() {
     TestRoute route = testRoute(host("example.org", () -> complete("OK!")));

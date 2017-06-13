@@ -13,11 +13,11 @@ import akka.http.javadsl.model.headers.*;
 import akka.http.javadsl.unmarshalling.StringUnmarshallers;
 import org.junit.Test;
 
-import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.ScalaTestJunitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import akka.util.ByteString;
 
-public class MarshallerTest extends JUnitRouteTest {
+public class MarshallerTest extends ScalaTestJunitRouteTest {
 
   @Test
   public void testCustomToStringMarshaller() {

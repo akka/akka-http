@@ -6,11 +6,11 @@ package akka.http.javadsl.server.directives;
 
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.headers.HttpCookie;
-import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.ScalaTestJunitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import org.junit.Test;
 
-public class CookieDirectivesTest extends JUnitRouteTest {
+public class CookieDirectivesTest extends ScalaTestJunitRouteTest {
   @Test
   public void testCookieValue() {
     TestRoute route =

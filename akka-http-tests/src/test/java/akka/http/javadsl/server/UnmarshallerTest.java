@@ -4,7 +4,7 @@
 package akka.http.javadsl.server;
 
 import akka.http.javadsl.model.*;
-import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.ScalaTestJunitRouteTest;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.http.javadsl.unmarshalling.StringUnmarshallers;
 import org.junit.Test;
@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
-public class UnmarshallerTest extends JUnitRouteTest {
+public class UnmarshallerTest extends ScalaTestJunitRouteTest {
 
   @Test
   public void unmarshallerWithoutExecutionContext() throws Exception {

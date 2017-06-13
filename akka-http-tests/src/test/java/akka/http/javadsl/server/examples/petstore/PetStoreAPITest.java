@@ -4,6 +4,7 @@
 
 package akka.http.javadsl.server.examples.petstore;
 
+import akka.http.javadsl.ScalaTestJunitRouteTest;
 import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.MediaTypes;
@@ -19,7 +20,7 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PetStoreAPITest extends JUnitRouteTest {
+public class PetStoreAPITest extends ScalaTestJunitRouteTest {
   @Test
   public void testGetPet() {
     TestRouteResult response = createRoute().run(HttpRequest.GET("/pet/1"));
