@@ -22,13 +22,13 @@ import akka.http.javadsl.unmarshalling.StringUnmarshallers;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
 import org.junit.Test;
 
-import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.ScalaTestJunitRouteTest;
 //FIXME discuss how to provide a javadsl.CustomHeader where render() is either pre-implemented or trivial to write in Java
 import akka.http.scaladsl.model.headers.CustomHeader;
 import akka.japi.pf.PFBuilder;
 import akka.util.ByteString;
 
-public class JavaRouteTest extends JUnitRouteTest {
+public class JavaRouteTest extends ScalaTestJunitRouteTest {
   private final Route route = getRoute();
   private static final Unmarshaller<String, BigDecimal> BIG_DECIMAL_PARAM =
     Unmarshaller.sync(BigDecimal::new);

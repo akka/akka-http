@@ -10,11 +10,11 @@ import akka.http.javadsl.model.HttpCharsets;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.MediaTypes;
 import akka.http.javadsl.unmarshalling.StringUnmarshallers;
-import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.ScalaTestJunitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import akka.japi.Pair;
 
-public class FormFieldsTest extends JUnitRouteTest {
+public class FormFieldsTest extends ScalaTestJunitRouteTest {
 
     private Pair<String, String> param(String name, String value) {
         return Pair.create(name, value);

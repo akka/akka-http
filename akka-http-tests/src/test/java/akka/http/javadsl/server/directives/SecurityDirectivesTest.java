@@ -7,6 +7,8 @@ package akka.http.javadsl.server.directives;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+
+import akka.http.javadsl.ScalaTestJunitRouteTest;
 import akka.http.javadsl.model.StatusCodes;
 import org.junit.Test;
 
@@ -21,7 +23,7 @@ import akka.http.javadsl.testkit.*;
 
 import static akka.http.javadsl.server.PathMatchers.*;
 
-public class SecurityDirectivesTest extends JUnitRouteTest {
+public class SecurityDirectivesTest extends ScalaTestJunitRouteTest {
 
   // These authenticators don't have to be async; they're just written that way to test the API.
   private CompletionStage<Optional<String>> authenticateUser(Optional<ProvidedCredentials> creds) {

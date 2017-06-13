@@ -7,14 +7,14 @@ import akka.http.javadsl.model.HttpHeader;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.model.headers.*;
-import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.ScalaTestJunitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import akka.japi.pf.PFBuilder;
 import org.junit.Test;
 
 import java.util.Optional;
 
-public class HeaderDirectivesTest extends JUnitRouteTest {
+public class HeaderDirectivesTest extends ScalaTestJunitRouteTest {
 
   @Test
   public void testHeaderValue() {

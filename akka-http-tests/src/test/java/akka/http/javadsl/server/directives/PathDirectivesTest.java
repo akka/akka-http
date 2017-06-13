@@ -11,11 +11,11 @@ import org.junit.Test;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.model.headers.Host;
 import akka.http.javadsl.server.PathMatchers;
-import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.ScalaTestJunitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import akka.http.scaladsl.model.HttpRequest;
 
-public class PathDirectivesTest extends JUnitRouteTest {
+public class PathDirectivesTest extends ScalaTestJunitRouteTest {
   @Test
   public void testPathPrefixAndPath() {
     TestRoute route = testRoute(

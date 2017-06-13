@@ -4,12 +4,13 @@
 
 package akka.http.javadsl.server.examples.simple;
 
+import akka.http.javadsl.ScalaTestJunitRouteTest;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.testkit.*;
 
 import org.junit.Test;
 
-public class SimpleServerTest extends JUnitRouteTest {
+public class SimpleServerTest extends ScalaTestJunitRouteTest {
     TestRoute route = testRoute(new SimpleServerApp().createRoute());
 
     @Test

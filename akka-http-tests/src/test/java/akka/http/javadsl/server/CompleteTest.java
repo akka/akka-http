@@ -14,9 +14,9 @@ import org.junit.Test;
 import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.MediaTypes;
-import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.ScalaTestJunitRouteTest;
 
-public class CompleteTest extends JUnitRouteTest {
+public class CompleteTest extends ScalaTestJunitRouteTest {
     @Test
     public void completeWithString() {
         Route route = complete("Everything OK!");

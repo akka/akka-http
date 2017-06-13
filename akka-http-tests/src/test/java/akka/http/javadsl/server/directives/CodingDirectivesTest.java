@@ -4,6 +4,7 @@
 
 package akka.http.javadsl.server.directives;
 
+import akka.http.javadsl.ScalaTestJunitRouteTest;
 import akka.http.javadsl.coding.Coder;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.headers.AcceptEncoding;
@@ -19,7 +20,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
-public class CodingDirectivesTest extends JUnitRouteTest {
+public class CodingDirectivesTest extends ScalaTestJunitRouteTest {
 
   @Test
   public void testAutomaticEncodingWhenNoEncodingRequested() throws Exception {
