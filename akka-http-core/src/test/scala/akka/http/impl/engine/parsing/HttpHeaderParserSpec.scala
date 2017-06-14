@@ -187,18 +187,6 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
         "HTTP header value exceeds the configured limit of 1000 characters"
     }
 
-    "produce an error when illegalResponseHeaderValueProcessingMode set to Error and a header contains illegal value" in new TestSetup(testSetupMode = TestSetupMode.Default, createParserSettings(system, illegalResponseHeaderValueProcessingMode = IllegalResponseHeaderValueProcessingMode.Error)) {
-      the[IllegalHeaderException] thrownBy parseLine(s"Server: something; something${newLine}x")
-    }
-
-    "continue parsing even if a header contains an invalid value when illegalResponseHeaderValueProcessingMode is set to Warn" in new TestSetup(testSetupMode = TestSetupMode.Default, createParserSettings(system, illegalResponseHeaderValueProcessingMode = IllegalResponseHeaderValueProcessingMode.Warn)) {
-      noException should be thrownBy parseLine(s"Server: something; something${newLine}x")
-    }
-
-    "continue parsing even if a header contains an invalid value when illegalResponseHeaderValueProcessingMode is set to Ignore" in new TestSetup(testSetupMode = TestSetupMode.Default, createParserSettings(system, illegalResponseHeaderValueProcessingMode = IllegalResponseHeaderValueProcessingMode.Ignore)) {
-      noException should be thrownBy parseLine(s"Server: something; something${newLine}x")
-    }
-
     "continue parsing raw headers even if the overall cache value capacity is reached" in new TestSetup() {
       val randomHeaders = Stream.continually {
         val name = nextRandomString(nextRandomAlphaNumChar, nextRandomInt(4, 16))

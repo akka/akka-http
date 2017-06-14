@@ -425,6 +425,7 @@ private[http] object HttpHeaderParser {
     def maxHeaderValueLength: Int
     def headerValueCacheLimit(headerName: String): Int
     def customMediaTypes: MediaTypes.FindCustom
+    def illegalHeaderWarnings: Boolean
     def illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode
     def errorLoggingVerbosity: ErrorLoggingVerbosity
   }
@@ -444,13 +445,10 @@ private[http] object HttpHeaderParser {
     prime(unprimed(settings, log, onIllegalHeader))
 
   def defaultIllegalHeaderHandler(settings: HttpHeaderParser.Settings, log: LoggingAdapter): ErrorInfo ⇒ Unit =
-    {
-      settings.illegalResponseHeaderValueProcessingMode match {
-        case IllegalResponseHeaderValueProcessingMode.Error ⇒ info ⇒ throw IllegalHeaderException(info)
-        case IllegalResponseHeaderValueProcessingMode.Warn ⇒ info ⇒ logParsingError(info withSummaryPrepended "Illegal response header", log, settings.errorLoggingVerbosity)
-        case IllegalResponseHeaderValueProcessingMode.Ignore ⇒ _ ⇒ // Does exactly what the label says - nothing
-      }
-    }
+    if (settings.illegalHeaderWarnings)
+      info ⇒ logParsingError(info withSummaryPrepended "Illegal response header", log, settings.errorLoggingVerbosity)
+    else
+      (_: ErrorInfo) ⇒ _ // Does exactly what the label says - nothing
 
   def unprimed(settings: HttpHeaderParser.Settings, log: LoggingAdapter, warnOnIllegalHeader: ErrorInfo ⇒ Unit) =
     new HttpHeaderParser(settings, log, warnOnIllegalHeader)
