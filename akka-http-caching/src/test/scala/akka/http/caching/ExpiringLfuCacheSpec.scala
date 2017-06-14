@@ -107,7 +107,7 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
   def lfuCache[T](maxCapacity: Int = 500, initialCapacity: Int = 16,
                   timeToLive: Duration = Duration.Inf, timeToIdle: Duration = Duration.Inf) = {
-    LfuCache[T] {
+    LfuCache[Int, T] {
       LfuCacheSettings()
         .withMaxCapacity(maxCapacity)
         .withInitialCapacity(initialCapacity)
