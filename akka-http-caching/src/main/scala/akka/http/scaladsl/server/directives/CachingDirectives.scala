@@ -7,6 +7,7 @@ import akka.http.scaladsl.server.Directive0
 import scala.concurrent.duration.Duration
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.model.HttpMethods.GET
+import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.headers.CacheDirectives._
 
@@ -19,14 +20,14 @@ trait CachingDirectives {
    * Wraps its inner Route with caching support using the given [[akka.http.caching.Cache]] implementation and
    * keyer function.
    */
-  def cache(cache: Cache[RouteResult], keyer: PartialFunction[RequestContext, Any]): Directive0 =
+  def cache[K](cache: Cache[K, RouteResult], keyer: PartialFunction[RequestContext, K]): Directive0 =
     cachingProhibited | alwaysCache(cache, keyer)
 
   /**
    * A simple keyer function that will cache responses to *all* GET requests, with the URI as key.
    * WARNING - consider whether you need special handling for e.g. authorised requests.
    */
-  val simpleKeyer: PartialFunction[RequestContext, Any] = {
+  val simpleKeyer: PartialFunction[RequestContext, Uri] = {
     case r: RequestContext if r.request.method == GET ⇒ r.request.uri
   }
 
@@ -48,7 +49,7 @@ trait CachingDirectives {
    * Wraps its inner Route with caching support using the given [[akka.http.caching.Cache]] implementation and
    * keyer function. Note that routes producing streaming responses cannot be wrapped with this directive.
    */
-  def alwaysCache(cache: Cache[RouteResult], keyer: PartialFunction[RequestContext, Any]): Directive0 = {
+  def alwaysCache[K](cache: Cache[K, RouteResult], keyer: PartialFunction[RequestContext, K]): Directive0 = {
     mapInnerRoute { route ⇒ ctx ⇒
       keyer.lift(ctx) match {
         case Some(key) ⇒ cache.apply(key, () ⇒ route(ctx))
@@ -58,8 +59,8 @@ trait CachingDirectives {
   }
 
   //# route-Cache
-  def routeCache(maxCapacity: Int = 500, initialCapacity: Int = 16, timeToLive: Duration = Duration.Inf,
-                 timeToIdle: Duration = Duration.Inf): Cache[RouteResult] = {
+  def routeCache[K](maxCapacity: Int = 500, initialCapacity: Int = 16, timeToLive: Duration = Duration.Inf,
+                    timeToIdle: Duration = Duration.Inf): Cache[K, RouteResult] = {
     LfuCache {
       LfuCacheSettings()
         .withMaxCapacity(maxCapacity)

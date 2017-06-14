@@ -21,7 +21,7 @@ object LfuCache {
    * Creates a new [[akka.http.caching.LfuCache]], with optional expiration depending
    * on whether a non-zero and finite timeToLive and/or timeToIdle is set or not.
    */
-  def apply[V](settings: LfuCacheSettings = LfuCacheSettings()): LfuCache[V] = {
+  def apply[K, V](settings: LfuCacheSettings = LfuCacheSettings()): LfuCache[K, V] = {
 
     require(settings.maxCapacity >= 0, "maxCapacity must not be negative")
     require(settings.initialCapacity <= settings.maxCapacity, "initialCapacity must be <= maxCapacity")
@@ -30,59 +30,59 @@ object LfuCache {
     else simpleLfuCache(settings.maxCapacity, settings.initialCapacity)
   }
 
-  private def simpleLfuCache[V](maxCapacity: Int, initialCapacity: Int): LfuCache[V] = {
-    val store = Caffeine.newBuilder().asInstanceOf[Caffeine[Any, V]]
+  private def simpleLfuCache[K, V](maxCapacity: Int, initialCapacity: Int): LfuCache[K, V] = {
+    val store = Caffeine.newBuilder().asInstanceOf[Caffeine[K, V]]
       .initialCapacity(initialCapacity)
       .maximumSize(maxCapacity)
-      .buildAsync[Any, V](dummyLoader[V])
-    new LfuCache[V](store)
+      .buildAsync[K, V](dummyLoader[K, V])
+    new LfuCache[K, V](store)
   }
 
-  private def expiringLfuCache[V](maxCapacity: Long, initialCapacity: Int,
-                                  timeToLive: Duration, timeToIdle: Duration): LfuCache[V] = {
+  private def expiringLfuCache[K, V](maxCapacity: Long, initialCapacity: Int,
+                                     timeToLive: Duration, timeToIdle: Duration): LfuCache[K, V] = {
     require(
       !timeToLive.isFinite || !timeToIdle.isFinite || timeToLive > timeToIdle,
       s"timeToLive($timeToLive) must be greater than timeToIdle($timeToIdle)")
 
-    def ttl: Caffeine[Any, V] ⇒ Caffeine[Any, V] = { builder ⇒
+    def ttl: Caffeine[K, V] ⇒ Caffeine[K, V] = { builder ⇒
       if (timeToLive.isFinite) builder.expireAfterWrite(timeToLive.toMillis, TimeUnit.MILLISECONDS)
       else builder
     }
 
-    def tti: Caffeine[Any, V] ⇒ Caffeine[Any, V] = { builder ⇒
+    def tti: Caffeine[K, V] ⇒ Caffeine[K, V] = { builder ⇒
       if (timeToIdle.isFinite) builder.expireAfterAccess(timeToIdle.toMillis, TimeUnit.MILLISECONDS)
       else builder
     }
 
-    val builder = Caffeine.newBuilder().asInstanceOf[Caffeine[Any, V]]
+    val builder = Caffeine.newBuilder().asInstanceOf[Caffeine[K, V]]
       .initialCapacity(initialCapacity)
       .maximumSize(maxCapacity)
 
-    val store = (ttl andThen tti)(builder).buildAsync[Any, V](dummyLoader[V])
-    new LfuCache[V](store)
+    val store = (ttl andThen tti)(builder).buildAsync[K, V](dummyLoader[K, V])
+    new LfuCache[K, V](store)
   }
 
   //LfuCache requires a loader function on creation - this will not be used.
-  private def dummyLoader[V] = new AsyncCacheLoader[Any, V] {
-    def asyncLoad(k: Any, e: Executor) =
+  private def dummyLoader[K, V] = new AsyncCacheLoader[K, V] {
+    def asyncLoad(k: K, e: Executor) =
       Future.failed[V](new RuntimeException("Dummy loader should not be used by LfuCache")).toJava.toCompletableFuture
   }
 
-  def toJavaMappingFunction[V](genValue: () ⇒ Future[V]) =
-    asJavaBiFunction[Any, Executor, CompletableFuture[V]]((k, e) ⇒ genValue().toJava.toCompletableFuture)
+  def toJavaMappingFunction[K, V](genValue: () ⇒ Future[V]) =
+    asJavaBiFunction[K, Executor, CompletableFuture[V]]((k, e) ⇒ genValue().toJava.toCompletableFuture)
 }
 
-private[caching] class LfuCache[V](val store: AsyncLoadingCache[Any, V]) extends Cache[V] {
+private[caching] class LfuCache[K, V](val store: AsyncLoadingCache[K, V]) extends Cache[K, V] {
 
-  def get(key: Any): Option[Future[V]] = Option(store.getIfPresent(key)).map(_.toScala)
+  def get(key: K): Option[Future[V]] = Option(store.getIfPresent(key)).map(_.toScala)
 
-  def apply(key: Any, genValue: () ⇒ Future[V]): Future[V] = store.get(key, toJavaMappingFunction(genValue)).toScala
+  def apply(key: K, genValue: () ⇒ Future[V]): Future[V] = store.get(key, toJavaMappingFunction[K, V](genValue)).toScala
 
-  def remove(key: Any): Unit = store.synchronous().invalidate(key)
+  def remove(key: K): Unit = store.synchronous().invalidate(key)
 
   def clear(): Unit = store.synchronous().invalidateAll()
 
-  def keys: Set[Any] = store.synchronous().asMap().keySet().asScala.toSet
+  def keys: Set[K] = store.synchronous().asMap().keySet().asScala.toSet
 
   def size: Int = store.synchronous().asMap().size()
 }
