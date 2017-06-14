@@ -238,6 +238,11 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
         case (acc, header) ⇒ acc + parseAndCache(header.toString + s"${newLine}x", header)
       } shouldEqual 12 // configured default per-header cache limit
     }
+
+    "ignore headers whose value cannot be parsed" in new TestSetup(testSetupMode = TestSetupMode.Default) {
+      noException should be thrownBy parseLine(s"Server: something; something${newLine}x")
+      parseAndCache(s"Server: something; something${newLine}x")() shouldEqual RawHeader("server", "something; something")
+    }
   }
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
@@ -265,7 +270,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
     val parser = testSetupMode match {
       case TestSetupMode.Primed   ⇒ HttpHeaderParser.prime(HttpHeaderParser.unprimed(parserSettings, system.log, defaultIllegalHeaderHandler))
       case TestSetupMode.Unprimed ⇒ HttpHeaderParser.unprimed(parserSettings, system.log, defaultIllegalHeaderHandler)
-      case TestSetupMode.Default  ⇒ HttpHeaderParser(parserSettings, system.log)()
+      case TestSetupMode.Default  ⇒ HttpHeaderParser(parserSettings, system.log)
     }
 
     private def defaultIllegalHeaderHandler = (info: ErrorInfo) ⇒ system.log.warning(info.formatPretty)
@@ -274,7 +279,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       if (parser.isEmpty) HttpHeaderParser.insertRemainingCharsAsNewNodes(parser, ByteString(line), value)
       else HttpHeaderParser.insert(parser, ByteString(line), value)
 
-    def parseLine(line: String) = parser.parseHeaderLine(ByteString(line))() → parser.resultHeader
+    def parseLine(line: String) = parser.parseHeaderLine(ByteString(line))() → { system.log.warning(parser.resultHeader.getClass.getSimpleName); parser.resultHeader }
 
     def parseAndCache(lineA: String)(lineB: String = lineA): HttpHeader = {
       val (ixA, headerA) = parseLine(lineA)

@@ -302,7 +302,7 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
 
     "support `rawRequestUriHeader` setting" in new Test {
       override protected def newParser: HttpRequestParser =
-        new HttpRequestParser(parserSettings, rawRequestUriHeader = true, headerParser = HttpHeaderParser(parserSettings, system.log)())
+        new HttpRequestParser(parserSettings, rawRequestUriHeader = true, headerParser = HttpHeaderParser(parserSettings, system.log))
 
       """GET /f%6f%6fbar?q=b%61z HTTP/1.1
         |Host: ping
@@ -477,7 +477,6 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
           |
           |""" should parseToError(422: StatusCode, ErrorInfo("TRACE requests must not have an entity"))
       }
-      
     }
   }
 
@@ -555,7 +554,7 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
         .awaitResult(awaitAtMost)
 
     protected def parserSettings: ParserSettings = ParserSettings(system)
-    protected def newParser = new HttpRequestParser(parserSettings, false, HttpHeaderParser(parserSettings, system.log)())
+    protected def newParser = new HttpRequestParser(parserSettings, false, HttpHeaderParser(parserSettings, system.log))
 
     private def compactEntity(entity: RequestEntity): Future[RequestEntity] =
       entity match {

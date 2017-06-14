@@ -441,8 +441,8 @@ private[http] object HttpHeaderParser {
     "Cache-Control: no-cache",
     "Expect: 100-continue")
 
-  def apply(settings: HttpHeaderParser.Settings, log: LoggingAdapter)(onIllegalHeader: ErrorInfo ⇒ Unit = defaultIllegalHeaderHandler(settings, log)) =
-    prime(unprimed(settings, log, onIllegalHeader))
+  def apply(settings: HttpHeaderParser.Settings, log: LoggingAdapter) =
+    prime(unprimed(settings, log, defaultIllegalHeaderHandler(settings, log)))
 
   def defaultIllegalHeaderHandler(settings: HttpHeaderParser.Settings, log: LoggingAdapter): ErrorInfo ⇒ Unit =
     if (settings.illegalHeaderWarnings)
