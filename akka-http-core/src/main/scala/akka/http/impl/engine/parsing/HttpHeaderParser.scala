@@ -446,7 +446,7 @@ private[http] object HttpHeaderParser {
 
   def defaultIllegalHeaderHandler(settings: HttpHeaderParser.Settings, log: LoggingAdapter): ErrorInfo ⇒ Unit =
     if (settings.illegalHeaderWarnings)
-      info ⇒ logParsingError(info withSummaryPrepended "Illegal response header", log, settings.errorLoggingVerbosity)
+      info ⇒ logParsingError(info withSummaryPrepended "Illegal header", log, settings.errorLoggingVerbosity)
     else
       (_: ErrorInfo) ⇒ _ // Does exactly what the label says - nothing
 
