@@ -34,8 +34,7 @@ small sample project to easily get started with your first Akka HTTP app. More i
 Akka HTTP treats differently by default a route that ends with slash (`/`) than one that doesn't. From this version on,
 users who don't want to have this distinction, can use a new Path Directive called `ignoreTrailingSlash`.
 This route, will retry its inner route with and without a trailing slash. If you want to know more about this feature,
-please check the documentation pages for @ref[Scala](scala/http/routing-dsl/directives/path-directives/ignoreTrailingSlash.md)
-and @ref[Java](java/http/routing-dsl/directives/path-directives/ignoreTrailingSlash.md) API.
+please check the @ref[documentation page](routing-dsl/directives/path-directives/ignoreTrailingSlash.md).
 
 ### List of Changes
 
@@ -215,8 +214,7 @@ small improvements.
 ### HttpApp
 
 A notable new feature is the experimental `HttpApp` feature (long time users may know it from spray). It allows
-to create an Akka HTTP server with very little boilerplate. See its @ref[Java](java/http/routing-dsl/HttpApp.md)
-and @ref[Scala](scala/http/routing-dsl/HttpApp.md) documentation. Thanks a lot, [@jlprat](https://github.com/jlprat) for
+to create an Akka HTTP server with very little boilerplate. See its @ref[documentation](routing-dsl/HttpApp.md). Thanks a lot, [@jlprat](https://github.com/jlprat) for
 contributing this feature and carrying through the PR with the most comments so far.
 
 ### Changed semantics

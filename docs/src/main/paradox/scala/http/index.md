@@ -7,7 +7,7 @@ Akka HTTP API - @scaladoc:[ScalaDoc](akka.http.scaladsl.index)
 
 @@@ index
 
-* [Security Announcements](../../security.md)
+* [Security Announcements](security.md)
 * [introduction](introduction.md)
 * [configuration](configuration.md)
 * [http-model](common/http-model.md)
@@ -20,6 +20,6 @@ Akka HTTP API - @scaladoc:[ScalaDoc](akka.http.scaladsl.index)
 * [server-side-https-support](server-side-https-support.md)
 * [handling-blocking-operations-in-akka-http-routes](handling-blocking-operations-in-akka-http-routes.md)
 * [migration-guides-scala](migration-guide/index.md)
-* [Release Notes](../../release-notes.md)
+* [Release Notes](release-notes.md)
 
 @@@
