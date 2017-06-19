@@ -4,6 +4,7 @@
 
 package akka.http.javadsl
 
+import java.net.InetSocketAddress
 import java.util.concurrent.CompletionStage
 
 import akka.actor.ActorSystem
@@ -21,10 +22,12 @@ import scala.concurrent.Future
 /**
  * (Still unstable) SPI for implementors of custom client transports.
  */
+// #client-transport-definition
 @ApiMayChange
-abstract class ClientTransport { outer ⇒
+abstract class ClientTransport {
   def connectTo(host: String, port: Int, settings: ClientConnectionSettings, system: ActorSystem): Flow[ByteString, ByteString, CompletionStage[OutgoingConnection]]
 }
+// #client-transport-definition
 
 /**
  * (Still unstable) entry point to create or access predefined client transports.
@@ -32,6 +35,18 @@ abstract class ClientTransport { outer ⇒
 @ApiMayChange
 object ClientTransport {
   def TCP: ClientTransport = scaladsl.ClientTransport.TCP.asJava
+
+  /**
+   * Returns a [[ClientTransport]] that runs all connection through the given HTTPS proxy using the
+   * HTTP CONNECT method.
+   *
+   * An HTTPS proxy is a proxy that will create one TCP connection to the HTTPS proxy for each target connection. The
+   * proxy transparently forwards the TCP connection to the target host.
+   *
+   * For more information about HTTP CONNECT tunnelling see https://tools.ietf.org/html/rfc7231#section-4.3.6.
+   */
+  def httpsProxy(proxyAddress: InetSocketAddress): ClientTransport =
+    scaladsl.ClientTransport.httpsProxy(proxyAddress).asJava
 
   def fromScala(scalaTransport: scaladsl.ClientTransport): ClientTransport =
     scalaTransport match {
