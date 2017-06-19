@@ -4,6 +4,8 @@
 
 package docs.http.scaladsl
 
+import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.settings.ConnectionPoolSettings
 import docs.CompileOnlySpec
 import org.scalatest.{ Matchers, WordSpec }
 
@@ -315,6 +317,27 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
 
     }
     //#single-request-in-actor-example
+  }
+
+  "https-proxy-example-single-request" in compileOnlySpec {
+    //#https-proxy-example-single-request
+    import java.net.InetSocketAddress
+
+    import akka.actor.ActorSystem
+    import akka.stream.ActorMaterializer
+    import akka.http.scaladsl.{ ClientTransport, Http }
+
+    implicit val system = ActorSystem()
+    implicit val materializer = ActorMaterializer()
+
+    val proxyHost = "localhost"
+    val proxyPort = 8888
+
+    val httpsProxyTransport = ClientTransport.httpsProxy(InetSocketAddress.createUnresolved(proxyHost, proxyPort))
+
+    val settings = ConnectionPoolSettings(system).withTransport(httpsProxyTransport)
+    Http().singleRequest(HttpRequest(uri = "https://google.com"), settings = settings)
+    //#https-proxy-example-single-request
   }
 
 }
