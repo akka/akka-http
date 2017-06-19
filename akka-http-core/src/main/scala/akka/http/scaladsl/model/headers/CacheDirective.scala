@@ -5,7 +5,7 @@
 package akka.http.scaladsl.model.headers
 
 import scala.annotation.{ varargs, tailrec }
-import scala.collection.immutable
+import scala.collection.{ immutable ⇒ colImmutable }
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 
@@ -29,7 +29,7 @@ object CacheDirective {
     CustomCacheDirective(name, content)
 
   sealed abstract class FieldNamesDirective extends Product with ValueRenderable {
-    def fieldNames: immutable.Seq[String]
+    def fieldNames: colImmutable.Seq[String]
     final def render[R <: Rendering](r: R): r.type =
       if (fieldNames.nonEmpty) {
         r ~~ productPrefix ~~ '=' ~~ '"'
@@ -68,7 +68,7 @@ object CacheDirectives {
 
   // http://tools.ietf.org/html/rfc7234#section-5.2.1.4
   case object `no-cache` extends SingletonValueRenderable with RequestDirective with ResponseDirective {
-    def apply(fieldNames: String*): `no-cache` = new `no-cache`(immutable.Seq(fieldNames: _*))
+    def apply(fieldNames: String*): `no-cache` = new `no-cache`(colImmutable.Seq(fieldNames: _*))
   }
 
   // http://tools.ietf.org/html/rfc7234#section-5.2.1.5
@@ -86,22 +86,25 @@ object CacheDirectives {
   case object `must-revalidate` extends SingletonValueRenderable with ResponseDirective
 
   // http://tools.ietf.org/html/rfc7234#section-5.2.2.2
-  final case class `no-cache`(fieldNames: immutable.Seq[String]) extends FieldNamesDirective with ResponseDirective
+  final case class `no-cache`(fieldNames: colImmutable.Seq[String]) extends FieldNamesDirective with ResponseDirective
 
   // http://tools.ietf.org/html/rfc7234#section-5.2.2.5
   case object `public` extends SingletonValueRenderable with ResponseDirective
+
+  // https://tools.ietf.org/wg/httpbis/draft-ietf-httpbis-immutable/
+  case object `immutable` extends SingletonValueRenderable with ResponseDirective
 
   /** Java API */
   def getPublic: ResponseDirective = `public`
 
   // http://tools.ietf.org/html/rfc7234#section-5.2.2.6
-  final case class `private`(fieldNames: immutable.Seq[String]) extends FieldNamesDirective with ResponseDirective
+  final case class `private`(fieldNames: colImmutable.Seq[String]) extends FieldNamesDirective with ResponseDirective
   object `private` {
-    def apply(fieldNames: String*): `private` = new `private`(immutable.Seq(fieldNames: _*))
+    def apply(fieldNames: String*): `private` = new `private`(colImmutable.Seq(fieldNames: _*))
   }
 
   /** Java API */
-  @varargs def createPrivate(fieldNames: String*): ResponseDirective = new `private`(immutable.Seq(fieldNames: _*))
+  @varargs def createPrivate(fieldNames: String*): ResponseDirective = new `private`(colImmutable.Seq(fieldNames: _*))
 
   // http://tools.ietf.org/html/rfc7234#section-5.2.2.7
   case object `proxy-revalidate` extends SingletonValueRenderable with ResponseDirective
