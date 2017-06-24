@@ -7,8 +7,9 @@ package akka.http.javadsl.model.ws
 import java.lang.{ Iterable ⇒ JIterable }
 import akka.http.scaladsl.{ model ⇒ sm }
 import akka.http.javadsl.model._
-
+import akka.japi.Pair
 import akka.stream._
+import scala.concurrent.Future
 
 /**
  * A virtual header that WebSocket requests will contain. Use [[UpgradeToWebSocket.handleMessagesWith]] to
@@ -48,4 +49,13 @@ trait UpgradeToWebSocket extends sm.HttpHeader {
    * The given subprotocol must be one of the ones offered by the client.
    */
   def handleMessagesWith(inSink: Graph[SinkShape[Message], _ <: Any], outSource: Graph[SourceShape[Message], _ <: Any], subprotocol: String): HttpResponse
+
+  /**
+   * Returns a response that can be used to answer a WebSocket handshake request, as well as a future materialized value.
+   * The connection will afterwards use the given handlerFlow to handle WebSocket messages from the client. The given
+   * subprotocol must be one of the ones offered by the client.
+   */
+  def handleMessagesWithMat[Mat](
+    handlerFlow: Graph[FlowShape[Message, Message], Mat],
+    subprotocol: String): Pair[HttpResponse, Future[Mat]]
 }
