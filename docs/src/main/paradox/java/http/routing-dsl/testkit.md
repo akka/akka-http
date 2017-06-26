@@ -84,3 +84,10 @@ However, it is impossible to unit test this Route directly using testkit, since 
 empty HTTP request. To test this type of route, embed it in a synthetic route in your test, for example:
 
 @@snip [TestKitFragmentTest.java](../../../../../test/java/docs/http/javadsl/server/testkit/TestKitFragmentTest.java) { #source-quote }
+
+## Increase Timeout
+
+The default timeout when testing your routes using the testkit is 3 seconds. Sometimes, though, this might not be enough.
+In order to extend this default timeout, to say 5 seconds, just override the following method:
+
+@@snip [WithTimeoutTest.java](../../../../../test/java/docs/http/javadsl/server/testkit/WithTimeoutTest.java) { #timeout-setting }

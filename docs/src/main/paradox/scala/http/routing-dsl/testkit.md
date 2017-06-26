@@ -110,6 +110,14 @@ This is what the full working test looks like:
 @@snip [TestKitFragmentSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/TestKitFragmentSpec.scala) { #source-quote }
 
 
+## Increase Timeout
+
+The default timeout when testing your routes using the testkit is 1 second. Sometimes, though, this might not be enough.
+In order to extend this default timeout, to say 5 seconds, just add the following implicit in scope:
+
+@@snip [TestKitFragmentSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/TestKitFragmentSpec.scala) { #timeout-setting }
+
+
 ## Examples
 
 A great pool of examples are the tests for all the predefined directives in Akka HTTP.

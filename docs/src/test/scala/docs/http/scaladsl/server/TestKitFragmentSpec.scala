@@ -46,3 +46,12 @@ class TestKitFragmentSpec extends WordSpec with Matchers with ScalatestRouteTest
   }
 }
 //#source-quote
+
+class TestKitTimeoutSpec extends WordSpec with ScalatestRouteTest {
+  //#timeout-setting
+  import scala.concurrent.duration._
+  import akka.http.scaladsl.testkit.RouteTestTimeout
+
+  implicit val timeout = RouteTestTimeout(5.seconds)
+  //#timeout-setting
+}
