@@ -5,15 +5,14 @@
 package akka.http.scaladsl
 
 import java.net.InetSocketAddress
-
 import akka.actor.ActorSystem
 import akka.annotation.ApiMayChange
 import akka.http.impl.engine.client.HttpsProxyGraphStage
 import akka.http.scaladsl.Http.OutgoingConnection
+import akka.http.scaladsl.model.headers.HttpCredentials
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.scaladsl.{ Flow, Keep, Tcp }
 import akka.util.ByteString
-
 import scala.concurrent.Future
 
 /**
@@ -57,9 +56,13 @@ object ClientTransport {
    */
   def httpsProxy(proxyAddress: InetSocketAddress): ClientTransport = new HttpsProxyTransport(proxyAddress)
 
-  private case class HttpsProxyTransport(proxyAddress: InetSocketAddress, underlyingTransport: ClientTransport = TCP) extends ClientTransport {
+  def httpsProxy(proxyAddress: InetSocketAddress, proxyAuth: HttpCredentials): ClientTransport = new HttpsProxyTransport(proxyAddress, proxyAuth = Some(proxyAuth))
+
+  private case class HttpsProxyTransport(proxyAddress: InetSocketAddress, underlyingTransport: ClientTransport = TCP, proxyAuth: Option[HttpCredentials] = None) extends ClientTransport {
+    def this(proxyAddress: InetSocketAddress, underlyingTransport: ClientTransport) = this(proxyAddress, underlyingTransport, None)
+
     def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
-      HttpsProxyGraphStage(host, port, settings)
+      HttpsProxyGraphStage(host, port, settings, proxyAuth)
         .joinMat(underlyingTransport.connectTo(proxyAddress.getHostString, proxyAddress.getPort, settings))(Keep.right)
         // on the HTTP level we want to see the final remote address in the `OutgoingConnection`
         .mapMaterializedValue(_.map(_.copy(remoteAddress = InetSocketAddress.createUnresolved(host, port)))(system.dispatcher))
