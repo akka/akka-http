@@ -1,3 +1,7 @@
+/**
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com/>
+ */
+
 package akka.http.caching
 
 import java.util.Random
@@ -23,13 +27,13 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
     }
     "store uncached values" in {
       val cache = lfuCache[String]()
-      Await.result(cache.get(1, "A"), 3.seconds) should be("A")
+      Await.result(cache.get(1, () ⇒ "A"), 3.seconds) should be("A")
       cache.size should be(1)
       cache.keys should be(Set(1))
     }
     "return stored values upon cache hit on existing values" in {
       val cache = lfuCache[String]()
-      Await.result(cache.get(1, "A"), 3.seconds) should be("A")
+      Await.result(cache.get(1, () ⇒ "A"), 3.seconds) should be("A")
       cache.size should be(1)
     }
     "return Futures on uncached values during evaluation and replace these with the value afterwards" in {
@@ -41,7 +45,7 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
           promise.success("A")
         }
       )
-      val future2 = cache.get(1, "")
+      val future2 = cache.get(1, () ⇒ "")
       Thread.sleep(50)
       cache.store.get(1).getNumberOfDependents should be(2)
 
@@ -52,10 +56,10 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
     }
     "properly limit capacity" in {
       val cache = lfuCache[String](maxCapacity = 3, initialCapacity = 1)
-      Await.result(cache.get(1, "A"), 3.seconds) should be("A")
+      Await.result(cache.get(1, () ⇒ "A"), 3.seconds) should be("A")
       Await.result(cache(2, () ⇒ Future.successful("B")), 3.seconds) should be("B")
-      Await.result(cache.get(3, "C"), 3.seconds) should be("C")
-      cache.get(4, "D")
+      Await.result(cache.get(3, () ⇒ "C"), 3.seconds) should be("C")
+      cache.get(4, () ⇒ "D")
       Thread.sleep(50)
       cache.size should be(3)
     }
@@ -64,14 +68,14 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
       an[RuntimeException] shouldBe thrownBy {
         Await.result(cache(1, () ⇒ { throw new RuntimeException("Naa"); Future.successful("") }), 5.second)
       }
-      Await.result(cache.get(1, "A"), 3.seconds) should be("A")
+      Await.result(cache.get(1, () ⇒ "A"), 3.seconds) should be("A")
     }
     "refresh an entries expiration time on cache hit" in {
       val cache = lfuCache[String]()
-      Await.result(cache.get(1, "A"), 3.seconds) should be("A")
-      Await.result(cache.get(2, "B"), 3.seconds) should be("B")
-      Await.result(cache.get(3, "C"), 3.seconds) should be("C")
-      Await.result(cache.get(1, ""), 3.seconds) should be("A") // refresh
+      Await.result(cache.get(1, () ⇒ "A"), 3.seconds) should be("A")
+      Await.result(cache.get(2, () ⇒ "B"), 3.seconds) should be("B")
+      Await.result(cache.get(3, () ⇒ "C"), 3.seconds) should be("C")
+      Await.result(cache.get(1, () ⇒ ""), 3.seconds) should be("A") // refresh
       cache.store.synchronous.asMap.toString should be("{1=A, 2=B, 3=C}")
     }
     "be thread-safe" in {
@@ -83,7 +87,7 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
           val rand = new Random(track)
           (1 to 10000) foreach { i ⇒
             val ix = rand.nextInt(1000) // for a random index into the cache
-            val value = Await.result(cache.get(ix, { // get (and maybe set) the cache value
+            val value = Await.result(cache.get(ix, () ⇒ { // get (and maybe set) the cache value
               Thread.sleep(0)
               rand.nextInt(1000000) + 1
             }), 5.second)
@@ -106,14 +110,14 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
   }
 
   def lfuCache[T](maxCapacity: Int = 500, initialCapacity: Int = 16,
-                  timeToLive: Duration = Duration.Inf, timeToIdle: Duration = Duration.Inf) = {
+                  timeToLive: Duration = Duration.Inf, timeToIdle: Duration = Duration.Inf): LfuCache[Int, T] = {
     LfuCache[Int, T] {
       LfuCacheSettings()
         .withMaxCapacity(maxCapacity)
         .withInitialCapacity(initialCapacity)
         .withTimeToLive(timeToLive)
         .withTimeToIdle(timeToIdle)
-    }
+    }.asInstanceOf[LfuCache[Int, T]]
   }
 
 }
