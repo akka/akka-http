@@ -26,7 +26,7 @@ public abstract class HttpHeader {
     public abstract String lowercaseName();
 
     /**
-     * Returns true if nameInLowerCase.equals(lowercaseName()).
+     * Returns true exactly when nameInLowerCase.equals(lowercaseName()).
      */
     public abstract boolean is(String nameInLowerCase);
 
@@ -36,12 +36,12 @@ public abstract class HttpHeader {
     public abstract boolean isNot(String nameInLowerCase);
 
     /**
-     * Returns true if the header is to be rendered in requests.
+     * Returns true exactly when the header is to be rendered in requests.
      */
     public abstract boolean renderInRequests();
 
     /**
-     * Returns true if the header is to be rendered in responses.
+     * Returns true exactly when the header is to be rendered in responses.
      */
     public abstract boolean renderInResponses();
 }
