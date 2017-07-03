@@ -1,3 +1,7 @@
+/**
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com/>
+ */
+
 package docs.http.scaladsl.server.directives
 
 import docs.http.scaladsl.server.RoutingSpec

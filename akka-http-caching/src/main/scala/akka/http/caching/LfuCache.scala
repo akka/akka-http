@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com/>
+ */
 package akka.http.caching
 
 import java.util.concurrent.{ CompletableFuture, Executor, TimeUnit }
@@ -10,6 +13,7 @@ import scala.concurrent.Future
 import com.github.benmanes.caffeine.cache.{ AsyncCacheLoader, AsyncLoadingCache, Caffeine }
 import akka.http.caching.LfuCache.toJavaMappingFunction
 import akka.http.caching.LfuCacheSettings.LfuCacheSettingsImpl
+import akka.http.caching.scaladsl.Cache
 
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.FunctionConverters._
@@ -21,7 +25,7 @@ object LfuCache {
    * Creates a new [[akka.http.caching.LfuCache]], with optional expiration depending
    * on whether a non-zero and finite timeToLive and/or timeToIdle is set or not.
    */
-  def apply[K, V](settings: LfuCacheSettings = LfuCacheSettings()): LfuCache[K, V] = {
+  def apply[K, V](settings: LfuCacheSettings = LfuCacheSettings()): akka.http.caching.scaladsl.Cache[K, V] = {
 
     require(settings.maxCapacity >= 0, "maxCapacity must not be negative")
     require(settings.initialCapacity <= settings.maxCapacity, "initialCapacity must be <= maxCapacity")
@@ -29,6 +33,20 @@ object LfuCache {
     if (settings.timeToLive.isFinite() || settings.timeToIdle.isFinite()) expiringLfuCache(settings.maxCapacity, settings.initialCapacity, settings.timeToLive, settings.timeToIdle)
     else simpleLfuCache(settings.maxCapacity, settings.initialCapacity)
   }
+
+  /**
+   * Creates a new [[akka.http.caching.LfuCache]], with optional expiration depending
+   * on whether a non-zero and finite timeToLive and/or timeToIdle is set or not.
+   */
+  def create[K, V](): akka.http.caching.javadsl.Cache[K, V] = 
+    apply(LfuCacheSettings())
+  
+  /**
+   * Creates a new [[akka.http.caching.LfuCache]], with optional expiration depending
+   * on whether a non-zero and finite timeToLive and/or timeToIdle is set or not.
+   */
+  def create[K, V](settings: LfuCacheSettings): akka.http.caching.javadsl.Cache[K, V] = 
+    apply(settings)
 
   private def simpleLfuCache[K, V](maxCapacity: Int, initialCapacity: Int): LfuCache[K, V] = {
     val store = Caffeine.newBuilder().asInstanceOf[Caffeine[K, V]]
@@ -84,7 +102,7 @@ private[caching] class LfuCache[K, V](val store: AsyncLoadingCache[K, V]) extend
 
   def keys: Set[K] = store.synchronous().asMap().keySet().asScala.toSet
 
-  def size: Int = store.synchronous().asMap().size()
+  override def size: Int = store.synchronous().asMap().size()
 }
 
 abstract class LfuCacheSettings private[http] () { self: LfuCacheSettingsImpl ⇒

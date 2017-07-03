@@ -1,7 +1,12 @@
+/**
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com/>
+ */
+
 package akka.http.scaladsl.server.directives
 
 import akka.annotation.ApiMayChange
-import akka.http.caching.{ Cache, LfuCache, LfuCacheSettings }
+import akka.http.caching.scaladsl.Cache
+import akka.http.caching.{ LfuCache, LfuCacheSettings }
 import akka.http.scaladsl.server.Directive0
 
 import scala.concurrent.duration.Duration
@@ -17,7 +22,7 @@ trait CachingDirectives {
   import akka.http.scaladsl.server.directives.RouteDirectives._
 
   /**
-   * Wraps its inner Route with caching support using the given [[akka.http.caching.Cache]] implementation and
+   * Wraps its inner Route with caching support using the given [[Cache]] implementation and
    * keyer function.
    */
   def cache[K](cache: Cache[K, RouteResult], keyer: PartialFunction[RequestContext, K]): Directive0 =
@@ -46,7 +51,7 @@ trait CachingDirectives {
     }).flatMap(if (_) pass else reject)
 
   /**
-   * Wraps its inner Route with caching support using the given [[akka.http.caching.Cache]] implementation and
+   * Wraps its inner Route with caching support using the given [[Cache]] implementation and
    * keyer function. Note that routes producing streaming responses cannot be wrapped with this directive.
    */
   def alwaysCache[K](cache: Cache[K, RouteResult], keyer: PartialFunction[RequestContext, K]): Directive0 = {
@@ -71,3 +76,5 @@ trait CachingDirectives {
   }
   //#
 }
+
+object CachingDirectives extends CachingDirectives
