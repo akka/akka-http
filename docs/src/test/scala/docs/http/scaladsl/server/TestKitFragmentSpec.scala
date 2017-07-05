@@ -51,7 +51,8 @@ class TestKitTimeoutSpec extends WordSpec with ScalatestRouteTest {
   //#timeout-setting
   import scala.concurrent.duration._
   import akka.http.scaladsl.testkit.RouteTestTimeout
+  import akka.testkit.TestDuration
 
-  implicit val timeout = RouteTestTimeout(5.seconds)
+  implicit val timeout = RouteTestTimeout(5.seconds dilated)
   //#timeout-setting
 }
