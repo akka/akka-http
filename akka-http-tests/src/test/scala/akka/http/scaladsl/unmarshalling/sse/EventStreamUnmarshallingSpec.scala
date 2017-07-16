@@ -7,15 +7,21 @@ package scaladsl
 package unmarshalling
 package sse
 
-import akka.NotUsed
+import java.util.concurrent.TimeoutException
+
+import akka.{ Done, NotUsed }
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.stream.scaladsl.{ Sink, Source }
 import java.util.{ List ⇒ JList }
+
+import akka.util.{ ByteString, Timeout }
 import org.scalatest.{ AsyncWordSpec, Matchers }
+
 import scala.collection.JavaConverters
 import scala.collection.immutable.Seq
+import scala.concurrent.duration._
 
 object EventStreamUnmarshallingSpec {
 
@@ -44,5 +50,28 @@ final class EventStreamUnmarshallingSpec extends AsyncWordSpec with Matchers wit
         .flatMap(_.runWith(Sink.seq))
         .map(_ shouldBe events)
     }
+
+    "timeout if the server doesn't send any heartbeats" in {
+      implicit val timeout = Timeout(500.millis)
+      Unmarshal(HttpEntity(`text/event-stream`, Source.maybe))
+        .to[Source[ServerSentEvent, NotUsed]]
+        .flatMap(_.runWith(Sink.ignore))
+        .map(_ ⇒ "failed")
+        .recover {
+          case _: TimeoutException ⇒ "succeeded"
+        }.map(_ shouldBe "succeeded")
+    }
+
+    "not timeout if the server does send heartbeats" in {
+      implicit val timeout = Timeout(500.millis)
+      Unmarshal(HttpEntity(
+        `text/event-stream`,
+        Source.tick(200.millis, 200.millis, ByteString("\r\n"))
+          .take(4)
+      )).to[Source[ServerSentEvent, NotUsed]]
+        .flatMap(_.runWith(Sink.ignore))
+        .map(_ shouldBe Done)
+    }
+
   }
 }

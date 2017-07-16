@@ -13,6 +13,8 @@ import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.stream.scaladsl.{ Keep, Source }
+import akka.util.Timeout
+import scala.concurrent.duration._
 
 /**
  * Importing [[EventStreamUnmarshalling.fromEventStream]] lets a `HttpEntity` with a `text/event-stream` media type be
@@ -48,7 +50,11 @@ trait EventStreamUnmarshalling {
   protected def maxLineSize: Int =
     4096
 
-  implicit final val fromEventStream: FromEntityUnmarshaller[Source[ServerSentEvent, NotUsed]] = {
+  /**
+   * Kept for binary compatibility.
+   */
+  @deprecated("Use fromEventStreamWithTimeout", "10.0.10")
+  final val fromEventStream: FromEntityUnmarshaller[Source[ServerSentEvent, NotUsed]] = {
     val eventStreamParser = EventStreamParser(maxLineSize, maxEventSize)
     def unmarshal(entity: HttpEntity) =
       entity
@@ -57,4 +63,22 @@ trait EventStreamUnmarshalling {
         .viaMat(eventStreamParser)(Keep.none)
     Unmarshaller.strict(unmarshal).forContentTypes(`text/event-stream`)
   }
+
+  /**
+   * Lets a `HttpEntity` with a `text/event-stream` media type be unmarshalled to a source of `ServerSentEvent`s.
+   *
+   * @param idleTimeout How long the connection should be allowed to be idle for before the connection is failed.
+   *                    Defaults to 1 minute.
+   */
+  implicit final def fromEventStreamWithTimeout(implicit idleTimeout: Timeout = Timeout(1.minute)): FromEntityUnmarshaller[Source[ServerSentEvent, NotUsed]] = {
+    val eventStreamParser = EventStreamParser(maxLineSize, maxEventSize)
+    def unmarshal(entity: HttpEntity) =
+      entity
+        .withoutSizeLimit // Because of streaming: the server keeps the response open and potentially streams huge amounts of data
+        .dataBytes
+        .idleTimeout(idleTimeout.duration)
+        .viaMat(eventStreamParser)(Keep.none)
+    Unmarshaller.strict(unmarshal).forContentTypes(`text/event-stream`)
+  }
+
 }

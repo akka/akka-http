@@ -1,0 +1,4 @@
+
+# Provide timeout for SSE unmarshalling in #1279, ok because trait is marked @ApiMayChange
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.unmarshalling.sse.EventStreamUnmarshalling.fromEventStreamWithTimeout$default$1")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.unmarshalling.sse.EventStreamUnmarshalling.fromEventStreamWithTimeout")
