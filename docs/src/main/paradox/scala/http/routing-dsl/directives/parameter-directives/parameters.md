@@ -55,7 +55,10 @@ as required, optional, or repeated, or to filter requests where a parameter has 
 You can use @ref[Case Class Extraction](../../case-class-extraction.md#case-class-extraction) to group several extracted values together into a case-class
 instance.
 
-Requests missing a required parameter or parameter value will be rejected with an appropriate rejection.
+Requests missing a required parameter or parameter value will be rejected with an appropriate rejection. 
+
+If an unmarshaller throws an exception while extracting the value of a parameter, it will be handled as a rejection.
+(see also @ref[Rejections](../../../routing-dsl/rejections.md))
 
 There's also a singular version, @ref[parameter](parameter.md#parameter). Form fields can be handled in a similar way, see `formFields`. If
 you want unified handling for both query parameters and form fields, see `anyParams`.
