@@ -39,18 +39,16 @@ as required, optional, or repeated, or to filter requests where a parameter has 
 (see also @ref[Unmarshalling](../../../common/unmarshalling.md#http-unmarshalling-scala))
 
 `"amount".as(deserializer)`
-: extract value of parameter "amount" with an explicit `Deserializer`
-
+: extract value of parameter "amount" with an explicit `Unmarshaller`
 `"distance".*`
 : extract multiple occurrences of parameter "distance" as `Iterable[String]`
 
 `"distance".as[Int].*`
-: extract multiple occurrences of parameter "distance" as `Iterable[Int]`, you need a matching `Deserializer` in scope for that to work
+: extract multiple occurrences of parameter "distance" as `Iterable[Int]`, you need a matching `Unmarshaller` in scope for that to work
 (see also @ref[Unmarshalling](../../../common/unmarshalling.md#http-unmarshalling-scala))
 
 `"distance".as(deserializer).*`
-: extract multiple occurrences of parameter "distance" with an explicit `Deserializer`
-
+: extract multiple occurrences of parameter "distance" with an explicit `Unmarshaller`
 
 You can use @ref[Case Class Extraction](../../case-class-extraction.md#case-class-extraction) to group several extracted values together into a case-class
 instance.
