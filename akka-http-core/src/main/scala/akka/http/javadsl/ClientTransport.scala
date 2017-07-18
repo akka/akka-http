@@ -6,7 +6,6 @@ package akka.http.javadsl
 
 import java.net.InetSocketAddress
 import java.util.concurrent.CompletionStage
-
 import akka.actor.ActorSystem
 import akka.stream.javadsl.Flow
 import akka.util.ByteString
@@ -15,8 +14,8 @@ import akka.http.impl.util.JavaMapping
 import JavaMapping._
 import JavaMapping.Implicits._
 import akka.annotation.ApiMayChange
-import akka.http.{ javadsl, scaladsl }
-
+import akka.http.scaladsl.model.headers.HttpCredentials
+import akka.http.{javadsl, scaladsl}
 import scala.concurrent.Future
 
 /**
@@ -47,6 +46,9 @@ object ClientTransport {
    */
   def httpsProxy(proxyAddress: InetSocketAddress): ClientTransport =
     scaladsl.ClientTransport.httpsProxy(proxyAddress).asJava
+
+  def httpsProxy(proxyAddress: InetSocketAddress, proxyAuth: HttpCredentials): ClientTransport =
+    scaladsl.ClientTransport.httpsProxy(proxyAddress, proxyAuth).asJava
 
   def fromScala(scalaTransport: scaladsl.ClientTransport): ClientTransport =
     scalaTransport match {
