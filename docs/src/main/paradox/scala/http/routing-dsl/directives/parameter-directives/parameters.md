@@ -57,8 +57,8 @@ instance.
 
 Requests missing a required parameter or parameter value will be rejected with an appropriate rejection. 
 
-If an unmarshaller throws an exception while extracting the value of a parameter, the request will be rejected with a MissingQueryParameterRejection 
-if the unmarshaller threw an Unmarshaller.NoContentException or a MalformedQueryParamRejection in all other cases.
+If an unmarshaller throws an exception while extracting the value of a parameter, the request will be rejected with a `MissingQueryParameterRejection` 
+if the unmarshaller threw an `Unmarshaller.NoContentException` or a `MalformedQueryParamRejection` in all other cases.
 (see also @ref[Rejections](../../../routing-dsl/rejections.md))
 
 There's also a singular version, @ref[parameter](parameter.md#parameter). Form fields can be handled in a similar way, see `formFields`. If
