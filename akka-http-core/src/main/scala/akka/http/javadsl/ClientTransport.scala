@@ -15,7 +15,7 @@ import JavaMapping._
 import JavaMapping.Implicits._
 import akka.annotation.ApiMayChange
 import akka.http.scaladsl.model.headers.HttpCredentials
-import akka.http.{javadsl, scaladsl}
+import akka.http.{ javadsl, scaladsl }
 import scala.concurrent.Future
 
 /**
