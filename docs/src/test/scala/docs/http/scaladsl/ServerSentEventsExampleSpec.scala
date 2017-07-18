@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2014-2017 Lightbend Inc. <http://www.lightbend.com>
+ */
 package docs.http.scaladsl
 
 import akka.NotUsed
@@ -13,7 +16,7 @@ import scala.concurrent.duration.DurationInt
 
 final class ServerSentEventsExampleSpec extends RoutingSpec with Directives with CompileOnlySpec {
 
-  compileOnlySpec {
+  "stream example" in compileOnlySpec { 
     //#event-stream-marshalling-example
     def route: Route = {
       import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
