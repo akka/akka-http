@@ -112,10 +112,10 @@ This is what the full working test looks like:
 
 ## Accounting for Slow Test Systems
 
-Sometimes, the timeout defined for a route is finely tuned for our production environment, but our Continuous
-Integration server fails consistently as it is usually under high load or it's simply not that powerful. To account for
-these situations, timeout durations can be scaled by a given factor.
-Check the @extref[Akka Docs](akka-docs:scala/testing.html#accounting-for-slow-test-systems) for further information.
+The timeouts you consciously defined on your lightning fast development environment might be too tight for your, most
+probably, high-loaded Continuous Integration server, invariably causing spurious failures. To account for such
+situations, timeout durations can be scaled by a given factor on such environments. Check the
+@extref[Akka Docs](akka-docs:scala/testing.html#accounting-for-slow-test-systems) for further information.
 
 
 ## Increase Timeout
