@@ -5,13 +5,20 @@ package docs.http.scaladsl
 
 //#bindAndHandleAsync
 import akka.http.scaladsl.Http2
-import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
 
 //#bindAndHandleAsync
+import scala.concurrent.Future
+import akka.actor.ActorSystem
+import akka.stream.Materializer
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, StatusCodes }
 
-val asyncHandler = ???
-val httpsServerContext = ???
+object Http2Spec {
+  val asyncHandler = ???
+  val httpsServerContext = ???
+  implicit val system: ActorSystem = ???
+  implicit val materializer: Materializer = ???
 
-//#bindAndHandleAsync
-Http2().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 8443, httpsServerContext)
-//#bindAndHandleAsync
+  //#bindAndHandleAsync
+  Http2().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 8443, httpsServerContext)
+  //#bindAndHandleAsync
+}
