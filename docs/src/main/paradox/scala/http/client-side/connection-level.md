@@ -63,7 +63,7 @@ It should be noted that Akka Streams provide various timeout functionality so an
 from the stream stages such as `idleTimeout`, `backpressureTimeout`, `completionTimeout`, `initialTimeout`
 and `throttle`. To learn more about these refer to their documentation in Akka Streams (and Scala Doc).
 
-For more details about timeout support in Akka HTTP in general refer to @ref[Akka HTTP Timeouts](../common/timeouts.md#http-timeouts-scala).
+For more details about timeout support in Akka HTTP in general refer to @ref[Akka HTTP Timeouts](../common/timeouts.md).
 
 <a id="http-client-layer"></a>
 ## Stand-Alone HTTP Layer Usage
