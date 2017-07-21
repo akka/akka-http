@@ -7,7 +7,7 @@ functionality of typical web servers or frameworks, like deconstruction of URIs,
 static content serving.
 
 @@@ note
-It is recommended to read the @ref[Implications of the streaming nature of Request/Response Entities](../implications-of-streaming-http-entity.md#implications-of-streaming-http-entities) section,
+It is recommended to read the @ref[Implications of the streaming nature of Request/Response Entities](../implications-of-streaming-http-entity.md) section,
 as it explains the underlying full-stack streaming concepts, which may be unexpected when coming
 from a background with non-"streaming first" HTTP Servers.
 @@@
