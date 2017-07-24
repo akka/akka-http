@@ -113,14 +113,13 @@ object CacheDirectives {
     def render[R <: Rendering](r: R): r.type = r ~~ productPrefix ~~ '=' ~~ deltaSeconds
   }
 
-  /** Java API */
-  def getImmutable: ResponseDirective = ImmutableCacheValue.immutable
-
-  object ImmutableCacheValue {
-
-    /** https://tools.ietf.org/wg/httpbis/draft-ietf-httpbis-immutable */
-    @ApiMayChange
-    case object immutable extends SingletonValueRenderable with ResponseDirective
+  /** https://tools.ietf.org/wg/httpbis/draft-ietf-httpbis-immutable */
+  @ApiMayChange
+  case object immutableDirective extends SingletonValueRenderable with ResponseDirective {
+    private val valueBytes = "immutable".asciiBytes
+    override def render[R <: Rendering](r: R): r.type = r ~~ valueBytes
   }
 
+  /** Java API */
+  def getImmutable: ResponseDirective = immutableDirective
 }

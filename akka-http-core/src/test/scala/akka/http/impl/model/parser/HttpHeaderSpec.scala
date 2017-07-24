@@ -12,7 +12,6 @@ import akka.http.impl.util._
 import akka.http.scaladsl.model._
 import headers._
 import CacheDirectives._
-import CacheDirectives.ImmutableCacheValue._
 import MediaTypes._
 import MediaRanges._
 import HttpCharsets._
@@ -177,7 +176,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Cache-Control: private=\"a,b\", no-cache" =!=
         `Cache-Control`(`private`("a", "b"), `no-cache`)
       "Cache-Control: private, immutable" =!=
-        `Cache-Control`(`private`(), immutable)
+        `Cache-Control`(`private`(), immutableDirective)
     }
 
     "Connection" in {

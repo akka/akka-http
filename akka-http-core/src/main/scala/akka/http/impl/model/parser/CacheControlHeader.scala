@@ -7,7 +7,6 @@ package akka.http.impl.model.parser
 import akka.parboiled2.Parser
 import akka.http.scaladsl.model.headers._
 import CacheDirectives._
-import CacheDirectives.ImmutableCacheValue._
 
 private[parser] trait CacheControlHeader { this: Parser with CommonRules with CommonActions with StringBuilding ⇒
 
@@ -29,7 +28,7 @@ private[parser] trait CacheControlHeader { this: Parser with CommonRules with Co
       | "must-revalidate" ~ push(`must-revalidate`)
       | "proxy-revalidate" ~ push(`proxy-revalidate`)
       | "s-maxage=" ~ `delta-seconds` ~> (`s-maxage`(_))
-      | "immutable" ~ push(`immutable`)
+      | "immutable" ~ push(immutableDirective)
       | token ~ optional(ws('=') ~ word) ~> (CacheDirective.custom(_, _)))
 
   def `field-names` = rule { `quoted-tokens` | token ~> (Seq(_)) }
