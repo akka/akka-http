@@ -48,7 +48,7 @@ public abstract class HttpApp extends AllDirectives {
    * Note that this method is blocking.
    */
   public void startServer(String host, int port, ActorSystem system) throws ExecutionException, InterruptedException {
-    startServer(host, port, ServerSettings.create(system), Optional.of(system));
+    startServer(host, port, ServerSettings.create(system), Optional.ofNullable(system));
   }
 
   /**
@@ -64,7 +64,7 @@ public abstract class HttpApp extends AllDirectives {
    * Note that this method is blocking.
    */
   public void startServer(String host, int port, ServerSettings settings, ActorSystem system) throws ExecutionException, InterruptedException {
-    startServer(host, port, settings, Optional.of(system));
+    startServer(host, port, settings, Optional.ofNullable(system));
   }
 
   /**

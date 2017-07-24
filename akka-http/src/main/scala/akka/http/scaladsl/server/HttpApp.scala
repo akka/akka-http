@@ -48,7 +48,7 @@ abstract class HttpApp extends Directives {
    * Note that this method is blocking
    */
   def startServer(host: String, port: Int, system: ActorSystem): Unit = {
-    startServer(host, port, ServerSettings(system), Some(system))
+    startServer(host, port, ServerSettings(system), Option(system))
   }
 
   /**
@@ -64,7 +64,7 @@ abstract class HttpApp extends Directives {
    * Note that this method is blocking.
    */
   def startServer(host: String, port: Int, settings: ServerSettings, system: ActorSystem): Unit = {
-    startServer(host, port, settings, Some(system))
+    startServer(host, port, settings, Option(system))
   }
 
   /**
