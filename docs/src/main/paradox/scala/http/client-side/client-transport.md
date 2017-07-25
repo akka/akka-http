@@ -68,8 +68,6 @@ Here are some ideas for custom (or future predefined) transports:
 
 ## Usage Examples
 
-### Use HTTPS Proxy with `Http.get(...).singleRequest` 
-
 ### Use HTTPS Proxy with @scala[`Http().singleRequest`]@java[`Http.get(...).singleRequest`]
 
 Scala
