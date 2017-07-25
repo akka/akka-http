@@ -12,6 +12,7 @@ import directives._
  * See [[akka.http.javadsl.server.AllDirectives]] for JavaDSL equivalent of this trait.
  */
 trait Directives extends RouteConcatenation
+  with AnyParamDirectives
   with BasicDirectives
   with CacheConditionDirectives
   with CookieDirectives

@@ -74,6 +74,13 @@ final case class MissingFormFieldRejection(fieldName: String)
   extends jserver.MissingFormFieldRejection with Rejection
 
 /**
+ * Rejection created by AnyParam filters accepting either parameters or form fields..
+ * Signals that the request was rejected because neither a query parameter nor form field was not found.
+ */
+final case class MissingAnyParamRejection(parameterName: String)
+  extends jserver.MissingQueryParamRejection with Rejection
+
+/**
  * Rejection created by form field filters.
  * Signals that the request was rejected because a form field could not be interpreted.
  */
