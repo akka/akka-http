@@ -154,26 +154,27 @@ object AnyParamDirectives extends AnyParamDirectives with ParameterDirectives wi
           case Success(query) ⇒
             if (query.getAll(paramName).nonEmpty) handleAnyParamResult(paramName, fsou(query.get(paramName)))
             else handleAnyParamResult(paramName, fieldOfForm(paramName, fu)(sfu)(ctx))
-          //else extract(fieldOfForm(paramName, fu)).flatMap(r ⇒ handleAnyParamResult(paramName, r))
           case Failure(t) ⇒ reject(MalformedRequestContentRejection(s"The request's query string is invalid: ${ctx.request.uri.rawQueryString.getOrElse("")}", t))
         }
       }
 
-    implicit def forString(implicit sfu: SFU, fsu: FSU[String], fu: FSFFU[String]): AnyParamDefAux[String, Directive1[String]] =
-      extractAnyParam[String, String] { string ⇒ filter(string, fsu, fu) }
-    implicit def forSymbol(implicit sfu: SFU, fsu: FSU[String], fu: FSFFU[String]): AnyParamDefAux[Symbol, Directive1[String]] =
-      extractAnyParam[Symbol, String] { symbol ⇒ filter(symbol.name, fsu, fu) }
-    implicit def forNR[T](implicit sfu: SFU, fsu: FSU[T], fu: FSFFU[T]): AnyParamDefAux[NameReceptacle[T], Directive1[T]] =
+    private val fromStringUnmarshaller: FSU[String] = Unmarshaller.identityUnmarshaller[String]
+
+    implicit def forString(implicit fu: FSFFU[String]): AnyParamDefAux[String, Directive1[String]] =
+      extractAnyParam[String, String] { string ⇒ filter(string, fromStringUnmarshaller, fu) }
+    implicit def forSymbol(implicit fu: FSFFU[String]): AnyParamDefAux[Symbol, Directive1[String]] =
+      extractAnyParam[Symbol, String] { symbol ⇒ filter(symbol.name, fromStringUnmarshaller, fu) }
+    implicit def forNR[T](implicit fsu: FSU[T], fu: FSFFU[T]): AnyParamDefAux[NameReceptacle[T], Directive1[T]] =
       extractAnyParam[NameReceptacle[T], T] { nr ⇒ filter(nr.name, fsu, fu) }
     implicit def forNUR[T]: AnyParamDefAux[NameUnmarshallerReceptacle[T], Directive1[T]] =
       extractAnyParam[NameUnmarshallerReceptacle[T], T] { nr ⇒ filter(nr.name, nr.um, StrictForm.Field.unmarshallerFromFSU(nr.um)) }
-    implicit def forNOR[T](implicit sfu: SFU, fsou: FSOU[T], fu: FSFFOU[T]): AnyParamDefAux[NameOptionReceptacle[T], Directive1[Option[T]]] =
+    implicit def forNOR[T](implicit fsou: FSOU[T], fu: FSFFOU[T]): AnyParamDefAux[NameOptionReceptacle[T], Directive1[Option[T]]] =
       extractAnyParam[NameOptionReceptacle[T], Option[T]] { nr ⇒ filter[Option[T]](nr.name, fsou, fu) }
-    implicit def forNDR[T](implicit sfu: SFU, fsou: FSOU[T], fu: FSFFOU[T]): AnyParamDefAux[NameDefaultReceptacle[T], Directive1[T]] =
+    implicit def forNDR[T](implicit fsou: FSOU[T], fu: FSFFOU[T]): AnyParamDefAux[NameDefaultReceptacle[T], Directive1[T]] =
       extractAnyParam[NameDefaultReceptacle[T], T] { nr ⇒ filter[T](nr.name, fsou withDefaultValue nr.default, fu withDefaultValue nr.default) }
-    implicit def forNOUR[T](implicit sfu: SFU): AnyParamDefAux[NameOptionUnmarshallerReceptacle[T], Directive1[Option[T]]] =
+    implicit def forNOUR[T]: AnyParamDefAux[NameOptionUnmarshallerReceptacle[T], Directive1[Option[T]]] =
       extractAnyParam[NameOptionUnmarshallerReceptacle[T], Option[T]] { nr ⇒ filter(nr.name, nr.um: FSOU[T], (StrictForm.Field.unmarshallerFromFSU(nr.um): FSFFOU[T])) }
-    implicit def forNDUR[T](implicit sfu: SFU): AnyParamDefAux[NameDefaultUnmarshallerReceptacle[T], Directive1[T]] =
+    implicit def forNDUR[T]: AnyParamDefAux[NameDefaultUnmarshallerReceptacle[T], Directive1[T]] =
       extractAnyParam[NameDefaultUnmarshallerReceptacle[T], T] { nr ⇒ filter[T](nr.name, (nr.um: FSOU[T]) withDefaultValue nr.default, (StrictForm.Field.unmarshallerFromFSU(nr.um): FSFFOU[T]) withDefaultValue nr.default) }
 
     //////////////////// required parameter support ////////////////////
