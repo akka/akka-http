@@ -22,11 +22,11 @@ class Http2Test {
     HttpsConnectionContext httpsConnectionContext = null;
 
     //#bindAndHandleAsync
-    Http http = new Http(system);
-    http.setDefaultServerHttpContext(httpsConnectionContext);
-
-    // TODO this doesn't actually appear to work? Will try with http.setDefaultServerHttpContext
-    http.bindAndHandleAsync(asyncHandler, toHostHttps("127.0.0.1", 8443), materializer);
+    Http.get(system)
+      .bindAndHandleAsync(
+        asyncHandler,
+        toHostHttps("127.0.0.1", 8443).withCustomHttpsContext(httpsConnectionContext),
+        materializer);
     //#bindAndHandleAsync
   }
 }
