@@ -9,7 +9,7 @@ This means it is ready to be evaluated, but the APIs and behavior is likely to c
 
 ## Enable HTTP/2 support
 
-`akka-http2-support` must be added as a dependency:
+To enabled HTTP/2 support `akka-http2-support` must be added as a dependency:
 
 sbt
 :   @@@vars
@@ -37,9 +37,9 @@ akka.http.server.preview.enable-http2 = on
 
 ## Use `bindAndHandleAsync` and HTTPS
 
-We only support HTTP/2 over HTTPS: browsers don't typically support HTTP/2 on plain HTTP, and other clients that do are rare. See the @ref[HTTPS section](../server-side-https-support.md) for how to set up HTTPS.
+Only secure HTTP/2 (also known as "over HTTPS" or "with TLS") connections are supported as this is the prime mode of operation for this protocol. While un-encrypted connections are allowed by HTTP/2, clients that support this are rare. See the @ref[HTTPS section](../server-side-https-support.md) for how to set up HTTPS.
 
-You can use @scala[@scaladoc[Http().bindAndHandleAsync](akka.http.scaladsl.HttpExt)]@java[@javadoc[new Http().bindAndHandleAsync()](akka.http.javadsl.HttpExt)] as long as you followed the above steps:
+You can use @scala[@scaladoc[Http().bindAndHandleAsync](akka.http.scaladsl.HttpExt)]@java[@javadoc[Http().get(system).bindAndHandleAsync()](akka.http.javadsl.HttpExt)] as long as you followed the above steps:
 
 Scala
 :   @@snip[Http2Spec.scala](../../../../../test/scala/docs/http/scaladsl/Http2Spec.scala) { #bindAndHandleAsync }
@@ -51,7 +51,9 @@ Note that `bindAndHandle` currently does not support HTTP/2, you must use `bindA
 
 ## Testing with cURL
 
-At this point you should be able to connect. You'll need a recent version of [cURL](https://curl.haxx.se/) compiled with HTTP/2 support (for OSX see [this article](https://simonecarletti.com/blog/2016/01/http2-curl-macosx/)). You can check whether your version supports HTTP2 with `curl --version`:
+At this point you should be able to connect, but HTTP/2 may still not be available.
+
+You'll need a recent version of [cURL](https://curl.haxx.se/) compiled with HTTP/2 support (for OSX see [this article](https://simonecarletti.com/blog/2016/01/http2-curl-macosx/)). You can check whether your version supports HTTP2 with `curl --version`, look for the nghttp2 extension and the HTTP2 feature:
 
 ```
 curl 7.52.1 (x86_64-pc-linux-gnu) libcurl/7.52.1 OpenSSL/1.0.2l zlib/1.2.8 libidn2/0.16 libpsl/0.17.0 (+libidn2/0.16) libssh2/1.8.0 nghttp2/1.23.1 librtmp/2.3
@@ -59,7 +61,23 @@ Protocols: dict file ftp ftps gopher http https imap imaps ldap ldaps pop3 pop3s
 Features: AsynchDNS IDN IPv6 Largefile GSS-API Kerberos SPNEGO NTLM NTLM_WB SSL libz TLS-SRP HTTP2 UnixSockets HTTPS-proxy PSL
 ```
 
-When you connect to your service you should now see:
+When you connect to your service you may now see something like:
+
+```
+$ curl -k -v https://localhost:8443
+(...)
+* ALPN, offering h2
+* ALPN, offering http/1.1
+(...)
+* ALPN, server accepted to use h2
+(...)
+> GET / HTTP/1.1
+(...)
+< HTTP/2 200
+(...)
+```
+
+If your curl output looks like above, you have successfully configured HTTP/2. However, on JDK's up to version 9, it is likely to look like this instead:
 
 ```
 $ curl -k -v https://localhost:8443
