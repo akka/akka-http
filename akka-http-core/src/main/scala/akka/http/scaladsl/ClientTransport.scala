@@ -56,6 +56,16 @@ object ClientTransport {
    */
   def httpsProxy(proxyAddress: InetSocketAddress): ClientTransport = new HttpsProxyTransport(proxyAddress)
 
+  /**
+   * Returns a [[ClientTransport]] that runs all connection through the given HTTPS proxy using the
+   * HTTP CONNECT method. This call also takes [[HttpCredentials]] to base proxy credentials along with
+   * the request.
+   *
+   * An HTTPS proxy is a proxy that will create one TCP connection to the HTTPS proxy for each target connection. The
+   * proxy transparently forwards the TCP connection to the target host.
+   *
+   * For more information about HTTP CONNECT tunnelling see https://tools.ietf.org/html/rfc7231#section-4.3.6.
+   */
   def httpsProxy(proxyAddress: InetSocketAddress, proxyAuth: HttpCredentials): ClientTransport = new HttpsProxyTransport(proxyAddress, proxyAuth = Some(proxyAuth))
 
   private case class HttpsProxyTransport(proxyAddress: InetSocketAddress, underlyingTransport: ClientTransport = TCP, proxyAuth: Option[HttpCredentials] = None) extends ClientTransport {
