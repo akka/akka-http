@@ -12,7 +12,6 @@ import akka.actor.ActorSystem;
 import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.ConnectionContext;
 import akka.http.javadsl.Http;
-import akka.http.javadsl.HttpsConnectionContext;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.server.*;
@@ -35,6 +34,10 @@ import java.util.function.Function;
 
 import static akka.http.javadsl.server.PathMatchers.integerSegment;
 import static akka.http.javadsl.unmarshalling.Unmarshaller.entityToString;
+//#https-http-config
+import akka.http.javadsl.HttpsConnectionContext;
+
+//#https-http-config
 
 public class SimpleServerApp extends AllDirectives { // or import Directives.*
 
@@ -111,7 +114,7 @@ public class SimpleServerApp extends AllDirectives { // or import Directives.*
 
     final SimpleServerApp app = new SimpleServerApp();
     final Flow<HttpRequest, HttpResponse, NotUsed> flow = app.createRoute().flow(system, materializer);
-    
+
     Http.get(system).bindAndHandle(flow, ConnectHttp.toHost("localhost", 8080), materializer);
 
     System.out.println("Type RETURN to exit");
