@@ -29,6 +29,15 @@ maven
     ```
     @@@
 
+gradle
+:   @@@vars
+    ```
+    dependencies {
+      compile group: 'com.typesafe.akka', name: 'akka-http2-support_2.12', version: '$project.version$'
+    }
+    ```
+    @@@
+
 HTTP/2 can then be enabled through configuration:
 
 ```
