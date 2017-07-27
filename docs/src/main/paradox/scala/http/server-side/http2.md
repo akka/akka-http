@@ -1,7 +1,11 @@
 # Server-Side HTTP/2 (Preview)
 
+@@@ warning
+
 Server-Side HTTP/2 support in akka-http is currently available as a preview.
-This means it is ready to be evaluated, but the API's and behavior is likely to change.
+This means it is ready to be evaluated, but the APIs and behavior is likely to change.
+
+@@@
 
 ## Enable HTTP/2 support
 
