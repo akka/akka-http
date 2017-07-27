@@ -79,6 +79,8 @@ ALPN support comes with the JVM starting from version 9. If you're on a previous
 
 ## Run and package
 
+### sbt
+
 sbt can be configured to load the agent with the [sbt-javaagent plugin](https://github.com/sbt/sbt-javaagent):
 
 ```
@@ -89,3 +91,56 @@ sbt can be configured to load the agent with the [sbt-javaagent plugin](https://
 ```
 
 This should automatically load the agent when running, testing, or even in distributions made with [sbt-native-package](https://github.com/sbt/sbt-native-packager).
+
+@@@ div { .group-java}
+
+### maven
+
+To configure maven to load the agent when running `mvn exec:exec`, add it as a 'runtime' dependency:
+
+```
+<dependency>
+    <groupId>org.mortbay.jetty.alpn</groupId>
+    <artifactId>jetty-alpn-agent</artifactId>
+    <version>2.0.6</version>
+    <scope>runtime</scope>
+</dependency>
+```
+
+and use the `maven-dependency-plugin`:
+
+```
+<plugin>
+    <artifactId>maven-dependency-plugin</artifactId>
+    <version>2.5.1</version>
+    <executions>
+        <execution>
+            <id>getClasspathFilenames</id>
+            <goals>
+                <goal>properties</goal>
+            </goals>
+        </execution>
+     </executions>
+</plugin>
+```
+
+to add it to the `exec-maven-plugin` arguments:
+
+```
+<plugin>
+    <groupId>org.codehaus.mojo</groupId>
+    <artifactId>exec-maven-plugin</artifactId>
+    <version>1.6.0</version>
+    <configuration>
+        <executable>java</executable>
+        <arguments>
+            <argument>-javaagent:${org.mortbay.jetty.alpn:jetty-alpn-agent:jar}</argument>
+            <argument>-classpath</argument>
+            <classpath />
+            <argument>com.example.HttpServer</argument>
+        </arguments>
+    </configuration>
+</plugin>
+```
+
+@@@
