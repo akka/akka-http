@@ -98,17 +98,19 @@ $ curl -k -v https://localhost:8443
 (...)
 > GET / HTTP/1.1
 (...)
+< HTTP/1.1 200 OK
+(...)
 ```
 
-This shows `curl` declaring it is ready to speak either `h2` (the shorthand name of HTTP/2) or HTTP/1.1, but because it could not determine whether the server is ready to it fell back to HTTP/1.1.
+This shows `curl` declaring it is ready to speak `h2` (the shorthand name of HTTP/2), but could not determine whether the server is ready to, so it fell back to HTTP/1.1. To make this negotiation work you'll have to configure ALPN as described below.
 
 ## Application-Layer Protocol Negotiation (ALPN)
 
 [Application-Layer Protocol Negotiation (ALPN)](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation) is used to negotiate whether both client and server support HTTP/2.
 
-ALPN support comes with the JVM starting from version 9. If you're on a previous version of the JVM, you'll have to load a Java Agent to provide this functionality.
+ALPN support comes with the JVM starting from version 9. If you're on a previous version of the JVM, you'll have to load a Java Agent to provide this functionality. We recommend the agent from the [Jetty](http://www.eclipse.org/jetty/) project, `jetty-alpn-agent`.
 
-## Run and package
+This agent can be loaded with the JVM option `-javaagent:/path/to/jetty-alpn-agent-2.0.6.jar`. For development and packaging you might want to set that parameter from your build tool:
 
 ### sbt
 
