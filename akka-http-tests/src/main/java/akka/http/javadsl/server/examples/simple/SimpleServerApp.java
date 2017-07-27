@@ -19,13 +19,6 @@ import akka.http.javadsl.unmarshalling.StringUnmarshallers;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Flow;
 
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManagerFactory;
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.*;
-import java.security.cert.CertificateException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
@@ -35,6 +28,14 @@ import java.util.function.Function;
 import static akka.http.javadsl.server.PathMatchers.integerSegment;
 import static akka.http.javadsl.unmarshalling.Unmarshaller.entityToString;
 //#https-http-config
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.*;
+import java.security.cert.CertificateException;
+
 import akka.http.javadsl.HttpsConnectionContext;
 
 //#https-http-config
