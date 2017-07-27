@@ -31,9 +31,9 @@ HTTP/2 can then be enabled through configuration:
 akka.http.server.preview.enable-http2 = on
 ```
 
-### Use `bindAndHandleAsync` and HTTPS
+## Use `bindAndHandleAsync` and HTTPS
 
-We only support HTTP/2 over HTTPS: browsers don't typically support HTTP/2 on plain HTTP, and other clients that do are rare.
+We only support HTTP/2 over HTTPS: browsers don't typically support HTTP/2 on plain HTTP, and other clients that do are rare. See the @ref[HTTPS section](../server-side-https-support.md) for how to set up HTTPS.
 
 You can use @scala[@scaladoc[Http().bindAndHandleAsync](akka.http.scaladsl.HttpExt)]@java[@javadoc[new Http().bindAndHandleAsync()](akka.http.javadsl.HttpExt)] as long as you followed the above steps:
 
@@ -45,7 +45,7 @@ Java
 
 Note that `bindAndHandle` currently does not support HTTP/2, you must use `bindAndHandleAsync`.
 
-### Testing with cURL
+## Testing with cURL
 
 At this point you should be able to connect. You'll need a recent version of [cURL](https://curl.haxx.se/) compiled with HTTP/2 support (for OSX see [this article](https://simonecarletti.com/blog/2016/01/http2-curl-macosx/)). You can check whether your version supports HTTP2 with `curl --version`:
 
@@ -71,13 +71,13 @@ $ curl -k -v https://localhost:8443
 
 This shows `curl` declaring it is ready to speak either `h2` (the shorthand name of HTTP/2) or HTTP/1.1, but because it could not determine whether the server is ready to it fell back to HTTP/1.1.
 
-### Application-Layer Protocol Negotiation (ALPN)
+## Application-Layer Protocol Negotiation (ALPN)
 
 [Application-Layer Protocol Negotiation (ALPN)](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation) is used to negotiate whether both client and server support HTTP/2.
 
 ALPN support comes with the JVM starting from version 9. If you're on a previous version of the JVM, you'll have to load a Java Agent to provide this functionality.
 
-### sbt
+## Run and package
 
 sbt can be configured to load the agent with the [sbt-javaagent plugin](https://github.com/sbt/sbt-javaagent):
 
@@ -89,7 +89,3 @@ sbt can be configured to load the agent with the [sbt-javaagent plugin](https://
 ```
 
 This should automatically load the agent when running, testing, or even in distributions made with [sbt-native-package](https://github.com/sbt/sbt-native-packager).
-
-### maven
-
-// TODO
