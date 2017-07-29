@@ -31,6 +31,10 @@ abstract class AnyParamDirectives extends FramedEntityStreamingDirectives {
       inner.apply(value.asJava).delegate
     })
 
+  @CorrespondsTo("anyParams")
+  def anyParamsOptional(name: String, inner: java.util.function.Function[Optional[String], Route]): Route =
+    anyParamOptional(name, inner)
+
   @CorrespondsTo("anyParamSeq")
   def anyParamList(name: String, inner: java.util.function.Function[java.util.List[String], Route]): Route = RouteAdapter(
     D.anyParam(_string2NR(name).*) { values ⇒
@@ -54,6 +58,10 @@ abstract class AnyParamDirectives extends FramedEntityStreamingDirectives {
       })
   }
 
+  @CorrespondsTo("anyParams")
+  def anyParamsOptional[T](t: Unmarshaller[String, T], name: String, inner: java.util.function.Function[Optional[T], Route]): Route =
+    anyParamOptional(t, name, inner)
+
   @CorrespondsTo("anyParam")
   def anyParamOrDefault[T](t: Unmarshaller[String, T], defaultValue: T, name: String, inner: java.util.function.Function[T, Route]): Route = {
     import t.asScala
@@ -62,6 +70,10 @@ abstract class AnyParamDirectives extends FramedEntityStreamingDirectives {
         inner.apply(value).delegate
       })
   }
+
+  @CorrespondsTo("anyParams")
+  def anyParamsOrDefault[T](t: Unmarshaller[String, T], defaultValue: T, name: String, inner: java.util.function.Function[T, Route]): Route =
+    anyParamOrDefault(t, defaultValue, name, inner)
 
   @CorrespondsTo("anyParamSeq")
   def anyParamList[T](t: Unmarshaller[String, T], name: String, inner: java.util.function.Function[java.util.List[T], Route]): Route = {
