@@ -9,11 +9,11 @@ import java.util.function.{ BiFunction, Function, Supplier }
 import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 import akka.http.impl.util.JavaMapping
-import akka.http.javadsl.server.directives.{ FramedEntityStreamingDirectives, TimeoutDirectives }
+import akka.http.javadsl.server.directives.{ AnyParamDirectives, TimeoutDirectives }
 
 import scala.annotation.varargs
 
-abstract class AllDirectives extends FramedEntityStreamingDirectives
+abstract class AllDirectives extends AnyParamDirectives
 
 /**
  * INTERNAL API

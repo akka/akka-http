@@ -176,10 +176,10 @@ class AnyParamDirectivesSpec extends RoutingSpec with Inside {
     }
     "cause a MalformedQueryParamRejection on illegal Int values" in {
       Get("/?amount=1x3") ~> {
-        parameter('amount.as[Int]) { echoComplete }
+        anyParams('amount.as[Int]) { echoComplete }
       } ~> check {
         inside(rejection) {
-          case MalformedQueryParamRejection("amount", "'1x3' is not a valid 32-bit signed integer value", Some(_)) ⇒
+          case MalformedAnyParamRejection("amount", "'1x3' is not a valid 32-bit signed integer value", Some(_)) ⇒
         }
       }
     }
@@ -204,7 +204,7 @@ class AnyParamDirectivesSpec extends RoutingSpec with Inside {
           anyParams("amount".as[Int].?) { echoComplete }
         } ~> check {
           inside(rejection) {
-            case MalformedQueryParamRejection("amount", "'x' is not a valid 32-bit signed integer value", Some(_)) ⇒
+            case MalformedAnyParamRejection("amount", "'x' is not a valid 32-bit signed integer value", Some(_)) ⇒
           }
         }
       }

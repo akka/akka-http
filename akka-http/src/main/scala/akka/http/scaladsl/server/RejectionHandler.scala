@@ -181,6 +181,10 @@ object RejectionHandler {
           complete((BadRequest, "The request content was malformed:\n" + msg))
       }
       .handle {
+        case MalformedAnyParamRejection(paramName, msg, _) ⇒
+          complete((BadRequest, "The query parameter or form field '" + paramName + "' was malformed:\n" + msg))
+      }
+      .handle {
         case MissingCookieRejection(cookieName) ⇒
           complete((BadRequest, "Request is missing required cookie '" + cookieName + '\''))
       }
@@ -199,6 +203,10 @@ object RejectionHandler {
       .handle {
         case MissingQueryParamRejection(paramName) ⇒
           complete((NotFound, "Request is missing required query parameter '" + paramName + '\''))
+      }
+      .handle {
+        case MissingAnyParamRejection(paramName) ⇒
+          complete((NotFound, "Request is missing required query parameter or form field '" + paramName + '\''))
       }
       .handle {
         case RequestEntityExpectedRejection ⇒

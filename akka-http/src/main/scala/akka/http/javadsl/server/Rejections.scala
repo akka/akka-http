@@ -67,6 +67,17 @@ trait MalformedQueryParamRejection extends Rejection {
 }
 
 /**
+ * Rejection created by anyParam filters.
+ * Signals that the request was rejected because a parameter could not be interpreted from the
+ * request or form fields.
+ */
+trait MalformedAnyParamRejection extends Rejection {
+  def parameterName: String
+  def errorMsg: String
+  def getCause: Optional[Throwable]
+}
+
+/**
  * Rejection created by form field filters.
  * Signals that the request was rejected because a form field was not found.
  */

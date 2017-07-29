@@ -67,6 +67,13 @@ final case class MalformedQueryParamRejection(parameterName: String, errorMsg: S
   extends jserver.MalformedQueryParamRejection with RejectionWithOptionalCause
 
 /**
+ * Rejection created by parameter filters.
+ * Signals that the request was rejected because a query parameter could not be interpreted.
+ */
+final case class MalformedAnyParamRejection(parameterName: String, errorMsg: String, cause: Option[Throwable] = None)
+  extends jserver.MalformedAnyParamRejection with RejectionWithOptionalCause
+
+/**
  * Rejection created by form field filters.
  * Signals that the request was rejected because a form field was not found.
  */

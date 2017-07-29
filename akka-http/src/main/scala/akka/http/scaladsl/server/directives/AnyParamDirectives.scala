@@ -136,7 +136,7 @@ object AnyParamDirectives extends AnyParamDirectives with ParameterDirectives wi
         case Success(x)                                  ⇒ provide(x)
         case Failure(Unmarshaller.NoContentException)    ⇒ reject(MissingAnyParamRejection(paramName))
         case Failure(x: UnsupportedContentTypeException) ⇒ reject(UnsupportedRequestContentTypeRejection(x.supported))
-        case Failure(x)                                  ⇒ reject(MalformedQueryParamRejection(paramName, x.getMessage.nullAsEmpty, Option(x.getCause)))
+        case Failure(x)                                  ⇒ reject(MalformedAnyParamRejection(paramName, x.getMessage.nullAsEmpty, Option(x.getCause)))
       }
 
     //////////////////// "regular" parameter extraction //////////////////////
