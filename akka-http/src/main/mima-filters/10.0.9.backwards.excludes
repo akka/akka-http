@@ -1,0 +1,7 @@
+# changes related to adding anyParam directives
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.http.scaladsl.server.directives.AnyParamDirectives.anyParamMultiMap")
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.http.scaladsl.server.directives.AnyParamDirectives.anyParamMap")
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.http.scaladsl.server.directives.AnyParamDirectives.anyParams")
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.http.scaladsl.server.directives.AnyParamDirectives.anyParamSeq")
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.http.scaladsl.server.directives.AnyParamDirectives.anyParam")
+
