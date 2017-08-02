@@ -9,7 +9,7 @@ echo "#######################"
 echo $BRANCH_NAME
 echo "#######################"
 git branch -r
-git fetch origin master
+git fetch origin
 git branch -r
 git branch -vv
 
