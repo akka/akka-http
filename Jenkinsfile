@@ -13,6 +13,7 @@ git branch -r
 git fetch origin
 git branch -r
 git branch -vv
+cat .git/config
 
 echo "#######################"
 
