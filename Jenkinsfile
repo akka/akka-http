@@ -9,6 +9,8 @@ echo "#######################"
 echo $BRANCH_NAME
 echo "#######################"
 git branch -r
+echo "#######################"
+
 if [ $BRANCH_NAME == "master" ]; then
   git diff --name-only HEAD HEAD~1 > changed_files.txt
 else
