@@ -4,6 +4,7 @@ pipeline {
     stage('Build') {
       steps {
         sh '''set -x
+printenv
 echo $GIT_BRANCH
 
 if [ $GIT_BRANCH == "origin/master" ]; then
