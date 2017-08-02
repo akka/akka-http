@@ -9,6 +9,8 @@ echo "#######################"
 echo $BRANCH_NAME
 echo "#######################"
 git branch -r
+git fetch origin master
+git branch -r
 echo "#######################"
 
 if [ $BRANCH_NAME == "master" ]; then
