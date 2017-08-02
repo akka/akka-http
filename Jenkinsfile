@@ -4,6 +4,7 @@ pipeline {
     stage('Build') {
       steps {
         sh '''set -x
+find .git
 printenv
 echo "#######################"
 echo $BRANCH_NAME
