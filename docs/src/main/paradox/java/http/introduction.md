@@ -114,7 +114,7 @@ APIs for handling such request-responses as function calls and as a `Flow<HttpRe
 
 @@snip [HttpServerLowLevelExample.java](../../../../test/java/docs/http/javadsl/HttpServerLowLevelExample.java) { #low-level-server-example }
 
-Read more details about the low level APIs in the section @ref[Low-Level Server-Side API](server-side/low-level-server-side-api.md).
+Read more details about the low level APIs in the section @ref[Low-Level Server-Side API](low-level-server-side-api.md).
 
 ## HTTP client API
 
@@ -139,7 +139,7 @@ with Akka HTTP. Details can be found in the section @ref[High-level Server-Side 
 
 akka-http-core
 : A complete, mostly low-level, server- and client-side implementation of HTTP (incl. WebSockets)
-Details can be found in sections @ref[Low-Level Server-Side API](server-side/low-level-server-side-api.md) and @ref[Consuming HTTP-based Services (Client-Side)](client-side/index.md)
+Details can be found in sections @ref[Low-Level Server-Side API](low-level-server-side-api.md) and @ref[Consuming HTTP-based Services (Client-Side)](client-side/index.md)
 
 akka-http-testkit
 : A test harness and set of utilities for verifying server-side service implementations
