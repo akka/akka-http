@@ -591,6 +591,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         `WWW-Authenticate`(HttpChallenge("Basic", None, Map("attr" → "value")))
       """WWW-Authenticate: Fancy realm="Secure Area",nonce=42""" =!=
         `WWW-Authenticate`(HttpChallenge("Fancy", Some("Secure Area"), Map("nonce" → "42")))
+      """WWW-Authenticate: NTLM TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg==""" =!=
+        `WWW-Authenticate`(HttpChallenge("NTLM", None, Map("" → "TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg==")))
     }
 
     "X-Forwarded-For" in {
