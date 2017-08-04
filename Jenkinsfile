@@ -19,5 +19,11 @@ pipeline {
         )
       }
     }
+    stage('Decide what to build') {
+      steps {
+        sh '''echo "1\n3\n" >what-to-build.txt
+'''
+      }
+    }
   }
 }
