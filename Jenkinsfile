@@ -1,28 +1,36 @@
 pipeline {
   agent any
   stages {
-    stage('Build') {
+    stage('Decide what to build') {
+      steps {
+        sh '''echo "1
+3
+" >what-to-build.txt
+'''
+      }
+    }
+    stage('Build1') {
       steps {
         parallel(
-          "Build": {
-            echo 'Build stage started'
+          "Build1": {
+            echo 'Build1 start'
+            sh '''cat what-to-build.txt
+'''
             
           },
           "Build2": {
-            echo 'Build2 stage started'
+            echo 'Build2 start'
+            sh '''cat what-to-build.txt
+'''
             
           },
           "Build3": {
-            echo 'Build3 stage started'
+            echo 'Build3 start'
+            sh '''cat what-to-build.txt
+'''
             
           }
         )
-      }
-    }
-    stage('Decide what to build') {
-      steps {
-        sh '''echo "1\n3\n" >what-to-build.txt
-'''
       }
     }
   }
