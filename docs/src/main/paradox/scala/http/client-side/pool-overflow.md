@@ -7,8 +7,9 @@ to a single host can handle.
 
 When you use the @ref[stream-based host-level API](host-level.md#using-the-host-level-api-in-a-streaming-fashion)
 stream semantics prevent that the pool is overloaded with requests. On the other side, when a new request is pushed either using
-`Http.singleRequest()` or when materializing too many streams using the same `Http().cachedHostConnectionPool`, requests
-may start to queue up when the rate of new requests is greater than the rate that the pool can process requests.
+@scala[`Http().singleRequest()`]@java[`Http.get(system).singleRequest()`] or when materializing too many streams using the same
+@scala[`Http().cachedHostConnectionPool`]@java[`Http.get(system).cachedHostConnectionPool`], requests may start to queue
+up when the rate of new requests is greater than the rate that the pool can process requests.
 
 In such a situation `max-open-requests` per host connection pool will be queued to buffer short-term peaks of requests.
 Further requests will fail immediately with a `BufferOverflowException` with a message like this:
