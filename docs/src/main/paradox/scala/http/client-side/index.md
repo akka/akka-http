@@ -17,7 +17,7 @@ Depending on your application's specific needs you can choose from three differe
   the user can supply a ``Source[HttpRequest, NotUsed]`` with requests to run against a single host
   over multiple pooled connections.
 
-@ref[Connection-Level Client-Side API](connection-level.md#connection-level-api)
+@ref[Connection-Level Client-Side API](connection-level.md)
 : for full-control over when HTTP connections are opened/closed and how requests are scheduled across them. Only
   recommended for particular use cases.
 
