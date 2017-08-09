@@ -5,6 +5,7 @@
 package docs.http.javadsl;
 
 //##single-request-in-actor-example
+
 import akka.actor.AbstractActor;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.model.HttpRequest;
@@ -25,9 +26,8 @@ public class SingleRequestInActorExample extends AbstractActor {
 
     public SingleRequestInActorExample() { // syntax changes slightly in Akka 2.5, see the migration guide
         receive(ReceiveBuilder
-                .match(String.class, url -> {
-                    pipe(fetch(url), dispatcher).to(self());
-                }).build());
+                .match(String.class, url -> pipe(fetch(url), dispatcher).to(self()))
+                .build());
     }
 
     CompletionStage<HttpResponse> fetch(String url) {

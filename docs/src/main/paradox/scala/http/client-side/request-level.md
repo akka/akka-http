@@ -11,7 +11,7 @@ from a background with non-"streaming first" HTTP Clients.
 @@@
 
 @@@ note
-The request-level API is implemented on top of a connection pool that is shared inside the ActorSystem. A consequence of
+The request-level API is implemented on top of a connection pool that is shared inside the actor system. A consequence of
 using a pool is that long-running requests block a connection while running and starve other requests. Make sure not to use
 the request-level API for long-running requests like long-polling GET requests. Use the @ref[Connection-Level Client-Side API](connection-level.md)
 or an extra pool just for the long-running connection instead.
@@ -22,7 +22,7 @@ or an extra pool just for the long-running connection instead.
 Most often, your HTTP client needs are very basic. You simply need the HTTP response for a certain request and don't
 want to bother with setting up a full-blown streaming infrastructure.
 
-For these cases Akka HTTP offers the `Http().singleRequest(...)` method, which simply turns an `HttpRequest` instance
+For these cases Akka HTTP offers the @scala[`Http().singleRequest(...)`]@java[`Http.get(system).singleRequest(...)`] method, which simply turns an `HttpRequest` instance
 into @scala[`Future[HttpResponse]`]@java[`CompletionStage<HttpResponse>`]. Internally the request is dispatched across the (cached) host connection pool for the
 request's effective URI.
 
@@ -40,9 +40,9 @@ Java
 ### Using the Future-Based API in Actors
 
 When using the @scala[`Future`]@java[`CompletionStage`] based API from inside an `Actor`, all the usual caveats apply to how one should deal
-with the futures completion. For example you should not access the Actors state from within the @scala[`Future`]@java[`CompletionStage`]'s callbacks
+with the futures completion. For example you should not access the actor's state from within the @scala[`Future`]@java[`CompletionStage`]'s callbacks
 (such as `map`, `onComplete`, ...) and instead you should use the @scala[`pipeTo`]@java[`pipe`] pattern to pipe the result back
-to the Actor as a message:
+to the actor as a message:
 
 Scala
 :   @@snip [HttpClientExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #single-request-in-actor-example }
@@ -52,8 +52,7 @@ Java
 
 @@@ warning
 
-Be sure to consume the response entities `dataBytes:Source[ByteString,Unit]` by for example connecting it
-to a `Sink` (for example @scala[`response.discardEntityBytes()`]@java[`response.discardEntityBytes(Materializer)`] if you don't care about the
+Always make sure you consume the response entity streams (of type @scala[`Source[ByteString,Unit]`]@java[`Source<ByteString, Object>`]) by for example connecting it to a `Sink` (for example @scala[`response.discardEntityBytes()`]@java[`response.discardEntityBytes(Materializer)`] if you don't care about the
 response entity), since otherwise Akka HTTP (and the underlying Streams infrastructure) will understand the
 lack of entity consumption as a back-pressure signal and stop reading from the underlying TCP connection!
 
@@ -68,12 +67,12 @@ so these may be implemented in the near future.
 
 ## Flow-Based Variant
 
-The flow-based variant of the request-level client-side API is presented by the `Http().superPool(...)` method.
+The flow-based variant of the request-level client-side API is presented by the @scala[`Http().superPool(...)`]@java[`Http.get(system).superPool(...)`] method.
 It creates a new "super connection pool flow", which routes incoming requests to a (cached) host connection pool
 depending on their respective effective URIs.
 
-The `Flow` returned by `Http().superPool(...)` is very similar to the one from the @ref[Host-Level Client-Side API](host-level.md), so the
-@scala[@ref[Using a Host Connection Pool](host-level.md#using-a-host-connection-pool)]@java[@ref[Using a Host Connection Pool](host-level.md#using-a-host-connection-pool-java)] section also applies here.
+The `Flow` returned by @scala[`Http().superPool(...)`]@java[`Http.get(system).superPool(...)`] is very similar to the one from the @ref[Host-Level Client-Side API](host-level.md), so the
+@ref[Using a Host Connection Pool](host-level.md#using-a-host-connection-pool) section also applies here.
 
 However, there is one notable difference between a "host connection pool client flow" for the host-level API and a
 "super-pool flow":
