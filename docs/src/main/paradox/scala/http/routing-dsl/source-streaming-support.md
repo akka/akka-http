@@ -1,4 +1,3 @@
-<a id="json-streaming-scala"></a>
 # Source Streaming
 
 Akka HTTP supports completing a request with an Akka `Source[T, _]`, which makes it possible to easily build
@@ -76,7 +75,7 @@ The above shown mode preserves ordering of the Source's elements, which may some
 for example when streaming a strictly ordered dataset. Sometimes the concept of strict order does not apply to the
 data being streamed, though, which allows us to exploit this property and use an `unordered` rendering.
 
-This `unordered` rendering can be enabled via a configuration option as shown below. Effectively this will allow Akka's marshalling infrastructure to concurrently marshall up to as many elements as defined in `parallelism` and emit the first one which is marshalled onto the `HttpResponse`:
+This `unordered` rendering can be enabled via a configuration option as shown below. Effectively, this allows Akka HTTP's marshalling infrastructure to concurrently marshall up to as many elements as defined in `parallelism` and emit the first one which is marshalled onto the `HttpResponse`:
 
 @@snip [JsonStreamingExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala) { #async-unordered-rendering }
 
@@ -90,7 +89,7 @@ the server and is feeding it with one line of measurement data.
 
 In this example, we want to consume this data in a streaming fashion from the request entity and also apply
 back pressure to the underlying TCP connection should the server be unable to cope with the rate of incoming data. Back pressure
-is automatically applied thanks to [Akka's stream library](http://doc.akka.io/docs/akka/current/scala/stream/index.html).
+is automatically applied thanks to @extref[Akka Streams](akka-docs:scala/stream/index.html).
 
 @@snip [JsonStreamingExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala) { #spray-json-request-streaming }
 
