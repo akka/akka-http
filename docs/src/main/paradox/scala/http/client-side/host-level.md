@@ -70,7 +70,7 @@ Flow<Pair<HttpRequest, T>, Pair<Try<HttpResponse>, T>, HostConnectionPool>
 ```
 @@@
 
-This means it consumes tuples of type @scala[`(HttpRequest, T)`]@java[`Pair<HttpRequest, T>`] and produces tuples of type @scala[`(Try[HttpResponse], T)`]@java[`Pair<Try<HttpResponse>, T>`]
+This means it consumes pairs of type @scala[`(HttpRequest, T)`]@java[`Pair<HttpRequest, T>`] and produces pairs of type @scala[`(Try[HttpResponse], T)`]@java[`Pair<Try<HttpResponse>, T>`]
 which might appear more complicated than necessary on first sight.
 The reason why the pool API includes objects of custom type `T` on both ends lies in the fact that the underlying
 transport usually comprises more than a single connection and as such the pool client flow often generates responses in
