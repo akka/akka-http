@@ -1,6 +1,6 @@
 # Low-Level Server-Side API
 
-Apart from the @ref[HTTP Client](client-side/index.md) Akka HTTP also provides an embedded,
+Apart from the @ref[HTTP Client](../client-side/index.md) Akka HTTP also provides an embedded,
 [Reactive-Streams](http://www.reactive-streams.org/)-based, fully asynchronous HTTP/1.1 server implemented on top of @scala[@extref[Streams](akka-docs:scala/stream/index.html)]@java[@extref[Streams](akka-docs:java/stream/index.html)].
 
 It sports the following features:
@@ -29,11 +29,11 @@ Apart from general focus this design keeps the server core small and light-weigh
 maintain.
 
 Depending on your needs you can either use the low-level API directly or rely on the high-level
-@ref[Routing DSL](routing-dsl/index.md) which can make the definition of more complex service logic much
+@ref[Routing DSL](../routing-dsl/index.md) which can make the definition of more complex service logic much
 easier.
 
 @@@ note
-It is recommended to read the @ref[Implications of the streaming nature of Request/Response Entities](implications-of-streaming-http-entity.md) section,
+It is recommended to read the @ref[Implications of the streaming nature of Request/Response Entities](../implications-of-streaming-http-entity.md) section,
 as it explains the underlying full-stack streaming concepts, which may be unexpected when coming
 from a background with non-"streaming first" HTTP Servers.
 @@@
@@ -50,7 +50,7 @@ source and, for each of them, provides a @scala[`Flow[HttpRequest, HttpResponse,
 Apart from regarding a socket bound on the server-side as a @scala[`Source[IncomingConnection]`]@java[`Source<IncomingConnection>`] and each connection as a
 @scala[`Source[HttpRequest]`]@java[`Source<HttpRequest>`] with a @scala[`Sink[HttpResponse]`]@java[`Sink<HttpResponse>`] the stream abstraction is also present inside a single HTTP
 message: The entities of HTTP requests and responses are generally modeled as a @scala[`Source[ByteString]`]@java[`Source<ByteString>`]. See also
-the @ref[HTTP Model](common/http-model.md) for more information on how HTTP messages are represented in Akka HTTP.
+the @ref[HTTP Model](../common/http-model.md) for more information on how HTTP messages are represented in Akka HTTP.
 
 ## Starting and Stopping
 
@@ -58,10 +58,10 @@ On the most basic level an Akka HTTP server is bound by invoking the `bind` meth
 extension:
 
 Scala
-:   @@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #binding-example }
+:   @@snip [HttpServerExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #binding-example }
 
 Java
-:   @@snip [HttpServerExampleDocTest.java](../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #binding-example }
+:   @@snip [HttpServerExampleDocTest.java](../../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #binding-example }
 
 Arguments to the `Http().bind` method specify the interface and port to bind to and register interest in handling
 incoming HTTP connections. Additionally, the method also allows for the definition of socket options as well as a larger
@@ -78,6 +78,7 @@ connection source has cancelled its subscription. Alternatively one can use the 
 The `Http.ServerBinding` also provides a way to get a hold of the actual local address of the bound socket, which is
 useful for example when binding to port zero (and thus letting the OS pick an available port).
 
+<a id="http-low-level-server-side-example"></a>
 ## Request-Response Cycle
 
 When a new connection has been accepted it will be published as an `Http.IncomingConnection` which consists
@@ -94,30 +95,30 @@ Requests are handled by calling one of the `handleWithXXX` methods with a handle
 Here is a complete example:
 
 Scala
-:   @@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #full-server-example }
+:   @@snip [HttpServerExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #full-server-example }
 
 Java
-:   @@snip [HttpServerExampleDocTest.java](../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #full-server-example }
+:   @@snip [HttpServerExampleDocTest.java](../../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #full-server-example }
 
 In this example, a request is handled by transforming the request stream with a function @scala[`HttpRequest => HttpResponse`]@java[`Function<HttpRequest, HttpResponse>`]
 using `handleWithSyncHandler` (or equivalently, Akka Stream's `map` operator). Depending on the use case many
 other ways of providing a request handler are conceivable using Akka Stream's combinators.
-
+ng
 If the application provides a `Flow` it is also the responsibility of the application to generate exactly one response
 for every request and that the ordering of responses matches the ordering of the associated requests (which is relevant
 if HTTP pipelining is enabled where processing of multiple incoming requests may overlap). When relying on
 `handleWithSyncHandler` or `handleWithAsyncHandler`, or the `map` or `mapAsync` stream operators, this
 requirement will be automatically fulfilled.
 
-See @scala[@ref[Routing DSL Overview](routing-dsl/overview.md#http-routing)]@java[@ref[Routing DSL Overview](routing-dsl/overview.md#http-routing-java)] for a more convenient high-level DSL to create request handlers.
+See @ref[Routing DSL Overview](../routing-dsl/overview.md#http-routing) for a more convenient high-level DSL to create request handlers.
 
 ### Streaming Request/Response Entities
 
 Streaming of HTTP message entities is supported through subclasses of `HttpEntity`. The application needs to be able
 to deal with streamed entities when receiving a request as well as, in many cases, when constructing responses.
-See @scala[@ref[HttpEntity](common/http-model.md#httpentity-scala)]@java[@ref[HttpEntity](common/http-model.md#httpentity-java)] for a description of the alternatives.
+See @ref[HttpEntity](../common/http-model.md#httpentity) for a description of the alternatives.
 
-If you rely on the @ref[Marshalling](common/marshalling.md) and/or @ref[Unmarshalling](common/unmarshalling.md) facilities provided by
+If you rely on the @ref[Marshalling](../common/marshalling.md) and/or @ref[Unmarshalling](../common/unmarshalling.md) facilities provided by
 Akka HTTP then the conversion of custom types to and from streamed entities can be quite convenient.
 
 <a id="http-closing-connection-low-level"></a>
@@ -128,13 +129,13 @@ connection. An often times more convenient alternative is to explicitly add a `C
 `HttpResponse`. This response will then be the last one on the connection and the server will actively close the
 connection when it has been sent out.
 
-Connection will also be closed if request entity has been cancelled (e.g. by attaching it to @scala[`Sink.cancelled`]@java[`Sink.cancelled()`])
+Connection will also be closed if request entity has been cancelled (e.g. by attaching it to `Sink.cancelled()`
 or consumed only partially (e.g. by using `take` combinator). In order to prevent this behaviour entity should be
-explicitly drained by attaching it to @scala[`Sink.ignore`]@java[`Sink.ignore()`].
+explicitly drained by attaching it to `Sink.ignore()`.
 
 ## Configuring Server-side HTTPS
 
-For detailed documentation about configuring and using HTTPS on the server-side refer to @ref[Server-Side HTTPS Support](server-side-https-support.md).
+For detailed documentation about configuring and using HTTPS on the server-side refer to @ref[Server-Side HTTPS Support](../server-side-https-support.md).
 
 <a id="http-server-layer"></a>
 ## Stand-Alone HTTP Layer Usage
@@ -148,7 +149,7 @@ some other source. Potential scenarios where this might be useful include tests,
 @@@ div { .group-scala }
 On the server-side the stand-alone HTTP layer forms a `BidiFlow` that is defined like this:
 
-@@snip [Http.scala](../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala) { #server-layer }
+@@snip [Http.scala](../../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala) { #server-layer }
 
 You create an instance of `Http.ServerLayer` by calling one of the two overloads of the `Http().serverLayer` method,
 which also allows for varying degrees of configuration.
@@ -211,10 +212,10 @@ is already taken by another application, or if the port is privileged (i.e. only
 In this case the "binding future" will fail immediately, and we can react to if by listening on the @scala[Future's]@java[CompletionStage’s] completion:
 
 Scala
-:   @@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #binding-failure-handling }
+:   @@snip [HttpServerExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #binding-failure-handling }
 
 Java
-:   @@snip [HttpServerExampleDocTest.java](../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #binding-failure-handling }
+:   @@snip [HttpServerExampleDocTest.java](../../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #binding-failure-handling }
 
 Once the server has successfully bound to a port, the @scala[`Source[IncomingConnection, _]`]@java[`Source<IncomingConnection, ?>`] starts running and emitting
 new incoming connections. This source technically can signal a failure as well, however this should only happen in very
@@ -229,10 +230,10 @@ stream's failure. We signal a `failureMonitor` actor with the cause why the stre
 handle the rest – maybe it'll decide to restart the server or shutdown the ActorSystem, that however is not our concern anymore.
 
 Scala
-:   @@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #incoming-connections-source-failure-handling }
+:   @@snip [HttpServerExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #incoming-connections-source-failure-handling }
 
 Java
-:   @@snip [HttpServerExampleDocTest.java](../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #incoming-connections-source-failure-handling }
+:   @@snip [HttpServerExampleDocTest.java](../../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #incoming-connections-source-failure-handling }
 
 #### Connection failures
 
@@ -241,15 +242,15 @@ however afterwards is terminated abruptly – for example by the client aborting
 To handle this failure we can use the same pattern as in the previous snippet, however apply it to the connection's Flow:
 
 Scala
-:   @@snip [HttpServerExampleSpec.scala](../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #connection-stream-failure-handling }
+:   @@snip [HttpServerExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #connection-stream-failure-handling }
 
 Java
-:   @@snip [HttpServerExampleDocTest.java](../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #connection-stream-failure-handling }
+:   @@snip [HttpServerExampleDocTest.java](../../../../../test/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #connection-stream-failure-handling }
 
 These failures can be described more or less infrastructure related, they are failing bindings or connections.
 Most of the time you won't need to dive into those very deeply, as Akka will simply log errors of this kind
 anyway, which is a reasonable default for such problems.
 
 In order to learn more about handling exceptions in the actual routing layer, which is where your application code
-comes into the picture, refer to @ref[Exception Handling](routing-dsl/exception-handling.md) which focuses explicitly on explaining how exceptions
+comes into the picture, refer to @ref[Exception Handling](../routing-dsl/exception-handling.md) which focuses explicitly on explaining how exceptions
 thrown in routes can be handled and transformed into `HttpResponse` s with appropriate error codes and human-readable failure descriptions.

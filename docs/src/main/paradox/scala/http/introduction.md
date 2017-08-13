@@ -153,10 +153,7 @@ Scala
 Java
 :   @@snip [HttpServerActorInteractionExample.java](../../../../test/java/docs/http/javadsl/HttpServerActorInteractionExample.java) { #actor-interaction }
 
-@@@ div { .group-scala }
-Again the logic for the marshalling and unmarshalling JSON in this example is provided by the "spray-json" library
-(details on how to use that here: @ref[JSON Support](common/json-support.md))
-@@@
+More details on how JSON marshalling and unmarshalling works can be found in the @ref[JSON Support section](common/json-support.md). 
 
 Read more about the details of the high level APIs in the section @ref[High-level Server-Side API](routing-dsl/index.md).
 
@@ -172,7 +169,7 @@ Scala
 Java
 :   @@snip [HttpServerLowLevelExample.java](../../../../test/java/docs/http/javadsl/HttpServerLowLevelExample.java) { #low-level-server-example }
 
-Read more details about the low level APIs in the section @scala[@ref[Low-Level Server-Side API](low-level-server-side-api.md)]@java[@ref[Low-Level Server-Side API](low-level-server-side-api.md#http-low-level-server-side-api-java)].
+Read more details about the low level APIs in the section @ref[Low-Level Server-Side API](server-side/low-level-server-side-api.md).
 
 ## HTTP client API
 
@@ -201,7 +198,7 @@ with Akka HTTP. Details can be found in the section @ref[High-level Server-Side 
 
 akka-http-core
 : A complete, mostly low-level, server- and client-side implementation of HTTP (incl. WebSockets)
-Details can be found in sections @scala[@ref[Low-Level Server-Side API](low-level-server-side-api.md)]@java[@ref[Low-Level Server-Side API](low-level-server-side-api.md#http-low-level-server-side-api-java)] and @ref[Consuming HTTP-based Services (Client-Side)](client-side/index.md)
+Details can be found in sections @ref[Low-Level Server-Side API](server-side/low-level-server-side-api.md) and @ref[Consuming HTTP-based Services (Client-Side)](client-side/index.md)
 
 akka-http-testkit
 : A test harness and set of utilities for verifying server-side service implementations
