@@ -66,7 +66,7 @@ To learn more about how spray-json works please refer to its [documentation][spr
 <a id="json-jackson-support-java"></a>
 ## Jackson Support
 
-To make use of the support module for (un)marshalling from and to JSON with Jackson, add a library dependency onto:
+To make use of the support module for (un)marshalling from and to JSON with [Jackson], add a library dependency onto:
 
 sbt
 :   @@@vars
@@ -96,10 +96,14 @@ Maven
 Use `akka.http.javadsl.marshallers.jackson.Jackson.unmarshaller(T.class)` to create an `Unmarshaller<HttpEntity,T>` which expects the request
 body (HttpEntity) to be of type `application/json` and converts it to `T` using Jackson.
 
-See @github[this example](/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/petstore/PetStoreExample.java) in the sources for an example.
+@@snip [PetStoreExample.java](../../../../../../../akka-http-tests/src/main/java/akka/http/javadsl/server/examples/petstore/PetStoreExample.java) { #imports #unmarshall }
 
 Use `akka.http.javadsl.marshallers.jackson.Jackson.marshaller(T.class)` to create a `Marshaller<T,RequestEntity>` which can be used with
 `RequestContext.complete` or `RouteDirectives.complete` to convert a POJO to an HttpResponse.
+
+@@snip [PetStoreExample.java](../../../../../../../akka-http-tests/src/main/java/akka/http/javadsl/server/examples/petstore/PetStoreExample.java) { #imports #marshall }
+
+Refer to @github[this file](/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/petstore/PetStoreExample.java) in the sources for the complete example.
 
 @@@
 
