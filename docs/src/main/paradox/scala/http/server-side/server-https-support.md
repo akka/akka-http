@@ -105,7 +105,7 @@ or via [SSL-Config](#ssl-config) (not explained here though).
 
 Then, call `bind...` methods twice like below.
 @scala[The passed `https` context is from the above code snippet.]
-@java[The blow `SimpleServerApp.useHttps(system)` is calling the above defined HTTP `public static HttpsConnectionContext useHttps(ActorSystem system)` method.]
+@java[`SimpleServerApp.useHttps(system)` is calling the above defined `public static HttpsConnectionContext useHttps(ActorSystem system)` method.]
 
 Scala
 :  @@snip [HttpsServerExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #both-https-and-http }
