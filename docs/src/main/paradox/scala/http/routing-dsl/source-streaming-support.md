@@ -75,11 +75,11 @@ The above shown mode preserves ordering of the Source's elements, which may some
 for example when streaming a strictly ordered dataset. Sometimes the concept of strict order does not apply to the
 data being streamed, though, which allows us to exploit this property and use an `unordered` rendering.
 
-This `unordered` rendering can be enabled via a configuration option as shown below. Effectively, this allows Akka HTTP's marshalling infrastructure to concurrently marshall up to as many elements as defined in `parallelism` and emit the first one which is marshalled onto the `HttpResponse`:
+This `unordered` rendering can be enabled via a configuration option as shown below. Effectively, this allows Akka HTTP's marshalling infrastructure to concurrently marshall up to as many elements as defined in `parallelism` and emit the first one which is marshalled into the `HttpResponse`:
 
 @@snip [JsonStreamingExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala) { #async-unordered-rendering }
 
-This allows us to _potentially_ render elements faster onto the HttpResponse, since it can avoid "head of line blocking",
+This allows us to _potentially_ render elements faster into the HttpResponse, since it can avoid "head of line blocking",
 in case one element in front of the stream takes a long time to marshall, yet others after it are very quick to marshall.
 
 ## Consuming JSON Streaming uploads
