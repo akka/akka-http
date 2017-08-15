@@ -42,9 +42,11 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
       val myPort = binding.localAddress.getPort
 
-      val (response, sink) = Http().singleWebSocketRequest(
+      val flow = Flow.fromSinkAndSourceMat(TestSink.probe[Message], Source.maybe[Message])(Keep.both)
+
+      val (response, (sink, promise)) = Http().singleWebSocketRequest(
         WebSocketRequest("ws://127.0.0.1:" + myPort),
-        Flow.fromSinkAndSourceMat(TestSink.probe[Message], Source.empty)(Keep.left))
+        flow)
 
       response.futureValue.response.status.isSuccess should ===(true)
       sink
@@ -58,10 +60,11 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
         .expectNext(TextMessage("hello"))
         .expectComplete()
 
+      promise.success(None)
       binding.unbind()
     }
 
-    "not reset the connection when no data are flowing and the connection is closed from the client" in Utils.assertAllStagesStopped {
+    "not reset the connection when no data are flowing and close connection when the connection is closed from the client" in Utils.assertAllStagesStopped {
       val source = TestPublisher.probe[Message]()
       val bindingFuture = Http().bindAndHandleSync({
         case HttpRequest(_, _, headers, _, _) ⇒
@@ -71,53 +74,26 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
       val myPort = binding.localAddress.getPort
 
-      val completeOnlySwitch: Flow[ByteString, ByteString, Promise[Done]] = Flow.fromGraph(
-        new GraphStageWithMaterializedValue[FlowShape[ByteString, ByteString], Promise[Done]] {
-          override val shape: FlowShape[ByteString, ByteString] =
-            FlowShape(Inlet("completeOnlySwitch.in"), Outlet("completeOnlySwitch.out"))
+      val flow = Flow.fromSinkAndSourceMat(TestSink.probe[Message], Source.maybe[Message])(Keep.both)
 
-          override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Promise[Done]) = {
-            val promise = Promise[Done]
-
-            val logic = new GraphStageLogic(shape) with InHandler with OutHandler {
-              override def onPush(): Unit = push(shape.out, grab(shape.in))
-              override def onPull(): Unit = pull(shape.in)
-
-              override def preStart(): Unit = {
-                promise.future.foreach(_ ⇒ getAsyncCallback[Done](_ ⇒ complete(shape.out)).invoke(Done))(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
-              }
-
-              setHandlers(shape.in, shape.out, this)
-            }
-
-            (logic, promise)
-          }
-        })
-
-      val ((response, breaker), sink) =
-        Source.empty
-          .viaMat {
-            Http().webSocketClientLayer(WebSocketRequest("ws://localhost:" + myPort))
-              .atop(TLSPlacebo())
-              .joinMat(completeOnlySwitch.via(
-                Tcp().outgoingConnection(new InetSocketAddress("localhost", myPort), halfClose = true)))(Keep.both)
-          }(Keep.right)
-          .toMat(TestSink.probe[Message])(Keep.both)
-          .run()
+      val (response, (sink, promise)) = Http().singleWebSocketRequest(
+        WebSocketRequest("ws://localhost:" + myPort),
+        flow)
 
       response.futureValue.response.status.isSuccess should ===(true)
       sink
         .request(10)
         .expectNoMsg(1500.millis)
 
-      breaker.trySuccess(Done)
+      promise.success(None)
+      Thread.sleep(1000)
 
       source
         .sendNext(TextMessage("hello"))
-        .sendComplete()
+
       sink
-        .expectNext(TextMessage("hello"))
         .expectComplete()
+        .expectNoMsg(1500.millis)
 
       binding.unbind()
     }
@@ -135,11 +111,16 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
       val N = 100
 
       EventFilter.warning(pattern = "HTTP header .* is not allowed in responses", occurrences = 0) intercept {
-        val (response, count) = Http().singleWebSocketRequest(
+        val (response, (count, (sourceQueue, killSwitch))) = Http().singleWebSocketRequest(
           WebSocketRequest("ws://127.0.0.1:" + myPort),
           Flow.fromSinkAndSourceMat(
             Sink.fold(0)((n, _: Message) ⇒ n + 1),
-            Source.repeat(TextMessage("hello")).take(N))(Keep.left))
+            Source.queue[Message](100, OverflowStrategy.dropHead).viaMat(KillSwitches.single)(Keep.both)
+          )(Keep.both))
+
+        (1 to N).foreach(_ ⇒ sourceQueue.offer(TextMessage("tick")))
+        Thread.sleep(1000)
+        killSwitch.shutdown()
         count.futureValue should ===(N)
       }
 

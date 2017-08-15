@@ -17,8 +17,8 @@ import akka.event.NoLogging
 import akka.http.javadsl.model._
 import akka.http.javadsl.ServerBinding
 import akka.japi.Function
-import akka.stream.ActorMaterializer
-import akka.stream.javadsl.{ Flow, Keep, Sink, Source }
+import akka.stream.{ ActorMaterializer, OverflowStrategy, KillSwitches, UniqueKillSwitch }
+import akka.stream.javadsl.{ Flow, Keep, Sink, Source, SourceQueueWithComplete }
 import akka.stream.testkit.TestSubscriber
 import akka.testkit.{ SocketUtil, TestKit }
 import com.typesafe.config.ConfigFactory
@@ -362,26 +362,52 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
     "interact with a websocket through a flow (with with one parameter)" in {
       val (host, port, binding) = runWebsocketServer()
       val flow = http.webSocketClientFlow(WebSocketRequest.create(s"ws://$host:$port"))
-      val pair = Source.single(TextMessage.create("hello"))
-        .viaMat(flow, Keep.right[NotUsed, CompletionStage[WebSocketUpgradeResponse]])
-        .toMat(Sink.head[Message](), Keep.both[CompletionStage[WebSocketUpgradeResponse], CompletionStage[Message]])
-        .run(materializer)
 
-      waitFor(pair.first).response.status() should be(StatusCodes.SWITCHING_PROTOCOLS)
-      waitFor(pair.second).asTextMessage.getStrictText should be("hello")
+      // Using queue with KillSwitches is because client need to wait to send close connection for server sending back text.
+      val source: Source[Message, Pair[SourceQueueWithComplete[Message], UniqueKillSwitch]] =
+        Source.queue[Message](100, OverflowStrategy.dropHead)
+          .viaMat(KillSwitches.single, Keep.both[SourceQueueWithComplete[Message], UniqueKillSwitch])
+
+      val pair =
+        source
+          .viaMat(flow, Keep.both[Pair[SourceQueueWithComplete[Message], UniqueKillSwitch], CompletionStage[WebSocketUpgradeResponse]])
+          .toMat(Sink.head[Message](), Keep.both[Pair[Pair[SourceQueueWithComplete[Message], UniqueKillSwitch], CompletionStage[WebSocketUpgradeResponse]], CompletionStage[Message]])
+          .run(materializer)
+
+      val sourceQueue = pair.first.first.first
+      val killSwitch = pair.first.first.second
+      val response = pair.first.second
+      val message = pair.second
+      sourceQueue.offer(TextMessage.create("hello"))
+      waitFor(response).response.status() should be(StatusCodes.SWITCHING_PROTOCOLS)
+      waitFor(message).asTextMessage.getStrictText should be("hello")
+      killSwitch.shutdown()
       waitFor(binding.unbind())
     }
 
     "interact with a websocket through a flow (with five parameters)" in {
       val (host, port, binding) = runWebsocketServer()
       val flow = http.webSocketClientFlow(WebSocketRequest.create(s"ws://$host:$port"), connectionContext, Optional.empty(), ClientConnectionSettings.create(system), loggingAdapter)
-      val pair = Source.single(TextMessage.create("hello"))
-        .viaMat(flow, Keep.right[NotUsed, CompletionStage[WebSocketUpgradeResponse]])
-        .toMat(Sink.head[Message](), Keep.both[CompletionStage[WebSocketUpgradeResponse], CompletionStage[Message]])
-        .run(materializer)
 
-      waitFor(pair.first).response.status() should be(StatusCodes.SWITCHING_PROTOCOLS)
-      waitFor(pair.second).asTextMessage.getStrictText should be("hello")
+      // Using queue with KillSwitches is because client need to wait to send close connection for server sending back text.
+      val source: Source[Message, Pair[SourceQueueWithComplete[Message], UniqueKillSwitch]] =
+        Source.queue[Message](100, OverflowStrategy.dropHead)
+          .viaMat(KillSwitches.single, Keep.both[SourceQueueWithComplete[Message], UniqueKillSwitch])
+
+      val pair =
+        source
+          .viaMat(flow, Keep.both[Pair[SourceQueueWithComplete[Message], UniqueKillSwitch], CompletionStage[WebSocketUpgradeResponse]])
+          .toMat(Sink.head[Message](), Keep.both[Pair[Pair[SourceQueueWithComplete[Message], UniqueKillSwitch], CompletionStage[WebSocketUpgradeResponse]], CompletionStage[Message]])
+          .run(materializer)
+
+      val sourceQueue = pair.first.first.first
+      val killSwitch = pair.first.first.second
+      val response = pair.first.second
+      val message = pair.second
+      sourceQueue.offer(TextMessage.create("hello"))
+      waitFor(response).response.status() should be(StatusCodes.SWITCHING_PROTOCOLS)
+      waitFor(message).asTextMessage.getStrictText should be("hello")
+      killSwitch.shutdown()
       waitFor(binding.unbind())
     }
 
