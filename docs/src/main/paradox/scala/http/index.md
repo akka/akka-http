@@ -1,6 +1,6 @@
 # Akka HTTP
 
-Akka HTTP API - @scaladoc:[ScalaDoc](akka.http.scaladsl.index)
+Akka HTTP API - @scala[@scaladoc:[ScalaDoc](akka.http.scaladsl.index)]@java[@javadoc:[Javadoc](akka.http.javadsl.package-summary)]
 
 @@toc { depth=2 }
 
@@ -14,13 +14,13 @@ Akka HTTP API - @scaladoc:[ScalaDoc](akka.http.scaladsl.index)
 * [implications-of-streaming-http-entity](implications-of-streaming-http-entity.md)
 * [server-side/low-level-api](server-side/low-level-api.md)
 * [routing-dsl/index](routing-dsl/index.md)
-* [websocket-support](websocket-support.md)
+* [server-side/websocket-support](server-side/websocket-support.md)
 * [server-side/server-https-support](server-side/server-https-support.md)
 * [server-side/http2](server-side/http2.md)
 * [sse-support](sse-support.md)
 * [client-side/index](client-side/index.md)
 * [handling-blocking-operations-in-akka-http-routes](handling-blocking-operations-in-akka-http-routes.md)
-* [migration-guides-scala](migration-guide/index.md)
+* [migration-guides](migration-guide/index.md)
 * [Compatibility Guidelines](compatibility-guidelines.md)
 * [Release Notes](release-notes.md)
 
