@@ -976,6 +976,33 @@ final case class `X-Forwarded-For`(addresses: immutable.Seq[RemoteAddress]) exte
   def getAddresses: Iterable[jm.RemoteAddress] = addresses.asJava
 }
 
+object `X-Forwarded-Host` extends ModeledCompanion[`X-Forwarded-Host`] {
+  implicit val addressRenderer = {
+    implicit val singleAddressRenderer = RemoteAddress.renderWithoutPort
+    Renderer.defaultSeqRenderer[RemoteAddress] // cache
+  }
+}
+final case class `X-Forwarded-Host`(address: RemoteAddress) extends jm.headers.XForwardedHost
+  with RequestHeader {
+  import `X-Forwarded-Host`.addressRenderer
+  def renderValue[R <: Rendering](r: R): r.type = r ~~ address
+  protected def companion = `X-Forwarded-Host`
+
+  /** Java API */
+  def getAddress: jm.RemoteAddress = address.asJava
+}
+
+object `X-Forwarded-Proto` extends ModeledCompanion[`X-Forwarded-Proto`]
+final case class `X-Forwarded-Proto`(protocol: String) extends jm.headers.XForwardedProto
+  with RequestHeader {
+  require(protocol.nonEmpty, "protocol must not be empty")
+  def renderValue[R <: Rendering](r: R): r.type = r ~~ protocol
+  protected def companion = `X-Forwarded-Proto`
+
+  /** Java API */
+  def getProtocol: String = protocol
+}
+
 object `X-Real-Ip` extends ModeledCompanion[`X-Real-Ip`] {
   implicit val addressRenderer = RemoteAddress.renderWithoutPort // cache
 }
