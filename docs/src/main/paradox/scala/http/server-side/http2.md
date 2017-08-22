@@ -46,7 +46,7 @@ akka.http.server.preview.enable-http2 = on
 
 ## Use `bindAndHandleAsync` and HTTPS
 
-Only secure HTTP/2 (also known as "over HTTPS" or "with TLS") connections are supported as this is the prime mode of operation for this protocol. While un-encrypted connections are allowed by HTTP/2, clients that support this are rare. See the @ref[HTTPS section](../server-side-https-support.md) for how to set up HTTPS.
+Only secure HTTP/2 (also known as "over HTTPS" or "with TLS") connections are supported as this is the prime mode of operation for this protocol. While un-encrypted connections are allowed by HTTP/2, clients that support this are rare. See the @ref[HTTPS section](server-https-support.md) for how to set up HTTPS.
 
 You can use @scala[@scaladoc[Http().bindAndHandleAsync](akka.http.scaladsl.HttpExt)]@java[@javadoc[Http().get(system).bindAndHandleAsync()](akka.http.javadsl.HttpExt)] as long as you followed the above steps:
 
