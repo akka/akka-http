@@ -42,7 +42,7 @@ will handle *all* rejections that reach it.
 
 ## Rejection Cancellation
 
-As you can see from its definition above the `RejectionHandler` doesn't handle single rejections but a whole list of
+As mentioned above, the `RejectionHandler` doesn't handle single rejections but a whole list of
 them. This is because some route structure produce several "reasons" why a request could not be handled.
 
 Take this route structure for example:
