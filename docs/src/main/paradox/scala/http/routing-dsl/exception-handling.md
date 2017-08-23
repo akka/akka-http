@@ -63,9 +63,9 @@ normally contain enough information to provide a useful error message.
 
 @@@ note
 
-Users are strongly encouraged not to rely on using the `ExceptionHandler` as a means of handling errors. By errors, we mean things that are an expected part of normal operations: for example, issues discovered during input validation. The `ExceptionHandler` is meant to be a means of handling failures. See [Failure vs Error](http://www.reactivemanifesto.org/glossary#Failure) in the glossary of the [Reactive Manifesto](http://www.reactivemanifesto.org).
+Users are strongly encouraged not to rely on using the `ExceptionHandler` as a means of handling errors. By errors, we mean things that are an expected part of normal operations: for example, issues discovered during input validation. The `ExceptionHandler` is meant to be a means of handling failures. See [Failure vs Error](https://www.reactivemanifesto.org/glossary#Failure) in the glossary of the [Reactive Manifesto](https://www.reactivemanifesto.org).
 
-Distinguishing between errors and failures (thrown `Exceptions` handled via the `ExceptionHandler`) provides a much better mental model but also leads to performance improvements.
+Distinguishing between errors and failures (i.e. thrown `Exceptions` handled via the `ExceptionHandler`) provides a much better mental model but also leads to performance improvements.
 
 This is because exceptions are known to have a negative performance impact for cases
 when the depth of the call stack is significant (stack trace construction cost)
