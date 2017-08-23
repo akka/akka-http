@@ -13,6 +13,9 @@ To handle the `Failure` case automatically and only work with the result value, 
 
 To complete with a successful result automatically and just handle the failure result, use @ref[completeOrRecoverWith](completeOrRecoverWith.md), instead.
 
+@@@ note
+Using this directive means that you'll have to explicitly and manually handle failure cases. Most of the time, this will result in a lot of boilerplate code. Use the @ref[Exception Handling](../../exception-handling.md) mechanism, instead. @@@
+
 ## Example
 
 @@snip [FutureDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala) { #onComplete }
