@@ -86,7 +86,7 @@ $ curl -k -v https://localhost:8443
 (...)
 ```
 
-If your curl output looks like above, you have successfully configured HTTP/2. However, on JDK's up to version 9, it is likely to look like this instead:
+If your curl output looks like above, you have successfully configured HTTP/2. However, on JDKs up to version 9, it is likely to look like this instead:
 
 ```
 $ curl -k -v https://localhost:8443
