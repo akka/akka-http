@@ -63,7 +63,7 @@ normally contain enough information to provide a useful error message.
 
 @@@ note
 
-Users are strongly encouraged not to rely on using the `ExceptionHandler` as a means of handling errors. By errors, we mean things that are an expected part of normal operations:  for example, issues discovered during input validation. The `ExceptionHandler` is meant to be a means for handling failures. See [Failure vs Error](http://www.reactivemanifesto.org/glossary#Failure) in the glossary of the [Reactive Manifesto](http://www.reactivemanifesto.org).
+Users are strongly encouraged not to rely on using the `ExceptionHandler` as a means of handling errors. By errors, we mean things that are an expected part of normal operations: for example, issues discovered during input validation. The `ExceptionHandler` is meant to be a means for handling failures. See [Failure vs Error](http://www.reactivemanifesto.org/glossary#Failure) in the glossary of the [Reactive Manifesto](http://www.reactivemanifesto.org).
 
 Distinguishing between errors and failures (thrown `Exceptions` handled via the `ExceptionHandler`) provides a much better mental model but also leads to performance improvements.
 
