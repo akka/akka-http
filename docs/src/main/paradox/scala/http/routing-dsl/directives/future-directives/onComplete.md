@@ -13,14 +13,14 @@ To handle the `Failure` case automatically and only work with the result value, 
 
 To complete with a successful result automatically and just handle the failure result, use @ref[completeOrRecoverWith](completeOrRecoverWith.md), instead.
 
+## Example
+
+@@snip [FutureDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala) { #onComplete }
+
 @@@ note
-Using this directive means that you'll have to explicitly and manually handle failure cases. Doing this for every route in your app will result in a lot of boilerplate code. Most of the time you want to use the @ref[Exception Handling](../../exception-handling.md) mechanism instead.
+Using the `onComplete` directive means that you'll have to explicitly and manually handle failure cases. Doing this for every route in your app will result in a lot of boilerplate code. Most of the time you want to use the @ref[Exception Handling](../../exception-handling.md) mechanism instead.
 @@@
 
 @@@ note
 The similarly named `onComplete` method of Scala's `Future` does not work at all in this context since it's just a method that returns `Unit` whereas Akka HTTP expects a `directive`. 
 @@@
-
-## Example
-
-@@snip [FutureDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala) { #onComplete }
