@@ -7,7 +7,11 @@ XML or even binary encodings.
 @@@ div { .group-java }
 
 Akka HTTP does not currently provide a Java API for XML support. If you need to
-handle XML, one possible option is to use [Jackson]. Take a look at the
+handle XML, one possible option is to use [Jackson].
+
+@@ snip [#jackson-xml-support] (../../../../../test/java/docs/http/javadsl/JacksonXmlSupport.java) { #jackson-xml-support }
+
+Also, take a look at the
 @ref[Jackson JSON Support](json-support.md#json-jackson-support-java) for how it
 integrates with Jackson.
 
