@@ -12,12 +12,10 @@ The basic unit of data exchange in the WebSocket protocol is a message. A messag
 i.e. a sequence of octets or a text message, i.e. a sequence of Unicode code points.
 
 In the data model the two kinds of messages, binary and text messages, are represented by the two classes
-`BinaryMessage` and `TextMessage` deriving from a common superclass `Message`. The superclass `Message`
-contains `isText` and `isBinary` methods to distinguish a message and `asBinaryMessage` and `asTextMessage`
-methods to cast a message.
-
-The subclasses `BinaryMessage` and `TextMessage` contain methods to access the data. Take the API of
-`TextMessage` as an example (`BinaryMessage` is very similar with `String` replaced by `ByteString`):
+`BinaryMessage` and `TextMessage` deriving from a common superclass `Message`.
+@scala[The subclasses `BinaryMessage` and `TextMessage` contain methods to access the data.]
+@java[The superclass `Message` contains `isText` and `isBinary` methods to distinguish a message and `asBinaryMessage` and `asTextMessage` methods to cast a message.]
+Take the API of `TextMessage` as an example (`BinaryMessage` is very similar with `String` replaced by `ByteString`):
 
 Scala
 :  @@snip [Message.scala](../../../../../../../akka-http-core/src/main/scala/akka/http/scaladsl/model/ws/Message.scala) { #message-model }
@@ -93,7 +91,7 @@ Java
 @@@ div { .group-scala }
 It uses pattern matching on the path and then inspects the request to query for the `UpgradeToWebSocket` header. If
 such a header is found, it is used to generate a response by passing a handler for WebSocket messages to the
-`handleMessages` method. If no such header is found a "400 Bad Request" response is generated.
+`handleMessages` method. If no such header is found a `400 Bad Request` response is generated.
 @@@
 
 @@@ div { .group-java }
@@ -103,7 +101,7 @@ that will install the passed WebSocket handler if the header is found. If the re
 return a `400 Bad Request` error response.
 @@@
 
-In the example, the passed handler expects text messages where each message is expected to contain (a person's) name
+In the example, the passed handler expects text messages where each message is expected to contain a (person's) name
 and then responds with another text message that contains a greeting:
 
 Scala
