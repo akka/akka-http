@@ -13,4 +13,4 @@ Otherwise, rejects the request with a `ValidationRejection` containing the given
 
 ## Example
 
-@@snip [MiscDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala) { #validate-example }
+@@snip [MiscDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala) { #validate-example }

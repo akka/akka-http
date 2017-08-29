@@ -15,4 +15,4 @@ To handle the `Failure` case manually as well, use @ref[onComplete](onComplete.m
 
 ## Example
 
-@@snip [FutureDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala) { #onSuccess }
+@@snip [FutureDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala) { #onSuccess }

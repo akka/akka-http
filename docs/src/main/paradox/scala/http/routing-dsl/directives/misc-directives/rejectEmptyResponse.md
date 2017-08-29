@@ -14,4 +14,4 @@ usually marshalled to an empty but successful result. In many cases `None` shoul
 
 ## Example
 
-@@snip [MiscDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala) { #rejectEmptyResponse-example }
+@@snip [MiscDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala) { #rejectEmptyResponse-example }

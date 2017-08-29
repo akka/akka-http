@@ -13,4 +13,4 @@ The directive returns a `RequestEntity` without unmarshalling the request. To ex
 
 ## Example
 
-@@snip [BasicDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #extractRequestEntity-example }
+@@snip [BasicDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #extractRequestEntity-example }

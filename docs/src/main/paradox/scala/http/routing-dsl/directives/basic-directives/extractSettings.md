@@ -13,4 +13,4 @@ It is possible to override the settings for specific sub-routes by using the @re
 
 ## Example
 
-@@snip [BasicDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #extractSettings-examples }
+@@snip [BasicDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #extractSettings-examples }

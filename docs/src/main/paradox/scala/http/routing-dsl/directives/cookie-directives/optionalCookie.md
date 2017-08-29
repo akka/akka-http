@@ -12,4 +12,4 @@ Use the @ref[cookie](cookie.md) directive instead if the inner route does not ha
 
 ## Example
 
-@@snip [CookieDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/CookieDirectivesExamplesSpec.scala) { #optionalCookie }
+@@snip [CookieDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CookieDirectivesExamplesSpec.scala) { #optionalCookie }

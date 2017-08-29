@@ -15,4 +15,4 @@ To complete with a successful result automatically and just handle the failure r
 
 ## Example
 
-@@snip [FutureDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala) { #onComplete }
+@@snip [FutureDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala) { #onComplete }

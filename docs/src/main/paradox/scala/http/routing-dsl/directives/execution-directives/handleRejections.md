@@ -13,4 +13,4 @@ See @ref[Rejections](../../rejections.md) for general information about options 
 
 ## Example
 
-@@snip [ExecutionDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/ExecutionDirectivesExamplesSpec.scala) { #handleRejections }
+@@snip [ExecutionDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/ExecutionDirectivesExamplesSpec.scala) { #handleRejections }

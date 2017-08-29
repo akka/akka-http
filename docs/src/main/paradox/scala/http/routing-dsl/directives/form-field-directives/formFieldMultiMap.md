@@ -22,4 +22,4 @@ See @ref[formFieldSeq](formFieldSeq.md) for details.
 
 ## Example
 
-@@snip [FormFieldDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala) { #formFieldMultiMap }
+@@snip [FormFieldDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala) { #formFieldMultiMap }

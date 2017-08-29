@@ -33,4 +33,4 @@ and (`/whatever`) will fail. The @ref[pathPrefix](pathPrefix.md) provides more l
 
 ## Example
 
-@@snip [PathDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #path-example }
+@@snip [PathDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #path-example }

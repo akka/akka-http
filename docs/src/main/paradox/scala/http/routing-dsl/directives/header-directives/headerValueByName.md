@@ -16,4 +16,4 @@ handling when the header is missing use the @ref[optionalHeaderValueByName](opti
 
 ## Example
 
-@@snip [HeaderDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala) { #headerValueByName-0 }
+@@snip [HeaderDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/HeaderDirectivesExamplesSpec.scala) { #headerValueByName-0 }

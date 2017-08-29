@@ -21,4 +21,4 @@ This directive is useful for:
 
 ## Example
 
-@@snip [MethodDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/MethodDirectivesExamplesSpec.scala) { #overrideMethodWithParameter-0 }
+@@snip [MethodDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MethodDirectivesExamplesSpec.scala) { #overrideMethodWithParameter-0 }

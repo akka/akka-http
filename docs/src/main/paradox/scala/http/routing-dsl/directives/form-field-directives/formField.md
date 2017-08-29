@@ -12,4 +12,4 @@ See @ref[formFields](formFields.md) for an in-depth description.
 
 ## Example
 
-@@snip [FormFieldDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala) { #formField }
+@@snip [FormFieldDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala) { #formField }

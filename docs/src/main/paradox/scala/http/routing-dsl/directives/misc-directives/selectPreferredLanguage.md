@@ -15,4 +15,4 @@ If there are several best language alternatives that the client has equal prefer
 
 ## Example
 
-@@snip [MiscDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala) { #selectPreferredLanguage-example }
+@@snip [MiscDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala) { #selectPreferredLanguage-example }

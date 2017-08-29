@@ -18,4 +18,4 @@ See also @ref[extractMatchedPath](extractMatchedPath.md#extractmatchedpath) to s
 
 ## Example
 
-@@snip [BasicDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #extractUnmatchedPath-example }
+@@snip [BasicDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #extractUnmatchedPath-example }

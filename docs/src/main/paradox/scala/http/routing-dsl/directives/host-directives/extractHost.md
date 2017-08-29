@@ -10,4 +10,4 @@ Extract the hostname part of the `Host` request header and expose it as a `Strin
 
 ## Example
 
-@@snip [HostDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala) { #extractHost }
+@@snip [HostDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/HostDirectivesExamplesSpec.scala) { #extractHost }

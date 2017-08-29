@@ -18,4 +18,4 @@ See also @ref[respondWithDefaultHeaders](respondWithDefaultHeaders.md)  if you'd
 
 ## Example
 
-@@snip [RespondWithDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala) { #respondWithDefaultHeader-0 }
+@@snip [RespondWithDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/RespondWithDirectivesExamplesSpec.scala) { #respondWithDefaultHeader-0 }

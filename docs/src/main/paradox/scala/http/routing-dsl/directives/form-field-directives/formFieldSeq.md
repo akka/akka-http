@@ -20,4 +20,4 @@ can cause performance issues or even an `OutOfMemoryError` s.
 
 ## Example
 
-@@snip [FormFieldDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala) { #formFieldSeq }
+@@snip [FormFieldDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala) { #formFieldSeq }

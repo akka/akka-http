@@ -19,7 +19,7 @@ For more details refer to [getFromBrowseableDirectory]().
 
 ## Example
 
-@@snip [FileAndResourceDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/FileAndResourceDirectivesExamplesSpec.scala) { #getFromBrowseableDirectory-examples }
+@@snip [FileAndResourceDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FileAndResourceDirectivesExamplesSpec.scala) { #getFromBrowseableDirectory-examples }
 
 ### Default file listing page example
 

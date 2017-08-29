@@ -12,4 +12,4 @@ The `extractUpgradeToWebSocket` directive is used as a building block for @ref[C
 
 ## Example
 
-@@snip [WebSocketDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/WebSocketDirectivesExamplesSpec.scala) { #extractUpgradeToWebSocket }
+@@snip [WebSocketDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/WebSocketDirectivesExamplesSpec.scala) { #extractUpgradeToWebSocket }

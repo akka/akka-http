@@ -14,4 +14,4 @@ See also @ref[When to use which parameter directive?](index.md#which-parameter-d
 
 ## Example
 
-@@snip [ParameterDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala) { #parameterMap }
+@@snip [ParameterDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala) { #parameterMap }

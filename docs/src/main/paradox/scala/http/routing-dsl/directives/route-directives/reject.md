@@ -19,4 +19,4 @@ modifier for "filtering out" certain cases.
 
 ## Example
 
-@@snip [RouteDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/RouteDirectivesExamplesSpec.scala) { #reject-examples }
+@@snip [RouteDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/RouteDirectivesExamplesSpec.scala) { #reject-examples }

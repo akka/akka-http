@@ -13,4 +13,4 @@ Use the @ref[optionalCookie](optionalCookie.md) directive instead if you want to
 
 ## Example
 
-@@snip [CookieDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/CookieDirectivesExamplesSpec.scala) { #cookie }
+@@snip [CookieDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CookieDirectivesExamplesSpec.scala) { #cookie }

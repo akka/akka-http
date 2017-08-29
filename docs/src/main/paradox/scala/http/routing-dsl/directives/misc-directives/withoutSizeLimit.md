@@ -22,4 +22,4 @@ See also @ref[withSizeLimit](withSizeLimit.md) for setting request entity size l
 
 ## Example
 
-@@snip [MiscDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala) { #withoutSizeLimit-example }
+@@snip [MiscDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/MiscDirectivesExamplesSpec.scala) { #withoutSizeLimit-example }

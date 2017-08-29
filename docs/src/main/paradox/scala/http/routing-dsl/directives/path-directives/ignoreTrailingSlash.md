@@ -21,4 +21,4 @@ See also @ref[redirectToNoTrailingSlashIfPresent](redirectToNoTrailingSlashIfPre
 
 ## Example
 
-@@snip [PathDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #ignoreTrailingSlash }
+@@snip [PathDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #ignoreTrailingSlash }

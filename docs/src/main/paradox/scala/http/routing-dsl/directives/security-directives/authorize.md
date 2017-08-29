@@ -27,4 +27,4 @@ See also @ref[Authentication vs. Authorization](index.md#authentication-vs-autho
 
 ## Example
 
-@@snip [SecurityDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/SecurityDirectivesExamplesSpec.scala) { #authorize0-0 }
+@@snip [SecurityDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/SecurityDirectivesExamplesSpec.scala) { #authorize0-0 }
