@@ -66,6 +66,8 @@ Scala
 Java
 :   @@snip [HttpAppExampleTest.java]($test$/java/docs/http/javadsl/server/HttpAppExampleTest.java) { #minimal-imports #ownActorSystem }
 
+Here you are responsible for creating and terminating `ActorSystem`. For more fine-grained control over the shutdown of various parts of the application, take a look at @extref[Coordinated Shutdown](akka25-docs:scala/actors.html#coordinated-shutdown) extension which is available since Akka 2.5.0.
+
 ## Providing your own Actor System and Settings
 
 `HttpApp` offers another overloaded `startServer` method where you can pass, on top of the `host` and `port`,
