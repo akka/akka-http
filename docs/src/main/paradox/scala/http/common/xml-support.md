@@ -7,13 +7,37 @@ XML or even binary encodings.
 @@@ div { .group-java }
 
 Akka HTTP does not currently provide a Java API for XML support. If you need to
-handle XML, one possible option is to use [Jackson].
+produce and consume XML, you can write a @ref[custom marshaller](marshalling.md#custom-marshallers)
+using [Jackson], which is also the library used for providing @ref[JSON support](json-support.md#json-jackson-support-java).
 
 @@ snip [#jackson-xml-support] (../../../../../test/java/docs/http/javadsl/JacksonXmlSupport.java) { #jackson-xml-support }
 
-Also, take a look at the
-@ref[Jackson JSON Support](json-support.md#json-jackson-support-java) for how it
-integrates with Jackson.
+The custom XML (un)marshalling code shown above requires that you depend on the `jackson-dataformat-xml` library.
+
+sbt
+:   @@@vars
+    ```
+    "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml" % "$jackson.version$"
+    ```
+    @@@
+
+Gradle
+:   @@@vars
+    ```
+    compile group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-xml', version: '$jackson.version$'
+    ```
+    @@@
+
+Maven
+:   @@@vars
+    ```xml
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-xml</artifactId>
+      <version>$jackson.version$</version>
+    </dependency>
+    ```
+    @@@
 
 @@@
 
