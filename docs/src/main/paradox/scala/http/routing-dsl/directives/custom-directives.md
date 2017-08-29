@@ -140,7 +140,7 @@ def recoverPF[R >: L: Tuple](
 
 One example of a predefined directive relying `recoverPF` is the `optionalHeaderValue` directive:
 
-@@signature [HeaderDirectives.scala](../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala) { #optionalHeaderValue }
+@@signature [HeaderDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala) { #optionalHeaderValue }
 
 ## Directives from Scratch
 

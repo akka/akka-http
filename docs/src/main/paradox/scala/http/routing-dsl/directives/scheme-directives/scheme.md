@@ -2,7 +2,7 @@
 
 ## Signature
 
-@@signature [SchemeDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SchemeDirectives.scala) { #scheme }
+@@signature [SchemeDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/SchemeDirectives.scala) { #scheme }
 
 ## Description
 

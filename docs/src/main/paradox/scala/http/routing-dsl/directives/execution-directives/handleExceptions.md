@@ -2,7 +2,7 @@
 
 ## Signature
 
-@@signature [ExecutionDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/ExecutionDirectives.scala) { #handleExceptions }
+@@signature [ExecutionDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/ExecutionDirectives.scala) { #handleExceptions }
 
 ## Description
 
