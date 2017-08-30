@@ -15,7 +15,7 @@ To complete with a successful result automatically and just handle the failure r
 
 ## Example
 
-@@snip [FutureDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala) { #onComplete }
+@@snip [FutureDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FutureDirectivesExamplesSpec.scala) { #onComplete }
 
 @@@ note
 Using the `onComplete` directive means that you'll have to explicitly and manually handle failure cases. Doing this for every route in your app will result in a lot of boilerplate code. Most of the time you want to use the @ref[Exception Handling](../../exception-handling.md) mechanism instead.
