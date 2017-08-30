@@ -40,10 +40,10 @@ public class JacksonXmlExampleTest extends JUnitRouteTest {
 
   @Test
   public void unmarshalXml() throws Exception {
-    final Unmarshaller<HttpEntity, Point> unmarshallar = JacksonXmlSupport.unmarshaller(Point.class);
+    final Unmarshaller<HttpEntity, Point> unmarshaller = JacksonXmlSupport.unmarshaller(Point.class);
 
     final Route route = route(
-      entity(unmarshallar, p -> {
+      entity(unmarshaller, p -> {
         assertEquals(p, point);
         return complete(p.toString());
       })
