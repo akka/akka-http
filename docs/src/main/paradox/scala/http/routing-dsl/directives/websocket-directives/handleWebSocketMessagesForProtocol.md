@@ -2,7 +2,7 @@
 
 ## Signature
 
-@@signature [WebSocketDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/WebSocketDirectives.scala) { #handleWebSocketMessagesForProtocol }
+@@signature [WebSocketDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/WebSocketDirectives.scala) { #handleWebSocketMessagesForProtocol }
 
 ## Description
 
@@ -17,8 +17,8 @@ either rejected with an `ExpectedWebSocketRequestRejection` or an `UnsupportedWe
 To support several subprotocols, for example at the same path, several instances of `handleWebSocketMessagesForProtocol` can
 be chained using `~` as you can see in the below example.
 
-For more information about the WebSocket support, see @ref[Server-Side WebSocket Support](../../../websocket-support.md).
+For more information about the WebSocket support, see @ref[Server-Side WebSocket Support](../../../server-side/websocket-support.md).
 
 ## Example
 
-@@snip [WebSocketDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/WebSocketDirectivesExamplesSpec.scala) { #handle-multiple-protocols }
+@@snip [WebSocketDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/WebSocketDirectivesExamplesSpec.scala) { #handle-multiple-protocols }

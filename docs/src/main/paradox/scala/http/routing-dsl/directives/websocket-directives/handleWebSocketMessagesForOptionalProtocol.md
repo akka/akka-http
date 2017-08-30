@@ -2,7 +2,7 @@
 
 ## Signature
 
-@@signature [WebSocketDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/WebSocketDirectives.scala) { #handleWebSocketMessagesForOptionalProtocol }
+@@signature [WebSocketDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/WebSocketDirectives.scala) { #handleWebSocketMessagesForOptionalProtocol }
 
 ## Description
 
@@ -18,4 +18,4 @@ To support several subprotocols you may chain several `handleWebSocketMessagesFo
 
 The `handleWebSocketMessagesForOptionalProtocol` directive is used as a building block for @ref[WebSocket Directives](index.md) to handle websocket messages.
 
-For more information about the WebSocket support, see @ref[Server-Side WebSocket Support](../../../websocket-support.md).
+For more information about the WebSocket support, see @ref[Server-Side WebSocket Support](../../../server-side/websocket-support.md).
