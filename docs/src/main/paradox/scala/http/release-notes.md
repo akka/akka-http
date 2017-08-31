@@ -5,7 +5,25 @@
 ### Support for HTTP(S) proxies with Authorization
 
 It is now possible to connect to @scala[@ref[HTTP(S) Proxies](client-side/client-transport.md)]@java[@ref[HTTP(S) Proxies](client-side/client-transport.md)]
-that require an authorization via an `Proxy-Authorization` header. This can be set up directly on the `ClientTransport` object when configuring the proxy.
+that require an authorization via an `Proxy-Authorization` header. This can be set up directly on the `ClientTransport` object when configuring the proxy. ([#1213](https://github.com/akka/akka-http/issues/1213))
+
+### Improvements
+
+* (server) Better error reporting when failing to handle CONNECT requests ([#1315](https://github.com/akka/akka-http/issues/1315))
+* Add HttpApp.startServer(host, port, system) ([#1294](https://github.com/akka/akka-http/issues/1294))
+* Logging with println in Http2ServerDemux ([#1275](https://github.com/akka/akka-http/issues/1275))
+* Missing final boundary for empty multipart entities ([#1257](https://github.com/akka/akka-http/issues/1257))
+* Add Cache-Control 'immutable' value ([#1212](https://github.com/akka/akka-http/issues/1212))
+* Http2: Inbound flow control ([#737](https://github.com/akka/akka-http/issues/737))
+
+### Bugfixes
+
+* HttpChallenge rendering is broken if realm parameter is None ([#1295](https://github.com/akka/akka-http/issues/1295))
+* Incorrect request URIs with HTTP/2 ([#1274](https://github.com/akka/akka-http/issues/1274)
+* HttpResponseParser returns invalid status code for statuses without reason phrase ([#1251](https://github.com/akka/akka-http/issues/1251))
+* requests hang if pool is shutdown before receiving response ([#1245](https://github.com/akka/akka-http/issues/1245))
+* Large response entity is truncated over https with 'Connection: close' header ([#1199](https://github.com/akka/akka-http/issues/1199))
+
 
 ## 10.0.9
 
