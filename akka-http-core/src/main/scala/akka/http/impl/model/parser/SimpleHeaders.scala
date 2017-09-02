@@ -226,6 +226,14 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
     rule { oneOrMore(addr).separatedBy(listSep) ~ EOI ~> (`X-Forwarded-For`(_)) }
   }
 
+  def `x-forwarded-host` = rule {
+    (`ip-v4-address` | `ip-v6-address`) ~ EOI ~> (b ⇒ `X-Forwarded-Host`(RemoteAddress(b)))
+  }
+
+  def `x-forwarded-proto` = rule {
+    token ~ EOI ~> (`X-Forwarded-Proto`(_))
+  }
+
   def `x-real-ip` = rule {
     (`ip-v4-address` | `ip-v6-address`) ~ EOI ~> (b ⇒ `X-Real-Ip`(RemoteAddress(b)))
   }

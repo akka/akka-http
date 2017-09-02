@@ -5,7 +5,7 @@
 package akka.http.javadsl.model.headers;
 
 /**
- *  Model for the `X-Forwarded-Proto` header.
+ *  Model for the `X-Forwarded-Host` header.
  *  Specification: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-Host
  */
 public abstract class XForwardedHost extends akka.http.scaladsl.model.HttpHeader {
