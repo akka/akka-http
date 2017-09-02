@@ -4,14 +4,17 @@
 
 package akka.http.impl.model.parser
 
+import akka.annotation.InternalApi
 import akka.parboiled2.Parser
 import akka.http.scaladsl.model.RemoteAddress
 import akka.http.scaladsl.model.headers._
 
 /**
+ * INTERNAL API.
  * Parser rules for all headers that can be parsed with one single rule.
  * All header rules that require more than one single rule are modelled in their own trait.
  */
+@InternalApi
 private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonActions with IpAddressParsing ⇒
 
   // http://tools.ietf.org/html/rfc7233#section-2.3
