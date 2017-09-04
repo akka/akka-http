@@ -135,6 +135,8 @@ private[http] final class UriParser(val input: ParserInput,
     'h' ~ 't' ~ 't' ~ 'p' ~ (&(':') ~ run(_scheme = "http") | 's' ~ &(':') ~ run(_scheme = "https"))
     | clearSB() ~ ALPHA ~ appendLowered() ~ zeroOrMore(`scheme-char` ~ appendLowered()) ~ &(':') ~ run(_scheme = sb.toString))
 
+  def `scheme-pushed` = rule { oneOrMore(`scheme-char` ~ appendLowered()) ~ run(_scheme = sb.toString) ~ push(_scheme)}
+
   def authority = rule { optional(userinfo) ~ hostAndPort }
 
   def userinfo = rule {
@@ -149,6 +151,9 @@ private[http] final class UriParser(val input: ParserInput,
 
   /** A relaxed host rule to use in `parseHost` that also recognizes IPv6 address without the brackets. */
   def relaxedHost = rule { `IP-literal` | ipv6Host | ipv4Host | `reg-name` }
+
+  def `relaxedHost-pushed` = rule { relaxedHost ~ push(_host) }
+
 
   def port = rule {
     DIGIT ~ run(_port = lastChar - '0') ~ optional(

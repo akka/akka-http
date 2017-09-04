@@ -6,8 +6,9 @@ package akka.http.impl.model.parser
 
 import akka.annotation.InternalApi
 import akka.parboiled2.Parser
-import akka.http.scaladsl.model.RemoteAddress
+import akka.http.scaladsl.model.{ RemoteAddress, Uri }
 import akka.http.scaladsl.model.headers._
+import CharacterClasses.`scheme-char`
 
 /**
  * INTERNAL API.
@@ -230,11 +231,11 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
   }
 
   def `x-forwarded-host` = rule {
-    (`ip-v4-address` | `ip-v6-address`) ~ EOI ~> (b ⇒ `X-Forwarded-Host`(RemoteAddress(b)))
+    runSubParser(newUriParser(_).`relaxedHost-pushed`) ~ EOI ~> (`X-Forwarded-Host`(_))
   }
 
   def `x-forwarded-proto` = rule {
-    token ~ EOI ~> (`X-Forwarded-Proto`(_))
+    runSubParser(newUriParser(_).`scheme-pushed`) ~ EOI ~> (`X-Forwarded-Proto`(_))
   }
 
   def `x-real-ip` = rule {

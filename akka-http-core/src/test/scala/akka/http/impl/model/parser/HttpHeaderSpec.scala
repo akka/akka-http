@@ -632,39 +632,13 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     }
 
     "X-Forwarded-Host" in {
-      "X-Forwarded-Host: 1.2.3.4" =!= `X-Forwarded-Host`(remoteAddress("1.2.3.4"))
-      "X-Forwarded-Host: 1.2.3.4" <=!= `X-Forwarded-Host`(remoteAddress("1.2.3.4", Some(56789)))
-      "X-Forwarded-Host: 2001:db8:cafe:0:0:0:0:17" =!= `X-Forwarded-Host`(remoteAddress("2001:db8:cafe:0:0:0:0:17"))
-      "X-Forwarded-Host: 1234:5678:9abc:def1:2345:6789:abcd:ef00" =!= `X-Forwarded-Host`(remoteAddress("1234:5678:9abc:def1:2345:6789:abcd:ef00"))
-      "X-Forwarded-Host: 1234:567:9a:d:2:67:abc:ef00" =!= `X-Forwarded-Host`(remoteAddress("1234:567:9a:d:2:67:abc:ef00"))
-      "X-Forwarded-Host: 2001:db8:85a3::8a2e:370:7334" =!=> "2001:db8:85a3:0:0:8a2e:370:7334"
-      "X-Forwarded-Host: 1:2:3:4:5:6:7:8" =!= `X-Forwarded-Host`(remoteAddress("1:2:3:4:5:6:7:8"))
-      "X-Forwarded-Host: 1:2:3:4:5:6:7:8" <=!= `X-Forwarded-Host`(remoteAddress("1:2:3:4:5:6:7:8", Some(9)))
-      "X-Forwarded-Host: ::2:3:4:5:6:7:8" =!=> "0:2:3:4:5:6:7:8"
-      "X-Forwarded-Host: ::3:4:5:6:7:8" =!=> "0:0:3:4:5:6:7:8"
-      "X-Forwarded-Host: ::4:5:6:7:8" =!=> "0:0:0:4:5:6:7:8"
-      "X-Forwarded-Host: ::5:6:7:8" =!=> "0:0:0:0:5:6:7:8"
-      "X-Forwarded-Host: ::6:7:8" =!=> "0:0:0:0:0:6:7:8"
-      "X-Forwarded-Host: ::7:8" =!=> "0:0:0:0:0:0:7:8"
-      "X-Forwarded-Host: ::8" =!=> "0:0:0:0:0:0:0:8"
-      "X-Forwarded-Host: 1:2:3:4:5:6:7::" =!=> "1:2:3:4:5:6:7:0"
-      "X-Forwarded-Host: 1:2:3:4:5:6::" =!=> "1:2:3:4:5:6:0:0"
-      "X-Forwarded-Host: 1:2:3:4:5::" =!=> "1:2:3:4:5:0:0:0"
-      "X-Forwarded-Host: 1:2:3:4::" =!=> "1:2:3:4:0:0:0:0"
-      "X-Forwarded-Host: 1:2:3::" =!=> "1:2:3:0:0:0:0:0"
-      "X-Forwarded-Host: 1:2::" =!=> "1:2:0:0:0:0:0:0"
-      "X-Forwarded-Host: 1::" =!=> "1:0:0:0:0:0:0:0"
-      "X-Forwarded-Host: 1::3:4:5:6:7:8" =!=> "1:0:3:4:5:6:7:8"
-      "X-Forwarded-Host: 1:2::4:5:6:7:8" =!=> "1:2:0:4:5:6:7:8"
-      "X-Forwarded-Host: 1:2:3::5:6:7:8" =!=> "1:2:3:0:5:6:7:8"
-      "X-Forwarded-Host: 1:2:3:4::6:7:8" =!=> "1:2:3:4:0:6:7:8"
-      "X-Forwarded-Host: 1:2:3:4:5::7:8" =!=> "1:2:3:4:5:0:7:8"
-      "X-Forwarded-Host: 1:2:3:4:5:6::8" =!=> "1:2:3:4:5:6:0:8"
-      "X-Forwarded-Host: ::" =!=> "0:0:0:0:0:0:0:0"
-      "X-Forwarded-Host: akka.io" =!=
-        ErrorInfo(
-          "Illegal HTTP header 'X-Forwarded-Host': Invalid input 'k', expected HEXDIG, h8, ':', ch16o or cc (line 1, column 2)",
-          "akka.io\n ^")
+      "X-Forwarded-Host: 1.2.3.4" =!= `X-Forwarded-Host`(Uri.Host("1.2.3.4"))
+      "X-Forwarded-Host: [2001:db8:cafe:0:0:0:0:17]" =!= `X-Forwarded-Host`(Uri.Host("2001:db8:cafe:0:0:0:0:17"))
+      "X-Forwarded-Host: [1234:5678:9abc:def1:2345:6789:abcd:ef00]" =!= `X-Forwarded-Host`(Uri.Host("1234:5678:9abc:def1:2345:6789:abcd:ef00"))
+      "X-Forwarded-Host: [1234:567:9a:d:2:67:abc:ef00]" =!= `X-Forwarded-Host`(Uri.Host("1234:567:9a:d:2:67:abc:ef00"))
+      "X-Forwarded-Host: [1:2:3:4:5:6:7:8]" =!= `X-Forwarded-Host`(Uri.Host("1:2:3:4:5:6:7:8"))
+      "X-Forwarded-Host: akka.io" =!= `X-Forwarded-Host`(Uri.Host("akka.io"))
+      "X-Forwarded-Host: [1:2:3:4::6:7:8]" =!= `X-Forwarded-Host`(Uri.Host("1:2:3:4::6:7:8"))
     }
 
     "X-Forwarded-Proto" in {
@@ -764,8 +738,6 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       try parsedHeader should equal(header)
       catch {
         case e: TestFailedException if parsedHeader.toString == header.toString ⇒
-          println(s"!!!!!!$parsedHeader")
-          println(s"!!!!!!$header")
           def className[T](t: T): String = scala.reflect.NameTransformer.decode(t.getClass.getName)
           throw new AssertionError(s"Test equals failed with equal toString. parsedHeader class was ${className(parsedHeader)}, " +
             s"header class was ${className(header)}", e)
