@@ -699,6 +699,10 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       HeaderParser.parseFull("location", "http://example.org/?abc=def=ghi", HeaderParser.Settings(uriParsingMode = Uri.ParsingMode.Relaxed)) shouldEqual
         Right(Location(targetUri))
     }
+    "correctly parse a Content-Disposition header with and without charset" in {
+      HttpHeader.parse("Content-Disposition", "inline; filename=\"fn\"; filename*=utf-8''fn") shouldEqual
+        ParsingResult.Ok(`Content-Disposition`(ContentDispositionTypes.inline, Map("filename" → "fn", "filename*" → "utf-8''fn")), List())
+    }
   }
 
   implicit class TestLine(line: String) {
