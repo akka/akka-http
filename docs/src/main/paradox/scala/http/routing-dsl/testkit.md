@@ -1,10 +1,11 @@
 # Route TestKit
 
-@@@ div { .group-scala }
-
 One of Akka HTTP's design goals is good testability of the created services.
 For services built with the Routing DSL Akka HTTP provides a dedicated testkit that makes efficient testing of
 route logic easy and convenient. This "route test DSL" is made available with the *akka-http-testkit* module.
+
+@@@ div { .group-scala }
+
 To use it include the following dependency:
 
 sbt
@@ -14,7 +15,11 @@ sbt
     ```
     @@@
 
+@@@
+
 ## Usage
+
+@@@ div { .group-scala }
 
 Here is an example of what a simple test with the routing testkit might look like using the built-in support for
 [scalatest](http://www.scalatest.org) and [specs2](http://etorreborre.github.io/specs2/):
@@ -83,10 +88,6 @@ the request. You can customize this behavior by bringing a custom instance of `D
 @@@
 
 @@@ div { .group-java }
-
-akka-http has a testkit that provides a convenient way of testing your routes with JUnit. It allows
-running requests against a route (without hitting the network) and provides means to assert against
-response properties in a compact way.
 
 To use the testkit you need to take these steps:
 
@@ -157,11 +158,12 @@ The section above describes how to test a "regular" branch of your route structu
 with HTTP response parts or rejections. Sometimes, however, you will want to verify that your service also translates
 @ref[Rejections](rejections.md) to HTTP responses in the way you expect.
 
-You do this by wrapping your route with the @scala[`akka.http.scaladsl.server.Route.seal`]@java[`akka.http.javadsl.server.Route.seal`]. The `seal` wrapper applies the logic of the in-scope @ref[ExceptionHandler](exception-handling.md) and
-@ref[RejectionHandler](rejections.md#the-rejectionhandler) to all exceptions and rejections coming back from the route,
-and translates them to the respective `HttpResponse`.
+You do this by calling the `Route.seal()` method. The `Route.seal()` method applies the logic of the @scala[in-scope]
+@ref[RejectionHandler](rejections.md#the-rejectionhandler) and @ref[RejectionHandler](rejections.md#the-rejectionhandler)
+@java[passed as method arguments] to all exceptions and rejections coming back from the 
+route, and translates them to the respective `HttpResponse`.
 
-Note that explicit call on the @scala[`akka.http.scaladsl.server.Route.seal`]@java[`akka.http.javadsl.server.Route.seal`] method is needed in test code, but in your application code it is not necessary.
+Note that explicit call on the `Route.seal` method is needed in test code, but in your application code it is not necessary.
 As described in @ref[Sealing a Route](routes.md#sealing-a-route), your application code only needs to bring
 implicit rejection and exception handlers in scope.
 
@@ -172,6 +174,9 @@ such instance is testing a route that begins with the `pathEnd` directive, such 
 
 Scala
 :   @@snip [TestKitFragmentSpec.scala]($test$/scala/docs/http/scaladsl/server/TestKitFragmentSpec.scala) { #fragment }
+
+Java
+:   @@snip [MyAppFragment.java]($test$/java/docs/http/javadsl/server/testkit/MyAppFragment.java) { #fragment}
 
 You might create a route such as this to be able to compose it into another route such as:
 
@@ -198,12 +203,13 @@ Java
 The timeouts you consciously defined on your lightning fast development environment might be too tight for your, most
 probably, high-loaded Continuous Integration server, invariably causing spurious failures. To account for such
 situations, timeout durations can be scaled by a given factor on such environments. Check the
-@extref[Akka Docs](akka-docs:scala/testing.html#accounting-for-slow-test-systems) for further information.
+@scala[@extref[Akka Docs](akka-docs:scala/testing.html#accounting-for-slow-test-systems)]@java[@extref[Akka Docs](akka-docs:java/testing.html#accounting-for-slow-test-systems)] 
+for further information.
 
 
 ## Increase Timeout
 
-The default timeout when testing your routes using the testkit is 1 second. Sometimes, though, this might not be enough.
+The default timeout when testing your routes using the testkit is @scala[1 second]@java[3 seconds] second. Sometimes, though, this might not be enough.
 In order to extend this default timeout, to say 5 seconds, just add the following implicit in scope:
 
 Scala
@@ -214,11 +220,7 @@ Java
 
 Remember to configure the timeout using `dilated` if you want to account for slow test systems.
 
-@@@ div { .group-scala }
-
 ## Examples
 
 A great pool of examples are the tests for all the predefined directives in Akka HTTP.
-They can be found @github[here](/akka-http-tests/src/test/scala/akka/http/scaladsl/server/directives/).
-
-@@@
+They can be found @scala[@github[here](/akka-http-tests/src/test/scala/akka/http/scaladsl/server/directives/)]@java[@github[here](/akka-http-tests/src/test/java/akka/http/javadsl/server/directives/)].
