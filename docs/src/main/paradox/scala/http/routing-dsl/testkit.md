@@ -4,18 +4,32 @@ One of Akka HTTP's design goals is good testability of the created services.
 For services built with the Routing DSL Akka HTTP provides a dedicated testkit that makes efficient testing of
 route logic easy and convenient. This "route test DSL" is made available with the *akka-http-testkit* module.
 
-@@@ div { .group-scala }
-
 To use it include the following dependency:
 
 sbt
 :   @@@vars
-    ```
-    "com.typesafe.akka" %% "akka-http-testkit" % "$project.version$"
+    ```scala
+    "com.typesafe.akka" %% "akka-http-testkit" % "$project.version$" $crossString$
     ```
     @@@
 
-@@@
+Gradle
+:   @@@vars
+    ```
+    compile group: 'com.typesafe.akka', name: 'akka-http-testkit_$scala.binary_version$', version: '$project.version$'
+    ```
+    @@@
+
+Maven
+:   @@@vars
+    ```xml
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-http-testkit_$scala.binary_version$</artifactId>
+      <version>$project.version$</version>
+    </dependency>
+    ```
+    @@@
 
 ## Usage
 
