@@ -5,7 +5,7 @@ package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.Host
-import akka.http.scaladsl.server.{Directive, Directive1, Route}
+import akka.http.scaladsl.server.{ Directive, Directive1, Route }
 import docs.http.scaladsl.server.RoutingSpec
 
 class CustomDirectivesExamplesSpec extends RoutingSpec {
@@ -85,8 +85,8 @@ class CustomDirectivesExamplesSpec extends RoutingSpec {
 
       private val hostnameAndPort =
         textract(ctx => {
-          val auth = ctx.request.uri.authority
-          (auth.host.address(), auth.port)
+          val authority = ctx.request.uri.authority
+          (authority.host.address(), authority.port)
         })
 
       override def tapply(f: ((String, Int)) => Route): Route = hostnameAndPort {
