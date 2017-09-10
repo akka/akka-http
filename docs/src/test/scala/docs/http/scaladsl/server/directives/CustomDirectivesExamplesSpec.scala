@@ -3,7 +3,9 @@
  */
 package docs.http.scaladsl.server.directives
 
-import akka.http.scaladsl.server.{ Directive1, Directive }
+import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model.headers.Host
+import akka.http.scaladsl.server.{Directive, Directive1, Route}
 import docs.http.scaladsl.server.RoutingSpec
 
 class CustomDirectivesExamplesSpec extends RoutingSpec {
@@ -75,6 +77,33 @@ class CustomDirectivesExamplesSpec extends RoutingSpec {
       handled === false
     }
     //#flatMap-0
+  }
+
+  "scratch" in {
+    //#scratch
+    object HostnameAndPort extends Directive[(String, Int)] {
+
+      private val hostnameAndPort =
+        textract(ctx => {
+          val auth = ctx.request.uri.authority
+          (auth.host.address(), auth.port)
+        })
+
+      override def tapply(f: ((String, Int)) => Route): Route = hostnameAndPort {
+        (hostname, port) => f(hostname, port)
+      }
+    }
+
+    // test
+    val route = HostnameAndPort {
+      (hostname, port) => complete(s"The hostname is $hostname and the port is $port")
+    }
+
+    Get() ~> Host("akka.io", 8080) ~> route ~> check {
+      status === OK
+      responseAs[String] === "The hostname is akka.io and the port is 8080"
+    }
+    //#scratch
   }
 
 }
