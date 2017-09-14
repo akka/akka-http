@@ -5,7 +5,7 @@
 package akka.http.impl.engine.client
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, HttpsProxySettings, ServerSettings }
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 
@@ -23,6 +23,11 @@ class HttpConfigurationSpec extends AkkaSpec {
     }
     "have default client and pool `client` settings" in {
       ClientConnectionSettings(system).toString should ===(ConnectionPoolSettings(system).connectionSettings.toString)
+    }
+    "have empty string host  default client https proxy settings" in {
+      assertThrows[IllegalArgumentException] {
+        HttpsProxySettings(system)
+      }
     }
 
     "override value from `akka.http.parsing` by setting `akka.http.client.parsing`" in {
@@ -155,6 +160,40 @@ class HttpConfigurationSpec extends AkkaSpec {
         """.stripMargin) { sys ⇒
 
           intercept[IllegalArgumentException] { ConnectionPoolSettings(sys) }
+        }
+    }
+
+    "set `akka.http.client.proxy.https.host` only in" in {
+      configuredSystem(
+        """
+          akka.http.client.proxy.https.host = ""
+        """) { sys ⇒
+          assertThrows[IllegalArgumentException] {
+            HttpsProxySettings(sys)
+          }
+        }
+    }
+
+    "set `akka.http.client.proxy.https.port` only in" in {
+      configuredSystem(
+        """
+          akka.http.client.proxy.https.port = 8080
+        """) { sys ⇒
+          assertThrows[IllegalArgumentException] {
+            HttpsProxySettings(sys)
+          }
+        }
+    }
+
+    "set `akka.http.client.proxy.https.port` and `akka.http.client.proxy.https.host` in" in {
+      configuredSystem(
+        """
+          akka.http.client.proxy.https.host = localhost
+          akka.http.client.proxy.https.port = 8080
+        """.stripMargin) { sys ⇒
+          val settings = HttpsProxySettings(sys)
+          settings.host should ===("localhost")
+          settings.port should ===(8080)
         }
     }
   }
