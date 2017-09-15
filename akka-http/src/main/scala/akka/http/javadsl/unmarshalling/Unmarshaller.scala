@@ -25,7 +25,7 @@ import scala.compat.java8.FutureConverters._
 import scala.concurrent.ExecutionContext
 import scala.language.implicitConversions
 
-object Unmarshaller {
+object Unmarshaller extends akka.http.javadsl.unmarshalling.Unmarshallers {
   implicit def fromScala[A, B](scalaUnmarshaller: unmarshalling.Unmarshaller[A, B]): Unmarshaller[A, B] =
     scalaUnmarshaller
 
@@ -40,26 +40,16 @@ object Unmarshaller {
   /**
    * Creates an unmarshaller from an asynchronous Java function.
    */
-  def async[A, B](f: java.util.function.Function[A, CompletionStage[B]]): Unmarshaller[A, B] =
+  override def async[A, B](f: java.util.function.Function[A, CompletionStage[B]]): Unmarshaller[A, B] =
     unmarshalling.Unmarshaller[A, B] { ctx ⇒ a ⇒ f(a).toScala
     }
-  /*
-  //#unmarshaller-creation
-  static <A, B> Unmarshaller<A, B> async(java.util.function.Function<A, java.util.concurrent.CompletionStage<B>> f)
-  //#unmarshaller-creation
-  */
 
   /**
    * Creates an unmarshaller from a Java function.
    */
-  def sync[A, B](f: java.util.function.Function[A, B]): Unmarshaller[A, B] =
+  override def sync[A, B](f: java.util.function.Function[A, B]): Unmarshaller[A, B] =
     unmarshalling.Unmarshaller[A, B] { ctx ⇒ a ⇒ scala.concurrent.Future.successful(f.apply(a))
     }
-  /*
-  //#unmarshaller-creation
-  static <A, B> Unmarshaller<A, B> sync(java.util.function.Function<A, B> f)
-  //#unmarshaller-creation
-  */
 
   // format: OFF
   def entityToByteString: Unmarshaller[HttpEntity, ByteString] = unmarshalling.Unmarshaller.byteStringUnmarshaller
@@ -99,41 +89,21 @@ object Unmarshaller {
     u.forContentTypes(theTypes: _*)
   }
 
-  def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B]): Unmarshaller[A, B] = {
+  override def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B]): Unmarshaller[A, B] = {
     unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala)
   }
-  /*
-  //#unmarshaller-creation
-  static <A, B> Unmarshaller<A, B> firstOf(Unmarshaller<A, B> u1, Unmarshaller<A, B> u2)
-  //#unmarshaller-creation
-  */
 
-  def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B]): Unmarshaller[A, B] = {
+  override def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B]): Unmarshaller[A, B] = {
     unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala, u3.asScala)
   }
-  /*
-  //#unmarshaller-creation
-  static <A, B> Unmarshaller<A, B> firstOf(Unmarshaller<A, B> u1, Unmarshaller<A, B> u2, Unmarshaller<A, B> u3)
-  //#unmarshaller-creation
-  */
 
-  def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B], u4: Unmarshaller[A, B]): Unmarshaller[A, B] = {
+  override def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B], u4: Unmarshaller[A, B]): Unmarshaller[A, B] = {
     unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala, u3.asScala, u4.asScala)
   }
-  /*
-  //#unmarshaller-creation
-  static <A, B> Unmarshaller<A, B> firstOf(Unmarshaller<A, B> u1, Unmarshaller<A, B> u2, Unmarshaller<A, B> u3, Unmarshaller<A, B> u4)
-  //#unmarshaller-creation
-  */
 
-  def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B], u4: Unmarshaller[A, B], u5: Unmarshaller[A, B]): Unmarshaller[A, B] = {
+  override def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B], u4: Unmarshaller[A, B], u5: Unmarshaller[A, B]): Unmarshaller[A, B] = {
     unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala, u3.asScala, u4.asScala, u5.asScala)
   }
-  /*
-  //#unmarshaller-creation
-  static <A, B> Unmarshaller<A, B> firstOf(Unmarshaller<A, B> u1, Unmarshaller<A, B> u2, Unmarshaller<A, B> u3, Unmarshaller<A, B> u4, Unmarshaller<A, B> u5)
-  //#unmarshaller-creation
-  */
 
   private implicit def adaptInputToJava[JI, SI, O](um: unmarshalling.Unmarshaller[SI, O])(implicit mi: JavaMapping[JI, SI]): unmarshalling.Unmarshaller[JI, O] =
     um.asInstanceOf[unmarshalling.Unmarshaller[JI, O]] // since guarantee provided by existence of `mi`

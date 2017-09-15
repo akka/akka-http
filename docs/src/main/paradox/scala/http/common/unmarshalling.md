@@ -78,7 +78,7 @@ Scala
 :  @@snip [Unmarshaller.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/Unmarshaller.scala) { #unmarshaller-creation }
 
 Java
-:  @@snip [Unmarshaller.scala]($akka-http$/akka-http/src/main/scala/akka/http/javadsl/unmarshalling/Unmarshaller.scala) { #unmarshaller-creation }
+:  @@snip [Unmarshallers.scala]($akka-http$/akka-http/src/main/java/akka/http/javadsl/unmarshalling/Unmarshallers.java) { #unmarshaller-creation }
 
 ## Deriving Unmarshallers
 
