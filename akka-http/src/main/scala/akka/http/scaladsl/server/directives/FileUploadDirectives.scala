@@ -34,6 +34,7 @@ trait FileUploadDirectives {
    *
    * @group fileupload
    */
+  @deprecated("Deprecated in favor of storeUploadedFile which allows to specify a file to store the upload in.", "10.0.11")
   def uploadedFile(fieldName: String): Directive1[(FileInfo, File)] =
     storeUploadedFile(fieldName, _ ⇒ File.createTempFile("akka-http-upload", ".tmp"))
 

@@ -24,7 +24,10 @@ abstract class FileUploadDirectives extends FileAndResourceDirectives {
    * If there is an error writing to disk the request will be failed with the thrown exception, if there is no such
    * field the request will be rejected, if there are multiple file parts with the same name, the first one will be
    * used and the subsequent ones ignored.
+   *
+   * @deprecated in favor of storeUploadedFile which allows to specify a file to store the upload in
    */
+  @Deprecated
   def uploadedFile(fieldName: String, inner: BiFunction[FileInfo, File, Route]): Route = RouteAdapter {
     D.uploadedFile(fieldName) { case (info, file) ⇒ inner.apply(info, file).delegate }
   }
