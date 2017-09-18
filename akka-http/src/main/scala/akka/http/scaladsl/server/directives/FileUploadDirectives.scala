@@ -4,8 +4,9 @@
 package akka.http.scaladsl.server.directives
 
 import java.io.File
+
 import akka.annotation.ApiMayChange
-import akka.http.scaladsl.server.{ Directive1, MissingFormFieldRejection }
+import akka.http.scaladsl.server.{ Directive, Directive1, MissingFormFieldRejection }
 import akka.http.scaladsl.model.{ ContentType, Multipart }
 import akka.util.ByteString
 
@@ -36,7 +37,7 @@ trait FileUploadDirectives {
    */
   @deprecated("Deprecated in favor of storeUploadedFile which allows to specify a file to store the upload in.", "10.0.11")
   def uploadedFile(fieldName: String): Directive1[(FileInfo, File)] =
-    storeUploadedFile(fieldName, _ ⇒ File.createTempFile("akka-http-upload", ".tmp"))
+    storeUploadedFile(fieldName, _ ⇒ File.createTempFile("akka-http-upload", ".tmp")).tmap(Tuple1(_))
 
   /**
    * Streams the bytes of the file submitted using multipart with the given file name into a designated file on disk.
@@ -47,7 +48,7 @@ trait FileUploadDirectives {
    * @group fileupload
    */
   @ApiMayChange
-  def storeUploadedFile(fieldName: String, destFn: FileInfo ⇒ File): Directive1[(FileInfo, File)] =
+  def storeUploadedFile(fieldName: String, destFn: FileInfo ⇒ File): Directive[(FileInfo, File)] =
     extractRequestContext.flatMap { ctx ⇒
       import ctx.executionContext
       import ctx.materializer
@@ -56,19 +57,17 @@ trait FileUploadDirectives {
         case (fileInfo, bytes) ⇒
 
           val dest = destFn(fileInfo)
-          val uploadedF: Future[(FileInfo, File)] = bytes.runWith(FileIO.toPath(dest.toPath))
-            .map(_ ⇒ (fileInfo, dest))
+          val uploadedF: Future[(FileInfo, File)] =
+            bytes
+              .runWith(FileIO.toPath(dest.toPath))
+              .map(_ ⇒ (fileInfo, dest))
+              .recoverWith {
+                case ex ⇒
+                  dest.delete()
+                  throw ex
+              }
 
-          onComplete[(FileInfo, File)](uploadedF).flatMap {
-
-            case Success(uploaded) ⇒
-              provide(uploaded)
-
-            case Failure(ex) ⇒
-              dest.delete()
-              failWith(ex)
-
-          }
+          onSuccess(uploadedF)
       }
     }
 
