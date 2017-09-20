@@ -145,7 +145,7 @@ One example of a predefined directive relying `recoverPF` is the `optionalHeader
 ## Directives from Scratch
 
 The third option for creating custom directives is to do it “from scratch”,
-by directly subclassing the Directive class. The Directive is defined like this
+either by using `Directive.apply` or by subclassing `Directive` class directly. The `Directive` is defined like this
 (leaving away operators and modifiers):
 
 @@snip [Directive.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/Directive.scala) { #basic }
@@ -175,11 +175,9 @@ hostname and port of a request:
 
 @@snip [CustomDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #scratch-1 }
 
-Beside using `Directive.apply`, you can also extending `Directive` directly:
+Beside using `Directive.apply`, you can also extending `Directive` directly(This is actually uncommon and the first is preferable for common use cases):
 
 @@snip [CustomDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #scratch-2 }
-
-However, extending `Directive` directly is actually uncommon and the first is preferable for common use cases.
 
 Keeping extractions as `Tuples` has a lot of advantages, mainly great flexibility
 while upholding full type safety and “inferability”. However, the number of times
