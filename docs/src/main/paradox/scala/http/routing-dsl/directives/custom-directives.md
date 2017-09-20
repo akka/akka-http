@@ -173,7 +173,13 @@ A `Directive[(String, Int)]` extracts a `String` value and an `Int` value
 (like a `parameters('a.as[String], 'b.as[Int])` directive). Such a directive can be defined to extract the 
 hostname and port of a request:
 
-@@snip [CustomDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #scratch }
+@@snip [CustomDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #scratch-1 }
+
+Beside using `Directive.apply`, you can also extending `Directive` directly:
+
+@@snip [CustomDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #scratch-2 }
+
+However, extending `Directive` directly is actually uncommon and the first is preferable for common use cases.
 
 Keeping extractions as `Tuples` has a lot of advantages, mainly great flexibility
 while upholding full type safety and “inferability”. However, the number of times

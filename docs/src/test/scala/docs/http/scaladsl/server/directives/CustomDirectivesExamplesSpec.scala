@@ -79,23 +79,15 @@ class CustomDirectivesExamplesSpec extends RoutingSpec {
     //#flatMap-0
   }
 
-  "scratch" in {
-    //#scratch
-    object HostnameAndPort extends Directive[(String, Int)] {
-
-      private val hostnameAndPort =
-        textract(ctx => {
-          val authority = ctx.request.uri.authority
-          (authority.host.address(), authority.port)
-        })
-
-      override def tapply(f: ((String, Int)) => Route): Route = hostnameAndPort {
-        (hostname, port) => f(hostname, port)
-      }
+  "scratch-1" in {
+    //#scratch-1
+    def hostnameAndPort: Directive[(String, Int)] = Directive[(String, Int)] { inner => ctx =>
+      val authority = ctx.request.uri.authority
+      inner((authority.host.address(), authority.port))(ctx)
     }
 
     // test
-    val route = HostnameAndPort {
+    val route = hostnameAndPort {
       (hostname, port) => complete(s"The hostname is $hostname and the port is $port")
     }
 
@@ -103,7 +95,28 @@ class CustomDirectivesExamplesSpec extends RoutingSpec {
       status === OK
       responseAs[String] === "The hostname is akka.io and the port is 8080"
     }
-    //#scratch
+    //#scratch-1
+  }
+
+  "scratch-2" in {
+    //#scratch-2
+    object hostnameAndPort extends Directive[(String, Int)] {
+      override def tapply(f: ((String, Int)) => Route): Route = { ctx =>
+        val authority = ctx.request.uri.authority
+        f((authority.host.address(), authority.port))(ctx)
+      }
+    }
+
+    // test
+    val route = hostnameAndPort {
+      (hostname, port) => complete(s"The hostname is $hostname and the port is $port")
+    }
+
+    Get() ~> Host("akka.io", 8080) ~> route ~> check {
+      status === OK
+      responseAs[String] === "The hostname is akka.io and the port is 8080"
+    }
+    //#scratch-2
   }
 
 }
