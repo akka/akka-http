@@ -63,7 +63,9 @@ trait CachingDirectives {
     }
   }
 
-  //# route-Cache
+  /**
+   * Creates an [[LfuCache]]
+   */
   def routeCache[K](maxCapacity: Int = 500, initialCapacity: Int = 16, timeToLive: Duration = Duration.Inf,
                     timeToIdle: Duration = Duration.Inf): Cache[K, RouteResult] = {
     LfuCache {
@@ -74,7 +76,6 @@ trait CachingDirectives {
         .withTimeToIdle(timeToIdle)
     }
   }
-  //#
 }
 
 object CachingDirectives extends CachingDirectives

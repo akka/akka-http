@@ -3,6 +3,8 @@
  */
 package akka.http.caching.javadsl;
 
+import akka.annotation.ApiMayChange;
+import akka.annotation.DoNotInherit;
 import akka.japi.Creator;
 import akka.japi.Procedure;
 
@@ -10,6 +12,8 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+@ApiMayChange
+@DoNotInherit
 public interface Cache<K, V> {
   /**
    * Returns either the cached CompletionStage for the given key or evaluates the given value generating

@@ -38,14 +38,14 @@ object LfuCache {
    * Creates a new [[akka.http.caching.LfuCache]], with optional expiration depending
    * on whether a non-zero and finite timeToLive and/or timeToIdle is set or not.
    */
-  def create[K, V](): akka.http.caching.javadsl.Cache[K, V] = 
+  def create[K, V](): akka.http.caching.javadsl.Cache[K, V] =
     apply(LfuCacheSettings())
-  
+
   /**
    * Creates a new [[akka.http.caching.LfuCache]], with optional expiration depending
    * on whether a non-zero and finite timeToLive and/or timeToIdle is set or not.
    */
-  def create[K, V](settings: LfuCacheSettings): akka.http.caching.javadsl.Cache[K, V] = 
+  def create[K, V](settings: LfuCacheSettings): akka.http.caching.javadsl.Cache[K, V] =
     apply(settings)
 
   private def simpleLfuCache[K, V](maxCapacity: Int, initialCapacity: Int): LfuCache[K, V] = {

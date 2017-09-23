@@ -93,5 +93,5 @@ abstract class Cache[K, V] extends akka.http.caching.javadsl.Cache[K, V] {
    * cache entries, since expired entries are only evicted upon next access
    * (or by being thrown out by a capacity constraint).
    */
-  override def size(): Int
+  def size(): Int
 }

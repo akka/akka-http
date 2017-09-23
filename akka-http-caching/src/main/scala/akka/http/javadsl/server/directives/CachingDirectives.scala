@@ -11,6 +11,8 @@ import akka.http.caching.javadsl.Cache
 import akka.http.javadsl.model.Uri
 import akka.http.javadsl.server.{ RequestContext, Route, RouteResult }
 import akka.http.javadsl.model.HttpMethods.GET
+import akka.http.caching.{ CacheJavaMapping, LfuCache }
+import akka.http.impl.util.JavaMapping
 
 import scala.concurrent.duration.Duration
 
@@ -18,6 +20,9 @@ import scala.concurrent.duration.Duration
 class CachingDirectives {
 
   import akka.http.scaladsl.server.directives.{ CachingDirectives ⇒ D }
+
+  private implicit def routeResultCacheMapping[K] =
+    CacheJavaMapping.cacheMapping[K, RouteResult, K, akka.http.scaladsl.server.RouteResult]
 
   /**
    * Wraps its inner Route with caching support using the given [[akka.http.caching.scaladsl.Cache]] implementation and
@@ -27,7 +32,7 @@ class CachingDirectives {
    */
   def cache[K](cache: Cache[K, RouteResult], keyer: PartialFunction[RequestContext, K], inner: Supplier[Route]) = RouteAdapter {
     D.cache(
-      cache.asInstanceOf[akka.http.caching.scaladsl.Cache[K, akka.http.scaladsl.server.RouteResult]],
+      JavaMapping.toScala(cache),
       toScalaKeyer(keyer)
     ) { inner.get.delegate }
   }
@@ -69,20 +74,35 @@ class CachingDirectives {
     ) { inner.get.delegate }
   }
 
+  /**
+   * Creates an [[LfuCache]] with default settings
+   */
   def routeCache[K](): Cache[K, RouteResult] =
-    D.routeCache(500, 16, Duration.Inf, Duration.Inf)
+    JavaMapping.toJava(D.routeCache[K](500, 16, Duration.Inf, Duration.Inf))
 
+  /**
+   * Creates an [[LfuCache]]
+   */
   def routeCache[K](maxCapacity: Int): Cache[K, RouteResult] =
-    D.routeCache(maxCapacity, 16, Duration.Inf, Duration.Inf)
+    JavaMapping.toJava(D.routeCache[K](maxCapacity, 16, Duration.Inf, Duration.Inf))
 
+  /**
+   * Creates an [[LfuCache]]
+   */
   def routeCache[K](maxCapacity: Int, initialCapacity: Int): Cache[K, RouteResult] =
-    D.routeCache(maxCapacity, initialCapacity, Duration.Inf, Duration.Inf)
+    JavaMapping.toJava(D.routeCache[K](maxCapacity, initialCapacity, Duration.Inf, Duration.Inf))
 
+  /**
+   * Creates an [[LfuCache]]
+   */
   def routeCache[K](maxCapacity: Int, initialCapacity: Int, timeToLive: Duration): Cache[K, RouteResult] =
-    D.routeCache(maxCapacity, initialCapacity, timeToLive, Duration.Inf)
+    JavaMapping.toJava(D.routeCache[K](maxCapacity, initialCapacity, timeToLive, Duration.Inf))
 
+  /**
+   * Creates an [[LfuCache]]
+   */
   def routeCache[K](maxCapacity: Int, initialCapacity: Int, timeToLive: Duration, timeToIdle: Duration): Cache[K, RouteResult] =
-    D.routeCache(maxCapacity, initialCapacity, timeToLive, timeToIdle)
+    JavaMapping.toJava(D.routeCache[K](maxCapacity, initialCapacity, timeToLive, timeToIdle))
 }
 
 object CachingDirectives extends CachingDirectives
