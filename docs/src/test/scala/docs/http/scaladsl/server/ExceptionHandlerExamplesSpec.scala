@@ -24,16 +24,13 @@ object MyExplicitExceptionHandler extends App {
         complete(HttpResponse(InternalServerError, entity = "Bad numbers, bad result!!!"))
       }
   }
-
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
-
     val route: Route =
       handleExceptions(myExceptionHandler) {
         // ... some route structure
         null // hide
       }
-
     Http().bindAndHandle(route, "localhost", 8080)
   //#explicit-handler-example
 }
@@ -57,14 +54,11 @@ object MyImplicitExceptionHandler extends App {
           complete(HttpResponse(InternalServerError, entity = "Bad numbers, bad result!!!"))
         }
     }
-
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
-
     val route: Route =
     // ... some route structure
       null // hide
-
     Http().bindAndHandle(route, "localhost", 8080)
   //#implicit-handler-example
 }
