@@ -6,7 +6,7 @@ package docs.http.scaladsl.server
 
 // format: OFF
 
-object MyExplicitExceptionHandler {
+object MyExplicitExceptionHandler extends App {
 
   //#explicit-handler-example
   import akka.actor.ActorSystem
@@ -24,8 +24,6 @@ object MyExplicitExceptionHandler {
         complete(HttpResponse(InternalServerError, entity = "Bad numbers, bad result!!!"))
       }
   }
-
-  object MyApp extends App {
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
 
@@ -36,9 +34,40 @@ object MyExplicitExceptionHandler {
       }
 
     Http().bindAndHandle(route, "localhost", 8080)
-  }
+
   //#explicit-handler-example
 }
+
+object MyImplicitExceptionHandler extends App {
+
+  //#implicit-handler-example
+  import akka.actor.ActorSystem
+  import akka.stream.ActorMaterializer
+  import akka.http.scaladsl.Http
+  import akka.http.scaladsl.model._
+  import akka.http.scaladsl.server._
+  import StatusCodes._
+  import Directives._
+
+  implicit def myExceptionHandler: ExceptionHandler =
+    ExceptionHandler {
+      case _: ArithmeticException =>
+        extractUri { uri =>
+          println(s"Request to $uri could not be handled normally")
+          complete(HttpResponse(InternalServerError, entity = "Bad numbers, bad result!!!"))
+        }
+    }
+  
+    implicit val system = ActorSystem()
+    implicit val materializer = ActorMaterializer()
+
+    val route: Route =
+    // ... some route structure
+      null // hide
+
+    Http().bindAndHandle(route, "localhost", 8080)
+}
+
 
 object MyImplicitExceptionHandler {
 
