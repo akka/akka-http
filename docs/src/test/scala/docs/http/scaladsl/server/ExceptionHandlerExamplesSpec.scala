@@ -35,7 +35,6 @@ object MyExplicitExceptionHandler extends App {
       }
 
     Http().bindAndHandle(route, "localhost", 8080)
-
   //#explicit-handler-example
 }
 
@@ -67,7 +66,6 @@ object MyImplicitExceptionHandler extends App {
       null // hide
 
     Http().bindAndHandle(route, "localhost", 8080)
-
   //#implicit-handler-example
 }
 
