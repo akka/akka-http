@@ -6,7 +6,7 @@ package docs.http.scaladsl.server
 
 // format: OFF
 
-object MyExplicitExceptionHandler {
+object MyExplicitExceptionHandler extends App {
 
   //#explicit-handler-example
   import akka.actor.ActorSystem
@@ -25,7 +25,6 @@ object MyExplicitExceptionHandler {
       }
   }
 
-  object MyApp extends App {
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
 
@@ -36,11 +35,11 @@ object MyExplicitExceptionHandler {
       }
 
     Http().bindAndHandle(route, "localhost", 8080)
-  }
+
   //#explicit-handler-example
 }
 
-object MyImplicitExceptionHandler {
+object MyImplicitExceptionHandler extends App {
 
   //#implicit-handler-example
   import akka.actor.ActorSystem
@@ -60,7 +59,6 @@ object MyImplicitExceptionHandler {
         }
     }
 
-  object MyApp extends App {
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
 
@@ -69,7 +67,7 @@ object MyImplicitExceptionHandler {
       null // hide
 
     Http().bindAndHandle(route, "localhost", 8080)
-  }
+
   //#implicit-handler-example
 }
 
