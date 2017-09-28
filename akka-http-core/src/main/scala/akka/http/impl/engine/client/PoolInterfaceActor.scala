@@ -21,9 +21,12 @@ import akka.stream.{ BufferOverflowException, Materializer }
 import scala.annotation.tailrec
 import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.Deadline
+import scala.concurrent.duration._
+import java.util.concurrent.TimeoutException
 
 private object PoolInterfaceActor {
-  final case class PoolRequest(request: HttpRequest, responsePromise: Promise[HttpResponse]) extends NoSerializationVerificationNeeded
+  final case class PoolRequest(request: HttpRequest, responsePromise: Promise[HttpResponse], deadline: Option[Deadline]) extends NoSerializationVerificationNeeded
 
   case object Shutdown extends DeadLetterSuppression
 
@@ -47,6 +50,8 @@ private object PoolInterfaceActor {
 
       override def getClazz(t: PoolGateway): Class[_] = classOf[PoolGateway]
     }
+
+  private case object Prune
 }
 
 /**
@@ -85,9 +90,17 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
       "Please retry the request later. See http://doc.akka.io/docs/akka-http/current/scala/http/client-side/pool-overflow.html for " +
       "more information.")
 
+  private[this] val PoolTimeoutException = new TimeoutException(
+    s"Request timed out while being queued in pool ${gateway.hcps} after having waited " +
+      s"${gateway.hcps.setup.settings.idleTimeout} without being sent to a connection. "
+      + "Increase idle-timeout to avoid this.")
+
   log.debug("(Re-)starting host connection pool to {}:{}", hcps.host, hcps.port)
 
   initConnectionFlow()
+
+  import context.dispatcher
+  val pruneSubscription = context.system.scheduler.schedule(1.second, 1.second, self, Prune)
 
   /** Start the pool flow with this actor acting as source as well as sink */
   private def initConnectionFlow() = {
@@ -153,7 +166,7 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
         }
       } else dispatchRequest(x) // if we can dispatch right now, do it
 
-    case PoolRequest(request, responsePromise) ⇒
+    case PoolRequest(request, responsePromise, _) ⇒
       // we have already started shutting down, i.e. this pool is not usable anymore
       // so we forward the request back to the gateway
       //
@@ -163,7 +176,7 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
 
     case Shutdown ⇒ // signal coming in from gateway
       while (!inputBuffer.isEmpty) {
-        val PoolRequest(request, responsePromise) = inputBuffer.dequeue()
+        val PoolRequest(request, responsePromise, _) = inputBuffer.dequeue()
         responsePromise.completeWith(gateway(request))
       }
 
@@ -174,6 +187,16 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
         onCompleteThenStop()
       } else
         debug(s"Deferring shutting down host connection pool until all [$remainingRequested] responses have been dispatched")
+
+    case Prune ⇒ // Kick all expired requests out of the queue and fail them
+      while (inputBuffer.nonEmpty && inputBuffer.peek().deadline.filter(!_.hasTimeLeft()).isDefined) {
+        val expire = inputBuffer.dequeue()
+        expire.responsePromise.failure(PoolTimeoutException)
+      }
+  }
+
+  override def postStop() {
+    pruneSubscription.cancel()
   }
 
   @tailrec private def dispatchRequests(): Unit =

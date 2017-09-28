@@ -12,6 +12,9 @@ import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.stream.Materializer
 
 import scala.concurrent.{ Future, Promise }
+import akka.util.Timeout
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.Deadline
 
 /**
  * INTERNAL API
@@ -57,6 +60,11 @@ private[http] final class PoolMasterActor extends Actor with ActorLogging {
     context.watch(ref)
   }
 
+  private def createDeadline(gateway: PoolGateway): Option[Deadline] = gateway.hcps.setup.settings.idleTimeout match {
+    case finite: FiniteDuration ⇒ Some(finite.fromNow)
+    case infinite               ⇒ None
+  }
+
   def receive = {
 
     // Start or restart a pool without sending it a request. This is used to ensure that
@@ -75,13 +83,13 @@ private[http] final class PoolMasterActor extends Actor with ActorLogging {
     case s @ SendRequest(gateway, request, responsePromise, materializer) ⇒
       poolStatus.get(gateway) match {
         case Some(PoolInterfaceRunning(ref)) ⇒
-          ref ! PoolRequest(request, responsePromise)
+          ref ! PoolRequest(request, responsePromise, createDeadline(gateway))
         case Some(PoolInterfaceShuttingDown(shutdownCompletedPromise)) ⇒
           // The request will be resent when the pool shutdown is complete (the first
           // request will recreate the pool).
           shutdownCompletedPromise.future.foreach(_ ⇒ self ! s)(context.dispatcher)
         case None ⇒
-          startPoolInterfaceActor(gateway)(materializer) ! PoolRequest(request, responsePromise)
+          startPoolInterfaceActor(gateway)(materializer) ! PoolRequest(request, responsePromise, createDeadline(gateway))
       }
 
     // Shutdown a pool and signal its termination.
