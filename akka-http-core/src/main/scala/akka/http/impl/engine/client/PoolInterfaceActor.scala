@@ -23,11 +23,14 @@ import akka.stream.{ BufferOverflowException, Materializer }
 import scala.annotation.tailrec
 import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
+import akka.http.metrics.HttpMeasurements
 
 private object PoolInterfaceActor {
   final case class PoolRequest(request: HttpRequest, responsePromise: Promise[HttpResponse]) extends NoSerializationVerificationNeeded
 
   case object Shutdown extends DeadLetterSuppression
+
+  case object SendMetrics extends DeadLetterSuppression
 
   val name = SeqActorName("PoolInterfaceActor")
 
@@ -89,6 +92,13 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
 
   log.debug("(Re-)starting host connection pool to {}:{}", hcps.host, hcps.port)
 
+  import context.dispatcher
+  val subscription = context.system.scheduler.schedule(hcps.setup.settings.metricsInterval, hcps.setup.settings.metricsInterval, self, SendMetrics)
+
+  val metrics = ClientMetric(hcps.host, hcps.port)
+  val queueUsed = metrics.gauge("queue.used")
+  val queueCapacity = metrics.gauge("queue.capacity")
+
   initConnectionFlow()
 
   /** Start the pool flow with this actor acting as source as well as sink */
@@ -102,8 +112,8 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
 
     val poolFlow =
       settings.poolImplementation match {
-        case PoolImplementation.Legacy ⇒ PoolFlow(connectionFlow, settings, log).named("PoolFlow")
-        case PoolImplementation.New    ⇒ NewHostConnectionPool(connectionFlow, settings, log).named("PoolFlow")
+        case PoolImplementation.Legacy ⇒ PoolFlow(connectionFlow, settings, metrics, log).named("PoolFlow")
+        case PoolImplementation.New    ⇒ NewHostConnectionPool(connectionFlow, settings, metrics, log).named("PoolFlow")
       }
 
     Source.fromPublisher(ActorPublisher(self)).via(poolFlow).runWith(Sink.fromSubscriber(ActorSubscriber[ResponseContext](self)))
@@ -181,6 +191,13 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
         onCompleteThenStop()
       } else
         debug(s"Deferring shutting down host connection pool until all [$remainingRequested] responses have been dispatched")
+
+    case SendMetrics ⇒
+      context.system.eventStream.publish(HttpMeasurements(queueUsed(inputBuffer.used), queueCapacity(inputBuffer.capacity)))
+  }
+
+  override def postStop(): Unit = {
+    subscription.cancel()
   }
 
   @tailrec private def dispatchRequests(): Unit =

@@ -9,7 +9,7 @@ import akka.http.impl.util.{ SettingsCompanion, _ }
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, PoolImplementation }
 import com.typesafe.config.Config
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 /** INTERNAL API */
 @InternalApi
@@ -20,6 +20,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   maxOpenRequests:                   Int,
   pipeliningLimit:                   Int,
   idleTimeout:                       Duration,
+  metricsInterval:                   FiniteDuration,
   connectionSettings:                ClientConnectionSettings,
   poolImplementation:                PoolImplementation,
   responseEntitySubscriptionTimeout: Duration)
@@ -58,6 +59,7 @@ object ConnectionPoolSettingsImpl extends SettingsCompanion[ConnectionPoolSettin
       c getInt "max-open-requests",
       c getInt "pipelining-limit",
       c getPotentiallyInfiniteDuration "idle-timeout",
+      c getFiniteDuration "metrics-interval",
       ClientConnectionSettingsImpl.fromSubConfig(root, c.getConfig("client")),
       c.getString("pool-implementation").toLowerCase match {
         case "legacy" ⇒ PoolImplementation.Legacy
