@@ -152,9 +152,6 @@ private[http] final class UriParser(val input: ParserInput,
   /** A relaxed host rule to use in `parseHost` that also recognizes IPv6 address without the brackets. */
   def relaxedHost = rule { `IP-literal` | ipv6Host | ipv4Host | `reg-name` }
 
-  def `relaxedHost-pushed` = rule { relaxedHost ~ push(_host) }
-
-
   def port = rule {
     DIGIT ~ run(_port = lastChar - '0') ~ optional(
       DIGIT ~ run(_port = 10 * _port + lastChar - '0') ~ optional(

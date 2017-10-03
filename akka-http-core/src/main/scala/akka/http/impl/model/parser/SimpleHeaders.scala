@@ -230,10 +230,12 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
     rule { oneOrMore(addr).separatedBy(listSep) ~ EOI ~> (`X-Forwarded-For`(_)) }
   }
 
+  // de-facto standard as per https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-Host
   def `x-forwarded-host` = rule {
-    runSubParser(newUriParser(_).`relaxedHost-pushed`) ~ EOI ~> (`X-Forwarded-Host`(_))
+    host ~> (hostHeader ⇒ `X-Forwarded-Host`(hostHeader.host))
   }
 
+  // de-facto standard as per https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-Proto
   def `x-forwarded-proto` = rule {
     runSubParser(newUriParser(_).`scheme-pushed`) ~ EOI ~> (`X-Forwarded-Proto`(_))
   }
