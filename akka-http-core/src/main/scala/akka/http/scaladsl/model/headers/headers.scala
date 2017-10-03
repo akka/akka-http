@@ -991,7 +991,7 @@ final case class `X-Forwarded-Host`(host: Uri.Host) extends jm.headers.XForwarde
   protected def companion = `X-Forwarded-Host`
 
   /** Java API */
-  def getAddress: jm.Host = host.asJava
+  def getHost: jm.Host = host.asJava
 }
 
 object `X-Forwarded-Proto` extends ModeledCompanion[`X-Forwarded-Proto`]
