@@ -66,6 +66,14 @@ class SprayJsonExampleSpec extends WordSpec with Matchers {
 
     object WebServer {
 
+      // needed to run the route
+      implicit val system = ActorSystem()
+      implicit val materializer = ActorMaterializer()
+      // needed for the future map/flatmap in the end and future in fetchItem and saveOrder
+      implicit val executionContext = system.dispatcher
+
+      var orders: List[Item] = Nil
+
       // domain model
       final case class Item(name: String, id: Long)
       final case class Order(items: List[Item])
@@ -75,16 +83,21 @@ class SprayJsonExampleSpec extends WordSpec with Matchers {
       implicit val orderFormat = jsonFormat1(Order)
 
       // (fake) async database query api
-      def fetchItem(itemId: Long): Future[Option[Item]] = ???
-      def saveOrder(order: Order): Future[Done] = ???
+      def fetchItem(itemId: Long): Future[Option[Item]] = Future {
+        orders.filter(o => o.id == itemId) match {
+          case Nil => None
+          case xs => Some(xs.head)
+        }
+      }
+      def saveOrder(order: Order): Future[Done] = {
+        orders = order match {
+          case Order(items) => items ::: orders
+          case _ => orders
+        }
+        Future{Done}
+      }
 
       def main(args: Array[String]) {
-
-        // needed to run the route
-        implicit val system = ActorSystem()
-        implicit val materializer = ActorMaterializer()
-        // needed for the future map/flatmap in the end
-        implicit val executionContext = system.dispatcher
 
         val route: Route =
           get {
