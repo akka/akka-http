@@ -291,9 +291,9 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
         val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = "http://akka.io"))
 
         responseFuture
-          .onComplete{
+          .onComplete {
             case Success(res) => println(res)
-            case Failure(_) => sys.error("something wrong")
+            case Failure(_)   => sys.error("something wrong")
           }
       }
     }

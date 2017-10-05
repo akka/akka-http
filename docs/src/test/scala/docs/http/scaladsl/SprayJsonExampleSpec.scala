@@ -86,15 +86,15 @@ class SprayJsonExampleSpec extends WordSpec with Matchers {
       def fetchItem(itemId: Long): Future[Option[Item]] = Future {
         orders.filter(o => o.id == itemId) match {
           case Nil => None
-          case xs => Some(xs.head)
+          case xs  => Some(xs.head)
         }
       }
       def saveOrder(order: Order): Future[Done] = {
         orders = order match {
           case Order(items) => items ::: orders
-          case _ => orders
+          case _            => orders
         }
-        Future{Done}
+        Future { Done }
       }
 
       def main(args: Array[String]) {
