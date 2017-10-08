@@ -84,10 +84,7 @@ class SprayJsonExampleSpec extends WordSpec with Matchers {
 
       // (fake) async database query api
       def fetchItem(itemId: Long): Future[Option[Item]] = Future {
-        orders.filter(o => o.id == itemId) match {
-          case Nil => None
-          case xs  => Some(xs.head)
-        }
+        orders.find(o => o.id == itemId)
       }
       def saveOrder(order: Order): Future[Done] = {
         orders = order match {
