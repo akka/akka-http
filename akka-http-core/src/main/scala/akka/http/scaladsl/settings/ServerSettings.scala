@@ -44,6 +44,8 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def parserSettings: ParserSettings
   def logUnencryptedNetworkBytes: Option[Int]
   def http2Settings: Http2ServerSettings
+  def defaultHttpPort: Int
+  def defaultHttpsPort: Int
 
   /* Java APIs */
 
