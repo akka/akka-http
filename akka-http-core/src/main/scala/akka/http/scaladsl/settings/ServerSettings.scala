@@ -67,6 +67,8 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   override def getWebsocketRandomFactory = new Supplier[Random] {
     override def get(): Random = websocketRandomFactory()
   }
+  override def getDefaultHttpPort: Int = defaultHttpPort
+  override def getDefaultHttpsPort: Int = defaultHttpsPort
 
   // ---
 
@@ -82,6 +84,8 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   override def withBacklog(newValue: Int): ServerSettings = self.copy(backlog = newValue)
   override def withSocketOptions(newValue: java.lang.Iterable[SocketOption]): ServerSettings = self.copy(socketOptions = newValue.asScala.toList)
   override def withWebsocketRandomFactory(newValue: java.util.function.Supplier[Random]): ServerSettings = self.copy(websocketRandomFactory = () ⇒ newValue.get())
+  override def withDefaultHttpPort(newValue: Int): ServerSettings = self.copy(defaultHttpPort = newValue)
+  override def withDefaultHttpsPort(newValue: Int): ServerSettings = self.copy(defaultHttpsPort = newValue)
 
   // overloads for Scala idiomatic use
   def withTimeouts(newValue: ServerSettings.Timeouts): ServerSettings = self.copy(timeouts = newValue)
