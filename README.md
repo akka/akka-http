@@ -36,6 +36,8 @@ You can join these groups and chats to discuss and ask Akka related questions:
 - Q&A: [![stackoverflow: #akka-http][stackoverflow-badge]][stackoverflow]
 - Issue tracker: [![github: akka/akka-http][github-issues-badge]][github-issues]
 
+All of our forums, chat rooms, and issue trackers are governed by our [Code Of Conduct](CODE_OF_CONDUCT.md).
+
 In addition to that, you may enjoy following:
 
 - The [news](http://akka.io/news) section of the page, which is updated whenever a new version is released
