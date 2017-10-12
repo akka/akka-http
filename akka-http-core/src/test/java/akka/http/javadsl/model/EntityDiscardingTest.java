@@ -11,7 +11,7 @@ import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
-import org.junit.Test;
+
 import org.scalatest.junit.JUnitSuite;
 
 import scala.util.Try;
@@ -19,7 +19,8 @@ import scala.util.Try;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class EntityDiscardingTest extends JUnitSuite {
 

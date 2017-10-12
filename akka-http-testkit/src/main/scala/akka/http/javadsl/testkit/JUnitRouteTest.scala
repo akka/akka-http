@@ -11,7 +11,8 @@ import akka.http.javadsl.server._
 import akka.stream.{ Materializer, ActorMaterializer }
 import com.typesafe.config.{ ConfigFactory, Config }
 import org.junit.rules.ExternalResource
-import org.junit.{ Assert, Rule }
+import org.junit.Rule
+import org.junit.jupiter.api.Assertions
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
 
@@ -27,17 +28,18 @@ abstract class JUnitRouteTestBase extends RouteTest {
   protected def createTestRouteResultAsync(request: HttpRequest, result: Future[RouteResult]): TestRouteResult =
     new TestRouteResult(result, awaitDuration)(system.dispatcher, materializer) {
       protected def assertEquals(expected: AnyRef, actual: AnyRef, message: String): Unit =
-        reportDetails { Assert.assertEquals(message, expected, actual) }
+        reportDetails { Assertions.assertEquals(expected, actual, message) }
 
       protected def assertEquals(expected: Int, actual: Int, message: String): Unit =
-        Assert.assertEquals(message, expected, actual)
+        Assertions.assertEquals(expected, actual, message)
 
       protected def assertTrue(predicate: Boolean, message: String): Unit =
-        Assert.assertTrue(message, predicate)
+        Assertions.assertTrue(predicate, message)
 
       protected def fail(message: String): Unit = {
-        Assert.fail(message)
+        Assertions.fail(message)
         throw new IllegalStateException("Assertion should have failed")
+
       }
 
       def reportDetails[T](block: ⇒ T): T = {

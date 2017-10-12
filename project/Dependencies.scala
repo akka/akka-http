@@ -9,10 +9,14 @@ object Dependencies {
 
   val jacksonVersion = "2.9.1"
   val junitVersion = "4.12"
-  val h2specVersion = "1.5.0"
+  val junitVintageVersion  = "4.12.1"
+  val junitPlatformVersion = "1.0.1"
+  val junitJupiterVersion  = "5.0.1"
+  val h2specVersion = "2.1.0"
   val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
   val h2specExe = "h2spec" + DependencyHelpers.exeIfWindows
-  val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.zip"
+  val h2specExt = DependencyHelpers.extIfWindows
+  val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.${h2specExt}"
 
   val akka25Version = "2.5.6"
 
@@ -46,7 +50,10 @@ object Dependencies {
     val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % jacksonVersion // ApacheV2
 
     // For akka-http-testkit-java
-    val junit       = "junit"                         % "junit"                        % junitVersion  // Common Public License 1.0
+    //val junit       = "junit"                         % "junit"                        % junitVersion  // Common Public License 1.0
+    val junitJupiter       = "org.junit.jupiter"               % "junit-jupiter-api"            % junitJupiterVersion  // Common Public License 1.0
+    val junitJupiterEngine = "org.junit.jupiter"               % "junit-jupiter-engine"         % junitJupiterVersion  // Common Public License 1.0
+    val junitJupiterMigration = "org.junit.jupiter"            % "junit-jupiter-migrationsupport" % junitJupiterVersion  // Common Public License 1.0
 
     val hpack       = "com.twitter"                   % "hpack"                        % "1.0.2"       // ApacheV2
 
@@ -59,7 +66,10 @@ object Dependencies {
     }
 
     object Test {
-      val junit        = Compile.junit                                                                       % "test" // Common Public License 1.0
+//      val junit        = Compile.junit                                                                       % "test" // Common Public License 1.0
+      val junitJupiter = Compile.junitJupiter                         % "test" // Common Public License 1.0
+      val junitJupiterEngine  = Compile.junitJupiterEngine            % "test" // Common Public License 1.0
+      val junitJupiterMigration  = Compile.junitJupiterMigration      % "test" // Common Public License 1.0
       val scalatest    = Def.setting { "org.scalatest"  %% "scalatest"   % scalaTestVersion.value   % "test" }      // ApacheV2
       val specs2       = Def.setting { "org.specs2"     %% "specs2-core" % specs2Version.value      % "test" }      // MIT
       val scalacheck   = Def.setting { "org.scalacheck" %% "scalacheck"  % scalaCheckVersion.value  % "test" }      // New BSD
@@ -85,7 +95,8 @@ object Dependencies {
 
   lazy val httpCore = l ++= Seq(
     Test.sprayJson, // for WS Autobahn test metadata
-    Test.scalatest.value, Test.scalacheck.value, Test.junit)
+    //Test.scalatest.value, Test.scalacheck.value, Test.junit)
+    Test.scalatest.value, Test.scalacheck.value, Test.junitJupiter, Test.junitJupiterEngine)
 
   lazy val http = l ++= Seq()
 
@@ -94,12 +105,14 @@ object Dependencies {
   lazy val http2Support = l ++= Seq(Test.h2spec)
 
   lazy val httpTestkit = l ++= Seq(
-    Test.junit, Test.junitIntf, Compile.junit % "provided",
+    //Test.junit, Test.junitIntf, Compile.junit % "provided",
+    Test.junitJupiter, Test.junitJupiterEngine, Test.junitJupiterMigration, Test.junitIntf, Compile.junitJupiterMigration, Compile.junitJupiter, Compile.junitJupiterEngine % "provided",
     Test.scalatest.value.copy(configurations = Some("provided; test")),
     Test.specs2.value.copy(configurations = Some("provided; test"))
   )
 
-  lazy val httpTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.junitIntf)
+  //lazy val httpTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.junitIntf)
+  lazy val httpTests = l ++= Seq(Test.junitJupiter, Test.junitJupiterEngine, Test.scalatest.value, Test.junitIntf)
 
   lazy val httpXml = versionDependentDeps(scalaXml)
 
@@ -157,5 +170,11 @@ object DependencyHelpers {
     val os = System.getProperty("os.name").toLowerCase()
     if (os startsWith "win") ".exe"
     else ""
+  }
+
+  def extIfWindows = {
+    val os = System.getProperty("os.name").toLowerCase()
+    if (os startsWith "win") "zip"
+    else "tar.gz"
   }
 }
