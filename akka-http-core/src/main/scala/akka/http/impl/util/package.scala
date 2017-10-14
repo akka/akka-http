@@ -92,8 +92,9 @@ package object util {
 
 package util {
 
-  import akka.http.scaladsl.model.{ ContentType, HttpEntity }
-  import akka.stream.{ Attributes, Outlet, Inlet, FlowShape }
+  import akka.http.scaladsl.model.AggregateBytesLimitExceededException
+  import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
+
   import scala.concurrent.duration.FiniteDuration
 
   private[http] class AggregateBytes(timeout: FiniteDuration, maxBytes: Long)
@@ -125,7 +126,7 @@ package util {
         override def onPush(): Unit = {
           bytes ++= grab(byteStringIn)
           if (bytes.length > maxBytes)
-            failStage(new Exception(s"AggregateBytes received more than the configured maximum $maxBytes bytes of data"))
+            failStage(AggregateBytesLimitExceededException(maxBytes))
           else
             pull(byteStringIn)
         }

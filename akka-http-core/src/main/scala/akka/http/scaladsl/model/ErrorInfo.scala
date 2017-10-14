@@ -90,4 +90,15 @@ final case class EntityStreamSizeException(limit: Long, actualSize: Option[Long]
       s"before materializing the dataBytes stream."
 }
 
+/**
+ * This exception is thrown when the size of an HTTP Entity on which `.toStrict` is called
+ * exceeds the configured limit. The limit is set by configuration option `akka.http.strict-entity-max-bytes`.
+ */
+final case class AggregateBytesLimitExceededException(maxBytes: Long) extends RuntimeException {
+
+  override def getMessage = toString
+
+  override def toString = s"The AggregateBytes received more than the configured maximum $maxBytes bytes of data"
+}
+
 case class RequestTimeoutException(request: HttpRequest, message: String) extends RuntimeException(message)

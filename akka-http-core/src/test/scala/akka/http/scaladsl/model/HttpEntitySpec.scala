@@ -103,9 +103,9 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
       }
       "Overly long data stream" in {
         val overlyLongByteString = ByteString(Random.alphanumeric.take(strictEntityMaxBytes + 1).mkString)
-        intercept[Exception] {
+        intercept[AggregateBytesLimitExceededException] {
           Await.result(IndefiniteLength(tpe, source(overlyLongByteString)).toStrict(100.millis), awaitAtMost)
-        }.getMessage must be(s"AggregateBytes received more than the configured maximum $strictEntityMaxBytes bytes of data")
+        }.maxBytes must be(strictEntityMaxBytes)
       }
     }
     "support transformDataBytes" - {
