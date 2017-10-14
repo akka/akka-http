@@ -72,17 +72,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     val httpLayer = serverLayerImpl(settings, None, log, connectionContext.isSecure)
     val tlsStage = sslTlsStage(connectionContext, Server)
 
-    lazy val nonTimeoutBidi = BidiFlow.fromFlows(
-      Flow[OrTimeoutSwitch[SslTlsOutbound]].collect {
-        case Right(sslTlsOutbound) ⇒ sslTlsOutbound
-      },
-      Flow[SslTlsInbound])
-
-    val serverBidiFlow =
-      settings.idleTimeout match {
-        case t: FiniteDuration ⇒ httpLayer atop delayCancellationStage(settings) atop tlsStage
-        case _                 ⇒ httpLayer atop delayCancellationStage(settings) atop tlsStage
-      }
+    val serverBidiFlow = httpLayer atop delayCancellationStage(settings) atop tlsStage
 
     serverBidiFlow
   }

@@ -76,7 +76,7 @@ private[http] class HttpResponseRendererFactory(
         setHandler(in, new InHandler {
           override def onPush(): Unit =
             render(grab(in)) match {
-              case Strict(outElements)  ⇒
+              case Strict(outElements) ⇒
                 push(out, outElements)
                 if (close) completeStage()
               case Streamed(outStream) ⇒
