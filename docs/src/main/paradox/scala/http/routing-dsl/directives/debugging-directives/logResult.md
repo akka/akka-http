@@ -1,14 +1,13 @@
-<a id="logresult"></a>
 # logResult
 
 ## Signature
 
 ```scala
-def logResult(marker: String)(implicit log: LoggingContext): Directive0
-def logResult(marker: String, level: LogLevel)(implicit log: LoggingContext): Directive0
-def logResult(show: RouteResult => String)(implicit log: LoggingContext): Directive0
-def logResult(show: RouteResult => LogEntry)(implicit log: LoggingContext): Directive0
-def logResult(magnet: LoggingMagnet[RouteResult => Unit])(implicit log: LoggingContext): Directive0
+def logResult(marker: String): Directive0
+def logResult(marker: String, level: LogLevel): Directive0
+def logResult(show: RouteResult => String): Directive0
+def logResult(show: RouteResult => LogEntry): Directive0
+def logResult(magnet: LoggingMagnet[RouteResult => Unit]): Directive0
 ```
 
 The signature shown is simplified, the real signature uses magnets. <a id="^1" href="#1">[1]</a>
@@ -17,9 +16,9 @@ The signature shown is simplified, the real signature uses magnets. <a id="^1" h
 
 ## Description
 
-Logs the response.
+Logs the response using the `LoggingAdapter` of the `RequestContext`.
 
-See @ref[logRequest](logRequest.md#logrequest) for the general description how these directives work. This directive is different
+See @ref[logRequest](logRequest.md) for the general description how these directives work. This directive is different
 as it requires a `LoggingMagnet[RouteResult => Unit]`. Instead of just logging `HttpResponses`, `logResult` is able to
 log any @ref[RouteResult](../../routes.md#routeresult) coming back from the inner route.
 
@@ -27,4 +26,4 @@ Use `logRequest` for logging the request, or `logRequestResult` for logging both
 
 ## Example
 
-@@snip [DebuggingDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logResult }
+@@snip [DebuggingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logResult }

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model.headers
@@ -26,6 +26,9 @@ object HttpOriginRange {
   case object `*` extends HttpOriginRange {
     def matches(origin: HttpOrigin) = true
     def render[R <: Rendering](r: R): r.type = r ~~ '*'
+
+    JavaInitialization.initializeStaticFieldWith(
+      this, classOf[jm.headers.HttpOriginRange].getField("ALL"))
   }
 
   def apply(origins: HttpOrigin*): Default = Default(immutable.Seq(origins: _*))
@@ -34,9 +37,6 @@ object HttpOriginRange {
     def matches(origin: HttpOrigin): Boolean = origins contains origin
     def render[R <: Rendering](r: R): r.type = r ~~ origins
   }
-
-  JavaInitialization.initializeStaticFieldWith(
-    `*`, classOf[jm.headers.HttpOriginRange].getField("ALL"))
 
 }
 

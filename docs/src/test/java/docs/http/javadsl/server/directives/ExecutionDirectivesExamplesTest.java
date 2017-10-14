@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package docs.http.javadsl.server.directives;
 
@@ -72,4 +72,37 @@ public class ExecutionDirectivesExamplesTest extends JUnitRouteTest {
       .assertEntity("This didn't work.");
     //#handleRejections
   }
+  
+  @Test
+    public void testHandleRejectionsWithDefails() {
+      //#handleNotFoundWithDefails
+      final RejectionHandler totallyMissingHandler = RejectionHandler.newBuilder()
+        .handleNotFound(
+          extractUnmatchedPath(path ->
+            complete(StatusCodes.NOT_FOUND, "The path " + path + " was not found!")
+          )
+        )
+        .build();
+  
+      final Route route = 
+        handleRejections(totallyMissingHandler, () ->
+        pathPrefix("handled", () ->
+          route(
+            path("existing", () -> complete("This path exists"))
+          )
+        )
+      );
+  
+      // tests:
+      testRoute(route).run(HttpRequest.GET("/handled/existing"))
+        .assertEntity("This path exists");
+      // applies default handler
+      testRoute(route).run(HttpRequest.GET("/missing"))
+        .assertStatusCode(StatusCodes.NOT_FOUND)
+        .assertEntity("The path /missing was not found!");
+      testRoute(route).run(HttpRequest.GET("/handled/missing"))
+        .assertStatusCode(StatusCodes.NOT_FOUND)
+        .assertEntity("The path /handled/missing was not found!");
+      //#handleNotFoundWithDefails
+    }
 }

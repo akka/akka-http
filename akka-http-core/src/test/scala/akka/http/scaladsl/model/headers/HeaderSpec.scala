@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model.headers
@@ -97,6 +97,7 @@ class HeaderSpec extends FreeSpec with Matchers {
         `Content-Length`(2000),
         `Content-Disposition`(ContentDispositionTypes.inline),
         `Content-Encoding`(HttpEncodings.gzip),
+        `Content-Range`(ContentRange.Default(1, 20, None)),
         `Content-Type`(ContentTypes.`text/xml(UTF-8)`),
         Cookie("cookie", "with-chocolate"),
         Date(DateTime(2016, 2, 4, 9, 9, 0)),
@@ -107,6 +108,7 @@ class HeaderSpec extends FreeSpec with Matchers {
         `If-None-Match`(EntityTagRange(EntityTag("hashhash"))),
         `If-Range`(DateTime(2016, 2, 4, 9, 9, 0)),
         `If-Unmodified-Since`(DateTime(2016, 2, 4, 9, 9, 0)),
+        `Last-Event-ID`("123"),
         Link(Uri("http://example.com"), LinkParams.`title*`("example")),
         Origin(HttpOrigin("http", Host("example.com"))),
         `Proxy-Authorization`(BasicHttpCredentials("johan", "correcthorsebatterystaple")),
@@ -119,6 +121,8 @@ class HeaderSpec extends FreeSpec with Matchers {
         Upgrade(Vector(UpgradeProtocol("HTTP", Some("2.0")))),
         `User-Agent`("Akka HTTP Client 2.4"),
         `X-Forwarded-For`(RemoteAddress(InetAddress.getByName("192.168.0.1"))),
+        `X-Forwarded-Host`(Uri.Host(InetAddress.getByName("192.168.0.2"))),
+        `X-Forwarded-Proto`("https"),
         `X-Real-Ip`(RemoteAddress(InetAddress.getByName("192.168.1.1"))))
 
       requestHeaders.foreach { header ⇒

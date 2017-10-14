@@ -1,33 +1,29 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.http.javadsl;
 
 import akka.Done;
-import akka.actor.AbstractActor;
-import akka.http.javadsl.ConnectHttp;
-import akka.http.javadsl.HostConnectionPool;
-import akka.japi.Pair;
-
-import akka.japi.pf.ReceiveBuilder;
+import akka.actor.*;
+import akka.http.javadsl.model.headers.BasicHttpCredentials;
+import akka.http.javadsl.model.headers.HttpCredentials;
 import akka.stream.Materializer;
 import akka.util.ByteString;
-import scala.compat.java8.FutureConverters;
 import scala.concurrent.ExecutionContextExecutor;
-import scala.concurrent.Future;
 import akka.stream.javadsl.*;
-import akka.http.javadsl.OutgoingConnection;
+import akka.http.javadsl.ClientTransport;
+import akka.http.javadsl.settings.ConnectionPoolSettings;
 import akka.http.javadsl.Http;
+import akka.http.javadsl.OutgoingConnection;
 
 import static akka.http.javadsl.ConnectHttp.toHost;
-import static akka.pattern.PatternsCS.*;
 
+import java.net.InetSocketAddress;
 import java.util.concurrent.CompletionStage;
 
 //#manual-entity-consume-example-1
 import java.io.File;
-import akka.actor.ActorSystem;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function; 
@@ -35,7 +31,6 @@ import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Framing;
 import akka.http.javadsl.model.*;
 import scala.concurrent.duration.FiniteDuration;
-import scala.util.Try;
 //#manual-entity-consume-example-1
 
 @SuppressWarnings("unused")
@@ -141,33 +136,21 @@ public class HttpClientExampleDocTest {
     final Flow<HttpRequest, HttpResponse, CompletionStage<OutgoingConnection>> connectionFlow =
             Http.get(system).outgoingConnection(toHost("akka.io", 80));
     final CompletionStage<HttpResponse> responseFuture =
+            // This is actually a bad idea in general. Even if the `connectionFlow` was instantiated only once above,
+            // a new connection is opened every single time, `runWith` is called. Materialization (the `runWith` call)
+            // and opening up a new connection is slow.
+            //
+            // The `outgoingConnection` API is very low-level. Use it only if you already have a `Source[HttpRequest]`
+            // (other than Source.single) available that you want to use to run requests on a single persistent HTTP
+            // connection.
+            //
+            // Unfortunately, this case is so uncommon, that we couldn't come up with a good example.
+            //
+            // In almost all cases it is better to use the `Http().singleRequest()` API instead.
             Source.single(HttpRequest.create("/"))
                     .via(connectionFlow)
                     .runWith(Sink.<HttpResponse>head(), materializer);
     //#outgoing-connection-example
-  }
-
-  // compile only test
-  public void testHostLevelExample() {
-    //#host-level-example
-    final ActorSystem system = ActorSystem.create();
-    final ActorMaterializer materializer = ActorMaterializer.create(system);
-
-    // construct a pool client flow with context type `Integer`
-    final Flow<
-      Pair<HttpRequest, Integer>,
-      Pair<Try<HttpResponse>, Integer>,
-      HostConnectionPool> poolClientFlow =
-      Http.get(system).<Integer>cachedHostConnectionPool(toHost("akka.io", 80), materializer);
-
-    // construct a pool client flow with context type `Integer`
-
-    final CompletionStage<Pair<Try<HttpResponse>, Integer>> responseFuture =
-      Source
-        .single(Pair.create(HttpRequest.create("/"), 42))
-        .via(poolClientFlow)
-        .runWith(Sink.<Pair<Try<HttpResponse>, Integer>>head(), materializer);
-    //#host-level-example
   }
 
   // compile only test
@@ -182,24 +165,52 @@ public class HttpClientExampleDocTest {
     //#single-request-example
   }
 
-  static
-      //#single-request-in-actor-example
-    class Myself extends AbstractActor {
-      final Http http = Http.get(context().system());
-      final ExecutionContextExecutor dispatcher = context().dispatcher();
-      final Materializer materializer = ActorMaterializer.create(context());
+  // compile only test
+  public void testSingleRequestWithHttpsProxyExample() {
+    //#https-proxy-example-single-request
 
-      public Myself() {
-        receive(ReceiveBuilder
-         .match(String.class, url -> {
-           pipe(fetch (url), dispatcher).to(self());
-         }).build());
-      }
+    final ActorSystem system = ActorSystem.create();
+    final Materializer materializer = ActorMaterializer.create(system);
 
-      CompletionStage<HttpResponse> fetch(String url) {
-        return http.singleRequest(HttpRequest.create(url), materializer);
-      }
-    }
-    //#single-request-in-actor-example
+    ClientTransport proxy = ClientTransport.httpsProxy(InetSocketAddress.createUnresolved("192.168.2.5", 8080));
+    ConnectionPoolSettings poolSettingsWithHttpsProxy = ConnectionPoolSettings.create(system).withTransport(proxy);
 
+    final CompletionStage<HttpResponse> responseFuture =
+        Http.get(system)
+            .singleRequest(
+                  HttpRequest.create("https://github.com"),
+                  Http.get(system).defaultClientHttpsContext(),
+                  poolSettingsWithHttpsProxy, // <- pass in the custom settings here
+                  system.log(),
+                  materializer);
+
+    //#https-proxy-example-single-request
+  }
+  
+  // compile only test
+  public void testSingleRequestWithHttpsProxyExampleWithAuth() {
+
+    final ActorSystem system = ActorSystem.create();
+    final Materializer materializer = ActorMaterializer.create(system);
+
+    //#auth-https-proxy-example-single-request
+    InetSocketAddress proxyAddress = 
+      InetSocketAddress.createUnresolved("192.168.2.5", 8080);
+    HttpCredentials credentials = 
+      HttpCredentials.createBasicHttpCredentials("proxy-user", "secret-proxy-pass-dont-tell-anyone");
+    
+    ClientTransport proxy = ClientTransport.httpsProxy(proxyAddress, credentials); // include credentials
+    ConnectionPoolSettings poolSettingsWithHttpsProxy = ConnectionPoolSettings.create(system).withTransport(proxy);
+
+    final CompletionStage<HttpResponse> responseFuture =
+        Http.get(system)
+            .singleRequest(
+                  HttpRequest.create("https://github.com"),
+                  Http.get(system).defaultClientHttpsContext(),
+                  poolSettingsWithHttpsProxy, // <- pass in the custom settings here
+                  system.log(),
+                  materializer);
+
+    //#auth-https-proxy-example-single-request
+  }
 }

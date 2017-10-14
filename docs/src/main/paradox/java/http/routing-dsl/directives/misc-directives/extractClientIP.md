@@ -1,4 +1,3 @@
-<a id="extractclientip-java"></a>
 # extractClientIP
 
 ## Description
@@ -10,4 +9,4 @@ setting `akka.http.server.remote-address-header` is set to `on`. Per default it 
 
 ## Example
 
-@@snip [MiscDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/MiscDirectivesExamplesTest.java) { #extractClientIPExample }
+@@snip [MiscDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MiscDirectivesExamplesTest.java) { #extractClientIPExample }

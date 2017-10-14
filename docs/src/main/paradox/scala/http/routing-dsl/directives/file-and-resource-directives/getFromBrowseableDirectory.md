@@ -1,9 +1,8 @@
-<a id="getfrombrowseabledirectory"></a>
 # getFromBrowseableDirectory
 
 ## Signature
 
-@@signature [FileAndResourceDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileAndResourceDirectives.scala) { #getFromBrowseableDirectory }
+@@signature [FileAndResourceDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileAndResourceDirectives.scala) { #getFromBrowseableDirectory }
 
 ## Description
 
@@ -16,11 +15,11 @@ Use `getFromBrowseableDirectory` to serve only one directory.
 
 Use `getFromDirectory` if directory browsing isn't required.
 
-For more details refer to [getFromBrowseableDirectory](#getfrombrowseabledirectory).
+For more details refer to [getFromBrowseableDirectory]().
 
 ## Example
 
-@@snip [FileAndResourceDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/FileAndResourceDirectivesExamplesSpec.scala) { #getFromBrowseableDirectory-examples }
+@@snip [FileAndResourceDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FileAndResourceDirectivesExamplesSpec.scala) { #getFromBrowseableDirectory-examples }
 
 ### Default file listing page example
 

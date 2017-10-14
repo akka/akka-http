@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.javadsl
@@ -8,7 +8,7 @@ import java.net.InetSocketAddress
 
 import akka.http.scaladsl
 
-class OutgoingConnection private[http] (delegate: scaladsl.Http.OutgoingConnection) {
+class OutgoingConnection private[http] (val delegate: scaladsl.Http.OutgoingConnection) {
   /**
    * The local address of this connection.
    */

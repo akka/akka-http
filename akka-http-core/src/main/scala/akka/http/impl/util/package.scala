@@ -1,14 +1,16 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl
 
 import language.implicitConversions
 import java.nio.charset.Charset
+
 import com.typesafe.config.Config
-import akka.stream.scaladsl.{ Flow, Source }
+import akka.stream.scaladsl.Source
 import akka.stream.stage._
+
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ Await, Future }
 import scala.reflect.ClassTag
@@ -16,6 +18,7 @@ import scala.util.{ Failure, Success }
 import scala.util.matching.Regex
 import akka.util.ByteString
 import akka.actor._
+import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse }
 
 package object util {
   private[http] val UTF8 = Charset.forName("UTF8")
@@ -70,12 +73,27 @@ package object util {
       "%.1f %sB" format (bytes / math.pow(unit, exp), pre)
     } else bytes.toString + "  B"
   }
+
+  private[http] implicit class RichHttpRequest(val request: HttpRequest) extends AnyVal {
+    def debugString: String = s"${request.method.value} ${request.uri.path} ${entityDebugInfo(request.entity)}"
+  }
+  private[http] implicit class RichHttpResponse(val response: HttpResponse) extends AnyVal {
+    def debugString: String = s"${response.status.value} ${entityDebugInfo(response.entity)}"
+  }
+  private def entityDebugInfo(e: HttpEntity): String = e match {
+    case HttpEntity.Empty                 ⇒ "Empty"
+    case HttpEntity.Strict(_, data)       ⇒ s"Strict(${data.size} bytes)"
+    case HttpEntity.Default(_, length, _) ⇒ s"Default($length bytes)"
+    case _: HttpEntity.CloseDelimited     ⇒ "CloseDelimited"
+    case _: HttpEntity.IndefiniteLength   ⇒ "IndefiniteLength"
+    case _: HttpEntity.Chunked            ⇒ "Chunked"
+  }
 }
 
 package util {
 
-  import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
-
+  import akka.http.scaladsl.model.{ ContentType, HttpEntity }
+  import akka.stream.{ Attributes, Outlet, Inlet, FlowShape }
   import scala.concurrent.duration.FiniteDuration
 
   private[http] class AggregateBytes(timeout: FiniteDuration, maxBytes: Long)

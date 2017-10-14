@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -101,6 +101,11 @@ object MediaType {
 
   def text(subType: String, fileExtensions: String*): WithOpenCharset =
     new NonMultipartWithOpenCharset("text/" + subType, "text", subType, fileExtensions.toList) {
+      override def isText = true
+    }
+
+  def textWithFixedCharset(subType: String, charset: HttpCharset, fileExtensions: String*): WithFixedCharset =
+    new WithFixedCharset("text/" + subType, "text", subType, charset, fileExtensions.toList) {
       override def isText = true
     }
 
@@ -219,25 +224,49 @@ object MediaType {
       customWithFixedCharset(mainType, subType, charset, fileExtensions, params)
 
     /**
+     * Turns the media type into a content type with a fixed, known charset.
+     *
      * JAVA API
      */
     def toContentType: ContentType.WithFixedCharset = ContentType(this)
   }
 
   sealed abstract class WithOpenCharset extends NonBinary with jm.MediaType.WithOpenCharset {
+    /**
+     * Turns the media type into a content type without specifying a charset.
+     *
+     * This is generally NOT what you want, since you're hiding the actual character encoding of your content, making
+     * decoding it possibly ambiguous.
+     *
+     * Consider using toContentType(charset: HttpCharset) instead.
+     */
+    def withMissingCharset: ContentType.WithMissingCharset = ContentType.WithMissingCharset(this)
     def withCharset(charset: HttpCharset): ContentType.WithCharset = ContentType(this, charset)
+    def withParams(params: Map[String, String]): WithOpenCharset with MediaType =
+      customWithOpenCharset(mainType, subType, fileExtensions, params)
 
     /**
+     * Turns the media type into a content type with the given charset.
+     *
      * JAVA API
      */
     def toContentType(charset: jm.HttpCharset): ContentType.WithCharset = withCharset(charset.asScala)
+    /**
+     * Turns the media type into a content type without specifying a charset.
+     *
+     * This is generally NOT what you want, since you're hiding the actual character encoding of your content, making
+     * decoding it possibly ambiguous.
+     *
+     * Consider using toContentType(charset: HttpCharset) instead.
+     *
+     * JAVA API
+     */
+    def toContentTypeWithMissingCharset: ContentType.WithMissingCharset = withMissingCharset
   }
 
   sealed abstract class NonMultipartWithOpenCharset(val value: String, val mainType: String, val subType: String,
                                                     val fileExtensions: List[String]) extends WithOpenCharset {
     def params: Map[String, String] = Map.empty
-    def withParams(params: Map[String, String]): WithOpenCharset with MediaType =
-      customWithOpenCharset(mainType, subType, fileExtensions, params)
   }
 
   final class Multipart(subType: String, _params: Map[String, String])
@@ -278,8 +307,8 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
     register(mediaType.mainType.toRootLowerCase → mediaType.subType.toRootLowerCase, mediaType)
   }
 
-  import MediaType._  
-  
+  import MediaType._
+
   /////////////////////////// PREDEFINED MEDIA-TYPE DEFINITION ////////////////////////////
   // format: OFF
 
@@ -290,6 +319,7 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   private def img(st: String, c: Compressibility, fe: String*)  = register(image(st, c, fe: _*))
   private def msg(st: String, fe: String*)                      = register(message(st, Compressible, fe: _*))
   private def txt(st: String, fe: String*)                      = register(text(st, fe: _*))
+  private def txtfc(st: String, cs: HttpCharset, fe: String*)   = register(textWithFixedCharset(st, cs, fe: _*))
   private def vid(st: String, fe: String*)                      = register(video(st, NotCompressible, fe: _*))
 
   // dummy value currently only used by ContentType.NoContentType
@@ -425,6 +455,7 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   val `text/calendar`             = txt("calendar", "ics")
   val `text/css`                  = txt("css", "css")
   val `text/csv`                  = txt("csv", "csv")
+  val `text/event-stream`         = txtfc("event-stream", HttpCharsets.`UTF-8`)
   val `text/html`                 = txt("html", "htm", "html", "htmls", "htx")
   val `text/markdown`             = txt("markdown", "markdown", "md")
   val `text/mcf`                  = txt("mcf", "mcf")

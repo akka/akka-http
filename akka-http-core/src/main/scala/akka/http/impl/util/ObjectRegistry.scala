@@ -1,8 +1,10 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.util
+
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API
@@ -10,6 +12,7 @@ package akka.http.impl.util
  * A unsynchronized registry to keep track of singleton instances similar to what
  * java.lang.Enum provides. `registry` should therefore only be used inside of singleton constructors.
  */
+@InternalApi
 private[http] trait ObjectRegistry[K, V <: AnyRef] {
   private[this] var _registry = Map.empty[K, V]
 

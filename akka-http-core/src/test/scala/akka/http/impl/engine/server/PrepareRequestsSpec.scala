@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.http.impl.engine.server
 
@@ -11,7 +11,7 @@ import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.{ Attributes, ActorMaterializer }
 import akka.stream.scaladsl.{ Sink, Source, Flow }
 import akka.stream.testkit.{ TestSubscriber, TestPublisher }
-import akka.testkit.AkkaSpec
+import akka.testkit._
 import akka.util.ByteString
 import scala.concurrent.duration._
 
@@ -93,7 +93,7 @@ class PrepareRequestsSpec extends AkkaSpec {
       inSub.expectRequest(1)
 
       // bug would fail stream here with exception
-      upstreamProbe.expectNoMsg(100.millis)
+      upstreamProbe.expectNoMsg(100.millis.dilated)
 
       inSub.sendNext(ParserOutput.EntityChunk(HttpEntity.ChunkStreamPart(ByteString("abc"))))
       entityProbe.expectNext()

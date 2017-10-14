@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -8,6 +8,7 @@ import akka.NotUsed
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 import Protocol.Opcode
+import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
@@ -20,6 +21,7 @@ import scala.util.control.NonFatal
  *
  * INTERNAL API
  */
+@InternalApi
 private[http] object FrameHandler {
 
   def create(server: Boolean): Flow[FrameEventOrError, Output, NotUsed] =

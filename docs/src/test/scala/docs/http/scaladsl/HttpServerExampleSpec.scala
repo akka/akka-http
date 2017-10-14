@@ -1,12 +1,11 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.http.scaladsl
 
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.model.StatusCodes
-import akka.stream.scaladsl.Sink
 import akka.testkit.TestActors
 import docs.CompileOnlySpec
 import org.scalatest.{ Matchers, WordSpec }
@@ -55,7 +54,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
       def main(args: Array[String]) {
         implicit val system = ActorSystem()
         implicit val materializer = ActorMaterializer()
-        // needed for the future onFailure in the end
+        // needed for the future foreach in the end
         implicit val executionContext = system.dispatcher
 
         val handler = get {
@@ -67,9 +66,8 @@ class HttpServerExampleSpec extends WordSpec with Matchers
         val bindingFuture: Future[ServerBinding] =
           Http().bindAndHandle(handler, host, port)
 
-        bindingFuture.onFailure {
-          case ex: Exception =>
-            log.error(ex, "Failed to bind to {}:{}!", host, port)
+        bindingFuture.failed.foreach { ex =>
+          log.error(ex, "Failed to bind to {}:{}!", host, port)
         }
       }
     }
@@ -93,7 +91,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
 
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
-    // needed for the future onFailure in the end
+    // needed for the future foreach in the end
     implicit val executionContext = system.dispatcher
 
     // let's say the OS won't allow us to bind to 80.
@@ -104,9 +102,8 @@ class HttpServerExampleSpec extends WordSpec with Matchers
       .to(handleConnections) // Sink[Http.IncomingConnection, _]
       .run()
 
-    bindingFuture.onFailure {
-      case ex: Exception =>
-        log.error(ex, "Failed to bind to {}:{}!", host, port)
+    bindingFuture.failed.foreach { ex =>
+      log.error(ex, "Failed to bind to {}:{}!", host, port)
     }
     //#binding-failure-handling
   }
@@ -134,8 +131,8 @@ class HttpServerExampleSpec extends WordSpec with Matchers
     val failureMonitor: ActorRef = system.actorOf(MyExampleMonitoringActor.props)
 
     val reactToTopLevelFailures = Flow[IncomingConnection]
-      .watchTermination()((_, termination) => termination.onFailure {
-        case cause => failureMonitor ! cause
+      .watchTermination()((_, termination) => termination.failed.foreach {
+        cause => failureMonitor ! cause
       })
 
     serverSource
@@ -439,7 +436,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
               .as(OrderItem) { orderItem =>
                 // ... route using case class instance created from
                 // required and optional query parameters
-                complete("") // hide
+                complete("") // #hide
               }
           }
         }
@@ -511,7 +508,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
 
   "interact with an actor" in compileOnlySpec {
     //#actor-interaction
-    import akka.actor.{Actor, ActorSystem, Props}
+    import akka.actor.{Actor, ActorSystem, Props, ActorLogging}
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model.StatusCodes
     import akka.http.scaladsl.server.Directives._
@@ -520,19 +517,24 @@ class HttpServerExampleSpec extends WordSpec with Matchers
     import akka.stream.ActorMaterializer
     import akka.util.Timeout
     import spray.json.DefaultJsonProtocol._
+    import scala.concurrent.Future
     import scala.concurrent.duration._
     import scala.io.StdIn
 
     object WebServer {
 
-      case class Bid(userId: String, bid: Int)
+      case class Bid(userId: String, offer: Int)
       case object GetBids
       case class Bids(bids: List[Bid])
 
-      class Auction extends Actor {
+      class Auction extends Actor with ActorLogging {
+        var bids = List.empty[Bid]
         def receive = {
-          case Bid(userId, bid) => println(s"Bid complete: $userId, $bid")
-          case _ => println("Invalid message")
+          case bid @ Bid(userId, offer) =>
+            bids = bids :+ bid
+            log.info(s"Bid complete: $userId, $offer")
+          case GetBids => sender() ! Bids(bids)
+          case _ => log.info("Invalid message")
         }
       }
 
@@ -556,7 +558,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
                 auction ! Bid(user, bid)
                 complete((StatusCodes.Accepted, "bid placed"))
               }
-            }
+            } ~
             get {
               implicit val timeout: Timeout = 5.seconds
 

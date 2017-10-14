@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.model
@@ -9,7 +9,7 @@ import akka.util.Unsafe
 /**
  * Provides workarounds around JavaDSL initialisation edge cases.
  *
- * FIXME: Exists only to fix JavaDSL init problem: #19162. Remove in Akka 3.x when "ALL" static fields moved
+ * FIXME: Exists only to fix JavaDSL init problem: #19162. Remove in Akka HTTP 11.x when "ALL" static fields moved
  */
 private[akka] object JavaInitialization {
 

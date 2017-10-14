@@ -1,4 +1,3 @@
-<a id="extractstrictentity-java"></a>
 # extractStrictEntity
 
 ## Description
@@ -11,10 +10,10 @@ A timeout parameter is given and if the stream isn't completed after the timeout
 
 The directive will read the request entity into memory within the size limit(8M by default) and effectively disable streaming.
 The size limit can be configured globally with `akka.http.parsing.max-content-length` or
-overridden by wrapping with @ref[withSizeLimit](../misc-directives/withSizeLimit.md#withsizelimit-java) or @ref[withoutSizeLimit-java](../misc-directives/withoutSizeLimit.md#withoutsizelimit-java) directive.
+overridden by wrapping with @ref[withSizeLimit](../misc-directives/withSizeLimit.md) or @ref[withoutSizeLimit](../misc-directives/withoutSizeLimit.md) directive.
 
 @@@
 
 ## Example
 
-@@snip [BasicDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #extractStrictEntity }
+@@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #extractStrictEntity }

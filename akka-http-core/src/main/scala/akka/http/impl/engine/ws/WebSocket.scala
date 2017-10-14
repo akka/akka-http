@@ -1,25 +1,29 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
 
 import java.util.Random
+
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
+import akka.http.impl.util.StreamUtils
 import akka.util.ByteString
+
 import scala.concurrent.duration._
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.http.scaladsl.model.ws._
-import akka.stream.impl.fusing.SubSource
 
 /**
  * INTERNAL API
  *
  * Defines components of the websocket stack.
  */
+@InternalApi
 private[http] object WebSocket {
   import FrameHandler._
 
@@ -103,7 +107,7 @@ private[http] object WebSocket {
           case (Nil, _) ⇒ Nil
           case (first +: Nil, remaining) ⇒ (first match {
             case TextMessagePart(text, true) ⇒
-              SubSource.kill(remaining)
+              StreamUtils.cancelSource(remaining)(StreamUtils.OnlyRunInGraphInterpreterContext)
               TextMessage.Strict(text)
             case first @ TextMessagePart(text, false) ⇒
               TextMessage(
@@ -112,7 +116,7 @@ private[http] object WebSocket {
                     case t: TextMessagePart if t.data.nonEmpty ⇒ t.data
                   })
             case BinaryMessagePart(data, true) ⇒
-              SubSource.kill(remaining)
+              StreamUtils.cancelSource(remaining)(StreamUtils.OnlyRunInGraphInterpreterContext)
               BinaryMessage.Strict(data)
             case first @ BinaryMessagePart(data, false) ⇒
               BinaryMessage(

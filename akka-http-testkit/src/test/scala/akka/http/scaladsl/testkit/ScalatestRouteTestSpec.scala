@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.testkit
@@ -7,7 +7,7 @@ package akka.http.scaladsl.testkit
 import scala.concurrent.duration._
 import org.scalatest.FreeSpec
 import org.scalatest.Matchers
-import akka.testkit.TestProbe
+import akka.testkit._
 import akka.util.Timeout
 import akka.pattern.ask
 import akka.http.scaladsl.model.headers.RawHeader
@@ -55,7 +55,7 @@ class ScalatestRouteTestSpec extends FreeSpec with Matchers with ScalatestRouteT
       val service = TestProbe()
       val handler = TestProbe()
       implicit def serviceRef = service.ref
-      implicit val askTimeout: Timeout = 1.second
+      implicit val askTimeout: Timeout = 1.second.dilated
 
       val result =
         Get() ~> pinkHeader ~> {
@@ -74,8 +74,4 @@ class ScalatestRouteTestSpec extends FreeSpec with Matchers with ScalatestRouteT
       }(result)
     }
   }
-
-  // TODO: remove once RespondWithDirectives have been ported
-  def respondWithHeader(responseHeader: HttpHeader): Directive0 =
-    mapResponseHeaders(responseHeader +: _)
 }

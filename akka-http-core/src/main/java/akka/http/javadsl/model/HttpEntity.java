@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.javadsl.model;
@@ -50,10 +50,9 @@ public interface HttpEntity {
     /**
      * The empty entity.
      *
-     * @deprecated Will be removed in Akka 3.x, use {@link HttpEntities#EMPTY} instead.
+     * @deprecated Will be removed in Akka HTTP 11.x, use {@link HttpEntities#EMPTY} instead.
      */
     @Deprecated
-    // FIXME: Remove in Akka 10.0
     HttpEntity.Strict EMPTY = HttpEntities.EMPTY;
 
     /**
@@ -155,6 +154,10 @@ public interface HttpEntity {
      * Allowing it to be consumable twice would require buffering the incoming data, thus defeating the purpose
      * of its streaming nature. If the dataBytes source is materialized a second time, it will fail with an
      * "stream can cannot be materialized more than once" exception.
+     *
+     * When called on `Strict` entities or sources whose values can be buffered in memory,
+     * the above warnings can be ignored. Repeated materialization is not necessary in this case, avoiding
+     * the mentioned exceptions due to the data being held in memory.
      *
      * In future versions, more automatic ways to warn or resolve these situations may be introduced, see issue #18716.
      */

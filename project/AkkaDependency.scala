@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka
 
@@ -8,11 +8,11 @@ import Keys._
 
 object AkkaDependency {
   // Needs to be a URI like git://github.com/akka/akka.git#master or file:///xyz/akka
-  val akkaSourceDependencyUri = sys.props.getOrElse("akka.sources", "")
+  val akkaSourceDependencyUri = System.getProperty("akka.sources", "")
   val shouldUseSourceDependency = akkaSourceDependencyUri != ""
   val akkaRepository = {
     // as a little hacky side effect also disable aggregation of samples
-    sys.props += "akka.build.aggregateSamples" -> "false"
+    System.setProperty("akka.build.aggregateSamples", "false")
 
     uri(akkaSourceDependencyUri)
   }
@@ -28,11 +28,13 @@ object AkkaDependency {
 
         project.dependsOn(withConfig)
       } else {
-        val dep = "com.typesafe.akka" %% module % Dependencies.akkaVersion
-        val withConfig =
-          if (config == "") dep
-          else dep % config
-        project.settings(libraryDependencies += withConfig)
+        project.settings(libraryDependencies += {
+          val dep = "com.typesafe.akka" %% module % Dependencies.akkaVersion.value
+          val withConfig =
+            if (config == "") dep
+            else dep % config
+          withConfig
+        })
       }
   }
 }

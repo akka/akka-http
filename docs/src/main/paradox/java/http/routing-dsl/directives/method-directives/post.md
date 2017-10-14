@@ -1,4 +1,3 @@
-<a id="post-java"></a>
 # post
 
 Matches requests with HTTP method `POST`.
@@ -12,4 +11,4 @@ by the default `RejectionHandler`.
 
 ## Example
 
-@@snip [MethodDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java) { #post }
+@@snip [MethodDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java) { #post }

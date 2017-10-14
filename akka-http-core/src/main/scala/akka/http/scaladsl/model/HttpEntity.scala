@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -22,7 +22,7 @@ import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream._
 import akka.{ Done, NotUsed, stream }
-import akka.http.scaladsl.model.ContentType.{ Binary, NonBinary }
+import akka.http.scaladsl.model.ContentType.{ Binary, NonBinary, WithMissingCharset }
 import akka.http.scaladsl.util.FastFuture
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.{ JavaMapping, StreamUtils, AggregateBytes }
@@ -31,6 +31,8 @@ import akka.http.impl.util.JavaMapping.Implicits._
 import scala.compat.java8.OptionConverters._
 import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
+
+import akka.annotation.{ DoNotInherit, InternalApi }
 
 import scala.compat.java8.FutureConverters
 
@@ -92,6 +94,10 @@ sealed trait HttpEntity extends jm.HttpEntity {
    * Allowing it to be consumable twice would require buffering the incoming data, thus defeating the purpose
    * of its streaming nature. If the dataBytes source is materialized a second time, it will fail with an
    * "stream can cannot be materialized more than once" exception.
+   *
+   * When called on `Strict` entities or sources whose values can be buffered in memory,
+   * the above warnings can be ignored. Repeated materialization is not necessary in this case, avoiding
+   * the mentioned exceptions due to the data being held in memory.
    *
    * In future versions, more automatic ways to warn or resolve these situations may be introduced, see issue #18716.
    */
@@ -344,6 +350,8 @@ object HttpEntity {
       val dataAsString = contentType match {
         case _: Binary ⇒
           data.toString()
+        case _: WithMissingCharset ⇒
+          data.toString()
         case nb: NonBinary ⇒
           try {
             val maxBytes = 4096
@@ -409,6 +417,7 @@ object HttpEntity {
    *
    * INTERNAL API
    */
+  @DoNotInherit
   private[http] sealed trait WithoutKnownLength extends HttpEntity {
     type Self <: HttpEntity.WithoutKnownLength
     def contentType: ContentType
@@ -585,9 +594,6 @@ object HttpEntity {
   def limitableChunkSource[Mat](source: Source[ChunkStreamPart, Mat]): Source[ChunkStreamPart, Mat] =
     source.via(new Limitable(sizeOfChunkStreamPart))
 
-  /**
-   * INTERNAL API
-   */
   private val sizeOfByteString: ByteString ⇒ Int = _.size
   private val sizeOfChunkStreamPart: ChunkStreamPart ⇒ Int = _.data.size
 
@@ -632,9 +638,6 @@ object HttpEntity {
     }
   }
 
-  /**
-   * INTERNAL API
-   */
   private final case class SizeLimit(maxBytes: Long, contentLength: Option[Long] = None) extends Attributes.Attribute {
     def isDisabled = maxBytes < 0
   }
@@ -645,6 +648,7 @@ object HttpEntity {
   /**
    * INTERNAL API
    */
+  @InternalApi
   private[http] def captureTermination[T <: HttpEntity](entity: T): (T, Future[Unit]) =
     entity match {
       case x: HttpEntity.Strict ⇒ x.asInstanceOf[T] → FastFuture.successful(())

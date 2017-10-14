@@ -1,4 +1,3 @@
-<a id="custom-directives"></a>
 # Custom Directives
 
 Part of the power of akka-http directives comes from the ease with which it’s possible to define
@@ -19,19 +18,19 @@ named configurations of more low-level directives.
 The basic technique is explained in the chapter about Composing Directives, where, for example, a new directive
 `getOrPut` is defined like this:
 
-@@snip [CustomDirectivesExamplesSpec.scala](../../../../../../test/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #labeling }
+@@snip [CustomDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #labeling }
 
-Another example is the @ref[MethodDirectives](method-directives/index.md#methoddirectives) which are simply instances of a preconfigured @ref[method](method-directives/method.md#method) directive.
+Another example is the @ref[MethodDirectives](method-directives/index.md) which are simply instances of a preconfigured @ref[method](method-directives/method.md) directive.
 The low-level directives that most often form the basis of higher-level “named configuration” directives are grouped
-together in the @ref[BasicDirectives](basic-directives/index.md#basicdirectives) trait.
+together in the @ref[BasicDirectives](basic-directives/index.md) trait.
 
 ## Transforming Directives
 
 The second option for creating new directives is to transform an existing one using one of the
-“transformation methods”, which are defined on the @github[Directive](/akka-http/src/main/scala/akka/http/scaladsl/server/Directive.scala) class, the base class of all “regular” directives.
+“transformation methods”, which are defined on the @scaladoc[Directive](akka.http.scaladsl.server.Directive) class, the base class of all “regular” directives.
 
 Apart from the combinator operators (`|` and `&`) and the case-class extractor (`as[T]`)
-there following transformations is also defined on all `Directive` instances:
+the following transformations are also defined on all `Directive` instances:
 
 >
  * [map/tmap](#map-tmap)
@@ -45,9 +44,9 @@ there following transformations is also defined on all `Directive` instances:
 If the Directive is a single-value `Directive`, the `map` method allows
 for simple transformations:
 
-@@snip [CustomDirectivesExamplesSpec.scala](../../../../../../test/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #map-0 }
+@@snip [CustomDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #map-0 }
 
-One example of a predefined directive relying on `map` is the @github[optionalHeaderValue](/akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala#L67) directive.
+One example of a predefined directive relying on `map` is the @github[optionalHeaderValue](/akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala) { #optionalHeaderValue } directive.
 
 The tmap modifier has this signature (somewhat simplified):
 
@@ -60,7 +59,7 @@ The number and/or types of the extractions can be changed arbitrarily. For examp
 if `R` is `Tuple2[A, B]` then the result will be a `Directive[(A, B)]`. Here is a
 somewhat contrived example:
 
-@@snip [CustomDirectivesExamplesSpec.scala](../../../../../../test/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #tmap-1 }
+@@snip [CustomDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #tmap-1 }
 
 <a id="flatmap-tflatmap"></a>
 ### flatMap and tflatMap
@@ -84,16 +83,16 @@ variant called `flatMap`, which simplifies the operation for Directives only ext
 
 Here is the (contrived) example from above, which doubles positive Int values and rejects all others:
 
-@@snip [CustomDirectivesExamplesSpec.scala](../../../../../../test/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #flatMap-0 }
+@@snip [CustomDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #flatMap-0 }
 
 A common pattern that relies on flatMap is to first extract a value
 from the RequestContext with the extract directive and then flatMap with
 some kind of filtering logic. For example, this is the implementation
 of the method directive:
 
-@@signature [MethodDirectives.scala](../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala) { #method }
+@@snip [MethodDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala) { #method }
 
-The explicit type parameter `[Unit]` on the flatMap i`s needed in this case
+The explicit type parameter `[Unit]` on the flatMap is needed in this case
 because the result of the flatMap is directly concatenated with the
 `cancelAllRejections` directive, thereby preventing “outside-in”
 inference of the type parameter value.
@@ -113,7 +112,7 @@ def require(predicate: T ⇒ Boolean, rejections: Rejection*): Directive0
 
 One example of a predefined directive relying on require is the first overload of the host directive:
 
-@@snip[HostDirectives.scala](../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HostDirectives.scala) { #require-host }
+@@snip[HostDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/HostDirectives.scala) { #require-host }
 
 You can only call require on single-extraction directives. The trequire modifier is the
 more general variant, which takes a predicate of type `Tuple => Boolean`.
@@ -141,7 +140,7 @@ def recoverPF[R >: L: Tuple](
 
 One example of a predefined directive relying `recoverPF` is the `optionalHeaderValue` directive:
 
-@@signature [HeaderDirectives.scala](../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala) { #optionalHeaderValue }
+@@signature [HeaderDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala) { #optionalHeaderValue }
 
 ## Directives from Scratch
 
@@ -149,11 +148,11 @@ The third option for creating custom directives is to do it “from scratch”,
 by directly subclassing the Directive class. The Directive is defined like this
 (leaving away operators and modifiers):
 
-@@snip [Directive.scala](../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/Directive.scala) { #basic }
+@@snip [Directive.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/Directive.scala) { #basic }
 
-It only has one abstract member that you need to implement, the happly method, which creates
+It only has one abstract member that you need to implement, the `tapply` method, which creates
 the Route the directives presents to the outside from its inner Route building function
-(taking the extractions as parameter).
+(taking the extractions as parameters).
 
 Extractions are kept as a Tuple. Here are a few examples:
 
@@ -170,7 +169,7 @@ A `Directive[(String)]` extracts one String value (like the hostName directive).
 type Directive1[T] = Directive[Tuple1[T]]
 ```
 
-A Directive[(Int, String)] extracts an `Int` value and a `String` value
+A `Directive[(Int, String)]` extracts an `Int` value and a `String` value
 (like a `parameters('a.as[Int], 'b.as[String])` directive).
 
 Keeping extractions as `Tuples` has a lot of advantages, mainly great flexibility

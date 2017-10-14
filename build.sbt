@@ -1,12 +1,17 @@
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import akka._
 import AkkaDependency._
+import akka.ValidatePullRequest._
+import sbtdynver.GitDescribeOutput
+import com.typesafe.sbt.SbtGit.GitKeys._
 
 inThisBuild(Def.settings(
   organization := "com.typesafe.akka",
   organizationName := "Lightbend",
   organizationHomepage := Some(url("https://www.lightbend.com")),
   homepage := Some(url("http://akka.io")),
+  // https://github.com/dwijnand/sbt-dynver/issues/23
+  isSnapshot :=  { isSnapshot.value || hasCommitsAfterTag(dynverGitDescribeOutput.value) },
   apiURL := {
     val apiVersion = if (isSnapshot.value) "current" else version.value
     Some(url(s"http://doc.akka.io/api/akka-http/$apiVersion/"))
@@ -39,7 +44,7 @@ inThisBuild(Def.settings(
 ))
 
 lazy val root = Project(
-    id = "root",
+    id = "akka-http-root",
     base = file(".")
   )
   .enablePlugins(UnidocRoot, NoPublish, DeployRsync)
@@ -67,6 +72,7 @@ lazy val parsing = project("akka-parsing")
   .settings(
     scalacOptions := scalacOptions.value.filterNot(_ == "-Xfatal-warnings")
   )
+  .addAkkaModuleDependency("akka-actor")
 
 lazy val httpCore = project("akka-http-core")
   .settings(Dependencies.httpCore)
@@ -79,6 +85,9 @@ lazy val http = project("akka-http")
   .dependsOn(httpCore)
 
 lazy val http2Support = project("akka-http2-support")
+  .enablePlugins(JavaAgent)
+  .disablePlugins(MimaPlugin) // experimental module still
+  .settings(javaAgents += Dependencies.Compile.Test.alpnAgent)
   .dependsOn(httpCore, httpTestkit % "test", httpCore % "test->test")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
 
@@ -135,33 +144,48 @@ def httpMarshallersJavaSubproject(name: String) =
   )
 
 lazy val docs = project("docs")
-  .enablePlugins(ParadoxPlugin, NoPublish, DeployRsync)
+  .enablePlugins(AkkaParadoxPlugin, NoPublish, DeployRsync)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .dependsOn(
-    httpCore, http, httpXml, httpMarshallersJava, httpMarshallersScala,
+    httpCore, http, httpXml, http2Support, httpMarshallersJava, httpMarshallersScala,
     httpTests % "compile;test->test", httpTestkit % "compile;test->test"
   )
   .settings(Dependencies.docs)
   .settings(
     name := "akka-http-docs",
-    paradoxTheme := Some(builtinParadoxTheme("generic")),
-    paradoxNavigationDepth := 3,
+    resolvers += Resolver.jcenterRepo,
+    paradoxGroups := Map("Languages" -> Seq("Scala", "Java")),
     paradoxProperties in Compile ++= Map(
-      "akka.version" -> Dependencies.akkaVersion,
+      "project.name" -> "Akka HTTP",
+      "akka.version" -> Dependencies.akkaVersion.value,
+      "akka25.version" -> Dependencies.akka25Version,
+      "scala.binary_version" -> scalaBinaryVersion.value, // to be consistent with Akka build
       "scala.binaryVersion" -> scalaBinaryVersion.value,
-      "scala.version" -> scalaVersion.value,
       "scaladoc.version" -> scalaVersion.value,
       "crossString" -> (scalaVersion.value match {
         case akka.Doc.BinVer(_) => ""
         case _                  => "cross CrossVersion.full"
       }),
-      "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${Dependencies.akkaVersion}/%s",
+      "jackson.version" -> Dependencies.jacksonVersion,
+      "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${Dependencies.akkaVersion.value}/%s",
+      "extref.akka25-docs.base_url" -> s"http://doc.akka.io/docs/akka/2.5/%s",
       "javadoc.akka.http.base_url" -> {
         val v = if (isSnapshot.value) "current" else version.value
         s"http://doc.akka.io/japi/akka-http/$v"
       },
-      "github.base_url" -> GitHub.url(version.value)
+      "algolia.docsearch.api_key" -> "0ccbb8bf5148554a406fbf07df0a93b9",
+      "algolia.docsearch.index_name" -> "akka-http",
+      "google.analytics.account" -> "UA-21117439-1",
+      "google.analytics.domain.name" -> "akka.io",
+      "github.base_url" -> GitHub.url(version.value),
+      "snip.test.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
+      "snip.akka-http.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
+      "signature.test.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
+      "signature.akka-http.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath
     ),
     Formatting.docFormatSettings,
+    additionalTasks in ValidatePR += paradox in Compile,
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka-http/${version.value}")
   )
+
+def hasCommitsAfterTag(description: Option[GitDescribeOutput]): Boolean = description.get.commitSuffix.distance > 0

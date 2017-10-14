@@ -1,4 +1,3 @@
-<a id="complete"></a>
 # complete
 
 ## Signature
@@ -28,4 +27,4 @@ directives have potentially chained into the @ref[RouteResult](../../routes.md#r
 
 ## Example
 
-@@snip [RouteDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/RouteDirectivesExamplesSpec.scala) { #complete-examples }
+@@snip [RouteDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/RouteDirectivesExamplesSpec.scala) { #complete-examples }

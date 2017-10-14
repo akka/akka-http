@@ -1,18 +1,20 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
 
+import akka.annotation.InternalApi
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.ws.UpgradeToWebSocket
-import akka.stream.{ Graph, FlowShape }
+import akka.stream.{ FlowShape, Graph }
 
 /**
  * Currently internal API to handle FrameEvents directly.
  *
  * INTERNAL API
  */
+@InternalApi
 private[http] abstract class UpgradeToWebSocketLowLevel extends InternalCustomHeader("UpgradeToWebSocket") with UpgradeToWebSocket {
   /**
    * The low-level interface to create WebSocket server based on "frames".
@@ -24,5 +26,6 @@ private[http] abstract class UpgradeToWebSocketLowLevel extends InternalCustomHe
    *
    * INTERNAL API (for now)
    */
+  @InternalApi
   private[http] def handleFrames(handlerFlow: Graph[FlowShape[FrameEvent, FrameEvent], Any], subprotocol: Option[String] = None): HttpResponse
 }

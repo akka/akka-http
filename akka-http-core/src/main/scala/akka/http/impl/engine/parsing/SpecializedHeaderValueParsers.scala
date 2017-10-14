@@ -1,19 +1,22 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
 
+import akka.annotation.InternalApi
+
 import scala.annotation.tailrec
 import akka.util.ByteString
 import akka.http.impl.model.parser.CharacterClasses._
-import akka.http.scaladsl.model.{ HttpHeader, ErrorInfo }
+import akka.http.scaladsl.model.{ ErrorInfo, HttpHeader }
 import akka.http.scaladsl.model.headers.`Content-Length`
 
 /**
  * INTERNAL API
  */
-private object SpecializedHeaderValueParsers {
+@InternalApi
+private[parsing] object SpecializedHeaderValueParsers {
   import HttpHeaderParser._
 
   def specializedHeaderValueParsers = Seq(ContentLengthParser)
@@ -26,6 +29,7 @@ private object SpecializedHeaderValueParsers {
         else if (DIGIT(c)) recurse(ix + 1, result * 10 + c - '0')
         else if (WSP(c)) recurse(ix + 1, result)
         else if (c == '\r' && byteChar(input, ix + 1) == '\n') (`Content-Length`(result), ix + 2)
+        else if (c == '\n') (`Content-Length`(result), ix + 1)
         else fail("Illegal `Content-Length` header value")
       }
       recurse()

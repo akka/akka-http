@@ -1,11 +1,10 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model.headers
 
 import akka.http.impl.model.JavaInitialization
-import akka.util.Unsafe
 
 import language.implicitConversions
 import akka.http.impl.util._
@@ -29,7 +28,10 @@ object HttpEncodingRange {
     def withQValue(qValue: Float) =
       if (qValue == 1.0f) `*` else if (qValue != this.qValue) `*`(qValue.toFloat) else this
   }
-  object `*` extends `*`(1.0f)
+  object `*` extends `*`(1.0f) {
+    JavaInitialization.initializeStaticFieldWith(
+      this, classOf[jm.headers.HttpEncodingRange].getField("ALL"))
+  }
 
   final case class One(encoding: HttpEncoding, qValue: Float) extends HttpEncodingRange {
     require(0.0f <= qValue && qValue <= 1.0f, "qValue must be >= 0 and <= 1.0")
@@ -40,10 +42,6 @@ object HttpEncodingRange {
 
   implicit def apply(encoding: HttpEncoding): HttpEncodingRange = apply(encoding, 1.0f)
   def apply(encoding: HttpEncoding, qValue: Float): HttpEncodingRange = One(encoding, qValue)
-
-  JavaInitialization.initializeStaticFieldWith(
-    `*`, classOf[jm.headers.HttpEncodingRange].getField("ALL"))
-
 }
 
 final case class HttpEncoding private[http] (value: String) extends jm.headers.HttpEncoding with LazyValueBytesRenderable with WithQValue[HttpEncodingRange] {

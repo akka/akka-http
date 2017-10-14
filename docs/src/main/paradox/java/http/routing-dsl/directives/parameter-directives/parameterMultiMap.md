@@ -1,4 +1,3 @@
-<a id="parametermultimap-java"></a>
 # parameterMultiMap
 
 ## Description
@@ -14,4 +13,4 @@ See @ref[When to use which parameter directive?](index.md#which-parameter-direct
 
 ## Example
 
-@@snip [ParameterDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/ParameterDirectivesExamplesTest.java) { #parameterMultiMap }
+@@snip [ParameterDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/ParameterDirectivesExamplesTest.java) { #parameterMultiMap }

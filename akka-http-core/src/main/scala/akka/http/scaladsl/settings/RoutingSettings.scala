@@ -1,14 +1,16 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.http.scaladsl.settings
 
+import akka.annotation.DoNotInherit
 import akka.http.impl.settings.RoutingSettingsImpl
 import com.typesafe.config.Config
 
 /**
  * Public API but not intended for subclassing
  */
+@DoNotInherit
 abstract class RoutingSettings private[akka] () extends akka.http.javadsl.settings.RoutingSettings { self: RoutingSettingsImpl ⇒
   def verboseErrorMessages: Boolean
   def fileGetConditional: Boolean

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server
@@ -53,7 +53,7 @@ class FullTestKitExampleSpec extends WordSpec with Matchers with ScalatestRouteT
     "return a MethodNotAllowed error for PUT requests to the root path" in {
       // tests:
       Put() ~> Route.seal(smallRoute) ~> check {
-        status === StatusCodes.MethodNotAllowed
+        status shouldEqual StatusCodes.MethodNotAllowed
         responseAs[String] shouldEqual "HTTP method not allowed, supported methods: GET"
       }
     }

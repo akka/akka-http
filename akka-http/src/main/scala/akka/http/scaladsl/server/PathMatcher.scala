@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -221,6 +221,9 @@ object PathMatcher extends ImplicitPathMatcherConstruction {
         def apply(value: T, more: Out) = Tuple1(mops(value, more._1))
       }
   }
+
+  /** The empty match returned when a Regex matcher matches the empty path */
+  private[http] val EmptyMatch = Matched(Path.Empty, Tuple1(""))
 }
 
 /**
@@ -263,38 +266,48 @@ trait ImplicitPathMatcherConstruction {
    *
    * @group pathmatcherimpl
    */
-  implicit def _regex2PathMatcher(regex: Regex): PathMatcher1[String] = regex.groupCount match {
-    case 0 ⇒ new PathMatcher1[String] {
-      def apply(path: Path) = path match {
-        case Path.Segment(segment, tail) ⇒ regex findPrefixOf segment match {
-          case Some(m) ⇒ Matched(segment.substring(m.length) :: tail, Tuple1(m))
-          case None    ⇒ Unmatched
-        }
-        case _ ⇒ Unmatched
-      }
+  implicit def _regex2PathMatcher(regex: Regex): PathMatcher1[String] = {
+    lazy val matchesEmptyPath = "" match {
+      case `regex`(_*) ⇒ true
+      case _           ⇒ false
     }
-    case 1 ⇒ new PathMatcher1[String] {
-      def apply(path: Path) = path match {
-        case Path.Segment(segment, tail) ⇒ regex findPrefixMatchOf segment match {
-          case Some(m) ⇒ Matched(segment.substring(m.end) :: tail, Tuple1(m.group(1)))
-          case None    ⇒ Unmatched
+
+    regex.groupCount match {
+      case 0 ⇒ new PathMatcher1[String] {
+        def apply(path: Path) = path match {
+          case Path.Segment(segment, tail) ⇒ regex findPrefixOf segment match {
+            case Some(m) ⇒ Matched(segment.substring(m.length) :: tail, Tuple1(m))
+            case None    ⇒ Unmatched
+          }
+          case Path.Empty if matchesEmptyPath ⇒ PathMatcher.EmptyMatch
+          case _                              ⇒ Unmatched
         }
-        case _ ⇒ Unmatched
       }
+      case 1 ⇒ new PathMatcher1[String] {
+        def apply(path: Path) = path match {
+          case Path.Segment(segment, tail) ⇒ regex findPrefixMatchOf segment match {
+            case Some(m) ⇒ Matched(segment.substring(m.end) :: tail, Tuple1(m.group(1)))
+            case None    ⇒ Unmatched
+          }
+          case Path.Empty if matchesEmptyPath ⇒ PathMatcher.EmptyMatch
+          case _                              ⇒ Unmatched
+        }
+      }
+      case _ ⇒ throw new IllegalArgumentException("Path regex '" + regex.pattern.pattern +
+        "' must not contain more than one capturing group")
     }
-    case _ ⇒ throw new IllegalArgumentException("Path regex '" + regex.pattern.pattern +
-      "' must not contain more than one capturing group")
   }
   /**
    * Creates a PathMatcher from the given Map of path segments (prefixes) to extracted values.
    * If the unmatched path starts with a segment having one of the maps keys as a prefix
    * the matcher consumes this path segment (prefix) and extracts the corresponding map value.
+   * For keys sharing a common prefix the longest matching prefix is selected.
    *
    * @group pathmatcherimpl
    */
   implicit def _valueMap2PathMatcher[T](valueMap: Map[String, T]): PathMatcher1[T] =
     if (valueMap.isEmpty) PathMatchers.nothingMatcher
-    else valueMap.map { case (prefix, value) ⇒ _stringExtractionPair2PathMatcher((prefix, value)) }.reduceLeft(_ | _)
+    else valueMap.toSeq.sortWith(_._1 > _._1).map(_stringExtractionPair2PathMatcher).reduceLeft(_ | _)
 }
 
 /**

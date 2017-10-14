@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package io.akka.integrationtest.http
@@ -14,7 +14,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
-import akka.testkit.TestKit
+import akka.testkit._
 import headers._
 
 /**
@@ -88,7 +88,7 @@ class HttpModelIntegrationSpec extends WordSpec with Matchers with BeforeAndAfte
 
       // Finally convert the body into an Array[Byte].
 
-      val entityBytes: Array[Byte] = Await.result(request.entity.toStrict(1.second), 2.seconds).data.toArray
+      val entityBytes: Array[Byte] = Await.result(request.entity.toStrict(1.second.dilated), 2.seconds.dilated).data.toArray
       entityBytes.to[Seq] shouldEqual ByteString("hello").to[Seq]
     }
 
@@ -100,7 +100,7 @@ class HttpModelIntegrationSpec extends WordSpec with Matchers with BeforeAndAfte
       // example simple model of an HTTP response.
 
       val textHeaders: Seq[(String, String)] = Seq(
-        "Content-Type" → "text/plain",
+        "Content-Type" → "text/plain;charset=UTF-8",
         "Content-Length" → "3",
         "X-Greeting" → "Hello")
       val byteArrayBody: Array[Byte] = "foo".getBytes

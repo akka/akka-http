@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.model.parser
@@ -23,11 +23,12 @@ private[parser] trait CacheControlHeader { this: Parser with CommonRules with Co
       | "min-fresh=" ~ `delta-seconds` ~> (`min-fresh`(_))
       | "only-if-cached" ~ push(`only-if-cached`)
       | "public" ~ push(`public`)
-      | "private" ~ (ws('=') ~ `field-names` ~> (`private`(_: _*)) | push(`private`(Nil: _*)))
+      | "private" ~ (ws('=') ~ `field-names` ~> (`private`(_: _*)) | push(`private`()))
       | "no-cache" ~ (ws('=') ~ `field-names` ~> (`no-cache`(_: _*)) | push(`no-cache`))
       | "must-revalidate" ~ push(`must-revalidate`)
       | "proxy-revalidate" ~ push(`proxy-revalidate`)
       | "s-maxage=" ~ `delta-seconds` ~> (`s-maxage`(_))
+      | "immutable" ~ push(immutableDirective)
       | token ~ optional(ws('=') ~ word) ~> (CacheDirective.custom(_, _)))
 
   def `field-names` = rule { `quoted-tokens` | token ~> (Seq(_)) }

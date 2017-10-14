@@ -1,32 +1,47 @@
 package akka.http.impl.util
 
 import akka.NotUsed
+import akka.annotation.InternalApi
+import akka.event.Logging
 import akka.stream.TLSProtocol._
-import akka.stream.scaladsl
 import akka.stream.scaladsl.{ BidiFlow, Flow }
 import akka.util.ByteString
+
+import scala.reflect.ClassTag
 
 /**
  * INTERNAL API
  *
  * Flow and BidiFlow stages to log streams of ByteString.
  */
+@InternalApi
 private[akka] object LogByteStringTools {
   val MaxBytesPrinted = 16 * 5
 
   def logByteStringBidi(name: String, maxBytes: Int = MaxBytesPrinted): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
     BidiFlow.fromFlows(
       logByteString(s"$name DOWN", maxBytes),
-      logByteString(s"$name UP", maxBytes)
+      logByteString(s"$name UP  ", maxBytes)
     )
+
+  def logToStringBidi[A: ClassTag, B: ClassTag](name: String, maxBytes: Int = MaxBytesPrinted): BidiFlow[A, A, B, B, NotUsed] = {
+    def limitedName[T](implicit tag: ClassTag[T]): String = Logging.simpleName(tag.runtimeClass).take(20).mkString
+    BidiFlow.fromFlows(
+      logToString(s"$name ${limitedName[A]}", maxBytes),
+      logToString(s"$name ${limitedName[B]}", maxBytes)
+    )
+  }
 
   def logByteString(name: String, maxBytes: Int = MaxBytesPrinted): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].log(name, printByteString(_, maxBytes))
 
+  def logToString[A](name: String, maxBytes: Int = MaxBytesPrinted): Flow[A, A, NotUsed] =
+    Flow[A].log(name, _.toString().take(maxBytes))
+
   def logTLSBidi(name: String, maxBytes: Int = MaxBytesPrinted): BidiFlow[SslTlsOutbound, SslTlsOutbound, SslTlsInbound, SslTlsInbound, NotUsed] =
     BidiFlow.fromFlows(
-      logTlsOutbound(s"$name DOWN", maxBytes),
-      logTlsInbound(s"$name UP", maxBytes))
+      logTlsOutbound(s"$name ToNet  ", maxBytes),
+      logTlsInbound(s"$name FromNet", maxBytes))
 
   def logTlsOutbound(name: String, maxBytes: Int = MaxBytesPrinted): Flow[SslTlsOutbound, SslTlsOutbound, NotUsed] =
     Flow[SslTlsOutbound].log(name, {
@@ -36,7 +51,7 @@ private[akka] object LogByteStringTools {
 
   def logTlsInbound(name: String, maxBytes: Int = MaxBytesPrinted): Flow[SslTlsInbound, SslTlsInbound, NotUsed] =
     Flow[SslTlsInbound].log(name, {
-      case s @ SessionTruncated         ⇒ s
+      case s: SessionTruncated          ⇒ s
       case SessionBytes(session, bytes) ⇒ "SessionBytes " + printByteString(bytes, maxBytes)
     })
 

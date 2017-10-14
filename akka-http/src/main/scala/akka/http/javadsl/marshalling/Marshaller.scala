@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.javadsl.marshalling
 
 import java.util.function
 
+import akka.annotation.InternalApi
 import akka.http.impl.util.JavaMapping
 import akka.http.javadsl.model.{ ContentType, HttpHeader, HttpResponse, MediaType, RequestEntity, StatusCode }
 import akka.http.scaladsl
@@ -87,6 +88,11 @@ object Marshaller {
   /**
    * Helper for creating a "super-marshaller" from a number of "sub-marshallers".
    * Content-negotiation determines, which "sub-marshaller" eventually gets to do the job.
+   *
+   * Please note that all passed in marshallers will actualy be invoked in order to get the Marshalling object
+   * out of them, and later decide which of the marshallings should be returned. This is by-design,
+   * however in ticket as discussed in ticket https://github.com/akka/akka-http/issues/243 it MAY be
+   * changed in later versions of Akka HTTP.
    */
   def oneOf[A, B](ms: Marshaller[A, B]*): Marshaller[A, B] = {
     fromScala(marshalling.Marshaller.oneOf[A, B](ms.map(_.asScala): _*))
@@ -95,6 +101,11 @@ object Marshaller {
   /**
    * Helper for creating a "super-marshaller" from a number of "sub-marshallers".
    * Content-negotiation determines, which "sub-marshaller" eventually gets to do the job.
+   *
+   * Please note that all marshallers will actualy be invoked in order to get the Marshalling object
+   * out of them, and later decide which of the marshallings should be returned. This is by-design,
+   * however in ticket as discussed in ticket https://github.com/akka/akka-http/issues/243 it MAY be
+   * changed in later versions of Akka HTTP.
    */
   def oneOf[A, B](m1: Marshaller[A, B], m2: Marshaller[A, B], m3: Marshaller[A, B]): Marshaller[A, B] = {
     fromScala(marshalling.Marshaller.oneOf(m1.asScala, m2.asScala, m3.asScala))
@@ -103,6 +114,11 @@ object Marshaller {
   /**
    * Helper for creating a "super-marshaller" from a number of "sub-marshallers".
    * Content-negotiation determines, which "sub-marshaller" eventually gets to do the job.
+   *
+   * Please note that all marshallers will actualy be invoked in order to get the Marshalling object
+   * out of them, and later decide which of the marshallings should be returned. This is by-design,
+   * however in ticket as discussed in ticket https://github.com/akka/akka-http/issues/243 it MAY be
+   * changed in later versions of Akka HTTP.
    */
   def oneOf[A, B](m1: Marshaller[A, B], m2: Marshaller[A, B], m3: Marshaller[A, B], m4: Marshaller[A, B]): Marshaller[A, B] = {
     fromScala(marshalling.Marshaller.oneOf(m1.asScala, m2.asScala, m3.asScala, m4.asScala))
@@ -111,6 +127,11 @@ object Marshaller {
   /**
    * Helper for creating a "super-marshaller" from a number of "sub-marshallers".
    * Content-negotiation determines, which "sub-marshaller" eventually gets to do the job.
+   *
+   * Please note that all marshallers will actualy be invoked in order to get the Marshalling object
+   * out of them, and later decide which of the marshallings should be returned. This is by-design,
+   * however in ticket as discussed in ticket https://github.com/akka/akka-http/issues/243 it MAY be
+   * changed in later versions of Akka HTTP.
    */
   def oneOf[A, B](m1: Marshaller[A, B], m2: Marshaller[A, B], m3: Marshaller[A, B], m4: Marshaller[A, B], m5: Marshaller[A, B]): Marshaller[A, B] = {
     fromScala(marshalling.Marshaller.oneOf(m1.asScala, m2.asScala, m3.asScala, m4.asScala, m5.asScala))
@@ -146,6 +167,7 @@ class Marshaller[-A, +B] private (implicit val asScala: marshalling.Marshaller[A
 
   /** INTERNAL API: involves unsafe cast (however is very fast) */
   // TODO would be nice to not need this special case
+  @InternalApi
   private[akka] def asScalaCastOutput[C]: marshalling.Marshaller[A, C] = asScala.asInstanceOf[marshalling.Marshaller[A, C]]
 
   def map[C](f: function.Function[B @uncheckedVariance, C]): Marshaller[A, C] = fromScala(asScala.map(f.apply))

@@ -1,14 +1,17 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
+
+import akka.annotation.InternalApi
 
 /**
  * Contains WebSocket protocol constants
  *
  * INTERNAL API
  */
+@InternalApi
 private[http] object Protocol {
   val FIN_MASK = 0x80
   val RSV1_MASK = 0x40
@@ -81,4 +84,5 @@ private[http] object Protocol {
 }
 
 /** INTERNAL API */
+@InternalApi
 private[http] case class ProtocolException(cause: String) extends RuntimeException(cause)

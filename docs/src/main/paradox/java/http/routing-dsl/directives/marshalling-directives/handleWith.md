@@ -1,4 +1,3 @@
-<a id="handlewith-java"></a>
 # handleWith
 
 ## Description
@@ -19,17 +18,17 @@ to a given function without requiring any akka-http-specific functionality.
 calls `complete` when the function passed to `handleWith` returns. Using `produce` you
 must explicity call the completion function passed from the `produce` function.
 
-See @ref[marshalling](../../../common/marshalling.md#http-marshalling-java) and @ref[unmarshalling](../../../common/unmarshalling.md#http-unmarshalling-java) for guidance
+See @ref[marshalling](../../../common/marshalling.md) and @ref[unmarshalling](../../../common/unmarshalling.md) for guidance
 on marshalling entities with akka-http.
 
 ## Examples
 
 The following example uses an `updatePerson` function with a `Person` class as an input and output. We plug this function into our route using `handleWith`.
 
-@@snip [MarshallingDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #person }
+@@snip [MarshallingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #person }
 
-@@snip [MarshallingDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #example-handleWith-with-json }
+@@snip [MarshallingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #example-handleWith-with-json }
 
 The following example uses also @ref[Json Support via Jackson](../../../common/json-support.md#json-jackson-support-java) to handle both marshalling and unmarshalling of the Person class.
 
-@@snip [MarshallingDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #person }
+@@snip [MarshallingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #person }

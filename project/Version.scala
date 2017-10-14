@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka
 
@@ -14,7 +14,7 @@ object Version {
   def versionSettings: Seq[Setting[_]] = inConfig(Compile)(Seq(
     resourceGenerators += generateVersion(resourceManaged, _ / "akka-http-version.conf",
       """|akka.http.version = "%s"
-         |""").taskValue,
+         |"""),
     sourceGenerators += generateVersion(sourceManaged, _ / "akka" / "http" / "Version.scala",
       """|package akka.http
          |
@@ -31,7 +31,7 @@ object Version {
          |    }
          |  }
          |}
-         |""").taskValue
+         |""")
   ))
 
   def generateVersion(dir: SettingKey[File], locate: File => File, template: String) = Def.task[Seq[File]] {

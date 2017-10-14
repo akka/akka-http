@@ -4,8 +4,10 @@
 
 package akka.http.impl.settings
 
+import java.net.InetSocketAddress
 import java.util.Random
 
+import akka.annotation.InternalApi
 import akka.http.impl.engine.ws.Randoms
 import akka.http.impl.util._
 import akka.http.scaladsl.model.headers.`User-Agent`
@@ -18,6 +20,7 @@ import scala.collection.immutable
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 /** INTERNAL API */
+@InternalApi
 private[akka] final case class ClientConnectionSettingsImpl(
   userAgentHeader:            Option[`User-Agent`],
   connectingTimeout:          FiniteDuration,
@@ -26,7 +29,8 @@ private[akka] final case class ClientConnectionSettingsImpl(
   logUnencryptedNetworkBytes: Option[Int],
   websocketRandomFactory:     () ⇒ Random,
   socketOptions:              immutable.Seq[SocketOption],
-  parserSettings:             ParserSettings)
+  parserSettings:             ParserSettings,
+  localAddress:               Option[InetSocketAddress])
   extends akka.http.scaladsl.settings.ClientConnectionSettings {
 
   require(connectingTimeout >= Duration.Zero, "connectingTimeout must be >= 0")
@@ -46,6 +50,7 @@ object ClientConnectionSettingsImpl extends SettingsCompanion[ClientConnectionSe
       logUnencryptedNetworkBytes = LogUnencryptedNetworkBytes(c getString "log-unencrypted-network-bytes"),
       websocketRandomFactory = Randoms.SecureRandomInstances, // can currently only be overridden from code
       socketOptions = SocketOptionSettings.fromSubConfig(root, c.getConfig("socket-options")),
-      parserSettings = ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")))
+      parserSettings = ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")),
+      localAddress = None)
   }
 }

@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
 import akka.http.scaladsl.server.IntegrationRoutingSpec
+import akka.testkit._
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
@@ -16,7 +17,7 @@ class TimeoutDirectivesSpec extends IntegrationRoutingSpec {
     "be configurable in routing layer" in {
 
       val route = path("timeout") {
-        withRequestTimeout(3.seconds) {
+        withRequestTimeout(3.seconds.dilated) {
           val response: Future[String] = slowFuture() // very slow
           complete(response)
         }
@@ -38,7 +39,7 @@ class TimeoutDirectivesSpec extends IntegrationRoutingSpec {
     val route =
       path("timeout") {
         // needs to be long because of the race between wRT and wRTR
-        withRequestTimeout(1.second) {
+        withRequestTimeout(1.second.dilated) {
           withRequestTimeoutResponse(request ⇒ timeoutResponse) {
             val response: Future[String] = slowFuture() // very slow
             complete(response)
@@ -47,7 +48,7 @@ class TimeoutDirectivesSpec extends IntegrationRoutingSpec {
       } ~
         path("equivalent") {
           // updates timeout and handler at
-          withRequestTimeout(1.second, request ⇒ timeoutResponse) {
+          withRequestTimeout(1.second.dilated, request ⇒ timeoutResponse) {
             val response: Future[String] = slowFuture() // very slow
             complete(response)
           }

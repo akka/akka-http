@@ -1,4 +1,3 @@
-<a id="patch-java"></a>
 # patch
 
 Matches requests with HTTP method `PATCH`.
@@ -12,4 +11,4 @@ by the default `RejectionHandler`.
 
 ## Example
 
-@@snip [MethodDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java) { #patch }
+@@snip [MethodDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java) { #patch }

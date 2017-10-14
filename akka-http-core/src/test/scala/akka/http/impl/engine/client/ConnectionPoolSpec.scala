@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -9,19 +9,21 @@ import java.nio.ByteBuffer
 import java.nio.channels.{ ServerSocketChannel, SocketChannel }
 import java.util.concurrent.atomic.AtomicInteger
 
+import akka.actor.ActorSystem
 import akka.http.impl.engine.client.PoolMasterActor.PoolInterfaceRunning
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
-import akka.http.impl.util.SingletonException
+import akka.http.impl.util._
+import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
-import akka.http.scaladsl.{ Http, TestUtils }
+import akka.http.scaladsl.{ ClientTransport, ConnectionContext, Http }
 import akka.stream.ActorMaterializer
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
-import akka.testkit.AkkaSpec
+import akka.testkit._
 import akka.util.ByteString
 
 import scala.collection.immutable
@@ -35,7 +37,9 @@ class ConnectionPoolSpec extends AkkaSpec("""
     akka.loglevel = OFF
     akka.io.tcp.windows-connection-abort-workaround-enabled = auto
     akka.io.tcp.trace-logging = off
-    akka.test.single-expect-default = 5000""") { // timeout for checks, adjust as necessary, set here to 5s
+    akka.test.single-expect-default = 5000 # timeout for checks, adjust as necessary, set here to 5s
+    akka.scheduler.tick-duration = 1ms     # to make race conditions in Pool idle-timeout more likely
+                                          """) {
   implicit val materializer = ActorMaterializer()
 
   // FIXME: Extract into proper util class to be reusable
@@ -153,7 +157,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
       acceptIncomingConnection()
       acceptIncomingConnection()
 
-      Await.result(idSum, 10.seconds) shouldEqual N * (N + 1) / 2
+      Await.result(idSum, 10.seconds.dilated) shouldEqual N * (N + 1) / 2
     }
 
     "properly surface connection-level errors" in new TestSetup(autoAccept = true) {
@@ -182,9 +186,6 @@ class ConnectionPoolSpec extends AkkaSpec("""
           .log("test")
 
       val laterData = Promise[ByteString]()
-      val slowEntity =
-        Source.single(ByteString("def")) ++ Source.fromFuture(laterData.future)
-
       val laterHandler = Promise[(HttpRequest ⇒ Future[HttpResponse]) ⇒ Unit]()
 
       override def asyncTestServerHandler(connNr: Int): HttpRequest ⇒ Future[HttpResponse] = { req ⇒
@@ -214,7 +215,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
       requestIn.sendNext(HttpRequest(uri = "/b") → 43)
 
       // ensure that server has seen request 2
-      val handlerSetter = Await.result(laterHandler.future, 1.second)
+      val handlerSetter = Await.result(laterHandler.future, 1.second.dilated)
 
       // now fail the first one
       errorOnConnection1.failure(new RuntimeException)
@@ -225,7 +226,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
       // now respond to request 2
       handlerSetter(req ⇒ Future.successful(HttpResponse()))
 
-      val (Success(response2), _) = responseOut.expectNext()
+      val (Success(_), _) = responseOut.expectNext()
     }
 
     "retry failed requests" in new TestSetup(autoAccept = true) {
@@ -270,16 +271,16 @@ class ConnectionPoolSpec extends AkkaSpec("""
     "automatically shutdown after configured timeout periods" in new TestSetup() {
       val (_, _, _, hcp) = cachedHostConnectionPool[Int](idleTimeout = 1.second)
       val gateway = hcp.gateway
-      Await.result(gateway.poolStatus(), 1500.millis).get shouldBe a[PoolInterfaceRunning]
-      awaitCond({ Await.result(gateway.poolStatus(), 1500.millis).isEmpty }, 2000.millis)
+      Await.result(gateway.poolStatus(), 1500.millis.dilated).get shouldBe a[PoolInterfaceRunning]
+      awaitCond({ Await.result(gateway.poolStatus(), 1500.millis.dilated).isEmpty }, 2000.millis.dilated)
     }
 
     "transparently restart after idle shutdown" in new TestSetup() {
       val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int](idleTimeout = 1.second)
 
       val gateway = hcp.gateway
-      Await.result(gateway.poolStatus(), 1500.millis).get shouldBe a[PoolInterfaceRunning]
-      awaitCond({ Await.result(gateway.poolStatus(), 1500.millis).isEmpty }, 2000.millis)
+      Await.result(gateway.poolStatus(), 1500.millis.dilated).get shouldBe a[PoolInterfaceRunning]
+      awaitCond({ Await.result(gateway.poolStatus(), 1500.millis.dilated).isEmpty }, 2000.millis.dilated)
 
       requestIn.sendNext(HttpRequest(uri = "/") → 42)
 
@@ -288,54 +289,81 @@ class ConnectionPoolSpec extends AkkaSpec("""
       val (Success(_), 42) = responseOut.expectNext()
     }
 
+    "don't drop requests during idle-timeout shutdown" in new TestSetup(autoAccept = true) {
+      val (requestIn, responseOut, responseOutSub, hcp) =
+        cachedHostConnectionPool[Int](
+          idleTimeout = 1.millisecond, // trigger as many idle-timeouts as possible
+          maxConnections = 1,
+          pipeliningLimit = 1,
+          minConnections = 0)
+
+      (1 to 100).foreach { i ⇒
+        responseOutSub.request(1)
+        requestIn.sendNext(HttpRequest(uri = s"/$i") → i)
+        responseOut.expectNext()
+        // more than the 1 millisescond idle-timeout but it seemed to trigger the bug quite reliably
+        Thread.sleep(2)
+      }
+    }
+
     "never close hot connections when minConnections key is given and >0 (minConnections = 1)" in new TestSetup() {
       val close: HttpHeader = Connection("close")
 
       // for lower bound of one connection
       val minConnection = 1
-      val (requestIn, requestOut, responseOutSub, hcpMinConnection) =
+      val (requestIn, responseOut, responseOutSub, hcpMinConnection) =
         cachedHostConnectionPool[Int](idleTimeout = 100.millis, minConnections = minConnection)
       val gatewayConnection = hcpMinConnection.gateway
 
       acceptIncomingConnection()
       requestIn.sendNext(HttpRequest(uri = "/minimumslots/1", headers = immutable.Seq(close)) → 42)
       responseOutSub.request(1)
-      requestOut.expectNextN(1)
+      responseOut.expectNextN(1)
 
-      condHolds(500.millis) { () ⇒
-        Await.result(gatewayConnection.poolStatus(), 100.millis).get shouldBe a[PoolInterfaceRunning]
+      condHolds(500.millis.dilated) { () ⇒
+        Await.result(gatewayConnection.poolStatus(), 100.millis.dilated).get shouldBe a[PoolInterfaceRunning]
       }
     }
 
-    "never close hot connections when minConnections key is given and >0 (minConnections = 5)" in new TestSetup() {
+    "never close hot connections when minConnections key is given and >0 (minConnections = 5)" in new TestSetup(autoAccept = true) {
       val close: HttpHeader = Connection("close")
 
       // for lower bound of five connections
       val minConnections = 5
-      val (requestIn, requestOut, responseOutSub, hcpMinConnection) = cachedHostConnectionPool[Int](
+      val (requestIn, responseOut, responseOutSub, hcpMinConnection) = cachedHostConnectionPool[Int](
         idleTimeout = 100.millis,
         minConnections = minConnections,
         maxConnections = minConnections + 10)
 
-      (0 until minConnections) foreach { _ ⇒ acceptIncomingConnection() }
-      (0 until minConnections) foreach { i ⇒
-        requestIn.sendNext(HttpRequest(uri = s"/minimumslots/5/$i", headers = immutable.Seq(close)) → 42)
+      (1 to 30) foreach { _ ⇒ // run a few requests
+        (0 until minConnections) foreach { i ⇒
+          requestIn.sendNext(HttpRequest(uri = s"/minimumslots/5/$i", headers = immutable.Seq(close)) → 42)
+        }
+        responseOutSub.request(minConnections)
+        responseOut.expectNextN(minConnections)
       }
-      responseOutSub.request(minConnections)
-      requestOut.expectNextN(minConnections)
 
       val gatewayConnections = hcpMinConnection.gateway
-      condHolds(1000.millis) { () ⇒
+      condHolds(1000.millis.dilated) { () ⇒
         val status = gatewayConnections.poolStatus()
-        Await.result(status, 100.millis).get shouldBe a[PoolInterfaceRunning]
+        Await.result(status, 100.millis.dilated).get shouldBe a[PoolInterfaceRunning]
       }
     }
 
     "shutdown if idle and min connection has been set to 0" in new TestSetup() {
       val (_, _, _, hcp) = cachedHostConnectionPool[Int](idleTimeout = 1.second, minConnections = 0)
       val gateway = hcp.gateway
-      Await.result(gateway.poolStatus(), 1500.millis).get shouldBe a[PoolInterfaceRunning]
-      awaitCond({ Await.result(gateway.poolStatus(), 1500.millis).isEmpty }, 2000.millis)
+      Await.result(gateway.poolStatus(), 1500.millis.dilated).get shouldBe a[PoolInterfaceRunning]
+      awaitCond({ Await.result(gateway.poolStatus(), 1500.millis.dilated).isEmpty }, 2000.millis.dilated)
+    }
+
+    "use the configured ClientTransport" in new ClientTransportTestSetup {
+      def issueRequest(request: HttpRequest, settings: ConnectionPoolSettings): Future[HttpResponse] =
+        Source.single(request.withUri(request.uri.toRelative))
+          .via(Http().outgoingConnectionUsingTransport(
+            host = request.uri.authority.host.address, port = request.uri.effectivePort,
+            transport = settings.transport, settings = settings.connectionSettings, connectionContext = ConnectionContext.noEncryption()))
+          .runWith(Sink.head)
     }
   }
 
@@ -345,7 +373,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
     "transform absolute request URIs into relative URIs plus host header" in new LocalTestSetup {
       val request = HttpRequest(uri = s"http://$serverHostName:$serverPort/abc?query#fragment")
       val responseFuture = Http().singleRequest(request)
-      val responseHeaders = Await.result(responseFuture, 1.second).headers
+      val responseHeaders = Await.result(responseFuture, 1.second.dilated).headers
       responseHeaders should contain(RawHeader("Req-Raw-Request-URI", "/abc?query"))
       responseHeaders should contain(RawHeader("Req-Host", s"$serverHostName:$serverPort"))
     }
@@ -353,14 +381,14 @@ class ConnectionPoolSpec extends AkkaSpec("""
     "support absolute request URIs without path component" in new LocalTestSetup {
       val request = HttpRequest(uri = s"http://$serverHostName:$serverPort")
       val responseFuture = Http().singleRequest(request)
-      val responseHeaders = Await.result(responseFuture, 1.second).headers
+      val responseHeaders = Await.result(responseFuture, 1.second.dilated).headers
       responseHeaders should contain(RawHeader("Req-Raw-Request-URI", "/"))
     }
 
     "support absolute request URIs with a double slash path component" in new LocalTestSetup {
       val request = HttpRequest(uri = s"http://$serverHostName:$serverPort//foo")
       val responseFuture = Http().singleRequest(request)
-      val responseHeaders = Await.result(responseFuture, 1.second).headers
+      val responseHeaders = Await.result(responseFuture, 1.second.dilated).headers
       responseHeaders should contain(RawHeader("Req-Uri", s"http://$serverHostName:$serverPort//foo"))
       responseHeaders should contain(RawHeader("Req-Raw-Request-URI", "//foo"))
     }
@@ -368,15 +396,20 @@ class ConnectionPoolSpec extends AkkaSpec("""
     "produce an error if the request does not have an absolute URI" in {
       val request = HttpRequest(uri = "/foo")
       val responseFuture = Http().singleRequest(request)
-      val thrown = the[IllegalUriException] thrownBy Await.result(responseFuture, 1.second)
+      val thrown = the[IllegalUriException] thrownBy Await.result(responseFuture, 1.second.dilated)
       thrown should have message "Cannot determine request scheme and target endpoint as HttpMethod(GET) request to /foo doesn't have an absolute URI"
+    }
+
+    "use the configured ClientTransport" in new ClientTransportTestSetup {
+      def issueRequest(request: HttpRequest, settings: ConnectionPoolSettings): Future[HttpResponse] =
+        Http().singleRequest(request, settings = settings)
     }
   }
 
   "The superPool client infrastructure" should {
 
     "route incoming requests to the right cached host connection pool" in new TestSetup(autoAccept = true) {
-      val (serverEndpoint2, serverHostName2, serverPort2) = TestUtils.temporaryServerHostnameAndPort()
+      val (serverHostName2, serverPort2) = SocketUtil.temporaryServerHostnameAndPort()
       Http().bindAndHandleSync(testServerHandler(0), serverHostName2, serverPort2)
 
       val (requestIn, responseOut, responseOutSub, hcp) = superPool[Int]()
@@ -390,6 +423,15 @@ class ConnectionPoolSpec extends AkkaSpec("""
         case (Success(x), 43) ⇒ requestUri(x) shouldEqual s"http://$serverHostName2:$serverPort2/b"
         case x                ⇒ fail(x.toString)
       }
+    }
+
+    "use the configured ClientTransport" in new ClientTransportTestSetup {
+      def issueRequest(request: HttpRequest, settings: ConnectionPoolSettings): Future[HttpResponse] =
+        Source.single(request)
+          .map((_, ()))
+          .via(Http().superPool[Unit](settings = settings))
+          .map(_._1.get)
+          .runWith(Sink.head)
     }
   }
 
@@ -408,7 +450,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
 
     (1 to N).foreach(_ ⇒ acceptIncomingConnection())
 
-    Await.result(idSum, 10.seconds) shouldEqual N * (N + 1) / 2
+    Await.result(idSum, 10.seconds.dilated) shouldEqual N * (N + 1) / 2
   }
 
   "be able to handle 500 pipelined requests with connection termination" in new TestSetup(autoAccept = true) {
@@ -446,7 +488,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
               case x ⇒ fail(x.toString)
             }.toMat(Sink.fold(0)(_ + _))(Keep.both).run()
 
-        Await.result(idSum, 35.seconds) shouldEqual N * (N + 1) / 2
+        Await.result(idSum, 35.seconds.dilated) shouldEqual N * (N + 1) / 2
       } catch {
         case thr: Throwable ⇒
           throw new RuntimeException(s"Failed at pipeliningLimit=$pipeliningLimit, poolFlow=$poolFlow", thr)
@@ -457,7 +499,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
   class TestSetup(
     serverSettings: ServerSettings = ServerSettings(system),
     autoAccept:     Boolean        = false) {
-    val (serverEndpoint, serverHostName, serverPort) = TestUtils.temporaryServerHostnameAndPort()
+    val (serverHostName, serverPort) = SocketUtil.temporaryServerHostnameAndPort()
 
     def asyncTestServerHandler(connNr: Int): HttpRequest ⇒ Future[HttpResponse] = {
       val handler = testServerHandler(connNr)
@@ -481,7 +523,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
           .recover({ case NoErrorComplete ⇒ ByteString.empty }),
         Flow[ByteString].map(SessionBytes(null, _)))
       val sink = if (autoAccept) Sink.foreach[Http.IncomingConnection](handleConnection) else Sink.fromSubscriber(incomingConnections)
-      Tcp().bind(serverEndpoint.getHostString, serverEndpoint.getPort, idleTimeout = serverSettings.timeouts.idleTimeout)
+      Tcp().bind(serverHostName, serverPort, idleTimeout = serverSettings.timeouts.idleTimeout)
         .map { c ⇒
           val layer = Http().serverLayer(serverSettings, log = log)
           Http.IncomingConnection(c.localAddress, c.remoteAddress, layer atop rawBytesInjection join c.flow)
@@ -504,13 +546,13 @@ class ConnectionPoolSpec extends AkkaSpec("""
       maxRetries:      Int                      = 2,
       maxOpenRequests: Int                      = 8,
       pipeliningLimit: Int                      = 1,
-      idleTimeout:     Duration                 = 5.seconds,
+      idleTimeout:     FiniteDuration           = 5.seconds,
       ccSettings:      ClientConnectionSettings = ClientConnectionSettings(system)) = {
 
       val settings =
         new ConnectionPoolSettingsImpl(maxConnections, minConnections,
           maxRetries, maxOpenRequests, pipeliningLimit,
-          idleTimeout, ccSettings)
+          idleTimeout.dilated, ccSettings)
       flowTestBench(
         Http().cachedHostConnectionPool[T](serverHostName, serverPort, settings))
     }
@@ -521,10 +563,10 @@ class ConnectionPoolSpec extends AkkaSpec("""
       maxRetries:      Int                      = 2,
       maxOpenRequests: Int                      = 8,
       pipeliningLimit: Int                      = 1,
-      idleTimeout:     Duration                 = 5.seconds,
+      idleTimeout:     FiniteDuration           = 5.seconds,
       ccSettings:      ClientConnectionSettings = ClientConnectionSettings(system)) = {
       val settings = new ConnectionPoolSettingsImpl(maxConnections, minConnections, maxRetries, maxOpenRequests, pipeliningLimit,
-        idleTimeout, ClientConnectionSettings(system))
+        idleTimeout.dilated, ClientConnectionSettings(system))
       flowTestBench(Http().superPool[T](settings = settings))
     }
 
@@ -569,4 +611,47 @@ class ConnectionPoolSpec extends AkkaSpec("""
   }
 
   object NoErrorComplete extends SingletonException
+
+  abstract class ClientTransportTestSetup {
+    def issueRequest(request: HttpRequest, settings: ConnectionPoolSettings): Future[HttpResponse]
+
+    class CustomTransport extends ClientTransport {
+      val in = ByteStringSinkProbe()
+      val out = TestPublisher.probe[ByteString]()
+      val promise = Promise[(String, Int, ClientConnectionSettings)]()
+
+      def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
+        promise.success((host, port, settings))
+        Flow.fromSinkAndSource(in.sink, Source.fromPublisher(out)).mapMaterializedValue(_ ⇒ Promise().future)
+      }
+    }
+
+    import system.dispatcher
+
+    val CustomIdleTimeout = 23.hours
+
+    val transport = new CustomTransport
+    val poolSettings =
+      ConnectionPoolSettings(system)
+        .withTransport(transport)
+        .withConnectionSettings(ClientConnectionSettings(system).withIdleTimeout(CustomIdleTimeout))
+
+    val responseFuture = issueRequest(HttpRequest(uri = "http://example.org/test"), settings = poolSettings)
+
+    val (host, port, settings) = transport.promise.future.awaitResult(10.seconds)
+    host should ===("example.org")
+    port should ===(80)
+    settings.idleTimeout should ===(CustomIdleTimeout)
+
+    transport.in.ensureSubscription()
+    transport.in.expectUtf8EncodedString("GET /test HTTP/1.1\r\n")
+    transport.out.sendNext(ByteString("HTTP/1.1 200 OK\r\nConnection: close\r\n\r\n"))
+
+    val response = responseFuture.awaitResult(10.seconds)
+    response.status should ===(StatusCodes.OK)
+    transport.out.sendNext(ByteString("Hello World!"))
+    transport.out.sendComplete()
+
+    response.entity.dataBytes.utf8String.awaitResult(10.seconds) should ===("Hello World!")
+  }
 }

@@ -1,9 +1,10 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
 
+import akka.annotation.InternalApi
 import akka.stream.stage._
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.util.ByteString
@@ -15,6 +16,7 @@ import scala.annotation.tailrec
  *
  * INTERNAL API
  */
+@InternalApi
 private[http] final class FrameEventRenderer extends GraphStage[FlowShape[FrameEvent, ByteString]] {
   val in = Inlet[FrameEvent]("FrameEventRenderer.in")
   val out = Outlet[ByteString]("FrameEventRenderer.out")

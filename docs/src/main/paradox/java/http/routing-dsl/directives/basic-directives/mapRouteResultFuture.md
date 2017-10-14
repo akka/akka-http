@@ -1,11 +1,10 @@
-<a id="maprouteresultfuture-java"></a>
 # mapRouteResultFuture
 
 ## Description
 
-Asynchronous version of @ref[mapRouteResult](mapRouteResult.md#maprouteresult-java).
+Asynchronous version of @ref[mapRouteResult](mapRouteResult.md).
 
-It's similar to @ref[mapRouteResultWith](mapRouteResultWith.md#maprouteresultwith-java), however it's
+It's similar to @ref[mapRouteResultWith](mapRouteResultWith.md), however it's
 `Function<CompletionStage<RouteResult>, CompletionStage<RouteResult>>`
 instead of `Function<RouteResult, CompletionStage<RouteResult>>` which may be useful when
 combining multiple transformations and / or wanting to `recover` from a failed route result.
@@ -14,4 +13,4 @@ See @ref[Result Transformation Directives](index.md#result-transformation-direct
 
 ## Example
 
-@@snip [BasicDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #mapRouteResultFuture }
+@@snip [BasicDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/BasicDirectivesExamplesTest.java) { #mapRouteResultFuture }

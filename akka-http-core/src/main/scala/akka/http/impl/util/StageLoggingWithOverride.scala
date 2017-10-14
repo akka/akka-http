@@ -1,11 +1,12 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
  *
  * Copied and adapted from akka-remote
  * https://github.com/akka/akka/blob/c90121485fcfc44a3cee62a0c638e1982d13d812/akka-remote/src/main/scala/akka/remote/artery/StageLogging.scala
  */
 package akka.http.impl.util
 
+import akka.annotation.InternalApi
 import akka.stream.stage.GraphStageLogic
 import akka.event.LoggingAdapter
 import akka.stream.ActorMaterializer
@@ -17,6 +18,7 @@ import akka.event.NoLogging
 /**
  * INTERNAL API
  */
+@InternalApi
 private[akka] trait StageLoggingWithOverride { self: GraphStageLogic ⇒
   def logOverride: LoggingAdapter = DefaultNoLogging
 

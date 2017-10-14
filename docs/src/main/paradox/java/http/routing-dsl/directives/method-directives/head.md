@@ -1,4 +1,3 @@
-<a id="head-java"></a>
 # head
 
 Matches requests with HTTP method `HEAD`.
@@ -18,4 +17,4 @@ this behavior.
 
 ## Example
 
-@@snip [MethodDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java) { #head }
+@@snip [MethodDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java) { #head }

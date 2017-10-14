@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.javadsl.model;
@@ -104,6 +104,7 @@ public final class MediaTypes {
     public static final MediaType.Binary IMAGE_JPEG = akka.http.scaladsl.model.MediaTypes.image$divjpeg();
     public static final MediaType.Binary IMAGE_PICT = akka.http.scaladsl.model.MediaTypes.image$divpict();
     public static final MediaType.Binary IMAGE_PNG = akka.http.scaladsl.model.MediaTypes.image$divpng();
+    public static final MediaType.Binary IMAGE_SVGZ = akka.http.scaladsl.model.MediaTypes.image$divsvgz();
     public static final MediaType.Binary IMAGE_SVG_XML = akka.http.scaladsl.model.MediaTypes.image$divsvg$plusxml();
     public static final MediaType.Binary IMAGE_TIFF = akka.http.scaladsl.model.MediaTypes.image$divtiff();
     public static final MediaType.Binary IMAGE_X_ICON = akka.http.scaladsl.model.MediaTypes.image$divx$minusicon();
@@ -133,6 +134,7 @@ public final class MediaTypes {
     public static final MediaType.WithOpenCharset TEXT_CALENDAR = akka.http.scaladsl.model.MediaTypes.text$divcalendar();
     public static final MediaType.WithOpenCharset TEXT_CSS = akka.http.scaladsl.model.MediaTypes.text$divcss();
     public static final MediaType.WithOpenCharset TEXT_CSV = akka.http.scaladsl.model.MediaTypes.text$divcsv();
+    public static final MediaType.WithFixedCharset TEXT_EVENT_STREAM = akka.http.scaladsl.model.MediaTypes.text$divevent$minusstream();
     public static final MediaType.WithOpenCharset TEXT_HTML = akka.http.scaladsl.model.MediaTypes.text$divhtml();
     public static final MediaType.WithOpenCharset TEXT_MARKDOWN = akka.http.scaladsl.model.MediaTypes.text$divmarkdown();
     public static final MediaType.WithOpenCharset TEXT_MCF = akka.http.scaladsl.model.MediaTypes.text$divmcf();

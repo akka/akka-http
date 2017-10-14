@@ -1,9 +1,8 @@
-<a id="parameterseq"></a>
 # parameterSeq
 
 ## Signature
 
-@@signature [ParameterDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/ParameterDirectives.scala) { #parameterSeq }
+@@signature [ParameterDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/ParameterDirectives.scala) { #parameterSeq }
 
 ## Description
 
@@ -15,4 +14,4 @@ See @ref[When to use which parameter directive?](index.md#which-parameter-direct
 
 ## Example
 
-@@snip [ParameterDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala) { #parameterSeq }
+@@snip [ParameterDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala) { #parameterSeq }

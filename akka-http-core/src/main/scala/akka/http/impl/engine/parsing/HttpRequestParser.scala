@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -15,6 +15,7 @@ import akka.http.scaladsl.model._
 import headers._
 import StatusCodes._
 import ParserOutput._
+import akka.annotation.InternalApi
 import akka.http.impl.util.ByteStringParserInput
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.stream.TLSProtocol.SessionBytes
@@ -23,6 +24,7 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] final class HttpRequestParser(
   settings:            ParserSettings,
   rawRequestUriHeader: Boolean,
@@ -73,6 +75,8 @@ private[http] final class HttpRequestParser(
       cursor = parseProtocol(input, cursor)
       if (byteChar(input, cursor) == '\r' && byteChar(input, cursor + 1) == '\n')
         parseHeaderLines(input, cursor + 2)
+      else if (byteChar(input, cursor) == '\n')
+        parseHeaderLines(input, cursor + 1)
       else onBadProtocol
     }
 

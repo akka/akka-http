@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.javadsl.common
@@ -140,10 +140,28 @@ object EntityStreamingSupport {
 
 // extends Scala base, in order to get linearization right and (as we can't go into traits here, because companion object needed)
 abstract class JsonEntityStreamingSupport extends common.EntityStreamingSupport {
+  /**
+   * Java API: Write-side, apply framing to outgoing entity stream.
+   *
+   * Most typical usage will be a variant of `Flow[ByteString].intersperse`.
+   *
+   * For example for rendering a JSON array one would return
+   * `Flow[ByteString].intersperse(ByteString("["), ByteString(","), ByteString("]"))`
+   * and for rendering a new-line separated CSV simply `Flow[ByteString].intersperse(ByteString("\n"))`.
+   */
   def withFramingRendererFlow(flow: Flow[ByteString, ByteString, NotUsed]): JsonEntityStreamingSupport
 }
 
 // extends Scala base, in order to get linearization right and (as we can't go into traits here, because companion object needed)
 abstract class CsvEntityStreamingSupport extends common.EntityStreamingSupport {
+  /**
+   * Java API: Write-side, apply framing to outgoing entity stream.
+   *
+   * Most typical usage will be a variant of `Flow[ByteString].intersperse`.
+   *
+   * For example for rendering a JSON array one would return
+   * `Flow[ByteString].intersperse(ByteString("["), ByteString(","), ByteString("]"))`
+   * and for rendering a new-line separated CSV simply `Flow[ByteString].intersperse(ByteString("\n"))`.
+   */
   def withFramingRendererFlow(flow: Flow[ByteString, ByteString, NotUsed]): CsvEntityStreamingSupport
 }

@@ -1,10 +1,12 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.javadsl.unmarshalling
 
 import java.util.concurrent.CompletionStage
+
+import akka.annotation.InternalApi
 
 object StringUnmarshaller {
   /**
@@ -21,6 +23,7 @@ object StringUnmarshaller {
 /**
  * INTERNAL API
  */
+@InternalApi
 private[unmarshalling] object StringUnmarshallerPredef extends akka.http.scaladsl.unmarshalling.PredefinedFromStringUnmarshallers {
 
 }

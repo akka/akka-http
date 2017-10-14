@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine
@@ -8,6 +8,7 @@ import java.net.InetSocketAddress
 import java.util.concurrent.TimeoutException
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.stream.scaladsl.{ BidiFlow, Flow }
 import akka.util.ByteString
 
@@ -15,6 +16,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NoStackTrace
 
 /** INTERNAL API */
+@InternalApi
 private[akka] object HttpConnectionIdleTimeoutBidi {
   def apply(idleTimeout: FiniteDuration, remoteAddress: Option[InetSocketAddress]): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] = {
     val connectionToString = remoteAddress match {

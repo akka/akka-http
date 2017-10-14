@@ -1,10 +1,9 @@
-<a id="http-marshalling-scala"></a>
 # Marshalling
 
-"Marshalling" is the process of converting a higher-level (object) structure into some kind of lower-level
-representation, often a "wire format". Other popular names for it are "Serialization" or "Pickling".
+Marshalling is the process of converting a higher-level (object) structure into some kind of lower-level
+representation, often a "wire format". Other popular names for marshalling are "serialization" or "pickling".
 
-In Akka HTTP "Marshalling" means the conversion of an object of type `T` into a lower-level target type,
+In Akka HTTP, marshalling means the conversion of an object of type `T` into a lower-level target type,
 e.g. a `MessageEntity` (which forms the "entity body" of an HTTP request or response) or a full `HttpRequest` or
 `HttpResponse`.
 
@@ -13,15 +12,15 @@ e.g. a `MessageEntity` (which forms the "entity body" of an HTTP request or resp
 Marshalling of instances of type `A` into instances of type `B` is performed by a `Marshaller[A, B]`.
 Akka HTTP also predefines a number of helpful aliases for the types of marshallers that you'll likely work with most:
 
-@@snip [package.scala](../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/marshalling/package.scala) { #marshaller-aliases }
+@@snip [package.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/marshalling/package.scala) { #marshaller-aliases }
 
 Contrary to what you might initially expect `Marshaller[A, B]` is not a plain function `A => B` but rather
 essentially a function `A => Future[List[Marshalling[B]]]`.
-Let's dissect this rather complicated looking signature piece by piece to understand what marshallers are designed this
+Let's dissect this rather complicated looking signature piece by piece to understand why marshallers are designed this
 way.
-Given an instance of type `A` a `Marshaller[A, B]` produces:
+Given an instance of type `A`, a `Marshaller[A, B]` produces:
 
-1. A `Future`: This is probably quite clear. Marshallers are not required to synchronously produce a result, so instead
+1. A `Future`: Marshallers are not required to synchronously produce a result, so instead
 they return a future, which allows for asynchronicity in the marshalling process.
 
 2. of `List`: Rather than only a single target representation for `A` marshallers can offer several ones. Which
@@ -37,14 +36,14 @@ delaying the actual construction of the marshalling target instance to the very 
 
 This is how `Marshalling` is defined:
 
-@@snip [Marshaller.scala](../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/marshalling/Marshaller.scala) { #marshalling }
+@@snip [Marshaller.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/marshalling/Marshaller.scala) { #marshalling }
 
 ## Predefined Marshallers
 
 Akka HTTP already predefines a number of marshallers for the most common types.
 Specifically these are:
 
- * @github[PredefinedToEntityMarshallers](/akka-http/src/main/scala/akka/http/scaladsl/marshalling/PredefinedToEntityMarshallers.scala)
+ * @scaladoc[PredefinedToEntityMarshallers](akka.http.scaladsl.marshalling.PredefinedToEntityMarshallers)
     * `Array[Byte]`
     * `ByteString`
     * `Array[Char]`
@@ -52,7 +51,7 @@ Specifically these are:
     * `akka.http.scaladsl.model.FormData`
     * `akka.http.scaladsl.model.MessageEntity`
     * `T <: akka.http.scaladsl.model.Multipart`
- * @github[PredefinedToResponseMarshallers](/akka-http/src/main/scala/akka/http/scaladsl/marshalling/PredefinedToResponseMarshallers.scala)
+ * @scaladoc[PredefinedToResponseMarshallers](akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers)
     * `T`, if a `ToEntityMarshaller[T]` is available
     * `HttpResponse`
     * `StatusCode`
@@ -60,12 +59,12 @@ Specifically these are:
     * `(Int, T)`, if a `ToEntityMarshaller[T]` is available
     * `(StatusCode, immutable.Seq[HttpHeader], T)`, if a `ToEntityMarshaller[T]` is available
     * `(Int, immutable.Seq[HttpHeader], T)`, if a `ToEntityMarshaller[T]` is available
- * @github[PredefinedToRequestMarshallers](/akka-http/src/main/scala/akka/http/scaladsl/marshalling/PredefinedToRequestMarshallers.scala)
+ * @scaladoc[PredefinedToRequestMarshallers](akka.http.scaladsl.marshalling.PredefinedToRequestMarshallers)
     * `HttpRequest`
     * `Uri`
     * `(HttpMethod, Uri, T)`, if a `ToEntityMarshaller[T]` is available
     * `(HttpMethod, Uri, immutable.Seq[HttpHeader], T)`, if a `ToEntityMarshaller[T]` is available
- * @github[GenericMarshallers](/akka-http/src/main/scala/akka/http/scaladsl/marshalling/GenericMarshallers.scala)
+ * @scaladoc[GenericMarshallers](akka.http.scaladsl.marshalling.GenericMarshallers)
     * `Marshaller[Throwable, T]`
     * `Marshaller[Option[A], B]`, if a `Marshaller[A, B]` and an `EmptyValue[B]` is available
     * `Marshaller[Either[A1, A2], B]`, if a `Marshaller[A1, B]` and a `Marshaller[A2, B]` is available
@@ -98,7 +97,7 @@ For writing your own marshallers you won't have to "manually" implement the `Mar
 Rather, it should be possible to use one of the convenience construction helpers defined on the `Marshaller`
 companion:
 
-@@snip [Marshaller.scala](../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/marshalling/Marshaller.scala) { #marshaller-creation }
+@@snip [Marshaller.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/marshalling/Marshaller.scala) { #marshaller-creation }
 
 ## Deriving Marshallers
 
@@ -125,10 +124,10 @@ depend on one being available implicitly at the usage site.
 
 ## Using Marshallers
 
-In many places throughput Akka HTTP marshallers are used implicitly, e.g. when you define how to @ref[complete](../routing-dsl/directives/route-directives/complete.md#complete) a
-request using the @ref[Routing DSL](../routing-dsl/index.md#http-high-level-server-side-api).
+In many places through Akka HTTP, marshallers are used implicitly, e.g. when you define how to @ref[complete](../routing-dsl/directives/route-directives/complete.md) a
+request using the @ref[Routing DSL](../routing-dsl/index.md).
 
-However, you can also use the marshalling infrastructure directly if you wish, which can be useful for example in tests.
+However, you can also use the marshalling infrastructure directly if you wish, which can be useful in tests, for example.
 The best entry point for this is the `akka.http.scaladsl.marshalling.Marshal` object, which you can use like this:
 
-@@snip [MarshalSpec.scala](../../../../../test/scala/docs/http/scaladsl/MarshalSpec.scala) { #use-marshal }
+@@snip [MarshalSpec.scala]($test$/scala/docs/http/scaladsl/MarshalSpec.scala) { #use-marshal }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.javadsl.server
@@ -9,6 +9,7 @@ import akka.japi.pf.PFBuilder
 import akka.http.javadsl.settings.RoutingSettings
 import akka.http.impl.util.JavaMapping.Implicits._
 import RoutingJavaMapping._
+import akka.annotation.InternalApi
 
 object ExceptionHandler {
   /**
@@ -17,6 +18,7 @@ object ExceptionHandler {
   def newBuilder: ExceptionHandlerBuilder = new ExceptionHandlerBuilder()
 
   /** INTERNAL API */
+  @InternalApi
   def of(pf: PartialFunction[Throwable, Route]) = new ExceptionHandler(server.ExceptionHandler(pf.andThen(_.delegate)))
 }
 

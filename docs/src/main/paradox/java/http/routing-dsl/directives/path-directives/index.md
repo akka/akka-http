@@ -1,4 +1,3 @@
-<a id="pathdirectives-java"></a>
 # PathDirectives
 
 @@toc { depth=1 }
@@ -17,6 +16,7 @@
 * [rawPathPrefixTest](rawPathPrefixTest.md)
 * [redirectToNoTrailingSlashIfPresent](redirectToNoTrailingSlashIfPresent.md)
 * [redirectToTrailingSlashIfMissing](redirectToTrailingSlashIfMissing.md)
+* [ignoreTrailingSlash](ignoreTrailingSlash.md)
 * [../path-directives](../path-directives.md)
 
 @@@

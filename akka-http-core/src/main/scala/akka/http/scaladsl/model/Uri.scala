@@ -1,17 +1,18 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
 
 import language.implicitConversions
 import java.net.{ Inet4Address, Inet6Address, InetAddress }
-import java.lang.{ StringBuilder ⇒ JStringBuilder, Iterable }
+import java.lang.{ Iterable, StringBuilder ⇒ JStringBuilder }
 import java.nio.charset.Charset
+
 import scala.annotation.tailrec
-import scala.collection.{ immutable, mutable, LinearSeqOptimized }
+import scala.collection.{ LinearSeqOptimized, immutable, mutable }
 import scala.collection.immutable.LinearSeq
-import akka.parboiled2.{ CharUtils, CharPredicate, ParserInput }
+import akka.parboiled2.{ CharPredicate, CharUtils, ParserInput }
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.model.parser.UriParser
 import akka.http.impl.model.parser.CharacterClasses._
@@ -134,7 +135,15 @@ sealed abstract case class Uri(scheme: String, authority: Authority, path: Path,
    */
   def toEffectiveHttpRequestUri(hostHeaderHost: Host, hostHeaderPort: Int, securedConnection: Boolean = false,
                                 defaultAuthority: Authority = Authority.Empty): Uri =
-    effectiveHttpRequestUri(scheme, authority.host, authority.port, path, rawQueryString, fragment, securedConnection,
+    toEffectiveRequestUri(hostHeaderHost, hostHeaderPort, httpScheme(securedConnection), defaultAuthority)
+
+  /**
+   * Converts this URI to an "effective request URI" as defined by
+   * http://tools.ietf.org/html/rfc7230#section-5.5
+   */
+  def toEffectiveRequestUri(hostHeaderHost: Host, hostHeaderPort: Int, defaultScheme: String,
+                            defaultAuthority: Authority = Authority.Empty): Uri =
+    effectiveRequestUri(scheme, authority.host, authority.port, path, rawQueryString, fragment, defaultScheme,
       hostHeaderHost, hostHeaderPort, defaultAuthority)
 
   /**
@@ -266,6 +275,28 @@ object Uri {
     new UriParser(requestTarget, charset, mode).parseHttpRequestTarget()
 
   /**
+   * Parses the given string as if it were the value of an HTTP/2 ":path" pseudo-header.
+   * The result is a path and a query string as defined in
+   * https://tools.ietf.org/html/rfc7540#section-8.1.2.3
+   * If strict is `false`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
+   * If the given string is not a valid path or query string the method throws an `IllegalUriException`.
+   */
+  private[http] def parseHttp2PathPseudoHeader(headerValue: ParserInput, charset: Charset = UTF8,
+                                               mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): (Uri.Path, Option[String]) =
+    new UriParser(headerValue, charset, mode).parseHttp2PathPseudoHeader()
+
+  /**
+   * Parses the given string as if it were the value of an HTTP/2 ":authority" pseudo-header.
+   * The result is an authority object.
+   * https://tools.ietf.org/html/rfc7540#section-8.1.2.3
+   * If strict is `false`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
+   * If the given string is not a valid path or query string the method throws an `IllegalUriException`.
+   */
+  private[http] def parseHttp2AuthorityPseudoHeader(headerValue: ParserInput, charset: Charset = UTF8,
+                                                    mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): Uri.Authority =
+    new UriParser(headerValue, charset, mode).parseHttp2AuthorityPseudoHeader()
+
+  /**
    * Normalizes the given URI string by performing the following normalizations:
    *  - the `scheme` and `host` components are converted to lowercase
    *  - a potentially existing `port` component is removed if it matches one of the defined default ports for the scheme
@@ -287,12 +318,22 @@ object Uri {
    */
   def effectiveHttpRequestUri(scheme: String, host: Host, port: Int, path: Path, query: Option[String], fragment: Option[String],
                               securedConnection: Boolean, hostHeaderHost: Host, hostHeaderPort: Int,
-                              defaultAuthority: Authority = Authority.Empty): Uri = {
+                              defaultAuthority: Authority = Authority.Empty): Uri =
+    effectiveRequestUri(scheme, host, port, path, query, fragment, httpScheme(securedConnection), hostHeaderHost,
+      hostHeaderPort, defaultAuthority)
+
+  /**
+   * Converts a set of URI components to an "effective request URI" as defined by
+   * http://tools.ietf.org/html/rfc7230#section-5.5.
+   */
+  def effectiveRequestUri(scheme: String, host: Host, port: Int, path: Path, query: Option[String], fragment: Option[String],
+                          defaultScheme: String, hostHeaderHost: Host, hostHeaderPort: Int,
+                          defaultAuthority: Authority = Authority.Empty): Uri = {
     var _scheme = scheme
     var _host = host
     var _port = port
     if (_scheme.isEmpty) {
-      _scheme = httpScheme(securedConnection)
+      _scheme = defaultScheme
       if (_host.isEmpty) {
         if (hostHeaderHost.isEmpty) {
           _host = defaultAuthority.host
@@ -307,6 +348,8 @@ object Uri {
   }
 
   def httpScheme(securedConnection: Boolean = false) = if (securedConnection) "https" else "http"
+
+  def websocketScheme(securedConnection: Boolean = false) = (if (securedConnection) "wss" else "ws")
 
   /**
    * @param port A port number that may be `0` to signal the default port of for scheme.
@@ -434,10 +477,10 @@ object Uri {
     def endsWithSlash: Boolean = {
       import Path.{ Empty ⇒ PEmpty, _ }
       @tailrec def check(path: Path): Boolean = path match {
-        case PEmpty              ⇒ false
-        case Slash(PEmpty)       ⇒ true
-        case Slash(tail)         ⇒ check(tail)
-        case Segment(head, tail) ⇒ check(tail)
+        case PEmpty           ⇒ false
+        case Slash(PEmpty)    ⇒ true
+        case Slash(tail)      ⇒ check(tail)
+        case Segment(_, tail) ⇒ check(tail)
       }
       check(this)
     }
@@ -553,9 +596,25 @@ object Uri {
         if (q.isEmpty) map else append(map.updated(q.key, q.value), q.tail)
       append(Map.empty, this)
     }
+
+    /**
+     * Returns this query as a map where keys can have multiple values. The parameter order is
+     * preserved, so that the following query:
+     *
+     * {{{
+     *   a=1&a=2&a=3&a=4&b=1
+     * }}}
+     *
+     * Will return a map like:
+     *
+     * {{{
+     *   "a" -> List(1, 2, 3, 4),
+     *   "b" -> List(1)
+     * }}}
+     */
     def toMultiMap: Map[String, List[String]] = {
       @tailrec def append(map: Map[String, List[String]], q: Query): Map[String, List[String]] =
-        if (q.isEmpty) map else append(map.updated(q.key, q.value :: map.getOrElse(q.key, Nil)), q.tail)
+        if (q.isEmpty) map else append(map.updated(q.key, map.getOrElse(q.key, Nil) :+ q.value), q.tail)
       append(Map.empty, this)
     }
     override def newBuilder: mutable.Builder[(String, String), Query] = Query.newBuilder
@@ -803,6 +862,7 @@ object UriRendering {
   def renderUriWithoutFragment[R <: Rendering](r: R, value: Uri, charset: Charset): r.type = {
     import value._
     if (isAbsolute) r ~~ scheme ~~ ':'
+    if (authority.nonEmpty) r ~~ '/' ~~ '/'
     renderAuthority(r, authority, path, scheme, charset)
     renderPath(r, path, charset, encodeFirstSegmentColons = isRelative)
     rawQueryString.foreach(r ~~ '?' ~~ _)
@@ -815,7 +875,6 @@ object UriRendering {
   def renderAuthority[R <: Rendering](r: R, authority: Authority, path: Path, scheme: String, charset: Charset): r.type =
     if (authority.nonEmpty) {
       import authority._
-      r ~~ '/' ~~ '/'
       if (!userinfo.isEmpty) encode(r, userinfo, charset, `userinfo-char`) ~~ '@'
       r ~~ host
       if (port != 0) r ~~ ':' ~~ port else r
@@ -873,27 +932,3 @@ object UriRendering {
   private[http] def isAsciiCompatible(cs: Charset) = cs == UTF8 || cs == ISO88591 || cs == ASCII
 }
 
-/**
- * INTERNAL API.
- */
-abstract class UriJavaAccessor
-/**
- * INTERNAL API.
- */
-object UriJavaAccessor {
-  import collection.JavaConverters._
-
-  def hostApply(string: String): Host = Uri.Host(string)
-  def hostApply(string: String, mode: Uri.ParsingMode): Host = Uri.Host(string, mode = mode)
-  def hostApply(string: String, charset: Charset): Host = Uri.Host(string, charset = charset)
-  def emptyHost: Uri.Host = Uri.Host.Empty
-
-  def queryApply(params: Array[akka.japi.Pair[String, String]]): Uri.Query = Uri.Query(params.map(_.toScala): _*)
-  def queryApply(params: java.util.Map[String, String]): Uri.Query = Uri.Query(params.asScala.toSeq: _*)
-  def queryApply(string: String, mode: Uri.ParsingMode): Uri.Query = Uri.Query(string, mode = mode)
-  def queryApply(string: String, charset: Charset): Uri.Query = Uri.Query(string, charset = charset)
-  def emptyQuery: Uri.Query = Uri.Query.Empty
-
-  def pmStrict: Uri.ParsingMode = Uri.ParsingMode.Strict
-  def pmRelaxed: Uri.ParsingMode = Uri.ParsingMode.Relaxed
-}

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.javadsl.model.headers;
@@ -42,4 +42,5 @@ public final class CacheDirectives {
     public static CacheDirective S_MAXAGE(long deltaSeconds) {
         return new akka.http.scaladsl.model.headers.CacheDirectives.s$minusmaxage(deltaSeconds);
     }
+    public static final CacheDirective IMMUTABLE = akka.http.scaladsl.model.headers.CacheDirectives.getImmutable();
 }

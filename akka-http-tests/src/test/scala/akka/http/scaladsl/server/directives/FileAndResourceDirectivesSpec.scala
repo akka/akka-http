@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -11,21 +11,19 @@ import akka.http.scaladsl.settings.RoutingSettings
 import akka.http.scaladsl.testkit.RouteTestTimeout
 
 import scala.concurrent.duration._
-import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Properties
-import org.scalatest.matchers.Matcher
 import org.scalatest.{ Inside, Inspectors }
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
-import akka.http.scaladsl.TestUtils.writeAllText
 import akka.http.scaladsl.model.Uri.Path
+import akka.testkit._
 
 class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Inside {
 
   // operations touch files, can be randomly hit by slowness
-  implicit val routeTestTimeout = RouteTestTimeout(3.seconds)
+  implicit val routeTestTimeout = RouteTestTimeout(3.seconds.dilated)
 
   // need to serve from the src directory, when sbt copies the resource directory over to the
   // target directory it will resolve symlinks in the process
@@ -33,6 +31,9 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
   require(testRoot.exists(), s"testRoot was not found at ${testRoot.getAbsolutePath}")
 
   override def testConfigSource = "akka.http.routing.range-coalescing-threshold = 1"
+
+  def writeAllText(text: String, file: File): Unit =
+    java.nio.file.Files.write(file.toPath, text.getBytes("UTF-8"))
 
   "getFromFile" should {
     "reject non-GET requests" in {
@@ -89,7 +90,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
           header[`Content-Range`] shouldEqual None
           mediaType.withParams(Map.empty) shouldEqual `multipart/byteranges`
 
-          val parts = responseAs[Multipart.ByteRanges].toStrict(1.second).awaitResult(3.seconds).strictParts
+          val parts = responseAs[Multipart.ByteRanges].toStrict(1.second.dilated).awaitResult(3.seconds.dilated).strictParts
           parts.map(_.entity.data.utf8String) should contain theSameElementsAs List("BCDEFGHIJK", "QRSTUVWXYZ")
         }
       } finally file.delete
@@ -241,7 +242,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     "return the resource content from an archive" in {
       Get() ~> getFromResource("com/typesafe/config/Config.class") ~> check {
         mediaType shouldEqual `application/octet-stream`
-        responseEntity.toStrict(1.second).awaitResult(1.second).data.asByteBuffer.getInt shouldEqual 0xCAFEBABE
+        responseEntity.toStrict(1.second.dilated).awaitResult(1.second.dilated).data.asByteBuffer.getInt shouldEqual 0xCAFEBABE
       }
     }
     "return the file content with MediaType 'application/octet-stream' on unknown file extensions" in {
@@ -278,7 +279,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     "return the resource content from an archive" in {
       Get("Config.class") ~> getFromResourceDirectory("com/typesafe/config") ~> check {
         mediaType shouldEqual `application/octet-stream`
-        responseEntity.toStrict(1.second).awaitResult(1.second).data.asByteBuffer.getInt shouldEqual 0xCAFEBABE
+        responseEntity.toStrict(1.second.dilated).awaitResult(1.second.dilated).data.asByteBuffer.getInt shouldEqual 0xCAFEBABE
       }
     }
     "reject requests to directory resources" in {
@@ -501,9 +502,4 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
   }
 
   def prep(s: String) = s.stripMarginWithNewline("\n")
-
-  def evaluateTo[T](t: T, atMost: Duration = 100.millis)(implicit ec: ExecutionContext): Matcher[Future[T]] =
-    be(t).compose[Future[T]] { fut ⇒
-      fut.awaitResult(atMost)
-    }
 }

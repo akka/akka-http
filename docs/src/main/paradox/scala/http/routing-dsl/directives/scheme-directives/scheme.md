@@ -1,9 +1,8 @@
-<a id="scheme"></a>
 # scheme
 
 ## Signature
 
-@@signature [SchemeDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SchemeDirectives.scala) { #scheme }
+@@signature [SchemeDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/SchemeDirectives.scala) { #scheme }
 
 ## Description
 
@@ -16,8 +15,8 @@ A typical use case for the `scheme` directive would be to reject requests coming
 http instead of https, or to redirect such requests to the matching https URI with a
 `MovedPermanently`.
 
-For simply extracting the scheme name, see the @ref[extractScheme](extractScheme.md#extractscheme) directive.
+For simply extracting the scheme name, see the @ref[extractScheme](extractScheme.md) directive.
 
 ## Example
 
-@@snip [SchemeDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/SchemeDirectivesExamplesSpec.scala) { #example-2 }
+@@snip [SchemeDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/SchemeDirectivesExamplesSpec.scala) { #example-2 }

@@ -1,4 +1,3 @@
-<a id="put-java"></a>
 # put
 
 Matches requests with HTTP method `PUT`.
@@ -12,4 +11,4 @@ by the default `RejectionHandler`.
 
 ## Example
 
-@@snip [MethodDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java) { #put }
+@@snip [MethodDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java) { #put }

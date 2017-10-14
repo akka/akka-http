@@ -1,17 +1,17 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
 
-import akka.http.scaladsl.{ Http, TestUtils }
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.HttpProtocols._
 import akka.http.scaladsl.model.RequestEntityAcceptance.Expected
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives
 import akka.stream.ActorMaterializer
-import akka.testkit.AkkaSpec
+import akka.testkit.{ AkkaSpec, SocketUtil }
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
 
@@ -25,12 +25,12 @@ class CustomHttpMethodSpec extends AkkaSpec with ScalaFutures
   "Http" should {
     "allow registering custom method" in {
       import system.dispatcher
-      val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
+      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
 
       //#application-custom
       import akka.http.scaladsl.settings.{ ParserSettings, ServerSettings }
 
-      // define custom media type:
+      // define custom method type:
       val BOLT = HttpMethod.custom("BOLT", safe = false,
         idempotent = true, requestEntityAcceptance = Expected)
 
@@ -42,9 +42,9 @@ class CustomHttpMethodSpec extends AkkaSpec with ScalaFutures
         complete(s"This is a ${method.name} method request.")
       }
       val binding = Http().bindAndHandle(routes, host, port, settings = serverSettings)
-      //#application-custom
 
-      val request = HttpRequest(BOLT, s"http://$host:$port/", protocol = `HTTP/1.0`)
+      val request = HttpRequest(BOLT, s"http://$host:$port/", protocol = `HTTP/1.1`)
+      //#application-custom
       val response = Http().singleRequest(request).futureValue
 
       response.status should ===(StatusCodes.OK)

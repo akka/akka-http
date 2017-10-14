@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -8,9 +8,9 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.{ Http, TestUtils }
+import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
-import akka.testkit.TestKit
+import akka.testkit.{ SocketUtil, TestKit }
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 
@@ -47,7 +47,7 @@ class WithoutSizeLimitSpec extends WordSpec with Matchers with RequestBuilding w
             }
           }
 
-      val (_, hostName, port) = TestUtils.temporaryServerHostnameAndPort()
+      val (hostName, port) = SocketUtil.temporaryServerHostnameAndPort()
 
       val future = for {
         _ ← Http().bindAndHandle(route, hostName, port)

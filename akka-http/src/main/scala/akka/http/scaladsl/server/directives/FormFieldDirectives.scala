@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -7,6 +7,7 @@ package directives
 
 import akka.http.impl.util._
 import akka.http.scaladsl.common._
+import akka.http.scaladsl.model.EntityStreamSizeException
 import akka.http.scaladsl.server.directives.RouteDirectives._
 import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
 import akka.http.scaladsl.util.FastFuture._
@@ -82,6 +83,7 @@ object FormFieldDirectives extends FormFieldDirectives {
       onComplete(sequenceF).flatMap {
         case Success(x)                                  ⇒ provide(x)
         case Failure(x: UnsupportedContentTypeException) ⇒ reject(UnsupportedRequestContentTypeRejection(x.supported))
+        case Failure(x: EntityStreamSizeException)       ⇒ reject(MalformedRequestContentRejection(x.getMessage.nullAsEmpty, x))
         case Failure(_)                                  ⇒ reject // TODO Use correct rejections
       }
     }

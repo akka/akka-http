@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.model
@@ -7,12 +7,15 @@ package akka.http.impl.model
 import java.nio.charset.Charset
 import java.util.Optional
 import java.{ lang ⇒ jl }
+
+import akka.annotation.InternalApi
 import akka.http.scaladsl.model.Uri.ParsingMode
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.{ model ⇒ sm }
 import akka.http.impl.util.JavaMapping.Implicits._
 
 /** INTERNAL API */
+@InternalApi
 case class JavaUri(uri: sm.Uri) extends jm.Uri {
   def isRelative: Boolean = uri.isRelative
   def isAbsolute: Boolean = uri.isAbsolute

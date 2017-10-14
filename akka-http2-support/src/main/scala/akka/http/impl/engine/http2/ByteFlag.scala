@@ -1,10 +1,13 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
 
+import akka.annotation.InternalApi
+
 /** INTERNAL API */
+@InternalApi
 private[http] final class ByteFlag(val value: Int) extends AnyVal {
   def |(that: ByteFlag): ByteFlag = new ByteFlag((this.value | that.value).toByte)
   def &(that: ByteFlag): ByteFlag = new ByteFlag((this.value | that.value).toByte)
@@ -14,6 +17,7 @@ private[http] final class ByteFlag(val value: Int) extends AnyVal {
   override def toString: String = s"ByteFlag(${Integer.toHexString(value)})"
 }
 /** INTERNAL API */
+@InternalApi
 private[impl] object ByteFlag {
   val Zero = new ByteFlag(0)
 

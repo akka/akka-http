@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.model.parser
@@ -175,6 +175,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         `Cache-Control`(`no-cache`("Set-Cookie")).renderedTo("no-cache=\"Set-Cookie\"")
       "Cache-Control: private=\"a,b\", no-cache" =!=
         `Cache-Control`(`private`("a", "b"), `no-cache`)
+      "Cache-Control: private, immutable" =!=
+        `Cache-Control`(`private`(), immutableDirective)
     }
 
     "Connection" in {
@@ -208,6 +210,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         `Content-Type`(`application/json`)
       "Content-Type: text/plain; charset=utf8" =!=
         `Content-Type`(ContentType(`text/plain`, `UTF-8`)).renderedTo("text/plain; charset=UTF-8")
+      "Content-Type: text/plain" =!=
+        `Content-Type`(ContentType.WithMissingCharset(MediaTypes.`text/plain`)).renderedTo("text/plain")
       "Content-Type: text/xml2; version=3; charset=windows-1252" =!=
         `Content-Type`(MediaType.customWithOpenCharset("text", "xml2", params = Map("version" → "3"))
           withCharset HttpCharsets.getForKey("windows-1252").get)
@@ -303,6 +307,13 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Host: 127.0.0.1" =!= Host("127.0.0.1")
     }
 
+    "If-Match dispatching" in {
+      // https://github.com/akka/akka-http/issues/443 Check dispatching for "if-match" does not throw "RuleNotFound"
+      import scala.util._
+      val Failure(cause) = Try(HeaderParser.dispatch(null, "if-match"))
+      cause.getClass should be(classOf[NullPointerException])
+    }
+
     "If-Match" in {
       """If-Match: *""" =!= `If-Match`.`*`
       """If-Match: "938fz3f83z3z38z"""" =!= `If-Match`(EntityTag("938fz3f83z3z38z"))
@@ -312,6 +323,10 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
 
     "If-Modified-Since" in {
       "If-Modified-Since: Wed, 13 Jul 2011 08:12:31 GMT" =!= `If-Modified-Since`(DateTime(2011, 7, 13, 8, 12, 31))
+      "If-Modified-Since: Tue, 09 May 2017 18:49:57 GMT" =!= `If-Modified-Since`(DateTime(2017, 5, 9, 18, 49, 57))
+      "If-Modified-Since: Tue, 9 May 2017 18:49:57 GMT" =!=> "Tue, 09 May 2017 18:49:57 GMT"
+      "If-Modified-Since: Tue, 9 May 17 18:49:57 GMT" =!=> "Tue, 09 May 2017 18:49:57 GMT"
+      "If-Modified-Since: Sat, 09 May 70 18:49:57 GMT" =!=> "Sat, 09 May 1970 18:49:57 GMT"
       "If-Modified-Since: 0" =!= `If-Modified-Since`(DateTime.MinValue).renderedTo("Wed, 01 Jan 1800 00:00:00 GMT")
     }
 
@@ -570,12 +585,17 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
           "Digest realm=\"testrealm@host.com\",qop=\"auth,auth-int\",nonce=dcd98b7102dd2f0e8b11d0f600bfb0c093,opaque=5ccc069c403ebaf9f0171e9517f40e41")
       "WWW-Authenticate: Basic realm=\"WallyWorld\",attr=\"val>ue\", Fancy realm=\"yeah\"" =!=
         `WWW-Authenticate`(HttpChallenge("Basic", Some("WallyWorld"), Map("attr" → "val>ue")), HttpChallenge("Fancy", Some("yeah")))
+      "WWW-Authenticate: Basic attr=value,another=\"val>ue\"" =!=
+        `WWW-Authenticate`(HttpChallenge("Basic", None, Map("attr" → "value", "another" → "val>ue")))
+      "WWW-Authenticate: Basic attr=value" =!=
+        `WWW-Authenticate`(HttpChallenge("Basic", None, Map("attr" → "value")))
       """WWW-Authenticate: Fancy realm="Secure Area",nonce=42""" =!=
         `WWW-Authenticate`(HttpChallenge("Fancy", Some("Secure Area"), Map("nonce" → "42")))
     }
 
     "X-Forwarded-For" in {
       "X-Forwarded-For: 1.2.3.4" =!= `X-Forwarded-For`(remoteAddress("1.2.3.4"))
+      "X-Forwarded-For: 1.2.3.4" <=!= `X-Forwarded-For`(remoteAddress("1.2.3.4", Some(56789)))
       "X-Forwarded-For: 234.123.5.6, 8.8.8.8" =!= `X-Forwarded-For`(remoteAddress("234.123.5.6"), remoteAddress("8.8.8.8"))
       "X-Forwarded-For: 1.2.3.4, unknown" =!= `X-Forwarded-For`(remoteAddress("1.2.3.4"), RemoteAddress.Unknown)
       "X-Forwarded-For: 192.0.2.43, 2001:db8:cafe:0:0:0:0:17" =!= `X-Forwarded-For`(remoteAddress("192.0.2.43"), remoteAddress("2001:db8:cafe::17"))
@@ -583,6 +603,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "X-Forwarded-For: 1234:567:9a:d:2:67:abc:ef00" =!= `X-Forwarded-For`(remoteAddress("1234:567:9a:d:2:67:abc:ef00"))
       "X-Forwarded-For: 2001:db8:85a3::8a2e:370:7334" =!=> "2001:db8:85a3:0:0:8a2e:370:7334"
       "X-Forwarded-For: 1:2:3:4:5:6:7:8" =!= `X-Forwarded-For`(remoteAddress("1:2:3:4:5:6:7:8"))
+      "X-Forwarded-For: 1:2:3:4:5:6:7:8" <=!= `X-Forwarded-For`(remoteAddress("1:2:3:4:5:6:7:8", Some(9)))
       "X-Forwarded-For: ::2:3:4:5:6:7:8" =!=> "0:2:3:4:5:6:7:8"
       "X-Forwarded-For: ::3:4:5:6:7:8" =!=> "0:0:3:4:5:6:7:8"
       "X-Forwarded-For: ::4:5:6:7:8" =!=> "0:0:0:4:5:6:7:8"
@@ -610,13 +631,31 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
           "1.2.3.4, akka.io\n          ^")
     }
 
+    "X-Forwarded-Host" in {
+      "X-Forwarded-Host: 1.2.3.4" =!= `X-Forwarded-Host`(Uri.Host("1.2.3.4"))
+      "X-Forwarded-Host: [2001:db8:cafe:0:0:0:0:17]" =!= `X-Forwarded-Host`(Uri.Host("2001:db8:cafe:0:0:0:0:17"))
+      "X-Forwarded-Host: [1234:5678:9abc:def1:2345:6789:abcd:ef00]" =!= `X-Forwarded-Host`(Uri.Host("1234:5678:9abc:def1:2345:6789:abcd:ef00"))
+      "X-Forwarded-Host: [1234:567:9a:d:2:67:abc:ef00]" =!= `X-Forwarded-Host`(Uri.Host("1234:567:9a:d:2:67:abc:ef00"))
+      "X-Forwarded-Host: [1:2:3:4:5:6:7:8]" =!= `X-Forwarded-Host`(Uri.Host("1:2:3:4:5:6:7:8"))
+      "X-Forwarded-Host: akka.io" =!= `X-Forwarded-Host`(Uri.Host("akka.io"))
+      "X-Forwarded-Host: [1:2:3:4::6:7:8]" =!= `X-Forwarded-Host`(Uri.Host("1:2:3:4::6:7:8"))
+    }
+
+    "X-Forwarded-Proto" in {
+      "X-Forwarded-Proto: http" =!= `X-Forwarded-Proto`("http")
+      "X-Forwarded-Proto: https" =!= `X-Forwarded-Proto`("https")
+      "X-Forwarded-Proto: akka" =!= `X-Forwarded-Proto`("akka")
+    }
+
     "X-Real-Ip" in {
       "X-Real-Ip: 1.2.3.4" =!= `X-Real-Ip`(remoteAddress("1.2.3.4"))
+      "X-Real-Ip: 1.2.3.4" <=!= `X-Real-Ip`(remoteAddress("1.2.3.4", Some(56789)))
       "X-Real-Ip: 2001:db8:cafe:0:0:0:0:17" =!= `X-Real-Ip`(remoteAddress("2001:db8:cafe:0:0:0:0:17"))
       "X-Real-Ip: 1234:5678:9abc:def1:2345:6789:abcd:ef00" =!= `X-Real-Ip`(remoteAddress("1234:5678:9abc:def1:2345:6789:abcd:ef00"))
       "X-Real-Ip: 1234:567:9a:d:2:67:abc:ef00" =!= `X-Real-Ip`(remoteAddress("1234:567:9a:d:2:67:abc:ef00"))
       "X-Real-Ip: 2001:db8:85a3::8a2e:370:7334" =!=> "2001:db8:85a3:0:0:8a2e:370:7334"
       "X-Real-Ip: 1:2:3:4:5:6:7:8" =!= `X-Real-Ip`(remoteAddress("1:2:3:4:5:6:7:8"))
+      "X-Real-Ip: 1:2:3:4:5:6:7:8" <=!= `X-Real-Ip`(remoteAddress("1:2:3:4:5:6:7:8", Some(9)))
       "X-Real-Ip: ::2:3:4:5:6:7:8" =!=> "0:2:3:4:5:6:7:8"
       "X-Real-Ip: ::3:4:5:6:7:8" =!=> "0:0:3:4:5:6:7:8"
       "X-Real-Ip: ::4:5:6:7:8" =!=> "0:0:0:4:5:6:7:8"
@@ -673,13 +712,16 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
 
     "parse with custom uri parsing mode" in {
       val targetUri = Uri("http://example.org/?abc=def=ghi", Uri.ParsingMode.Relaxed)
-      HeaderParser.parseFull("location", "http://example.org/?abc=def=ghi", HeaderParser.Settings(uriParsingMode = Uri.ParsingMode.Relaxed)) shouldEqual
-        Right(Location(targetUri))
+      HttpHeader.parse("location", "http://example.org/?abc=def=ghi", HeaderParser.Settings(uriParsingMode = Uri.ParsingMode.Relaxed)) shouldEqual
+        ParsingResult.Ok(Location(targetUri), Nil)
     }
   }
 
   implicit class TestLine(line: String) {
     def =!=(testHeader: TestExample) = testHeader(line)
+    def <=!=(header: HttpHeader) = {
+      header.toString shouldEqual line
+    }
     def =!=>(expectedRendering: String) = {
       val Array(name, value) = line.split(": ", 2)
       val HttpHeader.ParsingResult.Ok(header, Nil) = HttpHeader.parse(name, value)
@@ -696,8 +738,9 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       try parsedHeader should equal(header)
       catch {
         case e: TestFailedException if parsedHeader.toString == header.toString ⇒
-          throw new AssertionError(s"Test equals failed with equal toString. parsedHeader class was ${parsedHeader.getClass}," +
-            s"header class was ${header.getClass}", e)
+          def className[T](t: T): String = scala.reflect.NameTransformer.decode(t.getClass.getName)
+          throw new AssertionError(s"Test equals failed with equal toString. parsedHeader class was ${className(parsedHeader)}, " +
+            s"header class was ${className(header)}", e)
       }
     }
     def rendering(line: String): String = line
@@ -740,5 +783,5 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         fail(s"Input `${header.header}` failed to parse:\n${info.summary}\n${info.detail}")
     }
 
-  def remoteAddress(ip: String) = RemoteAddress(InetAddress.getByName(ip))
+  def remoteAddress(ip: String, port: Option[Int] = None) = RemoteAddress(InetAddress.getByName(ip), port)
 }

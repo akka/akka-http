@@ -1,9 +1,10 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
 
+import akka.annotation.InternalApi
 import akka.util.ByteString
 
 /**
@@ -13,7 +14,8 @@ import akka.util.ByteString
  *
  * https://tools.ietf.org/html/rfc7540
  */
-object Http2Protocol {
+@InternalApi
+private[http] object Http2Protocol {
   // constants defined in the spec
 
   /**
@@ -27,6 +29,63 @@ object Http2Protocol {
   final val InitialWindowSize = 65535
 
   /**
+   * The initial frame size for both incoming and outgoing frames as defined by the
+   * specification.
+   *
+   * The frame size can be changed by changing SETTINGS_MAX_FRAME_SIZE.
+   *
+   * See https://tools.ietf.org/html/rfc7540#section-6.5.2:
+   *
+   * SETTINGS_MAX_FRAME_SIZE (0x5):  Indicates the size of the largest
+   *  frame payload that the sender is willing to receive, in octets.
+   *
+   *  The initial value is 2^14 (16,384) octets.  The value advertised
+   *  by an endpoint MUST be between this initial value and the maximum
+   *  allowed frame size (2^24-1 or 16,777,215 octets), inclusive.
+   *  Values outside this range MUST be treated as a connection error
+   *  (Section 5.4.1) of type PROTOCOL_ERROR.
+   */
+  final val InitialMaxFrameSize = 16384
+
+  /**
+   * Minimum frame size that can be written.
+   *
+   * See http://httpwg.org/specs/rfc7540.html#rfc.section.4.2
+   *
+   * The size of a frame payload is limited by the maximum size that a receiver advertises in the SETTINGS_MAX_FRAME_SIZE setting.
+   * This setting can have any value between 2^14^ (16,384) and 2^24^-1 (16,777,215) octets, inclusive.
+   */
+  final val MinFrameSize = 16384
+
+  /**
+   * Maximum frame size that can be written.
+   *
+   * See http://httpwg.org/specs/rfc7540.html#rfc.section.4.2
+   *
+   * The size of a frame payload is limited by the maximum size that a receiver advertises in the SETTINGS_MAX_FRAME_SIZE setting.
+   * This setting can have any value between 2^14^ (16,384) and 2^24^-1 (16,777,215) octets, inclusive.
+   */
+  final val MaxFrameSize = 16777215
+
+  /**
+   * Initial maximum size of the header compression table used to decode header blocks, in octets.
+   *
+   * See http://httpwg.org/specs/rfc7540.html#SettingValues
+   */
+  final val InitialMaxHeaderTableSize = 4096
+
+  /**
+   * This advisory setting informs a peer of the maximum size of header list that the sender is prepared to accept, in octets.
+   *
+   * The value is based on the uncompressed size of header fields,
+   * including the length of the name and value in octets plus an overhead of 32 octets for each header field.
+   * For any given request, a lower limit than what is advertised MAY be enforced.
+   *
+   * See http://httpwg.org/specs/rfc7540.html#SettingValues
+   */
+  final val InitialMaxHeaderListSize = Int.MaxValue // "unlimited"
+
+  /**
    * The stream id to be used for frames not associated with any individual stream
    * as defined by the specification.
    *
@@ -38,6 +97,8 @@ object Http2Protocol {
    *   opposed to an individual stream.
    */
   final val NoStreamId = 0
+
+  final val PushPromiseEnabledDefault = true
 
   sealed abstract class FrameType(val id: Int) extends Product
   object FrameType {

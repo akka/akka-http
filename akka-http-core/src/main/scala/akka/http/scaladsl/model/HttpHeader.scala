@@ -1,21 +1,19 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
 
-import java.nio.charset.StandardCharsets
+import akka.annotation.InternalApi
 
 import scala.util.{ Failure, Success }
-import akka.parboiled2.{ ParseError, ParserInput }
+import akka.parboiled2.ParseError
 import akka.http.impl.util.ToStringRenderable
 import akka.http.impl.model.parser.{ CharacterClasses, HeaderParser }
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.model.headers._
-import akka.parboiled2.ParserInput.DefaultParserInput
-import akka.util.{ ByteString, OptionVal }
+import akka.util.OptionVal
 
-import scala.annotation.tailrec
 import scala.collection.immutable
 
 /**
@@ -66,26 +64,24 @@ object HttpHeader {
       val parser = new HeaderParser(value, settings)
       parser.`header-field-value`.run() match {
         case Success(preProcessedValue) ⇒
-          try {
-            HeaderParser.parseFull(name.toLowerCase, preProcessedValue, settings) match {
-              case Right(header) ⇒ ParsingResult.Ok(header, Nil)
-              case Left(info) ⇒
-                val errors = info.withSummaryPrepended(s"Illegal HTTP header '$name'") :: Nil
-                ParsingResult.Ok(RawHeader(name, preProcessedValue), errors)
-            }
-          } catch {
-            case HeaderParser.RuleNotFoundException ⇒ ParsingResult.Ok(RawHeader(name, preProcessedValue), Nil)
+          HeaderParser.parseFull(name.toLowerCase, preProcessedValue, settings) match {
+            case HeaderParser.Success(header) ⇒ ParsingResult.Ok(header, Nil)
+            case HeaderParser.Failure(info) ⇒
+              val errors = info.withSummaryPrepended(s"Illegal HTTP header '$name'") :: Nil
+              ParsingResult.Ok(RawHeader(name, preProcessedValue), errors)
+            case HeaderParser.RuleNotFound ⇒ ParsingResult.Ok(RawHeader(name, preProcessedValue), Nil)
           }
         case Failure(error) ⇒
-          val info = error match {
+          val info = (error match {
             case e: ParseError ⇒ parser.parseError(e)
             case e             ⇒ parser.failure(e)
-          }
-          ParsingResult.Error(info.left.get.withSummaryPrepended(s"Illegal HTTP header value"))
+          }).info
+          ParsingResult.Error(info.withSummaryPrepended(s"Illegal HTTP header value"))
       }
     } else ParsingResult.Error(ErrorInfo(s"Illegal HTTP header name", name))
 
   /** INTERNAL API */
+  @InternalApi
   private[akka] def fastFind[T >: Null <: jm.HttpHeader](clazz: Class[T], headers: immutable.Seq[HttpHeader]): OptionVal[T] = {
     val it = headers.iterator
     while (it.hasNext) it.next() match {

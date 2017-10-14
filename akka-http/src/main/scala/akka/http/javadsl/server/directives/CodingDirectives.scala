@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.javadsl.server
@@ -108,7 +108,7 @@ abstract class CodingDirectives extends CacheConditionDirectives {
 
   /**
    * Inspects the response entity and adds a `Content-Encoding: gzip` response header if
-   * the entities media-type is precompressed with gzip and no `Content-Encoding` header is present yet.
+   * the entity's media-type is precompressed with gzip and no `Content-Encoding` header is present yet.
    */
   def withPrecompressedMediaTypeSupport(inner: Supplier[Route]): Route = RouteAdapter {
     D.withPrecompressedMediaTypeSupport {
@@ -116,4 +116,3 @@ abstract class CodingDirectives extends CacheConditionDirectives {
     }
   }
 }
-

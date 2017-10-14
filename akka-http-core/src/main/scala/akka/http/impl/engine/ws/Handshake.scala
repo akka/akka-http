@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
 
 import java.util.Random
 
+import akka.annotation.InternalApi
+
 import scala.collection.immutable
 import scala.collection.immutable.Seq
-import scala.reflect.ClassTag
 import akka.http.impl.util._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.ws.{ Message, UpgradeToWebSocket }
@@ -21,6 +22,7 @@ import akka.util.OptionVal
  *
  * INTERNAL API
  */
+@InternalApi
 private[http] object Handshake {
   val CurrentWebSocketVersion = 13
 

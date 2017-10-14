@@ -1,13 +1,15 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.http.scaladsl.settings
 
 import akka.actor.{ ActorRefFactory, ActorSystem }
+import akka.annotation.InternalApi
 import com.typesafe.config.Config
 import akka.http.impl.util._
 
 /** INTERNAL API */
+@InternalApi
 private[akka] trait SettingsCompanion[T] {
 
   /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -9,7 +9,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.pattern.CircuitBreaker
 
 import scala.concurrent.Future
-import akka.testkit.EventFilter
+import akka.testkit._
 import org.scalatest.Inside
 
 import scala.concurrent.duration._
@@ -25,8 +25,8 @@ class FutureDirectivesSpec extends RoutingSpec with Inside {
   }
 
   trait TestWithCircuitBreaker {
-    val breakerResetTimeout = 500.millis
-    val breaker = new CircuitBreaker(system.scheduler, maxFailures = 1, callTimeout = 10.seconds, breakerResetTimeout)
+    val breakerResetTimeout = 500.millis.dilated
+    val breaker = new CircuitBreaker(system.scheduler, maxFailures = 1, callTimeout = 10.seconds.dilated, breakerResetTimeout)
     def openBreaker() = breaker.withCircuitBreaker(Future.failed(new Exception("boom")))
   }
 
@@ -113,29 +113,29 @@ class FutureDirectivesSpec extends RoutingSpec with Inside {
         responseAs[String] shouldEqual "yes"
       }
     }
-    "propagate the exception in the failure case" in EventFilter.error(
+    "propagate the exception in the failure case" in EventFilter[TestException.type](
       occurrences = 1,
-      message = "Error during processing of request: 'XXX'. Completing with 500 Internal Server Error response."
+      message = BasicRouteSpecs.defaultExnHandler500Error("XXX")
     ).intercept {
-      Get() ~> onSuccess(Future.failed(TestException)) { echoComplete } ~> check {
-        status shouldEqual StatusCodes.InternalServerError
+        Get() ~> onSuccess(Future.failed(TestException)) { echoComplete } ~> check {
+          status shouldEqual StatusCodes.InternalServerError
+        }
       }
-    }
     "catch an exception in the success case" in {
       Get() ~> onSuccess(Future.successful("ok")) { throwTestException("EX when ") } ~> check {
         status shouldEqual StatusCodes.InternalServerError
         responseAs[String] shouldEqual s"Oops. akka.http.scaladsl.server.directives.FutureDirectivesSpec$$TestException: EX when ok"
       }
     }
-    "catch an exception in the failure case" in EventFilter.error(
+    "catch an exception in the failure case" in EventFilter[TestException.type](
       occurrences = 1,
-      message = "Error during processing of request: 'XXX'. Completing with 500 Internal Server Error response."
+      message = BasicRouteSpecs.defaultExnHandler500Error("XXX")
     ).intercept {
-      Get() ~> onSuccess(Future.failed(TestException)) { throwTestException("EX when ") } ~> check {
-        status shouldEqual StatusCodes.InternalServerError
-        responseAs[String] shouldEqual "There was an internal server error."
+        Get() ~> onSuccess(Future.failed(TestException)) { throwTestException("EX when ") } ~> check {
+          status shouldEqual StatusCodes.InternalServerError
+          responseAs[String] shouldEqual "There was an internal server error."
+        }
       }
-    }
   }
 
   "The `completeOrRecoverWith` directive" should {

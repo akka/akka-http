@@ -1,4 +1,12 @@
 /.idea
+.DS_Store
 target
 
 *.orig
+
+*#
+*~
+.#*
+.*.swp
+*.vim
+.ensime*

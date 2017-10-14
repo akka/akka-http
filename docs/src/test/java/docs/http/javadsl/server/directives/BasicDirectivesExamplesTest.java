@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package docs.http.javadsl.server.directives;
 
@@ -174,7 +174,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
       )
     );
 
-    //tests:
+    // tests:
     testRoute(route).run(HttpRequest.GET("/sample"))
       .assertEntity("Run on " + system().dispatcher().hashCode() + "!");
     //#extractExecutionContext
@@ -204,6 +204,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     // tests:
     testRoute(route).run(HttpRequest.GET("/sample"))
       .assertEntity("Logging using " + system().log() + "!");
+
     testRoute(route).run(HttpRequest.GET("/special/sample"))
       .assertEntity("Logging using " + special + "!");
     //#withLog
@@ -708,7 +709,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
   public void testExtractRequestContext() {
     //#extractRequestContext
     final Route route = extractRequestContext(ctx -> {
-      ctx.getLog().debug("Using access to additional context availablethings, like the logger.");
+      ctx.getLog().debug("Using access to additional context available, like the logger.");
       final HttpRequest request = ctx.getRequest();
       return complete("Request method is " + request.method().name() +
                         " and content-type is " + request.entity().getContentType());
@@ -720,6 +721,19 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     testRoute(route).run(HttpRequest.GET("/"))
       .assertEntity("Request method is GET and content-type is none/none");
     //#extractRequestContext
+  }
+
+  @Test
+  public void testExtractParserSettings() {
+    //#extractParserSettings
+    final Route route = extractParserSettings(parserSettings ->
+      complete("URI parsing mode is " + parserSettings.getUriParsingMode())
+    );
+
+    // tests:
+    testRoute(route).run(HttpRequest.GET("/"))
+      .assertEntity("URI parsing mode is Strict");
+    //#extractParserSettings
   }
 
   @Test

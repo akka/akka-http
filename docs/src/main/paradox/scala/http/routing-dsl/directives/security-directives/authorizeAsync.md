@@ -1,9 +1,8 @@
-<a id="authorizeasync"></a>
 # authorizeAsync
 
 ## Signature
 
-@@signature [SecurityDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #authorizeAsync }
+@@signature [SecurityDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #authorizeAsync }
 
 ## Description
 
@@ -18,9 +17,9 @@ otherwise an `AuthorizationFailedRejection` is created, triggering a `403 Forbid
 (the same as in the case of an `AuthenticationFailedRejection`).
 
 In a common use-case you would check if a user (e.g. supplied by any of the `authenticate*` family of directives,
-e.g. @ref[authenticateBasic](authenticateBasic.md#authenticatebasic)) is allowed to access the inner routes, e.g. by checking if the user has the needed permissions.
+e.g. @ref[authenticateBasic](authenticateBasic.md)) is allowed to access the inner routes, e.g. by checking if the user has the needed permissions.
 
-See also @ref[authorize](authorize.md#authorize) for the synchronous version of this directive.
+See also @ref[authorize](authorize.md) for the synchronous version of this directive.
 
 @@@ note
 See also @ref[Authentication vs. Authorization](index.md#authentication-vs-authorization-scala) to understand the differences between those.
@@ -28,4 +27,4 @@ See also @ref[Authentication vs. Authorization](index.md#authentication-vs-autho
 
 ## Example
 
-@@snip [SecurityDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/SecurityDirectivesExamplesSpec.scala) { #authorizeAsync0 }
+@@snip [SecurityDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/SecurityDirectivesExamplesSpec.scala) { #authorizeAsync0 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.marshalling
@@ -48,7 +48,7 @@ class Marshal[A](val value: A) {
       val bestMarshal = {
         if (supportedAlternatives.nonEmpty) {
           ctn.pickContentType(supportedAlternatives).flatMap {
-            case best @ (_: ContentType.Binary | _: ContentType.WithFixedCharset) ⇒
+            case best @ (_: ContentType.Binary | _: ContentType.WithFixedCharset | _: ContentType.WithMissingCharset) ⇒
               marshallings collectFirst { case Marshalling.WithFixedContentType(`best`, marshal) ⇒ marshal }
             case best @ ContentType.WithCharset(bestMT, bestCS) ⇒
               marshallings collectFirst {

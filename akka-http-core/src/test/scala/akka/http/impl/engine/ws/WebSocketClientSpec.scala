@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -21,6 +21,7 @@ import akka.http.scaladsl.model.Uri
 import akka.stream.scaladsl._
 import akka.stream.testkit.{ TestSubscriber, TestPublisher }
 import akka.util.ByteString
+import akka.testkit._
 import org.scalatest.{ Matchers, FreeSpec }
 
 import akka.http.impl.util._
@@ -291,7 +292,7 @@ class WebSocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
   }
 
   abstract class TestSetup extends WSTestSetupBase {
-    protected def noMsgTimeout: FiniteDuration = 100.millis
+    protected def noMsgTimeout: FiniteDuration = 100.millis.dilated
     protected def clientImplementation: Flow[Message, Message, NotUsed]
     protected def requestedSubProtocol: Option[String] = None
 
@@ -357,7 +358,7 @@ class WebSocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
 
     import akka.http.impl.util._
     def expectInvalidUpgradeResponse(): InvalidUpgradeResponse =
-      response.awaitResult(1.second).asInstanceOf[InvalidUpgradeResponse]
+      response.awaitResult(1.second.dilated).asInstanceOf[InvalidUpgradeResponse]
   }
 
   trait ClientEchoes extends TestSetup {

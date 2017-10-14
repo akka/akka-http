@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -57,7 +57,8 @@ object MediaRange {
   private final case class Custom(mainType: String, params: Map[String, String], qValue: Float)
     extends MediaRange with ValueRenderable {
     require(0.0f <= qValue && qValue <= 1.0f, "qValue must be >= 0 and <= 1.0")
-    def matches(mediaType: MediaType) = mainType == "*" || mediaType.mainType == mainType
+    def matches(mediaType: MediaType) = (mainType == "*" || mediaType.mainType == mainType) &&
+      this.params.forall { case (key, value) ⇒ mediaType.params.get(key).contains(value) }
     def withParams(params: Map[String, String]) = custom(mainType, params, qValue)
     def withQValue(qValue: Float) = if (qValue != this.qValue) custom(mainType, params, qValue) else this
     def render[R <: Rendering](r: R): r.type = {
@@ -92,7 +93,14 @@ object MediaRange {
     override def isText = mediaType.isText
     override def isVideo = mediaType.isVideo
     def matches(mediaType: MediaType) =
-      this.mediaType.mainType == mediaType.mainType && this.mediaType.subType == mediaType.subType
+      this.mediaType.mainType == mediaType.mainType &&
+        this.mediaType.subType == mediaType.subType &&
+        this.mediaType.params
+        .forall {
+          // just ignore charset parameter in `Accept` headers, clients should use `Accept-Charset` instead, see also #1139
+          case ("charset", _) ⇒ true
+          case (key, value)   ⇒ mediaType.params.get(key).contains(value)
+        }
     def withParams(params: Map[String, String]) = copy(mediaType = mediaType.withParams(params))
     def withQValue(qValue: Float) = copy(qValue = qValue)
     def render[R <: Rendering](r: R): r.type = if (qValue < 1.0f) r ~~ mediaType ~~ ";q=" ~~ qValue else r ~~ mediaType

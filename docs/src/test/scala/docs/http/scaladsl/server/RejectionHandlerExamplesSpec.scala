@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server
@@ -21,35 +21,54 @@ object MyRejectionHandler {
   import StatusCodes._
   import Directives._
 
-  implicit def myRejectionHandler =
-    RejectionHandler.newBuilder()
-      .handle { case MissingCookieRejection(cookieName) =>
-        complete(HttpResponse(BadRequest, entity = "No cookies, no service!!!"))
-      }
-      .handle { case AuthorizationFailedRejection =>
-        complete((Forbidden, "You're out of your depth!"))
-      }
-      .handle { case ValidationRejection(msg, _) =>
-        complete((InternalServerError, "That wasn't valid! " + msg))
-      }
-      .handleAll[MethodRejection] { methodRejections =>
-        val names = methodRejections.map(_.supported.name)
-        complete((MethodNotAllowed, s"Can't do that! Supported: ${names mkString " or "}!"))
-      }
-      .handleNotFound { complete((NotFound, "Not here!")) }
-      .result()
-
   object MyApp extends App {
+    implicit def myRejectionHandler =
+      RejectionHandler.newBuilder()
+        .handle { case MissingCookieRejection(cookieName) =>
+          complete(HttpResponse(BadRequest, entity = "No cookies, no service!!!"))
+        }
+        .handle { case AuthorizationFailedRejection =>
+          complete((Forbidden, "You're out of your depth!"))
+        }
+        .handle { case ValidationRejection(msg, _) =>
+          complete((InternalServerError, "That wasn't valid! " + msg))
+        }
+        .handleAll[MethodRejection] { methodRejections =>
+          val names = methodRejections.map(_.supported.name)
+          complete((MethodNotAllowed, s"Can't do that! Supported: ${names mkString " or "}!"))
+        }
+        .handleNotFound { complete((NotFound, "Not here!")) }
+        .result()
+
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
 
     val route: Route =
       // ... some route structure
-      null // hide
+      null // #hide
 
     Http().bindAndHandle(route, "localhost", 8080)
   }
   //#custom-handler-example
+}
+
+object HandleNotFoundWithThePath {
+
+  //#not-found-with-path
+  import akka.http.scaladsl.model._
+  import akka.http.scaladsl.model.StatusCodes._
+  import akka.http.scaladsl.server._
+  import Directives._
+  
+  implicit def myRejectionHandler =
+    RejectionHandler.newBuilder()
+      .handleNotFound { 
+        extractUnmatchedPath { p =>
+          complete((NotFound, s"The path you requested [${p}] does not exist."))
+        }
+      }
+      .result()
+  //#not-found-with-path
 }
 
 class RejectionHandlerExamplesSpec extends RoutingSpec {
@@ -98,17 +117,17 @@ class RejectionHandlerExamplesSpec extends RoutingSpec {
           complete("Hello there")
         }
       )
-      
-    //#example-json
+
+    // tests:
     Get("/nope") ~> route ~> check {
       status should === (StatusCodes.NotFound)
       contentType should === (ContentTypes.`application/json`)
       responseAs[String] should ===("""{"rejection": "The requested resource could not be found."}""")
     }
+    //#example-json
   }
   
   "example-3-custom-rejection-http-response" in {
-    //#example-json
     import akka.http.scaladsl.model._
     import akka.http.scaladsl.server.RejectionHandler
 
@@ -125,20 +144,23 @@ class RejectionHandlerExamplesSpec extends RoutingSpec {
             
           case x => x // pass through all other types of responses
         }
-    
-    val route =
+
+    //#example-json
+
+    val anotherRoute =
       Route.seal(
         validate(check = false, "Whoops, bad request!") {
           complete("Hello there") 
         }
       )
-      
-    //#example-json
-    Get("/hello") ~> route ~> check {
+
+    // tests:
+    Get("/hello") ~> anotherRoute ~> check {
       status should === (StatusCodes.BadRequest)
       contentType should === (ContentTypes.`application/json`)
       responseAs[String] should ===("""{"rejection": "Whoops, bad request!"}""")
     }
+    //#example-json
   }
 
   "test custom handler example" in {

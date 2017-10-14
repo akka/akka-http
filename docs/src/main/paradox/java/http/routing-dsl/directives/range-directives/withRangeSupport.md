@@ -1,4 +1,3 @@
-<a id="withrangesupport-java"></a>
 # withRangeSupport
 
 ## Description
@@ -24,4 +23,4 @@ See also: [RFC 7233](https://tools.ietf.org/html/rfc7233)
 
 ## Example
 
-@@snip [RangeDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/RangeDirectivesExamplesTest.java) { #withRangeSupport }
+@@snip [RangeDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/RangeDirectivesExamplesTest.java) { #withRangeSupport }

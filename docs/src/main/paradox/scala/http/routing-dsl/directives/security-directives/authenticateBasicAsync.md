@@ -1,17 +1,16 @@
-<a id="authenticatebasicasync"></a>
 # authenticateBasicAsync
 
 ## Signature
 
-@@signature [SecurityDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #AsyncAuthenticator }
+@@signature [SecurityDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #AsyncAuthenticator }
 
-@@signature [SecurityDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #authenticateBasicAsync }
+@@signature [SecurityDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #authenticateBasicAsync }
 
 ## Description
 
 Wraps the inner route with Http Basic authentication support using a given `AsyncAuthenticator[T]`.
 
-This variant of the @ref[authenticateBasic](authenticateBasic.md#authenticatebasic) directive returns a `Future[Option[T]]` which allows freeing up the routing
+This variant of the @ref[authenticateBasic](authenticateBasic.md) directive returns a `Future[Option[T]]` which allows freeing up the routing
 layer of Akka HTTP, freeing it for other requests. It should be used whenever an authentication is expected to take
 a longer amount of time (e.g. looking up the user in a database).
 
@@ -29,4 +28,4 @@ Make sure to use basic authentication only over SSL/TLS because credentials are 
 
 ## Example
 
-@@snip [SecurityDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/SecurityDirectivesExamplesSpec.scala) { #authenticateBasicAsync-0 }
+@@snip [SecurityDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/SecurityDirectivesExamplesSpec.scala) { #authenticateBasicAsync-0 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.javadsl.server
@@ -11,6 +11,7 @@ import akka.http.scaladsl
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.http.javadsl.settings.{ ParserSettings, RoutingSettings }
 
 /**
@@ -35,17 +36,32 @@ import akka.http.javadsl.settings.{ ParserSettings, RoutingSettings }
  */
 trait Route {
   /** INTERNAL API */
+  @InternalApi
   private[http] def delegate: scaladsl.server.Route
 
   def flow(system: ActorSystem, materializer: Materializer): Flow[HttpRequest, HttpResponse, NotUsed]
 
   /**
-   * "Seals" a route by wrapping it with default exception handling and rejection conversion.
+   * Seals a route by wrapping it with default exception handling and rejection conversion.
+   *
+   * A sealed route has these properties:
+   *  - The result of the route will always be a complete response, i.e. the result of the future is a
+   *    ``Success(RouteResult.Complete(response))``, never a failed future and never a rejected route. These
+   *    will be already be handled using the implicitly given [[RejectionHandler]] and [[ExceptionHandler]] (or
+   *    the default handlers if none are given or can be found implicitly).
+   *  - Consequently, no route alternatives will be tried that were combined with this route.
    */
   def seal(system: ActorSystem, materializer: Materializer): Route
 
   /**
-   * "Seals" a route by wrapping it with explicit exception handling and rejection conversion.
+   * Seals a route by wrapping it with explicit exception handling and rejection conversion.
+   *
+   * A sealed route has these properties:
+   *  - The result of the route will always be a complete response, i.e. the result of the future is a
+   *    ``Success(RouteResult.Complete(response))``, never a failed future and never a rejected route. These
+   *    will be already be handled using the implicitly given [[RejectionHandler]] and [[ExceptionHandler]] (or
+   *    the default handlers if none are given or can be found implicitly).
+   *  - Consequently, no route alternatives will be tried that were combined with this route.
    */
   def seal(
     routingSettings:  RoutingSettings,

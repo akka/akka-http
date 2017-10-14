@@ -1,18 +1,19 @@
 /**
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.http.impl.util
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.stream.scaladsl.BidiFlow
 
-import scala.util.control.NoStackTrace
 import akka.stream._
-import akka.stream.stage.{ OutHandler, InHandler, GraphStageLogic, GraphStage }
+import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] object One2OneBidiFlow {
 
   case class UnexpectedOutputException(element: Any)

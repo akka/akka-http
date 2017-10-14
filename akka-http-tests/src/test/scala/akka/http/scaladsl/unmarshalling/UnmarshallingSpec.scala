@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.unmarshalling
@@ -10,7 +10,7 @@ import akka.http.scaladsl.testkit.ScalatestUtils
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model._
-import akka.testkit.TestKit
+import akka.testkit._
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -23,6 +23,9 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
   "The PredefinedFromEntityUnmarshallers" - {
     "stringUnmarshaller should unmarshal `text/plain` content in UTF-8 to Strings" in {
       Unmarshal(HttpEntity("Hällö")).to[String] should evaluateTo("Hällö")
+    }
+    "stringUnmarshaller should assume UTF-8 for textual content type with missing charset" in {
+      Unmarshal(HttpEntity(MediaTypes.`text/plain`.withMissingCharset, "Hällö".getBytes("UTF-8"))).to[String] should evaluateTo("Hällö")
     }
     "charArrayUnmarshaller should unmarshal `text/plain` content in UTF-8 to char arrays" in {
       Unmarshal(HttpEntity("árvíztűrő ütvefúrógép")).to[Array[Char]] should evaluateTo("árvíztűrő ütvefúrógép".toCharArray)
@@ -37,8 +40,8 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
   }
 
   "The GenericUnmarshallers" - {
-    implicit val rawInt: FromEntityUnmarshaller[Int] = Unmarshaller(implicit ex ⇒ bs ⇒ bs.toStrict(1.second).map(_.data.utf8String.toInt))
-    implicit val rawlong: FromEntityUnmarshaller[Long] = Unmarshaller(implicit ex ⇒ bs ⇒ bs.toStrict(1.second).map(_.data.utf8String.toLong))
+    implicit val rawInt: FromEntityUnmarshaller[Int] = Unmarshaller(implicit ex ⇒ bs ⇒ bs.toStrict(1.second.dilated).map(_.data.utf8String.toInt))
+    implicit val rawlong: FromEntityUnmarshaller[Long] = Unmarshaller(implicit ex ⇒ bs ⇒ bs.toStrict(1.second.dilated).map(_.data.utf8String.toLong))
 
     "eitherUnmarshaller should unmarshal its Right value" in {
       // we'll find:
@@ -50,19 +53,19 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
       //   stringUnmarshaller: FromEntityUnmarshaller[String]
 
       val testRight = Unmarshal(HttpEntity("42")).to[Either[String, Int]]
-      Await.result(testRight, 1.second) should ===(Right(42))
+      Await.result(testRight, 1.second.dilated) should ===(Right(42))
     }
 
     "eitherUnmarshaller should unmarshal its Left value" in {
       val testLeft = Unmarshal(HttpEntity("I'm not a number, I'm a free man!")).to[Either[String, Int]]
-      Await.result(testLeft, 1.second) should ===(Left("I'm not a number, I'm a free man!"))
+      Await.result(testLeft, 1.second.dilated) should ===(Left("I'm not a number, I'm a free man!"))
     }
 
     "eitherUnmarshaller report both error messages if unmarshalling failed" in {
       type ImmenseChoice = Either[Long, Int]
       val testLeft = Unmarshal(HttpEntity("I'm not a number, I'm a free man!")).to[ImmenseChoice]
       val ex = intercept[EitherUnmarshallingException] {
-        Await.result(testLeft, 1.second)
+        Await.result(testLeft, 1.second.dilated)
       }
 
       ex.getMessage should include("Either[long, int]")
@@ -70,7 +73,13 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
       ex.getMessage should include("Right failure: For input string")
       ex.getMessage should include("Left failure: For input string")
     }
+  }
 
+  "Unmarshaller.forContentTypes" - {
+    "should handle media ranges of types with missing charset by assuming UTF-8 charset when matching" in {
+      val um = Unmarshaller.stringUnmarshaller.forContentTypes(MediaTypes.`text/plain`)
+      Await.result(um(HttpEntity(MediaTypes.`text/plain`.withMissingCharset, "Hêllö".getBytes("utf-8"))), 1.second.dilated) should ===("Hêllö")
+    }
   }
 
   override def afterAll() = TestKit.shutdownActorSystem(system)

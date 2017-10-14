@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -10,7 +10,6 @@ import akka.http.impl.model.JavaInitialization
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.util.Unsafe
 
 sealed abstract class RemoteAddress extends jm.RemoteAddress with ValueRenderable {
   def toOption: Option[InetAddress]
@@ -32,6 +31,9 @@ object RemoteAddress {
     def render[R <: Rendering](r: R): r.type = r ~~ "unknown"
 
     def isUnknown = true
+
+    JavaInitialization.initializeStaticFieldWith(
+      this, classOf[jm.RemoteAddress].getField("UNKNOWN"))
   }
 
   final case class IP(ip: InetAddress, port: Option[Int] = None) extends RemoteAddress {
@@ -56,7 +58,10 @@ object RemoteAddress {
     try IP(InetAddress.getByAddress(bytes)) catch { case _: UnknownHostException ⇒ Unknown }
   }
 
-  JavaInitialization.initializeStaticFieldWith(
-    Unknown, classOf[jm.RemoteAddress].getField("UNKNOWN"))
-
+  private[akka] val renderWithoutPort = new Renderer[RemoteAddress] {
+    def render[R <: Rendering](r: R, address: RemoteAddress): r.type = address match {
+      case IP(ip, _) ⇒ r ~~ ip.getHostAddress
+      case _         ⇒ r ~~ address
+    }
+  }
 }

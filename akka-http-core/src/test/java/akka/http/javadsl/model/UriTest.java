@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.javadsl.model;
@@ -9,6 +9,7 @@ import akka.japi.Pair;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
+import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
 import static akka.http.javadsl.model.Uri.RELAXED;
@@ -56,6 +57,16 @@ public class UriTest extends JUnitSuite {
     assertEquals("urn", uri8.getScheme());
     assertEquals("oasis:names:specification:docbook:dtd:xml:4.1.2", uri8.getPathString());
     //#valid-uri-examples
+  }
+
+  @Test
+  public void testPercentEscape() {
+    //#dont-double-decode
+    Uri uri1 = Uri.create("http://foo.com?foo=%2520");
+    assertEquals(Optional.of("%20"), uri1.query().get("foo"));
+    Uri uri2 = Uri.create("http://foo.com?foo=%2F%5C");
+    assertEquals(Optional.of("/\\"), uri2.query().get("foo"));
+    //#dont-double-decode
   }
 
   //#illegal-scheme
@@ -121,11 +132,11 @@ public class UriTest extends JUnitSuite {
   @Test(expected = IllegalUriException.class)
   public void testIllegalQuery() {
     //#illegal-query
-    Uri.create("?a=b=c").query();
+    Uri.create("?a%b=c").query();
     //IllegalUriException(
-    //  "Illegal query: Invalid input '=', expected '+', query-char, 'EOI', '&' or pct-encoded (line 1, column 4)",
-    //  "a=b=c\n" +
-    //  "   ^"
+    //  " Illegal query: Invalid input '=', expected HEXDIG (line 1, column 4): a%b=c",
+    //  "a%b=c\n" +
+    //  " ^"
     //)
     //#illegal-query
   }
@@ -264,24 +275,13 @@ public class UriTest extends JUnitSuite {
     //#query-relaxed-mode-success
     assertEquals(Query.create(Pair.create("a^", "b")), relaxed("a^=b"));
     assertEquals(Query.create(Pair.create("a;", "b")), relaxed("a;=b"));
+    assertEquals(Query.create(Pair.create("a", "b=c")), relaxed("a=b=c"));
     //#query-relaxed-mode-success
   }
 
   //#query-relaxed-mode-exception-1
   @Test(expected = IllegalUriException.class)
   public void testRelaxedModeException1() {
-    //double '=' in query string is invalid, even in relaxed mode
-    relaxed("a=b=c");
-    //IllegalUriException(
-    //  "Illegal query: Invalid input '=', expected '+', query-char, 'EOI', '&' or pct-encoded (line 1, column 4)",
-    //  "a=b=c\n" +
-    //  "   ^")
-  }
-  //#query-relaxed-mode-exception-1
-
-  //#query-relaxed-mode-exception-2
-  @Test(expected = IllegalUriException.class)
-  public void testRelaxedModeException2() {
     //following '%', it should be percent encoding (HEXDIG), but "%b=" is not a valid percent encoding
     //still invalid even in relaxed mode
     relaxed("a%b=c");
@@ -290,6 +290,6 @@ public class UriTest extends JUnitSuite {
     //  "a%b=c\n" +
     //  "   ^")
   }
-  //#query-relaxed-mode-exception-2
+  //#query-relaxed-mode-exception-1
 
 }

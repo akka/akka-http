@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.unmarshalling
@@ -27,6 +27,9 @@ trait Unmarshaller[-A, B] extends akka.http.javadsl.unmarshalling.Unmarshaller[A
 
   def flatMap[C](f: ExecutionContext ⇒ Materializer ⇒ B ⇒ Future[C]): Unmarshaller[A, C] =
     transform(implicit ec ⇒ mat ⇒ _.fast flatMap f(ec)(mat))
+
+  def andThen[C](other: Unmarshaller[B, C]): Unmarshaller[A, C] =
+    flatMap(ec ⇒ mat ⇒ data ⇒ other(data)(ec, mat))
 
   def recover[C >: B](pf: ExecutionContext ⇒ Materializer ⇒ PartialFunction[Throwable, C]): Unmarshaller[A, C] =
     transform(implicit ec ⇒ mat ⇒ _.fast recover pf(ec)(mat))

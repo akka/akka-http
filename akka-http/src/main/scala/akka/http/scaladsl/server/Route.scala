@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -21,7 +21,15 @@ object Route {
   def apply(f: Route): Route = f
 
   /**
-   * "Seals" a route by wrapping it with exception handling and rejection conversion.
+   * "Seals" a route by wrapping it with default exception handling and rejection conversion.
+   *
+   * A sealed route has these properties:
+   *  - The result of the route will always be a complete response, i.e. the result of the future is a
+   *    ``Success(RouteResult.Complete(response))``, never a failed future and never a rejected route. These
+   *    will be already be handled using the implicitly given [[RejectionHandler]] and [[ExceptionHandler]] (or
+   *    the default handlers if none are given or can be found implicitly).
+   *  - Consequently, no route alternatives will be tried that were combined with this route
+   *    using the ``~`` on routes or the [[Directive.|]] operator on directives.
    */
   def seal(route: Route)(implicit
     routingSettings: RoutingSettings,
@@ -29,11 +37,9 @@ object Route {
                          rejectionHandler: RejectionHandler = RejectionHandler.default,
                          exceptionHandler: ExceptionHandler = null): Route = {
     import directives.ExecutionDirectives._
-    handleExceptions(ExceptionHandler.seal(exceptionHandler)) {
-      handleRejections(rejectionHandler.seal) {
-        route
-      }
-    }
+    // optimized as this is the root handler for all akka-http applications
+    (handleExceptions(ExceptionHandler.seal(exceptionHandler)) & handleRejections(rejectionHandler.seal))
+      .tapply(_ ⇒ route) // execute above directives eagerly, avoiding useless laziness of Directive.addByNameNullaryApply
   }
 
   /**

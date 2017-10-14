@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.coding
@@ -10,17 +10,20 @@ import akka.stream.{ FlowShape, Materializer }
 import akka.stream.stage.GraphStage
 import akka.util.ByteString
 import headers.HttpEncoding
-import akka.stream.scaladsl.{ Sink, Source, Flow }
+import akka.stream.scaladsl.{ Flow, Sink, Source }
 
 import scala.concurrent.Future
 
 trait Decoder {
   def encoding: HttpEncoding
 
-  def decode[T <: HttpMessage](message: T)(implicit mapper: DataMapper[T]): T#Self =
+  def decodeMessage(message: HttpMessage): message.Self =
     if (message.headers exists Encoder.isContentEncodingHeader)
-      decodeData(message).withHeaders(message.headers filterNot Encoder.isContentEncodingHeader)
+      message.transformEntityDataBytes(decoderFlow).withHeaders(message.headers filterNot Encoder.isContentEncodingHeader)
     else message.self
+
+  @deprecated("Use Decoder#decodeMessage instead. No need for implicit mapper.", since = "10.0.6")
+  def decode[T <: HttpMessage](message: T)(implicit mapper: DataMapper[T]): T#Self = decodeMessage(message)
 
   def decodeData[T](t: T)(implicit mapper: DataMapper[T]): T = mapper.transformDataBytes(t, decoderFlow)
 

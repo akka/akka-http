@@ -1,14 +1,14 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
 
 import akka.Done
-import akka.http.scaladsl.{ Http, TestUtils }
+import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
-import akka.testkit.AkkaSpec
+import akka.testkit._
 import scala.concurrent.duration._
 import akka.util.ByteString
 
@@ -56,7 +56,7 @@ class EntityDiscardingSpec extends AkkaSpec {
     // TODO consider improving this by storing a mutable "already materialized" flag somewhere
     // TODO likely this is going to inter-op with the auto-draining as described in #18716
     "should not allow draining a second time" in {
-      val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
+      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
       val bound = Http().bindAndHandleSync(
         req ⇒
           HttpResponse(entity = HttpEntity(
@@ -71,7 +71,7 @@ class EntityDiscardingSpec extends AkkaSpec {
         de.future.futureValue should ===(Done)
 
         val de2 = response.discardEntityBytes()
-        val secondRunException = intercept[IllegalStateException] { Await.result(de2.future, 3.seconds) }
+        val secondRunException = intercept[IllegalStateException] { Await.result(de2.future, 3.seconds.dilated) }
         secondRunException.getMessage should include("Source cannot be materialized more than once")
       } finally bound.unbind().futureValue
     }

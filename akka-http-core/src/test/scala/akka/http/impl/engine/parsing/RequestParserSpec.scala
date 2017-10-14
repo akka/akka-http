@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -29,9 +29,9 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
-import akka.testkit.TestKit
+import akka.testkit._
 
-class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
+abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
     akka.event-handlers = ["akka.testkit.TestEventListener"]
     akka.loglevel = WARNING
@@ -44,7 +44,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   val BOLT = HttpMethod.custom("BOLT", safe = false, idempotent = true, requestEntityAcceptance = Expected)
   implicit val materializer = ActorMaterializer()
 
-  "The request parsing logic should" - {
+  s"The request parsing logic should (mode: $mode)" - {
     "properly parse a request" - {
       "with no headers and no body" in new Test {
         """GET / HTTP/1.0
@@ -271,12 +271,12 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       }
 
       "don't overflow the stack for large buffers of chunks" in new Test {
-        override val awaitAtMost = 10000.millis
+        override val awaitAtMost = 10000.millis.dilated
 
         val x = NotEnoughDataException
         val numChunks = 12000 // failed starting from 4000 with sbt started with `-Xss2m`
-        val oneChunk = "1\r\nz\n"
-        val manyChunks = (oneChunk * numChunks) + "0\r\n"
+        val oneChunk = s"1${newLine}z\n"
+        val manyChunks = (oneChunk * numChunks) + s"0${newLine}"
 
         val parser = newParser
         val result = multiParse(newParser)(Seq(prep(start + manyChunks)))
@@ -302,7 +302,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
     "support `rawRequestUriHeader` setting" in new Test {
       override protected def newParser: HttpRequestParser =
-        new HttpRequestParser(parserSettings, rawRequestUriHeader = true, headerParser = HttpHeaderParser(parserSettings, system.log)())
+        new HttpRequestParser(parserSettings, rawRequestUriHeader = true, headerParser = HttpHeaderParser(parserSettings, system.log))
 
       """GET /f%6f%6fbar?q=b%61z HTTP/1.1
         |Host: ping
@@ -477,43 +477,13 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           |
           |""" should parseToError(422: StatusCode, ErrorInfo("TRACE requests must not have an entity"))
       }
-
-      "with additional fields in headers" in new Test {
-        """GET / HTTP/1.1
-          |Host: x; dummy
-          |
-          |""" should parseToError(
-          BadRequest,
-          ErrorInfo("Illegal 'host' header: Invalid input ' ', expected 'EOI', ':', UPPER_ALPHA, lower-reg-name-char or pct-encoded (line 1, column 3)", "x; dummy\n  ^"))
-
-        """GET / HTTP/1.1
-          |Content-length: 3; dummy
-          |
-          |""" should parseToError(
-          BadRequest,
-          ErrorInfo("Illegal `Content-Length` header value"))
-
-        """GET / HTTP/1.1
-          |Connection:keep-alive; dummy
-          |
-          |""" should parseToError(
-          BadRequest,
-          ErrorInfo("Illegal 'connection' header: Invalid input ';', expected tchar, OWS, listSep or 'EOI' (line 1, column 11)", "keep-alive; dummy\n          ^"))
-
-        """GET / HTTP/1.1
-          |Transfer-Encoding: chunked; dummy
-          |
-          |""" should parseToError(
-          BadRequest,
-          ErrorInfo("Illegal 'transfer-encoding' header: Invalid input ';', expected OWS, listSep or 'EOI' (line 1, column 8)", "chunked; dummy\n       ^"))
-      }
     }
   }
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
 
   private class Test {
-    def awaitAtMost: FiniteDuration = 3.seconds
+    def awaitAtMost: FiniteDuration = 3.seconds.dilated
     var closeAfterResponseCompletion = Seq.empty[Boolean]
 
     class StrictEqualHttpRequest(val req: HttpRequest) {
@@ -584,7 +554,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         .awaitResult(awaitAtMost)
 
     protected def parserSettings: ParserSettings = ParserSettings(system)
-    protected def newParser = new HttpRequestParser(parserSettings, false, HttpHeaderParser(parserSettings, system.log)())
+    protected def newParser = new HttpRequestParser(parserSettings, false, HttpHeaderParser(parserSettings, system.log))
 
     private def compactEntity(entity: RequestEntity): Future[RequestEntity] =
       entity match {
@@ -596,8 +566,12 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       data.limit(100000).runWith(Sink.seq)
         .fast.recover { case _: NoSuchElementException ⇒ Nil }
 
-    def prep(response: String) = response.stripMarginWithNewline("\r\n")
+    def prep(response: String) = response.stripMarginWithNewline(newLine)
   }
 
   def source[T](elems: T*): Source[T, NotUsed] = Source(elems.toList)
 }
+
+class RequestParserCRLFSpec extends RequestParserSpec("CRLF", "\r\n")
+
+class RequestParserLFSpec extends RequestParserSpec("LF", "\n")

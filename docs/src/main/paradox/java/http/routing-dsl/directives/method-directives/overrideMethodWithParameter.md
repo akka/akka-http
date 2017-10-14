@@ -1,4 +1,3 @@
-<a id="overridemethodwithparameter-java"></a>
 # overrideMethodWithParameter
 
 Changes the HTTP method of the request to the value of the specified query string parameter. 
@@ -15,4 +14,4 @@ This directive is useful for:
 
 ## Example
 
-@@snip [MethodDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java) { #overrideMethodWithParameter }
+@@snip [MethodDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MethodDirectivesExamplesTest.java) { #overrideMethodWithParameter }

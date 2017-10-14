@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -21,10 +21,11 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
-import akka.testkit.AkkaSpec
+import akka.testkit._
 
 class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF") with Inside {
   implicit val materializer = ActorMaterializer()
+  implicit val dispatcher = system.dispatcher
 
   "The connection-level client implementation" should {
 
@@ -547,7 +548,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         }
 
         implicit class XResponse(response: HttpResponse) {
-          val timeout = 500.millis
+          val timeout = 500.millis.dilated
 
           def expectStrictEntityWithLength(bytes: Int) =
             response shouldEqual HttpResponse(
@@ -556,7 +557,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
           def expectEntity[T <: HttpEntity: ClassTag](bytes: Int) =
             inside(response) {
               case HttpResponse(_, _, entity: T, _) ⇒
-                entity.toStrict(100.millis).awaitResult(timeout).data.utf8String shouldEqual entityBase.take(bytes)
+                entity.toStrict(100.millis.dilated).awaitResult(timeout).data.utf8String shouldEqual entityBase.take(bytes)
             }
 
           def expectSizeErrorInEntityOfType[T <: HttpEntity: ClassTag](limit: Int, actualSize: Option[Long] = None) =
@@ -723,7 +724,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
         netOutSub.request(1)
-        netOut.expectNoMsg(50.millis)
+        netOut.expectNoMsg(50.millis.dilated)
 
         sendWireData(
           """HTTP/1.1 100 Continue
@@ -760,7 +761,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
         netOutSub.request(1)
-        netOut.expectNoMsg(50.millis)
+        netOut.expectNoMsg(50.millis.dilated)
 
         sendWireData(
           """HTTP/1.1 100 Continue
@@ -797,7 +798,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
         netOutSub.request(1)
-        netOut.expectNoMsg(50.millis)
+        netOut.expectNoMsg(50.millis.dilated)
 
         sendWireData(
           """HTTP/1.1 200 OK
@@ -828,7 +829,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
         netOutSub.request(1)
-        netOut.expectNoMsg(50.millis)
+        netOut.expectNoMsg(50.millis.dilated)
 
         sendWireData(
           """HTTP/1.1 400 Bad Request
@@ -863,6 +864,32 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
           |""")
 
       expectResponse() shouldEqual HttpResponse()
+
+      requestsSub.sendComplete()
+      netOut.expectComplete()
+      netInSub.sendComplete()
+      responses.expectComplete()
+    }
+
+    "receive Content-Length for HEAD requests" in new TestSetup {
+      requestsSub.sendNext(HttpRequest(method = HttpMethods.HEAD))
+      expectWireData(
+        """HEAD / HTTP/1.1
+          |Host: example.com
+          |User-Agent: akka-http/test
+          |
+          |""")
+      sendWireData(
+        """HTTP/1.1 200 OK
+          |Content-Length: 6
+          |
+          |""")
+
+      val HttpResponse(StatusCodes.OK, _, HttpEntity.Default(_, contentLength, data), _) = expectResponse()
+      contentLength shouldEqual 6
+
+      val chunks = data.runWith(Sink.seq).awaitResult(3.seconds.dilated)
+      chunks.length shouldEqual 0
 
       requestsSub.sendComplete()
       netOut.expectComplete()

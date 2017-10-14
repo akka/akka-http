@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -13,10 +13,13 @@ import akka.util.ByteString
 import akka.http.scaladsl.model._
 import headers._
 import ParserOutput._
+import akka.annotation.InternalApi
+import akka.stream.scaladsl.Source
 
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] class HttpResponseParser(protected val settings: ParserSettings, protected val headerParser: HttpHeaderParser)
   extends HttpMessageParser[ResponseOutput] { self ⇒
   import HttpResponseParser._
@@ -67,33 +70,48 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
   override final def onBadProtocol() = throw new ParsingException("The server-side HTTP version is not supported")
 
   private def parseStatus(input: ByteString, cursor: Int): Int = {
-    def badStatusCode = throw new ParsingException("Illegal response status code")
+    def badStatusCode() = throw new ParsingException("Illegal response status code")
+    def badStatusCodeSpecific(code: Int) = throw new ParsingException("Illegal response status code: " + code)
     def parseStatusCode() = {
       def intValue(offset: Int): Int = {
         val c = byteChar(input, cursor + offset)
-        if (CharacterClasses.DIGIT(c)) c - '0' else badStatusCode
+        if (CharacterClasses.DIGIT(c)) c - '0' else badStatusCode()
       }
       val code = intValue(0) * 100 + intValue(1) * 10 + intValue(2)
       statusCode = code match {
         case 200 ⇒ StatusCodes.OK
-        case _ ⇒ StatusCodes.getForKey(code) match {
+        case code ⇒ StatusCodes.getForKey(code) match {
           case Some(x) ⇒ x
-          case None    ⇒ customStatusCodes(code) getOrElse badStatusCode
+          case None    ⇒ customStatusCodes(code) getOrElse badStatusCodeSpecific(code)
         }
       }
     }
+
+    def isLF(idx: Int) = byteChar(input, idx) == '\n'
+    def isCRLF(idx: Int) = byteChar(input, idx) == '\r' && isLF(idx + 1)
+    def isNewLine(idx: Int) = isLF(idx) || isCRLF(idx)
+
+    def skipNewLine(idx: Int) = {
+      if (isCRLF(idx)) idx + 2
+      else if (isLF(idx)) idx + 1
+      else idx
+    }
+
     if (byteChar(input, cursor + 3) == ' ') {
       parseStatusCode()
       val startIdx = cursor + 4
       @tailrec def skipReason(idx: Int): Int =
         if (idx - startIdx <= maxResponseReasonLength)
-          if (byteChar(input, idx) == '\r' && byteChar(input, idx + 1) == '\n') idx + 2
+          if (isNewLine(idx)) skipNewLine(idx)
           else skipReason(idx + 1)
         else throw new ParsingException("Response reason phrase exceeds the configured limit of " +
           maxResponseReasonLength + " characters")
       skipReason(startIdx)
-    } else if (byteChar(input, cursor + 3) == '\r' && byteChar(input, cursor + 4) == '\n') {
-      throw new ParsingException("Status code misses trailing space")
+    } else if (isNewLine(cursor + 3)) {
+      parseStatusCode()
+      // Status format with no reason phrase and no trailing space accepted, diverging from the spec
+      // See https://github.com/akka/akka-http/pull/989
+      skipNewLine(cursor + 3)
     } else badStatusCode
   }
 
@@ -138,41 +156,55 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
           startNewMessage(input, bodyStart)
       }
 
-    if (statusCode.allowsEntity && (contextForCurrentResponse.get.requestMethod != HttpMethods.HEAD)) {
-      teh match {
-        case None ⇒ clh match {
-          case Some(`Content-Length`(contentLength)) ⇒
-            if (contentLength == 0) finishEmptyResponse()
-            else if (contentLength <= input.size - bodyStart) {
-              val cl = contentLength.toInt
-              emitResponseStart(strictEntity(cth, input, bodyStart, cl))
-              setCompletionHandling(HttpMessageParser.CompletionOk)
-              emit(MessageEnd)
-              startNewMessage(input, bodyStart + cl)
-            } else {
-              emitResponseStart(defaultEntity(cth, contentLength))
-              parseFixedLengthBody(contentLength, closeAfterResponseCompletion)(input, bodyStart)
-            }
-          case None ⇒
+    if (statusCode.allowsEntity) {
+      contextForCurrentResponse.get.requestMethod match {
+        case HttpMethods.HEAD ⇒ clh match {
+          case Some(`Content-Length`(contentLength)) if contentLength > 0 ⇒
             emitResponseStart {
-              StreamedEntityCreator { entityParts ⇒
-                val data = entityParts.collect { case EntityPart(bytes) ⇒ bytes }
-                HttpEntity.CloseDelimited(contentType(cth), HttpEntity.limitableByteSource(data))
-              }
+              StrictEntityCreator(HttpEntity.Default(contentType(cth), contentLength, Source.empty))
             }
             setCompletionHandling(HttpMessageParser.CompletionOk)
-            parseToCloseBody(input, bodyStart, totalBytesRead = 0)
+            emit(MessageEnd)
+            startNewMessage(input, bodyStart)
+          case _ ⇒ finishEmptyResponse()
         }
+        case HttpMethods.CONNECT ⇒
+          finishEmptyResponse()
+        case _ ⇒ teh match {
+          case None ⇒ clh match {
+            case Some(`Content-Length`(contentLength)) ⇒
+              if (contentLength == 0) finishEmptyResponse()
+              else if (contentLength <= input.size - bodyStart) {
+                val cl = contentLength.toInt
+                emitResponseStart(strictEntity(cth, input, bodyStart, cl))
+                setCompletionHandling(HttpMessageParser.CompletionOk)
+                emit(MessageEnd)
+                startNewMessage(input, bodyStart + cl)
+              } else {
+                emitResponseStart(defaultEntity(cth, contentLength))
+                parseFixedLengthBody(contentLength, closeAfterResponseCompletion)(input, bodyStart)
+              }
+            case None ⇒
+              emitResponseStart {
+                StreamedEntityCreator { entityParts ⇒
+                  val data = entityParts.collect { case EntityPart(bytes) ⇒ bytes }
+                  HttpEntity.CloseDelimited(contentType(cth), HttpEntity.limitableByteSource(data))
+                }
+              }
+              setCompletionHandling(HttpMessageParser.CompletionOk)
+              parseToCloseBody(input, bodyStart, totalBytesRead = 0)
+          }
 
-        case Some(te) ⇒
-          val completedHeaders = addTransferEncodingWithChunkedPeeled(headers, te)
-          if (te.isChunked) {
-            if (clh.isEmpty) {
-              emitResponseStart(chunkedEntity(cth), completedHeaders)
-              parseChunk(input, bodyStart, closeAfterResponseCompletion, totalBytesRead = 0L)
-            } else failMessageStart("A chunked response must not contain a Content-Length header.")
-          } else parseEntity(completedHeaders, protocol, input, bodyStart, clh, cth, teh = None,
-            expect100continue, hostHeaderPresent, closeAfterResponseCompletion)
+          case Some(te) ⇒
+            val completedHeaders = addTransferEncodingWithChunkedPeeled(headers, te)
+            if (te.isChunked) {
+              if (clh.isEmpty) {
+                emitResponseStart(chunkedEntity(cth), completedHeaders)
+                parseChunk(input, bodyStart, closeAfterResponseCompletion, totalBytesRead = 0L)
+              } else failMessageStart("A chunked response must not contain a Content-Length header.")
+            } else parseEntity(completedHeaders, protocol, input, bodyStart, clh, cth, teh = None,
+              expect100continue, hostHeaderPresent, closeAfterResponseCompletion)
+        }
       }
     } else finishEmptyResponse()
   }

@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.marshallers.xml
 
 import java.io.File
+import java.nio.file.Files
 
-import akka.http.scaladsl.TestUtils
 import org.xml.sax.SAXParseException
 import scala.xml.NodeSeq
 import scala.concurrent.{ Future, Await }
@@ -16,6 +16,7 @@ import akka.util.ByteString
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.unmarshalling.{ Unmarshaller, Unmarshal }
 import akka.http.scaladsl.model._
+import akka.testkit._
 import MediaTypes._
 
 class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest with Inside {
@@ -88,14 +89,14 @@ class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest
   }
 
   def shouldHaveFailedWithSAXParseException(result: Future[NodeSeq]) =
-    inside(Await.result(result.failed, 1.second)) {
+    inside(Await.result(result.failed, 1.second.dilated)) {
       case _: SAXParseException ⇒
     }
 
   def withTempFile[T](content: String)(f: File ⇒ T): T = {
     val file = File.createTempFile("xxe", ".txt")
     try {
-      TestUtils.writeAllText(content, file)
+      Files.write(file.toPath, content.getBytes("UTF-8"))
       f(file)
     } finally {
       file.delete()

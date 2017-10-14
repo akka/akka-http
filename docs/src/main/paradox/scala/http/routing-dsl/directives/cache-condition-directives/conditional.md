@@ -1,9 +1,8 @@
-<a id="conditional"></a>
 # conditional
 
 ## Signature
 
-@@signature [CacheConditionDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/CacheConditionDirectives.scala) { #conditional }
+@@signature [CacheConditionDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/CacheConditionDirectives.scala) { #conditional }
 
 ## Description
 
@@ -24,5 +23,5 @@ Since this directive requires the `EntityTag` and `lastModified` time stamp for 
 it is usually used quite deep down in the route structure (i.e. close to the leaf-level), where the exact resource
 targeted by the request has already been established and the respective ETag/Last-Modified values can be determined.
 
-The @ref[FileAndResourceDirectives](../file-and-resource-directives/index.md#fileandresourcedirectives) internally use the `conditional` directive for ETag and Last-Modified support
+The @ref[FileAndResourceDirectives](../file-and-resource-directives/index.md) internally use the `conditional` directive for ETag and Last-Modified support
 (if the `akka.http.routing.file-get-conditional` setting is enabled).

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.javadsl.model;
@@ -50,6 +50,6 @@ public abstract class HttpMethod {
     /**
      * Java API: Returns the entity acceptance level for this method.
      */
-    // TODO: Rename it to requestEntityAcceptance() in Akka 10.0
+    // TODO: Rename it to requestEntityAcceptance() in Akka HTTP 11.0
     public abstract akka.http.javadsl.model.RequestEntityAcceptance getRequestEntityAcceptance();
 }

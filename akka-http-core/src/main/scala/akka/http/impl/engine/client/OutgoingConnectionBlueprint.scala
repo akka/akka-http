@@ -1,14 +1,14 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ParserSettings }
 import akka.stream.impl.ConstantFun
 
-import language.existentials
 import scala.annotation.tailrec
 import scala.concurrent.Promise
 import scala.collection.mutable.ListBuffer
@@ -28,11 +28,10 @@ import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.{ InHandler, OutHandler }
 import akka.http.impl.util.LogByteStringTools._
 
-import scala.util.control.NoStackTrace
-
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] object OutgoingConnectionBlueprint {
 
   type BypassData = HttpResponseParser.ResponseContext
@@ -87,10 +86,7 @@ private[http] object OutgoingConnectionBlueprint {
       val responseParsingMerge = b.add {
         // the initial header parser we initially use for every connection,
         // will not be mutated, all "shared copy" parsers copy on first-write into the header cache
-        val rootParser = new HttpResponseParser(parserSettings, HttpHeaderParser(parserSettings, log) { info ⇒
-          if (parserSettings.illegalHeaderWarnings)
-            logParsingError(info withSummaryPrepended "Illegal response header", log, parserSettings.errorLoggingVerbosity)
-        })
+        val rootParser = new HttpResponseParser(parserSettings, HttpHeaderParser(parserSettings, log))
         new ResponseParsingMerge(rootParser)
       }
 

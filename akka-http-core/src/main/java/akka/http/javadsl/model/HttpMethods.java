@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.javadsl.model;
@@ -37,7 +37,7 @@ public final class HttpMethods {
     /**
      * Create a custom method type.
      */
-    // TODO: Rename it to custom() in Akka 10.0
+    // TODO: Rename it to custom() in Akka HTTP 11.0
     public static HttpMethod createCustom(String value, boolean safe, boolean idempotent, akka.http.javadsl.model.RequestEntityAcceptance requestEntityAcceptance) {
         //This cast is safe as implementation of RequestEntityAcceptance only exists in Scala
         akka.http.scaladsl.model.RequestEntityAcceptance scalaRequestEntityAcceptance

@@ -1,4 +1,3 @@
-<a id="entity-java"></a>
 # entity
 
 ## Description
@@ -10,7 +9,7 @@ The `entity` method will either pass the `value` to the inner route or map the `
 
 The `entity` directive works in conjunction with `as` and `akka.http.scaladsl.unmarshalling` to
 convert some serialized "wire format" value into a higher-level object structure.  
-@ref[The unmarshalling documentation](../../../common/unmarshalling.md#http-unmarshalling-java) explains this process in detail.
+@ref[The unmarshalling documentation](../../../common/unmarshalling.md) explains this process in detail.
 This directive simplifies extraction and error handling to the specified type from the request.
 
 An unmarshaller will return a `Left(exception)` in the case of an error.  This is converted to a
@@ -18,6 +17,7 @@ An unmarshaller will return a `Left(exception)` in the case of an error.  This i
 are mapped to rejections:
 
 |Left(exception)          | Rejection                                                                |
+|-------------------------|--------------------------------------------------------------------------|
 |`ContentExpected`        | `RequestEntityExpectedRejection`                                         |
 |`UnsupportedContentType` | `UnsupportedRequestContentTypeRejection`, which lists the supported types|
 |`MaformedContent`        | `MalformedRequestContentRejection`, with an error message and cause      |
@@ -26,6 +26,6 @@ are mapped to rejections:
 
 The following example uses @ref[Json Support via Jackson](../../../common/json-support.md#json-jackson-support-java) to unmarshall a json request into a simple `Person`  
 
-@@snip [MarshallingDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #person }
+@@snip [MarshallingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #person }
 
-@@snip [MarshallingDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #example-entity-with-json }
+@@snip [MarshallingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/MarshallingDirectivesExamplesTest.java) { #example-entity-with-json }

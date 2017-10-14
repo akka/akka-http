@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server
@@ -25,7 +25,7 @@ class DirectiveExamplesSpec extends RoutingSpec {
           }
         }
       }
-    verify(route) // hide
+    verify(route) // #hide
     //#example-1
   }
 
@@ -44,7 +44,7 @@ class DirectiveExamplesSpec extends RoutingSpec {
       }
 
     val route: Route = path("order" / IntNumber) { id => innerRoute(id) }
-    verify(route) // hide
+    verify(route) // #hide
     //#example-2
   }
 
@@ -56,7 +56,7 @@ class DirectiveExamplesSpec extends RoutingSpec {
           ctx.complete(s"Received ${ctx.request.method.name} request for order $id")
         }
       }
-    verify(route) // hide
+    verify(route) // #hide
     //#example-3
   }
 
@@ -70,7 +70,7 @@ class DirectiveExamplesSpec extends RoutingSpec {
           }
         }
       }
-    verify(route) // hide
+    verify(route) // #hide
     //#example-4
   }
 
@@ -85,7 +85,7 @@ class DirectiveExamplesSpec extends RoutingSpec {
           }
         }
       }
-    verify(route) // hide
+    verify(route) // #hide
     //#example-5
   }
 
@@ -96,7 +96,7 @@ class DirectiveExamplesSpec extends RoutingSpec {
       (path("order" / IntNumber) & getOrPut & extractMethod) { (id, m) =>
         complete(s"Received ${m.name} request for order $id")
       }
-    verify(route) // hide
+    verify(route) // #hide
     //#example-6
   }
 
@@ -108,8 +108,27 @@ class DirectiveExamplesSpec extends RoutingSpec {
       orderGetOrPutWithMethod { (id, m) =>
         complete(s"Received ${m.name} request for order $id")
       }
-    verify(route) // hide
+    verify(route) // #hide
     //#example-7
+  }
+
+  "example-8" in {
+    //#example-8
+    def innerRoute(id: Int): Route =
+      concat(get {
+        complete {
+          "Received GET request for order " + id
+        }
+      },
+      put {
+        complete {
+          "Received PUT request for order " + id
+        }
+      })
+
+    val route: Route = path("order" / IntNumber) { id => innerRoute(id) }
+    verify(route) // #hide
+    //#example-8
   }
 
   def verify(route: Route) = {

@@ -1,14 +1,17 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
 
-import java.nio.{ CharBuffer, ByteBuffer }
+import java.nio.{ ByteBuffer, CharBuffer }
 import java.util.Arrays.copyOf
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
+
+import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.settings.ParserSettings.IllegalResponseHeaderValueProcessingMode
+import akka.http.scaladsl.settings.ParserSettings.ErrorLoggingVerbosity
 import akka.http.scaladsl.settings.ParserSettings
 
 import scala.annotation.tailrec
@@ -62,6 +65,7 @@ import akka.http.impl.model.parser.CharacterClasses._
  * Since we address them via the nodes MSB and zero is reserved the trie
  * cannot hold more then 255 items, so this array has a fixed size of 255.
  */
+@InternalApi
 private[engine] final class HttpHeaderParser private (
   val settings:                      HttpHeaderParser.Settings,
   val log:                           LoggingAdapter,
@@ -412,6 +416,7 @@ private[engine] final class HttpHeaderParser private (
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] object HttpHeaderParser {
   import SpecializedHeaderValueParsers._
 
@@ -420,7 +425,9 @@ private[http] object HttpHeaderParser {
     def maxHeaderValueLength: Int
     def headerValueCacheLimit(headerName: String): Int
     def customMediaTypes: MediaTypes.FindCustom
+    def illegalHeaderWarnings: Boolean
     def illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode
+    def errorLoggingVerbosity: ErrorLoggingVerbosity
   }
 
   private def predefinedHeaders = Seq(
@@ -434,8 +441,14 @@ private[http] object HttpHeaderParser {
     "Cache-Control: no-cache",
     "Expect: 100-continue")
 
-  def apply(settings: HttpHeaderParser.Settings, log: LoggingAdapter)(onIllegalHeader: ErrorInfo ⇒ Unit = info ⇒ throw IllegalHeaderException(info)) =
-    prime(unprimed(settings, log, onIllegalHeader))
+  def apply(settings: HttpHeaderParser.Settings, log: LoggingAdapter) =
+    prime(unprimed(settings, log, defaultIllegalHeaderHandler(settings, log)))
+
+  def defaultIllegalHeaderHandler(settings: HttpHeaderParser.Settings, log: LoggingAdapter): ErrorInfo ⇒ Unit =
+    if (settings.illegalHeaderWarnings)
+      info ⇒ logParsingError(info withSummaryPrepended "Illegal header", log, settings.errorLoggingVerbosity)
+    else
+      (_: ErrorInfo) ⇒ _ // Does exactly what the label says - nothing
 
   def unprimed(settings: HttpHeaderParser.Settings, log: LoggingAdapter, warnOnIllegalHeader: ErrorInfo ⇒ Unit) =
     new HttpHeaderParser(settings, log, warnOnIllegalHeader)
@@ -463,6 +476,7 @@ private[http] object HttpHeaderParser {
     insertInGoodOrder(specializedHeaderValueParsers)()
     insertInGoodOrder(predefinedHeaders.sorted)()
     parser.insert(ByteString("\r\n"), EmptyHeader)()
+    parser.insert(ByteString("\n"), EmptyHeader)()
     parser
   }
 
@@ -480,15 +494,21 @@ private[http] object HttpHeaderParser {
 
   private[parsing] class ModeledHeaderValueParser(headerName: String, maxHeaderValueLength: Int, maxValueCount: Int, log: LoggingAdapter, settings: HeaderParser.Settings)
     extends HeaderValueParser(headerName, maxValueCount) {
+    val parser = HeaderParser.lookupParser(headerName, settings).getOrElse(
+      throw new IllegalStateException(s"Missing parser for modeled [$headerName].")
+    )
+
     def apply(hhp: HttpHeaderParser, input: ByteString, valueStart: Int, onIllegalHeader: ErrorInfo ⇒ Unit): (HttpHeader, Int) = {
       // TODO: optimize by running the header value parser directly on the input ByteString (rather than an extracted String); seems done?
       val (headerValue, endIx) = scanHeaderValue(hhp, input, valueStart, valueStart + maxHeaderValueLength + 2, log, settings.illegalResponseHeaderValueProcessingMode)()
       val trimmedHeaderValue = headerValue.trim
-      val header = HeaderParser.parseFull(headerName, trimmedHeaderValue, settings) match {
-        case Right(h) ⇒ h
-        case Left(error) ⇒
+      val header = parser(trimmedHeaderValue) match {
+        case HeaderParser.Success(h) ⇒ h
+        case HeaderParser.Failure(error) ⇒
           onIllegalHeader(error.withSummaryPrepended(s"Illegal '$headerName' header"))
           RawHeader(headerName, trimmedHeaderValue)
+        case HeaderParser.RuleNotFound ⇒
+          throw new IllegalStateException(s"Unexpected RuleNotFound exception for modeled header [$headerName]")
       }
       header → endIx
     }
@@ -522,6 +542,9 @@ private[http] object HttpHeaderParser {
         case '\r' if byteChar(input, ix + 1) == '\n' ⇒
           if (WSP(byteChar(input, ix + 2))) scanHeaderValue(hhp, input, start, limit, log, mode)(appended(' '), ix + 3)
           else (if (sb != null) sb.toString else asciiString(input, start, ix), ix + 2)
+        case '\n' ⇒
+          if (WSP(byteChar(input, ix + 1))) scanHeaderValue(hhp, input, start, limit, log, mode)(appended(' '), ix + 2)
+          else (if (sb != null) sb.toString else asciiString(input, start, ix), ix + 1)
         case c ⇒
           var nix = ix + 1
           val nsb =

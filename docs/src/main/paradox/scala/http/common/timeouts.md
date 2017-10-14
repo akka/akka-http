@@ -1,4 +1,3 @@
-<a id="http-timeouts-scala"></a>
 # Akka HTTP Timeouts
 
 Akka HTTP comes with a variety of built-in timeout mechanisms to protect your servers from malicious attacks or
@@ -7,7 +6,7 @@ are left to the streaming APIs and are easily implementable as patterns in user-
 
 ## Common timeouts
 
-<a id="idle-timeouts-scala"></a>
+<a id="idle-timeouts"></a>
 ### Idle timeouts
 
 The `idle-timeout` is a global setting which sets the maximum inactivity time of a given connection.
@@ -25,12 +24,12 @@ akka.http.host-connection-pool.client.idle-timeout
 ```
 
 @@@ note
-For the connection pooled client side the idle period is counted only when the pool has no pending requests waiting.
+For the client side connection pool, the idle period is counted only when the pool has no pending requests waiting.
 @@@
 
 ## Server timeouts
 
-<a id="request-timeout-scala"></a>
+<a id="request-timeout"></a>
 ### Request timeout
 
 Request timeouts are a mechanism that limits the maximum time it may take to produce an `HttpResponse` from a route.
@@ -40,7 +39,7 @@ never sending the real response otherwise).
 
 The default `HttpResponse` that is written when a request timeout is exceeded looks like this:
 
-@@snip [HttpServerBluePrint.scala](../../../../../../../akka-http-core/src/main/scala/akka/http/impl/engine/server/HttpServerBluePrint.scala) { #default-request-timeout-httpresponse }
+@@snip [HttpServerBluePrint.scala]($akka-http$/akka-http-core/src/main/scala/akka/http/impl/engine/server/HttpServerBluePrint.scala) { #default-request-timeout-httpresponse }
 
 A default request timeout is applied globally to all routes and can be configured using the
 `akka.http.server.request-timeout` setting (which defaults to 20 seconds).
@@ -51,12 +50,26 @@ using the same connection and the `n-th` request triggers a request timeout the 
 and close the connection, leaving the `(n+1)-th` (and subsequent requests on the same connection) unhandled.
 @@@
 
-The request timeout can be configured at run-time for a given route using the any of the @ref[TimeoutDirectives](../routing-dsl/directives/timeout-directives/index.md#timeoutdirectives).
+The request timeout can be configured at run-time for a given route using the any of the @ref[TimeoutDirectives](../routing-dsl/directives/timeout-directives/index.md).
 
 ### Bind timeout
 
 The bind timeout is the time period within which the TCP binding process must be completed (using any of the `Http().bind*` methods).
 It can be configured using the `akka.http.server.bind-timeout` setting.
+
+### Linger timeout
+
+The linger timeout is the time period the HTTP server implementation will keep a connection open after
+all data has been delivered to the network layer. This setting is similar to the SO_LINGER socket option
+but does not only include the OS-level socket but also covers the Akka IO / Akka Streams network stack.
+The setting is an extra precaution that prevents clients from keeping open a connection that is
+already considered completed from the server side.
+
+If the network level buffers (including the Akka Stream / Akka IO networking stack buffers)
+contains more data than can be transferred to the client in the given time when the server-side considers
+to be finished with this connection, the client may encounter a connection reset.
+
+Set to `infinite` to disable automatic connection closure (which will risk to leak connections).
 
 ## Client timeouts
 

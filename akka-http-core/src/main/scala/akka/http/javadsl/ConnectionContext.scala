@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka.http.javadsl
 
@@ -12,7 +12,6 @@ import akka.http.impl.util.JavaMapping.Implicits._
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 
 import scala.compat.java8.OptionConverters
-import scala.collection.JavaConverters._
 
 object ConnectionContext {
   //#https-context-creation
@@ -61,6 +60,8 @@ object ConnectionContext {
 abstract class ConnectionContext {
   def isSecure: Boolean
   /** Java API */
+
+  @deprecated("'default-http-port' and 'default-https-port' configuration properties are used instead", since = "10.0.11")
   def getDefaultPort: Int
   def sslConfig: Option[AkkaSSLConfig]
 }

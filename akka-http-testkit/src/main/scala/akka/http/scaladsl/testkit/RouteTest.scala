@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.testkit
@@ -167,5 +167,3 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
       }
   }
 }
-
-//FIXME: trait Specs2RouteTest extends RouteTest with Specs2Interface

@@ -1,4 +1,3 @@
-<a id="codingdirectives-java"></a>
 # CodingDirectives
 
 @@toc { depth=1 }
@@ -11,5 +10,6 @@
 * [encodeResponseWith](encodeResponseWith.md)
 * [requestEncodedWith](requestEncodedWith.md)
 * [responseEncodingAccepted](responseEncodingAccepted.md)
+* [withPrecompressedMediaTypeSupport](withPrecompressedMediaTypeSupport.md)
 
 @@@

@@ -1,4 +1,3 @@
-<a id="encoderesponsewith-java"></a>
 # encodeResponseWith
 
 ## Description
@@ -14,4 +13,4 @@ response encoding is used. Otherwise the request is rejected.
 
 ## Example
 
-@@snip [CodingDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/CodingDirectivesExamplesTest.java) { #encodeResponseWith }
+@@snip [CodingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/CodingDirectivesExamplesTest.java) { #encodeResponseWith }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server.directives
@@ -7,7 +7,8 @@ package akka.http.scaladsl.server.directives
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import org.scalatest.FreeSpec
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.duration._
 import akka.testkit.EventFilter
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 import akka.http.scaladsl.marshalling._
@@ -42,17 +43,17 @@ class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
       "for successful futures and marshalling" in {
         Get() ~> complete(Promise.successful("yes").future) ~> check { responseAs[String] shouldEqual "yes" }
       }
-      "for failed futures and marshalling" in EventFilter.error(
+      object TestException extends RuntimeException("Boom")
+      "for failed futures and marshalling" in EventFilter[TestException.type](
         occurrences = 1,
-        message = "Error during processing of request: 'Boom'. Completing with 500 Internal Server Error response."
+        message = BasicRouteSpecs.defaultExnHandler500Error("Boom")
       ).intercept {
-        object TestException extends RuntimeException("Boom")
-        Get() ~> complete(Promise.failed[String](TestException).future) ~>
-          check {
-            status shouldEqual StatusCodes.InternalServerError
-            responseAs[String] shouldEqual "There was an internal server error."
-          }
-      }
+          Get() ~> complete(Promise.failed[String](TestException).future) ~>
+            check {
+              status shouldEqual StatusCodes.InternalServerError
+              responseAs[String] shouldEqual "There was an internal server error."
+            }
+        }
       "for futures failed with a RejectionError" in {
         Get() ~> complete(Promise.failed[String](RejectionError(AuthorizationFailedRejection)).future) ~>
           check {
@@ -108,6 +109,30 @@ class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
       Get().withHeaders(Accept(MediaTypes.`text/plain`)) ~> Route.seal(route) ~> check {
         status shouldEqual StatusCodes.NotAcceptable
       }
+    }
+    "avoid marshalling too eagerly for multi-marshallers" in {
+      case class MyClass(value: String)
+
+      implicit val superMarshaller = {
+        val jsonMarshaller =
+          Marshaller.stringMarshaller(MediaTypes.`application/json`)
+            .compose[MyClass] { mc ⇒
+              println(s"jsonMarshaller marshall $mc")
+              mc.value
+            }
+        val textMarshaller = Marshaller.stringMarshaller(MediaTypes.`text/html`)
+          .compose[MyClass] { mc ⇒
+            println(s"textMarshaller marshall $mc")
+            throw new IllegalArgumentException(s"Unexpected value $mc")
+          }
+
+        Marshaller.oneOf(jsonMarshaller, textMarshaller)
+      }
+      val request =
+        HttpRequest(uri = "/test")
+          .withHeaders(Accept(MediaTypes.`application/json`))
+      val response = Await.result(Marshal(MyClass("test")).toResponseFor(request), 1.second)
+      response.status shouldEqual StatusCodes.OK
     }
   }
 

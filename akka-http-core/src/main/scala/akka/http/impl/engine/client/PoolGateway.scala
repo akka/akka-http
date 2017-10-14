@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -8,7 +8,8 @@ import java.util.concurrent.atomic.AtomicLong
 
 import akka.Done
 import akka.actor.ActorRef
-import akka.http.impl.engine.client.PoolGateway.{ GatewayIdentifier, SharedGateway }
+import akka.annotation.InternalApi
+import akka.http.impl.engine.client.PoolGateway.GatewayIdentifier
 import akka.http.impl.engine.client.PoolMasterActor._
 import akka.http.impl.settings.HostConnectionPoolSetup
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
@@ -52,7 +53,9 @@ private[http] final class PoolGateway(gatewayRef: ActorRef, val hcps: HostConnec
 
   /**
    * Shutdown the corresponding pool and signal its termination. If the pool is not running or is
-   * being shutting down, this does nothing,
+   * being shutting down, this does nothing.
+   *
+   * The shutdown will wait for all ongoing requests to be completed.
    *
    * @return a Future completed when the pool has been shutdown.
    */
@@ -65,6 +68,7 @@ private[http] final class PoolGateway(gatewayRef: ActorRef, val hcps: HostConnec
   override def toString = s"PoolGateway(hcps = $hcps)"
 
   // INTERNAL API (testing only)
+  @InternalApi
   private[client] def poolStatus(): Future[Option[PoolInterfaceStatus]] = {
     val statusPromise = Promise[Option[PoolInterfaceStatus]]()
     gatewayRef ! PoolStatus(this, statusPromise)
@@ -82,9 +86,15 @@ private[http] final class PoolGateway(gatewayRef: ActorRef, val hcps: HostConnec
 
 private[http] object PoolGateway {
 
-  sealed trait GatewayIdentifier
-  case object SharedGateway extends GatewayIdentifier
-  final case class UniqueGateway(id: Long) extends GatewayIdentifier
+  sealed trait GatewayIdentifier {
+    def name: String
+  }
+  case object SharedGateway extends GatewayIdentifier {
+    def name: String = "shared"
+  }
+  final case class UniqueGateway(id: Long) extends GatewayIdentifier {
+    def name: String = s"#$id"
+  }
 
   private[this] val uniqueGatewayId = new AtomicLong(0)
   def newUniqueGatewayIdentifier = UniqueGateway(uniqueGatewayId.incrementAndGet())

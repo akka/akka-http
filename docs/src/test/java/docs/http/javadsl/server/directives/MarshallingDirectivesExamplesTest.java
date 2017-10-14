@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.http.javadsl.server.directives;
@@ -47,9 +47,9 @@ public class MarshallingDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testEntity() {
     //#example-entity-with-json
-    final Unmarshaller<HttpEntity, Person> unmarshallar = Jackson.unmarshaller(Person.class);
+    final Unmarshaller<HttpEntity, Person> unmarshaller = Jackson.unmarshaller(Person.class);
 
-    final Route route = entity(unmarshallar, person ->
+    final Route route = entity(unmarshaller, person ->
       complete( "Person:" +  person.getName() + " - favoriteNumber:" + person.getFavoriteNumber() )
     );
 

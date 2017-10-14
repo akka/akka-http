@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka
 
@@ -47,7 +47,8 @@ object Scaladoc extends AutoPlugin {
       "-groups",
       "-doc-source-url", urlString,
       "-sourcepath", base.getAbsolutePath,
-      "-skip-packages", "akka.pattern"
+      // Workaround https://issues.scala-lang.org/browse/SI-10028
+      "-skip-packages", "akka.pattern:org.specs2"
     )
     CliOptions.scaladocDiagramsEnabled.ifTrue("-diagrams").toList ::: opts
   }
@@ -118,7 +119,7 @@ object UnidocRoot extends AutoPlugin {
     javacOptions in (JavaUnidoc, unidoc) ++= Seq("-Xdoclint:none"),
     // genjavadoc needs to generate synthetic methods since the java code uses them
     scalacOptions += "-P:genjavadoc:suppressSynthetic=false",
-    // FIXME: see #18056
+    // FIXME: see https://github.com/akka/akka-http/issues/230
     sources in(JavaUnidoc, unidoc) ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin")))
   )).getOrElse(Nil)
 
@@ -148,7 +149,7 @@ object Unidoc extends AutoPlugin {
       javacOptions in doc += "-Xdoclint:none",
       scalacOptions in Compile += "-P:genjavadoc:fabricateParams=true",
       unidocGenjavadocVersion in Global := "0.10",
-      // FIXME: see #18056
+      // FIXME: see https://github.com/akka/akka-http/issues/230
       sources in(Genjavadoc, doc) ~= (_.filterNot(_.getPath.contains("Access$minusControl$minusAllow$minusOrigin")))
     )
   ).getOrElse(Seq.empty)

@@ -1,9 +1,8 @@
-<a id="withrequesttimeout-java"></a>
 # withRequestTimeout
 
 ## Description
 
-This directive enables "late" (during request processing) control over the @ref[Request timeout](../../../common/timeouts.md#request-timeout-java) feature in Akka HTTP.
+This directive enables "late" (during request processing) control over the @ref[Request timeout](../../../common/timeouts.md#request-timeout) feature in Akka HTTP.
 
 The timeout can be either loosened or made more tight using this directive, however one should be aware that it is
 inherently racy (which may especially show with very tight timeouts) since a timeout may already have been triggered
@@ -16,7 +15,7 @@ to be dropped. This is by-design, as the request timeout feature serves as a "sa
 
 Optionally, a timeout handler may be provided in which is called when a time-out is triggered and must produce an
 `HttpResponse` that will be sent back to the client instead of the "too late" response (in case it'd ever arrive).
-See also @ref[withRequestTimeoutResponse](withRequestTimeoutResponse.md#withrequesttimeoutresponse-java) if only looking to customise the timeout response without changing the timeout itself.
+See also @ref[withRequestTimeoutResponse](withRequestTimeoutResponse.md) if only looking to customise the timeout response without changing the timeout itself.
 
 @@@ warning
 
@@ -29,12 +28,12 @@ or malicious attackers) and if needed tighten it using the directives – not th
 
 @@@
 
-For more information about various timeouts in Akka HTTP see @ref[Akka HTTP Timeouts](../../../common/timeouts.md#http-timeouts-java).
+For more information about various timeouts in Akka HTTP see @ref[Akka HTTP Timeouts](../../../common/timeouts.md).
 
 ## Example
 
-@@snip [TimeoutDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/TimeoutDirectivesExamplesTest.java) { #withRequestTimeout-plain }
+@@snip [TimeoutDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/TimeoutDirectivesExamplesTest.java) { #withRequestTimeout-plain }
 
 With setting the handler at the same time:
 
-@@snip [TimeoutDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/TimeoutDirectivesExamplesTest.java) { #withRequestTimeout-with-handler }
+@@snip [TimeoutDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/TimeoutDirectivesExamplesTest.java) { #withRequestTimeout-with-handler }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives;
@@ -97,7 +97,7 @@ public class SecurityDirectivesTest extends JUnitRouteTest {
     route.run(HttpRequest.GET("/basicSecure"))
       .assertStatusCode(StatusCodes.UNAUTHORIZED)
       .assertEntity("The resource requires authentication, which was not supplied with the request")
-      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"test-realm\"");
+      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"test-realm\",charset=UTF-8");
   }
 
   @Test

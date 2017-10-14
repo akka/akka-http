@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -65,7 +65,7 @@ trait WebSocketDirectives {
    * announced in the WebSocket request) contains `protocol`. If the client did not offer the protocol in question
    * the request is rejected with an [[UnsupportedWebSocketSubprotocolRejection]] rejection.
    *
-   * To support several subprotocols you may chain several `handleWebSocketMessage` Routes.
+   * To support several subprotocols you may chain several `handleWebSocketMessagesForOptionalProtocol` routes.
    *
    * @group websocket
    */

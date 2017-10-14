@@ -1,9 +1,8 @@
-<a id="formfieldseq"></a>
 # formFieldSeq
 
 ## Signature
 
-@@signature [FormFieldDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FormFieldDirectives.scala) { #formFieldSeq }
+@@signature [FormFieldDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/FormFieldDirectives.scala) { #formFieldSeq }
 
 ## Description
 
@@ -11,7 +10,7 @@ Extracts all HTTP form fields at once in the original order as (name, value) tup
 
 This directive can be used if the exact order of form fields is important or if parameters can occur several times.
 
-See @ref[formFields](formFields.md#formfields) for an in-depth description.
+See @ref[formFields](formFields.md) for an in-depth description.
 
 ## Warning
 
@@ -21,4 +20,4 @@ can cause performance issues or even an `OutOfMemoryError` s.
 
 ## Example
 
-@@snip [FormFieldDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala) { #formFieldSeq }
+@@snip [FormFieldDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala) { #formFieldSeq }

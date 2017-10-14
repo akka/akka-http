@@ -1,14 +1,13 @@
-<a id="pathmatcher-dsl"></a>
 # The PathMatcher DSL
 
-For being able to work with the @ref[PathDirectives](directives/path-directives/index.md#pathdirectives) effectively you should have some understanding of the
+For being able to work with the @ref[PathDirectives](directives/path-directives/index.md) effectively you should have some understanding of the
 `PathMatcher` mini-DSL that Akka HTTP provides for elegantly defining URI matching behavior.
 
 ## Overview
 
 When a request (or rather the respective `RequestContext` instance) enters the route structure it has an
 "unmatched path" that is identical to the `request.uri.path`. As it descends the routing tree and passes through one
-or more @ref[pathPrefix](directives/path-directives/pathPrefix.md#pathprefix) or @ref[path](directives/path-directives/path.md#path) directives the "unmatched path" progressively gets "eaten into" from the
+or more @ref[pathPrefix](directives/path-directives/pathPrefix.md) or @ref[path](directives/path-directives/path.md) directives the "unmatched path" progressively gets "eaten into" from the
 left until, in most cases, it eventually has been consumed completely.
 
 What exactly gets matched and consumed as well as extracted from the unmatched path in each directive is defined with
@@ -27,7 +26,7 @@ defines a matcher which only extracts a single value of type `T`.
 
 Here is an example of a more complex `PathMatcher` expression:
 
-@@snip [PathDirectivesExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #path-matcher }
+@@snip [PathDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #path-matcher }
 
 This will match paths like `foo/bar/X42/edit` or `foo/bar/X/create`.
 
@@ -182,4 +181,4 @@ how to use them.
 
 ## Examples
 
-@@snip [PathDirectivesExamplesSpec.scala](../../../../../test/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #path-dsl }
+@@snip [PathDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #path-dsl }

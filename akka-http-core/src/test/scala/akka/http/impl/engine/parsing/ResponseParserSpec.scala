@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -29,9 +29,9 @@ import StatusCodes._
 import HttpEntity._
 import ParserOutput._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
-import akka.testkit.TestKit
+import akka.testkit._
 
-class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
+abstract class ResponseParserSpec(mode: String, newLine: String) extends FreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
     akka.event-handlers = ["akka.testkit.TestEventListener"]
     akka.loglevel = WARNING
@@ -42,7 +42,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   implicit val materializer = ActorMaterializer()
   val ServerOnTheMove = StatusCodes.custom(331, "Server on the move")
 
-  "The response parsing logic should" - {
+  s"The response parsing logic should (mode: $mode)" - {
     "properly parse" - {
 
       // http://tools.ietf.org/html/rfc7230#section-3.3.3
@@ -85,7 +85,12 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       }
 
       "a response with a missing reason phrase" in new Test {
-        "HTTP/1.1 200 \r\nContent-Length: 0\r\n\r\n" should parseTo(HttpResponse(OK))
+        s"HTTP/1.1 404 ${newLine}Content-Length: 0${newLine}${newLine}" should parseTo(HttpResponse(NotFound))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
+      "a response with no reason phrase and no trailing space" in new Test {
+        s"""HTTP/1.1 404${newLine}Content-Length: 0${newLine}${newLine}""".stripMargin should parseTo(HEAD, HttpResponse(NotFound))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
@@ -229,7 +234,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
     "reject a response with" - {
       "HTTP version 1.2" in new Test {
-        Seq("HTTP/1.2 200 OK\r\n") should generalMultiParseTo(Left(MessageStartError(
+        Seq(s"HTTP/1.2 200 OK${newLine}") should generalMultiParseTo(Left(MessageStartError(
           400: StatusCode, ErrorInfo("The server-side HTTP version is not supported"))))
       }
 
@@ -239,13 +244,8 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       }
 
       "a too-long response status reason" in new Test {
-        Seq("HTTP/1.1 204 12345678", "90123456789012\r\n") should generalMultiParseTo(Left(
+        Seq("HTTP/1.1 204 12345678", s"90123456789012${newLine}") should generalMultiParseTo(Left(
           MessageStartError(400: StatusCode, ErrorInfo("Response reason phrase exceeds the configured limit of 21 characters"))))
-      }
-
-      "with a missing reason phrase and no trailing space" in new Test {
-        Seq("HTTP/1.1 200\r\nContent-Length: 0\r\n\r\n") should generalMultiParseTo(Left(MessageStartError(
-          400: StatusCode, ErrorInfo("Status code misses trailing space"))))
       }
     }
   }
@@ -253,7 +253,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   override def afterAll() = TestKit.shutdownActorSystem(system)
 
   private class Test {
-    def awaitAtMost: FiniteDuration = 3.seconds
+    def awaitAtMost: FiniteDuration = 3.seconds.dilated
     var closeAfterResponseCompletion = Seq.empty[Boolean]
 
     class StrictEqualHttpResponse(val resp: HttpResponse) {
@@ -318,12 +318,12 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         }.concatSubstreams
 
     def collectBlocking[T](source: Source[T, Any]): Seq[T] =
-      Await.result(source.limit(100000).runWith(Sink.seq), 1000.millis)
+      Await.result(source.limit(100000).runWith(Sink.seq), 1000.millis.dilated)
 
     protected def parserSettings: ParserSettings = ParserSettings(system)
 
     def newParserStage(requestMethod: HttpMethod = GET) = {
-      val parser = new HttpResponseParser(parserSettings, HttpHeaderParser(parserSettings, system.log)())
+      val parser = new HttpResponseParser(parserSettings, HttpHeaderParser(parserSettings, system.log))
       parser.setContextForNextResponse(HttpResponseParser.ResponseContext(requestMethod, None))
 
       // Note that this GraphStage mutates the HttpMessageParser instance, use with caution.
@@ -366,8 +366,12 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         .fast.map(source(_: _*))
         .fast.recover { case _: NoSuchElementException ⇒ source() }
 
-    def prep(response: String) = response.stripMarginWithNewline("\r\n")
+    def prep(response: String) = response.stripMarginWithNewline(newLine)
 
     def source[T](elems: T*): Source[T, NotUsed] = Source(elems.toList)
   }
 }
+
+class ResponseParserCRLFSpec extends ResponseParserSpec("CRLF", "\r\n")
+
+class ResponseParserLFSpec extends ResponseParserSpec("LF", "\n")

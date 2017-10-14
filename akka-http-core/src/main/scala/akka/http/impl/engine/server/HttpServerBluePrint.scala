@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.server
@@ -12,6 +12,7 @@ import scala.collection.immutable
 import scala.util.control.NonFatal
 import akka.NotUsed
 import akka.actor.Cancellable
+import akka.annotation.InternalApi
 import akka.japi.Function
 import akka.event.LoggingAdapter
 import akka.util.ByteString
@@ -54,13 +55,14 @@ import akka.http.impl.util.LogByteStringTools._
  *                 |          |                                   |             |  Rendering- |           |
  *                 +----------+                                   +-------------+  Context    +-----------+
  */
+@InternalApi
 private[http] object HttpServerBluePrint {
-  def apply(settings: ServerSettings, log: LoggingAdapter): Http.ServerLayer =
+  def apply(settings: ServerSettings, log: LoggingAdapter, isSecureConnection: Boolean): Http.ServerLayer =
     userHandlerGuard(settings.pipeliningLimit) atop
       requestTimeoutSupport(settings.timeouts.requestTimeout) atop
       requestPreparation(settings) atop
       controller(settings, log) atop
-      parsingRendering(settings, log) atop
+      parsingRendering(settings, log, isSecureConnection) atop
       websocketSupport(settings, log) atop
       tlsSupport atop
       logTLSBidiBySetting("server-plain-text", settings.logUnencryptedNetworkBytes)
@@ -71,8 +73,8 @@ private[http] object HttpServerBluePrint {
   def websocketSupport(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingOutput, ByteString, SessionBytes, SessionBytes, NotUsed] =
     BidiFlow.fromGraph(new ProtocolSwitchStage(settings, log))
 
-  def parsingRendering(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingContext, ResponseRenderingOutput, SessionBytes, RequestOutput, NotUsed] =
-    BidiFlow.fromFlows(rendering(settings, log), parsing(settings, log))
+  def parsingRendering(settings: ServerSettings, log: LoggingAdapter, isSecureConnection: Boolean): BidiFlow[ResponseRenderingContext, ResponseRenderingOutput, SessionBytes, RequestOutput, NotUsed] =
+    BidiFlow.fromFlows(rendering(settings, log), parsing(settings, log, isSecureConnection))
 
   def controller(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ResponseRenderingContext, RequestOutput, RequestOutput, NotUsed] =
     BidiFlow.fromGraph(new ControllerStage(settings, log)).reversed
@@ -95,7 +97,8 @@ private[http] object HttpServerBluePrint {
     override val shape: FlowShape[RequestOutput, HttpRequest] = FlowShape.of(in, out)
 
     override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
-      val remoteAddress = inheritedAttributes.get[HttpAttributes.RemoteAddress].flatMap(_.address)
+      val remoteAddress = inheritedAttributes.get[HttpAttributes.RemoteAddress].map(_.address)
+
       var downstreamPullWaiting = false
       var completionDeferred = false
       var entitySource: SubSourceOutlet[RequestOutput] = _
@@ -118,6 +121,7 @@ private[http] object HttpServerBluePrint {
       override def onPush(): Unit = grab(in) match {
         case RequestStart(method, uri, protocol, hdrs, entityCreator, _, _) ⇒
           val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
+
           val effectiveHeaders =
             if (settings.remoteAddressHeader && remoteAddress.isDefined)
               headers.`Remote-Address`(RemoteAddress(remoteAddress.get)) +: hdrs
@@ -199,21 +203,19 @@ private[http] object HttpServerBluePrint {
     }
   }
 
-  def parsing(settings: ServerSettings, log: LoggingAdapter): Flow[SessionBytes, RequestOutput, NotUsed] = {
+  def parsing(settings: ServerSettings, log: LoggingAdapter, isSecureConnection: Boolean): Flow[SessionBytes, RequestOutput, NotUsed] = {
     import settings._
 
     // the initial header parser we initially use for every connection,
     // will not be mutated, all "shared copy" parsers copy on first-write into the header cache
-    val rootParser = new HttpRequestParser(parserSettings, rawRequestUriHeader,
-      HttpHeaderParser(parserSettings, log) { info ⇒
-        if (parserSettings.illegalHeaderWarnings)
-          logParsingError(info withSummaryPrepended "Illegal request header", log, parserSettings.errorLoggingVerbosity)
-      })
+    val rootParser = new HttpRequestParser(parserSettings, rawRequestUriHeader, HttpHeaderParser(parserSettings, log))
 
     def establishAbsoluteUri(requestOutput: RequestOutput): RequestOutput = requestOutput match {
+      case connect: RequestStart if connect.method == HttpMethods.CONNECT ⇒
+        MessageStartError(StatusCodes.BadRequest, ErrorInfo(s"CONNECT requests are not supported", s"Rejecting CONNECT request to '${connect.uri}'"))
       case start: RequestStart ⇒
         try {
-          val effectiveUri = HttpRequest.effectiveUri(start.uri, start.headers, securedConnection = false, defaultHostHeader)
+          val effectiveUri = HttpRequest.effectiveUri(start.uri, start.headers, isSecureConnection, defaultHostHeader)
           start.copy(uri = effectiveUri)
         } catch {
           case e: IllegalUriException ⇒
@@ -417,7 +419,7 @@ private[http] object HttpServerBluePrint {
 
           emit(responseCtxOut, ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close),
             pullHttpResponseIn)
-          if (!isClosed(requestParsingIn) && close && requestStart.expect100Continue) pull(requestParsingIn)
+          if (!isClosed(requestParsingIn) && close && requestStart.expect100Continue) maybePullRequestParsingIn()
         }
         override def onUpstreamFinish() =
           if (openRequests.isEmpty && isClosed(requestParsingIn)) completeStage()
@@ -442,16 +444,11 @@ private[http] object HttpServerBluePrint {
           }
       })
 
-      class ResponseCtxOutHandler extends OutHandler {
-        override def onPull() = {}
-        override def onDownstreamFinish() =
-          cancel(httpResponseIn) // we cannot fully completeState() here as the websocket pipeline would not complete properly
-      }
-      setHandler(responseCtxOut, new ResponseCtxOutHandler {
+      setHandler(responseCtxOut, new OutHandler {
         override def onPull() = {
           pull(httpResponseIn)
           // after the initial pull here we only ever pull after having emitted in `onPush` of `httpResponseIn`
-          setHandler(responseCtxOut, new ResponseCtxOutHandler)
+          setHandler(responseCtxOut, GraphStageLogic.EagerTerminateOutput)
         }
       })
 
@@ -465,6 +462,12 @@ private[http] object HttpServerBluePrint {
 
       def emitErrorResponse(response: HttpResponse): Unit =
         emit(responseCtxOut, ResponseRenderingContext(response, closeRequested = true), () ⇒ completeStage())
+
+      def maybePullRequestParsingIn(): Unit =
+        if (pullSuppressed) {
+          pullSuppressed = false
+          pull(requestParsingIn)
+        }
 
       /**
        * The `Expect: 100-continue` header has a special status in HTTP.
@@ -503,10 +506,7 @@ private[http] object HttpServerBluePrint {
         getAsyncCallback[Unit] { _ ⇒
           oneHundredContinueResponsePending = false
           emit(responseCtxOut, ResponseRenderingContext(HttpResponse(StatusCodes.Continue)))
-          if (pullSuppressed) {
-            pullSuppressed = false
-            pull(requestParsingIn)
-          }
+          maybePullRequestParsingIn()
         }
 
       case object OneHundredContinueStage extends GraphStage[FlowShape[ParserOutput, ParserOutput]] {

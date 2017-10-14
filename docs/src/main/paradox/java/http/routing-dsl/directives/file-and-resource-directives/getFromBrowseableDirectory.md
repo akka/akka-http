@@ -1,4 +1,3 @@
-<a id="getfrombrowseabledirectory-java"></a>
 # getFromBrowseableDirectory
 
 ## Description
@@ -12,11 +11,11 @@ Use `getFromBrowseableDirectory` to serve only one directory.
 
 Use `getFromDirectory` if directory browsing isn't required.
 
-For more details refer to [getFromBrowseableDirectory-java](#getfrombrowseabledirectory-java).
+For more details refer to [getFromBrowseableDirectory-java]().
 
 ## Example
 
-@@snip [FileAndResourceDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/FileAndResourceDirectivesExamplesTest.java) { #getFromBrowseableDirectory }
+@@snip [FileAndResourceDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FileAndResourceDirectivesExamplesTest.java) { #getFromBrowseableDirectory }
 
 ### Default file listing page example
 

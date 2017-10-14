@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model.headers
@@ -14,8 +14,14 @@ final case class HttpChallenge(scheme: String, realm: String,
 
   def render[R <: Rendering](r: R): r.type = {
     r ~~ scheme
+
     if (realm != null) r ~~ " realm=" ~~#! realm
-    if (params.nonEmpty) params.foreach { case (k, v) ⇒ r ~~ ',' ~~ k ~~ '=' ~~# v }
+    if (params.nonEmpty) {
+      if (realm == null) r ~~ ' ' else r ~~ ','
+      r ~~ params.head._1 ~~ '=' ~~# params.head._2
+      params.tail.foreach { case (k, v) ⇒ r ~~ ',' ~~ k ~~ '=' ~~# v }
+    }
+
     r
   }
 
@@ -35,7 +41,7 @@ object HttpChallenge extends scala.runtime.AbstractFunction3[String, String, Map
 
 object HttpChallenges {
 
-  def basic(realm: String): HttpChallenge = HttpChallenge("Basic", realm)
+  def basic(realm: String): HttpChallenge = HttpChallenge("Basic", realm, Map("charset" → "UTF-8"))
 
   def oAuth2(realm: String): HttpChallenge = HttpChallenge("Bearer", realm)
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -13,7 +13,7 @@ import org.scalatest.{ Matchers, WordSpec }
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import org.scalatest.BeforeAndAfterAll
-import akka.testkit.TestKit
+import akka.testkit._
 
 class ClientSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
@@ -31,23 +31,23 @@ class ClientSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   "HTTP Client" should {
 
     "reuse connection pool" in {
-      val (_, hostname, port) = TestUtils.temporaryServerHostnameAndPort()
+      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
       val bindingFuture = Http().bindAndHandleSync(_ ⇒ HttpResponse(), hostname, port)
-      val binding = Await.result(bindingFuture, 3.seconds)
+      val binding = Await.result(bindingFuture, 3.seconds.dilated)
 
       val respFuture = Http().singleRequest(HttpRequest(POST, s"http://$hostname:$port/"))
-      val resp = Await.result(respFuture, 3.seconds)
+      val resp = Await.result(respFuture, 3.seconds.dilated)
       resp.status shouldBe StatusCodes.OK
 
-      Await.result(Http().poolSize, 1.second) shouldEqual 1
+      Await.result(Http().poolSize, 1.second.dilated) shouldEqual 1
 
       val respFuture2 = Http().singleRequest(HttpRequest(POST, s"http://$hostname:$port/"))
-      val resp2 = Await.result(respFuture, 3.seconds)
+      val resp2 = Await.result(respFuture, 3.seconds.dilated)
       resp2.status shouldBe StatusCodes.OK
 
-      Await.result(Http().poolSize, 1.second) shouldEqual 1
+      Await.result(Http().poolSize, 1.second.dilated) shouldEqual 1
 
-      Await.ready(binding.unbind(), 1.second)
+      Await.ready(binding.unbind(), 1.second.dilated)
     }
   }
 }

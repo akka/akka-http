@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package docs.http.javadsl.server.directives;
@@ -7,6 +7,7 @@ package docs.http.javadsl.server.directives;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
+import akka.http.javadsl.server.PathMatchers;
 import org.junit.Test;
 
 import akka.http.javadsl.model.HttpRequest;
@@ -258,14 +259,14 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
                 path(segment("foo").slash(), () -> complete("OK")),
                 path(segment("bad-1"), () -> 
                     // MISTAKE!
-                    // Missing `/` in path, causes this path to never match,
+                    // Missing .slash() in path, causes this path to never match,
                     // because it is inside a `redirectToTrailingSlashIfMissing`
                     complete(StatusCodes.NOT_IMPLEMENTED)
                 ),
-                path(segment("bad-2").slash(), () -> 
+                path(segment("bad-2/"), () ->
                     // MISTAKE!
-                    // / should be explicit as path element separator and not *in* the path element
-                    // So it should be: "bad-1" /
+                    // / should be explicit with `.slash()` and not *in* the path element
+                    // So it should be: segment("bad-2").slash()
                     complete(StatusCodes.NOT_IMPLEMENTED)
                 )
             )
@@ -319,4 +320,34 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
     //#redirect-notrailing-slash-present
   }
 
+  @Test
+  public void testIgnoreTrailingSlash() {
+    //#ignoreTrailingSlash
+    final Route route = ignoreTrailingSlash(() ->
+      route(
+        path("foo", () ->
+          // Thanks to `ignoreTrailingSlash` it will serve both `/foo` and `/foo/`.
+          complete("OK")),
+        path(PathMatchers.segment("bar").slash(), () ->
+          // Thanks to `ignoreTrailingSlash` it will serve both `/bar` and `/bar/`.
+          complete("OK"))
+      )
+    );
+
+    // tests:
+    testRoute(route).run(HttpRequest.GET("/foo"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("OK");
+    testRoute(route).run(HttpRequest.GET("/foo/"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("OK");
+
+    testRoute(route).run(HttpRequest.GET("/bar"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("OK");
+    testRoute(route).run(HttpRequest.GET("/bar/"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("OK");
+    //#ignoreTrailingSlash
+  }
 }

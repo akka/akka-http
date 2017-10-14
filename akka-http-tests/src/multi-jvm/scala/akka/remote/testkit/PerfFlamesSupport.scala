@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.remote.testkit
@@ -12,7 +12,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 /**
- * INTERNAL API: Support trait allowing trivially recording perf metrics from [[MultiNodeSpec]]s
+ * Support trait allowing trivially recording perf metrics from [[MultiNodeSpec]]s
  */
 private[akka] trait PerfFlamesSupport { _: MultiNodeSpec ⇒
 

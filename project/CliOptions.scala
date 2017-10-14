@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package akka
 
@@ -21,7 +21,7 @@ object CliOption {
   object CliOptionParser {
     implicit object BooleanCliOptionParser extends CliOptionParser[Boolean] {
       def parse(path: String, default: Boolean) =
-        CliOption(sys.props.getOrElse(path, default.toString).toBoolean)
+        CliOption(System.getProperty(path, default.toString).toBoolean)
     }
   }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -12,9 +12,10 @@ import akka.http.impl.util.JavaMapping.Implicits._
 
 final case class ContentTypeRange(mediaRange: MediaRange, charsetRange: HttpCharsetRange) extends jm.ContentTypeRange with ValueRenderable {
   def matches(contentType: jm.ContentType) =
-    contentType match {
-      case ContentType.Binary(mt)   ⇒ mediaRange.matches(mt)
-      case x: ContentType.NonBinary ⇒ mediaRange.matches(x.mediaType) && charsetRange.matches(x.charset)
+    convertToScala(contentType) match {
+      case ContentType.Binary(mt)             ⇒ mediaRange.matches(mt)
+      case ContentType.WithMissingCharset(mt) ⇒ mediaRange.matches(mt)
+      case x: ContentType.NonBinary           ⇒ mediaRange.matches(x.mediaType) && charsetRange.matches(x.charset)
     }
 
   def render[R <: Rendering](r: R): r.type = charsetRange match {
@@ -30,9 +31,10 @@ object ContentTypeRange {
   implicit def apply(mediaRange: MediaRange): ContentTypeRange = apply(mediaRange, HttpCharsetRange.`*`)
   implicit def apply(contentType: ContentType): ContentTypeRange =
     contentType match {
-      case ContentType.Binary(mt)           ⇒ ContentTypeRange(mt)
-      case ContentType.WithFixedCharset(mt) ⇒ ContentTypeRange(mt)
-      case ContentType.WithCharset(mt, cs)  ⇒ ContentTypeRange(mt, cs)
+      case ContentType.Binary(mt)             ⇒ ContentTypeRange(mt)
+      case ContentType.WithFixedCharset(mt)   ⇒ ContentTypeRange(mt)
+      case ContentType.WithCharset(mt, cs)    ⇒ ContentTypeRange(mt, cs)
+      case ContentType.WithMissingCharset(mt) ⇒ ContentTypeRange(mt)
     }
 }
 
@@ -53,27 +55,41 @@ sealed trait ContentType extends jm.ContentType with ValueRenderable {
 }
 
 object ContentType {
+  /** Represents a content-type which we know not to contain text (will never have have a charset) */
   final case class Binary(mediaType: MediaType.Binary) extends jm.ContentType.Binary with ContentType {
     def binary = true
     def charsetOption = None
   }
 
+  /** Represents a content-type which we know to contain text, and has a specified charset. */
   sealed trait NonBinary extends jm.ContentType.NonBinary with ContentType {
     def binary = false
     def charset: HttpCharset
     def charsetOption = Some(charset)
   }
 
-  final case class WithFixedCharset(val mediaType: MediaType.WithFixedCharset)
+  /** Represents a content-type which we know to contain text, where the charset always has the same predefined value. */
+  final case class WithFixedCharset(mediaType: MediaType.WithFixedCharset)
     extends jm.ContentType.WithFixedCharset with NonBinary {
     def charset = mediaType.charset
   }
 
-  final case class WithCharset(val mediaType: MediaType.WithOpenCharset, val charset: HttpCharset)
+  /** Represents a content-type which we know to contain text, and the charset is known at runtime. */
+  final case class WithCharset(mediaType: MediaType.WithOpenCharset, charset: HttpCharset)
     extends jm.ContentType.WithCharset with NonBinary {
 
     private[http] override def render[R <: Rendering](r: R): r.type =
       super.render(r) ~~ ContentType.`; charset=` ~~ charset
+  }
+
+  /**
+   * Represents a content-type which we know to contain text, and would be better off having a charset,
+   * but the client or server hasn't provided that. For example, "text/xml" without a charset parameter.
+   */
+  final case class WithMissingCharset(mediaType: MediaType.WithOpenCharset)
+    extends jm.ContentType.WithMissingCharset with ContentType {
+    def binary = false
+    def charsetOption = None
   }
 
   implicit def apply(mediaType: MediaType.Binary): Binary = Binary(mediaType)

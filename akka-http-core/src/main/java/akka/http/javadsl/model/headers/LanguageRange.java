@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.javadsl.model.headers;
@@ -14,9 +14,8 @@ public interface LanguageRange {
     /**
      * @deprecated because of troublesome initialisation order (with regards to scaladsl class implementing this class).
      *             In some edge cases this field could end up containing a null value.
-     *             Will be removed in Akka 3.x, use {@link LanguageRanges#ALL} instead.
+     *             Will be removed in Akka HTTP 11.x, use {@link LanguageRanges#ALL} instead.
      */
     @Deprecated
-    // FIXME: Remove in Akka 10.0
     public static final LanguageRange ALL = LanguageRanges.ALL;
 }

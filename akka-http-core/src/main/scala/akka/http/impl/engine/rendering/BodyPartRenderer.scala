@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.rendering
@@ -17,12 +17,14 @@ import akka.stream.stage._
 import akka.util.ByteString
 import HttpEntity._
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
-
 import java.util.concurrent.ThreadLocalRandom
+
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] object BodyPartRenderer {
 
   def streamed(
@@ -100,8 +102,8 @@ private[http] object BodyPartRenderer {
         renderHeaders(r, part.headers, log)
         r ~~ part.entity.data
       }
-      renderFinalBoundary(r, boundary)
     }
+    renderFinalBoundary(r, boundary)
     r.get
   }
 

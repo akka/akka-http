@@ -1,20 +1,24 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.util
 
-import java.net.{ InetSocketAddress, InetAddress }
-import com.typesafe.config.{ ConfigFactory, Config }
+import java.net.{ InetAddress, InetSocketAddress }
+
+import com.typesafe.config.{ Config, ConfigFactory }
 import com.typesafe.config.ConfigFactory._
+
 import scala.util.control.NonFatal
 import scala.collection.immutable.ListMap
 import scala.collection.JavaConverters._
 import akka.actor.{ ActorRefFactory, ActorSystem }
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] abstract class SettingsCompanion[T](protected val prefix: String) {
   private final val MaxCached = 8
   private[this] var cache = ListMap.empty[ActorSystem, T]

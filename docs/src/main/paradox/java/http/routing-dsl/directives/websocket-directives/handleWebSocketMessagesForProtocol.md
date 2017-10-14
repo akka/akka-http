@@ -1,4 +1,3 @@
-<a id="handlewebsocketmessagesforprotocol-java"></a>
 # handleWebSocketMessagesForProtocol
 
 ## Description
@@ -14,8 +13,8 @@ either rejected with an `ExpectedWebSocketRequestRejection` or an `UnsupportedWe
 To support several subprotocols, for example at the same path, several instances of `handleWebSocketMessagesForProtocol` can
 be chained using `~` as you can see in the below example.
 
-For more information about the WebSocket support, see @ref[Server-Side WebSocket Support](../../../server-side/websocket-support.md#server-side-websocket-support-java).
+For more information about the WebSocket support, see @ref[Server-Side WebSocket Support](../../../server-side/websocket-support.md).
 
 ## Example
 
-@@snip [WebSocketDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/WebSocketDirectivesExamplesTest.java) { #handleWebSocketMessagesForProtocol }
+@@snip [WebSocketDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/WebSocketDirectivesExamplesTest.java) { #handleWebSocketMessagesForProtocol }

@@ -1,15 +1,14 @@
-<a id="withrequesttimeoutresponse"></a>
 # withRequestTimeoutResponse
 
 ## Signature
 
-@@signature [TimeoutDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/TimeoutDirectives.scala) { #withRequestTimeoutResponse }
+@@signature [TimeoutDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/TimeoutDirectives.scala) { #withRequestTimeoutResponse }
 
 ## Description
 
-Allows customising the `HttpResponse` that will be sent to clients in case of a @ref[Request timeout](../../../common/timeouts.md#request-timeout-scala).
+Allows customising the `HttpResponse` that will be sent to clients in case of a @ref[Request timeout](../../../common/timeouts.md#request-timeout).
 
-See also @ref[withRequestTimeout](withRequestTimeout.md#withrequesttimeout) or @ref[withoutRequestTimeout](withoutRequestTimeout.md#withoutrequesttimeout) if interested in dynamically changing the timeout
+See also @ref[withRequestTimeout](withRequestTimeout.md) or @ref[withoutRequestTimeout](withoutRequestTimeout.md) if interested in dynamically changing the timeout
 for a given route instead.
 
 @@@ warning
@@ -23,8 +22,8 @@ of request timeouts being measured in seconds it shouldn't be a problem in reali
 
 @@@
 
-To learn more about various timeouts in Akka HTTP and how to configure them see @ref[Akka HTTP Timeouts](../../../common/timeouts.md#http-timeouts-scala).
+To learn more about various timeouts in Akka HTTP and how to configure them see @ref[Akka HTTP Timeouts](../../../common/timeouts.md).
 
 ## Example
 
-@@snip [TimeoutDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/TimeoutDirectivesExamplesSpec.scala) { #withRequestTimeoutResponse }
+@@snip [TimeoutDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/TimeoutDirectivesExamplesSpec.scala) { #withRequestTimeoutResponse }

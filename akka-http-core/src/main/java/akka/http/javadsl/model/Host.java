@@ -1,11 +1,11 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.javadsl.model;
 
 import akka.http.scaladsl.model.Uri;
-import akka.http.scaladsl.model.UriJavaAccessor;
+import akka.http.impl.model.UriJavaAccessor;
 
 import java.net.InetAddress;
 import java.nio.charset.Charset;

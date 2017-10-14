@@ -1,4 +1,3 @@
-<a id="pathendorsingleslash-java"></a>
 # pathEndOrSingleSlash
 
 ## Description
@@ -13,4 +12,4 @@ It is equivalent to `pathEnd | pathSingleSlash` but slightly more efficient.
 
 ## Example
 
-@@snip [PathDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java) { #path-end-or-single-slash }
+@@snip [PathDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java) { #path-end-or-single-slash }

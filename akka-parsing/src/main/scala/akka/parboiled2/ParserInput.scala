@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Mathias Doenitz, Alexander Myltsev
+ * Copyright (C) 2009-2017 Mathias Doenitz, Alexander Myltsev
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,6 @@ package akka.parboiled2
 
 import scala.annotation.tailrec
 import java.nio.ByteBuffer
-import java.nio.charset.StandardCharsets
-
-import akka.parboiled2.ParserInput.DefaultParserInput
 
 trait ParserInput {
   /**

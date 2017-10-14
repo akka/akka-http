@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.javadsl.server
 
 import java.util.concurrent.CompletionStage
 
+import akka.annotation.InternalApi
 import akka.http.impl.util.JavaMapping._
 import akka.http.impl.util._
 import akka.http.javadsl.common.EntityStreamingSupport
@@ -20,6 +21,7 @@ import scala.collection.immutable
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] object RoutingJavaMapping {
 
   object Implicits {
@@ -40,7 +42,7 @@ private[http] object RoutingJavaMapping {
   implicit object Rejection extends Inherited[javadsl.server.Rejection, scaladsl.server.Rejection]
 
   implicit object RequestContext extends JavaMapping[javadsl.server.RequestContext, scaladsl.server.RequestContext] {
-    // TODO make it inhierit
+    // TODO make it inherit
     //    extends Inherited[javadsl.server.RequestContext, scaladsl.server.RequestContext]
     override def toScala(javaObject: javadsl.server.RequestContext): scaladsl.server.RequestContext = javaObject.delegate
     override def toJava(scalaObject: scaladsl.server.RequestContext): javadsl.server.RequestContext = javadsl.server.RequestContext.wrap(scalaObject)
@@ -50,7 +52,6 @@ private[http] object RoutingJavaMapping {
   implicit object convertEntityStreamingSupport extends Inherited[EntityStreamingSupport, scommon.EntityStreamingSupport]
 
   implicit object convertDirectoryRenderer extends Inherited[jdirectives.DirectoryRenderer, sdirectives.FileAndResourceDirectives.DirectoryRenderer]
-  implicit object convertContentTypeResolver extends Inherited[jdirectives.ContentTypeResolver, sdirectives.ContentTypeResolver]
   implicit object convertDirectoryListing extends Inherited[jdirectives.DirectoryListing, sdirectives.DirectoryListing]
 
   //  implicit object javaToScalaMediaType extends Inherited[javadsl.model.MediaType, scaladsl.model.MediaType]

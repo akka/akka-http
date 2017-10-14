@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -382,16 +382,10 @@ class UriSpec extends WordSpec with Matchers {
       //#query-relaxed-mode-success
       relaxed("a^=b") shouldEqual ("a^", "b") +: Query.Empty
       relaxed("a;=b") shouldEqual ("a;", "b") +: Query.Empty
+      relaxed("a=b=c") shouldEqual ("a", "b=c") +: Query.Empty
       //#query-relaxed-mode-success
 
       //#query-relaxed-mode-exception
-      //double '=' in query string is invalid, even in relaxed mode
-      the[IllegalUriException] thrownBy relaxed("a=b=c") shouldBe {
-        IllegalUriException(
-          "Illegal query: Invalid input '=', expected '+', query-char, 'EOI', '&' or pct-encoded (line 1, column 4)",
-          "a=b=c\n" +
-            "   ^")
-      }
       //following '%', it should be percent encoding (HEXDIG), but "%b=" is not a valid percent encoding
       //still invalid even in relaxed mode
       the[IllegalUriException] thrownBy relaxed("a%b=c") shouldBe {
@@ -411,9 +405,13 @@ class UriSpec extends WordSpec with Matchers {
       query.getAll("b") shouldEqual List("", "4", "2")
       query.getAll("d") shouldEqual Nil
       query.toMap shouldEqual Map("a" → "1", "b" → "", "c" → "3")
-      query.toMultiMap shouldEqual Map("a" → List("1"), "b" → List("", "4", "2"), "c" → List("3"))
+      query.toMultiMap shouldEqual Map("a" → List("1"), "b" → List("2", "4", ""), "c" → List("3"))
       query.toList shouldEqual List("a" → "1", "b" → "2", "c" → "3", "b" → "4", "b" → "")
       query.toSeq shouldEqual Seq("a" → "1", "b" → "2", "c" → "3", "b" → "4", "b" → "")
+    }
+    "preserve the order of repeated parameters when retrieving as a multimap" in {
+      val query = Query("a=1&b=1&b=2&b=3&b=4&c=1")
+      query.toMultiMap shouldEqual Map("a" → List("1"), "b" → List("1", "2", "3", "4"), "c" → List("1"))
     }
     "support conversion from list of name/value pairs" in {
       import Query._
@@ -615,14 +613,6 @@ class UriSpec extends WordSpec with Matchers {
             "            ^")
       }
       //#illegal-cases-immediate-exception
-
-      // illegal query
-      the[IllegalUriException] thrownBy Uri("?a=b=c").query() shouldBe {
-        IllegalUriException(
-          "Illegal query: Invalid input '=', expected '+', query-char, 'EOI', '&' or pct-encoded (line 1, column 4)",
-          "a=b=c\n" +
-            "   ^")
-      }
     }
 
     // http://tools.ietf.org/html/rfc3986#section-5.4
@@ -729,6 +719,13 @@ class UriSpec extends WordSpec with Matchers {
 
       Uri("https://host/").withPort(4450).effectivePort shouldEqual 4450
       Uri("https://host:3030/").withPort(4450).effectivePort shouldEqual 4450
+    }
+
+    "properly render authority" in {
+      Uri("http://localhost/test").authority.toString shouldEqual "localhost"
+      Uri("http://example.com:80/test").authority.toString shouldEqual "example.com:80"
+      Uri("ftp://host/").authority.toString shouldEqual "host"
+      Uri("http://user@host").authority.toString shouldEqual "user@host"
     }
 
     "keep the specified authority port" in {

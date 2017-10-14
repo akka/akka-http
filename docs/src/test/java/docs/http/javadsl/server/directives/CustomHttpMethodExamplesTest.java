@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 package docs.http.javadsl.server.directives;
 
@@ -22,14 +22,16 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-import static akka.http.javadsl.model.HttpProtocols.HTTP_1_0;
+import static akka.http.javadsl.model.HttpProtocols.HTTP_1_1;
 import static akka.http.javadsl.model.RequestEntityAcceptances.Expected;
 
 public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
 
   @Test
-  public void testComposition() throws InterruptedException, ExecutionException {
+  public void testComposition() throws InterruptedException, ExecutionException, TimeoutException {
     ActorSystem  system = system();
     Materializer materializer = materializer();
     LoggingAdapter loggingAdapter = NoLogging.getInstance();
@@ -38,8 +40,12 @@ public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
     String host = "127.0.0.1";
 
     //#customHttpMethod
+
+    // define custom method type:
     HttpMethod BOLT =
       HttpMethods.createCustom("BOLT", false, true, Expected);
+
+    // add custom method to parser settings:
     final ParserSettings parserSettings =
       ParserSettings.create(system).withCustomMethods(BOLT);
     final ServerSettings serverSettings =
@@ -63,12 +69,12 @@ public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
     HttpRequest request = HttpRequest.create()
       .withUri("http://" + host + ":" + Integer.toString(port))
       .withMethod(BOLT)
-      .withProtocol(HTTP_1_0);
+      .withProtocol(HTTP_1_1);
 
     CompletionStage<HttpResponse> response = http.singleRequest(request, materializer);
     //#customHttpMethod
 
-    assertEquals(StatusCodes.OK, response.toCompletableFuture().get().status());
+    assertEquals(StatusCodes.OK, response.toCompletableFuture().get(3, TimeUnit.SECONDS).status());
     assertEquals(
       "This is a BOLT request.",
       response.toCompletableFuture().get().entity().toStrict(3000, materializer).toCompletableFuture().get().getData().utf8String()

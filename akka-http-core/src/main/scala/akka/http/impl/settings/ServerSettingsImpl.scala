@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.settings
@@ -7,7 +7,7 @@ package akka.http.impl.settings
 import java.util.Random
 
 import akka.http.impl.engine.ws.Randoms
-import akka.http.scaladsl.settings.{ ParserSettings, ServerSettings }
+import akka.http.scaladsl.settings.{ Http2ServerSettings, ParserSettings, PreviewServerSettings, ServerSettings }
 import com.typesafe.config.Config
 
 import scala.language.implicitConversions
@@ -15,6 +15,7 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import akka.http.javadsl.{ settings ⇒ js }
 import akka.ConfigurationException
+import akka.annotation.InternalApi
 import akka.io.Inet.SocketOption
 import akka.http.impl.util._
 import akka.http.scaladsl.model.HttpHeader
@@ -22,8 +23,10 @@ import akka.http.scaladsl.model.headers.{ Host, Server }
 import akka.http.scaladsl.settings.ServerSettings.LogUnencryptedNetworkBytes
 
 /** INTERNAL API */
+@InternalApi
 private[akka] final case class ServerSettingsImpl(
   serverHeader:               Option[Server],
+  previewServerSettings:      PreviewServerSettings,
   timeouts:                   ServerSettings.Timeouts,
   maxConnections:             Int,
   pipeliningLimit:            Int,
@@ -37,7 +40,10 @@ private[akka] final case class ServerSettingsImpl(
   socketOptions:              immutable.Seq[SocketOption],
   defaultHostHeader:          Host,
   websocketRandomFactory:     () ⇒ Random,
-  parserSettings:             ParserSettings) extends ServerSettings {
+  parserSettings:             ParserSettings,
+  http2Settings:              Http2ServerSettings,
+  defaultHttpPort:            Int,
+  defaultHttpsPort:           Int) extends ServerSettings {
 
   require(0 < maxConnections, "max-connections must be > 0")
   require(0 < pipeliningLimit && pipeliningLimit <= 1024, "pipelining-limit must be > 0 and <= 1024")
@@ -47,25 +53,30 @@ private[akka] final case class ServerSettingsImpl(
   override def productPrefix = "ServerSettings"
 }
 
-object ServerSettingsImpl extends SettingsCompanion[ServerSettingsImpl]("akka.http.server") {
+/** INTERNAL API */
+@InternalApi
+private[http] object ServerSettingsImpl extends SettingsCompanion[ServerSettingsImpl]("akka.http.server") {
   implicit def timeoutsShortcut(s: js.ServerSettings): js.ServerSettings.Timeouts = s.getTimeouts
 
-  /** INTERNAL API */
   final case class Timeouts(
     idleTimeout:    Duration,
     requestTimeout: Duration,
-    bindTimeout:    FiniteDuration) extends ServerSettings.Timeouts {
+    bindTimeout:    FiniteDuration,
+    lingerTimeout:  Duration) extends ServerSettings.Timeouts {
     require(idleTimeout > Duration.Zero, "idleTimeout must be infinite or > 0")
     require(requestTimeout > Duration.Zero, "requestTimeout must be infinite or > 0")
     require(bindTimeout > Duration.Zero, "bindTimeout must be > 0")
+    require(lingerTimeout > Duration.Zero, "lingerTimeout must be infinite or > 0")
   }
 
   def fromSubConfig(root: Config, c: Config) = new ServerSettingsImpl(
     c.getString("server-header").toOption.map(Server(_)),
+    PreviewServerSettingsImpl.fromSubConfig(root, c.getConfig("preview")),
     Timeouts(
       c getPotentiallyInfiniteDuration "idle-timeout",
       c getPotentiallyInfiniteDuration "request-timeout",
-      c getFiniteDuration "bind-timeout"),
+      c getFiniteDuration "bind-timeout",
+      c getPotentiallyInfiniteDuration "linger-timeout"),
     c getInt "max-connections",
     c getInt "pipelining-limit",
     c getBoolean "remote-address-header",
@@ -84,9 +95,8 @@ object ServerSettingsImpl extends SettingsCompanion[ServerSettingsImpl]("akka.ht
           throw new ConfigurationException(info.formatPretty)
       },
     Randoms.SecureRandomInstances, // can currently only be overridden from code
-    ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")))
-
-  //  def apply(optionalSettings: Option[ServerSettings])(implicit actorRefFactory: ActorRefFactory): ServerSettings =
-  //    optionalSettings getOrElse apply(actorSystem)
-
+    ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")),
+    Http2ServerSettings.Http2ServerSettingsImpl.fromSubConfig(root, c.getConfig("http2")),
+    c getInt "default-http-port",
+    c getInt "default-https-port")
 }

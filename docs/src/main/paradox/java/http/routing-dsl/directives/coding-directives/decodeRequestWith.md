@@ -1,4 +1,3 @@
-<a id="decoderequestwith-java"></a>
 # decodeRequestWith
 
 ## Description
@@ -7,4 +6,4 @@ Decodes the incoming request if it is encoded with one of the given encoders. If
 
 ## Example
 
-@@snip [CodingDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/CodingDirectivesExamplesTest.java) { #decodeRequestWith }
+@@snip [CodingDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/CodingDirectivesExamplesTest.java) { #decodeRequestWith }

@@ -1,26 +1,27 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.util
 
-import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
 import akka.NotUsed
+import akka.actor.Cancellable
+import akka.annotation.InternalApi
+import akka.event.Logging
 import akka.stream._
+import akka.stream.impl.fusing.GraphInterpreter
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.impl.{ PublisherSink, SinkModule, SourceModule }
 import akka.stream.scaladsl._
 import akka.stream.stage._
-import akka.util.ByteString
-import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
+import akka.util.{ ByteString, OptionVal }
 
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 
 /**
  * INTERNAL API
  */
 private[http] object StreamUtils {
-  import Attributes.none
 
   /**
    * Creates a transformer that will call `f` for each incoming ByteString and output its result. After the complete
@@ -46,9 +47,6 @@ private[http] object StreamUtils {
       setHandlers(in, out, this)
     }
   }
-
-  def failedPublisher[T](ex: Throwable): Publisher[T] =
-    impl.ErrorPublisher(ex, "failed").asInstanceOf[Publisher[T]]
 
   def captureTermination[T, Mat](source: Source[T, Mat]): (Source[T, Mat], Future[Unit]) = {
     val promise = Promise[Unit]()
@@ -145,79 +143,6 @@ private[http] object StreamUtils {
     }
 
   /**
-   * Returns a source that can only be used once for testing purposes.
-   */
-  def oneTimeSource[T, Mat](other: Source[T, Mat], errorMsg: String = "One time source can only be instantiated once"): Source[T, Mat] = {
-    val onlyOnceFlag = new AtomicBoolean(false)
-    other.mapMaterializedValue { elem ⇒
-      if (onlyOnceFlag.get() || !onlyOnceFlag.compareAndSet(false, true))
-        throw new IllegalStateException(errorMsg)
-      elem
-    }
-  }
-
-  def oneTimePublisherSink[In](cell: OneTimeWriteCell[Publisher[In]], name: String): Sink[In, Publisher[In]] =
-    new Sink[In, Publisher[In]](new OneTimePublisherSink(none, SinkShape(Inlet(name)), cell))
-  def oneTimeSubscriberSource[Out](cell: OneTimeWriteCell[Subscriber[Out]], name: String): Source[Out, Subscriber[Out]] =
-    new Source[Out, Subscriber[Out]](new OneTimeSubscriberSource(none, SourceShape(Outlet(name)), cell))
-
-  /** A copy of PublisherSink that allows access to the publisher through the cell but can only materialized once */
-  private class OneTimePublisherSink[In](attributes: Attributes, shape: SinkShape[In], cell: OneTimeWriteCell[Publisher[In]])
-    extends PublisherSink[In](attributes, shape) {
-    override def create(context: MaterializationContext): (AnyRef, Publisher[In]) = {
-      val results = super.create(context)
-      cell.set(results._2)
-      results
-    }
-    override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] =
-      new OneTimePublisherSink[In](attributes, shape, cell)
-
-    override def withAttributes(attr: Attributes): OneTimePublisherSink[In] =
-      new OneTimePublisherSink[In](attr, amendShape(attr), cell)
-  }
-  /** A copy of SubscriberSource that allows access to the subscriber through the cell but can only materialized once */
-  private class OneTimeSubscriberSource[Out](val attributes: Attributes, shape: SourceShape[Out], cell: OneTimeWriteCell[Subscriber[Out]])
-    extends SourceModule[Out, Subscriber[Out]](shape) {
-
-    override def create(context: MaterializationContext): (Publisher[Out], Subscriber[Out]) = {
-      val processor = new Processor[Out, Out] {
-        @volatile private var subscriber: Subscriber[_ >: Out] = null
-
-        override def subscribe(s: Subscriber[_ >: Out]): Unit = subscriber = s
-
-        override def onError(t: Throwable): Unit = subscriber.onError(t)
-        override def onSubscribe(s: Subscription): Unit = subscriber.onSubscribe(s)
-        override def onComplete(): Unit = subscriber.onComplete()
-        override def onNext(t: Out): Unit = subscriber.onNext(t)
-      }
-      cell.setValue(processor)
-
-      (processor, processor)
-    }
-
-    override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Subscriber[Out]] =
-      new OneTimeSubscriberSource[Out](attributes, shape, cell)
-    override def withAttributes(attr: Attributes): OneTimeSubscriberSource[Out] =
-      new OneTimeSubscriberSource[Out](attr, amendShape(attr), cell)
-  }
-
-  trait ReadableCell[+T] {
-    def value: T
-  }
-  /** A one time settable cell */
-  class OneTimeWriteCell[T <: AnyRef] extends AtomicReference[T] with ReadableCell[T] {
-    def value: T = {
-      val value = get()
-      require(value != null, "Value wasn't set yet")
-      value
-    }
-
-    def setValue(value: T): Unit =
-      if (!compareAndSet(null.asInstanceOf[T], value))
-        throw new IllegalStateException("Value can be only set once.")
-  }
-
-  /**
    * Similar to Source.maybe but doesn't rely on materialization. Can only be used once.
    */
   trait OneTimeValve {
@@ -233,6 +158,128 @@ private[http] object StreamUtils {
       def open(): Unit = promise.success(())
     }
   }
+
+  /**
+   * INTERNAL API
+   *
+   * Returns a flow that is almost identity but delays propagation of cancellation from downstream to upstream.
+   */
+  def delayCancellation[T](cancelAfter: Duration): Flow[T, T, NotUsed] = Flow.fromGraph(new DelayCancellationStage(cancelAfter))
+  final class DelayCancellationStage[T](cancelAfter: Duration) extends SimpleLinearGraphStage[T] {
+    def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with ScheduleSupport with InHandler with OutHandler with StageLogging {
+      setHandlers(in, out, this)
+
+      def onPush(): Unit = push(out, grab(in)) // using `passAlong` was considered but it seems to need some boilerplate to make it work
+      def onPull(): Unit = pull(in)
+
+      var timeout: OptionVal[Cancellable] = OptionVal.None
+
+      override def onDownstreamFinish(): Unit = {
+        cancelAfter match {
+          case finite: FiniteDuration ⇒
+            timeout = OptionVal.Some {
+              scheduleOnce(finite) {
+                log.debug(s"Stage was canceled after delay of $cancelAfter")
+                completeStage()
+              }
+            }
+          case _ ⇒ // do nothing
+        }
+
+        // don't pass cancellation to upstream but keep pulling until we get completion or failure
+        setHandler(
+          in,
+          new InHandler {
+            if (!hasBeenPulled(in)) pull(in)
+
+            def onPush(): Unit = {
+              grab(in) // ignore further elements
+              pull(in)
+            }
+          }
+        )
+      }
+
+      override def postStop(): Unit = timeout match {
+        case OptionVal.Some(x) ⇒ x.cancel()
+        case OptionVal.None    ⇒ // do nothing
+      }
+    }
+  }
+
+  /**
+   * Similar idea than [[FlowOps.statefulMapConcat]] but for a simple map.
+   */
+  def statefulMap[T, U](functionConstructor: () ⇒ T ⇒ U): Flow[T, U, NotUsed] =
+    Flow[T].statefulMapConcat { () ⇒
+      val f = functionConstructor()
+      i ⇒ f(i) :: Nil
+    }
+
+  /**
+   * Lifts the streams attributes into an element and passes them to the function for each passed through element.
+   * Similar idea than [[FlowOps.statefulMapConcat]] but for a simple map.
+   *
+   * The result of `Attributes => (T => U)` is cached, and only the `T => U` function will be invoked afterwards for each element.
+   */
+  def statefulAttrsMap[T, U](functionConstructor: Attributes ⇒ T ⇒ U): Flow[T, U, NotUsed] =
+    Flow[T].via(ExposeAttributes[T, U](functionConstructor))
+
+  trait ScheduleSupport { self: GraphStageLogic ⇒
+    /**
+     * Schedule a block to be run once after the given duration in the context of this graph stage.
+     */
+    def scheduleOnce(delay: FiniteDuration)(block: ⇒ Unit): Cancellable =
+      materializer.scheduleOnce(delay, new Runnable { def run() = runInContext(block) })
+
+    def runInContext(block: ⇒ Unit): Unit = getAsyncCallback[AnyRef](_ ⇒ block).invoke(null)
+  }
+
+  private val EmptySource = Source.empty
+
+  /** Dummy name to signify that the caller asserts that cancelSource is only run from within a GraphInterpreter context */
+  val OnlyRunInGraphInterpreterContext: Materializer = null
+  /**
+   * Tries to guess whether a source needs to cancelled and how. In the best case no materialization should be needed.
+   */
+  def cancelSource(source: Source[_, _])(implicit materializer: Materializer): Unit = source match {
+    case EmptySource ⇒ // nothing to do with empty source
+    case x ⇒
+      val mat =
+        GraphInterpreter.currentInterpreterOrNull match {
+          case null if materializer ne null ⇒ materializer
+          case null                         ⇒ throw new IllegalStateException("Need to pass materializer to cancelSource if not run from GraphInterpreter context.")
+          case x                            ⇒ x.subFusingMaterializer // try to use fuse if already running in interpreter context
+        }
+      x.runWith(Sink.ignore)(mat)
+  }
+
+  private trait Fuser {
+    def aggressive[S <: Shape, M](g: Graph[S, M]): Graph[S, M]
+  }
+  private val fuser: Fuser =
+    try {
+      val cl = Class.forName("akka.stream.Fusing$")
+      val field = cl.getDeclaredField("MODULE$")
+      field.setAccessible(true)
+      type Fusing = { def aggressive[S <: Shape, M](g: Graph[S, M]): Graph[S, M] }
+      val instance = field.get(null).asInstanceOf[Fusing]
+
+      new Fuser {
+        def aggressive[S <: Shape, M](g: Graph[S, M]): Graph[S, M] = instance.aggressive(g)
+      }
+    } catch {
+      case ex: ClassNotFoundException ⇒
+        new Fuser {
+          def aggressive[S <: Shape, M](g: Graph[S, M]): Graph[S, M] = g // no fusing
+        }
+    }
+
+  /**
+   * Try to fuse flow using Fusing.aggressive reflectively on Akka 2.4 or do nothing on Akka >= 2.5 (where explicit
+   * fusing is neither supported nor necessary).
+   */
+  def fuseAggressive[S <: Shape, M](g: Graph[S, M]): Graph[S, M] = fuser.aggressive(g)
 }
 
 /**
@@ -243,4 +290,21 @@ private[http] class EnhancedByteStringSource[Mat](val byteStringStream: Source[B
     byteStringStream.runFold(ByteString.empty)(_ ++ _)
   def utf8String(implicit materializer: Materializer, ec: ExecutionContext): Future[String] =
     join.map(_.utf8String)
+}
+
+/** INTERNAL API */
+@InternalApi private[http] case class ExposeAttributes[T, U](functionConstructor: Attributes ⇒ T ⇒ U)
+  extends GraphStage[FlowShape[T, U]] {
+
+  val in = Inlet[T]("ExposeAttributes.in")
+  val out = Outlet[U]("ExposeAttributes.out")
+  override val shape = FlowShape(in, out)
+
+  override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
+    val f = functionConstructor(inheritedAttributes)
+    override def onPush(): Unit = push(out, f(grab(in)))
+    override def onPull(): Unit = pull(in)
+
+    setHandlers(in, out, this)
+  }
 }

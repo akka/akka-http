@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -12,7 +12,6 @@ import akka.http.scaladsl.server.directives.BasicDirectives
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
 
 trait RejectionHandler extends (immutable.Seq[Rejection] ⇒ Option[Route]) { self ⇒
@@ -95,7 +94,7 @@ object RejectionHandler {
     }
 
     /**
-     * Convenience method for handling rejections created by created by the onCompleteWithBreaker directive.
+     * Convenience method for handling rejections created by the onCompleteWithBreaker directive.
      * Signals that the request was rejected because the supplied circuit breaker is open and requests are failing fast.
      *
      * Use to customise the error response being written instead of the default [[ServiceUnavailable]] response.
@@ -152,7 +151,7 @@ object RejectionHandler {
    * Default [[RejectionHandler]] instance.
    */
   final val default =
-    newBuilder()
+    new Builder(isDefault = true)
       .handleAll[SchemeRejection] { rejections ⇒
         val schemes = rejections.map(_.supported).mkString(", ")
         complete((BadRequest, "Uri scheme not allowed, supported schemes: " + schemes))

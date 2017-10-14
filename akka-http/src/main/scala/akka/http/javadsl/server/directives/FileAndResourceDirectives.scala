@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives
@@ -14,13 +14,6 @@ import akka.http.javadsl.model.ContentType
 import akka.http.javadsl.model.RequestEntity
 import akka.http.javadsl.server.{ Route, RoutingJavaMapping }
 import akka.http.scaladsl.server.{ Directives ⇒ D }
-
-/**
- * Implement this interface to provide a custom mapping from a file name to a [[akka.http.javadsl.model.ContentType]].
- */
-trait ContentTypeResolver {
-  def resolve(fileName: String): ContentType
-}
 
 abstract class DirectoryListing {
   def getPath: String

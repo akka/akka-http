@@ -1,4 +1,3 @@
-<a id="path-directives-java"></a>
 # PathDirectives
 
 Path directives are the most basic building blocks for routing requests depending on the URI path.
@@ -88,4 +87,4 @@ potentially nested directives.
 
 Here's a collection of path matching examples:
 
-@@snip [PathDirectiveExampleTest.java](../../../../../../test/java/docs/http/javadsl/server/PathDirectiveExampleTest.java) { #path-examples }
+@@snip [PathDirectiveExampleTest.java]($test$/java/docs/http/javadsl/server/PathDirectiveExampleTest.java) { #path-examples }

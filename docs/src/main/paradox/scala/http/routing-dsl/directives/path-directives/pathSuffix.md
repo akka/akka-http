@@ -1,9 +1,8 @@
-<a id="pathsuffix"></a>
 # pathSuffix
 
 ## Signature
 
-@@signature [PathDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #pathSuffix }
+@@signature [PathDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #pathSuffix }
 
 ## Description
 
@@ -12,9 +11,9 @@ potentially extracts one or more values (depending on the type of the argument).
 
 This directive filters incoming requests based on the part of their URI that hasn't been matched yet by other
 potentially existing path matching directives on higher levels of the routing structure.
-Its one parameter is usually an expression evaluating to a `PathMatcher` instance (see also: @ref[The PathMatcher DSL](../../path-matchers.md#pathmatcher-dsl)).
+Its one parameter is usually an expression evaluating to a `PathMatcher` instance (see also: @ref[The PathMatcher DSL](../../path-matchers.md)).
 
-As opposed to @ref[pathPrefix](pathPrefix.md#pathprefix) this directive matches and consumes the unmatched path from the right, i.e. the end.
+As opposed to @ref[pathPrefix](pathPrefix.md) this directive matches and consumes the unmatched path from the right, i.e. the end.
 
 @@@ warning { title="Caution" }
 For efficiency reasons, the given `PathMatcher` must match the desired suffix in reversed-segment
@@ -27,4 +26,4 @@ the URI. If the match fails the request is rejected with an @ref[empty rejection
 
 ## Example
 
-@@snip [PathDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #completeWithUnmatchedPath #pathSuffix- }
+@@snip [PathDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/PathDirectivesExamplesSpec.scala) { #completeWithUnmatchedPath #pathSuffix- }

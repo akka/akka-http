@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.testkit
@@ -28,5 +28,15 @@ object TestFrameworkInterface {
       super.afterAll()
     }
   }
+}
 
+object Specs2FrameworkInterface {
+  import org.specs2.execute.{ Failure, FailureException }
+  import org.specs2.specification.AfterAll
+
+  trait Specs2 extends TestFrameworkInterface with AfterAll {
+    def failTest(msg: String): Nothing = throw new FailureException(Failure(msg))
+
+    override def afterAll(): Unit = cleanUp()
+  }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model.headers
@@ -9,6 +9,8 @@ import java.net.InetSocketAddress
 import java.security.MessageDigest
 import java.util
 import javax.net.ssl.SSLSession
+
+import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.stream.scaladsl.ScalaSessionAPI
 
 import scala.reflect.ClassTag
@@ -38,6 +40,7 @@ sealed abstract class ModeledCompanion[T: ClassTag] extends Renderable {
     }
 }
 /** INTERNAL API */
+@InternalApi
 private[akka] object ModeledCompanion {
   def nameFromClass[T](clazz: Class[T]): String = {
     val name = {
@@ -424,7 +427,7 @@ object `Content-Range` extends ModeledCompanion[`Content-Range`] {
   def apply(byteContentRange: ByteContentRange): `Content-Range` = apply(RangeUnits.Bytes, byteContentRange)
 }
 final case class `Content-Range`(rangeUnit: RangeUnit, contentRange: ContentRange) extends jm.headers.ContentRange
-  with ResponseHeader {
+  with RequestResponseHeader {
   def renderValue[R <: Rendering](r: R): r.type = r ~~ rangeUnit ~~ ' ' ~~ contentRange
   protected def companion = `Content-Range`
 }
@@ -468,10 +471,12 @@ final case class Date(date: DateTime) extends jm.headers.Date with RequestRespon
 /**
  * INTERNAL API
  */
+@InternalApi
 private[headers] object EmptyCompanion extends ModeledCompanion[EmptyHeader.type]
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] object EmptyHeader extends SyntheticHeader {
   def renderValue[R <: Rendering](r: R): r.type = r
   protected def companion: ModeledCompanion[EmptyHeader.type] = EmptyCompanion
@@ -568,6 +573,13 @@ object `If-Unmodified-Since` extends ModeledCompanion[`If-Unmodified-Since`]
 final case class `If-Unmodified-Since`(date: DateTime) extends jm.headers.IfUnmodifiedSince with RequestHeader {
   def renderValue[R <: Rendering](r: R): r.type = date.renderRfc1123DateTimeString(r)
   protected def companion = `If-Unmodified-Since`
+}
+
+// https://www.w3.org/TR/eventsource/#last-event-id
+object `Last-Event-ID` extends ModeledCompanion[`Last-Event-ID`]
+final case class `Last-Event-ID`(id: String) extends jm.headers.LastEventId with RequestHeader {
+  override protected[http] def renderValue[R <: Rendering](r: R): r.type = r ~~ id
+  override protected def companion = `Last-Event-ID`
 }
 
 // http://tools.ietf.org/html/rfc7232#section-2.2
@@ -695,6 +707,7 @@ final case class Referer(uri: Uri) extends jm.headers.Referer with RequestHeader
  * INTERNAL API
  */
 // http://tools.ietf.org/html/rfc6455#section-4.3
+@InternalApi
 private[http] object `Sec-WebSocket-Accept` extends ModeledCompanion[`Sec-WebSocket-Accept`] {
   // Defined at http://tools.ietf.org/html/rfc6455#section-4.2.2
   val MagicGuid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
@@ -711,6 +724,7 @@ private[http] object `Sec-WebSocket-Accept` extends ModeledCompanion[`Sec-WebSoc
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] final case class `Sec-WebSocket-Accept`(key: String) extends ResponseHeader {
   protected[http] def renderValue[R <: Rendering](r: R): r.type = r ~~ key
 
@@ -721,12 +735,14 @@ private[http] final case class `Sec-WebSocket-Accept`(key: String) extends Respo
  * INTERNAL API
  */
 // http://tools.ietf.org/html/rfc6455#section-4.3
+@InternalApi
 private[http] object `Sec-WebSocket-Extensions` extends ModeledCompanion[`Sec-WebSocket-Extensions`] {
   implicit val extensionsRenderer = Renderer.defaultSeqRenderer[WebSocketExtension]
 }
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] final case class `Sec-WebSocket-Extensions`(extensions: immutable.Seq[WebSocketExtension])
   extends ResponseHeader {
   require(extensions.nonEmpty, "Sec-WebSocket-Extensions.extensions must not be empty")
@@ -739,6 +755,7 @@ private[http] final case class `Sec-WebSocket-Extensions`(extensions: immutable.
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] object `Sec-WebSocket-Key` extends ModeledCompanion[`Sec-WebSocket-Key`] {
   def apply(keyBytes: Array[Byte]): `Sec-WebSocket-Key` = {
     require(keyBytes.length == 16, s"Sec-WebSocket-Key keyBytes must have length 16 but had ${keyBytes.length}")
@@ -748,6 +765,7 @@ private[http] object `Sec-WebSocket-Key` extends ModeledCompanion[`Sec-WebSocket
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] final case class `Sec-WebSocket-Key`(key: String) extends RequestHeader {
   protected[http] def renderValue[R <: Rendering](r: R): r.type = r ~~ key
 
@@ -764,12 +782,14 @@ private[http] final case class `Sec-WebSocket-Key`(key: String) extends RequestH
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] object `Sec-WebSocket-Protocol` extends ModeledCompanion[`Sec-WebSocket-Protocol`] {
   implicit val protocolsRenderer = Renderer.defaultSeqRenderer[String]
 }
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] final case class `Sec-WebSocket-Protocol`(protocols: immutable.Seq[String])
   extends jm.headers.SecWebSocketProtocol with RequestResponseHeader {
   require(protocols.nonEmpty, "Sec-WebSocket-Protocol.protocols must not be empty")
@@ -785,12 +805,14 @@ private[http] final case class `Sec-WebSocket-Protocol`(protocols: immutable.Seq
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] object `Sec-WebSocket-Version` extends ModeledCompanion[`Sec-WebSocket-Version`] {
   implicit val versionsRenderer = Renderer.defaultSeqRenderer[Int]
 }
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] final case class `Sec-WebSocket-Version`(versions: immutable.Seq[Int])
   extends RequestResponseHeader {
   require(versions.nonEmpty, "Sec-WebSocket-Version.versions must not be empty")
@@ -938,7 +960,10 @@ final case class `WWW-Authenticate`(challenges: immutable.Seq[HttpChallenge]) ex
 // http://en.wikipedia.org/wiki/X-Forwarded-For
 object `X-Forwarded-For` extends ModeledCompanion[`X-Forwarded-For`] {
   def apply(first: RemoteAddress, more: RemoteAddress*): `X-Forwarded-For` = apply(immutable.Seq(first +: more: _*))
-  implicit val addressesRenderer = Renderer.defaultSeqRenderer[RemoteAddress] // cache
+  implicit val addressesRenderer = {
+    implicit val singleAddressRenderer = RemoteAddress.renderWithoutPort
+    Renderer.defaultSeqRenderer[RemoteAddress] // cache
+  }
 }
 final case class `X-Forwarded-For`(addresses: immutable.Seq[RemoteAddress]) extends jm.headers.XForwardedFor
   with RequestHeader {
@@ -951,9 +976,46 @@ final case class `X-Forwarded-For`(addresses: immutable.Seq[RemoteAddress]) exte
   def getAddresses: Iterable[jm.RemoteAddress] = addresses.asJava
 }
 
-object `X-Real-Ip` extends ModeledCompanion[`X-Real-Ip`]
+object `X-Forwarded-Host` extends ModeledCompanion[`X-Forwarded-Host`] {
+  implicit val hostRenderer = UriRendering.HostRenderer // cache
+}
+
+/**
+ * De-facto standard as per https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-Host
+ */
+@ApiMayChange
+final case class `X-Forwarded-Host`(host: Uri.Host) extends jm.headers.XForwardedHost
+  with RequestHeader {
+  import `X-Forwarded-Host`.hostRenderer
+  def renderValue[R <: Rendering](r: R): r.type = r ~~ host
+  protected def companion = `X-Forwarded-Host`
+
+  /** Java API */
+  def getHost: jm.Host = host.asJava
+}
+
+object `X-Forwarded-Proto` extends ModeledCompanion[`X-Forwarded-Proto`]
+
+/**
+ * de-facto standard as per https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-Proto
+ */
+@ApiMayChange
+final case class `X-Forwarded-Proto`(protocol: String) extends jm.headers.XForwardedProto
+  with RequestHeader {
+  require(protocol.nonEmpty, "protocol must not be empty")
+  def renderValue[R <: Rendering](r: R): r.type = r ~~ protocol
+
+  protected def companion = `X-Forwarded-Proto`
+  /** Java API */
+  def getProtocol: String = protocol
+}
+
+object `X-Real-Ip` extends ModeledCompanion[`X-Real-Ip`] {
+  implicit val addressRenderer = RemoteAddress.renderWithoutPort // cache
+}
 final case class `X-Real-Ip`(address: RemoteAddress) extends jm.headers.XRealIp
   with RequestHeader {
+  import `X-Real-Ip`.addressRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ address
   protected def companion = `X-Real-Ip`
 }

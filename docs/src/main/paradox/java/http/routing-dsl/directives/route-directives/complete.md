@@ -1,4 +1,3 @@
-<a id="complete-java"></a>
 # complete
 
 ## Description
@@ -14,4 +13,4 @@ Please note that the `complete` directive has multiple variants, like
 
 ## Example
 
-@@snip [RouteDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/RouteDirectivesExamplesTest.java) { #complete }
+@@snip [RouteDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/RouteDirectivesExamplesTest.java) { #complete }

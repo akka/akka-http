@@ -1,4 +1,3 @@
-<a id="redirect-java"></a>
 # redirect
 
 ## Description
@@ -10,4 +9,4 @@ It is equivalent to this snippet relying on the `complete` directive:
 
 ## Example
 
-@@snip [RouteDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/RouteDirectivesExamplesTest.java) { #redirect }
+@@snip [RouteDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/RouteDirectivesExamplesTest.java) { #redirect }

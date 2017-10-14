@@ -1,16 +1,18 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.model.parser
 
 import java.nio.charset.Charset
+
 import akka.parboiled2._
 import akka.http.impl.util.enhanceString_
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers.HttpOrigin
 import Parser.DeliveryScheme.Either
 import Uri._
+import akka.annotation.InternalApi
 
 // format: OFF
 /**
@@ -18,6 +20,7 @@ import Uri._
  *
  * http://tools.ietf.org/html/rfc3986
  */
+@InternalApi
 private[http] final class UriParser(val input: ParserInput,
                               val uriParsingCharset: Charset,
                               val uriParsingMode: Uri.ParsingMode,
@@ -81,9 +84,13 @@ private[http] final class UriParser(val input: ParserInput,
     case Uri.ParsingMode.Strict ⇒ `pchar-base`
     case _                      ⇒ `relaxed-path-segment-char`
   }
-  private[this] val `query-char` = uriParsingMode match {
-    case Uri.ParsingMode.Strict              ⇒ `strict-query-char`
-    case Uri.ParsingMode.Relaxed             ⇒ `relaxed-query-char`
+  private[this] val `query-key-char` = uriParsingMode match {
+    case Uri.ParsingMode.Strict              ⇒ `strict-query-key-char`
+    case Uri.ParsingMode.Relaxed             ⇒ `relaxed-query-key-char`
+  }
+  private[this] val `query-value-char` = uriParsingMode match {
+    case Uri.ParsingMode.Strict              ⇒ `strict-query-value-char`
+    case Uri.ParsingMode.Relaxed             ⇒ `relaxed-query-value-char`
   }
   private[this] val `fragment-char` = uriParsingMode match {
     case Uri.ParsingMode.Strict ⇒ `query-fragment-char`
@@ -127,6 +134,8 @@ private[http] final class UriParser(val input: ParserInput,
   def scheme = rule(
     'h' ~ 't' ~ 't' ~ 'p' ~ (&(':') ~ run(_scheme = "http") | 's' ~ &(':') ~ run(_scheme = "https"))
     | clearSB() ~ ALPHA ~ appendLowered() ~ zeroOrMore(`scheme-char` ~ appendLowered()) ~ &(':') ~ run(_scheme = sb.toString))
+
+  def `scheme-pushed` = rule { oneOrMore(`scheme-char` ~ appendLowered()) ~ run(_scheme = sb.toString) ~ push(_scheme)}
 
   def authority = rule { optional(userinfo) ~ hostAndPort }
 
@@ -181,12 +190,13 @@ private[http] final class UriParser(val input: ParserInput,
 
   // http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1
   def query: Rule1[Query] = {
-    def part = rule(
-      clearSBForDecoding() ~ oneOrMore('+' ~ appendSB(' ') | `query-char` ~ appendSB() | `pct-encoded`) ~ push(getDecodedString())
+    def part(`query-char`: CharPredicate) =
+      rule(clearSBForDecoding() ~
+        oneOrMore('+' ~ appendSB(' ') | `query-char` ~ appendSB() | `pct-encoded`) ~ push(getDecodedString())
         | push(""))
 
     def keyValuePair: Rule2[String, String] = rule {
-      part ~ ('=' ~ part | push(Query.EmptyValue))
+      part(`query-key-char`) ~ ('=' ~ part(`query-value-char`) | push(Query.EmptyValue))
     }
 
     // has a max value-stack depth of 3
@@ -245,6 +255,32 @@ private[http] final class UriParser(val input: ParserInput,
         val path = if (_scheme.isEmpty) _path else collapseDotSegments(_path)
         create(_scheme, _userinfo, _host, _port, path, _rawQueryString, _fragment)
       case Left(error) => fail(error, "request-target")
+    }
+
+  /////////////////////////// ADDITIONAL HTTP/2-SPECIFIC RULES /////////////////////////
+
+  // https://tools.ietf.org/html/rfc7540#section-8.1.2.3
+  // https://tools.ietf.org/html/rfc3986#section-3.2 - without deprecated userinfo
+  def `http2-authority-pseudo-header` = hostAndPort
+
+  def parseHttp2AuthorityPseudoHeader(): Uri.Authority =
+    rule(`http2-authority-pseudo-header` ~ EOI).run() match {
+      case Right(_) => Authority(_host, _port)
+      case Left(error) => fail(error, "http2-authority-pseudo-header")
+    }
+
+  // https://tools.ietf.org/html/rfc7540#section-8.1.2.3
+  def `http2-path-pseudo-header` = rule(
+    `absolute-path` ~ optional('?' ~ rawQueryString) // origin-form
+        // TODO: asterisk-form
+  )
+
+  def parseHttp2PathPseudoHeader(): (Uri.Path, Option[String]) =
+    rule(`http2-path-pseudo-header` ~ EOI).run() match {
+      case Right(_) =>
+        val path = collapseDotSegments(_path)
+        (path, _rawQueryString)
+      case Left(error) => fail(error, "http2-path-pseudo-header")
     }
 
   ///////////// helpers /////////////

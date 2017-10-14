@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -11,6 +11,7 @@ import scala.concurrent.duration._
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import akka.http.impl.util._
+import akka.testkit._
 import org.scalatest.prop.PropertyChecks
 import org.scalatest.{ FreeSpec, Matchers }
 
@@ -43,7 +44,7 @@ class Utf8CodingSpecs extends FreeSpec with Matchers with PropertyChecks with Wi
   def encodeUtf8(str: String): ByteString =
     Source(str.map(ch ⇒ new String(Array(ch)))) // chunk in smallest chunks possible
       .via(Utf8Encoder)
-      .runFold(ByteString.empty)(_ ++ _).awaitResult(1.second)
+      .runFold(ByteString.empty)(_ ++ _).awaitResult(1.second.dilated)
 
   def decodeUtf8(bytes: ByteString): String = {
     val builder = new StringBuilder

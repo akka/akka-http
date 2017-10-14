@@ -1,4 +1,3 @@
-<a id="formfield-java"></a>
 # formField
 
 ## Description
@@ -6,4 +5,4 @@ Allows extracting a single Form field sent in the request. Data posted from [HTM
 
 ## Example
 
-@@snip [FormFieldDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/FormFieldDirectivesExamplesTest.java) { #formField }
+@@snip [FormFieldDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/FormFieldDirectivesExamplesTest.java) { #formField }

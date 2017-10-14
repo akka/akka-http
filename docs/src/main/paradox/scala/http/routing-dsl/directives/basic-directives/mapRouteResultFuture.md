@@ -1,15 +1,14 @@
-<a id="maprouteresultfuture"></a>
 # mapRouteResultFuture
 
 ## Signature
 
-@@signature [BasicDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #mapRouteResultFuture }
+@@signature [BasicDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/BasicDirectives.scala) { #mapRouteResultFuture }
 
 ## Description
 
-Asynchronous version of @ref[mapRouteResult](mapRouteResult.md#maprouteresult).
+Asynchronous version of @ref[mapRouteResult](mapRouteResult.md).
 
-It's similar to @ref[mapRouteResultWith](mapRouteResultWith.md#maprouteresultwith), however it's `Future[RouteResult] ⇒ Future[RouteResult]`
+It's similar to @ref[mapRouteResultWith](mapRouteResultWith.md), however it's `Future[RouteResult] ⇒ Future[RouteResult]`
 instead of `RouteResult ⇒ Future[RouteResult]` which may be useful when combining multiple transformations
 and / or wanting to `recover` from a failed route result.
 
@@ -17,4 +16,4 @@ See @ref[Result Transformation Directives](index.md#result-transformation-direct
 
 ## Example
 
-@@snip [BasicDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #mapRouteResultFuture }
+@@snip [BasicDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/BasicDirectivesExamplesSpec.scala) { #mapRouteResultFuture }

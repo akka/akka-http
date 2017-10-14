@@ -1,9 +1,12 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.javadsl.model;
 
+import akka.annotation.DoNotInherit;
+import akka.stream.FlowShape;
+import akka.stream.Graph;
 import akka.stream.Materializer;
 import akka.http.javadsl.model.headers.HttpCredentials;
 import akka.util.ByteString;
@@ -20,6 +23,7 @@ import java.util.Optional;
  *
  * Binary compatibility is only maintained for callers of this trait’s interface.
  */
+@DoNotInherit
 public interface HttpMessage {
     /**
      * Is this instance a request.
@@ -59,20 +63,24 @@ public interface HttpMessage {
     ResponseEntity entity();
 
     /**
-     * Discards the entities data bytes by running the {@code dataBytes} Source contained by the {@code entity} 
+     * Discards the entities data bytes by running the {@code dataBytes} Source contained by the {@code entity}
      * of this HTTP message.
-     * 
+     *
      * Note: It is crucial that entities are either discarded, or consumed by running the underlying [[akka.stream.javadsl.Source]]
      * as otherwise the lack of consuming of the data will trigger back-pressure to the underlying TCP connection
-     * (as designed), however possibly leading to an idle-timeout that will close the connection, instead of 
+     * (as designed), however possibly leading to an idle-timeout that will close the connection, instead of
      * just having ignored the data.
-     *  
+     *
      * Warning: It is not allowed to discard and/or consume the {@code entity.dataBytes} more than once
      * as the stream is directly attached to the "live" incoming data source from the underlying TCP connection.
      * Allowing it to be consumable twice would require buffering the incoming data, thus defeating the purpose
      * of its streaming nature. If the dataBytes source is materialized a second time, it will fail with an
      * "stream can cannot be materialized more than once" exception.
-     * 
+     *
+     * When called on `Strict` entities or sources whose values can be buffered in memory,
+     * the above warnings can be ignored. Repeated materialization is not necessary in this case, avoiding
+     * the mentioned exceptions due to the data being held in memory.
+     *
      * In future versions, more automatic ways to warn or resolve these situations may be introduced, see issue #18716.
      */
     DiscardedEntity discardEntityBytes(Materializer materializer);
@@ -143,7 +151,7 @@ public interface HttpMessage {
         /**
          * Returns a copy of Self message with a new entity.
          *
-         * @deprecated Will be removed in Akka 3.x, use {@link #withEntity(ContentType, Path)} instead.
+         * @deprecated Will be removed in Akka HTTP 11.x, use {@link #withEntity(ContentType, Path)} instead.
          */
         @Deprecated
         Self withEntity(ContentType type, File file);
@@ -157,5 +165,10 @@ public interface HttpMessage {
          * Returns a copy of Self message with a new entity.
          */
         Self withEntity(RequestEntity entity);
+
+        /**
+         * Returns a copy of Self message after applying the given transformation
+         */
+        <T> Self transformEntityDataBytes(Graph<FlowShape<ByteString, ByteString>, T> transformer);
     }
 }

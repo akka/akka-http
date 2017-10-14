@@ -1,9 +1,8 @@
-<a id="formfieldmap"></a>
 # formFieldMap
 
 ## Signature
 
-@@signature [FormFieldDirectives.scala](../../../../../../../../../akka-http/src/main/scala/akka/http/scaladsl/server/directives/FormFieldDirectives.scala) { #formFieldMap }
+@@signature [FormFieldDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/FormFieldDirectives.scala) { #formFieldMap }
 
 ## Description
 
@@ -11,13 +10,13 @@ Extracts all HTTP form fields at once as a `Map[String, String]` mapping form fi
 
 If form data contain a field value several times, the map will contain the last one.
 
-See @ref[formFields](formFields.md#formfields) for an in-depth description.
+See @ref[formFields](formFields.md) for an in-depth description.
 
 ## Warning
 
 Use of this directive can result in performance degradation or even in `OutOfMemoryError` s.
-See @ref[formFieldSeq](formFieldSeq.md#formfieldseq) for details.
+See @ref[formFieldSeq](formFieldSeq.md) for details.
 
 ## Example
 
-@@snip [FormFieldDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala) { #formFieldMap }
+@@snip [FormFieldDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/FormFieldDirectivesExamplesSpec.scala) { #formFieldMap }

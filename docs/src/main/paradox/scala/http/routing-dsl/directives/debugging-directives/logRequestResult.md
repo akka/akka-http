@@ -1,4 +1,3 @@
-<a id="logrequestresult"></a>
 # logRequestResult
 
 ## Signature
@@ -15,19 +14,19 @@ The signature shown is simplified, the real signature uses magnets. <a id="^1" h
 
 ## Description
 
-Logs both, the request and the response.
+Logs both, the request and the response using the `LoggingAdapter` of the `RequestContext`.
 
-This directive is a combination of @ref[logRequest](logRequest.md#logrequest) and @ref[logResult](logResult.md#logresult).
+This directive is a combination of @ref[logRequest](logRequest.md) and @ref[logResult](logResult.md).
 
-See @ref[logRequest](logRequest.md#logrequest) for the general description how these directives work.
+See @ref[logRequest](logRequest.md) for the general description how these directives work.
 
 ## Example
 
-@@snip [DebuggingDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logRequestResult }
+@@snip [DebuggingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logRequestResult }
 
 ## Building Advanced Directives
 
 This example will showcase the advanced logging using the `DebuggingDirectives`.
 The built *logResponseTime* directive will log the request time (or rejection reason):
 
-@@snip [DebuggingDirectivesExamplesSpec.scala](../../../../../../../test/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logRequestResultWithResponseTime }
+@@snip [DebuggingDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/DebuggingDirectivesExamplesSpec.scala) { #logRequestResultWithResponseTime }

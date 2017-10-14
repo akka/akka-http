@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -222,6 +222,30 @@ class MarshallingDirectivesSpec extends RoutingSpec with Inside {
     "reject JSON rendering if an `Accept-Charset` request header requests a non-UTF-8 encoding" in {
       Get() ~> `Accept-Charset`(`ISO-8859-1`) ~> complete(foo) ~> check {
         rejection shouldEqual UnacceptedResponseContentTypeRejection(Set(ContentType(`application/json`)))
+      }
+    }
+    val acceptHeaderUtf = Accept.parseFromValueString("application/json;charset=utf8").right.get
+    val acceptHeaderNonUtf = Accept.parseFromValueString("application/json;charset=ISO-8859-1").right.get
+    "render JSON response when `Accept` header is present with the `charset` parameter ignoring it" in {
+      Get().withHeaders(acceptHeaderUtf) ~> complete(foo) ~> check {
+        responseEntity shouldEqual HttpEntity(`application/json`, foo.toJson.compactPrint)
+      }
+      Get().withHeaders(acceptHeaderNonUtf) ~> complete(foo) ~> check {
+        responseEntity shouldEqual HttpEntity(`application/json`, foo.toJson.compactPrint)
+      }
+      Get().withHeaders(acceptHeaderNonUtf) ~> `Accept-Charset`(`UTF-8`) ~> complete(foo) ~> check {
+        responseEntity shouldEqual HttpEntity(`application/json`, foo.toJson.compactPrint)
+      }
+    }
+    "reject JSON rendering if an `Accept-Charset` request header requests a non-UTF-8 encoding ignoring the `charset` parameter in `Accept`" in {
+      Get().addHeader(acceptHeaderNonUtf).addHeader(`Accept-Charset`(`ISO-8859-1`)) ~> complete(foo) ~> check {
+        rejection shouldEqual UnacceptedResponseContentTypeRejection(Set(ContentType(`application/json`)))
+      }
+    }
+    "render JSON response when `Accept` header is present" in {
+      val acceptHeader = Accept(MediaRange(`application/json`))
+      Get().withHeaders(acceptHeader) ~> complete(foo) ~> check {
+        responseEntity shouldEqual HttpEntity(`application/json`, foo.toJson.compactPrint)
       }
     }
   }

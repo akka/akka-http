@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -46,6 +46,15 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
         } ~> check {
           inside(rejection) {
             case MalformedQueryParamRejection("amount", "'x' is not a valid 32-bit signed integer value", Some(_)) ⇒
+          }
+        }
+      }
+      "cause a MalformedRequestContentRejection on invalid query strings" in {
+        Get("/?amount=1%2") ~> {
+          parameter("amount".as[Int].?) { echoComplete }
+        } ~> check {
+          inside(rejection) {
+            case MalformedRequestContentRejection("The request's query string is invalid: amount=1%2", _) ⇒
           }
         }
       }

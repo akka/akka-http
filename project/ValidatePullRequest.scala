@@ -1,7 +1,8 @@
 /**
-  * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
   */
-import akka.GitHub
+package akka
+
 import com.typesafe.tools.mima.plugin.MimaKeys.mimaReportBinaryIssues
 import com.typesafe.tools.mima.plugin.MimaPlugin
 import net.virtualvoid.sbt.graph.backend.SbtUpdateReport
@@ -11,6 +12,7 @@ import sbtunidoc.Plugin.UnidocKeys.unidoc
 import sbt.Keys._
 import sbt._
 
+import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.util.matching.Regex
 
@@ -99,8 +101,8 @@ object ValidatePullRequest extends AutoPlugin {
     }
   }
 
-  def localTargetBranch: Option[String] = sys.env.get("PR_TARGET_BRANCH")
-  def jenkinsTargetBranch: Option[String] = sys.env.get("ghprbTargetBranch")
+  def localTargetBranch: Option[String] = System.getenv.asScala.get("PR_TARGET_BRANCH")
+  def jenkinsTargetBranch: Option[String] = System.getenv.asScala.get("ghprbTargetBranch")
   def runningOnJenkins: Boolean = jenkinsTargetBranch.isDefined
   def runningLocally: Boolean = !runningOnJenkins
 
@@ -157,7 +159,8 @@ object ValidatePullRequest extends AutoPlugin {
           .filter(l =>
             l.startsWith("akka-") ||
               l.startsWith("docs") ||
-              (l.startsWith("project") && l != "project/MiMa.scala")
+              l.startsWith("project") ||
+              (l == "build.sbt")
           )
           .map(l ⇒ l.takeWhile(_ != '/'))
           .toSet

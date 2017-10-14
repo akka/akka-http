@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -83,7 +83,7 @@ trait CodingDirectives {
         extractSettings flatMap { settings ⇒
           val effectiveDecoder = decoder.withMaxBytesPerChunk(settings.decodeMaxBytesPerChunk)
           mapRequest { request ⇒
-            effectiveDecoder.decode(request).mapEntity { entity ⇒
+            effectiveDecoder.decodeMessage(request).mapEntity { entity ⇒
               entity.transformDataBytes(Flow[ByteString].recover {
                 case NonFatal(e) ⇒
                   throw IllegalRequestException(
@@ -134,7 +134,7 @@ trait CodingDirectives {
 
   /**
    * Inspects the response entity and adds a `Content-Encoding: gzip` response header if
-   * the entities media-type is precompressed with gzip and no `Content-Encoding` header is present yet.
+   * the entity's media-type is precompressed with gzip and no `Content-Encoding` header is present yet.
    *
    * @group coding
    */
@@ -161,7 +161,7 @@ object CodingDirectives extends CodingDirectives {
       val encodings: List[HttpEncoding] = encoders.map(_.encoding)(collection.breakOut)
       val bestEncoder = negotiator.pickEncoding(encodings).flatMap(be ⇒ encoders.find(_.encoding == be))
       bestEncoder match {
-        case Some(encoder) ⇒ mapResponse(encoder.encode(_))
+        case Some(encoder) ⇒ mapResponse(encoder.encodeMessage(_))
         case _ ⇒
           if (encoders.contains(NoCoding) && !negotiator.hasMatchingFor(HttpEncodings.identity)) pass
           else reject(UnacceptedResponseEncodingRejection(encodings.toSet))

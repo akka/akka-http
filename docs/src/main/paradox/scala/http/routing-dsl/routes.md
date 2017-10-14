@@ -2,20 +2,33 @@
 # Routes
 
 The "Route" is the central concept of Akka HTTP's Routing DSL. All the structures you build with the DSL, no matter
-whether they consists of a single line or span several hundred lines, are instances of this type:
+whether they consists of a single line or span several hundred lines, are @scala[`type`]@java[`function`] turning a 
+`RequestContext` into a @scala[`Future[RouteResult]`]@java[`CompletionStage<RouteResult>`].
+
+@@@ div { .group-scala }
 
 ```scala
 type Route = RequestContext => Future[RouteResult]
 ```
-
 It's a simple alias for a function turning a `RequestContext` into a `Future[RouteResult]`.
+
+@@@
+
+@@@ div { .group-java }
+
+A `Route` itself is a function that operates on a `RequestContext` and returns a `RouteResult`. The
+`RequestContext` is a data structure that contains the current request and auxiliary data like the so far unmatched
+path of the request URI that gets passed through the route structure. It also contains the current `ExecutionContext`
+and `akka.stream.Materializer`, so that these don't have to be passed around manually.
+
+@@@
 
 Generally when a route receives a request (or rather a `RequestContext` for it) it can do one of these things:
 
  * Complete the request by returning the value of `requestContext.complete(...)`
- * Reject the request by returning the value of `requestContext.reject(...)` (see @ref[Rejections](rejections.md#rejections-scala))
- * Fail the request by returning the value of `requestContext.fail(...)` or by just throwing an exception (see @ref[Exception Handling](exception-handling.md#exception-handling-scala))
- * Do any kind of asynchronous processing and instantly return a `Future[RouteResult]` to be eventually completed later
+ * Reject the request by returning the value of `requestContext.reject(...)` (see @ref[Rejections](rejections.md#rejections))
+ * Fail the request by returning the value of `requestContext.fail(...)` or by just throwing an exception (see @ref[Exception Handling](exception-handling.md#exception-handling))
+ * Do any kind of asynchronous processing and instantly return a @scala[`Future[RouteResult]`]@java[`CompletionStage<RouteResult>`] to be eventually completed later
 
 The first case is pretty clear, by calling `complete` a given response is sent to the client as reaction to the
 request. In the second case "reject" means that the route does not want to handle the request. You'll see further down
@@ -27,7 +40,7 @@ instances to convert rejections and exceptions into appropriate HTTP responses f
 
 
 Using `Route.handlerFlow` or `Route.asyncHandler` a `Route` can be lifted into a handler `Flow` or async handler
-function to be used with a `bindAndHandleXXX` call from the @ref[Low-Level Server-Side API](../low-level-server-side-api.md#http-low-level-server-side-api).
+function to be used with a `bindAndHandleXXX` call from the @ref[Low-Level Server-Side API](../server-side/low-level-api.md).
 
 Note: There is also an implicit conversion from `Route` to `Flow[HttpRequest, HttpResponse, Unit]` defined in the
 `RouteResult` companion, which relies on `Route.handlerFlow`.
@@ -49,6 +62,8 @@ modified copies.
 `RouteResult` is a simple abstract data type (ADT) that models the possible non-error results of a `Route`.
 It is defined as such:
 
+@@@ div { .group-scala }
+
 ```scala
 sealed trait RouteResult
 
@@ -57,6 +72,8 @@ object RouteResult {
   final case class Rejected(rejections: immutable.Seq[Rejection]) extends RouteResult
 }
 ```
+
+@@@
 
 Usually you don't create any `RouteResult` instances yourself, but rather rely on the pre-defined @ref[RouteDirectives](directives/route-directives/index.md#routedirectives)
 (like @ref[complete](directives/route-directives/complete.md#complete), @ref[reject](directives/route-directives/reject.md#reject) or @ref[redirect](directives/route-directives/redirect.md#redirect)) or the respective methods on the [RequestContext](#requestcontext)
@@ -80,11 +97,13 @@ HTTP and which you can also easily create yourself.
 <a id="the-routing-tree"></a>
 ## The Routing Tree
 
-Essentially, when you combine directives and custom routes via nesting and the `~` operator, you build a routing
+Essentially, when you combine directives and custom routes via nesting and the @scala[`~` operator]@java[alternative], you build a routing
 structure that forms a tree. When a request comes in it is injected into this tree at the root and flows down through
 all the branches in a depth-first manner until either some node completes it or it is fully rejected.
 
 Consider this schematic example:
+
+@@@ div { .group-scala }
 
 ```scala
 val route =
@@ -104,6 +123,32 @@ val route =
   }
 ```
 
+@@@
+
+@@@ div { .group-java }
+
+```java
+import static akka.http.javadsl.server.Directives.*;
+
+Route route =
+  directiveA(route(() ->
+    directiveB(route(() ->
+      directiveC(
+        ... // route 1
+      ),
+      directiveD(
+        ... // route 2
+      ),
+      ... // route 3
+    )),
+    directiveE(
+      ... // route 4
+    )
+  ));
+```
+
+@@@
+
 Here five directives form a routing tree.
 
  * Route 1 will only be reached if directives `a`, `b` and `c` all let the request pass through.
@@ -119,7 +164,7 @@ specific cases up front and the most general cases in the back.
 As described in @ref[Rejections](rejections.md#rejections-scala) and @ref[Exception Handling](exception-handling.md#exception-handling-scala),
 there are generally two ways to handle rejections and exceptions.
 
- * Bring rejection/exception handlers into implicit scope at the top-level
+ * Bring rejection/exception handlers @scala[`into implicit scope at the top-level`]@java[`seal()` method of the `Route`]
  * Supply handlers as arguments to @ref[handleRejections](directives/execution-directives/handleRejections.md#handlerejections) and @ref[handleExceptions](directives/execution-directives/handleExceptions.md#handleexceptions) directives 
 
 In the first case your handlers will be "sealed", (which means that it will receive the default handler as a fallback for all cases your handler doesn't handle itself) 
@@ -134,4 +179,8 @@ However, you can use `Route.seal()` to perform modification on HttpResponse from
 For example, if you want to add a special header, but still use the default rejection handler, then you can do the following.
 In the below case, the special header is added to rejected responses which did not match the route, as well as successful responses which matched the route.
 
-@@snip [RouteSealExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/RouteSealExampleSpec.scala) { #route-seal-example }
+Scala
+:   @@snip [RouteSealExampleSpec.scala](../../../../../test/scala/docs/http/scaladsl/RouteSealExampleSpec.scala) { #route-seal-example }
+
+Java
+:   @@snip [RouteSealExample.java](../../../../../test/java/docs/http/javadsl/RouteSealExample.java) { #route-seal-example }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.coding
@@ -11,19 +11,20 @@ import headers._
 import HttpMethods.POST
 import scala.concurrent.duration._
 import akka.http.impl.util._
+import akka.testkit._
 
 class EncoderSpec extends WordSpec with CodecSpecSupport {
 
   "An Encoder" should {
     "not transform the message if messageFilter returns false" in {
       val request = HttpRequest(POST, entity = HttpEntity(smallText.getBytes("UTF8")))
-      DummyEncoder.encode(request) shouldEqual request
+      DummyEncoder.encodeMessage(request) shouldEqual request
     }
     "correctly transform the HttpMessage if messageFilter returns true" in {
       val request = HttpRequest(POST, entity = HttpEntity(smallText))
-      val encoded = DummyEncoder.encode(request)
+      val encoded = DummyEncoder.encodeMessage(request)
       encoded.headers shouldEqual List(`Content-Encoding`(DummyEncoder.encoding))
-      encoded.entity.toStrict(3.seconds).awaitResult(3.seconds) shouldEqual HttpEntity(dummyCompress(smallText))
+      encoded.entity.toStrict(3.seconds.dilated).awaitResult(3.seconds.dilated) shouldEqual HttpEntity(dummyCompress(smallText))
     }
   }
 

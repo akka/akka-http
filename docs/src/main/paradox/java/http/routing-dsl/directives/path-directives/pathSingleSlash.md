@@ -1,4 +1,3 @@
-<a id="pathsingleslash-java"></a>
 # pathSingleSlash
 
 ## Description
@@ -11,4 +10,4 @@ This directive is a simple alias for `pathPrefix(PathEnd)` and is mostly used fo
 
 ## Example
 
-@@snip [PathDirectivesExamplesTest.java](../../../../../../../test/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java) { #path-single-slash }
+@@snip [PathDirectivesExamplesTest.java]($test$/java/docs/http/javadsl/server/directives/PathDirectivesExamplesTest.java) { #path-single-slash }

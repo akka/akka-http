@@ -1,16 +1,20 @@
 /**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.impl.util
 
 import java.util.Locale
+
+import akka.annotation.InternalApi
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] class EnhancedString(val underlying: String) extends AnyVal {
 
   /**
