@@ -93,7 +93,7 @@ package object util {
 package util {
 
   import akka.http.scaladsl.model.AggregateBytesLimitExceededException
-  import akka.stream.{Attributes, FlowShape, Inlet, Outlet}
+  import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 
   import scala.concurrent.duration.FiniteDuration
 
