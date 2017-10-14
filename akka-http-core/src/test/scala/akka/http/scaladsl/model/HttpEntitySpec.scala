@@ -35,7 +35,7 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString(s"""
   akka.event-handlers = ["akka.testkit.TestEventListener"]
   akka.loglevel = WARNING
-  akka.strict-entity-max-bytes = $strictEntityMaxBytes""")
+  akka.http.strict-entity-max-bytes = $strictEntityMaxBytes bytes""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
 
   implicit val materializer = ActorMaterializer()

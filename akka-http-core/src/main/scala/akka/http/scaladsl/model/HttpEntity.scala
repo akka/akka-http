@@ -73,7 +73,7 @@ sealed trait HttpEntity extends jm.HttpEntity {
    * The Future is failed with an TimeoutException if the stream isn't completed after the given timeout.
    */
   def toStrict(timeout: FiniteDuration)(implicit fm: Materializer): Future[HttpEntity.Strict] = {
-    val maxBytes = ActorMaterializerHelper.downcast(fm).system.settings.config.getLong("akka.strict-entity-max-bytes")
+    val maxBytes = ActorMaterializerHelper.downcast(fm).system.settings.config.getBytes("akka.http.strict-entity-max-bytes")
 
     dataBytes
       .via(new AggregateBytes(timeout, maxBytes))
