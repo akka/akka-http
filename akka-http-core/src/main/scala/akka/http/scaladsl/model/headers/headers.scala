@@ -23,6 +23,8 @@ import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.model._
 
+import scala.concurrent.duration.Duration
+
 sealed abstract class ModeledCompanion[T: ClassTag] extends Renderable {
   val name = ModeledCompanion.nameFromClass(getClass)
   val lowercaseName = name.toRootLowerCase

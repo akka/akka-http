@@ -5,10 +5,12 @@
 package akka.http.scaladsl.server
 package directives
 
-import akka.http.impl.engine.server.SwitchableIdleTimeoutPrototype
+import akka.http.impl.engine.server.SwitchableIdleTimeoutBidi.SetTimeoutHeader
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.directives.BasicDirectives._
+
+import scala.concurrent.duration.Duration
 
 /**
  * @groupname misc Miscellaneous directives
@@ -100,11 +102,22 @@ trait MiscDirectives {
 
   /**
    *
-   * Disables the idle timeout (configured by `akka.http.server.idle-timeout`) while the response entity is being streamed.
+   * Overrides the configuration setting for the idle timeout (configured by `akka.http.server.idle-timeout`)
+   * while the response entity is being streamed.
    *
    * @group misc
    */
-  def withoutIdleTimeout: Directive0 = MiscDirectives._withoutIdleTimeout
+  def withIdleTimeout(timeout: Duration): Directive0 =
+    mapResponse(_.addHeader(SetTimeoutHeader(timeout)))
+
+  /**
+   *
+   * Disables the idle timeout (configured by `akka.http.server.idle-timeout`)
+   * while the response entity is being streamed.
+   *
+   * @group misc
+   */
+  def withoutIdleTimeout: Directive0 = withIdleTimeout(Duration.Inf)
 }
 
 object MiscDirectives extends MiscDirectives {
@@ -133,7 +146,4 @@ object MiscDirectives extends MiscDirectives {
 
   private val _withoutSizeLimit: Directive0 =
     mapRequestContext(_.mapRequest(_.mapEntity(_.withoutSizeLimit)))
-
-  private val _withoutIdleTimeout: Directive0 =
-    mapResponseEntity(SwitchableIdleTimeoutPrototype.embedIdleTimeoutSwitchByteStringsInEntity)
 }

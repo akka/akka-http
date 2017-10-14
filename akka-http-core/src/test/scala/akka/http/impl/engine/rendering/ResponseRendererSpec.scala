@@ -19,6 +19,7 @@ import akka.util.ByteString
 import akka.stream.scaladsl._
 import akka.stream.ActorMaterializer
 import HttpEntity._
+import akka.http.impl.engine.server.SwitchableIdleTimeoutBidi.TimeoutSwitch
 import akka.testkit._
 
 class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
@@ -612,8 +613,9 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
             Source.single(ctx),
             renderer.named("renderer")
               .map {
-                case ResponseRenderingOutput.HttpData(bytes)      ⇒ bytes
-                case _: ResponseRenderingOutput.SwitchToWebSocket ⇒ throw new IllegalStateException("Didn't expect websocket response")
+                case Right(ResponseRenderingOutput.HttpData(bytes))      ⇒ bytes
+                case Right(_: ResponseRenderingOutput.SwitchToWebSocket) ⇒ throw new IllegalStateException("Didn't expect websocket response")
+                case Left(_: TimeoutSwitch)                              ⇒ throw new IllegalStateException("Didn't expect timeout switch")
               }
           )
 

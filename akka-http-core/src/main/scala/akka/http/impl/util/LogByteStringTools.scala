@@ -3,6 +3,7 @@ package akka.http.impl.util
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.event.Logging
+import akka.http.impl.engine.server.SwitchableIdleTimeoutBidi.OrTimeoutSwitch
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl.{ BidiFlow, Flow }
 import akka.util.ByteString
@@ -36,7 +37,7 @@ private[akka] object LogByteStringTools {
     Flow[ByteString].log(name, printByteString(_, maxBytes))
 
   def logToString[A](name: String, maxBytes: Int = MaxBytesPrinted): Flow[A, A, NotUsed] =
-    Flow[A].log(name, _.toString().take(maxBytes))
+    Flow[A].log(name, _.toString.take(maxBytes))
 
   def logTLSBidi(name: String, maxBytes: Int = MaxBytesPrinted): BidiFlow[SslTlsOutbound, SslTlsOutbound, SslTlsInbound, SslTlsInbound, NotUsed] =
     BidiFlow.fromFlows(

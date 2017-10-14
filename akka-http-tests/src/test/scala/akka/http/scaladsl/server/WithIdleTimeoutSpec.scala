@@ -19,8 +19,8 @@ import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class WithoutIdleTimeoutSpec extends WordSpec with Matchers with RequestBuilding with BeforeAndAfterAll {
-  val idleTimeout: FiniteDuration = 100 millis
+class WithIdleTimeoutSpec extends WordSpec with Matchers with RequestBuilding with BeforeAndAfterAll {
+  val idleTimeout: FiniteDuration = 50 millis
 
   val testConf: Config = ConfigFactory.parseString(s"""
     akka.loggers = ["akka.testkit.TestEventListener"]
@@ -33,13 +33,11 @@ class WithoutIdleTimeoutSpec extends WordSpec with Matchers with RequestBuilding
   implicit val materializer = ActorMaterializer()
 
   "A server response that is idle for longer than the configured akka.http.server.idle-timeout" should {
-    "fail if not routed via the withoutIdleTimeout directive" in {
+    "fail if using the default timeout" in {
       // Given
       val route: Route =
-        path("noDirective") {
-          get {
-            complete(lazyEntity(2 * idleTimeout, "Hello Akka"))
-          }
+        get {
+          complete(lazyEntity(4 * idleTimeout, "Hello Akka"))
         }
 
       val (hostName, port) = SocketUtil.temporaryServerHostnameAndPort()
@@ -47,7 +45,7 @@ class WithoutIdleTimeoutSpec extends WordSpec with Matchers with RequestBuilding
       // When
       val entityF = for {
         _ ← Http().bindAndHandle(route, hostName, port)
-        request = Get(s"http://$hostName:$port/noDirective")
+        request = Get(s"http://$hostName:$port/")
         response ← Http().singleRequest(request)
         _ = response.status shouldEqual StatusCodes.OK
         strictEntity ← response.entity.toStrict(5 seconds)
@@ -59,14 +57,12 @@ class WithoutIdleTimeoutSpec extends WordSpec with Matchers with RequestBuilding
       }.getMessage shouldEqual "The connection closed with error: An existing connection was forcibly closed by the remote host"
     }
 
-    "be streamed through if routed via the withoutIdleTimeout directive" in {
+    "fail via an withIdleTimeout directive with a sufficiently long timeout" in {
       // Given
       val route: Route =
-        path("withoutIdleTimeout") {
-          get {
-            withoutIdleTimeout {
-              complete(lazyEntity(2 * idleTimeout, "Hello Akka"))
-            }
+        get {
+          withIdleTimeout(2 * idleTimeout) {
+            complete(lazyEntity(3 * idleTimeout, "Hello Akka"))
           }
         }
 
@@ -75,7 +71,58 @@ class WithoutIdleTimeoutSpec extends WordSpec with Matchers with RequestBuilding
       // When
       val entityF = for {
         _ ← Http().bindAndHandle(route, hostName, port)
-        request = Get(s"http://$hostName:$port/withoutIdleTimeout")
+        request = Get(s"http://$hostName:$port/")
+        response ← Http().singleRequest(request)
+        _ = response.status shouldEqual StatusCodes.OK
+        strictEntity ← response.entity.toStrict(5 seconds)
+      } yield strictEntity
+
+      // Then
+      intercept[StreamTcpException] {
+        val entity = Await.result(entityF, 10 seconds)
+      }.getMessage shouldEqual "The connection closed with error: An existing connection was forcibly closed by the remote host"
+    }
+
+    "be streamed through via an withIdleTimeout directive with a sufficiently long timeout" in {
+      // Given
+      val route: Route =
+        get {
+          withIdleTimeout(4 * idleTimeout) {
+            complete(lazyEntity(3 * idleTimeout, "Hello Akka"))
+          }
+        }
+
+      val (hostName, port) = SocketUtil.temporaryServerHostnameAndPort()
+
+      // When
+      val entityF = for {
+        _ ← Http().bindAndHandle(route, hostName, port)
+        request = Get(s"http://$hostName:$port/")
+        response ← Http().singleRequest(request)
+        _ = response.status shouldEqual StatusCodes.OK
+        strictEntity ← response.entity.toStrict(5 seconds)
+      } yield strictEntity
+
+      // Then
+      val entity = Await.result(entityF, 10 seconds)
+      entity.data.utf8String shouldEqual "Hello Akka"
+    }
+
+    "be streamed through via the withoutIdleTimeout directive" in {
+      // Given
+      val route: Route =
+        get {
+          withoutIdleTimeout {
+            complete(lazyEntity(3 * idleTimeout, "Hello Akka"))
+          }
+        }
+
+      val (hostName, port) = SocketUtil.temporaryServerHostnameAndPort()
+
+      // When
+      val entityF = for {
+        _ ← Http().bindAndHandle(route, hostName, port)
+        request = Get(s"http://$hostName:$port/")
         response ← Http().singleRequest(request)
         _ = response.status shouldEqual StatusCodes.OK
         strictEntity ← response.entity.toStrict(5 seconds)
