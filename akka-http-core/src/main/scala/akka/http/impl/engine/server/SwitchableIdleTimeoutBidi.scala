@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.server
 
+import java.util.concurrent.TimeUnit
+
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.http.impl.engine.HttpIdleTimeoutException
@@ -36,19 +38,31 @@ final class SwitchableIdleTimeoutBidi[I, O](val defaultTimeout: Duration) extend
   override def initialAttributes = DefaultAttributes.idleTimeoutBidi
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
-    var currentTimeout: Duration = defaultTimeout
+    private var currentTimeout: Duration = defaultTimeout
+    private var nextDeadline: Option[Long] = buildNextDeadline()
 
     setHandlers(in1, out1, new InboundHandler)
     setHandlers(in2, out2, new OutboundHandler)
 
-    final override def onTimer(key: Any): Unit = {
-      currentTimeout match {
-        case fd: FiniteDuration ⇒
-          failStage(new HttpIdleTimeoutException(
-            "HTTP idle-timeout encountered, no bytes passed in the last " + fd +
-              ". This is configurable by akka.http.server.idle-timeout.", fd))
-        case _ ⇒
-      }
+    private def onActivity(): Unit = nextDeadline = buildNextDeadline()
+
+    private def buildNextDeadline(): Option[Long] = currentTimeout match {
+      case fd: FiniteDuration ⇒
+        Some(System.nanoTime + fd.toNanos)
+      case _ ⇒
+        None
+    }
+
+    final override def onTimer(key: Any): Unit = nextDeadline match {
+      case Some(deadline) if deadline - System.nanoTime < 0 ⇒
+        currentTimeout match {
+          case fd: FiniteDuration ⇒
+            failStage(new HttpIdleTimeoutException(
+              "HTTP idle-timeout encountered, no bytes passed in the last " + fd +
+                ". This is configurable by akka.http.server.idle-timeout.", fd))
+          case _ ⇒ // If the timeout is set to infinite, we should never get a timeout anyway.
+        }
+      case _ ⇒ // Either no deadline is set, or it hasn't been reached.
     }
 
     override def preStart(): Unit = resetTimer()
@@ -56,7 +70,7 @@ final class SwitchableIdleTimeoutBidi[I, O](val defaultTimeout: Duration) extend
     private def resetTimer(): Unit = {
       currentTimeout match {
         case fd: FiniteDuration ⇒
-          scheduleOnce(GraphStageLogicTimer, fd)
+          schedulePeriodically(GraphStageLogicTimer, idleTimeoutCheckInterval(fd))
         case _: Infinite ⇒
           cancelTimer(GraphStageLogicTimer)
       }
@@ -74,7 +88,7 @@ final class SwitchableIdleTimeoutBidi[I, O](val defaultTimeout: Duration) extend
             resetTimer()
             pull(in1)
           case Right(elem) ⇒
-            resetTimer()
+            onActivity()
             push(out1, elem)
         }
       }
@@ -88,7 +102,7 @@ final class SwitchableIdleTimeoutBidi[I, O](val defaultTimeout: Duration) extend
 
     class OutboundHandler extends InHandler with OutHandler {
       override def onPush(): Unit = {
-        resetTimer()
+        onActivity()
         push(out2, grab(in2))
       }
 
@@ -104,6 +118,13 @@ final class SwitchableIdleTimeoutBidi[I, O](val defaultTimeout: Duration) extend
 }
 
 object SwitchableIdleTimeoutBidi {
+  private def idleTimeoutCheckInterval(timeout: FiniteDuration): FiniteDuration = {
+    import scala.concurrent.duration._
+    FiniteDuration(
+      math.min(math.max(timeout.toNanos / 8, 100.millis.toNanos), timeout.toNanos / 2),
+      TimeUnit.NANOSECONDS)
+  }
+
   def bidirectionalSettableIdleTimeout[I, O](defaultTimeout: Duration): BidiFlow[OrTimeoutSwitch[I], I, O, O, NotUsed] =
     fromGraph(new SwitchableIdleTimeoutBidi(defaultTimeout))
 
