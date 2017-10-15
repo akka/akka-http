@@ -76,9 +76,8 @@ private[http] object HttpServerBluePrint {
   def websocketSupport(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingOutput, ByteString, SessionBytes, SessionBytes, NotUsed] =
     BidiFlow.fromGraph(new ProtocolSwitchStage(settings, log))
 
-  def idleTimeout(settings: ServerSettings): BidiFlow[OrTimeoutSetting[ResponseRenderingOutput], ResponseRenderingOutput, SessionBytes, SessionBytes, NotUsed] = {
-    SettableIdleTimeoutBidi.bidirectionalSettableIdleTimeout[ResponseRenderingOutput, SessionBytes](settings.idleTimeout)
-  }
+  def idleTimeout(settings: ServerSettings): BidiFlow[OrTimeoutSetting[ResponseRenderingOutput], ResponseRenderingOutput, SessionBytes, SessionBytes, NotUsed] =
+    BidiFlow.fromGraph(new SettableIdleTimeoutBidi(settings.idleTimeout))
 
   def parsingRendering(settings: ServerSettings, log: LoggingAdapter, isSecureConnection: Boolean): BidiFlow[ResponseRenderingContext, OrTimeoutSetting[ResponseRenderingOutput], SessionBytes, RequestOutput, NotUsed] =
     BidiFlow.fromFlows(rendering(settings, log), parsing(settings, log, isSecureConnection))

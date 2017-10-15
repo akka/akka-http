@@ -114,7 +114,7 @@ private[http] final class SettableIdleTimeoutBidi[I, O](val defaultTimeout: Dura
     }
   }
 
-  override def toString = "SwitchableIdleTimeoutBidi"
+  override def toString = "SettableIdleTimeoutBidi"
 }
 
 object SettableIdleTimeoutBidi {
@@ -124,9 +124,6 @@ object SettableIdleTimeoutBidi {
       math.min(math.max(timeout.toNanos / 8, 100.millis.toNanos), timeout.toNanos / 2),
       TimeUnit.NANOSECONDS)
   }
-
-  def bidirectionalSettableIdleTimeout[I, O](defaultTimeout: Duration): BidiFlow[OrTimeoutSetting[I], I, O, O, NotUsed] =
-    fromGraph(new SettableIdleTimeoutBidi(defaultTimeout))
 
   type OrTimeoutSetting[Other] = Either[TimeoutSetting, Other]
 
