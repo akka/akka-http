@@ -91,6 +91,15 @@ public class MiscDirectivesTest extends JUnitRouteTest {
 
   }
 
+  @Test
+  public void testWithIdleTimeout() {
+    TestRoute route = testRoute(withIdleTimeout(5000, () -> complete("ok")));
+
+    route
+      .run(HttpRequest.create())
+      .assertHeaderExists("SetTimeout", "5000 milliseconds");
+  }
+
   private HttpRequest withEntityOfSize(int sizeLimit) {
     char[] charArray = new char[sizeLimit];
     Arrays.fill(charArray, '0');
