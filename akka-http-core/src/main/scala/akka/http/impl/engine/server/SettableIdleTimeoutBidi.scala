@@ -9,8 +9,8 @@ import java.util.concurrent.TimeUnit
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.http.impl.engine.HttpIdleTimeoutException
-import akka.http.impl.engine.server.SwitchableIdleTimeoutBidi._
-import akka.http.scaladsl.model.headers.CustomHeader
+import akka.http.impl.engine.server.SettableIdleTimeoutBidi._
+import akka.http.scaladsl.model.headers.{ CustomHeader, InternalCustomHeader }
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.Timers.GraphStageLogicTimer
@@ -23,13 +23,13 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 /**
  * A version of the [[akka.stream.impl.Timers.IdleTimeoutBidi]] that accepts, in one direction, elements that can
- * disable or re-enable the timeout.
+ * modify or reset the timeout.
  */
 
 /** INTERNAL API */
 @InternalApi
-final class SwitchableIdleTimeoutBidi[I, O](val defaultTimeout: Duration) extends GraphStage[BidiShape[OrTimeoutSwitch[I], I, O, O]] {
-  val in1 = Inlet[OrTimeoutSwitch[I]]("in1")
+private[http] final class SettableIdleTimeoutBidi[I, O](val defaultTimeout: Duration) extends GraphStage[BidiShape[OrTimeoutSetting[I], I, O, O]] {
+  val in1 = Inlet[OrTimeoutSetting[I]]("in1")
   val in2 = Inlet[O]("in2")
   val out1 = Outlet[I]("out1")
   val out2 = Outlet[O]("out2")
@@ -117,7 +117,7 @@ final class SwitchableIdleTimeoutBidi[I, O](val defaultTimeout: Duration) extend
   override def toString = "SwitchableIdleTimeoutBidi"
 }
 
-object SwitchableIdleTimeoutBidi {
+object SettableIdleTimeoutBidi {
   private def idleTimeoutCheckInterval(timeout: FiniteDuration): FiniteDuration = {
     import scala.concurrent.duration._
     FiniteDuration(
@@ -125,20 +125,14 @@ object SwitchableIdleTimeoutBidi {
       TimeUnit.NANOSECONDS)
   }
 
-  def bidirectionalSettableIdleTimeout[I, O](defaultTimeout: Duration): BidiFlow[OrTimeoutSwitch[I], I, O, O, NotUsed] =
-    fromGraph(new SwitchableIdleTimeoutBidi(defaultTimeout))
+  def bidirectionalSettableIdleTimeout[I, O](defaultTimeout: Duration): BidiFlow[OrTimeoutSetting[I], I, O, O, NotUsed] =
+    fromGraph(new SettableIdleTimeoutBidi(defaultTimeout))
 
-  type OrTimeoutSwitch[Other] = Either[TimeoutSwitch, Other]
+  type OrTimeoutSetting[Other] = Either[TimeoutSetting, Other]
 
-  sealed trait TimeoutSwitch
+  sealed trait TimeoutSetting
+  case class SetTimeout(timeout: Duration) extends TimeoutSetting
+  case object ResetTimeout extends TimeoutSetting
 
-  case class SetTimeout(timeout: Duration) extends TimeoutSwitch
-  case object ResetTimeout extends TimeoutSwitch
-
-  private[http] case class SetTimeoutHeader(timeout: Duration) extends CustomHeader {
-    override def name(): String = "SetTimeout"
-    override def value(): String = timeout.toString
-    override def renderInRequests(): Boolean = false
-    override def renderInResponses(): Boolean = false
-  }
+  private[http] case class SetIdleTimeoutHeader(timeout: Duration) extends InternalCustomHeader("SetIdleTimeoutHeader")
 }

@@ -3,7 +3,7 @@ package akka.http.impl.util
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.event.Logging
-import akka.http.impl.engine.server.SwitchableIdleTimeoutBidi.OrTimeoutSwitch
+import akka.http.impl.engine.server.SettableIdleTimeoutBidi.OrTimeoutSetting
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl.{ BidiFlow, Flow }
 import akka.util.ByteString

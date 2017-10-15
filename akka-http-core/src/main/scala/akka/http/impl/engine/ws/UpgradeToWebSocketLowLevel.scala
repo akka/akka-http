@@ -6,6 +6,7 @@ package akka.http.impl.engine.ws
 
 import akka.annotation.InternalApi
 import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.headers.InternalCustomHeader
 import akka.http.scaladsl.model.ws.UpgradeToWebSocket
 import akka.stream.{ FlowShape, Graph }
 

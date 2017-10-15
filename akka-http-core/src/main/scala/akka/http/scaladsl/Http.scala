@@ -15,7 +15,7 @@ import akka.event.{ Logging, LoggingAdapter }
 import akka.http.impl.engine.Http2Shadow
 import akka.http.impl.engine.client.PoolMasterActor.{ PoolSize, ShutdownAll }
 import akka.http.impl.engine.client._
-import akka.http.impl.engine.server.SwitchableIdleTimeoutBidi.OrTimeoutSwitch
+import akka.http.impl.engine.server.SettableIdleTimeoutBidi.OrTimeoutSetting
 import akka.http.impl.engine.server._
 import akka.http.impl.engine.ws.WebSocketClientBlueprint
 import akka.http.impl.settings.{ ConnectionPoolSetup, HostConnectionPoolSetup }

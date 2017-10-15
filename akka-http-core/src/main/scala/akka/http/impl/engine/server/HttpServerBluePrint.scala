@@ -13,7 +13,7 @@ import akka.event.LoggingAdapter
 import akka.http.impl.engine.parsing.ParserOutput._
 import akka.http.impl.engine.parsing._
 import akka.http.impl.engine.rendering.{ HttpResponseRendererFactory, ResponseRenderingContext, ResponseRenderingOutput }
-import akka.http.impl.engine.server.SwitchableIdleTimeoutBidi.OrTimeoutSwitch
+import akka.http.impl.engine.server.SettableIdleTimeoutBidi.OrTimeoutSetting
 import akka.http.impl.engine.ws._
 import akka.http.impl.util.LogByteStringTools._
 import akka.http.impl.util._
@@ -76,11 +76,11 @@ private[http] object HttpServerBluePrint {
   def websocketSupport(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingOutput, ByteString, SessionBytes, SessionBytes, NotUsed] =
     BidiFlow.fromGraph(new ProtocolSwitchStage(settings, log))
 
-  def idleTimeout(settings: ServerSettings): BidiFlow[OrTimeoutSwitch[ResponseRenderingOutput], ResponseRenderingOutput, SessionBytes, SessionBytes, NotUsed] = {
-    SwitchableIdleTimeoutBidi.bidirectionalSettableIdleTimeout[ResponseRenderingOutput, SessionBytes](settings.idleTimeout)
+  def idleTimeout(settings: ServerSettings): BidiFlow[OrTimeoutSetting[ResponseRenderingOutput], ResponseRenderingOutput, SessionBytes, SessionBytes, NotUsed] = {
+    SettableIdleTimeoutBidi.bidirectionalSettableIdleTimeout[ResponseRenderingOutput, SessionBytes](settings.idleTimeout)
   }
 
-  def parsingRendering(settings: ServerSettings, log: LoggingAdapter, isSecureConnection: Boolean): BidiFlow[ResponseRenderingContext, OrTimeoutSwitch[ResponseRenderingOutput], SessionBytes, RequestOutput, NotUsed] =
+  def parsingRendering(settings: ServerSettings, log: LoggingAdapter, isSecureConnection: Boolean): BidiFlow[ResponseRenderingContext, OrTimeoutSetting[ResponseRenderingOutput], SessionBytes, RequestOutput, NotUsed] =
     BidiFlow.fromFlows(rendering(settings, log), parsing(settings, log, isSecureConnection))
 
   def controller(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ResponseRenderingContext, RequestOutput, RequestOutput, NotUsed] =
@@ -234,7 +234,7 @@ private[http] object HttpServerBluePrint {
     Flow[SessionBytes].via(rootParser).map(establishAbsoluteUri)
   }
 
-  def rendering(settings: ServerSettings, log: LoggingAdapter): Flow[ResponseRenderingContext, OrTimeoutSwitch[ResponseRenderingOutput], NotUsed] = {
+  def rendering(settings: ServerSettings, log: LoggingAdapter): Flow[ResponseRenderingContext, OrTimeoutSetting[ResponseRenderingOutput], NotUsed] = {
     import settings._
 
     val responseRendererFactory = new HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint, log)

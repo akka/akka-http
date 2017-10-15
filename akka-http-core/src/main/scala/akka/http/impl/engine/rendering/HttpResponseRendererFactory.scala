@@ -8,7 +8,7 @@ import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.rendering.RenderSupport._
-import akka.http.impl.engine.server.SwitchableIdleTimeoutBidi._
+import akka.http.impl.engine.server.SettableIdleTimeoutBidi._
 import akka.http.impl.engine.ws.{ FrameEvent, UpgradeToWebSocketResponseHeader }
 import akka.http.impl.util._
 import akka.http.scaladsl.model.HttpProtocols._
@@ -59,12 +59,12 @@ private[http] class HttpResponseRendererFactory(
   // split out so we can stabilize by overriding in tests
   protected def currentTimeMillis(): Long = System.currentTimeMillis()
 
-  def renderer: Flow[ResponseRenderingContext, OrTimeoutSwitch[ResponseRenderingOutput], NotUsed] = Flow.fromGraph(HttpResponseRenderer).mapConcat(identity)
+  def renderer: Flow[ResponseRenderingContext, OrTimeoutSetting[ResponseRenderingOutput], NotUsed] = Flow.fromGraph(HttpResponseRenderer).mapConcat(identity)
 
-  object HttpResponseRenderer extends GraphStage[FlowShape[ResponseRenderingContext, Seq[OrTimeoutSwitch[ResponseRenderingOutput]]]] {
+  object HttpResponseRenderer extends GraphStage[FlowShape[ResponseRenderingContext, Seq[OrTimeoutSetting[ResponseRenderingOutput]]]] {
     val in = Inlet[ResponseRenderingContext]("HttpResponseRenderer.in")
-    val out = Outlet[Seq[OrTimeoutSwitch[ResponseRenderingOutput]]]("HttpResponseRenderer.out")
-    val shape: FlowShape[ResponseRenderingContext, Seq[OrTimeoutSwitch[ResponseRenderingOutput]]] = FlowShape(in, out)
+    val out = Outlet[Seq[OrTimeoutSetting[ResponseRenderingOutput]]]("HttpResponseRenderer.out")
+    val shape: FlowShape[ResponseRenderingContext, Seq[OrTimeoutSetting[ResponseRenderingOutput]]] = FlowShape(in, out)
 
     def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
       new GraphStageLogic(shape) {
@@ -91,9 +91,9 @@ private[http] class HttpResponseRendererFactory(
           def onPull(): Unit = pull(in)
         }
         setHandler(out, waitForDemandHandler)
-        def transfer(outStream: Source[OrTimeoutSwitch[ResponseRenderingOutput], Any]): Unit = {
+        def transfer(outStream: Source[OrTimeoutSetting[ResponseRenderingOutput], Any]): Unit = {
           transferring = true
-          val sinkIn = new SubSinkInlet[OrTimeoutSwitch[ResponseRenderingOutput]]("RenderingSink")
+          val sinkIn = new SubSinkInlet[OrTimeoutSetting[ResponseRenderingOutput]]("RenderingSink")
           sinkIn.setHandler(new InHandler {
             override def onPush(): Unit = push(out, Seq(sinkIn.grab()))
             override def onUpstreamFinish(): Unit =
@@ -132,7 +132,8 @@ private[http] class HttpResponseRendererFactory(
           def mustRenderTransferEncodingChunkedHeader =
             entity.isChunked && (!entity.isKnownEmpty || ctx.requestMethod == HttpMethods.HEAD) && (ctx.requestProtocol == `HTTP/1.1`)
 
-          def setTimeout: Option[SetTimeout] = header[SetTimeoutHeader].map(h ⇒ SetTimeout(h.timeout))
+          def idleTimeoutHeader: OptionVal[SetIdleTimeoutHeader] =
+            HttpHeader.fastFind(classOf[SetIdleTimeoutHeader], headers)
 
           def renderHeaders(headers: Seq[HttpHeader], alwaysClose: Boolean = false): Unit = {
             var connHeader: Connection = null
@@ -224,13 +225,15 @@ private[http] class HttpResponseRendererFactory(
             renderByteStrings(r.asByteString, entityBytes, skipEntity = noEntity).map(ResponseRenderingOutput.HttpData)
 
           def streamedOutput(source: Source[ResponseRenderingOutput, Any]) = {
-            val sourceAsRight = source.map(Right(_))
-            val sourceWithTimeouts = setTimeout match {
-              case Some(st: SetTimeout) ⇒
-                Source.single(Left(st)) concat sourceAsRight concat Source.single(Left(ResetTimeout))
-              case None ⇒
-                sourceAsRight
+            val sourceWithTimeouts = idleTimeoutHeader match {
+              case OptionVal.Some(SetIdleTimeoutHeader(duration)) ⇒
+                Source.single(Left(SetTimeout(duration)))
+                  .concat(source.map(Right(_)))
+                  .concat(Source.single(Left(ResetTimeout)))
+              case _ ⇒
+                source.map(Right(_))
             }
+
             Streamed(sourceWithTimeouts)
           }
 
@@ -254,10 +257,10 @@ private[http] class HttpResponseRendererFactory(
                   case _                          ⇒ ResponseRenderingOutput.HttpData(finalBytes)
                 }
 
-                val output = setTimeout match {
-                  case Some(st: SetTimeout) ⇒
-                    Seq(Left(st), Right(responseBytes), Left(ResetTimeout))
-                  case None ⇒
+                val output = idleTimeoutHeader match {
+                  case OptionVal.Some(SetIdleTimeoutHeader(duration)) ⇒
+                    Seq(Left(SetTimeout(duration)), Right(responseBytes), Left(ResetTimeout))
+                  case _ ⇒
                     Seq(Right(responseBytes))
                 }
 
@@ -290,8 +293,8 @@ private[http] class HttpResponseRendererFactory(
       }
 
     sealed trait StrictOrStreamed
-    case class Strict(output: Seq[OrTimeoutSwitch[ResponseRenderingOutput]]) extends StrictOrStreamed
-    case class Streamed(source: Source[OrTimeoutSwitch[ResponseRenderingOutput], Any]) extends StrictOrStreamed
+    case class Strict(output: Seq[OrTimeoutSetting[ResponseRenderingOutput]]) extends StrictOrStreamed
+    case class Streamed(source: Source[OrTimeoutSetting[ResponseRenderingOutput], Any]) extends StrictOrStreamed
   }
 
   sealed trait CloseMode

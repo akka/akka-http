@@ -87,7 +87,7 @@ abstract class MiscDirectives extends MethodDirectives {
   /**
    *
    * Overrides the configuration setting for the idle timeout (configured by `akka.http.server.idle-timeout`)
-   * while the response entity is being streamed.
+   * while the response returned by this route is being streamed.
    *
    * @group misc
    */
@@ -100,7 +100,7 @@ abstract class MiscDirectives extends MethodDirectives {
   /**
    *
    * Disables the idle timeout (configured by `akka.http.server.idle-timeout`)
-   * while the response entity is being streamed.
+   * while the response returned by this route is being streamed.
    *
    * @group misc
    */

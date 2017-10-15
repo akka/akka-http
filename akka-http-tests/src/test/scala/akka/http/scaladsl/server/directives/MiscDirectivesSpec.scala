@@ -13,7 +13,7 @@ import akka.testkit._
 import headers._
 import java.net.InetAddress
 
-import akka.http.impl.engine.server.SwitchableIdleTimeoutBidi.SetTimeoutHeader
+import akka.http.impl.engine.server.SettableIdleTimeoutBidi.SetIdleTimeoutHeader
 
 class MiscDirectivesSpec extends RoutingSpec {
 
@@ -186,7 +186,7 @@ class MiscDirectivesSpec extends RoutingSpec {
         }
 
       Get() ~> route ~> check {
-        header[SetTimeoutHeader] shouldEqual Some(SetTimeoutHeader(5.seconds))
+        header[SetIdleTimeoutHeader] shouldEqual Some(SetIdleTimeoutHeader(5.seconds))
       }
     }
   }
@@ -199,7 +199,7 @@ class MiscDirectivesSpec extends RoutingSpec {
         }
 
       Get() ~> route ~> check {
-        header[SetTimeoutHeader] shouldEqual Some(SetTimeoutHeader(Duration.Inf))
+        header[SetIdleTimeoutHeader] shouldEqual Some(SetIdleTimeoutHeader(Duration.Inf))
       }
     }
   }

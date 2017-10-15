@@ -5,7 +5,7 @@
 package akka.http.scaladsl.server
 package directives
 
-import akka.http.impl.engine.server.SwitchableIdleTimeoutBidi.SetTimeoutHeader
+import akka.http.impl.engine.server.SettableIdleTimeoutBidi.SetIdleTimeoutHeader
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.directives.BasicDirectives._
@@ -103,17 +103,17 @@ trait MiscDirectives {
   /**
    *
    * Overrides the configuration setting for the idle timeout (configured by `akka.http.server.idle-timeout`)
-   * while the response entity is being streamed.
+   * while the response returned by this route is being streamed.
    *
    * @group misc
    */
   def withIdleTimeout(timeout: Duration): Directive0 =
-    mapResponse(_.addHeader(SetTimeoutHeader(timeout)))
+    mapResponse(_.addHeader(SetIdleTimeoutHeader(timeout)))
 
   /**
    *
    * Disables the idle timeout (configured by `akka.http.server.idle-timeout`)
-   * while the response entity is being streamed.
+   * while the response returned by this route is being streamed.
    *
    * @group misc
    */
