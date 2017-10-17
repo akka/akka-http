@@ -71,3 +71,39 @@ Maven
     </dependency>
     ```
     @@@
+    
+The same issue using `akka-http-testkit` library. So in this case, it is necessary to add:
+
+sbt
+:   @@@vars
+    ```
+    libraryDependencies += "com.typesafe.akka" %% "akka-http-testkit"   % akkaHttpVersion
+    libraryDependencies += "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion
+    ```
+    @@@
+
+Gradle
+:   @@@vars
+    ```
+    compile group: 'com.typesafe.akka', name: 'akka-http-testkit_$scala.binary_version$', version: '$project.version$'
+    compile group: 'com.typesafe.akka', name: 'akka-stream-testkit_$scala.binary_version$', version: '$akka25.version$'
+    ```
+    @@@
+    
+Maven
+:   @@@vars
+    ```
+    <!-- Explicitly depend on akka-streams-testkit in same version as akka-actor-->
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-stream-testkit_$scala.binary_version$</artifactId>
+      <version>$akka25.version$</version>
+    </dependency>
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-http-testkit_$scala.binary_version$</artifactId>
+      <version>$akka25.version$</version>
+    </dependency>
+    ```
+    @@@
+
