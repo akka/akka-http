@@ -38,6 +38,10 @@ sbt
     libraryDependencies += "com.typesafe.akka" %% "akka-http"   % akkaHttpVersion
     libraryDependencies += "com.typesafe.akka" %% "akka-actor"  % akkaVersion
     libraryDependencies += "com.typesafe.akka" %% "akka-stream" % akkaVersion
+    
+    // If testkit used, explicitly declare dependency on akka-streams-testkit in same version as akka-actor
+    libraryDependencies += "com.typesafe.akka" %% "akka-http-testkit"   % akkaHttpVersion % Test
+    libraryDependencies += "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion     % Test
     ```
     @@@
 
@@ -47,6 +51,10 @@ Gradle
     compile group: 'com.typesafe.akka', name: 'akka-http_$scala.binary_version$', version: '$project.version$'
     compile group: 'com.typesafe.akka', name: 'akka-actor_$scala.binary_version$', version: '$akka25.version$'
     compile group: 'com.typesafe.akka', name: 'akka-stream_$scala.binary_version$', version: '$akka25.version$'
+    
+    // If testkit used, explicitly declare dependency on akka-streams-testkit in same version as akka-actor
+    testCompile group: 'com.typesafe.akka', name: 'akka-http-testkit_$scala.binary_version$', version: '$project.version$'
+    testCompile group: 'com.typesafe.akka', name: 'akka-stream-testkit_$scala.binary_version$', version: '$akka25.version$'
     ```
     @@@
     
@@ -69,41 +77,19 @@ Maven
       <artifactId>akka-http_$scala.binary_version$</artifactId>
       <version>$akka25.version$</version>
     </dependency>
-    ```
-    @@@
-    
-The same issue using `akka-http-testkit` library. So in this case, it is necessary to add:
 
-sbt
-:   @@@vars
-    ```
-    libraryDependencies += "com.typesafe.akka" %% "akka-http-testkit"   % akkaHttpVersion
-    libraryDependencies += "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```
-    compile group: 'com.typesafe.akka', name: 'akka-http-testkit_$scala.binary_version$', version: '$project.version$'
-    compile group: 'com.typesafe.akka', name: 'akka-stream-testkit_$scala.binary_version$', version: '$akka25.version$'
-    ```
-    @@@
-    
-Maven
-:   @@@vars
-    ```
-    <!-- Explicitly depend on akka-streams-testkit in same version as akka-actor-->
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-stream-testkit_$scala.binary_version$</artifactId>
-      <version>$akka25.version$</version>
-    </dependency>
+    <!-- If testkit used, explicitly declare dependency on akka-streams-testkit in same version as akka-actor-->
     <dependency>
       <groupId>com.typesafe.akka</groupId>
       <artifactId>akka-http-testkit_$scala.binary_version$</artifactId>
       <version>$akka25.version$</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-stream-testkit_$scala.binary_version$</artifactId>
+      <version>$akka25.version$</version>
+      <scope>test</scope>
     </dependency>
     ```
     @@@
-
