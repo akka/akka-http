@@ -32,7 +32,6 @@ object Dependencies {
   import Versions._
 
 
-  // format: OFF
   object Compile {
     val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.6" // Scala License
     val scalaReflect  = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _) // Scala License
@@ -72,7 +71,6 @@ object Dependencies {
       val h2spec       = "io.github.summerwind"        % h2specName                     % h2specVersion      % "test" from(h2specUrl) // MIT
     }
   }
-  // format: ON
 
   import Compile._
 

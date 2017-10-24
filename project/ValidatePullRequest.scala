@@ -5,8 +5,8 @@ package akka
 
 import com.typesafe.tools.mima.plugin.MimaKeys.mimaReportBinaryIssues
 import com.typesafe.tools.mima.plugin.MimaPlugin
-//import net.virtualvoid.sbt.graph.backend.SbtUpdateReport
-//import net.virtualvoid.sbt.graph.ModuleGraph
+import net.virtualvoid.sbt.graph.backend.SbtUpdateReport
+import net.virtualvoid.sbt.graph.ModuleGraph
 import org.kohsuke.github.{ GHIssueComment, GitHubBuilder }
 import sbtunidoc.BaseUnidocPlugin.autoImport.unidoc
 import sbt.Keys._
@@ -84,7 +84,6 @@ object ValidatePullRequest extends AutoPlugin {
   val validatePullRequest = taskKey[Unit]("Validate pull request")
   val additionalTasks = taskKey[Seq[TaskKey[_]]]("Additional tasks for pull request validation")
 
-  /* See https://github.com/akka/akka-http/issues/1438
   def changedDirectoryIsDependency(changedDirs: Set[String], name: String, graphsToTest: Seq[(Configuration, ModuleGraph)])(log: Logger): Boolean = {
     val dirsOrExperimental = changedDirs.flatMap(dir => Set(dir, s"$dir-experimental"))
     graphsToTest exists { case (ivyScope, deps) =>
@@ -102,7 +101,6 @@ object ValidatePullRequest extends AutoPlugin {
       }
     }
   }
-  */
 
   def localTargetBranch: Option[String] = System.getenv.asScala.get("PR_TARGET_BRANCH")
   def jenkinsTargetBranch: Option[String] = System.getenv.asScala.get("ghprbTargetBranch")
@@ -200,14 +198,10 @@ object ValidatePullRequest extends AutoPlugin {
 
       val thisProjectId = CrossVersion(scalaVersion.value, scalaBinaryVersion.value)(projectID.value)
 
-      /* See https://github.com/akka/akka-http/issues/1438
       def graphFor(updateReport: UpdateReport, config: Configuration): (Configuration, ModuleGraph) =
         config -> SbtUpdateReport.fromConfigurationReport(updateReport.configuration(config).get, thisProjectId)
-      */
 
       def isDependency: Boolean = {
-        false
-        /* See https://github.com/akka/akka-http/issues/1438
         changedDirectoryIsDependency(
           changedDirs,
           name.value,
@@ -217,7 +211,6 @@ object ValidatePullRequest extends AutoPlugin {
             graphFor((update in Runtime).value, Runtime),
             graphFor((update in Provided).value, Provided),
             graphFor((update in Optional).value, Optional)))(log)
-        */
       }
 
       if (githubCommandEnforcedBuildAll.isDefined)

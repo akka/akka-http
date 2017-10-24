@@ -15,8 +15,7 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.9.2")
 addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.1")
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "2.0.0")
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.2.27")
-// See https://github.com/akka/akka-http/issues/1438
-//addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.8.3-SNAPSHOT") // for advanced PR validation features
+addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.0") // for advanced PR validation features
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.1")
 addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.1")
 addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.4")
