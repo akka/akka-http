@@ -9,7 +9,6 @@ import akka.http.caching.scaladsl.Cache
 import akka.http.caching.{ LfuCache, LfuCacheSettings }
 import akka.http.scaladsl.server.Directive0
 
-import scala.concurrent.duration.Duration
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.headers.CacheDirectives._
@@ -56,16 +55,8 @@ trait CachingDirectives {
   /**
    * Creates an [[LfuCache]]
    */
-  def routeCache[K](maxCapacity: Int = 500, initialCapacity: Int = 16, timeToLive: Duration = Duration.Inf,
-                    timeToIdle: Duration = Duration.Inf): Cache[K, RouteResult] = {
-    LfuCache {
-      LfuCacheSettings()
-        .withMaxCapacity(maxCapacity)
-        .withInitialCapacity(initialCapacity)
-        .withTimeToLive(timeToLive)
-        .withTimeToIdle(timeToIdle)
-    }
-  }
+  def routeCache[K](settings: LfuCacheSettings = LfuCacheSettings()): Cache[K, RouteResult] =
+    LfuCache[K, RouteResult](settings)
 }
 
 object CachingDirectives extends CachingDirectives
