@@ -4,12 +4,20 @@
 
 package docs.http.scaladsl.server.directives
 
+import akka.http.scaladsl.model.Uri
 import docs.http.scaladsl.server.RoutingSpec
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.headers.CacheDirectives._
+import akka.http.scaladsl.server.RequestContext
 import akka.http.scaladsl.server.directives.CachingDirectives
+import akka.http.scaladsl.model.HttpMethods.GET
 
 class CachingDirectivesExamplesSpec extends RoutingSpec with CachingDirectives {
+
+  val simpleKeyer: PartialFunction[RequestContext, Uri] = {
+    case r: RequestContext if r.request.method == GET ⇒ r.request.uri
+  }
+
   "cache" in {
     //#cache
     var i = 0

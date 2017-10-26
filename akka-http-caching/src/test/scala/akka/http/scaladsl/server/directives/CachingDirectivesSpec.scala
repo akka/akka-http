@@ -5,15 +5,20 @@
 package akka.http.scaladsl.server.directives
 
 import akka.http.impl.util.SingletonException
-import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.{ HttpResponse, Uri }
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.headers.CacheDirectives._
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.ExceptionHandler
+import akka.http.scaladsl.server.{ ExceptionHandler, RequestContext }
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import akka.http.scaladsl.model.HttpMethods.GET
 import org.scalatest.{ Matchers, WordSpec }
 
 class CachingDirectivesSpec extends WordSpec with Matchers with ScalatestRouteTest with CachingDirectives {
+
+  val simpleKeyer: PartialFunction[RequestContext, Uri] = {
+    case r: RequestContext if r.request.method == GET ⇒ r.request.uri
+  }
 
   val countingService = {
     var i = 0
