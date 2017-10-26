@@ -4,9 +4,12 @@
 
 package akka.http.caching
 
+import akka.annotation.InternalApi
 import akka.http.caching.javadsl.Cache
 import akka.http.impl.util.JavaMapping
 
+/** INTERNAL API */
+@InternalApi
 object CacheJavaMapping {
 
   def cacheMapping[JK, JV, SK <: JK, SV <: JV] =
