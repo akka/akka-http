@@ -35,6 +35,7 @@ object LfuCache {
   }
 
   /**
+   * Java API
    * Creates a new [[akka.http.caching.LfuCache]], with optional expiration depending
    * on whether a non-zero and finite timeToLive and/or timeToIdle is set or not.
    */
@@ -42,6 +43,7 @@ object LfuCache {
     apply(LfuCacheSettings())
 
   /**
+   * Java API
    * Creates a new [[akka.http.caching.LfuCache]], with optional expiration depending
    * on whether a non-zero and finite timeToLive and/or timeToIdle is set or not.
    */
