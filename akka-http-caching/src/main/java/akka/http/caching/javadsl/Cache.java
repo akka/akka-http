@@ -30,7 +30,7 @@ public interface Cache<K, V> {
   /**
    * Returns either the cached CompletionStage for the given key or the given value as a CompletionStage
    */
-  CompletionStage<V> getStrict(K key, Creator<V> block);
+  CompletionStage<V> getOrCreateStrict(K key, Creator<V> block);
 
   /**
    * Retrieves the CompletionStage instance that is currently in the cache for the given key.
