@@ -8,9 +8,7 @@ import java.util.function.Supplier
 
 import akka.annotation.ApiMayChange
 import akka.http.caching.javadsl.Cache
-import akka.http.javadsl.model.Uri
 import akka.http.javadsl.server.{ RequestContext, Route, RouteResult }
-import akka.http.javadsl.model.HttpMethods.GET
 import akka.http.caching.{ CacheJavaMapping, LfuCache }
 import akka.http.impl.util.JavaMapping
 
@@ -45,14 +43,6 @@ class CachingDirectives {
           keyer(javaRequestContext)
         }
     }
-  }
-
-  /**
-   * A simple keyer function that will cache responses to *all* GET requests, with the URI as key.
-   * WARNING - consider whether you need special handling for e.g. authorised requests.
-   */
-  val simpleKeyer: PartialFunction[RequestContext, Uri] = {
-    case r: RequestContext if r.getRequest.method == GET ⇒ r.getRequest.getUri
   }
 
   /**

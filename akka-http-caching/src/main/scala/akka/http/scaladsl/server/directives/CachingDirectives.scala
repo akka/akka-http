@@ -11,8 +11,6 @@ import akka.http.scaladsl.server.Directive0
 
 import scala.concurrent.duration.Duration
 import akka.http.scaladsl.server._
-import akka.http.scaladsl.model.HttpMethods.GET
-import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.headers.CacheDirectives._
 
@@ -27,14 +25,6 @@ trait CachingDirectives {
    */
   def cache[K](cache: Cache[K, RouteResult], keyer: PartialFunction[RequestContext, K]): Directive0 =
     cachingProhibited | alwaysCache(cache, keyer)
-
-  /**
-   * A simple keyer function that will cache responses to *all* GET requests, with the URI as key.
-   * WARNING - consider whether you need special handling for e.g. authorised requests.
-   */
-  val simpleKeyer: PartialFunction[RequestContext, Uri] = {
-    case r: RequestContext if r.request.method == GET ⇒ r.request.uri
-  }
 
   /**
    * Passes only requests to the inner route that explicitly forbid caching with a `Cache-Control` header with either
