@@ -139,7 +139,7 @@ object UnidocRoot extends AutoPlugin {
 /**
  * Unidoc settings for every multi-project. Adds genjavadoc specific settings.
  */
-object Unidoc extends AutoPlugin {
+object BootstrapGenjavadoc extends AutoPlugin {
 
   override def trigger = allRequirements
   override def requires = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(GenJavadocPlugin).getOrElse(plugins.JvmPlugin)

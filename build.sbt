@@ -75,7 +75,7 @@ lazy val parsing = project("akka-parsing")
   .addAkkaModuleDependency("akka-actor")
 
 lazy val httpCore = project("akka-http-core")
-  .enablePlugins(Unidoc)
+  .enablePlugins(BootstrapGenjavadoc)
   .settings(Dependencies.httpCore)
   .settings(VersionGenerator.versionSettings)
   .dependsOn(parsing)
@@ -83,18 +83,18 @@ lazy val httpCore = project("akka-http-core")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
 
 lazy val http = project("akka-http")
-  .enablePlugins(Unidoc)
+  .enablePlugins(BootstrapGenjavadoc)
   .dependsOn(httpCore)
 
 lazy val http2Support = project("akka-http2-support")
-  .enablePlugins(JavaAgent, Unidoc)
+  .enablePlugins(JavaAgent, BootstrapGenjavadoc)
   .disablePlugins(MimaPlugin) // experimental module still
   .settings(javaAgents += Dependencies.Compile.Test.alpnAgent)
   .dependsOn(httpCore, httpTestkit % "test", httpCore % "test->test")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
 
 lazy val httpTestkit = project("akka-http-testkit")
-  .enablePlugins(Unidoc)
+  .enablePlugins(BootstrapGenjavadoc)
   .settings(Dependencies.httpTestkit)
   .dependsOn(http)
   .addAkkaModuleDependency("akka-stream-testkit")
@@ -138,7 +138,7 @@ def httpMarshallersScalaSubproject(name: String) =
     base = file(s"akka-http-marshallers-scala/akka-http-$name")
   )
   .dependsOn(http)
-  .enablePlugins(Unidoc)
+  .enablePlugins(BootstrapGenjavadoc)
 
 def httpMarshallersJavaSubproject(name: String) =
   Project(
@@ -146,7 +146,7 @@ def httpMarshallersJavaSubproject(name: String) =
     base = file(s"akka-http-marshallers-java/akka-http-$name"),
   )
   .dependsOn(http)
-  .enablePlugins(Unidoc)
+  .enablePlugins(BootstrapGenjavadoc)
 
 lazy val docs = project("docs")
   .enablePlugins(AkkaParadoxPlugin, NoPublish, DeployRsync)
