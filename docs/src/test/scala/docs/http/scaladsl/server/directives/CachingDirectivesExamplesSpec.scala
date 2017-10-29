@@ -14,12 +14,17 @@ import akka.http.scaladsl.model.HttpMethods.GET
 
 class CachingDirectivesExamplesSpec extends RoutingSpec with CachingDirectives {
 
-  val simpleKeyer: PartialFunction[RequestContext, Uri] = {
-    case r: RequestContext if r.request.method == GET ⇒ r.request.uri
-  }
-
   "cache" in {
     //#cache
+    //Example keyer for non-authenticated GET requests
+    val simpleKeyer: PartialFunction[RequestContext, Uri] = {
+      val isGet: RequestContext ⇒ Boolean = _.request.method == GET
+      val isAuthorized: RequestContext ⇒ Boolean = _.request.headers.exists(_.is(Authorization.lowercaseName))
+      PartialFunction {
+        case r: RequestContext if isGet(r) && !isAuthorized(r) ⇒ r.request.uri
+      }
+    }
+
     var i = 0
     val route =
       cache(routeCache(), simpleKeyer) {
@@ -44,6 +49,15 @@ class CachingDirectivesExamplesSpec extends RoutingSpec with CachingDirectives {
   }
   "always-cache" in {
     //#always-cache
+    //Example keyer for non-authenticated GET requests
+    val simpleKeyer: PartialFunction[RequestContext, Uri] = {
+      val isGet: RequestContext ⇒ Boolean = _.request.method == GET
+      val isAuthorized: RequestContext ⇒ Boolean = _.request.headers.exists(_.is(Authorization.lowercaseName))
+      PartialFunction {
+        case r: RequestContext if isGet(r) && !isAuthorized(r) ⇒ r.request.uri
+      }
+    }
+
     var i = 0
     val route =
       alwaysCache(routeCache(), simpleKeyer) {
