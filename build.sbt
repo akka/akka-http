@@ -132,7 +132,6 @@ lazy val httpJackson =
 
 lazy val httpCaching = project("akka-http-caching")
   .settings(Dependencies.httpCaching)
-  .settings(Version.versionSettings)
   .dependsOn(http, httpCore, httpTestkit % "test")
 
 def project(name: String) =
