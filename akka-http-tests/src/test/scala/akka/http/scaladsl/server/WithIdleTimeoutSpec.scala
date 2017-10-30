@@ -53,8 +53,8 @@ class WithIdleTimeoutSpec extends WordSpec with Matchers with RequestBuilding wi
 
       // Then
       intercept[StreamTcpException] {
-        val entity = Await.result(entityF, 10 seconds)
-      }.getMessage shouldEqual "The connection closed with error: An existing connection was forcibly closed by the remote host"
+        Await.result(entityF, 10 seconds)
+      }
     }
 
     "fail via an withIdleTimeout directive with a sufficiently long timeout" in {
@@ -79,8 +79,8 @@ class WithIdleTimeoutSpec extends WordSpec with Matchers with RequestBuilding wi
 
       // Then
       intercept[StreamTcpException] {
-        val entity = Await.result(entityF, 10 seconds)
-      }.getMessage shouldEqual "The connection closed with error: An existing connection was forcibly closed by the remote host"
+        Await.result(entityF, 10 seconds)
+      }
     }
 
     "be streamed through via an withIdleTimeout directive with a sufficiently long timeout" in {
