@@ -7,8 +7,8 @@ package akka.http.scaladsl.model.headers
 import akka.annotation.InternalApi
 
 /**
-  * INTERNAL API
-  */
+ * INTERNAL API
+ */
 @InternalApi
 private[http] abstract class InternalCustomHeader(val name: String) extends CustomHeader {
   final def renderInRequests = false
