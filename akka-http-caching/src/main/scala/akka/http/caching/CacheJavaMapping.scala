@@ -10,7 +10,7 @@ import akka.http.impl.util.JavaMapping
 
 /** INTERNAL API */
 @InternalApi
-object CacheJavaMapping {
+private[akka] object CacheJavaMapping {
 
   def cacheMapping[JK, JV, SK <: JK, SV <: JV] =
     new JavaMapping[Cache[JK, JV], akka.http.caching.scaladsl.Cache[SK, SV]] {

@@ -7,10 +7,10 @@ package akka.http.javadsl.server.directives
 import java.util.function.Supplier
 
 import akka.annotation.ApiMayChange
-import akka.http.caching.javadsl.Cache
-import akka.http.javadsl.server.{ RequestContext, Route, RouteResult }
-import akka.http.caching.{ CacheJavaMapping, LfuCache, LfuCacheSettings }
+import akka.http.caching.javadsl.{ Cache, CachingSettings }
+import akka.http.caching.{ CacheJavaMapping, LfuCache }
 import akka.http.impl.util.JavaMapping
+import akka.http.javadsl.server.{ RequestContext, Route, RouteResult }
 
 @ApiMayChange
 class CachingDirectives {
@@ -64,8 +64,10 @@ class CachingDirectives {
 
   /**
    * Creates an [[LfuCache]]
+   *
+   * Default settings are available via [[akka.http.caching.javadsl.CachingSettings.create]].
    */
-  def routeCache[K](settings: LfuCacheSettings = LfuCacheSettings()): Cache[K, RouteResult] =
+  def routeCache[K](settings: CachingSettings): Cache[K, RouteResult] =
     JavaMapping.toJava(D.routeCache[K](settings))
 }
 

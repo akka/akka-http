@@ -8,6 +8,7 @@ import java.util.Random
 import java.util.concurrent.CountDownLatch
 
 import akka.actor.ActorSystem
+import akka.http.caching.scaladsl.{ CachingSettings, CachingSettingsImpl, LfuCacheSettingsImpl }
 import akka.testkit.TestKit
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 
@@ -112,11 +113,14 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
   def lfuCache[T](maxCapacity: Int = 500, initialCapacity: Int = 16,
                   timeToLive: Duration = Duration.Inf, timeToIdle: Duration = Duration.Inf): LfuCache[Int, T] = {
     LfuCache[Int, T] {
-      LfuCacheSettings()
-        .withMaxCapacity(maxCapacity)
-        .withInitialCapacity(initialCapacity)
-        .withTimeToLive(timeToLive)
-        .withTimeToIdle(timeToIdle)
+      val settings = CachingSettings(system)
+      settings.withLfuCacheSettings(
+        settings.lfuCacheSettings
+          .withMaxCapacity(maxCapacity)
+          .withInitialCapacity(initialCapacity)
+          .withTimeToLive(timeToLive)
+          .withTimeToIdle(timeToIdle)
+      )
     }.asInstanceOf[LfuCache[Int, T]]
   }
 
