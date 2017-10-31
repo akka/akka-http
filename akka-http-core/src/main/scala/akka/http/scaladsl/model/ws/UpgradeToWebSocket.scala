@@ -99,10 +99,13 @@ trait UpgradeToWebSocket extends jm.ws.UpgradeToWebSocket {
   override def handleMessagesWithSource(source: Graph[SourceShape[jm.ws.Message], _ <: Any])(implicit mat: Materializer): HttpResponse =
     handleMessages(createScalaCoupledFlow(akka.http.javadsl.model.ws.WebSocket.ignoreSink(mat), scaladsl.Source.fromGraph(source)))
 
-  private[this] def createScalaFlow(inSink: Graph[SinkShape[jm.ws.Message], _ <: Any], outSource: Graph[SourceShape[jm.ws.Message], _ <: Any]): Graph[FlowShape[Message, Message], NotUsed] =
-    JavaMapping.toScala(scaladsl.Flow.fromSinkAndSourceMat(inSink, outSource)(scaladsl.Keep.none): Graph[FlowShape[jm.ws.Message, jm.ws.Message], NotUsed])
+  private[this] def createScalaFlow(inSink: Graph[SinkShape[jm.ws.Message], _ <: Any], outSource: Graph[SourceShape[jm.ws.Message], _ <: Any]): Graph[FlowShape[Message, Message], NotUsed] = {
+    val graph: Graph[FlowShape[jm.ws.Message, jm.ws.Message], NotUsed] = scaladsl.Flow.fromSinkAndSourceMat(inSink, outSource)(scaladsl.Keep.none)
+    JavaMapping.toScala(graph)
+  }
 
   private[this] def createScalaCoupledFlow(inSink: Graph[SinkShape[jm.ws.Message], _ <: Any], outSource: Graph[SourceShape[jm.ws.Message], _ <: Any]): Graph[FlowShape[Message, Message], NotUsed] = {
-    ??? // I really can't get this to compile... :-| JavaMapping.toScala(scaladsl.CoupledTerminationFlow.fromSinkAndSource(Sink.fromGraph(inSink), Source.fromGraph(outSource)).mapMaterializedValue((v: (Any, Any)) ⇒ NotUsed): Graph[FlowShape[Message, Message], NotUsed])
+    val graph: Graph[FlowShape[jm.ws.Message, jm.ws.Message], NotUsed] = scaladsl.CoupledTerminationFlow.fromSinkAndSource(Sink.fromGraph(inSink), Source.fromGraph(outSource)).mapMaterializedValue(_ ⇒ NotUsed)
+    JavaMapping.toScala(graph)
   }
 }
