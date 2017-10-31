@@ -74,7 +74,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
     val serverBidiFlow =
       settings.idleTimeout match {
-        case t: FiniteDuration ⇒ httpLayer atop delayCancellationStage(settings) atop tlsStage atop HttpConnectionIdleTimeoutBidi(t, None)
+        case t: FiniteDuration ⇒ httpLayer atop delayCancellationStage(settings) atop tlsStage atop HttpConnectionIdleTimeoutBidi(t)
         case _                 ⇒ httpLayer atop delayCancellationStage(settings) atop tlsStage
       }
 
