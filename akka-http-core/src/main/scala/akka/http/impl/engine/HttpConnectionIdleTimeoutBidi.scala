@@ -4,50 +4,41 @@
 
 package akka.http.impl.engine
 
-import java.net.InetSocketAddress
 import java.util.concurrent.{ TimeUnit, TimeoutException }
 
-import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.http.impl.engine.server.HttpAttributes
 import akka.stream._
-import akka.stream.scaladsl.{ BidiFlow, Flow }
+import akka.stream.scaladsl.{ BidiFlow, Flow, Keep }
 import akka.stream.stage._
 import akka.util.ByteString
+import akka.{ Done, NotUsed }
 
-import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ Future, Promise }
 import scala.util.control.NoStackTrace
 
 /** INTERNAL API */
 @InternalApi
 private[akka] object HttpConnectionIdleTimeoutBidi {
-  def apply(idleTimeout: FiniteDuration): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] = {
-    val killSwitchP = Promise[UniqueKillSwitch]()
-    val connectionKiller = Flow.fromGraph(KillSwitches.single[ByteString]).mapMaterializedValue { switch ⇒
-      killSwitchP.success(switch)
-      NotUsed
-    }
-    val idleCallback = (remoteAddress: Option[InetSocketAddress]) ⇒ {
-      killSwitchP.future.foreach { killSwitch ⇒
-        val connectionToString = remoteAddress match {
-          case Some(addr) ⇒ s" on connection to [$addr]"
-          case _          ⇒ ""
-        }
-        println("hitting that killswitch")
-        killSwitch.abort(new HttpIdleTimeoutException(
-          "HTTP idle-timeout encountered" + connectionToString + ", " +
-            "no bytes passed in the last " + idleTimeout + ". " +
-            "This is configurable by akka.http.[server|client].idle-timeout.", idleTimeout))
-      }(ExecutionContexts.sameThreadExecutionContext)
-    }
-    val idleDetector = new HttpIdleStage[ByteString](idleTimeout, idleCallback)
+  def apply(idleTimeout: FiniteDuration, server: Boolean): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] = {
+    val idleDetector = new HttpIdleStage[ByteString](idleTimeout, server)
+    val connectionKiller = Flow.fromGraph(KillSwitches.single[ByteString])
 
-    BidiFlow.fromFlows(
+    BidiFlow.fromFlowsMat(
       idleDetector,
-      connectionKiller.via(idleDetector)
-    )
+      connectionKiller.viaMat(idleDetector)(Keep.both)
+    ) {
+        case (outIdleFuture, (killSwitch, inIdleFuture)) ⇒
+          val killTheConnection: PartialFunction[Throwable, Unit] = {
+            case ex: HttpIdleTimeoutException ⇒ killSwitch.abort(ex)
+          }
+          outIdleFuture.onFailure(killTheConnection)(ExecutionContexts.sameThreadExecutionContext)
+          inIdleFuture.onFailure(killTheConnection)(ExecutionContexts.sameThreadExecutionContext)
+
+          NotUsed
+      }
   }
 
   private object IdleTick
@@ -55,7 +46,7 @@ private[akka] object HttpConnectionIdleTimeoutBidi {
   // Custom idle stage for HTTP that instead of failing the stream completes a promise upon timeout
   // so that we can make sure we fail the stream from the source and avoid a race where cancel reaches
   // the user logic first, issue #1026
-  private class HttpIdleStage[T](timeout: FiniteDuration, onIdle: (Option[InetSocketAddress]) ⇒ Unit) extends GraphStage[FlowShape[T, T]] {
+  private class HttpIdleStage[T](timeout: FiniteDuration, server: Boolean) extends GraphStageWithMaterializedValue[FlowShape[T, T], Future[Done]] {
     val in = Inlet[T]("HttpIdleStage")
     val out = Outlet[T]("HttpIdleStage")
     override val shape = FlowShape[T, T](in, out)
@@ -67,25 +58,41 @@ private[akka] object HttpConnectionIdleTimeoutBidi {
         TimeUnit.NANOSECONDS)
     }
 
-    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) with InHandler with OutHandler {
-      private var nextDeadline: Long = System.nanoTime + timeoutNanos
-      private def onActivity(): Unit = nextDeadline = System.nanoTime + timeoutNanos
-      override def preStart(): Unit = schedulePeriodically(IdleTick, idleCheckInterval)
+    def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[Done]) = {
+      val failPromise = Promise[Done]()
+      val logic = new TimerGraphStageLogic(shape) with InHandler with OutHandler {
 
-      override def onPush(): Unit = {
-        onActivity()
-        push(out, grab(in))
-      }
+        private var nextDeadline: Long = System.nanoTime + timeoutNanos
+        private def onActivity(): Unit = nextDeadline = System.nanoTime + timeoutNanos
+        override def preStart(): Unit = schedulePeriodically(IdleTick, idleCheckInterval)
 
-      final override def onTimer(key: Any): Unit =
-        if (nextDeadline - System.nanoTime < 0) {
-          onIdle(inheritedAttributes.get[HttpAttributes.RemoteAddress].map(_.address))
-          cancelTimer(IdleTick)
+        override def onPush(): Unit = {
+          onActivity()
+          push(out, grab(in))
         }
 
-      override def onPull(): Unit = pull(in)
+        final override def onTimer(key: Any): Unit =
+          if (nextDeadline - System.nanoTime < 0) {
+            failPromise.tryFailure(idleTimeoutException)
+            cancelTimer(IdleTick)
+          }
 
-      setHandlers(in, out, this)
+        override def onPull(): Unit = pull(in)
+
+        def idleTimeoutException = {
+          val connectionToString = inheritedAttributes.get[HttpAttributes.RemoteAddress] match {
+            case Some(addr) ⇒ s" on connection to [${addr.address}]"
+            case _          ⇒ ""
+          }
+
+          new HttpIdleTimeoutException(
+            s"HTTP idle-timeout encountered$connectionToString, no bytes passed in the last $timeout. " +
+              s"This is configurable by [akka.http.${if (server) "server" else "client"}.idle-timeout]", timeout)
+        }
+
+        setHandlers(in, out, this)
+      }
+      (logic, failPromise.future)
     }
 
     override def toString = s"HttpIdleStage($timeout)"
