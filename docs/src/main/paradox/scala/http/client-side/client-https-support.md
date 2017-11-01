@@ -85,7 +85,7 @@ against the host name the connection was opened against is therefore vital.
 
 The default `HttpsContext` enables hostname verification. Akka HTTP relies on the [Lightbend SSL-Config](https://lightbend.github.io/ssl-config) library
 to implement this and security options for SSL/TLS. Hostname verification is provided by the JDK
-and used by Akka ' since Java 7, and on Java 6 the verification is implemented by ssl-config manually.
+and used by Akka since Java 7, and on Java 6 the verification is implemented by ssl-config manually.
 
 For further recommended reading we would like to highlight the [fixing hostname verification blog post](https://tersesystems.com/2014/03/23/fixing-hostname-verification/) by blog post by Will Sargent.
 
