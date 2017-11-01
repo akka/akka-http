@@ -33,6 +33,7 @@ import akka.http.javadsl.model
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws.Message
 import akka.http.impl.util.LogByteStringTools._
+import scala.concurrent.duration._
 
 /**
  * INTERNAL API

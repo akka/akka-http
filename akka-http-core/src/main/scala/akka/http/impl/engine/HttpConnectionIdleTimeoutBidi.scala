@@ -35,6 +35,7 @@ private[akka] object HttpConnectionIdleTimeoutBidi {
           case Some(addr) ⇒ s" on connection to [$addr]"
           case _          ⇒ ""
         }
+        println("hitting that killswitch")
         killSwitch.abort(new HttpIdleTimeoutException(
           "HTTP idle-timeout encountered" + connectionToString + ", " +
             "no bytes passed in the last " + idleTimeout + ". " +
@@ -44,8 +45,8 @@ private[akka] object HttpConnectionIdleTimeoutBidi {
     val idleDetector = new HttpIdleStage[ByteString](idleTimeout, idleCallback)
 
     BidiFlow.fromFlows(
-      connectionKiller.via(idleDetector),
-      idleDetector
+      idleDetector,
+      connectionKiller.via(idleDetector)
     )
   }
 

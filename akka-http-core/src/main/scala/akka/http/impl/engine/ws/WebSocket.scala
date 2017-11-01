@@ -37,7 +37,14 @@ private[http] object WebSocket {
     log:                  LoggingAdapter): BidiFlow[FrameEvent, Message, Message, FrameEvent, NotUsed] =
     masking(serverSide, maskingRandomFactory) atop
       frameHandling(serverSide, closeTimeout, log) atop
-      messageAPI(serverSide, closeTimeout)
+      messageAPI(serverSide, closeTimeout) atop
+      delayedCancellation
+
+  // #1026 avoid cancellation reaching the user flow before the idle timeout failure
+  val delayedCancellation = BidiFlow.fromFlows(
+    Flow[Message],
+    StreamUtils.delayCancellation[Message](3.seconds)
+  )
 
   /** The lowest layer that implements the binary protocol */
   def framing: BidiFlow[ByteString, FrameEvent, FrameEvent, ByteString, NotUsed] =
