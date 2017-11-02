@@ -58,7 +58,10 @@ private final class LineParser(maxLineSize: Int) extends GraphStage[FlowShape[By
               case _ ⇒
                 parseLines(bs, from, at + 1, parsedLines)
             }
-        buffer = parseLines(buffer ++ grab(in)) match {
+
+        // start the search where it ended, prevent iterating over all the buffer again
+        val currentBufferStart = math.max(0, buffer.length - 1)
+        buffer = parseLines(buffer ++ grab(in), at = currentBufferStart) match {
           case (remaining, _) if remaining.size > maxLineSize ⇒
             failStage(new IllegalStateException(s"maxLineSize of $maxLineSize exceeded!"))
             ByteString.empty // Clear buffer
