@@ -51,6 +51,9 @@ private final class LineParser(maxLineSize: Int) extends GraphStage[FlowShape[By
               // Lookahead for LF after CR
               case `cr` if at < bs.length - 1 && bs(at + 1) == lf ⇒
                 parseLines(bs, at + 2, at + 2, parsedLines :+ bs.slice(from, at).utf8String)
+              // if starts with a CR, but we don't know the next byte, we can't slice it yet, so simply advance
+              case `cr` if at >= bs.length - 1 =>
+                parseLines(bs, from, at + 1, parsedLines)
               // a CR or LF means we found a new slice
               case `cr` | `lf` ⇒
                 parseLines(bs, at + 1, at + 1, parsedLines :+ bs.slice(from, at).utf8String)
