@@ -46,11 +46,11 @@ object LinkParams {
   val blockedBy = rel("blocked-by")
 
   /**
-    * This can be either a bare word, an absolute URI, or a quoted, space-separated string of zero-or-more of either
-    *
-    * For a more detailed breakdown of the relation type link parameter, see
-    * http://tools.ietf.org/html/rfc5988#section-5.3
-    */
+   * This can be either a bare word, an absolute URI, or a quoted, space-separated string of zero-or-more of either
+   *
+   * For a more detailed breakdown of the relation type link parameter, see
+   * http://tools.ietf.org/html/rfc5988#section-5.3
+   */
   final case class rel(value: String) extends LinkParam {
     def render[R <: Rendering](r: R): r.type = {
       r ~~ "rel="
@@ -59,9 +59,9 @@ object LinkParams {
   }
 
   /**
-    * For a more detailed breakdown of the anchor link parameter, see
-    * http://tools.ietf.org/html/rfc5988#section-5.2
-    */
+   * For a more detailed breakdown of the anchor link parameter, see
+   * http://tools.ietf.org/html/rfc5988#section-5.2
+   */
   final case class anchor(uri: Uri) extends LinkParam {
     def value: AnyRef = uri
 
@@ -69,11 +69,11 @@ object LinkParams {
   }
 
   /**
-    * This can be either a bare word, an absolute URI, or a quoted, space-separated string of zero-or-more of either.
-    *
-    * For a more detailed breakdown of the reverse relationship link parameter, see
-    * http://tools.ietf.org/html/rfc5988#section-5.3
-    */
+   * This can be either a bare word, an absolute URI, or a quoted, space-separated string of zero-or-more of either.
+   *
+   * For a more detailed breakdown of the reverse relationship link parameter, see
+   * http://tools.ietf.org/html/rfc5988#section-5.3
+   */
   final case class rev(value: String) extends LinkParam {
     def render[R <: Rendering](r: R): r.type = {
       r ~~ "rev="
@@ -82,9 +82,9 @@ object LinkParams {
   }
 
   /**
-    * For a more detailed breakdown of the dereferenced language hint link parameter
-    * http://tools.ietf.org/html/rfc5988#section-5.4
-    */
+   * For a more detailed breakdown of the dereferenced language hint link parameter
+   * http://tools.ietf.org/html/rfc5988#section-5.4
+   */
   final case class hreflang(lang: Language) extends LinkParam {
     def value: AnyRef = lang
 
@@ -92,9 +92,9 @@ object LinkParams {
   }
 
   /**
-    * For a more detailed breakdown of how to use the dereferenced language hint link parameter, see
-    * http://tools.ietf.org/html/rfc5988#section-5.4
-    */
+   * For a more detailed breakdown of how to use the dereferenced language hint link parameter, see
+   * http://tools.ietf.org/html/rfc5988#section-5.4
+   */
   final case class media(desc: String) extends LinkParam {
     def value: AnyRef = desc
 
@@ -105,18 +105,19 @@ object LinkParams {
   }
 
   /**
-    * For a more detailed breakdown of how to use the dereferenced language hint link parameter, see
-    * http://tools.ietf.org/html/rfc5988#section-5.4
-    */  final case class title(title: String) extends LinkParam {
+   * For a more detailed breakdown of how to use the dereferenced language hint link parameter, see
+   * http://tools.ietf.org/html/rfc5988#section-5.4
+   */
+  final case class title(title: String) extends LinkParam {
     def value: AnyRef = title
 
     def render[R <: Rendering](r: R): r.type = r ~~ "title=\"" ~~ title ~~ '"'
   }
 
   /**
-    * For a more detailed breakdown of how to use the dereferenced language hint link parameter, see
-    * http://tools.ietf.org/html/rfc5988#section-5.4
-    */
+   * For a more detailed breakdown of how to use the dereferenced language hint link parameter, see
+   * http://tools.ietf.org/html/rfc5988#section-5.4
+   */
   final case class `title*`(title: String) extends LinkParam {
     def value: AnyRef = title
 
@@ -127,9 +128,9 @@ object LinkParams {
   }
 
   /**
-    * For a more detailed breakdown of how to use the dereferenced language hint link parameter, see
-    * http://tools.ietf.org/html/rfc5988#section-5.4
-    */
+   * For a more detailed breakdown of how to use the dereferenced language hint link parameter, see
+   * http://tools.ietf.org/html/rfc5988#section-5.4
+   */
   final case class `type`(mediaType: MediaType) extends LinkParam {
     def value: AnyRef = mediaType
 
