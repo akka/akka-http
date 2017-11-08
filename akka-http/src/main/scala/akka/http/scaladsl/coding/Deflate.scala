@@ -4,20 +4,30 @@
 
 package akka.http.scaladsl.coding
 
-import java.util.zip.{ Inflater, Deflater }
+import java.util.zip.{ Deflater, Inflater }
+
 import akka.stream.Attributes
 import akka.stream.impl.io.ByteStringParser
 import ByteStringParser.{ ParseResult, ParseStep }
-import akka.util.{ ByteStringBuilder, ByteString }
+import akka.NotUsed
+import akka.util.{ ByteString, ByteStringBuilder }
 
 import scala.annotation.tailrec
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.HttpEncodings
+import akka.stream.scaladsl.Flow
 
 class Deflate(val messageFilter: HttpMessage ⇒ Boolean) extends Coder with StreamDecoder {
   val encoding = HttpEncodings.deflate
   def newCompressor = new DeflateCompressor
   def newDecompressorStage(maxBytesPerChunk: Int) = () ⇒ new DeflateDecompressor(maxBytesPerChunk)
+  def decodeMessage(message: HttpMessage, noWrap: Boolean): message.Self =
+    if (message.headers exists Encoder.isContentEncodingHeader)
+      message.transformEntityDataBytes(decoderFlowWithWrapping(noWrap)).withHeaders(message.headers filterNot Encoder.isContentEncodingHeader)
+    else message.self
+
+  private def decoderFlowWithWrapping(noWrap: Boolean): Flow[ByteString, ByteString, NotUsed] =
+    Flow.fromGraph(new DeflateDecompressor(maxBytesPerChunk, noWrap))
 }
 object Deflate extends Deflate(Encoder.DefaultFilter)
 
@@ -86,10 +96,11 @@ private[http] object DeflateCompressor {
   }
 }
 
-class DeflateDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) extends DeflateDecompressorBase(maxBytesPerChunk) {
+class DeflateDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault, noWrap: Boolean = false)
+  extends DeflateDecompressorBase(maxBytesPerChunk) {
 
   override def createLogic(attr: Attributes) = new DecompressorParsingLogic {
-    override val inflater: Inflater = new Inflater()
+    override val inflater: Inflater = new Inflater(noWrap)
 
     override val inflateState = new Inflate(true) {
       override def onTruncation(): Unit = completeStage()
