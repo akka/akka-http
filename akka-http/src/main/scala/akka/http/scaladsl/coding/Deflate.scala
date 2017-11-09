@@ -1,33 +1,23 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
  */
 
 package akka.http.scaladsl.coding
 
-import java.util.zip.{ Deflater, Inflater }
-
+import java.util.zip.{ Inflater, Deflater }
 import akka.stream.Attributes
 import akka.stream.impl.io.ByteStringParser
 import ByteStringParser.{ ParseResult, ParseStep }
-import akka.NotUsed
-import akka.util.{ ByteString, ByteStringBuilder }
+import akka.util.{ ByteStringBuilder, ByteString }
 
 import scala.annotation.tailrec
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.HttpEncodings
-import akka.stream.scaladsl.Flow
 
 class Deflate(val messageFilter: HttpMessage ⇒ Boolean) extends Coder with StreamDecoder {
   val encoding = HttpEncodings.deflate
   def newCompressor = new DeflateCompressor
   def newDecompressorStage(maxBytesPerChunk: Int) = () ⇒ new DeflateDecompressor(maxBytesPerChunk)
-  def decodeMessage(message: HttpMessage, noWrap: Boolean): message.Self =
-    if (message.headers exists Encoder.isContentEncodingHeader)
-      message.transformEntityDataBytes(decoderFlowWithWrapping(noWrap)).withHeaders(message.headers filterNot Encoder.isContentEncodingHeader)
-    else message.self
-
-  private def decoderFlowWithWrapping(noWrap: Boolean): Flow[ByteString, ByteString, NotUsed] =
-    Flow.fromGraph(new DeflateDecompressor(maxBytesPerChunk, noWrap))
 }
 object Deflate extends Deflate(Encoder.DefaultFilter)
 
@@ -96,14 +86,22 @@ private[http] object DeflateCompressor {
   }
 }
 
-class DeflateDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault, noWrap: Boolean = false)
-  extends DeflateDecompressorBase(maxBytesPerChunk) {
+class DeflateDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) extends DeflateDecompressorBase(maxBytesPerChunk) {
 
   override def createLogic(attr: Attributes) = new DecompressorParsingLogic {
-    override val inflater: Inflater = new Inflater(noWrap)
+    var maybeNoWrappedInflater: Option[Inflater] = None
+    override def inflater: Inflater = maybeNoWrappedInflater.getOrElse(new Inflater())
 
     override val inflateState = new Inflate(true) {
       override def onTruncation(): Unit = completeStage()
+
+      override def parse(reader: ByteStringParser.ByteReader): ParseResult[ByteString] = {
+        val data = reader.remainingData
+        maybeNoWrappedInflater = maybeNoWrappedInflater
+          .orElse(data.headOption.filter(b ⇒ (b & 0x0F) != 8)
+            .fold(Some(new Inflater()))(_ ⇒ Some(new Inflater(true))))
+        super.parse(new ByteStringParser.ByteReader(reader.takeAll()))
+      }
     }
 
     override def afterInflate = inflateState
@@ -117,7 +115,7 @@ abstract class DeflateDecompressorBase(maxBytesPerChunk: Int = Decoder.MaxBytesP
   extends ByteStringParser[ByteString] {
 
   abstract class DecompressorParsingLogic extends ParsingLogic {
-    val inflater: Inflater
+    def inflater: Inflater
     def afterInflate: ParseStep[ByteString]
     def afterBytesRead(buffer: Array[Byte], offset: Int, length: Int): Unit
     val inflateState: Inflate

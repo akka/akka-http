@@ -35,7 +35,7 @@ class DeflateSpec extends CoderSpec {
     }
     "properly round-trip encode/decode an HttpRequest using wrapping" in {
       val request = HttpRequest(POST, entity = HttpEntity(largeText))
-      Deflate.decodeMessage(encodeNoWrappedMessage(request), noWrap = true).toStrict(3.seconds.dilated)
+      Deflate.decodeMessage(encodeNoWrappedMessage(request)).toStrict(3.seconds.dilated)
         .awaitResult(3.seconds.dilated) should equal(request)
     }
   }
