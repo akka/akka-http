@@ -33,17 +33,27 @@ class DeflateSpec extends CoderSpec {
         ourDecode(ByteString(0, 1, 2, 3, 4))
       }).ultimateCause should be(a[DataFormatException])
     }
-    "properly round-trip encode/decode an HttpRequest using wrapping" in {
+    "properly round-trip encode/decode an HttpRequest using no-wrap and best compression" in {
       val request = HttpRequest(POST, entity = HttpEntity(largeText))
-      Deflate.decodeMessage(encodeNoWrappedMessage(request)).toStrict(3.seconds.dilated)
+      Deflate.decodeMessage(encodeMessage(request, Deflater.BEST_COMPRESSION, noWrap = true)).toStrict(3.seconds.dilated)
+        .awaitResult(3.seconds.dilated) should equal(request)
+    }
+    "properly round-trip encode/decode an HttpRequest using no-wrap and no compression" in {
+      val request = HttpRequest(POST, entity = HttpEntity(largeText))
+      Deflate.decodeMessage(encodeMessage(request, Deflater.NO_COMPRESSION, noWrap = true)).toStrict(3.seconds.dilated)
+        .awaitResult(3.seconds.dilated) should equal(request)
+    }
+    "properly round-trip encode/decode an HttpRequest with wrapping and no compression" in {
+      val request = HttpRequest(POST, entity = HttpEntity(largeText))
+      Deflate.decodeMessage(encodeMessage(request, Deflater.NO_COMPRESSION, noWrap = false)).toStrict(3.seconds.dilated)
         .awaitResult(3.seconds.dilated) should equal(request)
     }
   }
 
-  private def encodeNoWrappedMessage(request: HttpRequest): HttpRequest = {
+  private def encodeMessage(request: HttpRequest, compressionLevel: Int, noWrap: Boolean): HttpRequest = {
     val deflaterWithoutWrapping = new Deflate(Encoder.DefaultFilter) {
       override def newCompressor = new DeflateCompressor {
-        override lazy val deflater = new Deflater(Deflater.BEST_COMPRESSION, true)
+        override lazy val deflater = new Deflater(compressionLevel, noWrap)
       }
     }
     request.transformEntityDataBytes(deflaterWithoutWrapping.encoderFlow)
