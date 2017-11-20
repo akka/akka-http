@@ -24,6 +24,7 @@ abstract class CachingSettings private[http] () extends javadsl.CachingSettings 
 @InternalApi
 private[http] final case class CachingSettingsImpl(lfuCacheSettings: LfuCacheSettings) extends CachingSettings {
   override def withLfuCacheSettings(newSettings: javadsl.LfuCacheSettings): CachingSettings = copy(lfuCacheSettings = newSettings.asInstanceOf[LfuCacheSettings])
+  override def productPrefix = "CachingSettings"
 }
 
 /**
@@ -54,7 +55,9 @@ private[http] final case class LfuCacheSettingsImpl(
   initialCapacity: Int,
   timeToLive:      Duration,
   timeToIdle:      Duration
-) extends LfuCacheSettings
+) extends LfuCacheSettings {
+  override def productPrefix = "LfuCacheSettings"
+}
 
 object CachingSettings extends SettingsCompanion[CachingSettings]("akka.http.caching") {
   def fromSubConfig(root: Config, c: Config) = {
