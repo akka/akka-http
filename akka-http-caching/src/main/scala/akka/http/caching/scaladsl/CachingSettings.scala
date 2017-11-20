@@ -5,7 +5,6 @@ package akka.http.caching.scaladsl
 
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.http.caching.javadsl
-import akka.http.caching.javadsl.CachingSettings
 import akka.http.impl.util.SettingsCompanion
 import com.typesafe.config.Config
 
@@ -19,11 +18,14 @@ import akka.http.impl.util._
 abstract class CachingSettings private[http] () extends javadsl.CachingSettings { self: CachingSettingsImpl ⇒
   override def lfuCacheSettings: LfuCacheSettings
 
+  // overloads for idiomatic Scala use
+  def withLfuCacheSettings(newSettings: LfuCacheSettings): CachingSettings =
+    self.copy(lfuCacheSettings = newSettings)
 }
+
 /** INTERNAL API */
 @InternalApi
 private[http] final case class CachingSettingsImpl(lfuCacheSettings: LfuCacheSettings) extends CachingSettings {
-  override def withLfuCacheSettings(newSettings: javadsl.LfuCacheSettings): CachingSettings = copy(lfuCacheSettings = newSettings.asInstanceOf[LfuCacheSettings])
   override def productPrefix = "CachingSettings"
 }
 
