@@ -16,7 +16,7 @@ import akka.http.impl.util._
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class CachingSettings extends javadsl.CachingSettings { this: CachingSettingsImpl ⇒
+abstract class CachingSettings private[http] () extends javadsl.CachingSettings { self: CachingSettingsImpl ⇒
   override def lfuCacheSettings: LfuCacheSettings
 
 }
@@ -30,7 +30,7 @@ private[http] final case class CachingSettingsImpl(lfuCacheSettings: LfuCacheSet
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class LfuCacheSettings extends javadsl.LfuCacheSettings { self: LfuCacheSettingsImpl ⇒
+abstract class LfuCacheSettings private[http] () extends javadsl.LfuCacheSettings { self: LfuCacheSettingsImpl ⇒
   def maxCapacity: Int
   def initialCapacity: Int
   def timeToLive: Duration

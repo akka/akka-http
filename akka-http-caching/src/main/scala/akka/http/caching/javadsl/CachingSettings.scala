@@ -25,7 +25,7 @@ abstract class CachingSettings private[http] () { self: CachingSettingsImpl ⇒
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class LfuCacheSettings { self: LfuCacheSettingsImpl ⇒
+abstract class LfuCacheSettings private[http] () { self: LfuCacheSettingsImpl ⇒
   def getMaxCapacity: Int
   def getInitialCapacity: Int
   def getTimeToLive: Duration
