@@ -34,6 +34,7 @@ private final class LineParser(maxLineSize: Int) extends GraphStage[FlowShape[By
       import shape._
 
       private var buffer = ByteString.empty
+      private var slicedCr = false
 
       setHandlers(in, out, this)
 
@@ -43,19 +44,23 @@ private final class LineParser(maxLineSize: Int) extends GraphStage[FlowShape[By
           bs:          ByteString,
           from:        Int            = 0,
           at:          Int            = 0,
-          parsedLines: Vector[String] = Vector.empty): (ByteString, Vector[String]) =
+          parsedLines: Vector[String] = Vector.empty,
+          slicedCr:    Boolean        = false): (ByteString, Vector[String], Boolean) =
           if (at >= bs.length)
-            (bs.drop(from), parsedLines)
+            (bs.drop(from), parsedLines, slicedCr)
           else
             bs(at) match {
               // Lookahead for LF after CR
               case `cr` if at < bs.length - 1 && bs(at + 1) == lf ⇒
                 parseLines(bs, at + 2, at + 2, parsedLines :+ bs.slice(from, at).utf8String)
-              // if starts with a CR, but we don't know the next byte, we can't slice it yet, so simply advance
-              case `cr` if at >= bs.length - 1 ⇒
-                parseLines(bs, from, at + 1, parsedLines)
+              // if is a CR but we don't know the next character, slice it but flag that the last character was a CR so if the next happens to be a LF we just ignore
+              case `cr` ⇒
+                parseLines(bs, at + 1, at + 1, parsedLines :+ bs.slice(from, at).utf8String, slicedCr = true)
+              // if is a LF and we just sliced a CR then we simply advance
+              case `lf` if slicedCr ⇒
+                parseLines(bs, at + 1, at + 1, parsedLines)
               // a CR or LF means we found a new slice
-              case `cr` | `lf` ⇒
+              case `lf` ⇒
                 parseLines(bs, at + 1, at + 1, parsedLines :+ bs.slice(from, at).utf8String)
               // for other input, simply advance
               case _ ⇒
@@ -64,12 +69,13 @@ private final class LineParser(maxLineSize: Int) extends GraphStage[FlowShape[By
 
         // start the search where it ended, prevent iterating over all the buffer again
         val currentBufferStart = math.max(0, buffer.length - 1)
-        buffer = parseLines(buffer ++ grab(in), at = currentBufferStart) match {
-          case (remaining, _) if remaining.size > maxLineSize ⇒
+        buffer = parseLines(buffer ++ grab(in), at = currentBufferStart, slicedCr = slicedCr) match {
+          case (remaining, _, _) if remaining.size > maxLineSize ⇒
             failStage(new IllegalStateException(s"maxLineSize of $maxLineSize exceeded!"))
             ByteString.empty // Clear buffer
-          case (remaining, parsedLines) ⇒
+          case (remaining, parsedLines, lastCharWasCr) ⇒
             if (parsedLines.nonEmpty) emitMultiple(out, parsedLines) else pull(in)
+            slicedCr = lastCharWasCr
             remaining
         }
       }

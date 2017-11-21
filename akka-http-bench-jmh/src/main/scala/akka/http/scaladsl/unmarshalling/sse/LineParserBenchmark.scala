@@ -1,16 +1,16 @@
 package akka.http.scaladsl.unmarshalling.sse
 
-import java.nio.file.{Files, Path}
+import java.nio.file.{ Files, Path }
 import java.util.concurrent.TimeUnit
 
 import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{FileIO, Keep, RunnableGraph, Sink, Source}
+import akka.stream.scaladsl.{ FileIO, Keep, RunnableGraph, Sink, Source }
 import akka.util.ByteString
 import org.openjdk.jmh.annotations._
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 
 @State(Scope.Benchmark)
