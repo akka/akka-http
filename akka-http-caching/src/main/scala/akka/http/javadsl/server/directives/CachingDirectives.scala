@@ -68,7 +68,7 @@ class CachingDirectives {
    * Default settings are available via [[akka.http.caching.javadsl.CachingSettings.create]].
    */
   def routeCache[K](settings: CachingSettings): Cache[K, RouteResult] =
-    JavaMapping.toJava(D.routeCache[K](settings))
+    LfuCache.create[K, RouteResult](settings)
 }
 
 object CachingDirectives extends CachingDirectives
