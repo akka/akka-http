@@ -34,6 +34,10 @@ pool methods like
 @scala[`Http().singleRequest`, `Http().superPool`, or `Http().cachedHostConnectionPool`]
 @java[`Http.get(...).singleRequest`, `Http.get(...).superPool`, or `Http.get(...).cachedHostConnectionPool`].
 
+Same feature is available for Web Sockets, with `ClientConnectionSettings` instead of `ConnectionPoolSettings` and
+@scala[`Http().singleWebSocketRequest`]
+@java[`Http.get(...).singleWebSocketRequest`].
+
 ### Single Connection Usage
 
 You can configure a custom transport for a single HTTP connection by passing it to the `Http().outgoingConnectionUsingTransport`
@@ -60,7 +64,7 @@ Instantiate the HTTP(S) proxy transport using `ClientTransport.httpsProxy(proxyA
 ### Use HTTP(S) proxy with @scala[`Http().singleRequest`]@java[`Http.get(...).singleRequest`]
 
 To make use of an HTTP proxy when using the `singleRequest` API you simply need to configure the proxy and pass
-the apropriate settings object when calling the single request method.
+the appropriate settings object when calling the single request method.
 
 Scala
 :  @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #https-proxy-example-single-request }
@@ -68,17 +72,28 @@ Scala
 Java
 :  @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #https-proxy-example-single-request }
 
+### Use HTTP(S) proxy with @scala[`Http().singleWebSocketRequest`]@java[`Http.get(...).singleWebSocketRequest`]
+
+Making use of an HTTP proxy when using the `singleWebSocketRequest` is done the same way, with `ClientConnectionSettings` instead of `ConnectionPoolSettings`:
+
+Scala
+:  @@snip [WebSocketClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala) { #https-proxy-singleWebSocket-request-example }
+
+Java
+:  @@snip [WebSocketClientExampleTest.java]($test$/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #https-proxy-singleWebSocket-request-example }
+
 ### Use HTTP(S) proxy that requires authentication
 
 In order to use a HTTP(S) proxy that requires authentication, you need to provide `HttpCredentials` that will be used
 when making the CONNECT request to the proxy:
-
 
 Scala
 :  @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #auth-https-proxy-example-single-request }
 
 Java
 :  @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #auth-https-proxy-example-single-request }
+
+
 
 ## Implementing Custom Transports
 

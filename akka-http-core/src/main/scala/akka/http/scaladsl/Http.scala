@@ -673,7 +673,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     val port = uri.effectivePort
 
     webSocketClientLayer(request, settings, log)
-      .joinMat(_outgoingTlsConnectionLayer(host, port, settings.withLocalAddressOverride(localAddress), ctx, ClientTransport.TCP, log))(Keep.left)
+      .joinMat(_outgoingTlsConnectionLayer(host, port, settings.withLocalAddressOverride(localAddress), ctx, settings.transport, log))(Keep.left)
   }
 
   /**
