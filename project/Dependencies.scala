@@ -24,8 +24,8 @@ object Dependencies {
   val Versions = Seq(
     crossScalaVersions := Seq("2.11.11", "2.12.4"),
     scalaVersion := crossScalaVersions.value.head,
-    akkaVersion := System.getProperty("akka.build.version", "2.4.19"),
-    scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.13.4"),
+    akkaVersion := System.getProperty("akka.build.version", "2.4.20"),
+    scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.13.5"),
     scalaTestVersion := "3.0.4",
     specs2Version := "3.9.5"
   )
@@ -150,16 +150,17 @@ object DependencyHelpers {
   }
 
   // OS name for Go binaries
-  def osName = {
+  def osName: String = {
     val os = System.getProperty("os.name").toLowerCase()
     if (os startsWith "mac") "darwin"
     else if (os startsWith "win") "windows"
     else "linux"
   }
 
-  def exeIfWindows = {
+  def exeIfWindows: String = {
     val os = System.getProperty("os.name").toLowerCase()
     if (os startsWith "win") ".exe"
     else ""
   }
+
 }
