@@ -6,7 +6,7 @@ package akka.http.impl.model.parser
 
 import akka.annotation.InternalApi
 import akka.parboiled2.Parser
-import akka.http.scaladsl.model.{ RemoteAddress, Uri }
+import akka.http.scaladsl.model.{ RemoteAddress, Uri, DateTime }
 import akka.http.scaladsl.model.headers._
 import CharacterClasses.`scheme-char`
 
@@ -185,6 +185,11 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
     // we are bit more relaxed than the spec here by also parsing a potential fragment
     // but catch it in the `Referer` instance validation (with a `require` in the constructor)
     uriReference ~ EOI ~> (Referer(_))
+  }
+
+  //https://tools.ietf.org/html/rfc7231#section-7.1.3
+  def `retry-after` = rule {
+    (`HTTP-date` ~> (Right(_)) | `delta-seconds` ~> (Left(_))) ~ EOI ~> (`Retry-After`(_))
   }
 
   // http://tools.ietf.org/html/rfc7231#section-7.4.2
