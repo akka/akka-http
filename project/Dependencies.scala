@@ -40,7 +40,7 @@ object Dependencies {
     val sslConfigAkka = "com.typesafe"               %% "ssl-config-akka"              % "0.2.2"       // ApacheV2
 
     // For akka-http spray-json support
-    val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.3"       // ApacheV2
+    val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.4"       // ApacheV2
 
     // For akka-http-jackson support
     val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % jacksonVersion // ApacheV2
@@ -51,6 +51,8 @@ object Dependencies {
     val hpack       = "com.twitter"                   % "hpack"                        % "1.0.2"       // ApacheV2
 
     val alpnApi     = "org.eclipse.jetty.alpn"        % "alpn-api"                     % "1.1.3.v20160715" // ApacheV2
+
+    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.4.0"
 
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
@@ -80,12 +82,14 @@ object Dependencies {
     DependencyHelpers.versionDependentDeps(
       Dependencies.Compile.scalaReflect % "provided"
     ),
-    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.fullMapped(nominalScalaVersion))
+    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
   )
 
   lazy val httpCore = l ++= Seq(
     Test.sprayJson, // for WS Autobahn test metadata
     Test.scalatest.value, Test.scalacheck.value, Test.junit)
+
+  lazy val httpCaching = l ++= Seq(caffeine, Test.scalatest.value)
 
   lazy val http = l ++= Seq()
 
@@ -95,8 +99,8 @@ object Dependencies {
 
   lazy val httpTestkit = l ++= Seq(
     Test.junit, Test.junitIntf, Compile.junit % "provided",
-    Test.scalatest.value.copy(configurations = Some("provided; test")),
-    Test.specs2.value.copy(configurations = Some("provided; test"))
+    Test.scalatest.value.withConfigurations(Some("provided; test")),
+    Test.specs2.value.withConfigurations(Some("provided; test"))
   )
 
   lazy val httpTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.junitIntf)
