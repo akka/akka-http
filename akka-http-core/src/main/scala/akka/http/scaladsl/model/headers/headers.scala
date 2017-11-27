@@ -714,7 +714,7 @@ final case class `Retry-After`(delaySecondsOrDateTime: Either[Long, DateTime]) e
     case Left(delay)     => r ~~ delay
     case Right(dateTime) => dateTime.renderRfc1123DateTimeString(r)
   }
-  protected def companion = `Content-Type`
+  protected def companion = `Retry-After`
 
   /** Java API suppport */
   override protected def delaySeconds(): Option[java.lang.Long] = delaySecondsOrDateTime.left.toOption.map(Long.box)
