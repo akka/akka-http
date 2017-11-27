@@ -17,19 +17,19 @@ import scala.util.Right;
  */
 public abstract class RetryAfter extends akka.http.scaladsl.model.HttpHeader {
 
-	  protected abstract scala.Option<Long> delaySeconds();
+    protected abstract scala.Option<Long> delaySeconds();
 	  
-	  protected abstract scala.Option<akka.http.scaladsl.model.DateTime> dateTime();
+    protected abstract scala.Option<akka.http.scaladsl.model.DateTime> dateTime();
 
     /** number of seconds for the retry attempt, if available */
-	  public Optional<Long> getDelaySeconds() {
-	  	return Util.convertOption(delaySeconds());
-	  } 
+    public Optional<Long> getDelaySeconds() {
+    	return Util.convertOption(delaySeconds());
+    }
 
     /** the date for the retry attempt, if available */
-	  public Optional<DateTime> getDateTime() {
-	  	return Util.convertOption(dateTime());
-	  }
+    public Optional<DateTime> getDateTime() {
+    	return Util.convertOption(dateTime());
+    }
 
     public static RetryAfter create(Long delaySeconds) {
         return new akka.http.scaladsl.model.headers.Retry$minusAfter(new Left(delaySeconds));
