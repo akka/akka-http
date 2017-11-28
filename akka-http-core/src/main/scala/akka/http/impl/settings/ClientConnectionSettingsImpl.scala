@@ -41,7 +41,7 @@ private[akka] final case class ClientConnectionSettingsImpl(
 
 object ClientConnectionSettingsImpl extends SettingsCompanion[ClientConnectionSettingsImpl]("akka.http.client") {
   def fromSubConfig(root: Config, inner: Config) = {
-    val c = inner.withFallback(root.getConfig(prefix))
+    val c = root.getConfig(prefix).withFallback(inner)
     new ClientConnectionSettingsImpl(
       userAgentHeader = c.getString("user-agent-header").toOption.map(`User-Agent`(_)),
       connectingTimeout = c getFiniteDuration "connecting-timeout",

@@ -62,7 +62,7 @@ object ParserSettingsImpl extends SettingsCompanion[ParserSettingsImpl]("akka.ht
   private[this] val noCustomMediaTypes: (String, String) ⇒ Option[MediaType] = ConstantFun.scalaAnyTwoToNone
 
   def fromSubConfig(root: Config, inner: Config) = {
-    val c = inner.withFallback(root.getConfig(prefix))
+    val c = root.getConfig(prefix).withFallback(inner)
     val cacheConfig = c getConfig "header-cache"
 
     new ParserSettingsImpl(
