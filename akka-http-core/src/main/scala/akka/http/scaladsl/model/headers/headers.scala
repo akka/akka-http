@@ -711,8 +711,8 @@ object `Retry-After` extends ModeledCompanion[`Retry-After`] {
 final case class `Retry-After`(delaySecondsOrDateTime: Either[Long, DateTime]) extends jm.headers.RetryAfter with ResponseHeader {
   require(delaySecondsOrDateTime.left.toOption.forall(_ >= 0), "Retry-after header must not contain a negative delay in seconds")
   def renderValue[R <: Rendering](r: R): r.type = delaySecondsOrDateTime match {
-    case Left(delay)     => r ~~ delay
-    case Right(dateTime) => dateTime.renderRfc1123DateTimeString(r)
+    case Left(delay)     ⇒ r ~~ delay
+    case Right(dateTime) ⇒ dateTime.renderRfc1123DateTimeString(r)
   }
   protected def companion = `Retry-After`
 
