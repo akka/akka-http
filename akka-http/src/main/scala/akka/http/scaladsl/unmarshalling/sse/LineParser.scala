@@ -34,7 +34,7 @@ private final class LineParser(maxLineSize: Int) extends GraphStage[FlowShape[By
       import shape._
 
       private var buffer = ByteString.empty
-      private var slicedCr = false
+      private var lastCharWasCr = false
 
       setHandlers(in, out, this)
 
@@ -69,13 +69,13 @@ private final class LineParser(maxLineSize: Int) extends GraphStage[FlowShape[By
 
         // start the search where it ended, prevent iterating over all the buffer again
         val currentBufferStart = math.max(0, buffer.length - 1)
-        buffer = parseLines(buffer ++ grab(in), at = currentBufferStart, slicedCr = slicedCr) match {
+        buffer = parseLines(buffer ++ grab(in), at = currentBufferStart, slicedCr = lastCharWasCr) match {
           case (remaining, _, _) if remaining.size > maxLineSize ⇒
             failStage(new IllegalStateException(s"maxLineSize of $maxLineSize exceeded!"))
             ByteString.empty // Clear buffer
-          case (remaining, parsedLines, lastCharWasCr) ⇒
+          case (remaining, parsedLines, _lastCharWasCr) ⇒
             if (parsedLines.nonEmpty) emitMultiple(out, parsedLines) else pull(in)
-            slicedCr = lastCharWasCr
+            lastCharWasCr = _lastCharWasCr
             remaining
         }
       }
