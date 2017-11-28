@@ -140,7 +140,7 @@ private[http] final class UriParser(val input: ParserInput,
   def authority = rule { optional(userinfo) ~ hostAndPort }
 
   def userinfo = rule {
-    clearSB() ~ zeroOrMore(`userinfo-char` ~ appendSB()| `pct-encoded`) ~ '@' ~ run(_userinfo = sb.toString)
+    clearSB() ~ zeroOrMore(`userinfo-char` ~ appendSB() | `pct-encoded`) ~ '@' ~ run(_userinfo = sb.toString)
   }
 
   def hostAndPort = rule { host ~ optional(':' ~ port)  }

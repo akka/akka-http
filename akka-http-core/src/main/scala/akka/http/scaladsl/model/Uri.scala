@@ -215,6 +215,12 @@ object Uri {
   def apply(input: ParserInput, charset: Charset, mode: Uri.ParsingMode): Uri =
     new UriParser(input, charset, mode).parseUriReference()
 
+  def apply(uri: java.net.URI): Uri = {
+    apply(
+      uri.toString
+    )
+  }
+
   /**
    * Creates a new Uri instance from the given components.
    * All components are verified and normalized except the authority which is kept as provided.
@@ -369,7 +375,6 @@ object Uri {
   object Authority {
     val Empty = Authority(Host.Empty)
 
-    // FIXME: add test for this method
     def parse(authorityString: ParserInput, charset: Charset = UTF8, mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): Authority =
       new UriParser(authorityString, charset, mode).parseAuthority()
   }
@@ -875,9 +880,9 @@ object UriRendering {
   def renderAuthority[R <: Rendering](r: R, authority: Authority, path: Path, scheme: String, charset: Charset): r.type =
     if (authority.nonEmpty) {
       import authority._
-      if (!userinfo.isEmpty) encode(r, userinfo, charset, `userinfo-char`) ~~ '@'
+      if (!userinfo.isEmpty) encode(r, userinfo, charset, `userinfo-char`, detectAlreadyEscapedChars = true) ~~ '@'
       r ~~ host
-      if (port != 0) r ~~ ':' ~~ port else r
+      if (port > 0) r ~~ ':' ~~ port else r
     } else scheme match {
       case "" | "mailto" ⇒ r
       case _             ⇒ if (path.isEmpty || path.startsWithSlash) r ~~ '/' ~~ '/' else r
@@ -909,14 +914,28 @@ object UriRendering {
   }
 
   private[http] def encode(r: Rendering, string: String, charset: Charset, keep: CharPredicate,
-                           replaceSpaces: Boolean = false): r.type = {
+                           replaceSpaces:             Boolean = false,
+                           detectAlreadyEscapedChars: Boolean = false): r.type = {
     val asciiCompatible = isAsciiCompatible(charset)
     @tailrec def rec(ix: Int): r.type = {
-      def appendEncoded(byte: Byte): Unit = r ~~ '%' ~~ CharUtils.upperHexDigit(byte >>> 4) ~~ CharUtils.upperHexDigit(byte)
+      def appendEncoded(byte: Byte): Unit =
+        r ~~ '%' ~~ CharUtils.upperHexDigit(byte >>> 4) ~~ CharUtils.upperHexDigit(byte)
+
       if (ix < string.length) {
         val charSize = string.charAt(ix) match {
-          case c if keep(c)                     ⇒ { r ~~ c; 1 }
-          case ' ' if replaceSpaces             ⇒ { r ~~ '+'; 1 }
+          case c if keep(c)         ⇒ { r ~~ c; 1 }
+          case ' ' if replaceSpaces ⇒ { r ~~ '+'; 1 }
+          case '%' if detectAlreadyEscapedChars ⇒ {
+            var c1: Char = 0
+            var c2: Char = 0
+            val isEscapedChar = string.length > ix + 2 && {
+              c1 = string.charAt(ix + 1)
+              c2 = string.charAt(ix + 2)
+              c1 < 127 && c2 < 127
+            }
+            if (isEscapedChar) { r ~~ '%' ~~ c1 ~~ c2; 3 }
+            else { appendEncoded('%'.toByte); 1 }
+          }
           case c if c <= 127 && asciiCompatible ⇒ { appendEncoded(c.toByte); 1 }
           case c ⇒
             def append(s: String) = s.getBytes(charset).foreach(appendEncoded)

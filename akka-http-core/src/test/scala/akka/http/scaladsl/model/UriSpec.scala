@@ -11,6 +11,7 @@ import org.scalatest.matchers.{ MatchResult, Matcher }
 import org.scalatest.{ Matchers, WordSpec }
 import akka.parboiled2.UTF8
 import Uri._
+import java.net.{ URI ⇒ JavaURI }
 
 class UriSpec extends WordSpec with Matchers {
 
@@ -721,11 +722,23 @@ class UriSpec extends WordSpec with Matchers {
       Uri("https://host:3030/").withPort(4450).effectivePort shouldEqual 4450
     }
 
+    "parse authority" in {
+      Uri.Authority.parse("localhost").toString shouldEqual "localhost"
+      Uri.Authority.parse("example.com:80").toString shouldEqual "example.com:80"
+      Uri.Authority.parse("user@host").toString shouldEqual "user@host"
+
+      val a = Uri.Authority.parse("user:p%40ssword@host")
+      a.userinfo.length shouldEqual "user:p%40ssword".length
+      a.userinfo shouldEqual "user:p%40ssword"
+      a.toString shouldEqual "user:p%40ssword@host"
+    }
+
     "properly render authority" in {
       Uri("http://localhost/test").authority.toString shouldEqual "localhost"
       Uri("http://example.com:80/test").authority.toString shouldEqual "example.com:80"
       Uri("ftp://host/").authority.toString shouldEqual "host"
       Uri("http://user@host").authority.toString shouldEqual "user@host"
+      Uri("http://user:p%40ssword@host").authority.toString shouldEqual "user:p%40ssword@host"
     }
 
     "keep the specified authority port" in {
