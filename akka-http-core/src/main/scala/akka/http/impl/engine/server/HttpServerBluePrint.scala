@@ -6,33 +6,35 @@ package akka.http.impl.engine.server
 
 import java.util.concurrent.atomic.AtomicReference
 
-import scala.concurrent.{ Future, Promise }
-import scala.concurrent.duration.{ Deadline, Duration, FiniteDuration }
-import scala.collection.immutable
-import scala.util.control.NonFatal
 import akka.NotUsed
 import akka.actor.Cancellable
 import akka.annotation.InternalApi
-import akka.japi.Function
 import akka.event.LoggingAdapter
-import akka.util.ByteString
-import akka.stream._
-import akka.stream.TLSProtocol._
-import akka.stream.scaladsl._
-import akka.stream.stage._
-import akka.http.scaladsl.settings.ServerSettings
 import akka.http.impl.engine.parsing.ParserOutput._
 import akka.http.impl.engine.parsing._
 import akka.http.impl.engine.rendering.{ HttpResponseRendererFactory, ResponseRenderingContext, ResponseRenderingOutput }
+import akka.http.impl.engine.server.SettableIdleTimeoutBidi.OrTimeoutSetting
 import akka.http.impl.engine.ws._
+import akka.http.impl.util.LogByteStringTools._
 import akka.http.impl.util._
-import akka.http.scaladsl.util.FastFuture.EnhancedFuture
-import akka.http.scaladsl.{ Http, TimeoutAccess }
-import akka.http.scaladsl.model.headers.`Timeout-Access`
 import akka.http.javadsl.model
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.`Timeout-Access`
 import akka.http.scaladsl.model.ws.Message
-import akka.http.impl.util.LogByteStringTools._
+import akka.http.scaladsl.settings.ServerSettings
+import akka.http.scaladsl.util.FastFuture.EnhancedFuture
+import akka.http.scaladsl.{ Http, TimeoutAccess }
+import akka.japi.Function
+import akka.stream.TLSProtocol._
+import akka.stream._
+import akka.stream.scaladsl._
+import akka.stream.stage._
+import akka.util.ByteString
+
+import scala.collection.immutable
+import scala.concurrent.duration.{ Deadline, Duration, FiniteDuration }
+import scala.concurrent.{ Future, Promise }
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -63,6 +65,7 @@ private[http] object HttpServerBluePrint {
       requestPreparation(settings) atop
       controller(settings, log) atop
       parsingRendering(settings, log, isSecureConnection) atop
+      idleTimeout(settings) atop
       websocketSupport(settings, log) atop
       tlsSupport atop
       logTLSBidiBySetting("server-plain-text", settings.logUnencryptedNetworkBytes)
@@ -73,7 +76,10 @@ private[http] object HttpServerBluePrint {
   def websocketSupport(settings: ServerSettings, log: LoggingAdapter): BidiFlow[ResponseRenderingOutput, ByteString, SessionBytes, SessionBytes, NotUsed] =
     BidiFlow.fromGraph(new ProtocolSwitchStage(settings, log))
 
-  def parsingRendering(settings: ServerSettings, log: LoggingAdapter, isSecureConnection: Boolean): BidiFlow[ResponseRenderingContext, ResponseRenderingOutput, SessionBytes, RequestOutput, NotUsed] =
+  def idleTimeout(settings: ServerSettings): BidiFlow[OrTimeoutSetting[ResponseRenderingOutput], ResponseRenderingOutput, SessionBytes, SessionBytes, NotUsed] =
+    BidiFlow.fromGraph(new SettableIdleTimeoutBidi(settings.idleTimeout))
+
+  def parsingRendering(settings: ServerSettings, log: LoggingAdapter, isSecureConnection: Boolean): BidiFlow[ResponseRenderingContext, OrTimeoutSetting[ResponseRenderingOutput], SessionBytes, RequestOutput, NotUsed] =
     BidiFlow.fromFlows(rendering(settings, log), parsing(settings, log, isSecureConnection))
 
   def controller(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ResponseRenderingContext, RequestOutput, RequestOutput, NotUsed] =
@@ -227,7 +233,7 @@ private[http] object HttpServerBluePrint {
     Flow[SessionBytes].via(rootParser).map(establishAbsoluteUri)
   }
 
-  def rendering(settings: ServerSettings, log: LoggingAdapter): Flow[ResponseRenderingContext, ResponseRenderingOutput, NotUsed] = {
+  def rendering(settings: ServerSettings, log: LoggingAdapter): Flow[ResponseRenderingContext, OrTimeoutSetting[ResponseRenderingOutput], NotUsed] = {
     import settings._
 
     val responseRendererFactory = new HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint, log)

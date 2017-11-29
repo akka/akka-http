@@ -91,6 +91,24 @@ public class MiscDirectivesTest extends JUnitRouteTest {
 
   }
 
+  @Test
+  public void testWithIdleTimeout() {
+    TestRoute route = testRoute(withIdleTimeout(5000, () -> complete("ok")));
+
+    route
+      .run(HttpRequest.create())
+      .assertHeaderKindExists("SetIdleTimeoutHeader");
+  }
+
+  @Test
+  public void testWithoutIdleTimeout() {
+    TestRoute route = testRoute(withoutIdleTimeout(() -> complete("ok")));
+
+    route
+      .run(HttpRequest.create())
+      .assertHeaderKindExists("SetIdleTimeoutHeader");
+  }
+
   private HttpRequest withEntityOfSize(int sizeLimit) {
     char[] charArray = new char[sizeLimit];
     Arrays.fill(charArray, '0');

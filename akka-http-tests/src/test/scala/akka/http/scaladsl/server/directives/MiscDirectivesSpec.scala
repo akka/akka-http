@@ -13,6 +13,8 @@ import akka.testkit._
 import headers._
 import java.net.InetAddress
 
+import akka.http.impl.engine.server.SettableIdleTimeoutBidi.SetIdleTimeoutHeader
+
 class MiscDirectivesSpec extends RoutingSpec {
 
   "the extractClientIP directive" should {
@@ -172,6 +174,32 @@ class MiscDirectivesSpec extends RoutingSpec {
 
       Post("/abc", entityOfSize(501)) ~> route ~> check {
         status shouldEqual StatusCodes.OK
+      }
+    }
+  }
+
+  "the withIdleTimeout directive" should {
+    "add SetTImeoutHeader to response" in {
+      val route =
+        withIdleTimeout(5.seconds) {
+          completeOk
+        }
+
+      Get() ~> route ~> check {
+        header[SetIdleTimeoutHeader] shouldEqual Some(SetIdleTimeoutHeader(5.seconds))
+      }
+    }
+  }
+
+  "the withoutIdleTimeout directive" should {
+    "add SetTImeoutHeader with infinite duration to response" in {
+      val route =
+        withoutIdleTimeout {
+          completeOk
+        }
+
+      Get() ~> route ~> check {
+        header[SetIdleTimeoutHeader] shouldEqual Some(SetIdleTimeoutHeader(Duration.Inf))
       }
     }
   }

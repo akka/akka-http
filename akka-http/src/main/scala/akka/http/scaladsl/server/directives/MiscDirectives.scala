@@ -5,10 +5,12 @@
 package akka.http.scaladsl.server
 package directives
 
+import akka.http.impl.engine.server.SettableIdleTimeoutBidi.SetIdleTimeoutHeader
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.directives.BasicDirectives._
-import akka.http.scaladsl.server.RequestEntityExpectedRejection
-import headers._
+
+import scala.concurrent.duration.Duration
 
 /**
  * @groupname misc Miscellaneous directives
@@ -94,10 +96,28 @@ trait MiscDirectives {
    * @note  Usage of `withoutSizeLimit` is not recommended as it turns off the too large payload protection. Therefore,
    *        we highly encourage using `withSizeLimit` instead, providing it with a value high enough to successfully
    *        handle the route in need of big entities.
-   *
    * @group misc
    */
   def withoutSizeLimit: Directive0 = MiscDirectives._withoutSizeLimit
+
+  /**
+   *
+   * Overrides the configuration setting for the idle timeout (configured by `akka.http.server.idle-timeout`)
+   * while the response returned by this route is being streamed.
+   *
+   * @group misc
+   */
+  def withIdleTimeout(timeout: Duration): Directive0 =
+    mapResponse(_.addHeader(SetIdleTimeoutHeader(timeout)))
+
+  /**
+   *
+   * Disables the idle timeout (configured by `akka.http.server.idle-timeout`)
+   * while the response returned by this route is being streamed.
+   *
+   * @group misc
+   */
+  def withoutIdleTimeout: Directive0 = withIdleTimeout(Duration.Inf)
 }
 
 object MiscDirectives extends MiscDirectives {

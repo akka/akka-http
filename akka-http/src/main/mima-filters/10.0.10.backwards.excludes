@@ -4,3 +4,5 @@
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.FileUploadDirectives.fileUploadAll")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.FileUploadDirectives.storeUploadedFile")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.FileUploadDirectives.storeUploadedFiles")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.MiscDirectives.withIdleTimeout")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.MiscDirectives.withoutIdleTimeout")

@@ -41,7 +41,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.loglevel = ERROR
     akka.stdout-loglevel = ERROR
-    windows-connection-abort-workaround-enabled = auto
+    akka.io.tcp.windows-connection-abort-workaround-enabled = auto
     akka.log-dead-letters = OFF
     akka.http.server.request-timeout = infinite""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)

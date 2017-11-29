@@ -165,5 +165,4 @@ class TimeoutDirectivesFiniteTimeoutExamplesSpec extends AkkaSpec(TimeoutDirecti
       runRoute(route, "timeout").status should ===(StatusCodes.ServiceUnavailable) // the timeout response
     }
   }
-
 }

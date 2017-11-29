@@ -11,11 +11,11 @@ import java.util.function.{ Function ⇒ JFunction }
 import java.util.function.Supplier
 
 import scala.collection.JavaConverters._
-
 import akka.http.javadsl.model.RemoteAddress
 import akka.http.javadsl.model.headers.Language
 import akka.http.impl.util.JavaMapping.Implicits._
 import RoutingJavaMapping._
+import scala.concurrent.duration._
 
 import akka.http.scaladsl.server.{ Directives ⇒ D }
 
@@ -82,6 +82,32 @@ abstract class MiscDirectives extends MethodDirectives {
    */
   def withoutSizeLimit(inner: Supplier[Route]): Route = RouteAdapter {
     D.withoutSizeLimit { inner.get.delegate }
+  }
+
+  /**
+   *
+   * Overrides the configuration setting for the idle timeout (configured by `akka.http.server.idle-timeout`)
+   * while the response returned by this route is being streamed.
+   *
+   * @group misc
+   */
+  def withIdleTimeout(timeoutMillis: Long, inner: Supplier[Route]): Route = RouteAdapter {
+    D.withIdleTimeout(timeoutMillis.millis) {
+      inner.get.delegate
+    }
+  }
+
+  /**
+   *
+   * Disables the idle timeout (configured by `akka.http.server.idle-timeout`)
+   * while the response returned by this route is being streamed.
+   *
+   * @group misc
+   */
+  def withoutIdleTimeout(inner: Supplier[Route]): Route = RouteAdapter {
+    D.withoutIdleTimeout {
+      inner.get.delegate
+    }
   }
 
   /**
