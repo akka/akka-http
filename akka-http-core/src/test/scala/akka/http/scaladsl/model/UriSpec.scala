@@ -481,8 +481,12 @@ class UriSpec extends WordSpec with Matchers {
 
       //#dont-double-decode
       // don't double decode
-      Uri("%2520").path.head shouldEqual "%20"
-      Uri("/%2F%5C").path shouldEqual Path / """/\"""
+      // Uri("%2520").path.head shouldEqual "%20" // fails, head is just a String, which is " "
+      Uri("%2520").path.head shouldEqual "%20" // ok, applies rendering which applies the escaping
+      Uri("%2520").path.toString shouldEqual "%2520" // ok, applies rendering which applies the escaping
+      Uri("/%2F%5C").path.toString shouldEqual """/%2F%5C"""
+      Uri("/%2F%5C").path.head shouldEqual '/'
+      Uri("/%2F%5C").path.tail.head shouldEqual """/\"""
       //#dont-double-decode
 
       // render
@@ -728,9 +732,8 @@ class UriSpec extends WordSpec with Matchers {
       Uri.Authority.parse("user@host").toString shouldEqual "user@host"
 
       val a = Uri.Authority.parse("user:p%40ssword@host")
-      a.userinfo.length shouldEqual "user:p%40ssword".length
-      a.userinfo shouldEqual "user:p%40ssword"
       a.toString shouldEqual "user:p%40ssword@host"
+      a.userinfo shouldEqual "user:p@ssword"
     }
 
     "properly render authority" in {

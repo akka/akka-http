@@ -97,6 +97,13 @@ object CharUtils {
       putChar((63 - java.lang.Long.numberOfLeadingZeros(long)) & 0xFC)
     } else sb.append('0')
 
+  /** Efficient way to convert single URL encoded value (e.g. %40 => @) into its String representation. */
+  def stringFromHexString(ch1: Char, ch2: Char): String = {
+    val v = Integer.parseInt(new String(Array(ch1, ch2)), 16)
+    if (v < 0) throw new IllegalArgumentException("URLDecoder: Illegal hex characters in escape (%) pattern - negative value")
+    new String(Array(v.asInstanceOf[Byte]))
+  }
+
   /**
    * Returns a String representing the given long in signed decimal representation.
    */

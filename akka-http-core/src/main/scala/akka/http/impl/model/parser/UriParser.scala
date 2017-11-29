@@ -230,8 +230,14 @@ private[http] final class UriParser(val input: ParserInput,
     | run(_fragment = Some("")))
 
   def `pct-encoded` = rule {
-    '%' ~ HEXDIG ~ HEXDIG ~ run {
+    ('%' ~ HEXDIG ~ HEXDIG) ~ run {
       if (firstPercentIx == -1) firstPercentIx = sb.length()
+//      val p1 = charAt(-2)
+//      val p2 = lastChar
+//      sb.append('%').append(p1).append(p2)
+//      sb.append(CharUtils.stringFromHexString(charAt(-2), lastChar))
+
+      // put raw things there, later we decode() in getDecodedString()
       sb.append('%').append(charAt(-2)).append(lastChar)
     }
   }

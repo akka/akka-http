@@ -502,7 +502,9 @@ object Uri {
     def /(segment: String): Path = this ++ Path.Slash(segment :: Path.Empty)
     def startsWith(that: Path): Boolean
     def dropChars(count: Int): Path
-    override def toString = UriRendering.PathRenderer.render(new StringRendering, this).get
+    override def toString = {
+      UriRendering.PathRenderer.render(new StringRendering, this).get
+    }
   }
   object Path {
     val SingleSlash = Slash(Empty)
@@ -723,6 +725,8 @@ object Uri {
   private[http] def decode(string: String, charset: Charset, ix: Int)(sb: JStringBuilder = new JStringBuilder(string.length).append(string, 0, ix)): String =
     if (ix < string.length) string.charAt(ix) match {
       case '%' ⇒
+        println(s"  AT ix=${ix}, rest: ${string.substring(ix)}")
+
         def intValueOfHexWord(i: Int) = {
           def intValueOfHexChar(j: Int) = {
             val c = string.charAt(j)
@@ -880,7 +884,7 @@ object UriRendering {
   def renderAuthority[R <: Rendering](r: R, authority: Authority, path: Path, scheme: String, charset: Charset): r.type =
     if (authority.nonEmpty) {
       import authority._
-      if (!userinfo.isEmpty) encode(r, userinfo, charset, `userinfo-char`, detectAlreadyEscapedChars = true) ~~ '@'
+      if (!userinfo.isEmpty) encode(r, userinfo, charset, `userinfo-char`) ~~ '@'
       r ~~ host
       if (port > 0) r ~~ ':' ~~ port else r
     } else scheme match {
@@ -914,8 +918,7 @@ object UriRendering {
   }
 
   private[http] def encode(r: Rendering, string: String, charset: Charset, keep: CharPredicate,
-                           replaceSpaces:             Boolean = false,
-                           detectAlreadyEscapedChars: Boolean = false): r.type = {
+                           replaceSpaces: Boolean = false): r.type = {
     val asciiCompatible = isAsciiCompatible(charset)
     @tailrec def rec(ix: Int): r.type = {
       def appendEncoded(byte: Byte): Unit =
@@ -923,19 +926,8 @@ object UriRendering {
 
       if (ix < string.length) {
         val charSize = string.charAt(ix) match {
-          case c if keep(c)         ⇒ { r ~~ c; 1 }
-          case ' ' if replaceSpaces ⇒ { r ~~ '+'; 1 }
-          case '%' if detectAlreadyEscapedChars ⇒ {
-            var c1: Char = 0
-            var c2: Char = 0
-            val isEscapedChar = string.length > ix + 2 && {
-              c1 = string.charAt(ix + 1)
-              c2 = string.charAt(ix + 2)
-              c1 < 127 && c2 < 127
-            }
-            if (isEscapedChar) { r ~~ '%' ~~ c1 ~~ c2; 3 }
-            else { appendEncoded('%'.toByte); 1 }
-          }
+          case c if keep(c)                     ⇒ { r ~~ c; 1 }
+          case ' ' if replaceSpaces             ⇒ { r ~~ '+'; 1 }
           case c if c <= 127 && asciiCompatible ⇒ { appendEncoded(c.toByte); 1 }
           case c ⇒
             def append(s: String) = s.getBytes(charset).foreach(appendEncoded)
