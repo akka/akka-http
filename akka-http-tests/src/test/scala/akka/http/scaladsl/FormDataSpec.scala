@@ -4,11 +4,16 @@
 
 package akka.http.scaladsl
 
+import java.net.{ URL, URLDecoder, URLEncoder }
+
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
 import akka.testkit.AkkaSpec
+import org.scalatest.{ MustMatchers, WordSpec }
+
+import scala.util.Try
 
 class FormDataSpec extends AkkaSpec {
   implicit val materializer = ActorMaterializer()
@@ -31,4 +36,49 @@ class FormDataSpec extends AkkaSpec {
     }
   }
 
+}
+
+class UriSpec extends WordSpec with MustMatchers {
+  val userInfo = "user:p%40ssword"
+  val hostAndPath = "host/direc%20tory/fi%20le.tgz?query=test%25#frag%20ment"
+  val uriString = s"https://$userInfo@$hostAndPath"
+
+  "A Java URI" must {
+    "convert into an Akka HTTP Uri" in {
+      import java.net.{ URI ⇒ JavaURI }
+
+      info("              string: " + uriString)
+      val javaUri = JavaURI.create(uriString)
+      info("                java: " + javaUri)
+
+      val decoded = javaUri.toASCIIString
+      info("  toASCIIString java: " + decoded)
+
+      //            val akkaUri = Uri(javaUri.toString)
+      val akkaFromInitial = Uri(uriString)
+      info("   from initial akka: " + akkaFromInitial)
+
+      def akkaFromAscii = Uri(javaUri.toASCIIString)
+      info("from java ASCII akka: " + Try(akkaFromAscii))
+
+      def akkaUrifromJavaUri(u: JavaURI): Uri = {
+        def port(i: Int) = i match {
+          case -1 ⇒ 0
+          case _  ⇒ i
+        }
+
+        Uri.apply(
+          javaUri.getScheme,
+          Uri.Authority(Uri.Host(javaUri.getHost), port(javaUri.getPort), javaUri.getUserInfo),
+          Uri.Path(javaUri.getPath),
+          None,
+          Option(javaUri.getFragment)
+        ).withQuery(Uri.Query(javaUri.getRawQuery))
+      }
+
+      info("        manual akka: " + Try(akkaUrifromJavaUri(javaUri)))
+
+      akkaUrifromJavaUri(javaUri).toString mustEqual javaUri.toString
+    }
+  }
 }

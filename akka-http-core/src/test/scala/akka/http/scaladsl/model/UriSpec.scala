@@ -11,6 +11,7 @@ import org.scalatest.matchers.{ MatchResult, Matcher }
 import org.scalatest.{ Matchers, WordSpec }
 import akka.parboiled2.UTF8
 import Uri._
+import java.net.{ URI ⇒ JavaURI }
 
 class UriSpec extends WordSpec with Matchers {
 
@@ -480,8 +481,12 @@ class UriSpec extends WordSpec with Matchers {
 
       //#dont-double-decode
       // don't double decode
-      Uri("%2520").path.head shouldEqual "%20"
-      Uri("/%2F%5C").path shouldEqual Path / """/\"""
+      // Uri("%2520").path.head shouldEqual "%20" // fails, head is just a String, which is " "
+      Uri("%2520").path.head shouldEqual "%20" // ok, applies rendering which applies the escaping
+      Uri("%2520").path.toString shouldEqual "%2520" // ok, applies rendering which applies the escaping
+      Uri("/%2F%5C").path.toString shouldEqual """/%2F%5C"""
+      Uri("/%2F%5C").path.head shouldEqual '/'
+      Uri("/%2F%5C").path.tail.head shouldEqual """/\"""
       //#dont-double-decode
 
       // render
@@ -721,11 +726,22 @@ class UriSpec extends WordSpec with Matchers {
       Uri("https://host:3030/").withPort(4450).effectivePort shouldEqual 4450
     }
 
+    "parse authority" in {
+      Uri.Authority.parse("localhost").toString shouldEqual "localhost"
+      Uri.Authority.parse("example.com:80").toString shouldEqual "example.com:80"
+      Uri.Authority.parse("user@host").toString shouldEqual "user@host"
+
+      val a = Uri.Authority.parse("user:p%40ssword@host")
+      a.toString shouldEqual "user:p%40ssword@host"
+      a.userinfo shouldEqual "user:p@ssword"
+    }
+
     "properly render authority" in {
       Uri("http://localhost/test").authority.toString shouldEqual "localhost"
       Uri("http://example.com:80/test").authority.toString shouldEqual "example.com:80"
       Uri("ftp://host/").authority.toString shouldEqual "host"
       Uri("http://user@host").authority.toString shouldEqual "user@host"
+      Uri("http://user:p%40ssword@host").authority.toString shouldEqual "user:p%40ssword@host"
     }
 
     "keep the specified authority port" in {

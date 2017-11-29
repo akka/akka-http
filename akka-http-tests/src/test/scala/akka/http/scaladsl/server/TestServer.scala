@@ -4,17 +4,22 @@
 
 package akka.http.scaladsl.server
 
+import java.nio.file.Paths
+
 import akka.NotUsed
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
-import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.directives.Credentials
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor.ActorSystem
+import akka.http.javadsl.model.BodyPartEntity
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.common.EntityStreamingSupport
+import akka.http.scaladsl.model.Multipart.FormData.BodyPart
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.io.StdIn
 
