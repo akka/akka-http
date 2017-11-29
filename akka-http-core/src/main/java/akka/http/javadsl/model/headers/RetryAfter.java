@@ -7,9 +7,6 @@ package akka.http.javadsl.model.headers;
 import java.util.Optional;
 import akka.http.impl.util.Util;
 import akka.http.javadsl.model.DateTime;
-import scala.util.Either;
-import scala.util.Left;
-import scala.util.Right;
 
 /**
  *  Model for the `Retry-After` header.
@@ -32,10 +29,10 @@ public abstract class RetryAfter extends akka.http.scaladsl.model.HttpHeader {
     }
 
     public static RetryAfter create(Long delaySeconds) {
-        return new akka.http.scaladsl.model.headers.Retry$minusAfter(new Left(delaySeconds));
+        return new akka.http.scaladsl.model.headers.RetryAfterDuration(delaySeconds);
     }
 
     public static RetryAfter create(DateTime dateTime) {
-        return new akka.http.scaladsl.model.headers.Retry$minusAfter(new Right((akka.http.scaladsl.model.DateTime) dateTime));
+        return new akka.http.scaladsl.model.headers.RetryAfterDateTime((akka.http.scaladsl.model.DateTime) dateTime);
     }
 }

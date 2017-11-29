@@ -189,7 +189,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
 
   //https://tools.ietf.org/html/rfc7231#section-7.1.3
   def `retry-after` = rule {
-    (`HTTP-date` ~> (Right(_)) | `delta-seconds` ~> (Left(_))) ~ EOI ~> (`Retry-After`(_))
+    (`HTTP-date` ~> (RetryAfterDateTime(_)) | `delta-seconds` ~> (RetryAfterDuration(_))) ~ EOI
   }
 
   // http://tools.ietf.org/html/rfc7231#section-7.4.2

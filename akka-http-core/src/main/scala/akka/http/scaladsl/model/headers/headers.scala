@@ -704,22 +704,30 @@ final case class Referer(uri: Uri) extends jm.headers.Referer with RequestHeader
 }
 
 //https://tools.ietf.org/html/rfc7231#section-7.1.3
-object `Retry-After` extends ModeledCompanion[`Retry-After`] {
-  def apply(delaySeconds: Long): `Retry-After` = apply(Left(delaySeconds))
-  def apply(timestamp: DateTime): `Retry-After` = apply(Right(timestamp))
-}
-final case class `Retry-After`(delaySecondsOrDateTime: Either[Long, DateTime]) extends jm.headers.RetryAfter with ResponseHeader {
-  require(delaySecondsOrDateTime.left.toOption.forall(_ >= 0), "Retry-after header must not contain a negative delay in seconds")
-  def renderValue[R <: Rendering](r: R): r.type = delaySecondsOrDateTime match {
-    case Left(delay)     ⇒ r ~~ delay
-    case Right(dateTime) ⇒ dateTime.renderRfc1123DateTimeString(r)
-  }
+sealed trait `Retry-After` extends jm.headers.RetryAfter
+final case class RetryAfterDuration(delay: Long) extends `Retry-After` with ResponseHeader {
+  def renderValue[R <: Rendering](r: R): r.type = r ~~ delay
+
   protected def companion = `Retry-After`
 
   /** Java API suppport */
-  override protected def delaySeconds(): Option[java.lang.Long] = delaySecondsOrDateTime.left.toOption.map(Long.box)
+  override protected def delaySeconds(): Option[java.lang.Long] = Some(Long.box(delay))
+  override protected def dateTime(): Option[DateTime] = None
+}
 
-  override protected def dateTime(): Option[DateTime] = delaySecondsOrDateTime.right.toOption
+final case class RetryAfterDateTime(dt: DateTime) extends `Retry-After` with ResponseHeader {
+  def renderValue[R <: Rendering](r: R): r.type = dt.renderRfc1123DateTimeString(r)
+
+  protected def companion = `Retry-After`
+
+  /** Java API suppport */
+  override protected def delaySeconds(): Option[java.lang.Long] = None
+  override protected def dateTime(): Option[DateTime] = Some(dt)
+}
+
+object `Retry-After` extends ModeledCompanion[`Retry-After`] {
+  def apply(delaySeconds: Long): `Retry-After` = RetryAfterDuration(delaySeconds)
+  def apply(timestamp: DateTime): `Retry-After` = RetryAfterDateTime(timestamp)
 }
 
 /**
