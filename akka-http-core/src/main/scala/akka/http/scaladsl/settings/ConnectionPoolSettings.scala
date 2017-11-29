@@ -6,7 +6,6 @@ package akka.http.scaladsl.settings
 import akka.annotation.DoNotInherit
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
 import akka.http.javadsl.{ settings ⇒ js }
-import akka.http.scaladsl.ClientTransport
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.Duration
@@ -24,9 +23,6 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   def idleTimeout: Duration
   def connectionSettings: ClientConnectionSettings
 
-  /** The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used. */
-  def transport: ClientTransport
-
   // ---
 
   // overrides for more precise return type
@@ -39,7 +35,6 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
 
   // overloads for idiomatic Scala use
   def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue)
-  def withTransport(newTransport: ClientTransport): ConnectionPoolSettings = self.copy(transport = newTransport)
 }
 
 object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] {

@@ -28,20 +28,15 @@ of strategy by implementing `ClientTransport` yourself).
 
 ### Connection Pool Usage
 
-The `ConnectionPoolSettings` class allows setting a custom transport for any of the pool methods. Use
-`ConnectionPoolSettings.withTransport` to configure a transport and pass those settings to one of the
-pool methods like
+The `ClientConnectionSettings` class allows setting a custom transport for any of the pool methods. First use
+`ClientConnectionSettings.withTransport` to configure a transport, then use `ConnectionPoolSettings.withConnectionSettings` and
+pass those settings to one of the pool methods like
 @scala[`Http().singleRequest`, `Http().superPool`, or `Http().cachedHostConnectionPool`]
 @java[`Http.get(...).singleRequest`, `Http.get(...).superPool`, or `Http.get(...).cachedHostConnectionPool`].
 
-Same feature is available for Web Sockets, with `ClientConnectionSettings` instead of `ConnectionPoolSettings` and
+Same feature is available for Web Sockets, directly with `ClientConnectionSettings` and
 @scala[`Http().singleWebSocketRequest`]
 @java[`Http.get(...).singleWebSocketRequest`].
-
-### Single Connection Usage
-
-You can configure a custom transport for a single HTTP connection by passing it to the `Http().outgoingConnectionUsingTransport`
-method.
 
 ## Predefined Transports
 

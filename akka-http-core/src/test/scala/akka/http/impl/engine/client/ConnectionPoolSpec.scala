@@ -360,9 +360,9 @@ class ConnectionPoolSpec extends AkkaSpec("""
     "use the configured ClientTransport" in new ClientTransportTestSetup {
       def issueRequest(request: HttpRequest, settings: ConnectionPoolSettings): Future[HttpResponse] =
         Source.single(request.withUri(request.uri.toRelative))
-          .via(Http().outgoingConnectionUsingTransport(
+          .via(Http().outgoingConnectionUsingContext(
             host = request.uri.authority.host.address, port = request.uri.effectivePort,
-            transport = settings.transport, settings = settings.connectionSettings, connectionContext = ConnectionContext.noEncryption()))
+            settings = settings.connectionSettings, connectionContext = ConnectionContext.noEncryption()))
           .runWith(Sink.head)
     }
   }
@@ -633,8 +633,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
     val transport = new CustomTransport
     val poolSettings =
       ConnectionPoolSettings(system)
-        .withTransport(transport)
-        .withConnectionSettings(ClientConnectionSettings(system).withIdleTimeout(CustomIdleTimeout))
+        .withConnectionSettings(ClientConnectionSettings(system).withIdleTimeout(CustomIdleTimeout).withTransport(transport))
 
     val responseFuture = issueRequest(HttpRequest(uri = "http://example.org/test"), settings = poolSettings)
 

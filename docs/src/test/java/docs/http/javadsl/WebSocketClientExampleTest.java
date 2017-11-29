@@ -255,7 +255,8 @@ public class WebSocketClientExampleTest {
         Source.single(TextMessage.create("hello world")));
 
     ClientTransport proxy = ClientTransport.httpsProxy(InetSocketAddress.createUnresolved("192.168.2.5", 8080));
-    ClientConnectionSettings clientSettingsWithHttpsProxy = ClientConnectionSettings.create(system).withTransport(proxy);
+    ClientConnectionSettings clientSettingsWithHttpsProxy = ClientConnectionSettings.create(system)
+    		.withTransport(proxy);
 
     Http.get(system)
       .singleWebSocketRequest(
@@ -288,7 +289,8 @@ public class WebSocketClientExampleTest {
       HttpCredentials.createBasicHttpCredentials("proxy-user", "secret-proxy-pass-dont-tell-anyone");
     
     ClientTransport proxy = ClientTransport.httpsProxy(proxyAddress, credentials); // include credentials
-    ClientConnectionSettings clientSettingsWithHttpsProxy = ClientConnectionSettings.create(system).withTransport(proxy);
+    ClientConnectionSettings clientSettingsWithHttpsProxy = ClientConnectionSettings.create(system)
+    		.withTransport(proxy);
 
     Http.get(system)
       .singleWebSocketRequest(

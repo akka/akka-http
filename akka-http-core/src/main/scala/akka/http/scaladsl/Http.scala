@@ -97,9 +97,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
             // signals in both directions
             termWatchBefore.flatMap(_ ⇒ termWatchAfter)(ExecutionContexts.sameThreadExecutionContext)
           }
-          .joinMat(baseFlow)(Keep.left)
-      )
-    )
+          .joinMat(baseFlow)(Keep.left)))
 
   private def tcpBind(interface: String, port: Int, settings: ServerSettings): Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
     Tcp()
@@ -327,7 +325,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
                          localAddress: Option[InetSocketAddress] = None,
                          settings:     ClientConnectionSettings  = ClientConnectionSettings(system),
                          log:          LoggingAdapter            = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
-    _outgoingConnection(host, port, settings.withLocalAddressOverride(localAddress), ConnectionContext.noEncryption(), ClientTransport.TCP, log)
+    _outgoingConnection(host, port, settings.withLocalAddressOverride(localAddress), ConnectionContext.noEncryption(), log)
 
   /**
    * Same as [[#outgoingConnection]] but for encrypted (HTTPS) connections.
@@ -343,7 +341,24 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
                               localAddress:      Option[InetSocketAddress] = None,
                               settings:          ClientConnectionSettings  = ClientConnectionSettings(system),
                               log:               LoggingAdapter            = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
-    _outgoingConnection(host, port, settings.withLocalAddressOverride(localAddress), connectionContext, ClientTransport.TCP, log)
+    _outgoingConnection(host, port, settings.withLocalAddressOverride(localAddress), connectionContext, log)
+
+  /**
+   * Similar to `outgoingConnection` but allows to specify a user-defined connection context to run the connection on.
+   *
+   * Depending on the kind of `ConnectionContext` the implementation will add TLS between the transport and the HTTP
+   * implementation
+   *
+   * To configure additional settings for requests made using this method,
+   * use the `akka.http.client` config section or pass in a [[akka.http.scaladsl.settings.ClientConnectionSettings]] explicitly.
+   */
+  def outgoingConnectionUsingContext(
+    host:              String,
+    port:              Int,
+    connectionContext: ConnectionContext,
+    settings:          ClientConnectionSettings = ClientConnectionSettings(system),
+    log:               LoggingAdapter           = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
+    _outgoingConnection(host, port, settings, connectionContext, log)
 
   /**
    * Similar to `outgoingConnection` but allows to specify a user-defined transport layer to run the connection on.
@@ -354,6 +369,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    * To configure additional settings for requests made using this method,
    * use the `akka.http.client` config section or pass in a [[akka.http.scaladsl.settings.ClientConnectionSettings]] explicitly.
    */
+  @deprecated("Deprecated in favor of method outgoingConnectionUsingContext (transport retrieved from ClientConnectionSettings)", "10.0.11")
   def outgoingConnectionUsingTransport(
     host:              String,
     port:              Int,
@@ -368,6 +384,18 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     port:              Int,
     settings:          ClientConnectionSettings,
     connectionContext: ConnectionContext,
+    log:               LoggingAdapter): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
+    val hostHeader = if (port == connectionContext.defaultPort) Host(host) else Host(host, port)
+    val layer = clientLayer(hostHeader, settings, log)
+    layer.joinMat(_outgoingTlsConnectionLayer(host, port, settings, connectionContext, log))(Keep.right)
+  }
+
+  @deprecated("Deprecated in favor of method _outgoingConnection (transport retrieved from ClientConnectionSettings)", "10.0.11")
+  private def _outgoingConnection(
+    host:              String,
+    port:              Int,
+    settings:          ClientConnectionSettings,
+    connectionContext: ConnectionContext,
     transport:         ClientTransport,
     log:               LoggingAdapter): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
     val hostHeader = if (port == connectionContext.defaultPort) Host(host) else Host(host, port)
@@ -375,6 +403,15 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     layer.joinMat(_outgoingTlsConnectionLayer(host, port, settings, connectionContext, transport, log))(Keep.right)
   }
 
+  private def _outgoingTlsConnectionLayer(host: String, port: Int,
+                                          settings: ClientConnectionSettings, connectionContext: ConnectionContext,
+                                          log: LoggingAdapter): Flow[SslTlsOutbound, SslTlsInbound, Future[OutgoingConnection]] = {
+    val tlsStage = sslTlsStage(connectionContext, Client, Some(host → port))
+
+    tlsStage.joinMat(settings.transport.connectTo(host, port, settings))(Keep.right)
+  }
+
+  @deprecated("Deprecated in favor of method _outgoingTlsConnectionLayer (transport retrieved from ClientConnectionSettings)", "10.0.11")
   private def _outgoingTlsConnectionLayer(host: String, port: Int,
                                           settings: ClientConnectionSettings, connectionContext: ConnectionContext,
                                           transport: ClientTransport,
@@ -673,7 +710,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     val port = uri.effectivePort
 
     webSocketClientLayer(request, settings, log)
-      .joinMat(_outgoingTlsConnectionLayer(host, port, settings.withLocalAddressOverride(localAddress), ctx, settings.transport, log))(Keep.left)
+      .joinMat(_outgoingTlsConnectionLayer(host, port, settings.withLocalAddressOverride(localAddress), ctx, log))(Keep.left)
   }
 
   /**

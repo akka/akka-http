@@ -6,7 +6,6 @@ package akka.http.impl.settings
 
 import akka.annotation.InternalApi
 import akka.http.impl.util.{ SettingsCompanion, _ }
-import akka.http.scaladsl.ClientTransport
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings }
 import com.typesafe.config.Config
 
@@ -21,20 +20,8 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   maxOpenRequests:    Int,
   pipeliningLimit:    Int,
   idleTimeout:        Duration,
-  connectionSettings: ClientConnectionSettings,
-  transport:          ClientTransport)
+  connectionSettings: ClientConnectionSettings)
   extends ConnectionPoolSettings {
-
-  def this(
-    maxConnections:     Int,
-    minConnections:     Int,
-    maxRetries:         Int,
-    maxOpenRequests:    Int,
-    pipeliningLimit:    Int,
-    idleTimeout:        Duration,
-    connectionSettings: ClientConnectionSettings) =
-    this(maxConnections, minConnections, maxRetries, maxOpenRequests, pipeliningLimit, idleTimeout, connectionSettings,
-      ClientTransport.TCP)
 
   require(maxConnections > 0, "max-connections must be > 0")
   require(minConnections >= 0, "min-connections must be >= 0")

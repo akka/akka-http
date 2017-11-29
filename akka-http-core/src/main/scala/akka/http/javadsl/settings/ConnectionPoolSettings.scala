@@ -25,9 +25,6 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   def getIdleTimeout: Duration = idleTimeout
   def getConnectionSettings: ClientConnectionSettings = connectionSettings
 
-  /** The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used. */
-  def getTransport: ClientTransport = transport.asJava
-
   // ---
 
   def withMaxConnections(n: Int): ConnectionPoolSettings = self.copy(maxConnections = n)
@@ -37,7 +34,6 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copy(pipeliningLimit = newValue)
   def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue)
   def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue.asScala)
-  def withTransport(newValue: ClientTransport): ConnectionPoolSettings = self.copy(transport = newValue.asScala)
 }
 
 object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] {
