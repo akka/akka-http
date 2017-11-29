@@ -12,7 +12,7 @@ In case the returned option is an empty `Optional` the request is rejected with 
 which by default is mapped to an `401 Unauthorized` response.
 
 Standard HTTP-based authentication which uses the `WWW-Authenticate` header containing challenge data and
-`Authorization` header for receiving credentials is implemented in subclasses of `HttpAuthenticator`.
+@unidoc[Authorization] header for receiving credentials is implemented in subclasses of `HttpAuthenticator`.
 
 See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks-java) for details about verifying the secret.
 

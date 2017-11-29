@@ -13,17 +13,53 @@ import org.pegdown.ast.{DirectiveNode, HtmlBlockNode, VerbatimNode, Visitor}
 import scala.collection.JavaConverters._
 import scala.io.{Codec, Source}
 
+import _root_.io.github.lukehutch.fastclasspathscanner.FastClasspathScanner
+import _root_.io.github.lukehutch.fastclasspathscanner.scanner.ScanResult
+
+
 object ParadoxSupport {
   val paradoxWithSignatureDirective = Seq(
-    paradoxDirectives += Def.taskDyn {
+    paradoxDirectives ++= Def.taskDyn {
       val log = streams.value.log
-      Def.task {
+      val classpath = (fullClasspath in Compile).value.files.map(_.toURI.toURL).toArray
+      val classloader = new java.net.URLClassLoader(classpath, this.getClass().getClassLoader())
+      val scanner = new FastClasspathScanner().addClassLoader(classloader).scan()
+      val directives = paradoxDirectives.value
+      Def.task { Seq(
         { context: Writer.Context ⇒
-          new SignatureDirective(context.location.tree.label, context.properties, msg ⇒ log.warn(msg))
-        }
-      }
+            new SignatureDirective(context.location.tree.label, context.properties, msg ⇒ log.warn(msg))
+        },
+        { context: Writer.Context ⇒ {
+            val scaladocDirective = directives.map(_.apply(context)).collect { case x: ScaladocDirective => x }.head
+            val javadocDirective = directives.map(_.apply(context)).collect { case x: JavadocDirective => x }.head
+            new UnidocDirective(scaladocDirective, javadocDirective, scanner)
+          }
+        },
+      )}
     }.value
   )
+
+  class UnidocDirective(scaladocDirective: ScaladocDirective, javadocDirective: JavadocDirective, scanner: ScanResult) extends InlineDirective("unidoc") {
+    def render(node: DirectiveNode, visitor: Visitor, printer: Printer): Unit = {
+      val matches = scanner.getNamesOfAllStandardClasses.asScala.filter(_.startsWith("akka.http")).filter(_.endsWith('.' + node.label))
+      if (matches.size > 2)
+        throw new java.lang.IllegalStateException(s"Multiple matches found for ${node.label}: " + matches.mkString(", "))
+      matches.foreach(c => {
+        val syntheticSource = new DirectiveNode.Source.Direct(c)
+        def syntheticNode(group: String) = {
+          val attributes = new org.pegdown.ast.DirectiveAttributes.AttributeMap()
+          new DirectiveNode(DirectiveNode.Format.Inline, group, null, null, attributes, null,
+            new DirectiveNode(DirectiveNode.Format.Inline, group + "doc", node.label, syntheticSource, node.attributes, c, node.contentsNode)
+          )
+        }
+
+        if (!c.contains("javadsl"))
+          syntheticNode("scala").accept(visitor)
+        if (!c.contains("scaladsl"))
+          syntheticNode("java").accept(visitor)
+      })
+    }
+  }
 
   class SignatureDirective(page: Page, variables: Map[String, String], logWarn: String => Unit) extends LeafBlockDirective("signature") {
     def render(node: DirectiveNode, visitor: Visitor, printer: Printer): Unit =
