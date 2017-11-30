@@ -7,7 +7,9 @@ package akka.http.javadsl.model.headers;
 import java.util.Optional;
 import akka.http.impl.util.Util;
 import akka.http.javadsl.model.DateTime;
-
+import akka.http.scaladsl.model.headers.Retry$minusAfter;
+import akka.http.scaladsl.model.headers.RetryAfterDuration;
+import akka.http.scaladsl.model.headers.RetryAfterDateTime;
 /**
  *  Model for the `Retry-After` header.
  *  Specification: //https://tools.ietf.org/html/rfc7231#section-7.1.3
@@ -29,10 +31,10 @@ public abstract class RetryAfter extends akka.http.scaladsl.model.HttpHeader {
     }
 
     public static RetryAfter create(Long delaySeconds) {
-        return new akka.http.scaladsl.model.headers.RetryAfterDuration(delaySeconds);
+        return new Retry$minusAfter(new RetryAfterDuration(delaySeconds));
     }
 
     public static RetryAfter create(DateTime dateTime) {
-        return new akka.http.scaladsl.model.headers.RetryAfterDateTime((akka.http.scaladsl.model.DateTime) dateTime);
+        return new Retry$minusAfter(new RetryAfterDateTime((akka.http.scaladsl.model.DateTime) dateTime));
     }
 }
