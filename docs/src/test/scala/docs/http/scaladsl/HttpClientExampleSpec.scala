@@ -384,7 +384,7 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
 
     val settings = ConnectionPoolSettings(system)
       .withConnectionSettings(ClientConnectionSettings(system)
-          .withTransport(httpsProxyTransport))
+        .withTransport(httpsProxyTransport))
     Http().singleRequest(HttpRequest(uri = "http://akka.io"), settings = settings)
     //#auth-https-proxy-example-single-request
   }

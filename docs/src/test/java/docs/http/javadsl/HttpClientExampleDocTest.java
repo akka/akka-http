@@ -175,8 +175,7 @@ public class HttpClientExampleDocTest {
 
     ClientTransport proxy = ClientTransport.httpsProxy(InetSocketAddress.createUnresolved("192.168.2.5", 8080));
     ConnectionPoolSettings poolSettingsWithHttpsProxy = ConnectionPoolSettings.create(system)
-    		.withConnectionSettings(ClientConnectionSettings.create(system)
-    				.withTransport(proxy));
+      .withConnectionSettings(ClientConnectionSettings.create(system).withTransport(proxy));
 
     final CompletionStage<HttpResponse> responseFuture =
         Http.get(system)
@@ -204,8 +203,7 @@ public class HttpClientExampleDocTest {
     
     ClientTransport proxy = ClientTransport.httpsProxy(proxyAddress, credentials); // include credentials
     ConnectionPoolSettings poolSettingsWithHttpsProxy = ConnectionPoolSettings.create(system)
-    		.withConnectionSettings(ClientConnectionSettings.create(system)
-    				.withTransport(proxy));
+      .withConnectionSettings(ClientConnectionSettings.create(system).withTransport(proxy));
 
     final CompletionStage<HttpResponse> responseFuture =
         Http.get(system)
