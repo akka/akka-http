@@ -703,13 +703,6 @@ final case class Referer(uri: Uri) extends jm.headers.Referer with RequestHeader
   def getUri: akka.http.javadsl.model.Uri = uri.asJava
 }
 
-//https://tools.ietf.org/html/rfc7231#section-7.1.3
-sealed abstract class RetryAfterParameter
-final case class RetryAfterDuration(delayInSeconds: Long) extends RetryAfterParameter {
-  require(delayInSeconds >= 0, "Retry-after header must not contain a negative delay in seconds")
-}
-final case class RetryAfterDateTime(dateTime: DateTime) extends RetryAfterParameter
-
 object `Retry-After` extends ModeledCompanion[`Retry-After`] {
   def apply(delaySeconds: Long): `Retry-After` = apply(RetryAfterDuration(delaySeconds))
   def apply(timestamp: DateTime): `Retry-After` = apply(RetryAfterDateTime(timestamp))
