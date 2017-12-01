@@ -41,7 +41,7 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   // overloads for idiomatic Scala use
   def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue)
   @deprecated("Deprecated as transport is now retrieved from ClientConnectionSettings)", "10.0.11")
-	def withTransport(newTransport: ClientTransport): ConnectionPoolSettings = self.copy(transport = newTransport)
+  def withTransport(newTransport: ClientTransport): ConnectionPoolSettings = self.copy(transport = newTransport)
 }
 
 object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] {

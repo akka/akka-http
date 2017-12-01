@@ -25,9 +25,9 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   def getIdleTimeout: Duration = idleTimeout
   def getConnectionSettings: ClientConnectionSettings = connectionSettings
 
-	/** The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used. */
+  /** The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used. */
   @deprecated("Deprecated as transport is now retrieved from ClientConnectionSettings)", "10.0.11")
-	def getTransport: ClientTransport = transport.asJava
+  def getTransport: ClientTransport = transport.asJava
 
   // ---
 
