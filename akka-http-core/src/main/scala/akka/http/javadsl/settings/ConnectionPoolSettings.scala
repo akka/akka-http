@@ -4,13 +4,21 @@
 package akka.http.javadsl.settings
 
 import akka.actor.ActorSystem
-import akka.annotation.DoNotInherit
+import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
 import akka.http.javadsl.ClientTransport
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.Duration
 import akka.http.impl.util.JavaMapping.Implicits._
+
+@ApiMayChange
+trait PoolImplementation
+@ApiMayChange
+object PoolImplementation {
+  def Legacy: PoolImplementation = akka.http.scaladsl.settings.PoolImplementation.Legacy
+  def New: PoolImplementation = akka.http.scaladsl.settings.PoolImplementation.New
+}
 
 /**
  * Public API but not intended for subclassing
@@ -25,6 +33,12 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   def getIdleTimeout: Duration = idleTimeout
   def getConnectionSettings: ClientConnectionSettings = connectionSettings
 
+  @ApiMayChange
+  def getPoolImplementation: PoolImplementation = poolImplementation
+
+  @ApiMayChange
+  def getResponseEntitySubscriptionTimeout: Duration = responseEntitySubscriptionTimeout
+
   /** The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used. */
   @deprecated("Deprecated as transport is now retrieved from ClientConnectionSettings)", "10.0.11")
   def getTransport: ClientTransport = transport.asJava
@@ -38,6 +52,13 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copy(pipeliningLimit = newValue)
   def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue)
   def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue.asScala)
+
+  @ApiMayChange
+  def withPoolImplementation(newValue: PoolImplementation): ConnectionPoolSettings = self.copy(poolImplementation = newValue.asScala)
+
+  @ApiMayChange
+  def withResponseEntitySubscriptionTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(responseEntitySubscriptionTimeout = newValue)
+
   @deprecated("Deprecated as transport is now retrieved from ClientConnectionSettings)", "10.0.11")
   def withTransport(newValue: ClientTransport): ConnectionPoolSettings = self.copy(transport = newValue.asScala)
 }
