@@ -1,13 +1,14 @@
 import akka._
 import akka.ValidatePullRequest._
 import AkkaDependency._
-import Dependencies.{ h2specName, h2specExe }
+import Dependencies.{ h2specName, h2specExe, h2specExt }
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 import java.nio.file.Files
 import java.nio.file.attribute.{ PosixFileAttributeView, PosixFilePermission }
 import sbtdynver.GitDescribeOutput
 import spray.boilerplate.BoilerplatePlugin
+import scala.sys.process._
 
 inThisBuild(Def.settings(
   organization := "com.typesafe.akka",
@@ -121,12 +122,20 @@ lazy val http2Support = project("akka-http2-support")
       resourceGenerators in Test += Def.task {
         val log = streams.value.log
         val h2spec = h2specPath.value
-
         if (!h2spec.exists) {
           log.info("Extracting h2spec to " + h2spec)
 
-          for (zip <- (update in Test).value.select(artifact = artifactFilter(name = h2specName, extension = "zip")))
-            IO.unzip(zip, (target in Test).value)
+          for (archive <- (update in Test).value.select(artifact = artifactFilter(name = h2specName, extension = h2specExt))) {
+            h2specExt match {
+              case "zip" => IO.unzip(archive, (target in Test).value)
+              case "tar.gz" =>
+                    val destDir = (target in Test).value / h2specName
+                    IO.createDirectory(destDir)
+                    s"tar xf ${archive.getPath}  -C ${destDir}".!!
+
+              case extension => log.error("Unexpected extentions " + extension.toString())
+            }
+          }
 
           // Set the executable bit on the expected path to fail if it doesn't exist
           for (view <- Option(Files.getFileAttributeView(h2spec.toPath, classOf[PosixFileAttributeView]))) {
