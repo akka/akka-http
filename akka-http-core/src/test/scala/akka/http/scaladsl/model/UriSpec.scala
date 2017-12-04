@@ -603,7 +603,7 @@ class UriSpec extends WordSpec with Matchers {
             "            ^")
       }
 
-      // illgal percent-encoding ends with %
+      // illegal percent-encoding ends with %
       the[IllegalUriException] thrownBy Uri("http://www.example.com/%CE%B8%") shouldBe {
         IllegalUriException(
           "Illegal URI reference: Unexpected end of input, expected HEXDIG (line 1, column 31)",
