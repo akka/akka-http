@@ -1,6 +1,6 @@
 # Marshalling
 
-@java[TODO overhaul for Java]
+@java[TODO @github[overhaul for Java](#1367)]
 
 Marshalling is the process of converting a higher-level (object) structure into some kind of lower-level
 representation, often a "wire format". Other popular names for marshalling are "serialization" or "pickling".
@@ -89,31 +89,17 @@ Specifically these are:
 @@@ div { .group-java }
 
  * Predefined @javadoc[RequestEntity](akka.http.javadsl.model.RequestEntity) marshallers:
-    * @javadoc[`byte[]`](akka.http.javadsl.marshalling.Marshaller#byteArrayToEntity--)
-    * @javadoc[`ByteString`](akka.http.javadsl.marshalling.Marshaller#byteStringToEntity--)
-    * @javadoc[`char[]`](akka.http.javadsl.marshalling.Marshaller#charArrayToEntity--)
-    * @javadoc[`String`](akka.http.javadsl.marshalling.Marshaller#stringToEntity--)
-    * @javadoc[`FormData`](akka.http.javadsl.marshalling.Marshaller#formDataToEntity--)
+    * `byte[]`
+    * `ByteString`
+    * `char[]`
+    * `String`
+    * `FormData
  * Predefined @javadoc[HttpResponse](akka.http.javadsl.model.HttpResponse) marshallers:
-    * @javadoc[entityToResponse](akka.http.javadsl.marshalling.Marshaller#entityToResponse)
-    * `T`, if a `ToEntityMarshaller[T]` is available
-    * `HttpResponse`
-    * `StatusCode`
-    * `(StatusCode, T)`, if a `ToEntityMarshaller[T]` is available
-    * `(Int, T)`, if a `ToEntityMarshaller[T]` is available
-    * `(StatusCode, immutable.Seq[HttpHeader], T)`, if a `ToEntityMarshaller[T]` is available
-    * `(Int, immutable.Seq[HttpHeader], T)`, if a `ToEntityMarshaller[T]` is available
- * @javadoc[PredefinedToRequestMarshallers](akka.http.javadsl.marshalling.PredefinedToRequestMarshallers)
-    * `HttpRequest`
-    * `Uri`
-    * `(HttpMethod, Uri, T)`, if a `ToEntityMarshaller[T]` is available
-    * `(HttpMethod, Uri, immutable.Seq[HttpHeader], T)`, if a `ToEntityMarshaller[T]` is available
- * @javadoc[GenericMarshallers](akka.http.scaladsl.marshalling.GenericMarshallers)
-    * `Marshaller[Throwable, T]`
-    * `Marshaller[Option[A], B]`, if a `Marshaller[A, B]` and an `EmptyValue[B]` is available
-    * `Marshaller[Either[A1, A2], B]`, if a `Marshaller[A1, B]` and a `Marshaller[A2, B]` is available
-    * `Marshaller[Future[A], B]`, if a `Marshaller[A, B]` is available
-    * `Marshaller[Try[A], B]`, if a `Marshaller[A, B]` is available
+    * `T` using an existing `RequestEntity` marshaller for `T`
+    * `T` and `StatusCode` using an existing `RequestEntity` marshaller for `T`
+    * `T`, `StatusCode` and `Iterable[HttpHeader]` using an existing `RequestEntity` marshaller for `T`
+
+All marshallers can be found in @javadoc[Marshaller](akka.http.javadsl.marshalling.Marshaller).
 
 @@@
 
@@ -179,27 +165,22 @@ depend on one being available implicitly at the usage site.
 
 ## Using Marshallers
 
-In many places throughput Akka HTTP marshallers are used implicitly, e.g. when you define how to @ref[complete](../routing-dsl/directives/route-directives/complete.md) a
+In many places througout Akka HTTP, marshallers are used implicitly, e.g. when you define how to @ref[complete](../routing-dsl/directives/route-directives/complete.md) a
 request using the @ref[Routing DSL](../routing-dsl/index.md).
 
+@@@ div { .group-scala }
+
 However, you can also use the marshalling infrastructure directly if you wish, which can be useful for example in tests.
-The best entry point for this is the `akka.http.scaladsl.marshalling.Marshal` object, which you can use like this:
+The best entry point for this is the @scaladoc[Marshal](akka.http.scaladsl.marshalling.Marshal) object, which you can use like this:
 
-Scala
-:  @@snip [MarshalSpec.scala]($test$/scala/docs/http/scaladsl/MarshalSpec.scala) { #use-marshal }
+@@snip [MarshalSpec.scala]($test$/scala/docs/http/scaladsl/MarshalSpec.scala) { #use-marshal }
 
-Java
-:  @@snip [MarshalTest.java]($test$/java/docs/http/javadsl/MarshalTest.java) { #use-marshal }
+@@@
 
-<!--
-    Marshallers can be specified when completing a request with `RequestContext.complete` or by using one of the
-    `RouteDirectives.complete` directives.
+@@@ div { .group-java }
 
-    These marshallers are provided by akka-http:
+However, many directives dealing with @ref[marshalling](../routing-dsl/directives/marshalling-directives/index.md) also  require that you pass a marshaller explicitly. The following example shows how to marshal Java bean classes to JSON using the @ref:[Jackson JSON support](json-support.md#jackson-support):
 
-    >
-     * Use @ref[Json Support via Jackson](../common/json-support.md#json-jackson-support-java) to create an marshaller that can convert a POJO to an `application/json`
-    response using [jackson](https://github.com/FasterXML/jackson).
-     * Use `Marshaller.stringToEntity`, `Marshaller.byteArrayToEntity`, `Marshaller.byteStringToEntity`,
-    combined with `Marshaller.entityToResponse` to create custom marshallers.
--->
+@@snip [PetStoreExample.java]($akka-http$/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/petstore/PetStoreExample.java) { #imports #marshall }
+
+@@@
