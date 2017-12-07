@@ -42,7 +42,7 @@ Java
 import static akka.http.javadsl.server.Directives.*;
 ```
 
-@@@ div { .group-scala }
+@@@ div { .group-java }
 
 Or by extending the `akka.http.javadsl.server.AllDirectives` class which brings together all directives into a single class
 for easier access:
