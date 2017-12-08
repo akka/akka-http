@@ -30,8 +30,8 @@ object ParadoxSupport {
             new SignatureDirective(context.location.tree.label, context.properties, msg ⇒ log.warn(msg))
         },
         { context: Writer.Context ⇒ {
-            val scaladocDirective = directives.map(_.apply(context)).collect { case x: ScaladocDirective => x }.head
-            val javadocDirective = directives.map(_.apply(context)).collect { case x: JavadocDirective => x }.head
+            val scaladocDirective = directives.map(_.apply(context)).collectFirst { case x: ScaladocDirective => x }.get
+            val javadocDirective = directives.map(_.apply(context)).collectFirst { case x: JavadocDirective => x }.get
             new UnidocDirective(scaladocDirective, javadocDirective, scanner)
           }
         },
