@@ -83,7 +83,7 @@ Java
 In this example, a request is handled by transforming the request stream with a function @scala[`HttpRequest => HttpResponse`]@java[`Function<HttpRequest, HttpResponse>`]
 using `handleWithSyncHandler` (or equivalently, Akka Stream's `map` operator). Depending on the use case many
 other ways of providing a request handler are conceivable using Akka Stream's combinators.
-If the application provides a `Flow` it is also the responsibility of the application to generate exactly one response
+If the application provides a @unidoc[Flow] it is also the responsibility of the application to generate exactly one response
 for every request and that the ordering of responses matches the ordering of the associated requests (which is relevant
 if HTTP pipelining is enabled where processing of multiple incoming requests may overlap). When relying on
 `handleWithSyncHandler` or `handleWithAsyncHandler`, or the `map` or `mapAsync` stream operators, this
@@ -93,7 +93,7 @@ See @ref[Routing DSL Overview](../routing-dsl/overview.md#http-routing) for a mo
 
 ### Streaming Request/Response Entities
 
-Streaming of HTTP message entities is supported through subclasses of `HttpEntity`. The application needs to be able
+Streaming of HTTP message entities is supported through subclasses of @unidoc[HttpEntity]. The application needs to be able
 to deal with streamed entities when receiving a request as well as, in many cases, when constructing responses.
 See @ref[HttpEntity](../common/http-model.md#httpentity) for a description of the alternatives.
 
@@ -103,9 +103,9 @@ Akka HTTP then the conversion of custom types to and from streamed entities can 
 <a id="http-closing-connection-low-level"></a>
 ### Closing a connection
 
-The HTTP connection will be closed when the handling `Flow` cancels its upstream subscription or the peer closes the
+The HTTP connection will be closed when the handling @unidoc[Flow] cancels its upstream subscription or the peer closes the
 connection. An often times more convenient alternative is to explicitly add a `Connection: close` header to an
-`HttpResponse`. This response will then be the last one on the connection and the server will actively close the
+@unidoc[HttpResponse]. This response will then be the last one on the connection and the server will actively close the
 connection when it has been sent out.
 
 Connection will also be closed if request entity has been cancelled (e.g. by attaching it to `Sink.cancelled()`
@@ -126,7 +126,7 @@ some other source. Potential scenarios where this might be useful include tests,
 (e.g by replaying network traffic).
 
 @@@ div { .group-scala }
-On the server-side the stand-alone HTTP layer forms a `BidiFlow` that is defined like this:
+On the server-side the stand-alone HTTP layer forms a @unidoc[BidiFlow] that is defined like this:
 
 @@snip [Http.scala]($akka-http$/akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala) { #server-layer }
 
@@ -180,7 +180,7 @@ from being unable to start the server, and ending with failing to unmarshal an H
 
  * Failure to `bind` to the specified address/port,
  * Failure while accepting new `IncommingConnection` s, for example when the OS has run out of file descriptors or memory,
- * Failure while handling a connection, for example if the incoming `HttpRequest` is malformed.
+ * Failure while handling a connection, for example if the incoming @unidoc[HttpRequest] is malformed.
 
 This section describes how to handle each failure situation, and in which situations these failures may occur.
 
@@ -204,7 +204,7 @@ through the stream starting from the stage which failed, all the way downstream 
 
 #### Connections Source failures
 
-In the example below we add a custom `GraphStage` (see @scala[@extref[Custom stream processing](akka-docs:scala/stream/stream-customize.html)]@java[@extref[Custom stream processing](akka-docs:java/stream/stream-customize.html)]) in order to react to the
+In the example below we add a custom @unidoc[GraphStage] (see @scala[@extref[Custom stream processing](akka-docs:scala/stream/stream-customize.html)]@java[@extref[Custom stream processing](akka-docs:java/stream/stream-customize.html)]) in order to react to the
 stream's failure. We signal a `failureMonitor` actor with the cause why the stream is going down, and let the Actor
 handle the rest – maybe it'll decide to restart the server or shutdown the ActorSystem, that however is not our concern anymore.
 
@@ -232,4 +232,4 @@ anyway, which is a reasonable default for such problems.
 
 In order to learn more about handling exceptions in the actual routing layer, which is where your application code
 comes into the picture, refer to @ref[Exception Handling](../routing-dsl/exception-handling.md) which focuses explicitly on explaining how exceptions
-thrown in routes can be handled and transformed into `HttpResponse` s with appropriate error codes and human-readable failure descriptions.
+thrown in routes can be handled and transformed into @unidoc[HttpResponse] s with appropriate error codes and human-readable failure descriptions.

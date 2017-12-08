@@ -13,10 +13,10 @@ from a background with non-"streaming first" HTTP Clients.
 ## Requesting a Host Connection Pool
 
 The best way to get a hold of a connection pool to a given target endpoint is the @scala[`Http().cachedHostConnectionPool(...)`]@java[`Http.get(system).cachedHostConnectionPool(...)`]
-method, which returns a `Flow` that can be "baked" into an application-level stream setup. This flow is also called
+method, which returns a @unidoc[Flow] that can be "baked" into an application-level stream setup. This flow is also called
 a "pool client flow".
 
-The connection pool underlying a pool client flow is cached. For every `ActorSystem`, target endpoint and pool
+The connection pool underlying a pool client flow is cached. For every @unidoc[ActorSystem], target endpoint and pool
 configuration there will never be more than a single pool live at any time.
 
 Also, the HTTP layer transparently manages idle shutdown and restarting of connection pools as configured.
@@ -141,12 +141,12 @@ shutdown of a specific pool by calling `shutdown()` on the `HostConnectionPool` 
 flow materializes into. This `shutdown()` call produces a @scala[`Future[Unit]`]@java[`CompletionStage<Done>`] which is fulfilled when the pool
 termination has been completed.
 
-It's also possible to trigger the immediate termination of *all* connection pools in the `ActorSystem` at the same
+It's also possible to trigger the immediate termination of *all* connection pools in the @unidoc[ActorSystem] at the same
 time by calling @scala[`Http().shutdownAllConnectionPools()`]@java[`Http.get(system).shutdownAllConnectionPools()`].
 This call too produces a @scala[`Future[Unit]`]@java[`CompletionStage<Done>`] which is fulfilled when all pools have terminated.
 
 @@@ note
-When encountering unexpected `akka.stream.AbruptTerminationException` exceptions during `ActorSystem` **shutdown**
+When encountering unexpected `akka.stream.AbruptTerminationException` exceptions during @unidoc[ActorSystem] **shutdown**
 please make sure that active connections are shut down before shutting down the entire system, this can be done by
 calling the @scala[`Http().shutdownAllConnectionPools()`]@java[`Http.get(system).shutdownAllConnectionPools()`] method,
 and only once its @scala[`Future`]@java[`CompletionStage`] completes, shutting down the actor system.
@@ -170,7 +170,7 @@ with the host-level API, here's how to do it.
 
 As explained above, Akka HTTP prevents to build up an unbounded buffer of requests and an unlimited number of connections.
 Therefore, it guards itself a) by applying backpressure to all request streams connected to the cached pool and b)
-by failing requests with a `BufferOverflowException` when the internal buffer overflows when too many materializations
+by failing requests with a @unidoc[BufferOverflowException] when the internal buffer overflows when too many materializations
 exist or too many requests have been issued to the pool.
 
 To mimic the request-level API we can put an explicit queue in front of the pool and decide ourselves what to do when

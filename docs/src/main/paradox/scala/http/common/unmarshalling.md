@@ -4,7 +4,7 @@
 higher-level (object) structure. Other popular names for it are "Deserialization" or "Unpickling".
 
 In Akka HTTP "Unmarshalling" means the conversion of a lower-level source object, e.g. a `MessageEntity`
-(which forms the "entity body" of an HTTP request or response) or a full `HttpRequest` or `HttpResponse`,
+(which forms the "entity body" of an HTTP request or response) or a full @unidoc[HttpRequest] or @unidoc[HttpResponse],
 into an instance of type `T`.
 
 ## Basic Design
@@ -39,7 +39,7 @@ Specifically these are:
  * @scala[@scaladoc[PredefinedFromEntityUnmarshallers](akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers)]
    @java[@javadoc[Unmarshaller](akka.http.javadsl.unmarshalling.Unmarshaller)]
     * @scala[`Array[Byte]`]@java[`byte[]`]
-    * `ByteString`
+    * @unidoc[ByteString]
     * @scala[`Array[Char]`]@java[`char[]`]
     * `String`
     * @scala[`akka.http.scaladsl.model.FormData`]@java[`akka.http.javadsl.model.FormData`]
@@ -58,11 +58,11 @@ Additional unmarshallers are available in separate modules for specific content 
 
 ## Implicit Resolution
 
-The unmarshalling infrastructure of Akka HTTP relies on a type-class based approach, which means that `Unmarshaller`
+The unmarshalling infrastructure of Akka HTTP relies on a type-class based approach, which means that @unidoc[Unmarshaller]
 instances from a certain type `A` to a certain type `B` have to be available implicitly.
 
 The implicits for most of the predefined unmarshallers in Akka HTTP are provided through the companion object of the
-`Unmarshaller` trait. This means that they are always available and never need to be explicitly imported.
+@unidoc[Unmarshaller] trait. This means that they are always available and never need to be explicitly imported.
 Additionally, you can simply "override" them by bringing your own custom version into local scope.
 
 @@@
@@ -70,9 +70,9 @@ Additionally, you can simply "override" them by bringing your own custom version
 ## Custom Unmarshallers
 
 Akka HTTP gives you a few convenience tools for constructing unmarshallers for your own types.
-Usually you won't have to "manually" implement the `Unmarshaller` @scala[trait]@java[class] directly.
+Usually you won't have to "manually" implement the @unidoc[Unmarshaller] @scala[trait]@java[class] directly.
 Rather, it should be possible to use one of the convenience construction helpers defined on
-@scala[the `Unmarshaller` companion]@java[`Unmarshaller`]:
+@scala[the @unidoc[Unmarshaller] companion]@java[@unidoc[Unmarshaller]]:
 
 Scala
 :  @@snip [Unmarshaller.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/Unmarshaller.scala) { #unmarshaller-creation }
@@ -103,8 +103,8 @@ For this type of unmarshaller transformation Akka HTTP defines these methods:
 @@@ div { .group-java }
  * `baseMarshaller.thenApply`
  * `baseMarshaller.flatMap`
- * `Unmarshaller.forMediaType` (to derive from a `HttpEntity` unmarshaller)
- * `Unmarshaller.forMediaTypes` (to derive from a `HttpEntity` unmarshaller)
+ * `Unmarshaller.forMediaType` (to derive from a @unidoc[HttpEntity] unmarshaller)
+ * `Unmarshaller.forMediaTypes` (to derive from a @unidoc[HttpEntity] unmarshaller)
 @@@
 
 The method signatures should make their semantics relatively clear.

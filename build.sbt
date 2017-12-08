@@ -259,6 +259,7 @@ lazy val docs = project("docs")
         val v = if (isSnapshot.value) "current" else version.value
         s"http://doc.akka.io/japi/akka-http/$v"
       },
+      "javadoc.akka.base_url" -> s"https://doc.akka.io/japi/akka/${Dependencies.akka25Version}",
       "algolia.docsearch.api_key" -> "0ccbb8bf5148554a406fbf07df0a93b9",
       "algolia.docsearch.index_name" -> "akka-http",
       "google.analytics.account" -> "UA-21117439-1",
