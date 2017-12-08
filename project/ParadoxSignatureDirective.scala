@@ -23,7 +23,7 @@ object ParadoxSupport {
       val log = streams.value.log
       val classpath = (fullClasspath in Compile).value.files.map(_.toURI.toURL).toArray
       val classloader = new java.net.URLClassLoader(classpath, this.getClass().getClassLoader())
-      val scanner = new FastClasspathScanner().addClassLoader(classloader).scan()
+      lazy val scanner = new FastClasspathScanner("akka").addClassLoader(classloader).scan()
       val directives = paradoxDirectives.value
       Def.task { Seq(
         { context: Writer.Context ⇒
