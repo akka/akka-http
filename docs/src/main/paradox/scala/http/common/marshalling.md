@@ -165,7 +165,7 @@ depend on one being available implicitly at the usage site.
 
 ## Using Marshallers
 
-In many places througout Akka HTTP, marshallers are used implicitly, e.g. when you define how to @ref[complete](../routing-dsl/directives/route-directives/complete.md) a
+In many places throughout Akka HTTP, marshallers are used implicitly, e.g. when you define how to @ref[complete](../routing-dsl/directives/route-directives/complete.md) a
 request using the @ref[Routing DSL](../routing-dsl/index.md).
 
 @@@ div { .group-scala }
