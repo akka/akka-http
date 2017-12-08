@@ -70,7 +70,7 @@ Flow<Pair<HttpRequest, T>, Pair<Try<HttpResponse>, T>, HostConnectionPool>
 ```
 @@@
 
-This means it consumes pairs of type @scala[`(HttpRequest, T)`]@java[`Pair<HttpRequest, T>`] and produces pairs of type @scala[`(Try[HttpResponse], T)`]@java[`Pair<Try<HttpResponse>, T>`]
+This means it consumes pairs of type @scala[`(HttpRequest, T)`]@java[@unidoc[Pair[HttpRequest, T]]] and produces pairs of type @scala[`(Try[HttpResponse], T)`]@java[`Pair<Try<HttpResponse>, T>`]
 which might appear more complicated than necessary on first sight.
 The reason why the pool API includes objects of custom type `T` on both ends lies in the fact that the underlying
 transport usually comprises more than a single connection and as such the pool client flow often generates responses in
@@ -184,7 +184,7 @@ about what to do when requests fail because the queue overflowed (e.g. try again
 ### Using the host-level API in a streaming fashion
 
 Even better is it to use the streaming API directly. This will mostly prevent intermediate buffers as data can be
-generated "on-the-fly" while streaming the requests. You supply the requests as a stream, i.e. as a `Source[(HttpRequest, ...)]`, and
+generated "on-the-fly" while streaming the requests. You supply the requests as a stream, i.e. as a @unidoc[Source[(HttpRequest, ...)]], and
 the pool will "pull out" single requests when capacity is available on one of the connections to the host.
 
 @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #host-level-streamed-example }

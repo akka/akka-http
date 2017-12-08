@@ -15,7 +15,7 @@ The most major changes include:
 @unidoc[HttpApp] (a helper class containing a `main()` implementation) is gone, as we would like to encourage understanding
 how the various elements of the API fit together.
 
-Instead developers should start applications "manually", by converting a @unidoc[Route] to a `Flow<HttpRequest, HttpResponse, ?>`
+Instead developers should start applications "manually", by converting a @unidoc[Route] to a @unidoc[Flow[HttpRequest, HttpResponse, ?]]
 using the `Route.flow` method. For examples of full apps refer to @ref[Route Testkit](../routing-dsl/testkit.md).
 
 ## `RequestVal` is gone

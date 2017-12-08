@@ -42,7 +42,7 @@ instances to convert rejections and exceptions into appropriate HTTP responses f
 Using `Route.handlerFlow` or `Route.asyncHandler` a @unidoc[Route] can be lifted into a handler @unidoc[Flow] or async handler
 function to be used with a `bindAndHandleXXX` call from the @ref[Low-Level Server-Side API](../server-side/low-level-api.md).
 
-Note: There is also an implicit conversion from @unidoc[Route] to `Flow[HttpRequest, HttpResponse, Unit]` defined in the
+Note: There is also an implicit conversion from @unidoc[Route] to @unidoc[Flow[HttpRequest, HttpResponse, Unit]] defined in the
 @unidoc[RouteResult] companion, which relies on `Route.handlerFlow`.
 
 <a id="requestcontext"></a>

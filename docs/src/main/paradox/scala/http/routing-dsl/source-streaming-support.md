@@ -1,9 +1,9 @@
 # Source Streaming
 
-Akka HTTP supports completing a request with an Akka @scala[`Source[T, _]`]@java[`Source<T, ?>`], which makes it possible to easily build
+Akka HTTP supports completing a request with an Akka @scala[@unidoc[Source[T, _]`]@java[@unidoc[Source[T, ?]]], which makes it possible to easily build
 and consume streaming end-to-end APIs which apply back pressure throughout the entire stack. 
 
-It is possible to complete requests with raw @scala[`Source[ByteString, _]`]@java[`Source<ByteString, ?>`], however often it is more convenient to 
+It is possible to complete requests with raw @scala[`Source[ByteString, _]`]@java[@unidoc[Source[ByteString, ?]]], however often it is more convenient to 
 stream on an element-by-element basis, and allow Akka HTTP to handle the rendering internally - for example as a JSON array,
 or CSV stream (where each element is separated by a newline).
 
@@ -45,7 +45,7 @@ In this example we implement an API representing an infinite stream of tweets, v
 @@@ div { .group-scala }
 
 Firstly, we'll need to get some additional marshalling infrastructure set up, that is able to marshal to and from an
-Akka Streams `Source[T,_]`. One such trait, containing the needed marshallers is `SprayJsonSupport`, which uses
+Akka Streams `Source[T,_]]. One such trait, containing the needed marshallers is `SprayJsonSupport`, which uses
 `spray-json` (a high performance JSON parser library), and is shipped as part of Akka HTTP in the
 `akka-http-spray-json` module.
 
@@ -59,7 +59,7 @@ like to stream a different content type (for example plists or protobuf).
 @@@ div { .group-java }
 
 Firstly, we'll need to get some additional marshalling infrastructure set up, that is able to marshal to and from an
-Akka Streams `Source<T, ?>`. Here we'll use the `Jackson` helper class from `akka-http-jackson` (a separate library
+Akka Streams @unidoc[Source[T, ?]]. Here we'll use the `Jackson` helper class from `akka-http-jackson` (a separate library
 that you should add as a dependency if you want to use Jackson with Akka HTTP).
 
 First we enable JSON Streaming by making an implicit @unidoc[EntityStreamingSupport] instance available (Step 1).
@@ -162,7 +162,7 @@ Java
 ## Implementing custom EntityStreamingSupport traits
 
 The @unidoc[EntityStreamingSupport] infrastructure is open for extension and not bound to any single format, content type,
-or marshalling library. The provided JSON support does not rely on `spray-json` directly, but uses @scala[`Marshaller[T, ByteString]`]@java[`Marshaller<T, ByteString>`]
+or marshalling library. The provided JSON support does not rely on `spray-json` directly, but uses @scala[@unidoc[Marshaller[T, ByteString]]]@java[@unidoc[Marshaller[T, ByteString]]]
 instances, which can be provided using any JSON marshalling library (such as Circe, Jawn or Play JSON).
 
 When implementing a custom support trait, one should simply extend the @unidoc[EntityStreamingSupport] abstract class

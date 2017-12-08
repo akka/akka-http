@@ -25,11 +25,11 @@ implementation as well as on all levels of its API.
 
 On the connection level Akka HTTP offers basically the same kind of interface as @scala[@extref[Working with streaming IO](akka-docs:scala/stream/stream-io.html)]@java[@extref[Working with streaming IO](akka-docs:java/stream/stream-io.html)]:
 A socket binding is represented as a stream of incoming connections. The application pulls connections from this stream
-source and, for each of them, provides a @scala[`Flow[HttpRequest, HttpResponse, _]`]@java[`Flow<HttpRequest, HttpResponse, ?>`] to "translate" requests into responses.
+source and, for each of them, provides a @scala[@unidoc[Flow[HttpRequest, HttpResponse, _]`]@java[@unidoc[Flow[HttpRequest, HttpResponse, ?]]] to "translate" requests into responses.
 
-Apart from regarding a socket bound on the server-side as a @scala[`Source[IncomingConnection]`]@java[`Source<IncomingConnection>`] and each connection as a
-@scala[`Source[HttpRequest]`]@java[`Source<HttpRequest>`] with a @scala[`Sink[HttpResponse]`]@java[`Sink<HttpResponse>`] the stream abstraction is also present inside a single HTTP
-message: The entities of HTTP requests and responses are generally modeled as a @scala[`Source[ByteString]`]@java[`Source<ByteString>`]. See also
+Apart from regarding a socket bound on the server-side as a @scala[@unidoc[Source[IncomingConnection]`]@java[@unidoc[Source[IncomingConnection]]] and each connection as a
+@scala[`Source[HttpRequest]`]@java[@unidoc[Source[HttpRequest]]] with a @scala[@unidoc[Sink[HttpResponse]]]@java[@unidoc[Sink[HttpResponse]]] the stream abstraction is also present inside a single HTTP
+message: The entities of HTTP requests and responses are generally modeled as a @scala[`Source[ByteString]]]@java[@unidoc[Source[ByteString]]]. See also
 the @ref[HTTP Model](../common/http-model.md) for more information on how HTTP messages are represented in Akka HTTP.
 
 ## Starting and Stopping
@@ -47,7 +47,7 @@ Arguments to the `Http().bind` method specify the interface and port to bind to 
 incoming HTTP connections. Additionally, the method also allows for the definition of socket options as well as a larger
 number of settings for configuring the server according to your needs.
 
-The result of the `bind` method is a @scala[`Source[Http.IncomingConnection]`]@java[`Source<Http.IncomingConnection>`] which must be drained by the application in
+The result of the `bind` method is a @scala[`Source[Http.IncomingConnection]]]@java[@unidoc[Source[Http.IncomingConnection]]] which must be drained by the application in
 order to accept incoming connections.
 The actual binding is not performed before this source is materialized as part of a processing pipeline. In
 case the bind fails (e.g. because the port is already busy) the materialized stream will immediately be terminated with
@@ -62,13 +62,13 @@ useful for example when binding to port zero (and thus letting the OS pick an av
 ## Request-Response Cycle
 
 When a new connection has been accepted it will be published as an `Http.IncomingConnection` which consists
-of the remote address and methods to provide a @scala[`Flow[HttpRequest, HttpResponse, _]`]@java[`Flow<HttpRequest, HttpResponse, ?>`] to handle requests coming in over
+of the remote address and methods to provide a @scala[@unidoc[Flow[HttpRequest, HttpResponse, _]]]@java[@unidoc[Flow[HttpRequest, HttpResponse, ?]]] to handle requests coming in over
 this connection.
 
 Requests are handled by calling one of the `handleWithXXX` methods with a handler, which can either be
 
 >
- * a @scala[`Flow[HttpRequest, HttpResponse, _]`]@java[`Flow<HttpRequest, HttpResponse, ?>`] for `handleWith`,
+ * a @scala[@unidoc[Flow[HttpRequest, HttpResponse, _]]]@java[@unidoc[Flow[HttpRequest, HttpResponse, ?]]] for `handleWith`,
  * a function @scala[`HttpRequest => HttpResponse`]@java[`Function<HttpRequest, HttpResponse>`] for `handleWithSyncHandler`,
  * a function @scala[`HttpRequest => Future[HttpResponse]`]@java[`Function<HttpRequest, CompletionStage<HttpResponse>>`] for `handleWithAsyncHandler`.
 
@@ -134,7 +134,7 @@ You create an instance of `Http.ServerLayer` by calling one of the two overloads
 which also allows for varying degrees of configuration.
 @@@
 @@@ div { .group-java }
-On the server-side the stand-alone HTTP layer forms a `BidiFlow<HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed>`,
+On the server-side the stand-alone HTTP layer forms a @unidoc[BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed]],
 that is a stage that "upgrades" a potentially encrypted raw connection to the HTTP level.
 
 You create an instance of the layer by calling one of the two overloads of the `Http.get(system).serverLayer` method,
@@ -151,7 +151,7 @@ can limit the number of requests it handles in parallel.
 
 To limit the number of simultaneously open connections, use the `akka.http.server.max-connections` setting. This setting
 applies to all of `Http.bindAndHandle*` methods. If you use `Http.bind`, incoming connections are represented by
-a @scala[`Source[IncomingConnection, ...]`]@java[`Source<IncomingConnection, ...>`]. Use Akka Stream's combinators to apply backpressure to control the flow of
+a @scala[@unidoc[Source[IncomingConnection, ...]]]@java[@unidoc[Source[IncomingConnection, ...]]]. Use Akka Stream's combinators to apply backpressure to control the flow of
 incoming connections, e.g. by using `throttle` or `mapAsync`.
 
 HTTP pipelining is generally discouraged (and [disabled by most browsers](https://en.wikipedia.org/w/index.php?title=HTTP_pipelining&oldid=700966692#Implementation_in_web_browsers)) but
@@ -196,7 +196,7 @@ Scala
 Java
 :   @@snip [HttpServerExampleDocTest.java]($test$/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #binding-failure-handling }
 
-Once the server has successfully bound to a port, the @scala[`Source[IncomingConnection, _]`]@java[`Source<IncomingConnection, ?>`] starts running and emitting
+Once the server has successfully bound to a port, the @scala[@unidoc[Source[IncomingConnection, _]]]@java[@unidoc[Source[IncomingConnection, ?]]] starts running and emitting
 new incoming connections. This source technically can signal a failure as well, however this should only happen in very
 dramatic situations such as running out of file descriptors or memory available to the system, such that it's not able
 to accept a new incoming connection. Handling failures in Akka Streams is pretty straight forward, as failures are signaled
