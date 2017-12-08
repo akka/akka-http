@@ -48,7 +48,7 @@ object ParadoxSupport {
           new DirectiveNode(DirectiveNode.Format.Inline, group + "doc", node.label, syntheticSource, node.attributes, c, node.contentsNode))
       }
 
-      val matches = scanner.getNamesOfAllClasses.asScala.filter(_.startsWith("akka.http")).filter(_.endsWith('.' + node.label))
+      val matches = scanner.getNamesOfAllClasses.asScala.filter(_.endsWith('.' + node.label))
       matches.size match {
         case 0 =>
           throw new java.lang.IllegalStateException(s"No matches found for ${node.label}")
