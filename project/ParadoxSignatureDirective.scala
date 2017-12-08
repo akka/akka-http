@@ -41,23 +41,34 @@ object ParadoxSupport {
 
   class UnidocDirective(scaladocDirective: ScaladocDirective, javadocDirective: JavadocDirective, scanner: ScanResult) extends InlineDirective("unidoc") {
     def render(node: DirectiveNode, visitor: Visitor, printer: Printer): Unit = {
-      val matches = scanner.getNamesOfAllStandardClasses.asScala.filter(_.startsWith("akka.http")).filter(_.endsWith('.' + node.label))
-      if (matches.size > 2)
-        throw new java.lang.IllegalStateException(s"Multiple matches found for ${node.label}: " + matches.mkString(", "))
-      matches.foreach(c => {
+      def syntheticNode(group: String, c: String): DirectiveNode = {
         val syntheticSource = new DirectiveNode.Source.Direct(c)
-        def syntheticNode(group: String) = {
-          val attributes = new org.pegdown.ast.DirectiveAttributes.AttributeMap()
-          new DirectiveNode(DirectiveNode.Format.Inline, group, null, null, attributes, null,
-            new DirectiveNode(DirectiveNode.Format.Inline, group + "doc", node.label, syntheticSource, node.attributes, c, node.contentsNode)
-          )
-        }
+        val attributes = new org.pegdown.ast.DirectiveAttributes.AttributeMap()
+        new DirectiveNode(DirectiveNode.Format.Inline, group, null, null, attributes, null,
+          new DirectiveNode(DirectiveNode.Format.Inline, group + "doc", node.label, syntheticSource, node.attributes, c, node.contentsNode))
+      }
 
-        if (!c.contains("javadsl"))
-          syntheticNode("scala").accept(visitor)
-        if (!c.contains("scaladsl"))
-          syntheticNode("java").accept(visitor)
-      })
+      val matches = scanner.getNamesOfAllClasses.asScala.filter(_.startsWith("akka.http")).filter(_.endsWith('.' + node.label))
+      matches.size match {
+        case 0 =>
+          throw new java.lang.IllegalStateException(s"No matches found for ${node.label}")
+        case 1 if matches(0).contains("adsl") =>
+          throw new java.lang.IllegalStateException(s"Match for ${node.label} only found in one language: ${matches(0)}")
+        case 1 =>
+          syntheticNode("scala", matches(0)).accept(visitor)
+          syntheticNode("java", matches(0)).accept(visitor)
+        case 2 if matches.forall(_.contains("adsl")) =>
+          matches.foreach(m => {
+            if (!m.contains("javadsl"))
+              syntheticNode("scala", m).accept(visitor)
+            if (!m.contains("scaladsl"))
+              syntheticNode("java", m).accept(visitor)
+          })
+        case 2 =>
+          throw new java.lang.IllegalStateException(s"2 matches found for ${node.label}, but not javadsl/scaladsl: ${matches.mkString(", ")}")
+        case n =>
+          throw new java.lang.IllegalStateException(s"$n matches found for ${node.label}, but not javadsl/scaladsl: ${matches.mkString(", ")}")
+      }
     }
   }
 
