@@ -40,8 +40,8 @@ All of our forums, chat rooms, and issue trackers are governed by our [Code Of C
 
 In addition to that, you may enjoy following:
 
-- The [news](https://akka.io/news) section of the page, which is updated whenever a new version is released
-- The [Akka Team Blog](https://blog.akka.io)
+- The [news](https://akka.io/blog/news-archive.html) section of the page, which is updated whenever a new version is released
+- The [Akka Team Blog](https://akka.io/blog)
 - [@akkateam](https://twitter.com/akkateam) on Twitter
 - Projects built with Akka HTTP: [![Built with Akka HTTP][scaladex-badge]][scaladex-projects]
 
