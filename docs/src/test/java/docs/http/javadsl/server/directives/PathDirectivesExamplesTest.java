@@ -15,6 +15,7 @@ import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 //#path-matcher
+import akka.http.javadsl.server.PathMatcher1;
 import static akka.http.javadsl.server.PathMatchers.segment;
 //#path-matcher
 import static akka.http.javadsl.server.PathMatchers.segments;
