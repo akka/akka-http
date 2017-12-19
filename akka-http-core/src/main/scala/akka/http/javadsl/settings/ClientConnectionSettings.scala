@@ -10,6 +10,7 @@ import java.util.{ Optional, Random }
 import akka.actor.ActorSystem
 import akka.annotation.DoNotInherit
 import akka.http.impl.settings.ClientConnectionSettingsImpl
+import akka.http.javadsl.ClientTransport
 import akka.http.javadsl.model.headers.UserAgent
 import akka.io.Inet.SocketOption
 import com.typesafe.config.Config
@@ -39,6 +40,9 @@ abstract class ClientConnectionSettings private[akka] () { self: ClientConnectio
   }
   final def getLocalAddress: Optional[InetSocketAddress] = OptionConverters.toJava(localAddress)
 
+  /** The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used. */
+  def getTransport: ClientTransport = transport.asJava
+
   // ---
 
   def withUserAgentHeader(newValue: Optional[UserAgent]): ClientConnectionSettings = self.copy(userAgentHeader = newValue.asScala.map(_.asScala))
@@ -50,6 +54,7 @@ abstract class ClientConnectionSettings private[akka] () { self: ClientConnectio
   def withSocketOptions(newValue: java.lang.Iterable[SocketOption]): ClientConnectionSettings = self.copy(socketOptions = newValue.asScala.toList)
   def withParserSettings(newValue: ParserSettings): ClientConnectionSettings = self.copy(parserSettings = newValue.asScala)
   def withLocalAddress(newValue: Optional[InetSocketAddress]): ClientConnectionSettings = self.copy(localAddress = OptionConverters.toScala(newValue))
+  def withTransport(newValue: ClientTransport): ClientConnectionSettings = self.copy(transport = newValue.asScala)
 }
 
 object ClientConnectionSettings extends SettingsCompanion[ClientConnectionSettings] {

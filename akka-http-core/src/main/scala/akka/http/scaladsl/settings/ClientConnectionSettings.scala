@@ -9,6 +9,7 @@ import java.util.Random
 import akka.annotation.DoNotInherit
 import akka.http.impl.util._
 import akka.http.impl.settings.ClientConnectionSettingsImpl
+import akka.http.scaladsl.ClientTransport
 import akka.http.scaladsl.model.headers.`User-Agent`
 import akka.io.Inet.SocketOption
 import com.typesafe.config.Config
@@ -31,6 +32,9 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   def logUnencryptedNetworkBytes: Option[Int]
   def localAddress: Option[InetSocketAddress]
 
+  /** The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used. */
+  def transport: ClientTransport
+
   // ---
 
   // overrides for more specific return type
@@ -45,6 +49,7 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   def withSocketOptions(newValue: immutable.Seq[SocketOption]): ClientConnectionSettings = self.copy(socketOptions = newValue)
   def withParserSettings(newValue: ParserSettings): ClientConnectionSettings = self.copy(parserSettings = newValue)
   def withLocalAddress(newValue: Option[InetSocketAddress]): ClientConnectionSettings = self.copy(localAddress = newValue)
+  def withTransport(newTransport: ClientTransport): ClientConnectionSettings = self.copy(transport = newTransport)
 
   /**
    * Returns a new instance with the given local address set if the given override is `Some(address)`, otherwise

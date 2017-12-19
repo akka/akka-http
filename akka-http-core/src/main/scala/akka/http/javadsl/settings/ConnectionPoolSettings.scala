@@ -40,6 +40,7 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   def getResponseEntitySubscriptionTimeout: Duration = responseEntitySubscriptionTimeout
 
   /** The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used. */
+  @deprecated("Deprecated as transport is now retrieved from ClientConnectionSettings)", "10.0.12")
   def getTransport: ClientTransport = transport.asJava
 
   // ---
@@ -58,6 +59,7 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   @ApiMayChange
   def withResponseEntitySubscriptionTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(responseEntitySubscriptionTimeout = newValue)
 
+  @deprecated("Deprecated as transport is now retrieved from ClientConnectionSettings)", "10.0.12")
   def withTransport(newValue: ClientTransport): ConnectionPoolSettings = self.copy(transport = newValue.asScala)
 }
 
