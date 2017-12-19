@@ -278,17 +278,6 @@ object HttpEntity {
    *
    * If the given `chunkSize` is -1 the default chunk size is used.
    */
-  @deprecated("Use `fromPath` instead", "2.4.5")
-  def apply(contentType: ContentType, file: File, chunkSize: Int = -1): UniversalEntity =
-    fromPath(contentType, file.toPath, chunkSize)
-
-  /**
-   * Returns either the empty entity, if the given file is empty, or a [[HttpEntity.Default]] entity
-   * consisting of a stream of [[akka.util.ByteString]] instances each containing `chunkSize` bytes
-   * (except for the final ByteString, which simply contains the remaining bytes).
-   *
-   * If the given `chunkSize` is -1 the default chunk size is used.
-   */
   def fromPath(contentType: ContentType, file: Path, chunkSize: Int = -1): UniversalEntity = {
     val fileLength = Files.size(file)
     if (fileLength > 0)

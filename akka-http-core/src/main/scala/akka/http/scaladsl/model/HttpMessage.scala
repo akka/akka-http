@@ -6,7 +6,6 @@ package akka.http.scaladsl.model
 
 import akka.stream.scaladsl.Flow
 import akka.stream.{ FlowShape, Graph }
-import java.io.File
 import java.nio.file.Path
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.Optional
@@ -143,8 +142,6 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def withEntity(contentType: jm.ContentType, bytes: Array[Byte]): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], bytes))
   def withEntity(contentType: jm.ContentType, bytes: ByteString): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], bytes))
 
-  @deprecated("Use withEntity(ContentType, Path) instead", "2.4.5")
-  def withEntity(contentType: jm.ContentType, file: File): Self = withEntity(HttpEntity.fromPath(contentType.asInstanceOf[ContentType], file.toPath))
   def withEntity(contentType: jm.ContentType, file: Path): Self = withEntity(HttpEntity.fromPath(contentType.asInstanceOf[ContentType], file))
 
   def transformEntityDataBytes[M](transformer: Graph[FlowShape[ByteString, ByteString], M]): Self
