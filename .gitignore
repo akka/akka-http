@@ -10,3 +10,7 @@ target
 .*.swp
 *.vim
 .ensime*
+**/.classpath
+**/.project
+**/.settings
+
