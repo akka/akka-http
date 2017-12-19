@@ -6,8 +6,6 @@ package akka.http.scaladsl.model
 
 import java.util.OptionalLong
 
-import akka.http.impl.model.JavaInitialization
-
 import language.implicitConversions
 import java.io.File
 import java.nio.file.{ Files, Path }
@@ -291,9 +289,6 @@ object HttpEntity {
   def empty(contentType: ContentType): HttpEntity.Strict =
     if (contentType == Empty.contentType) Empty
     else HttpEntity.Strict(contentType, data = ByteString.empty)
-
-  JavaInitialization.initializeStaticFieldWith(
-    Empty, classOf[jm.HttpEntity].getField("EMPTY"))
 
   // TODO: re-establish serializability
   // TODO: equal/hashcode ?
