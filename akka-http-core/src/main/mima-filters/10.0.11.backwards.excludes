@@ -1,2 +1,5 @@
 # Don't monitor changes to internal API
 ProblemFilters.exclude[Problem]("akka.http.impl.*")
+
+#ClientConnectionSettings, marked as @DoNotInherit, allows new methods
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ClientConnectionSettings.transport")
