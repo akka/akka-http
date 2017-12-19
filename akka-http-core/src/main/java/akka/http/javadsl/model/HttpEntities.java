@@ -4,6 +4,7 @@
 
 package akka.http.javadsl.model;
 
+import java.io.File;
 import java.nio.file.Path;
 
 import akka.http.impl.util.JavaAccessors;
@@ -41,8 +42,16 @@ public final class HttpEntities {
         return HttpEntity$.MODULE$.apply((akka.http.scaladsl.model.ContentType) contentType, bytes);
     }
 
+    public static UniversalEntity create(ContentType contentType, File file) {
+        return JavaAccessors.HttpEntity(contentType, file);
+    }
+
     public static UniversalEntity create(ContentType contentType, Path file) {
         return JavaAccessors.HttpEntity(contentType, file);
+    }
+
+    public static UniversalEntity create(ContentType contentType, File file, int chunkSize) {
+        return create(contentType, file.toPath(), chunkSize);
     }
 
     public static UniversalEntity create(ContentType contentType, Path file, int chunkSize) {

@@ -414,6 +414,15 @@ object Multipart {
      * Creates a FormData instance that contains a single part backed by the given file.
      *
      * To create an instance with several parts or for multiple files, use
+     * `FormData(BodyPart.fromFile("field1", ...), BodyPart.fromFile("field2", ...)`
+     */
+    def fromFile(name: String, contentType: ContentType, file: File, chunkSize: Int = -1): Multipart.FormData =
+      fromPath(name, contentType, file.toPath, chunkSize)
+
+    /**
+     * Creates a FormData instance that contains a single part backed by the given file.
+     *
+     * To create an instance with several parts or for multiple files, use
      * `FormData(BodyPart.fromPath("field1", ...), BodyPart.fromPath("field2", ...)`
      */
     def fromPath(name: String, contentType: ContentType, file: Path, chunkSize: Int = -1): Multipart.FormData =
@@ -500,6 +509,12 @@ object Multipart {
           def entity = _entity
           override def toString = s"FormData.BodyPart($name, $entity, $additionalDispositionParams, $additionalHeaders)"
         }
+
+      /**
+       * Creates a BodyPart backed by a File that will be streamed using a FileSource.
+       */
+      def fromFile(name: String, contentType: ContentType, file: File, chunkSize: Int = -1): BodyPart =
+        fromPath(name, contentType, file.toPath, chunkSize)
 
       /**
        * Creates a BodyPart backed by a file that will be streamed using a FileSource.
