@@ -18,6 +18,7 @@ import akka.http.javadsl.model.headers.Authorization;
 import akka.http.javadsl.model.headers.BasicHttpCredentials;
 import akka.http.javadsl.model.headers.HttpChallenge;
 import akka.http.javadsl.testkit.*;
+import akka.japi.Option;
 
 import static akka.http.javadsl.server.PathMatchers.*;
 
@@ -130,7 +131,7 @@ public class SecurityDirectivesTest extends JUnitRouteTest {
           if (cred.isPresent()) {
             return CompletableFuture.completedFuture(Right.apply(cred.get().token()));
           } else {
-            return CompletableFuture.completedFuture(Left.apply(HttpChallenge.create("Basic", "test-realm")));
+            return CompletableFuture.completedFuture(Left.apply(HttpChallenge.create("Basic", Option.option("test-realm"))));
           }
         }, this::securedRoute)
       )

@@ -17,22 +17,6 @@ public abstract class HttpChallenge {
 
     public abstract Map<String, String> getParams();
 
-    /**
-     * @deprecated Use constructor with optional realm parameter instead.
-     */
-    @Deprecated
-    public static HttpChallenge create(String scheme, String realm) {
-        return akka.http.scaladsl.model.headers.HttpChallenge.apply(scheme, scala.Option.apply(realm), Util.emptyMap);
-    }
-
-    /**
-     * @deprecated Use constructor with optional realm parameter instead.
-     */
-    @Deprecated
-    public static HttpChallenge create(String scheme, String realm, Map<String, String> params) {
-        return akka.http.scaladsl.model.headers.HttpChallenge.apply(scheme, scala.Option.apply(realm), Util.convertMapToScala(params));
-    }
-
     public static HttpChallenge create(String scheme, Option<String> realm) {
         return akka.http.scaladsl.model.headers.HttpChallenge.apply(scheme, realm.asScala(), Util.emptyMap);
     }
@@ -44,10 +28,10 @@ public abstract class HttpChallenge {
     public static HttpChallenge createBasic(String realm) {
         Map<String, String> params = new HashMap<String, String>();
         params.put("charset", "UTF-8");
-        return create("Basic", realm, params);
+        return create("Basic", Option.option(realm), params);
     }
 
     public static HttpChallenge createOAuth2(String realm) {
-        return create("Bearer", realm);
+        return create("Bearer", Option.option(realm));
     }
 }
