@@ -30,7 +30,7 @@ public final class HttpMethods {
      * @deprecated Use {@link #custom} instead. Will be removed in Akka HTTP 11.0.
      */
     @Deprecated
-    public static HttpMethod createCstom(String value, boolean safe, boolean idempotent, akka.http.javadsl.model.RequestEntityAcceptance requestEntityAcceptance) {
+    public static HttpMethod createCustom(String value, boolean safe, boolean idempotent, akka.http.javadsl.model.RequestEntityAcceptance requestEntityAcceptance) {
         return custom(value, safe, idempotent, requestEntityAcceptance);
     }
 
