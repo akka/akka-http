@@ -5,7 +5,7 @@
 package akka.http.scaladsl.server.util
 
 /**
- * Phantom type providing implicit evidence that a given type is a Tuple or Unit.
+ * type class providing implicit evidence that a given type is a Tuple or Unit.
  */
 sealed trait Tuple[T]
 
