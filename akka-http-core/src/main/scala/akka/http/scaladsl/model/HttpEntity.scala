@@ -173,8 +173,10 @@ sealed trait HttpEntity extends jm.HttpEntity {
     toStrict(timeoutMillis.millis)(materializer).toJava
 
   /** Java API */
-  override def withContentType(contentType: jm.ContentType): HttpEntity =
-    withContentType(contentType.asInstanceOf[ContentType])
+  override def withContentType(contentType: jm.ContentType): HttpEntity = {
+    import JavaMapping.Implicits._
+    withContentType(contentType.asScala)
+  }
 }
 
 /* An entity that can be used for body parts */

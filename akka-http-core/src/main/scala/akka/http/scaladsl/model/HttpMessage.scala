@@ -167,8 +167,10 @@ sealed trait HttpMessage extends jm.HttpMessage {
   /** Java API */
   def addHeaders(headers: JIterable[jm.HttpHeader]): Self = mapHeaders(_ ++ headers.asScala.asInstanceOf[Iterable[HttpHeader]])
   /** Java API */
-  def withHeaders(headers: JIterable[jm.HttpHeader]): Self =
-    withHeaders(headers.asScala.toIndexedSeq.asInstanceOf[immutable.Seq[HttpHeader]])
+  def withHeaders(headers: JIterable[jm.HttpHeader]): Self = {
+    import JavaMapping.Implicits._
+    withHeaders(headers.asScala.toVector.map(_.asScala))
+  }
   /** Java API */
   def toStrict(timeoutMillis: Long, ec: Executor, materializer: Materializer): CompletionStage[Self] = {
     val ex = ExecutionContext.fromExecutor(ec)
