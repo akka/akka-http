@@ -10,7 +10,7 @@ import java.io.File
 import java.nio.file.Path
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.Optional
-import java.util.concurrent.{ CompletionStage, Executor }
+import java.util.concurrent.{ CompletionStage, Executor, TimeUnit }
 
 import scala.compat.java8.FutureConverters
 import scala.concurrent.duration.FiniteDuration
@@ -170,9 +170,9 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def withHeaders(headers: JIterable[jm.HttpHeader]): Self =
     withHeaders(headers.asScala.toIndexedSeq.asInstanceOf[immutable.Seq[HttpHeader]])
   /** Java API */
-  override def toStrict(timeoutMillis: Long, ec: Executor, materializer: Materializer): CompletionStage[jm.HttpMessage] = {
+  def toStrict(timeoutMillis: Long, ec: Executor, materializer: Materializer): CompletionStage[Self] = {
     val ex = ExecutionContext.fromExecutor(ec)
-    toStrict(timeoutMillis.millis)(ex, materializer).map(_.asInstanceOf[jm.HttpMessage])(ex).toJava
+    toStrict(timeoutMillis.millis)(ex, materializer).toJava
   }
 }
 
