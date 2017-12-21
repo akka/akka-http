@@ -18,9 +18,10 @@ In this section we discuss some of the specific cases of compatibility between v
 For example, you may be interested in those examples if you encountered the following exception in your system when upgrading parts 
 of your libraries: `Detected java.lang.NoSuchMethodError error, which MAY be caused by incompatible Akka versions on the classpath. Please note that a given Akka version MUST be the same across all modules of Akka that you are using, e.g. if you use akka-actor [2.5.3 (resolved from current classpath)] all other core Akka modules MUST be of the same version. External projects like Alpakka, Persistence plugins or Akka HTTP etc. have their own version numbers - please make sure you're using a compatible set of libraries.`
 
-### Akka HTTP 10.0.x with Akka 2.5.x and later
+### Compatibility with Akka
 
-Akka HTTP 10.0.x is (binary) compatible with Akka `2.5.x` and any future versions in the 2.x tree.
+Akka HTTP 10.1.x is (binary) compatible with Akka `2.5.x`
+and future Akka 2.x versions that are released during the lifetime of Akka HTTP 10.1.x.
 To facilitate supporting multiple minor versions of Akka we do not depend on `akka-stream`
 explicitly but mark it as a `provided` dependency in our build. That means that you will *always* have to add
 a manual dependency to `akka-stream`.

@@ -26,7 +26,7 @@ On the other hand, if you prefer to build your applications with the guidance of
 ## Using Akka HTTP
 
 Akka HTTP is provided as independent modules from Akka itself under its own release cycle. Akka HTTP is @ref[compatible](compatibility-guidelines.md)
-with Akka 2.5 and any later 2.x versions. The modules, however, do *not* depend on `akka-actor` or `akka-stream`, so the user is required to
+with Akka 2.5 and any later 2.x versions released during the lifetime of Akka HTTP 10.1.x. The modules, however, do *not* depend on `akka-actor` or `akka-stream`, so the user is required to
 choose an Akka version to run against and add a manual dependency to `akka-stream` of the chosen version.
 
 sbt
