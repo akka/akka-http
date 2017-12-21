@@ -505,7 +505,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   /**
    * Same as [[cachedHostConnectionPool]] but with HTTPS encryption.
    *
-   * The current default client-side [[ConnectionContext]] will be used for encryption on the connection.
+   * When an [[HttpConnectionContext]] is defined in the given [[ConnectHttp]] it will be used, otherwise the default client-side context will be used.
    */
   def cachedHostConnectionPoolHttps[T](
     to:       ConnectHttp,
@@ -517,7 +517,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   /**
    * Same as [[cachedHostConnectionPool]] but with HTTPS encryption.
    *
-   * The current default client-side [[ConnectionContext]] will be used for encryption on the connection.
+   * When an [[HttpConnectionContext]] is defined in the given [[ConnectHttp]] it will be used, otherwise the default client-side context will be used.
    */
   def cachedHostConnectionPoolHttps[T](
     to: ConnectHttp
