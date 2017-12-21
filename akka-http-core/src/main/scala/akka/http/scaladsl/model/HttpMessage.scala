@@ -10,7 +10,7 @@ import java.io.File
 import java.nio.file.Path
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.Optional
-import java.util.concurrent.CompletionStage
+import java.util.concurrent.{ CompletionStage, Executor }
 
 import scala.compat.java8.FutureConverters
 import scala.concurrent.duration.FiniteDuration
@@ -27,6 +27,8 @@ import akka.http.scaladsl.util.FastFuture._
 import headers._
 
 import scala.annotation.tailrec
+import scala.compat.java8.FutureConverters._
+import scala.concurrent.duration._
 
 /**
  * Common base class of HttpRequest and HttpResponse.
@@ -164,6 +166,14 @@ sealed trait HttpMessage extends jm.HttpMessage {
   }
   /** Java API */
   def addHeaders(headers: JIterable[jm.HttpHeader]): Self = mapHeaders(_ ++ headers.asScala.asInstanceOf[Iterable[HttpHeader]])
+  /** Java API */
+  def withHeaders(headers: JIterable[jm.HttpHeader]): Self =
+    withHeaders(headers.asScala.toIndexedSeq.asInstanceOf[immutable.Seq[HttpHeader]])
+  /** Java API */
+  override def toStrict(timeoutMillis: Long, ec: Executor, materializer: Materializer): CompletionStage[jm.HttpMessage] = {
+    val ex = ExecutionContext.fromExecutor(ec)
+    toStrict(timeoutMillis.millis)(ex, materializer).map(_.asInstanceOf[jm.HttpMessage])(ex).toJava
+  }
 }
 
 object HttpMessage {

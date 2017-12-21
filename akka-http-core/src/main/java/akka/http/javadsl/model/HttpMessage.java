@@ -14,6 +14,8 @@ import akka.util.ByteString;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 
 /**
  * The base type for an Http message (request or response).
@@ -86,6 +88,17 @@ public interface HttpMessage {
     DiscardedEntity discardEntityBytes(Materializer materializer);
 
     /**
+     * Returns a future of Self message with strict entity that contains the same data as this entity
+     * which is only completed when the complete entity has been collected. As the
+     * duration of receiving the complete entity cannot be predicted, a timeout needs to
+     * be specified to guard the process against running and keeping resources infinitely.
+     *
+     * Use getEntity().getDataBytes and stream processing instead if the expected data is big or
+     * is likely to take a long time.
+     */
+    CompletionStage<HttpMessage> toStrict(long timeoutMillis, Executor ec, Materializer materializer);
+
+    /**
      * Represents the currently being-drained HTTP Entity which triggers completion of the contained
      * Future once the entity has been drained for the given HttpMessage completely.
      */
@@ -107,6 +120,11 @@ public interface HttpMessage {
          * Returns a copy of this message with the given headers added to the list of headers.
          */
         Self addHeaders(Iterable<HttpHeader> headers);
+
+        /**
+         * Returns a copy of this message with new headers.
+         */
+        Self withHeaders(Iterable<HttpHeader> headers);
 
         /**
          * Returns a copy of this message with the given http credential header added to the list of headers.
