@@ -59,7 +59,7 @@ public abstract class HttpHeader {
         return ((akka.http.scaladsl.model.HttpHeader$ParsingResult$Ok) result).header();
       }
       else {
-        throw new IllegalArgumentException("Unable to parse header [" + name + "] with value [" + value + "]");
+        throw new IllegalArgumentException("Unable to parse header");
       }
     }
 }
