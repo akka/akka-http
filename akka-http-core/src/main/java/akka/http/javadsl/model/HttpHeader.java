@@ -4,6 +4,8 @@
 
 package akka.http.javadsl.model;
 
+import akka.http.scaladsl.model.IllegalHeaderException;
+
 /**
  * The base type representing Http headers. All actual header values will be instances
  * of one of the subtypes defined in the `headers` packages. Unknown headers will be subtypes
@@ -59,7 +61,7 @@ public abstract class HttpHeader {
         return ((akka.http.scaladsl.model.HttpHeader$ParsingResult$Ok) result).header();
       }
       else {
-        throw new IllegalArgumentException("Unable to parse header");
+        throw new IllegalHeaderException(((akka.http.scaladsl.model.HttpHeader$ParsingResult$Error)result).error());
       }
     }
 }
