@@ -4,11 +4,13 @@
 
 package akka.http.scaladsl.unmarshalling
 
+import java.util.NoSuchElementException
+
 import akka.event.Logging
 import akka.stream.Materializer
 
-import scala.util.control.{ NoStackTrace, NonFatal }
-import scala.concurrent.{ Future, ExecutionContext }
+import scala.util.control.{NoStackTrace, NonFatal}
+import scala.concurrent.{ExecutionContext, Future}
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
 import akka.http.scaladsl.model._
@@ -72,13 +74,17 @@ object Unmarshaller
   def firstOf[A, B](unmarshallers: Unmarshaller[A, B]*): Unmarshaller[A, B] = //...
   //#unmarshaller-creation
     Unmarshaller.withMaterializer { implicit ec ⇒ implicit mat => a ⇒
-      def rec(ix: Int, supported: Set[ContentTypeRange]): Future[B] =
+
+      def rec(ix: Int, contentType: Option[ContentType], supported: Set[ContentTypeRange]): Future[B] =
         if (ix < unmarshallers.size) {
           unmarshallers(ix)(a).fast.recoverWith {
-            case Unmarshaller.UnsupportedContentTypeException(supp) ⇒ rec(ix + 1, supported ++ supp)
+            case Unmarshaller.UnsupportedContentTypeException(currType, supp) ⇒
+              rec(ix + 1, contentType.orElse(Some(currType)), supported ++ supp)
           }
-        } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(supported))
-      rec(0, Set.empty)
+        } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(
+          contentType.getOrElse(throw new NoSuchElementException), supported))
+
+      rec(0, None, Set.empty)
     }
 
   // format: ON
@@ -110,15 +116,14 @@ object Unmarshaller
       Unmarshaller.withMaterializer { implicit ec ⇒ implicit mat ⇒
         entity ⇒
           if (entity.contentType == ContentTypes.NoContentType || ranges.exists(_ matches entity.contentType)) {
-            underlying(entity).fast.recover[A](barkAtUnsupportedContentTypeException(ranges, entity.contentType))
-          } else FastFuture.failed(UnsupportedContentTypeException(ranges: _*))
+            underlying(entity).fast.recover[A](barkAtUnsupportedContentTypeException(ranges))
+          } else FastFuture.failed(UnsupportedContentTypeException(entity.contentType, ranges: _*))
       }
 
     private def barkAtUnsupportedContentTypeException(
-      ranges:         Seq[ContentTypeRange],
-      newContentType: ContentType): PartialFunction[Throwable, Nothing] = {
-      case UnsupportedContentTypeException(supported) ⇒ throw new IllegalStateException(
-        s"Illegal use of `unmarshaller.forContentTypes($ranges)`: $newContentType is not supported by underlying marshaller!")
+      ranges:         Seq[ContentTypeRange]): PartialFunction[Throwable, Nothing] = {
+      case UnsupportedContentTypeException(contentType, supported) ⇒ throw new IllegalStateException(
+        s"Illegal use of `unmarshaller.forContentTypes($ranges)`: $contentType is not supported by underlying marshaller!")
     }
   }
 
@@ -142,8 +147,8 @@ object Unmarshaller
    * This error cannot be thrown by custom code, you need to use the `forContentTypes` modifier on a base
    * [[akka.http.scaladsl.unmarshalling.Unmarshaller]] instead.
    */
-  final case class UnsupportedContentTypeException(supported: Set[ContentTypeRange])
-    extends RuntimeException(supported.mkString("Unsupported Content-Type, supported: ", ", ", ""))
+  final case class UnsupportedContentTypeException(contentType: ContentType, supported: Set[ContentTypeRange])
+    extends RuntimeException(supported.mkString(s"Unsupported Content-Type: $contentType, supported: ", ", ", ""))
 
   /** Order of parameters (`right` first, `left` second) is intentional, since that's the order we evaluate them in. */
   final case class EitherUnmarshallingException(
@@ -155,6 +160,7 @@ object Unmarshaller
         s"Left failure: ${left.getMessage}")
 
   object UnsupportedContentTypeException {
-    def apply(supported: ContentTypeRange*): UnsupportedContentTypeException = UnsupportedContentTypeException(Set(supported: _*))
+    def apply(contentType: ContentType, supported: ContentTypeRange*): UnsupportedContentTypeException =
+      UnsupportedContentTypeException(contentType, Set(supported: _*))
   }
 }
