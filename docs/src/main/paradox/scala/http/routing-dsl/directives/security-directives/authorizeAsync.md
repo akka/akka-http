@@ -12,8 +12,8 @@ Applies the given authorization check to the request.
 
 ## Description
 
-The user-defined authorization check can either be supplied as a @scala[`=> Future[Boolean]`]@java[`() -> CompletionStage<Boolean>`] value which is calculated
-just from information out of the lexical scope, or as a function @scala[`RequestContext => Future[Boolean]`]@java[`RequestContext -> CompletionStage<Boolean>`] which can also
+The user-defined authorization check can either be supplied as a @scala[`=> Future[Boolean]`]@java[`Supplier<CompletionStage<Boolean>>`] value which is calculated
+just from information out of the lexical scope, or as a function @scala[`RequestContext => Future[Boolean]`]@java[`Function<RequestContext,CompletionStage<Boolean>>`] which can also
 take information from the request itself into account.
 
 If the check returns `true` or the @scala[`Future`]@java[`CompletionStage`] is failed the request is passed on to the inner route unchanged,
