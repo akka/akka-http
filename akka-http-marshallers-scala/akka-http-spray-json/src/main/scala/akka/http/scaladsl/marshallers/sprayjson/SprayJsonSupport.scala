@@ -55,7 +55,7 @@ trait SprayJsonSupport {
           else Flow[ByteString].mapAsync(support.parallelism)(unmarshal)
         val elements = frames.viaMat(unmarshallingFlow)(Keep.right)
         FastFuture.successful(elements)
-      } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(support.supported))
+      } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(Some(e.contentType), support.supported))
     }
 
   //#sprayJsonMarshallerConverter

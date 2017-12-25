@@ -9,8 +9,8 @@ import java.util.NoSuchElementException
 import akka.event.Logging
 import akka.stream.Materializer
 
-import scala.util.control.{NoStackTrace, NonFatal}
-import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.{ NoStackTrace, NonFatal }
+import scala.concurrent.{ ExecutionContext, Future }
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
 import akka.http.scaladsl.model._
@@ -79,10 +79,9 @@ object Unmarshaller
         if (ix < unmarshallers.size) {
           unmarshallers(ix)(a).fast.recoverWith {
             case Unmarshaller.UnsupportedContentTypeException(currType, supp) ⇒
-              rec(ix + 1, contentType.orElse(Some(currType)), supported ++ supp)
+              rec(ix + 1, contentType.orElse(currType), supported ++ supp)
           }
-        } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(
-          contentType.getOrElse(throw new NoSuchElementException), supported))
+        } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(contentType, supported))
 
       rec(0, None, Set.empty)
     }
@@ -117,11 +116,11 @@ object Unmarshaller
         entity ⇒
           if (entity.contentType == ContentTypes.NoContentType || ranges.exists(_ matches entity.contentType)) {
             underlying(entity).fast.recover[A](barkAtUnsupportedContentTypeException(ranges))
-          } else FastFuture.failed(UnsupportedContentTypeException(entity.contentType, ranges: _*))
+          } else FastFuture.failed(UnsupportedContentTypeException(Some(entity.contentType), ranges: _*))
       }
 
     private def barkAtUnsupportedContentTypeException(
-      ranges:         Seq[ContentTypeRange]): PartialFunction[Throwable, Nothing] = {
+      ranges: Seq[ContentTypeRange]): PartialFunction[Throwable, Nothing] = {
       case UnsupportedContentTypeException(contentType, supported) ⇒ throw new IllegalStateException(
         s"Illegal use of `unmarshaller.forContentTypes($ranges)`: $contentType is not supported by underlying marshaller!")
     }
@@ -147,8 +146,8 @@ object Unmarshaller
    * This error cannot be thrown by custom code, you need to use the `forContentTypes` modifier on a base
    * [[akka.http.scaladsl.unmarshalling.Unmarshaller]] instead.
    */
-  final case class UnsupportedContentTypeException(contentType: ContentType, supported: Set[ContentTypeRange])
-    extends RuntimeException(supported.mkString(s"Unsupported Content-Type: $contentType, supported: ", ", ", ""))
+  final case class UnsupportedContentTypeException(contentType: Option[ContentType], supported: Set[ContentTypeRange])
+    extends RuntimeException(supported.mkString(s"Unsupported Content-Type: ${contentType.getOrElse("undefined")}, supported: ", ", ", ""))
 
   /** Order of parameters (`right` first, `left` second) is intentional, since that's the order we evaluate them in. */
   final case class EitherUnmarshallingException(
@@ -160,7 +159,7 @@ object Unmarshaller
         s"Left failure: ${left.getMessage}")
 
   object UnsupportedContentTypeException {
-    def apply(contentType: ContentType, supported: ContentTypeRange*): UnsupportedContentTypeException =
+    def apply(contentType: Option[ContentType], supported: ContentTypeRange*): UnsupportedContentTypeException =
       UnsupportedContentTypeException(contentType, Set(supported: _*))
   }
 }
