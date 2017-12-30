@@ -35,7 +35,7 @@ trait MarshallingDirectives {
         case Success(value) ⇒ provide(value)
         case Failure(RejectionError(r)) ⇒ reject(r)
         case Failure(Unmarshaller.NoContentException) ⇒ reject(RequestEntityExpectedRejection)
-        case Failure(Unmarshaller.UnsupportedContentTypeException(x)) ⇒ reject(UnsupportedRequestContentTypeRejection(x))
+        case Failure(Unmarshaller.UnsupportedContentTypeException(x, _)) ⇒ reject(UnsupportedRequestContentTypeRejection(x))
         case Failure(x: IllegalArgumentException) ⇒ reject(ValidationRejection(x.getMessage.nullAsEmpty, Some(x)))
         case Failure(x) ⇒ reject(MalformedRequestContentRejection(x.getMessage.nullAsEmpty, x))
       }

@@ -75,7 +75,7 @@ object Unmarshaller
       def rec(ix: Int, supported: Set[ContentTypeRange]): Future[B] =
         if (ix < unmarshallers.size) {
           unmarshallers(ix)(a).fast.recoverWith {
-            case Unmarshaller.UnsupportedContentTypeException(supp) ⇒ rec(ix + 1, supported ++ supp)
+            case Unmarshaller.UnsupportedContentTypeException(supp, _) ⇒ rec(ix + 1, supported ++ supp)
           }
         } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(supported))
       rec(0, Set.empty)
@@ -117,7 +117,7 @@ object Unmarshaller
     private def barkAtUnsupportedContentTypeException(
       ranges:         Seq[ContentTypeRange],
       newContentType: ContentType): PartialFunction[Throwable, Nothing] = {
-      case UnsupportedContentTypeException(supported) ⇒ throw new IllegalStateException(
+      case UnsupportedContentTypeException(supported, _) ⇒ throw new IllegalStateException(
         s"Illegal use of `unmarshaller.forContentTypes($ranges)`: $newContentType is not supported by underlying marshaller!")
     }
   }
@@ -142,8 +142,17 @@ object Unmarshaller
    * This error cannot be thrown by custom code, you need to use the `forContentTypes` modifier on a base
    * [[akka.http.scaladsl.unmarshalling.Unmarshaller]] instead.
    */
-  final case class UnsupportedContentTypeException(supported: Set[ContentTypeRange])
-    extends RuntimeException(supported.mkString("Unsupported Content-Type, supported: ", ", ", ""))
+  final case class UnsupportedContentTypeException(supported: Set[ContentTypeRange], contentType: Option[ContentType] = None)
+    extends RuntimeException(supported.mkString("Unsupported Content-Type, supported: ", ", ", "")) {
+
+    def this(supported: Set[ContentTypeRange]) = this(supported, None)
+
+    def this(contentType: Option[ContentType], supported: Set[ContentTypeRange]) = this(supported, contentType)
+
+    def copy(supported: Set[ContentTypeRange]) = UnsupportedContentTypeException(supported, contentType)
+
+    def copy(supported: Set[ContentTypeRange], contentType: Option[ContentType] = None) = UnsupportedContentTypeException(supported, contentType)
+  }
 
   /** Order of parameters (`right` first, `left` second) is intentional, since that's the order we evaluate them in. */
   final case class EitherUnmarshallingException(
@@ -155,6 +164,13 @@ object Unmarshaller
         s"Left failure: ${left.getMessage}")
 
   object UnsupportedContentTypeException {
-    def apply(supported: ContentTypeRange*): UnsupportedContentTypeException = UnsupportedContentTypeException(Set(supported: _*))
+    def apply(supported: ContentTypeRange*): UnsupportedContentTypeException =
+      UnsupportedContentTypeException(Set(supported: _*))
+
+    def apply(contentType: Option[ContentType], supported: ContentTypeRange*): UnsupportedContentTypeException =
+      UnsupportedContentTypeException(Set(supported: _*), contentType)
+
+    def apply(supported: Set[ContentTypeRange]): UnsupportedContentTypeException =
+      UnsupportedContentTypeException(supported)
   }
 }
