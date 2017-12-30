@@ -71,7 +71,7 @@ trait FramedEntityStreamingDirectives extends MarshallingDirectives {
         val elements = frames.viaMat(marshalling)(Keep.right)
         FastFuture.successful(elements)
 
-      } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(Some(entity.contentType), support.supported))
+      } else FastFuture.failed(UnsupportedContentTypeException(Some(entity.contentType), support.supported))
     }
   // format: ON
 

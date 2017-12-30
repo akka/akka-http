@@ -19,7 +19,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.model._
 import akka.testkit._
 import MediaTypes._
-import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
+import akka.http.scaladsl.unmarshalling.UnsupportedContentTypeException
 
 class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest with Inside {
   import ScalaXmlSupport._

@@ -14,8 +14,8 @@ import akka.http.javadsl.model._
 import akka.http.scaladsl.model.{ ContentTypeRange, ContentTypes, FormData ⇒ SFormData }
 import akka.http.scaladsl.model.{ Multipart ⇒ SMultipart }
 import akka.http.scaladsl.unmarshalling
-import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
-import akka.http.scaladsl.unmarshalling.Unmarshaller.{ EnhancedFromEntityUnmarshaller, UnsupportedContentTypeException }
+import akka.http.scaladsl.unmarshalling.{ FromEntityUnmarshaller, UnsupportedContentTypeException }
+import akka.http.scaladsl.unmarshalling.Unmarshaller.{ EnhancedFromEntityUnmarshaller }
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.util.ByteString

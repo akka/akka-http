@@ -72,13 +72,15 @@ object Unmarshaller
   def firstOf[A, B](unmarshallers: Unmarshaller[A, B]*): Unmarshaller[A, B] = //...
   //#unmarshaller-creation
     Unmarshaller.withMaterializer { implicit ec ⇒ implicit mat => a ⇒
-      def rec(ix: Int, supported: Set[ContentTypeRange]): Future[B] =
+      def rec(ix: Int, supported: Set[ContentTypeRange], contentType: Option[ContentType]): Future[B] =
         if (ix < unmarshallers.size) {
           unmarshallers(ix)(a).fast.recoverWith {
-            case Unmarshaller.UnsupportedContentTypeException(supp, _) ⇒ rec(ix + 1, supported ++ supp)
+            case UnsupportedContentTypeException(supp, actualType) ⇒
+              rec(ix + 1, supported ++ supp, contentType.orElse(actualType))
           }
-        } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(supported))
-      rec(0, Set.empty)
+        } else FastFuture.failed(UnsupportedContentTypeException(supported, contentType))
+
+      rec(0, Set.empty, None)
     }
 
   // format: ON
@@ -137,23 +139,6 @@ object Unmarshaller
    */
   case object NoContentException extends RuntimeException("Message entity must not be empty") with NoStackTrace
 
-  /**
-   * Signals that unmarshalling failed because the entity content-type did not match one of the supported ranges.
-   * This error cannot be thrown by custom code, you need to use the `forContentTypes` modifier on a base
-   * [[akka.http.scaladsl.unmarshalling.Unmarshaller]] instead.
-   */
-  final case class UnsupportedContentTypeException(supported: Set[ContentTypeRange], contentType: Option[ContentType] = None)
-    extends RuntimeException(supported.mkString("Unsupported Content-Type, supported: ", ", ", "")) {
-
-    def this(supported: Set[ContentTypeRange]) = this(supported, None)
-
-    def this(contentType: Option[ContentType], supported: Set[ContentTypeRange]) = this(supported, contentType)
-
-    def copy(supported: Set[ContentTypeRange]) = UnsupportedContentTypeException(supported, contentType)
-
-    def copy(supported: Set[ContentTypeRange], contentType: Option[ContentType] = None) = UnsupportedContentTypeException(supported, contentType)
-  }
-
   /** Order of parameters (`right` first, `left` second) is intentional, since that's the order we evaluate them in. */
   final case class EitherUnmarshallingException(
     rightClass: Class[_], right: Throwable,
@@ -162,15 +147,4 @@ object Unmarshaller
       s"Failed to unmarshal Either[${Logging.simpleName(leftClass)}, ${Logging.simpleName(rightClass)}] (attempted ${Logging.simpleName(rightClass)} first). " +
         s"Right failure: ${right.getMessage}, " +
         s"Left failure: ${left.getMessage}")
-
-  object UnsupportedContentTypeException {
-    def apply(supported: ContentTypeRange*): UnsupportedContentTypeException =
-      UnsupportedContentTypeException(Set(supported: _*))
-
-    def apply(contentType: Option[ContentType], supported: ContentTypeRange*): UnsupportedContentTypeException =
-      UnsupportedContentTypeException(Set(supported: _*), contentType)
-
-    def apply(supported: Set[ContentTypeRange]): UnsupportedContentTypeException =
-      UnsupportedContentTypeException(supported)
-  }
 }

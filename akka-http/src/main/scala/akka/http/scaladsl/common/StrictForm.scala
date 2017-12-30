@@ -125,10 +125,10 @@ object StrictForm {
           }
 
         tryUnmarshalToQueryForm.fast.recoverWith {
-          case Unmarshaller.UnsupportedContentTypeException(supported1, _) ⇒
+          case UnsupportedContentTypeException(supported1, _) ⇒
             tryUnmarshalToMultipartForm.fast.recoverWith {
-              case Unmarshaller.UnsupportedContentTypeException(supported2, _) ⇒
-                FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(supported1 ++ supported2))
+              case UnsupportedContentTypeException(supported2, contentType) ⇒
+                FastFuture.failed(UnsupportedContentTypeException(supported1 ++ supported2, contentType))
             }
         }
     }
@@ -141,7 +141,7 @@ object StrictForm {
   object FileData {
     implicit val unmarshaller: FromStrictFormFieldUnmarshaller[FileData] =
       Unmarshaller strict {
-        case Field.FromString(_)  ⇒ throw Unmarshaller.UnsupportedContentTypeException(MediaTypes.`application/x-www-form-urlencoded`)
+        case Field.FromString(_)  ⇒ throw UnsupportedContentTypeException(MediaTypes.`application/x-www-form-urlencoded`)
         case Field.FromPart(part) ⇒ FileData(part.filename, part.entity)
       }
   }

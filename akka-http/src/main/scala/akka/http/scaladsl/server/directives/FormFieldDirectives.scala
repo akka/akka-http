@@ -10,7 +10,6 @@ import akka.http.impl.util._
 import akka.http.scaladsl.common._
 import akka.http.scaladsl.model.EntityStreamSizeException
 import akka.http.scaladsl.server.directives.RouteDirectives._
-import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
 import akka.http.scaladsl.util.FastFuture._
 
 import scala.annotation.tailrec

@@ -12,7 +12,6 @@ import akka.http.scaladsl.model.MediaRanges._
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ParserSettings
-import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.ActorMaterializerHelper
 import akka.stream.scaladsl._
