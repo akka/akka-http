@@ -32,6 +32,7 @@ import scala.concurrent.duration.FiniteDuration;
 //#manual-entity-consume-example-1
 
 //#collecting-headers-example
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -218,17 +219,19 @@ public class HttpClientExampleDocTest {
   public void testCollectingHeadersExample() {
 
     final ActorSystem system = ActorSystem.create();
+    final ActorMaterializer materializer = ActorMaterializer.create(system);
 
     //#collecting-headers-example
-    final CompletionStage<HttpResponse> responseFuture =
-      Http.get(system)
-        .singleRequest(HttpRequest.create("http://akka.io"));
+    final HttpResponse response = responseFromSomewhere();
 
-      responseFuture.thenApply(response -> StreamSupport.stream(response.getHeaders().spliterator(), false)
-        .filter(SetCookie.class::isInstance)
-        .map(SetCookie.class::cast)
-        .collect(Collectors.toList())
-      ).thenAccept(cookies -> System.out.println("Cookies set by a server: " + cookies));
+    List<SetCookie> setCookies = StreamSupport.stream(response.getHeaders().spliterator(), false)
+      .filter(SetCookie.class::isInstance)
+      .map(SetCookie.class::cast)
+      .collect(Collectors.toList());
+
+    System.out.println("Cookies set by a server: " + setCookies);
+
+    response.discardEntityBytes(materializer);
     //#collecting-headers-example
   }
 }
