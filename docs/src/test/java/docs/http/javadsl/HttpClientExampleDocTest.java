@@ -6,9 +6,7 @@ package docs.http.javadsl;
 
 import akka.Done;
 import akka.actor.*;
-import akka.http.javadsl.model.headers.BasicHttpCredentials;
 import akka.http.javadsl.model.headers.HttpCredentials;
-import akka.stream.Materializer;
 import akka.util.ByteString;
 import scala.concurrent.ExecutionContextExecutor;
 import akka.stream.javadsl.*;
@@ -157,11 +155,10 @@ public class HttpClientExampleDocTest {
   public void testSingleRequestExample() {
     //#single-request-example
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
 
     final CompletionStage<HttpResponse> responseFuture =
       Http.get(system)
-          .singleRequest(HttpRequest.create("http://akka.io"), materializer);
+          .singleRequest(HttpRequest.create("http://akka.io"));
     //#single-request-example
   }
 
@@ -170,7 +167,6 @@ public class HttpClientExampleDocTest {
     //#https-proxy-example-single-request
 
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
 
     ClientTransport proxy = ClientTransport.httpsProxy(InetSocketAddress.createUnresolved("192.168.2.5", 8080));
     ConnectionPoolSettings poolSettingsWithHttpsProxy = ConnectionPoolSettings.create(system).withTransport(proxy);
@@ -181,8 +177,7 @@ public class HttpClientExampleDocTest {
                   HttpRequest.create("https://github.com"),
                   Http.get(system).defaultClientHttpsContext(),
                   poolSettingsWithHttpsProxy, // <- pass in the custom settings here
-                  system.log(),
-                  materializer);
+                  system.log());
 
     //#https-proxy-example-single-request
   }
@@ -191,7 +186,6 @@ public class HttpClientExampleDocTest {
   public void testSingleRequestWithHttpsProxyExampleWithAuth() {
 
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
 
     //#auth-https-proxy-example-single-request
     InetSocketAddress proxyAddress =
@@ -208,8 +202,7 @@ public class HttpClientExampleDocTest {
                   HttpRequest.create("https://github.com"),
                   Http.get(system).defaultClientHttpsContext(),
                   poolSettingsWithHttpsProxy, // <- pass in the custom settings here
-                  system.log(),
-                  materializer);
+                  system.log());
 
     //#auth-https-proxy-example-single-request
   }
