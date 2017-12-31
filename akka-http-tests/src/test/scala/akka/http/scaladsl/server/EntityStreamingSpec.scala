@@ -168,7 +168,10 @@ class EntityStreamingSpec extends RoutingSpec {
 
     Post("/metrics", entity = xmlData) ~> route ~> check {
       handled should ===(false)
-      rejection should ===(UnsupportedRequestContentTypeRejection(Set(ContentTypes.`application/json`)))
+      rejection should ===(
+        UnsupportedRequestContentTypeRejection(
+          Set(ContentTypes.`application/json`),
+          Some(ContentTypes.`text/xml(UTF-8)`)))
     }
     //#spray-json-request-streaming
   }

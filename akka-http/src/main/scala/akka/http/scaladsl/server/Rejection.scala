@@ -104,7 +104,9 @@ final case class InvalidOriginRejection(allowedOrigins: immutable.Seq[SHttpOrigi
  * Rejection created by unmarshallers.
  * Signals that the request was rejected because the requests content-type is unsupported.
  */
-final case class UnsupportedRequestContentTypeRejection(supported: immutable.Set[ContentTypeRange])
+final case class UnsupportedRequestContentTypeRejection(
+  supported:   immutable.Set[ContentTypeRange],
+  contentType: Option[ContentType])
   extends jserver.UnsupportedRequestContentTypeRejection with Rejection {
   override def getSupported: java.util.Set[model.ContentTypeRange] =
     scala.collection.mutable.Set(supported.map(_.asJava).toVector: _*).asJava // TODO optimise
