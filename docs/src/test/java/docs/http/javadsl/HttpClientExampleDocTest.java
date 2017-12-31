@@ -31,6 +31,13 @@ import akka.http.javadsl.model.*;
 import scala.concurrent.duration.FiniteDuration;
 //#manual-entity-consume-example-1
 
+//#collecting-headers-example
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
+
+import akka.http.javadsl.model.headers.SetCookie;
+//#collecting-headers-example
+
 @SuppressWarnings("unused")
 public class HttpClientExampleDocTest {
 
@@ -205,5 +212,23 @@ public class HttpClientExampleDocTest {
                   system.log());
 
     //#auth-https-proxy-example-single-request
+  }
+
+  // compile only test
+  public void testCollectingHeadersExample() {
+
+    final ActorSystem system = ActorSystem.create();
+
+    //#collecting-headers-example
+    final CompletionStage<HttpResponse> responseFuture =
+      Http.get(system)
+        .singleRequest(HttpRequest.create("http://akka.io"));
+
+      responseFuture.thenApply(response -> StreamSupport.stream(response.getHeaders().spliterator(), false)
+        .filter(SetCookie.class::isInstance)
+        .map(SetCookie.class::cast)
+        .collect(Collectors.toList())
+      ).thenAccept(cookies -> System.out.println("Cookies set by a server: " + cookies));
+    //#collecting-headers-example
   }
 }
