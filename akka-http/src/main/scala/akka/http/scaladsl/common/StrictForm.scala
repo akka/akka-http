@@ -6,7 +6,7 @@ package akka.http.scaladsl.common
 
 import scala.annotation.implicitNotFound
 import scala.collection.immutable
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
 import akka.stream.Materializer
 import akka.http.scaladsl.unmarshalling._

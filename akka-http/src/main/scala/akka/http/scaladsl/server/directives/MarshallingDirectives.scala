@@ -8,8 +8,9 @@ package directives
 import scala.concurrent.Promise
 import scala.util.{ Failure, Success }
 import akka.http.scaladsl.marshalling.ToResponseMarshaller
-import akka.http.scaladsl.unmarshalling.{ FromRequestUnmarshaller, Unmarshaller, UnsupportedContentTypeException }
+import akka.http.scaladsl.unmarshalling.{ FromRequestUnmarshaller, Unmarshaller }
 import akka.http.impl.util._
+import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
 
 /**
  * @groupname marshalling Marshalling directives

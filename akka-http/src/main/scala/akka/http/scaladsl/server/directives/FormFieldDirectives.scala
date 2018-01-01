@@ -16,7 +16,7 @@ import akka.http.scaladsl.util.FastFuture._
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.util.{ Failure, Success }
 
 /**
  * @groupname form Form field directives

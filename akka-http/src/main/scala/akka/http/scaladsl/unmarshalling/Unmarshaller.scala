@@ -149,13 +149,13 @@ object Unmarshaller
         s"Left failure: ${left.getMessage}")
 
   /**
-    * Signals that unmarshalling failed because the entity content-type did not match one of the supported ranges.
-    * This error cannot be thrown by custom code, you need to use the `forContentTypes` modifier on a base
-    * [[akka.http.scaladsl.unmarshalling.Unmarshaller]] instead.
-    */
+   * Signals that unmarshalling failed because the entity content-type did not match one of the supported ranges.
+   * This error cannot be thrown by custom code, you need to use the `forContentTypes` modifier on a base
+   * [[akka.http.scaladsl.unmarshalling.Unmarshaller]] instead.
+   */
   final case class UnsupportedContentTypeException(
-                                                    supported:   Set[ContentTypeRange],
-                                                    contentType: Option[ContentType]   = None)
+    supported:   Set[ContentTypeRange],
+    contentType: Option[ContentType]   = None)
     extends RuntimeException(supported.mkString(
       s"Unsupported Content-Type${contentType.map(": " + _).getOrElse("")}, supported: ", ", ", "")) {
 
