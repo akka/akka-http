@@ -6,9 +6,10 @@ package akka.http.scaladsl.server.directives
 import akka.NotUsed
 import akka.http.scaladsl.common.EntityStreamingSupport
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.unmarshalling.{ Unmarshaller, _ }
+import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
+import akka.http.scaladsl.unmarshalling.{Unmarshaller, _}
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.scaladsl.{ Flow, Keep, Source }
+import akka.stream.scaladsl.{Flow, Keep, Source}
 import akka.util.ByteString
 
 /**
