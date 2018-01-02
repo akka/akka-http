@@ -104,30 +104,33 @@ final case class InvalidOriginRejection(allowedOrigins: immutable.Seq[SHttpOrigi
  * Signals that the request was rejected because the requests content-type is unsupported.
  */
 final case class UnsupportedRequestContentTypeRejection(
-  supported:   immutable.Set[ContentTypeRange],
-  contentType: Option[ContentType]             = None)
-  extends jserver.UnsupportedRequestContentTypeRejection with Rejection {
+  supported:   Set[ContentTypeRange],
+  contentType: Option[ContentType]   = None)
+  extends jserver.UnsupportedRequestContentTypeRejection
+  with Rejection {
 
   override def getSupported: java.util.Set[model.ContentTypeRange] =
     scala.collection.mutable.Set(supported.map(_.asJava).toVector: _*).asJava // TODO optimise
 
   // for binary compatibility
-  def this(supported: scala.collection.immutable.Set[ContentTypeRange]) = this(supported, None)
+  def this(supported: Set[ContentTypeRange]) = this(supported, None)
 
-  def copy(supported: immutable.Set[ContentTypeRange]) =
+  def copy(supported: Set[ContentTypeRange]) =
     new UnsupportedRequestContentTypeRejection(supported, this.contentType)
 
-  def copy$default$1(supported: immutable.Set[ContentTypeRange]) =
+  def copy$default$1(supported: Set[ContentTypeRange]) =
     new UnsupportedRequestContentTypeRejection(supported, this.contentType)
 
   def copy(
-    supported:   immutable.Set[ContentTypeRange] = this.supported,
-    contentType: Option[ContentType]             = this.contentType) =
+    supported:   Set[ContentTypeRange] = this.supported,
+    contentType: Option[ContentType]   = this.contentType) =
     UnsupportedRequestContentTypeRejection(supported, contentType)
 }
 
-object UnsupportedRequestContentTypeRejection extends AbstractFunction1[immutable.Set[ContentTypeRange], UnsupportedRequestContentTypeRejection] {
-  def apply(supported: immutable.Set[ContentTypeRange]): UnsupportedRequestContentTypeRejection =
+object UnsupportedRequestContentTypeRejection
+  extends AbstractFunction1[Set[ContentTypeRange], UnsupportedRequestContentTypeRejection] {
+
+  def apply(supported: Set[ContentTypeRange]): UnsupportedRequestContentTypeRejection =
     new UnsupportedRequestContentTypeRejection(supported)
 }
 
@@ -178,7 +181,7 @@ case object RequestEntityExpectedRejection
  * Signals that the request was rejected because the service is not capable of producing a response entity whose
  * content type is accepted by the client
  */
-final case class UnacceptedResponseContentTypeRejection(supported: immutable.Set[ContentNegotiator.Alternative])
+final case class UnacceptedResponseContentTypeRejection(supported: Set[ContentNegotiator.Alternative])
   extends jserver.UnacceptedResponseContentTypeRejection with Rejection
 
 /**
@@ -186,7 +189,7 @@ final case class UnacceptedResponseContentTypeRejection(supported: immutable.Set
  * Signals that the request was rejected because the service is not capable of producing a response entity whose
  * content encoding is accepted by the client
  */
-final case class UnacceptedResponseEncodingRejection(supported: immutable.Set[HttpEncoding])
+final case class UnacceptedResponseEncodingRejection(supported: Set[HttpEncoding])
   extends jserver.UnacceptedResponseEncodingRejection with Rejection {
   override def getSupported: java.util.Set[model.headers.HttpEncoding] =
     scala.collection.mutable.Set(supported.map(_.asJava).toVector: _*).asJava // TODO optimise

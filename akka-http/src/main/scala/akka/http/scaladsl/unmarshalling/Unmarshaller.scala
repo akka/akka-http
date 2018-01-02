@@ -157,7 +157,7 @@ object Unmarshaller
     supported:   Set[ContentTypeRange],
     contentType: Option[ContentType]   = None)
     extends RuntimeException(supported.mkString(
-      s"Unsupported Content-Type${contentType.map(": " + _).getOrElse("")}, supported: ", ", ", "")) {
+      s"Unsupported Content-Type [$contentType], supported: ", ", ", "")) {
 
     //constructors and copy methods added to cover binary compatibility
     def this(supported: Set[ContentTypeRange]) = this(supported, None)
