@@ -5,13 +5,13 @@
 package akka.http.scaladsl.unmarshalling
 
 import akka.event.Logging
-import akka.stream.Materializer
-
-import scala.util.control.{ NoStackTrace, NonFatal }
-import scala.concurrent.{ Future, ExecutionContext }
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
-import akka.http.scaladsl.model._
+import akka.stream.Materializer
+
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.control.{ NoStackTrace, NonFatal }
 
 trait Unmarshaller[-A, B] extends akka.http.javadsl.unmarshalling.Unmarshaller[A, B] {
 
@@ -176,7 +176,10 @@ object Unmarshaller
 
   object UnsupportedContentTypeException {
     def apply(supported: ContentTypeRange*): UnsupportedContentTypeException =
-      UnsupportedContentTypeException(Set(supported: _*))
+      new UnsupportedContentTypeException(Set(supported: _*))
+
+    def apply(supported: Set[ContentTypeRange]): UnsupportedContentTypeException =
+      new UnsupportedContentTypeException(supported)
 
     def apply(contentType: Option[ContentType], supported: ContentTypeRange*): UnsupportedContentTypeException =
       UnsupportedContentTypeException(Set(supported: _*), contentType)

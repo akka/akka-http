@@ -142,7 +142,7 @@ object StrictForm {
   object FileData {
     implicit val unmarshaller: FromStrictFormFieldUnmarshaller[FileData] =
       Unmarshaller strict {
-        case Field.FromString(_)  ⇒ throw UnsupportedContentTypeException(MediaTypes.`application/x-www-form-urlencoded`)
+        case Field.FromString(_)  ⇒ throw UnsupportedContentTypeException(None, MediaTypes.`application/x-www-form-urlencoded`)
         case Field.FromPart(part) ⇒ FileData(part.filename, part.entity)
       }
   }
