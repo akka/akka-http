@@ -79,7 +79,8 @@ lazy val parsing = project("akka-parsing")
   .settings(
     scalacOptions := scalacOptions.value.filterNot(Set("-Xfatal-warnings", "-Xlint", "-Ywarn-dead-code").contains), // disable warnings for parboiled code
     scalacOptions += "-language:_",
-    unmanagedSourceDirectories in ScalariformKeys.format in Test := (unmanagedSourceDirectories in Test).value
+    unmanagedSourceDirectories in ScalariformKeys.format in Test := (unmanagedSourceDirectories in Test).value,
+    includeFilter in (Compile, headerCreate) := "LogHelper.scala"
   )
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
   .disablePlugins(MimaPlugin)
@@ -91,6 +92,11 @@ lazy val httpCore = project("akka-http-core")
   .settings(Dependencies.httpCore)
   .settings(VersionGenerator.versionSettings)
   .enablePlugins(BootstrapGenjavadoc)
+  .settings(
+    excludeFilter in (Compile, headerCreate) :=
+      "LastEventId.*" || "ServerSentEvent.*" || "Base64Parsing.scala" || "StringBuilding.scala",
+    excludeFilter in (Test, headerCreate) := "ServerSentEventTest.java"
+  )
 
 lazy val http = project("akka-http")
   .dependsOn(httpCore)
@@ -107,6 +113,9 @@ lazy val http2Support = project("akka-http2-support")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
   .settings(Dependencies.http2)
   .settings(Dependencies.http2Support)
+  .settings(
+    excludeFilter in (Compile, headerCreate) := "AsciiTreeLayout.scala"
+  )
   .settings {
     lazy val h2specPath = Def.task {
       (target in Test).value / h2specName / h2specExe
@@ -162,6 +171,11 @@ lazy val httpTests = project("akka-http-tests")
   .enablePlugins(MultiNode)
   .disablePlugins(MimaPlugin) // this is only tests
   .configs(MultiJvm)
+  .settings(headerSettings(MultiJvm))
+  .settings(
+    excludeFilter in (Test, headerCreate) :=
+      "EventStreamMarshallingTest.java" || "EventStreamUnmarshallingTest.java"
+  )
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency("akka-multi-node-testkit", "test")
 
