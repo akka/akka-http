@@ -20,6 +20,7 @@ import akka.pattern.CircuitBreakerOpenException
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.compat.java8.OptionConverters
+import scala.runtime.AbstractFunction1
 
 /**
  * A rejection encapsulates a specific reason why a Route was not able to handle a request. Rejections are gathered
@@ -103,8 +104,8 @@ final case class InvalidOriginRejection(allowedOrigins: immutable.Seq[SHttpOrigi
  * Signals that the request was rejected because the requests content-type is unsupported.
  */
 final case class UnsupportedRequestContentTypeRejection(
-  supported:   Set[ContentTypeRange],
-  contentType: Option[ContentType]   = None)
+  supported:   immutable.Set[ContentTypeRange],
+  contentType: Option[ContentType]             = None)
   extends jserver.UnsupportedRequestContentTypeRejection with Rejection {
 
   override def getSupported: java.util.Set[model.ContentTypeRange] =
@@ -113,17 +114,20 @@ final case class UnsupportedRequestContentTypeRejection(
   // for binary compatibility
   def this(supported: scala.collection.immutable.Set[ContentTypeRange]) = this(supported, None)
 
-  def copy$default$1(supported: Set[ContentTypeRange]) =
-    UnsupportedRequestContentTypeRejection(supported, this.contentType)
+  def copy(supported: immutable.Set[ContentTypeRange]) =
+    new UnsupportedRequestContentTypeRejection(supported, this.contentType)
+
+  def copy$default$1(supported: immutable.Set[ContentTypeRange]) =
+    new UnsupportedRequestContentTypeRejection(supported, this.contentType)
 
   def copy(
-    supported:   Set[ContentTypeRange] = this.supported,
-    contentType: Option[ContentType]   = this.contentType) =
+    supported:   immutable.Set[ContentTypeRange] = this.supported,
+    contentType: Option[ContentType]             = this.contentType) =
     UnsupportedRequestContentTypeRejection(supported, contentType)
 }
 
-object UnsupportedRequestContentTypeRejection {
-  def apply(supported: Set[ContentTypeRange]): UnsupportedRequestContentTypeRejection =
+object UnsupportedRequestContentTypeRejection extends AbstractFunction1[immutable.Set[ContentTypeRange], UnsupportedRequestContentTypeRejection] {
+  def apply(supported: immutable.Set[ContentTypeRange]): UnsupportedRequestContentTypeRejection =
     new UnsupportedRequestContentTypeRejection(supported)
 }
 
