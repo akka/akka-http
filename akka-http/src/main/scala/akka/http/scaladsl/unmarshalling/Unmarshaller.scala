@@ -180,8 +180,5 @@ object Unmarshaller
 
     def apply(contentType: Option[ContentType], supported: ContentTypeRange*): UnsupportedContentTypeException =
       UnsupportedContentTypeException(Set(supported: _*), contentType)
-
-    def apply(supported: Set[ContentTypeRange]): UnsupportedContentTypeException =
-      UnsupportedContentTypeException(supported)
   }
 }
