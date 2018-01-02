@@ -162,12 +162,9 @@ object Unmarshaller
     //constructors and copy methods added to cover binary compatibility
     def this(supported: Set[ContentTypeRange]) = this(supported, None)
 
-    def copy(supported: Set[ContentTypeRange]): UnsupportedContentTypeException =
-      copy(supported, contentType)
-
     def copy(
-      supported:   Set[ContentTypeRange],
-      contentType: Option[ContentType]   = None): UnsupportedContentTypeException =
+      supported:   Set[ContentTypeRange] = this.supported,
+      contentType: Option[ContentType]   = this.contentType): UnsupportedContentTypeException =
       UnsupportedContentTypeException(supported, contentType)
   }
 

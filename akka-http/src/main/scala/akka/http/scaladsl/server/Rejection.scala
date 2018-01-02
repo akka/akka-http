@@ -110,16 +110,18 @@ final case class UnsupportedRequestContentTypeRejection(
   override def getSupported: java.util.Set[model.ContentTypeRange] =
     scala.collection.mutable.Set(supported.map(_.asJava).toVector: _*).asJava // TODO optimise
 
-  override def getContentType: Optional[model.ContentType] = contentType.asJava
-
   // for binary compatibility
   def this(supported: scala.collection.immutable.Set[ContentTypeRange]) = this(supported, None)
 
-  def copy(supported: Set[ContentTypeRange]): UnsupportedRequestContentTypeRejection =
-    copy(supported, contentType)
-
-  def copy(supported: Set[ContentTypeRange], contentType: Option[ContentType] = None) =
+  def copy(
+    supported:   Set[ContentTypeRange] = this.supported,
+    contentType: Option[ContentType]   = this.contentType) =
     UnsupportedRequestContentTypeRejection(supported, contentType)
+}
+
+object UnsupportedRequestContentTypeRejection {
+  def apply(supported: Set[ContentTypeRange]): UnsupportedRequestContentTypeRejection =
+    new UnsupportedRequestContentTypeRejection(supported)
 }
 
 /**

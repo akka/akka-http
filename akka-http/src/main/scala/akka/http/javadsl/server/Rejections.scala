@@ -116,8 +116,6 @@ trait InvalidOriginRejection extends Rejection {
  */
 trait UnsupportedRequestContentTypeRejection extends Rejection {
   def getSupported: java.util.Set[akka.http.javadsl.model.ContentTypeRange]
-
-  def getContentType: java.util.Optional[ContentType]
 }
 
 /**
