@@ -10,10 +10,10 @@ import java.util.function.Function
 
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.impl.util.JavaMapping._
-import akka.http.javadsl.model.headers.{HttpOrigin => JHttpOrigin}
-import akka.http.javadsl.{model, server => jserver}
+import akka.http.javadsl.model.headers.{ HttpOrigin ⇒ JHttpOrigin }
+import akka.http.javadsl.{ model, server ⇒ jserver }
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{HttpOrigin => SHttpOrigin, _}
+import akka.http.scaladsl.model.headers.{ HttpOrigin ⇒ SHttpOrigin, _ }
 import akka.japi.Util
 import akka.pattern.CircuitBreakerOpenException
 
@@ -113,7 +113,7 @@ final case class UnsupportedRequestContentTypeRejection(
   // for binary compatibility
   def this(supported: scala.collection.immutable.Set[ContentTypeRange]) = this(supported, None)
 
-  def copy(supported:   Set[ContentTypeRange] = this.supported) =
+  def copy$default$1(supported: Set[ContentTypeRange]) =
     UnsupportedRequestContentTypeRejection(supported, this.contentType)
 
   def copy(
