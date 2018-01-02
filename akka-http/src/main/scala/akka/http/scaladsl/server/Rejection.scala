@@ -8,19 +8,17 @@ import java.lang.Iterable
 import java.util.Optional
 import java.util.function.Function
 
-import akka.japi.Util
-
-import scala.collection.immutable
-import akka.http.scaladsl.model._
-import akka.http.javadsl.{ model, server ⇒ jserver }
-import headers._
-import akka.http.impl.util.JavaMapping._
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.pattern.CircuitBreakerOpenException
+import akka.http.impl.util.JavaMapping._
 import akka.http.javadsl.model.headers.{ HttpOrigin ⇒ JHttpOrigin }
-import akka.http.scaladsl.model.headers.{ HttpOrigin ⇒ SHttpOrigin }
+import akka.http.javadsl.{ model, server ⇒ jserver }
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{ HttpOrigin ⇒ SHttpOrigin, _ }
+import akka.japi.Util
+import akka.pattern.CircuitBreakerOpenException
 
 import scala.collection.JavaConverters._
+import scala.collection.immutable
 import scala.compat.java8.OptionConverters
 
 /**
@@ -105,11 +103,22 @@ final case class InvalidOriginRejection(allowedOrigins: immutable.Seq[SHttpOrigi
  * Signals that the request was rejected because the requests content-type is unsupported.
  */
 final case class UnsupportedRequestContentTypeRejection(
-  supported:   immutable.Set[ContentTypeRange],
-  contentType: Option[ContentType])
+  supported:   Set[ContentTypeRange],
+  contentType: Option[ContentType]   = None)
   extends jserver.UnsupportedRequestContentTypeRejection with Rejection {
+
   override def getSupported: java.util.Set[model.ContentTypeRange] =
     scala.collection.mutable.Set(supported.map(_.asJava).toVector: _*).asJava // TODO optimise
+
+  override def getContentType: Optional[model.ContentType] = contentType.asJava
+
+  def this(supported: scala.collection.immutable.Set[ContentTypeRange]) = this(supported, None)
+
+  def copy(supported: Set[ContentTypeRange]): UnsupportedRequestContentTypeRejection =
+    copy(supported, contentType)
+
+  def copy(supported: Set[ContentTypeRange], contentType: Option[ContentType] = None) =
+    UnsupportedRequestContentTypeRejection(supported, contentType)
 }
 
 /**

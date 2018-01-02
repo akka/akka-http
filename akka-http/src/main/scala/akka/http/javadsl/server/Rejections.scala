@@ -116,6 +116,8 @@ trait InvalidOriginRejection extends Rejection {
  */
 trait UnsupportedRequestContentTypeRejection extends Rejection {
   def getSupported: java.util.Set[akka.http.javadsl.model.ContentTypeRange]
+
+  def getContentType: java.util.Optional[ContentType]
 }
 
 /**
@@ -341,6 +343,12 @@ object Rejections {
     s.UnsupportedRequestContentTypeRejection(
       supported = supported.asScala.map(m ⇒ scaladsl.model.ContentTypeRange(m.asScala)).toSet,
       contentType = contentType.asScala.map(_.asScala))
+
+  // for backwards compatibility
+  def unsupportedRequestContentType(supported: java.lang.Iterable[MediaType]): UnsupportedRequestContentTypeRejection =
+    s.UnsupportedRequestContentTypeRejection(
+      supported = supported.asScala.map(m ⇒ scaladsl.model.ContentTypeRange(m.asScala)).toSet,
+      contentType = None)
 
   def unsupportedRequestEncoding(supported: HttpEncoding): UnsupportedRequestEncodingRejection =
     s.UnsupportedRequestEncodingRejection(supported.asScala)
