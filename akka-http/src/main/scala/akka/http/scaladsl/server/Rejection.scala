@@ -112,6 +112,7 @@ final case class UnsupportedRequestContentTypeRejection(
 
   override def getContentType: Optional[model.ContentType] = contentType.asJava
 
+  // for binary compatibility
   def this(supported: scala.collection.immutable.Set[ContentTypeRange]) = this(supported, None)
 
   def copy(supported: Set[ContentTypeRange]): UnsupportedRequestContentTypeRejection =
