@@ -88,7 +88,7 @@ class FutureDirectivesSpec extends RoutingSpec with Inside {
     }
     "stop failing fast when the circuit breaker closes" in new TestWithCircuitBreaker {
       openBreaker()
-      Thread.sleep(breakerResetTimeout.toMillis + 200)
+      Thread.sleep((breakerResetTimeout + 200.millis.dilated).toMillis)
       Get() ~> onCompleteWithBreaker(breaker)(Future.successful(1)) { echoComplete } ~> check {
         responseAs[String] shouldEqual "Success(1)"
       }
