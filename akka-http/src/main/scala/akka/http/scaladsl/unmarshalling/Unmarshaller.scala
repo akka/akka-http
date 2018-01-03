@@ -159,15 +159,18 @@ object Unmarshaller
     extends RuntimeException(supported.mkString(
       s"Unsupported Content-Type [$contentType], supported: ", ", ", "")) {
 
-    //constructors and copy methods added to cover binary compatibility
+    @deprecated("for binary compatibility")
     def this(supported: Set[ContentTypeRange]) = this(supported, None)
 
+    @deprecated("for binary compatibility")
     def copy(supported: Set[ContentTypeRange]): UnsupportedContentTypeException =
       new UnsupportedContentTypeException(supported, this.contentType)
 
+    @deprecated("for binary compatibility")
     def copy$default$1(supported: Set[ContentTypeRange]): UnsupportedContentTypeException =
       new UnsupportedContentTypeException(supported, this.contentType)
 
+    @deprecated("for binary compatibility")
     def copy(
       supported:   Set[ContentTypeRange] = this.supported,
       contentType: Option[ContentType]   = this.contentType): UnsupportedContentTypeException =
@@ -175,11 +178,14 @@ object Unmarshaller
   }
 
   object UnsupportedContentTypeException {
-    def apply(supported: ContentTypeRange*): UnsupportedContentTypeException =
-      new UnsupportedContentTypeException(Set(supported: _*))
 
+    @deprecated("for binary compatibility")
+    def apply(supported: ContentTypeRange*): UnsupportedContentTypeException =
+      new UnsupportedContentTypeException(Set(supported: _*), None)
+
+    @deprecated("for binary compatibility")
     def apply(supported: Set[ContentTypeRange]): UnsupportedContentTypeException =
-      new UnsupportedContentTypeException(supported)
+      new UnsupportedContentTypeException(supported, None)
 
     def apply(contentType: Option[ContentType], supported: ContentTypeRange*): UnsupportedContentTypeException =
       UnsupportedContentTypeException(Set(supported: _*), contentType)

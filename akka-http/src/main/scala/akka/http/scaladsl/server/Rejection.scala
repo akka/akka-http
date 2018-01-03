@@ -112,15 +112,18 @@ final case class UnsupportedRequestContentTypeRejection(
   override def getSupported: java.util.Set[model.ContentTypeRange] =
     scala.collection.mutable.Set(supported.map(_.asJava).toVector: _*).asJava // TODO optimise
 
-  // for binary compatibility
+  @deprecated("for binary compatibility")
   def this(supported: Set[ContentTypeRange]) = this(supported, None)
 
+  @deprecated("for binary compatibility")
   def copy(supported: Set[ContentTypeRange]) =
     new UnsupportedRequestContentTypeRejection(supported, this.contentType)
 
+  @deprecated("for binary compatibility")
   def copy$default$1(supported: Set[ContentTypeRange]) =
     new UnsupportedRequestContentTypeRejection(supported, this.contentType)
 
+  @deprecated("for binary compatibility")
   def copy(
     supported:   Set[ContentTypeRange] = this.supported,
     contentType: Option[ContentType]   = this.contentType) =
@@ -130,8 +133,9 @@ final case class UnsupportedRequestContentTypeRejection(
 object UnsupportedRequestContentTypeRejection
   extends AbstractFunction1[Set[ContentTypeRange], UnsupportedRequestContentTypeRejection] {
 
+  @deprecated("for binary compatibility")
   def apply(supported: Set[ContentTypeRange]): UnsupportedRequestContentTypeRejection =
-    new UnsupportedRequestContentTypeRejection(supported)
+    new UnsupportedRequestContentTypeRejection(supported, None)
 }
 
 /**
