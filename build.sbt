@@ -57,6 +57,7 @@ lazy val root = Project(
   .settings(
     // Unidoc doesn't like macros
     unidocProjectExcludes := Seq(parsing),
+    unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get,
     deployRsyncArtifact :=
       (unidoc in Compile).value zip Seq(s"www/api/akka-http/${version.value}", s"www/japi/akka-http/${version.value}")
   )
