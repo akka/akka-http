@@ -23,18 +23,15 @@ cache:
     - $HOME/.sbt/boot
 
 script:
-  # need to override as the default is to test
-  - sbt -J-XX:ReservedCodeCacheSize=256m +update
   # make 'git branch' work again
   - git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH"
-  # check policies, if on master also upload
-  - if [[ "$TRAVIS_SECURE_ENV_VARS" == "true" ]]; then if [[ "$TRAVIS_BRANCH" == "master" && "$TRAVIS_EVENT_TYPE" == "push" ]]; then sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies whitesourceUpdate; else sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies; fi ; fi
+  - sbt whitesourceCi
+  - sbt -Dakka.publish.repo=snapshots +publishCi
 
 deploy:
   provider: script
   script:
     - sbt -J-XX:ReservedCodeCacheSize=256m +publish
-#    - sbt -J-XX:ReservedCodeCacheSize=256m +publish akka-http/bintraySyncMavenCentral # enable if we want to sync to central automatically
   on:
     tags: true
     repo: akka/akka-http

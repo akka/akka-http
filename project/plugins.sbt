@@ -17,7 +17,7 @@ addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "2.0.1")
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.2.27")
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.0") // for advanced PR validation features
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.1")
-addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.1")
+addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.2")
 addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.4")
 addSbtPlugin("com.lightbend.paradox" % "sbt-paradox" % "0.3.2")
 addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.5")

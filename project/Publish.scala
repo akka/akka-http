@@ -21,12 +21,17 @@ object Publish extends AutoPlugin {
   import bintray.BintrayPlugin
   import bintray.BintrayPlugin.autoImport._
 
+  object CliOptions {
+    val publishRepo = CliOption("akka.publish.repo", "maven")
+  }
+
   override def trigger = allRequirements
   override def requires = BintrayPlugin
 
   override def projectSettings = Seq(
     bintrayOrganization := Some("akka"),
-    bintrayPackage := "com.typesafe.akka:akka-http_2.11"
+    bintrayPackage := "com.typesafe.akka:akka-http_2.11",
+    bintrayRepository := CliOptions.publishRepo.get
   )
 }
 

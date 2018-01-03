@@ -23,5 +23,10 @@ object CliOption {
       def parse(path: String, default: Boolean) =
         CliOption(System.getProperty(path, default.toString).toBoolean)
     }
+
+    implicit object StringCliOptionParser extends CliOptionParser[String] {
+      def parse(path: String, default: String) =
+        CliOption(System.getProperty(path, default))
+    }
   }
 }
