@@ -146,7 +146,7 @@ public class FutureDirectivesExamplesTest extends JUnitRouteTest {
     new TestKit(system()) {
       {
         awaitAssert(
-            FiniteDuration.create(300, TimeUnit.MILLISECONDS),
+            FiniteDuration.create(500, TimeUnit.MILLISECONDS),
             () -> {
               testRoute(route).run(HttpRequest.GET("/divide/8/2"))
                   .assertEntity("The result was 4");
