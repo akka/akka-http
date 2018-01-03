@@ -195,12 +195,6 @@ private[pool] object SlotState {
     }
   }
   final case class WaitingForEndOfRequestEntity(ongoingRequest: RequestContext) extends ConnectedState with BusyState {
-    override def onRequestEntityCompleted(ctx: SlotContext): SlotState =
-      WaitingForResponse(ongoingRequest)
-
-    // connection failures are handled by BusyState implementations
-  }
-  final case class WaitingForResponse(ongoingRequest: RequestContext) extends ConnectedState with BusyState {
     override def onResponseReceived(ctx: SlotContext, response: HttpResponse): SlotState =
       WaitingForResponseDispatch(ongoingRequest, Success(response))
 

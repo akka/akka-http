@@ -173,8 +173,6 @@ private[client] object NewHostConnectionPool {
           def onNewRequest(req: RequestContext): Unit =
             updateState(Event.onNewRequest, req)
 
-          def onRequestEntityCompleted(): Unit =
-            updateState(Event.onRequestEntityCompleted)
           def onRequestEntityFailed(cause: Throwable): Unit =
             updateState(Event.onRequestEntityFailed, cause)
 
@@ -334,6 +332,7 @@ private[client] object NewHostConnectionPool {
             if (connection eq null) throw new IllegalStateException("Cannot open push request to connection when there's no connection")
 
             // bit of a HACK to make sure onRequestEntityCompleted will end up in the right place
+            // TODO do we still needed since we don't have onRequestEntityCompleted anymore then?
             state = nextState
 
             connection.pushRequest(request)
@@ -374,12 +373,11 @@ private[client] object NewHostConnectionPool {
             val newRequest =
               request.entity match {
                 case _: HttpEntity.Strict ⇒
-                  withSlot(_.onRequestEntityCompleted())
                   request
                 case e ⇒
                   val (newEntity, entityComplete) = HttpEntity.captureTermination(request.entity)
                   entityComplete.onComplete(safely {
-                    case Success(_)     ⇒ withSlot(_.onRequestEntityCompleted())
+                    case Success(_)     ⇒
                     case Failure(cause) ⇒ withSlot(_.onRequestEntityFailed(cause))
                   })(ExecutionContexts.sameThreadExecutionContext)
 

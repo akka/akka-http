@@ -9,16 +9,17 @@ import java.nio.ByteBuffer
 import java.nio.channels.{ ServerSocketChannel, SocketChannel }
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.ActorSystem
+import akka.actor.{ ActorRef, ActorSystem, PoisonPill }
 import akka.http.impl.engine.client.PoolMasterActor.PoolInterfaceRunning
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util._
 import akka.http.scaladsl.Http.OutgoingConnection
+import akka.http.scaladsl.model.HttpEntity.Chunked
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, PoolImplementation, ServerSettings }
 import akka.http.scaladsl.{ ClientTransport, ConnectionContext, Http }
-import akka.stream.ActorMaterializer
+import akka.stream.{ ActorMaterializer, OverflowStrategy }
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
@@ -408,6 +409,20 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     "use the configured ClientTransport" in new ClientTransportTestSetup {
       def issueRequest(request: HttpRequest, settings: ConnectionPoolSettings): Future[HttpResponse] =
         Http().singleRequest(request, settings = settings)
+    }
+
+    "support receiving a response before the request is complete" in new LocalTestSetup {
+      val sourceRefPromise = Promise[ActorRef]()
+      val source = Source.actorRef(8, OverflowStrategy.fail).mapMaterializedValue(sourceRefPromise.success)
+      val slowEntity = Chunked(ContentTypes.`text/plain(UTF-8)`, source)
+      val request = HttpRequest(uri = s"http://$serverHostName:$serverPort/abc?query#fragment", entity = slowEntity)
+      val responseFuture = Http().singleRequest(request)
+      val sourceRef = Await.result(sourceRefPromise.future, 3.seconds)
+      val response = Await.result(responseFuture, 1.second.dilated)
+      response.headers should contain(RawHeader("Req-Host", s"$serverHostName:$serverPort"))
+
+      sourceRef ! PoisonPill
+      // TODO maybe extend this test by making the server streaming-echo back the request
     }
   }
 
