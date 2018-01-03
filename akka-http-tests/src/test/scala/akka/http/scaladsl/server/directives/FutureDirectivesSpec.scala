@@ -86,19 +86,18 @@ class FutureDirectivesSpec extends RoutingSpec with Inside with TestKitBase {
           inside(rejection) {
             case CircuitBreakerOpenRejection(_) ⇒
           }
-        }, 500.millis)
+        }, breakerResetTimeout / 2)
     }
     "stop failing fast when the circuit breaker closes" in new TestWithCircuitBreaker {
       openBreaker()
       // observe that it opened
       awaitAssert(breaker.isOpen should ===(true))
-      Thread.sleep(breakerResetTimeout.toMillis)
       // since this is timing sensitive, try a few times to observe the breaker closed
       awaitAssert({
         Get() ~> onCompleteWithBreaker(breaker)(Future.successful(1)) { echoComplete } ~> check {
           responseAs[String] shouldEqual "Success(1)"
         }
-      }, 500.millis)
+      }, breakerResetTimeout + 1.second)
     }
     "catch an exception in the success case" in new TestWithCircuitBreaker {
       Get() ~> onCompleteWithBreaker(breaker)(Future.successful("ok")) { throwTestException("EX when ") } ~> check {
