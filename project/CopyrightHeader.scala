@@ -32,6 +32,8 @@ object CopyrightHeader extends AutoPlugin {
           ))
         )
       )
-    }
+    },
+    additionalTasks in ValidatePR += headerCheck in Compile,
+    additionalTasks in ValidatePR += headerCheck in Test
   )
 }

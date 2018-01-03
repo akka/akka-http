@@ -174,6 +174,7 @@ lazy val httpTests = project("akka-http-tests")
   .configs(MultiJvm)
   .settings(headerSettings(MultiJvm))
   .settings(
+    additionalTasks in ValidatePR += headerCheck in MultiJvm,
     excludeFilter in (Test, headerCreate) :=
       "EventStreamMarshallingTest.java" || "EventStreamUnmarshallingTest.java"
   )
