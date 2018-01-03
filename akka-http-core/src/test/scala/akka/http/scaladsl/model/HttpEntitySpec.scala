@@ -30,9 +30,12 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
   val fgh = ByteString("fgh")
   val ijk = ByteString("ijk")
 
-  val testConf: Config = ConfigFactory.parseString("""
+  val strictEntityMaxBytes = 8192
+
+  val testConf: Config = ConfigFactory.parseString(s"""
   akka.event-handlers = ["akka.testkit.TestEventListener"]
-  akka.loglevel = WARNING""")
+  akka.loglevel = WARNING
+  akka.http.strict-entity-max-bytes = $strictEntityMaxBytes bytes""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
 
   implicit val materializer = ActorMaterializer()
@@ -96,7 +99,13 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
         val neverCompleted = Promise[ByteString]()
         intercept[TimeoutException] {
           Await.result(Default(tpe, 42, Source.fromFuture(neverCompleted.future)).toStrict(100.millis), awaitAtMost)
-        }.getMessage must be("HttpEntity.toStrict timed out after 100 milliseconds while still waiting for outstanding data")
+        }.getMessage must be("AggregateBytes timed out after 100 milliseconds while still waiting for outstanding data")
+      }
+      "Overly long data stream" in {
+        val overlyLongByteString = ByteString(Random.alphanumeric.take(strictEntityMaxBytes + 1).mkString)
+        intercept[AggregateBytesLimitExceededException] {
+          Await.result(IndefiniteLength(tpe, source(overlyLongByteString)).toStrict(100.millis), awaitAtMost)
+        }.maxBytes must be(strictEntityMaxBytes)
       }
     }
     "support transformDataBytes" - {
