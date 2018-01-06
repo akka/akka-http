@@ -402,7 +402,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Proxy-Authenticate: Basic realm=\"WallyWorld\",attr=\"val>ue\", Fancy realm=\"yeah\"" =!=
         `Proxy-Authenticate`(HttpChallenge("Basic", Some("WallyWorld"), Map("attr" → "val>ue")), HttpChallenge("Fancy", Some("yeah")))
       """Proxy-Authenticate: NTLM TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg==""" =!=
-        `Proxy-Authenticate`(HttpChallenge("NTLM", "TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg=="))
+        `Proxy-Authenticate`(HttpChallenge("NTLM", Some("TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg=="), None))
     }
 
     "Proxy-Authorization" in {
@@ -605,7 +605,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       """WWW-Authenticate: Fancy realm="Secure Area",nonce=42""" =!=
         `WWW-Authenticate`(HttpChallenge("Fancy", Some("Secure Area"), Map("nonce" → "42")))
       """WWW-Authenticate: NTLM TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg==""" =!=
-        `WWW-Authenticate`(HttpChallenge("NTLM", "TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg=="))
+        `WWW-Authenticate`(HttpChallenge("NTLM", Some("TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg=="), None))
     }
 
     "X-Forwarded-For" in {
