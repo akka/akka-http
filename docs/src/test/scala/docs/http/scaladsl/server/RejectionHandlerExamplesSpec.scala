@@ -5,8 +5,7 @@
 package docs.http.scaladsl.server
 
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.server.{ Rejection, Route }
-import akka.http.scaladsl.server.RouteResult.Complete
+import akka.http.scaladsl.server.Route
 
 // format: OFF
 
@@ -45,9 +44,7 @@ object MyRejectionHandler {
 
     val route: Route =
       // ... some route structure
-      //#custom-handler-example
-      null // hide
-      //#custom-handler-example
+      null // #hide
 
     Http().bindAndHandle(route, "localhost", 8080)
   }
@@ -57,7 +54,6 @@ object MyRejectionHandler {
 object HandleNotFoundWithThePath {
 
   //#not-found-with-path
-  import akka.http.scaladsl.model._
   import akka.http.scaladsl.model.StatusCodes._
   import akka.http.scaladsl.server._
   import Directives._
@@ -74,7 +70,6 @@ object HandleNotFoundWithThePath {
 }
 
 class RejectionHandlerExamplesSpec extends RoutingSpec {
-  import MyRejectionHandler._
 
   "example-1" in {
     //#example-1

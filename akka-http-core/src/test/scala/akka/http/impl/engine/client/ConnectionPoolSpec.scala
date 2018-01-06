@@ -12,12 +12,11 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.ActorSystem
 import akka.http.impl.engine.client.PoolMasterActor.PoolInterfaceRunning
 import akka.http.impl.engine.ws.ByteStringSinkProbe
-import akka.http.impl.settings.ConnectionPoolSettingsImpl
 import akka.http.impl.util._
 import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, PoolImplementation, ServerSettings }
 import akka.http.scaladsl.{ ClientTransport, ConnectionContext, Http }
 import akka.stream.ActorMaterializer
 import akka.stream.TLSProtocol._
@@ -32,9 +31,10 @@ import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
-class ConnectionPoolSpec extends AkkaSpec("""
+abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extends AkkaSpec("""
     akka.loggers = []
-    akka.loglevel = OFF
+    akka.loglevel = DEBUG # to track down #1667
+    akka.loggers = ["akka.testkit.TestEventListener"]
     akka.io.tcp.windows-connection-abort-workaround-enabled = auto
     akka.io.tcp.trace-logging = off
     akka.test.single-expect-default = 5000 # timeout for checks, adjust as necessary, set here to 5s
@@ -64,7 +64,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
 
   "The host-level client infrastructure" should {
 
-    "properly complete a simple request/response cycle" in new TestSetup {
+    "complete a simple request/response cycle" in new TestSetup {
       val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int]()
 
       requestIn.sendNext(HttpRequest(uri = "/") → 42)
@@ -160,7 +160,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
       Await.result(idSum, 10.seconds.dilated) shouldEqual N * (N + 1) / 2
     }
 
-    "properly surface connection-level errors" in new TestSetup(autoAccept = true) {
+    "surface connection-level errors" in new TestSetup(autoAccept = true) {
       val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int](maxRetries = 0)
 
       requestIn.sendNext(HttpRequest(uri = "/a") → 42)
@@ -177,7 +177,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
     }
 
     // akka-http/#416
-    "properly surface connection-level and stream-level errors while receiving response entity" in new TestSetup(autoAccept = true) {
+    "surface connection-level and stream-level errors while receiving response entity" in new TestSetup(autoAccept = true) {
       val errorOnConnection1 = Promise[ByteString]()
 
       val crashingEntity =
@@ -185,7 +185,6 @@ class ConnectionPoolSpec extends AkkaSpec("""
           .concat(Source.fromFuture(errorOnConnection1.future))
           .log("test")
 
-      val laterData = Promise[ByteString]()
       val laterHandler = Promise[(HttpRequest ⇒ Future[HttpResponse]) ⇒ Unit]()
 
       override def asyncTestServerHandler(connNr: Int): HttpRequest ⇒ Future[HttpResponse] = { req ⇒
@@ -218,7 +217,9 @@ class ConnectionPoolSpec extends AkkaSpec("""
       val handlerSetter = Await.result(laterHandler.future, 1.second.dilated)
 
       // now fail the first one
-      errorOnConnection1.failure(new RuntimeException)
+      EventFilter[RuntimeException](occurrences = 1) intercept {
+        errorOnConnection1.failure(new RuntimeException)
+      }
 
       // waiting for error to trigger connection pool failure
       Thread.sleep(2000)
@@ -550,9 +551,16 @@ class ConnectionPoolSpec extends AkkaSpec("""
       ccSettings:      ClientConnectionSettings = ClientConnectionSettings(system)) = {
 
       val settings =
-        new ConnectionPoolSettingsImpl(maxConnections, minConnections,
-          maxRetries, maxOpenRequests, pipeliningLimit,
-          idleTimeout.dilated, ccSettings)
+        ConnectionPoolSettings(system)
+          .withMaxConnections(maxConnections)
+          .withMinConnections(minConnections)
+          .withMaxRetries(maxRetries)
+          .withMaxOpenRequests(maxOpenRequests)
+          .withPipeliningLimit(pipeliningLimit)
+          .withIdleTimeout(idleTimeout.dilated)
+          .withConnectionSettings(ccSettings)
+          .withPoolImplementation(poolImplementation)
+
       flowTestBench(
         Http().cachedHostConnectionPool[T](serverHostName, serverPort, settings))
     }
@@ -565,8 +573,17 @@ class ConnectionPoolSpec extends AkkaSpec("""
       pipeliningLimit: Int                      = 1,
       idleTimeout:     FiniteDuration           = 5.seconds,
       ccSettings:      ClientConnectionSettings = ClientConnectionSettings(system)) = {
-      val settings = new ConnectionPoolSettingsImpl(maxConnections, minConnections, maxRetries, maxOpenRequests, pipeliningLimit,
-        idleTimeout.dilated, ClientConnectionSettings(system))
+
+      val settings =
+        ConnectionPoolSettings(system)
+          .withMaxConnections(maxConnections)
+          .withMinConnections(minConnections)
+          .withMaxRetries(maxRetries)
+          .withMaxOpenRequests(maxOpenRequests)
+          .withPipeliningLimit(pipeliningLimit)
+          .withIdleTimeout(idleTimeout.dilated)
+          .withConnectionSettings(ccSettings)
+          .withPoolImplementation(poolImplementation)
       flowTestBench(Http().superPool[T](settings = settings))
     }
 
@@ -622,7 +639,8 @@ class ConnectionPoolSpec extends AkkaSpec("""
 
       def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
         promise.success((host, port, settings))
-        Flow.fromSinkAndSource(in.sink, Source.fromPublisher(out)).mapMaterializedValue(_ ⇒ Promise().future)
+        Flow.fromSinkAndSource(in.sink, Source.fromPublisher(out))
+          .mapMaterializedValue(_ ⇒ Future.successful(Http.OutgoingConnection(InetSocketAddress.createUnresolved("local", 12345), InetSocketAddress.createUnresolved(host, port))))
       }
     }
 
@@ -635,6 +653,7 @@ class ConnectionPoolSpec extends AkkaSpec("""
       ConnectionPoolSettings(system)
         .withTransport(transport)
         .withConnectionSettings(ClientConnectionSettings(system).withIdleTimeout(CustomIdleTimeout))
+        .withPoolImplementation(poolImplementation)
 
     val responseFuture = issueRequest(HttpRequest(uri = "http://example.org/test"), settings = poolSettings)
 
@@ -655,3 +674,6 @@ class ConnectionPoolSpec extends AkkaSpec("""
     response.entity.dataBytes.utf8String.awaitResult(10.seconds) should ===("Hello World!")
   }
 }
+
+class LegacyConnectionPoolSpec extends ConnectionPoolSpec(PoolImplementation.Legacy)
+class NewConnectionPoolSpec extends ConnectionPoolSpec(PoolImplementation.New)

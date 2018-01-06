@@ -14,6 +14,7 @@ import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.scaladsl.model.StatusCodes;
 import akka.japi.pf.PFBuilder;
 import akka.pattern.CircuitBreaker;
+import akka.testkit.javadsl.TestKit;
 import org.junit.Test;
 import scala.concurrent.duration.FiniteDuration;
 
@@ -119,7 +120,7 @@ public class FutureDirectivesExamplesTest extends JUnitRouteTest {
           .map(func(result -> complete("The result was " + result)))
           .recover(new PFBuilder<Throwable, Route>()
             .matchAny(ex -> complete(StatusCodes.InternalServerError(),
-              "An error occurred: " + ex.getMessage())
+              "An error occurred: " + ex.toString())
             )
             .build())
           .get()
@@ -131,19 +132,28 @@ public class FutureDirectivesExamplesTest extends JUnitRouteTest {
 
     testRoute(route).run(HttpRequest.GET("/divide/10/0"))
       .assertStatusCode(StatusCodes.InternalServerError())
-      .assertEntity("An error occurred: / by zero");
+      .assertEntity("An error occurred: java.lang.ArithmeticException: / by zero");
     // opened the circuit-breaker 
-    
-    testRoute(route).run(HttpRequest.GET("/divide/10/0"))
-          .assertStatusCode(StatusCodes.ServiceUnavailable())
-          .assertEntity("The server is currently unavailable (because it is overloaded or down for maintenance).");
 
-    Thread.sleep(resetTimeout.toMillis() + 300);
-    // circuit breaker resets after this time
-    
-    testRoute(route).run(HttpRequest.GET("/divide/8/2"))
-      .assertEntity("The result was 4");
-    
+    testRoute(route).run(HttpRequest.GET("/divide/10/0"))
+          .assertEntity("The server is currently unavailable (because it is overloaded or down for maintenance).")
+          .assertStatusCode(StatusCodes.ServiceUnavailable());
+
+    Thread.sleep(resetTimeout.toMillis());
+
+    // circuit breaker resets after this time, but observing it
+    // is timing sensitive so retry a few times within a timeout
+    new TestKit(system()) {
+      {
+        awaitAssert(
+            FiniteDuration.create(500, TimeUnit.MILLISECONDS),
+            () -> {
+              testRoute(route).run(HttpRequest.GET("/divide/8/2"))
+                  .assertEntity("The result was 4");
+              return null;
+            });
+      }
+    };
     //#onCompleteWithBreaker
   }
 

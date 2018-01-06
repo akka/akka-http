@@ -10,7 +10,7 @@ import java.io.File
 import java.nio.file.Path
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.Optional
-import java.util.concurrent.CompletionStage
+import java.util.concurrent.{ CompletionStage, Executor, TimeUnit }
 
 import scala.compat.java8.FutureConverters
 import scala.concurrent.duration.FiniteDuration
@@ -27,6 +27,8 @@ import akka.http.scaladsl.util.FastFuture._
 import headers._
 
 import scala.annotation.tailrec
+import scala.compat.java8.FutureConverters._
+import scala.concurrent.duration._
 
 /**
  * Common base class of HttpRequest and HttpResponse.
@@ -55,6 +57,10 @@ sealed trait HttpMessage extends jm.HttpMessage {
    * Allowing it to be consumable twice would require buffering the incoming data, thus defeating the purpose
    * of its streaming nature. If the dataBytes source is materialized a second time, it will fail with an
    * "stream can cannot be materialized more than once" exception.
+   *
+   * When called on `Strict` entities or sources whose values can be buffered in memory,
+   * the above warnings can be ignored. Repeated materialization is not necessary in this case, avoiding
+   * the mentioned exceptions due to the data being held in memory.
    *
    * In future versions, more automatic ways to warn or resolve these situations may be introduced, see issue #18716.
    */
@@ -139,7 +145,6 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def withEntity(contentType: jm.ContentType, bytes: Array[Byte]): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], bytes))
   def withEntity(contentType: jm.ContentType, bytes: ByteString): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], bytes))
 
-  @deprecated("Use withEntity(ContentType, Path) instead", "2.4.5")
   def withEntity(contentType: jm.ContentType, file: File): Self = withEntity(HttpEntity.fromPath(contentType.asInstanceOf[ContentType], file.toPath))
   def withEntity(contentType: jm.ContentType, file: Path): Self = withEntity(HttpEntity.fromPath(contentType.asInstanceOf[ContentType], file))
 
@@ -161,6 +166,16 @@ sealed trait HttpMessage extends jm.HttpMessage {
   }
   /** Java API */
   def addHeaders(headers: JIterable[jm.HttpHeader]): Self = mapHeaders(_ ++ headers.asScala.asInstanceOf[Iterable[HttpHeader]])
+  /** Java API */
+  def withHeaders(headers: JIterable[jm.HttpHeader]): Self = {
+    import JavaMapping.Implicits._
+    withHeaders(headers.asScala.toVector.map(_.asScala))
+  }
+  /** Java API */
+  def toStrict(timeoutMillis: Long, ec: Executor, materializer: Materializer): CompletionStage[Self] = {
+    val ex = ExecutionContext.fromExecutor(ec)
+    toStrict(timeoutMillis.millis)(ex, materializer).toJava
+  }
 }
 
 object HttpMessage {
@@ -203,6 +218,10 @@ object HttpMessage {
      * Allowing it to be consumable twice would require buffering the incoming data, thus defeating the purpose
      * of its streaming nature. If the dataBytes source is materialized a second time, it will fail with an
      * "stream can cannot be materialized more than once" exception.
+     *
+     * When called on `Strict` entities or sources whose values can be buffered in memory,
+     * the above warnings can be ignored. Repeated materialization is not necessary in this case, avoiding
+     * the mentioned exceptions due to the data being held in memory.
      *
      * In future versions, more automatic ways to warn or resolve these situations may be introduced, see issue #18716.
      */
@@ -415,12 +434,13 @@ final class HttpResponse(
   override def isRequest = false
   override def isResponse = true
 
-  override def withHeaders(headers: immutable.Seq[HttpHeader]) =
+  override def withHeaders(headers: immutable.Seq[HttpHeader]): HttpResponse =
     if (headers eq this.headers) this else copy(headers = headers)
 
-  override def withProtocol(protocol: akka.http.javadsl.model.HttpProtocol): akka.http.javadsl.model.HttpResponse = copy(protocol = protocol.asInstanceOf[HttpProtocol])
-  override def withStatus(statusCode: Int): akka.http.javadsl.model.HttpResponse = copy(status = statusCode)
-  override def withStatus(statusCode: akka.http.javadsl.model.StatusCode): akka.http.javadsl.model.HttpResponse = copy(status = statusCode.asInstanceOf[StatusCode])
+  override def withProtocol(protocol: akka.http.javadsl.model.HttpProtocol): akka.http.javadsl.model.HttpResponse = withProtocol(protocol.asInstanceOf[HttpProtocol])
+  def withProtocol(protocol: HttpProtocol): HttpResponse = copy(protocol = protocol)
+  override def withStatus(statusCode: Int): HttpResponse = copy(status = statusCode)
+  override def withStatus(statusCode: akka.http.javadsl.model.StatusCode): HttpResponse = copy(status = statusCode.asInstanceOf[StatusCode])
 
   override def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: MessageEntity): HttpResponse = withHeadersAndEntity(headers, entity: ResponseEntity)
   def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: ResponseEntity): HttpResponse = copy(headers = headers, entity = entity)

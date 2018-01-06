@@ -1,6 +1,14 @@
-# Contributing to Akka HTTP
+# Welcome! Thank you for contributing to Akka HTTP!
+
+We follow the standard GitHub [fork & pull](https://help.github.com/articles/using-pull-requests/#fork--pull) approach to pull requests. Just fork the official repo, develop in a branch, and submit a PR!
+
+You're always welcome to submit your PR straight away and start the discussion (without reading the rest of this wonderful doc, or the README.md). The goal of these notes is to make your experience contributing to Akka HTTP as smooth and pleasant as possible. We're happy to guide you through the process once you've submitted your PR.
+
+# The Akka Community
 
 In case of questions about the contribution process or for discussion of specific issues please visit the [akka/dev gitter chat](https://gitter.im/akka/dev).
+
+You may also check out these [other resources](https://akka.io/get-involved/).
 
 # Navigating around the project & codebase
 
@@ -23,7 +31,7 @@ Most notably many tags start `t:` prefix (as in `topic:`), which categorises iss
 In general *all issues are open for anyone working on them*, however if you're new to the project and looking for an issue
 that will be accepted and likely is a nice one to get started you should check out the following tags:
 
-- [community](https://github.com/akka/akka-http/labels/community) - which identifies issues that the core team will likely not have time to work on, or the issue is a nice entry level ticket. If you're not sure how to solve a ticket but would like to work on it feel free to ask in the issue about clarification or tips.
+- [help wanted](https://github.com/akka/akka-http/labels/help%20wanted) - which identifies issues that the core team will likely not have time to work on, or the issue is a nice entry level ticket. If you're not sure how to solve a ticket but would like to work on it feel free to ask in the issue about clarification or tips.
 - [nice-to-have (low-priority)](https://github.com/akka/akka-http/labels/nice-to-have%20%28low-prio%29) - are tasks which make sense, however are not very high priority (in face of other very high priority issues). If you see something interesting in this list, a contribution would be really wonderful!
 
 Another group of tickets are those which start from a number. They're used to signal in what phase of development an issue is:
@@ -50,13 +58,16 @@ as well as any plugins or additional repos located under the Akka GitHub organis
 These guidelines are meant to be a living document that should be changed and adapted as needed.
 We encourage changes that make it easier to achieve our goals in an efficient way.
 
+Please also note that we have a *Code of Conduct* in place which aims keep our community a nice and helpful one.
+You can read its full text here: [Akka Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## General Workflow
 
 The below steps are how to get a patch into a main development branch (e.g. `master`). 
 The steps are exactly the same for everyone involved in the project (be it core team, or first time contributor).
 
-1. Make sure an issue exists in the [issue tracker](https://github.com/akka/akka-http/issues) for the work you want to contribute. 
-   - If there is no ticket for it, [create one](https://github.com/akka/akka-http/issues/new) first.
+1. To avoid duplicated effort, it might be good to check the [issue tracker](https://github.com/akka/akka-http/issues) and [existing pull requests](https://github.com/akka/akka-http/pulls) for existing work.
+   - If there is no ticket yet, feel free to [create one](https://github.com/akka/akka-http/issues/new) to discuss the problem and the approach you want to take to solve it.
 1. [Fork the project](https://github.com/akka/akka-http#fork-destination-box) on GitHub. You'll need to create a feature-branch for your work on your fork, as this way you'll be able to submit a PullRequest against the mainline Akka-http.
 1. Create a branch on your fork and work on the feature. For example: `git checkout -b wip-custom-headers-akka-http`
    - Please make sure to follow the general quality guidelines (specified below) when developing your patch.
@@ -121,7 +132,7 @@ This allows simple and fast iterations on changes that would need to be introduc
 Binary compatibility rules and guarantees are described in depth in the [Binary Compatibility Rules
 ](http://doc.akka.io/docs/akka/snapshot/common/binary-compatibility-rules.html) section of the documentation.
 
-Akka-http uses MiMa (which is short for [Lightbend Migration Manager](https://github.com/typesafehub/migration-manager)) to
+Akka-http uses MiMa (which is short for [Lightbend Migration Manager](https://github.com/lightbend/migration-manager)) to
 validate binary compatibility of incoming Pull Requests. If your PR fails due to binary compatibility issues, you may see 
 an error like this:
 
@@ -141,6 +152,10 @@ Situations when it may be fine to ignore a MiMa issued warning include:
 - if it is adding API to classes / traits which are only meant for extension by Akka itself, i.e. should not be extended by end-users
 - other tricky situations
 
+If it turns out that the change can be safely ignored, please add the filter to the submodule's `src/main/mima-filters/<last-released-version>.backwards.excludes` file using (or creating) the file corresponding to the latest released version.
+
+You can run `mimaReportBinaryIssues` on the sbt console to check if you introduced a binary incompatibility or whether an
+incompatibility has been successfully ignored after adding it to the filter file.
 
 ## Pull Request Requirements
 
@@ -197,7 +212,7 @@ The rendered documentation will be available under `docs/target/paradox/site/mai
 
 ### JavaDoc
 
-Akka-http generates JavaDoc-style API documentation using the [genjavadoc](https://github.com/typesafehub/genjavadoc) sbt plugin, since the sources are written mostly in Scala.
+Akka-http generates JavaDoc-style API documentation using the [genjavadoc](https://github.com/lightbend/genjavadoc) sbt plugin, since the sources are written mostly in Scala.
 
 Generating JavaDoc is not enabled by default, as it's not needed on day-to-day development as it's expected to just work.
 If you'd like to check if you links and formatting looks good in JavaDoc (and not only in ScalaDoc), you can generate it by running:

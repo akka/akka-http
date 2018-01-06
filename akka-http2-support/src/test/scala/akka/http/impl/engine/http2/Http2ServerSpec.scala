@@ -1,7 +1,7 @@
 package akka.http.impl.engine.http2
 
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
-import java.net.{ InetAddress, InetSocketAddress }
+import java.net.InetSocketAddress
 import java.nio.ByteOrder
 
 import akka.NotUsed
@@ -10,9 +10,8 @@ import akka.http.impl.engine.http2.framing.FrameRenderer
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.{ StreamUtils, StringRendering }
-import akka.http.scaladsl.Http.ServerLayer
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{ CacheDirectives, RawHeader, `Remote-Address` }
+import akka.http.scaladsl.model.headers.{ CacheDirectives, RawHeader }
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.impl.io.ByteStringParser.ByteReader
@@ -614,7 +613,7 @@ class Http2ServerSpec extends AkkaSpec("""
         sendSETTING(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 1)
         expectSettingsAck()
 
-        // TODO actually apply the limiting and verify it works		
+        // TODO actually apply the limiting and verify it works
       }
 
       "received SETTINGS_HEADER_TABLE_SIZE" in new TestSetup with RequestResponseProbes {
@@ -795,8 +794,8 @@ class Http2ServerSpec extends AkkaSpec("""
      */
     def expectGOAWAY(lastStreamId: Int = -1): (Int, ErrorCode) = {
       // GOAWAY is always written to stream zero:
-      //   The GOAWAY frame applies to the connection, not a specific stream. 
-      //   An endpoint MUST treat a GOAWAY frame with a stream identifier other than 0x0 
+      //   The GOAWAY frame applies to the connection, not a specific stream.
+      //   An endpoint MUST treat a GOAWAY frame with a stream identifier other than 0x0
       //   as a connection error (Section 5.4.1) of type PROTOCOL_ERROR.
       val payload = expectFramePayload(FrameType.GOAWAY, ByteFlag.Zero, streamId = 0)
       val reader = new ByteReader(payload)

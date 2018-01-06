@@ -134,7 +134,7 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
           // a new connection is opened every single time, `runWith` is called. Materialization (the `runWith` call)
           // and opening up a new connection is slow.
           //
-          // The `outgoingConnection` API is very low-level. Use it only if you already have a `Source[HttpRequest]`
+          // The `outgoingConnection` API is very low-level. Use it only if you already have a `Source[HttpRequest, _]`
           // (other than Source.single) available that you want to use to run requests on a single persistent HTTP
           // connection.
           //
@@ -205,7 +205,7 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
 
   "host-level-streamed-example" in compileOnlySpec {
     //#host-level-streamed-example
-    import java.nio.file.Path
+    import java.nio.file.{ Path, Paths }
 
     import scala.util.{ Failure, Success }
     import scala.concurrent.Future
@@ -226,7 +226,13 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
 
     case class FileToUpload(name: String, location: Path)
 
-    def filesToUpload(): Source[FileToUpload, NotUsed] = ???
+    def filesToUpload(): Source[FileToUpload, NotUsed] =
+      // This could even be a lazy/infinite stream. For this example we have a finite one:
+      Source(List(
+        FileToUpload("foo.txt", Paths.get("./foo.txt")),
+        FileToUpload("bar.txt", Paths.get("./bar.txt")),
+        FileToUpload("baz.txt", Paths.get("./baz.txt"))
+      ))
 
     val poolClientFlow =
       Http().cachedHostConnectionPool[FileToUpload]("akka.io")
@@ -273,12 +279,24 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
     import akka.stream.ActorMaterializer
 
     import scala.concurrent.Future
+    import scala.util.{ Failure, Success }
 
-    implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
+    object Client {
+      def main(args: Array[String]): Unit = {
+        implicit val system = ActorSystem()
+        implicit val materializer = ActorMaterializer()
+        // needed for the future flatMap/onComplete in the end
+        implicit val executionContext = system.dispatcher
 
-    val responseFuture: Future[HttpResponse] =
-      Http().singleRequest(HttpRequest(uri = "http://akka.io"))
+        val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = "http://akka.io"))
+
+        responseFuture
+          .onComplete {
+            case Success(res) => println(res)
+            case Failure(_)   => sys.error("something wrong")
+          }
+      }
+    }
     //#single-request-example
   }
 
@@ -366,4 +384,35 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
     //#auth-https-proxy-example-single-request
   }
 
+  "collecting_headers-example-for-single-request" in compileOnlySpec {
+    //#collecting-headers-example
+    import akka.actor.ActorSystem
+    import akka.http.scaladsl.Http
+    import akka.http.scaladsl.model.headers.{ HttpCookie, `Set-Cookie` }
+    import akka.http.scaladsl.model._
+    import akka.stream.ActorMaterializer
+
+    import scala.concurrent.Future
+
+    object Client {
+      def main(args: Array[String]): Unit = {
+        implicit val system = ActorSystem()
+        implicit val materializer = ActorMaterializer()
+        implicit val executionContext = system.dispatcher
+
+        val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = "http://akka.io"))
+
+        responseFuture.map {
+          case HttpResponse(StatusCodes.OK, headers, entity, _) =>
+            val setCookies: Seq[HttpCookie] = headers.collect {
+              case `Set-Cookie`(x) ⇒ x
+            }
+            println(s"Cookies set by a server: $setCookies")
+            entity.discardBytes()
+          case _ => sys.error("something wrong")
+        }
+      }
+    }
+    //#collecting-headers-example
+  }
 }

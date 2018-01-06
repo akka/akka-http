@@ -25,7 +25,7 @@ import scala.compat.java8.FutureConverters._
 import scala.concurrent.ExecutionContext
 import scala.language.implicitConversions
 
-object Unmarshaller {
+object Unmarshaller extends akka.http.javadsl.unmarshalling.Unmarshallers {
   implicit def fromScala[A, B](scalaUnmarshaller: unmarshalling.Unmarshaller[A, B]): Unmarshaller[A, B] =
     scalaUnmarshaller
 
@@ -40,14 +40,14 @@ object Unmarshaller {
   /**
    * Creates an unmarshaller from an asynchronous Java function.
    */
-  def async[A, B](f: java.util.function.Function[A, CompletionStage[B]]): Unmarshaller[A, B] =
+  override def async[A, B](f: java.util.function.Function[A, CompletionStage[B]]): Unmarshaller[A, B] =
     unmarshalling.Unmarshaller[A, B] { ctx ⇒ a ⇒ f(a).toScala
     }
 
   /**
    * Creates an unmarshaller from a Java function.
    */
-  def sync[A, B](f: java.util.function.Function[A, B]): Unmarshaller[A, B] =
+  override def sync[A, B](f: java.util.function.Function[A, B]): Unmarshaller[A, B] =
     unmarshalling.Unmarshaller[A, B] { ctx ⇒ a ⇒ scala.concurrent.Future.successful(f.apply(a))
     }
 
@@ -57,12 +57,8 @@ object Unmarshaller {
   def entityToCharArray: Unmarshaller[HttpEntity, Array[Char]] = unmarshalling.Unmarshaller.charArrayUnmarshaller
   def entityToString: Unmarshaller[HttpEntity, String]         = unmarshalling.Unmarshaller.stringUnmarshaller
 
-  @deprecated("Use `entityToWwwUrlEncodedFormData` instead. This method leaks a Scala DSL class", "10.0.1")
-  def entityToUrlEncodedFormData: Unmarshaller[HttpEntity, SFormData]   = unmarshalling.Unmarshaller.defaultUrlEncodedFormDataUnmarshaller
   def entityToWwwUrlEncodedFormData: Unmarshaller[HttpEntity, FormData] = unmarshalling.Unmarshaller.defaultUrlEncodedFormDataUnmarshaller.map(scalaFormData => new FormData(JavaQuery(scalaFormData.fields)))
 
-  @deprecated("Use `entityToMultipartByteRangesUnmarshaller` instead. This method leaks a Scala DSL class", "10.0.1")
-  def entityToMultipartByteRanges: Unmarshaller[HttpEntity, SMultipart.ByteRanges]            = unmarshalling.MultipartUnmarshallers.defaultMultipartByteRangesUnmarshaller
   def entityToMultipartByteRangesUnmarshaller: Unmarshaller[HttpEntity, Multipart.ByteRanges] = downcast(unmarshalling.MultipartUnmarshallers.defaultMultipartByteRangesUnmarshaller, classOf[Multipart.ByteRanges])
   def entityToMultipartFormData: Unmarshaller[HttpEntity, Multipart.FormData]                 = downcast(unmarshalling.MultipartUnmarshallers.multipartFormDataUnmarshaller, classOf[Multipart.FormData])
   // format: ON
@@ -89,19 +85,19 @@ object Unmarshaller {
     u.forContentTypes(theTypes: _*)
   }
 
-  def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B]): Unmarshaller[A, B] = {
+  override def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B]): Unmarshaller[A, B] = {
     unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala)
   }
 
-  def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B]): Unmarshaller[A, B] = {
+  override def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B]): Unmarshaller[A, B] = {
     unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala, u3.asScala)
   }
 
-  def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B], u4: Unmarshaller[A, B]): Unmarshaller[A, B] = {
+  override def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B], u4: Unmarshaller[A, B]): Unmarshaller[A, B] = {
     unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala, u3.asScala, u4.asScala)
   }
 
-  def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B], u4: Unmarshaller[A, B], u5: Unmarshaller[A, B]): Unmarshaller[A, B] = {
+  override def firstOf[A, B](u1: Unmarshaller[A, B], u2: Unmarshaller[A, B], u3: Unmarshaller[A, B], u4: Unmarshaller[A, B], u5: Unmarshaller[A, B]): Unmarshaller[A, B] = {
     unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala, u3.asScala, u4.asScala, u5.asScala)
   }
 
@@ -133,12 +129,6 @@ abstract class Unmarshaller[-A, B] extends UnmarshallerBase[A, B] {
    * If you expect the marshalling to be heavy, it is suggested to provide a specialized context for those operations.
    */
   def unmarshal(value: A, mat: Materializer): CompletionStage[B] = unmarshal(value, mat.executionContext, mat)
-
-  /**
-   * Deprecated in favor of [[unmarshal]].
-   */
-  @deprecated("Use unmarshal instead.", "10.0.2")
-  def unmarshall(a: A, ec: ExecutionContext, mat: Materializer): CompletionStage[B] = unmarshal(a, ec, mat)
 
   /**
    * Transform the result `B` of this unmarshaller to a `C` producing a marshaller that turns `A`s into `C`s

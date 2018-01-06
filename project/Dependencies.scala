@@ -7,14 +7,14 @@ import scala.language.implicitConversions
 object Dependencies {
   import DependencyHelpers._
 
-  val jacksonVersion = "2.8.8"
+  val jacksonVersion = "2.9.2"
   val junitVersion = "4.12"
   val h2specVersion = "1.5.0"
   val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
   val h2specExe = "h2spec" + DependencyHelpers.exeIfWindows
   val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.zip"
 
-  val akka25Version = "2.5.4"
+  val akka25Version = "2.5.8"
 
   lazy val akkaVersion = settingKey[String]("The version of Akka to use.")
   lazy val scalaTestVersion = settingKey[String]("The version of ScalaTest to use.")
@@ -22,12 +22,12 @@ object Dependencies {
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.11.11", "2.12.2"),
+    crossScalaVersions := Seq("2.11.11", "2.12.4"),
     scalaVersion := crossScalaVersions.value.head,
-    akkaVersion := System.getProperty("akka.build.version", "2.4.19"),
-    scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.13.4"),
-    scalaTestVersion := "3.0.3",
-    specs2Version := "3.8.6"
+    akkaVersion := System.getProperty("akka.build.version", akka25Version),
+    scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.13.5"),
+    scalaTestVersion := "3.0.4",
+    specs2Version := "4.0.2"
   )
   import Versions._
 
@@ -40,7 +40,7 @@ object Dependencies {
     val sslConfigAkka = "com.typesafe"               %% "ssl-config-akka"              % "0.2.2"       // ApacheV2
 
     // For akka-http spray-json support
-    val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.3"       // ApacheV2
+    val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.4"       // ApacheV2
 
     // For akka-http-jackson support
     val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % jacksonVersion // ApacheV2
@@ -52,9 +52,12 @@ object Dependencies {
 
     val alpnApi     = "org.eclipse.jetty.alpn"        % "alpn-api"                     % "1.1.3.v20160715" // ApacheV2
 
+    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.6.0"
+    val jsr305      = "com.google.code.findbugs"      % "jsr305"                       % "3.0.2"             % Provided // ApacheV2
+
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
-      val gson        = "com.google.code.gson"             % "gson"                    % "2.3.1"             % "test"
+      val gson        = "com.google.code.gson"             % "gson"                    % "2.8.2"             % "test"
       val jacksonXml  = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml"  % jacksonVersion      % "test" // ApacheV2
     }
 
@@ -80,12 +83,14 @@ object Dependencies {
     DependencyHelpers.versionDependentDeps(
       Dependencies.Compile.scalaReflect % "provided"
     ),
-    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.fullMapped(nominalScalaVersion))
+    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full)
   )
 
   lazy val httpCore = l ++= Seq(
     Test.sprayJson, // for WS Autobahn test metadata
     Test.scalatest.value, Test.scalacheck.value, Test.junit)
+
+  lazy val httpCaching = l ++= Seq(caffeine, jsr305, Test.scalatest.value)
 
   lazy val http = l ++= Seq()
 
@@ -95,8 +100,8 @@ object Dependencies {
 
   lazy val httpTestkit = l ++= Seq(
     Test.junit, Test.junitIntf, Compile.junit % "provided",
-    Test.scalatest.value.copy(configurations = Some("provided; test")),
-    Test.specs2.value.copy(configurations = Some("provided; test"))
+    Test.scalatest.value.withConfigurations(Some("provided; test")),
+    Test.specs2.value.withConfigurations(Some("provided; test"))
   )
 
   lazy val httpTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.junitIntf)
@@ -146,16 +151,17 @@ object DependencyHelpers {
   }
 
   // OS name for Go binaries
-  def osName = {
+  def osName: String = {
     val os = System.getProperty("os.name").toLowerCase()
     if (os startsWith "mac") "darwin"
     else if (os startsWith "win") "windows"
     else "linux"
   }
 
-  def exeIfWindows = {
+  def exeIfWindows: String = {
     val os = System.getProperty("os.name").toLowerCase()
     if (os startsWith "win") ".exe"
     else ""
   }
+
 }

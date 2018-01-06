@@ -6,8 +6,6 @@ package akka.http.scaladsl.model
 
 import java.util.OptionalLong
 
-import akka.http.impl.model.JavaInitialization
-
 import language.implicitConversions
 import java.io.File
 import java.nio.file.{ Files, Path }
@@ -91,6 +89,10 @@ sealed trait HttpEntity extends jm.HttpEntity {
    * of its streaming nature. If the dataBytes source is materialized a second time, it will fail with an
    * "stream can cannot be materialized more than once" exception.
    *
+   * When called on `Strict` entities or sources whose values can be buffered in memory,
+   * the above warnings can be ignored. Repeated materialization is not necessary in this case, avoiding
+   * the mentioned exceptions due to the data being held in memory.
+   *
    * In future versions, more automatic ways to warn or resolve these situations may be introduced, see issue #18716.
    */
   override def discardBytes(mat: Materializer): HttpMessage.DiscardedEntity =
@@ -170,6 +172,11 @@ sealed trait HttpEntity extends jm.HttpEntity {
   override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[jm.HttpEntity.Strict] =
     toStrict(timeoutMillis.millis)(materializer).toJava
 
+  /** Java API */
+  override def withContentType(contentType: jm.ContentType): HttpEntity = {
+    import JavaMapping.Implicits._
+    withContentType(contentType.asScala)
+  }
 }
 
 /* An entity that can be used for body parts */
@@ -274,8 +281,7 @@ object HttpEntity {
    *
    * If the given `chunkSize` is -1 the default chunk size is used.
    */
-  @deprecated("Use `fromPath` instead", "2.4.5")
-  def apply(contentType: ContentType, file: File, chunkSize: Int = -1): UniversalEntity =
+  def fromFile(contentType: ContentType, file: File, chunkSize: Int = -1): UniversalEntity =
     fromPath(contentType, file.toPath, chunkSize)
 
   /**
@@ -298,9 +304,6 @@ object HttpEntity {
   def empty(contentType: ContentType): HttpEntity.Strict =
     if (contentType == Empty.contentType) Empty
     else HttpEntity.Strict(contentType, data = ByteString.empty)
-
-  JavaInitialization.initializeStaticFieldWith(
-    Empty, classOf[jm.HttpEntity].getField("EMPTY"))
 
   // TODO: re-establish serializability
   // TODO: equal/hashcode ?
@@ -642,21 +645,7 @@ object HttpEntity {
    */
   @InternalApi
   private[http] def captureTermination[T <: HttpEntity](entity: T): (T, Future[Unit]) =
-    entity match {
-      case x: HttpEntity.Strict ⇒ x.asInstanceOf[T] → FastFuture.successful(())
-      case x: HttpEntity.Default ⇒
-        val (newData, whenCompleted) = StreamUtils.captureTermination(x.data)
-        x.copy(data = newData).asInstanceOf[T] → whenCompleted
-      case x: HttpEntity.Chunked ⇒
-        val (newChunks, whenCompleted) = StreamUtils.captureTermination(x.chunks)
-        x.copy(chunks = newChunks).asInstanceOf[T] → whenCompleted
-      case x: HttpEntity.CloseDelimited ⇒
-        val (newData, whenCompleted) = StreamUtils.captureTermination(x.data)
-        x.copy(data = newData).asInstanceOf[T] → whenCompleted
-      case x: HttpEntity.IndefiniteLength ⇒
-        val (newData, whenCompleted) = StreamUtils.captureTermination(x.data)
-        x.copy(data = newData).asInstanceOf[T] → whenCompleted
-    }
+    StreamUtils.transformEntityStream(entity, StreamUtils.CaptureTerminationOp)
 
   /**
    * Represents the currently being-drained HTTP Entity which triggers completion of the contained

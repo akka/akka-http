@@ -9,7 +9,6 @@ import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.duration.FiniteDuration
 import akka.actor.ActorSystem
-import akka.http.impl.util.AddFutureAwaitResult
 import akka.http.impl.util.JavaMapping.Implicits.AddAsScala
 import akka.http.javadsl.model.HttpRequest
 import akka.http.javadsl.model.headers.Host
@@ -22,6 +21,7 @@ import akka.http.scaladsl.server.{ ExceptionHandler, Route ⇒ ScalaRoute }
 import akka.http.scaladsl.settings.RoutingSettings
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
+import akka.testkit.TestDuration
 
 /**
  * A base class to create route tests for testing libraries. An implementation needs to provide
@@ -34,7 +34,7 @@ abstract class RouteTest extends AllDirectives with WSTestRequestBuilding {
   implicit def materializer: Materializer
   implicit def executionContext: ExecutionContextExecutor = system.dispatcher
 
-  protected def awaitDuration: FiniteDuration = 3.seconds
+  protected def awaitDuration: FiniteDuration = 3.seconds.dilated
 
   protected def defaultHostInfo: DefaultHostInfo = DefaultHostInfo(Host.create("example.com"), false)
 
