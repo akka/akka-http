@@ -15,9 +15,9 @@ final case class HttpChallenge(scheme: String, realm: String,
   def render[R <: Rendering](r: R): r.type = {
     r ~~ scheme
 
-    val paramsNoToken = params.filterKeys(_ != "tokenKey")
+    val paramsNoToken = params.filterKeys(_ != "")
 
-    if (params.contains("tokenKey")) r ~~ " " ~~ params("tokenKey")
+    if (params.contains("")) r ~~ " " ~~ params("")
     if (realm != null) r ~~ " realm=" ~~#! realm
     if (paramsNoToken.nonEmpty) {
       if (realm == null) r ~~ ' ' else r ~~ ','
@@ -40,12 +40,6 @@ object HttpChallenge extends scala.runtime.AbstractFunction3[String, String, Map
 
   def apply(scheme: String, realm: Option[String], params: Map[String, String]): HttpChallenge =
     HttpChallenge(scheme, realm.orNull, params)
-
-  def apply(scheme: String, token: Option[String], realm: Option[String]): HttpChallenge =
-    token match {
-      case Some(v) ⇒ HttpChallenge(scheme, realm.orNull, Map("tokenKey" → v))
-      case None    ⇒ HttpChallenge(scheme, realm.orNull, Map.empty[String, String])
-    }
 
 }
 
