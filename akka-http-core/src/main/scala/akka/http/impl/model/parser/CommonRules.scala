@@ -176,7 +176,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
       tokenAndParams match {
         case ("", Nil)    ⇒ HttpChallenge(scheme, None, None)
         case (token, Nil) ⇒ HttpChallenge(scheme, Some(token), None)
-        case (_, params)  ⇒ {
+        case (_, params) ⇒ {
           val (realms, otherParams) = params.partition(_._1 equalsIgnoreCase "realm")
           HttpChallenge(scheme, realms.headOption.map(_._2), otherParams.toMap)
         }
