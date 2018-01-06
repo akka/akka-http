@@ -43,8 +43,8 @@ object HttpChallenge extends scala.runtime.AbstractFunction3[String, String, Map
 
   def apply(scheme: String, token: Option[String], realm: Option[String]): HttpChallenge =
     token match {
-      case Some(v)  ⇒ HttpChallenge(scheme, realm.orNull, Map("tokenKey" → v))
-      case None     ⇒ HttpChallenge(scheme, realm.orNull, Map.empty[String, String])
+      case Some(v) ⇒ HttpChallenge(scheme, realm.orNull, Map("tokenKey" → v))
+      case None    ⇒ HttpChallenge(scheme, realm.orNull, Map.empty[String, String])
     }
 
 }
