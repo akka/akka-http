@@ -9,6 +9,10 @@ import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util._
 import akka.http.impl.util.JavaMapping.Implicits._
 
+/**
+  * Note: the token of challenge is stored in the params Map as a parameter whose name is empty String("") for binary
+  * compatibility, but it will be parsed and rendered correctly.
+  */
 final case class HttpChallenge(scheme: String, realm: String,
                                params: Map[String, String] = Map.empty) extends jm.headers.HttpChallenge with ValueRenderable {
 
