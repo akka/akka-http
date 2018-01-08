@@ -14,7 +14,7 @@ import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.scaladsl.model.StatusCodes;
 import akka.japi.pf.PFBuilder;
 import akka.pattern.CircuitBreaker;
-import akka.testkit.javadsl.TestKit;
+import akka.testkit.JavaTestKit;
 import org.junit.Test;
 import scala.concurrent.duration.FiniteDuration;
 
@@ -143,15 +143,15 @@ public class FutureDirectivesExamplesTest extends JUnitRouteTest {
 
     // circuit breaker resets after this time, but observing it
     // is timing sensitive so retry a few times within a timeout
-    new TestKit(system()) {
+    new JavaTestKit(system()) {
       {
-        awaitAssert(
-            FiniteDuration.create(500, TimeUnit.MILLISECONDS),
-            () -> {
-              testRoute(route).run(HttpRequest.GET("/divide/8/2"))
-                  .assertEntity("The result was 4");
-              return null;
-            });
+        new AwaitAssert(FiniteDuration.create(500, TimeUnit.MILLISECONDS)) {
+          @Override
+          protected void check() {
+            testRoute(route).run(HttpRequest.GET("/divide/8/2"))
+                .assertEntity("The result was 4");
+          }
+        };
       }
     };
     //#onCompleteWithBreaker
