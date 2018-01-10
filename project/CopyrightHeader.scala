@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka
 
 import sbt._, Keys._
@@ -37,7 +41,9 @@ object CopyrightHeader extends AutoPlugin {
     import HeaderCommentStyle.cStyleBlockComment.commentCreator
 
     def updateLightbendHeader(header: String): String = header match {
-      case CopyrightPattern(years, null, _)     => commentCreator(headerFor(years))
+      case CopyrightPattern(years, null, _)     =>
+        if (years != CurrentYear) commentCreator(headerFor(years + "-" + CurrentYear))
+        else commentCreator(headerFor(years))
       case CopyrightPattern(years, endYears, _) => commentCreator(headerFor(years.replace(endYears, "-" + CurrentYear)))
       case _                                    => header.trim
     }
