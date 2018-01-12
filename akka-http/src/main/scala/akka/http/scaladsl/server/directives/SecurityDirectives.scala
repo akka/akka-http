@@ -150,20 +150,18 @@ trait SecurityDirectives {
         parameter('access_token.?)
       }
 
-      def liftedAuthenticator(cred: Option[HttpCredentials]) = authenticator(Credentials(cred)).fast.map {
+      def liftedAuthenticator(credentials: Option[HttpCredentials]) = authenticator(Credentials(credentials)).fast.map {
         case Some(t) ⇒ AuthenticationResult.success(t)
         case None    ⇒ AuthenticationResult.failWithChallenge(HttpChallenges.oAuth2(realm))
       }
 
       accessToken.flatMap {
-        case Some(_) ⇒
-          accessToken.flatMap { cred ⇒
-            onSuccess(liftedAuthenticator(cred.map(OAuth2BearerToken))).flatMap {
-              case Right(user) ⇒ provide(user)
-              case Left(challenge) ⇒
-                val cause = if (cred.isEmpty) CredentialsMissing else CredentialsRejected
-                reject(AuthenticationFailedRejection(cause, challenge)): Directive1[T]
-            }
+        case credentials @ Some(_) ⇒
+          onSuccess(liftedAuthenticator(credentials.map(OAuth2BearerToken))).flatMap {
+            case Right(user) ⇒ provide(user)
+            case Left(challenge) ⇒
+              val cause = if (credentials.isEmpty) CredentialsMissing else CredentialsRejected
+              reject(AuthenticationFailedRejection(cause, challenge)): Directive1[T]
           }
         case None ⇒
           authenticateOrRejectWithChallenge[OAuth2BearerToken, T](liftedAuthenticator)
