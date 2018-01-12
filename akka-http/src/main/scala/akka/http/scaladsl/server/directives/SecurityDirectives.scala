@@ -143,15 +143,42 @@ trait SecurityDirectives {
    *
    * @group security
    */
-  def authenticateOAuth2Async[T](realm: String, authenticator: AsyncAuthenticator[T]): AuthenticationDirective[T] =
+  def authenticateOAuth2Async[T](realm: String, authenticator: AsyncAuthenticator[T]): AuthenticationDirective[T] = {
     extractExecutionContext.flatMap { implicit ec ⇒
+      val accessToken = {
+        import akka.http.scaladsl.server.Directives._
+        parameter('access_token.?)
+      }
+
+      def liftedAuthenticator(cred: Option[HttpCredentials]) = authenticator(Credentials(cred)).fast.map {
+        case Some(t) ⇒ AuthenticationResult.success(t)
+        case None    ⇒ AuthenticationResult.failWithChallenge(HttpChallenges.oAuth2(realm))
+      }
+
+      accessToken.flatMap {
+        case Some(_) ⇒
+          accessToken.flatMap { cred ⇒
+            onSuccess(liftedAuthenticator(cred.map(OAuth2BearerToken))).flatMap {
+              case Right(user) ⇒ provide(user)
+              case Left(challenge) ⇒
+                val cause = if (cred.isEmpty) CredentialsMissing else CredentialsRejected
+                reject(AuthenticationFailedRejection(cause, challenge)): Directive1[T]
+            }
+          }
+        case None ⇒
+          authenticateOrRejectWithChallenge[OAuth2BearerToken, T](liftedAuthenticator)
+      }
+    }
+
+    /*extractExecutionContext.flatMap { implicit ec ⇒
       authenticateOrRejectWithChallenge[OAuth2BearerToken, T] { cred ⇒
         authenticator(Credentials(cred)).fast.map {
           case Some(t) ⇒ AuthenticationResult.success(t)
-          case None    ⇒ AuthenticationResult.failWithChallenge(HttpChallenges.oAuth2(realm))
+          case None ⇒ AuthenticationResult.failWithChallenge(HttpChallenges.oAuth2(realm))
         }
       }
-    }
+    }*/
+  }
 
   /**
    * A directive that wraps the inner route with OAuth2 Bearer Token authentication support.
