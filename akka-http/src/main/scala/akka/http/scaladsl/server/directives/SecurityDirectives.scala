@@ -169,15 +169,6 @@ trait SecurityDirectives {
           authenticateOrRejectWithChallenge[OAuth2BearerToken, T](liftedAuthenticator)
       }
     }
-
-    /*extractExecutionContext.flatMap { implicit ec ⇒
-      authenticateOrRejectWithChallenge[OAuth2BearerToken, T] { cred ⇒
-        authenticator(Credentials(cred)).fast.map {
-          case Some(t) ⇒ AuthenticationResult.success(t)
-          case None ⇒ AuthenticationResult.failWithChallenge(HttpChallenges.oAuth2(realm))
-        }
-      }
-    }*/
   }
 
   /**
