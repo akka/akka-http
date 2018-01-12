@@ -145,27 +145,26 @@ trait SecurityDirectives {
    */
   def authenticateOAuth2Async[T](realm: String, authenticator: AsyncAuthenticator[T]): AuthenticationDirective[T] = {
     extractExecutionContext.flatMap { implicit ec ⇒
-      val accessToken = {
-        import akka.http.scaladsl.server.Directives._
-        parameter('access_token.?)
+      authenticateOrRejectWithChallenge[OAuth2BearerToken, T] { cred ⇒
+        authenticator(Credentials(cred)).fast.map {
+          case Some(t) ⇒ AuthenticationResult.success(t)
+          case None    ⇒ AuthenticationResult.failWithChallenge(HttpChallenges.oAuth2(realm))
+        }
       }
+    }.recoverPF {
+      case rejections: Seq[Rejection] ⇒
+        val accessToken = {
+          import akka.http.scaladsl.server.Directives._
+          parameter('access_token.?)
+        }
 
-      def liftedAuthenticator(credentials: Option[HttpCredentials]) = authenticator(Credentials(credentials)).fast.map {
-        case Some(t) ⇒ AuthenticationResult.success(t)
-        case None    ⇒ AuthenticationResult.failWithChallenge(HttpChallenges.oAuth2(realm))
-      }
-
-      accessToken.flatMap {
-        case credentials @ Some(_) ⇒
-          onSuccess(liftedAuthenticator(credentials.map(OAuth2BearerToken))).flatMap {
-            case Right(user) ⇒ provide(user)
-            case Left(challenge) ⇒
-              val cause = if (credentials.isEmpty) CredentialsMissing else CredentialsRejected
-              reject(AuthenticationFailedRejection(cause, challenge)): Directive1[T]
+        accessToken.flatMap {
+          case cred @ Some(_) ⇒ onSuccess(authenticator(Credentials(cred.map(OAuth2BearerToken)))).flatMap {
+            case Some(t) ⇒ provide(t)
+            case None    ⇒ reject(AuthenticationFailedRejection(CredentialsRejected, HttpChallenges.oAuth2(realm))): Directive1[T]
           }
-        case None ⇒
-          authenticateOrRejectWithChallenge[OAuth2BearerToken, T](liftedAuthenticator)
-      }
+          case None ⇒ reject(rejections: _*): Directive1[T]
+        }
     }
   }
 
