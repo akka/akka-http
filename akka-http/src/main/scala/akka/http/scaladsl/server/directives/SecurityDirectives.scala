@@ -150,21 +150,21 @@ trait SecurityDirectives {
           case Some(t) ⇒ AuthenticationResult.success(t)
           case None    ⇒ AuthenticationResult.failWithChallenge(HttpChallenges.oAuth2(realm))
         }
-      }
-    }.recoverPF {
-      case rejections: Seq[Rejection] ⇒
-        val accessToken = {
-          import akka.http.scaladsl.server.Directives._
-          parameter('access_token.?)
-        }
-
-        accessToken.flatMap {
-          case cred @ Some(_) ⇒ onSuccess(authenticator(Credentials(cred.map(OAuth2BearerToken)))).flatMap {
-            case Some(t) ⇒ provide(t)
-            case None    ⇒ reject(AuthenticationFailedRejection(CredentialsRejected, HttpChallenges.oAuth2(realm))): Directive1[T]
+      }.recoverPF {
+        case rejections: Seq[Rejection] ⇒
+          val accessToken = {
+            import akka.http.scaladsl.server.Directives._
+            parameter('access_token.?)
           }
-          case None ⇒ reject(rejections: _*): Directive1[T]
-        }
+
+          accessToken.flatMap {
+            case cred @ Some(_) ⇒ onSuccess(authenticator(Credentials(cred.map(OAuth2BearerToken)))).flatMap {
+              case Some(t) ⇒ provide(t)
+              case None    ⇒ reject(AuthenticationFailedRejection(CredentialsRejected, HttpChallenges.oAuth2(realm))): Directive1[T]
+            }
+            case None ⇒ reject(rejections: _*): Directive1[T]
+          }
+      }
     }
 
   /**
