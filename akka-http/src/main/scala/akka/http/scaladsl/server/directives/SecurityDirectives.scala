@@ -143,7 +143,7 @@ trait SecurityDirectives {
    *
    * @group security
    */
-  def authenticateOAuth2Async[T](realm: String, authenticator: AsyncAuthenticator[T]): AuthenticationDirective[T] = {
+  def authenticateOAuth2Async[T](realm: String, authenticator: AsyncAuthenticator[T]): AuthenticationDirective[T] =
     extractExecutionContext.flatMap { implicit ec ⇒
       authenticateOrRejectWithChallenge[OAuth2BearerToken, T] { cred ⇒
         authenticator(Credentials(cred)).fast.map {
@@ -166,7 +166,6 @@ trait SecurityDirectives {
           case None ⇒ reject(rejections: _*): Directive1[T]
         }
     }
-  }
 
   /**
    * A directive that wraps the inner route with OAuth2 Bearer Token authentication support.
