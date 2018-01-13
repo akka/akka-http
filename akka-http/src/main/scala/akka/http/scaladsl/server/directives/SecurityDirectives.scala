@@ -152,6 +152,7 @@ trait SecurityDirectives {
 
       accessToken.flatMap { uriCred ⇒
         authenticateOrRejectWithChallenge[OAuth2BearerToken, T] { headerCred ⇒
+          // If `Authorization` header is missing take URI's `access_token` query parameter
           val cred = headerCred.orElse(uriCred.map(OAuth2BearerToken))
           authenticator(Credentials(cred)).fast.map {
             case Some(t) ⇒ AuthenticationResult.success(t)
