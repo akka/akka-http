@@ -74,10 +74,10 @@ trait SecurityDirectives {
    * @group security
    */
   def extractCredentials: Directive1[Option[HttpCredentials]] = {
-    optionalHeaderValueByType[Authorization](()).map(_.map(_.credentials)).flatMap { cred ⇒
+    optionalHeaderValueByType[Authorization](()).map(_.map(_.credentials)).flatMap { headerCred ⇒
       import akka.http.scaladsl.server.Directives._
-      parameter('access_token.?).map { a ⇒
-        cred.orElse(a.map(OAuth2BearerToken))
+      parameter('access_token.?).map { uriCred ⇒
+        headerCred.orElse(uriCred.map(OAuth2BearerToken))
       }
     }
   }
