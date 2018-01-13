@@ -68,12 +68,19 @@ trait SecurityDirectives {
   //#async-authenticator-pf
 
   /**
-   * Extracts the potentially present [[HttpCredentials]] provided with the request's [[Authorization]] header.
+   * Extracts the potentially present [[HttpCredentials]] provided with the request's [[Authorization]] header or
+   * `access_token` URI query component.
    *
    * @group security
    */
-  def extractCredentials: Directive1[Option[HttpCredentials]] =
-    optionalHeaderValueByType[Authorization](()).map(_.map(_.credentials))
+  def extractCredentials: Directive1[Option[HttpCredentials]] = {
+    optionalHeaderValueByType[Authorization](()).map(_.map(_.credentials)).flatMap { cred ⇒
+      import akka.http.scaladsl.server.Directives._
+      parameter('access_token.?).map { a ⇒
+        cred.orElse(a.map(OAuth2BearerToken))
+      }
+    }
+  }
 
   /**
    * Wraps the inner route with Http Basic authentication support using a given `Authenticator[T]`.
@@ -150,20 +157,6 @@ trait SecurityDirectives {
           case Some(t) ⇒ AuthenticationResult.success(t)
           case None    ⇒ AuthenticationResult.failWithChallenge(HttpChallenges.oAuth2(realm))
         }
-      }.recoverPF {
-        case rejections: Seq[Rejection] ⇒
-          val accessToken = {
-            import akka.http.scaladsl.server.Directives._
-            parameter('access_token.?)
-          }
-
-          accessToken.flatMap {
-            case cred @ Some(_) ⇒ onSuccess(authenticator(Credentials(cred.map(OAuth2BearerToken)))).flatMap {
-              case Some(t) ⇒ provide(t)
-              case None    ⇒ reject(AuthenticationFailedRejection(CredentialsRejected, HttpChallenges.oAuth2(realm))): Directive1[T]
-            }
-            case None ⇒ reject(rejections: _*): Directive1[T]
-          }
       }
     }
 
