@@ -10,7 +10,7 @@ import java.io.File
 import java.nio.file.Path
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.Optional
-import java.util.concurrent.CompletionStage
+import java.util.concurrent.{ CompletionStage, Executor, TimeUnit }
 
 import scala.compat.java8.FutureConverters
 import scala.concurrent.duration.FiniteDuration
@@ -27,6 +27,8 @@ import akka.http.scaladsl.util.FastFuture._
 import headers._
 
 import scala.annotation.tailrec
+import scala.compat.java8.FutureConverters._
+import scala.concurrent.duration._
 
 /**
  * Common base class of HttpRequest and HttpResponse.
@@ -165,6 +167,16 @@ sealed trait HttpMessage extends jm.HttpMessage {
   }
   /** Java API */
   def addHeaders(headers: JIterable[jm.HttpHeader]): Self = mapHeaders(_ ++ headers.asScala.asInstanceOf[Iterable[HttpHeader]])
+  /** Java API */
+  def withHeaders(headers: JIterable[jm.HttpHeader]): Self = {
+    import JavaMapping.Implicits._
+    withHeaders(headers.asScala.toVector.map(_.asScala))
+  }
+  /** Java API */
+  def toStrict(timeoutMillis: Long, ec: Executor, materializer: Materializer): CompletionStage[Self] = {
+    val ex = ExecutionContext.fromExecutor(ec)
+    toStrict(timeoutMillis.millis)(ex, materializer).toJava
+  }
 }
 
 object HttpMessage {
@@ -423,12 +435,13 @@ final class HttpResponse(
   override def isRequest = false
   override def isResponse = true
 
-  override def withHeaders(headers: immutable.Seq[HttpHeader]) =
+  override def withHeaders(headers: immutable.Seq[HttpHeader]): HttpResponse =
     if (headers eq this.headers) this else copy(headers = headers)
 
-  override def withProtocol(protocol: akka.http.javadsl.model.HttpProtocol): akka.http.javadsl.model.HttpResponse = copy(protocol = protocol.asInstanceOf[HttpProtocol])
-  override def withStatus(statusCode: Int): akka.http.javadsl.model.HttpResponse = copy(status = statusCode)
-  override def withStatus(statusCode: akka.http.javadsl.model.StatusCode): akka.http.javadsl.model.HttpResponse = copy(status = statusCode.asInstanceOf[StatusCode])
+  override def withProtocol(protocol: akka.http.javadsl.model.HttpProtocol): akka.http.javadsl.model.HttpResponse = withProtocol(protocol.asInstanceOf[HttpProtocol])
+  def withProtocol(protocol: HttpProtocol): HttpResponse = copy(protocol = protocol)
+  override def withStatus(statusCode: Int): HttpResponse = copy(status = statusCode)
+  override def withStatus(statusCode: akka.http.javadsl.model.StatusCode): HttpResponse = copy(status = statusCode.asInstanceOf[StatusCode])
 
   override def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: MessageEntity): HttpResponse = withHeadersAndEntity(headers, entity: ResponseEntity)
   def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: ResponseEntity): HttpResponse = copy(headers = headers, entity = entity)

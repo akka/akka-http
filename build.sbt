@@ -44,7 +44,8 @@ inThisBuild(Def.settings(
   testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v"),
   Dependencies.Versions,
   Formatting.formatSettings,
-  shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
+  shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
+  concurrentRestrictions in Global += Tags.limit(Tags.Test, 1)
 ))
 
 lazy val root = Project(
@@ -75,9 +76,8 @@ lazy val root = Project(
 lazy val parsing = project("akka-parsing")
   .addAkkaModuleDependency("akka-actor", "provided")
   .settings(Dependencies.parsing)
-  .settings(OSGi.parsing)
   .settings(
-    scalacOptions := scalacOptions.value.filterNot(_ == "-Xfatal-warnings"),
+    scalacOptions := scalacOptions.value.filterNot(Set("-Xfatal-warnings", "-Xlint", "-Ywarn-dead-code").contains), // disable warnings for parboiled code
     scalacOptions += "-language:_",
     unmanagedSourceDirectories in ScalariformKeys.format in Test := (unmanagedSourceDirectories in Test).value
   )
@@ -89,7 +89,6 @@ lazy val httpCore = project("akka-http-core")
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
   .settings(Dependencies.httpCore)
-  .settings(OSGi.httpCore)
   .settings(VersionGenerator.versionSettings)
   .enablePlugins(BootstrapGenjavadoc)
 
@@ -97,7 +96,6 @@ lazy val http = project("akka-http")
   .dependsOn(httpCore)
   .addAkkaModuleDependency("akka-stream", "provided")
   .settings(Dependencies.http)
-  .settings(OSGi.http)
   .settings(
     scalacOptions in Compile += "-language:_"
   )
@@ -109,7 +107,6 @@ lazy val http2Support = project("akka-http2-support")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
   .settings(Dependencies.http2)
   .settings(Dependencies.http2Support)
-  .settings(OSGi.http2Support)
   .settings {
     lazy val h2specPath = Def.task {
       (target in Test).value / h2specName / h2specExe
@@ -148,7 +145,6 @@ lazy val httpTestkit = project("akka-http-testkit")
   .dependsOn(http)
   .addAkkaModuleDependency("akka-stream-testkit")
   .settings(Dependencies.httpTestkit)
-  .settings(OSGi.httpTestkit)
   .settings(
     // don't ignore Suites which is the default for the junit-interface
     testOptions += Tests.Argument(TestFrameworks.JUnit, "--ignore-runners="),
@@ -171,6 +167,7 @@ lazy val httpTests = project("akka-http-tests")
 
 lazy val httpJmhBench = project("akka-http-bench-jmh")
   .dependsOn(http)
+  .addAkkaModuleDependency("akka-stream")
   .enablePlugins(JmhPlugin)
   .enablePlugins(NoPublish).disablePlugins(BintrayPlugin) // don't release benchs
   .disablePlugins(MimaPlugin)
@@ -184,13 +181,11 @@ lazy val httpXml =
   httpMarshallersScalaSubproject("xml")
     .addAkkaModuleDependency("akka-stream", "provided")
     .settings(Dependencies.httpXml)
-    .settings(OSGi.httpXml)
 
 lazy val httpSprayJson =
   httpMarshallersScalaSubproject("spray-json")
     .addAkkaModuleDependency("akka-stream", "provided")
     .settings(Dependencies.httpSprayJson)
-    .settings(OSGi.httpSprayJson)
 
 lazy val httpMarshallersJava = project("akka-http-marshallers-java")
   .enablePlugins(NoPublish)
@@ -201,7 +196,6 @@ lazy val httpJackson =
   httpMarshallersJavaSubproject("jackson")
     .addAkkaModuleDependency("akka-stream", "provided")
     .settings(Dependencies.httpJackson)
-    .settings(OSGi.httpJackson)
     .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 lazy val httpCaching = project("akka-http-caching")
@@ -240,7 +234,7 @@ lazy val docs = project("docs")
   .settings(
     name := "akka-http-docs",
     resolvers += Resolver.jcenterRepo,
-    paradoxGroups := Map("Languages" -> Seq("Scala", "Java")),
+    paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     paradoxProperties in Compile ++= Map(
       "project.name" -> "Akka HTTP",
       "akka.version" -> Dependencies.akkaVersion.value,
@@ -279,6 +273,6 @@ lazy val docs = project("docs")
     additionalTasks in ValidatePR += paradox in Compile,
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka-http/${version.value}")
   )
-  .settings(ParadoxSupport.paradoxWithSignatureDirective)
+  .settings(ParadoxSupport.paradoxWithCustomDirectives)
 
 def hasCommitsAfterTag(description: Option[GitDescribeOutput]): Boolean = description.get.commitSuffix.distance > 0
