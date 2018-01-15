@@ -452,10 +452,6 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         pushInput(closeFrame(Protocol.CloseCodes.Regular, mask = true))
         expectComplete(messageIn)
 
-        netIn.expectNoMsg(100.millis.dilated) // especially the cancellation not yet
-        expectNoNetworkData()
-        messageOut.sendComplete()
-
         expectCloseCodeOnNetwork(Protocol.CloseCodes.Regular)
         netOut.expectComplete()
         netIn.expectCancellation()
@@ -481,34 +477,9 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         pushInput(closeFrame(Protocol.CloseCodes.Regular, mask = true))
         expectComplete(messageIn)
 
-        netIn.expectNoMsg(100.millis.dilated) // especially the cancellation not yet
-        expectNoNetworkData()
-        messageOut.sendComplete()
-
         expectCloseCodeOnNetwork(Protocol.CloseCodes.Regular)
         netOut.expectComplete()
         netIn.expectCancellation()
-      }
-      "after receiving regular close frame when idle (user still sends some data)" in new ServerTestSetup {
-        pushInput(closeFrame(Protocol.CloseCodes.Regular, mask = true))
-        expectComplete(messageIn)
-
-        // sending another message is allowed before closing (inherently racy)
-        val pub = TestPublisher.manualProbe[ByteString]()
-        val msg = BinaryMessage(Source.fromPublisher(pub))
-        pushMessage(msg)
-
-        val data = ByteString("abc", "ASCII")
-        val dataSub = pub.expectSubscription()
-        dataSub.sendNext(data)
-        expectFrameOnNetwork(Opcode.Binary, data, fin = false)
-
-        dataSub.sendComplete()
-        expectFrameOnNetwork(Opcode.Continuation, ByteString.empty, fin = true)
-
-        messageOut.sendComplete()
-        expectCloseCodeOnNetwork(Protocol.CloseCodes.Regular)
-        netOut.expectComplete()
       }
       "after receiving regular close frame when fragmented message is still open" in new ServerTestSetup {
         pushInput(frameHeader(Protocol.Opcode.Binary, 0, fin = false, mask = Some(Random.nextInt())))
@@ -530,23 +501,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         // could be seen as something being amiss.
         expectError(messageIn)
         inSubscriber.expectError()
-        // truncation of open message
 
-        // sending another message is allowed before closing (inherently racy)
-
-        val pub = TestPublisher.manualProbe[ByteString]()
-        val msg = BinaryMessage(Source.fromPublisher(pub))
-        pushMessage(msg)
-
-        val data = ByteString("abc", "ASCII")
-        val dataSub = pub.expectSubscription()
-        dataSub.sendNext(data)
-        expectFrameOnNetwork(Opcode.Binary, data, fin = false)
-
-        dataSub.sendComplete()
-        expectFrameOnNetwork(Opcode.Continuation, ByteString.empty, fin = true)
-
-        messageOut.sendComplete()
         expectCloseCodeOnNetwork(Protocol.CloseCodes.Regular)
         netOut.expectComplete()
 

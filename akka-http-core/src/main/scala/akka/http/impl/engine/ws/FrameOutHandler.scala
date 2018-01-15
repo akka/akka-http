@@ -42,10 +42,6 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
         grab(in) match {
           case start: FrameStart   ⇒ push(out, start)
           case DirectAnswer(frame) ⇒ push(out, frame)
-          case PeerClosed(code, reason) if !code.exists(Protocol.CloseCodes.isError) ⇒
-            // let user complete it, FIXME: maybe make configurable? immediately, or timeout
-            setHandler(in, new WaitingForUserHandlerClosed(FrameEvent.closeFrame(code.getOrElse(Protocol.CloseCodes.Regular), reason)))
-            pull(in)
           case PeerClosed(code, reason) ⇒
             val closeFrame = FrameEvent.closeFrame(code.getOrElse(Protocol.CloseCodes.Regular), reason)
             if (serverSide) {
