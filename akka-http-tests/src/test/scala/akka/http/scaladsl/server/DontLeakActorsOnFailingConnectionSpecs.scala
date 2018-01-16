@@ -50,7 +50,6 @@ abstract class DontLeakActorsOnFailingConnectionSpecs(poolImplementation: String
         val port = 86 // (Micro Focus Cobol) unlikely to be used port in the "system ports" range
         val source = Source(1 to reqsCount)
           .map(i ⇒ HttpRequest(uri = Uri(s"http://$host:$port/test/$i")) → i)
-          .log("whatever")
 
         val countDown = new CountDownLatch(reqsCount)
         val sink = Sink.foreach[(Try[HttpResponse], Int)] {
