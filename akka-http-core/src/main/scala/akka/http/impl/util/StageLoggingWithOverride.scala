@@ -1,5 +1,8 @@
 /*
  * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ *
+ * Copied and adapted from akka-remote
+ * https://github.com/akka/akka/blob/c90121485fcfc44a3cee62a0c638e1982d13d812/akka-remote/src/main/scala/akka/remote/artery/StageLogging.scala
  */
 
 package akka.http.impl.util
@@ -15,9 +18,6 @@ import akka.event.NoLogging
 // but we need a few more changes to be able to override the default logger. So for now we keep it here.
 /**
  * INTERNAL API
- *
- * Copied and adapted from akka-remote
- * https://github.com/akka/akka/blob/c90121485fcfc44a3cee62a0c638e1982d13d812/akka-remote/src/main/scala/akka/remote/artery/StageLogging.scala
  */
 @InternalApi
 private[akka] trait StageLoggingWithOverride { self: GraphStageLogic ⇒
