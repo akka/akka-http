@@ -32,7 +32,8 @@ object CopyrightHeader extends AutoPlugin {
   )
 
   val CurrentYear = java.time.Year.now.getValue.toString
-  val CopyrightPattern = "(?s).* Copyright \\([Cc]\\) (\\d{4}(-\\d{4})?) (Lightbend|Typesafe) Inc.*".r
+  val CopyrightPattern = "Copyright \\([Cc]\\) (\\d{4}(-\\d{4})?) (Lightbend|Typesafe) Inc. <.*>".r
+  val CopyrightHeaderPattern = s"(?s).*${CopyrightPattern}.*".r
 
   def headerFor(year: String): String =
     s"Copyright (C) $year Lightbend Inc. <https://www.lightbend.com>"
@@ -41,17 +42,22 @@ object CopyrightHeader extends AutoPlugin {
     import HeaderCommentStyle.cStyleBlockComment.commentCreator
 
     def updateLightbendHeader(header: String): String = header match {
-      case CopyrightPattern(years, null, _)     =>
-        if (years != CurrentYear) commentCreator(headerFor(years + "-" + CurrentYear))
-        else commentCreator(headerFor(years))
-      case CopyrightPattern(years, endYears, _) => commentCreator(headerFor(years.replace(endYears, "-" + CurrentYear)))
-      case _                                    => header.trim
+      case CopyrightHeaderPattern(years, null, _) =>
+        if (years != CurrentYear)
+          CopyrightPattern.replaceFirstIn(header, headerFor(years + "-" + CurrentYear))
+        else
+          CopyrightPattern.replaceFirstIn(header, headerFor(years))
+      case CopyrightHeaderPattern(years, endYears, _) =>
+        CopyrightPattern.replaceFirstIn(header, headerFor(years.replace(endYears, "-" + CurrentYear)))
+      case _ =>
+        header
     }
 
     override def apply(text: String, existingText: Option[String]): String = {
       existingText
         .map(updateLightbendHeader)
         .getOrElse(commentCreator(text, existingText))
+        .trim
     }
   })
 }
