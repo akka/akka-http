@@ -36,6 +36,8 @@ object AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeConfig {
         actor.warn-about-java-serializer-usage = off
         stream.materializer.debug.fuzzing-mode = off
 
+        actor.serialize-creators = off
+
         testconductor.barrier-timeout = 30m
         
         test.AkkaHttpServerLatencySpec {
