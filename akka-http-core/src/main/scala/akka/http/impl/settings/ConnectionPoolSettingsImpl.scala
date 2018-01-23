@@ -52,11 +52,11 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   override def productPrefix = "ConnectionPoolSettings"
 
   private def suggestPowerOfTwo(around: Int): String = {
-    @annotation.tailrec
-    def findAbove(n: Int = 2): Int = if (n > around) n else findAbove(n * 2)
+    val firstBit = 31 - Integer.numberOfLeadingZeros(around)
 
-    val above = findAbove()
-    val below = above / 2
+    val below = 1 << firstBit
+    val above = 1 << (firstBit + 1)
+
     s"Perhaps try $below or $above."
   }
 }

@@ -35,10 +35,13 @@ class ConnectionPoolSettingsSpec extends AkkaSpec {
       config("akka.http.host-connection-pool.max-open-requests = 1").maxOpenRequests should be(1)
     }
     "produce a nice error message when max-open-requests" in {
-      Try(config("akka.http.host-connection-pool.max-open-requests = 100")) match {
-        case Failure(cause) ⇒ cause.getMessage should include("Perhaps try 64 or 128")
-        case Success(_)     ⇒ fail("Expected a failure when max-open-requests is not a power of 2")
-      }
+      expectError("akka.http.host-connection-pool.max-open-requests = 10") should include("Perhaps try 8 or 16")
+      expectError("akka.http.host-connection-pool.max-open-requests = 100") should include("Perhaps try 64 or 128")
+      expectError("akka.http.host-connection-pool.max-open-requests = 1000") should include("Perhaps try 512 or 1024")
+    }
+    def expectError(configString: String): String = Try(config(configString)) match {
+      case Failure(cause) ⇒ cause.getMessage
+      case Success(_)     ⇒ fail("Expected a failure when max-open-requests is not a power of 2")
     }
   }
 
