@@ -31,6 +31,9 @@ class ConnectionPoolSettingsSpec extends AkkaSpec {
       settings.connectionSettings.userAgentHeader shouldEqual Some(`User-Agent`.parseFromValueString("serva/5.7").right.get)
       settings.connectionSettings.requestHeaderSizeHint shouldEqual 1024 // still fall back
     }
+    "allow max-open-requests = 1" in {
+      config("akka.http.host-connection-pool.max-open-requests = 1").maxOpenRequests should be(1)
+    }
     "produce a nice error message when max-open-requests" in {
       Try(config("akka.http.host-connection-pool.max-open-requests = 100")) match {
         case Failure(cause) ⇒ cause.getMessage should include("Perhaps try 64 or 128")
