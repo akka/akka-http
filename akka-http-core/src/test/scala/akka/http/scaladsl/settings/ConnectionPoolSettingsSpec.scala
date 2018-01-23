@@ -4,6 +4,9 @@
 
 package akka.http.scaladsl.settings
 
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 import akka.testkit.AkkaSpec
 import akka.http.scaladsl.model.headers.`User-Agent`
 
@@ -27,6 +30,12 @@ class ConnectionPoolSettingsSpec extends AkkaSpec {
 
       settings.connectionSettings.userAgentHeader shouldEqual Some(`User-Agent`.parseFromValueString("serva/5.7").right.get)
       settings.connectionSettings.requestHeaderSizeHint shouldEqual 1024 // still fall back
+    }
+    "produce a nice error message when max-open-requests" in {
+      Try(config("akka.http.host-connection-pool.max-open-requests = 100")) match {
+        case Failure(cause) ⇒ cause.getMessage should include("Perhaps try 64 or 128")
+        case Success(_)     ⇒ fail("Expected a failure when max-open-requests is not a power of 2")
+      }
     }
   }
 

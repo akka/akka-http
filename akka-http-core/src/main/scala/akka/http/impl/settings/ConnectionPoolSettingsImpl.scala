@@ -44,11 +44,21 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   require(minConnections >= 0, "min-connections must be >= 0")
   require(minConnections <= maxConnections, "min-connections must be <= max-connections")
   require(maxRetries >= 0, "max-retries must be >= 0")
-  require(maxOpenRequests > 0 && (maxOpenRequests & (maxOpenRequests - 1)) == 0, "max-open-requests must be a power of 2 > 0")
+  require(maxOpenRequests > 0, "max-open-requests must be a power of 2 > 0.")
+  require((maxOpenRequests & (maxOpenRequests - 1)) == 0, "max-open-requests must be a power of 2. " + suggestPowerOfTwo(maxOpenRequests))
   require(pipeliningLimit > 0, "pipelining-limit must be > 0")
   require(idleTimeout >= Duration.Zero, "idle-timeout must be >= 0")
 
   override def productPrefix = "ConnectionPoolSettings"
+
+  private def suggestPowerOfTwo(around: Int): String = {
+    @annotation.tailrec
+    def findAbove(n: Int = 2): Int = if (n > around) n else findAbove(n * 2)
+
+    val above = findAbove()
+    val below = above / 2
+    s"Perhaps try $below or $above."
+  }
 }
 
 object ConnectionPoolSettingsImpl extends SettingsCompanion[ConnectionPoolSettingsImpl]("akka.http.host-connection-pool") {
