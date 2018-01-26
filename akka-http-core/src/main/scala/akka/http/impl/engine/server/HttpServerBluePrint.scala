@@ -315,7 +315,7 @@ private[http] object HttpServerBluePrint {
     }
 
     override def apply(request: HttpRequest) = {
-      log.info("Request [{}] is timed out", request.debugString)
+      log.info("Request timeout encountered for request [{}]", request.debugString)
       //#default-request-timeout-httpresponse
       HttpResponse(StatusCodes.ServiceUnavailable, entity = "The server was not able " +
         "to produce a timely response to your request.\r\nPlease try again in a short while!")
