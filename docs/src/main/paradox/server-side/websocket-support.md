@@ -63,7 +63,7 @@ values of @scala[`UpgradeToWebSocket.requestedProtocols`]@java[`UpgradeToWebSock
 
 ### Handling Messages
 
-A message handler is expected to be implemented as a @scala[`Flow[Message, Message, Any]]]@java[@unidoc[Flow[Message, Message, ?]]]. For typical request-response
+A message handler is expected to be implemented as a @scala[@unidoc[Flow[Message, Message, Any]]]@java[@unidoc[Flow[Message, Message, ?]]]. For typical request-response
 scenarios this fits very well and such a @unidoc[Flow] can be constructed from a simple function by using
 @scala[`Flow[Message].map` or `Flow[Message].mapAsync`]@java[`Flow.<Message>create().map` or `Flow.<Message>create().mapAsync`].
 
