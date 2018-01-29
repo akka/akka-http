@@ -258,8 +258,8 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
       "with incorrect but harmless whitespace after chunk size" in new Test {
         Seq(
           start,
-          """0  
-            |
+          "0\u0020\u0020" +
+         """|
             |""") should generalMultiParseTo(
             Right(baseRequest.withEntity(Chunked(`application/pdf`, source(LastChunk)))))
         closeAfterResponseCompletion shouldEqual Seq(false)
