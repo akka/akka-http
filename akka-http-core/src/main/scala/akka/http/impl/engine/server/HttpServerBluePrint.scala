@@ -305,6 +305,8 @@ private[http] object HttpServerBluePrint {
     extends AtomicReference[Future[TimeoutSetup]] with TimeoutAccess with (HttpRequest ⇒ HttpResponse) { self ⇒
     import materializer.executionContext
 
+    private var currentTimeout = initialTimeout
+
     initialTimeout match {
       case timeout: FiniteDuration ⇒ set {
         requestEnd.fast.map(_ ⇒ new TimeoutSetup(Deadline.now, schedule(timeout, this), timeout, this))
@@ -338,6 +340,7 @@ private[http] object HttpServerBluePrint {
               case x: FiniteDuration ⇒ schedule(old.timeoutBase + x - Deadline.now, newHandler)
               case _                 ⇒ null // don't schedule a new timeout
             }
+            currentTimeout = newTimeout
             new TimeoutSetup(old.timeoutBase, newScheduling, newTimeout, newHandler)
           } else old // too late, the previously set timeout cannot be cancelled anymore
         }
@@ -351,6 +354,8 @@ private[http] object HttpServerBluePrint {
       update(timeout, handler(_: HttpRequest).asScala)
     def updateHandler(handler: Function[model.HttpRequest, model.HttpResponse]): Unit =
       updateHandler(handler(_: HttpRequest).asScala)
+
+    def getTimeout = currentTimeout
   }
 
   class ControllerStage(settings: ServerSettings, log: LoggingAdapter)

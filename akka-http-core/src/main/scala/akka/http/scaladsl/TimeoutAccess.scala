@@ -13,6 +13,16 @@ import akka.http.scaladsl.model.{ HttpResponse, HttpRequest }
 trait TimeoutAccess extends akka.http.javadsl.TimeoutAccess {
 
   /**
+   * Returns the currently set timeout.
+   * The timeout period is measured as of the point in time that the end of the request has been received,
+   * which may be in the past or in the future!
+   *
+   * Due to the inherent raciness it is not guaranteed that the returned timeout was applied before
+   * the previously set timeout has expired!
+   */
+  def getTimeout: Duration
+
+  /**
    * Tries to set a new timeout.
    * The timeout period is measured as of the point in time that the end of the request has been received,
    * which may be in the past or in the future!

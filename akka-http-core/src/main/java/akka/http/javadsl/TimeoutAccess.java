@@ -15,6 +15,16 @@ import scala.concurrent.duration.Duration;
 public interface TimeoutAccess {
 
   /**
+   * Returns the currently set timeout.
+   * The timeout period is measured as of the point in time that the end of the request has been received,
+   * which may be in the past or in the future!
+   *
+   * Due to the inherent raciness it is not guaranteed that the returned timeout was applied before
+   * the previously set timeout has expired!
+   */
+  Duration getTimeout();
+
+  /**
    * Tries to set a new timeout.
    * The timeout period is measured as of the point in time that the end of the request has been received,
    * which may be in the past or in the future!
