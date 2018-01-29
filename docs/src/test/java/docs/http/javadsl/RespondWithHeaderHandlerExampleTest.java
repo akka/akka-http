@@ -54,7 +54,10 @@ public class RespondWithHeaderHandlerExampleTest extends JUnitSuite {
 
             return respondWithHeader(RawHeader.create("X-Outer-Header", "outer"), () -> //will apply for handled exceptions
                     handleExceptions(divByZeroHandler, () -> route(
-                            path("greetings", () -> complete("Hello!")),
+                            path("greetings", () -> {
+                                println(s"Request to $uri could not be handled normally")
+                                return complete("Hello!"))
+                            },
                             path("divide", () -> complete("Dividing with zero: " + (1 / 0))),
                             respondWithHeader(RawHeader.create("X-Inner-Header", "inner"), () -> {
                                 throw new RuntimeException("Boom!"); //Will cause Internal server error,
