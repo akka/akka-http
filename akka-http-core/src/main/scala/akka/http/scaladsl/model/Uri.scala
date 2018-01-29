@@ -499,7 +499,7 @@ object Uri {
     def reverse: Path = reverseAndPrependTo(Path.Empty)
     def reverseAndPrependTo(prefix: Path): Path
     def /(segment: String): Path = this ++ Path.Slash(segment :: Path.Empty)
-    def ?/(segment: String): Path = if (this.endsWithSlash) this + segment else this /
+    def ?/(segment: String): Path = if (this.endsWithSlash) this + segment else this / segment
 
     def startsWith(that: Path): Boolean
     def dropChars(count: Int): Path
