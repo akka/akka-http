@@ -1,3 +1,6 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <http://www.lightbend.com>
+ */
 package docs.http.javadsl;
 
 //#respond-with-header-exceptionhandler-example
@@ -51,7 +54,7 @@ public class RespondWithHeaderHandlerExampleTest extends JUnitSuite {
 
             return respondWithHeader(RawHeader.create("X-Outer-Header", "outer"), () -> //will apply for handled exceptions
                     handleExceptions(divByZeroHandler, () -> route(
-                            path("greetings", () -> complete("Hello! ")),
+                            path("greetings", () -> complete("Hello!")),
                             path("divide", () -> complete("Dividing with zero: " + (1 / 0))),
                             respondWithHeader(RawHeader.create("X-Inner-Header", "inner"), () -> {
                                 throw new RuntimeException("Boom!"); //Will cause Internal server error,
