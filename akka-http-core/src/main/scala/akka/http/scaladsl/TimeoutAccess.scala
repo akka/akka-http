@@ -20,7 +20,10 @@ trait TimeoutAccess extends akka.http.javadsl.TimeoutAccess {
    * Due to the inherent raciness it is not guaranteed that the returned timeout was applied before
    * the previously set timeout has expired!
    */
-  def getTimeout: Duration
+  def timeout: Duration
+
+  // javadsl
+  def getTimeout: Duration = timeout
 
   /**
    * Tries to set a new timeout.

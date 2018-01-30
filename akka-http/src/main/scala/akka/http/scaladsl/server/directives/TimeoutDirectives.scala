@@ -15,6 +15,13 @@ import scala.concurrent.duration.Duration
  */
 trait TimeoutDirectives {
 
+  /**
+   * Return the currently set request timeout.
+   *
+   * Note that this may be changed in inner directives.
+   *
+   * @group timeout
+   */
   def extractRequestTimeout: Directive1[Duration] = Directive { inner ⇒ ctx ⇒
     val timeout = ctx.request.header[`Timeout-Access`] match {
       case Some(t) ⇒ t.timeoutAccess.getTimeout

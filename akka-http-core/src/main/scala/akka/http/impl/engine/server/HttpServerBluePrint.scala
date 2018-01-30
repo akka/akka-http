@@ -355,7 +355,7 @@ private[http] object HttpServerBluePrint {
     def updateHandler(handler: Function[model.HttpRequest, model.HttpResponse]): Unit =
       updateHandler(handler(_: HttpRequest).asScala)
 
-    def getTimeout = currentTimeout
+    def timeout = currentTimeout
   }
 
   class ControllerStage(settings: ServerSettings, log: LoggingAdapter)
