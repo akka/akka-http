@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -499,6 +499,8 @@ object Uri {
     def reverse: Path = reverseAndPrependTo(Path.Empty)
     def reverseAndPrependTo(prefix: Path): Path
     def /(segment: String): Path = this ++ Path.Slash(segment :: Path.Empty)
+    def ?/(segment: String): Path = if (this.endsWithSlash) this + segment else this / segment
+
     def startsWith(that: Path): Boolean
     def dropChars(count: Int): Path
     override def toString = UriRendering.PathRenderer.render(new StringRendering, this).get

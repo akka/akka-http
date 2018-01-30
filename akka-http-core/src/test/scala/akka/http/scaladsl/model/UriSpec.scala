@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -255,6 +255,10 @@ class UriSpec extends WordSpec with Matchers {
       Path("/abc").endsWithSlash shouldBe false
       Path("/abc/def").endsWithSlash shouldBe false
       Path("/abc/def/").endsWithSlash shouldBe true
+    }
+    "support the `?/` operator" in {
+      Path("abc") ?/ "def" shouldEqual Path("abc/def")
+      Path("abc/") ?/ "def" shouldEqual Path("abc/def")
     }
     "support the `dropChars` modifier" in {
       Path./.dropChars(0) shouldEqual Path./

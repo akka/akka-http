@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.examples.simple;
@@ -87,7 +87,7 @@ public class SimpleServerApp extends AllDirectives { // or import Directives.*
         ),
         path(PathMatchers.segment("multiplyAsync").slash(integerSegment()).slash(integerSegment()), (x, y) ->
           extractExecutionContext(ctx ->
-            onSuccess(() -> multiplyAsync(ctx, x, y), Function.identity())
+            onSuccess(multiplyAsync(ctx, x, y), Function.identity())
           )
         ),
         post(() ->

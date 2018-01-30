@@ -1,21 +1,26 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.http.impl.engine.http2
 
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
 import java.net.InetSocketAddress
 import java.nio.ByteOrder
+import javax.net.ssl.SSLContext
 
 import akka.NotUsed
 import akka.http.impl.engine.http2.Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
 import akka.http.impl.engine.http2.framing.FrameRenderer
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.engine.ws.ByteStringSinkProbe
-import akka.http.impl.util.{ StreamUtils, StringRendering }
+import akka.http.impl.util.{ StreamUtils, StringRendering, WithLogCapturing }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ CacheDirectives, RawHeader }
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.impl.io.ByteStringParser.ByteReader
-import akka.stream.scaladsl.{ BidiFlow, Flow, Sink, Source }
+import akka.stream.scaladsl.{ BidiFlow, Flow, Sink, Source, TLSPlacebo }
 import akka.stream.testkit.TestPublisher.ManualProbe
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.stream.{ ActorMaterializer, Materializer }
@@ -33,10 +38,11 @@ import scala.util.control.NoStackTrace
 
 class Http2ServerSpec extends AkkaSpec("""
     akka.loglevel = debug
+    akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
     
     akka.http.server.remote-address-header = on
   """)
-  with WithInPendingUntilFixed with Eventually {
+  with WithInPendingUntilFixed with Eventually with WithLogCapturing {
   implicit val mat = ActorMaterializer()
 
   "The Http/2 server implementation" should {
@@ -716,6 +722,24 @@ class Http2ServerSpec extends AkkaSpec("""
         remoteAddressHeader.address.getPort shouldBe thePort
       }
 
+      "expose Tls-Session-Info" in new TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
+        override def settings: ServerSettings =
+          super.settings.withParserSettings(super.settings.parserSettings.withIncludeTlsSessionInfoHeader(true))
+
+        lazy val expectedSession = SSLContext.getDefault.createSSLEngine.getSession
+        override def modifyServer(server: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed]) =
+          BidiFlow.fromGraph(StreamUtils.fuseAggressive(server).withAttributes(
+            HttpAttributes.tlsSessionInfo(expectedSession)
+          ))
+
+        val target = Uri("http://www.example.com/")
+        sendRequest(1, HttpRequest(uri = target))
+        requestIn.ensureSubscription()
+
+        val request = expectRequestRaw()
+        val tlsSessionInfoHeader = request.header[headers.`Tls-Session-Info`].get
+        tlsSessionInfoHeader.session shouldBe expectedSession
+      }
     }
 
     "must not swallow errors / warnings" in pending
@@ -732,8 +756,11 @@ class Http2ServerSpec extends AkkaSpec("""
     // hook to modify server, for example add attributes
     def modifyServer(server: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed]) = server
 
+    // hook to modify server settings
+    def settings = ServerSettings(system).withServerHeader(None)
+
     final def theServer: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
-      modifyServer(Http2Blueprint.serverStack(ServerSettings(system).withServerHeader(None), system.log))
+      modifyServer(Http2Blueprint.serverStack(settings, system.log))
 
     handlerFlow
       .join(theServer)

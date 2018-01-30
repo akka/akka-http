@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2014 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.settings
@@ -54,13 +54,16 @@ private[akka] final case class ParserSettingsImpl(
     headerValueCacheLimits.getOrElse(headerName, defaultHeaderValueCacheLimit)
 
   override def productPrefix = "ParserSettings"
+
+  // optimization: if we see the default value as defined below, we know it hasn't been changed
+  override def areNoCustomMediaTypesDefined: Boolean = customMediaTypes eq ParserSettingsImpl.noCustomMediaTypes
 }
 
 object ParserSettingsImpl extends SettingsCompanion[ParserSettingsImpl]("akka.http.parsing") {
 
   private[this] val noCustomMethods: String ⇒ Option[HttpMethod] = ConstantFun.scalaAnyToNone
   private[this] val noCustomStatusCodes: Int ⇒ Option[StatusCode] = ConstantFun.scalaAnyToNone
-  private[this] val noCustomMediaTypes: (String, String) ⇒ Option[MediaType] = ConstantFun.scalaAnyTwoToNone
+  private[ParserSettingsImpl] val noCustomMediaTypes: (String, String) ⇒ Option[MediaType] = ConstantFun.scalaAnyTwoToNone
 
   def fromSubConfig(root: Config, inner: Config) = {
     val c = inner.withFallback(root.getConfig(prefix))

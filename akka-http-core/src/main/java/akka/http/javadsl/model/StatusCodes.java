@@ -1,9 +1,10 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.model;
 
+import akka.annotation.ApiMayChange;
 import akka.http.impl.util.Util;
 import akka.http.scaladsl.model.StatusCodes$;
 
@@ -19,6 +20,9 @@ public final class StatusCodes {
     public static final StatusCode CONTINUE = akka.http.scaladsl.model.StatusCodes.Continue();
     public static final StatusCode SWITCHING_PROTOCOLS = akka.http.scaladsl.model.StatusCodes.SwitchingProtocols();
     public static final StatusCode PROCESSING = akka.http.scaladsl.model.StatusCodes.Processing();
+
+    @ApiMayChange
+    public static final StatusCode EARLY_HINTS = akka.http.scaladsl.model.StatusCodes.EarlyHints();
 
     public static final StatusCode OK = akka.http.scaladsl.model.StatusCodes.OK();
     public static final StatusCode CREATED = akka.http.scaladsl.model.StatusCodes.Created();
@@ -60,6 +64,7 @@ public final class StatusCodes {
     public static final StatusCode EXPECTATION_FAILED = akka.http.scaladsl.model.StatusCodes.ExpectationFailed();
     public static final StatusCode IM_A_TEAPOT = akka.http.scaladsl.model.StatusCodes.ImATeapot();
     public static final StatusCode ENHANCE_YOUR_CALM = akka.http.scaladsl.model.StatusCodes.EnhanceYourCalm();
+    public static final StatusCode MISDIRECTED_REQUEST = akka.http.scaladsl.model.StatusCodes.MisdirectedRequest();
     public static final StatusCode UNPROCESSABLE_ENTITY = akka.http.scaladsl.model.StatusCodes.UnprocessableEntity();
     public static final StatusCode LOCKED = akka.http.scaladsl.model.StatusCodes.Locked();
     public static final StatusCode FAILED_DEPENDENCY = akka.http.scaladsl.model.StatusCodes.FailedDependency();

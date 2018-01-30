@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server.directives;
@@ -55,11 +55,11 @@ public class FutureDirectivesExamplesTest extends JUnitRouteTest {
   public void testOnSuccess() {
     //#onSuccess
     final Route route = path("success", () ->
-      onSuccess(() -> CompletableFuture.supplyAsync(() -> "Ok"),
+      onSuccess(CompletableFuture.supplyAsync(() -> "Ok"),
         extraction -> complete(extraction)
       )
     ).orElse(path("failure", () ->
-      onSuccess(() -> CompletableFuture.supplyAsync(() -> {
+      onSuccess(CompletableFuture.supplyAsync(() -> {
           throw new RuntimeException();
         }),
         extraction -> complete("never reaches here"))

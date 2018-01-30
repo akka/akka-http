@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -243,8 +243,8 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
 
         // push single-byte ByteStrings without reading anything until it fails
         // this should be after the internal input buffers have filled up
-        eventually(PatienceConfiguration.Timeout(500.millis.dilated), PatienceConfiguration.Interval(1.milli.dilated)) {
-          the[AssertionError] thrownBy pushInput(ByteString("a"))
+        eventually(timeout(1.second.dilated), interval(10.millis)) {
+          an[AssertionError] should be thrownBy pushInput(ByteString("a"))
         }
       }
     }
