@@ -120,6 +120,14 @@ sealed trait HttpMessage extends jm.HttpMessage {
     }
   }
 
+  /** Returns all the headers of the given type **/
+  def headers[T >: Null <: jm.HttpHeader: ClassTag]: immutable.Seq[T] = {
+    val clazz = classTag[T].runtimeClass.asInstanceOf[Class[T]]
+    headers.collect {
+      case h if clazz.isInstance(h) ⇒ h.asInstanceOf[T]
+    }
+  }
+
   /**
    * Returns true if this message is an:
    *  - HttpRequest and the client does not want to reuse the connection after the response for this request has been received
@@ -159,6 +167,12 @@ sealed trait HttpMessage extends jm.HttpMessage {
       case OptionVal.Some(h) ⇒ Optional.of(h.asInstanceOf[T])
       case _                 ⇒ Optional.empty()
     }
+  /** Java API */
+  def getHeaders[T <: jm.HttpHeader](headerClass: Class[T]): JIterable[T] = {
+    headers.collect {
+      case h if headerClass.isInstance(h) ⇒ h.asInstanceOf[T]
+    }.asJava
+  }
   /** Java API */
   def getHeader(headerName: String): Optional[jm.HttpHeader] = {
     val lowerCased = headerName.toRootLowerCase
