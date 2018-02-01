@@ -4,8 +4,12 @@
 
 package akka
 
+import java.net.URL
+
 import sbt._
 import sbt.Keys._
+import sbt.librarymanagement.Artifact
+
 import scala.language.implicitConversions
 
 object Dependencies {
@@ -13,10 +17,11 @@ object Dependencies {
 
   val jacksonVersion = "2.9.2"
   val junitVersion = "4.12"
-  val h2specVersion = "1.5.0"
+  val h2specVersion = "2.1.0"
   val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
   val h2specExe = "h2spec" + DependencyHelpers.exeIfWindows
-  val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.zip"
+  val h2specExt = DependencyHelpers.extIfWindows
+  val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.${h2specExt}"
 
   val akka25Version = "2.5.8"
 
@@ -75,7 +80,13 @@ object Dependencies {
 
       // HTTP/2
       val alpnAgent    = "org.mortbay.jetty.alpn"      % "jetty-alpn-agent"             % "2.0.6"            % "test" // ApacheV2
-      val h2spec       = "io.github.summerwind"        % h2specName                     % h2specVersion      % "test" from(h2specUrl) // MIT
+      val h2spec       = "io.github.summerwind"        % h2specName                     % h2specVersion      % "test" artifacts(Artifact(h2specName,
+                                                                                                                                         h2specExt,
+                                                                                                                                         h2specExt,
+                                                                                                                                         None,
+                                                                                                                                         Vector.empty,
+                                                                                                                                         Some(new URL(h2specUrl))
+                                                                                                                                        )) // MIT
     }
   }
 
@@ -166,6 +177,12 @@ object DependencyHelpers {
     val os = System.getProperty("os.name").toLowerCase()
     if (os startsWith "win") ".exe"
     else ""
+  }
+
+  def extIfWindows: String = {
+    val os = System.getProperty("os.name").toLowerCase()
+    if (os startsWith "win") "zip"
+    else "tar.gz"
   }
 
 }
