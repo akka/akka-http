@@ -118,11 +118,10 @@ public class HttpServerActorInteractionExample extends AllDirectives {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .match(
-          HttpServerActorInteractionExample.Bid.class, bid -> {
-            bids.add(bid);
-            log.info("Bid complete: {}, {}", bid.userId, bid.offer);
-            })
+        .match(HttpServerActorInteractionExample.Bid.class, bid -> {
+          bids.add(bid);
+          log.info("Bid complete: {}, {}", bid.userId, bid.offer);
+        })
         .match(HttpServerActorInteractionExample.GetBids.class, m -> {
           sender().tell(new HttpServerActorInteractionExample.Bids(bids), self());
         })
