@@ -189,22 +189,22 @@ public class HttpClientExampleDocTest {
   // compile only test
   public void singleRequestInActorExample1() {
     //#single-request-in-actor-example
-      class SingleRequestInActorExample extends AbstractActor {
+    class SingleRequestInActorExample extends AbstractActor {
       final Http http = Http.get(context().system());
       final ExecutionContextExecutor dispatcher = context().dispatcher();
       final Materializer materializer = ActorMaterializer.create(context());
 
-       @Override
-       public Receive createReceive() {
-         return receiveBuilder()
-                 .match(String.class, url -> pipe(fetch(url), dispatcher).to(self()))
-                 .build();
-       }
+      @Override
+      public Receive createReceive() {
+        return receiveBuilder()
+          .match(String.class, url -> pipe(fetch(url), dispatcher).to(self()))
+          .build();
+      }
 
       CompletionStage<HttpResponse> fetch(String url) {
         return http.singleRequest(HttpRequest.create(url));
       }
-     }
+    }
     //#single-request-in-actor-example
   }
 
