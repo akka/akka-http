@@ -71,7 +71,7 @@ private[http2] object RequestParsing {
 
           val entity = subStream match {
             case s if s.data == Source.empty || contentLength == 0 ⇒ HttpEntity.Empty
-            case ByteHttp2SubStream(_, data) if contentLength > 0                       ⇒ HttpEntity.Default(contentType, contentLength, data)
+            case ByteHttp2SubStream(_, data) if contentLength > 0  ⇒ HttpEntity.Default(contentType, contentLength, data)
             case ByteHttp2SubStream(_, data)                       ⇒ HttpEntity.Chunked.fromData(contentType, data)
             case ChunkedHttp2SubStream(_, data)                    ⇒ HttpEntity.Chunked(contentType, data)
           }
