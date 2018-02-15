@@ -269,7 +269,6 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
               case _                        ⇒
             }
 
-            log.info("pushed frame")
             outStream.endStreamIfPossible() match {
               case Some(finalFrame) ⇒
                 become(WaitingForNetworkToSendControlFrames(immutable.Seq(finalFrame), Set.empty))
@@ -286,9 +285,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         require(controlFrameBuffer.nonEmpty)
         def onPull(): Unit = controlFrameBuffer match {
           case first +: remaining ⇒
-            log.info(s"Got pull, pushing $first")
             outlet.push(first)
-            log.info("Becoming...")
             become {
               if (remaining.isEmpty && sendableOutstreams.isEmpty) Idle
               else if (remaining.isEmpty) WaitingForNetworkToSendData(sendableOutstreams)
@@ -318,7 +315,6 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
             case _                        ⇒
           }
 
-          log.info("pushed frame")
           outStream.endStreamIfPossible() match {
             case Some(finalFrame) ⇒
               become(WaitingForNetworkToSendControlFrames(immutable.Seq(finalFrame), Set.empty))
