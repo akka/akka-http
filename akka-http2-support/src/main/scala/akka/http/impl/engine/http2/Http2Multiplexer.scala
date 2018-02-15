@@ -10,7 +10,6 @@ import akka.stream.scaladsl.Sink
 
 import scala.collection.mutable
 import scala.collection.immutable
-import scala.collection.immutable.VectorBuilder
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler, StageLogging }
 import akka.util.ByteString
 
@@ -127,9 +126,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
             case newData: ByteString          ⇒ buffer ++= newData
             case HttpEntity.Chunk(newData, _) ⇒ buffer ++= newData
             case HttpEntity.LastChunk(_, headers) ⇒
-              val headerPairs = new VectorBuilder[(String, String)]()
-              ResponseRendering.renderHeaders(headers, headerPairs, None, log)
-              trailer = Some(ParsedHeadersFrame(streamId, endStream = true, headerPairs.result(), None))
+              trailer = Some(ParsedHeadersFrame(streamId, endStream = true, ResponseRendering.renderHeaders(headers, log), None))
           }
 
           debug(s"[$streamId] buffered ${buffer.size} bytes")
