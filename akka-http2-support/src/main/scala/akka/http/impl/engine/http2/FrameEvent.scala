@@ -16,6 +16,7 @@ sealed trait FrameEvent { self: Product ⇒
 }
 sealed trait StreamFrameEvent extends FrameEvent { self: Product ⇒
   def streamId: Int
+  def endStream: Boolean
 }
 
 final case class GoAwayFrame(lastStreamId: Int, errorCode: ErrorCode, debug: ByteString = ByteString.empty) extends FrameEvent {
@@ -45,15 +46,21 @@ final case class HeadersFrame(
 final case class ContinuationFrame(
   streamId:   Int,
   endHeaders: Boolean,
-  payload:    ByteString) extends StreamFrameEvent
+  payload:    ByteString) extends StreamFrameEvent {
+  def endStream = false
+}
 
 case class PushPromiseFrame(
   streamId:            Int,
   endHeaders:          Boolean,
   promisedStreamId:    Int,
-  headerBlockFragment: ByteString) extends StreamFrameEvent
+  headerBlockFragment: ByteString) extends StreamFrameEvent {
+  def endStream = false
+}
 
-final case class RstStreamFrame(streamId: Int, errorCode: ErrorCode) extends StreamFrameEvent
+final case class RstStreamFrame(streamId: Int, errorCode: ErrorCode) extends StreamFrameEvent {
+  def endStream = false
+}
 final case class SettingsFrame(settings: immutable.Seq[Setting]) extends FrameEvent
 final case class SettingsAckFrame(acked: immutable.Seq[Setting]) extends FrameEvent
 
@@ -62,13 +69,17 @@ case class PingFrame(ack: Boolean, data: ByteString) extends FrameEvent {
 }
 final case class WindowUpdateFrame(
   streamId:            Int,
-  windowSizeIncrement: Int) extends StreamFrameEvent
+  windowSizeIncrement: Int) extends StreamFrameEvent {
+  def endStream = false
+}
 
 final case class PriorityFrame(
   streamId:         Int,
   exclusiveFlag:    Boolean,
   streamDependency: Int,
-  weight:           Int) extends StreamFrameEvent
+  weight:           Int) extends StreamFrameEvent {
+  def endStream = false
+}
 
 final case class Setting(
   identifier: SettingIdentifier,
@@ -84,7 +95,9 @@ final case class UnknownFrameEvent(
   tpe:      FrameType,
   flags:    ByteFlag,
   streamId: Int,
-  payload:  ByteString) extends StreamFrameEvent
+  payload:  ByteString) extends StreamFrameEvent {
+  def endStream = false
+}
 
 final case class ParsedHeadersFrame(
   streamId:      Int,

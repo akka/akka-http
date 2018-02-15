@@ -31,6 +31,7 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -452,6 +453,20 @@ class Http2ServerSpec extends AkkaSpec("""
         // now expect PING ack frame to "overtake" the data frame
         expectFrame(FrameType.PING, Flags.ACK, 0, pingData)
         expectDATA(TheStreamId, endStream = false, responseDataChunk)
+      }
+      "support trailing headers for chunked responses" in new WaitingForResponseSetup {
+        val response = HttpResponse(entity = HttpEntity.Chunked(
+          ContentTypes.`application/octet-stream`,
+          Source(List(
+            HttpEntity.Chunk("foo"),
+            HttpEntity.Chunk("bar"),
+            HttpEntity.LastChunk(trailer = immutable.Seq[HttpHeader](RawHeader("Status", "grpc-status 10")))
+          ))
+        ))
+        emitResponse(TheStreamId, response)
+        expectDecodedResponseHEADERS(streamId = TheStreamId, endStream = false)
+        expectDATAFrame(TheStreamId) should be(false, ByteString("foobar"))
+        expectDecodedResponseHEADERS(streamId = TheStreamId, endStream = true).headers should be(immutable.Seq(RawHeader("status", "grpc-status 10")))
       }
     }
 

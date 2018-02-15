@@ -56,10 +56,19 @@ private[http2] object ResponseRendering {
 
       val headers = ParsedHeadersFrame(streamId, endStream = response.entity.isKnownEmpty, headerPairs.result(), None)
 
-      Http2SubStream(
-        headers,
-        response.entity.dataBytes
-      )
+      response.entity match {
+        case HttpEntity.Chunked(_, chunks) ⇒
+          ChunkedHttp2SubStream(
+            headers,
+            chunks
+          )
+        case _ ⇒
+          ByteHttp2SubStream(
+            headers,
+            response.entity.dataBytes
+          )
+      }
+
     }
   }
 

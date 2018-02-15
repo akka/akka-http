@@ -21,9 +21,25 @@ import scala.concurrent.{ ExecutionContext, Future }
 /**
  * Represents one direction of an Http2 substream.
  */
-private[http2] final case class Http2SubStream(
+private[http2] sealed trait Http2SubStream {
+  type T
+  val initialHeaders: ParsedHeadersFrame
+  val data: Source[T, Any]
+  def streamId: Int
+}
+
+private[http2] final case class ByteHttp2SubStream(
   initialHeaders: ParsedHeadersFrame,
-  data:           Source[ByteString, Any]) {
+  data:           Source[ByteString, Any]
+) extends Http2SubStream {
+  type T = ByteString
+  def streamId: Int = initialHeaders.streamId
+}
+private[http2] final case class ChunkedHttp2SubStream(
+  initialHeaders: ParsedHeadersFrame,
+  data:           Source[HttpEntity.ChunkStreamPart, Any]
+) extends Http2SubStream {
+  type T = HttpEntity.ChunkStreamPart
   def streamId: Int = initialHeaders.streamId
 }
 
