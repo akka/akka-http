@@ -56,8 +56,6 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         private def inlet: SubSinkInlet[_] = maybeInlet.get
         def canSend = (buffer.nonEmpty && outboundWindowLeft > 0) || (upstreamClosed && !endStreamSent)
 
-        def shouldSendEndStreamNow: Boolean = upstreamClosed && !endStreamSent && buffer.isEmpty && trailer.isEmpty
-
         def registerIncomingData(inlet: SubSinkInlet[_]): Unit = {
           require(!maybeInlet.isDefined)
 
@@ -67,34 +65,32 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         }
 
         def nextFrame(maxBytesToSend: Int): StreamFrameEvent = {
-          if (buffer.isEmpty) {
-            trailer match {
-              case None ⇒
-                throw new IllegalStateException("requested next frame while buffer empty")
-              case Some(trailerFrameEvent) ⇒
-                endStreamSent = true
-                closeStream()
-                trailerFrameEvent
-            }
-          } else {
-            val toTake = maxBytesToSend min buffer.size min outboundWindowLeft
-            val toSend = buffer.take(toTake)
-            require(toSend.nonEmpty)
+          val toTake = maxBytesToSend min buffer.size min outboundWindowLeft
+          val toSend = buffer.take(toTake)
+          require(toSend.nonEmpty)
 
-            outboundWindowLeft -= toTake
-            buffer = buffer.drop(toTake)
+          outboundWindowLeft -= toTake
+          buffer = buffer.drop(toTake)
 
-            val endStream = shouldSendEndStreamNow
-
+          val endStream = upstreamClosed && buffer.isEmpty && trailer.isEmpty
+          if (endStream) {
+            closeStream()
+            endStreamSent = true
+          } else
             maybePull()
 
-            debug(s"[$streamId] sending ${toSend.size} bytes, endStream = $endStream")
+          debug(s"[$streamId] sending ${toSend.size} bytes, endStream = $endStream")
 
-            endStreamSent = endStream
-            if (endStream) closeStream()
+          DataFrame(streamId, endStream, toSend)
+        }
 
-            DataFrame(streamId, endStream, toSend)
-          }
+        def endStreamIfPossible(): Option[FrameEvent] = {
+          if (upstreamClosed && !endStreamSent && buffer.isEmpty) {
+            val finalFrame = trailer.getOrElse(DataFrame(streamId, endStream = true, ByteString.empty))
+            closeStream()
+            Some(finalFrame)
+          } else
+            None
         }
 
         private def maybePull(): Unit = {
@@ -136,13 +132,11 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           if (canSend) enqueueOutStream(this)
         }
 
-        override def onUpstreamFinish(): Unit =
-          if (buffer.isEmpty) {
-            // push last frame immediately
-            closeStream()
-            pushControlFrame(DataFrame(streamId, endStream = true, ByteString.empty))
-          } else
-            upstreamClosed = true
+        override def onUpstreamFinish(): Unit = {
+          upstreamClosed = true
+          log.info(s"Upstream finished")
+          endStreamIfPossible().foreach(pushControlFrame)
+        }
 
         override def onUpstreamFailure(ex: Throwable): Unit = {
           log.error(ex, s"Substream $streamId failed with $ex")
@@ -227,7 +221,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
       var state: MultiplexerState = Idle
       def onPull(): Unit = state.onPull()
       private def become(nextState: MultiplexerState): Unit = {
-        if (nextState.name != state.name) recordStateChange(state.name, nextState.name)
+        if (nextState.name != state.name) recordStateChange(state.name, nextState.toString)
 
         state = nextState
       }
@@ -275,10 +269,15 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
               case _                        ⇒
             }
 
-            if (outStream.canSend) // if we still can send, then do
-              become(WaitingForNetworkToSendData(immutable.TreeSet(outStream.streamId)))
-            else
-              become(Idle) // everything sent for now
+            log.info("pushed frame")
+            outStream.endStreamIfPossible() match {
+              case Some(finalFrame) ⇒
+                become(WaitingForNetworkToSendControlFrames(immutable.Seq(finalFrame), Set.empty))
+              case _ if outStream.canSend ⇒
+                become(WaitingForNetworkToSendData(immutable.TreeSet(outStream.streamId)))
+              case _ ⇒
+                become(Idle)
+            }
           }
       }
 
@@ -287,7 +286,9 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         require(controlFrameBuffer.nonEmpty)
         def onPull(): Unit = controlFrameBuffer match {
           case first +: remaining ⇒
+            log.info(s"Got pull, pushing $first")
             outlet.push(first)
+            log.info("Becoming...")
             become {
               if (remaining.isEmpty && sendableOutstreams.isEmpty) Idle
               else if (remaining.isEmpty) WaitingForNetworkToSendData(sendableOutstreams)
@@ -317,13 +318,17 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
             case _                        ⇒
           }
 
-          if (outStream.canSend) // if we still can send, then do
-            become(WaitingForNetworkToSendData(sendableOutstreams))
-          else if (sendableOutstreams.size == 1)
-            // now empty
-            become(Idle)
-          else
-            become(WaitingForNetworkToSendData(sendableOutstreams.filterNot(_ == chosenId))) // TODO: use Set instead
+          log.info("pushed frame")
+          outStream.endStreamIfPossible() match {
+            case Some(finalFrame) ⇒
+              become(WaitingForNetworkToSendControlFrames(immutable.Seq(finalFrame), Set.empty))
+            case _ if outStream.canSend ⇒
+              become(WaitingForNetworkToSendData(sendableOutstreams))
+            case _ if sendableOutstreams.size == 1 ⇒
+              become(Idle)
+            case _ ⇒
+              become(WaitingForNetworkToSendData(sendableOutstreams.filterNot(_ == chosenId))) // TODO: use Set instead
+          }
         }
       }
 
