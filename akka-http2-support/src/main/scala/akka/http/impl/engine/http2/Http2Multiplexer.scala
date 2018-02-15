@@ -77,8 +77,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
                 closeStream()
                 trailerFrameEvent
             }
-          }
-          else {
+          } else {
             val toTake = maxBytesToSend min buffer.size min outboundWindowLeft
             val toSend = buffer.take(toTake)
             require(toSend.nonEmpty)
