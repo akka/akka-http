@@ -233,8 +233,8 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
       private def getOrCreateStreamFor(stream: Http2SubStream): OutStream[_] = outStreams.get(stream.streamId) match {
         case None ⇒
           val newOne = stream match {
-            case _: ByteHttp2SubStream => new ByteOutStream(stream.streamId, None, currentInitialWindow)
-            case _: ChunkedHttp2SubStream => new ChunkedOutStream(stream.streamId, None, currentInitialWindow)
+            case _: ByteHttp2SubStream    ⇒ new ByteOutStream(stream.streamId, None, currentInitialWindow)
+            case _: ChunkedHttp2SubStream ⇒ new ChunkedOutStream(stream.streamId, None, currentInitialWindow)
           }
           outStreams += stream.streamId → newOne
           newOne
