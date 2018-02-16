@@ -465,7 +465,7 @@ class Http2ServerSpec extends AkkaSpec("""
         ))
         emitResponse(TheStreamId, response)
         expectDecodedResponseHEADERS(streamId = TheStreamId, endStream = false)
-        expectDATAFrame(TheStreamId) should be(false, ByteString("foobar"))
+        expectDATA(TheStreamId, endStream = false, ByteString("foobar"))
         expectDecodedResponseHEADERS(streamId = TheStreamId).headers should be(immutable.Seq(RawHeader("status", "grpc-status 10")))
       }
       "include the trailing headers even when the buffer is emptied before sending the last chunk" in new WaitingForResponseSetup {
@@ -483,7 +483,7 @@ class Http2ServerSpec extends AkkaSpec("""
         chunkQueue.offer(HttpEntity.Chunk("bar"))
 
         expectDecodedResponseHEADERS(streamId = TheStreamId, endStream = false)
-        expectDATAFrame(TheStreamId) should be(false, ByteString("foobar"))
+        expectDATA(TheStreamId, endStream = false, ByteString("foobar"))
 
         chunkQueue.offer(HttpEntity.LastChunk(trailer = immutable.Seq[HttpHeader](RawHeader("Status", "grpc-status 10"))))
         chunkQueue.complete()
@@ -506,7 +506,7 @@ class Http2ServerSpec extends AkkaSpec("""
           if (toSend != 0) {
             val data = "x" * toSend
             chunkQueue.offer(HttpEntity.Chunk(data))
-            expectDATAFrame(TheStreamId) should be(false, ByteString(data))
+            expectDATA(TheStreamId, endStream = false, ByteString(data))
             depleteWindow()
           }
         }

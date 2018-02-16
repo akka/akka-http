@@ -23,7 +23,7 @@ import scala.concurrent.{ ExecutionContext, Future }
  */
 private[http2] sealed trait Http2SubStream {
   val initialHeaders: ParsedHeadersFrame
-  val data: Source[_, Any]
+  val data: Source[Any, Any]
   def streamId: Int = initialHeaders.streamId
 }
 

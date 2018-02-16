@@ -64,7 +64,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           inlet.setHandler(this)
         }
 
-        def nextFrame(maxBytesToSend: Int): StreamFrameEvent = {
+        def nextFrame(maxBytesToSend: Int): DataFrame = {
           val toTake = maxBytesToSend min buffer.size min outboundWindowLeft
           val toSend = buffer.take(toTake)
           require(toSend.nonEmpty)
@@ -134,7 +134,6 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
 
         override def onUpstreamFinish(): Unit = {
           upstreamClosed = true
-          log.info(s"Upstream finished")
           endStreamIfPossible().foreach(pushControlFrame)
         }
 
@@ -221,7 +220,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
       var state: MultiplexerState = Idle
       def onPull(): Unit = state.onPull()
       private def become(nextState: MultiplexerState): Unit = {
-        if (nextState.name != state.name) recordStateChange(state.name, nextState.toString)
+        if (nextState.name != state.name) recordStateChange(state.name, nextState.name)
 
         state = nextState
       }
@@ -255,7 +254,9 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           outlet.push(frame)
           become(Idle)
         }
-        def connectionWindowAvailable(): Unit = () // nothing to do, as there is no data to send
+        def connectionWindowAvailable(): Unit = ()
+
+        // nothing to do, as there is no data to send
         def enqueueOutStream(outStream: OutStream): Unit =
           if (connectionWindowLeft == 0) become(WaitingForConnectionWindow(immutable.TreeSet(outStream.streamId)))
           else {
@@ -269,14 +270,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
               case _                        ⇒
             }
 
-            outStream.endStreamIfPossible() match {
-              case Some(finalFrame) ⇒
-                become(WaitingForNetworkToSendControlFrames(immutable.Seq(finalFrame), Set.empty))
-              case _ if outStream.canSend ⇒
-                become(WaitingForNetworkToSendData(immutable.TreeSet(outStream.streamId)))
-              case _ ⇒
-                become(Idle)
-            }
+            become(nextStateAfterPushingDataFrame(outStream, Set.empty))
           }
       }
 
@@ -315,16 +309,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
             case _                        ⇒
           }
 
-          outStream.endStreamIfPossible() match {
-            case Some(finalFrame) ⇒
-              become(WaitingForNetworkToSendControlFrames(immutable.Seq(finalFrame), Set.empty))
-            case _ if outStream.canSend ⇒
-              become(WaitingForNetworkToSendData(sendableOutstreams))
-            case _ if sendableOutstreams.size == 1 ⇒
-              become(Idle)
-            case _ ⇒
-              become(WaitingForNetworkToSendData(sendableOutstreams.filterNot(_ == chosenId))) // TODO: use Set instead
-          }
+          become(nextStateAfterPushingDataFrame(outStream, sendableOutstreams))
         }
       }
 
@@ -359,6 +344,19 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
       private def maxBytesToBufferPerSubstream = 2 * currentMaxFrameSize // for now, let's buffer two frames per substream
 
       def debug(msg: ⇒ String): Unit = log.debug(msg)
+
+      def nextStateAfterPushingDataFrame(outStream: OutStream, sendableOutstreams: Set[Int]): MultiplexerState = {
+        outStream.endStreamIfPossible()
+          .map(finalFrame ⇒ WaitingForNetworkToSendControlFrames(immutable.Seq(finalFrame), sendableOutstreams - outStream.streamId))
+          .getOrElse {
+            val newSendableOutStreams =
+              if (outStream.canSend) sendableOutstreams + outStream.streamId
+              else sendableOutstreams - outStream.streamId
+
+            if (newSendableOutStreams.isEmpty) Idle
+            else WaitingForNetworkToSendData(newSendableOutStreams)
+          }
+      }
     }
 
   private trait LogSupport {
