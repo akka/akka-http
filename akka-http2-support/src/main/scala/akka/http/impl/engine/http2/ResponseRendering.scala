@@ -73,6 +73,15 @@ private[http2] object ResponseRendering {
   }
 
   private[http2] def renderHeaders(
+    headers: immutable.Seq[HttpHeader],
+    log:     LoggingAdapter
+  ): Seq[(String, String)] = {
+    val headerPairs = new VectorBuilder[(String, String)]()
+    renderHeaders(headers, headerPairs, None, log)
+    headerPairs.result()
+  }
+
+  private[http2] def renderHeaders(
     headersSeq:   immutable.Seq[HttpHeader],
     headerPairs:  VectorBuilder[(String, String)],
     serverHeader: Option[(String, String)],
