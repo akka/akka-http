@@ -254,9 +254,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           outlet.push(frame)
           become(Idle)
         }
-        def connectionWindowAvailable(): Unit = ()
-
-        // nothing to do, as there is no data to send
+        def connectionWindowAvailable(): Unit = () // nothing to do, as there is no data to send
         def enqueueOutStream(outStream: OutStream): Unit =
           if (connectionWindowLeft == 0) become(WaitingForConnectionWindow(immutable.TreeSet(outStream.streamId)))
           else {
@@ -265,10 +263,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
             val maxBytesToSend = currentMaxFrameSize min connectionWindowLeft
             val frame = outStream.nextFrame(maxBytesToSend)
             outlet.push(frame)
-            frame match {
-              case DataFrame(_, _, payload) ⇒ connectionWindowLeft -= payload.size
-              case _                        ⇒
-            }
+            connectionWindowLeft -= frame.payload.size
 
             become(nextStateAfterPushingDataFrame(outStream, Set.empty))
           }
@@ -304,10 +299,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           val maxBytesToSend = currentMaxFrameSize min connectionWindowLeft
           val frame = outStream.nextFrame(maxBytesToSend)
           outlet.push(frame)
-          frame match {
-            case DataFrame(_, _, payload) ⇒ connectionWindowLeft -= payload.size
-            case _                        ⇒
-          }
+          connectionWindowLeft -= frame.payload.size
 
           become(nextStateAfterPushingDataFrame(outStream, sendableOutstreams))
         }
