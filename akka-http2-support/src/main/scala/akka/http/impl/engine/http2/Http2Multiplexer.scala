@@ -5,10 +5,12 @@
 package akka.http.impl.engine.http2
 
 import akka.annotation.InternalApi
+import akka.http.scaladsl.model.HttpEntity
 import akka.stream.scaladsl.Sink
 
 import scala.collection.mutable
 import scala.collection.immutable
+import scala.collection.immutable.VectorBuilder
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler, StageLogging }
 import akka.util.ByteString
 
@@ -43,20 +45,19 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
     new Http2Multiplexer with OutHandler with StateTimingSupport with LogSupport {
       outlet.setHandler(this)
 
-      class OutStream(
+      abstract class OutStream[T](
         val streamId:           Int,
-        private var maybeInlet: Option[SubSinkInlet[ByteString]],
+        private var maybeInlet: Option[SubSinkInlet[T]],
         var outboundWindowLeft: Int,
-        private var buffer:     ByteString                       = ByteString.empty,
-        var upstreamClosed:     Boolean                          = false,
-        var endStreamSent:      Boolean                          = false
+        private var buffer:     ByteString                 = ByteString.empty,
+        var upstreamClosed:     Boolean                    = false,
+        var endStreamSent:      Boolean                    = false,
+        var trailer:            Option[ParsedHeadersFrame] = None
       ) extends InHandler {
-        private def inlet: SubSinkInlet[ByteString] = maybeInlet.get
+        private def inlet: SubSinkInlet[T] = maybeInlet.get
         def canSend = (buffer.nonEmpty && outboundWindowLeft > 0) || (upstreamClosed && !endStreamSent)
 
-        def shouldSendEndStreamNow: Boolean = upstreamClosed && !endStreamSent && buffer.isEmpty
-
-        def registerIncomingData(inlet: SubSinkInlet[ByteString]): Unit = {
+        def registerIncomingData(inlet: SubSinkInlet[T]): Unit = {
           require(!maybeInlet.isDefined)
 
           this.maybeInlet = Some(inlet)
@@ -72,9 +73,12 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           outboundWindowLeft -= toTake
           buffer = buffer.drop(toTake)
 
-          val endStream = shouldSendEndStreamNow
-
-          maybePull()
+          val endStream = upstreamClosed && buffer.isEmpty && trailer.isEmpty
+          if (endStream) {
+            closeStream()
+            endStreamSent = true
+          } else
+            maybePull()
 
           debug(s"[$streamId] sending ${toSend.size} bytes, endStream = $endStream")
 
@@ -82,6 +86,15 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           if (endStream) closeStream()
 
           DataFrame(streamId, endStream, toSend)
+        }
+
+        def endStreamIfPossible(): Option[FrameEvent] = {
+          if (upstreamClosed && !endStreamSent && buffer.isEmpty) {
+            val finalFrame = trailer.getOrElse(DataFrame(streamId, endStream = true, ByteString.empty))
+            closeStream()
+            Some(finalFrame)
+          } else
+            None
         }
 
         private def maybePull(): Unit = {
@@ -96,6 +109,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           upstreamClosed = true
           endStreamSent = true
           buffer = ByteString.empty
+          trailer = None
           maybeInlet.foreach(_.cancel())
 
           if (maybeInlet.isDefined) {
@@ -108,8 +122,9 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         def bufferedBytes: Int = buffer.size
 
         override def onPush(): Unit = {
-          val newData = inlet.grab()
-          buffer ++= newData
+          val newBytes = onData(inlet.grab())
+          if (newBytes != ByteString.empty)
+            buffer ++= newBytes
 
           debug(s"[$streamId] buffered ${buffer.size} bytes")
           maybePull()
@@ -118,13 +133,12 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           if (canSend) enqueueOutStream(this)
         }
 
-        override def onUpstreamFinish(): Unit =
-          if (buffer.isEmpty) {
-            // push last frame immediately
-            closeStream()
-            pushControlFrame(DataFrame(streamId, endStream = true, ByteString.empty))
-          } else
-            upstreamClosed = true
+        def onData(data: T): ByteString
+
+        override def onUpstreamFinish(): Unit = {
+          upstreamClosed = true
+          endStreamIfPossible().foreach(pushControlFrame)
+        }
 
         override def onUpstreamFailure(ex: Throwable): Unit = {
           log.error(ex, s"Substream $streamId failed with $ex")
@@ -132,17 +146,37 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           pushControlFrame(RstStreamFrame(streamId, Http2Protocol.ErrorCode.INTERNAL_ERROR))
         }
       }
+      private class ByteOutStream(streamId: Int, maybeInlet: Option[Http2MultiplexerSupport.this.SubSinkInlet[ByteString]], outboundWindowLeft: Int)
+        extends OutStream[ByteString](streamId, maybeInlet, outboundWindowLeft) {
+        override def onData(bytes: ByteString): ByteString = bytes
+      }
+      private class ChunkedOutStream(streamId: Int, maybeInlet: Option[Http2MultiplexerSupport.this.SubSinkInlet[HttpEntity.ChunkStreamPart]], outboundWindowLeft: Int)
+        extends OutStream[HttpEntity.ChunkStreamPart](streamId, maybeInlet, outboundWindowLeft) {
+        override def onData(chunk: HttpEntity.ChunkStreamPart): ByteString = chunk match {
+          case HttpEntity.Chunk(newData, _) ⇒ newData
+          case HttpEntity.LastChunk(_, headers) ⇒
+            val headerPairs = new VectorBuilder[(String, String)]()
+            ResponseRendering.renderHeaders(headers, headerPairs, None, log)
+            trailer = Some(ParsedHeadersFrame(streamId, endStream = true, headerPairs.result(), None))
+            ByteString.empty
+        }
+      }
+      private class CancelledOutStream(streamId: Int) extends OutStream[Nothing](streamId, None, 0) {
+        override def onData(chunk: Nothing): ByteString = {
+          throw new IllegalStateException("Stream was already cancelled before it was registered")
+        }
+      }
 
       private var currentInitialWindow = Http2Protocol.InitialWindowSize
       private var currentMaxFrameSize = Http2Protocol.InitialMaxFrameSize
       private var connectionWindowLeft = Http2Protocol.InitialWindowSize
 
-      private val outStreams = mutable.Map.empty[Int, OutStream]
+      private val outStreams = mutable.Map.empty[Int, OutStream[_]]
 
       override def pushControlFrame(frame: FrameEvent): Unit = state.pushControlFrame(frame)
 
       override def registerSubStream(sub: Http2SubStream): Unit = {
-        val info = streamFor(sub.streamId)
+        val info = getOrCreateStreamFor(sub)
 
         if (!info.endStreamSent) {
           pushControlFrame(sub.initialHeaders)
@@ -154,9 +188,16 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
             info.closeStream()
             outStreams.remove(sub.streamId)
           } else {
-            val subIn = new SubSinkInlet[ByteString](s"substream-in-${sub.streamId}")
-            info.registerIncomingData(subIn)
-            sub.data.runWith(subIn.sink)(subFusingMaterializer)
+            sub match {
+              case ByteHttp2SubStream(_, data) ⇒
+                val subIn = new SubSinkInlet[ByteString](s"substream-in-${sub.streamId}")
+                info.asInstanceOf[OutStream[ByteString]].registerIncomingData(subIn)
+                data.runWith(subIn.sink)(subFusingMaterializer)
+              case ChunkedHttp2SubStream(_, data) ⇒
+                val subIn = new SubSinkInlet[HttpEntity.ChunkStreamPart](s"substream-in-${sub.streamId}")
+                info.asInstanceOf[OutStream[HttpEntity.ChunkStreamPart]].registerIncomingData(subIn)
+                data.runWith(subIn.sink)(subFusingMaterializer)
+            }
           }
         } else {
           // stream was cancelled before it we got the response stream
@@ -175,7 +216,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           debug(s"Updating window for $streamId by $increment to ${windowLeftFor(streamId)} buffered bytes: ${streamFor(streamId).bufferedBytes}")
         }
 
-      override def cancelSubStream(streamId: Int): Unit = streamFor(streamId).cancelStream()
+      override def cancelSubStream(streamId: Int): Unit = streamForCancelling(streamId).cancelStream()
       override def updateMaxFrameSize(newMaxFrameSize: Int): Unit = currentMaxFrameSize = newMaxFrameSize
       override def updateDefaultWindow(newDefaultWindow: Int): Unit = {
         val delta = newDefaultWindow - currentInitialWindow
@@ -185,13 +226,24 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
       }
       override def updatePriority(info: PriorityFrame): Unit = prioritizer.updatePriority(info)
 
-      private def streamFor(streamId: Int): OutStream = outStreams.get(streamId) match {
+      private def getOrCreateStreamFor(stream: Http2SubStream): OutStream[_] = outStreams.get(stream.streamId) match {
         case None ⇒
-          val newOne = new OutStream(streamId, None, currentInitialWindow)
-          outStreams += streamId → newOne
+          val newOne = stream match {
+            case _: ByteHttp2SubStream    ⇒ new ByteOutStream(stream.streamId, None, currentInitialWindow)
+            case _: ChunkedHttp2SubStream ⇒ new ChunkedOutStream(stream.streamId, None, currentInitialWindow)
+          }
+          outStreams += stream.streamId → newOne
           newOne
         case Some(old) ⇒ old
       }
+      private def streamForCancelling(streamId: Int): OutStream[_] = outStreams.get(streamId) match {
+        case None ⇒
+          val newOne = new CancelledOutStream(streamId)
+          outStreams += streamId -> newOne
+          newOne
+        case Some(old) ⇒ old
+      }
+      private def streamFor(streamId: Int): OutStream[_] = outStreams(streamId)
       private def windowLeftFor(streamId: Int): Int = streamFor(streamId).outboundWindowLeft
       private def updateWindowFor(streamId: Int, increment: Int): Unit = {
         val info = streamFor(streamId)
@@ -199,7 +251,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         if (info.canSend) enqueueOutStream(info)
       }
 
-      def enqueueOutStream(outStream: OutStream): Unit = state.enqueueOutStream(outStream)
+      def enqueueOutStream(outStream: OutStream[_]): Unit = state.enqueueOutStream(outStream)
 
       override def onDownstreamFinish(): Unit = {
         outStreams.values.foreach(_.cancelStream())
@@ -220,7 +272,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         def onPull(): Unit
         def pushControlFrame(frame: FrameEvent): Unit
         def connectionWindowAvailable(): Unit
-        def enqueueOutStream(outStream: OutStream): Unit
+        def enqueueOutStream(outStream: OutStream[_]): Unit
       }
 
       // Multiplexer state machine
@@ -234,7 +286,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         def onPull(): Unit = become(WaitingForData)
         def pushControlFrame(frame: FrameEvent): Unit = become(WaitingForNetworkToSendControlFrames(frame :: Nil, immutable.TreeSet.empty))
         def connectionWindowAvailable(): Unit = ()
-        def enqueueOutStream(outStream: OutStream): Unit = become(WaitingForNetworkToSendData(immutable.TreeSet(outStream.streamId)))
+        def enqueueOutStream(outStream: OutStream[_]): Unit = become(WaitingForNetworkToSendData(immutable.TreeSet(outStream.streamId)))
       }
 
       case object WaitingForData extends MultiplexerState {
@@ -244,7 +296,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           become(Idle)
         }
         def connectionWindowAvailable(): Unit = () // nothing to do, as there is no data to send
-        def enqueueOutStream(outStream: OutStream): Unit =
+        def enqueueOutStream(outStream: OutStream[_]): Unit =
           if (connectionWindowLeft == 0) become(WaitingForConnectionWindow(immutable.TreeSet(outStream.streamId)))
           else {
             require(outStream.canSend)
@@ -254,10 +306,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
             outlet.push(frame)
             connectionWindowLeft -= frame.payload.size
 
-            if (outStream.canSend) // if we still can send, then do
-              become(WaitingForNetworkToSendData(immutable.TreeSet(outStream.streamId)))
-            else
-              become(Idle) // everything sent for now
+            become(nextStateAfterPushingDataFrame(outStream, Set.empty))
           }
       }
 
@@ -275,7 +324,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         }
         def pushControlFrame(frame: FrameEvent): Unit = become(copy(controlFrameBuffer = controlFrameBuffer :+ frame))
         def connectionWindowAvailable(): Unit = ()
-        def enqueueOutStream(outStream: OutStream): Unit =
+        def enqueueOutStream(outStream: OutStream[_]): Unit =
           if (!sendableOutstreams.contains(outStream.streamId))
             become(copy(sendableOutstreams = sendableOutstreams + outStream.streamId))
       }
@@ -293,13 +342,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           outlet.push(frame)
           connectionWindowLeft -= frame.payload.size
 
-          if (outStream.canSend) // if we still can send, then do
-            become(WaitingForNetworkToSendData(sendableOutstreams))
-          else if (sendableOutstreams.size == 1)
-            // now empty
-            become(Idle)
-          else
-            become(WaitingForNetworkToSendData(sendableOutstreams.filterNot(_ == chosenId))) // TODO: use Set instead
+          become(nextStateAfterPushingDataFrame(outStream, sendableOutstreams))
         }
       }
 
@@ -312,7 +355,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
 
         def pushControlFrame(frame: FrameEvent): Unit = become(WaitingForNetworkToSendControlFrames(frame :: Nil, sendableOutstreams))
         def connectionWindowAvailable(): Unit = ()
-        def enqueueOutStream(outStream: OutStream): Unit =
+        def enqueueOutStream(outStream: OutStream[_]): Unit =
           if (!sendableOutstreams.contains(outStream.streamId))
             become(copy(sendableOutstreams = sendableOutstreams + outStream.streamId))
       }
@@ -326,7 +369,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           become(WaitingForNetworkToSendData(sendableOutstreams))
         }
         def connectionWindowAvailable(): Unit = sendNext()
-        def enqueueOutStream(outStream: OutStream): Unit =
+        def enqueueOutStream(outStream: OutStream[_]): Unit =
           if (!sendableOutstreams.contains(outStream.streamId))
             become(copy(sendableOutstreams = sendableOutstreams + outStream.streamId))
       }
@@ -334,6 +377,19 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
       private def maxBytesToBufferPerSubstream = 2 * currentMaxFrameSize // for now, let's buffer two frames per substream
 
       def debug(msg: ⇒ String): Unit = log.debug(msg)
+
+      def nextStateAfterPushingDataFrame(outStream: OutStream[_], sendableOutstreams: Set[Int]): MultiplexerState = {
+        outStream.endStreamIfPossible()
+          .map(finalFrame ⇒ WaitingForNetworkToSendControlFrames(immutable.Seq(finalFrame), sendableOutstreams - outStream.streamId))
+          .getOrElse {
+            val newSendableOutStreams =
+              if (outStream.canSend) sendableOutstreams + outStream.streamId
+              else sendableOutstreams - outStream.streamId
+
+            if (newSendableOutStreams.isEmpty) Idle
+            else WaitingForNetworkToSendData(newSendableOutStreams)
+          }
+      }
     }
 
   private trait LogSupport {
