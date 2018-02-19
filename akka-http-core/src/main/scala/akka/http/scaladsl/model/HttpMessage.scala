@@ -121,11 +121,8 @@ sealed trait HttpMessage extends jm.HttpMessage {
   }
 
   /** Returns all the headers of the given type **/
-  def headers[T <: jm.HttpHeader: ClassTag]: immutable.Seq[T] = {
-    val clazz = classTag[T].runtimeClass.asInstanceOf[Class[T]]
-    headers.collect {
-      case h if clazz.isInstance(h) ⇒ h.asInstanceOf[T]
-    }
+  def headers[T <: jm.HttpHeader: ClassTag]: immutable.Seq[T] = headers.collect {
+    case h: T ⇒ h
   }
 
   /**
