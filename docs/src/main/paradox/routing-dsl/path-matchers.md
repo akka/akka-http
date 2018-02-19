@@ -225,6 +225,9 @@ Pipe Operator (`|`)
 : This operator combines two matcher alternatives in that the second one is only tried if the first one did *not* match.
 The two sub-matchers must have compatible types.
 For example: `"foo" | "bar"` will match either "foo" *or* "bar".
+When combining an alternative expressed using this operator with an `/` operator, make sure to embrace the alternative using
+a pair of parentheses, like so: `("foo" | "bar") / "bom"`. Otherwise the `/` operator would bind only to the right-hand side 
+of the alternative.
 
 
 ## Modifiers
