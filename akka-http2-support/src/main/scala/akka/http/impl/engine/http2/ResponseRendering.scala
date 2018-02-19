@@ -58,15 +58,9 @@ private[http2] object ResponseRendering {
 
       response.entity match {
         case HttpEntity.Chunked(_, chunks) ⇒
-          ChunkedHttp2SubStream(
-            headers,
-            chunks
-          )
+          ChunkedHttp2SubStream(headers, chunks)
         case _ ⇒
-          ByteHttp2SubStream(
-            headers,
-            response.entity.dataBytes
-          )
+          ByteHttp2SubStream(headers, response.entity.dataBytes)
       }
 
     }
