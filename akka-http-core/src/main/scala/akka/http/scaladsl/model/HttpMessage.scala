@@ -397,7 +397,7 @@ object HttpRequest {
         case 5 if c(0) == 'h' && c(1) == 't' && c(2) == 't' && c(3) == 'p' && c(4) == 's' ⇒ // ok
         case 2 if c(0) == 'w' && c(1) == 's' ⇒ // ok
         case 3 if c(0) == 'w' && c(1) == 's' && c(2) == 's' ⇒ // ok
-        case _ ⇒ throw new IllegalArgumentException("""`uri` must have scheme "http", "https", "ws", "wss" or no scheme""")
+        case _ ⇒ throw IllegalUriException(ErrorInfo("""`uri` must have scheme "http", "https", "ws", "wss" or no scheme"""))
       }
     }
 

@@ -216,10 +216,11 @@ private[http] object HttpServerBluePrint {
       case start: RequestStart ⇒
         try {
           val effectiveUri = HttpRequest.effectiveUri(start.uri, start.headers, isSecureConnection, defaultHostHeader)
+          HttpRequest.verifyUri(effectiveUri)
           start.copy(uri = effectiveUri)
         } catch {
           case e: IllegalUriException ⇒
-            MessageStartError(StatusCodes.BadRequest, ErrorInfo("Request is missing required `Host` header", e.getMessage))
+            MessageStartError(StatusCodes.BadRequest, e.info)
         }
       case x ⇒ x
     }

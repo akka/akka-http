@@ -47,6 +47,11 @@ class HttpMessageSpec extends WordSpec with Matchers {
     "throw IllegalUriException for relative URI with empty Host header and no default Host header" in {
       failWithNoHostHeader(Some(Host("")), "an empty `Host` header")
     }
+
+    "throw IllegalUriException for an invalid URI schema" in {
+      an[IllegalUriException] should be thrownBy
+        HttpRequest(uri = Uri("htp://example.com"))
+    }
   }
 
   "HttpMessage" should {
