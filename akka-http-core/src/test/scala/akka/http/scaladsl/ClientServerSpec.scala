@@ -708,6 +708,8 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       EventFilter.warning(pattern = "Perhaps this was an HTTPS request sent to an HTTP endpoint", occurrences = 6) intercept {
         Await.ready(Http().singleRequest(HttpRequest(uri = uri)), 30.seconds)
       }
+
+      Await.result(binding.unbind(), 10.seconds)
     }
   }
 
