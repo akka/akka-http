@@ -1,18 +1,18 @@
-/**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.javadsl.settings
 
 import java.util.{ Optional, Random }
 
 import akka.actor.ActorSystem
-import akka.annotation.InternalApi
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.http.impl.settings.ServerSettingsImpl
 import akka.http.javadsl.model.headers.Host
 import akka.http.javadsl.model.headers.Server
 import akka.io.Inet.SocketOption
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.scaladsl.settings
 import com.typesafe.config.Config
 
 import scala.collection.JavaConverters._
@@ -23,8 +23,9 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 /**
  * Public API but not intended for subclassing
  */
-abstract class ServerSettings { self: ServerSettingsImpl ⇒
+@DoNotInherit abstract class ServerSettings { self: ServerSettingsImpl ⇒
   def getServerHeader: Optional[Server]
+  def getPreviewServerSettings: PreviewServerSettings
   def getTimeouts: ServerSettings.Timeouts
   def getMaxConnections: Int
   def getPipeliningLimit: Int
@@ -39,10 +40,14 @@ abstract class ServerSettings { self: ServerSettingsImpl ⇒
   def getWebsocketRandomFactory: java.util.function.Supplier[Random]
   def getParserSettings: ParserSettings
   def getLogUnencryptedNetworkBytes: Optional[Int]
+  def getHttp2Settings: Http2ServerSettings = self.http2Settings
+  def getDefaultHttpPort: Int
+  def getDefaultHttpsPort: Int
 
   // ---
 
   def withServerHeader(newValue: Optional[Server]): ServerSettings = self.copy(serverHeader = newValue.asScala.map(_.asScala))
+  def withPreviewServerSettings(newValue: PreviewServerSettings): ServerSettings = self.copy(previewServerSettings = newValue.asScala)
   def withTimeouts(newValue: ServerSettings.Timeouts): ServerSettings = self.copy(timeouts = newValue.asScala)
   def withMaxConnections(newValue: Int): ServerSettings = self.copy(maxConnections = newValue)
   def withPipeliningLimit(newValue: Int): ServerSettings = self.copy(pipeliningLimit = newValue)
@@ -57,6 +62,9 @@ abstract class ServerSettings { self: ServerSettingsImpl ⇒
   def withParserSettings(newValue: ParserSettings): ServerSettings = self.copy(parserSettings = newValue.asScala)
   def withWebsocketRandomFactory(newValue: java.util.function.Supplier[Random]): ServerSettings = self.copy(websocketRandomFactory = () ⇒ newValue.get())
   def withLogUnencryptedNetworkBytes(newValue: Optional[Int]): ServerSettings = self.copy(logUnencryptedNetworkBytes = OptionConverters.toScala(newValue))
+  def withHttp2Settings(newValue: Http2ServerSettings): ServerSettings = self.copy(http2Settings = newValue.asScala)
+  def withDefaultHttpPort(newValue: Int): ServerSettings = self.copy(defaultHttpPort = newValue)
+  def withDefaultHttpsPort(newValue: Int): ServerSettings = self.copy(defaultHttpPort = newValue)
 
 }
 

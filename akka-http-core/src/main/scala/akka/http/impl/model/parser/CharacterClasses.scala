@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.model.parser
@@ -43,12 +43,14 @@ private[http] object CharacterClasses {
   val `pchar-base-nc` = unreserved ++ `sub-delims` ++ '@'
   val `pchar-base` = `pchar-base-nc` ++ ':' // pchar without percent
   val `query-fragment-char` = `pchar-base` ++ "/?"
-  val `strict-query-char` = `query-fragment-char` -- "&=;"
-  val `strict-query-char-np` = `strict-query-char` -- '+'
+  val `strict-query-key-char` = `query-fragment-char` -- "&=;"
+  val `strict-query-value-char` = `query-fragment-char` -- "&=;"
+  val `strict-query-char-np` = `strict-query-value-char` -- '+'
 
   val `relaxed-fragment-char` = VCHAR -- '%'
   val `relaxed-path-segment-char` = VCHAR -- "%/?#"
-  val `relaxed-query-char` = VCHAR -- "%&=#"
+  val `relaxed-query-key-char` = VCHAR -- "%&=#"
+  val `relaxed-query-value-char` = VCHAR -- "%&#"
   val `raw-query-char` = VCHAR -- '#'
   val `scheme-char` = ALPHA ++ DIGIT ++ '+' ++ '-' ++ '.'
 
@@ -72,7 +74,7 @@ private[http] object CharacterClasses {
 
   // helpers
   val `qdtext-base` = CharPredicate(HTAB, SP, '\u0021', '\u0023' to '\u005B', '\u005D' to '\u007E')
-  val `ctext-base` = CharPredicate(HTAB, SP, '\u0021' to '\u0027', '\u002A' to '\u005B', '\u005D' to '\u007E')
+  val `ctext-base` = CharPredicate(HTAB, SP, '\u0021' to '\'' /* \u0027 */ , '\u002A' to '\u005B', '\u005D' to '\u007E')
   val `quotable-base` = CharPredicate(HTAB, SP, VCHAR)
   val `etagc-base` = VCHAR -- '"'
   val DIGIT04 = CharPredicate('0' to '4')

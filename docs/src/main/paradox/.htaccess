@@ -1,0 +1,15 @@
+# Since 10.0.9
+RedirectMatch 301 ^(.*)/common/de-coding.html$ $1/common/encoding.html
+RedirectMatch 301 ^(.*)/low-level-server-side-api.html$ $1/server-side/low-level-api.html
+RedirectMatch 301 ^(.*)/server-side-https-support.html$ $1/server-side/https-support.html
+RedirectMatch 301 ^(.*)/routing-dsl/marshalling.html$ $1/common/marshalling.html
+# Root at (java|scala)/http to avoid loops.
+RedirectMatch 301 ^(.*)/http/websocket-support.html$ $1/http/server-side/websocket-support.html
+
+RedirectMatch 301 ^(.*)/formFieldList.html$ $1/formFieldSeq.html
+RedirectMatch 301 ^(.*)/extractHostName.html$ $1/extractHost.html
+
+RedirectMatch 301 ^(.*)/release-notes.html$ $1/release-notes/
+
+RedirectMatch 301 ^(.*)/scala/http/(.*)$ $1/$2?language=scala
+RedirectMatch 301 ^(.*)/java/http/(.*)$ $1/$2?language=java

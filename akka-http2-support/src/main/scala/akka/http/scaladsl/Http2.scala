@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -11,7 +11,6 @@ import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, Ex
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.{ AlpnSwitch, Http2AlpnSupport, Http2Blueprint }
-import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.Http.ServerBinding
@@ -28,7 +27,8 @@ import scala.util.Success
 import scala.util.control.NonFatal
 
 /** Entry point for Http/2 server */
-class Http2Ext(private val config: Config)(implicit val system: ActorSystem) extends akka.actor.Extension {
+class Http2Ext(private val config: Config)(implicit val system: ActorSystem)
+  extends akka.actor.Extension {
   // FIXME: won't having the same package as top-level break osgi?
 
   private[this] final val DefaultPortForProtocol = -1 // any negative value
@@ -47,11 +47,6 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem) ext
     // automatically preserves association between request and response by setting the right headers, can use mapAsyncUnordered
 
     val effectivePort = if (port >= 0) port else 443
-
-    val unwrapTls: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, ByteString, NotUsed] =
-      BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect {
-        case SessionBytes(_, bytes) ⇒ bytes
-      })
 
     def http2Layer(): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
       Http2Blueprint.serverStack(settings, log) atop
@@ -80,7 +75,7 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem) ext
       }
       val tls = TLS(createEngine, _ ⇒ Success(()), IgnoreComplete)
 
-      AlpnSwitch(getChosenProtocol, Http().serverLayer(), http2Layer()) atop
+      AlpnSwitch(getChosenProtocol, http.serverLayer(settings, None, log), http2Layer()) atop
         tls
     }
 
@@ -98,11 +93,7 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem) ext
     connections.mapAsyncUnordered(settings.maxConnections) {
       case incoming: Tcp.IncomingConnection ⇒
         try {
-          val layer =
-            if (settings.remoteAddressHeader) fullLayer().addAttributes(HttpAttributes.remoteAddress(Some(incoming.remoteAddress)))
-            else fullLayer()
-
-          layer.joinMat(incoming.flow)(Keep.left)
+          fullLayer().addAttributes(Http.prepareAttributes(settings, incoming)).joinMat(incoming.flow)(Keep.left)
             .run().recover {
               // Ignore incoming errors from the connection as they will cancel the binding.
               // As far as it is known currently, these errors can only happen if a TCP error bubbles up
@@ -121,9 +112,15 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem) ext
     }.to(Sink.ignore).run()
   }
 
+  private val unwrapTls: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, ByteString, NotUsed] =
+    BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect {
+      case SessionBytes(_, bytes) ⇒ bytes
+    })
+
 }
 
 object Http2 extends ExtensionId[Http2Ext] with ExtensionIdProvider {
+  override def get(system: ActorSystem): Http2Ext = super.get(system)
   def apply()(implicit system: ActorSystem): Http2Ext = super.apply(system)
   def lookup(): ExtensionId[_ <: Extension] = Http2
   def createExtension(system: ExtendedActorSystem): Http2Ext =

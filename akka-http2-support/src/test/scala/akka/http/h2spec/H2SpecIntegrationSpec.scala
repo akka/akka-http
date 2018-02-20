@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.h2spec
@@ -7,10 +7,10 @@ package akka.http.h2spec
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 
-import akka.http.impl.util.ExampleHttpContexts
+import akka.http.impl.util.{ ExampleHttpContexts, WithLogCapturing }
 import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse }
 import akka.http.scaladsl.server.Directives
-import akka.http.scaladsl.{ Http2, TestUtils }
+import akka.http.scaladsl.Http2
 import akka.stream.ActorMaterializer
 import akka.testkit._
 import org.scalatest.concurrent.ScalaFutures
@@ -18,12 +18,12 @@ import org.scalatest.exceptions.TestPendingException
 
 import scala.concurrent.duration._
 import scala.sys.process._
-import scala.util.control.NoStackTrace
 
 class H2SpecIntegrationSpec extends AkkaSpec(
   """
      akka {
-       loglevel = INFO
+       loglevel = DEBUG
+       loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
        http.server.log-unencrypted-network-bytes = off
         
        actor.serialize-creators = off
@@ -31,7 +31,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
        
        stream.materializer.debug.fuzzing-mode = off
      }
-  """) with Directives with ScalaFutures {
+  """) with Directives with ScalaFutures with WithLogCapturing {
 
   import system.dispatcher
   implicit val mat = ActorMaterializer()
@@ -43,7 +43,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
       HttpResponse().withEntity(HttpEntity(entity.data))
     }
   }
-  val port = TestUtils.temporaryServerAddress().getPort
+  val port = SocketUtil.temporaryServerAddress().getPort
 
   val binding = {
     Http2().bindAndHandleAsync(echo, "127.0.0.1", port, ExampleHttpContexts.exampleServerContext).futureValue
@@ -87,8 +87,8 @@ class H2SpecIntegrationSpec extends AkkaSpec(
         8.2. Server Push
       """.split("\n").map(_.trim).filterNot(_.isEmpty)
 
-    // execution of tests ------------------------------------------------------------------ 
-    val runningOnJenkins = sys.env.get("BUILD_NUMBER").isDefined
+    // execution of tests ------------------------------------------------------------------
+    val runningOnJenkins = System.getenv.containsKey("BUILD_NUMBER")
 
     if (runningOnJenkins) {
       "pass the entire h2spec, producing junit test report" in {
@@ -106,11 +106,11 @@ class H2SpecIntegrationSpec extends AkkaSpec(
           }
       }
     }
-    // end of execution of tests ----------------------------------------------------------- 
+    // end of execution of tests -----------------------------------------------------------
 
     def runSpec(specSectionNumber: String = null, junitOutput: File = null): Unit = {
       require(specSectionNumber != null ^ junitOutput != null, "Only one of the parameters must be not null, selecting the mode we run in.")
-      val TestFailureMarker = "×" // that special character is next to test failures, so we detect them by it 
+      val TestFailureMarker = "×" // that special character is next to test failures, so we detect them by it
 
       val keepAccumulating = new AtomicBoolean(true)
       val sb = new StringBuffer()
@@ -140,10 +140,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
       } else if (output.contains("0 failed")) ()
     }
 
-    def executable = sys.props("h2spec.path")
-  }
-
-  override protected def afterTermination(): Unit = {
-    binding.unbind().futureValue
+    def executable =
+      System.getProperty("h2spec.path").ensuring(_ != null, "h2spec.path property not defined")
   }
 }

@@ -1,28 +1,26 @@
-/**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.scaladsl.settings
 
-import java.lang.Iterable
-import java.util.{ Optional, Random }
-import java.util.function.Supplier
+import java.net.InetSocketAddress
+import java.util.Random
 
+import akka.annotation.DoNotInherit
 import akka.http.impl.util._
 import akka.http.impl.settings.ClientConnectionSettingsImpl
-import akka.http.javadsl.model.headers.UserAgent
-import akka.http.javadsl.{ settings ⇒ js }
 import akka.http.scaladsl.model.headers.`User-Agent`
 import akka.io.Inet.SocketOption
 import com.typesafe.config.Config
 
 import scala.collection.immutable
-import scala.compat.java8.OptionConverters
-import scala.concurrent.duration.{ FiniteDuration, Duration }
-import scala.collection.JavaConverters._
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 /**
  * Public API but not intended for subclassing
  */
+@DoNotInherit
 abstract class ClientConnectionSettings private[akka] () extends akka.http.javadsl.settings.ClientConnectionSettings { self: ClientConnectionSettingsImpl ⇒
   def userAgentHeader: Option[`User-Agent`]
   def connectingTimeout: FiniteDuration
@@ -32,19 +30,7 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   def socketOptions: immutable.Seq[SocketOption]
   def parserSettings: ParserSettings
   def logUnencryptedNetworkBytes: Option[Int]
-
-  /* JAVA APIs */
-
-  final override def getConnectingTimeout: FiniteDuration = connectingTimeout
-  final override def getParserSettings: js.ParserSettings = parserSettings
-  final override def getIdleTimeout: Duration = idleTimeout
-  final override def getSocketOptions: Iterable[SocketOption] = socketOptions.asJava
-  final override def getUserAgentHeader: Optional[UserAgent] = OptionConverters.toJava(userAgentHeader)
-  final override def getLogUnencryptedNetworkBytes: Optional[Int] = OptionConverters.toJava(logUnencryptedNetworkBytes)
-  final override def getRequestHeaderSizeHint: Int = requestHeaderSizeHint
-  final override def getWebsocketRandomFactory: Supplier[Random] = new Supplier[Random] {
-    override def get(): Random = websocketRandomFactory()
-  }
+  def localAddress: Option[InetSocketAddress]
 
   // ---
 
@@ -59,6 +45,15 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   def withLogUnencryptedNetworkBytes(newValue: Option[Int]): ClientConnectionSettings = self.copy(logUnencryptedNetworkBytes = newValue)
   def withSocketOptions(newValue: immutable.Seq[SocketOption]): ClientConnectionSettings = self.copy(socketOptions = newValue)
   def withParserSettings(newValue: ParserSettings): ClientConnectionSettings = self.copy(parserSettings = newValue)
+  def withLocalAddress(newValue: Option[InetSocketAddress]): ClientConnectionSettings = self.copy(localAddress = newValue)
+
+  /**
+   * Returns a new instance with the given local address set if the given override is `Some(address)`, otherwise
+   * return this instance unchanged.
+   */
+  def withLocalAddressOverride(overrideLocalAddressOption: Option[InetSocketAddress]): ClientConnectionSettings =
+    if (overrideLocalAddressOption.isDefined) withLocalAddress(overrideLocalAddressOption)
+    else this
 }
 
 object ClientConnectionSettings extends SettingsCompanion[ClientConnectionSettings] {

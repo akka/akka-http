@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -10,8 +10,6 @@ import scala.util.control.NonFatal
 import akka.http.scaladsl.model.headers.{ HttpEncoding, HttpEncodings }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.coding._
-import akka.http.impl.util._
-import akka.stream.impl.fusing.GraphStages
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -8,8 +8,6 @@ import akka.Done
 import akka.actor.{ Actor, ActorLogging, ActorRef, DeadLetterSuppression, Deploy, NoSerializationVerificationNeeded, Props, Terminated }
 import akka.annotation.InternalApi
 import akka.http.impl.engine.client.PoolInterfaceActor.PoolRequest
-import akka.http.impl.settings.HostConnectionPoolSetup
-import akka.http.scaladsl.HttpExt
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.stream.Materializer
 

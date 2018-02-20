@@ -1,12 +1,12 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.marshalling
 
 import java.util.concurrent.ThreadLocalRandom
 
-import akka.event.{ LoggingAdapter, NoLogging }
+import akka.event.LoggingAdapter
 import akka.http.impl.engine.rendering.BodyPartRenderer
 import akka.http.impl.util.DefaultNoLogging
 import akka.http.scaladsl.model._

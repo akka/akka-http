@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka
 
 import sbt._
@@ -7,110 +11,70 @@ import scala.language.implicitConversions
 object Dependencies {
   import DependencyHelpers._
 
-  val akkaVersion = "2.4.17"
+  val jacksonVersion = "2.9.4"
   val junitVersion = "4.12"
   val h2specVersion = "1.5.0"
   val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
   val h2specExe = "h2spec" + DependencyHelpers.exeIfWindows
   val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.zip"
+  val alpnAgentVersion = "2.0.7"
 
+  val akka25Version = "2.5.9"
+
+  lazy val akkaVersion = settingKey[String]("The version of Akka to use.")
   lazy val scalaTestVersion = settingKey[String]("The version of ScalaTest to use.")
   lazy val specs2Version = settingKey[String]("The version of Specs2 to use")
-  lazy val scalaStmVersion = settingKey[String]("The version of ScalaSTM to use.")
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
-  lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.11.8", "2.12.1"),
+    crossScalaVersions := Seq("2.11.12", "2.12.4"),
     scalaVersion := crossScalaVersions.value.head,
-    scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.13.4"),
-    scalaTestVersion := "3.0.0",
-    specs2Version := "3.8.6",
-    java8CompatVersion := "0.8.0"
+    akkaVersion := System.getProperty("akka.build.version", akka25Version),
+    scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.13.5"),
+    scalaTestVersion := "3.0.5",
+    specs2Version := "4.0.2"
   )
   import Versions._
 
 
   object Compile {
-    // Compile
-
-    // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
-    val netty         = "io.netty"                    % "netty"                        % "3.10.6.Final" // ApacheV2
-
-    val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.5" // Scala License
+    val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.6" // Scala License
     val scalaReflect  = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _) // Scala License
 
-    // ssl-config
-    val sslConfigAkka = "com.typesafe"               %% "ssl-config-akka"              % "0.2.2"       // ApacheV2
-
     // For akka-http spray-json support
-    val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.3"       // ApacheV2
+    val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.4"       // ApacheV2
 
     // For akka-http-jackson support
-    val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % "2.7.6"       // ApacheV2
+    val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % jacksonVersion // ApacheV2
 
     // For akka-http-testkit-java
     val junit       = "junit"                         % "junit"                        % junitVersion  // Common Public License 1.0
-
-    // For Java 8 Conversions
-    val java8Compat = Def.setting {"org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value} // Scala License
-
-    val aeronDriver = "io.aeron"                      % "aeron-driver"                 % "1.0.1"       // ApacheV2
-    val aeronClient = "io.aeron"                      % "aeron-client"                 % "1.0.1"       // ApacheV2
 
     val hpack       = "com.twitter"                   % "hpack"                        % "1.0.2"       // ApacheV2
 
     val alpnApi     = "org.eclipse.jetty.alpn"        % "alpn-api"                     % "1.1.3.v20160715" // ApacheV2
 
+    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.6.1"
+    val jsr305      = "com.google.code.findbugs"      % "jsr305"                       % "3.0.2"             % Provided // ApacheV2
+
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
-      val gson        = "com.google.code.gson"        % "gson"                         % "2.3.1"             % "test"
+      val gson        = "com.google.code.gson"             % "gson"                    % "2.8.2"             % "test"
+      val jacksonXml  = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml"  % jacksonVersion      % "test" // ApacheV2
     }
 
     object Test {
-      val junit        = "junit"                       % "junit"                        % junitVersion       % "test" // Common Public License 1.0
-      val logback      = "ch.qos.logback"              % "logback-classic"              % "1.1.3"            % "test" // EPL 1.0 / LGPL 2.1
-      val mockito      = "org.mockito"                 % "mockito-all"                  % "1.10.19"          % "test" // MIT
+      val junit        = Compile.junit                                                                       % "test" // Common Public License 1.0
       val scalatest    = Def.setting { "org.scalatest"  %% "scalatest"   % scalaTestVersion.value   % "test" }      // ApacheV2
       val specs2       = Def.setting { "org.specs2"     %% "specs2-core" % specs2Version.value      % "test" }      // MIT
       val scalacheck   = Def.setting { "org.scalacheck" %% "scalacheck"  % scalaCheckVersion.value  % "test" }      // New BSD
-      val pojosr       = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.2.1"            % "test" // ApacheV2
-      val tinybundles  = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2
-      val log4j        = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
       val junitIntf    = "com.novocode"                % "junit-interface"              % "0.11"             % "test" // MIT
-      val scalaXml     = "org.scala-lang.modules"     %% "scala-xml"                    % "1.0.4"            % "test"
       val sprayJson    = Compile.sprayJson                                                                   % "test" // ApacheV2
 
-      // in-memory filesystem for file related tests
-      val jimfs        = "com.google.jimfs"            % "jimfs"                        % "1.1"              % "test" // ApacheV2
-
-      // metrics, measurements, perf testing
-      val metrics      = "com.codahale.metrics"        % "metrics-core"                 % "3.0.2"            % "test" // ApacheV2
-      val metricsJvm   = "com.codahale.metrics"        % "metrics-jvm"                  % "3.0.2"            % "test" // ApacheV2
-      val latencyUtils = "org.latencyutils"            % "LatencyUtils"                 % "1.0.3"            % "test" // Free BSD
-      val hdrHistogram = "org.hdrhistogram"            % "HdrHistogram"                 % "2.1.9"            % "test" // CC0
-      val metricsAll   = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
-
       // HTTP/2
-      val alpnAgent    = "org.mortbay.jetty.alpn"      % "jetty-alpn-agent"             % "2.0.6"            % "test" // ApacheV2
+      val alpnAgent    = "org.mortbay.jetty.alpn"      % "jetty-alpn-agent"             % alpnAgentVersion  % "test" // ApacheV2
       val h2spec       = "io.github.summerwind"        % h2specName                     % h2specVersion      % "test" from(h2specUrl) // MIT
-
-      // sigar logging
-      val slf4jJul     = "org.slf4j"                   % "jul-to-slf4j"                 % "1.7.16"           % "test" // MIT
-      val slf4jLog4j   = "org.slf4j"                   % "log4j-over-slf4j"             % "1.7.16"           % "test" // MIT
-
-      // reactive streams tck
-      val reactiveStreamsTck = "org.reactivestreams"   % "reactive-streams-tck"         % "1.0.0"            % "test" // CC0
     }
-
-    object Provided {
-      // TODO remove from "test" config
-      val sigarLoader  = "io.kamon"         % "sigar-loader"        % "1.6.6-rev002"     %     "optional;provided;test" // ApacheV2
-
-      val levelDB       = "org.iq80.leveldb"            % "leveldb"          % "0.7"    %  "optional;provided"     // ApacheV2
-      val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.8"    %  "optional;provided"     // New BSD
-    }
-
   }
 
   import Compile._
@@ -121,12 +85,14 @@ object Dependencies {
     DependencyHelpers.versionDependentDeps(
       Dependencies.Compile.scalaReflect % "provided"
     ),
-    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.fullMapped(nominalScalaVersion))
+    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full)
   )
 
   lazy val httpCore = l ++= Seq(
     Test.sprayJson, // for WS Autobahn test metadata
     Test.scalatest.value, Test.scalacheck.value, Test.junit)
+
+  lazy val httpCaching = l ++= Seq(caffeine, jsr305, Test.scalatest.value)
 
   lazy val http = l ++= Seq()
 
@@ -136,8 +102,8 @@ object Dependencies {
 
   lazy val httpTestkit = l ++= Seq(
     Test.junit, Test.junitIntf, Compile.junit % "provided",
-    Test.scalatest.value.copy(configurations = Some("provided; test")),
-    Test.specs2.value.copy(configurations = Some("provided; test"))
+    Test.scalatest.value.withConfigurations(Some("provided; test")),
+    Test.specs2.value.withConfigurations(Some("provided; test"))
   )
 
   lazy val httpTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.junitIntf)
@@ -154,7 +120,7 @@ object Dependencies {
 
   lazy val httpJackson = l ++= Seq(jackson)
 
-  lazy val docs = l ++= Seq(Docs.sprayJson, Docs.gson)
+  lazy val docs = l ++= Seq(Docs.sprayJson, Docs.gson, Docs.jacksonXml)
 }
 
 
@@ -190,16 +156,17 @@ object DependencyHelpers {
   }
 
   // OS name for Go binaries
-  def osName = {
+  def osName: String = {
     val os = System.getProperty("os.name").toLowerCase()
     if (os startsWith "mac") "darwin"
     else if (os startsWith "win") "windows"
     else "linux"
   }
 
-  def exeIfWindows = {
+  def exeIfWindows: String = {
     val os = System.getProperty("os.name").toLowerCase()
     if (os startsWith "win") ".exe"
     else ""
   }
+
 }

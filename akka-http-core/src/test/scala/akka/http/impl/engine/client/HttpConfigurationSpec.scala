@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -137,10 +137,10 @@ class HttpConfigurationSpec extends AkkaSpec {
           akka.http.host-connection-pool.max-connections = 43
         """.stripMargin) { sys ⇒
 
-        val pool = ConnectionPoolSettings(sys)
-        pool.getMinConnections should ===(42)
-        pool.getMaxConnections should ===(43)
-      }
+          val pool = ConnectionPoolSettings(sys)
+          pool.getMinConnections should ===(42)
+          pool.getMaxConnections should ===(43)
+        }
 
       configuredSystem(""" """) { sys ⇒
 
@@ -154,8 +154,8 @@ class HttpConfigurationSpec extends AkkaSpec {
           akka.http.host-connection-pool.max-connections = 1
         """.stripMargin) { sys ⇒
 
-        intercept[IllegalArgumentException] { ConnectionPoolSettings(sys) }
-      }
+          intercept[IllegalArgumentException] { ConnectionPoolSettings(sys) }
+        }
     }
   }
 

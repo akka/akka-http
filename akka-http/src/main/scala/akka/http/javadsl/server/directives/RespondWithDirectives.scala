@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.javadsl.server.directives
 
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.function.Supplier
-import java.util.{ List ⇒ JList }
 
 import akka.http.javadsl.model.HttpHeader
 import akka.http.javadsl.server.Route

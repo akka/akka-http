@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -16,7 +16,7 @@ import akka.http.scaladsl.model.ws._
 import Protocol.Opcode
 import akka.testkit._
 import akka.stream.OverflowStrategy
-import org.scalatest.concurrent.{ Eventually, PatienceConfiguration }
+import org.scalatest.concurrent.Eventually
 
 class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with Eventually {
   import WSTestUtils._
@@ -175,7 +175,6 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
           val data = ByteString(msg, "UTF-8")
           val data0 = data.slice(0, 2)
           val data1 = data.slice(2, 5)
-          val data2 = data.slice(5, data.size)
           val input = frameHeader(Opcode.Text, data.size, fin = true) ++ data0
 
           pushInput(input)
@@ -202,7 +201,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
           parts.runWith(Sink.fromSubscriber(sub))
           val s = sub.expectSubscription()
           s.request(4)
-          sub.expectNoMsg(100.millis.dilated)
+          sub.expectNoMessage(100.millis)
 
           val header1 = frameHeader(Opcode.Continuation, data1.size, fin = true)
           pushInput(header1 ++ data1)
@@ -244,8 +243,8 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
 
         // push single-byte ByteStrings without reading anything until it fails
         // this should be after the internal input buffers have filled up
-        eventually(PatienceConfiguration.Timeout(500.millis.dilated), PatienceConfiguration.Interval(1.milli.dilated)) {
-          the[AssertionError] thrownBy pushInput(ByteString("a"))
+        eventually(timeout(1.second.dilated), interval(10.millis)) {
+          an[AssertionError] should be thrownBy pushInput(ByteString("a"))
         }
       }
     }
@@ -453,7 +452,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         pushInput(closeFrame(Protocol.CloseCodes.Regular, mask = true))
         expectComplete(messageIn)
 
-        netIn.expectNoMsg(100.millis.dilated) // especially the cancellation not yet
+        netIn.expectNoMessage(100.millis) // especially the cancellation not yet
         expectNoNetworkData()
         messageOut.sendComplete()
 
@@ -482,7 +481,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         pushInput(closeFrame(Protocol.CloseCodes.Regular, mask = true))
         expectComplete(messageIn)
 
-        netIn.expectNoMsg(100.millis.dilated) // especially the cancellation not yet
+        netIn.expectNoMessage(100.millis) // especially the cancellation not yet
         expectNoNetworkData()
         messageOut.sendComplete()
 
@@ -615,7 +614,6 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         expectCloseCodeOnNetwork(Protocol.CloseCodes.Regular)
         expectNoNetworkData() // wait for peer to close regularly
 
-        val mask = Random.nextInt()
         pushInput(closeFrame(Protocol.CloseCodes.Regular, mask = true))
 
         expectComplete(messageIn)

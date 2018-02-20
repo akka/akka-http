@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2016 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -12,11 +12,8 @@ import akka.http.scaladsl.model.headers._
 import akka.stream.scaladsl._
 import akka.testkit.EventFilter
 import akka.util.ByteString
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.Matchers
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
 
 class EntityStreamingSpec extends RoutingSpec {
 

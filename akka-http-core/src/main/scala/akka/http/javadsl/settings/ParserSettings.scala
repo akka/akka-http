@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.javadsl.settings
 
 import java.util.Optional
@@ -9,16 +10,19 @@ import akka.actor.ActorSystem
 import akka.http.impl.engine.parsing.BodyPartParser
 import akka.http.impl.settings.ParserSettingsImpl
 import java.{ util ⇒ ju }
+
+import akka.annotation.DoNotInherit
 import akka.http.impl.util.JavaMapping.Implicits._
+
 import scala.annotation.varargs
 import scala.collection.JavaConverters._
-
-import akka.http.javadsl.model.{ MediaType, HttpMethod, StatusCode, Uri }
+import akka.http.javadsl.model.{ HttpMethod, MediaType, StatusCode, Uri }
 import com.typesafe.config.Config
 
 /**
  * Public API but not intended for subclassing
  */
+@DoNotInherit
 abstract class ParserSettings private[akka] () extends BodyPartParser.Settings { self: ParserSettingsImpl ⇒
   def getMaxUriLength: Int
   def getMaxMethodLength: Int
@@ -40,6 +44,7 @@ abstract class ParserSettings private[akka] () extends BodyPartParser.Settings {
   def getCustomMethods: java.util.function.Function[String, Optional[HttpMethod]]
   def getCustomStatusCodes: java.util.function.Function[Int, Optional[StatusCode]]
   def getCustomMediaTypes: akka.japi.function.Function2[String, String, Optional[MediaType]]
+  def getModeledHeaderParsing: Boolean
 
   // ---
 
@@ -58,6 +63,7 @@ abstract class ParserSettings private[akka] () extends BodyPartParser.Settings {
   def withErrorLoggingVerbosity(newValue: ParserSettings.ErrorLoggingVerbosity): ParserSettings = self.copy(errorLoggingVerbosity = newValue.asScala)
   def withHeaderValueCacheLimits(newValue: ju.Map[String, Int]): ParserSettings = self.copy(headerValueCacheLimits = newValue.asScala.toMap)
   def withIncludeTlsSessionInfoHeader(newValue: Boolean): ParserSettings = self.copy(includeTlsSessionInfoHeader = newValue)
+  def withModeledHeaderParsing(newValue: Boolean): ParserSettings = self.copy(modeledHeaderParsing = newValue)
 
   // special ---
 

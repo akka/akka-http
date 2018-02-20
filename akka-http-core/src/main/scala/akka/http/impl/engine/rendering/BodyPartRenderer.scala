@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.rendering
@@ -102,8 +102,8 @@ private[http] object BodyPartRenderer {
         renderHeaders(r, part.headers, log)
         r ~~ part.entity.data
       }
-      renderFinalBoundary(r, boundary)
     }
+    renderFinalBoundary(r, boundary)
     r.get
   }
 

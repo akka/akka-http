@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -14,10 +14,11 @@ import scala.util.Random
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import akka.util.ByteString
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpHeader
+import akka.http.scaladsl.model.{ ErrorInfo, HttpHeader }
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.model.parser.CharacterClasses
 import akka.http.impl.util._
+import akka.http.scaladsl.settings.ParserSettings.IllegalResponseHeaderValueProcessingMode
 import akka.testkit.TestKit
 
 abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordSpec with Matchers with BeforeAndAfterAll {
@@ -31,7 +32,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
   val system = ActorSystem(getClass.getSimpleName, testConf)
 
   s"The HttpHeaderParser (mode: $mode)" should {
-    "insert the 1st value" in new TestSetup(primed = false) {
+    "insert the 1st value" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
       insert("Hello", 'Hello)
       check {
         """nodes: 0/H, 0/e, 0/l, 0/l, 0/o, 1/Ω
@@ -44,7 +45,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       }
     }
 
-    "insert a new branch underneath a simple node" in new TestSetup(primed = false) {
+    "insert a new branch underneath a simple node" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
       insert("Hello", 'Hello)
       insert("Hallo", 'Hallo)
       check {
@@ -59,7 +60,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       }
     }
 
-    "insert a new branch underneath the root" in new TestSetup(primed = false) {
+    "insert a new branch underneath the root" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
       insert("Hello", 'Hello)
       insert("Hallo", 'Hallo)
       insert("Yeah", 'Yeah)
@@ -76,7 +77,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       }
     }
 
-    "insert a new branch underneath an existing branch node" in new TestSetup(primed = false) {
+    "insert a new branch underneath an existing branch node" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
       insert("Hello", 'Hello)
       insert("Hallo", 'Hallo)
       insert("Yeah", 'Yeah)
@@ -95,7 +96,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       }
     }
 
-    "support overriding of previously inserted values" in new TestSetup(primed = false) {
+    "support overriding of previously inserted values" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
       insert("Hello", 'Hello)
       insert("Hallo", 'Hallo)
       insert("Yeah", 'Yeah)
@@ -138,15 +139,15 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
     "parse and cache an X-Real-Ip with a hostname as it's value as a RawHeader" in new TestSetup() {
       parseAndCache(s"X-Real-Ip: akka.io${newLine}x")() shouldEqual RawHeader("x-real-ip", "akka.io")
     }
-    "parse and cache a raw header" in new TestSetup(primed = false) {
+    "parse and cache a raw header" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
       insert("hello: bob", 'Hello)
       val (ixA, headerA) = parseLine(s"Fancy-Pants: foo${newLine}x")
       val (ixB, headerB) = parseLine(s"Fancy-pants: foo${newLine}x")
       val newLineWithHyphen = if (newLine == "\r\n") """\r-\n""" else """\n"""
       check {
         s""" ┌─f-a-n-c-y---p-a-n-t-s-:-(Fancy-Pants)- -f-o-o-${newLineWithHyphen}- *Fancy-Pants: foo
-          |-h-e-l-l-o-:- -b-o-b- 'Hello
-          |""" → parser.formatTrie
+           |-h-e-l-l-o-:- -b-o-b- 'Hello
+           |""" → parser.formatTrie
       }
       ixA shouldEqual ixB
       headerA shouldEqual RawHeader("Fancy-Pants", "foo")
@@ -181,14 +182,14 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
     }
 
     "produce an error message for lines with a too-long header value" in new TestSetup() {
-      noException should be thrownBy parseLine(s"foo: ${nextRandomString(nextRandomAlphaNumChar, 1000)}${newLine}x")
-      the[ParsingException] thrownBy parseLine(s"foo: ${nextRandomString(nextRandomAlphaNumChar, 1001)}${newLine}x") should have message
+      noException should be thrownBy parseLine(s"foo: ${nextRandomString(nextRandomAlphaNumChar _, 1000)}${newLine}x")
+      the[ParsingException] thrownBy parseLine(s"foo: ${nextRandomString(nextRandomAlphaNumChar _, 1001)}${newLine}x") should have message
         "HTTP header value exceeds the configured limit of 1000 characters"
     }
 
     "continue parsing raw headers even if the overall cache value capacity is reached" in new TestSetup() {
       val randomHeaders = Stream.continually {
-        val name = nextRandomString(nextRandomAlphaNumChar, nextRandomInt(4, 16))
+        val name = nextRandomString(nextRandomAlphaNumChar _, nextRandomInt(4, 16))
         val value = nextRandomString(nextRandomPrintableChar, nextRandomInt(4, 16))
         RawHeader(name, value)
       }
@@ -200,7 +201,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
     "continue parsing modelled headers even if the overall cache value capacity is reached" in new TestSetup() {
       val randomHostHeaders = Stream.continually {
         Host(
-          host = nextRandomString(nextRandomAlphaNumChar, nextRandomInt(4, 8)),
+          host = nextRandomString(nextRandomAlphaNumChar _, nextRandomInt(4, 8)),
           port = nextRandomInt(1000, 10000))
       }
       randomHostHeaders.take(300).foldLeft(0) {
@@ -211,8 +212,8 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
     "continue parsing headers even if the overall cache node capacity is reached" in new TestSetup() {
       val randomHostHeaders = Stream.continually {
         RawHeader(
-          name = nextRandomString(nextRandomAlphaNumChar, 60),
-          value = nextRandomString(nextRandomAlphaNumChar, 1000))
+          name = nextRandomString(nextRandomAlphaNumChar _, 60),
+          value = nextRandomString(nextRandomAlphaNumChar _, 1000))
       }
       randomHostHeaders.take(100).foldLeft(0) {
         case (acc, header) ⇒ acc + parseAndCache(header.toString + s"${newLine}x", header)
@@ -231,11 +232,27 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
 
     "continue parsing modelled headers even if the header-specific cache capacity is reached" in new TestSetup() {
       val randomHeaders = Stream.continually {
-        `User-Agent`(nextRandomString(nextRandomAlphaNumChar, nextRandomInt(4, 16)))
+        `User-Agent`(nextRandomString(nextRandomAlphaNumChar _, nextRandomInt(4, 16)))
       }
       randomHeaders.take(40).foldLeft(0) {
         case (acc, header) ⇒ acc + parseAndCache(header.toString + s"${newLine}x", header)
       } shouldEqual 12 // configured default per-header cache limit
+    }
+
+    "ignore headers whose value cannot be parsed" in new TestSetup(testSetupMode = TestSetupMode.Default) {
+      noException should be thrownBy parseLine(s"Server: something; something${newLine}x")
+      parseAndCache(s"Server: something; something${newLine}x")() shouldEqual RawHeader("server", "something; something")
+    }
+
+    "parse most headers to RawHeader when `modeled-header-parsing = off`" in new TestSetup(
+      parserSettings = createParserSettings(system).withModeledHeaderParsing(false)) {
+      // Connection, Host, and Expect should still be modelled
+      parseAndCache(s"Connection: close${newLine}x")(s"CONNECTION: close${newLine}x") shouldEqual Connection("close")
+      parseAndCache(s"Host: spray.io:123${newLine}x")(s"HOST: spray.io:123${newLine}x") shouldEqual Host("spray.io", 123)
+
+      // don't parse other headers
+      parseAndCache(s"User-Agent: hmpf${newLine}x")(s"USER-AGENT: hmpf${newLine}x") shouldEqual RawHeader("User-Agent", "hmpf")
+      parseAndCache(s"X-Forwarded-Host: localhost:8888${newLine}x")(s"X-FORWARDED-Host: localhost:8888${newLine}x") shouldEqual RawHeader("X-Forwarded-Host", "localhost:8888")
     }
   }
 
@@ -246,19 +263,34 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
     actual shouldEqual expected.stripMarginWithNewline("\n")
   }
 
-  abstract class TestSetup(primed: Boolean = true) {
-    val parser = {
-      val p = HttpHeaderParser.unprimed(
-        settings = ParserSettings(system),
-        system.log,
-        warnOnIllegalHeader = info ⇒ system.log.warning(info.formatPretty))
-      if (primed) HttpHeaderParser.prime(p) else p
+  sealed trait TestSetupMode
+  object TestSetupMode {
+    case object Primed extends TestSetupMode
+    case object Unprimed extends TestSetupMode
+    case object Default extends TestSetupMode // creates a test setup using the default HttpHeaderParser.apply()
+  }
+
+  def createParserSettings(
+    actorSystem:                              ActorSystem,
+    illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode = IllegalResponseHeaderValueProcessingMode.Error): ParserSettings =
+    ParserSettings(actorSystem)
+      .withIllegalResponseHeaderValueProcessingMode(illegalResponseHeaderValueProcessingMode)
+
+  abstract class TestSetup(testSetupMode: TestSetupMode = TestSetupMode.Primed, parserSettings: ParserSettings = createParserSettings(system)) {
+
+    val parser = testSetupMode match {
+      case TestSetupMode.Primed   ⇒ HttpHeaderParser.prime(HttpHeaderParser.unprimed(parserSettings, system.log, defaultIllegalHeaderHandler))
+      case TestSetupMode.Unprimed ⇒ HttpHeaderParser.unprimed(parserSettings, system.log, defaultIllegalHeaderHandler)
+      case TestSetupMode.Default  ⇒ HttpHeaderParser(parserSettings, system.log)
     }
+
+    private def defaultIllegalHeaderHandler = (info: ErrorInfo) ⇒ system.log.warning(info.formatPretty)
+
     def insert(line: String, value: AnyRef): Unit =
       if (parser.isEmpty) HttpHeaderParser.insertRemainingCharsAsNewNodes(parser, ByteString(line), value)
       else HttpHeaderParser.insert(parser, ByteString(line), value)
 
-    def parseLine(line: String) = parser.parseHeaderLine(ByteString(line))() → parser.resultHeader
+    def parseLine(line: String) = parser.parseHeaderLine(ByteString(line))() → { system.log.warning(parser.resultHeader.getClass.getSimpleName); parser.resultHeader }
 
     def parseAndCache(lineA: String)(lineB: String = lineA): HttpHeader = {
       val (ixA, headerA) = parseLine(lineA)

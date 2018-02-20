@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http
 
 import java.io.{ BufferedWriter, FileWriter }
@@ -11,11 +12,11 @@ import akka.actor.{ Actor, ActorIdentity, ActorRef, Identify, Props }
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.{ ContentTypes, HttpEntity }
 import akka.http.scaladsl.server.{ Directives, Route }
-import akka.http.scaladsl.{ Http, TestUtils }
+import akka.http.scaladsl.Http
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
-import akka.testkit.{ ImplicitSender, LongRunningTest }
+import akka.testkit.{ ImplicitSender, LongRunningTest, SocketUtil }
 import akka.util.{ ByteString, Timeout }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
@@ -33,6 +34,7 @@ object AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeConfig {
       akka {
         actor.default-mailbox.mailbox-type = "akka.dispatch.UnboundedMailbox"
         actor.provider = "akka.remote.RemoteActorRefProvider"
+        actor.warn-about-java-serializer-usage = off
         stream.materializer.debug.fuzzing-mode = off
 
         testconductor.barrier-timeout = 30m
@@ -181,7 +183,7 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
         enterBarrier("load-gen-ready")
 
         runOn(server) {
-          val (_, _, port) = TestUtils.temporaryServerHostnameAndPort()
+          val (_, port) = SocketUtil.temporaryServerHostnameAndPort()
           info(s"Binding Akka HTTP Server to port: $port @ ${myself}")
           val futureBinding = Http().bindAndHandle(routes, "0.0.0.0", port)
 

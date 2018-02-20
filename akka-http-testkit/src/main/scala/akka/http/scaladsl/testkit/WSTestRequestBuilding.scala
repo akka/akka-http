@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.testkit
@@ -23,8 +23,8 @@ trait WSTestRequestBuilding {
           HttpResponse(
             StatusCodes.SwitchingProtocols,
             headers =
-            Upgrade(UpgradeProtocol("websocket") :: Nil) ::
-              subprotocol.map(p ⇒ `Sec-WebSocket-Protocol`(p :: Nil)).toList)
+              Upgrade(UpgradeProtocol("websocket") :: Nil) ::
+                subprotocol.map(p ⇒ `Sec-WebSocket-Protocol`(p :: Nil)).toList)
         }
       })
 }

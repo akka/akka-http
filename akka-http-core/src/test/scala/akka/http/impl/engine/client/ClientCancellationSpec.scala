@@ -1,29 +1,36 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.http.impl.engine.client
 
 import javax.net.ssl.SSLContext
-import akka.http.scaladsl.{ ConnectionContext, Http, TestUtils }
-import akka.http.scaladsl.model.{ HttpResponse, HttpRequest }
+
+import akka.http.impl.util.WithLogCapturing
+import akka.http.scaladsl.{ ConnectionContext, Http }
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Sink, Source }
-import akka.stream.testkit.{ TestSubscriber, TestPublisher, Utils }
+import akka.stream.testkit.{ TestPublisher, TestSubscriber, Utils }
 import akka.http.scaladsl.model.headers
-import akka.testkit.AkkaSpec
+import akka.testkit.{ AkkaSpec, SocketUtil }
 
 class ClientCancellationSpec extends AkkaSpec("""
     akka.loglevel = DEBUG
-    akka.io.tcp.trace-logging = off""") {
+    akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
+    akka.io.tcp.trace-logging = off""") with WithLogCapturing {
 
   implicit val materializer = ActorMaterializer()
   val noncheckedMaterializer = ActorMaterializer()
 
   "Http client connections" must {
-    val address = TestUtils.temporaryServerAddress()
+    val address = SocketUtil.temporaryServerAddress()
     Http().bindAndHandleSync(
       { req ⇒ HttpResponse(headers = headers.Connection("close") :: Nil) },
       address.getHostName,
       address.getPort)(noncheckedMaterializer)
 
-    val addressTls = TestUtils.temporaryServerAddress()
+    val addressTls = SocketUtil.temporaryServerAddress()
     Http().bindAndHandleSync(
       { req ⇒ HttpResponse() }, // TLS client does full-close, no need for the connection:close header
       addressTls.getHostName,
@@ -50,7 +57,7 @@ class ClientCancellationSpec extends AkkaSpec("""
       testCase(
         Flow[HttpRequest]
           .map((_, ()))
-          .via(Http().cachedHostConnectionPool(address.getHostName, address.getPort)(noncheckedMaterializer))
+          .via(Http().cachedHostConnectionPool(address.getHostName, address.getPort))
           .map(_._1.get))
     }
 
@@ -65,7 +72,7 @@ class ClientCancellationSpec extends AkkaSpec("""
       testCase(
         Flow[HttpRequest]
           .map((_, ()))
-          .via(Http().cachedHostConnectionPoolHttps(addressTls.getHostName, addressTls.getPort)(noncheckedMaterializer))
+          .via(Http().cachedHostConnectionPoolHttps(addressTls.getHostName, addressTls.getPort))
           .map(_._1.get))
     }
 

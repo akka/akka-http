@@ -1,26 +1,33 @@
-/**
-  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
-  */
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka
 
-import java.io.{File => _, _}
+import java.io._
 
-import akka.MimaWithPrValidation.{MimaResult, Problems}
-import com.typesafe.tools.mima.plugin.MimaKeys.mimaReportBinaryIssues
-import com.typesafe.tools.mima.plugin.MimaPlugin
-import net.virtualvoid.sbt.graph.backend.SbtUpdateReport
+import akka.MimaWithPrValidation.MimaResult
+import akka.MimaWithPrValidation.Problems
 import net.virtualvoid.sbt.graph.ModuleGraph
-import org.kohsuke.github.{GHIssueComment, GitHubBuilder}
-import sbt.Aggregation.{Complete, KeyValue, ShowConfig}
-import sbtunidoc.Plugin.UnidocKeys.unidoc
+import net.virtualvoid.sbt.graph.backend.SbtUpdateReport
+import org.kohsuke.github.GHIssueComment
+import org.kohsuke.github.GitHubBuilder
 import sbt.Keys._
-import sbt.Scope.{GlobalScope => _, _}
 import sbt._
-import sbt.plugins.JvmPlugin
-import sbt.std.Streams
+import sbt.access.Aggregation
+import sbt.access.Aggregation.Complete
+import sbt.access.Aggregation.KeyValue
+import sbt.access.Aggregation.ShowConfig
+import sbt.internal.util.MainAppender
+import sbt.internal.Act
+import sbt.internal.BuildStructure
 import sbt.std.Transform.DummyTaskMap
+import sbt.util.LogExchange
+import sbtunidoc.BaseUnidocPlugin.autoImport.unidoc
 
+import scala.collection.JavaConverters._
 import scala.collection.immutable
+import scala.sys.process._
 import scala.util.Try
 import scala.util.matching.Regex
 
@@ -92,6 +99,9 @@ object ValidatePullRequest extends AutoPlugin {
   val executePullRequestValidation = taskKey[Seq[KeyValue[Result[Any]]]]("Run pull request per project")
   val additionalTasks = taskKey[Seq[TaskKey[_]]]("Additional tasks for pull request validation")
 
+  // The set of (top-level) files or directories to watch for build changes.
+  val BuildFilesAndDirectories = Set("project", "build.sbt")
+
   def changedDirectoryIsDependency(changedDirs: Set[String], name: String, graphsToTest: Seq[(Configuration, ModuleGraph)])(log: Logger): Boolean = {
     val dirsOrExperimental = changedDirs.flatMap(dir => Set(dir, s"$dir-experimental"))
     graphsToTest exists { case (ivyScope, deps) =>
@@ -110,8 +120,8 @@ object ValidatePullRequest extends AutoPlugin {
     }
   }
 
-  def localTargetBranch: Option[String] = sys.env.get("PR_TARGET_BRANCH")
-  def jenkinsTargetBranch: Option[String] = sys.env.get("ghprbTargetBranch")
+  def localTargetBranch: Option[String] = System.getenv.asScala.get("PR_TARGET_BRANCH")
+  def jenkinsTargetBranch: Option[String] = System.getenv.asScala.get("ghprbTargetBranch")
   def runningOnJenkins: Boolean = jenkinsTargetBranch.isDefined
   def runningLocally: Boolean = !runningOnJenkins
 
@@ -133,9 +143,9 @@ object ValidatePullRequest extends AutoPlugin {
     buildAllKeyword in Global in ValidatePR := """PLS BUILD ALL""".r,
 
     gitHubEnforcedBuildAll in Global in ValidatePR := {
+      val log = streams.value.log
+      val buildAllMagicPhrase = (buildAllKeyword in ValidatePR).value
       sys.env.get(PullIdEnvVarName).map(_.toInt) flatMap { prId =>
-        val log = streams.value.log
-        val buildAllMagicPhrase = (buildAllKeyword in ValidatePR).value
         log.info("Checking GitHub comments for PR validation options...")
 
         try {
@@ -168,8 +178,7 @@ object ValidatePullRequest extends AutoPlugin {
           .filter(l =>
             l.startsWith("akka-") ||
               l.startsWith("docs") ||
-              (l.startsWith("project") && l != "project/MiMa.scala") ||
-              (l == "build.sbt")
+              BuildFilesAndDirectories.exists(l startsWith)
           )
           .map(l ⇒ l.takeWhile(_ != '/'))
           .toSet
@@ -181,7 +190,7 @@ object ValidatePullRequest extends AutoPlugin {
           val dirtyDirectories = statusOutput
             .map(l ⇒ l.trim.dropWhile(_ != ' ').drop(1))
             .map(_.takeWhile(_ != '/'))
-            .filter(dir => dir.startsWith("akka-") || dir.startsWith("docs") || dir == "project")
+            .filter(dir => dir.startsWith("akka-") || dir.startsWith("docs") || BuildFilesAndDirectories.contains(dir))
             .toSet
           log.info("Detected uncomitted changes in directories (including in dependency analysis): " + dirtyDirectories.mkString("[", ",", "]"))
           dirtyDirectories
@@ -207,9 +216,9 @@ object ValidatePullRequest extends AutoPlugin {
       val thisProjectId = CrossVersion(scalaVersion.value, scalaBinaryVersion.value)(projectID.value)
 
       def graphFor(updateReport: UpdateReport, config: Configuration): (Configuration, ModuleGraph) =
-        config -> SbtUpdateReport.fromConfigurationReport(updateReport.configuration(config.name).get, thisProjectId)
+        config -> SbtUpdateReport.fromConfigurationReport(updateReport.configuration(config).get, thisProjectId)
 
-      def isDependency: Boolean =
+      def isDependency: Boolean = {
         changedDirectoryIsDependency(
           changedDirs,
           name.value,
@@ -219,10 +228,11 @@ object ValidatePullRequest extends AutoPlugin {
             graphFor((update in Runtime).value, Runtime),
             graphFor((update in Provided).value, Provided),
             graphFor((update in Optional).value, Optional)))(log)
+      }
 
       if (githubCommandEnforcedBuildAll.isDefined)
         githubCommandEnforcedBuildAll.get
-      else if (changedDirs contains "project")
+      else if (changedDirs exists (BuildFilesAndDirectories contains))
         BuildProjectChangedQuick
       else if (isDependency)
         BuildQuick
@@ -244,13 +254,6 @@ object ValidatePullRequest extends AutoPlugin {
       })).asInstanceOf[Seq[TaskKey[Any]]]
 
       val thisProject = Def.resolvedScoped.value.scope.project.toOption.get
-      //log.info(Def.resolvedScoped.value.toString)
-
-      //val joinedTask : Task[Seq[KeyValue[Result[Any]]]] =
-      /*validationTasks.map(key => key.toTask.result.map(res => KeyValue(key, res))).join
-        .map(_.join)*/
-
-      // Initialize[Task[Seq[KeyValue[Result[Any]]]]]
 
       // Create a task for every validation task key and
       // then zip all of the tasks together discarding outputs.
@@ -262,30 +265,7 @@ object ValidatePullRequest extends AutoPlugin {
         }
       } apply { tasks: Seq[Task[KeyValue[Result[Any]]]] =>
         tasks.join
-        /*Task[Seq[Result[Any]]](Info(), new Join(tasks,  { s: Seq[Result[Any]] =>
-          /*//println(s"Results ${s.size}: $s")
-          val onlyTestResults = s collect {
-            case Value(o: Tests.Output) =>
-              o
-          }
-
-          log.info("------------------------------")
-          log.info("Pull request validation report")
-          log.info("------------------------------")
-
-          onlyTestResults.foreach { res =>
-            Try {
-              TestResultLogger.Default.run(log, res, "<unknown>")
-            }
-          }
-
-          log.info("------------------")
-
-          Right(TaskExtra.all(s))*/
-          Right(s)*/
-        //}))
       }
-      //joinedTask
     }.value
   )
 }
@@ -306,7 +286,7 @@ object AggregatePRValidation extends AutoPlugin {
       keys.foreach(x => log.info(x.toString))
       log.info("END")
 
-      def timedRun[T](s: State, ts: Seq[KeyValue[Task[T]]], extra: DummyTaskMap): Complete[Result[T]] = {
+      def timedRun[T](s: State, ts: Seq[sbt.internal.Aggregation.KeyValue[Task[T]]], extra: DummyTaskMap): Complete[Result[T]] = {
         import EvaluateTask._
         import std.TaskExtra._
 
@@ -333,9 +313,9 @@ object AggregatePRValidation extends AutoPlugin {
         Complete(start, stop, result, newS)
       }
 
-      def runTasks[HL <: HList, T](s: State, structure: BuildStructure, ts: Seq[KeyValue[Task[T]]], extra: DummyTaskMap, show: ShowConfig)(implicit display: Show[ScopedKey[_]]): (State, Result[Seq[KeyValue[Result[T]]]])  = {
+      def runTasks[T](s: State, structure: BuildStructure, ts: Seq[sbt.internal.Aggregation.KeyValue[Task[T]]], extra: DummyTaskMap, show: ShowConfig)(implicit display: Show[ScopedKey[_]]): (State, Result[Seq[KeyValue[Result[T]]]])  = {
         val complete = timedRun[T](s, ts, extra)
-        Aggregation.showRun(complete, show)
+        sbt.access.AggregationShowRun(complete, show)
         val newState =
           complete.results match {
             case Inc(i)   => complete.state.handleError(i)
@@ -353,7 +333,7 @@ object AggregatePRValidation extends AutoPlugin {
         val tasks = Act.keyValues(extracted.structure)(keys)
         log.info(s"Tasks to aggregate are: $keys $tasks")
 
-        runTasks(state, extracted.structure, tasks, DummyTaskMap(Nil), show = Aggregation.defaultShow(state, false))(extracted.showKey)
+        runTasks[T](state, extracted.structure, tasks, DummyTaskMap(Nil), show = Aggregation.defaultShow(state, false))(extracted.showKey)
       }
 
       val (newState, result) = runAggregated(executePullRequestValidation in extracted.currentRef, state.value)
@@ -378,7 +358,10 @@ object AggregatePRValidation extends AutoPlugin {
         log.info(msg)
         fw.println(msg)
       }
-      val testLogger = MainLogging.defaultBacked(useColor = false)(fw)
+
+      val testLogger = LogExchange.logger("testLogger")
+      val appender = MainAppender.defaultBacked(useFormat = false)(fw)
+      LogExchange.bindLoggerAppenders("testLogger", appender -> Level.Info :: Nil)
 
       log.info("")
       write("------------------------------")
@@ -386,7 +369,7 @@ object AggregatePRValidation extends AutoPlugin {
       write("------------------------------")
       write("")
 
-      def showKey(key: ScopedKey[_]): String = Project.showContextKey(newState)(key)
+      def showKey(key: ScopedKey[_]): String = Project.showContextKey(newState).show(key)
       def printTestResults(result: KeyValue[Tests.Output]): Unit = {
         write(s"Test result for '${showKey(result.key)}'")
 
@@ -396,6 +379,9 @@ object AggregatePRValidation extends AutoPlugin {
         // HACK: there is no logger which would both log to our file and the console, so we log twice
         safeLogTestResults(log)
         safeLogTestResults(testLogger)
+
+        // there seems to be some async logging going on, so let's wait for a while to be sure the appender has flushed
+        Thread.sleep(100)
 
         write("")
       }
@@ -552,13 +538,17 @@ object MimaWithPrValidation extends AutoPlugin {
               streams.value
             )
 
+            val binary = mimaBinaryIssueFilters.value
+            val backward = mimaBackwardIssueFilters.value
+            val forward = mimaForwardIssueFilters.value
+
             withLogger { logger =>
               reportModuleErrors(
                 moduleId,
                 problems._1, problems._2,
-                mimaBinaryIssueFilters.value,
-                mimaBackwardIssueFilters.value,
-                mimaForwardIssueFilters.value,
+                binary,
+                backward,
+                forward,
                 logger,
                 name.value)
             }

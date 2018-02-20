@@ -1,15 +1,17 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
 
 import akka.actor._
-import akka.event.Logging
+import akka.event.{ LogSource, Logging, LoggingAdapter }
 import akka.http.impl.engine.client.PoolFlow._
+import akka.http.impl.engine.client.pool.NewHostConnectionPool
 import akka.http.impl.util.RichHttpRequest
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.settings.PoolImplementation
 import akka.macros.LogHelper
 import akka.stream.actor.ActorPublisherMessage._
 import akka.stream.actor.ActorSubscriberMessage._
@@ -30,6 +32,23 @@ private object PoolInterfaceActor {
   val name = SeqActorName("PoolInterfaceActor")
 
   def props(gateway: PoolGateway)(implicit fm: Materializer) = Props(new PoolInterfaceActor(gateway)).withDeploy(Deploy.local)
+
+  /**
+   * LogSource for PoolGateway instances
+   *
+   * Using this LogSource allows us to set the log class to `PoolInterfaceActor` and the log source string
+   * to a descriptive name that describes a particular pool instance.
+   */
+  private val GatewayLogSource: LogSource[PoolGateway] =
+    new LogSource[PoolGateway] {
+      def genString(gateway: PoolGateway): String = {
+        val scheme = if (gateway.hcps.setup.connectionContext.isSecure) "https" else "http"
+        s"Pool(${gateway.gatewayId.name}->$scheme://${gateway.hcps.host}:${gateway.hcps.port})"
+      }
+      override def genString(gateway: PoolGateway, system: ActorSystem): String = s"${system.name}/${genString(gateway)}"
+
+      override def getClazz(t: PoolGateway): Class[_] = classOf[PoolGateway]
+    }
 }
 
 /**
@@ -48,16 +67,19 @@ private object PoolInterfaceActor {
  */
 private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer)
   extends ActorSubscriber with ActorPublisher[RequestContext] with LogHelper {
-  override val log = {
-    val scheme = if (gateway.hcps.setup.connectionContext.isSecure) "https" else "http"
-    Logging.getLogger(context.system, s"${context.system.name}/Pool(${gateway.gatewayId.name}->$scheme://${gateway.hcps.host}:${gateway.hcps.port})")
-  }
+  override val log: LoggingAdapter = Logging(context.system, gateway)(PoolInterfaceActor.GatewayLogSource)
 
   import PoolInterfaceActor._
 
   private[this] val hcps = gateway.hcps
   private[this] val inputBuffer = Buffer[PoolRequest](hcps.setup.settings.maxOpenRequests, fm)
   private[this] var activeIdleTimeout: Option[Cancellable] = None
+
+  /*
+   * If true, the pool is shutting down and waiting for ongoing requests to be completed. Requests coming in in this state
+   * will be redispatched through the gateway. Once all requests were handled this pool shuts down itself.
+   */
+  private[this] var shuttingDown: Boolean = false
 
   private[this] val PoolOverflowException = new BufferOverflowException( // stack trace cannot be prevented here because `BufferOverflowException` is final
     s"Exceeded configured max-open-requests value of [${inputBuffer.capacity}]. This means that the request queue of this pool (${gateway.hcps}) " +
@@ -78,7 +100,12 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
     val connectionFlow =
       Http().outgoingConnectionUsingTransport(host, port, settings.transport, connectionContext, settings.connectionSettings, setup.log)
 
-    val poolFlow = PoolFlow(connectionFlow, settings, log).named("PoolFlow")
+    val poolFlow =
+      settings.poolImplementation match {
+        case PoolImplementation.Legacy ⇒ PoolFlow(connectionFlow, settings, log).named("PoolFlow")
+        case PoolImplementation.New    ⇒ NewHostConnectionPool(connectionFlow, settings, log).named("PoolFlow")
+      }
+
     Source.fromPublisher(ActorPublisher(self)).via(poolFlow).runWith(Sink.fromSubscriber(ActorSubscriber[ResponseContext](self)))
   }
 
@@ -102,6 +129,11 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
       rc.responsePromise.complete(responseTry)
       activateIdleTimeoutIfNecessary()
 
+      if (shuttingDown && remainingRequested == 0) {
+        debug("Shutting down host connection pool now after all responses have been dispatched")
+        onCompleteThenStop()
+      }
+
     case OnComplete ⇒ // the pool shut down
       debug("Host connection pool has completed orderly shutdown")
       self ! PoisonPill // give potentially queued requests another chance to be forwarded back to the gateway
@@ -112,7 +144,7 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
 
     /////////////// FROM CLIENT //////////////
 
-    case x: PoolRequest if isActive ⇒
+    case x: PoolRequest if !shuttingDown ⇒
       activeIdleTimeout foreach { timeout ⇒
         timeout.cancel()
         activeIdleTimeout = None
@@ -127,20 +159,28 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
           debug(s"InputBuffer (max-open-requests = ${hcps.setup.settings.maxOpenRequests}) now filled with ${inputBuffer.used} request after enqueuing ${x.request.debugString}")
         }
       } else dispatchRequest(x) // if we can dispatch right now, do it
-      request(1) // for every incoming request we demand one response from the pool
 
     case PoolRequest(request, responsePromise) ⇒
       // we have already started shutting down, i.e. this pool is not usable anymore
       // so we forward the request back to the gateway
+      //
+      // TODO: How would that happen? Wouldn't it be a bug if the PoolMasterActor/gateway would dispatch
+      //       more requests to this instance after having sent `Shutdown`?
       responsePromise.completeWith(gateway(request))
 
     case Shutdown ⇒ // signal coming in from gateway
-      debug("Shutting down host connection pool")
-      onCompleteThenStop()
       while (!inputBuffer.isEmpty) {
         val PoolRequest(request, responsePromise) = inputBuffer.dequeue()
         responsePromise.completeWith(gateway(request))
       }
+
+      shuttingDown = true
+
+      if (remainingRequested == 0) {
+        debug("Shutting down host connection pool immediately")
+        onCompleteThenStop()
+      } else
+        debug(s"Deferring shutting down host connection pool until all [$remainingRequested] responses have been dispatched")
   }
 
   @tailrec private def dispatchRequests(): Unit =
@@ -158,6 +198,7 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
         .withDefaultHeaders(hostHeader)
     val retries = if (pr.request.method.isIdempotent) hcps.setup.settings.maxRetries else 0
     onNext(RequestContext(effectiveRequest, pr.responsePromise, retries))
+    request(1) // for every outgoing request we demand one response from the pool
   }
 
   def activateIdleTimeoutIfNecessary(): Unit =
@@ -168,5 +209,5 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
     }
 
   private def shouldStopOnIdle(): Boolean =
-    remainingRequested == 0 && hcps.setup.settings.idleTimeout.isFinite && hcps.setup.settings.minConnections == 0
+    !shuttingDown && remainingRequested == 0 && hcps.setup.settings.idleTimeout.isFinite && hcps.setup.settings.minConnections == 0
 }

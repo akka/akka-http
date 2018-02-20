@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.unmarshalling
@@ -23,6 +23,9 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
   "The PredefinedFromEntityUnmarshallers" - {
     "stringUnmarshaller should unmarshal `text/plain` content in UTF-8 to Strings" in {
       Unmarshal(HttpEntity("Hällö")).to[String] should evaluateTo("Hällö")
+    }
+    "stringUnmarshaller should assume UTF-8 for textual content type with missing charset" in {
+      Unmarshal(HttpEntity(MediaTypes.`text/plain`.withMissingCharset, "Hällö".getBytes("UTF-8"))).to[String] should evaluateTo("Hällö")
     }
     "charArrayUnmarshaller should unmarshal `text/plain` content in UTF-8 to char arrays" in {
       Unmarshal(HttpEntity("árvíztűrő ütvefúrógép")).to[Array[Char]] should evaluateTo("árvíztűrő ütvefúrógép".toCharArray)
@@ -70,7 +73,13 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
       ex.getMessage should include("Right failure: For input string")
       ex.getMessage should include("Left failure: For input string")
     }
+  }
 
+  "Unmarshaller.forContentTypes" - {
+    "should handle media ranges of types with missing charset by assuming UTF-8 charset when matching" in {
+      val um = Unmarshaller.stringUnmarshaller.forContentTypes(MediaTypes.`text/plain`)
+      Await.result(um(HttpEntity(MediaTypes.`text/plain`.withMissingCharset, "Hêllö".getBytes("utf-8"))), 1.second.dilated) should ===("Hêllö")
+    }
   }
 
   override def afterAll() = TestKit.shutdownActorSystem(system)

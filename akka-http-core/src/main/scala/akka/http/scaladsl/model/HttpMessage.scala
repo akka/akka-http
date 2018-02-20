@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -10,13 +10,12 @@ import java.io.File
 import java.nio.file.Path
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.Optional
-import java.util.concurrent.CompletionStage
+import java.util.concurrent.{ CompletionStage, Executor }
 
 import scala.compat.java8.FutureConverters
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.collection.immutable
-import scala.compat.java8.OptionConverters._
 import scala.reflect.{ ClassTag, classTag }
 import akka.Done
 import akka.parboiled2.CharUtils
@@ -26,6 +25,10 @@ import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.util.FastFuture._
 import headers._
+
+import scala.annotation.tailrec
+import scala.compat.java8.FutureConverters._
+import scala.concurrent.duration._
 
 /**
  * Common base class of HttpRequest and HttpResponse.
@@ -54,6 +57,10 @@ sealed trait HttpMessage extends jm.HttpMessage {
    * Allowing it to be consumable twice would require buffering the incoming data, thus defeating the purpose
    * of its streaming nature. If the dataBytes source is materialized a second time, it will fail with an
    * "stream can cannot be materialized more than once" exception.
+   *
+   * When called on `Strict` entities or sources whose values can be buffered in memory,
+   * the above warnings can be ignored. Repeated materialization is not necessary in this case, avoiding
+   * the mentioned exceptions due to the data being held in memory.
    *
    * In future versions, more automatic ways to warn or resolve these situations may be introduced, see issue #18716.
    */
@@ -138,8 +145,7 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def withEntity(contentType: jm.ContentType, bytes: Array[Byte]): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], bytes))
   def withEntity(contentType: jm.ContentType, bytes: ByteString): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], bytes))
 
-  @deprecated("Use withEntity(ContentType, Path) instead", "2.4.5")
-  def withEntity(contentType: jm.ContentType, file: File): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], file))
+  def withEntity(contentType: jm.ContentType, file: File): Self = withEntity(HttpEntity.fromPath(contentType.asInstanceOf[ContentType], file.toPath))
   def withEntity(contentType: jm.ContentType, file: Path): Self = withEntity(HttpEntity.fromPath(contentType.asInstanceOf[ContentType], file))
 
   def transformEntityDataBytes[M](transformer: Graph[FlowShape[ByteString, ByteString], M]): Self
@@ -160,6 +166,16 @@ sealed trait HttpMessage extends jm.HttpMessage {
   }
   /** Java API */
   def addHeaders(headers: JIterable[jm.HttpHeader]): Self = mapHeaders(_ ++ headers.asScala.asInstanceOf[Iterable[HttpHeader]])
+  /** Java API */
+  def withHeaders(headers: JIterable[jm.HttpHeader]): Self = {
+    import JavaMapping.Implicits._
+    withHeaders(headers.asScala.toVector.map(_.asScala))
+  }
+  /** Java API */
+  def toStrict(timeoutMillis: Long, ec: Executor, materializer: Materializer): CompletionStage[Self] = {
+    val ex = ExecutionContext.fromExecutor(ec)
+    toStrict(timeoutMillis.millis)(ex, materializer).toJava
+  }
 }
 
 object HttpMessage {
@@ -202,6 +218,10 @@ object HttpMessage {
      * Allowing it to be consumable twice would require buffering the incoming data, thus defeating the purpose
      * of its streaming nature. If the dataBytes source is materialized a second time, it will fail with an
      * "stream can cannot be materialized more than once" exception.
+     *
+     * When called on `Strict` entities or sources whose values can be buffered in memory,
+     * the above warnings can be ignored. Repeated materialization is not necessary in this case, avoiding
+     * the mentioned exceptions due to the data being held in memory.
      *
      * In future versions, more automatic ways to warn or resolve these situations may be introduced, see issue #18716.
      */
@@ -331,26 +351,30 @@ object HttpRequest {
    * include a valid [[akka.http.scaladsl.model.headers.Host]] header or if URI authority and [[akka.http.scaladsl.model.headers.Host]] header don't match.
    */
   def effectiveUri(uri: Uri, headers: immutable.Seq[HttpHeader], securedConnection: Boolean, defaultHostHeader: Host): Uri = {
-    def findHost(headers: immutable.Seq[HttpHeader]): OptionVal[Host] = {
-      val it = headers.iterator
-      while (it.hasNext) it.next() match {
-        case h: Host ⇒ return OptionVal.Some(h)
-        case _       ⇒ // continue ...
-      }
-      OptionVal.None
-    }
-    val hostHeader: OptionVal[Host] = findHost(headers)
+    @tailrec def findHostAndWsUpgrade(it: Iterator[HttpHeader], host: OptionVal[Host] = OptionVal.None, wsUpgrade: Option[Boolean] = None): (OptionVal[Host], Boolean) =
+      if (host.isDefined && wsUpgrade.isDefined || !it.hasNext)
+        (host, wsUpgrade.contains(true))
+      else
+        it.next() match {
+          case h: Host    ⇒ findHostAndWsUpgrade(it, OptionVal.Some(h), wsUpgrade)
+          case u: Upgrade ⇒ findHostAndWsUpgrade(it, host, Some(u.hasWebSocket))
+          case _          ⇒ findHostAndWsUpgrade(it, host, wsUpgrade)
+        }
+    val (hostHeader, isWebsocket) = findHostAndWsUpgrade(headers.iterator)
     if (uri.isRelative) {
       def fail(detail: String) =
         throw IllegalUriException(
           s"Cannot establish effective URI of request to `$uri`, request has a relative URI and $detail; " +
             "consider setting `akka.http.server.default-host-header`")
-      val Host(host, port) = hostHeader match {
+      val Host(hostHeaderHost, hostHeaderPort) = hostHeader match {
         case OptionVal.None                 ⇒ if (defaultHostHeader.isEmpty) fail("is missing a `Host` header") else defaultHostHeader
         case OptionVal.Some(x) if x.isEmpty ⇒ if (defaultHostHeader.isEmpty) fail("an empty `Host` header") else defaultHostHeader
         case OptionVal.Some(x)              ⇒ x
       }
-      uri.toEffectiveHttpRequestUri(host, port, securedConnection)
+      val defaultScheme =
+        if (isWebsocket) Uri.websocketScheme(securedConnection)
+        else Uri.httpScheme(securedConnection)
+      uri.toEffectiveRequestUri(hostHeaderHost, hostHeaderPort, defaultScheme)
     } else // http://tools.ietf.org/html/rfc7230#section-5.4
     if (hostHeader.isEmpty || uri.authority.isEmpty && hostHeader.get.isEmpty ||
       hostHeader.get.host.equalsIgnoreCase(uri.authority.host) && hostHeader.get.port == uri.authority.port) uri
@@ -360,7 +384,7 @@ object HttpRequest {
   }
 
   /**
-   * Verifies that the given [[Uri]] is non-empty and has either scheme `http`, `https` or no scheme at all.
+   * Verifies that the given [[Uri]] is non-empty and has either scheme `http`, `https`, `ws`, `wss` or no scheme at all.
    * If any of these conditions is not met the method throws an [[IllegalArgumentException]].
    */
   def verifyUri(uri: Uri): Unit =
@@ -371,7 +395,9 @@ object HttpRequest {
         case 0 ⇒ // ok
         case 4 if c(0) == 'h' && c(1) == 't' && c(2) == 't' && c(3) == 'p' ⇒ // ok
         case 5 if c(0) == 'h' && c(1) == 't' && c(2) == 't' && c(3) == 'p' && c(4) == 's' ⇒ // ok
-        case _ ⇒ throw new IllegalArgumentException("""`uri` must have scheme "http", "https" or no scheme""")
+        case 2 if c(0) == 'w' && c(1) == 's' ⇒ // ok
+        case 3 if c(0) == 'w' && c(1) == 's' && c(2) == 's' ⇒ // ok
+        case _ ⇒ throw new IllegalArgumentException("""`uri` must have scheme "http", "https", "ws", "wss" or no scheme""")
       }
     }
 
@@ -408,12 +434,13 @@ final class HttpResponse(
   override def isRequest = false
   override def isResponse = true
 
-  override def withHeaders(headers: immutable.Seq[HttpHeader]) =
+  override def withHeaders(headers: immutable.Seq[HttpHeader]): HttpResponse =
     if (headers eq this.headers) this else copy(headers = headers)
 
-  override def withProtocol(protocol: akka.http.javadsl.model.HttpProtocol): akka.http.javadsl.model.HttpResponse = copy(protocol = protocol.asInstanceOf[HttpProtocol])
-  override def withStatus(statusCode: Int): akka.http.javadsl.model.HttpResponse = copy(status = statusCode)
-  override def withStatus(statusCode: akka.http.javadsl.model.StatusCode): akka.http.javadsl.model.HttpResponse = copy(status = statusCode.asInstanceOf[StatusCode])
+  override def withProtocol(protocol: akka.http.javadsl.model.HttpProtocol): akka.http.javadsl.model.HttpResponse = withProtocol(protocol.asInstanceOf[HttpProtocol])
+  def withProtocol(protocol: HttpProtocol): HttpResponse = copy(protocol = protocol)
+  override def withStatus(statusCode: Int): HttpResponse = copy(status = statusCode)
+  override def withStatus(statusCode: akka.http.javadsl.model.StatusCode): HttpResponse = copy(status = statusCode.asInstanceOf[StatusCode])
 
   override def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: MessageEntity): HttpResponse = withHeadersAndEntity(headers, entity: ResponseEntity)
   def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: ResponseEntity): HttpResponse = copy(headers = headers, entity = entity)

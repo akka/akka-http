@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.model.parser
@@ -53,7 +53,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
 
   def `nested-comment` = {
     var saved: String = null
-    rule { &('(') ~ run(saved = sb.toString) ~ (comment ~ prependSB(saved + " (") ~ appendSB(')') | setSB(saved) ~ test(false)) }
+    rule { &('(') ~ run { saved = sb.toString } ~ (comment ~ prependSB(saved + " (") ~ appendSB(')') | setSB(saved) ~ test(false)) }
   }
 
   def ctext = rule { (`ctext-base` | `obs-text`) ~ appendSB() }
@@ -88,13 +88,13 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
 
   def date1 = rule { day ~ `date-sep` ~ month ~ `date-sep` ~ year }
 
-  def day = rule { digit2 }
+  def day = rule { digit2 | digit }
 
   def month = rule(
     "Jan" ~ push(1) | "Feb" ~ push(2) | "Mar" ~ push(3) | "Apr" ~ push(4) | "May" ~ push(5) | "Jun" ~ push(6) | "Jul" ~ push(7) |
       "Aug" ~ push(8) | "Sep" ~ push(9) | "Oct" ~ push(10) | "Nov" ~ push(11) | "Dec" ~ push(12))
 
-  def year = rule { digit4 }
+  def year = rule { digit4 | digit2 ~> (y ⇒ if (y <= 69) y + 2000 else y + 1900) }
 
   def `time-of-day` = rule { hour ~ ':' ~ minute ~ ':' ~ second }
   def hour = rule { digit2 }
@@ -172,17 +172,23 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   def `token68` = rule { capture(oneOrMore(`token68-start`) ~ zeroOrMore('=')) ~ OWS }
 
   def challenge = rule {
-    `challenge-or-credentials` ~> { (scheme, params) ⇒
-      val (realms, otherParams) = params.partition(_._1 equalsIgnoreCase "realm")
-      HttpChallenge(scheme, realms.headOption.map(_._2), otherParams.toMap)
+    `challenge-or-credentials` ~> { (scheme, tokenAndParams) ⇒
+      tokenAndParams match {
+        case ("", Nil)    ⇒ HttpChallenge(scheme, None)
+        case (token, Nil) ⇒ HttpChallenge(scheme, None, Map("" → token))
+        case (_, params) ⇒ {
+          val (realms, otherParams) = params.partition(_._1 equalsIgnoreCase "realm")
+          HttpChallenge(scheme, realms.headOption.map(_._2), otherParams.toMap)
+        }
+      }
     }
   }
 
-  def `challenge-or-credentials`: Rule2[String, Seq[(String, String)]] = rule {
+  def `challenge-or-credentials`: Rule2[String, (String, Seq[(String, String)])] = rule {
     `auth-scheme` ~ (
-      oneOrMore(`auth-param` ~> (_ → _)).separatedBy(listSep)
-      | `token68` ~> (x ⇒ ("" → x) :: Nil)
-      | push(Nil))
+      oneOrMore(`auth-param` ~> (_ → _)).separatedBy(listSep) ~> (x ⇒ ("", x))
+      | `token68` ~> (x ⇒ (x, Nil))
+      | push(("", Nil)))
   }
 
   // ******************************************************************************************
@@ -220,7 +226,10 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   }
 
   def `generic-credentials` = rule {
-    `challenge-or-credentials` ~> ((scheme, params) ⇒ GenericHttpCredentials(scheme, params.toMap))
+    `challenge-or-credentials` ~> ((scheme, tokenAndParams) ⇒ {
+      val (token, params) = tokenAndParams
+      GenericHttpCredentials(scheme, token, params.toMap)
+    })
   }
 
   /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
@@ -8,6 +8,14 @@ import akka.http.scaladsl.model.headers._
 import docs.http.scaladsl.server.RoutingSpec
 
 class RespondWithDirectivesExamplesSpec extends RoutingSpec {
+
+  "multiple-headers" in {
+    //#multiple-headers
+    respondWithDefaultHeaders(
+      Origin(HttpOrigin("http://akka.io")),
+      RawHeader("X-Fish-Name", "Blippy")) { ??? }
+    //#multiple-headers
+  }
 
   "respondWithHeader-0" in {
     //#respondWithHeader-0

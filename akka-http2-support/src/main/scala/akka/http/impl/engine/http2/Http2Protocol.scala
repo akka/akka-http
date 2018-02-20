@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -15,7 +15,7 @@ import akka.util.ByteString
  * https://tools.ietf.org/html/rfc7540
  */
 @InternalApi
-private[http2] object Http2Protocol {
+private[http] object Http2Protocol {
   // constants defined in the spec
 
   /**

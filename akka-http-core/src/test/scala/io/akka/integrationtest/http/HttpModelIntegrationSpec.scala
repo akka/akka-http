@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package io.akka.integrationtest.http
@@ -100,7 +100,7 @@ class HttpModelIntegrationSpec extends WordSpec with Matchers with BeforeAndAfte
       // example simple model of an HTTP response.
 
       val textHeaders: Seq[(String, String)] = Seq(
-        "Content-Type" → "text/plain",
+        "Content-Type" → "text/plain;charset=UTF-8",
         "Content-Length" → "3",
         "X-Greeting" → "Hello")
       val byteArrayBody: Array[Byte] = "foo".getBytes

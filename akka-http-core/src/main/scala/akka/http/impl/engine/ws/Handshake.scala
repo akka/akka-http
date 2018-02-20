@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -10,7 +10,6 @@ import akka.annotation.InternalApi
 
 import scala.collection.immutable
 import scala.collection.immutable.Seq
-import scala.reflect.ClassTag
 import akka.http.impl.util._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.ws.{ Message, UpgradeToWebSocket }
@@ -73,9 +72,9 @@ private[http] object Handshake {
       // - Host header is validated in general HTTP logic
       // - Origin header is optional and, if required, should be validated
       //   on higher levels (routing, application logic)
-      // 
+      //
       // TODO See #18709 Extension support is optional in WS and currently unsupported.
-      // 
+      //
       // these are not needed directly, we verify their presence and correctness only:
       // - Upgrade
       // - Connection

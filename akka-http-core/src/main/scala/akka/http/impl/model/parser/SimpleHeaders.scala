@@ -1,17 +1,20 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.model.parser
 
+import akka.annotation.InternalApi
 import akka.parboiled2.Parser
 import akka.http.scaladsl.model.RemoteAddress
 import akka.http.scaladsl.model.headers._
 
 /**
+ * INTERNAL API.
  * Parser rules for all headers that can be parsed with one single rule.
  * All header rules that require more than one single rule are modelled in their own trait.
  */
+@InternalApi
 private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonActions with IpAddressParsing ⇒
 
   // http://tools.ietf.org/html/rfc7233#section-2.3
@@ -183,6 +186,11 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
     uriReference ~ EOI ~> (Referer(_))
   }
 
+  //https://tools.ietf.org/html/rfc7231#section-7.1.3
+  def `retry-after` = rule {
+    (`HTTP-date` ~> (RetryAfterDateTime(_)) | `delta-seconds` ~> (RetryAfterDuration(_))) ~ EOI ~> (`Retry-After`(_))
+  }
+
   // http://tools.ietf.org/html/rfc7231#section-7.4.2
   def server = rule { products ~ EOI ~> (Server(_)) }
 
@@ -224,6 +232,16 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
   def `x-forwarded-for` = {
     def addr = rule { (`ip-v4-address` | `ip-v6-address`) ~> (RemoteAddress(_)) | "unknown" ~ push(RemoteAddress.Unknown) }
     rule { oneOrMore(addr).separatedBy(listSep) ~ EOI ~> (`X-Forwarded-For`(_)) }
+  }
+
+  // de-facto standard as per https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-Host
+  def `x-forwarded-host` = rule {
+    host ~> (hostHeader ⇒ `X-Forwarded-Host`(hostHeader.host))
+  }
+
+  // de-facto standard as per https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-Proto
+  def `x-forwarded-proto` = rule {
+    runSubParser(newUriParser(_).`scheme-pushed`) ~ EOI ~> (`X-Forwarded-Proto`(_))
   }
 
   def `x-real-ip` = rule {

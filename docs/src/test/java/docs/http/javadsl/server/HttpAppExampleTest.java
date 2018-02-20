@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package docs.http.javadsl.server;
 
 //#imports
@@ -8,6 +12,7 @@ import akka.http.javadsl.server.HttpApp;
 import akka.http.javadsl.server.Route;
 //#minimal-imports
 import akka.http.javadsl.settings.ServerSettings;
+import akka.http.javadsl.ServerBinding;
 import com.typesafe.config.ConfigFactory;
 //#imports
 import org.junit.Test;
@@ -38,12 +43,14 @@ public class HttpAppExampleTest extends JUnitSuite {
 
   static
   //#minimal-routing-example
+  //#with-settings-routing-example
   //#ownActorSystem
+  //#ownActorSystemAndSettings
 
     // Server definition
     class MinimalHttpApp extends HttpApp {
       @Override
-      protected Route route() {
+      protected Route routes() {
         return path("hello", () ->
           get(() ->
             complete("<h1>Say hello to akka-http</h1>")
@@ -53,7 +60,9 @@ public class HttpAppExampleTest extends JUnitSuite {
     }
 
   //#minimal-routing-example
+  //#with-settings-routing-example
   //#ownActorSystem
+  //#ownActorSystemAndSettings
 
   void minimalServer() throws ExecutionException, InterruptedException {
     //#minimal-routing-example
@@ -68,8 +77,32 @@ public class HttpAppExampleTest extends JUnitSuite {
     //#with-settings-routing-example
     // Starting the server
     final MinimalHttpApp myServer = new MinimalHttpApp();
-    myServer.startServer("localhost", 8080, ServerSettings.create(ConfigFactory.load()));
+    final ServerSettings settings = ServerSettings.create(ConfigFactory.load()).withVerboseErrorMessages(true);
+    myServer.startServer("localhost", 8080, settings);
     //#with-settings-routing-example
+  }
+
+  void ownActorSystem() throws ExecutionException, InterruptedException {
+    //#ownActorSystem
+    // Starting the server
+    final ActorSystem system = ActorSystem.apply("myOwn");
+    new MinimalHttpApp().startServer("localhost", 8080, system);
+    // ActorSystem is not terminated after server shutdown
+    // It must be manually terminated
+    system.terminate();
+    //#ownActorSystem
+  }
+
+  void ownActorSystemAndSettings() throws ExecutionException, InterruptedException {
+    //#ownActorSystemAndSettings
+    // Starting the server
+    final ActorSystem system = ActorSystem.apply("myOwn");
+    final ServerSettings settings = ServerSettings.create(ConfigFactory.load()).withVerboseErrorMessages(true);
+    new MinimalHttpApp().startServer("localhost", 8080, settings, system);
+    // ActorSystem is not terminated after server shutdown
+    // It must be manually terminated
+    system.terminate();
+    //#ownActorSystemAndSettings
   }
 
   static
@@ -79,7 +112,7 @@ public class HttpAppExampleTest extends JUnitSuite {
     class SelfDestroyingHttpApp extends HttpApp {
 
       @Override
-      protected Route route() {
+      protected Route routes() {
         return path("hello", () ->
           get(() ->
               complete("<h1>Say hello to akka-http</h1>")
@@ -114,12 +147,19 @@ public class HttpAppExampleTest extends JUnitSuite {
     class FailBindingOverrideHttpApp extends HttpApp {
 
       @Override
-      protected Route route() {
+      protected Route routes() {
         return path("hello", () ->
           get(() ->
             complete("<h1>Say hello to akka-http</h1>")
           )
         );
+      }
+
+      @Override
+      protected void postHttpBinding(ServerBinding binding) {
+        super.postHttpBinding(binding);
+        final ActorSystem sys = systemReference.get();
+        sys.log().info("Running on [" + sys.name() + "] actor system");
       }
 
       @Override
@@ -138,18 +178,6 @@ public class HttpAppExampleTest extends JUnitSuite {
     //#bindingError
   }
 
-  void ownActorSystem() throws ExecutionException, InterruptedException {
-    //#ownActorSystem
-    // Starting the server
-    ActorSystem system = ActorSystem.apply("myOwn");
-    new MinimalHttpApp().startServer("localhost", 8080, ServerSettings.create(system), system);
-    // ActorSystem is not terminated after server shutdown
-    // It must be manually terminated
-    system.terminate();
-    //#ownActorSystem
-  }
-
-
   static
   //#postShutdown
 
@@ -157,7 +185,7 @@ public class HttpAppExampleTest extends JUnitSuite {
     class PostShutdownOverrideHttpApp extends HttpApp {
 
       @Override
-      protected Route route() {
+      protected Route routes() {
         return path("hello", () ->
           get(() ->
             complete("<h1>Say hello to akka-http</h1>")

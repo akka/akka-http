@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -11,8 +11,10 @@ import akka.util.ByteString
 
 import scala.collection.immutable
 
-sealed trait FrameEvent
-sealed trait StreamFrameEvent extends FrameEvent {
+sealed trait FrameEvent { self: Product ⇒
+  def frameTypeName: String = productPrefix
+}
+sealed trait StreamFrameEvent extends FrameEvent { self: Product ⇒
   def streamId: Int
 }
 
@@ -22,7 +24,17 @@ final case class GoAwayFrame(lastStreamId: Int, errorCode: ErrorCode, debug: Byt
 final case class DataFrame(
   streamId:  Int,
   endStream: Boolean,
-  payload:   ByteString) extends StreamFrameEvent
+  payload:   ByteString) extends StreamFrameEvent {
+  /**
+   * The amount of bytes this frame consumes of a window. According to RFC 7540, 6.9.1:
+   *
+   *        For flow-control calculations, the 9-octet frame header is not
+   *        counted.
+   *
+   * That means this size amounts to data size + padding size field + padding.
+   */
+  def sizeInWindow: Int = payload.size // FIXME: take padding size into account, #1313
+}
 
 final case class HeadersFrame(
   streamId:            Int,
@@ -34,7 +46,6 @@ final case class ContinuationFrame(
   streamId:   Int,
   endHeaders: Boolean,
   payload:    ByteString) extends StreamFrameEvent
-
 case class PushPromiseFrame(
   streamId:            Int,
   endHeaders:          Boolean,
@@ -79,4 +90,4 @@ final case class ParsedHeadersFrame(
   endStream:     Boolean,
   keyValuePairs: Seq[(String, String)],
   priorityInfo:  Option[PriorityFrame]
-) extends FrameEvent
+) extends StreamFrameEvent

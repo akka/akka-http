@@ -1,12 +1,11 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server
 
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.server.{ Rejection, Route }
-import akka.http.scaladsl.server.RouteResult.Complete
+import akka.http.scaladsl.server.Route
 
 // format: OFF
 
@@ -21,31 +20,31 @@ object MyRejectionHandler {
   import StatusCodes._
   import Directives._
 
-  implicit def myRejectionHandler =
-    RejectionHandler.newBuilder()
-      .handle { case MissingCookieRejection(cookieName) =>
-        complete(HttpResponse(BadRequest, entity = "No cookies, no service!!!"))
-      }
-      .handle { case AuthorizationFailedRejection =>
-        complete((Forbidden, "You're out of your depth!"))
-      }
-      .handle { case ValidationRejection(msg, _) =>
-        complete((InternalServerError, "That wasn't valid! " + msg))
-      }
-      .handleAll[MethodRejection] { methodRejections =>
-        val names = methodRejections.map(_.supported.name)
-        complete((MethodNotAllowed, s"Can't do that! Supported: ${names mkString " or "}!"))
-      }
-      .handleNotFound { complete((NotFound, "Not here!")) }
-      .result()
-
   object MyApp extends App {
+    implicit def myRejectionHandler =
+      RejectionHandler.newBuilder()
+        .handle { case MissingCookieRejection(cookieName) =>
+          complete(HttpResponse(BadRequest, entity = "No cookies, no service!!!"))
+        }
+        .handle { case AuthorizationFailedRejection =>
+          complete((Forbidden, "You're out of your depth!"))
+        }
+        .handle { case ValidationRejection(msg, _) =>
+          complete((InternalServerError, "That wasn't valid! " + msg))
+        }
+        .handleAll[MethodRejection] { methodRejections =>
+          val names = methodRejections.map(_.supported.name)
+          complete((MethodNotAllowed, s"Can't do that! Supported: ${names mkString " or "}!"))
+        }
+        .handleNotFound { complete((NotFound, "Not here!")) }
+        .result()
+
     implicit val system = ActorSystem()
     implicit val materializer = ActorMaterializer()
 
     val route: Route =
       // ... some route structure
-      null // hide
+      null // #hide
 
     Http().bindAndHandle(route, "localhost", 8080)
   }
@@ -55,7 +54,6 @@ object MyRejectionHandler {
 object HandleNotFoundWithThePath {
 
   //#not-found-with-path
-  import akka.http.scaladsl.model._
   import akka.http.scaladsl.model.StatusCodes._
   import akka.http.scaladsl.server._
   import Directives._
@@ -72,7 +70,6 @@ object HandleNotFoundWithThePath {
 }
 
 class RejectionHandlerExamplesSpec extends RoutingSpec {
-  import MyRejectionHandler._
 
   "example-1" in {
     //#example-1
@@ -120,9 +117,9 @@ class RejectionHandlerExamplesSpec extends RoutingSpec {
 
     // tests:
     Get("/nope") ~> route ~> check {
-      status should === (StatusCodes.NotFound)
-      contentType should === (ContentTypes.`application/json`)
-      responseAs[String] should ===("""{"rejection": "The requested resource could not be found."}""")
+      status shouldEqual StatusCodes.NotFound
+      contentType shouldEqual ContentTypes.`application/json`
+      responseAs[String] shouldEqual """{"rejection": "The requested resource could not be found."}"""
     }
     //#example-json
   }
@@ -156,20 +153,26 @@ class RejectionHandlerExamplesSpec extends RoutingSpec {
 
     // tests:
     Get("/hello") ~> anotherRoute ~> check {
-      status should === (StatusCodes.BadRequest)
-      contentType should === (ContentTypes.`application/json`)
-      responseAs[String] should ===("""{"rejection": "Whoops, bad request!"}""")
+      status shouldEqual StatusCodes.BadRequest
+      contentType shouldEqual ContentTypes.`application/json`
+      responseAs[String] shouldEqual """{"rejection": "Whoops, bad request!"}"""
     }
     //#example-json
   }
 
   "test custom handler example" in {
     import akka.http.scaladsl.server._
+    import akka.http.scaladsl.model.StatusCodes.BadRequest
+
+    implicit def myRejectionHandler = RejectionHandler.newBuilder().handle {
+      case MissingCookieRejection(_) => complete(HttpResponse(BadRequest, entity = "No cookies, no service!!!"))
+    }.result()
+
     val route = Route.seal(reject(MissingCookieRejection("abc")))
 
     // tests:
     Get() ~> route ~> check {
-      responseAs[String] === "No cookies, no service!!!"
+      responseAs[String] shouldEqual "No cookies, no service!!!"
     }
   }
 }

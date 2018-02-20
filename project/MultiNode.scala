@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka
 
 import com.typesafe.sbt.{SbtMultiJvm, SbtScalariform}
@@ -15,9 +16,10 @@ object MultiNode extends AutoPlugin {
     val multiNode = CliOption("akka.test.multi-node", false)
     val sbtLogNoFormat = CliOption("sbt.log.noformat", false)
 
-    val hostsFileName = sys.props.get("akka.test.multi-node.hostsFileName").toSeq
-    val javaName = sys.props.get("akka.test.multi-node.java").toSeq
-    val targetDirName = sys.props.get("akka.test.multi-node.targetDirName").toSeq
+    def seqWithProperty(name: String) = Option(System.getProperty(name)).toSeq
+    val hostsFileName = seqWithProperty("akka.test.multi-node.hostsFileName")
+    val javaName = seqWithProperty("akka.test.multi-node.java")
+    val targetDirName = seqWithProperty("akka.test.multi-node.targetDirName")
   }
 
   val multiExecuteTests = CliOptions.multiNode.ifTrue(multiNodeExecuteTests in MultiJvm).getOrElse(executeTests in MultiJvm)
@@ -72,6 +74,14 @@ object MultiNode extends AutoPlugin {
         testResults.events ++ multiNodeResults.events,
         testResults.summaries ++ multiNodeResults.summaries)
     })
+
+  implicit class TestResultOps(val self: TestResult) extends AnyVal {
+    def id: Int = self match {
+      case TestResult.Passed ⇒ 0
+      case TestResult.Failed ⇒ 1
+      case TestResult.Error  ⇒ 2
+    }
+  }
 }
 
 /**

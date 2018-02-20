@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.model;
@@ -30,12 +30,4 @@ public abstract class RemoteAddress {
     public static RemoteAddress create(byte[] address) {
         return akka.http.scaladsl.model.RemoteAddress.apply(address);
     }
-
-    /**
-     * @deprecated because of troublesome initialisation order (with regards to scaladsl class implementing this class).
-     *             In some edge cases this field could end up containing a null value.
-     *             Will be removed in Akka HTTP 11.x, use {@link RemoteAddresses#UNKNOWN} instead.
-     */
-    @Deprecated
-    public static final RemoteAddress UNKNOWN = RemoteAddresses.UNKNOWN;
 }

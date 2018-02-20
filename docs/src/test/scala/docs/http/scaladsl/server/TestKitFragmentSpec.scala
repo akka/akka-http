@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package docs.http.scaladsl.server
 
 // format: OFF
@@ -46,3 +50,13 @@ class TestKitFragmentSpec extends WordSpec with Matchers with ScalatestRouteTest
   }
 }
 //#source-quote
+
+class TestKitTimeoutSpec extends WordSpec with ScalatestRouteTest {
+  //#timeout-setting
+  import scala.concurrent.duration._
+  import akka.http.scaladsl.testkit.RouteTestTimeout
+  import akka.testkit.TestDuration
+
+  implicit val timeout = RouteTestTimeout(5.seconds dilated)
+  //#timeout-setting
+}

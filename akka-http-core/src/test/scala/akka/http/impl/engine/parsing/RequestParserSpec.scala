@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -22,6 +22,7 @@ import akka.http.impl.util._
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.HttpProtocols._
+import akka.http.scaladsl.model.MediaType.WithFixedCharset
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model.RequestEntityAcceptance.Expected
 import akka.http.scaladsl.model.StatusCodes._
@@ -255,6 +256,16 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
+      "with incorrect but harmless whitespace after chunk size" in new Test {
+        Seq(
+          start,
+          """|0\u0020\u0020
+             |
+             |""") should generalMultiParseTo(
+            Right(baseRequest.withEntity(Chunked(`application/pdf`, source(LastChunk)))))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
       "message end with extension and trailer" in new Test {
         Seq(
           start,
@@ -273,7 +284,6 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
       "don't overflow the stack for large buffers of chunks" in new Test {
         override val awaitAtMost = 10000.millis.dilated
 
-        val x = NotEnoughDataException
         val numChunks = 12000 // failed starting from 4000 with sbt started with `-Xss2m`
         val oneChunk = s"1${newLine}z\n"
         val manyChunks = (oneChunk * numChunks) + s"0${newLine}"
@@ -302,7 +312,7 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
 
     "support `rawRequestUriHeader` setting" in new Test {
       override protected def newParser: HttpRequestParser =
-        new HttpRequestParser(parserSettings, rawRequestUriHeader = true, headerParser = HttpHeaderParser(parserSettings, system.log)())
+        new HttpRequestParser(parserSettings, rawRequestUriHeader = true, headerParser = HttpHeaderParser(parserSettings, system.log))
 
       """GET /f%6f%6fbar?q=b%61z HTTP/1.1
         |Host: ping
@@ -316,6 +326,50 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
             `Raw-Request-URI`("/f%6f%6fbar?q=b%61z"),
             Host("ping")),
           HttpEntity.empty(`application/pdf`)))
+    }
+
+    "support custom media type parsing" in new Test {
+      val `application/custom`: WithFixedCharset =
+        MediaType.customWithFixedCharset("application", "custom", HttpCharsets.`UTF-8`)
+
+      override protected def parserSettings: ParserSettings =
+        super.parserSettings.withCustomMediaTypes(`application/custom`)
+
+      """POST / HTTP/1.1
+        |Host: ping
+        |Content-Type: application/custom
+        |Content-Length: 0
+        |
+        |""" should parseTo(
+        HttpRequest(
+          POST,
+          "/",
+          List(Host("ping")),
+          HttpEntity.empty(`application/custom`)))
+
+      """POST / HTTP/1.1
+        |Host: ping
+        |Content-Type: application/json
+        |Content-Length: 3
+        |
+        |123""" should parseTo(
+        HttpRequest(
+          POST,
+          "/",
+          List(Host("ping")),
+          HttpEntity(ContentTypes.`application/json`, "123")))
+
+      """POST / HTTP/1.1
+        |Host: ping
+        |Content-Type: text/plain; charset=UTF-8
+        |Content-Length: 8
+        |
+        |abcdefgh""" should parseTo(
+        HttpRequest(
+          POST,
+          "/",
+          List(Host("ping")),
+          HttpEntity(ContentTypes.`text/plain(UTF-8)`, "abcdefgh")))
     }
 
     "reject a message chunk with" - {
@@ -332,10 +386,10 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
       "an illegal char after chunk size" in new Test {
         Seq(
           start,
-          """15 ;
+          """15_;
             |""") should generalMultiParseTo(
             Right(baseRequest),
-            Left(EntityStreamError(ErrorInfo("Illegal character ' ' in chunk start"))))
+            Left(EntityStreamError(ErrorInfo("Illegal character '_' in chunk start"))))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
@@ -430,13 +484,13 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
       "with a too-long header name" in new Test {
         """|GET / HTTP/1.1
           |UserxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxAgent: curl/7.19.7""" should parseToError(
-          BadRequest, ErrorInfo("HTTP header name exceeds the configured limit of 64 characters"))
+          RequestHeaderFieldsTooLarge, ErrorInfo("HTTP header name exceeds the configured limit of 64 characters"))
       }
 
       "with a too-long header-value" in new Test {
         """|GET / HTTP/1.1
           |Fancy: 123456789012345678901234567890123""" should parseToError(
-          BadRequest,
+          RequestHeaderFieldsTooLarge,
           ErrorInfo("HTTP header value exceeds the configured limit of 32 characters"))
       }
 
@@ -476,36 +530,6 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
           |Host: x
           |
           |""" should parseToError(422: StatusCode, ErrorInfo("TRACE requests must not have an entity"))
-      }
-
-      "with additional fields in headers" in new Test {
-        """GET / HTTP/1.1
-          |Host: x; dummy
-          |
-          |""" should parseToError(
-          BadRequest,
-          ErrorInfo("Illegal 'host' header: Invalid input ' ', expected 'EOI', ':', UPPER_ALPHA, lower-reg-name-char or pct-encoded (line 1, column 3)", "x; dummy\n  ^"))
-
-        """GET / HTTP/1.1
-          |Content-length: 3; dummy
-          |
-          |""" should parseToError(
-          BadRequest,
-          ErrorInfo("Illegal `Content-Length` header value"))
-
-        """GET / HTTP/1.1
-          |Connection:keep-alive; dummy
-          |
-          |""" should parseToError(
-          BadRequest,
-          ErrorInfo("Illegal 'connection' header: Invalid input ';', expected tchar, OWS, listSep or 'EOI' (line 1, column 11)", "keep-alive; dummy\n          ^"))
-
-        """GET / HTTP/1.1
-          |Transfer-Encoding: chunked; dummy
-          |
-          |""" should parseToError(
-          BadRequest,
-          ErrorInfo("Illegal 'transfer-encoding' header: Invalid input ';', expected OWS, listSep or 'EOI' (line 1, column 8)", "chunked; dummy\n       ^"))
       }
     }
   }
@@ -584,7 +608,7 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
         .awaitResult(awaitAtMost)
 
     protected def parserSettings: ParserSettings = ParserSettings(system)
-    protected def newParser = new HttpRequestParser(parserSettings, false, HttpHeaderParser(parserSettings, system.log)())
+    protected def newParser = new HttpRequestParser(parserSettings, false, HttpHeaderParser(parserSettings, system.log))
 
     private def compactEntity(entity: RequestEntity): Future[RequestEntity] =
       entity match {

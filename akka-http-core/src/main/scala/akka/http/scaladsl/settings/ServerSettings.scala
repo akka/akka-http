@@ -1,11 +1,13 @@
-/**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.scaladsl.settings
 
 import java.util.Random
 import java.util.function.Supplier
 
+import akka.annotation.DoNotInherit
 import akka.http.impl.util._
 import akka.http.impl.settings.ServerSettingsImpl
 import akka.http.impl.util.JavaMapping.Implicits._
@@ -24,8 +26,10 @@ import scala.language.implicitConversions
 /**
  * Public API but not intended for subclassing
  */
+@DoNotInherit
 abstract class ServerSettings private[akka] () extends akka.http.javadsl.settings.ServerSettings { self: ServerSettingsImpl ⇒
   def serverHeader: Option[Server]
+  def previewServerSettings: PreviewServerSettings
   def timeouts: ServerSettings.Timeouts
   def maxConnections: Int
   def pipeliningLimit: Int
@@ -40,10 +44,14 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def websocketRandomFactory: () ⇒ Random
   def parserSettings: ParserSettings
   def logUnencryptedNetworkBytes: Option[Int]
+  def http2Settings: Http2ServerSettings
+  def defaultHttpPort: Int
+  def defaultHttpsPort: Int
 
   /* Java APIs */
 
   override def getBacklog = backlog
+  override def getPreviewServerSettings: akka.http.javadsl.settings.PreviewServerSettings = previewServerSettings
   override def getDefaultHostHeader = defaultHostHeader.asJava
   override def getPipeliningLimit = pipeliningLimit
   override def getParserSettings: js.ParserSettings = parserSettings
@@ -60,10 +68,13 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   override def getWebsocketRandomFactory = new Supplier[Random] {
     override def get(): Random = websocketRandomFactory()
   }
+  override def getDefaultHttpPort: Int = defaultHttpPort
+  override def getDefaultHttpsPort: Int = defaultHttpsPort
 
   // ---
 
   // override for more specific return type
+  def withPreviewServerSettings(newValue: PreviewServerSettings): ServerSettings = self.copy(previewServerSettings = newValue)
   override def withMaxConnections(newValue: Int): ServerSettings = self.copy(maxConnections = newValue)
   override def withPipeliningLimit(newValue: Int): ServerSettings = self.copy(pipeliningLimit = newValue)
   override def withRemoteAddressHeader(newValue: Boolean): ServerSettings = self.copy(remoteAddressHeader = newValue)
@@ -74,6 +85,8 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   override def withBacklog(newValue: Int): ServerSettings = self.copy(backlog = newValue)
   override def withSocketOptions(newValue: java.lang.Iterable[SocketOption]): ServerSettings = self.copy(socketOptions = newValue.asScala.toList)
   override def withWebsocketRandomFactory(newValue: java.util.function.Supplier[Random]): ServerSettings = self.copy(websocketRandomFactory = () ⇒ newValue.get())
+  override def withDefaultHttpPort(newValue: Int): ServerSettings = self.copy(defaultHttpPort = newValue)
+  override def withDefaultHttpsPort(newValue: Int): ServerSettings = self.copy(defaultHttpsPort = newValue)
 
   // overloads for Scala idiomatic use
   def withTimeouts(newValue: ServerSettings.Timeouts): ServerSettings = self.copy(timeouts = newValue)

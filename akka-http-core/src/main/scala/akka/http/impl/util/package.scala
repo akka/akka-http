@@ -1,17 +1,14 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl
-
-import akka.NotUsed
-import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 
 import language.implicitConversions
 import java.nio.charset.Charset
 
 import com.typesafe.config.Config
-import akka.stream.scaladsl.{ Flow, Source }
+import akka.stream.scaladsl.Source
 import akka.stream.stage._
 
 import scala.concurrent.duration.Duration
@@ -96,7 +93,6 @@ package object util {
 package util {
 
   import akka.http.scaladsl.model.{ ContentType, HttpEntity }
-  import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
   import akka.stream.{ Attributes, Outlet, Inlet, FlowShape }
   import scala.concurrent.duration.FiniteDuration
 

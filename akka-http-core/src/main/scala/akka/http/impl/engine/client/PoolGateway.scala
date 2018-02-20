@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicLong
 import akka.Done
 import akka.actor.ActorRef
 import akka.annotation.InternalApi
-import akka.http.impl.engine.client.PoolGateway.{ GatewayIdentifier, SharedGateway }
+import akka.http.impl.engine.client.PoolGateway.GatewayIdentifier
 import akka.http.impl.engine.client.PoolMasterActor._
 import akka.http.impl.settings.HostConnectionPoolSetup
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
@@ -53,7 +53,9 @@ private[http] final class PoolGateway(gatewayRef: ActorRef, val hcps: HostConnec
 
   /**
    * Shutdown the corresponding pool and signal its termination. If the pool is not running or is
-   * being shutting down, this does nothing,
+   * being shutting down, this does nothing.
+   *
+   * The shutdown will wait for all ongoing requests to be completed.
    *
    * @return a Future completed when the pool has been shutdown.
    */

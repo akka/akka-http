@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.http.javadsl.server.directives;
 
 import akka.NotUsed;
@@ -165,7 +166,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     //#extractExecutionContext
     final Route route = path("sample", () ->
       extractExecutionContext(executor ->
-        onSuccess(() ->
+        onSuccess(
           CompletableFuture.supplyAsync(
             // uses the `executor` ExecutionContext
             () -> "Run on " + executor.hashCode() + "!", executor
@@ -391,7 +392,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     }, () -> echoRequestHeaders);
 
     // tests:
-    testRoute(route).run(HttpRequest.GET("/").addHeaders(
+    testRoute(route).run(HttpRequest.GET("/").withHeaders(
       Arrays.asList(RawHeader.create("id", "12345"),RawHeader.create("id2", "67890"))))
       .assertHeaderKindNotExists("id")
       .assertHeaderExists("id2", "67890");
@@ -835,7 +836,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     final Route route = extractDataBytes(data -> {
       final CompletionStage<Integer> sum = data.runFold(0, (acc, i) ->
         acc + Integer.valueOf(i.utf8String()), materializer());
-      return onSuccess(() -> sum, s ->
+      return onSuccess(sum, s ->
         complete(HttpResponse.create().withEntity(HttpEntities.create(s.toString()))));
     });
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives;
@@ -374,5 +374,45 @@ public class PathDirectivesTest extends JUnitRouteTest {
     route.run(HttpRequest.GET("/home"))
          .assertStatusCode(200)
          .assertEntity("Ok");
+  }
+
+  @Test
+  public void testIgnoreTrailingSlash() {
+    TestRoute route = testRoute(
+      ignoreTrailingSlash(() ->
+        route(
+          path("foo", () -> complete("Ok")),
+          path("bar", () -> pathEndOrSingleSlash(() -> complete("Ok"))),
+          path(PathMatchers.segment("baz").slash(), () -> complete("Ok"))
+        )
+      )
+    );
+
+    route.run(HttpRequest.GET("/foo"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("Ok");
+
+    route.run(HttpRequest.GET("/foo/"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("Ok");
+
+    route.run(HttpRequest.GET("/bar/"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("Ok");
+
+    route.run(HttpRequest.GET("/baz"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("Ok");
+
+    route.run(HttpRequest.GET("/baz/"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("Ok");
+
+    route.run(HttpRequest.GET("/foo/?query#frag"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("Ok");
+
+    route.run(HttpRequest.GET("/foz/"))
+      .assertStatusCode(StatusCodes.NOT_FOUND);
   }
 }

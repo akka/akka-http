@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -19,7 +19,6 @@ import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import headers._
 
 import scala.collection.mutable.ListBuffer
-import akka.stream.impl.fusing.SubSource
 
 /**
  * INTERNAL API
@@ -60,9 +59,7 @@ private[http] final class BodyPartParser(
   private[this] val boyerMoore = new BoyerMoore(needle)
 
   // TODO: prevent re-priming header parser from scratch
-  private[this] val headerParser = HttpHeaderParser(settings, log) { errorInfo ⇒
-    if (illegalHeaderWarnings) log.warning(errorInfo.withSummaryPrepended("Illegal multipart header").formatPretty)
-  }
+  private[this] val headerParser = HttpHeaderParser(settings, log)
 
   val in = Inlet[ByteString]("BodyPartParser.in")
   val out = Outlet[BodyPartParser.Output]("BodyPartParser.out")
@@ -125,9 +122,6 @@ private[http] final class BodyPartParser(
       }
 
       setHandlers(in, out, this)
-
-      def warnOnIllegalHeader(errorInfo: ErrorInfo): Unit =
-        if (illegalHeaderWarnings) log.warning(errorInfo.withSummaryPrepended("Illegal multipart header").formatPretty)
 
       def tryParseInitialBoundary(input: ByteString): StateResult =
         // we don't use boyerMoore here because we are testing for the boundary *without* a
@@ -263,11 +257,6 @@ private[http] final class BodyPartParser(
             case 0 ⇒ next(_, 0)
             case 1 ⇒ throw new IllegalStateException
           }
-        done()
-      }
-
-      def continue(next: (ByteString, Int) ⇒ StateResult): StateResult = {
-        state = next(_, 0)
         done()
       }
 

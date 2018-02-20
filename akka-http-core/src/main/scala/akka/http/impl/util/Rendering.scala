@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.util
@@ -294,6 +294,9 @@ private[http] class ByteArrayRendering(sizeHint: Int) extends Rendering {
     size = neededSize.toInt
     oldSize
   }
+
+  def remainingCapacity: Int = array.length - size
+  def asByteString: ByteString = ByteString.ByteString1(array, 0, size)
 }
 
 /**

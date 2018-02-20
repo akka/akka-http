@@ -1,6 +1,14 @@
-# Contributing to Akka HTTP
+# Welcome! Thank you for contributing to Akka HTTP!
+
+We follow the standard GitHub [fork & pull](https://help.github.com/articles/using-pull-requests/#fork--pull) approach to pull requests. Just fork the official repo, develop in a branch, and submit a PR!
+
+You're always welcome to submit your PR straight away and start the discussion (without reading the rest of this wonderful doc, or the README.md). The goal of these notes is to make your experience contributing to Akka HTTP as smooth and pleasant as possible. We're happy to guide you through the process once you've submitted your PR.
+
+# The Akka Community
 
 In case of questions about the contribution process or for discussion of specific issues please visit the [akka/dev gitter chat](https://gitter.im/akka/dev).
+
+You may also check out these [other resources](https://akka.io/get-involved/).
 
 # Navigating around the project & codebase
 
@@ -23,7 +31,7 @@ Most notably many tags start `t:` prefix (as in `topic:`), which categorises iss
 In general *all issues are open for anyone working on them*, however if you're new to the project and looking for an issue
 that will be accepted and likely is a nice one to get started you should check out the following tags:
 
-- [community](https://github.com/akka/akka-http/labels/community) - which identifies issues that the core team will likely not have time to work on, or the issue is a nice entry level ticket. If you're not sure how to solve a ticket but would like to work on it feel free to ask in the issue about clarification or tips.
+- [help wanted](https://github.com/akka/akka-http/labels/help%20wanted) - which identifies issues that the core team will likely not have time to work on, or the issue is a nice entry level ticket. If you're not sure how to solve a ticket but would like to work on it feel free to ask in the issue about clarification or tips.
 - [nice-to-have (low-priority)](https://github.com/akka/akka-http/labels/nice-to-have%20%28low-prio%29) - are tasks which make sense, however are not very high priority (in face of other very high priority issues). If you see something interesting in this list, a contribution would be really wonderful!
 
 Another group of tickets are those which start from a number. They're used to signal in what phase of development an issue is:
@@ -50,13 +58,16 @@ as well as any plugins or additional repos located under the Akka GitHub organis
 These guidelines are meant to be a living document that should be changed and adapted as needed.
 We encourage changes that make it easier to achieve our goals in an efficient way.
 
+Please also note that we have a *Code of Conduct* in place which aims keep our community a nice and helpful one.
+You can read its full text here: [Akka Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## General Workflow
 
 The below steps are how to get a patch into a main development branch (e.g. `master`). 
 The steps are exactly the same for everyone involved in the project (be it core team, or first time contributor).
 
-1. Make sure an issue exists in the [issue tracker](https://github.com/akka/akka-http/issues) for the work you want to contribute. 
-   - If there is no ticket for it, [create one](https://github.com/akka/akka-http/issues/new) first.
+1. To avoid duplicated effort, it might be good to check the [issue tracker](https://github.com/akka/akka-http/issues) and [existing pull requests](https://github.com/akka/akka-http/pulls) for existing work.
+   - If there is no ticket yet, feel free to [create one](https://github.com/akka/akka-http/issues/new) to discuss the problem and the approach you want to take to solve it.
 1. [Fork the project](https://github.com/akka/akka-http#fork-destination-box) on GitHub. You'll need to create a feature-branch for your work on your fork, as this way you'll be able to submit a PullRequest against the mainline Akka-http.
 1. Create a branch on your fork and work on the feature. For example: `git checkout -b wip-custom-headers-akka-http`
    - Please make sure to follow the general quality guidelines (specified below) when developing your patch.
@@ -68,7 +79,7 @@ The steps are exactly the same for everyone involved in the project (be it core 
 1. Now both committers and interested people will review your code. This process is to ensure the code we merge is of the best possible quality, and that no silly mistakes slip through. You're expected to follow-up these comments by adding new commits to the same branch. The commit messages of those commits can be more lose, for example: `Removed debugging using printline`, as they all will be squashed into one commit before merging into the main branch.
     - The community and team are really nice people, so don't be afraid to ask follow up questions if you didn't understand some comment, or would like to clarify how to continue with a given feature. We're here to help, so feel free to ask and discuss any kind of questions you might have during review!
 1. After the review you should fix the issues as needed (pushing a new commit for new review etc.), iterating until the reviewers give their thumbs up–which is signalled usually by a comment saying `LGTM`, which means "Looks Good To Me". 
-    - In general a PR is expected to get 2 LGTMs from the team before it is merged. If the PR is trivial, or under under special circumstances (such as most of the team being on vacation, a PR was very thoroughly reviewed/tested and surely is correct) one LGTM may be fine as well.
+    - In general a PR is expected to get 2 LGTMs from the team before it is merged. If the PR is trivial, or under special circumstances (such as most of the team being on vacation, a PR was very thoroughly reviewed/tested and surely is correct) one LGTM may be fine as well.
 1. If the code change needs to be applied to other branches as well (for example a bugfix needing to be backported to a previous version), one of the team will either ask you to submit a PR with the same commit to the old branch, or do this for you.
    - Backport pull requests such as these are marked using the phrase`for validation` in the title to make the purpose clear in the pull request list. They can be merged once validation passes without additional review (if no conflicts).
 1. Once everything is said and done, your Pull Request gets merged :tada: Your feature will be available with the next “earliest” release milestone (i.e. if back-ported so that it will be in release x.y.z, find the relevant milestone for that release). And of course you will be given credit for the fix in the release stats during the release's announcement. You've made it!
@@ -91,7 +102,7 @@ The Akka-http build includes a special task called `validatePullRequest` which i
 then running tests only on those projects.
 
 For example changing something in `akka-http-core` would cause tests to be run in all projects which depend on it
-(e.g. `akka-http-tests`, `akka-http-marshallers-*`, `akka-docs` etc.).
+(e.g. `akka-http-tests`, `akka-http-marshallers-*`, `docs` etc.).
 
 To use the task simply type, and the output should include entries like shown below:
 
@@ -99,7 +110,7 @@ To use the task simply type, and the output should include entries like shown be
 > validatePullRequest
 [info] Diffing [HEAD] to determine changed modules in PR...
 [info] Detected uncomitted changes in directories (including in dependency analysis): [akka-protobuf,project]
-[info] Detected changes in directories: [akka-docs, project, akka-http-tests, akka-protobuf, akka-http-testkit, akka-http, akka-http-core, akka-stream]
+[info] Detected changes in directories: [docs, project, akka-http-tests, akka-protobuf, akka-http-testkit, akka-http, akka-http-core, akka-stream]
 ```
 
 By default changes are diffed with the `master` branch when working locally, if you want to validate against a different
@@ -121,7 +132,7 @@ This allows simple and fast iterations on changes that would need to be introduc
 Binary compatibility rules and guarantees are described in depth in the [Binary Compatibility Rules
 ](http://doc.akka.io/docs/akka/snapshot/common/binary-compatibility-rules.html) section of the documentation.
 
-Akka-http uses MiMa (which is short for [Lightbend Migration Manager](https://github.com/typesafehub/migration-manager)) to
+Akka-http uses MiMa (which is short for [Lightbend Migration Manager](https://github.com/lightbend/migration-manager)) to
 validate binary compatibility of incoming Pull Requests. If your PR fails due to binary compatibility issues, you may see 
 an error like this:
 
@@ -141,6 +152,10 @@ Situations when it may be fine to ignore a MiMa issued warning include:
 - if it is adding API to classes / traits which are only meant for extension by Akka itself, i.e. should not be extended by end-users
 - other tricky situations
 
+If it turns out that the change can be safely ignored, please add the filter to the submodule's `src/main/mima-filters/<last-released-version>.backwards.excludes` file using (or creating) the file corresponding to the latest released version.
+
+You can run `mimaReportBinaryIssues` on the sbt console to check if you introduced a binary incompatibility or whether an
+incompatibility has been successfully ignored after adding it to the filter file.
 
 ## Pull Request Requirements
 
@@ -161,7 +176,7 @@ For a Pull Request to be considered at all it has to meet these requirements:
 
 Some additional guidelines regarding source code are:
 
-- files should start with a ``Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>`` copyright header 
+- files should start with a ``Copyright (C) 2018 Lightbend Inc. <http://www.lightbend.com>`` copyright header 
 - keep the code [DRY](http://programmer.97things.oreilly.com/wiki/index.php/Don%27t_Repeat_Yourself)
 - apply the [Boy Scout Rule](http://programmer.97things.oreilly.com/wiki/index.php/The_Boy_Scout_Rule) whenever you have the chance to
 - Never delete or change existing copyright notices, just add additional info.  
@@ -180,6 +195,7 @@ All documentation must abide by the following maxims:
 - Version should be **programmatically** specifiable to the build.
 - Generation should be **completely automated** and available for scripting.
 - Artifacts that must be included in the Lightbend stack should be published to a maven “documentation” repository as documentation artifacts.
+- When renaming Markdown files, add a rewrite rule to the `.htaccess` file to not break external links.
 
 All documentation is preferred to be in Lightbend's standard documentation format [Paradox](https://github.com/lightbend/paradox).
 The language used by Paradox is a super-set or Markdown which supports most Github Flavored Markdown extensions as well as additional directives to facilitate writing documentation for software projects.
@@ -192,11 +208,11 @@ To generate documentation you can:
 > paradox
 ```
 
-The rendered documentation will be available under `docs/target/paradox/site/index.html`. 
+The rendered documentation will be available under `docs/target/paradox/site/main/index.html`. 
 
 ### JavaDoc
 
-Akka-http generates JavaDoc-style API documentation using the [genjavadoc](https://github.com/typesafehub/genjavadoc) sbt plugin, since the sources are written mostly in Scala.
+Akka-http generates JavaDoc-style API documentation using the [genjavadoc](https://github.com/lightbend/genjavadoc) sbt plugin, since the sources are written mostly in Scala.
 
 Generating JavaDoc is not enabled by default, as it's not needed on day-to-day development as it's expected to just work.
 If you'd like to check if you links and formatting looks good in JavaDoc (and not only in ScalaDoc), you can generate it by running:
@@ -299,7 +315,7 @@ There is a number of ways timeouts can be defined in Akka tests. The following w
 * `3.seconds` is third choice if not using testkit
 * lower timeouts must come with a very good reason (e.g. Awaiting on a known to be "already completed" `Future`)
 
-Special care should be given `expectNoMsg` calls, which indeed will wait the entire timeout before continuing, therefore a shorter timeout should be used in those, for example `200` or `300.millis`.
+Special care should be given `expectNoMessage` calls, which indeed will wait the entire timeout before continuing, therefore a shorter timeout should be used in those, for example `200` or `300.millis`.
 
 You can read up on remaining and friends in [TestKit.scala](https://github.com/akka/akka/blob/master/akka-testkit/src/main/scala/akka/testkit/TestKit.scala)
 
@@ -307,12 +323,16 @@ You can read up on remaining and friends in [TestKit.scala](https://github.com/a
 
 ## Continuous Integration
 
-Each project should be configured to use a continuous integration (CI) tool (i.e. a build server à la Jenkins). 
+akka-http currently uses a combination of jenkins and travis for Continuous
+Integration:
 
-Lightbend is sponsoring a [Jenkins server farm](https://jenkins.akka.io/), sometimes referred to as "the Lausanne cluster".
+* Jenkins [runs the tests for each PR](https://jenkins.akka.io:8498/view/PR%20Validators/job/pr-validator-akka-http/)
+* Jenkins [runs a nightly performance test suite](https://jenkins.akka.io:8498/view/Akka-http/) against master
+* Travis [checks dependency licenses for all PR's](https://travis-ci.org/akka/akka-http)
+* Travis [is used for publishing releases](https://github.com/akka/akka-http/blob/master/.travis.yml#L33)
+
+The [Jenkins server farm](https://jenkins.akka.io/), sometimes referred to as "the Lausanne cluster", is sponsored by Lightbend.
 The cluster is made out of real bare-metal boxes, and maintained by the Akka team (and other very helpful people at Lightbend).
-
-In addition to PR Validation the cluster is also used for nightly and performance test runs. 
 
 ## Related links
 

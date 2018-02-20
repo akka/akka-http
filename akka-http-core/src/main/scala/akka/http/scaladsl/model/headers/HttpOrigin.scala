@@ -1,10 +1,8 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model.headers
-
-import akka.http.impl.model.JavaInitialization
 
 import language.implicitConversions
 import scala.collection.immutable
@@ -34,9 +32,6 @@ object HttpOriginRange {
     def matches(origin: HttpOrigin): Boolean = origins contains origin
     def render[R <: Rendering](r: R): r.type = r ~~ origins
   }
-
-  JavaInitialization.initializeStaticFieldWith(
-    `*`, classOf[jm.headers.HttpOriginRange].getField("ALL"))
 
 }
 

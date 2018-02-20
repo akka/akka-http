@@ -1,11 +1,8 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model.headers
-
-import akka.http.impl.model.JavaInitialization
-import akka.util.Unsafe
 
 import scala.language.implicitConversions
 import scala.collection.immutable
@@ -54,10 +51,6 @@ object LanguageRange {
 
   implicit def apply(language: Language): LanguageRange = apply(language, 1.0f)
   def apply(language: Language, qValue: Float): LanguageRange = One(language, qValue)
-
-  JavaInitialization.initializeStaticFieldWith(
-    `*`, classOf[jm.headers.LanguageRange].getField("ALL"))
-
 }
 
 final case class Language(primaryTag: String, subTags: immutable.Seq[String])

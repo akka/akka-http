@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.model;
@@ -28,6 +28,7 @@ public final class MediaTypes {
     public static final MediaType.Binary APPLICATION_MSPOWERPOINT = akka.http.scaladsl.model.MediaTypes.application$divmspowerpoint();
     public static final MediaType.Binary APPLICATION_MSWORD = akka.http.scaladsl.model.MediaTypes.application$divmsword();
     public static final MediaType.Binary APPLICATION_OCTET_STREAM = akka.http.scaladsl.model.MediaTypes.application$divoctet$minusstream();
+    public static final MediaType.Binary APPLICATION_GRPC_PROTO = akka.http.scaladsl.model.MediaTypes.application$divgrpc$plusproto();
     public static final MediaType.Binary APPLICATION_PDF = akka.http.scaladsl.model.MediaTypes.application$divpdf();
     public static final MediaType.Binary APPLICATION_POSTSCRIPT = akka.http.scaladsl.model.MediaTypes.application$divpostscript();
     public static final MediaType.WithOpenCharset APPLICATION_RSS_XML = akka.http.scaladsl.model.MediaTypes.application$divrss$plusxml();
@@ -134,6 +135,7 @@ public final class MediaTypes {
     public static final MediaType.WithOpenCharset TEXT_CALENDAR = akka.http.scaladsl.model.MediaTypes.text$divcalendar();
     public static final MediaType.WithOpenCharset TEXT_CSS = akka.http.scaladsl.model.MediaTypes.text$divcss();
     public static final MediaType.WithOpenCharset TEXT_CSV = akka.http.scaladsl.model.MediaTypes.text$divcsv();
+    public static final MediaType.WithFixedCharset TEXT_EVENT_STREAM = akka.http.scaladsl.model.MediaTypes.text$divevent$minusstream();
     public static final MediaType.WithOpenCharset TEXT_HTML = akka.http.scaladsl.model.MediaTypes.text$divhtml();
     public static final MediaType.WithOpenCharset TEXT_MARKDOWN = akka.http.scaladsl.model.MediaTypes.text$divmarkdown();
     public static final MediaType.WithOpenCharset TEXT_MCF = akka.http.scaladsl.model.MediaTypes.text$divmcf();

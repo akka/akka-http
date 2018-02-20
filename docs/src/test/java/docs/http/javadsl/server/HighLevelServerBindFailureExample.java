@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server;
@@ -26,7 +26,6 @@ public class HighLevelServerBindFailureExample {
     final ActorSystem system = ActorSystem.create();
     final ActorMaterializer materializer = ActorMaterializer.create(system);
 
-    // HttpApp.bindRoute expects a route being provided by HttpApp.createRoute
     final HighLevelServerExample app = new HighLevelServerExample();
     final Route route = app.createRoute();
 

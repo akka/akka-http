@@ -1,11 +1,10 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server
 
 import akka.http.scaladsl.server
-import akka.japi.pf.PFBuilder
 import akka.http.javadsl.settings.RoutingSettings
 import akka.http.impl.util.JavaMapping.Implicits._
 import RoutingJavaMapping._

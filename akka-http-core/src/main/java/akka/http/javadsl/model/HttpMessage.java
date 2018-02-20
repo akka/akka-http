@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.model;
@@ -14,6 +14,8 @@ import akka.util.ByteString;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 
 /**
  * The base type for an Http message (request or response).
@@ -77,6 +79,10 @@ public interface HttpMessage {
      * of its streaming nature. If the dataBytes source is materialized a second time, it will fail with an
      * "stream can cannot be materialized more than once" exception.
      *
+     * When called on `Strict` entities or sources whose values can be buffered in memory,
+     * the above warnings can be ignored. Repeated materialization is not necessary in this case, avoiding
+     * the mentioned exceptions due to the data being held in memory.
+     *
      * In future versions, more automatic ways to warn or resolve these situations may be introduced, see issue #18716.
      */
     DiscardedEntity discardEntityBytes(Materializer materializer);
@@ -103,6 +109,11 @@ public interface HttpMessage {
          * Returns a copy of this message with the given headers added to the list of headers.
          */
         Self addHeaders(Iterable<HttpHeader> headers);
+
+        /**
+         * Returns a copy of this message with new headers.
+         */
+        Self withHeaders(Iterable<HttpHeader> headers);
 
         /**
          * Returns a copy of this message with the given http credential header added to the list of headers.
@@ -146,10 +157,7 @@ public interface HttpMessage {
 
         /**
          * Returns a copy of Self message with a new entity.
-         *
-         * @deprecated Will be removed in Akka HTTP 11.x, use {@link #withEntity(ContentType, Path)} instead.
          */
-        @Deprecated
         Self withEntity(ContentType type, File file);
 
         /**
@@ -166,5 +174,16 @@ public interface HttpMessage {
          * Returns a copy of Self message after applying the given transformation
          */
         <T> Self transformEntityDataBytes(Graph<FlowShape<ByteString, ByteString>, T> transformer);
+
+        /**
+         * Returns a future of Self message with strict entity that contains the same data as this entity
+         * which is only completed when the complete entity has been collected. As the
+         * duration of receiving the complete entity cannot be predicted, a timeout needs to
+         * be specified to guard the process against running and keeping resources infinitely.
+         *
+         * Use getEntity().getDataBytes and stream processing instead if the expected data is big or
+         * is likely to take a long time.
+         */
+        CompletionStage<? extends Self> toStrict(long timeoutMillis, Executor ec, Materializer materializer);
     }
 }

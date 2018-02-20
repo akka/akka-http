@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.server
@@ -59,7 +59,7 @@ import akka.http.impl.util.LogByteStringTools._
 private[http] object HttpServerBluePrint {
   def apply(settings: ServerSettings, log: LoggingAdapter, isSecureConnection: Boolean): Http.ServerLayer =
     userHandlerGuard(settings.pipeliningLimit) atop
-      requestTimeoutSupport(settings.timeouts.requestTimeout) atop
+      requestTimeoutSupport(settings.timeouts.requestTimeout, log) atop
       requestPreparation(settings) atop
       controller(settings, log) atop
       parsingRendering(settings, log, isSecureConnection) atop
@@ -82,8 +82,8 @@ private[http] object HttpServerBluePrint {
   def requestPreparation(settings: ServerSettings): BidiFlow[HttpResponse, HttpResponse, RequestOutput, HttpRequest, NotUsed] =
     BidiFlow.fromFlows(Flow[HttpResponse], new PrepareRequests(settings))
 
-  def requestTimeoutSupport(timeout: Duration): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, NotUsed] =
-    BidiFlow.fromGraph(new RequestTimeoutSupport(timeout)).reversed
+  def requestTimeoutSupport(timeout: Duration, log: LoggingAdapter): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, NotUsed] =
+    BidiFlow.fromGraph(new RequestTimeoutSupport(timeout, log)).reversed
 
   /**
    * Two state stage, either transforms an incoming RequestOutput into a HttpRequest with strict entity and then pushes
@@ -97,7 +97,8 @@ private[http] object HttpServerBluePrint {
     override val shape: FlowShape[RequestOutput, HttpRequest] = FlowShape.of(in, out)
 
     override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
-      val remoteAddress = inheritedAttributes.get[HttpAttributes.RemoteAddress].flatMap(_.address)
+      val remoteAddress = inheritedAttributes.get[HttpAttributes.RemoteAddress].map(_.address)
+
       var downstreamPullWaiting = false
       var completionDeferred = false
       var entitySource: SubSourceOutlet[RequestOutput] = _
@@ -120,6 +121,7 @@ private[http] object HttpServerBluePrint {
       override def onPush(): Unit = grab(in) match {
         case RequestStart(method, uri, protocol, hdrs, entityCreator, _, _) ⇒
           val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
+
           val effectiveHeaders =
             if (settings.remoteAddressHeader && remoteAddress.isDefined)
               headers.`Remote-Address`(RemoteAddress(remoteAddress.get)) +: hdrs
@@ -206,13 +208,11 @@ private[http] object HttpServerBluePrint {
 
     // the initial header parser we initially use for every connection,
     // will not be mutated, all "shared copy" parsers copy on first-write into the header cache
-    val rootParser = new HttpRequestParser(parserSettings, rawRequestUriHeader,
-      HttpHeaderParser(parserSettings, log) { info ⇒
-        if (parserSettings.illegalHeaderWarnings)
-          logParsingError(info withSummaryPrepended "Illegal request header", log, parserSettings.errorLoggingVerbosity)
-      })
+    val rootParser = new HttpRequestParser(parserSettings, rawRequestUriHeader, HttpHeaderParser(parserSettings, log))
 
     def establishAbsoluteUri(requestOutput: RequestOutput): RequestOutput = requestOutput match {
+      case connect: RequestStart if connect.method == HttpMethods.CONNECT ⇒
+        MessageStartError(StatusCodes.BadRequest, ErrorInfo(s"CONNECT requests are not supported", s"Rejecting CONNECT request to '${connect.uri}'"))
       case start: RequestStart ⇒
         try {
           val effectiveUri = HttpRequest.effectiveUri(start.uri, start.headers, isSecureConnection, defaultHostHeader)
@@ -236,7 +236,7 @@ private[http] object HttpServerBluePrint {
       .via(responseRendererFactory.renderer.named("renderer"))
   }
 
-  class RequestTimeoutSupport(initialTimeout: Duration)
+  class RequestTimeoutSupport(initialTimeout: Duration, log: LoggingAdapter)
     extends GraphStage[BidiShape[HttpRequest, HttpRequest, HttpResponse, HttpResponse]] {
     private val requestIn = Inlet[HttpRequest]("RequestTimeoutSupport.requestIn")
     private val requestOut = Outlet[HttpRequest]("RequestTimeoutSupport.requestOut")
@@ -249,23 +249,25 @@ private[http] object HttpServerBluePrint {
 
     def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
       var openTimeouts = immutable.Queue[TimeoutAccessImpl]()
+      // the application response might has already arrived after we scheduled the timeout response (which is close but ok)
+      // or current head (same reason) is not for response the timeout has been scheduled for
+      val callback: AsyncCallback[(TimeoutAccess, HttpResponse)] = getAsyncCallback {
+        case (timeout, response) ⇒
+          if (openTimeouts.headOption.exists(_ eq timeout)) {
+            emit(responseOut, response, () ⇒ completeStage())
+          }
+      }
       setHandler(requestIn, new InHandler {
         def onPush(): Unit = {
           val request = grab(requestIn)
           val (entity, requestEnd) = HttpEntity.captureTermination(request.entity)
-          val access = new TimeoutAccessImpl(request, initialTimeout, requestEnd,
-            getAsyncCallback(emitTimeoutResponse), interpreter.materializer)
+          val access = new TimeoutAccessImpl(request, initialTimeout, requestEnd, callback,
+            interpreter.materializer, log)
           openTimeouts = openTimeouts.enqueue(access)
           push(requestOut, request.copy(headers = request.headers :+ `Timeout-Access`(access), entity = entity))
         }
         override def onUpstreamFinish() = complete(requestOut)
         override def onUpstreamFailure(ex: Throwable) = fail(requestOut, ex)
-        def emitTimeoutResponse(response: (TimeoutAccess, HttpResponse)) =
-          // the application response might has already arrived after we scheduled the timeout response (which is close but ok)
-          // or current head (same reason) is not for response the timeout has been scheduled for
-          if (openTimeouts.headOption.exists(_ eq response._1)) {
-            emit(responseOut, response._2, () ⇒ completeStage())
-          }
       })
       // TODO: provide and use default impl for simply connecting an input and an output port as we do here
       setHandler(requestOut, new OutHandler {
@@ -300,7 +302,8 @@ private[http] object HttpServerBluePrint {
   }
 
   private class TimeoutAccessImpl(request: HttpRequest, initialTimeout: Duration, requestEnd: Future[Unit],
-                                  trigger: AsyncCallback[(TimeoutAccess, HttpResponse)], materializer: Materializer)
+                                  trigger:      AsyncCallback[(TimeoutAccess, HttpResponse)],
+                                  materializer: Materializer, log: LoggingAdapter)
     extends AtomicReference[Future[TimeoutSetup]] with TimeoutAccess with (HttpRequest ⇒ HttpResponse) { self ⇒
     import materializer.executionContext
 
@@ -313,11 +316,13 @@ private[http] object HttpServerBluePrint {
       }
     }
 
-    override def apply(request: HttpRequest) =
+    override def apply(request: HttpRequest) = {
+      log.info("Request timeout encountered for request [{}]", request.debugString)
       //#default-request-timeout-httpresponse
       HttpResponse(StatusCodes.ServiceUnavailable, entity = "The server was not able " +
         "to produce a timely response to your request.\r\nPlease try again in a short while!")
-    //#default-request-timeout-httpresponse
+      //#default-request-timeout-httpresponse
+    }
 
     def clear(): Unit = // best effort timeout cancellation
       get.fast.foreach(setup ⇒ if (setup.scheduledTask ne null) setup.scheduledTask.cancel())
@@ -664,14 +669,25 @@ private[http] object HttpServerBluePrint {
           })
 
           setHandler(fromNet, new InHandler {
-            override def onPush(): Unit = sourceOut.push(grab(fromNet).bytes)
+            override def onPush(): Unit = {
+              if (sourceOut.isAvailable) {
+                sourceOut.push(grab(fromNet).bytes)
+              }
+            }
             override def onUpstreamFinish(): Unit = sourceOut.complete()
             override def onUpstreamFailure(ex: Throwable): Unit = sourceOut.fail(ex)
           })
           sourceOut.setHandler(new OutHandler {
             override def onPull(): Unit = {
-              if (!hasBeenPulled(fromNet)) pull(fromNet)
+              // This check only needed on the first pull due to potential element
+              // pushed in response to pull by previous source
+              if (isAvailable(fromNet)) {
+                sourceOut.push(grab(fromNet).bytes)
+              } else if (!hasBeenPulled(fromNet)) {
+                pull(fromNet)
+              }
               cancelTimeout(timeoutKey)
+
               sourceOut.setHandler(new OutHandler {
                 override def onPull(): Unit = if (!hasBeenPulled(fromNet)) pull(fromNet)
                 override def onDownstreamFinish(): Unit = cancel(fromNet)

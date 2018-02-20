@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server
@@ -15,7 +15,6 @@ import scala.collection.JavaConverters._
 import akka.http.javadsl.model.RemoteAddress
 import akka.http.javadsl.model.headers.Language
 import akka.http.impl.util.JavaMapping.Implicits._
-import RoutingJavaMapping._
 
 import akka.http.scaladsl.server.{ Directives ⇒ D }
 
@@ -75,6 +74,10 @@ abstract class MiscDirectives extends MethodDirectives {
    * Disables the size limit (configured by `akka.http.parsing.max-content-length` by default) checking on the incoming
    * [[akka.http.javadsl.model.HttpRequest]] entity.
    * Can be useful when handling arbitrarily large data uploads in specific parts of your routes.
+   *
+   * @note  Usage of `withoutSizeLimit` is not recommended as it turns off the too large payload protection. Therefore,
+   *        we highly encourage using `withSizeLimit` instead, providing it with a value high enough to successfully
+   *        handle the route in need of big entities.
    */
   def withoutSizeLimit(inner: Supplier[Route]): Route = RouteAdapter {
     D.withoutSizeLimit { inner.get.delegate }

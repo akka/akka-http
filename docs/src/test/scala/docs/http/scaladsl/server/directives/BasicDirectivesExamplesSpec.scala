@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
@@ -614,7 +614,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
     }
     //#pass
   }
-  "0provide" in {
+  "provide0" in {
     //#provide0
     def providePrefixedString(value: String): Directive1[String] = provide("prefix:" + value)
     val route =

@@ -1,8 +1,10 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server.directives
+
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.immutable.ListMap
 import akka.http.scaladsl.model.StatusCodes
@@ -146,6 +148,18 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
     "accept [/foo/bar/baz]" inThe test("/baz")
   }
 
+  """pathPrefix(".*")""" should {
+    val test = testFor(pathPrefix(".*".r) { echoCaptureAndUnmatchedPath })
+    "accept [/]" inThe test(":")
+    "accept [/abc]" inThe test("abc:")
+  }
+
+  """pathPrefix("(.)*.r")""" should {
+    val test = testFor(pathPrefix("(.)*".r) { echoCaptureAndUnmatchedPath })
+    "accept [/]" inThe test(":")
+    "accept [/abc]" inThe test("c:")
+  }
+
   """pathPrefix("ab[cd]+".r)""" should {
     val test = testFor(pathPrefix("ab[cd]+".r) { echoCaptureAndUnmatchedPath })
     "reject [/bar]" inThe test()
@@ -271,6 +285,14 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
     "accept [/foops]" inThe test("ps")
     "accept [/bar]" inThe test("")
     "reject [/baz]" inThe test()
+  }
+  """pathPrefix(("foo" | "bar") / "example")""" should {
+    val test = testFor(pathPrefix(("foo" | "bar") / "example") { echoUnmatchedPath })
+    // nope:    val test = testFor(pathPrefix("foo" | "bar" / "example") { echoUnmatchedPath })
+    "accept [/foo/example]" inThe test("")
+    "accept [/bar/example]" inThe test("")
+    "reject [/baz]" inThe test()
+    "reject [/bar/nein]" inThe test()
   }
 
   """pathSuffix(!"foo")""" should {
@@ -461,6 +483,63 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
       Get("/foo/bar/") ~>
         redirectToNoTrailingSlashIfPresent(MovedPermanently) { completeOk } ~>
         check { status shouldEqual MovedPermanently }
+    }
+  }
+
+  "the `ignoreTrailingSlash` directive" should {
+    def route(counter: AtomicInteger = new AtomicInteger(0)) = ignoreTrailingSlash {
+      counter.incrementAndGet()
+      path("foo") {
+        complete(s"${counter.get()}")
+      } ~
+        (pathPrefix("bar") & pathEndOrSingleSlash) {
+          complete(s"${counter.get()}")
+        } ~
+        path("baz" /) {
+          complete(s"${counter.get()}")
+        }
+    }
+
+    "pass if the request path doesn't have a trailing slash" in {
+      Get("/foo") ~> route() ~> check {
+        responseAs[String] shouldEqual "1"
+      }
+    }
+
+    "pass if the request path has a trailing slash by retrying the inner route" in {
+      Get("/foo/") ~> route() ~> check {
+        responseAs[String] shouldEqual "2"
+      }
+    }
+
+    "pass when the request contains parameters and fragments" in {
+      Get("/foo/?query#frag") ~> route() ~> check {
+        responseAs[String] shouldEqual "2"
+      }
+    }
+
+    "retry the inner route only once if path already checks for an optional trailing slash" in {
+      Get("/bar/") ~> route() ~> check {
+        responseAs[String] shouldEqual "1"
+      }
+    }
+
+    "retry accordingly if the path expects a trailing slash" in {
+      Get("/baz") ~> route() ~> check {
+        responseAs[String] shouldEqual "2"
+      }
+
+      Get("/baz/") ~> route() ~> check {
+        responseAs[String] shouldEqual "1"
+      }
+    }
+
+    "reject if request can't be matched with nor without a trailing slash" in {
+      val counter = new AtomicInteger(0)
+      Get("/foz") ~> route(counter) ~> check {
+        counter.get() shouldEqual 2
+        handled shouldEqual false
+      }
     }
   }
 

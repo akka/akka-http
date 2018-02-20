@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives;
@@ -31,6 +31,16 @@ public class ParameterDirectivesTest extends JUnitRouteTest {
       .run(HttpRequest.create().withUri("/abc?stringParam=john"))
       .assertStatusCode(200)
       .assertEntity("john");
+
+    route
+        .run(HttpRequest.create().withUri("/abc?stringParam=a%b"))
+        .assertStatusCode(400)
+        .assertEntity("The request content was malformed:\nThe request's query string is invalid: stringParam=a%b");
+
+    route
+      .run(HttpRequest.create().withUri("/abc?stringParam=a=b"))
+      .assertStatusCode(200)
+      .assertEntity("a=b");
   }
 
   @Test

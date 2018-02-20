@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.model.headers;
@@ -13,12 +13,4 @@ public abstract class EntityTagRange {
     public static EntityTagRange create(EntityTag... tags) {
         return akka.http.scaladsl.model.headers.EntityTagRange.apply(Util.<EntityTag, akka.http.scaladsl.model.headers.EntityTag>convertArray(tags));
     }
-
-    /**
-     * @deprecated because of troublesome initialisation order (with regards to scaladsl class implementing this class).
-     *             In some edge cases this field could end up containing a null value.
-     *             Will be removed in Akka HTTP 11.x, use {@link EntityTagRanges#ALL} instead.
-     */
-    @Deprecated
-    public static final EntityTagRange ALL = EntityTagRanges.ALL;
 }

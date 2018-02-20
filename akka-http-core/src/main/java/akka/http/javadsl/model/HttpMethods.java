@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.model;
@@ -27,18 +27,17 @@ public final class HttpMethods {
 
     /**
      * Create a custom method type.
-     * @deprecated Use {@link  #createCustom} instead.
+     * @deprecated Use {@link #custom} instead. Will be removed in Akka HTTP 11.0.
      */
     @Deprecated
-    public static HttpMethod custom(String value, boolean safe, boolean idempotent, akka.http.scaladsl.model.RequestEntityAcceptance requestEntityAcceptance) {
-        return akka.http.scaladsl.model.HttpMethod.custom(value, safe, idempotent, requestEntityAcceptance);
+    public static HttpMethod createCustom(String value, boolean safe, boolean idempotent, akka.http.javadsl.model.RequestEntityAcceptance requestEntityAcceptance) {
+        return custom(value, safe, idempotent, requestEntityAcceptance);
     }
 
     /**
      * Create a custom method type.
      */
-    // TODO: Rename it to custom() in Akka HTTP 11.0
-    public static HttpMethod createCustom(String value, boolean safe, boolean idempotent, akka.http.javadsl.model.RequestEntityAcceptance requestEntityAcceptance) {
+    public static HttpMethod custom(String value, boolean safe, boolean idempotent, akka.http.javadsl.model.RequestEntityAcceptance requestEntityAcceptance) {
         //This cast is safe as implementation of RequestEntityAcceptance only exists in Scala
         akka.http.scaladsl.model.RequestEntityAcceptance scalaRequestEntityAcceptance
           = (akka.http.scaladsl.model.RequestEntityAcceptance) requestEntityAcceptance;

@@ -1,11 +1,13 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.util
 
 import akka.NotUsed
 import akka.actor.Cancellable
+import akka.annotation.InternalApi
+import akka.http.scaladsl.model.HttpEntity
 import akka.stream._
 import akka.stream.impl.fusing.GraphInterpreter
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
@@ -20,7 +22,6 @@ import scala.concurrent.{ ExecutionContext, Future, Promise }
  * INTERNAL API
  */
 private[http] object StreamUtils {
-  import Attributes.none
 
   /**
    * Creates a transformer that will call `f` for each incoming ByteString and output its result. After the complete
@@ -215,6 +216,15 @@ private[http] object StreamUtils {
       i ⇒ f(i) :: Nil
     }
 
+  /**
+   * Lifts the streams attributes into an element and passes them to the function for each passed through element.
+   * Similar idea than [[FlowOps.statefulMapConcat]] but for a simple map.
+   *
+   * The result of `Attributes => (T => U)` is cached, and only the `T => U` function will be invoked afterwards for each element.
+   */
+  def statefulAttrsMap[T, U](functionConstructor: Attributes ⇒ T ⇒ U): Flow[T, U, NotUsed] =
+    Flow[T].via(ExposeAttributes[T, U](functionConstructor))
+
   trait ScheduleSupport { self: GraphStageLogic ⇒
     /**
      * Schedule a block to be run once after the given duration in the context of this graph stage.
@@ -270,6 +280,62 @@ private[http] object StreamUtils {
    * fusing is neither supported nor necessary).
    */
   def fuseAggressive[S <: Shape, M](g: Graph[S, M]): Graph[S, M] = fuser.aggressive(g)
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  object CaptureMaterializationAndTerminationOp extends EntityStreamOp[(Future[Unit], Future[Unit])] {
+    def strictM: (Future[Unit], Future[Unit]) = (Future.successful(()), Future.successful(()))
+    def apply[T, Mat](source: Source[T, Mat]): (Source[T, Mat], (Future[Unit], Future[Unit])) = {
+      val materializationPromise = Promise[Unit]()
+      val (newSource, completion) =
+        StreamUtils.captureTermination(source.mapMaterializedValue { mat ⇒
+          materializationPromise.trySuccess(())
+          mat
+        })
+      (newSource, (materializationPromise.future, completion))
+    }
+  }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  object CaptureTerminationOp extends EntityStreamOp[Future[Unit]] {
+    def strictM: Future[Unit] = Future.successful(())
+    def apply[T, Mat](source: Source[T, Mat]): (Source[T, Mat], Future[Unit]) = StreamUtils.captureTermination(source)
+  }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[http] trait EntityStreamOp[M] {
+    def strictM: M
+    def apply[T, Mat](source: Source[T, Mat]): (Source[T, Mat], M)
+  }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[http] def transformEntityStream[T <: HttpEntity, M](entity: T, streamOp: EntityStreamOp[M]): (T, M) =
+    entity match {
+      case x: HttpEntity.Strict ⇒ x.asInstanceOf[T] → streamOp.strictM
+      case x: HttpEntity.Default ⇒
+        val (newData, whenCompleted) = streamOp(x.data)
+        x.copy(data = newData).asInstanceOf[T] → whenCompleted
+      case x: HttpEntity.Chunked ⇒
+        val (newChunks, whenCompleted) = streamOp(x.chunks)
+        x.copy(chunks = newChunks).asInstanceOf[T] → whenCompleted
+      case x: HttpEntity.CloseDelimited ⇒
+        val (newData, whenCompleted) = streamOp(x.data)
+        x.copy(data = newData).asInstanceOf[T] → whenCompleted
+      case x: HttpEntity.IndefiniteLength ⇒
+        val (newData, whenCompleted) = streamOp(x.data)
+        x.copy(data = newData).asInstanceOf[T] → whenCompleted
+    }
 }
 
 /**
@@ -280,4 +346,21 @@ private[http] class EnhancedByteStringSource[Mat](val byteStringStream: Source[B
     byteStringStream.runFold(ByteString.empty)(_ ++ _)
   def utf8String(implicit materializer: Materializer, ec: ExecutionContext): Future[String] =
     join.map(_.utf8String)
+}
+
+/** INTERNAL API */
+@InternalApi private[http] case class ExposeAttributes[T, U](functionConstructor: Attributes ⇒ T ⇒ U)
+  extends GraphStage[FlowShape[T, U]] {
+
+  val in = Inlet[T]("ExposeAttributes.in")
+  val out = Outlet[U]("ExposeAttributes.out")
+  override val shape = FlowShape(in, out)
+
+  override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
+    val f = functionConstructor(inheritedAttributes)
+    override def onPush(): Unit = push(out, f(grab(in)))
+    override def onPull(): Unit = pull(in)
+
+    setHandlers(in, out, this)
+  }
 }

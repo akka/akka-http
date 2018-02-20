@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -22,7 +22,7 @@ class CustomMediaTypesSpec extends AkkaSpec with ScalaFutures
   "Http" should {
     "allow registering custom media type" in {
       import system.dispatcher
-      val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
+      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
 
       //#application-custom
 

@@ -1,16 +1,14 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
 
 import java.net.{ InetSocketAddress, UnknownHostException, InetAddress }
 import java.util.Optional
-import akka.http.impl.model.JavaInitialization
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.util.Unsafe
 
 sealed abstract class RemoteAddress extends jm.RemoteAddress with ValueRenderable {
   def toOption: Option[InetAddress]
@@ -62,8 +60,4 @@ object RemoteAddress {
       case _         ⇒ r ~~ address
     }
   }
-
-  JavaInitialization.initializeStaticFieldWith(
-    Unknown, classOf[jm.RemoteAddress].getField("UNKNOWN"))
-
 }

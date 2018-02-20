@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
@@ -69,6 +69,7 @@ class CodingDirectivesExamplesSpec extends RoutingSpec {
   val helloGzipped = compress("Hello", Gzip)
   val helloDeflated = compress("Hello", Deflate)
   "decodeRequest" in {
+    //#decodeRequest
     val route =
       decodeRequest {
         entity(as[String]) { content: String =>
@@ -86,6 +87,7 @@ class CodingDirectivesExamplesSpec extends RoutingSpec {
     Post("/", "hello uncompressed") ~> `Content-Encoding`(identity) ~> route ~> check {
       responseAs[String] shouldEqual "Request content: 'hello uncompressed'"
     }
+    //#decodeRequest
   }
   "decodeRequestWith-0" in {
     //#decodeRequestWith

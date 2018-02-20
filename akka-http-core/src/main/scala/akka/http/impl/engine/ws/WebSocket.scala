@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -17,7 +17,6 @@ import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.http.scaladsl.model.ws._
-import akka.stream.impl.fusing.SubSource
 
 /**
  * INTERNAL API

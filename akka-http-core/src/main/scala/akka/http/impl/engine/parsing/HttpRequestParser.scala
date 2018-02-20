@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -31,7 +31,6 @@ private[http] final class HttpRequestParser(
   headerParser:        HttpHeaderParser)
   extends GraphStage[FlowShape[SessionBytes, RequestOutput]] { self ⇒
 
-  import HttpMessageParser._
   import settings._
 
   val in = Inlet[SessionBytes]("HttpRequestParser.in")

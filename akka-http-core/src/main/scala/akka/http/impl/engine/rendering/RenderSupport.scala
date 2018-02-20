@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.rendering
@@ -17,11 +17,12 @@ import akka.http.impl.util._
 import akka.stream.stage.GraphStage
 import akka.stream._
 import akka.stream.scaladsl.{ Flow, Sink, Source }
+
 /**
  * INTERNAL API
  */
 @InternalApi
-private object RenderSupport {
+private[rendering] object RenderSupport {
   val DefaultStatusLineBytes = "HTTP/1.1 200 OK\r\n".asciiBytes
   val StatusLineStartBytes = "HTTP/1.1 ".asciiBytes
   val ChunkedBytes = "chunked".asciiBytes
@@ -65,9 +66,9 @@ private object RenderSupport {
     } else r // don't render
   }
 
-  def renderByteStrings(r: ByteStringRendering, entityBytes: ⇒ Source[ByteString, Any],
+  def renderByteStrings(header: ByteString, entityBytes: ⇒ Source[ByteString, Any],
                         skipEntity: Boolean = false): Source[ByteString, Any] = {
-    val messageStart = Source.single(r.get)
+    val messageStart = Source.single(header)
     val messageBytes =
       if (!skipEntity) (messageStart ++ entityBytes).mapMaterializedValue(_ ⇒ ())
       else CancelSecond(messageStart, entityBytes)

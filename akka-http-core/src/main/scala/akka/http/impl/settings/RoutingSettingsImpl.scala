@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2014 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.settings
@@ -10,7 +10,7 @@ import com.typesafe.config.Config
 
 /** INTERNAL API */
 @InternalApi
-final case class RoutingSettingsImpl(
+private[http] final case class RoutingSettingsImpl(
   verboseErrorMessages:     Boolean,
   fileGetConditional:       Boolean,
   renderVanityFooter:       Boolean,

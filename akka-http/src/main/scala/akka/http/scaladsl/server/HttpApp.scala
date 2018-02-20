@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -17,7 +17,7 @@ import akka.http.scaladsl.settings.ServerSettings
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise, blocking }
 import scala.io.StdIn
 import scala.util.{ Failure, Success, Try }
 
@@ -44,7 +44,19 @@ abstract class HttpApp extends Directives {
   }
 
   /**
-   * Start a server on the specified host and port, using provided settings.
+   * Start a server on the specified host and port, using the provided [[ActorSystem]].
+   * Note that this method is blocking
+   *
+   * @param system ActorSystem to use for starting the app,
+   *   if `null` is passed in a new default ActorSystem will be created instead, which will
+   *   be terminated when the server is stopped.
+   */
+  def startServer(host: String, port: Int, system: ActorSystem): Unit = {
+    startServer(host, port, ServerSettings(system), Option(system))
+  }
+
+  /**
+   * Start a server on the specified host and port, using the provided settings.
    * Note that this method is blocking.
    */
   def startServer(host: String, port: Int, settings: ServerSettings): Unit = {
@@ -52,16 +64,24 @@ abstract class HttpApp extends Directives {
   }
 
   /**
-   * Start a server on the specified host and port, using provided settings and [[ActorSystem]].
+   * Start a server on the specified host and port, using the provided settings and [[ActorSystem]].
    * Note that this method is blocking.
+   *
+   * @param system ActorSystem to use for starting the app,
+   *   if `null` is passed in a new default ActorSystem will be created instead, which will
+   *   be terminated when the server is stopped.
    */
   def startServer(host: String, port: Int, settings: ServerSettings, system: ActorSystem): Unit = {
-    startServer(host, port, settings, Some(system))
+    startServer(host, port, settings, Option(system))
   }
 
   /**
-   * Start a server on the specified host and port, using provided settings and [[ActorSystem]] if present.
+   * Start a server on the specified host and port, using the provided settings and [[ActorSystem]] if present.
    * Note that this method is blocking.
+   *
+   * @param system ActorSystem to use for starting the app,
+   *   if `None` is passed in a new default ActorSystem will be created instead, which will
+   *   be terminated when the server is stopped.
    */
   def startServer(host: String, port: Int, settings: ServerSettings, system: Option[ActorSystem]): Unit = {
     implicit val theSystem = system.getOrElse(ActorSystem(Logging.simpleName(this).replaceAll("\\$", "")))
@@ -70,7 +90,7 @@ abstract class HttpApp extends Directives {
     implicit val executionContext = theSystem.dispatcher
 
     val bindingFuture = Http().bindAndHandle(
-      handler = route,
+      handler = routes,
       interface = host,
       port = port,
       settings = settings)
@@ -134,18 +154,19 @@ abstract class HttpApp extends Directives {
   protected def waitForShutdownSignal(system: ActorSystem)(implicit ec: ExecutionContext): Future[Done] = {
     val promise = Promise[Done]()
     sys.addShutdownHook {
-      promise.success(Done)
+      promise.trySuccess(Done)
     }
     Future {
-      if (StdIn.readLine("Press RETURN to stop...\n") != null)
-        promise.success(Done)
+      blocking {
+        if (StdIn.readLine("Press RETURN to stop...\n") != null)
+          promise.trySuccess(Done)
+      }
     }
     promise.future
   }
 
   /**
-   * Override to implement the route that will be served by this http server.
+   * Override to implement the routes that will be served by this http server.
    */
-  protected def route: Route
-
+  protected def routes: Route
 }

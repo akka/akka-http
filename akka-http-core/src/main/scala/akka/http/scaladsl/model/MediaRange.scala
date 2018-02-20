@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -95,7 +95,12 @@ object MediaRange {
     def matches(mediaType: MediaType) =
       this.mediaType.mainType == mediaType.mainType &&
         this.mediaType.subType == mediaType.subType &&
-        this.mediaType.params.forall { case (key, value) ⇒ mediaType.params.get(key).contains(value) }
+        this.mediaType.params
+        .forall {
+          // just ignore charset parameter in `Accept` headers, clients should use `Accept-Charset` instead, see also #1139
+          case ("charset", _) ⇒ true
+          case (key, value)   ⇒ mediaType.params.get(key).contains(value)
+        }
     def withParams(params: Map[String, String]) = copy(mediaType = mediaType.withParams(params))
     def withQValue(qValue: Float) = copy(qValue = qValue)
     def render[R <: Rendering](r: R): r.type = if (qValue < 1.0f) r ~~ mediaType ~~ ";q=" ~~ qValue else r ~~ mediaType

@@ -1,21 +1,22 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
 
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.net.SocketException
 
 import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http.ServerBinding
-import akka.http.scaladsl.{ Http, TestUtils }
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.{ HttpRequest, StatusCodes }
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.ActorMaterializer
-import akka.testkit.AkkaSpec
+import akka.testkit.{ AkkaSpec, EventFilter }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
 
@@ -29,23 +30,18 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
   class MinimalApp extends HttpApp {
 
     val shutdownPromise = Promise[Done]()
-    val bindingPromise = Promise[Done]()
+    val bindingPromise = Promise[ServerBinding]()
 
-    override protected def route: Route =
+    def shutdownServer(): Unit = shutdownPromise.success(Done)
+
+    override protected def routes: Route =
       path("foo") {
         complete("bar")
-      } ~
-        path("shutdown") {
-          if (shutdownPromise.isCompleted) complete("Shutdown already in process")
-          else {
-            shutdownPromise.success(Done)
-            complete("Shutdown request accepted")
-          }
-        }
+      }
 
     override protected def postHttpBinding(binding: ServerBinding): Unit = {
       super.postHttpBinding(binding)
-      bindingPromise.success(Done)
+      bindingPromise.success(binding)
     }
 
     override protected def waitForShutdownSignal(system: ActorSystem)(implicit ec: ExecutionContext): Future[Done] = {
@@ -63,25 +59,23 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
     override protected def postHttpBinding(binding: ServerBinding): Unit = {
       postBindingCalled.set(true)
-      bindingPromise.success(Done)
+      bindingPromise.success(binding)
     }
 
     override protected def postServerShutdown(attempt: Try[Done], system: ActorSystem): Unit = postShutdownCalled.set(true)
   }
 
-  def withMinimal(testCode: (MinimalApp, String, Int) ⇒ Any): Unit = {
-    val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
+  def withMinimal(testCode: MinimalApp ⇒ Any): Unit = {
     val minimal = new MinimalApp()
-    try testCode(minimal, host, port)
+    try testCode(minimal)
     finally {
       if (!minimal.shutdownPromise.isCompleted) minimal.shutdownPromise.success(Done)
     }
   }
 
-  def withSneaky(testCode: (SneakyServer, String, Int) ⇒ Any): Unit = {
-    val (_, host, port) = TestUtils.temporaryServerHostnameAndPort()
+  def withSneaky(testCode: SneakyServer ⇒ Any): Unit = {
     val sneaky = new SneakyServer()
-    try testCode(sneaky, host, port)
+    try testCode(sneaky)
     finally {
       if (!sneaky.shutdownPromise.isCompleted) sneaky.shutdownPromise.success(Done)
     }
@@ -89,85 +83,118 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
   "HttpApp" should {
 
-    "start only with host and port" in withMinimal { (minimal, host, port) ⇒
+    "start only with host and port" in withMinimal { minimal ⇒
       val server = Future {
-        minimal.startServer(host, port)
+        minimal.startServer("localhost", 0)
       }
 
-      Await.result(minimal.bindingPromise.future, Duration(5, TimeUnit.SECONDS))
+      val binding = Await.result(minimal.bindingPromise.future, Duration(5, TimeUnit.SECONDS))
+
+      // Checking server is up and running
+      callAndVerify(binding, "foo")
 
       // Requesting the server to shutdown
-      callAndVerify(host, port, "shutdown")
+      minimal.shutdownServer()
       Await.ready(server, Duration(1, TimeUnit.SECONDS))
       server.isCompleted should ===(true)
     }
 
-    "start without ActorSystem" in withMinimal { (minimal, host, port) ⇒
+    "start without ActorSystem" in withMinimal { minimal ⇒
 
       val server = Future {
-        minimal.startServer(host, port, ServerSettings(ConfigFactory.load))
+        minimal.startServer("localhost", 0, ServerSettings(ConfigFactory.load))
       }
 
-      Await.result(minimal.bindingPromise.future, Duration(5, TimeUnit.SECONDS))
+      val binding = Await.result(minimal.bindingPromise.future, Duration(5, TimeUnit.SECONDS))
+
+      // Checking server is up and running
+      callAndVerify(binding, "foo")
 
       // Requesting the server to shutdown
-      callAndVerify(host, port, "shutdown")
+      minimal.shutdownServer()
       Await.ready(server, Duration(1, TimeUnit.SECONDS))
       server.isCompleted should ===(true)
 
     }
 
-    "start providing an ActorSystem" in withMinimal { (minimal, host, port) ⇒
+    "start providing an ActorSystem" in withMinimal { minimal ⇒
 
       val server = Future {
-        minimal.startServer(host, port, ServerSettings(system), system)
+        minimal.startServer("localhost", 0, system)
       }
 
-      Await.result(minimal.bindingPromise.future, Duration(5, TimeUnit.SECONDS))
+      val binding = Await.result(minimal.bindingPromise.future, Duration(5, TimeUnit.SECONDS))
+
+      // Checking server is up and running
+      callAndVerify(binding, "foo")
 
       // Requesting the server to shutdown
-      callAndVerify(host, port, "shutdown")
+      minimal.shutdownServer()
       Await.ready(server, Duration(1, TimeUnit.SECONDS))
       server.isCompleted should ===(true)
       system.whenTerminated.isCompleted should ===(false)
 
     }
 
-    "provide binding if available" in withMinimal { (minimal, host, port) ⇒
+    "start providing an ActorSystem and Settings" in withMinimal { minimal ⇒
+
+      val server = Future {
+        minimal.startServer("localhost", 0, ServerSettings(system), system)
+      }
+
+      val binding = Await.result(minimal.bindingPromise.future, Duration(5, TimeUnit.SECONDS))
+
+      // Checking server is up and running
+      callAndVerify(binding, "foo")
+
+      // Requesting the server to shutdown
+      minimal.shutdownServer()
+      Await.ready(server, Duration(1, TimeUnit.SECONDS))
+      server.isCompleted should ===(true)
+      system.whenTerminated.isCompleted should ===(false)
+
+    }
+
+    "provide binding if available" in withMinimal { minimal ⇒
 
       minimal.binding().isFailure should ===(true)
 
       val server = Future {
-        minimal.startServer(host, port, ServerSettings(ConfigFactory.load))
+        minimal.startServer("127.0.0.1", 0, ServerSettings(ConfigFactory.load))
       }
 
-      Await.result(minimal.bindingPromise.future, Duration(5, TimeUnit.SECONDS))
+      val binding = Await.result(minimal.bindingPromise.future, Duration(5, TimeUnit.SECONDS))
 
       minimal.binding().isSuccess should ===(true)
-      minimal.binding().get.localAddress.getPort should ===(port)
-      minimal.binding().get.localAddress.getHostName should ===(host)
+      minimal.binding().get.localAddress.getAddress.getHostAddress should ===("127.0.0.1")
+
+      // Checking server is up and running
+      callAndVerify(binding, "foo")
 
       // Requesting the server to shutdown
-      callAndVerify(host, port, "shutdown")
+      minimal.shutdownServer()
       Await.ready(server, Duration(1, TimeUnit.SECONDS))
       server.isCompleted should ===(true)
 
     }
 
-    "let get notified" when {
+    "notify" when {
 
-      "shutting down" in withSneaky { (sneaky, host, port) ⇒
+      "shutting down" in withSneaky { sneaky ⇒
 
         val server = Future {
-          sneaky.startServer(host, port, ServerSettings(ConfigFactory.load))
+          sneaky.startServer("localhost", 0, ServerSettings(ConfigFactory.load))
         }
 
-        Await.result(sneaky.bindingPromise.future, Duration(5, TimeUnit.SECONDS))
+        val binding = Await.result(sneaky.bindingPromise.future, Duration(5, TimeUnit.SECONDS))
 
         sneaky.postShutdownCalled.get() should ===(false)
 
+        // Checking server is up and running
+        callAndVerify(binding, "foo")
+
         // Requesting the server to shutdown
-        callAndVerify(host, port, "shutdown")
+        sneaky.shutdownServer()
         Await.ready(server, Duration(1, TimeUnit.SECONDS))
         server.isCompleted should ===(true)
         eventually {
@@ -176,26 +203,30 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
       }
 
-      "after binding is successful" in withSneaky { (sneaky, host, port) ⇒
+      "after binding is successful" in withSneaky { sneaky ⇒
 
         val server = Future {
-          sneaky.startServer(host, port, ServerSettings(ConfigFactory.load))
+          sneaky.startServer("localhost", 0, ServerSettings(ConfigFactory.load))
         }
 
         val binding = Await.result(sneaky.bindingPromise.future, Duration(5, TimeUnit.SECONDS))
 
         sneaky.postBindingCalled.get() should ===(true)
 
+        // Checking server is up and running
+        callAndVerify(binding, "foo")
+
         // Requesting the server to shutdown
-        callAndVerify(host, port, "shutdown")
+        sneaky.shutdownServer()
         Await.ready(server, Duration(1, TimeUnit.SECONDS))
         server.isCompleted should ===(true)
 
       }
 
-      "after binding is unsuccessful" in withSneaky { (sneaky, host, _) ⇒
-
-        sneaky.startServer(host, 1, ServerSettings(ConfigFactory.load))
+      "after binding is unsuccessful" in withSneaky { sneaky ⇒
+        EventFilter[SocketException](message = "Permission denied", occurrences = 1) intercept {
+          sneaky.startServer("localhost", 1, system)
+        }
 
         eventually {
           sneaky.postBindingFailureCalled.get() should ===(true)
@@ -207,9 +238,11 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
   }
 
-  private def callAndVerify(host: String, port: Int, path: String) = {
-
+  private def callAndVerify(binding: ServerBinding, path: String) = {
     implicit val mat = ActorMaterializer()
+
+    val host = binding.localAddress.getHostString
+    val port = binding.localAddress.getPort
 
     val request = HttpRequest(uri = s"http://$host:$port/$path")
     val response = Http().singleRequest(request)

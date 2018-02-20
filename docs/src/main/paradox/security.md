@@ -1,11 +1,11 @@
-# Security announcements
+# ! Security Announcements !
 
-## Receiving security advisories
+## Receiving Security Advisories
 The best way to receive any and all security announcements is to subscribe to the [Akka security list](https://groups.google.com/forum/#!forum/akka-security).
 
 The mailing list is very low traffic, and receives notifications only after security reports have been managed by the core team and fixes are publicly available.
 
-## Reporting vulnerabilities
+## Reporting Vulnerabilities
 
 We strongly encourage people to report such problems to our private security mailing list first, before disclosing them in a public forum.
 
@@ -16,6 +16,10 @@ Reports to this email address will be handled by our security team, who will wor
 to ensure that a fix can be provided without delay.
 
 ## Fixed Security Vulnerabilities
+
+### Fixed in Akka HTTP 10.0.6 & 2.4.11.2
+
+* @ref:[Illegal Media Range in Accept Header Causes StackOverflowError Leading to Denial of Service](security/2017-05-03-illegal-media-range-in-accept-header-causes-stackoverflowerror.md)
 
 ### Fixed in Akka HTTP 10.0.2 & 2.4.11.1
 

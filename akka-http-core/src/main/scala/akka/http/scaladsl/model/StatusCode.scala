@@ -1,10 +1,11 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
 
 import language.implicitConversions
+import akka.annotation.ApiMayChange
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 
@@ -104,6 +105,9 @@ object StatusCodes extends ObjectRegistry[Int, StatusCode] {
   val SwitchingProtocols = reg(i(101)("Switching Protocols", "The server is switching protocols, because the client requested the switch."))
   val Processing         = reg(i(102)("Processing", "The server is processing the request, but no response is available yet."))
 
+  @ApiMayChange
+  val EarlyHints         = reg(i(103)("Early Hints", "The server is likely to send a final response with the header fields included in the response.")) // RFC 8297
+
   val OK                          = reg(s(200)("OK", "OK"))
   val Created                     = reg(s(201)("Created", "The request has been fulfilled and resulted in a new resource being created."))
   val Accepted                    = reg(s(202)("Accepted", "The request has been accepted for processing, but the processing has not been completed."))
@@ -142,7 +146,9 @@ object StatusCodes extends ObjectRegistry[Int, StatusCode] {
   val UnsupportedMediaType         = reg(c(415)("Unsupported Media Type", "The request entity has a media type which the server or resource does not support."))
   val RequestedRangeNotSatisfiable = reg(c(416)("Requested Range Not Satisfiable", "The client has asked for a portion of the file, but the server cannot supply that portion."))
   val ExpectationFailed            = reg(c(417)("Expectation Failed", "The server cannot meet the requirements of the Expect request-header field."))
+  val ImATeapot                    = reg(c(418)("I'm a teapot", "The resulting entity body MAY be short and stout."))
   val EnhanceYourCalm              = reg(c(420)("Enhance Your Calm", "You are being rate-limited.")) // Twitter only
+  val MisdirectedRequest           = reg(c(421)("Misdirected Request", "The request was directed at a server that is not able to produce a response.")) // HTTP/2 only. https://tools.ietf.org/html/rfc7540#section-9.1.2
   val UnprocessableEntity          = reg(c(422)("Unprocessable Entity", "The request was well-formed but was unable to be followed due to semantic errors."))
   val Locked                       = reg(c(423)("Locked", "The resource that is being accessed is locked."))
   val FailedDependency             = reg(c(424)("Failed Dependency", "The request failed due to failure of a previous request."))

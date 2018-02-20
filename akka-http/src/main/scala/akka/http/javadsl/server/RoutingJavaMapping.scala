@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server
@@ -14,7 +14,6 @@ import akka.http.{ javadsl, scaladsl }
 import akka.http.scaladsl.server.{ directives ⇒ sdirectives }
 import akka.http.scaladsl.{ common ⇒ scommon }
 import akka.http.javadsl.server.{ directives ⇒ jdirectives }
-import akka.http.javadsl.{ common ⇒ jcommon }
 
 import scala.collection.immutable
 
@@ -52,7 +51,6 @@ private[http] object RoutingJavaMapping {
   implicit object convertEntityStreamingSupport extends Inherited[EntityStreamingSupport, scommon.EntityStreamingSupport]
 
   implicit object convertDirectoryRenderer extends Inherited[jdirectives.DirectoryRenderer, sdirectives.FileAndResourceDirectives.DirectoryRenderer]
-  implicit object convertContentTypeResolver extends Inherited[jdirectives.ContentTypeResolver, sdirectives.ContentTypeResolver]
   implicit object convertDirectoryListing extends Inherited[jdirectives.DirectoryListing, sdirectives.DirectoryListing]
 
   //  implicit object javaToScalaMediaType extends Inherited[javadsl.model.MediaType, scaladsl.model.MediaType]

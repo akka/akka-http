@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.impl.engine.client
 
 import akka.http.impl.engine.client.OutgoingConnectionBlueprint.PrepareResponse
@@ -107,7 +108,7 @@ class PrepareResponseSpec extends AkkaSpec {
       responseSub.request(1)
       inSub.expectRequest(1)
       inSub.sendNext(strictStart)
-      val response = responseProbe.expectNext()
+      responseProbe.expectNext()
 
       // now, before the strict message has completed
       // there is upstream demand
@@ -184,7 +185,7 @@ class PrepareResponseSpec extends AkkaSpec {
       responseSub.request(1)
       inSub.expectRequest(1)
       inSub.sendNext(strictStart)
-      val response = responseProbe.expectNext()
+      responseProbe.expectNext()
 
       // now before end of message has arrived
       // downstream cancels

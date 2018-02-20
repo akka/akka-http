@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.javadsl.server.directives
 
 import java.util.function.BiFunction
@@ -269,6 +270,14 @@ abstract class PathDirectives extends ParameterDirectives {
    */
   def path[T](t: Unmarshaller[String, T], inner: JFunction[T, Route]): Route = RouteAdapter {
     D.path(PathMatchers.Segment)(unmarshal(t, inner))
+  }
+
+  /**
+   * Tries to match the inner route and if it fails with an empty rejection, it tries it again
+   * adding (or removing) the trailing slash on the given path.
+   */
+  def ignoreTrailingSlash(inner: Supplier[Route]): Route = RouteAdapter {
+    D.ignoreTrailingSlash { inner.get.delegate }
   }
 
   private def unmarshal[T](t: Unmarshaller[String, T], inner: JFunction[T, Route]) = { element: String ⇒

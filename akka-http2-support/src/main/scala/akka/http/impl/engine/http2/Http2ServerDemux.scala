@@ -1,23 +1,20 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
 
-import akka.NotUsed
-import akka.http.impl.engine.http2.Http2Compliance.Http2ProtocolException
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
-import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.{ COMPRESSION_ERROR, FLOW_CONTROL_ERROR, FRAME_SIZE_ERROR }
+import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.FLOW_CONTROL_ERROR
+import akka.http.scaladsl.settings.Http2ServerSettings
 import akka.stream.Attributes
 import akka.stream.BidiShape
 import akka.stream.Inlet
 import akka.stream.Outlet
 import akka.stream.impl.io.ByteStringParser.ParsingException
-import akka.stream.scaladsl.Source
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, StageLogging }
 import akka.util.ByteString
 
-import scala.collection.mutable
 import scala.util.control.NonFatal
 
 /**
@@ -67,10 +64,7 @@ import scala.util.control.NonFatal
  * not work because the sending decision relies on dynamic window size and settings information that will be
  * only available in this stage.
  */
-class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] {
-
-  import Http2ServerDemux._
-
+class Http2ServerDemux(http2Settings: Http2ServerSettings) extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] {
   val frameIn = Inlet[FrameEvent]("Demux.frameIn")
   val frameOut = Outlet[FrameEvent]("Demux.frameOut")
 
@@ -81,14 +75,12 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
     BidiShape(substreamIn, frameOut, frameIn, substreamOut)
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with GenericOutletSupport with Http2MultiplexerSupport with StageLogging {
+    new GraphStageLogic(shape) with Http2MultiplexerSupport with Http2StreamHandling with GenericOutletSupport with StageLogging {
       logic ⇒
 
-      final case class SubStream(
-        streamId: Int,
-        state:    StreamState,
-        outlet:   Option[BufferedOutlet[ByteString]]
-      )
+      def settings: Http2ServerSettings = http2Settings
+
+      override protected def logSource: Class[_] = classOf[Http2ServerDemux]
 
       val multiplexer = createMultiplexer(frameOut, StreamPrioritizer.first())
 
@@ -101,15 +93,15 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
 
       // we should not handle streams later than the GOAWAY told us about with lastStreamId
       private var closedAfter: Option[Int] = None
-      private var incomingStreams = mutable.Map.empty[Int, SubStream]
-      private var maxConcurrentStreams: Option[Int] = None
+
       /**
        * The "last peer-initiated stream that was or might be processed on the sending endpoint in this connection"
        * @see http://httpwg.org/specs/rfc7540.html#rfc.section.6.8
+       *
+       * We currently don't support tracking that value accurately.
+       * TODO: track more accurately
        */
-      def lastStreamId: Int = {
-        incomingStreams.keys.toList.sortBy(-_).headOption.getOrElse(0) // FIXME should be optimised
-      }
+      def lastStreamId: Int = 1
 
       def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit = {
         // http://httpwg.org/specs/rfc7540.html#rfc.section.6.8
@@ -125,72 +117,19 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         def onPush(): Unit = {
           val in = grab(frameIn)
           in match {
-            case WindowUpdateFrame(streamId, increment) ⇒ multiplexer.updateWindow(streamId, increment)
-
-            case priorityInfo: PriorityFrame ⇒
-              multiplexer.updatePriority(priorityInfo)
-
-            case e: StreamFrameEvent if !Http2Compliance.isClientInitiatedStreamId(e.streamId) ⇒
-              pushGOAWAY(ErrorCode.PROTOCOL_ERROR, "Not a valid client initiated stream id! Was: " + e.streamId)
-
-            case e: StreamFrameEvent if e.streamId > closedAfter.getOrElse(Int.MaxValue) ⇒
-            // streams that will have a greater stream id than the one we sent with GOAWAY will be ignored
-
-            case frame @ ParsedHeadersFrame(streamId, endStream, headers, prioInfo) if lastStreamId < streamId ⇒
-              // TODO: process priority information
-              val (data: Source[ByteString, NotUsed], outlet: Option[BufferedOutlet[ByteString]]) =
-                if (endStream) (Source.empty, None)
-                else {
-                  val subSource = new SubSourceOutlet[ByteString](s"substream-out-$streamId")
-                  (Source.fromGraph(subSource.source), Some(new BufferedOutlet[ByteString](subSource) {
-                    override def onDownstreamFinish(): Unit =
-                      // FIXME: when substream (= request entity) is cancelled, we need to RST_STREAM
-                      // if the stream is finished and sent a RST_STREAM we can just remove the incoming stream from our map
-                      incomingStreams.remove(streamId)
-                  }))
-                }
-              val entry = SubStream(streamId, StreamState.Open /* FIXME stream state */ , outlet)
-              incomingStreams += streamId → entry // TODO optimise for lookup later on
-
-              dispatchSubstream(Http2SubStream(frame, data))
-
-              prioInfo.foreach(multiplexer.updatePriority)
-
-            case e: StreamFrameEvent if !incomingStreams.contains(e.streamId) ⇒
-              // if a stream is invalid we will GO_AWAY
-              pushGOAWAY(ErrorCode.PROTOCOL_ERROR, "Unknown stream id: " + e.streamId)
-
-            case h: ParsedHeadersFrame ⇒
-              if (h.endStream)
-                incomingStreams(h.streamId).outlet match {
-                  case Some(outlet) ⇒ outlet.complete()
-                  case None         ⇒ failSubstream(h.streamId, ErrorCode.STREAM_CLOSED, "Got HEADERS frame on closed stream")
-                }
-            // else just ignore intermediate HEADERS frames
-
-            case DataFrame(streamId, endStream, payload) ⇒
-              // technically this case is the same as StreamFrameEvent, however we're handling it earlier in the match here for efficiency
-              // pushing http entity, TODO: handle flow control from here somehow?
-              incomingStreams(streamId).outlet match {
-                case Some(outlet) ⇒
-                  outlet.push(payload)
-                  if (endStream) outlet.complete()
-                case None ⇒ failSubstream(streamId, ErrorCode.STREAM_CLOSED, "Got DATA frame on closed stream")
-              }
-
-            case RstStreamFrame(streamId, errorCode) ⇒
-              // FIXME: also need to handle the other case when no response has been produced yet (inlet still None)
-              multiplexer.cancelSubStream(streamId)
+            case WindowUpdateFrame(streamId, increment) ⇒ multiplexer.updateWindow(streamId, increment) // handled specially
+            case p: PriorityFrame                       ⇒ multiplexer.updatePriority(p)
+            case s: StreamFrameEvent                    ⇒ handleStreamEvent(s)
 
             case SettingsFrame(settings) ⇒
-              if (settings.nonEmpty) debug(s"Got ${settings.length} settings!")
+              if (settings.nonEmpty) log.debug("Got {} settings!", settings.length)
 
               var settingsAppliedOk = true
 
               settings.foreach {
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE, value) ⇒
                   if (value >= 0) {
-                    debug(s"Setting initial window to $value")
+                    log.debug("Setting initial window to {}", value)
                     multiplexer.updateDefaultWindow(value)
                   } else {
                     pushGOAWAY(FLOW_CONTROL_ERROR, s"Invalid value for SETTINGS_INITIAL_WINDOW_SIZE: $value")
@@ -199,10 +138,9 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) ⇒
                   multiplexer.updateMaxFrameSize(value)
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) ⇒
-                  debug(s"Setting max concurrent streams to $value (not enforced)")
-                  maxConcurrentStreams = Some(value)
+                  log.debug("Setting max concurrent streams to {} (not enforced)", value)
                 case Setting(id, value) ⇒
-                  debug(s"Ignoring setting $id -> $value (in Demux)")
+                  log.debug("Ignoring setting {} -> {} (in Demux)", id, value)
               }
 
               if (settingsAppliedOk) {
@@ -215,7 +153,7 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               multiplexer.pushControlFrame(PingFrame(ack = true, data))
 
             case e ⇒
-              debug(s"Got unhandled event $e")
+              log.debug("Got unhandled event {}", e)
             // ignore unknown frames
           }
           pull(frameIn)
@@ -231,13 +169,12 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
               pushGOAWAY(e.errorCode, e.getMessage)
 
             case e: Http2Compliance.Http2ProtocolStreamException ⇒
-              incomingStreams.remove(e.streamId)
-              multiplexer.pushControlFrame(RstStreamFrame(e.streamId, e.errorCode))
+              resetStream(e.streamId, e.errorCode)
 
             case e: ParsingException ⇒
               e.getCause match {
                 case null  ⇒ super.onUpstreamFailure(e) // fail with the raw parsing exception
-                case cause ⇒ onUpstreamFailure(cause) // unwrap the cause, which should carry ComplianceException and recurse 
+                case cause ⇒ onUpstreamFailure(cause) // unwrap the cause, which should carry ComplianceException and recurse
               }
 
             // handle every unhandled exception
@@ -247,6 +184,10 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
         }
       })
 
+      // FIXME: What if user handler doesn't pull in new substreams? Should we reject them
+      //        after a while or buffer only a limited amount? We should also be able to
+      //        keep the buffer limited to the number of concurrent streams as negotiated
+      //        with the other side.
       val bufferedSubStreamOutput = new BufferedOutlet[Http2SubStream](substreamOut)
       def dispatchSubstream(sub: Http2SubStream): Unit = bufferedSubStreamOutput.push(sub)
 
@@ -262,23 +203,6 @@ class Http2ServerDemux extends GraphStage[BidiShape[Http2SubStream, FrameEvent, 
           multiplexer.registerSubStream(sub)
         }
       })
-
-      def debug(msg: String): Unit = println(msg)
     }
 
-}
-
-object Http2ServerDemux {
-  sealed trait StreamState
-  object StreamState {
-    case object Idle extends StreamState
-    case object Open extends StreamState
-    case object Closed extends StreamState
-    case object HalfClosedLocal extends StreamState
-    case object HalfClosedRemote extends StreamState
-
-    // for PUSH_PROMISE
-    // case object ReservedLocal extends StreamState
-    // case object ReservedRemote extends StreamState
-  }
 }

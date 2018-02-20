@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.impl.engine.server
 
 import akka.http.impl.engine.parsing.ParserOutput
@@ -93,7 +94,7 @@ class PrepareRequestsSpec extends AkkaSpec {
       inSub.expectRequest(1)
 
       // bug would fail stream here with exception
-      upstreamProbe.expectNoMsg(100.millis.dilated)
+      upstreamProbe.expectNoMessage(100.millis)
 
       inSub.sendNext(ParserOutput.EntityChunk(HttpEntity.ChunkStreamPart(ByteString("abc"))))
       entityProbe.expectNext()
@@ -192,7 +193,7 @@ class PrepareRequestsSpec extends AkkaSpec {
         .withAttributes(Attributes.inputBuffer(1, 1))
         .run()
 
-      val entitySub = entityProbe.expectSubscription()
+      entityProbe.expectSubscription()
 
       // incoming stream is completed, but we never got the chunk end
       inSub.sendComplete()

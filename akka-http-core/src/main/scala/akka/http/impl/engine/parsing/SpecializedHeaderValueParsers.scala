@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -16,7 +16,7 @@ import akka.http.scaladsl.model.headers.`Content-Length`
  * INTERNAL API
  */
 @InternalApi
-private object SpecializedHeaderValueParsers {
+private[parsing] object SpecializedHeaderValueParsers {
   import HttpHeaderParser._
 
   def specializedHeaderValueParsers = Seq(ContentLengthParser)

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -256,6 +256,10 @@ class UriSpec extends WordSpec with Matchers {
       Path("/abc/def").endsWithSlash shouldBe false
       Path("/abc/def/").endsWithSlash shouldBe true
     }
+    "support the `?/` operator" in {
+      Path("abc") ?/ "def" shouldEqual Path("abc/def")
+      Path("abc/") ?/ "def" shouldEqual Path("abc/def")
+    }
     "support the `dropChars` modifier" in {
       Path./.dropChars(0) shouldEqual Path./
       Path./.dropChars(1) shouldEqual Empty
@@ -269,6 +273,12 @@ class UriSpec extends WordSpec with Matchers {
       Path("/abc/def/").dropChars(7) shouldEqual Path("f/")
       Path("/abc/def/").dropChars(8) shouldEqual Path("/")
       Path("/abc/def/").dropChars(9) shouldEqual Empty
+    }
+
+    "not accept illegal parcent-encoding" in {
+      the[IllegalUriException] thrownBy Path("/example/%12%")
+      the[IllegalUriException] thrownBy Path("/example/%12%1")
+      the[IllegalUriException] thrownBy Path("/example/%12%1V")
     }
   }
 
@@ -382,16 +392,10 @@ class UriSpec extends WordSpec with Matchers {
       //#query-relaxed-mode-success
       relaxed("a^=b") shouldEqual ("a^", "b") +: Query.Empty
       relaxed("a;=b") shouldEqual ("a;", "b") +: Query.Empty
+      relaxed("a=b=c") shouldEqual ("a", "b=c") +: Query.Empty
       //#query-relaxed-mode-success
 
       //#query-relaxed-mode-exception
-      //double '=' in query string is invalid, even in relaxed mode
-      the[IllegalUriException] thrownBy relaxed("a=b=c") shouldBe {
-        IllegalUriException(
-          "Illegal query: Invalid input '=', expected '+', query-char, 'EOI', '&' or pct-encoded (line 1, column 4)",
-          "a=b=c\n" +
-            "   ^")
-      }
       //following '%', it should be percent encoding (HEXDIG), but "%b=" is not a valid percent encoding
       //still invalid even in relaxed mode
       the[IllegalUriException] thrownBy relaxed("a%b=c") shouldBe {
@@ -411,9 +415,13 @@ class UriSpec extends WordSpec with Matchers {
       query.getAll("b") shouldEqual List("", "4", "2")
       query.getAll("d") shouldEqual Nil
       query.toMap shouldEqual Map("a" → "1", "b" → "", "c" → "3")
-      query.toMultiMap shouldEqual Map("a" → List("1"), "b" → List("", "4", "2"), "c" → List("3"))
+      query.toMultiMap shouldEqual Map("a" → List("1"), "b" → List("2", "4", ""), "c" → List("3"))
       query.toList shouldEqual List("a" → "1", "b" → "2", "c" → "3", "b" → "4", "b" → "")
       query.toSeq shouldEqual Seq("a" → "1", "b" → "2", "c" → "3", "b" → "4", "b" → "")
+    }
+    "preserve the order of repeated parameters when retrieving as a multimap" in {
+      val query = Query("a=1&b=1&b=2&b=3&b=4&c=1")
+      query.toMultiMap shouldEqual Map("a" → List("1"), "b" → List("1", "2", "3", "4"), "c" → List("1"))
     }
     "support conversion from list of name/value pairs" in {
       import Query._
@@ -492,7 +500,7 @@ class UriSpec extends WordSpec with Matchers {
 
       // empty host
       Uri("http://:8000/foo") shouldEqual Uri("http", Authority(Host.Empty, 8000), Path / "foo")
-      Uri("http://:80/foo") shouldEqual Uri("http", Authority(Host.Empty, 80), Path / "foo")
+      Uri("http://:80/foo") shouldEqual Uri("http", Authority(Host.Empty, 0), Path / "foo")
     }
 
     "properly complete a normalization cycle" in {
@@ -599,6 +607,14 @@ class UriSpec extends WordSpec with Matchers {
             "            ^")
       }
 
+      // illegal percent-encoding ends with %
+      the[IllegalUriException] thrownBy Uri("http://www.example.com/%CE%B8%") shouldBe {
+        IllegalUriException(
+          "Illegal URI reference: Unexpected end of input, expected HEXDIG (line 1, column 31)",
+          "http://www.example.com/%CE%B8%\n" +
+            "                              ^")
+      }
+
       // illegal path
       the[IllegalUriException] thrownBy Uri("http://www.example.com/name with spaces/") shouldBe {
         IllegalUriException(
@@ -615,14 +631,6 @@ class UriSpec extends WordSpec with Matchers {
             "            ^")
       }
       //#illegal-cases-immediate-exception
-
-      // illegal query
-      the[IllegalUriException] thrownBy Uri("?a=b=c").query() shouldBe {
-        IllegalUriException(
-          "Illegal query: Invalid input '=', expected '+', query-char, 'EOI', '&' or pct-encoded (line 1, column 4)",
-          "a=b=c\n" +
-            "   ^")
-      }
     }
 
     // http://tools.ietf.org/html/rfc3986#section-5.4
@@ -694,7 +702,7 @@ class UriSpec extends WordSpec with Matchers {
       val nonDefaultUri = Uri("http://host:6060/path?query#fragment")
 
       uri.withScheme("https") shouldEqual Uri("https://host/path?query#fragment")
-      explicitDefault.withScheme("https") shouldEqual Uri("https://host:80/path?query#fragment")
+      explicitDefault.withScheme("https") shouldEqual Uri("https://host/path?query#fragment")
       nonDefaultUri.withScheme("https") shouldEqual Uri("https://host:6060/path?query#fragment")
 
       uri.withAuthority(Authority(Host("other"), 3030)) shouldEqual Uri("http://other:3030/path?query#fragment")
@@ -731,11 +739,21 @@ class UriSpec extends WordSpec with Matchers {
       Uri("https://host:3030/").withPort(4450).effectivePort shouldEqual 4450
     }
 
+    "parse authority" in {
+      Uri.Authority.parse("localhost").toString shouldEqual "localhost"
+      Uri.Authority.parse("example.com:80").toString shouldEqual "example.com:80"
+      Uri.Authority.parse("user@host").toString shouldEqual "user@host"
+
+      Uri.Authority.parse("user:p%40ssword@host").userinfo shouldEqual "user:p@ssword"
+    }
+
     "properly render authority" in {
       Uri("http://localhost/test").authority.toString shouldEqual "localhost"
-      Uri("http://example.com:80/test").authority.toString shouldEqual "example.com:80"
+      Uri("http://example.com:80/test").authority.toString shouldEqual "example.com"
       Uri("ftp://host/").authority.toString shouldEqual "host"
       Uri("http://user@host").authority.toString shouldEqual "user@host"
+      Uri("http://user:p%40ssword@host").authority.toString shouldEqual "user:p%40ssword@host"
+      Uri("http://user:p%40ssword@host/test").toString shouldEqual "http://user:p%40ssword@host/test"
     }
 
     "keep the specified authority port" in {
@@ -748,8 +766,8 @@ class UriSpec extends WordSpec with Matchers {
     }
 
     "properly render as HTTP request target origin forms" in {
-      Uri("http://example.com/foo/bar?query=1#frag").toHttpRequestTargetOriginForm.toString === "/foo/bar?query=1"
-      Uri("http://example.com//foo/bar?query=1#frag").toHttpRequestTargetOriginForm.toString === "//foo/bar?query=1"
+      Uri("http://example.com/foo/bar?query=1#frag").toHttpRequestTargetOriginForm.toString shouldEqual "/foo/bar?query=1"
+      Uri("http://example.com//foo/bar?query=1#frag").toHttpRequestTargetOriginForm.toString shouldEqual "//foo/bar?query=1"
     }
 
     "survive parsing a URI with thousands of path segments" in {

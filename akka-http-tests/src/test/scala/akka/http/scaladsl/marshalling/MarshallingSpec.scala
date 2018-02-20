@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.marshalling
@@ -98,6 +98,12 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
 
   "The MultipartMarshallers" - {
     "multipartMarshaller should correctly marshal multipart content with" - {
+      "no parts" in {
+        marshal(Multipart.General(`multipart/mixed`)) shouldEqual HttpEntity(
+          contentType = (`multipart/mixed` withBoundary randomBoundary).toContentType,
+          data = ByteString(s"""
+                      |--$randomBoundary--""".stripMarginWithNewline("\r\n")))
+      }
       "one empty part" in {
         marshal(Multipart.General(`multipart/mixed`, Multipart.General.BodyPart.Strict(""))) shouldEqual HttpEntity(
           contentType = (`multipart/mixed` withBoundary randomBoundary).toContentType,

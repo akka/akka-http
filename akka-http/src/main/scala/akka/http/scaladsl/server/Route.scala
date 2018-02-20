@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
 
 import akka.NotUsed
 import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
-import akka.stream.{ ActorMaterializer, ActorMaterializerHelper, Materializer }
+import akka.stream.{ ActorMaterializerHelper, Materializer }
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import akka.stream.scaladsl.Flow
@@ -37,11 +37,9 @@ object Route {
                          rejectionHandler: RejectionHandler = RejectionHandler.default,
                          exceptionHandler: ExceptionHandler = null): Route = {
     import directives.ExecutionDirectives._
-    handleExceptions(ExceptionHandler.seal(exceptionHandler)) {
-      handleRejections(rejectionHandler.seal) {
-        route
-      }
-    }
+    // optimized as this is the root handler for all akka-http applications
+    (handleExceptions(ExceptionHandler.seal(exceptionHandler)) & handleRejections(rejectionHandler.seal))
+      .tapply(_ ⇒ route) // execute above directives eagerly, avoiding useless laziness of Directive.addByNameNullaryApply
   }
 
   /**

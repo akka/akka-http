@@ -1,10 +1,11 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.http.impl.engine.client.PoolConductor.PoolSlotsSetting
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 
@@ -16,38 +17,42 @@ import akka.stream.scaladsl._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.Http
 
-private object PoolFlow {
+/** Internal API */
+@InternalApi
+private[client] object PoolFlow {
 
   case class RequestContext(request: HttpRequest, responsePromise: Promise[HttpResponse], retriesLeft: Int) {
     require(retriesLeft >= 0)
+
+    def canBeRetried: Boolean = retriesLeft > 0
   }
   case class ResponseContext(rc: RequestContext, response: Try[HttpResponse])
 
   /*
     Pool Flow Stream Setup
     ======================
-                                               +-------------------+                             
-                                               |                   |                             
-                                        +----> | Connection Slot 1 +---->                        
-                                        |      |                   |    |                        
-                                        |      +---+---------------+    |                        
-                                        |          |                    |                        
+                                               +-------------------+
+                                               |                   |
+                                        +----> | Connection Slot 1 +---->
+                                        |      |                   |    |
+                                        |      +---+---------------+    |
+                                        |          |                    |
                        +-----------+    |      +-------------------+    |      +---------------+
       RequestContext   |           +----+      |                   |    +----> |               |  ResponseContext
     +----------------> | Conductor |---------> | Connection Slot 2 +---------> | responseMerge +------------------>
                        |           +----+      |                   |    +----> |               |
                        +-----------+    |      +---------+---------+    |      +---------------+
-                             ^          |          |     |              |                        
-                             |          |      +-------------------+    |                        
-                             |          |      |                   |    |                        
-                RawSlotEvent |          +----> | Connection Slot 3 +---->                        
-                             |                 |                   |                             
-                             |                 +---------------+---+                             
-                             |                     |     |     |                                    
-                       +-----------+  RawSlotEvent |     |     | 
+                             ^          |          |     |              |
+                             |          |      +-------------------+    |
+                             |          |      |                   |    |
+                RawSlotEvent |          +----> | Connection Slot 3 +---->
+                             |                 |                   |
+                             |                 +---------------+---+
+                             |                     |     |     |
+                       +-----------+  RawSlotEvent |     |     |
                        | slotEvent | <-------------+     |     |
-                       |   Merge   | <-------------------+     |                                  
-                       |           | <-------------------------+                                  
+                       |   Merge   | <-------------------+     |
+                       |           | <-------------------------+
                        +-----------+
 
     Conductor:
