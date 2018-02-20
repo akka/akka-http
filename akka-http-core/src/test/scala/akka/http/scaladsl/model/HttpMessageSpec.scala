@@ -22,7 +22,7 @@ class HttpMessageSpec extends WordSpec with Matchers {
       HttpRequest.effectiveUri(Uri("/relative"), hostHeader.toList, securedConnection = false, Host(""))
 
     thrown should have message
-      s"Cannot establish effective URI of request to `/relative`, request has a relative URI and $details; " +
+      s"Cannot establish effective URI of request to `/relative`, request has a relative URI and $details: " +
       "consider setting `akka.http.server.default-host-header`"
   }
 
