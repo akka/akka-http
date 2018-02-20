@@ -874,9 +874,9 @@ class HttpServerSpec extends AkkaSpec(
            |Date: XXXX
            |Connection: close
            |Content-Type: text/plain; charset=UTF-8
-           |Content-Length: 167
+           |Content-Length: 110
            |
-           |Cannot establish effective URI of request to `/abc`, request has a relative URI and is missing a `Host` header; consider setting `akka.http.server.default-host-header`""")
+           |Cannot establish effective URI of request to `/abc`, request has a relative URI and is missing a `Host` header""")
 
       netIn.sendComplete()
       netOut.expectComplete()
