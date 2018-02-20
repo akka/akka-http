@@ -385,10 +385,10 @@ object HttpRequest {
 
   /**
    * Verifies that the given [[Uri]] is non-empty and has either scheme `http`, `https`, `ws`, `wss` or no scheme at all.
-   * If any of these conditions is not met the method throws an [[IllegalArgumentException]].
+   * If any of these conditions is not met the method throws an [[IllegalUriException]].
    */
   def verifyUri(uri: Uri): Unit =
-    if (uri.isEmpty) throw new IllegalArgumentException("`uri` must not be empty")
+    if (uri.isEmpty) throw IllegalUriException("`uri` must not be empty")
     else {
       def c(i: Int) = CharUtils.toLowerCase(uri.scheme charAt i)
       uri.scheme.length match {
@@ -397,7 +397,7 @@ object HttpRequest {
         case 5 if c(0) == 'h' && c(1) == 't' && c(2) == 't' && c(3) == 'p' && c(4) == 's' ⇒ // ok
         case 2 if c(0) == 'w' && c(1) == 's' ⇒ // ok
         case 3 if c(0) == 'w' && c(1) == 's' && c(2) == 's' ⇒ // ok
-        case _ ⇒ throw IllegalUriException(ErrorInfo("""`uri` must have scheme "http", "https", "ws", "wss" or no scheme"""))
+        case _ ⇒ throw IllegalUriException("""`uri` must have scheme "http", "https", "ws", "wss" or no scheme""")
       }
     }
 

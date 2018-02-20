@@ -52,6 +52,11 @@ class HttpMessageSpec extends WordSpec with Matchers {
       an[IllegalUriException] should be thrownBy
         HttpRequest(uri = Uri("htp://example.com"))
     }
+
+    "throw IllegalUriException for empty URI" in {
+      an[IllegalUriException] should be thrownBy
+        HttpRequest(uri = Uri())
+    }
   }
 
   "HttpMessage" should {
