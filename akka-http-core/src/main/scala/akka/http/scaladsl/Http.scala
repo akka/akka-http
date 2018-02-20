@@ -354,7 +354,6 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    * To configure additional settings for requests made using this method,
    * use the `akka.http.client` config section or pass in a [[akka.http.scaladsl.settings.ClientConnectionSettings]] explicitly.
    */
-  @deprecated("Deprecated in favor of method outgoingConnectionUsingContext (transport retrieved from ClientConnectionSettings)", "10.0.12")
   def outgoingConnectionUsingContext(
     host:              String,
     port:              Int,
@@ -372,6 +371,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    * To configure additional settings for requests made using this method,
    * use the `akka.http.client` config section or pass in a [[akka.http.scaladsl.settings.ClientConnectionSettings]] explicitly.
    */
+  @deprecated("Deprecated in favor of method outgoingConnectionUsingContext (transport retrieved from ClientConnectionSettings)", "10.0.12")
   def outgoingConnectionUsingTransport(
     host:              String,
     port:              Int,
