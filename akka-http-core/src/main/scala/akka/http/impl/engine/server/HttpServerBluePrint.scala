@@ -216,7 +216,6 @@ private[http] object HttpServerBluePrint {
       case start: RequestStart ⇒
         try {
           val effectiveUri = HttpRequest.effectiveUri(start.uri, start.headers, isSecureConnection, defaultHostHeader)
-          HttpRequest.verifyUri(effectiveUri)
           start.copy(uri = effectiveUri)
         } catch {
           case e: IllegalUriException ⇒
@@ -443,6 +442,9 @@ private[http] object HttpServerBluePrint {
               }
               val info = ErrorInfo(summary, "Consider increasing the value of akka.http.server.parsing.max-content-length")
               finishWithIllegalRequestError(StatusCodes.RequestEntityTooLarge, info)
+
+            case IllegalUriException(errorInfo) ⇒
+              finishWithIllegalRequestError(StatusCodes.BadRequest, errorInfo)
 
             case NonFatal(e) ⇒
               log.error(e, "Internal server error, sending 500 response")
