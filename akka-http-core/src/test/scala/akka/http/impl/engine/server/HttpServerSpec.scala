@@ -1312,7 +1312,7 @@ class HttpServerSpec extends AkkaSpec(
       netOut.expectComplete()
     })
 
-    "reject HTTP/1.1 requests with invalid Host header schema" in assertAllStagesStopped(new TestSetup {
+    "reject HTTP/1.1 requests with Host header that doesn't match absolute request target authority" in assertAllStagesStopped(new TestSetup {
       send("""GET http://www.example.com HTTP/1.1
              |Host: www.example.net
              |
