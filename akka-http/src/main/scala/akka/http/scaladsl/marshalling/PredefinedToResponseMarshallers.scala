@@ -106,7 +106,7 @@ trait LowPriorityToResponseMarshallerImplicits {
           // TODO, NOTE: this is somewhat duplicated from Marshal.scala it could be made DRYer
           val bestMarshallingPerElement = availableMarshallingsPerElement map { marshallings ⇒
             // pick the Marshalling that matches our EntityStreamingSupport
-            val selectedMarshalling: Option[() => Source[ByteString, _]] = s.contentType match {
+            val selectedMarshalling = s.contentType match {
               case best @ (_: ContentType.Binary | _: ContentType.WithFixedCharset | _: ContentType.WithMissingCharset) ⇒
                 marshallings collectFirst { case Marshalling.WithFixedContentType(`best`, marshal) ⇒ marshal }
 
