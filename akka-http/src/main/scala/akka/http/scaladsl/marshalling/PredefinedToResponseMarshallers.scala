@@ -80,7 +80,7 @@ trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImp
     })
 
   @deprecated("This method exists only for the purpose of binary compatibility, it used to be implicit.", "10.1.0")
-  implicit def fromEntityStreamingSupportAndByteStringMarshaller[T, M](s: EntityStreamingSupport, m: ToByteStringMarshaller[T]): ToResponseMarshaller[Source[T, M]] =
+  def fromEntityStreamingSupportAndByteStringMarshaller[T, M](s: EntityStreamingSupport, m: ToByteStringMarshaller[T]): ToResponseMarshaller[Source[T, M]] =
     fromEntityStreamingSupportAndByteStringMarshaller(null, s, m)
 
   implicit def fromEntityStreamingSupportAndByteStringMarshaller[T: ClassTag, M](implicit s: EntityStreamingSupport, m: ToByteStringMarshaller[T]): ToResponseMarshaller[Source[T, M]] =
