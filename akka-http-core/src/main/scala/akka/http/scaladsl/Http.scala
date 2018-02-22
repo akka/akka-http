@@ -41,7 +41,7 @@ import scala.util.control.NonFatal
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
-class HttpExt(private val config: Config)(implicit val system: ActorSystem) extends akka.actor.Extension
+class HttpExt(private val config: Config)(implicit val system: ExtendedActorSystem) extends akka.actor.Extension
   with DefaultSSLContextCreation {
 
   akka.http.Version.check(system.settings.config)
@@ -315,7 +315,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
   // ** CLIENT ** //
 
-  private[this] val poolMasterActorRef = system.actorOf(PoolMasterActor.props, "pool-master")
+  private[this] val poolMasterActorRef = system.systemActorOf(PoolMasterActor.props, "pool-master")
   private[this] val systemMaterializer = ActorMaterializer()
 
   /**
