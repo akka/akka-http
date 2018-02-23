@@ -67,7 +67,6 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
         def nextFrame(maxBytesToSend: Int): DataFrame = {
           val toTake = maxBytesToSend min buffer.size min outboundWindowLeft
           val toSend = buffer.take(toTake)
-          require(toSend.nonEmpty)
 
           outboundWindowLeft -= toTake
           buffer = buffer.drop(toTake)
