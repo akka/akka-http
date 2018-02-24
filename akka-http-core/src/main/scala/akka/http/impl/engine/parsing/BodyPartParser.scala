@@ -43,21 +43,6 @@ private[http] final class BodyPartParser(
 
   sealed trait StateResult // phantom type for ensuring soundness of our parsing method setup
 
-  private[this] val needle: Array[Byte] = {
-    val array = new Array[Byte](boundary.length + 4)
-    array(0) = '\r'.toByte
-    array(1) = '\n'.toByte
-    array(2) = '-'.toByte
-    array(3) = '-'.toByte
-    boundary.getAsciiBytes(array, 4)
-    array
-  }
-
-  // we use the Boyer-Moore string search algorithm for finding the boundaries in the multipart entity,
-  // TODO: evaluate whether an upgrade to the more efficient FJS is worth the implementation cost
-  // see: http://www.cgjennings.ca/fjs/ and http://ijes.info/4/1/42544103.pdf
-  private[this] val boyerMoore = new BoyerMoore(needle)
-
   // TODO: prevent re-priming header parser from scratch
   private[this] val headerParser = HttpHeaderParser(settings, log)
 
@@ -73,7 +58,7 @@ private[http] final class BodyPartParser(
       private var shouldTerminate = false
       // Will be override at the beginning of the parsing (tryParseInitialBoundary and parsePreamble)
       // But initially defined here as norm version to avoid NPE
-      private var eolConfiguration = EndOfLineConfiguration("\r\n", boundary)
+      private var eolConfiguration: EndOfLineConfiguration = UndefinedEndOfLineConfiguration(boundary)
 
       override def onPush(): Unit = {
         if (!shouldTerminate) {
@@ -128,9 +113,9 @@ private[http] final class BodyPartParser(
 
       def tryParseInitialBoundary(input: ByteString): StateResult =
         // we don't use boyerMoore here because we are testing for the boundary *without* a
-        // preceding CRLF and at a known location (the very beginning of the entity)
+        // preceding LF or CRLF and at a known location (the very beginning of the entity)
         try {
-          eolConfiguration = EndOfLineConfiguration(input, boundary)
+          eolConfiguration = eolConfiguration.defineOnce(input)
           if (eolConfiguration.isBoundary(input, 0)) {
             val ix = eolConfiguration.boundaryLength
             if (eolConfiguration.isEndOfLine(input, ix)) parseHeaderLines(input, ix + eolConfiguration.eolLength)
@@ -149,7 +134,7 @@ private[http] final class BodyPartParser(
             else if (doubleDash(input, needleEnd)) setShouldTerminate()
             else rec(needleEnd)
           }
-          eolConfiguration = EndOfLineConfiguration(input, boundary)
+          eolConfiguration = eolConfiguration.defineOnce(input)
           rec(offset)
         } catch {
           case NotEnoughDataException ⇒ continue(input.takeRight(eolConfiguration.needle.length + eolConfiguration.eolLength), 0)(parsePreamble)
@@ -310,7 +295,15 @@ private[http] object BodyPartParser {
     def defaultHeaderValueCacheLimit: Int
   }
 
-  case class EndOfLineConfiguration(eol: String, boundary: String) {
+  sealed trait EndOfLineConfiguration {
+    def eol: String
+    def boundary: String
+    /*
+     * At first, the configuration is mocked with a default value to avoid NPE (CRLF).
+     * We need to define afterward but only once and avoid redefining it several times.
+     */
+    def defineOnce(input: ByteString): EndOfLineConfiguration
+
     val eolLength: Int = eol.length
 
     val needle: Array[Byte] = s"$eol--$boundary".asciiBytes
@@ -318,6 +311,9 @@ private[http] object BodyPartParser {
     // the length of the needle without the preceding End Of Line (CRLF or LF)
     val boundaryLength: Int = needle.length - eolLength
 
+    // we use the Boyer-Moore string search algorithm for finding the boundaries in the multipart entity,
+    // TODO: evaluate whether an upgrade to the more efficient FJS is worth the implementation cost
+    // see: http://www.cgjennings.ca/fjs/ and http://ijes.info/4/1/42544103.pdf
     val boyerMoore: BoyerMoore = new BoyerMoore(needle)
 
     def isBoundary(input: ByteString, offset: Int, ix: Int = eolLength): Boolean = {
@@ -335,12 +331,20 @@ private[http] object BodyPartParser {
     }
   }
 
-  object EndOfLineConfiguration {
-    def apply(byteString: ByteString, boundary: String): EndOfLineConfiguration = {
+  case class DefinedEndOfLineConfiguration(eol: String, boundary: String) extends EndOfLineConfiguration {
+    override def defineOnce(input: ByteString): EndOfLineConfiguration = this
+  }
+
+  case class UndefinedEndOfLineConfiguration(boundary: String) extends EndOfLineConfiguration {
+    override def eol: String = "\r\n"
+
+    override def defineOnce(byteString: ByteString): EndOfLineConfiguration = {
       // Hypothesis: There is either CRLF or LF as EOL, no mix possible
       val cr = '\r'.toByte
-      val eol: String = if (byteString.contains(cr)) "\r\n" else "\n"
-      EndOfLineConfiguration(eol, boundary)
+      val lf = '\n'.toByte
+      if (byteString.contains(cr)) DefinedEndOfLineConfiguration("\r\n", boundary)
+      else if (byteString.contains(lf)) DefinedEndOfLineConfiguration("\n", boundary)
+      else this
     }
   }
 }
