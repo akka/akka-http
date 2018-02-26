@@ -69,7 +69,7 @@ trait UpgradeToWebSocket extends jm.ws.UpgradeToWebSocket {
    */
   def handleMessagesWithMat[Mat](
     handlerFlow: Graph[FlowShape[Message, Message], Mat],
-    subprotocol: Option[String] = None): (HttpResponse, Future[Mat]) = {
+    subprotocol: Option[String]                          = None): (HttpResponse, Future[Mat]) = {
     val promise = Promise[Mat]
     val response = handleMessages(Flow.fromGraph(handlerFlow).mapMaterializedValue(mat ⇒ promise.success(mat)), subprotocol)
     (response, promise.future)
