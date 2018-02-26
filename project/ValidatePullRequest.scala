@@ -364,14 +364,22 @@ object AggregatePRValidation extends AutoPlugin {
       LogExchange.bindLoggerAppenders("testLogger", appender -> Level.Info :: Nil)
 
       log.info("")
-      write("------------------------------")
-      write("Pull request validation report")
-      write("------------------------------")
+      write("")
+      write("# Pull request validation report")
       write("")
 
-      def showKey(key: ScopedKey[_]): String = Project.showContextKey(newState).show(key)
+      def showKey(key: ScopedKey[_]): String = Project.showContextKey(extracted.session, extracted.structure).show(key)//Project.showContextKey(newState).show(key)
+
+      def totalCount(suiteResult: SuiteResult): Int = {
+        import suiteResult._
+        passedCount + failureCount + errorCount + skippedCount + ignoredCount + canceledCount + pendingCount
+      }
+      def hasExecutedTests(suiteResult: SuiteResult): Boolean = totalCount(suiteResult) > 0
+      def hasTests(result: Tests.Output): Boolean = result.events.exists(e => hasExecutedTests(e._2))
       def printTestResults(result: KeyValue[Tests.Output]): Unit = {
         write(s"Test result for '${showKey(result.key)}'")
+        write("")
+        write("```")
 
         def safeLogTestResults(logger: Logger): Unit =
           Try(TestResultLogger.Default.run(logger, result.value, showKey(result.key)))
@@ -383,56 +391,70 @@ object AggregatePRValidation extends AutoPlugin {
         // there seems to be some async logging going on, so let's wait for a while to be sure the appender has flushed
         Thread.sleep(100)
 
+        write("```")
         write("")
       }
 
-      val (passed, failed) = onlyTestResults.partition(_.value.overall == TestResult.Passed)
+      val (passed0, failed) = onlyTestResults.partition(_.value.overall == TestResult.Passed)
+      val passed = passed0.filter(t => hasTests(t.value))
 
-      write("+ Successful Test Suites")
-      write("")
+      if (failed.nonEmpty) {
+        write("## Failed Test Suites")
+        write("")
+        failed.foreach(printTestResults)
+        write("")
+      }
 
-      passed.foreach(printTestResults)
+      if (mimaFailures.nonEmpty) {
+        write("## Mima Failures")
+        write("")
+        write("```")
+        mimaFailures.foreach {
+          case KeyValue(key, Problems(desc)) =>
+            write(s"Problems for ${key.scope.project.toOption.get.asInstanceOf[ProjectRef].project}:\n$desc")
+            write("")
+        }
+        write("```")
+        write("")
+      }
 
-      write("+ Failed Test Suites")
-      write("")
-      failed.foreach(printTestResults)
+      if (failedTasks.nonEmpty) {
+        write("## Other Failed tasks")
+        write("")
+        failedTasks foreach { case KeyValue(key, Inc(inc: Incomplete)) =>
+          def parseIncomplete(inc: Incomplete): String =
+            "an underlying problem during task execution:\n" +
+            Incomplete.linearize(inc).filter(x => x.message.isDefined || x.directCause.isDefined)
+              .map { case i @ Incomplete(node, tpe, message, causes, directCause) =>
+                def nodeName: String = node match {
+                  case Some(key: ScopedKey[_]) => showKey(key)
+                  case Some(t: Task[_]) =>
+                    t.info.name
+                      .orElse(t.info.attributes.get(taskDefinitionKey).map(showKey))
+                      .getOrElse(t.info.toString)
+                  case Some(x) => s"<$x>"
+                  case None => "<unknown>"
+                }
 
-      write("+ Mima Failures")
-      write("")
-      mimaFailures.foreach {
-        case KeyValue(key, Problems(desc)) =>
-          write(s"Problems for ${key.scope.project.toOption.get.asInstanceOf[ProjectRef].project}:\n$desc")
+                s"  $nodeName: ${message.orElse(directCause.map(_.toString)).getOrElse(s"<unknown: ($i)>")}"
+              }.mkString("\n")
+
+          val problem = inc.directCause.map(_.toString).getOrElse(parseIncomplete(inc))
+
+          write(s"${showKey(key)} failed because of $problem")
           write("")
+        }
       }
 
-      write("+ Other Failed tasks")
-      write("")
-      failedTasks foreach { case KeyValue(key, Inc(inc: Incomplete)) =>
-        def parseIncomplete(inc: Incomplete): String =
-          "an underlying problem during task execution:\n" +
-          Incomplete.linearize(inc).filter(x => x.message.isDefined || x.directCause.isDefined)
-            .map { case i@Incomplete(node, tpe, message, causes, directCause) =>
-              def nodeName: String = node match {
-                case Some(key: ScopedKey[_]) => showKey(key)
-                case Some(t: Task[_]) =>
-                  t.info.name
-                    .orElse(t.info.attributes.get(taskDefinitionKey).map(showKey))
-                    .getOrElse(t.info.toString)
-                case Some(x) => s"<$x>"
-                case None => "<unknown>"
-              }
-
-              s"  $nodeName: ${message.orElse(directCause.map(_.toString)).getOrElse(s"<unknown: ($i)>")}"
-            }.mkString("\n")
-
-        val problem = inc.directCause.map(_.toString).getOrElse(parseIncomplete(inc))
-
-        write(s"${showKey(key)} failed because of $problem")
+      /*if (passed.nonEmpty) {
+        write("+ Successful Test Suites")
         write("")
-      }
+
+        passed.foreach(printTestResults)
+        write("")
+      }*/
 
       write("")
-      write("------------------")
 
       fw.close()
       log.info(s"Wrote PR validation report to ${outputFile.getAbsolutePath}")
