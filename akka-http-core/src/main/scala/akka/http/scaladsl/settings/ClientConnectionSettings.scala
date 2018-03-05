@@ -17,7 +17,7 @@ import akka.io.Inet.SocketOption
 import com.typesafe.config.Config
 
 import scala.collection.immutable
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 /**
  * Public API but not intended for subclassing

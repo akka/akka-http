@@ -6,7 +6,7 @@ package akka.http.javadsl.settings
 
 import java.net.InetSocketAddress
 import java.util.function.Supplier
-import java.util.{Optional, Random}
+import java.util.{ Optional, Random }
 
 import akka.actor.ActorSystem
 import akka.annotation.ApiMayChange
@@ -21,7 +21,7 @@ import akka.http.impl.util.JavaMapping.Implicits._
 import scala.collection.JavaConverters._
 import scala.compat.java8.OptionConverters
 import scala.compat.java8.OptionConverters._
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 /**
  * Public API but not intended for subclassing
