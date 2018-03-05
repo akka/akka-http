@@ -38,12 +38,16 @@ final class RouteAdapter(val delegate: akka.http.scaladsl.server.Route) extends 
     }
 
   override def seal(system: ActorSystem, materializer: Materializer): Route = {
-    seal(system)
+    seal()
   }
 
-  override def seal(system: ActorSystem): Route = {
-    implicit val s: ActorSystem = system
-    RouteAdapter(scaladsl.server.Route.seal(delegate))
+  override def seal(): Route = {
+    // TODO: scaladsl.server.Route.seal shouldn't require an implicit RoutingSettings when it can retrieve it itself. See https://github.com/akka/akka-http/issues/1898
+    RouteAdapter {
+      akka.http.scaladsl.server.directives.BasicDirectives.extractSettings { implicit settings ⇒
+        scaladsl.server.Route.seal(delegate)
+      }
+    }
   }
 
   override def seal(routingSettings: RoutingSettings, parserSettings: ParserSettings, rejectionHandler: RejectionHandler, exceptionHandler: ExceptionHandler, system: ActorSystem, materializer: Materializer): Route = {

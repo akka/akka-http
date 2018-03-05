@@ -50,7 +50,7 @@ trait Route {
    *    will be already be handled using the implicitly given [[RejectionHandler]] and [[ExceptionHandler]] (or
    *    the default handlers if none are given or can be found implicitly).
    *  - Consequently, no route alternatives will be tried that were combined with this route.
-   * @deprecated Use the variant without [[Materializer]]
+   * @deprecated Use the variant without [[ActorSystem]] and [[Materializer]]
    */
   @Deprecated
   def seal(system: ActorSystem, materializer: Materializer): Route
@@ -65,7 +65,7 @@ trait Route {
    *    the default handlers if none are given or can be found implicitly).
    *  - Consequently, no route alternatives will be tried that were combined with this route.
    */
-  def seal(system: ActorSystem): Route
+  def seal(): Route
 
   /**
    * Seals a route by wrapping it with explicit exception handling and rejection conversion.
