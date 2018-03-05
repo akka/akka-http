@@ -8,6 +8,8 @@ import akka.annotation.InternalApi
 
 import scala.collection.immutable
 
+import FrameEvent.PriorityFrame
+
 /**
  * INTERNAL API
  *

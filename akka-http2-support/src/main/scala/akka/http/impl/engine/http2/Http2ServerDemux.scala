@@ -18,6 +18,8 @@ import akka.util.ByteString
 
 import scala.util.control.NonFatal
 
+import FrameEvent._
+
 /**
  * INTERNAL API
  *

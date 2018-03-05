@@ -19,6 +19,8 @@ import akka.util.ByteString
 
 import scala.concurrent.{ ExecutionContext, Future }
 
+import FrameEvent._
+
 /**
  * Represents one direction of an Http2 substream.
  */

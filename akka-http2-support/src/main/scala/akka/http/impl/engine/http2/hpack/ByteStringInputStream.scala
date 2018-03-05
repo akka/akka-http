@@ -4,7 +4,7 @@
 
 package akka.http.impl.engine.http2.hpack
 
-import java.io.{ByteArrayInputStream, InputStream}
+import java.io.{ ByteArrayInputStream, InputStream }
 
 import akka.annotation.InternalApi
 import akka.util.ByteString
