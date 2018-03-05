@@ -72,5 +72,8 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.Ht
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.getHeaders")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.headers")
 
-#ClientConnectionSettings, marked as @DoNotInherit, allows new methods
+# ClientConnectionSettings, marked as @DoNotInherit, allows new methods
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ClientConnectionSettings.transport")
+
+# ConnectionPoolSettings, marked as @DoNotInherit, allows new methods
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.withUpdatedConnectionSettings")
