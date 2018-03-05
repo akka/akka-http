@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.testkit;
@@ -73,7 +73,7 @@ public class JUnitRouteTestTest extends JUnitRouteTest {
       testRoute(
         respondWithHeader(pinkHeader, () ->
           onSuccess(
-            () -> promise,
+            promise,
             result -> complete(result)
           )
         )

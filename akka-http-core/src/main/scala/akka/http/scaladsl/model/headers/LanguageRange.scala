@@ -1,10 +1,8 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model.headers
-
-import akka.http.impl.model.JavaInitialization
 
 import scala.language.implicitConversions
 import scala.collection.immutable
@@ -38,10 +36,7 @@ object LanguageRange {
     def withQValue(qValue: Float) =
       if (qValue == 1.0f) `*` else if (qValue != this.qValue) `*`(qValue.toFloat) else this
   }
-  object `*` extends `*`(1.0f) {
-    JavaInitialization.initializeStaticFieldWith(
-      `*`, classOf[jm.headers.LanguageRange].getField("ALL"))
-  }
+  object `*` extends `*`(1.0f)
 
   final case class One(language: Language, qValue: Float) extends LanguageRange {
     require(0.0f <= qValue && qValue <= 1.0f, "qValue must be >= 0 and <= 1.0")

@@ -44,7 +44,8 @@ inThisBuild(Def.settings(
   testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v"),
   Dependencies.Versions,
   Formatting.formatSettings,
-  shellPrompt := { s => Project.extract(s).currentProject.id + " > " }
+  shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
+  concurrentRestrictions in Global += Tags.limit(Tags.Test, 1)
 ))
 
 lazy val root = Project(
@@ -56,8 +57,20 @@ lazy val root = Project(
   .settings(
     // Unidoc doesn't like macros
     unidocProjectExcludes := Seq(parsing),
-    deployRsyncArtifact :=
-      (unidoc in Compile).value zip Seq(s"www/api/akka-http/${version.value}", s"www/japi/akka-http/${version.value}")
+    unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get,
+    deployRsyncArtifact := {
+      val unidocArtifacts = (unidoc in Compile).value
+      // unidoc returns a Seq[File] which contains directories of generated API docs, one for
+      // Java, one for Scala. It's not specified which is which, though.
+      // We currently expect the java documentation at akka-http/target/javaunidoc, so
+      // the following heuristic is hopefully good enough to determine which one is the Java and
+      // which one the Scala version.
+      val (Seq(java), Seq(scala)) = unidocArtifacts.partition(_.getName contains "java")
+
+      Seq(
+        scala -> s"www/api/akka-http/${version.value}",
+        java -> s"www/japi/akka-http/${version.value}")
+    }
   )
   .aggregate(
     parsing,
@@ -75,9 +88,8 @@ lazy val root = Project(
 lazy val parsing = project("akka-parsing")
   .addAkkaModuleDependency("akka-actor", "provided")
   .settings(Dependencies.parsing)
-  .settings(OSGi.parsing)
   .settings(
-    scalacOptions := scalacOptions.value.filterNot(_ == "-Xfatal-warnings"),
+    scalacOptions := scalacOptions.value.filterNot(Set("-Xfatal-warnings", "-Xlint", "-Ywarn-dead-code").contains), // disable warnings for parboiled code
     scalacOptions += "-language:_",
     unmanagedSourceDirectories in ScalariformKeys.format in Test := (unmanagedSourceDirectories in Test).value
   )
@@ -89,7 +101,6 @@ lazy val httpCore = project("akka-http-core")
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
   .settings(Dependencies.httpCore)
-  .settings(OSGi.httpCore)
   .settings(VersionGenerator.versionSettings)
   .enablePlugins(BootstrapGenjavadoc)
 
@@ -97,7 +108,6 @@ lazy val http = project("akka-http")
   .dependsOn(httpCore)
   .addAkkaModuleDependency("akka-stream", "provided")
   .settings(Dependencies.http)
-  .settings(OSGi.http)
   .settings(
     scalacOptions in Compile += "-language:_"
   )
@@ -109,7 +119,6 @@ lazy val http2Support = project("akka-http2-support")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
   .settings(Dependencies.http2)
   .settings(Dependencies.http2Support)
-  .settings(OSGi.http2Support)
   .settings {
     lazy val h2specPath = Def.task {
       (target in Test).value / h2specName / h2specExe
@@ -148,7 +157,6 @@ lazy val httpTestkit = project("akka-http-testkit")
   .dependsOn(http)
   .addAkkaModuleDependency("akka-stream-testkit")
   .settings(Dependencies.httpTestkit)
-  .settings(OSGi.httpTestkit)
   .settings(
     // don't ignore Suites which is the default for the junit-interface
     testOptions += Tests.Argument(TestFrameworks.JUnit, "--ignore-runners="),
@@ -166,11 +174,14 @@ lazy val httpTests = project("akka-http-tests")
   .enablePlugins(MultiNode)
   .disablePlugins(MimaPlugin) // this is only tests
   .configs(MultiJvm)
+  .settings(headerSettings(MultiJvm))
+  .settings(additionalTasks in ValidatePR += headerCheck in MultiJvm)
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency("akka-multi-node-testkit", "test")
 
 lazy val httpJmhBench = project("akka-http-bench-jmh")
   .dependsOn(http)
+  .addAkkaModuleDependency("akka-stream")
   .enablePlugins(JmhPlugin)
   .enablePlugins(NoPublish).disablePlugins(BintrayPlugin) // don't release benchs
   .disablePlugins(MimaPlugin)
@@ -184,13 +195,11 @@ lazy val httpXml =
   httpMarshallersScalaSubproject("xml")
     .addAkkaModuleDependency("akka-stream", "provided")
     .settings(Dependencies.httpXml)
-    .settings(OSGi.httpXml)
 
 lazy val httpSprayJson =
   httpMarshallersScalaSubproject("spray-json")
     .addAkkaModuleDependency("akka-stream", "provided")
     .settings(Dependencies.httpSprayJson)
-    .settings(OSGi.httpSprayJson)
 
 lazy val httpMarshallersJava = project("akka-http-marshallers-java")
   .enablePlugins(NoPublish)
@@ -201,7 +210,6 @@ lazy val httpJackson =
   httpMarshallersJavaSubproject("jackson")
     .addAkkaModuleDependency("akka-stream", "provided")
     .settings(Dependencies.httpJackson)
-    .settings(OSGi.httpJackson)
     .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 lazy val httpCaching = project("akka-http-caching")
@@ -240,11 +248,11 @@ lazy val docs = project("docs")
   .settings(
     name := "akka-http-docs",
     resolvers += Resolver.jcenterRepo,
-    paradoxGroups := Map("Languages" -> Seq("Scala", "Java")),
+    paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     paradoxProperties in Compile ++= Map(
       "project.name" -> "Akka HTTP",
-      "akka.version" -> Dependencies.akkaVersion.value,
-      "akka25.version" -> Dependencies.akka25Version,
+      "akka.version" -> AkkaDependency.akkaVersion,
+      "alpn-agent.version" -> Dependencies.alpnAgentVersion,
       "scala.binary_version" -> scalaBinaryVersion.value, // to be consistent with Akka build
       "scala.binaryVersion" -> scalaBinaryVersion.value,
       "scaladoc.version" -> scalaVersion.value,
@@ -253,18 +261,18 @@ lazy val docs = project("docs")
         case _                  => "cross CrossVersion.full"
       }),
       "jackson.version" -> Dependencies.jacksonVersion,
-      "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${Dependencies.akkaVersion.value}/%s",
+      "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${AkkaDependency.akkaVersion}/%s",
       "extref.akka25-docs.base_url" -> s"http://doc.akka.io/docs/akka/2.5/%s",
       "javadoc.akka.http.base_url" -> {
         val v = if (isSnapshot.value) "current" else version.value
         s"http://doc.akka.io/japi/akka-http/$v"
       },
-      "javadoc.akka.base_url" -> s"https://doc.akka.io/japi/akka/${Dependencies.akka25Version}",
+      "javadoc.akka.base_url" -> s"https://doc.akka.io/japi/akka/${AkkaDependency.akkaVersion}",
       "scaladoc.akka.http.base_url" -> {
         val v = if (isSnapshot.value) "current" else version.value
         s"http://doc.akka.io/api/akka-http/$v"
       },
-      "scaladoc.akka.base_url" -> s"https://doc.akka.io/api/akka/${Dependencies.akka25Version}",
+      "scaladoc.akka.base_url" -> s"https://doc.akka.io/api/akka/${AkkaDependency.akkaVersion}",
       "algolia.docsearch.api_key" -> "0ccbb8bf5148554a406fbf07df0a93b9",
       "algolia.docsearch.index_name" -> "akka-http",
       "google.analytics.account" -> "UA-21117439-1",
@@ -279,6 +287,6 @@ lazy val docs = project("docs")
     additionalTasks in ValidatePR += paradox in Compile,
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka-http/${version.value}")
   )
-  .settings(ParadoxSupport.paradoxWithSignatureDirective)
+  .settings(ParadoxSupport.paradoxWithCustomDirectives)
 
 def hasCommitsAfterTag(description: Option[GitDescribeOutput]): Boolean = description.get.commitSuffix.distance > 0

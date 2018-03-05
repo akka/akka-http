@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -11,7 +11,7 @@ import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.scaladsl.model
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.`Remote-Address`
+import akka.http.scaladsl.model.headers.{ `Remote-Address`, `Tls-Session-Info` }
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.Attributes
@@ -33,6 +33,12 @@ private[http2] object RequestParsing {
         attributes.get[HttpAttributes.RemoteAddress].map(remote ⇒ model.headers.`Remote-Address`(RemoteAddress(remote.address)))
         // in order to avoid searching all the time for the attribute, we need to guard it with the setting condition
       } else None // no need to emit the remote address header
+
+    val tlsSessionInfoHeader: Option[`Tls-Session-Info`] =
+      if (serverSettings.parserSettings.includeTlsSessionInfoHeader) {
+        attributes.get[HttpAttributes.TLSSessionInfo].map(sslSessionInfo ⇒
+          model.headers.`Tls-Session-Info`(sslSessionInfo.session))
+      } else None
 
     { subStream ⇒
       @tailrec
@@ -61,10 +67,15 @@ private[http2] object RequestParsing {
           }
           if (remoteAddressHeader.isDefined) headers += remoteAddressHeader.get
 
-          val entity =
-            if (subStream.data == Source.empty || contentLength == 0) HttpEntity.Empty
-            else if (contentLength > 0) HttpEntity.Default(contentType, contentLength, subStream.data)
-            else HttpEntity.Chunked.fromData(contentType, subStream.data)
+          if (tlsSessionInfoHeader.isDefined) headers += tlsSessionInfoHeader.get
+
+          val entity = subStream match {
+            case s if s.data == Source.empty || contentLength == 0 ⇒ HttpEntity.Empty
+            case ByteHttp2SubStream(_, data) if contentLength > 0  ⇒ HttpEntity.Default(contentType, contentLength, data)
+            /* contentLength undefined */
+            case ByteHttp2SubStream(_, data)                       ⇒ HttpEntity.Chunked.fromData(contentType, data)
+            case ChunkedHttp2SubStream(_, data)                    ⇒ HttpEntity.Chunked(contentType, data)
+          }
 
           val (path, rawQueryString) = pathAndRawQuery
           val authorityOrDefault: Uri.Authority = if (authority == null) Uri.Authority.Empty else authority

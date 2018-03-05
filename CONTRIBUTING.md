@@ -176,7 +176,7 @@ For a Pull Request to be considered at all it has to meet these requirements:
 
 Some additional guidelines regarding source code are:
 
-- files should start with a ``Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>`` copyright header 
+- files should start with a ``Copyright (C) 2018 Lightbend Inc. <http://www.lightbend.com>`` copyright header 
 - keep the code [DRY](http://programmer.97things.oreilly.com/wiki/index.php/Don%27t_Repeat_Yourself)
 - apply the [Boy Scout Rule](http://programmer.97things.oreilly.com/wiki/index.php/The_Boy_Scout_Rule) whenever you have the chance to
 - Never delete or change existing copyright notices, just add additional info.  
@@ -315,7 +315,7 @@ There is a number of ways timeouts can be defined in Akka tests. The following w
 * `3.seconds` is third choice if not using testkit
 * lower timeouts must come with a very good reason (e.g. Awaiting on a known to be "already completed" `Future`)
 
-Special care should be given `expectNoMsg` calls, which indeed will wait the entire timeout before continuing, therefore a shorter timeout should be used in those, for example `200` or `300.millis`.
+Special care should be given `expectNoMessage` calls, which indeed will wait the entire timeout before continuing, therefore a shorter timeout should be used in those, for example `200` or `300.millis`.
 
 You can read up on remaining and friends in [TestKit.scala](https://github.com/akka/akka/blob/master/akka-testkit/src/main/scala/akka/testkit/TestKit.scala)
 

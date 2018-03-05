@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.server
@@ -59,7 +59,7 @@ import akka.http.impl.util.LogByteStringTools._
 private[http] object HttpServerBluePrint {
   def apply(settings: ServerSettings, log: LoggingAdapter, isSecureConnection: Boolean): Http.ServerLayer =
     userHandlerGuard(settings.pipeliningLimit) atop
-      requestTimeoutSupport(settings.timeouts.requestTimeout) atop
+      requestTimeoutSupport(settings.timeouts.requestTimeout, log) atop
       requestPreparation(settings) atop
       controller(settings, log) atop
       parsingRendering(settings, log, isSecureConnection) atop
@@ -82,8 +82,8 @@ private[http] object HttpServerBluePrint {
   def requestPreparation(settings: ServerSettings): BidiFlow[HttpResponse, HttpResponse, RequestOutput, HttpRequest, NotUsed] =
     BidiFlow.fromFlows(Flow[HttpResponse], new PrepareRequests(settings))
 
-  def requestTimeoutSupport(timeout: Duration): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, NotUsed] =
-    BidiFlow.fromGraph(new RequestTimeoutSupport(timeout)).reversed
+  def requestTimeoutSupport(timeout: Duration, log: LoggingAdapter): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, NotUsed] =
+    BidiFlow.fromGraph(new RequestTimeoutSupport(timeout, log)).reversed
 
   /**
    * Two state stage, either transforms an incoming RequestOutput into a HttpRequest with strict entity and then pushes
@@ -219,7 +219,7 @@ private[http] object HttpServerBluePrint {
           start.copy(uri = effectiveUri)
         } catch {
           case e: IllegalUriException ⇒
-            MessageStartError(StatusCodes.BadRequest, ErrorInfo("Request is missing required `Host` header", e.getMessage))
+            MessageStartError(StatusCodes.BadRequest, e.info)
         }
       case x ⇒ x
     }
@@ -236,7 +236,7 @@ private[http] object HttpServerBluePrint {
       .via(responseRendererFactory.renderer.named("renderer"))
   }
 
-  class RequestTimeoutSupport(initialTimeout: Duration)
+  class RequestTimeoutSupport(initialTimeout: Duration, log: LoggingAdapter)
     extends GraphStage[BidiShape[HttpRequest, HttpRequest, HttpResponse, HttpResponse]] {
     private val requestIn = Inlet[HttpRequest]("RequestTimeoutSupport.requestIn")
     private val requestOut = Outlet[HttpRequest]("RequestTimeoutSupport.requestOut")
@@ -249,23 +249,25 @@ private[http] object HttpServerBluePrint {
 
     def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
       var openTimeouts = immutable.Queue[TimeoutAccessImpl]()
+      // the application response might has already arrived after we scheduled the timeout response (which is close but ok)
+      // or current head (same reason) is not for response the timeout has been scheduled for
+      val callback: AsyncCallback[(TimeoutAccess, HttpResponse)] = getAsyncCallback {
+        case (timeout, response) ⇒
+          if (openTimeouts.headOption.exists(_ eq timeout)) {
+            emit(responseOut, response, () ⇒ completeStage())
+          }
+      }
       setHandler(requestIn, new InHandler {
         def onPush(): Unit = {
           val request = grab(requestIn)
           val (entity, requestEnd) = HttpEntity.captureTermination(request.entity)
-          val access = new TimeoutAccessImpl(request, initialTimeout, requestEnd,
-            getAsyncCallback(emitTimeoutResponse), interpreter.materializer)
+          val access = new TimeoutAccessImpl(request, initialTimeout, requestEnd, callback,
+            interpreter.materializer, log)
           openTimeouts = openTimeouts.enqueue(access)
           push(requestOut, request.copy(headers = request.headers :+ `Timeout-Access`(access), entity = entity))
         }
         override def onUpstreamFinish() = complete(requestOut)
         override def onUpstreamFailure(ex: Throwable) = fail(requestOut, ex)
-        def emitTimeoutResponse(response: (TimeoutAccess, HttpResponse)) =
-          // the application response might has already arrived after we scheduled the timeout response (which is close but ok)
-          // or current head (same reason) is not for response the timeout has been scheduled for
-          if (openTimeouts.headOption.exists(_ eq response._1)) {
-            emit(responseOut, response._2, () ⇒ completeStage())
-          }
       })
       // TODO: provide and use default impl for simply connecting an input and an output port as we do here
       setHandler(requestOut, new OutHandler {
@@ -300,7 +302,8 @@ private[http] object HttpServerBluePrint {
   }
 
   private class TimeoutAccessImpl(request: HttpRequest, initialTimeout: Duration, requestEnd: Future[Unit],
-                                  trigger: AsyncCallback[(TimeoutAccess, HttpResponse)], materializer: Materializer)
+                                  trigger:      AsyncCallback[(TimeoutAccess, HttpResponse)],
+                                  materializer: Materializer, log: LoggingAdapter)
     extends AtomicReference[Future[TimeoutSetup]] with TimeoutAccess with (HttpRequest ⇒ HttpResponse) { self ⇒
     import materializer.executionContext
 
@@ -313,11 +316,13 @@ private[http] object HttpServerBluePrint {
       }
     }
 
-    override def apply(request: HttpRequest) =
+    override def apply(request: HttpRequest) = {
+      log.info("Request timeout encountered for request [{}]", request.debugString)
       //#default-request-timeout-httpresponse
       HttpResponse(StatusCodes.ServiceUnavailable, entity = "The server was not able " +
         "to produce a timely response to your request.\r\nPlease try again in a short while!")
-    //#default-request-timeout-httpresponse
+      //#default-request-timeout-httpresponse
+    }
 
     def clear(): Unit = // best effort timeout cancellation
       get.fast.foreach(setup ⇒ if (setup.scheduledTask ne null) setup.scheduledTask.cancel())
@@ -437,6 +442,9 @@ private[http] object HttpServerBluePrint {
               }
               val info = ErrorInfo(summary, "Consider increasing the value of akka.http.server.parsing.max-content-length")
               finishWithIllegalRequestError(StatusCodes.RequestEntityTooLarge, info)
+
+            case IllegalUriException(errorInfo) ⇒
+              finishWithIllegalRequestError(StatusCodes.BadRequest, errorInfo)
 
             case NonFatal(e) ⇒
               log.error(e, "Internal server error, sending 500 response")

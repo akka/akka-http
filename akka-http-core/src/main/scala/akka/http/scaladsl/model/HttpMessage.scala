@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -10,7 +10,7 @@ import java.io.File
 import java.nio.file.Path
 import java.lang.{ Iterable ⇒ JIterable }
 import java.util.Optional
-import java.util.concurrent.CompletionStage
+import java.util.concurrent.{ CompletionStage, Executor }
 
 import scala.compat.java8.FutureConverters
 import scala.concurrent.duration.FiniteDuration
@@ -27,6 +27,8 @@ import akka.http.scaladsl.util.FastFuture._
 import headers._
 
 import scala.annotation.tailrec
+import scala.compat.java8.FutureConverters._
+import scala.concurrent.duration._
 
 /**
  * Common base class of HttpRequest and HttpResponse.
@@ -118,6 +120,11 @@ sealed trait HttpMessage extends jm.HttpMessage {
     }
   }
 
+  /** Returns all the headers of the given type **/
+  def headers[T <: jm.HttpHeader: ClassTag]: immutable.Seq[T] = headers.collect {
+    case h: T ⇒ h
+  }
+
   /**
    * Returns true if this message is an:
    *  - HttpRequest and the client does not want to reuse the connection after the response for this request has been received
@@ -143,7 +150,6 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def withEntity(contentType: jm.ContentType, bytes: Array[Byte]): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], bytes))
   def withEntity(contentType: jm.ContentType, bytes: ByteString): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], bytes))
 
-  @deprecated("Use withEntity(ContentType, Path) instead", "2.4.5")
   def withEntity(contentType: jm.ContentType, file: File): Self = withEntity(HttpEntity.fromPath(contentType.asInstanceOf[ContentType], file.toPath))
   def withEntity(contentType: jm.ContentType, file: Path): Self = withEntity(HttpEntity.fromPath(contentType.asInstanceOf[ContentType], file))
 
@@ -159,12 +165,26 @@ sealed trait HttpMessage extends jm.HttpMessage {
       case _                 ⇒ Optional.empty()
     }
   /** Java API */
+  def getHeaders[T <: jm.HttpHeader](headerClass: Class[T]): JIterable[T] = {
+    headers[T](ClassTag[T](headerClass)).asJava
+  }
+  /** Java API */
   def getHeader(headerName: String): Optional[jm.HttpHeader] = {
     val lowerCased = headerName.toRootLowerCase
     Util.convertOption(headers.find(_.is(lowerCased))) // Upcast because of invariance
   }
   /** Java API */
   def addHeaders(headers: JIterable[jm.HttpHeader]): Self = mapHeaders(_ ++ headers.asScala.asInstanceOf[Iterable[HttpHeader]])
+  /** Java API */
+  def withHeaders(headers: JIterable[jm.HttpHeader]): Self = {
+    import JavaMapping.Implicits._
+    withHeaders(headers.asScala.toVector.map(_.asScala))
+  }
+  /** Java API */
+  def toStrict(timeoutMillis: Long, ec: Executor, materializer: Materializer): CompletionStage[Self] = {
+    val ex = ExecutionContext.fromExecutor(ec)
+    toStrict(timeoutMillis.millis)(ex, materializer).toJava
+  }
 }
 
 object HttpMessage {
@@ -353,8 +373,8 @@ object HttpRequest {
     if (uri.isRelative) {
       def fail(detail: String) =
         throw IllegalUriException(
-          s"Cannot establish effective URI of request to `$uri`, request has a relative URI and $detail; " +
-            "consider setting `akka.http.server.default-host-header`")
+          s"Cannot establish effective URI of request to `$uri`, request has a relative URI and $detail",
+          "consider setting `akka.http.server.default-host-header`")
       val Host(hostHeaderHost, hostHeaderPort) = hostHeader match {
         case OptionVal.None                 ⇒ if (defaultHostHeader.isEmpty) fail("is missing a `Host` header") else defaultHostHeader
         case OptionVal.Some(x) if x.isEmpty ⇒ if (defaultHostHeader.isEmpty) fail("an empty `Host` header") else defaultHostHeader
@@ -374,10 +394,10 @@ object HttpRequest {
 
   /**
    * Verifies that the given [[Uri]] is non-empty and has either scheme `http`, `https`, `ws`, `wss` or no scheme at all.
-   * If any of these conditions is not met the method throws an [[IllegalArgumentException]].
+   * If any of these conditions is not met the method throws an [[IllegalUriException]].
    */
   def verifyUri(uri: Uri): Unit =
-    if (uri.isEmpty) throw new IllegalArgumentException("`uri` must not be empty")
+    if (uri.isEmpty) throw IllegalUriException("`uri` must not be empty")
     else {
       def c(i: Int) = CharUtils.toLowerCase(uri.scheme charAt i)
       uri.scheme.length match {
@@ -386,7 +406,7 @@ object HttpRequest {
         case 5 if c(0) == 'h' && c(1) == 't' && c(2) == 't' && c(3) == 'p' && c(4) == 's' ⇒ // ok
         case 2 if c(0) == 'w' && c(1) == 's' ⇒ // ok
         case 3 if c(0) == 'w' && c(1) == 's' && c(2) == 's' ⇒ // ok
-        case _ ⇒ throw new IllegalArgumentException("""`uri` must have scheme "http", "https", "ws", "wss" or no scheme""")
+        case _ ⇒ throw IllegalUriException("""`uri` must have scheme "http", "https", "ws", "wss" or no scheme""")
       }
     }
 
@@ -423,12 +443,13 @@ final class HttpResponse(
   override def isRequest = false
   override def isResponse = true
 
-  override def withHeaders(headers: immutable.Seq[HttpHeader]) =
+  override def withHeaders(headers: immutable.Seq[HttpHeader]): HttpResponse =
     if (headers eq this.headers) this else copy(headers = headers)
 
-  override def withProtocol(protocol: akka.http.javadsl.model.HttpProtocol): akka.http.javadsl.model.HttpResponse = copy(protocol = protocol.asInstanceOf[HttpProtocol])
-  override def withStatus(statusCode: Int): akka.http.javadsl.model.HttpResponse = copy(status = statusCode)
-  override def withStatus(statusCode: akka.http.javadsl.model.StatusCode): akka.http.javadsl.model.HttpResponse = copy(status = statusCode.asInstanceOf[StatusCode])
+  override def withProtocol(protocol: akka.http.javadsl.model.HttpProtocol): akka.http.javadsl.model.HttpResponse = withProtocol(protocol.asInstanceOf[HttpProtocol])
+  def withProtocol(protocol: HttpProtocol): HttpResponse = copy(protocol = protocol)
+  override def withStatus(statusCode: Int): HttpResponse = copy(status = statusCode)
+  override def withStatus(statusCode: akka.http.javadsl.model.StatusCode): HttpResponse = copy(status = statusCode.asInstanceOf[StatusCode])
 
   override def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: MessageEntity): HttpResponse = withHeadersAndEntity(headers, entity: ResponseEntity)
   def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: ResponseEntity): HttpResponse = copy(headers = headers, entity = entity)

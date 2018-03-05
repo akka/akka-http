@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -32,13 +32,14 @@ import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
 abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extends AkkaSpec("""
-    akka.loggers = []
-    akka.loglevel = OFF
+    akka.loglevel = DEBUG
+    akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
     akka.io.tcp.windows-connection-abort-workaround-enabled = auto
     akka.io.tcp.trace-logging = off
     akka.test.single-expect-default = 5000 # timeout for checks, adjust as necessary, set here to 5s
     akka.scheduler.tick-duration = 1ms     # to make race conditions in Pool idle-timeout more likely
-                                          """) {
+    akka.http.client.log-unencrypted-network-bytes = 200
+                                          """) with WithLogCapturing {
   implicit val materializer = ActorMaterializer()
 
   // FIXME: Extract into proper util class to be reusable
@@ -132,6 +133,10 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       val (Success(response1), 42) = responseOut.expectNext()
       connNr(response1) shouldEqual 1
 
+      // prone to race conditions: that the response was delivered does not necessarily mean that the pool infrastructure
+      // has actually seen that the response is completely done, especially in the legacy implementation
+      Thread.sleep(100)
+
       requestIn.sendNext(HttpRequest(uri = "/b") → 43)
       responseOutSub.request(1)
       val (Success(response2), 43) = responseOut.expectNext()
@@ -184,7 +189,6 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
           .concat(Source.fromFuture(errorOnConnection1.future))
           .log("test")
 
-      val laterData = Promise[ByteString]()
       val laterHandler = Promise[(HttpRequest ⇒ Future[HttpResponse]) ⇒ Unit]()
 
       override def asyncTestServerHandler(connNr: Int): HttpRequest ⇒ Future[HttpResponse] = { req ⇒
@@ -217,7 +221,9 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       val handlerSetter = Await.result(laterHandler.future, 1.second.dilated)
 
       // now fail the first one
-      errorOnConnection1.failure(new RuntimeException)
+      EventFilter[RuntimeException](occurrences = 1) intercept {
+        errorOnConnection1.failure(new RuntimeException)
+      }
 
       // waiting for error to trigger connection pool failure
       Thread.sleep(2000)

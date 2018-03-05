@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -74,7 +74,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
 
         // FIXME: after multiplexer PR is merged
         // prioInfo.foreach(multiplexer.updatePriority)
-        dispatchSubstream(Http2SubStream(frame, data))
+        dispatchSubstream(ByteHttp2SubStream(frame, data))
         nextState
 
       case x ⇒ receivedUnexpectedFrame(x)

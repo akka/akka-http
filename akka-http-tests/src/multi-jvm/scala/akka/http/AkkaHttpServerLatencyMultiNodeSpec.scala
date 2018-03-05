@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http
 
 import java.io.{ BufferedWriter, FileWriter }
@@ -33,6 +34,7 @@ object AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeConfig {
       akka {
         actor.default-mailbox.mailbox-type = "akka.dispatch.UnboundedMailbox"
         actor.provider = "akka.remote.RemoteActorRefProvider"
+        actor.warn-about-java-serializer-usage = off
         stream.materializer.debug.fuzzing-mode = off
 
         testconductor.barrier-timeout = 30m

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -74,8 +74,8 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
     val serverBidiFlow =
       settings.idleTimeout match {
-        case t: FiniteDuration ⇒ httpLayer atop delayCancellationStage(settings) atop tlsStage atop HttpConnectionIdleTimeoutBidi(t, None)
-        case _                 ⇒ httpLayer atop delayCancellationStage(settings) atop tlsStage
+        case t: FiniteDuration ⇒ httpLayer atop tlsStage atop HttpConnectionIdleTimeoutBidi(t, None)
+        case _                 ⇒ httpLayer atop tlsStage
       }
 
     serverBidiFlow
@@ -289,7 +289,9 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     remoteAddress:      Option[InetSocketAddress] = None,
     log:                LoggingAdapter            = system.log,
     isSecureConnection: Boolean                   = false): ServerLayer =
-    HttpServerBluePrint(settings, log, isSecureConnection).addAttributes(HttpAttributes.remoteAddress(remoteAddress))
+    HttpServerBluePrint(settings, log, isSecureConnection)
+      .addAttributes(HttpAttributes.remoteAddress(remoteAddress))
+      .atop(delayCancellationStage(settings))
 
   @deprecated("Binary compatibility method. Use the new `serverLayer` method without the implicit materializer instead.", "10.0.11")
   private[http] def serverLayer()(implicit mat: Materializer): ServerLayer =
@@ -823,7 +825,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   /** Creates real or placebo SslTls stage based on if ConnectionContext is HTTPS or not. */
   private[http] def sslTlsStage(connectionContext: ConnectionContext, role: TLSRole, hostInfo: Option[(String, Int)] = None) =
     connectionContext match {
-      case hctx: HttpsConnectionContext ⇒ TLS(hctx.sslContext, connectionContext.sslConfig, hctx.firstSession, role, hostInfo = hostInfo)
+      case hctx: HttpsConnectionContext ⇒ TLS(hctx.sslContext, connectionContext.sslConfig, hctx.firstSession, role, hostInfo = hostInfo, closing = TLSClosing.eagerClose)
       case other                        ⇒ TLSPlacebo() // if it's not HTTPS, we don't enable SSL/TLS
     }
 
@@ -944,16 +946,19 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   final case class HostConnectionPool private[http] (setup: HostConnectionPoolSetup)(
     private[http] val gateway: PoolGateway) { // enable test access
 
+    @deprecated("In favor of method that takes no execution context.", since = "10.1.0")
+    private[http] def shutdown(ec: ExecutionContextExecutor): Future[Done] = shutdown()
+
     /**
      * Asynchronously triggers the shutdown of the host connection pool.
      *
      * The produced [[scala.concurrent.Future]] is fulfilled when the shutdown has been completed.
      */
-    def shutdown()(implicit ec: ExecutionContextExecutor): Future[Done] = gateway.shutdown()
+    def shutdown(): Future[Done] = gateway.shutdown()
 
     private[http] def toJava = new akka.http.javadsl.HostConnectionPool {
       override def setup = HostConnectionPool.this.setup
-      override def shutdown(executor: ExecutionContextExecutor): CompletionStage[Done] = HostConnectionPool.this.shutdown()(executor).toJava
+      def shutdown(): CompletionStage[Done] = HostConnectionPool.this.shutdown().toJava
     }
   }
 

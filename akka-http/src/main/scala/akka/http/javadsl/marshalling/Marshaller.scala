@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.marshalling
@@ -50,8 +50,6 @@ object Marshaller {
 
   def byteStringToEntity: Marshaller[ByteString, RequestEntity] = fromScala(marshalling.Marshaller.ByteStringMarshaller)
 
-  @deprecated("Use `formDataToEntity` instead", "10.0.10")
-  def fromDataToEntity: Marshaller[FormData, RequestEntity] = formDataToEntity
   def formDataToEntity: Marshaller[FormData, RequestEntity] = fromScala(marshalling.Marshaller.FormDataMarshaller)
 
   def byteStringMarshaller(t: ContentType): Marshaller[ByteString, RequestEntity] =

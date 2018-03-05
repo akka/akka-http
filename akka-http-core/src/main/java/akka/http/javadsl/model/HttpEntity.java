@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.model;
@@ -48,12 +48,9 @@ public interface HttpEntity {
     ContentType getContentType();
 
     /**
-     * The empty entity.
-     *
-     * @deprecated Will be removed in Akka HTTP 11.x, use {@link HttpEntities#EMPTY} instead.
+     * Returns a copy of this entity with new content type./
      */
-    @Deprecated
-    HttpEntity.Strict EMPTY = HttpEntities.EMPTY;
+    HttpEntity withContentType(ContentType contentType);
 
     /**
      * Returns if this entity is known to be empty. Open-ended entity types like

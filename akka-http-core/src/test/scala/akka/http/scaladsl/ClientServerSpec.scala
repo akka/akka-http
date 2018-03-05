@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -39,7 +39,7 @@ import org.scalatest.concurrent.Eventually.eventually
 class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
   val testConf: Config = ConfigFactory.parseString("""
     akka.loggers = ["akka.testkit.TestEventListener"]
-    akka.loglevel = ERROR
+    akka.loglevel = WARNING
     akka.stdout-loglevel = ERROR
     windows-connection-abort-workaround-enabled = auto
     akka.log-dead-letters = OFF
@@ -62,7 +62,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val probe = TestSubscriber.manualProbe[Http.IncomingConnection]()
       val binding = Http().bind(hostname, port).toMat(Sink.fromSubscriber(probe))(Keep.left).run()
       val sub = probe.expectSubscription() // if we get it we are bound
-      val address = Await.result(binding, 1.second.dilated).localAddress
+      Await.result(binding, 1.second.dilated)
       sub.cancel()
     }
 
@@ -430,8 +430,10 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         performValidRequest()
         assertCounters(0, 1)
 
-        performFaultyRequest()
-        assertCounters(0, 2)
+        EventFilter.warning(pattern = "Illegal HTTP message start", occurrences = 1) intercept {
+          performFaultyRequest()
+          assertCounters(0, 2)
+        }
 
         performValidRequest()
         assertCounters(0, 3)
@@ -488,7 +490,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         private val HttpRequest(POST, uri, List(Accept(Seq(MediaRanges.`*/*`)), Host(_, _), `User-Agent`(_)),
           Chunked(`chunkedContentType`, chunkStream), HttpProtocols.`HTTP/1.1`) = serverIn.expectNext() mapHeaders (_.filterNot(_.is("timeout-access")))
         uri shouldEqual Uri(s"http://$hostname:$port/chunked")
-        Await.result(chunkStream.limit(5).runWith(Sink.seq), 100.millis.dilated) shouldEqual chunks
+        Await.result(chunkStream.limit(5).runWith(Sink.seq), 1000.millis.dilated) shouldEqual chunks
 
         val serverOutSub = serverOut.expectSubscription()
         serverOutSub.expectRequest()
@@ -498,7 +500,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         clientInSub.request(1)
         val HttpResponse(StatusCodes.PartialContent, List(Age(42), Server(_), Date(_)),
           Chunked(`chunkedContentType`, chunkStream2), HttpProtocols.`HTTP/1.1`) = clientIn.expectNext()
-        Await.result(chunkStream2.limit(1000).runWith(Sink.seq), 100.millis.dilated) shouldEqual chunks
+        Await.result(chunkStream2.limit(1000).runWith(Sink.seq), 1000.millis.dilated) shouldEqual chunks
 
         clientOutSub.sendComplete()
         serverInSub.request(1)
@@ -531,21 +533,25 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val responseSize = 200000
 
       val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-      val request = HttpRequest(uri = s"http://$hostname:$port", headers = headers.Connection("close") :: Nil)
-      val response = HttpResponse(entity = HttpEntity.Strict(ContentTypes.`text/plain(UTF-8)`, ByteString("t" * responseSize)))
+      def request(i: Int) = HttpRequest(uri = s"http://$hostname:$port/$i", headers = headers.Connection("close") :: Nil)
+      def response(req: HttpRequest) = HttpResponse(entity = HttpEntity.Strict(ContentTypes.`text/plain(UTF-8)`, ByteString(req.uri.path.toString.takeRight(1) * responseSize)))
 
       // settings adapting network buffer sizes
       val serverSettings = ServerSettings(system).withSocketOptions(SO.SendBufferSize(serverToClientNetworkBufferSize) :: Nil)
       val clientSettings = ConnectionPoolSettings(system).withConnectionSettings(ClientConnectionSettings(system).withSocketOptions(SO.ReceiveBufferSize(serverToClientNetworkBufferSize) :: Nil))
 
-      val server = Http().bindAndHandleSync(_ ⇒ response, hostname, port, settings = serverSettings)
-      def runOnce() =
-        Http().singleRequest(request, settings = clientSettings).futureValue
-          .entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue
+      val server = Http().bindAndHandleSync(response, hostname, port, settings = serverSettings)
+      def runOnce(i: Int) =
+        Http().singleRequest(request(i), settings = clientSettings).futureValue
+          .entity.dataBytes.runFold(ByteString.empty) { (prev, cur) ⇒
+            val res = prev ++ cur
+            system.log.debug(s"Received ${res.size} of [${res.take(1).utf8String}]")
+            res
+          }.futureValue
           .size shouldBe responseSize
 
       try {
-        (1 to 10).foreach(_ ⇒ runOnce())
+        (1 to 10).foreach(runOnce)
       } finally server.foreach(_.unbind())
     }
 
@@ -572,15 +578,17 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
           .bindAndHandle(routes, hostname, port, connectionContext = serverConnectionContext, settings = serverSettings)
           .futureValue
 
-      Http()
-        .singleRequest(request, connectionContext = clientConnectionContext, settings = clientSettings)
-        .futureValue
-        .entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue.utf8String shouldEqual entity
+      EventFilter.warning(pattern = "Hostname verification failed", occurrences = 1) intercept {
+        Http()
+          .singleRequest(request, connectionContext = clientConnectionContext, settings = clientSettings)
+          .futureValue
+          .entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue.utf8String shouldEqual entity
+      }
 
       serverBinding.unbind()
     }
 
-    "complete a request/response over https when server closes connection without close_notify" in Utils.assertAllStagesStopped {
+    class CloseDelimitedTLSSetup {
       val source = TestPublisher.probe[ByteString]()
 
       def handler(req: HttpRequest): HttpResponse =
@@ -590,7 +598,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val clientSideTls = Http().sslTlsStage(ExampleHttpContexts.exampleClientContext, akka.stream.Client, Some("akka.example.org" → 8080))
 
       val server: Flow[ByteString, ByteString, Any] =
-        Http().serverLayer()
+        Http().serverLayerImpl()
           .atop(serverSideTls)
           .reversed
           .join(Flow[HttpRequest].map(handler))
@@ -620,11 +628,22 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
       source.sendNext(ByteString("ghij"))
       sinkProbe.expectUtf8EncodedString("ghij")
+    }
 
-      killSwitch.shutdown() // simulate FIN in server -> client direction
-      // akka-http is currently lenient wrt TLS truncation which is *not* reported to the user
-      // FIXME: if https://github.com/akka/akka-http/issues/235 is ever fixed, expect an error here
-      sinkProbe.expectComplete()
+    "complete a request/response with CloseDelimited entity over TLS" in Utils.assertAllStagesStopped {
+      new CloseDelimitedTLSSetup {
+        source.sendComplete()
+        sinkProbe.expectComplete()
+      }
+    }
+
+    "complete a request/response over https when server closes connection without close_notify" in Utils.assertAllStagesStopped {
+      new CloseDelimitedTLSSetup {
+        killSwitch.shutdown() // simulate FIN in server -> client direction
+        // akka-http is currently lenient wrt TLS truncation which is *not* reported to the user
+        // FIXME: if https://github.com/akka/akka-http/issues/235 is ever fixed, expect an error here
+        sinkProbe.expectComplete()
+      }
     }
 
     "properly complete a simple request/response cycle when `modeled-header-parsing = off`" in Utils.assertAllStagesStopped {
@@ -689,6 +708,19 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
         connSourceSub.cancel()
       }
+    }
+
+    "produce a useful error message when connecting to a HTTP endpoint over HTTPS" in Utils.assertAllStagesStopped {
+      val dummyFlow = Flow.fromFunction((_: HttpRequest) ⇒ ???)
+
+      val binding = Http().bindAndHandle(dummyFlow, "127.0.0.1", port = 0).futureValue
+      val uri = "https://" + binding.localAddress.getHostString + ":" + binding.localAddress.getPort
+
+      EventFilter.warning(pattern = "Perhaps this was an HTTPS request sent to an HTTP endpoint", occurrences = 6) intercept {
+        Await.ready(Http().singleRequest(HttpRequest(uri = uri)), 30.seconds)
+      }
+
+      Await.result(binding.unbind(), 10.seconds)
     }
   }
 

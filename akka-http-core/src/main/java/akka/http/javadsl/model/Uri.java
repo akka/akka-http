@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.model;
@@ -13,7 +13,7 @@ import akka.parboiled2.ParserInput$;
 import java.util.Optional;
 
 /**
- * Represents an Uri. Use the `withX` methods to create modified copies of a given instance.
+ * Represents an Uri. Use methods on the class to create modified copies of a given instance.
  */
 public abstract class Uri {
   /**

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -359,7 +359,7 @@ object Uri {
    *                 after the colon (`:`). Therefore, it is not guaranteed that future versions of this class will
    *                 preserve full userinfo between parsing and rendering (even if it might do so right now).
    */
-  final case class Authority(host: Host, port: Int = 0, userinfo: String = "") {
+  final case class Authority(host: Host, port: Int = 0, userinfo: String = "") extends jm.Authority {
     def isEmpty = equals(Authority.Empty)
     def nonEmpty = !isEmpty
     def normalizedForHttp(encrypted: Boolean = false) =
@@ -499,6 +499,8 @@ object Uri {
     def reverse: Path = reverseAndPrependTo(Path.Empty)
     def reverseAndPrependTo(prefix: Path): Path
     def /(segment: String): Path = this ++ Path.Slash(segment :: Path.Empty)
+    def ?/(segment: String): Path = if (this.endsWithSlash) this + segment else this / segment
+
     def startsWith(that: Path): Boolean
     def dropChars(count: Int): Path
     override def toString = UriRendering.PathRenderer.render(new StringRendering, this).get

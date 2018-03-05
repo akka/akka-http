@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.model.parser
@@ -184,6 +184,11 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
     // we are bit more relaxed than the spec here by also parsing a potential fragment
     // but catch it in the `Referer` instance validation (with a `require` in the constructor)
     uriReference ~ EOI ~> (Referer(_))
+  }
+
+  //https://tools.ietf.org/html/rfc7231#section-7.1.3
+  def `retry-after` = rule {
+    (`HTTP-date` ~> (RetryAfterDateTime(_)) | `delta-seconds` ~> (RetryAfterDuration(_))) ~ EOI ~> (`Retry-After`(_))
   }
 
   // http://tools.ietf.org/html/rfc7231#section-7.4.2

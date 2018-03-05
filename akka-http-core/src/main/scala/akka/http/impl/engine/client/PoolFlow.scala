@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -23,6 +23,8 @@ private[client] object PoolFlow {
 
   case class RequestContext(request: HttpRequest, responsePromise: Promise[HttpResponse], retriesLeft: Int) {
     require(retriesLeft >= 0)
+
+    def canBeRetried: Boolean = retriesLeft > 0
   }
   case class ResponseContext(rc: RequestContext, response: Try[HttpResponse])
 

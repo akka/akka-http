@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.model;
@@ -14,6 +14,8 @@ import akka.util.ByteString;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executor;
 
 /**
  * The base type for an Http message (request or response).
@@ -56,6 +58,12 @@ public interface HttpMessage {
      * Some(header), otherwise this method returns None.
      */
     <T extends HttpHeader> Optional<T> getHeader(Class<T> headerClass);
+
+    /**
+     * An iterable containing all headers of the given class
+     * of this message.
+     */
+    <T extends HttpHeader> Iterable<T> getHeaders(Class<T> headerClass);
 
     /**
      * The entity of this message.
@@ -109,6 +117,11 @@ public interface HttpMessage {
         Self addHeaders(Iterable<HttpHeader> headers);
 
         /**
+         * Returns a copy of this message with new headers.
+         */
+        Self withHeaders(Iterable<HttpHeader> headers);
+
+        /**
          * Returns a copy of this message with the given http credential header added to the list of headers.
          */
         Self addCredentials(HttpCredentials credentials);
@@ -150,10 +163,7 @@ public interface HttpMessage {
 
         /**
          * Returns a copy of Self message with a new entity.
-         *
-         * @deprecated Will be removed in Akka HTTP 11.x, use {@link #withEntity(ContentType, Path)} instead.
          */
-        @Deprecated
         Self withEntity(ContentType type, File file);
 
         /**
@@ -170,5 +180,16 @@ public interface HttpMessage {
          * Returns a copy of Self message after applying the given transformation
          */
         <T> Self transformEntityDataBytes(Graph<FlowShape<ByteString, ByteString>, T> transformer);
+
+        /**
+         * Returns a future of Self message with strict entity that contains the same data as this entity
+         * which is only completed when the complete entity has been collected. As the
+         * duration of receiving the complete entity cannot be predicted, a timeout needs to
+         * be specified to guard the process against running and keeping resources infinitely.
+         *
+         * Use getEntity().getDataBytes and stream processing instead if the expected data is big or
+         * is likely to take a long time.
+         */
+        CompletionStage<? extends Self> toStrict(long timeoutMillis, Executor ec, Materializer materializer);
     }
 }

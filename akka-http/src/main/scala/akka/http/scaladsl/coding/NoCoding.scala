@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.coding
@@ -17,9 +17,7 @@ import headers.HttpEncodings
 object NoCoding extends Coder with StreamDecoder {
   val encoding = HttpEncodings.identity
 
-  override def encode[T <: HttpMessage](message: T)(implicit mapper: DataMapper[T]): T#Self = message.self
   override def encodeData[T](t: T)(implicit mapper: DataMapper[T]): T = t
-  override def decode[T <: HttpMessage](message: T)(implicit mapper: DataMapper[T]): T#Self = message.self
   override def decodeData[T](t: T)(implicit mapper: DataMapper[T]): T = t
 
   val messageFilter: HttpMessage ⇒ Boolean = _ ⇒ false

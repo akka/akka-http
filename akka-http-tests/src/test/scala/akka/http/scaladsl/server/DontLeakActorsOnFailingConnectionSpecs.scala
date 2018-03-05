@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -8,27 +8,32 @@ import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 import akka.actor.ActorSystem
 import akka.event.Logging
+import akka.http.impl.util.WithLogCapturing
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, Uri }
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.Utils.assertAllStagesStopped
-import akka.testkit.{ TestKit, SocketUtil }
+import akka.testkit.TestKit
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
 
-class DontLeakActorsOnFailingConnectionSpecs extends WordSpecLike with Matchers with BeforeAndAfterAll {
+abstract class DontLeakActorsOnFailingConnectionSpecs(poolImplementation: String)
+  extends WordSpecLike with Matchers with BeforeAndAfterAll with WithLogCapturing {
 
-  val config = ConfigFactory.parseString("""
+  val config = ConfigFactory.parseString(s"""
     akka {
-      # disable logs (very noisy tests - 100 exepected errors)
-      loglevel = OFF
-      stdout-loglevel = OFF
+      # disable logs (very noisy tests - 100 expected errors)
+      loglevel = DEBUG
+      loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
+
+      http.host-connection-pool.pool-implementation = $poolImplementation
     }""").withFallback(ConfigFactory.load())
-  implicit val system = ActorSystem("DontLeakActorsOnFailingConnectionSpecs", config)
-  import system.dispatcher
+  implicit val system = ActorSystem("DontLeakActorsOnFailingConnectionSpecs-" + poolImplementation, config)
   implicit val materializer = ActorMaterializer()
 
   val log = Logging(system, getClass)
@@ -39,19 +44,23 @@ class DontLeakActorsOnFailingConnectionSpecs extends WordSpecLike with Matchers 
       assertAllStagesStopped {
         val reqsCount = 100
         val clientFlow = Http().superPool[Int]()
-        val (_, port) = SocketUtil.temporaryServerHostnameAndPort()
-        val source = Source(1 to reqsCount).map(i ⇒ HttpRequest(uri = Uri(s"http://127.0.0.1:$port/test/$i")) → i)
+        // host that will reply, important because if it is a host not replying it will
+        // take too long to fail
+        val host = "127.0.0.1"
+        val port = 86 // (Micro Focus Cobol) unlikely to be used port in the "system ports" range
+        val source = Source(1 to reqsCount)
+          .map(i ⇒ HttpRequest(uri = Uri(s"http://$host:$port/test/$i")) → i)
 
         val countDown = new CountDownLatch(reqsCount)
         val sink = Sink.foreach[(Try[HttpResponse], Int)] {
-          case (resp, id) ⇒ handleResponse(resp, id)
+          case (resp, id) ⇒
+            countDown.countDown()
+            handleResponse(resp, id)
         }
 
-        val resps = source.via(clientFlow).runWith(sink)
-        resps.onComplete({ case _ ⇒ countDown.countDown() })
-
-        countDown.await(10, TimeUnit.SECONDS)
-        Thread.sleep(5000)
+        val running = source.via(clientFlow).runWith(sink)
+        countDown.await(10, TimeUnit.SECONDS) should be(true)
+        Await.result(running, 10.seconds)
       }
     }
   }
@@ -59,13 +68,16 @@ class DontLeakActorsOnFailingConnectionSpecs extends WordSpecLike with Matchers 
   private def handleResponse(httpResp: Try[HttpResponse], id: Int): Unit = {
     httpResp match {
       case Success(httpRes) ⇒
-        println(s"$id: OK: (${httpRes.status.intValue}")
+        system.log.error(s"$id: OK: (${httpRes.status.intValue}")
         httpRes.entity.dataBytes.runWith(Sink.ignore)
 
       case Failure(ex) ⇒
-        println(s"$id: FAIL: $ex")
+        system.log.debug(s"$id: FAIL $ex") // this is what we expect
     }
   }
 
   override def afterAll = TestKit.shutdownActorSystem(system)
 }
+
+class LegacyPoolDontLeakActorsOnFailingConnectionSpecs extends DontLeakActorsOnFailingConnectionSpecs("legacy")
+class NewPoolDontLeakActorsOnFailingConnectionSpecs extends DontLeakActorsOnFailingConnectionSpecs("new")

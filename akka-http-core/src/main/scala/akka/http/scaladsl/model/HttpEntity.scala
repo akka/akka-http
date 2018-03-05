@@ -1,12 +1,10 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
 
 import java.util.OptionalLong
-
-import akka.http.impl.model.JavaInitialization
 
 import language.implicitConversions
 import java.io.File
@@ -174,6 +172,11 @@ sealed trait HttpEntity extends jm.HttpEntity {
   override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[jm.HttpEntity.Strict] =
     toStrict(timeoutMillis.millis)(materializer).toJava
 
+  /** Java API */
+  override def withContentType(contentType: jm.ContentType): HttpEntity = {
+    import JavaMapping.Implicits._
+    withContentType(contentType.asScala)
+  }
 }
 
 /* An entity that can be used for body parts */
@@ -278,8 +281,7 @@ object HttpEntity {
    *
    * If the given `chunkSize` is -1 the default chunk size is used.
    */
-  @deprecated("Use `fromPath` instead", "2.4.5")
-  def apply(contentType: ContentType, file: File, chunkSize: Int = -1): UniversalEntity =
+  def fromFile(contentType: ContentType, file: File, chunkSize: Int = -1): UniversalEntity =
     fromPath(contentType, file.toPath, chunkSize)
 
   /**
@@ -302,9 +304,6 @@ object HttpEntity {
   def empty(contentType: ContentType): HttpEntity.Strict =
     if (contentType == Empty.contentType) Empty
     else HttpEntity.Strict(contentType, data = ByteString.empty)
-
-  JavaInitialization.initializeStaticFieldWith(
-    Empty, classOf[jm.HttpEntity].getField("EMPTY"))
 
   // TODO: re-establish serializability
   // TODO: equal/hashcode ?

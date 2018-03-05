@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl
@@ -135,7 +135,7 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
           // a new connection is opened every single time, `runWith` is called. Materialization (the `runWith` call)
           // and opening up a new connection is slow.
           //
-          // The `outgoingConnection` API is very low-level. Use it only if you already have a `Source[HttpRequest]`
+          // The `outgoingConnection` API is very low-level. Use it only if you already have a `Source[HttpRequest, _]`
           // (other than Source.single) available that you want to use to run requests on a single persistent HTTP
           // connection.
           //
@@ -389,4 +389,34 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
     //#auth-https-proxy-example-single-request
   }
 
+  "collecting_headers-example-for-single-request" in compileOnlySpec {
+    //#collecting-headers-example
+    import akka.actor.ActorSystem
+    import akka.http.scaladsl.Http
+    import akka.http.scaladsl.model.headers.`Set-Cookie`
+    import akka.http.scaladsl.model._
+    import akka.stream.ActorMaterializer
+
+    import scala.concurrent.ExecutionContextExecutor
+    import scala.concurrent.Future
+
+    object Client {
+      def main(args: Array[String]): Unit = {
+        implicit val system: ActorSystem = ActorSystem()
+        implicit val materializer: ActorMaterializer = ActorMaterializer()
+        implicit val executionContext: ExecutionContextExecutor = system.dispatcher
+
+        val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = "http://akka.io"))
+
+        responseFuture.map {
+          case response @ HttpResponse(StatusCodes.OK, _, _, _) =>
+            val setCookies = response.headers[`Set-Cookie`]
+            println(s"Cookies set by a server: $setCookies")
+            response.discardEntityBytes()
+          case _ => sys.error("something wrong")
+        }
+      }
+    }
+    //#collecting-headers-example
+  }
 }

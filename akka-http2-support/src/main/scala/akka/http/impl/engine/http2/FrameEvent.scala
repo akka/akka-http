@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -46,7 +46,6 @@ final case class ContinuationFrame(
   streamId:   Int,
   endHeaders: Boolean,
   payload:    ByteString) extends StreamFrameEvent
-
 case class PushPromiseFrame(
   streamId:            Int,
   endHeaders:          Boolean,

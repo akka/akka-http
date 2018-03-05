@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.http.javadsl.server.directives;
 
 import akka.http.javadsl.model.HttpRequest;
@@ -61,7 +62,7 @@ public class RangeDirectivesExamplesTest extends JUnitRouteTest {
         response.assertHeaderKindNotExists("Content-Range");
 
         final CompletionStage<List<Multipart.ByteRanges.BodyPart>> completionStage =
-                response.entity(Unmarshaller.entityToMultipartByteRanges()).getParts()
+                response.entity(Unmarshaller.entityToMultipartByteRangesUnmarshaller()).getParts()
                         .runFold(new ArrayList<>(), (acc, n) -> {
                             acc.add(n);
                             return acc;
