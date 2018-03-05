@@ -74,9 +74,3 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.H
 
 #ClientConnectionSettings, marked as @DoNotInherit, allows new methods
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ClientConnectionSettings.transport")
-
-#ConnectionPoolSettings, marked as @ApiMayChange, allows method removal
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.settings.ConnectionPoolSettings.getTransport")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.settings.ConnectionPoolSettings.withTransport")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.transport")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.withTransport")

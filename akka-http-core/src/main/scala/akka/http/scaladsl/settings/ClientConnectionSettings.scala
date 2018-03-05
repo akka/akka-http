@@ -7,6 +7,7 @@ package akka.http.scaladsl.settings
 import java.net.InetSocketAddress
 import java.util.Random
 
+import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.http.impl.util._
 import akka.http.impl.settings.ClientConnectionSettingsImpl
@@ -16,7 +17,7 @@ import akka.io.Inet.SocketOption
 import com.typesafe.config.Config
 
 import scala.collection.immutable
-import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 /**
  * Public API but not intended for subclassing
@@ -34,6 +35,7 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   def localAddress: Option[InetSocketAddress]
 
   /** The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used. */
+  @ApiMayChange
   def transport: ClientTransport
 
   // ---
@@ -50,6 +52,8 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   def withSocketOptions(newValue: immutable.Seq[SocketOption]): ClientConnectionSettings = self.copy(socketOptions = newValue)
   def withParserSettings(newValue: ParserSettings): ClientConnectionSettings = self.copy(parserSettings = newValue)
   def withLocalAddress(newValue: Option[InetSocketAddress]): ClientConnectionSettings = self.copy(localAddress = newValue)
+
+  @ApiMayChange
   def withTransport(newTransport: ClientTransport): ClientConnectionSettings = self.copy(transport = newTransport)
 
   /**

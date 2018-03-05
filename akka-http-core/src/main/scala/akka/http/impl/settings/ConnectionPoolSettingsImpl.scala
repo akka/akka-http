@@ -36,6 +36,9 @@ private[akka] final case class ConnectionPoolSettingsImpl(
 
   override def productPrefix = "ConnectionPoolSettings"
 
+  def withUpdatedConnectionSettings(f: ClientConnectionSettings ⇒ ClientConnectionSettings): ConnectionPoolSettingsImpl =
+    copy(connectionSettings = f(connectionSettings))
+
   private def suggestPowerOfTwo(around: Int): String = {
     val firstBit = 31 - Integer.numberOfLeadingZeros(around)
 

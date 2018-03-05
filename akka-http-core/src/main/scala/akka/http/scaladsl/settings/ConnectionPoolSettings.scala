@@ -7,6 +7,7 @@ package akka.http.scaladsl.settings
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
 import akka.http.javadsl.{ settings ⇒ js }
+import akka.http.scaladsl.ClientTransport
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.Duration
@@ -39,6 +40,10 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   @ApiMayChange
   def responseEntitySubscriptionTimeout: Duration
 
+  /** The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used. */
+  @deprecated("Deprecated in favor of connectionSettings.transport", "10.1.0")
+  def transport: ClientTransport = connectionSettings.transport
+
   // ---
 
   // overrides for more precise return type
@@ -57,6 +62,15 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
 
   @ApiMayChange
   override def withResponseEntitySubscriptionTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(responseEntitySubscriptionTimeout = newValue)
+
+  /**
+   * Since 10.1.0, the transport is configured in [[ClientConnectionSettings]]. This method is a shortcut for
+   * `withUpdatedConnectionSettings(_.withTransport(newTransport))`.
+   */
+  def withTransport(newTransport: ClientTransport): ConnectionPoolSettings =
+    withUpdatedConnectionSettings(_.withTransport(newTransport))
+
+  def withUpdatedConnectionSettings(f: ClientConnectionSettings ⇒ ClientConnectionSettings): ConnectionPoolSettings
 }
 
 object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] {
