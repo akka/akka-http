@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.javadsl
 
 import java.net.InetSocketAddress
@@ -15,7 +16,6 @@ import akka.japi.Pair
 import akka.actor.ActorSystem
 import akka.event.NoLogging
 import akka.http.javadsl.model._
-import akka.http.javadsl.ServerBinding
 import akka.japi.Function
 import akka.stream.ActorMaterializer
 import akka.stream.javadsl.{ Flow, Keep, Sink, Source }

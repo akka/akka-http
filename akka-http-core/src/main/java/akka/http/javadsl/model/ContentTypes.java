@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http:__www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.javadsl.model;
 
 
@@ -27,6 +28,15 @@ public final class ContentTypes {
 
   public static final ContentType.WithCharset TEXT_CSV_UTF8 =
           akka.http.scaladsl.model.ContentTypes.text$divcsv$u0028UTF$minus8$u0029();
+
+  public static final ContentType.Binary APPLICATION_GRPC_PROTO = MediaTypes.APPLICATION_GRPC_PROTO.toContentType();
+
+  public static final ContentType.Binary NO_CONTENT_TYPE =
+          akka.http.scaladsl.model.ContentTypes.NoContentType();
+
+  public static ContentType parse(String contentType) {
+    return ContentType$.MODULE$.parse(contentType).right().get();
+  }
 
   public static ContentType.Binary create(MediaType.Binary mediaType) {
     return ContentType$.MODULE$.apply((akka.http.scaladsl.model.MediaType.Binary) mediaType);

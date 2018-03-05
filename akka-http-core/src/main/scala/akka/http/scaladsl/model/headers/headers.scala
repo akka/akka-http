@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model.headers
@@ -10,7 +10,7 @@ import java.security.MessageDigest
 import java.util
 import javax.net.ssl.SSLSession
 
-import akka.annotation.InternalApi
+import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.stream.scaladsl.ScalaSessionAPI
 
 import scala.reflect.ClassTag
@@ -703,6 +703,28 @@ final case class Referer(uri: Uri) extends jm.headers.Referer with RequestHeader
   def getUri: akka.http.javadsl.model.Uri = uri.asJava
 }
 
+object `Retry-After` extends ModeledCompanion[`Retry-After`] {
+  def apply(delaySeconds: Long): `Retry-After` = apply(RetryAfterDuration(delaySeconds))
+  def apply(timestamp: DateTime): `Retry-After` = apply(RetryAfterDateTime(timestamp))
+}
+
+final case class `Retry-After`(delaySecondsOrDateTime: RetryAfterParameter) extends jm.headers.RetryAfter with ResponseHeader {
+  def renderValue[R <: Rendering](r: R): r.type = delaySecondsOrDateTime match {
+    case RetryAfterDuration(delay)    ⇒ r ~~ delay
+    case RetryAfterDateTime(dateTime) ⇒ dateTime.renderRfc1123DateTimeString(r)
+  }
+
+  protected def companion = `Retry-After`
+
+  /** Java API suppport */
+  override protected def delaySeconds(): Option[java.lang.Long] = PartialFunction.condOpt(delaySecondsOrDateTime) {
+    case RetryAfterDuration(delay) ⇒ Long.box(delay)
+  }
+  override protected def dateTime(): Option[DateTime] = PartialFunction.condOpt(delaySecondsOrDateTime) {
+    case RetryAfterDateTime(dateTime) ⇒ dateTime
+  }
+}
+
 /**
  * INTERNAL API
  */
@@ -744,7 +766,7 @@ private[http] object `Sec-WebSocket-Extensions` extends ModeledCompanion[`Sec-We
  */
 @InternalApi
 private[http] final case class `Sec-WebSocket-Extensions`(extensions: immutable.Seq[WebSocketExtension])
-  extends ResponseHeader {
+  extends RequestResponseHeader {
   require(extensions.nonEmpty, "Sec-WebSocket-Extensions.extensions must not be empty")
   import `Sec-WebSocket-Extensions`.extensionsRenderer
   protected[http] def renderValue[R <: Rendering](r: R): r.type = r ~~ extensions
@@ -974,6 +996,40 @@ final case class `X-Forwarded-For`(addresses: immutable.Seq[RemoteAddress]) exte
 
   /** Java API */
   def getAddresses: Iterable[jm.RemoteAddress] = addresses.asJava
+}
+
+object `X-Forwarded-Host` extends ModeledCompanion[`X-Forwarded-Host`] {
+  implicit val hostRenderer = UriRendering.HostRenderer // cache
+}
+
+/**
+ * De-facto standard as per https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-Host
+ */
+@ApiMayChange
+final case class `X-Forwarded-Host`(host: Uri.Host) extends jm.headers.XForwardedHost
+  with RequestHeader {
+  import `X-Forwarded-Host`.hostRenderer
+  def renderValue[R <: Rendering](r: R): r.type = r ~~ host
+  protected def companion = `X-Forwarded-Host`
+
+  /** Java API */
+  def getHost: jm.Host = host.asJava
+}
+
+object `X-Forwarded-Proto` extends ModeledCompanion[`X-Forwarded-Proto`]
+
+/**
+ * de-facto standard as per https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-Proto
+ */
+@ApiMayChange
+final case class `X-Forwarded-Proto`(protocol: String) extends jm.headers.XForwardedProto
+  with RequestHeader {
+  require(protocol.nonEmpty, "protocol must not be empty")
+  def renderValue[R <: Rendering](r: R): r.type = r ~~ protocol
+
+  protected def companion = `X-Forwarded-Proto`
+  /** Java API */
+  def getProtocol: String = protocol
 }
 
 object `X-Real-Ip` extends ModeledCompanion[`X-Real-Ip`] {

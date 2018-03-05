@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -7,7 +7,7 @@ package akka.http.impl.engine.http2
 import akka.http.impl.engine.http2.util.AsciiTreeLayout
 
 import scala.collection.immutable
-import scala.collection.immutable.{ Seq, TreeMap, TreeSet }
+import scala.collection.immutable.{ TreeMap, TreeSet }
 
 /** INTERNAL API */
 private[http2] trait PriorityNode {

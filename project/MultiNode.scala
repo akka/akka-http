@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka
 
 import com.typesafe.sbt.{SbtMultiJvm, SbtScalariform}
@@ -73,6 +74,14 @@ object MultiNode extends AutoPlugin {
         testResults.events ++ multiNodeResults.events,
         testResults.summaries ++ multiNodeResults.summaries)
     })
+
+  implicit class TestResultOps(val self: TestResult) extends AnyVal {
+    def id: Int = self match {
+      case TestResult.Passed ⇒ 0
+      case TestResult.Failed ⇒ 1
+      case TestResult.Error  ⇒ 2
+    }
+  }
 }
 
 /**

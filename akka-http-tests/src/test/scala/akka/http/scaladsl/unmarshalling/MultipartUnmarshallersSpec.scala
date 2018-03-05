@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.unmarshalling
@@ -241,13 +241,13 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
       "a boundary with a trailing space" in {
         Await.result(
           Unmarshal(HttpEntity(`multipart/mixed` withBoundary "simple boundary ", ByteString.empty))
-          .to[Multipart.General].failed, 1.second.dilated).getMessage shouldEqual
+            .to[Multipart.General].failed, 1.second.dilated).getMessage shouldEqual
           "requirement failed: 'boundary' parameter of multipart Content-Type must not end with a space char"
       }
       "a boundary with an illegal character" in {
         Await.result(
           Unmarshal(HttpEntity(`multipart/mixed` withBoundary "simple&boundary", ByteString.empty))
-          .to[Multipart.General].failed, 1.second.dilated).getMessage shouldEqual
+            .to[Multipart.General].failed, 1.second.dilated).getMessage shouldEqual
           "requirement failed: 'boundary' parameter of multipart Content-Type contains illegal character '&'"
       }
     }

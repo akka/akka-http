@@ -1,13 +1,10 @@
-/**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.settings
 
-import akka.actor.ActorSystem
 import akka.testkit.AkkaSpec
-import com.typesafe.config.ConfigFactory
-import org.scalatest.{ Matchers, WordSpec }
 
 class PreviewServerSettingsSpec extends AkkaSpec {
 

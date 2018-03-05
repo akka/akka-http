@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -14,6 +14,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
 import scala.util.{ Success, Try }
 import akka.actor.ActorSystem
+import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util._
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.HttpEntity._
@@ -29,6 +30,8 @@ import akka.stream._
 import akka.testkit._
 import akka.util.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
+import com.typesafe.sslconfig.akka.AkkaSSLConfig
+import com.typesafe.sslconfig.ssl.{ SSLConfigSettings, SSLLooseConfig }
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.concurrent.Eventually.eventually
@@ -36,7 +39,7 @@ import org.scalatest.concurrent.Eventually.eventually
 class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
   val testConf: Config = ConfigFactory.parseString("""
     akka.loggers = ["akka.testkit.TestEventListener"]
-    akka.loglevel = ERROR
+    akka.loglevel = WARNING
     akka.stdout-loglevel = ERROR
     windows-connection-abort-workaround-enabled = auto
     akka.log-dead-letters = OFF
@@ -59,7 +62,18 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val probe = TestSubscriber.manualProbe[Http.IncomingConnection]()
       val binding = Http().bind(hostname, port).toMat(Sink.fromSubscriber(probe))(Keep.left).run()
       val sub = probe.expectSubscription() // if we get it we are bound
+      Await.result(binding, 1.second.dilated)
+      sub.cancel()
+    }
+
+    "properly bind a server with a default port set via settings" in {
+      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
+      val probe = TestSubscriber.manualProbe[Http.IncomingConnection]()
+      val settings = ServerSettings(system).withDefaultHttpPort(port)
+      val binding = Http().bind(hostname, settings = settings).toMat(Sink.fromSubscriber(probe))(Keep.left).run()
+      val sub = probe.expectSubscription() // if we get it we are bound
       val address = Await.result(binding, 1.second.dilated).localAddress
+      address.getPort shouldEqual port
       sub.cancel()
     }
 
@@ -205,9 +219,9 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     }
 
     "timeouts" should {
-      def bindServer(hostname: String, port: Int, serverTimeout: FiniteDuration): (Promise[Long], ServerBinding) = {
+      def bindServer(hostname: String, port: Int, serverIdleTimeout: FiniteDuration): (Promise[Long], ServerBinding) = {
         val s = ServerSettings(system)
-        val settings = s.withTimeouts(s.timeouts.withIdleTimeout(serverTimeout))
+        val settings = s.withTimeouts(s.timeouts.withIdleTimeout(serverIdleTimeout))
 
         val receivedRequest = Promise[Long]()
 
@@ -223,9 +237,9 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
       "support server timeouts" should {
         "close connection with idle client after idleTimeout" in {
-          val serverTimeout = 300.millis
+          val serverIdleTimeout = 300.millis
           val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-          val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverTimeout)
+          val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverIdleTimeout)
 
           try {
             def runIdleRequest(uri: Uri): Future[HttpResponse] = {
@@ -245,30 +259,29 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
               Await.result(clientsResponseFuture, 2.second.dilated)
             }
 
-            (System.nanoTime() - serverReceivedRequestAtNanos).millis should be >= serverTimeout
+            (System.nanoTime() - serverReceivedRequestAtNanos).millis should be >= serverIdleTimeout
           } finally Await.result(b1.unbind(), 1.second.dilated)
         }
       }
 
       "support client timeouts" should {
         "close connection with idle server after idleTimeout (using connection level client API)" in {
-          val serverTimeout = 10.seconds.dilated
+          val serverIdleTimeout = 10.seconds.dilated
 
-          val cs = ClientConnectionSettings(system)
-          val clientTimeout = 345.millis.dilated
-          val clientSettings = cs.withIdleTimeout(clientTimeout)
+          val clientIdleTimeout = 345.millis.dilated
+          val clientSettings = ClientConnectionSettings(system).withIdleTimeout(clientIdleTimeout)
 
-          val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-          val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverTimeout)
+          val (receivedRequest: Promise[Long], binding: ServerBinding) = bindServer("localhost", port = 0, serverIdleTimeout)
 
           try {
             def runRequest(uri: Uri): Future[HttpResponse] = {
               val itNeverSends = Chunked.fromData(ContentTypes.`text/plain(UTF-8)`, Source.maybe[ByteString])
-              Http().outgoingConnection(hostname, port, settings = clientSettings)
+              Http().outgoingConnection(binding.localAddress.getHostName, binding.localAddress.getPort, settings = clientSettings)
                 .runWith(Source.single(HttpRequest(POST, uri, entity = itNeverSends)), Sink.head)
                 ._2
             }
 
+            val clientSentRequestAtNanos = System.nanoTime()
             val clientsResponseFuture = runRequest("/")
 
             // await for the server to get the request
@@ -278,10 +291,10 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
             intercept[TimeoutException] {
               Await.result(clientsResponseFuture, 2.second.dilated)
             }
-            val actualTimeout = System.nanoTime() - serverReceivedRequestAtNanos
-            actualTimeout.nanos should be >= clientTimeout
-            actualTimeout.nanos should be < serverTimeout
-          } finally Await.result(b1.unbind(), 1.second.dilated)
+            val clientSawTimeoutAtNanos = System.nanoTime()
+            (clientSawTimeoutAtNanos - clientSentRequestAtNanos).nanos should be >= clientIdleTimeout
+            (clientSawTimeoutAtNanos - serverReceivedRequestAtNanos).nanos should be < serverIdleTimeout
+          } finally Await.result(binding.unbind(), 1.second.dilated)
         }
 
         "close connection with idle server after idleTimeout (using pool level client API)" in {
@@ -417,8 +430,10 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         performValidRequest()
         assertCounters(0, 1)
 
-        performFaultyRequest()
-        assertCounters(0, 2)
+        EventFilter.warning(pattern = "Illegal HTTP message start", occurrences = 1) intercept {
+          performFaultyRequest()
+          assertCounters(0, 2)
+        }
 
         performValidRequest()
         assertCounters(0, 3)
@@ -475,7 +490,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         private val HttpRequest(POST, uri, List(Accept(Seq(MediaRanges.`*/*`)), Host(_, _), `User-Agent`(_)),
           Chunked(`chunkedContentType`, chunkStream), HttpProtocols.`HTTP/1.1`) = serverIn.expectNext() mapHeaders (_.filterNot(_.is("timeout-access")))
         uri shouldEqual Uri(s"http://$hostname:$port/chunked")
-        Await.result(chunkStream.limit(5).runWith(Sink.seq), 100.millis.dilated) shouldEqual chunks
+        Await.result(chunkStream.limit(5).runWith(Sink.seq), 1000.millis.dilated) shouldEqual chunks
 
         val serverOutSub = serverOut.expectSubscription()
         serverOutSub.expectRequest()
@@ -485,7 +500,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         clientInSub.request(1)
         val HttpResponse(StatusCodes.PartialContent, List(Age(42), Server(_), Date(_)),
           Chunked(`chunkedContentType`, chunkStream2), HttpProtocols.`HTTP/1.1`) = clientIn.expectNext()
-        Await.result(chunkStream2.limit(1000).runWith(Sink.seq), 100.millis.dilated) shouldEqual chunks
+        Await.result(chunkStream2.limit(1000).runWith(Sink.seq), 1000.millis.dilated) shouldEqual chunks
 
         clientOutSub.sendComplete()
         serverInSub.request(1)
@@ -518,22 +533,150 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val responseSize = 200000
 
       val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-      val request = HttpRequest(uri = s"http://$hostname:$port", headers = headers.Connection("close") :: Nil)
-      val response = HttpResponse(entity = HttpEntity.Strict(ContentTypes.`text/plain(UTF-8)`, ByteString("t" * responseSize)))
+      def request(i: Int) = HttpRequest(uri = s"http://$hostname:$port/$i", headers = headers.Connection("close") :: Nil)
+      def response(req: HttpRequest) = HttpResponse(entity = HttpEntity.Strict(ContentTypes.`text/plain(UTF-8)`, ByteString(req.uri.path.toString.takeRight(1) * responseSize)))
 
       // settings adapting network buffer sizes
       val serverSettings = ServerSettings(system).withSocketOptions(SO.SendBufferSize(serverToClientNetworkBufferSize) :: Nil)
       val clientSettings = ConnectionPoolSettings(system).withConnectionSettings(ClientConnectionSettings(system).withSocketOptions(SO.ReceiveBufferSize(serverToClientNetworkBufferSize) :: Nil))
 
-      val server = Http().bindAndHandleSync(_ ⇒ response, hostname, port, settings = serverSettings)
-      def runOnce() =
-        Http().singleRequest(request, settings = clientSettings).futureValue
-          .entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue
+      val server = Http().bindAndHandleSync(response, hostname, port, settings = serverSettings)
+      def runOnce(i: Int) =
+        Http().singleRequest(request(i), settings = clientSettings).futureValue
+          .entity.dataBytes.runFold(ByteString.empty) { (prev, cur) ⇒
+            val res = prev ++ cur
+            system.log.debug(s"Received ${res.size} of [${res.take(1).utf8String}]")
+            res
+          }.futureValue
           .size shouldBe responseSize
 
       try {
-        (1 to 10).foreach(_ ⇒ runOnce())
+        (1 to 10).foreach(runOnce)
       } finally server.foreach(_.unbind())
+    }
+
+    "complete a request/response over https when request has `Connection: close` set" in Utils.assertAllStagesStopped {
+      // akka/akka-http#1219
+      val serverToClientNetworkBufferSize = 1000
+      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
+      val request = HttpRequest(uri = s"https://$hostname:$port", headers = headers.Connection("close") :: Nil)
+
+      // settings adapting network buffer sizes
+      val serverSettings = ServerSettings(system).withSocketOptions(SO.SendBufferSize(serverToClientNetworkBufferSize) :: Nil)
+      val clientSettings = ConnectionPoolSettings(system).withConnectionSettings(ClientConnectionSettings(system).withSocketOptions(SO.ReceiveBufferSize(serverToClientNetworkBufferSize) :: Nil))
+
+      val serverConnectionContext = ExampleHttpContexts.exampleServerContext
+      // Disable hostname verification as ExampleHttpContexts.exampleClientContext sets hostname as akka.example.org
+      val sslConfigSettings = SSLConfigSettings().withLoose(SSLLooseConfig().withDisableHostnameVerification(true))
+      val sslConfig = AkkaSSLConfig().withSettings(sslConfigSettings)
+      val clientConnectionContext = ConnectionContext.https(ExampleHttpContexts.exampleClientContext.sslContext, Some(sslConfig))
+
+      val entity = Array.fill[Char](999999)('0').mkString + "x"
+      val routes: Flow[HttpRequest, HttpResponse, Any] = Flow[HttpRequest].map { _ ⇒ HttpResponse(entity = entity) }
+      val serverBinding =
+        Http()
+          .bindAndHandle(routes, hostname, port, connectionContext = serverConnectionContext, settings = serverSettings)
+          .futureValue
+
+      EventFilter.warning(pattern = "Hostname verification failed", occurrences = 1) intercept {
+        Http()
+          .singleRequest(request, connectionContext = clientConnectionContext, settings = clientSettings)
+          .futureValue
+          .entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue.utf8String shouldEqual entity
+      }
+
+      serverBinding.unbind()
+    }
+
+    class CloseDelimitedTLSSetup {
+      val source = TestPublisher.probe[ByteString]()
+
+      def handler(req: HttpRequest): HttpResponse =
+        HttpResponse(entity = HttpEntity.CloseDelimited(ContentTypes.`application/octet-stream`, Source.fromPublisher(source)))
+
+      val serverSideTls = Http().sslTlsStage(ExampleHttpContexts.exampleServerContext, akka.stream.Server)
+      val clientSideTls = Http().sslTlsStage(ExampleHttpContexts.exampleClientContext, akka.stream.Client, Some("akka.example.org" → 8080))
+
+      val server: Flow[ByteString, ByteString, Any] =
+        Http().serverLayerImpl()
+          .atop(serverSideTls)
+          .reversed
+          .join(Flow[HttpRequest].map(handler))
+
+      val client =
+        Http().clientLayer(Host("akka.example.org", 8080))
+          .atop(clientSideTls)
+
+      val killSwitch = KillSwitches.shared("kill-transport")
+
+      val pipe: Flow[HttpRequest, HttpResponse, Any] =
+        client
+          .atop(BidiFlow.fromFlows(Flow[ByteString], killSwitch.flow[ByteString])) // kill switch will kill server -> client connection without close_notify
+          .join(server)
+
+      val response =
+        Source.single(HttpRequest())
+          .via(pipe)
+          .runWith(Sink.head)
+          .awaitResult(10.seconds)
+
+      val sinkProbe = ByteStringSinkProbe()
+      response.entity.dataBytes.runWith(sinkProbe.sink)
+
+      source.sendNext(ByteString("abcdef"))
+      sinkProbe.expectUtf8EncodedString("abcdef")
+
+      source.sendNext(ByteString("ghij"))
+      sinkProbe.expectUtf8EncodedString("ghij")
+    }
+
+    "complete a request/response with CloseDelimited entity over TLS" in Utils.assertAllStagesStopped {
+      new CloseDelimitedTLSSetup {
+        source.sendComplete()
+        sinkProbe.expectComplete()
+      }
+    }
+
+    "complete a request/response over https when server closes connection without close_notify" in Utils.assertAllStagesStopped {
+      new CloseDelimitedTLSSetup {
+        killSwitch.shutdown() // simulate FIN in server -> client direction
+        // akka-http is currently lenient wrt TLS truncation which is *not* reported to the user
+        // FIXME: if https://github.com/akka/akka-http/issues/235 is ever fixed, expect an error here
+        sinkProbe.expectComplete()
+      }
+    }
+
+    "properly complete a simple request/response cycle when `modeled-header-parsing = off`" in Utils.assertAllStagesStopped {
+      new TestSetup {
+        override def configOverrides = "akka.http.parsing.modeled-header-parsing = off"
+
+        val (clientOut, clientIn) = openNewClientConnection()
+        val (serverIn, serverOut) = acceptConnection()
+
+        val clientOutSub = clientOut.expectSubscription()
+        clientOutSub.expectRequest()
+        clientOutSub.sendNext(HttpRequest(uri = "/abc"))
+
+        val serverInSub = serverIn.expectSubscription()
+        serverInSub.request(1)
+        serverIn.expectNext().uri shouldEqual Uri(s"http://$hostname:$port/abc")
+
+        val serverOutSub = serverOut.expectSubscription()
+        serverOutSub.expectRequest()
+        serverOutSub.sendNext(HttpResponse(entity = "yeah"))
+
+        val clientInSub = clientIn.expectSubscription()
+        clientInSub.request(1)
+        val response = clientIn.expectNext()
+        toStrict(response.entity) shouldEqual HttpEntity("yeah")
+
+        clientOutSub.sendComplete()
+        serverIn.expectComplete()
+        serverOutSub.expectCancellation()
+        clientIn.expectComplete()
+
+        binding.foreach(_.unbind())
+      }
     }
 
     "be able to deal with eager closing of the request stream on the client side" in Utils.assertAllStagesStopped {
@@ -565,6 +708,19 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
         connSourceSub.cancel()
       }
+    }
+
+    "produce a useful error message when connecting to a HTTP endpoint over HTTPS" in Utils.assertAllStagesStopped {
+      val dummyFlow = Flow.fromFunction((_: HttpRequest) ⇒ ???)
+
+      val binding = Http().bindAndHandle(dummyFlow, "127.0.0.1", port = 0).futureValue
+      val uri = "https://" + binding.localAddress.getHostString + ":" + binding.localAddress.getPort
+
+      EventFilter.warning(pattern = "Perhaps this was an HTTPS request sent to an HTTP endpoint", occurrences = 6) intercept {
+        Await.ready(Http().singleRequest(HttpRequest(uri = uri)), 30.seconds)
+      }
+
+      Await.result(binding.unbind(), 10.seconds)
     }
   }
 

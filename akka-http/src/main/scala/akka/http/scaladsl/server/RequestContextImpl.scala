@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -7,7 +7,7 @@ package akka.http.scaladsl.server
 import akka.annotation.InternalApi
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
-import akka.stream.{ ActorMaterializer, ActorMaterializerHelper, Materializer }
+import akka.stream.{ ActorMaterializerHelper, Materializer }
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
 import akka.http.scaladsl.marshalling.{ Marshal, ToResponseMarshallable }

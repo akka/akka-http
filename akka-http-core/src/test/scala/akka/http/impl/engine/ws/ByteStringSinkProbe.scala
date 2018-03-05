@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -35,6 +35,8 @@ private[http] trait ByteStringSinkProbe {
   def ensureSubscription(): Unit
   def request(n: Long): Unit
   def cancel(): Unit
+
+  def within[T](max: FiniteDuration)(f: ⇒ T): T
 }
 
 /** INTERNAL API */
@@ -55,7 +57,7 @@ private[http] object ByteStringSinkProbe {
       }
       def expectNoBytes(timeout: FiniteDuration): Unit = {
         ensureRequested()
-        probe.expectNoMsg(timeout)
+        probe.expectNoMessage(timeout)
       }
 
       var inBuffer = ByteString.empty
@@ -87,5 +89,7 @@ private[http] object ByteStringSinkProbe {
       def ensureSubscription(): Unit = probe.ensureSubscription()
       def request(n: Long): Unit = probe.request(n)
       def cancel(): Unit = probe.cancel()
+
+      def within[T](max: FiniteDuration)(f: ⇒ T): T = probe.within(max)(f)
     }
 }

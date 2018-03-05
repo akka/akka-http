@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.common
@@ -73,6 +73,13 @@ object StrictForm {
         new FieldUnmarshaller[T] {
           def unmarshalString(value: String)(implicit ec: ExecutionContext, mat: Materializer) = fsu(value)
           def unmarshalPart(value: Multipart.FormData.BodyPart.Strict)(implicit ec: ExecutionContext, mat: Materializer) = feu(value.entity)
+        }
+
+      implicit val stringFieldUnmarshaller: FieldUnmarshaller[String] =
+        new FieldUnmarshaller[String] {
+          def unmarshalString(value: String)(implicit ec: ExecutionContext, mat: Materializer): Future[String] = FastFuture.successful(value)
+          def unmarshalPart(value: Multipart.FormData.BodyPart.Strict)(implicit ec: ExecutionContext, mat: Materializer): Future[String] =
+            Unmarshaller.stringUnmarshaller(value.entity)
         }
     }
     sealed abstract class LowPrioImplicits {

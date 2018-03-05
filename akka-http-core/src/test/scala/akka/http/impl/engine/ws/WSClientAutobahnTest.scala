@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
 
 import akka.Done
 
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
 import spray.json._
 import akka.actor.ActorSystem

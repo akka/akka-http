@@ -1,11 +1,10 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl
 
 import docs.CompileOnlySpec
-import org.scalatest.{ Matchers, WordSpec }
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.duration._
 import akka.testkit.AkkaSpec

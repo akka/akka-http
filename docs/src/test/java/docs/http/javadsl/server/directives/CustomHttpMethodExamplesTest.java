@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.http.javadsl.server.directives;
 
 import akka.NotUsed;
@@ -43,7 +44,7 @@ public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
 
     // define custom method type:
     HttpMethod BOLT =
-      HttpMethods.createCustom("BOLT", false, true, Expected);
+      HttpMethods.custom("BOLT", false, true, Expected);
 
     // add custom method to parser settings:
     final ParserSettings parserSettings =

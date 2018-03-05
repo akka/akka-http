@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server
@@ -15,7 +15,6 @@ import scala.collection.JavaConverters._
 import akka.http.javadsl.model.RemoteAddress
 import akka.http.javadsl.model.headers.Language
 import akka.http.impl.util.JavaMapping.Implicits._
-import RoutingJavaMapping._
 
 import akka.http.scaladsl.server.{ Directives ⇒ D }
 

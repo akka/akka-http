@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl
@@ -436,7 +436,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
               .as(OrderItem) { orderItem =>
                 // ... route using case class instance created from
                 // required and optional query parameters
-                complete("") // hide
+                complete("") // #hide
               }
           }
         }
@@ -517,6 +517,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
     import akka.stream.ActorMaterializer
     import akka.util.Timeout
     import spray.json.DefaultJsonProtocol._
+    import scala.concurrent.Future
     import scala.concurrent.duration._
     import scala.io.StdIn
 

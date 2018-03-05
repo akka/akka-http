@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.javadsl.server.directives
 
 import java.util.concurrent.CompletionStage
@@ -10,7 +11,6 @@ import akka.http.javadsl.marshalling.Marshaller
 import akka.http.scaladsl.server._
 import akka.japi.Util
 
-import scala.collection.immutable.Seq
 import scala.annotation.varargs
 import scala.collection.JavaConverters._
 import akka.http.impl.model.JavaUri

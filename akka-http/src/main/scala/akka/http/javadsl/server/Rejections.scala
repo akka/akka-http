@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.javadsl.server
 
 import akka.http.impl.util.JavaMapping
@@ -312,9 +313,7 @@ trait RejectionError extends RuntimeException {
 }
 
 object Rejections {
-  import akka.http.scaladsl.{ model ⇒ m }
   import akka.http.scaladsl.{ server ⇒ s }
-  import scala.language.implicitConversions
   import JavaMapping.Implicits._
   import RoutingJavaMapping._
 

@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.javadsl.server.directives
 
 import java.util.Optional
@@ -12,10 +13,9 @@ import scala.compat.java8.OptionConverters
 import scala.compat.java8.OptionConverters._
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.model.headers.{ HttpOriginRange, HttpOriginRanges }
-import akka.http.javadsl.model.{ HttpHeader, StatusCodes }
-import akka.http.javadsl.server.{ InvalidOriginRejection, MissingHeaderRejection, Route }
-import akka.http.scaladsl.model.headers.HttpOriginRange.Default
-import akka.http.scaladsl.model.headers.{ ModeledCustomHeader, ModeledCustomHeaderCompanion, Origin }
+import akka.http.javadsl.model.HttpHeader
+import akka.http.javadsl.server.Route
+import akka.http.scaladsl.model.headers.{ ModeledCustomHeader, ModeledCustomHeaderCompanion }
 import akka.http.scaladsl.server.directives.{ HeaderMagnet, HeaderDirectives ⇒ D }
 
 import scala.reflect.ClassTag
@@ -36,7 +36,7 @@ abstract class HeaderDirectives extends FutureDirectives {
   // TODO When breaking binary compatibility this should become HttpOriginRange.Default, see https://github.com/akka/akka/pull/20776/files#r70049845
   def checkSameOrigin(allowed: HttpOriginRange, inner: jf.Supplier[Route]): Route =
     allowed match {
-      case HttpOriginRanges.ALL | HttpOriginRange.ALL | akka.http.scaladsl.model.headers.HttpOriginRange.`*` ⇒ pass(inner)
+      case HttpOriginRanges.ALL | akka.http.scaladsl.model.headers.HttpOriginRange.`*` ⇒ pass(inner)
       case _ ⇒ RouteAdapter {
         // safe, we know it's not the `*` header
         val default = allowed.asInstanceOf[akka.http.scaladsl.model.headers.HttpOriginRange.Default]

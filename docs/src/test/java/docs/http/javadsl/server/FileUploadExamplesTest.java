@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.http.javadsl.server;
 
 import akka.Done;
@@ -76,7 +77,7 @@ public class FileUploadExamplesTest extends JUnitRouteTest {
           ));
 
         // when processing have finished create a response for the user
-        return onSuccess(() -> allParts, x -> complete("ok!"));
+        return onSuccess(allParts, x -> complete("ok!"));
       })
     );
     //#simple-upload

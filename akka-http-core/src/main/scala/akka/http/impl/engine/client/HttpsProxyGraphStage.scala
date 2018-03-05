@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -9,6 +9,7 @@ import akka.annotation.InternalApi
 import akka.http.impl.engine.parsing.HttpMessageParser.StateResult
 import akka.http.impl.engine.parsing.ParserOutput.{ NeedMoreData, RemainingBytes, ResponseStart }
 import akka.http.impl.engine.parsing.{ HttpHeaderParser, HttpResponseParser, ParserOutput }
+import akka.http.scaladsl.model.headers.{ HttpCredentials, `Proxy-Authorization` }
 import akka.http.scaladsl.model.{ HttpMethods, StatusCodes }
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.scaladsl.BidiFlow
@@ -29,13 +30,16 @@ private[http] object HttpsProxyGraphStage {
   // State after Proxy responded  back
   case object Connected extends State
 
-  def apply(targetHostName: String, targetPort: Int, settings: ClientConnectionSettings): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
-    BidiFlow.fromGraph(new HttpsProxyGraphStage(targetHostName, targetPort, settings))
+  def apply(targetHostName: String, targetPort: Int, settings: ClientConnectionSettings, proxyAuth: Option[HttpCredentials]): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
+    BidiFlow.fromGraph(new HttpsProxyGraphStage(targetHostName, targetPort, settings, proxyAuth))
 }
 
 /** INTERNAL API */
 @InternalApi
-private final class HttpsProxyGraphStage(targetHostName: String, targetPort: Int, settings: ClientConnectionSettings)
+private final class HttpsProxyGraphStage(
+  targetHostName: String, targetPort: Int,
+  settings:           ClientConnectionSettings,
+  proxyAuthorization: Option[HttpCredentials])
   extends GraphStage[BidiShape[ByteString, ByteString, ByteString, ByteString]] {
 
   import HttpsProxyGraphStage._
@@ -48,7 +52,19 @@ private final class HttpsProxyGraphStage(targetHostName: String, targetPort: Int
 
   override def shape: BidiShape[ByteString, ByteString, ByteString, ByteString] = BidiShape.apply(sslIn, bytesOut, bytesIn, sslOut)
 
-  private val connectMsg = ByteString(s"CONNECT $targetHostName:$targetPort HTTP/1.1\r\nHost: $targetHostName\r\n\r\n")
+  private val connectMsg = {
+    val renderedProxyAuth = proxyAuthorization.map { httpCredentials ⇒
+      ByteString(s"${`Proxy-Authorization`(httpCredentials)}\r\n")
+    } getOrElse ByteString.empty
+
+    // format: OFF
+    ByteString(
+      s"CONNECT $targetHostName:$targetPort HTTP/1.1\r\n" +
+      s"Host: $targetHostName\r\n") ++
+      renderedProxyAuth ++ 
+      ByteString("\r\n")
+    // format: ON
+  }
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with StageLogging {
     private var state: State = Starting
@@ -118,13 +134,13 @@ private final class HttpsProxyGraphStage(targetHostName: String, targetPort: Int
                 }
                 parser.onUpstreamFinish()
 
-                log.debug(s"HTTPS proxy connection to {}:{} established. Now forwarding data.", targetHostName, targetPort)
+                log.debug(s"HTTP(S) proxy connection to {}:{} established. Now forwarding data.", targetHostName, targetPort)
 
                 state = Connected
                 if (isAvailable(bytesOut)) pull(sslIn)
                 if (isAvailable(sslOut)) pull(bytesIn)
               case ResponseStart(statusCode, _, _, _, _) ⇒
-                failStage(new ProxyConnectionFailedException(s"The HTTPS proxy rejected to open a connection to $targetHostName:$targetPort with status code: $statusCode"))
+                failStage(new ProxyConnectionFailedException(s"The HTTP(S) proxy rejected to open a connection to $targetHostName:$targetPort with status code: $statusCode"))
               case other ⇒
                 throw new IllegalStateException(s"unexpected element of type $other")
             }
@@ -142,7 +158,7 @@ private final class HttpsProxyGraphStage(targetHostName: String, targetPort: Int
       override def onPull() = {
         state match {
           case Starting ⇒
-            log.debug(s"TCP connection to HTTPS proxy connection established. Sending CONNECT {}:{} to HTTPS proxy", targetHostName, targetPort)
+            log.debug(s"TCP connection to HTTP(S) proxy connection established. Sending CONNECT {}:{} to HTTP(S) proxy", targetHostName, targetPort)
             push(bytesOut, connectMsg)
             state = Connecting
           case Connecting ⇒

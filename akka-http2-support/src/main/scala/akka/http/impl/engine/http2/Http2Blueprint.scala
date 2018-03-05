@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -9,11 +9,10 @@ import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.framing.{ Http2FrameParsing, Http2FrameRendering }
 import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompression }
 import akka.http.impl.engine.parsing.HttpHeaderParser
-import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
-import akka.http.scaladsl.settings.{ ParserSettings, ServerSettings }
+import akka.http.scaladsl.settings.{ Http2ServerSettings, ParserSettings, ServerSettings }
 import akka.stream.scaladsl.{ BidiFlow, Flow, Source }
 import akka.util.ByteString
 
@@ -22,18 +21,28 @@ import scala.concurrent.{ ExecutionContext, Future }
 /**
  * Represents one direction of an Http2 substream.
  */
-private[http2] final case class Http2SubStream(
-  initialHeaders: ParsedHeadersFrame,
-  data:           Source[ByteString, Any]) {
+private[http2] sealed trait Http2SubStream {
+  val initialHeaders: ParsedHeadersFrame
+  val data: Source[Any, Any]
   def streamId: Int = initialHeaders.streamId
 }
+
+private[http2] final case class ByteHttp2SubStream(
+  initialHeaders: ParsedHeadersFrame,
+  data:           Source[ByteString, Any]
+) extends Http2SubStream
+
+private[http2] final case class ChunkedHttp2SubStream(
+  initialHeaders: ParsedHeadersFrame,
+  data:           Source[HttpEntity.ChunkStreamPart, Any]
+) extends Http2SubStream
 
 object Http2Blueprint {
   
   // format: OFF
   def serverStack(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
     httpLayer(settings, log) atop
-      demux() atop
+      demux(settings.http2Settings) atop
       // FrameLogger.bidi atop // enable for debugging
       hpackCoding() atop
       // LogByteStringTools.logToStringBidi("framing") atop // enable for debugging
@@ -63,8 +72,8 @@ object Http2Blueprint {
    * Creates substreams for every stream and manages stream state machines
    * and handles priorization (TODO: later)
    */
-  def demux(): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
-    BidiFlow.fromGraph(new Http2ServerDemux)
+  def demux(settings: Http2ServerSettings): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
+    BidiFlow.fromGraph(new Http2ServerDemux(settings))
 
   /**
    * Translation between substream frames and Http messages (both directions)

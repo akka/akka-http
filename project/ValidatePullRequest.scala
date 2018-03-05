@@ -1,19 +1,21 @@
-/**
-  * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
-  */
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka
 
 import com.typesafe.tools.mima.plugin.MimaKeys.mimaReportBinaryIssues
 import com.typesafe.tools.mima.plugin.MimaPlugin
 import net.virtualvoid.sbt.graph.backend.SbtUpdateReport
 import net.virtualvoid.sbt.graph.ModuleGraph
-import org.kohsuke.github.{GHIssueComment, GitHubBuilder}
-import sbtunidoc.Plugin.UnidocKeys.unidoc
+import org.kohsuke.github.{ GHIssueComment, GitHubBuilder }
+import sbtunidoc.BaseUnidocPlugin.autoImport.unidoc
 import sbt.Keys._
 import sbt._
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
+import scala.sys.process._
 import scala.util.matching.Regex
 
 object ValidatePullRequest extends AutoPlugin {
@@ -83,6 +85,9 @@ object ValidatePullRequest extends AutoPlugin {
   val validatePullRequest = taskKey[Unit]("Validate pull request")
   val additionalTasks = taskKey[Seq[TaskKey[_]]]("Additional tasks for pull request validation")
 
+  // The set of (top-level) files or directories to watch for build changes.
+  val BuildFilesAndDirectories = Set("project", "build.sbt")
+
   def changedDirectoryIsDependency(changedDirs: Set[String], name: String, graphsToTest: Seq[(Configuration, ModuleGraph)])(log: Logger): Boolean = {
     val dirsOrExperimental = changedDirs.flatMap(dir => Set(dir, s"$dir-experimental"))
     graphsToTest exists { case (ivyScope, deps) =>
@@ -124,9 +129,9 @@ object ValidatePullRequest extends AutoPlugin {
     buildAllKeyword in Global in ValidatePR := """PLS BUILD ALL""".r,
 
     gitHubEnforcedBuildAll in Global in ValidatePR := {
+      val log = streams.value.log
+      val buildAllMagicPhrase = (buildAllKeyword in ValidatePR).value
       sys.env.get(PullIdEnvVarName).map(_.toInt) flatMap { prId =>
-        val log = streams.value.log
-        val buildAllMagicPhrase = (buildAllKeyword in ValidatePR).value
         log.info("Checking GitHub comments for PR validation options...")
 
         try {
@@ -159,8 +164,7 @@ object ValidatePullRequest extends AutoPlugin {
           .filter(l =>
             l.startsWith("akka-") ||
               l.startsWith("docs") ||
-              l.startsWith("project") ||
-              (l == "build.sbt")
+              BuildFilesAndDirectories.exists(l startsWith)
           )
           .map(l ⇒ l.takeWhile(_ != '/'))
           .toSet
@@ -172,7 +176,7 @@ object ValidatePullRequest extends AutoPlugin {
           val dirtyDirectories = statusOutput
             .map(l ⇒ l.trim.dropWhile(_ != ' ').drop(1))
             .map(_.takeWhile(_ != '/'))
-            .filter(dir => dir.startsWith("akka-") || dir.startsWith("docs") || dir == "project")
+            .filter(dir => dir.startsWith("akka-") || dir.startsWith("docs") || BuildFilesAndDirectories.contains(dir))
             .toSet
           log.info("Detected uncomitted changes in directories (including in dependency analysis): " + dirtyDirectories.mkString("[", ",", "]"))
           dirtyDirectories
@@ -198,9 +202,9 @@ object ValidatePullRequest extends AutoPlugin {
       val thisProjectId = CrossVersion(scalaVersion.value, scalaBinaryVersion.value)(projectID.value)
 
       def graphFor(updateReport: UpdateReport, config: Configuration): (Configuration, ModuleGraph) =
-        config -> SbtUpdateReport.fromConfigurationReport(updateReport.configuration(config.name).get, thisProjectId)
+        config -> SbtUpdateReport.fromConfigurationReport(updateReport.configuration(config).get, thisProjectId)
 
-      def isDependency: Boolean =
+      def isDependency: Boolean = {
         changedDirectoryIsDependency(
           changedDirs,
           name.value,
@@ -210,10 +214,11 @@ object ValidatePullRequest extends AutoPlugin {
             graphFor((update in Runtime).value, Runtime),
             graphFor((update in Provided).value, Provided),
             graphFor((update in Optional).value, Optional)))(log)
+      }
 
       if (githubCommandEnforcedBuildAll.isDefined)
         githubCommandEnforcedBuildAll.get
-      else if (changedDirs contains "project")
+      else if (changedDirs exists (BuildFilesAndDirectories contains))
         BuildProjectChangedQuick
       else if (isDependency)
         BuildQuick

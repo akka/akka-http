@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -53,7 +53,7 @@ final class HttpsConnectionContext(
   val sslParameters:       Option[SSLParameters]         = None)
   extends akka.http.javadsl.HttpsConnectionContext with ConnectionContext {
 
-  // for binary-compatibility, since 2.4.7  
+  // for binary-compatibility, since 2.4.7
   def this(
     sslContext:          SSLContext,
     enabledCipherSuites: Option[immutable.Seq[String]],

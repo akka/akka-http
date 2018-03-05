@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -122,6 +122,8 @@ object ContentTypes {
   val `text/html(UTF-8)` = MediaTypes.`text/html` withCharset HttpCharsets.`UTF-8`
   val `text/xml(UTF-8)` = MediaTypes.`text/xml` withCharset HttpCharsets.`UTF-8`
   val `text/csv(UTF-8)` = MediaTypes.`text/csv` withCharset HttpCharsets.`UTF-8`
+
+  val `application/grpc+proto` = ContentType(MediaTypes.`application/grpc+proto`)
 
   // used for explicitly suppressing the rendering of Content-Type headers on requests and responses
   val NoContentType = ContentType(MediaTypes.NoMediaType)

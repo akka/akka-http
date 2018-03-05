@@ -1,19 +1,16 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.scaladsl.server.directives
 
 import akka.NotUsed
-import akka.http.scaladsl.common
 import akka.http.scaladsl.common.EntityStreamingSupport
-import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.{ Unmarshaller, _ }
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.scaladsl.{ Flow, Keep, Source }
 import akka.util.ByteString
-
-import scala.language.implicitConversions
 
 /**
  * Allows the [[MarshallingDirectives.entity]] directive to extract a [[akka.stream.scaladsl.Source]] of elements.

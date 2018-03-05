@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -100,10 +100,12 @@ trait HeaderDirectives {
    *
    * @group header
    */
+  //#optionalHeaderValue
   def optionalHeaderValue[T](f: HttpHeader ⇒ Option[T]): Directive1[Option[T]] =
     headerValue(f).map(Some(_): Option[T]).recoverPF {
       case Nil ⇒ provide(None)
     }
+  //#optionalHeaderValue
 
   /**
    * Extracts an optional HTTP header value using the given partial function.

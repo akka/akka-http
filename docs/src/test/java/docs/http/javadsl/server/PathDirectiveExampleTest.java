@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server;
@@ -7,7 +7,6 @@ package docs.http.javadsl.server;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.PathMatchers;
 import akka.http.javadsl.testkit.JUnitRouteTest;
-
 import org.junit.Test;
 
 public class PathDirectiveExampleTest extends JUnitRouteTest {

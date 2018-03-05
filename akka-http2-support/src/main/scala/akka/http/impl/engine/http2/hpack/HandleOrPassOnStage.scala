@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2.hpack
 
 import akka.annotation.InternalApi
-import akka.stream.{ FlowShape, Inlet, Outlet, Shape }
+import akka.stream.{ FlowShape, Inlet, Outlet }
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
 
 /**

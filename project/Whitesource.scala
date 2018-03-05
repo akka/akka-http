@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 import sbt._
 import sbt.Keys._
 import sbtwhitesource.WhiteSourcePlugin.autoImport._
@@ -18,8 +22,11 @@ object Whitesource extends AutoPlugin {
         if (isSnapshot.value)
           if (gitCurrentBranch.value == "master") "master"
           else "adhoc"
-        else "stable"
-      )
-    }
+        else CrossVersion.partialVersion((version in LocalRootProject).value)
+          .map { case (major,minor) => s"$major.$minor-stable" }
+          .getOrElse("adhoc"))
+    },
+    whitesourceForceCheckAllDependencies := true,
+    whitesourceFailOnError := true,
   )
 }

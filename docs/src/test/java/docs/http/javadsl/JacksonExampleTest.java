@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl;
@@ -69,7 +69,7 @@ public class JacksonExampleTest extends AllDirectives {
         pathPrefix("item", () ->
           path(longSegment(), (Long id) -> {
             final CompletionStage<Optional<Item>> futureMaybeItem = fetchItem(id);
-            return onSuccess(() -> futureMaybeItem, maybeItem ->
+            return onSuccess(futureMaybeItem, maybeItem ->
               maybeItem.map(item -> completeOK(item, Jackson.marshaller()))
                 .orElseGet(() -> complete(StatusCodes.NOT_FOUND, "Not Found"))
             );
@@ -78,7 +78,7 @@ public class JacksonExampleTest extends AllDirectives {
         path("create-order", () ->
           entity(Jackson.unmarshaller(Order.class), order -> {
             CompletionStage<Done> futureSaved = saveOrder(order);
-            return onSuccess(() -> futureSaved, done ->
+            return onSuccess(futureSaved, done ->
               complete("order created")
             );
           })))

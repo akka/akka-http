@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -243,6 +243,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
           case ';' if cursor > offset ⇒ parseChunkExtensions(size.toInt, cursor + 1)()
           case '\r' if cursor > offset && byteChar(input, cursor + 1) == '\n' ⇒ parseChunkBody(size.toInt, "", cursor + 2)
           case '\n' if cursor > offset ⇒ parseChunkBody(size.toInt, "", cursor + 1)
+          case c if CharacterClasses.WSP(c) ⇒ parseSize(cursor + 1, size) // illegal according to the spec but can happen, see issue #1812
           case c ⇒ failEntityStream(s"Illegal character '${escape(c)}' in chunk start")
         }
       } else failEntityStream(s"HTTP chunk size exceeds the configured limit of ${settings.maxChunkSize} bytes")

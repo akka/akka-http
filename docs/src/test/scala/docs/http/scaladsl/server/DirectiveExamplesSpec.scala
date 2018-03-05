@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server
@@ -25,12 +25,12 @@ class DirectiveExamplesSpec extends RoutingSpec {
           }
         }
       }
-    verify(route) // hide
+    verify(route) // #hide
     //#example-1
   }
 
   "example-2" in {
-    //#example-2
+    //#getOrPut
     def innerRoute(id: Int): Route =
       get {
         complete {
@@ -44,24 +44,24 @@ class DirectiveExamplesSpec extends RoutingSpec {
       }
 
     val route: Route = path("order" / IntNumber) { id => innerRoute(id) }
-    verify(route) // hide
-    //#example-2
+    verify(route) // #hide
+    //#getOrPut
   }
 
   "example-3" in {
-    //#example-3
+    //#getOrPutUsingPipe
     val route =
       path("order" / IntNumber) { id =>
         (get | put) { ctx =>
           ctx.complete(s"Received ${ctx.request.method.name} request for order $id")
         }
       }
-    verify(route) // hide
-    //#example-3
+    verify(route) // #hide
+    //#getOrPutUsingPipe
   }
 
   "example-4" in {
-    //#example-4
+    //#getOrPutUsingPipeAndExtractMethod
     val route =
       path("order" / IntNumber) { id =>
         (get | put) {
@@ -70,8 +70,8 @@ class DirectiveExamplesSpec extends RoutingSpec {
           }
         }
       }
-    verify(route) // hide
-    //#example-4
+    verify(route) // #hide
+    //#getOrPutUsingPipeAndExtractMethod
   }
 
   "example-5" in {
@@ -85,7 +85,7 @@ class DirectiveExamplesSpec extends RoutingSpec {
           }
         }
       }
-    verify(route) // hide
+    verify(route) // #hide
     //#example-5
   }
 
@@ -96,7 +96,7 @@ class DirectiveExamplesSpec extends RoutingSpec {
       (path("order" / IntNumber) & getOrPut & extractMethod) { (id, m) =>
         complete(s"Received ${m.name} request for order $id")
       }
-    verify(route) // hide
+    verify(route) // #hide
     //#example-6
   }
 
@@ -108,7 +108,7 @@ class DirectiveExamplesSpec extends RoutingSpec {
       orderGetOrPutWithMethod { (id, m) =>
         complete(s"Received ${m.name} request for order $id")
       }
-    verify(route) // hide
+    verify(route) // #hide
     //#example-7
   }
 
@@ -127,7 +127,7 @@ class DirectiveExamplesSpec extends RoutingSpec {
       })
 
     val route: Route = path("order" / IntNumber) { id => innerRoute(id) }
-    verify(route) // hide
+    verify(route) // #hide
     //#example-8
   }
 

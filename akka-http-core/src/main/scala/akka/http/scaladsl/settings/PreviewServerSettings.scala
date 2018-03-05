@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.scaladsl.settings
 
 import akka.annotation.{ ApiMayChange, DoNotInherit }
@@ -20,7 +21,7 @@ abstract class PreviewServerSettings private[akka] () extends akka.http.javadsl.
 
   override def enableHttp2: Boolean
 
-  // -- 
+  // --
 
   // override for more specific return type
   override def withEnableHttp2(newValue: Boolean): PreviewServerSettings = self.copy(enableHttp2 = newValue)

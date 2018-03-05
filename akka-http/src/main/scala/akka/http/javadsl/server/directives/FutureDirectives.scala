@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.javadsl.server.directives
 
 import java.util.concurrent.CompletionException
@@ -70,6 +71,20 @@ abstract class FutureDirectives extends FormFieldDirectives {
    */
   def onSuccess[T](f: Supplier[CompletionStage[T]], inner: JFunction[T, Route]) = RouteAdapter {
     D.onSuccess(f.get.toScala.recover(unwrapCompletionException)) { value ⇒
+      inner(value).delegate
+    }
+  }
+
+  /**
+   * "Unwraps" a `CompletionStage<T>` and runs the inner route after stage
+   * completion with the stage's value as an extraction of type `T`.
+   * If the stage fails its failure Throwable is bubbled up to the nearest
+   * ExceptionHandler.
+   *
+   * @group future
+   */
+  def onSuccess[T](cs: CompletionStage[T], inner: JFunction[T, Route]) = RouteAdapter {
+    D.onSuccess(cs.toScala.recover(unwrapCompletionException)) { value ⇒
       inner(value).delegate
     }
   }

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.unmarshalling
@@ -7,8 +7,6 @@ package akka.http.scaladsl.unmarshalling
 import akka.util.ByteString
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.model._
-
-import scala.concurrent.Future
 
 trait PredefinedFromEntityUnmarshallers extends MultipartUnmarshallers {
 

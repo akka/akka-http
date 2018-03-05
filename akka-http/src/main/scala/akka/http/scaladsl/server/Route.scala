@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
 
 import akka.NotUsed
 import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
-import akka.stream.{ ActorMaterializer, ActorMaterializerHelper, Materializer }
+import akka.stream.{ ActorMaterializerHelper, Materializer }
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import akka.stream.scaladsl.Flow

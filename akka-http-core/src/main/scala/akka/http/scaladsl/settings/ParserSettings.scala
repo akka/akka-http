@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.scaladsl.settings
 
 import java.util
@@ -42,6 +43,7 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   def customMethods: String ⇒ Option[HttpMethod]
   def customStatusCodes: Int ⇒ Option[StatusCode]
   def customMediaTypes: MediaTypes.FindCustom
+  def modeledHeaderParsing: Boolean
 
   /* Java APIs */
   override def getCookieParsingMode: js.ParserSettings.CookieParsingMode = cookieParsingMode
@@ -71,8 +73,7 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
     override def apply(mainType: String, subType: String): Optional[model.MediaType] =
       OptionConverters.toJava(customMediaTypes(mainType, subType))
   }
-
-  // ---
+  def getModeledHeaderParsing: Boolean = modeledHeaderParsing
 
   // override for more specific return type
   override def withMaxUriLength(newValue: Int): ParserSettings = self.copy(maxUriLength = newValue)
@@ -86,6 +87,7 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   override def withMaxChunkSize(newValue: Int): ParserSettings = self.copy(maxChunkSize = newValue)
   override def withIllegalHeaderWarnings(newValue: Boolean): ParserSettings = self.copy(illegalHeaderWarnings = newValue)
   override def withIncludeTlsSessionInfoHeader(newValue: Boolean): ParserSettings = self.copy(includeTlsSessionInfoHeader = newValue)
+  override def withModeledHeaderParsing(newValue: Boolean): ParserSettings = self.copy(modeledHeaderParsing = newValue)
 
   // overloads for idiomatic Scala use
   def withUriParsingMode(newValue: Uri.ParsingMode): ParserSettings = self.copy(uriParsingMode = newValue)

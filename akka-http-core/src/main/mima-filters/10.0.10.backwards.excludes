@@ -1,0 +1,17 @@
+# Don't monitor changes to internal API
+ProblemFilters.exclude[Problem]("akka.http.impl.*")
+
+# Adds new defaultHttpPort and defaultHttpsPort fields in ServerSettings
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ServerSettings.defaultHttpPort")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ServerSettings.defaultHttpsPort")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ServerSettings.getDefaultHttpPort")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ServerSettings.getDefaultHttpsPort")
+
+# New settings in `@DoNotInherit` classes
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ParserSettings.getModeledHeaderParsing")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ParserSettings.modeledHeaderParsing")
+
+# New poolImplementation setting on @DoNotInherit class
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.poolImplementation")
+# New responseEntitySubscriptionTimeout setting
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.responseEntitySubscriptionTimeout")

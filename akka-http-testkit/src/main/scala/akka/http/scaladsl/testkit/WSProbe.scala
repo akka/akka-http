@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.testkit
@@ -129,7 +129,7 @@ object WSProbe {
       }
 
       def expectNoMessage(): Unit = subscriber.expectNoMsg()
-      def expectNoMessage(max: FiniteDuration): Unit = subscriber.expectNoMsg(max)
+      def expectNoMessage(max: FiniteDuration): Unit = subscriber.expectNoMessage(max)
 
       def expectCompletion(): Unit = subscriber.expectComplete()
 

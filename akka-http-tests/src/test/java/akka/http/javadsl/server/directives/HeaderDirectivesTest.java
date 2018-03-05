@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.javadsl.server.directives;
 
 import akka.http.javadsl.model.HttpHeader;
@@ -153,11 +154,11 @@ public class HeaderDirectivesTest extends JUnitRouteTest {
 
   @Test
   public void testOptionalHeaderValueByType() {
-    TestRoute route = testRoute(optionalHeaderValueByType(Server.class,
-      (Optional<Server> s) -> complete(((Boolean)s.isPresent()).toString())));
+    TestRoute route = testRoute(optionalHeaderValueByType(UserAgent.class,
+      (Optional<UserAgent> ua) -> complete(((Boolean)ua.isPresent()).toString())));
 
     route
-      .run(HttpRequest.create().addHeader(Server.create(ProductVersion.create("such-service", "0.6"))))
+      .run(HttpRequest.create().addHeader(UserAgent.create("custom-server/1.2.3")))
       .assertStatusCode(StatusCodes.OK)
       .assertEntity("true");
 

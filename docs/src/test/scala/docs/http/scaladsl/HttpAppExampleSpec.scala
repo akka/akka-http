@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.http.scaladsl
 
 import docs.CompileOnlySpec
@@ -48,13 +49,39 @@ class HttpAppExampleSpec extends WordSpec with Matchers
         }
     }
 
-    // Starting the server
-    WebServer.startServer("localhost", 8080, ServerSettings(ConfigFactory.load))
+    // Creating own settings
+    val settings = ServerSettings(ConfigFactory.load).withVerboseErrorMessages(true)
+    WebServer.startServer("localhost", 8080, settings)
     //#with-settings-routing-example
   }
 
-  "failed-binding" in compileOnlySpec {
-    //#failed-binding-example
+  "webserver-as-providing-actor-system" in compileOnlySpec {
+    //#with-actor-system
+    import akka.actor.ActorSystem
+    import akka.http.scaladsl.model._
+    import akka.http.scaladsl.server.HttpApp
+    import akka.http.scaladsl.server.Route
+
+    // Server definition
+    object WebServer extends HttpApp {
+      override def routes: Route =
+        path("hello") {
+          get {
+            complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>"))
+          }
+        }
+    }
+
+    // Starting the server
+    val system = ActorSystem("ownActorSystem")
+    WebServer.startServer("localhost", 8080, system)
+    system.terminate()
+    //#with-actor-system
+  }
+
+  "webserver-as-providing-actor-system-and-settings" in compileOnlySpec {
+    //#with-actor-system-settings
+    import akka.actor.ActorSystem
     import akka.http.scaladsl.model._
     import akka.http.scaladsl.server.HttpApp
     import akka.http.scaladsl.server.Route
@@ -69,6 +96,39 @@ class HttpAppExampleSpec extends WordSpec with Matchers
             complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>"))
           }
         }
+    }
+
+    // Starting the server
+    val system = ActorSystem("ownActorSystem")
+    val settings = ServerSettings(ConfigFactory.load).withVerboseErrorMessages(true)
+    WebServer.startServer("localhost", 8080, settings, system)
+    system.terminate()
+    //#with-actor-system-settings
+  }
+
+  "failed-binding" in compileOnlySpec {
+    //#failed-binding-example
+    import akka.http.scaladsl.Http
+    import akka.http.scaladsl.model._
+    import akka.http.scaladsl.server.HttpApp
+    import akka.http.scaladsl.server.Route
+    import akka.http.scaladsl.settings.ServerSettings
+    import com.typesafe.config.ConfigFactory
+
+    // Server definition
+    object WebServer extends HttpApp {
+      override def routes: Route =
+        path("hello") {
+          get {
+            complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>"))
+          }
+        }
+
+      override protected def postHttpBinding(binding: Http.ServerBinding): Unit = {
+        super.postHttpBinding(binding)
+        val sys = systemReference.get()
+        sys.log.info(s"Running on [${sys.name}] actor system")
+      }
 
       override protected def postHttpBindingFailure(cause: Throwable): Unit = {
         println(s"The server could not be started due to $cause")
@@ -111,31 +171,6 @@ class HttpAppExampleSpec extends WordSpec with Matchers
     // Starting the server
     WebServer.startServer("localhost", 8080, ServerSettings(ConfigFactory.load))
     //#override-termination-signal
-  }
-
-  "webserver-as-providing-actor-system" in compileOnlySpec {
-    //#with-actor-system
-    import akka.actor.ActorSystem
-    import akka.http.scaladsl.model._
-    import akka.http.scaladsl.server.HttpApp
-    import akka.http.scaladsl.server.Route
-    import akka.http.scaladsl.settings.ServerSettings
-
-    // Server definition
-    object WebServer extends HttpApp {
-      override def routes: Route =
-        path("hello") {
-          get {
-            complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>"))
-          }
-        }
-    }
-
-    // Starting the server
-    val system = ActorSystem("ownActorSystem")
-    WebServer.startServer("localhost", 8080, ServerSettings(system), system)
-    system.terminate()
-    //#with-actor-system
   }
 
   "stopping-system-on-shutdown" in compileOnlySpec {

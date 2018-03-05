@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -15,7 +15,7 @@ import scala.collection.immutable
 import scala.collection.JavaConverters._
 import scala.util.{ Failure, Success, Try }
 import akka.event.LoggingAdapter
-import akka.stream.impl.ConstantFun
+import akka.util.ConstantFun
 import akka.stream.Materializer
 import akka.stream.javadsl.{ Source ⇒ JSource }
 import akka.stream.scaladsl._
@@ -59,21 +59,6 @@ sealed trait Multipart extends jm.Multipart {
   def toStrict(timeout: FiniteDuration)(implicit fm: Materializer): Future[Multipart.Strict]
 
   /**
-   * Creates a [[akka.http.scaladsl.model.MessageEntity]] from this multipart object.
-   *
-   * @deprecated This variant of `toEntity` is not supported any more. The charset parameter will be ignored. Please use
-   *             one of the other overloads instead.
-   */
-  @deprecated(
-    message = "This variant of `toEntity` is not supported any more. The charset parameter will be ignored. " +
-    "Please use the variant without specifying the charset.",
-    since = "10.0.0")
-  def toEntity(
-    charset:  HttpCharset = HttpCharsets.`UTF-8`,
-    boundary: String      = BodyPartRenderer.randomBoundary())(implicit log: LoggingAdapter = DefaultNoLogging): MessageEntity =
-    toEntity(boundary, log)
-
-  /**
    * Creates an entity from this multipart object using the specified boundary and logger.
    */
   def toEntity(boundary: String, log: LoggingAdapter): MessageEntity = {
@@ -104,19 +89,6 @@ sealed trait Multipart extends jm.Multipart {
   /** Java API */
   def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[_ <: jm.Multipart.Strict] =
     toStrict(FiniteDuration(timeoutMillis, concurrent.duration.MILLISECONDS))(materializer).toJava
-
-  /**
-   * Java API
-   *
-   * @deprecated This variant of `toEntity` is not supported any more. The charset parameter will be ignored. Please use
-   *             one of the other overloads instead.
-   */
-  @deprecated(
-    message = "This variant of `toEntity` is not supported any more. The charset parameter will be ignored. " +
-    "Please use the variant without specifying the charset.",
-    since = "10.0.0")
-  def toEntity(charset: jm.HttpCharset, boundary: String): jm.RequestEntity =
-    toEntity(boundary)
 }
 
 object Multipart {
@@ -133,9 +105,6 @@ object Multipart {
      * The parts of this content as a strict collection.
      */
     def strictParts: immutable.Seq[Multipart.BodyPart.Strict]
-
-    override def toEntity(charset: HttpCharset, boundary: String)(implicit log: LoggingAdapter = DefaultNoLogging): HttpEntity.Strict =
-      toEntity(boundary, log)
 
     /**
      * Creates an entity from this multipart object using the specified boundary and logger.
@@ -162,10 +131,6 @@ object Multipart {
     /** Java API */
     override def getStrictParts: java.lang.Iterable[_ <: jm.Multipart.BodyPart.Strict] =
       (strictParts: immutable.Seq[jm.Multipart.BodyPart.Strict]).asJava
-
-    /** Java API */
-    override def toEntity(charset: jm.HttpCharset, boundary: String): jm.HttpEntity.Strict =
-      super.toEntity(boundary).asInstanceOf[jm.HttpEntity.Strict]
   }
 
   /**
@@ -416,7 +381,6 @@ object Multipart {
      * To create an instance with several parts or for multiple files, use
      * `FormData(BodyPart.fromFile("field1", ...), BodyPart.fromFile("field2", ...)`
      */
-    @deprecated("Use `fromPath` instead", "2.4.5")
     def fromFile(name: String, contentType: ContentType, file: File, chunkSize: Int = -1): Multipart.FormData =
       fromPath(name, contentType, file.toPath, chunkSize)
 
@@ -514,7 +478,6 @@ object Multipart {
       /**
        * Creates a BodyPart backed by a File that will be streamed using a FileSource.
        */
-      @deprecated("Use `fromPath` instead", since = "2.4.5")
       def fromFile(name: String, contentType: ContentType, file: File, chunkSize: Int = -1): BodyPart =
         fromPath(name, contentType, file.toPath, chunkSize)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives;
@@ -130,7 +130,7 @@ public class SecurityDirectivesTest extends JUnitRouteTest {
           if (cred.isPresent()) {
             return CompletableFuture.completedFuture(Right.apply(cred.get().token()));
           } else {
-            return CompletableFuture.completedFuture(Left.apply(HttpChallenge.create("Basic", "test-realm")));
+            return CompletableFuture.completedFuture(Left.apply(HttpChallenge.createBasic("test-realm")));
           }
         }, this::securedRoute)
       )

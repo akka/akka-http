@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives
@@ -15,7 +15,6 @@ import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.model.headers.HttpCookie
 import akka.http.javadsl.model.headers.HttpCookiePair
 import akka.http.javadsl.server.Route
-import akka.http.scaladsl
 import akka.http.scaladsl.server.{ Directives ⇒ D }
 
 abstract class CookieDirectives extends CodingDirectives {

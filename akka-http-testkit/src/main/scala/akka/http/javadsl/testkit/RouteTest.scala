@@ -1,15 +1,14 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.testkit
 
 import scala.annotation.varargs
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.duration.FiniteDuration
 import akka.actor.ActorSystem
-import akka.http.impl.util.AddFutureAwaitResult
 import akka.http.impl.util.JavaMapping.Implicits.AddAsScala
 import akka.http.javadsl.model.HttpRequest
 import akka.http.javadsl.model.headers.Host
@@ -20,7 +19,9 @@ import akka.http.javadsl.server.RouteResult
 import akka.http.scaladsl.server
 import akka.http.scaladsl.server.{ ExceptionHandler, Route ⇒ ScalaRoute }
 import akka.http.scaladsl.settings.RoutingSettings
+import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
+import akka.testkit.TestDuration
 
 /**
  * A base class to create route tests for testing libraries. An implementation needs to provide
@@ -33,7 +34,7 @@ abstract class RouteTest extends AllDirectives with WSTestRequestBuilding {
   implicit def materializer: Materializer
   implicit def executionContext: ExecutionContextExecutor = system.dispatcher
 
-  protected def awaitDuration: FiniteDuration = 3.seconds
+  protected def awaitDuration: FiniteDuration = 3.seconds.dilated
 
   protected def defaultHostInfo: DefaultHostInfo = DefaultHostInfo(Host.create("example.com"), false)
 
@@ -62,7 +63,7 @@ abstract class RouteTest extends AllDirectives with WSTestRequestBuilding {
       akka.http.scaladsl.server.Directives.handleExceptions(sealedExceptionHandler)(scalaRoute)
 
     val result = semiSealedRoute(new server.RequestContextImpl(effectiveRequest, system.log, RoutingSettings(system)))
-    createTestRouteResult(request, result.awaitResult(awaitDuration))
+    createTestRouteResultAsync(request, result)
   }
 
   /**
@@ -74,7 +75,10 @@ abstract class RouteTest extends AllDirectives with WSTestRequestBuilding {
       val underlying: Route = Directives.route(first +: others: _*)
 
       def run(request: HttpRequest): TestRouteResult = runRoute(underlying, request)
+      def runWithRejections(request: HttpRequest): TestRouteResult = runRouteUnSealed(underlying, request)
     }
 
-  protected def createTestRouteResult(request: HttpRequest, result: RouteResult): TestRouteResult
+  protected def createTestRouteResult(request: HttpRequest, result: RouteResult): TestRouteResult =
+    createTestRouteResultAsync(request, FastFuture.successful(result))
+  protected def createTestRouteResultAsync(request: HttpRequest, result: Future[RouteResult]): TestRouteResult
 }

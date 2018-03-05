@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.impl.engine.ws
 
 import scala.concurrent.{ Await, Promise }
@@ -49,7 +50,7 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
       response.futureValue.response.status.isSuccess should ===(true)
       sink
         .request(10)
-        .expectNoMsg(500.millis.dilated)
+        .expectNoMessage(500.millis)
 
       source
         .sendNext(TextMessage("hello"))

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model.headers
@@ -7,7 +7,8 @@ package akka.http.scaladsl.model.headers
 import akka.http.impl.util._
 import org.scalatest._
 import java.net.InetAddress
-import akka.http.scaladsl.model._
+
+import akka.http.scaladsl.model.{ headers, _ }
 
 class HeaderSpec extends FreeSpec with Matchers {
   "ModeledCompanion should" - {
@@ -58,6 +59,24 @@ class HeaderSpec extends FreeSpec with Matchers {
         detail shouldEqual
           """text/plain, charset=UTF8
             |          ^""".stripMarginWithNewline("\n")
+      }
+    }
+  }
+
+  "Retry-After should" - {
+    "provide parseFromValueString method" - {
+      "successful parse run" in {
+        headers.`Retry-After`.parseFromValueString("120") shouldEqual Right(headers.`Retry-After`(120))
+        headers.`Retry-After`.parseFromValueString("Wed, 21 Oct 2015 07:28:00 GMT") shouldEqual
+          Right(headers.`Retry-After`(DateTime(2015, 10, 21, 7, 28)))
+      }
+      "failing parse run" in {
+        val Left(List(ErrorInfo(summary, detail))) = `Retry-After`.parseFromValueString("011")
+        summary shouldEqual "Illegal HTTP header 'Retry-After': Invalid input '1', expected OWS or 'EOI' (line 1, column 2)"
+        val Left(List(ErrorInfo(summary2, detail2))) = `Retry-After`.parseFromValueString("-10")
+        summary2 shouldEqual "Illegal HTTP header 'Retry-After': Invalid input '-', expected HTTP-date or delta-seconds (line 1, column 1)"
+        val Left(List(ErrorInfo(summary3, detail3))) = `Retry-After`.parseFromValueString("2015-10-21H07:28:00Z")
+        summary3 shouldEqual "Illegal HTTP header 'Retry-After': Invalid input '-', expected DIGIT, OWS or 'EOI' (line 1, column 5)"
       }
     }
   }
@@ -114,6 +133,7 @@ class HeaderSpec extends FreeSpec with Matchers {
         `Proxy-Authorization`(BasicHttpCredentials("johan", "correcthorsebatterystaple")),
         Range(RangeUnits.Bytes, Vector(ByteRange(1, 1024))),
         Referer(Uri("http://example.com/")),
+        `Sec-WebSocket-Extensions`(Vector(WebSocketExtension("permessage-deflate"), WebSocketExtension("client_max_window_bits"))),
         `Sec-WebSocket-Protocol`(Vector("chat", "superchat")),
         `Sec-WebSocket-Key`("dGhlIHNhbXBsZSBub25jZQ"),
         `Sec-WebSocket-Version`(Vector(13)),
@@ -121,6 +141,8 @@ class HeaderSpec extends FreeSpec with Matchers {
         Upgrade(Vector(UpgradeProtocol("HTTP", Some("2.0")))),
         `User-Agent`("Akka HTTP Client 2.4"),
         `X-Forwarded-For`(RemoteAddress(InetAddress.getByName("192.168.0.1"))),
+        `X-Forwarded-Host`(Uri.Host(InetAddress.getByName("192.168.0.2"))),
+        `X-Forwarded-Proto`("https"),
         `X-Real-Ip`(RemoteAddress(InetAddress.getByName("192.168.1.1"))))
 
       requestHeaders.foreach { header ⇒
@@ -163,7 +185,8 @@ class HeaderSpec extends FreeSpec with Matchers {
         `Set-Cookie`(HttpCookie("sessionId", "b0eb8b8b3ad246")),
         `Transfer-Encoding`(TransferEncodings.chunked),
         Upgrade(Vector(UpgradeProtocol("HTTP", Some("2.0")))),
-        `WWW-Authenticate`(HttpChallenge("Basic", Some("example.com"))))
+        `WWW-Authenticate`(HttpChallenge("Basic", Some("example.com"))),
+        `Retry-After`(120))
 
       responseHeaders.foreach { header ⇒
         header shouldBe 'renderInResponses

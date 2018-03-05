@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -14,15 +14,13 @@ import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.collection.immutable
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.model.Uri.Path
-import akka.stream.impl.ConstantFun.scalaIdentityFunction
+import akka.util.ConstantFun.scalaIdentityFunction
 import akka.stream.{ ActorMaterializerHelper, Materializer }
 import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
 import akka.http.scaladsl.server.util.Tuple
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture._
-
-import scala.util.{ Failure, Success }
 
 /**
  * @groupname basic Basic directives

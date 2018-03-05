@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.model.parser
@@ -137,6 +137,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Authorization: bAsIc QWxhZGRpbjpvcGVuIHNlc2FtZQ==" =!=
         Authorization(BasicHttpCredentials("Aladdin", "open sesame")).renderedTo(
           "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==")
+      "Authorization: Fancy QWxhZGRpbjpvcGVuIHNlc2FtZQ==" =!=
+        Authorization(GenericHttpCredentials("Fancy", "QWxhZGRpbjpvcGVuIHNlc2FtZQ=="))
       """Authorization: Fancy yes="n:o", nonce=42""" =!=
         Authorization(GenericHttpCredentials("Fancy", Map("yes" → "n:o", "nonce" → "42"))).renderedTo(
           """Fancy yes="n:o",nonce=42""")
@@ -152,6 +154,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         Authorization(OAuth2BearerToken("mF_9.B5f-4.1JqM/"))
       "Authorization: NoParamScheme" =!=
         Authorization(GenericHttpCredentials("NoParamScheme", Map.empty[String, String]))
+      "Authorization: NoTokenScheme" =!=
+        Authorization(GenericHttpCredentials("NoTokenScheme", ""))
       "Authorization: QVFJQzV3TTJMWTRTZmN3Zk=" =!=
         ErrorInfo(
           "Illegal HTTP header 'Authorization': Invalid input '=', expected auth-param, OWS, token68, 'EOI' or tchar (line 1, column 23)",
@@ -175,6 +179,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         `Cache-Control`(`no-cache`("Set-Cookie")).renderedTo("no-cache=\"Set-Cookie\"")
       "Cache-Control: private=\"a,b\", no-cache" =!=
         `Cache-Control`(`private`("a", "b"), `no-cache`)
+      "Cache-Control: private, immutable" =!=
+        `Cache-Control`(`private`(), immutableDirective)
     }
 
     "Connection" in {
@@ -395,11 +401,15 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     "Proxy-Authenticate" in {
       "Proxy-Authenticate: Basic realm=\"WallyWorld\",attr=\"val>ue\", Fancy realm=\"yeah\"" =!=
         `Proxy-Authenticate`(HttpChallenge("Basic", Some("WallyWorld"), Map("attr" → "val>ue")), HttpChallenge("Fancy", Some("yeah")))
+      """Proxy-Authenticate: NTLM TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg==""" =!=
+        `Proxy-Authenticate`(HttpChallenge("NTLM", None, Map("" → "TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg==")))
     }
 
     "Proxy-Authorization" in {
       """Proxy-Authorization: Fancy yes=no,nonce="4\\2"""" =!=
         `Proxy-Authorization`(GenericHttpCredentials("Fancy", Map("yes" → "no", "nonce" → """4\2""")))
+      "Proxy-Authorization: Fancy QWxhZGRpbjpvcGVuIHNlc2FtZQ==" =!=
+        `Proxy-Authorization`(GenericHttpCredentials("Fancy", "QWxhZGRpbjpvcGVuIHNlc2FtZQ=="))
     }
 
     "Referer" in {
@@ -408,6 +418,11 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Referer: https://akka.io/#sec" =!= ErrorInfo(
         "Illegal HTTP header 'Referer': requirement failed",
         "Referer header URI must not contain a fragment")
+    }
+
+    "Retry-After" in {
+      "Retry-After: 120" =!= `Retry-After`(120)
+      "Retry-After: Wed, 21 Oct 2015 07:28:00 GMT" =!= `Retry-After`(DateTime(2015, 10, 21, 7, 28))
     }
 
     "Server" in {
@@ -583,8 +598,14 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
           "Digest realm=\"testrealm@host.com\",qop=\"auth,auth-int\",nonce=dcd98b7102dd2f0e8b11d0f600bfb0c093,opaque=5ccc069c403ebaf9f0171e9517f40e41")
       "WWW-Authenticate: Basic realm=\"WallyWorld\",attr=\"val>ue\", Fancy realm=\"yeah\"" =!=
         `WWW-Authenticate`(HttpChallenge("Basic", Some("WallyWorld"), Map("attr" → "val>ue")), HttpChallenge("Fancy", Some("yeah")))
+      "WWW-Authenticate: Basic attr=value,another=\"val>ue\"" =!=
+        `WWW-Authenticate`(HttpChallenge("Basic", None, Map("attr" → "value", "another" → "val>ue")))
+      "WWW-Authenticate: Basic attr=value" =!=
+        `WWW-Authenticate`(HttpChallenge("Basic", None, Map("attr" → "value")))
       """WWW-Authenticate: Fancy realm="Secure Area",nonce=42""" =!=
         `WWW-Authenticate`(HttpChallenge("Fancy", Some("Secure Area"), Map("nonce" → "42")))
+      """WWW-Authenticate: NTLM TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg==""" =!=
+        `WWW-Authenticate`(HttpChallenge("NTLM", None, Map("" → "TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg==")))
     }
 
     "X-Forwarded-For" in {
@@ -623,6 +644,22 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         ErrorInfo(
           "Illegal HTTP header 'X-Forwarded-For': Invalid input 'k', expected HEXDIG, h8, ':', ch16o or cc (line 1, column 11)",
           "1.2.3.4, akka.io\n          ^")
+    }
+
+    "X-Forwarded-Host" in {
+      "X-Forwarded-Host: 1.2.3.4" =!= `X-Forwarded-Host`(Uri.Host("1.2.3.4"))
+      "X-Forwarded-Host: [2001:db8:cafe:0:0:0:0:17]" =!= `X-Forwarded-Host`(Uri.Host("2001:db8:cafe:0:0:0:0:17"))
+      "X-Forwarded-Host: [1234:5678:9abc:def1:2345:6789:abcd:ef00]" =!= `X-Forwarded-Host`(Uri.Host("1234:5678:9abc:def1:2345:6789:abcd:ef00"))
+      "X-Forwarded-Host: [1234:567:9a:d:2:67:abc:ef00]" =!= `X-Forwarded-Host`(Uri.Host("1234:567:9a:d:2:67:abc:ef00"))
+      "X-Forwarded-Host: [1:2:3:4:5:6:7:8]" =!= `X-Forwarded-Host`(Uri.Host("1:2:3:4:5:6:7:8"))
+      "X-Forwarded-Host: akka.io" =!= `X-Forwarded-Host`(Uri.Host("akka.io"))
+      "X-Forwarded-Host: [1:2:3:4::6:7:8]" =!= `X-Forwarded-Host`(Uri.Host("1:2:3:4::6:7:8"))
+    }
+
+    "X-Forwarded-Proto" in {
+      "X-Forwarded-Proto: http" =!= `X-Forwarded-Proto`("http")
+      "X-Forwarded-Proto: https" =!= `X-Forwarded-Proto`("https")
+      "X-Forwarded-Proto: akka" =!= `X-Forwarded-Proto`("akka")
     }
 
     "X-Real-Ip" in {
@@ -690,8 +727,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
 
     "parse with custom uri parsing mode" in {
       val targetUri = Uri("http://example.org/?abc=def=ghi", Uri.ParsingMode.Relaxed)
-      HeaderParser.parseFull("location", "http://example.org/?abc=def=ghi", HeaderParser.Settings(uriParsingMode = Uri.ParsingMode.Relaxed)) shouldEqual
-        Right(Location(targetUri))
+      HttpHeader.parse("location", "http://example.org/?abc=def=ghi", HeaderParser.Settings(uriParsingMode = Uri.ParsingMode.Relaxed)) shouldEqual
+        ParsingResult.Ok(Location(targetUri), Nil)
     }
   }
 

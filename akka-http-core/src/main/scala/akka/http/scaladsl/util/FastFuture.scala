@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.util
@@ -28,7 +28,7 @@ class FastFuture[A](val future: Future[A]) extends AnyVal {
   def filter(pred: A ⇒ Boolean)(implicit executor: ExecutionContext): Future[A] =
     flatMap { r ⇒
       if (pred(r)) future
-      else throw new NoSuchElementException("Future.filter predicate is not satisfied") // FIXME: avoid stack trace generation
+      else throw new NoSuchElementException("Future.filter predicate is not satisfied")
     }
 
   def foreach(f: A ⇒ Unit)(implicit ec: ExecutionContext): Unit = map(f)
