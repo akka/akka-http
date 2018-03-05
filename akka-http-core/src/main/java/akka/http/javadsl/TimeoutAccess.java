@@ -4,6 +4,7 @@
 
 package akka.http.javadsl;
 
+import akka.annotation.DoNotInherit;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
 import akka.japi.Function;
@@ -11,7 +12,10 @@ import scala.concurrent.duration.Duration;
 
 /**
  * Enables programmatic access to the server-side request timeout logic.
+ *
+ * Not for user extension.
  */
+@DoNotInherit
 public interface TimeoutAccess {
 
   /**
