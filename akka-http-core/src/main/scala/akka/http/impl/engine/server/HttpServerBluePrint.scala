@@ -219,7 +219,7 @@ private[http] object HttpServerBluePrint {
           start.copy(uri = effectiveUri)
         } catch {
           case e: IllegalUriException ⇒
-            MessageStartError(StatusCodes.BadRequest, ErrorInfo("Request is missing required `Host` header", e.getMessage))
+            MessageStartError(StatusCodes.BadRequest, e.info)
         }
       case x ⇒ x
     }
@@ -249,23 +249,25 @@ private[http] object HttpServerBluePrint {
 
     def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
       var openTimeouts = immutable.Queue[TimeoutAccessImpl]()
+      // the application response might has already arrived after we scheduled the timeout response (which is close but ok)
+      // or current head (same reason) is not for response the timeout has been scheduled for
+      val callback: AsyncCallback[(TimeoutAccess, HttpResponse)] = getAsyncCallback {
+        case (timeout, response) ⇒
+          if (openTimeouts.headOption.exists(_ eq timeout)) {
+            emit(responseOut, response, () ⇒ completeStage())
+          }
+      }
       setHandler(requestIn, new InHandler {
         def onPush(): Unit = {
           val request = grab(requestIn)
           val (entity, requestEnd) = HttpEntity.captureTermination(request.entity)
-          val access = new TimeoutAccessImpl(request, initialTimeout, requestEnd,
-            getAsyncCallback(emitTimeoutResponse), interpreter.materializer, log)
+          val access = new TimeoutAccessImpl(request, initialTimeout, requestEnd, callback,
+            interpreter.materializer, log)
           openTimeouts = openTimeouts.enqueue(access)
           push(requestOut, request.copy(headers = request.headers :+ `Timeout-Access`(access), entity = entity))
         }
         override def onUpstreamFinish() = complete(requestOut)
         override def onUpstreamFailure(ex: Throwable) = fail(requestOut, ex)
-        def emitTimeoutResponse(response: (TimeoutAccess, HttpResponse)) =
-          // the application response might has already arrived after we scheduled the timeout response (which is close but ok)
-          // or current head (same reason) is not for response the timeout has been scheduled for
-          if (openTimeouts.headOption.exists(_ eq response._1)) {
-            emit(responseOut, response._2, () ⇒ completeStage())
-          }
       })
       // TODO: provide and use default impl for simply connecting an input and an output port as we do here
       setHandler(requestOut, new OutHandler {
@@ -445,6 +447,9 @@ private[http] object HttpServerBluePrint {
               }
               val info = ErrorInfo(summary, "Consider increasing the value of akka.http.server.parsing.max-content-length")
               finishWithIllegalRequestError(StatusCodes.RequestEntityTooLarge, info)
+
+            case IllegalUriException(errorInfo) ⇒
+              finishWithIllegalRequestError(StatusCodes.BadRequest, errorInfo)
 
             case NonFatal(e) ⇒
               log.error(e, "Internal server error, sending 500 response")

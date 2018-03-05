@@ -9,6 +9,7 @@ import java.util.concurrent.CompletionStage
 import javax.net.ssl._
 
 import akka.actor._
+import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.{ Logging, LoggingAdapter }
@@ -41,7 +42,13 @@ import scala.util.control.NonFatal
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
-class HttpExt(private val config: Config)(implicit val system: ActorSystem) extends akka.actor.Extension
+/**
+ * Akka extension for HTTP which serves as the main entry point into akka-http.
+ *
+ * Use as `Http().bindAndHandle` etc. with an implicit [[ActorSystem]] in scope.
+ */
+@DoNotInherit
+class HttpExt private[http] (private val config: Config)(implicit val system: ExtendedActorSystem) extends akka.actor.Extension
   with DefaultSSLContextCreation {
 
   akka.http.Version.check(system.settings.config)
@@ -74,8 +81,8 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
     val serverBidiFlow =
       settings.idleTimeout match {
-        case t: FiniteDuration ⇒ httpLayer atop delayCancellationStage(settings) atop tlsStage atop HttpConnectionIdleTimeoutBidi(t, None)
-        case _                 ⇒ httpLayer atop delayCancellationStage(settings) atop tlsStage
+        case t: FiniteDuration ⇒ httpLayer atop tlsStage atop HttpConnectionIdleTimeoutBidi(t, None)
+        case _                 ⇒ httpLayer atop tlsStage
       }
 
     serverBidiFlow
@@ -289,7 +296,9 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     remoteAddress:      Option[InetSocketAddress] = None,
     log:                LoggingAdapter            = system.log,
     isSecureConnection: Boolean                   = false): ServerLayer =
-    HttpServerBluePrint(settings, log, isSecureConnection).addAttributes(HttpAttributes.remoteAddress(remoteAddress))
+    HttpServerBluePrint(settings, log, isSecureConnection)
+      .addAttributes(HttpAttributes.remoteAddress(remoteAddress))
+      .atop(delayCancellationStage(settings))
 
   @deprecated("Binary compatibility method. Use the new `serverLayer` method without the implicit materializer instead.", "10.0.11")
   private[http] def serverLayer()(implicit mat: Materializer): ServerLayer =
@@ -313,7 +322,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
 
   // ** CLIENT ** //
 
-  private[this] val poolMasterActorRef = system.actorOf(PoolMasterActor.props, "pool-master")
+  private[this] val poolMasterActorRef = system.systemActorOf(PoolMasterActor.props, "pool-master")
   private[this] val systemMaterializer = ActorMaterializer()
 
   /**
@@ -784,7 +793,7 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
   /** Creates real or placebo SslTls stage based on if ConnectionContext is HTTPS or not. */
   private[http] def sslTlsStage(connectionContext: ConnectionContext, role: TLSRole, hostInfo: Option[(String, Int)] = None) =
     connectionContext match {
-      case hctx: HttpsConnectionContext ⇒ TLS(hctx.sslContext, connectionContext.sslConfig, hctx.firstSession, role, hostInfo = hostInfo)
+      case hctx: HttpsConnectionContext ⇒ TLS(hctx.sslContext, connectionContext.sslConfig, hctx.firstSession, role, hostInfo = hostInfo, closing = TLSClosing.eagerClose)
       case other                        ⇒ TLSPlacebo() // if it's not HTTPS, we don't enable SSL/TLS
     }
 

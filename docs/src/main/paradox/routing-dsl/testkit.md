@@ -4,7 +4,9 @@ One of Akka HTTP's design goals is good testability of the created services.
 For services built with the Routing DSL Akka HTTP provides a dedicated testkit that makes efficient testing of
 route logic easy and convenient. This "route test DSL" is made available with the *akka-http-testkit* module.
 
-To use it include the following dependency:
+## Dependency
+
+To use Akka HTTP TestKit, add the module to your project:
 
 @@dependency [sbt,Gradle,Maven] {
   group="com.typesafe.akka"
@@ -114,7 +116,7 @@ Java
 
 The testkit supports a fluent DSL to write compact assertions on the response by chaining assertions
 using "dot-syntax". To simplify working with streamed responses the entity of the response is first "strictified", i.e.
-entity data is collected into a single @unidoc[ByteString] and provided the entity is supplied as an `HttpEntityStrict`. This
+entity data is collected into a single @unidoc[akka.util.ByteString] and provided the entity is supplied as an `HttpEntityStrict`. This
 allows to write several assertions against the same entity data which wouldn't (necessarily) be possible for the
 streamed version.
 

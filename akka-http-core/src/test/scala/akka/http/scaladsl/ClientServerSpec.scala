@@ -39,7 +39,7 @@ import org.scalatest.concurrent.Eventually.eventually
 class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures {
   val testConf: Config = ConfigFactory.parseString("""
     akka.loggers = ["akka.testkit.TestEventListener"]
-    akka.loglevel = ERROR
+    akka.loglevel = WARNING
     akka.stdout-loglevel = ERROR
     windows-connection-abort-workaround-enabled = auto
     akka.log-dead-letters = OFF
@@ -430,8 +430,10 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         performValidRequest()
         assertCounters(0, 1)
 
-        performFaultyRequest()
-        assertCounters(0, 2)
+        EventFilter.warning(pattern = "Illegal HTTP message start", occurrences = 1) intercept {
+          performFaultyRequest()
+          assertCounters(0, 2)
+        }
 
         performValidRequest()
         assertCounters(0, 3)
@@ -576,15 +578,17 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
           .bindAndHandle(routes, hostname, port, connectionContext = serverConnectionContext, settings = serverSettings)
           .futureValue
 
-      Http()
-        .singleRequest(request, connectionContext = clientConnectionContext, settings = clientSettings)
-        .futureValue
-        .entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue.utf8String shouldEqual entity
+      EventFilter.warning(pattern = "Hostname verification failed", occurrences = 1) intercept {
+        Http()
+          .singleRequest(request, connectionContext = clientConnectionContext, settings = clientSettings)
+          .futureValue
+          .entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue.utf8String shouldEqual entity
+      }
 
       serverBinding.unbind()
     }
 
-    "complete a request/response over https when server closes connection without close_notify" in Utils.assertAllStagesStopped {
+    class CloseDelimitedTLSSetup {
       val source = TestPublisher.probe[ByteString]()
 
       def handler(req: HttpRequest): HttpResponse =
@@ -594,7 +598,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val clientSideTls = Http().sslTlsStage(ExampleHttpContexts.exampleClientContext, akka.stream.Client, Some("akka.example.org" → 8080))
 
       val server: Flow[ByteString, ByteString, Any] =
-        Http().serverLayer()
+        Http().serverLayerImpl()
           .atop(serverSideTls)
           .reversed
           .join(Flow[HttpRequest].map(handler))
@@ -624,11 +628,22 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
       source.sendNext(ByteString("ghij"))
       sinkProbe.expectUtf8EncodedString("ghij")
+    }
 
-      killSwitch.shutdown() // simulate FIN in server -> client direction
-      // akka-http is currently lenient wrt TLS truncation which is *not* reported to the user
-      // FIXME: if https://github.com/akka/akka-http/issues/235 is ever fixed, expect an error here
-      sinkProbe.expectComplete()
+    "complete a request/response with CloseDelimited entity over TLS" in Utils.assertAllStagesStopped {
+      new CloseDelimitedTLSSetup {
+        source.sendComplete()
+        sinkProbe.expectComplete()
+      }
+    }
+
+    "complete a request/response over https when server closes connection without close_notify" in Utils.assertAllStagesStopped {
+      new CloseDelimitedTLSSetup {
+        killSwitch.shutdown() // simulate FIN in server -> client direction
+        // akka-http is currently lenient wrt TLS truncation which is *not* reported to the user
+        // FIXME: if https://github.com/akka/akka-http/issues/235 is ever fixed, expect an error here
+        sinkProbe.expectComplete()
+      }
     }
 
     "properly complete a simple request/response cycle when `modeled-header-parsing = off`" in Utils.assertAllStagesStopped {
@@ -693,6 +708,19 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
         connSourceSub.cancel()
       }
+    }
+
+    "produce a useful error message when connecting to a HTTP endpoint over HTTPS" in Utils.assertAllStagesStopped {
+      val dummyFlow = Flow.fromFunction((_: HttpRequest) ⇒ ???)
+
+      val binding = Http().bindAndHandle(dummyFlow, "127.0.0.1", port = 0).futureValue
+      val uri = "https://" + binding.localAddress.getHostString + ":" + binding.localAddress.getPort
+
+      EventFilter.warning(pattern = "Perhaps this was an HTTPS request sent to an HTTP endpoint", occurrences = 6) intercept {
+        Await.ready(Http().singleRequest(HttpRequest(uri = uri)), 30.seconds)
+      }
+
+      Await.result(binding.unbind(), 10.seconds)
     }
   }
 

@@ -7,15 +7,17 @@ This means it is ready to be evaluated, but the APIs and behavior are likely to 
 
 @@@
 
-## Enable HTTP/2 support
+## Dependency
 
-To enabled HTTP/2 support `akka-http2-support` must be added as a dependency:
+To use Akka HTTP2 Support, add the module to your project:
 
 @@dependency [sbt,Gradle,Maven] {
   group="com.typesafe.akka"
   artifact="akka-http2-support_$scala.binary.version$"
   version="$project.version$"
 }
+
+## Enable HTTP/2 support
 
 HTTP/2 can then be enabled through configuration:
 
@@ -91,22 +93,26 @@ ALPN support comes with the JVM starting from version 9. If you're on a previous
 
 ### manually
 
-This agent can be loaded with the JVM option `-javaagent:/path/to/jetty-alpn-agent-2.0.6.jar`.
+This agent can be loaded with the `-javaagent` JVM option:
 
+@@@vars
 ```
-  java -javaagent:/path/to/jetty-alpn-agent-2.0.6.jar -jar app.jar
+  java -javaagent:/path/to/jetty-alpn-agent-$alpn-agent.version$.jar -jar app.jar
 ```
+@@@
 
 ### sbt
 
 sbt can be configured to load the agent with the [sbt-javaagent plugin](https://github.com/sbt/sbt-javaagent):
 
+@@@vars
 ```
   .enablePlugins(JavaAgent)
   .settings(
-    javaAgents += "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "2.0.6" % "runtime"
+    javaAgents += "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "$alpn-agent.version$" % "runtime"
   )
 ```
+@@@
 
 This should automatically load the agent when running, testing, or even in distributions made with [sbt-native-package](https://github.com/sbt/sbt-native-packager).
 
@@ -116,14 +122,16 @@ This should automatically load the agent when running, testing, or even in distr
 
 To configure maven to load the agent when running `mvn exec:exec`, add it as a 'runtime' dependency:
 
+@@@@vars
 ```
 <dependency>
     <groupId>org.mortbay.jetty.alpn</groupId>
     <artifactId>jetty-alpn-agent</artifactId>
-    <version>2.0.6</version>
+    <version>$alpn-agent.version$</version>
     <scope>runtime</scope>
 </dependency>
 ```
+@@@@
 
 and use the `maven-dependency-plugin`:
 

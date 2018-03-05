@@ -58,8 +58,19 @@ lazy val root = Project(
     // Unidoc doesn't like macros
     unidocProjectExcludes := Seq(parsing),
     unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get,
-    deployRsyncArtifact :=
-      (unidoc in Compile).value zip Seq(s"www/api/akka-http/${version.value}", s"www/japi/akka-http/${version.value}")
+    deployRsyncArtifact := {
+      val unidocArtifacts = (unidoc in Compile).value
+      // unidoc returns a Seq[File] which contains directories of generated API docs, one for
+      // Java, one for Scala. It's not specified which is which, though.
+      // We currently expect the java documentation at akka-http/target/javaunidoc, so
+      // the following heuristic is hopefully good enough to determine which one is the Java and
+      // which one the Scala version.
+      val (Seq(java), Seq(scala)) = unidocArtifacts.partition(_.getName contains "java")
+
+      Seq(
+        scala -> s"www/api/akka-http/${version.value}",
+        java -> s"www/japi/akka-http/${version.value}")
+    }
   )
   .aggregate(
     parsing,
@@ -166,6 +177,7 @@ lazy val httpTests = project("akka-http-tests")
   .settings(headerSettings(MultiJvm))
   .settings(additionalTasks in ValidatePR += headerCheck in MultiJvm)
   .addAkkaModuleDependency("akka-stream", "provided")
+  .addAkkaModuleDependency("akka-actor-typed", "provided")
   .addAkkaModuleDependency("akka-multi-node-testkit", "test")
 
 lazy val httpJmhBench = project("akka-http-bench-jmh")
@@ -240,8 +252,8 @@ lazy val docs = project("docs")
     paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     paradoxProperties in Compile ++= Map(
       "project.name" -> "Akka HTTP",
-      "akka.version" -> Dependencies.akkaVersion.value,
-      "akka25.version" -> Dependencies.akka25Version,
+      "akka.version" -> AkkaDependency.akkaVersion,
+      "alpn-agent.version" -> Dependencies.alpnAgentVersion,
       "scala.binary_version" -> scalaBinaryVersion.value, // to be consistent with Akka build
       "scala.binaryVersion" -> scalaBinaryVersion.value,
       "scaladoc.version" -> scalaVersion.value,
@@ -250,18 +262,18 @@ lazy val docs = project("docs")
         case _                  => "cross CrossVersion.full"
       }),
       "jackson.version" -> Dependencies.jacksonVersion,
-      "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${Dependencies.akkaVersion.value}/%s",
+      "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${AkkaDependency.akkaVersion}/%s",
       "extref.akka25-docs.base_url" -> s"http://doc.akka.io/docs/akka/2.5/%s",
       "javadoc.akka.http.base_url" -> {
         val v = if (isSnapshot.value) "current" else version.value
         s"http://doc.akka.io/japi/akka-http/$v"
       },
-      "javadoc.akka.base_url" -> s"https://doc.akka.io/japi/akka/${Dependencies.akka25Version}",
+      "javadoc.akka.base_url" -> s"https://doc.akka.io/japi/akka/${AkkaDependency.akkaVersion}",
       "scaladoc.akka.http.base_url" -> {
         val v = if (isSnapshot.value) "current" else version.value
         s"http://doc.akka.io/api/akka-http/$v"
       },
-      "scaladoc.akka.base_url" -> s"https://doc.akka.io/api/akka/${Dependencies.akka25Version}",
+      "scaladoc.akka.base_url" -> s"https://doc.akka.io/api/akka/${AkkaDependency.akkaVersion}",
       "algolia.docsearch.api_key" -> "0ccbb8bf5148554a406fbf07df0a93b9",
       "algolia.docsearch.index_name" -> "akka-http",
       "google.analytics.account" -> "UA-21117439-1",
