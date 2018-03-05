@@ -21,27 +21,10 @@ transport layer itself.
 
 ## Configuring Client Transports
 
-A @unidoc[ClientTransport] is configured slightly differently for the various layers of the HTTP client.
-Right now, configuration is only possible with code (and not through config files). There's currently no
-predefined way that would allow you to select different transports per target host (but you can easily define any kind
-of strategy by implementing @unidoc[ClientTransport] yourself).
-
-### Connection Pool Usage
-
-The @unidoc[ClientConnectionSettings] class allows setting a custom transport for any of the pool methods. First use
-`ClientConnectionSettings.withTransport` to configure a transport, then use `ConnectionPoolSettings.withConnectionSettings` and
-pass those settings to one of the pool methods like
-@scala[`Http().singleRequest`, `Http().superPool`, or `Http().cachedHostConnectionPool`]
-@java[`Http.get(...).singleRequest`, `Http.get(...).superPool`, or `Http.get(...).cachedHostConnectionPool`].
-
-Same feature is available for Web Sockets, directly with `ClientConnectionSettings` and methods like
-@scala[`Http().singleWebSocketRequest`, `Http().webSocketClientFlow` or `Http().webSocketClientLayer`]
-@java[`Http.get(...).singleWebSocketRequest`, `Http.get(...).webSocketClientFlow` or `Http.get(...).webSocketClientLayer`].
-
-### Single Connection Usage
-
-You can configure a custom transport for a single HTTP connection by setting it to a `ClientConnectionSettings` that you pass to the
-`Http().outgoingConnectionUsingContext` method.
+A @unidoc[ClientTransport] can be configured in the @unidoc[ClientConnectionSettings]. Right now, this is not possible
+through config files but only by code. First, use `ClientConnectionSettings.withTransport` to configure a transport,
+then use `ConnectionPoolSettings.withConnectionSettings`. @unidoc[ClientConnectionSettings] can be passed to all
+client-side entry points in @unidoc[Http].
 
 ## Predefined Transports
 
