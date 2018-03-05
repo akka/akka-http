@@ -340,11 +340,11 @@ class HostConnectionPoolSpec extends AkkaSpec(
       "dispatch multiple failures on different slots when request entity fails" in new SetupWithServerProbes(_.withMaxConnections(3)) {
         val req1 = pushChunkedRequest(numRetries = 0)
         val conn1 = expectNextConnection()
-        val req1Bytes = conn1.expectChunkedRequestBytesAsProbe()
+        conn1.expectChunkedRequestBytesAsProbe()
 
         val req2 = pushChunkedRequest(numRetries = 0)
         val conn2 = expectNextConnection()
-        val req2Bytes = conn2.expectChunkedRequestBytesAsProbe()
+        conn2.expectChunkedRequestBytesAsProbe()
 
         req1.sendError(new RuntimeException("First request stumbled and fell"))
         conn1.failConnection(new RuntimeException("First connection crash-landed on mars"))
@@ -622,7 +622,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
   case object AkkaHttpEngineTCP extends TopLevelApiClientServerImplementation {
     protected override def bindServerSource = Http().bind("localhost", 0)
     protected def clientConnectionFlow(connectionKillSwitch: SharedKillSwitch): Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
-      Http().outgoingConnectionUsingTransport(host = "localhost", port = serverBinding.localAddress.getPort, connectionContext = ConnectionContext.noEncryption(), transport = new KillSwitchedClientTransport(connectionKillSwitch))
+      Http().outgoingConnectionUsingContext(host = "localhost", port = serverBinding.localAddress.getPort, connectionContext = ConnectionContext.noEncryption(), settings = ClientConnectionSettings(system).withTransport(new KillSwitchedClientTransport(connectionKillSwitch)))
   }
 
   /**
@@ -633,7 +633,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
   case object AkkaHttpEngineTLS extends TopLevelApiClientServerImplementation {
     protected override def bindServerSource = Http().bind("akka.example.org", 0, connectionContext = ExampleHttpContexts.exampleServerContext)
     protected def clientConnectionFlow(connectionKillSwitch: SharedKillSwitch): Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
-      Http().outgoingConnectionUsingTransport(host = "akka.example.org", port = serverBinding.localAddress.getPort, connectionContext = ExampleHttpContexts.exampleClientContext, transport = new KillSwitchedClientTransport(connectionKillSwitch))
+      Http().outgoingConnectionUsingContext(host = "akka.example.org", port = serverBinding.localAddress.getPort, connectionContext = ExampleHttpContexts.exampleClientContext, settings = ClientConnectionSettings(system).withTransport(new KillSwitchedClientTransport(connectionKillSwitch)))
   }
   abstract class TopLevelApiClientServerImplementation extends ClientServerImplementation {
     def failsHandlerInputWhenHandlerOutputFails: Boolean = false

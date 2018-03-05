@@ -373,15 +373,15 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
    * To configure additional settings for requests made using this method,
    * use the `akka.http.client` config section or pass in a [[akka.http.scaladsl.settings.ClientConnectionSettings]] explicitly.
    */
-  @deprecated("Deprecated in favor of method outgoingConnectionUsingContext (transport retrieved from ClientConnectionSettings)", "10.0.12")
-  def outgoingConnectionUsingTransport(
+  @deprecated("Deprecated in favor of method outgoingConnectionUsingContext (transport retrieved from ClientConnectionSettings)", "10.1.0")
+  private[http] def outgoingConnectionUsingTransport( // kept as private[http] for binary compatibility
     host:              String,
     port:              Int,
     transport:         ClientTransport,
     connectionContext: ConnectionContext,
     settings:          ClientConnectionSettings = ClientConnectionSettings(system),
     log:               LoggingAdapter           = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
-    _outgoingConnection(host, port, settings, connectionContext, transport, log)
+    _outgoingConnection(host, port, settings.withTransport(transport), connectionContext, log)
 
   private def _outgoingConnection(
     host:              String,
@@ -394,35 +394,12 @@ class HttpExt(private val config: Config)(implicit val system: ActorSystem) exte
     layer.joinMat(_outgoingTlsConnectionLayer(host, port, settings, connectionContext, log))(Keep.right)
   }
 
-  @deprecated("Deprecated in favor of method without ClientTransport (transport retrieved from ClientConnectionSettings)", "10.0.12")
-  private def _outgoingConnection(
-    host:              String,
-    port:              Int,
-    settings:          ClientConnectionSettings,
-    connectionContext: ConnectionContext,
-    transport:         ClientTransport,
-    log:               LoggingAdapter): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
-    val hostHeader = if (port == connectionContext.defaultPort) Host(host) else Host(host, port)
-    val layer = clientLayer(hostHeader, settings, log)
-    layer.joinMat(_outgoingTlsConnectionLayer(host, port, settings, connectionContext, transport, log))(Keep.right)
-  }
-
   private def _outgoingTlsConnectionLayer(host: String, port: Int,
                                           settings: ClientConnectionSettings, connectionContext: ConnectionContext,
                                           log: LoggingAdapter): Flow[SslTlsOutbound, SslTlsInbound, Future[OutgoingConnection]] = {
     val tlsStage = sslTlsStage(connectionContext, Client, Some(host → port))
 
     tlsStage.joinMat(settings.transport.connectTo(host, port, settings))(Keep.right)
-  }
-
-  @deprecated("Deprecated in favor of method without ClientTransport (transport retrieved from ClientConnectionSettings)", "10.0.12")
-  private def _outgoingTlsConnectionLayer(host: String, port: Int,
-                                          settings: ClientConnectionSettings, connectionContext: ConnectionContext,
-                                          transport: ClientTransport,
-                                          log:       LoggingAdapter): Flow[SslTlsOutbound, SslTlsInbound, Future[OutgoingConnection]] = {
-    val tlsStage = sslTlsStage(connectionContext, Client, Some(host → port))
-
-    tlsStage.joinMat(transport.connectTo(host, port, settings))(Keep.right)
   }
 
   type ClientLayer = Http.ClientLayer
