@@ -11,6 +11,81 @@ or other specifically documented special-cases.
 For more information and a detailed discussion of these rules and guarantees please refer to
 @extref:[The @DoNotInherit and @ApiMayChange markers](akka-docs:common/binary-compatibility-rules.html#The_@DoNotInherit_and_@ApiMayChange_markers).
 
+### Components with no Binary Compatibility Guarantee
+
+The following components and modules don't have the previously mentioned binary compatibility guaranteed within minor or
+patch versions. However, binary compatibility will attempted to be kept as much as possible.
+
+#### akka-http
+
+Scala
+:   ```scala
+    akka.http.scaladsl.server.directives.FileUploadDirectives#storeUploadedFile
+    akka.http.scaladsl.server.directives.FileUploadDirectives#storeUploadedFiles
+    akka.http.scaladsl.server.directives.FileUploadDirectives#fileUploadAll
+    akka.http.scaladsl.marshalling.sse.EventStreamMarshalling
+    akka.http.scaladsl.server.HttpApp
+    akka.http.scaladsl.unmarshalling.sse.EventStreamParser
+    akka.http.scaladsl.unmarshalling.sse.EventStreamUnmarshalling
+    ```
+
+Java
+:   ```java
+    akka.http.javadsl.common.PartialApplication#bindParameter
+    akka.http.javadsl.server.AllDirectives#anyOf (all overloads)
+    akka.http.javadsl.server.AllDirectives#allOf (all overloads)
+    akka.http.javadsl.server.directives.FileUploadDirectives#storeUploadedFile
+    akka.http.javadsl.server.directives.FileUploadDirectives#storeUploadedFiles
+    akka.http.javadsl.server.directives.FileUploadDirectives#fileUploadAll
+    akka.http.javadsl.server.HttpApp
+    ```    
+
+#### akka-http-caching
+
+Scala
+:   ```scala
+    akka.http.caching.LfuCache
+    akka.http.caching.javadsl.Cache
+    akka.http.caching.scaladsl.Cache
+    akka.http.scaladsl.server.directives.CachingDirectives
+    ```
+
+Java
+:   ```java
+    akka.http.caching.LfuCache
+    akka.http.caching.javadsl.Cache
+    akka.http.caching.scaladsl.Cache
+    akka.http.javadsl.server.directives.CachingDirectives
+    ```    
+
+#### akka-http-core
+
+Scala
+:   ```scala
+    akka.http.scaladsl.ClientTransport
+    akka.http.scaladsl.settings.PoolImplementation
+    akka.http.scaladsl.settings.ConnectionPoolSettings#poolImplementation
+    akka.http.scaladsl.settings.ConnectionPoolSettings#responseEntitySubscriptionTimeout
+    akka.http.scaladsl.settings.ConnectionPoolSettings#withPoolImplementation
+    akka.http.scaladsl.settings.ConnectionPoolSettings#withResponseEntitySubscriptionTimeout
+    akka.http.scaladsl.settings.Http2ServerSettings
+    akka.http.scaladsl.settings.PreviewServerSettings
+    akka.http.scaladsl.model.headers.CacheDirectives.immutableDirective
+    akka.http.scaladsl.model.headers.X-Forwarded-Host
+    akka.http.scaladsl.model.headers.X-Forwarded-Proto
+    ```
+
+Java
+:   ```java
+    akka.http.javadsl.ClientTransport
+    akka.http.javadsl.settings.PoolImplementation
+    akka.http.javadsl.settings.ConnectionPoolSettings#getPoolImplementation
+    akka.http.javadsl.settings.ConnectionPoolSettings#getResponseEntitySubscriptionTimeout
+    akka.http.javadsl.settings.ConnectionPoolSettings#withPoolImplementation
+    akka.http.javadsl.settings.ConnectionPoolSettings#withResponseEntitySubscriptionTimeout
+    akka.http.javadsl.settings.PreviewServerSettings
+    ```
+    
 ## Specific versions inter-op discussion
 
 In this section we discuss some of the specific cases of compatibility between versions of Akka HTTP and Akka itself.
