@@ -32,8 +32,8 @@ Scala
 Java
 :   ```java
     akka.http.javadsl.common.PartialApplication#bindParameter
-    akka.http.javadsl.server.AllDirectives#anyOf (all overloads)
-    akka.http.javadsl.server.AllDirectives#allOf (all overloads)
+    akka.http.javadsl.server.Directives#anyOf (all overloads)
+    akka.http.javadsl.server.Directives#allOf (all overloads)
     akka.http.javadsl.server.directives.FileUploadDirectives#storeUploadedFile
     akka.http.javadsl.server.directives.FileUploadDirectives#storeUploadedFiles
     akka.http.javadsl.server.directives.FileUploadDirectives#fileUploadAll
@@ -45,7 +45,6 @@ Java
 Scala
 :   ```scala
     akka.http.caching.LfuCache
-    akka.http.caching.javadsl.Cache
     akka.http.caching.scaladsl.Cache
     akka.http.scaladsl.server.directives.CachingDirectives
     ```
@@ -54,7 +53,6 @@ Java
 :   ```java
     akka.http.caching.LfuCache
     akka.http.caching.javadsl.Cache
-    akka.http.caching.scaladsl.Cache
     akka.http.javadsl.server.directives.CachingDirectives
     ```    
 
@@ -64,6 +62,8 @@ Scala
 :   ```scala
     akka.http.scaladsl.ClientTransport
     akka.http.scaladsl.settings.PoolImplementation
+    akka.http.scaladsl.settings.ClientConnectionSettings#transport
+    akka.http.scaladsl.settings.ClientConnectionSettings#withTransport
     akka.http.scaladsl.settings.ConnectionPoolSettings#poolImplementation
     akka.http.scaladsl.settings.ConnectionPoolSettings#responseEntitySubscriptionTimeout
     akka.http.scaladsl.settings.ConnectionPoolSettings#withPoolImplementation
@@ -78,11 +78,13 @@ Scala
 Java
 :   ```java
     akka.http.javadsl.ClientTransport
-    akka.http.javadsl.settings.PoolImplementation
+    akka.http.javadsl.settings.ClientConnectionSettings#getTransport
+    akka.http.javadsl.settings.ClientConnectionSettings#withTransport
     akka.http.javadsl.settings.ConnectionPoolSettings#getPoolImplementation
     akka.http.javadsl.settings.ConnectionPoolSettings#getResponseEntitySubscriptionTimeout
     akka.http.javadsl.settings.ConnectionPoolSettings#withPoolImplementation
     akka.http.javadsl.settings.ConnectionPoolSettings#withResponseEntitySubscriptionTimeout
+    akka.http.javadsl.settings.PoolImplementation
     akka.http.javadsl.settings.PreviewServerSettings
     ```
     
