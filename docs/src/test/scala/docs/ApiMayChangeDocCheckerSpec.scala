@@ -48,22 +48,25 @@ class ApiMayChangeDocCheckerSpec extends WordSpec with Matchers {
       .setScanners(
         new TypeAnnotationsScanner(),
         new MethodAnnotationsScanner()))
-    val docPage = Source.fromFile("docs/src/main/paradox/compatibility-guidelines.md").getLines().toList
-    "contain all ApiMayChange references in classes" in {
-      val classes: mutable.Set[Class[_]] = reflections.getTypesAnnotatedWith(classOf[ApiMayChange], true).asScala
-      val missing = classes
-        .map(prettifyName)
-        .foldLeft(Set.empty[String])(collectMissing(docPage))
-      checkNoMissingCases(missing, "Types")
-    }
-    "contain all ApiMayChange references in methods" in {
-      val methods = reflections.getMethodsAnnotatedWith(classOf[ApiMayChange]).asScala
-      val missing = methods
-        .filterNot(removeClassesToIgnore)
-        .map(method => prettifyName(method.getDeclaringClass) + "#" + method.getName)
-        .foldLeft(Set.empty[String])(collectMissing(docPage))
-      checkNoMissingCases(missing, "Methods")
-    }
+    val source = Source.fromFile("docs/src/main/paradox/compatibility-guidelines.md")
+    try {
+      val docPage = source.getLines().toList
+      "contain all ApiMayChange references in classes" in {
+        val classes: mutable.Set[Class[_]] = reflections.getTypesAnnotatedWith(classOf[ApiMayChange], true).asScala
+        val missing = classes
+          .map(prettifyName)
+          .foldLeft(Set.empty[String])(collectMissing(docPage))
+        checkNoMissingCases(missing, "Types")
+      }
+      "contain all ApiMayChange references in methods" in {
+        val methods = reflections.getMethodsAnnotatedWith(classOf[ApiMayChange]).asScala
+        val missing = methods
+          .filterNot(removeClassesToIgnore)
+          .map(method => prettifyName(method.getDeclaringClass) + "#" + method.getName)
+          .foldLeft(Set.empty[String])(collectMissing(docPage))
+        checkNoMissingCases(missing, "Methods")
+      }
+    } finally source.close()
 
   }
 }
