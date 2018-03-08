@@ -907,7 +907,8 @@ object UriRendering {
   def renderQuery[R <: Rendering](r: R, query: Query, charset: Charset,
                                   keep: CharPredicate = `strict-query-char-np`): r.type = {
     def enc(s: String): Unit = encode(r, s, charset, keep, replaceSpaces = true)
-    @tailrec def append(q: Query): r.type =
+    /* FIXME: broken in 2.13.0-M3, see https://github.com/scala/scala-dev/issues/467 @tailrec */
+    def append(q: Query): r.type =
       q match {
         case Query.Empty ⇒ r
         case Query.Cons(key, value, tail) ⇒
@@ -923,7 +924,8 @@ object UriRendering {
   private[http] def encode(r: Rendering, string: String, charset: Charset, keep: CharPredicate,
                            replaceSpaces: Boolean = false): r.type = {
     val asciiCompatible = isAsciiCompatible(charset)
-    @tailrec def rec(ix: Int): r.type = {
+    /* FIXME: broken in 2.13.0-M3, see https://github.com/scala/scala-dev/issues/467 @tailrec */
+    def rec(ix: Int): r.type = {
       def appendEncoded(byte: Byte): Unit = r ~~ '%' ~~ CharUtils.upperHexDigit(byte >>> 4) ~~ CharUtils.upperHexDigit(byte)
       if (ix < string.length) {
         val charSize = string.charAt(ix) match {

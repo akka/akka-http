@@ -35,7 +35,8 @@ object CacheDirective {
     final def render[R <: Rendering](r: R): r.type =
       if (fieldNames.nonEmpty) {
         r ~~ productPrefix ~~ '=' ~~ '"'
-        @tailrec def rec(i: Int = 0): r.type =
+        /* FIXME: broken in 2.13.0-M3, see https://github.com/scala/scala-dev/issues/467 @tailrec */
+        def rec(i: Int = 0): r.type =
           if (i < fieldNames.length) {
             if (i > 0) r ~~ ','
             r.putEscaped(fieldNames(i))
