@@ -121,14 +121,16 @@ private[http] object Renderer {
   def genericSeqRenderer[S, T](separator: S, empty: S)(implicit sRenderer: Renderer[S], tRenderer: Renderer[T]): Renderer[immutable.Seq[T]] =
     new Renderer[immutable.Seq[T]] {
       def render[R <: Rendering](r: R, value: immutable.Seq[T]): r.type = {
-        @tailrec def recI(values: IndexedSeq[T], ix: Int = 0): r.type =
+        /* FIXME: broken in 2.13.0-M3, see https://github.com/scala/scala-dev/issues/467 @tailrec */
+        def recI(values: IndexedSeq[T], ix: Int = 0): r.type =
           if (ix < values.size) {
             if (ix > 0) sRenderer.render(r, separator)
             tRenderer.render(r, values(ix))
             recI(values, ix + 1)
           } else r
 
-        @tailrec def recL(remaining: LinearSeq[T]): r.type =
+        /* FIXME: broken in 2.13.0-M3, see https://github.com/scala/scala-dev/issues/467 @tailrec */
+        def recL(remaining: LinearSeq[T]): r.type =
           if (remaining.nonEmpty) {
             if (remaining ne value) sRenderer.render(r, separator)
             tRenderer.render(r, remaining.head)
@@ -172,7 +174,8 @@ private[http] trait Rendering {
    */
   def ~~%(lng: Long): this.type =
     if (lng != 0) {
-      @tailrec def putChar(shift: Int): this.type = {
+      /* FIXME: broken in 2.13.0-M3, see https://github.com/scala/scala-dev/issues/467 @tailrec */
+      def putChar(shift: Int): this.type = {
         this ~~ CharUtils.lowerHexDigit(lng >>> shift)
         if (shift > 0) putChar(shift - 4) else this
       }
@@ -180,13 +183,15 @@ private[http] trait Rendering {
     } else this ~~ '0'
 
   def ~~(string: String): this.type = {
-    @tailrec def rec(ix: Int = 0): this.type =
+    /* FIXME: broken in 2.13.0-M3, see https://github.com/scala/scala-dev/issues/467 @tailrec */
+    def rec(ix: Int = 0): this.type =
       if (ix < string.length) { this ~~ string.charAt(ix); rec(ix + 1) } else this
     rec()
   }
 
   def ~~(chars: Array[Char]): this.type = {
-    @tailrec def rec(ix: Int = 0): this.type =
+    /* FIXME: broken in 2.13.0-M3, see https://github.com/scala/scala-dev/issues/467 @tailrec */
+    def rec(ix: Int = 0): this.type =
       if (ix < chars.length) { this ~~ chars(ix); rec(ix + 1) } else this
     rec()
   }
@@ -206,7 +211,8 @@ private[http] trait Rendering {
   def ~~#!(s: String): this.type = ~~('"').putEscaped(s) ~~ '"'
 
   def putEscaped(s: String, escape: CharPredicate = Rendering.`\"`, escChar: Char = '\\'): this.type = {
-    @tailrec def rec(ix: Int = 0): this.type =
+    /* FIXME: broken in 2.13.0-M3, see https://github.com/scala/scala-dev/issues/467 @tailrec */
+    def rec(ix: Int = 0): this.type =
       if (ix < s.length) {
         val c = s.charAt(ix)
         if (escape(c)) this ~~ escChar
@@ -239,7 +245,8 @@ private[http] class StringRendering extends Rendering {
   private[this] val sb = new java.lang.StringBuilder
   def ~~(ch: Char): this.type = { sb.append(ch); this }
   def ~~(bytes: Array[Byte]): this.type = {
-    @tailrec def rec(ix: Int = 0): this.type =
+    /* FIXME: broken in 2.13.0-M3, see https://github.com/scala/scala-dev/issues/467 @tailrec */
+    def rec(ix: Int = 0): this.type =
       if (ix < bytes.length) { this ~~ bytes(ix).asInstanceOf[Char]; rec(ix + 1) } else this
     rec()
   }
