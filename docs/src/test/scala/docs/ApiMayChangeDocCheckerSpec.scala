@@ -10,7 +10,7 @@ import akka.annotation.ApiMayChange
 import org.reflections.Reflections
 import org.reflections.scanners.{ MethodAnnotationsScanner, TypeAnnotationsScanner }
 import org.reflections.util.{ ClasspathHelper, ConfigurationBuilder }
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.{ Matchers, WordSpec, Assertion }
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -34,6 +34,14 @@ class ApiMayChangeDocCheckerSpec extends WordSpec with Matchers {
       set + name
   }
 
+  def checkNoMissingCases(missing: Set[String], typeOfUsage: String): Assertion = {
+    if (missing.isEmpty) {
+      succeed
+    } else {
+      fail(s"Please add the following missing $typeOfUsage annotated with @ApiMayChange to docs/src/main/paradox/compatibility-guidelines.md:\n${missing.map(miss => s"* $miss").mkString("\n")}")
+    }
+  }
+
   "compatibility-guidelines.md doc page" should {
     val reflections = new Reflections(new ConfigurationBuilder()
       .setUrls(ClasspathHelper.forPackage("akka.http"))
@@ -46,7 +54,7 @@ class ApiMayChangeDocCheckerSpec extends WordSpec with Matchers {
       val missing = classes
         .map(prettifyName)
         .foldLeft(Set.empty[String])(collectMissing(docPage))
-      missing shouldBe Set.empty
+      checkNoMissingCases(missing, "Types")
     }
     "contain all ApiMayChange references in methods" in {
       val methods = reflections.getMethodsAnnotatedWith(classOf[ApiMayChange]).asScala
@@ -54,7 +62,7 @@ class ApiMayChangeDocCheckerSpec extends WordSpec with Matchers {
         .filterNot(removeClassesToIgnore)
         .map(method => prettifyName(method.getDeclaringClass) + "#" + method.getName)
         .foldLeft(Set.empty[String])(collectMissing(docPage))
-      missing shouldBe Set.empty
+      checkNoMissingCases(missing, "Methods")
     }
 
   }
