@@ -307,11 +307,11 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
     case None    ⇒ ContentTypes.`application/octet-stream`
   }
 
-  protected final def emptyEntity(cth: Option[`Content-Type`]) =
+  protected final def emptyEntity(cth: Option[`Content-Type`]): StrictEntityCreator[Output, UniversalEntity] =
     StrictEntityCreator(if (cth.isDefined) HttpEntity.empty(cth.get.contentType) else HttpEntity.Empty)
 
   protected final def strictEntity(cth: Option[`Content-Type`], input: ByteString, bodyStart: Int,
-                                   contentLength: Int) =
+                                   contentLength: Int): StrictEntityCreator[Output, UniversalEntity] =
     StrictEntityCreator(HttpEntity.Strict(contentType(cth), input.slice(bodyStart, bodyStart + contentLength)))
 
   protected final def defaultEntity[A <: ParserOutput](cth: Option[`Content-Type`], contentLength: Long) =
