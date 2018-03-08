@@ -107,6 +107,7 @@ lazy val httpCore = project("akka-http-core")
   .enablePlugins(BootstrapGenjavadoc)
 
 lazy val http = project("akka-http")
+  .settings(AutomaticModuleName.settings("akka.http"))
   .dependsOn(httpCore)
   .addAkkaModuleDependency("akka-stream", "provided")
   .settings(Dependencies.http)
