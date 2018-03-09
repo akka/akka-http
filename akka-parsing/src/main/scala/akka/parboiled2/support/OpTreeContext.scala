@@ -595,7 +595,7 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
         case Left(_)  ⇒ super.render(wrapped)
         case Right(x) ⇒ q"$x ne null"
       }
-    def renderInner(wrapped: Boolean) = call.asInstanceOf[Left[OpTree, Tree]].value.render(wrapped)
+    def renderInner(wrapped: Boolean) = call.asInstanceOf[Left[OpTree, Tree]].a.render(wrapped)
   }
 
   def CharRange(lowerTree: Tree, upperTree: Tree): CharacterRange = {
