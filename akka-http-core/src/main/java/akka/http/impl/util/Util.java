@@ -47,7 +47,7 @@ public abstract class Util {
     public static final scala.collection.immutable.Map<String, String> emptyMap =
         Map$.MODULE$.<String, String>empty();
 
-    public static final None$ noneValue = None$.MODULE$;
+    private static final scala.Option<?> noneValue = None$.MODULE$;
     @SuppressWarnings("unchecked")
     public static <T> scala.Option<T> scalaNone() {
         return (scala.Option<T>) noneValue;
