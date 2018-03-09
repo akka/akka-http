@@ -82,7 +82,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   override val sslConfig = AkkaSSLConfig(system)
   validateAndWarnAboutLooseSettings()
 
-  private[this] val defaultConnectionPoolSettings = ConnectionPoolSettings(system)
+  private[this] val defaultConnectionPoolSettings = ConnectionPoolSettings.withOverrides(system)
 
   // configured default HttpsContext for the client-side
   // SYNCHRONIZED ACCESS ONLY!
@@ -475,7 +475,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   def newHostConnectionPool[T](host: String, port: Int = 80,
                                settings: ConnectionPoolSettings = defaultConnectionPoolSettings,
                                log:      LoggingAdapter         = system.log)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
-    val cps = ConnectionPoolSetup(settings, ConnectionContext.noEncryption(), log)
+    val cps = ConnectionPoolSetup(settings.forHost(host), ConnectionContext.noEncryption(), log)
     newHostConnectionPool(HostConnectionPoolSetup(host, port, cps))
   }
 
@@ -492,7 +492,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
                                     connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
                                     settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
                                     log:               LoggingAdapter         = system.log)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
-    val cps = ConnectionPoolSetup(settings, connectionContext, log)
+    val cps = ConnectionPoolSetup(settings.forHost(host), connectionContext, log)
     newHostConnectionPool(HostConnectionPoolSetup(host, port, cps))
   }
 
@@ -530,7 +530,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   def cachedHostConnectionPool[T](host: String, port: Int = 80,
                                   settings: ConnectionPoolSettings = defaultConnectionPoolSettings,
                                   log:      LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
-    val cps = ConnectionPoolSetup(settings, ConnectionContext.noEncryption(), log)
+    val cps = ConnectionPoolSetup(settings.forHost(host), ConnectionContext.noEncryption(), log)
     val setup = HostConnectionPoolSetup(host, port, cps)
     cachedHostConnectionPool(setup)
   }
@@ -548,7 +548,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
                                        connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
                                        settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
                                        log:               LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
-    val cps = ConnectionPoolSetup(settings, connectionContext, log)
+    val cps = ConnectionPoolSetup(settings.forHost(host), connectionContext, log)
     val setup = HostConnectionPoolSetup(host, port, cps)
     cachedHostConnectionPool(setup)
   }
@@ -595,7 +595,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
     settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
     log:               LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] =
-    clientFlow[T](settings)(singleRequest(_, connectionContext, settings, log))
+    clientFlow[T](settings)(request => singleRequest(request, connectionContext, settings.forHost(request.uri.authority.host.toString), log))
 
   /**
    * Fires a single [[akka.http.scaladsl.model.HttpRequest]] across the (cached) host connection pool for the request's
@@ -611,7 +611,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
     settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
     log:               LoggingAdapter         = system.log): Future[HttpResponse] =
-    try sharedGateway(request, settings, connectionContext, log)(request)
+    try sharedGateway(request, settings.forHost(request.uri.authority.host.toString), connectionContext, log)(request)
     catch {
       case e: IllegalUriException => FastFuture.failed(e)
     }
