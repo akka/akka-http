@@ -1,7 +1,7 @@
 package akka.http.scaladsl.server.directives
 
 import akka.http.scaladsl.marshalling.ToResponseMarshaller
-import akka.http.scaladsl.server.{Directive, Directive1, Directives, Route}
+import akka.http.scaladsl.server.{ Directive, Directive1, Directives, Route }
 
 import scala.language.implicitConversions
 
