@@ -9,7 +9,9 @@ import akka.http.impl.util.{ SettingsCompanion, _ }
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, PoolImplementation }
 import com.typesafe.config.Config
 
+import scala.collection.immutable
 import scala.concurrent.duration.Duration
+import scala.util.matching.Regex
 
 /** INTERNAL API */
 @InternalApi
@@ -22,7 +24,8 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   idleTimeout:                       Duration,
   connectionSettings:                ClientConnectionSettings,
   poolImplementation:                PoolImplementation,
-  responseEntitySubscriptionTimeout: Duration)
+  responseEntitySubscriptionTimeout: Duration,
+  hostMap:                           immutable.Map[Regex, ConnectionPoolSettings])
   extends ConnectionPoolSettings {
 
   require(maxConnections > 0, "max-connections must be > 0")
@@ -50,6 +53,33 @@ private[akka] final case class ConnectionPoolSettingsImpl(
 }
 
 object ConnectionPoolSettingsImpl extends SettingsCompanion[ConnectionPoolSettingsImpl]("akka.http.host-connection-pool") {
+
+  private[akka] def hostRegex(pattern: String): Regex = {
+    val regexPattern = if (pattern.startsWith("regex:")) {
+      pattern.stripPrefix("regex:")
+    } else {
+      pattern.stripPrefix("glob:").map {
+        case '*'   ⇒ ".*"
+        case '?'   ⇒ "."
+        case '.'   ⇒ "\\."
+        case other ⇒ other.toString
+      }.mkString
+    }
+
+    // If the pattern starts with a wildcard, we want to match subdomains, as well as the raw domain
+    // so *.example.com should match www.example.com as well as example.com. So we replacing any leading
+    // (.*\.) pattern to allow for the beginning of the string, as well as an arbitrary subdomain. But it
+    // won't match something like thisexample.com
+    val p = if (regexPattern.startsWith(".*\\.")) {
+      s"(^|.*\\.)${regexPattern.drop(4)}"
+    } else {
+      regexPattern
+    }
+
+    p.r
+
+  }
+
   def fromSubConfig(root: Config, c: Config) = {
     new ConnectionPoolSettingsImpl(
       c getInt "max-connections",
@@ -63,7 +93,9 @@ object ConnectionPoolSettingsImpl extends SettingsCompanion[ConnectionPoolSettin
         case "legacy" ⇒ PoolImplementation.Legacy
         case "new"    ⇒ PoolImplementation.New
       },
-      c getPotentiallyInfiniteDuration "response-entity-subscription-timeout"
+      c getPotentiallyInfiniteDuration "response-entity-subscription-timeout",
+      Map.empty
     )
   }
+
 }

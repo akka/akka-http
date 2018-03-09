@@ -4,12 +4,16 @@
 
 package akka.http.scaladsl.settings
 
+import java.util
+
+import akka.actor.ActorSystem
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
 import akka.http.javadsl.{ settings ⇒ js }
 import akka.http.scaladsl.ClientTransport
 import com.typesafe.config.Config
 
+import scala.collection.immutable
 import scala.concurrent.duration.Duration
 
 @ApiMayChange
@@ -34,6 +38,18 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   def connectionSettings: ClientConnectionSettings
 
   /**
+   * This checks to see if there's a matching host override. `hostMap` will only ever be populated
+   * by the default connection pool in the Http extension, so user supplied connection pools will
+   * never have any overrides, so will always use the object passed explicitly
+   */
+  private[akka] def forHost(h: String): ConnectionPoolSettings = {
+    if (hostMap.isEmpty) this
+    else {
+      hostMap.find(_._1.pattern.matcher(h).matches()).map(_._2).getOrElse(this)
+    }
+  }
+
+  /**
    * The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used.
    */
   @deprecated("Deprecated in favor of connectionSettings.transport", "10.1.0")
@@ -55,6 +71,10 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   override def withMaxOpenRequests(newValue: Int): ConnectionPoolSettings = self.copy(maxOpenRequests = newValue)
   override def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copy(pipeliningLimit = newValue)
   override def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue)
+  def withHostMap(newValue: immutable.Map[String, ConnectionPoolSettings]): ConnectionPoolSettings =
+    self.copy(hostMap = newValue.map { case (k, v) ⇒ ConnectionPoolSettingsImpl.hostRegex(k) -> v })
+  def withHostOverride(hostPattern: String, settings: ConnectionPoolSettings): ConnectionPoolSettings =
+    self.copy(hostMap = hostMap.updated(ConnectionPoolSettingsImpl.hostRegex(hostPattern), settings))
 
   // overloads for idiomatic Scala use
   def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue)
@@ -76,6 +96,34 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
 }
 
 object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] {
+
   override def apply(config: Config) = ConnectionPoolSettingsImpl(config)
+
+  private[akka] def forDefault(system: ActorSystem): ConnectionPoolSettings = {
+    forDefault(system.settings.config)
+  }
+
+  /**
+   * Builds a ConnectionPoolSettings that has the host specific overrides populated from config
+   *
+   * This is the ONLY place that a connection pool object can be created that has the abililty to be configured per
+   * host, and it's ONLY used by `HttpExt.defaultConnectionPoolSettings`. The intent is NOT to let users define or use
+   * this, or even for akka internally to use this. Think of this more like a placeholder for the
+   * `defaultConnectionPoolSettings` provided in the HttpExt.singleRequest and other client methods instead of breaking
+   * binary compatibility by making those calls take an `Option[_]`or using `null`
+   *
+   */
+  private[akka] def forDefault(config: Config): ConnectionPoolSettings = {
+    import scala.collection.JavaConverters._
+
+    val configOverrides = config.getObject("akka.http.host-connection-pool.per-host-override").asScala.toMap.map {
+      case (h, hostConfig) ⇒
+        ConnectionPoolSettingsImpl.hostRegex(h) -> ConnectionPoolSettingsImpl(hostConfig.atPath("akka.http.host-connection-pool").withFallback(config))
+    }
+
+    ConnectionPoolSettingsImpl(config).copy(hostMap = configOverrides)
+
+  }
+
   override def apply(configOverrides: String) = ConnectionPoolSettingsImpl(configOverrides)
 }

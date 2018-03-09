@@ -61,7 +61,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   override val sslConfig = AkkaSSLConfig(system)
   validateAndWarnAboutLooseSettings()
 
-  private[this] val defaultConnectionPoolSettings = ConnectionPoolSettings(system)
+  private[this] val defaultConnectionPoolSettings = ConnectionPoolSettings.forDefault(system)
 
   // configured default HttpsContext for the client-side
   // SYNCHRONIZED ACCESS ONLY!
@@ -501,7 +501,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   def newHostConnectionPool[T](host: String, port: Int = 80,
                                settings: ConnectionPoolSettings = defaultConnectionPoolSettings,
                                log:      LoggingAdapter         = system.log)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
-    val cps = ConnectionPoolSetup(settings, ConnectionContext.noEncryption(), log)
+    val cps = ConnectionPoolSetup(settings.forHost(host), ConnectionContext.noEncryption(), log)
     newHostConnectionPool(HostConnectionPoolSetup(host, port, cps))
   }
 
@@ -518,7 +518,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
                                     connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
                                     settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
                                     log:               LoggingAdapter         = system.log)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
-    val cps = ConnectionPoolSetup(settings, connectionContext, log)
+    val cps = ConnectionPoolSetup(settings.forHost(host), connectionContext, log)
     newHostConnectionPool(HostConnectionPoolSetup(host, port, cps))
   }
 
@@ -569,12 +569,12 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   def cachedHostConnectionPool[T](host: String, port: Int = 80,
                                   settings: ConnectionPoolSettings = defaultConnectionPoolSettings,
                                   log:      LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
-    cachedHostConnectionPoolImpl(host, port, settings, log)
+    cachedHostConnectionPoolImpl(host, port, settings.forHost(host), log)
 
   private[http] def cachedHostConnectionPoolImpl[T](host: String, port: Int = 80,
                                                     settings: ConnectionPoolSettings = defaultConnectionPoolSettings,
                                                     log:      LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
-    val cps = ConnectionPoolSetup(settings, ConnectionContext.noEncryption(), log)
+    val cps = ConnectionPoolSetup(settings.forHost(host), ConnectionContext.noEncryption(), log)
     val setup = HostConnectionPoolSetup(host, port, cps)
     cachedHostConnectionPool(setup)
   }
@@ -598,13 +598,13 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
                                        connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
                                        settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
                                        log:               LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
-    cachedHostConnectionPoolHttpsImpl(host, port, connectionContext, settings, log)
+    cachedHostConnectionPoolHttpsImpl(host, port, connectionContext, settings.forHost(host), log)
 
   private[http] def cachedHostConnectionPoolHttpsImpl[T](host: String, port: Int = 443,
                                                          connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
                                                          settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
                                                          log:               LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
-    val cps = ConnectionPoolSetup(settings, connectionContext, log)
+    val cps = ConnectionPoolSetup(settings.forHost(host), connectionContext, log)
     val setup = HostConnectionPoolSetup(host, port, cps)
     cachedHostConnectionPool(setup)
   }
@@ -663,7 +663,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
     settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
     log:               LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] =
-    clientFlow[T](settings) { request ⇒ request → sharedGateway(request, settings, connectionContext, log) }
+    clientFlow[T](settings) { request ⇒ request → sharedGateway(request, settings.forHost(request.uri.authority.host.toString), connectionContext, log) }
 
   @deprecated("Deprecated in favor of method without implicit materializer", "10.0.11") // kept as `private[http]` for binary compatibility
   private[http] def superPool[T](
@@ -686,7 +686,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
     settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
     log:               LoggingAdapter         = system.log): Future[HttpResponse] =
-    singleRequestImpl(request, connectionContext, settings, log)
+    singleRequestImpl(request, connectionContext, settings.forHost(request.uri.authority.host.toString), log)
 
   /**
    *  Dummy method to disambiguate internal usages of new singleRequest. Implementation can be moved to
@@ -698,7 +698,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
     log:               LoggingAdapter         = system.log): Future[HttpResponse] =
     try {
-      val gateway = sharedGateway(request, settings, connectionContext, log)
+      val gateway = sharedGateway(request, settings.forHost(request.uri.authority.host.toString), connectionContext, log)
       gateway(request)
     } catch {
       case e: IllegalUriException ⇒ FastFuture.failed(e)

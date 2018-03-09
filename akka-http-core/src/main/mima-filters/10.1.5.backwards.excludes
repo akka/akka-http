@@ -1,0 +1,6 @@
+# ConnectionPoolSettingsImpl is private[akka]
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.this")
+
+
