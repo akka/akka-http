@@ -96,10 +96,26 @@ trait Route {
    *    will be already be handled using the implicitly given [[RejectionHandler]] and [[ExceptionHandler]] (or
    *    the default handlers if none are given or can be found implicitly).
    *  - Consequently, no route alternatives will be tried that were combined with this route.
+   *  @deprecated Use the variant without [[RoutingSettings]] and [[ParserSettings]]
    */
+  @Deprecated
   def seal(
     routingSettings:  RoutingSettings,
     parserSettings:   ParserSettings,
+    rejectionHandler: RejectionHandler,
+    exceptionHandler: ExceptionHandler): Route
+
+  /**
+   * Seals a route by wrapping it with explicit exception handling and rejection conversion.
+   *
+   * A sealed route has these properties:
+   *  - The result of the route will always be a complete response, i.e. the result of the future is a
+   *    ``Success(RouteResult.Complete(response))``, never a failed future and never a rejected route. These
+   *    will be already be handled using the implicitly given [[RejectionHandler]] and [[ExceptionHandler]] (or
+   *    the default handlers if none are given or can be found implicitly).
+   *  - Consequently, no route alternatives will be tried that were combined with this route.
+   */
+  def seal(
     rejectionHandler: RejectionHandler,
     exceptionHandler: ExceptionHandler): Route
 

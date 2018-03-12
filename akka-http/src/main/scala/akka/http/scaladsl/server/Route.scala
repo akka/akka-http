@@ -5,13 +5,14 @@
 package akka.http.scaladsl.server
 
 import akka.NotUsed
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
+import akka.http.scaladsl.server.directives.BasicDirectives
 import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
+import akka.http.scaladsl.util.FastFuture._
+import akka.stream.scaladsl.Flow
 import akka.stream.{ ActorMaterializerHelper, Materializer }
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
-import akka.stream.scaladsl.Flow
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
-import akka.http.scaladsl.util.FastFuture._
 
 object Route {
 
@@ -31,15 +32,23 @@ object Route {
    *  - Consequently, no route alternatives will be tried that were combined with this route
    *    using the ``~`` on routes or the [[Directive.|]] operator on directives.
    */
-  def seal(route: Route)(implicit
+  protected[this] def seal(route: Route)(implicit
     routingSettings: RoutingSettings,
-                         parserSettings:   ParserSettings   = null,
-                         rejectionHandler: RejectionHandler = RejectionHandler.default,
+                                         parserSettings:   ParserSettings,
+                                         rejectionHandler: RejectionHandler,
+                                         exceptionHandler: ExceptionHandler): Route = {
+    Route.seal(route)
+  }
+
+  def seal(route: Route)(implicit
+    rejectionHandler: RejectionHandler = RejectionHandler.default,
                          exceptionHandler: ExceptionHandler = null): Route = {
     import directives.ExecutionDirectives._
     // optimized as this is the root handler for all akka-http applications
-    (handleExceptions(ExceptionHandler.seal(exceptionHandler)) & handleRejections(rejectionHandler.seal))
-      .tapply(_ ⇒ route) // execute above directives eagerly, avoiding useless laziness of Directive.addByNameNullaryApply
+    BasicDirectives.extractSettings { implicit settings ⇒
+      (handleExceptions(ExceptionHandler.seal(exceptionHandler)) & handleRejections(rejectionHandler.seal))
+        .tapply(_ ⇒ route) // execute above directives eagerly, avoiding useless laziness of Directive.addByNameNullaryApply
+    }
   }
 
   /**
@@ -73,8 +82,8 @@ object Route {
     {
       implicit val executionContext = effectiveEC // overrides parameter
       val effectiveParserSettings = if (parserSettings ne null) parserSettings else ParserSettings(ActorMaterializerHelper.downcast(materializer).system)
-
-      val sealedRoute = seal(route)
+      // Need to reference the right seal method
+      val sealedRoute = Route.seal(route)(rejectionHandler, exceptionHandler)
       request ⇒
         sealedRoute(new RequestContextImpl(request, routingLog.requestLog(request), routingSettings, effectiveParserSettings)).fast
           .map {
