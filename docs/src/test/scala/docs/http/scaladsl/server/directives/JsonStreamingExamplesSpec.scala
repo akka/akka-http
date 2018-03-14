@@ -85,12 +85,10 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
     // {"example":43}
     // ...
     // {"example":1000}
-    val start = ByteString.empty
     val sep = ByteString("\n")
-    val end = ByteString.empty
 
     implicit val jsonStreamingSupport = EntityStreamingSupport.json()
-      .withFramingRenderer(Flow[ByteString].intersperse(start, sep, end))
+      .withFramingRenderer(Flow[ByteString].mapConcat(_ :: sep :: Nil))
 
     val route =
       path("tweets") {
@@ -106,7 +104,7 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
       responseAs[String] shouldEqual
         """{"uid":1,"txt":"#Akka rocks!"}""" + "\n" +
         """{"uid":2,"txt":"Streaming is so hot right now!"}""" + "\n" +
-        """{"uid":3,"txt":"You cannot enter the same river twice."}"""
+        """{"uid":3,"txt":"You cannot enter the same river twice."}""" + "\n"
     }
     //#line-by-line-json-response-streaming
   }
@@ -138,7 +136,7 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
       responseAs[String] shouldEqual
         "1,#Akka rocks!" + "\n" +
         "2,Streaming is so hot right now!" + "\n" +
-        "3,You cannot enter the same river twice."
+        "3,You cannot enter the same river twice." + "\n"
     }
     //#csv-example
   }

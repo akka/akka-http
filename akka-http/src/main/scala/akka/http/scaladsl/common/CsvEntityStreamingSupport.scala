@@ -26,7 +26,7 @@ final class CsvEntityStreamingSupport private[akka] (
       maxObjectSize,
       ContentTypeRange(ContentTypes.`text/csv(UTF-8)`),
       ContentTypes.`text/csv(UTF-8)`,
-      Flow[ByteString].intersperse(ByteString("\n")),
+      Flow[ByteString].mapConcat(_ :: ByteString("\n") :: Nil),
       1, false)
 
   override val framingDecoder: Flow[ByteString, ByteString, NotUsed] =
