@@ -36,6 +36,49 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem)
 
   val http = Http(system)
 
+  /**
+   * Handle requests using HTTP/2 immediately, without any TLS or negotiation layer.
+   */
+  def bindAndHandleRaw(
+    handler:   HttpRequest ⇒ Future[HttpResponse],
+    interface: String, port: Int = DefaultPortForProtocol,
+    settings:    ServerSettings = ServerSettings(system),
+    parallelism: Int            = 1,
+    log:         LoggingAdapter = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
+    val effectivePort = if (port >= 0) port else 80
+
+    val serverLayer: Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(StreamUtils.fuseAggressive(
+      Flow[HttpRequest]
+        .watchTermination()(Keep.right)
+        // FIXME: parallelism should maybe kept in track with SETTINGS_MAX_CONCURRENT_STREAMS so that we don't need
+        // to buffer requests that cannot be handled in parallel
+        .via(Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher))
+        .joinMat(Http2Blueprint.serverStack(settings, log))(Keep.left)))
+
+    val connections = Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)
+
+    connections.mapAsyncUnordered(settings.maxConnections) {
+      incoming: Tcp.IncomingConnection ⇒
+        try {
+          serverLayer.addAttributes(Http.prepareAttributes(settings, incoming)).joinMat(incoming.flow)(Keep.left)
+            .run().recover {
+              // Ignore incoming errors from the connection as they will cancel the binding.
+              // As far as it is known currently, these errors can only happen if a TCP error bubbles up
+              // from the TCP layer through the HTTP layer to the Http.IncomingConnection.flow.
+              // See https://github.com/akka/akka/issues/17992
+              case NonFatal(ex) ⇒
+                Done
+            }(ExecutionContexts.sameThreadExecutionContext)
+        } catch {
+          case NonFatal(e) ⇒
+            log.error(e, "Could not materialize handling flow for {}", incoming)
+            throw e
+        }
+    }.mapMaterializedValue {
+      _.map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(fm.executionContext)
+    }.to(Sink.ignore).run()
+  }
+
   def bindAndHandleAsync(
     handler:   HttpRequest ⇒ Future[HttpResponse],
     interface: String, port: Int = DefaultPortForProtocol,
@@ -92,7 +135,7 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem)
     val connections = Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)
 
     connections.mapAsyncUnordered(settings.maxConnections) {
-      case incoming: Tcp.IncomingConnection ⇒
+      incoming: Tcp.IncomingConnection ⇒
         try {
           fullLayer().addAttributes(Http.prepareAttributes(settings, incoming)).joinMat(incoming.flow)(Keep.left)
             .run().recover {
