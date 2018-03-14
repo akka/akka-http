@@ -71,12 +71,8 @@ class EntityStreamingSpec extends RoutingSpec {
   "line-by-line-json-response-streaming" in {
     import MyJsonProtocol._
 
-    val start = ByteString.empty
-    val sep = ByteString("\n")
-    val end = ByteString.empty
-
     implicit val jsonStreamingSupport = EntityStreamingSupport.json()
-      .withFramingRenderer(Flow[ByteString].intersperse(start, sep, end))
+      .withFramingRenderer(Flow[ByteString].map(sb ⇒ sb ++ ByteString("\n")))
 
     val route =
       path("tweets") {
@@ -91,7 +87,7 @@ class EntityStreamingSpec extends RoutingSpec {
       responseAs[String] shouldEqual
         """{"uid":1,"txt":"#Akka rocks!"}""" + "\n" +
         """{"uid":2,"txt":"Streaming is so hot right now!"}""" + "\n" +
-        """{"uid":3,"txt":"You cannot enter the same river twice."}"""
+        """{"uid":3,"txt":"You cannot enter the same river twice."}""" + "\n"
     }
   }
 
@@ -118,7 +114,7 @@ class EntityStreamingSpec extends RoutingSpec {
       responseAs[String] shouldEqual
         "1,#Akka rocks!" + "\n" +
         "2,Streaming is so hot right now!" + "\n" +
-        "3,You cannot enter the same river twice."
+        "3,You cannot enter the same river twice." + "\n"
     }
   }
 
