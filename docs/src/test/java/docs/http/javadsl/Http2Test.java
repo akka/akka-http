@@ -18,6 +18,12 @@ import static akka.http.javadsl.ConnectHttp.toHostHttps;
 
 //#bindAndHandleAsync
 
+//#bindAndHandleRaw
+import akka.http.javadsl.Http2;
+import static akka.http.javadsl.ConnectHttp.toHost;
+
+//#bindAndHandleRaw
+
 class Http2Test {
   void testBindAndHandleAsync() {
     Function<HttpRequest, CompletionStage<HttpResponse>> asyncHandler = null;
@@ -32,5 +38,13 @@ class Http2Test {
         toHostHttps("127.0.0.1", 8443).withCustomHttpsContext(httpsConnectionContext),
         materializer);
     //#bindAndHandleAsync
+
+    //#bindAndHandleRaw
+    Http2.get(system)
+      .bindAndHandleRaw(
+        asyncHandler,
+        toHost("localhost", 8443),
+        materializer);
+    //#bindAndHandleRaw
   }
 }

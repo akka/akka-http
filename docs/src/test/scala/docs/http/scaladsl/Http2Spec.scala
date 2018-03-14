@@ -4,20 +4,40 @@
 
 package docs.http.scaladsl
 
-//#bindAndHandleAsync
-import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
+import akka.http.scaladsl.{ Http, HttpsConnectionContext }
 
 //#bindAndHandleAsync
+import scala.concurrent.Future
+
+//#bindAndHandleAsync
+
+//#bindAndHandleAsync
+import akka.http.scaladsl.Http2
+
+//#bindAndHandleAsync
+
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 
 object Http2Spec {
-  val asyncHandler = ???
-  val httpsServerContext = ???
+  val asyncHandler: HttpRequest ⇒ Future[HttpResponse] = ???
+  val httpsServerContext: HttpsConnectionContext = ???
   implicit val system: ActorSystem = ???
   implicit val materializer: Materializer = ???
 
   //#bindAndHandleAsync
-  Http().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 8443, httpsServerContext)
+  Http().bindAndHandleAsync(
+    asyncHandler,
+    interface = "localhost",
+    port = 8443,
+    httpsServerContext)
   //#bindAndHandleAsync
+
+  //#bindAndHandleRaw
+  Http2().bindAndHandleRaw(
+    asyncHandler,
+    interface = "localhost",
+    port = 8443)
+  //#bindAndHandleRaw
 }
