@@ -69,6 +69,38 @@ the Routing DSL will look like:
 
 @@@
 
+## Dynamic Routing Example
+
+As the routes are evaluated for each request, it is possible to make changes at runtime. Please note that every access
+may happen on a separated thread, so any shared mutable state must be thread safe.
+
+The following is an Akka HTTP route definition that allows dynamically adding new or updating mock endpoints with
+associated request-response pairs at runtime.
+
+Scala
+:  @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #dynamic-routing-example }
+
+Java
+:  @@snip [HttpServerDynamicRoutingExampleTest.java]($test$/java/docs/http/javadsl/HttpServerDynamicRoutingExampleTest.java) { #dynamic-routing-example }
+
+For example, let's say we do a POST request with body:
+
+```json
+{
+  "path": "test",
+  "requests": [
+    {"id": 1},
+    {"id": 2}
+  ],
+  "responses": [
+    {"amount": 1000},
+    {"amount": 2000}
+  ]
+}
+```
+
+Subsequent POST request to `/test` with body `{"id": 1}` will be responded with `{"amount": 1000}`.
+
 ## Handling HTTP Server failures in the High-Level API
 
 There are various situations when failure may occur while initialising or running an Akka HTTP server.
