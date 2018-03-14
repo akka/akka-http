@@ -85,9 +85,10 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
     // {"example":43}
     // ...
     // {"example":1000}
+    val newline = ByteString("\n")
 
     implicit val jsonStreamingSupport = EntityStreamingSupport.json()
-      .withFramingRenderer(Flow[ByteString].map(bs => bs ++ ByteString("\n")))
+      .withFramingRenderer(Flow[ByteString].map(bs => bs ++ newline))
 
     val route =
       path("tweets") {

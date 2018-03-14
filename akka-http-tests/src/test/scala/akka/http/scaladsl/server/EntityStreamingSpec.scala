@@ -71,8 +71,10 @@ class EntityStreamingSpec extends RoutingSpec {
   "line-by-line-json-response-streaming" in {
     import MyJsonProtocol._
 
+    val newline = ByteString("\n")
+
     implicit val jsonStreamingSupport = EntityStreamingSupport.json()
-      .withFramingRenderer(Flow[ByteString].map(sb ⇒ sb ++ ByteString("\n")))
+      .withFramingRenderer(Flow[ByteString].map(sb ⇒ sb ++ newline))
 
     val route =
       path("tweets") {
