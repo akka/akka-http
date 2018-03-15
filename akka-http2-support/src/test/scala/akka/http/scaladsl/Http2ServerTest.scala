@@ -77,11 +77,14 @@ object Http2ServerTest extends App {
       for {
         binding1 ← Http().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9000, ExampleHttpContexts.exampleServerContext)
         binding2 ← Http2().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9001, ExampleHttpContexts.exampleServerContext)
-      } yield (binding1, binding2)
+        binding3 ← Http2().bindAndHandleRaw(asyncHandler, interface = "localhost", port = 9002)
+      } yield (binding1, binding2, binding3)
 
     Await.result(bindings, 1.second) // throws if binding fails
     println("Server (HTTP/1.1) online at https://localhost:9000")
     println(Console.BOLD + "Server (HTTP/2) online at https://localhost:9001" + Console.RESET)
+<<<<<<< HEAD
+    println(Console.BOLD + "Server (HTTP/2 without negotiation or TLS) online at https://localhost:9002" + Console.RESET)
     println("Press RETURN to stop...")
     StdIn.readLine()
   } finally {
