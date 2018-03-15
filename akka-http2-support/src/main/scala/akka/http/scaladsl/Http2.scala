@@ -47,13 +47,13 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
     log:         LoggingAdapter = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
     val effectivePort = if (port >= 0) port else 80
 
-    val serverLayer: Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(StreamUtils.fuseAggressive(
+    val serverLayer: Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(
       Flow[HttpRequest]
         .watchTermination()(Keep.right)
         // FIXME: parallelism should maybe kept in track with SETTINGS_MAX_CONCURRENT_STREAMS so that we don't need
         // to buffer requests that cannot be handled in parallel
         .via(Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher))
-        .joinMat(Http2Blueprint.serverStack(settings, log))(Keep.left)))
+        .joinMat(Http2Blueprint.serverStack(settings, log))(Keep.left))
 
     val connections = Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)
 
@@ -124,13 +124,13 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
     }
 
     // Not reusable, see above.
-    def fullLayer(): Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(StreamUtils.fuseAggressive(
+    def fullLayer(): Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(
       Flow[HttpRequest]
         .watchTermination()(Keep.right)
         // FIXME: parallelism should maybe kept in track with SETTINGS_MAX_CONCURRENT_STREAMS so that we don't need
         // to buffer requests that cannot be handled in parallel
         .via(Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher))
-        .joinMat(serverLayer())(Keep.left)))
+        .joinMat(serverLayer())(Keep.left))
 
     val connections = Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)
 
