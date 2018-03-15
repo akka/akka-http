@@ -95,15 +95,15 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     baseFlow: ServerLayerBidiFlow,
     handler:  Flow[HttpRequest, HttpResponse, Any]): ServerLayerFlow =
     Flow.fromGraph(
-        Flow[HttpRequest]
-          .watchTermination()(Keep.right)
-          .viaMat(handler)(Keep.left)
-          .watchTermination() { (termWatchBefore, termWatchAfter) ⇒
-            // flag termination when the user handler has gotten (or has emitted) termination
-            // signals in both directions
-            termWatchBefore.flatMap(_ ⇒ termWatchAfter)(ExecutionContexts.sameThreadExecutionContext)
-          }
-          .joinMat(baseFlow)(Keep.left)
+      Flow[HttpRequest]
+        .watchTermination()(Keep.right)
+        .viaMat(handler)(Keep.left)
+        .watchTermination() { (termWatchBefore, termWatchAfter) ⇒
+          // flag termination when the user handler has gotten (or has emitted) termination
+          // signals in both directions
+          termWatchBefore.flatMap(_ ⇒ termWatchAfter)(ExecutionContexts.sameThreadExecutionContext)
+        }
+        .joinMat(baseFlow)(Keep.left)
     )
 
   private def tcpBind(interface: String, port: Int, settings: ServerSettings): Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
