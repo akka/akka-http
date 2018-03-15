@@ -43,8 +43,12 @@ Note that `bindAndHandle` currently does not support HTTP/2, you must use `bindA
 ### HTTP/2 without HTTPS
 
 While un-encrypted connections are allowed by HTTP/2, clients that support this are rare.
-Unlike with HTTPS, a 'raw' HTTP/2 server does not support protocol negotiation, and only
-support HTTP/2 connections:
+
+There are 2 ways to implement un-encrypted HTTP/2 connections: by using the
+[HTTP Upgrade mechanism](http://httpwg.org/specs/rfc7540.html#discover-http) or by starting communication in HTTP/2 directly.
+The latter only makes sense when you can assume the client has [Prior Knowledge](http://httpwg.org/specs/rfc7540.html#known-http) of HTTP/2 support.
+
+We currently only support the approach requiring [Prior Knowledge](http://httpwg.org/specs/rfc7540.html#known-http):
 
 Scala
 :   @@snip[Http2Spec.scala]($test$/scala/docs/http/scaladsl/Http2Spec.scala) { #bindAndHandleRaw }
