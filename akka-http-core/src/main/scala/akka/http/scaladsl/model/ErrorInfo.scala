@@ -12,9 +12,10 @@ import StatusCodes.ClientError
  * repeating anything present in the message itself (in order to not open holes for XSS attacks),
  * while the detail can contain additional information from any source (even the request itself).
  */
-final case class ErrorInfo(summary: String = "", detail: String = "") {
+final case class ErrorInfo(summary: String = "", detail: String = "", errorHeaderName: String = "") {
   def withSummary(newSummary: String) = copy(summary = newSummary)
   def withSummaryPrepended(prefix: String) = withSummary(if (summary.isEmpty) prefix else prefix + ": " + summary)
+  def withHeaderNamePrepend(headerName: String) = copy(errorHeaderName = headerName)
   def withFallbackSummary(fallbackSummary: String) = if (summary.isEmpty) withSummary(fallbackSummary) else this
   def formatPretty = if (summary.isEmpty) detail else if (detail.isEmpty) summary else summary + ": " + detail
   def format(withDetail: Boolean): String = if (withDetail) formatPretty else summary

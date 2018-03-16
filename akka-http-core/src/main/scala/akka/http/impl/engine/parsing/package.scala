@@ -38,11 +38,16 @@ package object parsing {
   }
 
   private[http] def logParsingError(info: ErrorInfo, log: LoggingAdapter,
-                                    setting: ParserSettings.ErrorLoggingVerbosity): Unit =
-    setting match {
-      case ParserSettings.ErrorLoggingVerbosity.Off    ⇒ // nothing to do
-      case ParserSettings.ErrorLoggingVerbosity.Simple ⇒ log.warning(info.summary)
-      case ParserSettings.ErrorLoggingVerbosity.Full   ⇒ log.warning(info.formatPretty)
+                                    settings:          ParserSettings.ErrorLoggingVerbosity,
+                                    ignoreHeaderNames: Set[String]                          = Set.empty): Unit =
+    settings match {
+      case ParserSettings.ErrorLoggingVerbosity.Off ⇒ // nothing to do
+      case ParserSettings.ErrorLoggingVerbosity.Simple ⇒
+        if (!ignoreHeaderNames.contains(info.errorHeaderName))
+          log.warning(info.summary)
+      case ParserSettings.ErrorLoggingVerbosity.Full ⇒
+        if (!ignoreHeaderNames.contains(info.errorHeaderName))
+          log.warning(info.formatPretty)
     }
 }
 

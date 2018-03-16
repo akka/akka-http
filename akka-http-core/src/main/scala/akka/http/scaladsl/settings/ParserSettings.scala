@@ -36,6 +36,7 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   def uriParsingMode: Uri.ParsingMode
   def cookieParsingMode: ParserSettings.CookieParsingMode
   def illegalHeaderWarnings: Boolean
+  def ignoreIllegalHeaderFor: Set[String]
   def errorLoggingVerbosity: ParserSettings.ErrorLoggingVerbosity
   def illegalResponseHeaderValueProcessingMode: ParserSettings.IllegalResponseHeaderValueProcessingMode
   def headerValueCacheLimits: Map[String, Int]
@@ -55,6 +56,7 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   override def getMaxHeaderValueLength = maxHeaderValueLength
   override def getIncludeTlsSessionInfoHeader = includeTlsSessionInfoHeader
   override def getIllegalHeaderWarnings = illegalHeaderWarnings
+  override def getIgnoreIllegalHeaderFor = ignoreIllegalHeaderFor
   override def getMaxHeaderNameLength = maxHeaderNameLength
   override def getMaxChunkSize = maxChunkSize
   override def getMaxResponseReasonLength = maxResponseReasonLength
