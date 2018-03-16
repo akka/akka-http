@@ -23,7 +23,7 @@ class HeaderSpec extends FreeSpec with Matchers {
             CacheDirectives.`s-maxage`(1000)))
       }
       "failing parse run" in {
-        val Left(List(ErrorInfo(summary, detail, ""))) = headers.`Last-Modified`.parseFromValueString("abc")
+        val Left(List(ErrorInfo(summary, detail))) = headers.`Last-Modified`.parseFromValueString("abc")
         summary shouldEqual "Illegal HTTP header 'Last-Modified': Invalid input 'a', expected IMF-fixdate, asctime-date or '0' (line 1, column 1)"
         detail shouldEqual
           """abc
@@ -39,7 +39,7 @@ class HeaderSpec extends FreeSpec with Matchers {
         MediaType.parse("application/gnutar") shouldEqual Right(MediaTypes.`application/gnutar`)
       }
       "failing parse run" in {
-        val Left(List(ErrorInfo(summary, detail, ""))) = MediaType.parse("application//gnutar")
+        val Left(List(ErrorInfo(summary, detail))) = MediaType.parse("application//gnutar")
         summary shouldEqual "Illegal HTTP header 'Content-Type': Invalid input '/', expected subtype (line 1, column 13)"
         detail shouldEqual
           """application//gnutar
@@ -54,7 +54,7 @@ class HeaderSpec extends FreeSpec with Matchers {
         ContentType.parse("text/plain; charset=UTF8") shouldEqual Right(MediaTypes.`text/plain`.withCharset(HttpCharsets.`UTF-8`))
       }
       "failing parse run" in {
-        val Left(List(ErrorInfo(summary, detail, ""))) = ContentType.parse("text/plain, charset=UTF8")
+        val Left(List(ErrorInfo(summary, detail))) = ContentType.parse("text/plain, charset=UTF8")
         summary shouldEqual "Illegal HTTP header 'Content-Type': Invalid input ',', expected tchar, OWS, ws or 'EOI' (line 1, column 11)"
         detail shouldEqual
           """text/plain, charset=UTF8
@@ -71,11 +71,11 @@ class HeaderSpec extends FreeSpec with Matchers {
           Right(headers.`Retry-After`(DateTime(2015, 10, 21, 7, 28)))
       }
       "failing parse run" in {
-        val Left(List(ErrorInfo(summary, detail, ""))) = `Retry-After`.parseFromValueString("011")
+        val Left(List(ErrorInfo(summary, detail))) = `Retry-After`.parseFromValueString("011")
         summary shouldEqual "Illegal HTTP header 'Retry-After': Invalid input '1', expected OWS or 'EOI' (line 1, column 2)"
-        val Left(List(ErrorInfo(summary2, detail2, ""))) = `Retry-After`.parseFromValueString("-10")
+        val Left(List(ErrorInfo(summary2, detail2))) = `Retry-After`.parseFromValueString("-10")
         summary2 shouldEqual "Illegal HTTP header 'Retry-After': Invalid input '-', expected HTTP-date or delta-seconds (line 1, column 1)"
-        val Left(List(ErrorInfo(summary3, detail3, ""))) = `Retry-After`.parseFromValueString("2015-10-21H07:28:00Z")
+        val Left(List(ErrorInfo(summary3, detail3))) = `Retry-After`.parseFromValueString("2015-10-21H07:28:00Z")
         summary3 shouldEqual "Illegal HTTP header 'Retry-After': Invalid input '-', expected DIGIT, OWS or 'EOI' (line 1, column 5)"
       }
     }
@@ -94,7 +94,7 @@ class HeaderSpec extends FreeSpec with Matchers {
           Right(headers.`Strict-Transport-Security`(30, true))
       }
       "failing parse run" in {
-        val Left(List(ErrorInfo(summary, detail, ""))) = `Strict-Transport-Security`.parseFromValueString("max-age=30; includeSubDomains; preload;")
+        val Left(List(ErrorInfo(summary, detail))) = `Strict-Transport-Security`.parseFromValueString("max-age=30; includeSubDomains; preload;")
         summary shouldEqual "Illegal HTTP header 'Strict-Transport-Security': Invalid input 'EOI', expected OWS or token0 (line 1, column 40)"
       }
     }
