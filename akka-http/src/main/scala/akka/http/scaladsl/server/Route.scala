@@ -32,22 +32,21 @@ object Route {
    *  - Consequently, no route alternatives will be tried that were combined with this route
    *    using the ``~`` on routes or the [[Directive.|]] operator on directives.
    */
-  protected[this] def seal(route: Route)(implicit
-    routingSettings: RoutingSettings,
-                                         parserSettings:   ParserSettings,
-                                         rejectionHandler: RejectionHandler,
-                                         exceptionHandler: ExceptionHandler): Route = {
-    Route.seal(route)
-  }
-
   def seal(route: Route)(implicit
-    rejectionHandler: RejectionHandler = RejectionHandler.default,
+    routingSettings: RoutingSettings = null,
+                         parserSettings:   ParserSettings   = null,
+                         rejectionHandler: RejectionHandler = RejectionHandler.default,
                          exceptionHandler: ExceptionHandler = null): Route = {
     import directives.ExecutionDirectives._
     // optimized as this is the root handler for all akka-http applications
-    BasicDirectives.extractSettings { implicit settings ⇒
-      (handleExceptions(ExceptionHandler.seal(exceptionHandler)) & handleRejections(rejectionHandler.seal))
-        .tapply(_ ⇒ route) // execute above directives eagerly, avoiding useless laziness of Directive.addByNameNullaryApply
+    BasicDirectives.extractSettings { theSettings ⇒
+      val effectiveRoutingSettings = if (routingSettings eq null) theSettings else routingSettings
+
+      {
+        implicit val routingSettings: RoutingSettings = effectiveRoutingSettings
+        (handleExceptions(ExceptionHandler.seal(exceptionHandler)) & handleRejections(rejectionHandler.seal))
+          .tapply(_ ⇒ route) // execute above directives eagerly, avoiding useless laziness of Directive.addByNameNullaryApply
+      }
     }
   }
 
@@ -82,8 +81,7 @@ object Route {
     {
       implicit val executionContext = effectiveEC // overrides parameter
       val effectiveParserSettings = if (parserSettings ne null) parserSettings else ParserSettings(ActorMaterializerHelper.downcast(materializer).system)
-      // Need to reference the right seal method
-      val sealedRoute = Route.seal(route)(rejectionHandler, exceptionHandler)
+      val sealedRoute = seal(route)
       request ⇒
         sealedRoute(new RequestContextImpl(request, routingLog.requestLog(request), routingSettings, effectiveParserSettings)).fast
           .map {
