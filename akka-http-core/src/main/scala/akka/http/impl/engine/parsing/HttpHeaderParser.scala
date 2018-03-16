@@ -444,11 +444,16 @@ private[http] object HttpHeaderParser {
 
   private val alwaysParsedHeaders = Set[String](
     "connection",
+    "content-encoding",
     "content-length",
     "content-type",
     "expect",
     "host",
-    "transfer-encoding"
+    "sec-websocket-key",
+    "sec-websocket-protocol",
+    "sec-websocket-version",
+    "transfer-encoding",
+    "upgrade"
   )
 
   def apply(settings: HttpHeaderParser.Settings, log: LoggingAdapter) =
