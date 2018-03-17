@@ -530,7 +530,7 @@ private[http] object HttpHeaderParser {
       val header = parser(trimmedHeaderValue) match {
         case HeaderParser.Success(h) ⇒ h
         case HeaderParser.Failure(error) ⇒
-          onIllegalHeader(error.withSummaryPrepended(s"Illegal '$headerName' header").withHeaderNamePrepend(headerName))
+          onIllegalHeader(error.withSummaryPrepended(s"Illegal '$headerName' header").withErrorHeaderName(headerName))
           RawHeader(headerName, trimmedHeaderValue)
         case HeaderParser.RuleNotFound ⇒
           throw new IllegalStateException(s"Unexpected RuleNotFound exception for modeled header [$headerName]")

@@ -19,7 +19,7 @@ final class ErrorInfo(
 ) extends scala.Product with scala.Serializable with scala.Equals with java.io.Serializable {
   def withSummary(newSummary: String) = copy(summary = newSummary)
   def withSummaryPrepended(prefix: String) = withSummary(if (summary.isEmpty) prefix else prefix + ": " + summary)
-  def withHeaderNamePrepend(headerName: String) = setErrorHeaderName(errorHeaderName = headerName)
+  def withErrorHeaderName(headerName: String) = new ErrorInfo(summary, detail, headerName)
   def withFallbackSummary(fallbackSummary: String) = if (summary.isEmpty) withSummary(fallbackSummary) else this
   def formatPretty = if (summary.isEmpty) detail else if (detail.isEmpty) summary else summary + ": " + detail
   def format(withDetail: Boolean): String = if (withDetail) formatPretty else summary
@@ -27,8 +27,6 @@ final class ErrorInfo(
   private[akka] def copy(summary: String = summary, detail: String = detail): ErrorInfo = {
     new ErrorInfo(summary, detail, errorHeaderName)
   }
-
-  private[akka] def setErrorHeaderName(errorHeaderName: String): ErrorInfo = new ErrorInfo(summary, detail, errorHeaderName)
 
   override def canEqual(that: Any): Boolean = that.isInstanceOf[ErrorInfo]
 
