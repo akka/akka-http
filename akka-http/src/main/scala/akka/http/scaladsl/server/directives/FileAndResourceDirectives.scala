@@ -111,7 +111,8 @@ trait FileAndResourceDirectives {
                   complete {
                     HttpEntity.Default(contentType, length,
                       StreamConverters.fromInputStream(() ⇒ url.openStream())
-                        .withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher))) // TODO is this needed? It already uses `val inputStreamSource = name("inputStreamSource") and IODispatcher`
+                        // allows to configure a dispatcher different from akka.stream.materializer.blocking-io-dispatcher
+                        .withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher)))
                   }
                 }
               } else complete(HttpEntity.Empty)
