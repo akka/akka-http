@@ -20,6 +20,7 @@ abstract class RoutingSettings private[akka] () { self: RoutingSettingsImpl ⇒
   def getRangeCountLimit: Int
   def getRangeCoalescingThreshold: Long
   def getDecodeMaxBytesPerChunk: Int
+  @deprecated("binary compatibility method. Use `akka.stream.materializer.blocking-io-dispatcher` to configure the dispatcher")
   def getFileIODispatcher: String
 
   def withVerboseErrorMessages(verboseErrorMessages: Boolean): RoutingSettings = self.copy(verboseErrorMessages = verboseErrorMessages)
@@ -29,7 +30,8 @@ abstract class RoutingSettings private[akka] () { self: RoutingSettingsImpl ⇒
   def withRangeCoalescingThreshold(rangeCoalescingThreshold: Long): RoutingSettings = self.copy(rangeCoalescingThreshold = rangeCoalescingThreshold)
   def withDecodeMaxBytesPerChunk(decodeMaxBytesPerChunk: Int): RoutingSettings = self.copy(decodeMaxBytesPerChunk = decodeMaxBytesPerChunk)
   def withDecodeMaxSize(decodeMaxSize: Long): RoutingSettings = self.copy(decodeMaxSize = decodeMaxSize)
-  def withFileIODispatcher(fileIODispatcher: String): RoutingSettings = self.copy(fileIODispatcher = fileIODispatcher)
+  @deprecated("binary compatibility method. Use `akka.stream.materializer.blocking-io-dispatcher` to configure the dispatcher")
+  def withFileIODispatcher(fileIODispatcher: String): RoutingSettings = self
 }
 
 object RoutingSettings extends SettingsCompanion[RoutingSettings] {
