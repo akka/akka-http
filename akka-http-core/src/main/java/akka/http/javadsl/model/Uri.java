@@ -172,7 +172,7 @@ public abstract class Uri {
   public abstract String getPathString();
 
   /**
-   * Returns the scaladsl view of this instance
+   * Returns the Scala DSL representation of this Uri.
    */
   public abstract akka.http.scaladsl.model.Uri asScala();
 
@@ -193,7 +193,7 @@ public abstract class Uri {
   }
 
   /**
-   * Returns an Uri wrapping the scaladsl representation.
+   * Returns the Java DSL representation of a Scala DSL Uri.
    */
   public static Uri create(akka.http.scaladsl.model.Uri uri) {
     return new JavaUri(uri);
