@@ -96,9 +96,11 @@ trait Route {
    *    will be already be handled using the implicitly given [[RejectionHandler]] and [[ExceptionHandler]] (or
    *    the default handlers if none are given or can be found implicitly).
    *  - Consequently, no route alternatives will be tried that were combined with this route.
-   *  @deprecated Use the variant without [[RoutingSettings]] and [[ParserSettings]]
+   *
+   * @deprecated Use the variant without [[RoutingSettings]] and [[ParserSettings]]
    */
   @Deprecated
+  @deprecated("Use the variant without RoutingSettings, ParserSettings parameters.", since = "10.1.1")
   def seal(
     routingSettings:  RoutingSettings,
     parserSettings:   ParserSettings,
