@@ -33,6 +33,7 @@ private[http] case class JavaUri(uri: sm.Uri) extends jm.Uri {
   override def getPort(): Int = port()
   override def getUserInfo(): String = userInfo()
   override def getPathString(): String = path()
+  override def asScala(): sm.Uri = uri
 
   def pathSegments(): jl.Iterable[String] = {
     import sm.Uri.Path._

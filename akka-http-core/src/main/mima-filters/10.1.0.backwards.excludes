@@ -1,0 +1,5 @@
+# Don't monitor changes to internal API
+ProblemFilters.exclude[Problem]("akka.http.impl.*")
+
+# Uri conversion additions https://github.com/akka/akka-http/pull/1950
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.Uri.asScala")
