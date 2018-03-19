@@ -9,8 +9,7 @@ import akka.actor.ActorSystem
 import akka.http.javadsl.model.HttpRequest
 import akka.http.javadsl.model.HttpResponse
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.javadsl.server.{ ExceptionHandler, RejectionHandler, Route, RoutingJavaMapping }
-import RoutingJavaMapping._
+import akka.http.javadsl.server.{ ExceptionHandler, RejectionHandler, Route }
 import akka.annotation.InternalApi
 import akka.http.javadsl.settings.{ ParserSettings, RoutingSettings }
 import akka.http.scaladsl
@@ -42,12 +41,8 @@ final class RouteAdapter(val delegate: akka.http.scaladsl.server.Route) extends 
   }
 
   override def seal(): Route = {
-    // TODO: scaladsl.server.Route.seal shouldn't require an implicit RoutingSettings when it can retrieve it itself. See https://github.com/akka/akka-http/issues/1898
-    RouteAdapter {
-      akka.http.scaladsl.server.directives.BasicDirectives.extractSettings { implicit settings ⇒
-        scaladsl.server.Route.seal(delegate)
-      }
-    }
+    RouteAdapter(scaladsl.server.Route.seal(delegate))
+
   }
 
   override def seal(routingSettings: RoutingSettings, parserSettings: ParserSettings, rejectionHandler: RejectionHandler, exceptionHandler: ExceptionHandler, system: ActorSystem, materializer: Materializer): Route = {
@@ -55,11 +50,13 @@ final class RouteAdapter(val delegate: akka.http.scaladsl.server.Route) extends 
   }
 
   override def seal(routingSettings: RoutingSettings, parserSettings: ParserSettings, rejectionHandler: RejectionHandler, exceptionHandler: ExceptionHandler): Route = {
+    seal(rejectionHandler, exceptionHandler)
+  }
+
+  override def seal(rejectionHandler: RejectionHandler, exceptionHandler: ExceptionHandler): Route = {
     RouteAdapter(scaladsl.server.Route.seal(delegate)(
-      routingSettings.asScala,
-      parserSettings.asScala,
-      rejectionHandler.asScala,
-      exceptionHandler.asScala))
+      rejectionHandler = rejectionHandler.asScala,
+      exceptionHandler = exceptionHandler.asScala))
   }
 
   override def toString = s"akka.http.javadsl.server.Route($delegate)"
