@@ -4,8 +4,6 @@
 
 package akka.http.impl.util;
 
-import akka.http.impl.model.JavaUri;
-import akka.http.javadsl.model.Uri;
 import scala.compat.java8.OptionConverters;
 import scala.None$;
 import scala.collection.immutable.Map$;
@@ -59,10 +57,6 @@ public abstract class Util {
     }
     public static <T, U extends T> Seq<U> convertArray(T[] els) {
         return Util.<T, U>convertIterable(Arrays.asList(els));
-    }
-
-    public static akka.http.scaladsl.model.Uri convertUriToScala(Uri uri) {
-        return ((JavaUri) uri).uri();
     }
 
     public static <J, V extends J> Optional<J> lookupInRegistry(ObjectRegistry<Object, V> registry, int key) {
