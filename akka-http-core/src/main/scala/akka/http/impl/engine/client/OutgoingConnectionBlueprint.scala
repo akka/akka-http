@@ -339,8 +339,7 @@ private[http] object OutgoingConnectionBlueprint {
         if (isClosed(dataIn)) {
           if (!completeStagePending)
             completeStage()
-        }
-        else pull(dataIn)
+        } else pull(dataIn)
       }
 
       @tailrec def drainParser(current: ResponseOutput, b: ListBuffer[ResponseOutput] = ListBuffer.empty): Unit = {

@@ -6,14 +6,14 @@ package akka.http.impl.engine.client
 import akka.http.impl.engine.client.OutgoingConnectionBlueprint.ResponseParsingMerge
 import akka.http.impl.engine.parsing.HttpResponseParser.ResponseContext
 import akka.http.impl.engine.parsing.ParserOutput.EntityStreamError
-import akka.http.impl.engine.parsing.{HttpHeaderParser, HttpResponseParser, ParserOutput}
+import akka.http.impl.engine.parsing.{ HttpHeaderParser, HttpResponseParser, ParserOutput }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ParserSettings
 import akka.stream.TLSProtocol.SessionBytes
 import akka.stream.javadsl.RunnableGraph
-import akka.stream.scaladsl.{GraphDSL, Sink, Source}
-import akka.stream.testkit.{TestPublisher, TestSubscriber}
-import akka.stream.{ActorMaterializer, Attributes, ClosedShape}
+import akka.stream.scaladsl.{ GraphDSL, Sink, Source }
+import akka.stream.testkit.{ TestPublisher, TestSubscriber }
+import akka.stream.{ ActorMaterializer, Attributes, ClosedShape }
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
 
@@ -36,7 +36,7 @@ class ResponseParsingMergeSpec extends AkkaSpec {
       }
 
       RunnableGraph.fromGraph(
-        GraphDSL.create(){ implicit b ⇒
+        GraphDSL.create() { implicit b ⇒
           import GraphDSL.Implicits._
           val parsingMerge = b.add(responseParsingMerge)
 
