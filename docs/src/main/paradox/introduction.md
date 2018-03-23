@@ -25,16 +25,16 @@ On the other hand, if you prefer to build your applications with the guidance of
 
 ## Using Akka HTTP
 
-Akka HTTP is provided as independent modules from Akka itself under its own release cycle. Akka HTTP is @ref[compatible](compatibility-guidelines.md)
-with Akka 2.4 and 2.5. The modules, however, do *not* depend on `akka-actor` or `akka-stream`, so the user is required to
-choose an Akka version to run against and add a manual dependency to `akka-stream` of the chosen version.
+Akka HTTP is provided in a separate jar file, to use it make sure to include the following dependency:
 
 sbt
 :   @@@vars
     ```
     // For Akka 2.4.x or 2.5.x
-    "com.typesafe.akka" %% "akka-http"   % "$project.version$" $crossString$
+    "com.typesafe.akka" %% "akka-http" % "$project.version$" $crossString$
+    // Only when running against Akka 2.5 explicitly depend on akka-streams in same version as akka-actor
     "com.typesafe.akka" %% "akka-stream" % "$akka25.version$" // or whatever the latest version is
+    "com.typesafe.akka" %% "akka-actor"  % "$akka25.version$" // or whatever the latest version is
     ```
     @@@
 
@@ -42,8 +42,10 @@ Gradle
 :   @@@vars
     ```
     // For Akka 2.4.x or 2.5.x
-    compile group: 'com.typesafe.akka', name: 'akka-http_$scala.binary_version$',   version: '$project.version$'
+    compile group: 'com.typesafe.akka', name: 'akka-http_$scala.binary_version$', version: '$project.version$'
+    // Only when running against Akka 2.5 explicitly depend on akka-streams in same version as akka-actor
     compile group: 'com.typesafe.akka', name: 'akka-stream_$scala.binary_version$', version: '$akka25.version$'
+    compile group: 'com.typesafe.akka', name: 'akka-actor_$scala.binary_version$', version: '$akka25.version$'
     ```
     @@@
 
@@ -56,10 +58,16 @@ Maven
       <artifactId>akka-http_$scala.binary_version$</artifactId>
       <version>$project.version$</version>
     </dependency>
+    <!-- Only when running against Akka 2.5 explicitly depend on akka-streams in same version as akka-actor -->
     <dependency>
       <groupId>com.typesafe.akka</groupId>
       <artifactId>akka-stream_$scala.binary_version$</artifactId>
       <version>$akka25.version$</version> <!-- Or whatever the latest version is -->
+    </dependency>
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-actor_$scala.binary_version$</artifactId>
+      <version>$akka25.version$</version>
     </dependency>
     ```
     @@@
