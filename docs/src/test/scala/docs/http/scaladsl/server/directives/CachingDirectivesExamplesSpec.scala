@@ -33,6 +33,8 @@ class CachingDirectivesExamplesSpec extends RoutingSpec {
       }
     }
 
+    // Created outside the route to allow using
+    // the same cache across multiple calls
     val myCache = routeCache[Uri]
 
     var i = 0
@@ -75,6 +77,8 @@ class CachingDirectivesExamplesSpec extends RoutingSpec {
       }
     }
 
+    // Created outside the route to allow using
+    // the same cache across multiple calls
     val myCache = routeCache[Uri]
 
     var i = 0
