@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.ws
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import akka.NotUsed
 
 import scala.concurrent.duration._
@@ -14,6 +16,8 @@ import akka.stream.testkit._
 import akka.util.ByteString
 import akka.http.scaladsl.model.ws._
 import Protocol.Opcode
+import akka.http.impl.settings.WebSocketSettingsImpl
+import akka.http.scaladsl.settings.WebSocketSettings
 import akka.testkit._
 import akka.stream.OverflowStrategy
 import org.scalatest.concurrent.Eventually
@@ -446,6 +450,56 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         pushInput(data)
         expectNoNetworkData()
       }
+
+      List("ping", "pong") foreach { keepAliveMode ⇒
+        def expectedOpcode = if (keepAliveMode == "ping") Opcode.Ping else Opcode.Pong
+
+        s"automatically send keep-alive [$keepAliveMode] frames, with empty data, when configured on the server side" in new ServerTestSetup {
+          override def websocketSettings: WebSocketSettings = // configures server to do keep-alive
+            super.websocketSettings
+              .withPeriodicKeepAliveMode(keepAliveMode)
+              .withPeriodicKeepAliveMaxIdle(100.millis)
+
+          expectFrameOnNetwork(expectedOpcode, ByteString.empty, fin = true)
+          expectFrameOnNetwork(expectedOpcode, ByteString.empty, fin = true)
+          expectFrameOnNetwork(expectedOpcode, ByteString.empty, fin = true)
+        }
+        s"automatically send keep-alive [$keepAliveMode] frames, with data payload, when configured on the server side" in new ServerTestSetup {
+          val counter = new AtomicInteger()
+          override def websocketSettings: WebSocketSettings = // configures server to do keep-alive
+            super.websocketSettings
+              .withPeriodicKeepAliveMode(keepAliveMode)
+              .withPeriodicKeepAliveMaxIdle(100.millis)
+              .withPeriodicKeepAliveData(() ⇒ ByteString(s"ping-${counter.incrementAndGet()}"))
+
+          expectFrameOnNetwork(expectedOpcode, ByteString("ping-1"), fin = true)
+          expectFrameOnNetwork(expectedOpcode, ByteString("ping-2"), fin = true)
+          expectFrameOnNetwork(expectedOpcode, ByteString("ping-3"), fin = true)
+        }
+
+        s"automatically send keep-alive [$keepAliveMode] frames, with empty data, when configured on the client side" in new ClientTestSetup {
+          override def websocketSettings: WebSocketSettings = // configures client to do keep-alive
+            super.websocketSettings
+              .withPeriodicKeepAliveMode(keepAliveMode)
+              .withPeriodicKeepAliveMaxIdle(100.millis)
+
+          expectFrameOnNetwork(expectedOpcode, ByteString.empty, fin = true)
+          expectFrameOnNetwork(expectedOpcode, ByteString.empty, fin = true)
+          expectFrameOnNetwork(expectedOpcode, ByteString.empty, fin = true)
+        }
+        s"automatically send keep-alive [$keepAliveMode] frames, with data payload, when configured on the client side" in new ClientTestSetup {
+          val counter = new AtomicInteger()
+          override def websocketSettings: WebSocketSettings = // configures client to do keep-alive
+            super.websocketSettings
+              .withPeriodicKeepAliveMode(keepAliveMode)
+              .withPeriodicKeepAliveMaxIdle(100.millis)
+              .withPeriodicKeepAliveData(() ⇒ ByteString(s"ping-${counter.incrementAndGet()}"))
+
+          expectMaskedFrameOnNetwork(expectedOpcode, ByteString("ping-1"), fin = true)
+          expectMaskedFrameOnNetwork(expectedOpcode, ByteString("ping-2"), fin = true)
+          expectMaskedFrameOnNetwork(expectedOpcode, ByteString("ping-3"), fin = true)
+        }
+      }
     }
     "provide close behavior" - {
       "after receiving regular close frame when idle (user closes immediately)" in new ServerTestSetup {
@@ -845,6 +899,9 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
   abstract class TestSetup {
     protected def serverSide: Boolean
     protected def closeTimeout: FiniteDuration = 1.second.dilated
+    protected def websocketSettings: WebSocketSettings =
+      if (serverSide) WebSocketSettingsImpl.serverFromRoot(system.settings.config)
+      else WebSocketSettingsImpl.clientFromRoot(system.settings.config)
 
     val netIn = TestPublisher.probe[ByteString]()
     val netOut = ByteStringSinkProbe()
@@ -860,8 +917,9 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
     Source.fromPublisher(netIn)
       .via(printEvent("netIn"))
       .via(FrameEventParser)
+      .via(printEvent("stackIn"))
       .via(WebSocket
-        .stack(serverSide, maskingRandomFactory = Randoms.SecureRandomInstances, closeTimeout = closeTimeout, log = system.log)
+        .stack(serverSide, websocketSettings = websocketSettings, closeTimeout = closeTimeout, log = system.log)
         .join(messageHandler))
       .via(printEvent("frameRendererIn"))
       .via(new FrameEventRenderer)
@@ -880,7 +938,10 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
     def expectTextMessage(message: TextMessage): Unit = expectTextMessage() shouldEqual message
     final def expectNetworkData(bytes: Int): ByteString = netOut.expectBytes(bytes)
 
-    def expectNetworkData(data: ByteString): Unit = expectNetworkData(data.size) shouldEqual data
+    def expectNetworkData(data: ByteString): Unit = {
+      val got = expectNetworkData(data.size)
+      got.utf8String shouldEqual data.utf8String
+    }
 
     def expectFrameOnNetwork(opcode: Opcode, data: ByteString, fin: Boolean): Unit = {
       expectFrameHeaderOnNetwork(opcode, data.size, fin)
@@ -968,8 +1029,8 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
     }
   }
 
-  val trace = false // set to `true` for debugging purposes
+  final val Trace = false // compile time constant; set to `true` for debugging purposes;
   def printEvent[T](marker: String): Flow[T, T, NotUsed] =
-    if (trace) Flow[T].log(marker)
+    if (Trace) Flow[T].log(marker)
     else Flow[T]
 }

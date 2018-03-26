@@ -6,8 +6,7 @@ package akka.http.impl.settings
 
 import java.util.Random
 
-import akka.http.impl.engine.ws.Randoms
-import akka.http.scaladsl.settings.{ Http2ServerSettings, ParserSettings, PreviewServerSettings, ServerSettings }
+import akka.http.scaladsl.settings.{ SettingsCompanion ⇒ _, _ }
 import com.typesafe.config.Config
 
 import scala.language.implicitConversions
@@ -39,7 +38,7 @@ private[akka] final case class ServerSettingsImpl(
   logUnencryptedNetworkBytes: Option[Int],
   socketOptions:              immutable.Seq[SocketOption],
   defaultHostHeader:          Host,
-  websocketRandomFactory:     () ⇒ Random,
+  websocketSettings:          WebSocketSettings,
   parserSettings:             ParserSettings,
   http2Settings:              Http2ServerSettings,
   defaultHttpPort:            Int,
@@ -50,7 +49,10 @@ private[akka] final case class ServerSettingsImpl(
   require(0 < responseHeaderSizeHint, "response-size-hint must be > 0")
   require(0 < backlog, "backlog must be > 0")
 
+  override def websocketRandomFactory: () ⇒ Random = websocketSettings.randomFactory
+
   override def productPrefix = "ServerSettings"
+
 }
 
 /** INTERNAL API */
@@ -94,7 +96,7 @@ private[http] object ServerSettingsImpl extends SettingsCompanion[ServerSettings
           val info = result.errors.head.withSummary("Configured `default-host-header` is illegal")
           throw new ConfigurationException(info.formatPretty)
       },
-    Randoms.SecureRandomInstances, // can currently only be overridden from code
+    WebSocketSettingsImpl.server(c.getConfig("websocket")),
     ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")),
     Http2ServerSettings.Http2ServerSettingsImpl.fromSubConfig(root, c.getConfig("http2")),
     c getInt "default-http-port",

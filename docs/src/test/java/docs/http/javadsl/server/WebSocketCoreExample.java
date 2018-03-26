@@ -8,11 +8,19 @@ package docs.http.javadsl.server;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import akka.NotUsed;
+import akka.http.impl.util.JavaMapping;
 import akka.http.javadsl.ConnectHttp;
+import akka.http.javadsl.ConnectionContext;
+import akka.http.javadsl.model.ws.WebSocketRequest;
+import akka.http.javadsl.settings.ClientConnectionSettings;
+import akka.http.javadsl.settings.ServerSettings;
+import akka.http.javadsl.settings.WebSocketSettings;
 import akka.japi.Function;
 import akka.japi.JavaPartialFunction;
 
@@ -29,10 +37,11 @@ import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.model.ws.Message;
 import akka.http.javadsl.model.ws.TextMessage;
 import akka.http.javadsl.model.ws.WebSocket;
+import akka.util.ByteString;
 
-@SuppressWarnings("Convert2MethodRef")
+@SuppressWarnings({"Convert2MethodRef", "ConstantConditions"})
 public class WebSocketCoreExample {
-  
+
   //#websocket-handling
   public static HttpResponse handleRequest(HttpRequest request) {
     System.out.println("Handling request to " + request.getUri());
@@ -101,5 +110,61 @@ public class WebSocketCoreExample {
     }
   }
   //#websocket-handler
+
+  {
+    ActorSystem system = null;
+    ActorMaterializer materializer = null;
+    Flow<HttpRequest, HttpResponse, NotUsed> handler = null;
+    //#websocket-ping-payload-server
+    ServerSettings defaultSettings = ServerSettings.create(system);
+
+    AtomicInteger pingCounter = new AtomicInteger();
+
+    WebSocketSettings customWebsocketSettings = defaultSettings.getWebsocketSettings()
+        .withPeriodicKeepAliveData(() ->
+            ByteString.fromString(String.format("debug-%d", pingCounter.incrementAndGet()))
+        );
+
+
+    ServerSettings customServerSettings = defaultSettings.withWebsocketSettings(customWebsocketSettings);
+
+    Http http = Http.get(system);
+    http.bindAndHandle(handler,
+        ConnectHttp.toHost("127.0.0.1"),
+        customServerSettings, // pass the configuration
+        system.log(),
+        materializer);
+    //#websocket-ping-payload-server
+  }
+
+  {
+    ActorSystem system = null;
+    ActorMaterializer materializer = null;
+    Flow<Message, Message, NotUsed> clientFlow = null;
+    //#websocket-client-ping-payload
+    ClientConnectionSettings defaultSettings = ClientConnectionSettings.create(system);
+
+    AtomicInteger pingCounter = new AtomicInteger();
+
+    WebSocketSettings customWebsocketSettings = defaultSettings.getWebsocketSettings()
+        .withPeriodicKeepAliveData(() ->
+            ByteString.fromString(String.format("debug-%d", pingCounter.incrementAndGet()))
+        );
+
+    ClientConnectionSettings customSettings =
+        defaultSettings.withWebsocketSettings(customWebsocketSettings);
+
+    Http http = Http.get(system);
+    http.singleWebSocketRequest(
+        WebSocketRequest.create("ws://127.0.0.1"),
+        clientFlow,
+        ConnectionContext.noEncryption(),
+        Optional.empty(),
+        customSettings,
+        system.log(),
+        materializer
+    );
+    //#websocket-client-ping-payload
+  }
 }
 //#websocket-example-using-core

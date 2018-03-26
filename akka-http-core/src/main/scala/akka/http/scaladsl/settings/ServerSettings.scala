@@ -41,7 +41,9 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def backlog: Int
   def socketOptions: immutable.Seq[SocketOption]
   def defaultHostHeader: Host
+  @Deprecated @deprecated("Kept for binary compatibility; Use websocketSettings.randomFactory instead", since = "10.1.1")
   def websocketRandomFactory: () ⇒ Random
+  def websocketSettings: WebSocketSettings
   def parserSettings: ParserSettings
   def logUnencryptedNetworkBytes: Option[Int]
   def http2Settings: Http2ServerSettings
@@ -84,7 +86,8 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   override def withResponseHeaderSizeHint(newValue: Int): ServerSettings = self.copy(responseHeaderSizeHint = newValue)
   override def withBacklog(newValue: Int): ServerSettings = self.copy(backlog = newValue)
   override def withSocketOptions(newValue: java.lang.Iterable[SocketOption]): ServerSettings = self.copy(socketOptions = newValue.asScala.toList)
-  override def withWebsocketRandomFactory(newValue: java.util.function.Supplier[Random]): ServerSettings = self.copy(websocketRandomFactory = () ⇒ newValue.get())
+  override def withWebsocketRandomFactory(newValue: java.util.function.Supplier[Random]): ServerSettings = self.copy(websocketSettings = websocketSettings.withRandomFactoryFactory(() ⇒ newValue.get()))
+  override def getWebsocketSettings: WebSocketSettings = self.websocketSettings
   override def withDefaultHttpPort(newValue: Int): ServerSettings = self.copy(defaultHttpPort = newValue)
   override def withDefaultHttpsPort(newValue: Int): ServerSettings = self.copy(defaultHttpsPort = newValue)
 
@@ -94,7 +97,8 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def withLogUnencryptedNetworkBytes(newValue: Option[Int]): ServerSettings = self.copy(logUnencryptedNetworkBytes = newValue)
   def withDefaultHostHeader(newValue: Host): ServerSettings = self.copy(defaultHostHeader = newValue)
   def withParserSettings(newValue: ParserSettings): ServerSettings = self.copy(parserSettings = newValue)
-  def withWebsocketRandomFactory(newValue: () ⇒ Random): ServerSettings = self.copy(websocketRandomFactory = newValue)
+  def withWebsocketRandomFactory(newValue: () ⇒ Random): ServerSettings = self.copy(websocketSettings = websocketSettings.withRandomFactoryFactory(() ⇒ newValue()))
+  def withWebsocketSettings(newValue: WebSocketSettings): ServerSettings = self.copy(websocketSettings = newValue)
   def withSocketOptions(newValue: immutable.Seq[SocketOption]): ServerSettings = self.copy(socketOptions = newValue)
 
 }

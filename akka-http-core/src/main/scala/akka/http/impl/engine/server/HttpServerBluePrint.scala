@@ -639,7 +639,7 @@ private[http] object HttpServerBluePrint {
         val frameHandler = handlerFlow match {
           case Left(frameHandler) ⇒ frameHandler
           case Right(messageHandler) ⇒
-            WebSocket.stack(serverSide = true, maskingRandomFactory = settings.websocketRandomFactory, log = log).join(messageHandler)
+            WebSocket.stack(serverSide = true, settings.websocketSettings, log = log).join(messageHandler)
         }
 
         val sinkIn = new SubSinkInlet[ByteString]("FrameSink")

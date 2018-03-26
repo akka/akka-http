@@ -8,12 +8,11 @@ import java.net.InetSocketAddress
 import java.util.Random
 
 import akka.annotation.InternalApi
-import akka.http.impl.engine.ws.Randoms
 import akka.http.impl.util._
 import akka.http.scaladsl.ClientTransport
 import akka.http.scaladsl.model.headers.`User-Agent`
 import akka.http.scaladsl.settings.ClientConnectionSettings.LogUnencryptedNetworkBytes
-import akka.http.scaladsl.settings.ParserSettings
+import akka.http.scaladsl.settings.{ ParserSettings, WebSocketSettings }
 import akka.io.Inet.SocketOption
 import com.typesafe.config.Config
 
@@ -28,7 +27,7 @@ private[akka] final case class ClientConnectionSettingsImpl(
   idleTimeout:                Duration,
   requestHeaderSizeHint:      Int,
   logUnencryptedNetworkBytes: Option[Int],
-  websocketRandomFactory:     () ⇒ Random,
+  websocketSettings:          WebSocketSettings,
   socketOptions:              immutable.Seq[SocketOption],
   parserSettings:             ParserSettings,
   localAddress:               Option[InetSocketAddress],
@@ -39,10 +38,14 @@ private[akka] final case class ClientConnectionSettingsImpl(
   require(requestHeaderSizeHint > 0, "request-size-hint must be > 0")
 
   override def productPrefix = "ClientConnectionSettings"
+
+  override def websocketRandomFactory: () ⇒ Random = websocketSettings.randomFactory
 }
 
-object ClientConnectionSettingsImpl extends SettingsCompanion[ClientConnectionSettingsImpl]("akka.http.client") {
-  def fromSubConfig(root: Config, inner: Config) = {
+/** INTERNAL API */
+@InternalApi
+private[akka] object ClientConnectionSettingsImpl extends SettingsCompanion[ClientConnectionSettingsImpl]("akka.http.client") {
+  def fromSubConfig(root: Config, inner: Config): ClientConnectionSettingsImpl = {
     val c = inner.withFallback(root.getConfig(prefix))
     new ClientConnectionSettingsImpl(
       userAgentHeader = c.getString("user-agent-header").toOption.map(`User-Agent`(_)),
@@ -50,7 +53,7 @@ object ClientConnectionSettingsImpl extends SettingsCompanion[ClientConnectionSe
       idleTimeout = c getPotentiallyInfiniteDuration "idle-timeout",
       requestHeaderSizeHint = c getIntBytes "request-header-size-hint",
       logUnencryptedNetworkBytes = LogUnencryptedNetworkBytes(c getString "log-unencrypted-network-bytes"),
-      websocketRandomFactory = Randoms.SecureRandomInstances, // can currently only be overridden from code
+      websocketSettings = WebSocketSettingsImpl.client(c.getConfig("websocket")),
       socketOptions = SocketOptionSettings.fromSubConfig(root, c.getConfig("socket-options")),
       parserSettings = ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")),
       localAddress = None,

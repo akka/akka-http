@@ -9,6 +9,9 @@ import java.util.Random
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
+import akka.http.impl.engine.ws.FrameOutHandler.Input
+import akka.http.impl.engine.ws.Protocol.Opcode
+import akka.http.impl.settings.WebSocketSettingsImpl
 import akka.http.impl.util.StreamUtils
 import akka.util.ByteString
 
@@ -17,6 +20,7 @@ import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.http.scaladsl.model.ws._
+import akka.http.scaladsl.settings.WebSocketSettings
 
 /**
  * INTERNAL API
@@ -31,12 +35,13 @@ private[http] object WebSocket {
    * A stack of all the higher WS layers between raw frames and the user API.
    */
   def stack(
-    serverSide:           Boolean,
-    maskingRandomFactory: () ⇒ Random,
-    closeTimeout:         FiniteDuration = 3.seconds,
-    log:                  LoggingAdapter): BidiFlow[FrameEvent, Message, Message, FrameEvent, NotUsed] =
-    masking(serverSide, maskingRandomFactory) atop
+    serverSide:        Boolean,
+    websocketSettings: WebSocketSettings,
+    closeTimeout:      FiniteDuration    = 3.seconds, // TODO put close timeout into the settings?
+    log:               LoggingAdapter): BidiFlow[FrameEvent, Message, Message, FrameEvent, NotUsed] =
+    masking(serverSide, websocketSettings.randomFactory) atop
       frameHandling(serverSide, closeTimeout, log) atop
+      periodicKeepAlive(websocketSettings) atop
       messageAPI(serverSide, closeTimeout)
 
   /** The lowest layer that implements the binary protocol */
@@ -51,12 +56,35 @@ private[http] object WebSocket {
     Masking(serverSide, maskingRandomFactory)
       .named("ws-masking")
 
+  /** The layer that transparently injects (if enabled) keepAlive Ping or Pong messages when connection is idle */
+  def periodicKeepAlive(settings: WebSocketSettings): BidiFlow[FrameHandler.Output, FrameHandler.Output, FrameOutHandler.Input, FrameOutHandler.Input, NotUsed] = {
+    settings.periodicKeepAliveMaxIdle match {
+      case maxIdle: FiniteDuration ⇒
+
+        val noCustomData = WebSocketSettingsImpl.hasNoCustomPeriodicKeepAliveData(settings)
+        val mkFrame = settings.periodicKeepAliveMode match {
+          case "ping" if noCustomData ⇒ FrameHandler.mkDirectAnswerPing // sending Ping should result in a Pong back
+          case "ping" ⇒ () ⇒ DirectAnswer(FrameEvent.fullFrame(Opcode.Ping, None, settings.periodicKeepAliveData(), fin = true))
+
+          case "pong" if noCustomData ⇒ FrameHandler.mkDirectAnswerPong // sending Pong means we do not expect a reply
+          case "pong"                 ⇒ () ⇒ DirectAnswer(FrameEvent.fullFrame(Opcode.Pong, None, settings.periodicKeepAliveData(), fin = true))
+        }
+
+        BidiFlow.fromFlows(
+          Flow[FrameHandler.Output].keepAlive(maxIdle, mkFrame),
+          Flow[Input]
+        )
+      case _ ⇒
+        BidiFlow.identity
+    }
+  }
+
   /**
    * The layer that implements all low-level frame handling, like handling control frames, collecting messages
    * from frames, decoding text messages, close handling, etc.
    */
   def frameHandling(
-    serverSide:   Boolean        = true,
+    serverSide:   Boolean,
     closeTimeout: FiniteDuration,
     log:          LoggingAdapter): BidiFlow[FrameEventOrError, FrameHandler.Output, FrameOutHandler.Input, FrameStart, NotUsed] =
     BidiFlow.fromFlows(
