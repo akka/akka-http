@@ -31,6 +31,9 @@ import akka.http.caching.javadsl.LfuCacheSettings;
 import akka.http.caching.LfuCache;
 
 //#create-cache-imports
+//#cache
+import static akka.http.javadsl.server.PathMatchers.segment;
+//#cache
 
 public class CachingDirectivesExamplesTest extends JUnitRouteTest {
 
@@ -52,26 +55,29 @@ public class CachingDirectivesExamplesTest extends JUnitRouteTest {
     };
 
     final AtomicInteger count = new AtomicInteger(0);
-    final Route route = cache(routeCache(cachingSettings), simpleKeyer, () ->
-      extractUri(uri ->
-        complete(String.format("Request for %s @ count %d", uri, count.incrementAndGet()))
+    final Cache<Uri, RouteResult> myCache = routeCache(cachingSettings);
+    final Route route = path(segment("cached"), () ->
+      cache(myCache, simpleKeyer, () ->
+        extractUri(uri ->
+          complete(String.format("Request for %s @ count %d", uri, count.incrementAndGet()))
+        )
       )
     );
 
     // tests:
     testRoute(route)
-      .run(HttpRequest.GET("/"))
-      .assertEntity("Request for http://example.com/ @ count 1");
+      .run(HttpRequest.GET("/cached"))
+      .assertEntity("Request for http://example.com/cached @ count 1");
 
     // now cached
     testRoute(route)
-      .run(HttpRequest.GET("/"))
-      .assertEntity("Request for http://example.com/ @ count 1");
+      .run(HttpRequest.GET("/cached"))
+      .assertEntity("Request for http://example.com/cached @ count 1");
 
     // caching prevented
     final CacheControl noCache = CacheControl.create(CacheDirectives.NO_CACHE);
-    testRoute(route).run(HttpRequest.GET("/").addHeader(noCache))
-      .assertEntity("Request for http://example.com/ @ count 2");
+    testRoute(route).run(HttpRequest.GET("/cached").addHeader(noCache))
+      .assertEntity("Request for http://example.com/cached @ count 2");
     //#cache
   }
 
@@ -94,26 +100,29 @@ public class CachingDirectivesExamplesTest extends JUnitRouteTest {
     };
 
     final AtomicInteger count = new AtomicInteger(0);
-    final Route route = alwaysCache(routeCache(cachingSettings), simpleKeyer, () ->
-      extractUri(uri ->
-        complete(String.format("Request for %s @ count %d", uri, count.incrementAndGet()))
+    final Cache<Uri, RouteResult> myCache = routeCache(cachingSettings);
+    final Route route = path("cached", () ->
+        alwaysCache(myCache, simpleKeyer, () ->
+        extractUri(uri ->
+          complete(String.format("Request for %s @ count %d", uri, count.incrementAndGet()))
+        )
       )
     );
 
     // tests:
     testRoute(route)
-      .run(HttpRequest.GET("/"))
-      .assertEntity("Request for http://example.com/ @ count 1");
+      .run(HttpRequest.GET("/cached"))
+      .assertEntity("Request for http://example.com/cached @ count 1");
 
     // now cached
     testRoute(route)
-      .run(HttpRequest.GET("/"))
-      .assertEntity("Request for http://example.com/ @ count 1");
+      .run(HttpRequest.GET("/cached"))
+      .assertEntity("Request for http://example.com/cached @ count 1");
 
     final CacheControl noCache = CacheControl.create(CacheDirectives.NO_CACHE);
     testRoute(route)
-      .run(HttpRequest.GET("/").addHeader(noCache))
-      .assertEntity("Request for http://example.com/ @ count 1");
+      .run(HttpRequest.GET("/cached").addHeader(noCache))
+      .assertEntity("Request for http://example.com/cached @ count 1");
     //#always-cache
   }
 
