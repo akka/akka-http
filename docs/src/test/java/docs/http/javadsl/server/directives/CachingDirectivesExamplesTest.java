@@ -54,8 +54,11 @@ public class CachingDirectivesExamplesTest extends JUnitRouteTest {
       }
     };
 
-    final AtomicInteger count = new AtomicInteger(0);
+    // Created outside the route to allow using
+    // the same cache across multiple calls
     final Cache<Uri, RouteResult> myCache = routeCache(cachingSettings);
+
+    final AtomicInteger count = new AtomicInteger(0);
     final Route route = path(segment("cached"), () ->
       cache(myCache, simpleKeyer, () ->
         extractUri(uri ->
@@ -99,8 +102,11 @@ public class CachingDirectivesExamplesTest extends JUnitRouteTest {
       }
     };
 
-    final AtomicInteger count = new AtomicInteger(0);
+    // Created outside the route to allow using
+    // the same cache across multiple calls
     final Cache<Uri, RouteResult> myCache = routeCache(cachingSettings);
+
+    final AtomicInteger count = new AtomicInteger(0);
     final Route route = path("cached", () ->
         alwaysCache(myCache, simpleKeyer, () ->
         extractUri(uri ->
