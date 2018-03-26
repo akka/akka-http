@@ -38,7 +38,9 @@ abstract class ClientConnectionSettings private[akka] () { self: ClientConnectio
   final def getLogUnencryptedNetworkBytes: Optional[Int] = OptionConverters.toJava(logUnencryptedNetworkBytes)
   final def getRequestHeaderSizeHint: Int = requestHeaderSizeHint
   final def getWebsocketSettings: WebSocketSettings = websocketSettings
-  final val getWebsocketRandomFactory: Supplier[Random] = () ⇒ websocketRandomFactory()
+  final def getWebsocketRandomFactory: Supplier[Random] = new Supplier[Random] {
+    override def get(): Random = websocketRandomFactory()
+  }
   final def getLocalAddress: Optional[InetSocketAddress] = OptionConverters.toJava(localAddress)
 
   /** The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used. */
@@ -52,7 +54,9 @@ abstract class ClientConnectionSettings private[akka] () { self: ClientConnectio
   def withIdleTimeout(newValue: Duration): ClientConnectionSettings = self.copy(idleTimeout = newValue)
   def withRequestHeaderSizeHint(newValue: Int): ClientConnectionSettings = self.copy(requestHeaderSizeHint = newValue)
   def withLogUnencryptedNetworkBytes(newValue: Optional[Int]): ClientConnectionSettings = self.copy(logUnencryptedNetworkBytes = OptionConverters.toScala(newValue))
-  def withWebsocketRandomFactory(newValue: java.util.function.Supplier[Random]): ClientConnectionSettings = self.copy(websocketSettings = websocketSettings.withRandomFactoryFactory(() ⇒ newValue.get()))
+  def withWebsocketRandomFactory(newValue: java.util.function.Supplier[Random]): ClientConnectionSettings = self.copy(websocketSettings = websocketSettings.withRandomFactoryFactory(new Supplier[Random] {
+    override def get(): Random = newValue.get()
+  }))
   def withWebsocketSettings(newValue: WebSocketSettings): ClientConnectionSettings = self.copy(websocketSettings = newValue.asScala)
   def withSocketOptions(newValue: java.lang.Iterable[SocketOption]): ClientConnectionSettings = self.copy(socketOptions = newValue.asScala.toList)
   def withParserSettings(newValue: ParserSettings): ClientConnectionSettings = self.copy(parserSettings = newValue.asScala)

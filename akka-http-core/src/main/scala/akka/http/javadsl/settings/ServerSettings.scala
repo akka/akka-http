@@ -4,6 +4,7 @@
 
 package akka.http.javadsl.settings
 
+import java.util.function.Supplier
 import java.util.{ Optional, Random }
 
 import akka.actor.ActorSystem
@@ -61,7 +62,9 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
   def withSocketOptions(newValue: java.lang.Iterable[SocketOption]): ServerSettings = self.copy(socketOptions = newValue.asScala.toList)
   def withDefaultHostHeader(newValue: Host): ServerSettings = self.copy(defaultHostHeader = newValue.asScala)
   def withParserSettings(newValue: ParserSettings): ServerSettings = self.copy(parserSettings = newValue.asScala)
-  def withWebsocketRandomFactory(newValue: java.util.function.Supplier[Random]): ServerSettings = self.copy(websocketSettings = websocketSettings.withRandomFactoryFactory(() ⇒ newValue.get()))
+  def withWebsocketRandomFactory(newValue: java.util.function.Supplier[Random]): ServerSettings = self.copy(websocketSettings = websocketSettings.withRandomFactoryFactory(new Supplier[Random] {
+    override def get(): Random = newValue.get()
+  }))
   def withWebsocketSettings(newValue: WebSocketSettings): ServerSettings = self.copy(websocketSettings = newValue.asScala)
   def withLogUnencryptedNetworkBytes(newValue: Optional[Int]): ServerSettings = self.copy(logUnencryptedNetworkBytes = OptionConverters.toScala(newValue))
   def withHttp2Settings(newValue: Http2ServerSettings): ServerSettings = self.copy(http2Settings = newValue.asScala)
