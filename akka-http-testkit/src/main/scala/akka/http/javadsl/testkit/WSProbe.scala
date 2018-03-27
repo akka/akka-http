@@ -26,7 +26,7 @@ import scala.concurrent.duration._
  */
 class WSProbe(delegate: st.WSProbe) {
 
-  def flow: Flow[Message, Message, Any] = {
+  def flow: Flow[Message, Message, NotUsed] = {
     val underlying = scaladsl.Flow[Message].map(_.asScala).via(delegate.flow).map(_.asJava)
     new Flow[Message, Message, NotUsed](underlying)
   }

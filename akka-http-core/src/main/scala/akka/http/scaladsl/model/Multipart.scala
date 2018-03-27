@@ -256,7 +256,7 @@ object Multipart {
 
       /** Java API */
       override def getParts: JSource[jm.Multipart.General.BodyPart.Strict, AnyRef] =
-        super.getParts.asInstanceOf[JSource[_ <: jm.Multipart.General.BodyPart.Strict, AnyRef]]
+        super.getParts.asInstanceOf[JSource[jm.Multipart.General.BodyPart.Strict, AnyRef]]
 
       /** Java API */
       override def getStrictParts: java.lang.Iterable[jm.Multipart.General.BodyPart.Strict] =
@@ -361,7 +361,7 @@ object Multipart {
     }
     /** INTERNAL API */
     @InternalApi
-    private[akka] def createSource(parts: Source[akka.http.javadsl.model.Multipart.FormData.BodyPart, Any]): Multipart.FormData = {
+    private[akka] def createSource(parts: Source[akka.http.javadsl.model.Multipart.FormData.BodyPart, _]): Multipart.FormData = {
       apply(parts.asInstanceOf[Source[Multipart.FormData.BodyPart, Any]])
     }
 
