@@ -1,4 +1,0 @@
-# #1938 Transparent websocket ping/pong
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ServerSettings.getWebsocketSettings")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ClientConnectionSettings.websocketSettings")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ServerSettings.websocketSettings")
