@@ -97,7 +97,9 @@ final class HttpsConnectionContext(
   override def getSslParameters: Optional[SSLParameters] = sslParameters.asJava
 }
 
-sealed class HttpConnectionContext(http2: UseHttp2) extends akka.http.javadsl.HttpConnectionContext(http2) with ConnectionContext
+sealed class HttpConnectionContext(http2: UseHttp2) extends akka.http.javadsl.HttpConnectionContext(http2) with ConnectionContext {
+  def this() = this(Negotiated)
+}
 final object HttpConnectionContext extends HttpConnectionContext(Negotiated) {
   /** Java API */
   def getInstance() = this
@@ -105,5 +107,6 @@ final object HttpConnectionContext extends HttpConnectionContext(Negotiated) {
   /** Java API */
   def create(http2: UseHttp2) = HttpConnectionContext(http2)
 
+  def apply() = new HttpConnectionContext(http2 = Negotiated)
   def apply(http2: UseHttp2) = new HttpConnectionContext(http2)
 }
