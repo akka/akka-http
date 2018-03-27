@@ -27,7 +27,8 @@ public class Http2JavaServerTest {
       "akka.actor.serialize-creators = off\n" +
       "akka.actor.serialize-messages = off\n" +
       "#akka.actor.default-dispatcher.throughput = 1000\n" +
-      "akka.actor.default-dispatcher.fork-join-executor.parallelism-max=8\n"
+      "akka.actor.default-dispatcher.fork-join-executor.parallelism-max=8\n" +
+      "akka.http.server.preview.enable-http2 = on\n"
     );
     ActorSystem system = ActorSystem.create("ServerTest", testConf);
     Materializer materializer = ActorMaterializer.create(system);
@@ -37,15 +38,12 @@ public class Http2JavaServerTest {
 
     HttpsConnectionContext httpsConnectionContext = ExampleHttpContexts.getExampleServerContext();
 
-    Http2.get(system).bindAndHandleAsync(
+    Http.get(system).bindAndHandleAsync(
       handler,
       ConnectWithHttps.toHostHttps("localhost", 9001)
         .withCustomHttpsContext(httpsConnectionContext),
       materializer);
 
-    Http2.get(system).bindAndHandleRaw(
-      handler,
-      ConnectHttp.toHost("localhost", 9002),
-      materializer);
+    // TODO what about unencrypted http2?
   }
 }

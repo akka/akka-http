@@ -77,7 +77,7 @@ object Http2ServerTest extends App {
       for {
         binding1 ← Http().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9000, ExampleHttpContexts.exampleServerContext)
         binding2 ← Http2().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9001, ExampleHttpContexts.exampleServerContext)
-        binding3 ← Http2().bindAndHandleRaw(asyncHandler, interface = "localhost", port = 9002)
+        binding3 ← Http().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9002, HttpConnectionContext(http2 = Always))
       } yield (binding1, binding2, binding3)
 
     Await.result(bindings, 1.second) // throws if binding fails

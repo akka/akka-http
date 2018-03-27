@@ -5,7 +5,6 @@
 package akka.http.scaladsl
 
 import javax.net.ssl.SSLEngine
-
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.dispatch.ExecutionContexts
@@ -13,6 +12,7 @@ import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.{ AlpnSwitch, Http2AlpnSupport, Http2Blueprint }
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.impl.util.StreamUtils
+import akka.http.scaladsl.{ Negotiated, Never }
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.ServerSettings
@@ -39,7 +39,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
   /**
    * Handle requests using HTTP/2 immediately, without any TLS or negotiation layer.
    */
-  def bindAndHandleRaw(
+  private def bindAndHandleRaw(
     handler:   HttpRequest ⇒ Future[HttpResponse],
     interface: String, port: Int = DefaultPortForProtocol,
     settings:    ServerSettings = ServerSettings(system),
@@ -82,12 +82,31 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
   def bindAndHandleAsync(
     handler:   HttpRequest ⇒ Future[HttpResponse],
     interface: String, port: Int = DefaultPortForProtocol,
-    httpsContext: HttpsConnectionContext,
-    settings:     ServerSettings         = ServerSettings(system),
-    parallelism:  Int                    = 1,
-    log:          LoggingAdapter         = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
+    connectionContext: ConnectionContext,
+    settings:          ServerSettings    = ServerSettings(system),
+    parallelism:       Int               = 1,
+    log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
     // TODO: split up similarly to what `Http` does into `serverLayer`, `bindAndHandle`, etc.
+    require(connectionContext.http2 != Never)
 
+    if (connectionContext.isSecure) {
+      bindAndHandleAsync(handler, interface, port, connectionContext.asInstanceOf[HttpsConnectionContext], settings, parallelism, log)
+    } else {
+      if (connectionContext.http2 == Negotiated)
+        // https://github.com/akka/akka-http/issues/1966
+        throw new NotImplementedError("h2c not supported")
+      else
+        bindAndHandleRaw(handler, interface, port, settings, parallelism, log)
+    }
+  }
+
+  private def bindAndHandleAsync(
+    handler:   HttpRequest ⇒ Future[HttpResponse],
+    interface: String, port: Int,
+    httpsContext: HttpsConnectionContext,
+    settings:     ServerSettings,
+    parallelism:  Int,
+    log:          LoggingAdapter)(implicit fm: Materializer): Future[ServerBinding] = {
     // automatically preserves association between request and response by setting the right headers, can use mapAsyncUnordered
 
     val effectivePort = if (port >= 0) port else 443

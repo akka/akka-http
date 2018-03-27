@@ -6,8 +6,8 @@ package akka.http.scaladsl
 
 import java.net.InetSocketAddress
 import java.util.concurrent.CompletionStage
-import javax.net.ssl._
 
+import javax.net.ssl._
 import akka.actor._
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
@@ -21,6 +21,7 @@ import akka.http.impl.engine.server._
 import akka.http.impl.engine.ws.WebSocketClientBlueprint
 import akka.http.impl.settings.{ ConnectionPoolSetup, HostConnectionPoolSetup }
 import akka.http.impl.util.StreamUtils
+import akka.http.scaladsl.{ Always, Never }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.ws.{ Message, WebSocketRequest, WebSocketUpgradeResponse }
@@ -258,12 +259,16 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     settings:          ServerSettings    = ServerSettings(system),
     parallelism:       Int               = 1,
     log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
-    val enableHttp2 = settings.previewServerSettings.enableHttp2
-    if (enableHttp2 && connectionContext.isSecure) {
+    val http2enabled = settings.previewServerSettings.enableHttp2
+    if (http2enabled && connectionContext.isSecure && connectionContext.http2 != Never) {
+      log.debug("Binding server using HTTP/2...")
+      Http2Shadow.bindAndHandleAsync(handler, interface, port, connectionContext, settings, parallelism, log)(fm)
+    } else if (http2enabled && !connectionContext.isSecure && connectionContext.http2 == Always) {
+      // We do not support HTTP/2 negotiation for insecure connections (h2c), https://github.com/akka/akka-http/issues/1966
       log.debug("Binding server using HTTP/2...")
       Http2Shadow.bindAndHandleAsync(handler, interface, port, connectionContext, settings, parallelism, log)(fm)
     } else {
-      if (enableHttp2)
+      if (http2enabled)
         log.debug("The akka.http.server.preview.enable-http2 flag was set, " +
           "but a plain HttpConnectionContext (not Https) was given, binding using plain HTTP...")
 

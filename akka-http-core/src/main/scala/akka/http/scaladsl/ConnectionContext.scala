@@ -10,6 +10,8 @@ import com.typesafe.sslconfig.akka.AkkaSSLConfig
 
 import scala.collection.JavaConverters._
 import java.util.{ Optional, Collection ⇒ JCollection }
+
+import akka.http.scaladsl.{ Negotiated, Never, UseHttp2 }
 import javax.net.ssl._
 
 import scala.collection.immutable
@@ -28,9 +30,21 @@ object ConnectionContext {
     enabledCipherSuites: Option[immutable.Seq[String]] = None,
     enabledProtocols:    Option[immutable.Seq[String]] = None,
     clientAuth:          Option[TLSClientAuth]         = None,
-    sslParameters:       Option[SSLParameters]         = None) =
-    new HttpsConnectionContext(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
+    sslParameters:       Option[SSLParameters]         = None,
+    http2: UseHttp2 = Negotiated,
+           ) =
+    new HttpsConnectionContext(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters, http2)
   //#https-context-creation
+
+  // for binary-compatibility, since 1.10.2
+  def https(
+    sslContext:          SSLContext,
+    sslConfig:           Option[AkkaSSLConfig],
+    enabledCipherSuites: Option[immutable.Seq[String]],
+    enabledProtocols:    Option[immutable.Seq[String]],
+    clientAuth:          Option[TLSClientAuth],
+    sslParameters:       Option[SSLParameters]) =
+    new HttpsConnectionContext(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters, http2 = Negotiated)
 
   // for binary-compatibility, since 2.4.7
   def https(
@@ -39,7 +53,7 @@ object ConnectionContext {
     enabledProtocols:    Option[immutable.Seq[String]],
     clientAuth:          Option[TLSClientAuth],
     sslParameters:       Option[SSLParameters]) =
-    new HttpsConnectionContext(sslContext, None, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
+    new HttpsConnectionContext(sslContext, sslConfig = None, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters, http2 = Negotiated)
 
   def noEncryption() = HttpConnectionContext
 }
@@ -50,8 +64,20 @@ final class HttpsConnectionContext(
   val enabledCipherSuites: Option[immutable.Seq[String]] = None,
   val enabledProtocols:    Option[immutable.Seq[String]] = None,
   val clientAuth:          Option[TLSClientAuth]         = None,
-  val sslParameters:       Option[SSLParameters]         = None)
-  extends akka.http.javadsl.HttpsConnectionContext with ConnectionContext {
+  val sslParameters:       Option[SSLParameters]         = None,
+  http2:                   UseHttp2                      = Negotiated,
+  )
+  extends akka.http.javadsl.HttpsConnectionContext(http2) with ConnectionContext {
+
+  // for binary-compatibility, since 2.10.2
+  def this(
+            sslContext:          SSLContext,
+            sslConfig: Option[AkkaSSLConfig],
+            enabledCipherSuites: Option[immutable.Seq[String]],
+            enabledProtocols:    Option[immutable.Seq[String]],
+            clientAuth:          Option[TLSClientAuth],
+            sslParameters:       Option[SSLParameters]) =
+    this(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters, http2 = Negotiated)
 
   // for binary-compatibility, since 2.4.7
   def this(
@@ -60,7 +86,7 @@ final class HttpsConnectionContext(
     enabledProtocols:    Option[immutable.Seq[String]],
     clientAuth:          Option[TLSClientAuth],
     sslParameters:       Option[SSLParameters]) =
-    this(sslContext, None, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
+    this(sslContext, sslConfig = None, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters, http2 = Negotiated)
 
   def firstSession = NegotiateNewSession(enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
 
@@ -71,8 +97,13 @@ final class HttpsConnectionContext(
   override def getSslParameters: Optional[SSLParameters] = sslParameters.asJava
 }
 
-sealed class HttpConnectionContext extends akka.http.javadsl.HttpConnectionContext with ConnectionContext
-final object HttpConnectionContext extends HttpConnectionContext {
+sealed class HttpConnectionContext(http2: UseHttp2) extends akka.http.javadsl.HttpConnectionContext(http2) with ConnectionContext
+final object HttpConnectionContext extends HttpConnectionContext(Negotiated) {
   /** Java API */
   def getInstance() = this
+
+  /** Java API */
+  def create(http2: UseHttp2) = HttpConnectionContext(http2)
+
+  def apply(http2: UseHttp2) = new HttpConnectionContext(http2)
 }

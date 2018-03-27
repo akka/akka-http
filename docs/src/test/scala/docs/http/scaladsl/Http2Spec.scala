@@ -5,7 +5,7 @@
 package docs.http.scaladsl
 
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
-import akka.http.scaladsl.{ Http, HttpsConnectionContext }
+import akka.http.scaladsl.{ Always, Http, HttpConnectionContext, HttpsConnectionContext }
 
 //#bindAndHandleAsync
 import scala.concurrent.Future
@@ -35,9 +35,10 @@ object Http2Spec {
   //#bindAndHandleAsync
 
   //#bindAndHandleRaw
-  Http2().bindAndHandleRaw(
+  Http2().bindAndHandleAsync(
     asyncHandler,
     interface = "localhost",
-    port = 8443)
+    port = 8080,
+    connectionContext = HttpConnectionContext(http2 = Always))
   //#bindAndHandleRaw
 }

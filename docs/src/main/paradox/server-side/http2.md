@@ -53,10 +53,7 @@ We currently only support the approach requiring [Prior Knowledge](http://httpwg
 Scala
 :   @@snip[Http2Spec.scala]($test$/scala/docs/http/scaladsl/Http2Spec.scala) { #bindAndHandleRaw }
 
-Java
-:   @@snip[Http2Test.java]($test$/java/docs/http/javadsl/Http2Test.java) { #bindAndHandleRaw }
-
-## Testing with cURL
+r## Testing with cURL
 
 At this point you should be able to connect, but HTTP/2 may still not be available.
 

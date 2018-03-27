@@ -19,8 +19,6 @@ import static akka.http.javadsl.ConnectHttp.toHostHttps;
 //#bindAndHandleAsync
 
 //#bindAndHandleRaw
-import akka.http.javadsl.Http2;
-import static akka.http.javadsl.ConnectHttp.toHost;
 
 //#bindAndHandleRaw
 
@@ -40,11 +38,10 @@ class Http2Test {
     //#bindAndHandleAsync
 
     //#bindAndHandleRaw
-    Http2.get(system)
-      .bindAndHandleRaw(
-        asyncHandler,
-        toHost("localhost", 8443),
-        materializer);
+
+    // TODO is there a reason there is no `bindAndHandle` that accepts
+    // a `ConnectionContext` in the javadsl?
+
     //#bindAndHandleRaw
   }
 }
