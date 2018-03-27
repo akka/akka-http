@@ -9,13 +9,15 @@ import akka.http.scaladsl.common.{ EntityStreamingSupport, JsonEntityStreamingSu
 import akka.http.scaladsl.marshalling.{ Marshaller, Marshalling, ToResponseMarshallable }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl._
 import akka.testkit.EventFilter
 import akka.util.ByteString
+import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.Future
 
-class EntityStreamingSpec extends RoutingSpec {
+class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
 
   //#models
   case class Tweet(uid: Int, txt: String)
@@ -93,6 +95,75 @@ class EntityStreamingSpec extends RoutingSpec {
         """{"uid":2,"txt":"Streaming is so hot right now!"}""" + "\n" +
         """{"uid":3,"txt":"You cannot enter the same river twice."}"""
     }
+  }
+
+  "client-consume-streaming-json" in {
+    //#json-streaming-client-example
+    import MyJsonProtocol._
+    import akka.http.scaladsl.unmarshalling._
+    import akka.http.scaladsl.common.EntityStreamingSupport
+    import akka.http.scaladsl.common.JsonEntityStreamingSupport
+
+    implicit val jsonStreamingSupport: JsonEntityStreamingSupport =
+      EntityStreamingSupport.json()
+
+    val input = """{"uid":1,"txt":"#Akka rocks!"}""" + "\n" +
+      """{"uid":2,"txt":"Streaming is so hot right now!"}""" + "\n" +
+      """{"uid":3,"txt":"You cannot enter the same river twice."}"""
+
+    val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, input))
+
+    // unmarshal:
+    val unmarshalled: Future[Source[Tweet, NotUsed]] =
+      Unmarshal(response).to[Source[Tweet, NotUsed]]
+
+    // flatten the Future[Source[]] into a Source[]:
+    val source: Source[Tweet, Future[NotUsed]] =
+      Source.fromFutureSource(unmarshalled)
+
+    //#json-streaming-client-example
+    // tests ------------------------------------------------------------
+    val all = source.runWith(Sink.seq).futureValue
+    all.head.uid should ===(1)
+    all.head.txt should ===("#Akka rocks!")
+    all.drop(1).head.uid should ===(2)
+    all.drop(1).head.txt should ===("Streaming is so hot right now!")
+    all.drop(2).head.uid should ===(3)
+    all.drop(2).head.txt should ===("You cannot enter the same river twice.")
+  }
+
+  "client-consume-streaming-json-raw" in {
+    //#json-streaming-client-example-raw
+    import MyJsonProtocol._
+    import akka.http.scaladsl.unmarshalling._
+    import akka.http.scaladsl.common.EntityStreamingSupport
+    import akka.http.scaladsl.common.JsonEntityStreamingSupport
+
+    implicit val jsonStreamingSupport: JsonEntityStreamingSupport =
+      EntityStreamingSupport.json()
+
+    val input = """{"uid":1,"txt":"#Akka rocks!"}""" + "\n" +
+      """{"uid":2,"txt":"Streaming is so hot right now!"}""" + "\n" +
+      """{"uid":3,"txt":"You cannot enter the same river twice."}"""
+
+    val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, input))
+
+    val value: Source[Tweet, Any] =
+      response.entity.dataBytes
+        .via(jsonStreamingSupport.framingDecoder) // pick your Framing (could be "\n" etc)
+        .mapAsync(1)(bytes ⇒ Unmarshal(bytes).to[Tweet]) // unmarshal one by one
+
+    //#json-streaming-client-example-raw
+
+    // tests ------------------------------------------------------------
+    val all = value.runWith(Sink.seq).futureValue
+    all.head.uid should ===(1)
+    all.head.txt should ===("#Akka rocks!")
+    all.drop(1).head.uid should ===(2)
+    all.drop(1).head.txt should ===("Streaming is so hot right now!")
+    all.drop(2).head.uid should ===(3)
+    all.drop(2).head.txt should ===("You cannot enter the same river twice.")
+
   }
 
   "csv-example" in {
