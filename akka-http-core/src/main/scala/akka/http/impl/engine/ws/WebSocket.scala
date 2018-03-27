@@ -63,11 +63,14 @@ private[http] object WebSocket {
 
         val noCustomData = WebSocketSettingsImpl.hasNoCustomPeriodicKeepAliveData(settings)
         val mkFrame = settings.periodicKeepAliveMode match {
-          case "ping" if noCustomData ⇒ FrameHandler.mkDirectAnswerPing // sending Ping should result in a Pong back
+          case "ping" if noCustomData ⇒ mkDirectAnswerPing // sending Ping should result in a Pong back
           case "ping" ⇒ () ⇒ DirectAnswer(FrameEvent.fullFrame(Opcode.Ping, None, settings.periodicKeepAliveData(), fin = true))
 
-          case "pong" if noCustomData ⇒ FrameHandler.mkDirectAnswerPong // sending Pong means we do not expect a reply
-          case "pong"                 ⇒ () ⇒ DirectAnswer(FrameEvent.fullFrame(Opcode.Pong, None, settings.periodicKeepAliveData(), fin = true))
+          case "pong" if noCustomData ⇒ mkDirectAnswerPong // sending Pong means we do not expect a reply
+          case "pong" ⇒ () ⇒ DirectAnswer(FrameEvent.fullFrame(Opcode.Pong, None, settings.periodicKeepAliveData(), fin = true))
+
+          case other ⇒ throw new IllegalArgumentException(s"Unsupported periodic-keep-alive-mode. " +
+            s"Found: [$other] however only [ping] and [pong] are supported")
         }
 
         BidiFlow.fromFlows(
@@ -78,6 +81,12 @@ private[http] object WebSocket {
         BidiFlow.identity
     }
   }
+
+  private[this] final val PingFullFrame: FrameStart = FrameEvent.fullFrame(Opcode.Ping, None, ByteString.empty, fin = true)
+  private[this] final val mkDirectAnswerPing = () ⇒ DirectAnswer(PingFullFrame)
+
+  private[this] final val PongFullFrame: FrameStart = FrameEvent.fullFrame(Opcode.Pong, None, ByteString.empty, fin = true)
+  private[this] final val mkDirectAnswerPong = () ⇒ DirectAnswer(PongFullFrame)
 
   /**
    * The layer that implements all low-level frame handling, like handling control frames, collecting messages

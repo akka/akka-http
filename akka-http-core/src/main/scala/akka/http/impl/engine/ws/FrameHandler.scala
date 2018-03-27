@@ -24,12 +24,6 @@ import scala.util.control.NonFatal
 @InternalApi
 private[http] object FrameHandler {
 
-  private val PingFullFrame: FrameStart = FrameEvent.fullFrame(Opcode.Ping, None, ByteString.empty, fin = true)
-  final val mkDirectAnswerPing = () ⇒ DirectAnswer(PingFullFrame)
-
-  private val PongFullFrame: FrameStart = FrameEvent.fullFrame(Opcode.Pong, None, ByteString.empty, fin = true)
-  final val mkDirectAnswerPong = () ⇒ DirectAnswer(PongFullFrame)
-
   def create(server: Boolean): Flow[FrameEventOrError, Output, NotUsed] =
     Flow[FrameEventOrError].via(new HandlerStage(server))
 
