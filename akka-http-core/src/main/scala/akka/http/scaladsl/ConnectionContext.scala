@@ -31,8 +31,7 @@ object ConnectionContext {
     enabledProtocols:    Option[immutable.Seq[String]] = None,
     clientAuth:          Option[TLSClientAuth]         = None,
     sslParameters:       Option[SSLParameters]         = None,
-    http2: UseHttp2 = Negotiated,
-           ) =
+    http2:               UseHttp2                      = Negotiated) =
     new HttpsConnectionContext(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters, http2)
   //#https-context-creation
 
@@ -65,18 +64,17 @@ final class HttpsConnectionContext(
   val enabledProtocols:    Option[immutable.Seq[String]] = None,
   val clientAuth:          Option[TLSClientAuth]         = None,
   val sslParameters:       Option[SSLParameters]         = None,
-  http2:                   UseHttp2                      = Negotiated,
-  )
+  http2:                   UseHttp2                      = Negotiated)
   extends akka.http.javadsl.HttpsConnectionContext(http2) with ConnectionContext {
 
   // for binary-compatibility, since 2.10.2
   def this(
-            sslContext:          SSLContext,
-            sslConfig: Option[AkkaSSLConfig],
-            enabledCipherSuites: Option[immutable.Seq[String]],
-            enabledProtocols:    Option[immutable.Seq[String]],
-            clientAuth:          Option[TLSClientAuth],
-            sslParameters:       Option[SSLParameters]) =
+    sslContext:          SSLContext,
+    sslConfig:           Option[AkkaSSLConfig],
+    enabledCipherSuites: Option[immutable.Seq[String]],
+    enabledProtocols:    Option[immutable.Seq[String]],
+    clientAuth:          Option[TLSClientAuth],
+    sslParameters:       Option[SSLParameters]) =
     this(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters, http2 = Negotiated)
 
   // for binary-compatibility, since 2.4.7
