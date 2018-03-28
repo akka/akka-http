@@ -13,7 +13,5 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.setting
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ParserSettings.getIgnoreIllegalHeaderFor")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ParserSettings.ignoreIllegalHeaderFor")
 
-# #1942 Internal class
+# #1942 changes to Internal API
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.ErrorInfo.copy")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.ErrorInfo.this")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.ErrorInfo.apply")
