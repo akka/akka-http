@@ -228,7 +228,7 @@ private object PoolConductor {
        *
        *  See http://tools.ietf.org/html/rfc7230#section-6.3.2 for more info on HTTP pipelining.
        */
-      @tailrec def bestSlot(ix: Int = 0, bestIx: Int = -1, bestState: SlotState = Busy): Int =
+      def bestSlot(ix: Int = 0, bestIx: Int = -1, bestState: SlotState = Busy): Int =
         if (ix < slotStates.length) {
           val pl = pipeliningLimit
           slotStates(ix) → bestState match {

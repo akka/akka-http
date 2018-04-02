@@ -822,7 +822,7 @@ class HttpServerSpec extends AkkaSpec(
           |""")
 
       val random = new Random()
-      @tailrec def rec(bytesLeft: Int): Unit =
+      def rec(bytesLeft: Int): Unit =
         if (bytesLeft > 0) {
           val count = math.min(random.nextInt(1000) + 1, bytesLeft)
           val data = random.alphanumeric.take(count).mkString

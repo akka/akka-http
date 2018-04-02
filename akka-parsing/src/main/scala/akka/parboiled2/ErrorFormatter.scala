@@ -119,7 +119,7 @@ class ErrorFormatter(
    * Formats what is expected at the error location into the given StringBuilder.
    */
   def formatExpectedAsString(sb: JStringBuilder, error: ParseError): JStringBuilder = {
-    @tailrec def rec(remaining: List[String]): JStringBuilder =
+    def rec(remaining: List[String]): JStringBuilder =
       remaining match {
         case Nil                 ⇒ sb.append("???")
         case head :: Nil         ⇒ sb.append(head)
@@ -169,7 +169,7 @@ class ErrorFormatter(
    */
   def expandErrorLineTabs(line: String, errorColumn: Int): (Int, String) = {
     val sb = new StringBuilder
-    @tailrec def rec(inCol: Int, errorCol: Int): Int =
+    def rec(inCol: Int, errorCol: Int): Int =
       if (inCol < line.length) {
         val ec = if (inCol == errorColumn - 1) sb.length else errorCol
         line.charAt(inCol) match {
@@ -200,8 +200,8 @@ class ErrorFormatter(
     val doSep: String ⇒ JStringBuilder = sb.append
     val dontSep: String ⇒ JStringBuilder = _ ⇒ sb
     def render(names: List[String], sep: String = "") = if (names.nonEmpty) names.reverse.mkString("", ":", sep) else ""
-    @tailrec def rec(remainingPrefix: List[RuleTrace.NonTerminal], names: List[String],
-                     sep: String ⇒ JStringBuilder): JStringBuilder =
+    def rec(remainingPrefix: List[RuleTrace.NonTerminal], names: List[String],
+            sep: String ⇒ JStringBuilder): JStringBuilder =
       remainingPrefix match {
         case NonTerminal(Named(name), _) :: tail ⇒
           rec(tail, name :: names, sep)

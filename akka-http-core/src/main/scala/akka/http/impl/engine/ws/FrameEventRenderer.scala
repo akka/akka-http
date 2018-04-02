@@ -101,7 +101,7 @@ private[http] final class FrameEventRenderer extends GraphStage[FlowShape[FrameE
         data(2) = ((length & 0xFF00) >> 8).toByte
         data(3) = ((length & 0x00FF) >> 0).toByte
       case 8 ⇒
-        @tailrec def addLongBytes(l: Long, writtenBytes: Int): Unit =
+        def addLongBytes(l: Long, writtenBytes: Int): Unit =
           if (writtenBytes < 8) {
             data(2 + writtenBytes) = (l & 0xff).toByte
             addLongBytes(java.lang.Long.rotateLeft(l, 8), writtenBytes + 1)

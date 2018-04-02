@@ -42,7 +42,7 @@ import FrameEvent._
 class Http2ServerSpec extends AkkaSpec("""
     akka.loglevel = debug
     akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
-    
+
     akka.http.server.remote-address-header = on
   """)
   with WithInPendingUntilFixed with Eventually with WithLogCapturing {
@@ -889,7 +889,7 @@ class Http2ServerSpec extends AkkaSpec("""
     }
 
     def expectDATA(streamId: Int, endStream: Boolean, numBytes: Int): ByteString = {
-      @tailrec def collectMore(collected: ByteString, remainingBytes: Int): ByteString = {
+      def collectMore(collected: ByteString, remainingBytes: Int): ByteString = {
         val (completed, data) = expectDATAFrame(streamId)
         data.size should be <= remainingBytes // cannot have more data pending
         if (data.size < remainingBytes) {

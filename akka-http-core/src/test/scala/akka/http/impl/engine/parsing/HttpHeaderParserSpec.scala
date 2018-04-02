@@ -190,7 +190,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
     "continue parsing raw headers even if the overall cache value capacity is reached" in new TestSetup() {
       val randomHeaders = Stream.continually {
         val name = nextRandomString(nextRandomAlphaNumChar _, nextRandomInt(4, 16))
-        val value = nextRandomString(nextRandomPrintableChar, nextRandomInt(4, 16))
+        val value = nextRandomString(nextRandomPrintableChar _, nextRandomInt(4, 16))
         RawHeader(name, value)
       }
       randomHeaders.take(300).foldLeft(0) {
@@ -222,7 +222,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
 
     "continue parsing raw headers even if the header-specific cache capacity is reached" in new TestSetup() {
       val randomHeaders = Stream.continually {
-        val value = nextRandomString(nextRandomPrintableChar, nextRandomInt(4, 16))
+        val value = nextRandomString(nextRandomPrintableChar _, nextRandomInt(4, 16))
         RawHeader("Fancy", value)
       }
       randomHeaders.take(20).foldLeft(0) {
@@ -312,11 +312,11 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
     private[this] val random = new Random(42)
     def nextRandomPrintableChar(): Char = random.nextPrintableChar()
     def nextRandomInt(min: Int, max: Int) = random.nextInt(max - min) + min
-    @tailrec final def nextRandomAlphaNumChar(): Char = {
+    final def nextRandomAlphaNumChar(): Char = {
       val c = nextRandomPrintableChar()
       if (CharacterClasses.ALPHANUM(c)) c else nextRandomAlphaNumChar()
     }
-    @tailrec final def nextRandomString(charGen: () ⇒ Char, len: Int, sb: JStringBuilder = new JStringBuilder): String =
+    final def nextRandomString(charGen: () ⇒ Char, len: Int, sb: JStringBuilder = new JStringBuilder): String =
       if (sb.length < len) nextRandomString(charGen, len, sb.append(charGen())) else sb.toString
   }
 }

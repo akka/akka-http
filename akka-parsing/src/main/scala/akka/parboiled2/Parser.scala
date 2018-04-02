@@ -372,7 +372,7 @@ abstract class Parser(
   /**
    * THIS IS NOT PUBLIC API and might become hidden in future. Use only if you know what you are doing!
    */
-  @tailrec final def __matchString(string: String, ix: Int = 0): Boolean =
+  final def __matchString(string: String, ix: Int = 0): Boolean =
     if (ix < string.length)
       if (_cursorChar == string.charAt(ix)) {
         __advance()
@@ -383,7 +383,7 @@ abstract class Parser(
   /**
    * THIS IS NOT PUBLIC API and might become hidden in future. Use only if you know what you are doing!
    */
-  @tailrec final def __matchStringWrapped(string: String, ix: Int = 0): Boolean =
+  final def __matchStringWrapped(string: String, ix: Int = 0): Boolean =
     if (ix < string.length)
       if (_cursorChar == string.charAt(ix)) {
         __advance()
@@ -402,7 +402,7 @@ abstract class Parser(
   /**
    * THIS IS NOT PUBLIC API and might become hidden in future. Use only if you know what you are doing!
    */
-  @tailrec final def __matchIgnoreCaseString(string: String, ix: Int = 0): Boolean =
+  final def __matchIgnoreCaseString(string: String, ix: Int = 0): Boolean =
     if (ix < string.length)
       if (Character.toLowerCase(_cursorChar) == string.charAt(ix)) {
         __advance()
@@ -413,7 +413,7 @@ abstract class Parser(
   /**
    * THIS IS NOT PUBLIC API and might become hidden in future. Use only if you know what you are doing!
    */
-  @tailrec final def __matchIgnoreCaseStringWrapped(string: String, ix: Int = 0): Boolean =
+  final def __matchIgnoreCaseStringWrapped(string: String, ix: Int = 0): Boolean =
     if (ix < string.length)
       if (Character.toLowerCase(_cursorChar) == string.charAt(ix)) {
         __advance()
@@ -432,7 +432,7 @@ abstract class Parser(
   /**
    * THIS IS NOT PUBLIC API and might become hidden in future. Use only if you know what you are doing!
    */
-  @tailrec final def __matchAnyOf(string: String, ix: Int = 0): Boolean =
+  final def __matchAnyOf(string: String, ix: Int = 0): Boolean =
     if (ix < string.length)
       if (string.charAt(ix) == _cursorChar) __advance()
       else __matchAnyOf(string, ix + 1)
@@ -441,7 +441,7 @@ abstract class Parser(
   /**
    * THIS IS NOT PUBLIC API and might become hidden in future. Use only if you know what you are doing!
    */
-  @tailrec final def __matchNoneOf(string: String, ix: Int = 0): Boolean =
+  final def __matchNoneOf(string: String, ix: Int = 0): Boolean =
     if (ix < string.length)
       _cursorChar != EOI && string.charAt(ix) != _cursorChar && __matchNoneOf(string, ix + 1)
     else __advance()

@@ -324,7 +324,7 @@ trait PathMatchers {
    * @group pathmatcher
    */
   def separateOnSlashes(string: String): PathMatcher0 = {
-    @tailrec def split(ix: Int = 0, matcher: PathMatcher0 = null): PathMatcher0 = {
+    def split(ix: Int = 0, matcher: PathMatcher0 = null): PathMatcher0 = {
       val nextIx = string.indexOf('/', ix)
       def append(m: PathMatcher0) = if (matcher eq null) m else matcher / m
       if (nextIx < 0) append(string.substring(ix))
@@ -436,7 +436,7 @@ trait PathMatchers {
 
     def apply(path: Path) = path match {
       case Path.Segment(segment, tail) ⇒
-        @tailrec def digits(ix: Int = 0, value: T = minusOne): Matching[Tuple1[T]] = {
+        def digits(ix: Int = 0, value: T = minusOne): Matching[Tuple1[T]] = {
           val a = if (ix < segment.length) fromChar(segment charAt ix) else minusOne
           if (a == minusOne) {
             if (value == minusOne) Unmatched

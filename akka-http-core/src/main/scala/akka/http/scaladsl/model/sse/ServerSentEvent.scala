@@ -99,8 +99,8 @@ final case class ServerSentEvent(
             8 + data.length + eventType.fold(0)(_.length + 7) + id.fold(0)(_.length + 4) + retry.fold(0)(_ ⇒ 17)
           )
         )
-      @tailrec def appendData(s: String, index: Int = 0): Unit = {
-        @tailrec def addLine(index: Int): Int =
+      def appendData(s: String, index: Int = 0): Unit = {
+        def addLine(index: Int): Int =
           if (index >= s.length)
             -1
           else {

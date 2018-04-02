@@ -49,8 +49,8 @@ private[http] class HttpRequestRendererFactory(
 
     def render(h: HttpHeader) = r ~~ h ~~ CrLf
 
-    @tailrec def renderHeaders(remaining: List[HttpHeader], hostHeaderSeen: Boolean = false,
-                               userAgentSeen: Boolean = false, transferEncodingSeen: Boolean = false): Unit =
+    def renderHeaders(remaining: List[HttpHeader], hostHeaderSeen: Boolean = false,
+                      userAgentSeen: Boolean = false, transferEncodingSeen: Boolean = false): Unit =
       remaining match {
         case head :: tail ⇒ head match {
           case x: `Content-Length` ⇒

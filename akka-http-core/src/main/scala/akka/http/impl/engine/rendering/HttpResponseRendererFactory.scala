@@ -220,7 +220,7 @@ private[http] class HttpResponseRendererFactory(
           def byteStrings(entityBytes: ⇒ Source[ByteString, Any]): Source[ResponseRenderingOutput, Any] =
             renderByteStrings(r.asByteString, entityBytes, skipEntity = noEntity).map(ResponseRenderingOutput.HttpData(_))
 
-          @tailrec def completeResponseRendering(entity: ResponseEntity): StrictOrStreamed =
+          def completeResponseRendering(entity: ResponseEntity): StrictOrStreamed =
             entity match {
               case HttpEntity.Strict(_, data) ⇒
                 renderHeaders(headers)

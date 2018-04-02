@@ -71,7 +71,7 @@ private[akka] class CollectorStage[T] extends GraphStageWithMaterializedValue[Si
       override def preStart(): Unit = {
         pull(in)
 
-        @tailrec def handleState(): Unit =
+        def handleState(): Unit =
           state.get() match {
             case Uninitialized ⇒
               if (!state.compareAndSet(Uninitialized, Initialized)) handleState()
@@ -91,7 +91,7 @@ private[akka] class CollectorStage[T] extends GraphStageWithMaterializedValue[Si
       def collectAndCompleteNow(): Future[(Seq[T], Boolean)] = {
         val p = Promise[(Seq[T], Boolean)]()
 
-        @tailrec def handleState(): Unit =
+        def handleState(): Unit =
           state.get() match {
             case Initialized ⇒
               if (!state.compareAndSet(Initialized, Scheduled(p))) handleState()

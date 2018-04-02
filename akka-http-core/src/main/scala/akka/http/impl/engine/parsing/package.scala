@@ -32,7 +32,7 @@ package object parsing {
     if (ix < input.length) input(ix) else throw NotEnoughDataException
 
   private[http] def asciiString(input: ByteString, start: Int, end: Int): String = {
-    @tailrec def build(ix: Int = start, sb: JStringBuilder = new JStringBuilder(end - start)): String =
+    def build(ix: Int = start, sb: JStringBuilder = new JStringBuilder(end - start)): String =
       if (ix == end) sb.toString else build(ix + 1, sb.append(input(ix).toChar))
     if (start == end) "" else build()
   }

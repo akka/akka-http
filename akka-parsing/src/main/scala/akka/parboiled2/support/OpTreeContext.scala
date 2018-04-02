@@ -576,7 +576,7 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
         case q"support.this.HListable.fromUnit"       ⇒ q"true"
         case q"support.this.HListable.fromAnyRef[$t]" ⇒ q"valueStack.pop(); true"
         case q"support.this.HListable.fromHList[$t]" ⇒
-          @tailrec def rec(t: Type, result: List[Tree] = Nil): List[Tree] =
+          def rec(t: Type, result: List[Tree] = Nil): List[Tree] =
             t match { // TODO: how can we use type quotes here, e.g. tq"shapeless.HNil"?
               case TypeRef(_, sym, List(_, tail)) if sym == HListConsTypeSymbol ⇒ rec(tail, q"valueStack.pop()" :: result)
               case TypeRef(_, sym, _) if sym == HNilTypeSymbol                  ⇒ result

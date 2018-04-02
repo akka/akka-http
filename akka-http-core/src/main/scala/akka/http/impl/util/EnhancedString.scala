@@ -26,7 +26,7 @@ private[http] class EnhancedString(val underlying: String) extends AnyVal {
    * empty leading or trailing empty string (respectively).
    */
   def fastSplit(delimiter: Char): immutable.LinearSeq[String] = {
-    @tailrec def split(end: Int = underlying.length, elements: List[String] = Nil): List[String] = {
+    def split(end: Int = underlying.length, elements: List[String] = Nil): List[String] = {
       val ix = underlying.lastIndexOf(delimiter, end - 1)
       if (ix < 0)
         underlying.substring(0, end) :: elements
@@ -83,7 +83,7 @@ private[http] class EnhancedString(val underlying: String) extends AnyVal {
    * If the array does not have enough space for the whole string only the portion that fits is copied.
    */
   def getAsciiBytes(array: Array[Byte], offset: Int): Unit = {
-    @tailrec def rec(ix: Int): Unit =
+    def rec(ix: Int): Unit =
       if (ix < array.length) {
         array(ix) = underlying.charAt(ix - offset).asInstanceOf[Byte]
         rec(ix + 1)

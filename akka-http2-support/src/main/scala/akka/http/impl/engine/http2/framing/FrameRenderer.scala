@@ -78,7 +78,7 @@ private[http2] object FrameRenderer {
 
       case SettingsFrame(settings) ⇒
         val bb = new ByteStringBuilder
-        @tailrec def renderNext(remaining: Seq[Setting]): Unit =
+        def renderNext(remaining: Seq[Setting]): Unit =
           remaining match {
             case Setting(id, value) +: remaining ⇒
               bb.putShort(id.id)

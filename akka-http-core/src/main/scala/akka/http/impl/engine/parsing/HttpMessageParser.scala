@@ -60,7 +60,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
     parseBytes(input.bytes)
   }
   final def parseBytes(input: ByteString): Output = {
-    @tailrec def run(next: ByteString ⇒ StateResult): StateResult =
+    def run(next: ByteString ⇒ StateResult): StateResult =
       (try next(input)
       catch {
         case e: ParsingException ⇒ failMessageStart(e.status, e.info)
@@ -113,11 +113,11 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
     } else onBadProtocol
   }
 
-  @tailrec protected final def parseHeaderLines(input: ByteString, lineStart: Int, headers: ListBuffer[HttpHeader] = initialHeaderBuffer,
-                                                headerCount: Int = 0, ch: Option[Connection] = None,
-                                                clh: Option[`Content-Length`] = None, cth: Option[`Content-Type`] = None,
-                                                teh: Option[`Transfer-Encoding`] = None, e100c: Boolean = false,
-                                                hh: Boolean = false): StateResult =
+  protected final def parseHeaderLines(input: ByteString, lineStart: Int, headers: ListBuffer[HttpHeader] = initialHeaderBuffer,
+                                       headerCount: Int = 0, ch: Option[Connection] = None,
+                                       clh: Option[`Content-Length`] = None, cth: Option[`Content-Type`] = None,
+                                       teh: Option[`Transfer-Encoding`] = None, e100c: Boolean = false,
+                                       hh: Boolean = false): StateResult =
     if (headerCount < settings.maxHeaderCount) {
       var lineEnd = 0
       val resultHeader =
@@ -189,8 +189,8 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
   }
 
   protected final def parseChunk(input: ByteString, offset: Int, isLastMessage: Boolean, totalBytesRead: Long): StateResult = {
-    @tailrec def parseTrailer(extension: String, lineStart: Int, headers: List[HttpHeader] = Nil,
-                              headerCount: Int = 0): StateResult = {
+    def parseTrailer(extension: String, lineStart: Int, headers: List[HttpHeader] = Nil,
+                     headerCount: Int = 0): StateResult = {
       var errorInfo: ErrorInfo = null
       val lineEnd =
         try headerParser.parseHeaderLine(input, lineStart)()
@@ -226,7 +226,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
         }
       } else parseTrailer(extension, cursor)
 
-    @tailrec def parseChunkExtensions(chunkSize: Int, cursor: Int)(startIx: Int = cursor): StateResult =
+    def parseChunkExtensions(chunkSize: Int, cursor: Int)(startIx: Int = cursor): StateResult =
       if (cursor - startIx <= settings.maxChunkExtLength) {
         def extension = asciiString(input, startIx, cursor)
         byteChar(input, cursor) match {
@@ -236,7 +236,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
         }
       } else failEntityStream(s"HTTP chunk extension length exceeds configured limit of ${settings.maxChunkExtLength} characters")
 
-    @tailrec def parseSize(cursor: Int, size: Long): StateResult =
+    def parseSize(cursor: Int, size: Long): StateResult =
       if (size <= settings.maxChunkSize) {
         byteChar(input, cursor) match {
           case c if CharacterClasses.HEXDIG(c) ⇒ parseSize(cursor + 1, size * 16 + CharUtils.hexValue(c))

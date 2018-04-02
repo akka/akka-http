@@ -342,7 +342,7 @@ private[http] object OutgoingConnectionBlueprint {
         } else pull(dataIn)
       }
 
-      @tailrec def drainParser(current: ResponseOutput, b: ListBuffer[ResponseOutput] = ListBuffer.empty): Unit = {
+      def drainParser(current: ResponseOutput, b: ListBuffer[ResponseOutput] = ListBuffer.empty): Unit = {
         def e(output: List[ResponseOutput], andThen: () ⇒ Unit): Unit =
           if (output.nonEmpty) emit(responseOut, output, andThen)
           else andThen()

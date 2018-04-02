@@ -29,7 +29,7 @@ final case class Bits(elements: Seq[Bits.BitElement]) {
 
     require(bits % 8 == 0)
     val data = new Array[Byte](bits / 8)
-    @tailrec def rec(byteIdx: Int, bitIdx: Int, remaining: Seq[Bits.BitElement]): Unit =
+    def rec(byteIdx: Int, bitIdx: Int, remaining: Seq[Bits.BitElement]): Unit =
       if (bitIdx >= 8) rec(byteIdx + 1, bitIdx - 8, remaining)
       else remaining match {
         case Zero +: rest ⇒
