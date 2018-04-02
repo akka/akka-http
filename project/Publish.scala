@@ -53,32 +53,7 @@ object Publish extends AutoPlugin {
       else
         Some("releases" at nexus + "service/local/staging/deploy/maven2")
     },
-    credentials += Credentials(Path.userHome / ".sbt" / "sonatype.properties"),
-    pomExtra :=
-        <licenses>
-          <license>
-            <name>Apache License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
-            <distribution>repo</distribution>
-          </license>
-        </licenses>
-        <scm>
-          <url>git@github.com:akka/akka-http.git</url>
-          <connection>scm:git:git@github.com:akka/akka-http.git</connection>
-        </scm>
-        <developers>
-          <developer>
-            <id>contributors</id>
-            <name>Contributors</name>
-            <email>akka-user@googlegroups.com</email>
-            <url>https://github.com/akka/akka-http/graphs/contributors</url>
-          </developer>
-        </developers>
-        <parent>
-          <groupId>org.sonatype.oss</groupId>
-          <artifactId>oss-parent</artifactId>
-          <version>7</version>
-        </parent>
+    credentials += Credentials(Path.userHome / ".sbt" / "sonatype.properties")
   )
 
 }
