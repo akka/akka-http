@@ -22,16 +22,66 @@ object NoPublish extends AutoPlugin {
 }
 
 object Publish extends AutoPlugin {
-  import bintray.BintrayPlugin
-  import bintray.BintrayPlugin.autoImport._
+//  import bintray.BintrayPlugin
+//  import bintray.BintrayPlugin.autoImport._
 
   override def trigger = allRequirements
-  override def requires = BintrayPlugin
+//  override def requires = BintrayPlugin
 
   override def projectSettings = Seq(
-    bintrayOrganization := Some("akka"),
-    bintrayPackage := "com.typesafe.akka:akka-http_2.11"
+    publishMavenStyle := true,
+    publishTo := {
+      val nexus = "https://oss.sonatype.org/"
+      if (isSnapshot.value)
+        Some("snapshots" at nexus + "content/repositories/snapshots")
+      else
+        Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+    }
+
+//    bintrayOrganization := Some("akka"),
+//    bintrayPackage := "com.typesafe.akka:akka-http_2.11"
+  ) ++ sonatypeSettings
+
+  val sonatypeSettings: Seq[Setting[_]] = Seq(
+    publishMavenStyle := true,
+    publishArtifact in Test := false,
+    pomIncludeRepository := { _ => false },
+    publishTo := {
+      val nexus = "https://oss.sonatype.org/"
+      if (version.value.trim.endsWith("SNAPSHOT"))
+        Some("snapshots" at nexus + "content/repositories/snapshots")
+      else
+        Some("releases" at nexus + "service/local/staging/deploy/maven2")
+    },
+    credentials += Credentials(Path.userHome / ".sbt" / "sonatype.properties"),
+    pomExtra :=
+      <url>https://github.com/akka/akka-http</url>
+        <licenses>
+          <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+          </license>
+        </licenses>
+        <scm>
+          <url>git@github.com:akka/akka-http.git</url>
+          <connection>scm:git:git@github.com:akka/akka-http.git</connection>
+        </scm>
+        <developers>
+          <developer>
+            <id>contributors</id>
+            <name>Contributors</name>
+            <email>akka-user@googlegroups.com</email>
+            <url>https://github.com/akka/akka-http/graphs/contributors</url>
+          </developer>
+        </developers>
+        <parent>
+          <groupId>org.sonatype.oss</groupId>
+          <artifactId>oss-parent</artifactId>
+          <version>7</version>
+        </parent>
   )
+
 }
 
 object DeployRsync extends AutoPlugin {
