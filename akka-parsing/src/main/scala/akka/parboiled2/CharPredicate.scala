@@ -53,25 +53,25 @@ sealed abstract class CharPredicate extends (Char ⇒ Boolean) {
   }
 
   def matchesAny(string: String): Boolean = {
-    @tailrec def rec(ix: Int): Boolean =
+    def rec(ix: Int): Boolean =
       if (ix == string.length) false else if (this(string charAt ix)) true else rec(ix + 1)
     rec(0)
   }
 
   def matchesAll(string: String): Boolean = {
-    @tailrec def rec(ix: Int): Boolean =
+    def rec(ix: Int): Boolean =
       if (ix == string.length) true else if (!this(string charAt ix)) false else rec(ix + 1)
     rec(0)
   }
 
   def indexOfFirstMatch(string: String): Int = {
-    @tailrec def rec(ix: Int): Int =
+    def rec(ix: Int): Int =
       if (ix == string.length) -1 else if (this(string charAt ix)) ix else rec(ix + 1)
     rec(0)
   }
 
   def indexOfFirstMismatch(string: String): Int = {
-    @tailrec def rec(ix: Int): Int =
+    def rec(ix: Int): Int =
       if (ix == string.length) -1 else if (this(string charAt ix)) rec(ix + 1) else ix
     rec(0)
   }
@@ -129,7 +129,7 @@ object CharPredicate {
     implicit def fromChars(chars: Seq[Char]): ApplyMagnet =
       chars match {
         case _ if chars.size < 128 & !chars.exists(unmaskable) ⇒
-          @tailrec def rec(ix: Int, result: CharPredicate): CharPredicate =
+          def rec(ix: Int, result: CharPredicate): CharPredicate =
             if (ix == chars.length) result else rec(ix + 1, result ++ chars(ix))
           new ApplyMagnet(rec(0, Empty))
         case r: NumericRange[Char] ⇒ new ApplyMagnet(new RangeBased(r))
@@ -195,7 +195,7 @@ object CharPredicate {
     }
 
     def getChars(array: Array[Char], startIx: Int): Unit = {
-      @tailrec def rec(mask: Long, offset: Int, bit: Int, ix: Int): Int =
+      def rec(mask: Long, offset: Int, bit: Int, ix: Int): Int =
         if (bit < 64 && ix < array.length) {
           if ((mask & (1L << bit)) > 0) {
             array(ix) = (offset + bit).toChar

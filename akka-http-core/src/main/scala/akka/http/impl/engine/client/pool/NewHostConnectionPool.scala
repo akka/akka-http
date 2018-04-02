@@ -276,7 +276,7 @@ private[client] object NewHostConnectionPool {
               }
 
             /** Run a loop of state transitions */
-            /* @tailrec (does not work for some reason?) */
+            /* (does not work for some reason?) */
             def loop[U](event: Event[U], arg: U, remainingIterations: Int): Unit =
               if (remainingIterations > 0)
                 runOneTransition(event, arg) match {

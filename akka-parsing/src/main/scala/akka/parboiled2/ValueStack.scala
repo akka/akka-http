@@ -63,7 +63,7 @@ class ValueStack private[parboiled2] (initialSize: Int, maxSize: Int) extends It
    * Puts the given HList of values onto the stack.
    * Throws a `ValueStackOverflowException` if the stack has no more space available.
    */
-  @tailrec final def pushAll(hlist: HList): Unit =
+  final def pushAll(hlist: HList): Unit =
     hlist match {
       case akka.shapeless.::(head, tail) ⇒
         push(head)
@@ -222,7 +222,7 @@ class ValueStack private[parboiled2] (initialSize: Int, maxSize: Int) extends It
    * Throws an `IllegalArgumentException` if `start < 0 || start > end`.
    * Throws a `ValueStackUnderflowException` if `end > size`.
    */
-  @tailrec final def toHList[L <: HList](start: Int = 0, end: Int = _size, prependTo: HList = HNil): L = {
+  final def toHList[L <: HList](start: Int = 0, end: Int = _size, prependTo: HList = HNil): L = {
     require(0 <= start && start <= end, "`start` must be >= 0 and <= `end`")
     if (start == end) prependTo.asInstanceOf[L]
     else toHList[L](start, end - 1, buffer(end - 1) :: prependTo)

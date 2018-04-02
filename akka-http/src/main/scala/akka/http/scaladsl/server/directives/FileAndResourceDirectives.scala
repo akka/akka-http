@@ -237,7 +237,7 @@ object FileAndResourceDirectives extends FileAndResourceDirectives {
 
   private def safeJoinPaths(base: String, path: Uri.Path, log: LoggingAdapter, separator: Char): String = {
     import java.lang.StringBuilder
-    @tailrec def rec(p: Uri.Path, result: StringBuilder = new StringBuilder(base)): String =
+    def rec(p: Uri.Path, result: StringBuilder = new StringBuilder(base)): String =
       p match {
         case Uri.Path.Empty       ⇒ result.toString
         case Uri.Path.Slash(tail) ⇒ rec(tail, result.append(separator))

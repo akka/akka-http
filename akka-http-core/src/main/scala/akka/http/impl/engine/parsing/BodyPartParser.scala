@@ -102,7 +102,7 @@ private[http] final class BodyPartParser(
 
       // hacky trampolining support: parsing states may call `trampoline(continuation)` to loop safely
       def run(data: ByteString): Unit = {
-        @tailrec def loop(): Unit =
+        def loop(): Unit =
           trampoline match {
             case null ⇒
             case f ⇒
@@ -139,7 +139,7 @@ private[http] final class BodyPartParser(
 
       def parsePreamble(input: ByteString, offset: Int): StateResult =
         try {
-          @tailrec def rec(index: Int): StateResult = {
+          def rec(index: Int): StateResult = {
             val needleEnd = boyerMoore.nextIndex(input, index) + needle.length
             if (crlf(input, needleEnd)) parseHeaderLines(input, needleEnd + 2)
             else if (doubleDash(input, needleEnd)) setShouldTerminate()
@@ -150,8 +150,8 @@ private[http] final class BodyPartParser(
           case NotEnoughDataException ⇒ continue(input.takeRight(needle.length + 2), 0)(parsePreamble)
         }
 
-      @tailrec def parseHeaderLines(input: ByteString, lineStart: Int, headers: ListBuffer[HttpHeader] = ListBuffer[HttpHeader](),
-                                    headerCount: Int = 0, cth: Option[`Content-Type`] = None): StateResult = {
+      def parseHeaderLines(input: ByteString, lineStart: Int, headers: ListBuffer[HttpHeader] = ListBuffer[HttpHeader](),
+                           headerCount: Int = 0, cth: Option[`Content-Type`] = None): StateResult = {
         def contentType =
           cth match {
             case Some(x) ⇒ x.contentType
@@ -213,7 +213,7 @@ private[http] final class BodyPartParser(
                           }))
                       })(input: ByteString, offset: Int): StateResult =
         try {
-          @tailrec def rec(index: Int): StateResult = {
+          def rec(index: Int): StateResult = {
             val currentPartEnd = boyerMoore.nextIndex(input, index)
             def emitFinalChunk() = emitFinalPartChunk(headers, contentType, input.slice(offset, currentPartEnd))
             val needleEnd = currentPartEnd + needle.length
@@ -277,7 +277,7 @@ private[http] final class BodyPartParser(
       // the length of the needle without the preceding CRLF
       def boundaryLength = needle.length - 2
 
-      @tailrec def boundary(input: ByteString, offset: Int, ix: Int = 2): Boolean =
+      def boundary(input: ByteString, offset: Int, ix: Int = 2): Boolean =
         (ix == needle.length) || (byteAt(input, offset + ix - 2) == needle(ix)) && boundary(input, offset, ix + 1)
 
       def crlf(input: ByteString, offset: Int): Boolean =

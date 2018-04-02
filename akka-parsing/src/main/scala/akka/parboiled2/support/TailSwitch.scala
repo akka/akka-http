@@ -37,7 +37,7 @@ object TailSwitch {
   (implicit ts: Aux[L, L, T, T, R, HNil, Out0]): TailSwitch[L, T, R] { type Out = Out0 } = `n/a`
 
   // type-level implementation of this algorithm:
-  //   @tailrec def rec(L, LI, T, TI, R, RI) =
+  //   def rec(L, LI, T, TI, R, RI) =
   //     if (TI <: L) R
   //     else if (LI <: T) RI.reverse ::: R
   //     else if (LI <: HNil) rec(L, HNil, T, TI.tail, R, RI)

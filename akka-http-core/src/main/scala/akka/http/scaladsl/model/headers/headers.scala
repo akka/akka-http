@@ -363,7 +363,7 @@ final case class Connection(tokens: immutable.Seq[String]) extends jm.headers.Co
   def hasKeepAlive = has("keep-alive")
   def hasUpgrade = has("upgrade")
   def append(tokens: immutable.Seq[String]) = Connection(this.tokens ++ tokens)
-  @tailrec private def has(item: String, ix: Int = 0): Boolean =
+  private def has(item: String, ix: Int = 0): Boolean =
     if (ix < tokens.length)
       if (tokens(ix) equalsIgnoreCase item) true
       else has(item, ix + 1)

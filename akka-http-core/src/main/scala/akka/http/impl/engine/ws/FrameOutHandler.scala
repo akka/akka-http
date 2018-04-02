@@ -157,7 +157,7 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
 
     /** We handle [[ProtocolException]] in a special way (by terminating with a ProtocolError) */
     private trait ProcotolExceptionHandling extends InHandler {
-      @tailrec override final def onUpstreamFailure(cause: Throwable): Unit =
+      override final def onUpstreamFailure(cause: Throwable): Unit =
         cause match {
           case p: ProtocolException ⇒
             becomeSendOutCloseFrameAndComplete(FrameEvent.closeFrame(Protocol.CloseCodes.ProtocolError))

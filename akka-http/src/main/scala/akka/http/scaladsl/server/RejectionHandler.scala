@@ -130,7 +130,7 @@ object RejectionHandler {
     val isDefault: Boolean) extends RejectionHandler {
     def apply(rejections: immutable.Seq[Rejection]): Option[Route] =
       if (rejections.nonEmpty) {
-        @tailrec def rec(ix: Int): Option[Route] =
+        def rec(ix: Int): Option[Route] =
           if (ix < cases.length) {
             cases(ix) match {
               case CaseHandler(pf) ⇒

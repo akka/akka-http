@@ -35,7 +35,7 @@ object CacheDirective {
     final def render[R <: Rendering](r: R): r.type =
       if (fieldNames.nonEmpty) {
         r ~~ productPrefix ~~ '=' ~~ '"'
-        @tailrec def rec(i: Int = 0): r.type =
+        def rec(i: Int = 0): r.type =
           if (i < fieldNames.length) {
             if (i > 0) r ~~ ','
             r.putEscaped(fieldNames(i))

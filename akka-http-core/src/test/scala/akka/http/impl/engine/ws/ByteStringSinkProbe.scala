@@ -61,7 +61,7 @@ private[http] object ByteStringSinkProbe {
       }
 
       var inBuffer = ByteString.empty
-      @tailrec def expectBytes(length: Int): ByteString =
+      def expectBytes(length: Int): ByteString =
         if (inBuffer.size >= length) {
           val res = inBuffer.take(length)
           inBuffer = inBuffer.drop(length)

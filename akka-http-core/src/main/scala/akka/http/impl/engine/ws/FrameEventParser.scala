@@ -117,7 +117,7 @@ private[http] object FrameEventParser extends ByteStringParser[FrameEvent] {
     }
 
   def mask(bytes: ByteString, mask: Int): (ByteString, Int) = {
-    @tailrec def rec(bytes: Array[Byte], offset: Int, mask: Int): Int =
+    def rec(bytes: Array[Byte], offset: Int, mask: Int): Int =
       if (offset >= bytes.length) mask
       else {
         val newMask = Integer.rotateLeft(mask, 8) // we cycle through the mask in BE order

@@ -61,7 +61,7 @@ object ParserInput {
 
   abstract class DefaultParserInput extends ParserInput {
     def getLine(line: Int): String = {
-      @tailrec def rec(ix: Int, lineStartIx: Int, lineNr: Int): String =
+      def rec(ix: Int, lineStartIx: Int, lineNr: Int): String =
         if (ix < length)
           if (charAt(ix) == '\n')
             if (lineNr < line) rec(ix + 1, ix + 1, lineNr + 1)

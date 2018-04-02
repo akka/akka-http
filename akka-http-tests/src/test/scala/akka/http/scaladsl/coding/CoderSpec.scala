@@ -172,7 +172,7 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
     val input = newDecodedInputStream(new ByteArrayInputStream(bytes.toArray))
 
     val buffer = new Array[Byte](500)
-    @tailrec def copy(from: InputStream, to: OutputStream): Unit = {
+    def copy(from: InputStream, to: OutputStream): Unit = {
       val read = from.read(buffer)
       if (read >= 0) {
         to.write(buffer, 0, read)
@@ -192,7 +192,7 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
 
   implicit class EnhancedThrowable(val throwable: Throwable) {
     def ultimateCause: Throwable = {
-      @tailrec def rec(ex: Throwable): Throwable =
+      def rec(ex: Throwable): Throwable =
         if (ex.getCause == null) ex
         else rec(ex.getCause)
 

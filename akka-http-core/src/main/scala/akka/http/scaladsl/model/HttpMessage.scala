@@ -360,7 +360,7 @@ object HttpRequest {
    * include a valid [[akka.http.scaladsl.model.headers.Host]] header or if URI authority and [[akka.http.scaladsl.model.headers.Host]] header don't match.
    */
   def effectiveUri(uri: Uri, headers: immutable.Seq[HttpHeader], securedConnection: Boolean, defaultHostHeader: Host): Uri = {
-    @tailrec def findHostAndWsUpgrade(it: Iterator[HttpHeader], host: OptionVal[Host] = OptionVal.None, wsUpgrade: Option[Boolean] = None): (OptionVal[Host], Boolean) =
+    def findHostAndWsUpgrade(it: Iterator[HttpHeader], host: OptionVal[Host] = OptionVal.None, wsUpgrade: Option[Boolean] = None): (OptionVal[Host], Boolean) =
       if (host.isDefined && wsUpgrade.isDefined || !it.hasNext)
         (host, wsUpgrade.contains(true))
       else

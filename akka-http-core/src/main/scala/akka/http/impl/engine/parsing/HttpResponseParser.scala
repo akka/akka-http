@@ -100,7 +100,7 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
     if (byteChar(input, cursor + 3) == ' ') {
       parseStatusCode()
       val startIdx = cursor + 4
-      @tailrec def skipReason(idx: Int): Int =
+      def skipReason(idx: Int): Int =
         if (idx - startIdx <= maxResponseReasonLength)
           if (isNewLine(idx)) skipNewLine(idx)
           else skipReason(idx + 1)

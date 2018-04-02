@@ -183,7 +183,7 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
         debug(s"Deferring shutting down host connection pool until all [$remainingRequested] responses have been dispatched")
   }
 
-  @tailrec private def dispatchRequests(): Unit =
+  private def dispatchRequests(): Unit =
     if (totalDemand > 0 && !inputBuffer.isEmpty) {
       dispatchRequest(inputBuffer.dequeue())
       dispatchRequests()
