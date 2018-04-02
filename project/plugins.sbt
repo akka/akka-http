@@ -25,7 +25,7 @@ addSbtPlugin("de.heikoseeberger" % "sbt-header" % "4.1.0")
 // Publishing, use sonatype when bintray does not work:
 // addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.2")
 addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "2.0")
-
+addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.1.1")
 
 // used in ValidatePullRequest to check github PR comments whether to build all subprojects
 libraryDependencies += "org.kohsuke" % "github-api" % "1.92"
