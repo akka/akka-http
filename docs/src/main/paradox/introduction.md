@@ -120,8 +120,7 @@ Java
 :   @@snip [HttpServerMinimalExampleTest.java]($test$/java/docs/http/javadsl/HttpServerMinimalExampleTest.java) { #minimal-routing-example }
 
 When you run this server, you can either open the page in a browser,
-at the following url: [http://localhost:8080/hello] - or, in console,
-run `curl http://localhost:8080/hello`.
+at the following url: [http://localhost:8080/hello](http://localhost:8080/hello) - or, in console, via `curl http://localhost:8080/hello`.
 
 
 A common use case is to reply to a request using a model object having the marshaller transform it into JSON. In
@@ -135,8 +134,8 @@ Scala
 Java
 :   @@snip [JacksonExampleTest.java]($test$/java/docs/http/javadsl/JacksonExampleTest.java) { #second-jackson-example }
 
-When you run this server, you can run, in a console, `curl -H "Content-Type: application/json" -X POST -d '{"name":"hhgtg","id":42}' http://localhost:8080/create-order` to add an item (named `"hhgtg"` and having an `id=42`; and then view the inventory either in a browser, at a url like: [http://localhost:8080/item/42] - or, in console,
-run `curl http://localhost:8080/item/42`.
+When you run this server, you can update the inventory via `curl -H "Content-Type: application/json" -X POST -d '{"name":"hhgtg","id":42}' http://localhost:8080/create-order` in your console - adding an item (named `"hhgtg"` and having an `id=42`; and then view the inventory either in a browser, at a url like: [http://localhost:8080/item/42](http://localhost:8080/item/42) - or, in console,
+via `curl http://localhost:8080/item/42`.
 
 The logic for the marshalling and unmarshalling JSON in this example is provided by the @scala["spray-json"]@java["Jackson"] library
 (details on how to use that here: @scala[@ref[JSON Support](common/json-support.md))]@java[@ref[JSON Support](common/json-support.md#json-jackson-support-java))].
@@ -169,7 +168,7 @@ Scala
 Java
 :   @@snip [HttpServerActorInteractionExample.java]($test$/java/docs/http/javadsl/HttpServerActorInteractionExample.java) { #actor-interaction }
 
-When you run this server, you can run, in a console, `curl -X PUT http://localhost:8080/auction?bid=22&user=MartinO` to add a bid; and then view the auction status either in a browser, at the url [http://localhost:8080/auction] - or, in console,
+When you run this server, you can add a bid via `curl -X PUT http://localhost:8080/auction?bid=22&user=MartinO` in a console; and then view the auction status either in a browser, at the url [http://localhost:8080/auction](http://localhost:8080/auction) - or, in console,
 via `curl http://localhost:8080/auction`.
 
 More details on how JSON marshalling and unmarshalling works can be found in the @ref[JSON Support section](common/json-support.md).
