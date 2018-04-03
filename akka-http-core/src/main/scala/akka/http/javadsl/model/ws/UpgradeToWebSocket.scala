@@ -28,6 +28,11 @@ trait UpgradeToWebSocket extends sm.HttpHeader {
   /**
    * Returns a response that can be used to answer a WebSocket handshake request. The connection will afterwards
    * use the given handlerFlow to handle WebSocket messages from the client.
+   *
+   * If you build the handler Flow from an independent Source and Sink, consider using one of the provided
+   * overloads of this method. If you want to construct the Flow manually, consider using [[CoupledTerminationFlow]]
+   * to bind the termination of the both sides of the Flow, as well as the [[WebSocket.ignoreSink]] for the incoming
+   * side if wanting to ignore client-side messages, as that Sink also properly handles streaming messages.
    */
   def handleMessagesWith(handlerFlow: Graph[FlowShape[Message, Message], _ <: Any]): HttpResponse
 
@@ -42,13 +47,8 @@ trait UpgradeToWebSocket extends sm.HttpHeader {
    * Convenience API for (safely, including Streamed ones) ignoring all incoming messages from the client-side and
    * emitting messages from the given Source.
    *
-   * If you want to build the handler Flow from an independent Source and Sink, consider using one of the provided
-   * overloads of this method. If you want to construct the Flow manually, consider using [[CoupledTerminationFlow]]
-   * to bind the termination of the both sides of the Flow, as well as the [[WebSocket.ignoreSink]] for the incoming
-   * side if wanting to ignore client-side messages, as that Sink also properly handles streaming messages.
-   *
    * Returns a response that can be used to answer a WebSocket handshake request. The connection will afterwards
-   * use the given handlerFlow to handle WebSocket messages from the client.
+   * drain incoming messages and use the given source to produce messages for the client.
    */
   def handleMessagesWithSource(source: Graph[SourceShape[Message], _ <: Any])(implicit mat: Materializer): HttpResponse
 
@@ -57,7 +57,7 @@ trait UpgradeToWebSocket extends sm.HttpHeader {
    * emitting messages from the given Source.
    *
    * Returns a response that can be used to answer a WebSocket handshake request. The connection will afterwards
-   * use the given handlerFlow to handle WebSocket messages from the client.
+   * use the given sink to handle WebSocket messages from the client.
    */
   def handleMessagesWithSink(sink: Graph[SinkShape[Message], _ <: Any]): HttpResponse
 
