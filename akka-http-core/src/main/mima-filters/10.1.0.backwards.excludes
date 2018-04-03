@@ -8,10 +8,3 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.Ur
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ServerSettings.getWebsocketSettings")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ClientConnectionSettings.websocketSettings")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ServerSettings.websocketSettings")
-
-# #1942 New ignoreIllegalHeaderFor setting
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ParserSettings.getIgnoreIllegalHeaderFor")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ParserSettings.ignoreIllegalHeaderFor")
-
-# #1942 changes to Internal API
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.ErrorInfo.copy")
