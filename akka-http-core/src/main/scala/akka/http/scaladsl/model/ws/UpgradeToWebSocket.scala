@@ -105,7 +105,7 @@ trait UpgradeToWebSocket extends jm.ws.UpgradeToWebSocket {
   }
 
   private[this] def createScalaCoupledFlow(inSink: Graph[SinkShape[jm.ws.Message], _ <: Any], outSource: Graph[SourceShape[jm.ws.Message], _ <: Any]): Graph[FlowShape[Message, Message], NotUsed] = {
-    val graph: Graph[FlowShape[jm.ws.Message, jm.ws.Message], NotUsed] = scaladsl.CoupledTerminationFlow.fromSinkAndSource(Sink.fromGraph(inSink), Source.fromGraph(outSource)).mapMaterializedValue(_ ⇒ NotUsed)
+    val graph: Graph[FlowShape[jm.ws.Message, jm.ws.Message], NotUsed] = scaladsl.CoupledTerminationFlow.fromSinkAndSource(Sink.fromGraph(inSink), Source.fromGraph(outSource)).mapMaterializedValue(_ => NotUsed)
     JavaMapping.toScala(graph)
   }
 }
