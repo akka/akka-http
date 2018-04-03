@@ -33,8 +33,6 @@ trait SprayJsonSupport {
       .forContentTypes(`application/json`)
       .andThen(sprayJsValueByteStringUnmarshaller)
 
-  def extraMethod = ???
-
   implicit def sprayJsValueByteStringUnmarshaller[T]: FromByteStringUnmarshaller[JsValue] =
     Unmarshaller.withMaterializer[ByteString, JsValue](_ ⇒ implicit mat ⇒ { bs ⇒
       // .compact so addressing into any address is very fast (also for large chunks)
