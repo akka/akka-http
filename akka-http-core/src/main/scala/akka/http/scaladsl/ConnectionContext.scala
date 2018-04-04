@@ -11,7 +11,7 @@ import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import scala.collection.JavaConverters._
 import java.util.{ Optional, Collection ⇒ JCollection }
 
-import akka.http.scaladsl.{ Negotiated, Never, UseHttp2 }
+import akka.http.scaladsl.UseHttp2.Negotiated
 import javax.net.ssl._
 
 import scala.collection.immutable
@@ -31,7 +31,7 @@ object ConnectionContext {
     enabledProtocols:    Option[immutable.Seq[String]] = None,
     clientAuth:          Option[TLSClientAuth]         = None,
     sslParameters:       Option[SSLParameters]         = None,
-    http2:               UseHttp2                      = Negotiated) =
+    http2:               UseHttp2                      = UseHttp2.Negotiated) =
     new HttpsConnectionContext(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters, http2)
   //#https-context-creation
 

@@ -6,6 +6,7 @@ package akka.http.javadsl
 
 import akka.annotation.DoNotInherit
 import akka.http.scaladsl
+import akka.http.scaladsl.UseHttp2._
 
 @DoNotInherit
 abstract class UseHttp2 {
@@ -13,7 +14,7 @@ abstract class UseHttp2 {
 }
 
 object UseHttp2 {
-  def always: UseHttp2 = scaladsl.Always
-  def negotiated: UseHttp2 = scaladsl.Negotiated
-  def never: UseHttp2 = scaladsl.Never
+  def always: UseHttp2 = Always
+  def negotiated: UseHttp2 = Negotiated
+  def never: UseHttp2 = Never
 }

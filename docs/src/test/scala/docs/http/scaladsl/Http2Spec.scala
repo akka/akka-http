@@ -5,17 +5,25 @@
 package docs.http.scaladsl
 
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
-import akka.http.scaladsl.{ Always, Http, HttpConnectionContext, HttpsConnectionContext }
 
 //#bindAndHandleAsync
 import scala.concurrent.Future
 
+import akka.http.scaladsl.{ Http, HttpsConnectionContext }
 //#bindAndHandleAsync
 
 //#bindAndHandleAsync
+//#bindAndHandleRaw
 import akka.http.scaladsl.Http2
+//#bindAndHandleRaw
 
 //#bindAndHandleAsync
+
+//#bindAndHandleRaw
+import akka.http.scaladsl.HttpConnectionContext
+import akka.http.scaladsl.UseHttp2.Always
+
+//#bindAndHandleRaw
 
 import akka.actor.ActorSystem
 import akka.stream.Materializer

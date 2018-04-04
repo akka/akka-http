@@ -11,8 +11,7 @@ import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.{ AlpnSwitch, Http2AlpnSupport, Http2Blueprint }
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
-import akka.http.impl.util.StreamUtils
-import akka.http.scaladsl.{ Negotiated, Never }
+import akka.http.scaladsl.UseHttp2.{ Negotiated, Never }
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.ServerSettings
