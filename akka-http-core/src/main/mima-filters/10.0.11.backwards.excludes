@@ -85,9 +85,3 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.setting
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.TimeoutAccess.getTimeout")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.TimeoutAccess.timeout")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.TimeoutAccess.getTimeout")
-
-# Constructors of classes that should have had @DoNotInherit in #1934
-# Should probably move to 10.1.1.backwards.includes since this is not expected to be merged into 10.1.1
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.HttpsConnectionContext.this")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.HttpConnectionContext.this")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.ConnectionContext.http2")

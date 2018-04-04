@@ -3,3 +3,12 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.ws
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.ws.BinaryMessage.toStrict")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.ws.TextMessage.toStrict")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.ws.BinaryMessage.toStrict")
+
+# Constructors and methods on classes that should have had @DoNotInherit in #1934
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.HttpsConnectionContext.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.HttpConnectionContext.this")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.ConnectionContext.http2")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.ConnectHttp.http2")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ConnectHttpImpl.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ConnectHttpsImpl.this")

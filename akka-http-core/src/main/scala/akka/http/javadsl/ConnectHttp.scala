@@ -77,7 +77,7 @@ object ConnectHttp {
 
   private def toHost(uriHost: Uri, port: Int, http2: UseHttp2 = Negotiated): ConnectHttp = {
     val s = uriHost.scheme.toLowerCase(Locale.ROOT)
-    if (s == "https") new ConnectHttpsImpl(uriHost.host.address, effectivePort(s, port), http2)
+    if (s == "https") new ConnectHttpsImpl(uriHost.host.address, effectivePort(s, port), context = Optional.empty(), http2)
     else new ConnectHttpImpl(uriHost.host.address, effectivePort(s, port), http2)
   }
 
@@ -138,7 +138,7 @@ object ConnectHttp {
   private def toHostHttps(uriHost: Uri, port: Int, http2: UseHttp2 = Negotiated): ConnectWithHttps = {
     val s = uriHost.scheme.toLowerCase(Locale.ROOT)
     require(s == "" || s == "https", "toHostHttps used with non https scheme! Was: " + uriHost)
-    new ConnectHttpsImpl(uriHost.host.address, effectivePort("https", port), http2)
+    new ConnectHttpsImpl(uriHost.host.address, effectivePort("https", port), context = Optional.empty(), http2)
   }
 
   private def createUriWithScheme(defaultScheme: String, host: String) = {
@@ -172,16 +172,16 @@ final class ConnectHttpImpl(val host: String, val port: Int, val http2: UseHttp2
 
 /** INTERNAL API */
 @InternalApi
-final class ConnectHttpsImpl(val host: String, val port: Int, val http2: UseHttp2, val context: Optional[HttpsConnectionContext] = Optional.empty())
+final class ConnectHttpsImpl(val host: String, val port: Int, val context: Optional[HttpsConnectionContext] = Optional.empty(), val http2: UseHttp2)
   extends ConnectWithHttps {
 
   override def isHttps: Boolean = true
 
   override def withCustomHttpsContext(context: HttpsConnectionContext): ConnectWithHttps =
-    new ConnectHttpsImpl(host, port, http2, Optional.of(context))
+    new ConnectHttpsImpl(host, port, Optional.of(context), http2)
 
   override def withDefaultHttpsContext(): ConnectWithHttps =
-    new ConnectHttpsImpl(host, port, http2, Optional.empty())
+    new ConnectHttpsImpl(host, port, Optional.empty(), http2)
 
   override def connectionContext: Optional[HttpsConnectionContext] = context
 
