@@ -7,15 +7,18 @@ package akka.http.javadsl
 import java.util.Locale
 import java.util.Optional
 
-import akka.annotation.InternalApi
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.http.javadsl.model.Uri
+import akka.http.scaladsl.UseHttp2.Negotiated
 
+@DoNotInherit
 abstract class ConnectHttp {
   def host: String
   def port: Int
 
   def isHttps: Boolean
   def connectionContext: Optional[HttpsConnectionContext]
+  def http2: UseHttp2
 
   final def effectiveHttpsConnectionContext(fallbackContext: HttpsConnectionContext): HttpsConnectionContext =
     connectionContext.orElse(fallbackContext)
@@ -24,9 +27,10 @@ abstract class ConnectHttp {
     if (connectionContext.isPresent) connectionContext.get()
     else fallbackContext
 
-  override def toString = s"ConnectHttp($host,$port,$isHttps,$connectionContext)"
+  override def toString = s"ConnectHttp($host,$port,$isHttps,$connectionContext,$http2)"
 }
 
+@DoNotInherit
 object ConnectHttp {
 
   // TODO may be optimised a bit to avoid parsing the Uri entirely for the known port cases
@@ -57,10 +61,24 @@ object ConnectHttp {
     toHost(createUriWithScheme("http", host), port)
   }
 
-  private def toHost(uriHost: Uri, port: Int): ConnectHttp = {
+  /**
+   * Extracts HTTP or HTTPS connection data from given host and port.
+   *
+   * The host string may contain a URI or a <host>:<port> pair. In both cases the
+   * port is ignored.
+   *
+   * If the given port is 0, a new local port will be assigned by the operating system,
+   * which can then be retrieved by the materialized [[akka.http.javadsl.Http.ServerBinding]].
+   */
+  def toHost(host: String, port: Int, http2: UseHttp2): ConnectHttp = {
+    require(port >= 0, "port must be >= 0")
+    toHost(createUriWithScheme("http", host), port, http2)
+  }
+
+  private def toHost(uriHost: Uri, port: Int, http2: UseHttp2 = Negotiated): ConnectHttp = {
     val s = uriHost.scheme.toLowerCase(Locale.ROOT)
-    if (s == "https") new ConnectHttpsImpl(uriHost.host.address, effectivePort(s, port))
-    else new ConnectHttpImpl(uriHost.host.address, effectivePort(s, port))
+    if (s == "https") new ConnectHttpsImpl(uriHost.host.address, effectivePort(s, port), http2)
+    else new ConnectHttpImpl(uriHost.host.address, effectivePort(s, port), http2)
   }
 
   /**
@@ -100,10 +118,27 @@ object ConnectHttp {
     toHostHttps(createUriWithScheme("https", host), port)
   }
 
-  private def toHostHttps(uriHost: Uri, port: Int): ConnectWithHttps = {
+  /**
+   * Extracts HTTPS connection data from given host and port, using the default HTTPS context.
+   *
+   * The host string may contain a URI or a <host>:<port> pair. In both cases the
+   * port is ignored.
+   *
+   * If the given port is 0, a new local port will be assigned by the operating system,
+   * which can then be retrieved by the materialized [[akka.http.javadsl.Http.ServerBinding]].
+   *
+   * Uses the default HTTPS context.
+   */
+  @throws(classOf[IllegalArgumentException])
+  def toHostHttps(host: String, port: Int, http2: UseHttp2): ConnectWithHttps = {
+    require(port >= 0, "port must be >= 0")
+    toHostHttps(createUriWithScheme("https", host), port, http2)
+  }
+
+  private def toHostHttps(uriHost: Uri, port: Int, http2: UseHttp2 = Negotiated): ConnectWithHttps = {
     val s = uriHost.scheme.toLowerCase(Locale.ROOT)
     require(s == "" || s == "https", "toHostHttps used with non https scheme! Was: " + uriHost)
-    new ConnectHttpsImpl(uriHost.host.address, effectivePort("https", port))
+    new ConnectHttpsImpl(uriHost.host.address, effectivePort("https", port), http2)
   }
 
   private def createUriWithScheme(defaultScheme: String, host: String) = {
@@ -121,6 +156,7 @@ object ConnectHttp {
 
 }
 
+@DoNotInherit
 abstract class ConnectWithHttps extends ConnectHttp {
   def withCustomHttpsContext(context: HttpsConnectionContext): ConnectWithHttps
   def withDefaultHttpsContext(): ConnectWithHttps
@@ -128,22 +164,24 @@ abstract class ConnectWithHttps extends ConnectHttp {
 
 /** INTERNAL API */
 @InternalApi
-final class ConnectHttpImpl(val host: String, val port: Int) extends ConnectHttp {
+final class ConnectHttpImpl(val host: String, val port: Int, val http2: UseHttp2) extends ConnectHttp {
   def isHttps: Boolean = false
 
   def connectionContext: Optional[HttpsConnectionContext] = Optional.empty()
 }
 
-final class ConnectHttpsImpl(val host: String, val port: Int, val context: Optional[HttpsConnectionContext] = Optional.empty())
+/** INTERNAL API */
+@InternalApi
+final class ConnectHttpsImpl(val host: String, val port: Int, val http2: UseHttp2, val context: Optional[HttpsConnectionContext] = Optional.empty())
   extends ConnectWithHttps {
 
   override def isHttps: Boolean = true
 
   override def withCustomHttpsContext(context: HttpsConnectionContext): ConnectWithHttps =
-    new ConnectHttpsImpl(host, port, Optional.of(context))
+    new ConnectHttpsImpl(host, port, http2, Optional.of(context))
 
   override def withDefaultHttpsContext(): ConnectWithHttps =
-    new ConnectHttpsImpl(host, port, Optional.empty())
+    new ConnectHttpsImpl(host, port, http2, Optional.empty())
 
   override def connectionContext: Optional[HttpsConnectionContext] = context
 
