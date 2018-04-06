@@ -967,12 +967,6 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
     }
     "support per-message-compression extension" in pending
   }
-  val trace = false
-
-  // set to `true` for debugging purposes
-  def printEvent[T](marker: String): Flow[T, T, NotUsed] =
-    if (trace) Flow[T].log(marker)
-    else Flow[T]
 
   class ServerTestSetup extends TestSetup {
     protected def serverSide: Boolean = true
@@ -1041,8 +1035,6 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
       val masked = maskedBytes(data, mask)._1
       expectNetworkData(masked)
     }
-
-    def expectNetworkData(data: ByteString): Unit = expectNetworkData(data.size) shouldEqual data
 
     final def expectNetworkData(bytes: Int): ByteString = netOut.expectBytes(bytes)
 
@@ -1124,13 +1116,6 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
       probe.expectError()
     }
 
-    protected def serverSide: Boolean
-
-    protected def closeTimeout: FiniteDuration = 1.second
-  }
-
-  class ServerTestSetup extends TestSetup {
-    protected def serverSide: Boolean = true
   }
 
   final val Trace = false // compile time constant; set to `true` for debugging purposes;

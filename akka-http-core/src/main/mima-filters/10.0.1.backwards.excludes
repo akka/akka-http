@@ -4,8 +4,3 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.server
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.server.HttpServerBluePrint.apply")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.server.HttpServerBluePrint.parsing")
 
-# Addition of `toStrict` methods in scope of #15.
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.ws.TextMessage.toStrict")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.ws.BinaryMessage.toStrict")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.ws.TextMessage.toStrict")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.ws.BinaryMessage.toStrict")
