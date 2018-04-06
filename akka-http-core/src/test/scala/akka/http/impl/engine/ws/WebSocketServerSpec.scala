@@ -10,10 +10,8 @@ import akka.stream.testkit.Utils
 import akka.util.ByteString
 import org.scalatest.{ FreeSpec, Matchers }
 import akka.http.impl.engine.server.HttpServerTestSetupBase
-import akka.stream.{ KillSwitches, UniqueKillSwitch }
 
 import scala.concurrent.duration._
-import scala.concurrent.Promise
 
 class WebSocketServerSpec extends FreeSpec with Matchers with WithMaterializerSpec { spec ⇒
 

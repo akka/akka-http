@@ -12,7 +12,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws._
 import akka.stream._
-import akka.stream.scaladsl.{ Flow, Sink, Source }
+import akka.stream.scaladsl.{ Flow, Source }
 import com.typesafe.config.{ Config, ConfigFactory }
 import HttpMethods._
 
