@@ -34,3 +34,7 @@ resourceGenerators in Test += Def.task {
   }
   Seq(h2spec)
 }.taskValue
+
+libraryDependencies +=
+  "org.conscrypt" % "conscrypt-openjdk" % "1.1.0" % Runtime classifier "linux-x86_64"
+

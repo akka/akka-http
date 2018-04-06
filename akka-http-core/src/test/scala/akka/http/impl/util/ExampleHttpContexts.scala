@@ -5,10 +5,10 @@
 package akka.http.impl.util
 
 import java.io.InputStream
-import java.security.{ SecureRandom, KeyStore }
-import java.security.cert.{ CertificateFactory, Certificate }
-import javax.net.ssl.{ SSLParameters, SSLContext, TrustManagerFactory, KeyManagerFactory }
+import java.security.{ KeyStore, Provider, SecureRandom, Security }
+import java.security.cert.{ Certificate, CertificateFactory }
 
+import javax.net.ssl.{ KeyManagerFactory, SSLContext, SSLParameters, TrustManagerFactory }
 import akka.http.scaladsl.HttpsConnectionContext
 
 /**
@@ -17,8 +17,11 @@ import akka.http.scaladsl.HttpsConnectionContext
 object ExampleHttpContexts {
 
   // TODO show example how to obtain pre-configured context from ssl-config
-
   val exampleServerContext = {
+    val conscrypt = Class.forName("org.conscrypt.Conscrypt")
+    val provider = conscrypt.getMethod("newProvider").invoke(null).asInstanceOf[Provider]
+    Security.addProvider(provider)
+
     // never put passwords into code!
     val password = "abcdef".toCharArray
 
@@ -28,7 +31,8 @@ object ExampleHttpContexts {
     val keyManagerFactory = KeyManagerFactory.getInstance("SunX509")
     keyManagerFactory.init(ks, password)
 
-    val context = SSLContext.getInstance("TLS")
+    //    val context = SSLContext.getInstance("TLS")
+    val context = SSLContext.getInstance("TLS", "Conscrypt")
     context.init(keyManagerFactory.getKeyManagers, null, new SecureRandom)
 
     new HttpsConnectionContext(context)
