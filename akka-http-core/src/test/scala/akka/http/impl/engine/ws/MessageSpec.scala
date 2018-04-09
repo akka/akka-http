@@ -1121,5 +1121,5 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
   final val Trace = false // compile time constant; set to `true` for debugging purposes;
   def printEvent[T](marker: String): Flow[T, T, NotUsed] =
     if (Trace) Flow[T].log(marker)
-  }
+    else Flow[T]
 }
