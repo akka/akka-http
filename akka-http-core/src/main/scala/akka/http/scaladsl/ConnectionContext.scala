@@ -36,6 +36,7 @@ object ConnectionContext {
   //#https-context-creation
 
   // for binary-compatibility, since 1.10.2
+  @deprecated
   def https(
     sslContext:          SSLContext,
     sslConfig:           Option[AkkaSSLConfig],
@@ -46,6 +47,7 @@ object ConnectionContext {
     new HttpsConnectionContext(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters, http2 = Negotiated)
 
   // for binary-compatibility, since 2.4.7
+  @deprecated
   def https(
     sslContext:          SSLContext,
     enabledCipherSuites: Option[immutable.Seq[String]],
