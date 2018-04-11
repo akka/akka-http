@@ -42,7 +42,8 @@ private[akka] final case class ServerSettingsImpl(
   parserSettings:             ParserSettings,
   http2Settings:              Http2ServerSettings,
   defaultHttpPort:            Int,
-  defaultHttpsPort:           Int) extends ServerSettings {
+  defaultHttpsPort:           Int,
+  halfClose: Boolean) extends ServerSettings {
 
   require(0 < maxConnections, "max-connections must be > 0")
   require(0 < pipeliningLimit && pipeliningLimit <= 1024, "pipelining-limit must be > 0 and <= 1024")
@@ -100,5 +101,7 @@ private[http] object ServerSettingsImpl extends SettingsCompanion[ServerSettings
     ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")),
     Http2ServerSettings.Http2ServerSettingsImpl.fromSubConfig(root, c.getConfig("http2")),
     c getInt "default-http-port",
-    c getInt "default-https-port")
+    c getInt "default-https-port",
+    c getBoolean "half-close",
+  )
 }

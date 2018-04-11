@@ -89,7 +89,7 @@ class Http2Ext(private val config: Config)(implicit val system: ActorSystem)
         .via(Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher))
         .joinMat(serverLayer())(Keep.left)))
 
-    val connections = Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)
+    val connections = Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, settings.halfClose, settings.timeouts.idleTimeout)
 
     connections.mapAsyncUnordered(settings.maxConnections) {
       case incoming: Tcp.IncomingConnection ⇒

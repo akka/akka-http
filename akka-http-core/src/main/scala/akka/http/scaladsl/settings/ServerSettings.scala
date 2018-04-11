@@ -49,6 +49,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def http2Settings: Http2ServerSettings
   def defaultHttpPort: Int
   def defaultHttpsPort: Int
+  def halfClose: Boolean
 
   /* Java APIs */
 
@@ -72,6 +73,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   }
   override def getDefaultHttpPort: Int = defaultHttpPort
   override def getDefaultHttpsPort: Int = defaultHttpsPort
+  override def getHalfClose: Boolean = halfClose
 
   // ---
 
@@ -92,6 +94,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   override def getWebsocketSettings: WebSocketSettings = self.websocketSettings
   override def withDefaultHttpPort(newValue: Int): ServerSettings = self.copy(defaultHttpPort = newValue)
   override def withDefaultHttpsPort(newValue: Int): ServerSettings = self.copy(defaultHttpsPort = newValue)
+  override def withHalfClose(newValue: Boolean): ServerSettings = self.copy(halfClose = newValue)
 
   // overloads for Scala idiomatic use
   def withTimeouts(newValue: ServerSettings.Timeouts): ServerSettings = self.copy(timeouts = newValue)

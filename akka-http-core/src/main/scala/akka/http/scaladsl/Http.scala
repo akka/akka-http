@@ -115,7 +115,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
         port,
         settings.backlog,
         settings.socketOptions,
-        halfClose = false,
+        settings.halfClose,
         idleTimeout = Duration.Inf // we knowingly disable idle-timeout on TCP level, as we handle it explicitly in Akka HTTP itself
       )
 
