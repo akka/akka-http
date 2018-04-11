@@ -104,22 +104,19 @@ class H2SpecIntegrationSpec extends AkkaSpec(
       testNamesWithSectionNumbers foreach {
         case (name, sectionNr) ⇒
           s"pass rule: $name" in {
-            runSpec(specSectionNumber = sectionNr)
+            runSpec(Some(sectionNr), junitOutput = new File(s"target/test-reports/h2spec-junit-$sectionNr.xml"))
           }
       }
     }
     // end of execution of tests -----------------------------------------------------------
 
-    def runSpec(specSectionNumber: String = null, junitOutput: File = null): Unit = {
-      require(specSectionNumber != null ^ junitOutput != null, "Only one of the parameters must be not null, selecting the mode we run in.")
+    def runSpec(specSectionNumber: Option[String] = None, junitOutput: File): Unit = {
       val TestFailureMarker = "×" // that special character is next to test failures, so we detect them by it
 
       val keepAccumulating = new AtomicBoolean(true)
       val sb = new StringBuffer()
 
-      val command =
-        if (specSectionNumber != null) s"""$executable -k -t -p $port -s $specSectionNumber"""
-        else s"""$executable -k -t -p $port -j $junitOutput""" // include junit report
+      val command = s"$executable -k -t -p $port -j $junitOutput" + specSectionNumber.map(" -s " + _).getOrElse("")
       println(s"exec: $command")
       val aggregateTckLogs = ProcessLogger(
         out ⇒ {
