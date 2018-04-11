@@ -5,14 +5,17 @@
 package akka.http.scaladsl.model.ws
 
 import java.lang.Iterable
+
 import scala.collection.immutable
 import akka.NotUsed
+import akka.annotation.DoNotInherit
 import akka.stream._
 import akka.http.impl.util.JavaMapping
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.model.HttpResponse
 import akka.japi.Pair
 import akka.stream.scaladsl.Flow
+
 import scala.concurrent.{ Future, Promise }
 
 /**
@@ -20,6 +23,7 @@ import scala.concurrent.{ Future, Promise }
  * enables a request handler to upgrade this connection to a WebSocket connection and
  * registers a WebSocket handler.
  */
+@DoNotInherit
 trait UpgradeToWebSocket extends jm.ws.UpgradeToWebSocket {
   /**
    * A sequence of protocols the client accepts.

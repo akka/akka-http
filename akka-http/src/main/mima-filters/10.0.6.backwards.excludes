@@ -7,3 +7,7 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.server.Ht
 
 # Path ignore trailing slash #880 (Trait is not expected to be implemented by third-parties)
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.PathDirectives.ignoreTrailingSlash")
+
+# handleMessagesWithMat method not meant to be extended by end users #1167
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.ws.UpgradeToWebSocket.handleMessagesWithMat")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.ws.UpgradeToWebSocket.handleMessagesWithMat")

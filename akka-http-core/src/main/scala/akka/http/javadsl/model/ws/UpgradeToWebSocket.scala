@@ -5,16 +5,20 @@
 package akka.http.javadsl.model.ws
 
 import java.lang.{ Iterable ⇒ JIterable }
+
+import akka.annotation.DoNotInherit
 import akka.http.scaladsl.{ model ⇒ sm }
 import akka.http.javadsl.model._
 import akka.japi.Pair
 import akka.stream._
+
 import scala.concurrent.Future
 
 /**
  * A virtual header that WebSocket requests will contain. Use [[UpgradeToWebSocket.handleMessagesWith]] to
  * create a WebSocket handshake response and handle the WebSocket message stream with the given handler.
  */
+@DoNotInherit
 trait UpgradeToWebSocket extends sm.HttpHeader {
   /**
    * Returns the sequence of protocols the client accepts.
