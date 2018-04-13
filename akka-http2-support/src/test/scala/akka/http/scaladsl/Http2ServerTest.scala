@@ -84,7 +84,6 @@ object Http2ServerTest extends App {
     Await.result(bindings, 1.second) // throws if binding fails
     println("Server (HTTP/1.1) online at https://localhost:9000")
     println(Console.BOLD + "Server (HTTP/2) online at https://localhost:9001" + Console.RESET)
-<<<<<<< HEAD
     println(Console.BOLD + "Server (HTTP/2 without negotiation or TLS) online at https://localhost:9002" + Console.RESET)
     println("Press RETURN to stop...")
     StdIn.readLine()
