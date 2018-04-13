@@ -42,7 +42,7 @@ Note that `bindAndHandle` currently does not support HTTP/2, you must use `bindA
 
 ### HTTP/2 without HTTPS
 
-While un-encrypted connections are allowed by HTTP/2, clients that support this are rare.
+While un-encrypted connections are allowed by HTTP/2, this is [generally discouraged](https://http2.github.io/faq/#does-http2-require-encryption).
 
 There are 2 ways to implement un-encrypted HTTP/2 connections: by using the
 [HTTP Upgrade mechanism](http://httpwg.org/specs/rfc7540.html#discover-http) or by starting communication in HTTP/2 directly.
