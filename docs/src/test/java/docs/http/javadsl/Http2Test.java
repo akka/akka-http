@@ -4,12 +4,15 @@
 
 package docs.http.javadsl;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+
+import akka.actor.ActorSystem;
 import akka.japi.Function;
-import akka.actor.ExtendedActorSystem;
 import akka.http.javadsl.HttpsConnectionContext;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
+import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 
 //#bindAndHandleAsync
@@ -18,11 +21,17 @@ import static akka.http.javadsl.ConnectHttp.toHostHttps;
 
 //#bindAndHandleAsync
 
+//#bindAndHandleWithoutNegotiation
+import akka.http.javadsl.UseHttp2;
+import static akka.http.javadsl.ConnectHttp.toHost;
+
+//#bindAndHandleWithoutNegotiation
+
 class Http2Test {
   void testBindAndHandleAsync() {
-    Function<HttpRequest, CompletionStage<HttpResponse>> asyncHandler = null;
-    Materializer materializer = null;
-    ExtendedActorSystem system = null;
+    Function<HttpRequest, CompletionStage<HttpResponse>> asyncHandler = r -> CompletableFuture.completedFuture(HttpResponse.create());
+    ActorSystem system = ActorSystem.create();
+    Materializer materializer = ActorMaterializer.create(system);
     HttpsConnectionContext httpsConnectionContext = null;
 
     //#bindAndHandleAsync
@@ -32,5 +41,13 @@ class Http2Test {
         toHostHttps("127.0.0.1", 8443).withCustomHttpsContext(httpsConnectionContext),
         materializer);
     //#bindAndHandleAsync
+
+    //#bindAndHandleWithoutNegotiation
+    Http.get(system)
+      .bindAndHandleAsync(
+        asyncHandler,
+        toHost("127.0.0.1", 8080, UseHttp2.always()),
+        materializer);
+    //#bindAndHandleWithoutNegotiation
   }
 }
