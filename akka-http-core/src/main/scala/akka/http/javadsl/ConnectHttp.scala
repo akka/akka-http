@@ -30,7 +30,6 @@ abstract class ConnectHttp {
   override def toString = s"ConnectHttp($host,$port,$isHttps,$connectionContext,$http2)"
 }
 
-@DoNotInherit
 object ConnectHttp {
 
   // TODO may be optimised a bit to avoid parsing the Uri entirely for the known port cases
