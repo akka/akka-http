@@ -35,8 +35,7 @@ object ConnectionContext {
     new HttpsConnectionContext(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters, http2)
   //#https-context-creation
 
-  // for binary-compatibility, since 1.10.2
-  @deprecated
+  @deprecated("for binary-compatibility", "10.1.2")
   def https(
     sslContext:          SSLContext,
     sslConfig:           Option[AkkaSSLConfig],
@@ -46,8 +45,7 @@ object ConnectionContext {
     sslParameters:       Option[SSLParameters]) =
     new HttpsConnectionContext(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters, http2 = Negotiated)
 
-  // for binary-compatibility, since 2.4.7
-  @deprecated
+  @deprecated("for binary-compatibility", "2.4.7")
   def https(
     sslContext:          SSLContext,
     enabledCipherSuites: Option[immutable.Seq[String]],
@@ -69,7 +67,7 @@ final class HttpsConnectionContext(
   http2:                   UseHttp2                      = Negotiated)
   extends akka.http.javadsl.HttpsConnectionContext(http2) with ConnectionContext {
 
-  // for binary-compatibility, since 2.10.2
+  @deprecated("for binary-compatibility", since = "10.1.2")
   def this(
     sslContext:          SSLContext,
     sslConfig:           Option[AkkaSSLConfig],
@@ -79,7 +77,7 @@ final class HttpsConnectionContext(
     sslParameters:       Option[SSLParameters]) =
     this(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters, http2 = Negotiated)
 
-  // for binary-compatibility, since 2.4.7
+  @deprecated("for binary-compatibility", since = "2.4.7")
   def this(
     sslContext:          SSLContext,
     enabledCipherSuites: Option[immutable.Seq[String]],
