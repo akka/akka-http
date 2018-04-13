@@ -51,9 +51,13 @@ The latter only makes sense when you can assume the client has [Prior Knowledge]
 We currently only support the approach requiring [Prior Knowledge](http://httpwg.org/specs/rfc7540.html#known-http):
 
 Scala
-:   @@snip[Http2Spec.scala]($test$/scala/docs/http/scaladsl/Http2Spec.scala) { #bindAndHandleRaw }
+:   @@snip[Http2Spec.scala]($test$/scala/docs/http/scaladsl/Http2Spec.scala) { #bindAndHandleWithoutNegotiation }
 
-r## Testing with cURL
+Java
+:   @@snip[Http2Test.java]($test$/java/docs/http/javadsl/Http2Test.java) { #bindAndHandleWithoutNegotiation }
+
+
+## Testing with cURL
 
 At this point you should be able to connect, but HTTP/2 may still not be available.
 

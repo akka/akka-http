@@ -21,11 +21,11 @@ import static akka.http.javadsl.ConnectHttp.toHostHttps;
 
 //#bindAndHandleAsync
 
-//#bindAndHandleRaw
+//#bindAndHandleWithoutNegotiation
 import akka.http.javadsl.UseHttp2;
 import static akka.http.javadsl.ConnectHttp.toHost;
 
-//#bindAndHandleRaw
+//#bindAndHandleWithoutNegotiation
 
 class Http2Test {
   void testBindAndHandleAsync() {
@@ -42,12 +42,12 @@ class Http2Test {
         materializer);
     //#bindAndHandleAsync
 
-    //#bindAndHandleRaw
+    //#bindAndHandleWithoutNegotiation
     Http.get(system)
       .bindAndHandleAsync(
         asyncHandler,
         toHost("127.0.0.1", 8080, UseHttp2.always()),
         materializer);
-    //#bindAndHandleRaw
+    //#bindAndHandleWithoutNegotiation
   }
 }

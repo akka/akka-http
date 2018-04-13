@@ -38,7 +38,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
   /**
    * Handle requests using HTTP/2 immediately, without any TLS or negotiation layer.
    */
-  private def bindAndHandleRaw(
+  private def bindAndHandleWithoutNegotiation(
     handler:   HttpRequest ⇒ Future[HttpResponse],
     interface: String, port: Int = DefaultPortForProtocol,
     settings:    ServerSettings = ServerSettings(system),
@@ -95,7 +95,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
         // https://github.com/akka/akka-http/issues/1966
         throw new NotImplementedError("h2c not supported")
       else
-        bindAndHandleRaw(handler, interface, port, settings, parallelism, log)
+        bindAndHandleWithoutNegotiation(handler, interface, port, settings, parallelism, log)
     }
   }
 
