@@ -6,6 +6,7 @@ package akka.http.scaladsl.settings
 
 import java.net.InetSocketAddress
 import java.util.Random
+import java.util.function.Supplier
 
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
@@ -28,6 +29,7 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   def connectingTimeout: FiniteDuration
   def idleTimeout: Duration
   def requestHeaderSizeHint: Int
+  def websocketSettings: WebSocketSettings
   def websocketRandomFactory: () ⇒ Random
   def socketOptions: immutable.Seq[SocketOption]
   def parserSettings: ParserSettings
@@ -46,7 +48,10 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   override def withRequestHeaderSizeHint(newValue: Int): ClientConnectionSettings = self.copy(requestHeaderSizeHint = newValue)
 
   // overloads for idiomatic Scala use
-  def withWebsocketRandomFactory(newValue: () ⇒ Random): ClientConnectionSettings = self.copy(websocketRandomFactory = newValue)
+  def withWebsocketSettings(newValue: WebSocketSettings): ClientConnectionSettings = self.copy(websocketSettings = newValue)
+  def withWebsocketRandomFactory(newValue: () ⇒ Random): ClientConnectionSettings = withWebsocketSettings(websocketSettings.withRandomFactoryFactory(new Supplier[Random] {
+    override def get(): Random = newValue()
+  }))
   def withUserAgentHeader(newValue: Option[`User-Agent`]): ClientConnectionSettings = self.copy(userAgentHeader = newValue)
   def withLogUnencryptedNetworkBytes(newValue: Option[Int]): ClientConnectionSettings = self.copy(logUnencryptedNetworkBytes = newValue)
   def withSocketOptions(newValue: immutable.Seq[SocketOption]): ClientConnectionSettings = self.copy(socketOptions = newValue)

@@ -33,7 +33,7 @@ public class JsonStreamingExamplesTest extends JUnitRouteTest {
     //#formats
 
     //#response-streaming
-    
+
     // Step 1: Enable JSON streaming
     // we're not using this in the example, but it's the simplest way to start:
     // The default rendering is a JSON array: `[el, el, el , ...]`
@@ -43,9 +43,9 @@ public class JsonStreamingExamplesTest extends JUnitRouteTest {
     final ByteString start = ByteString.fromString("[");
     final ByteString between = ByteString.fromString(",");
     final ByteString end = ByteString.fromString("]");
-    final Flow<ByteString, ByteString, NotUsed> compactArrayRendering = 
+    final Flow<ByteString, ByteString, NotUsed> compactArrayRendering =
       Flow.of(ByteString.class).intersperse(start, between, end);
-    
+
     final JsonEntityStreamingSupport compactJsonSupport = EntityStreamingSupport.json()
       .withFramingRendererFlow(compactArrayRendering);
 
@@ -56,7 +56,7 @@ public class JsonStreamingExamplesTest extends JUnitRouteTest {
         parameter(StringUnmarshallers.INTEGER, "n", n -> {
           final Source<JavaTweet, NotUsed> tws =
             Source.repeat(new JavaTweet(12, "Hello World!")).take(n);
-          
+
           // Step 3: call complete* with your source, marshaller, and stream rendering mode
           return completeOKWithSource(tws, Jackson.marshaller(), compactJsonSupport);
         })
@@ -76,17 +76,17 @@ public class JsonStreamingExamplesTest extends JUnitRouteTest {
             });
           }
         )
-      )  
+      )
     );
     //#incoming-request-streaming
-    
+
     return responseStreaming.orElse(incomingStreaming);
   }
-  
+
   final Route csvTweets() {
     //#csv-example
-    final Marshaller<JavaTweet, ByteString> renderAsCsv = 
-      Marshaller.withFixedContentType(ContentTypes.TEXT_CSV_UTF8, t -> 
+    final Marshaller<JavaTweet, ByteString> renderAsCsv =
+      Marshaller.withFixedContentType(ContentTypes.TEXT_CSV_UTF8, t ->
         ByteString.fromString(t.getId() + "," + t.getMessage())
       );
 
@@ -102,17 +102,39 @@ public class JsonStreamingExamplesTest extends JUnitRouteTest {
       )
     );
     //#csv-example
-    
+
     return responseStreaming;
   }
   //#routes
-  
+
+  final void clientStreamingJsonExample() {
+    //#json-streaming-client-example-raw
+    Unmarshaller<ByteString, JavaTweet> unmarshal = Jackson.byteStringUnmarshaller(JavaTweet.class);
+    JsonEntityStreamingSupport support = EntityStreamingSupport.json();
+
+    // imagine receiving such response from a service:
+    String payload = "{\"uid\":1,\"txt\":\"#Akka rocks!\"}\n" +
+        "{\"uid\":2,\"txt\":\"Streaming is so hot right now!\"}\n" +
+        "{\"uid\":3,\"txt\":\"You cannot enter the same river twice.\"}";
+    HttpEntity.Strict entity = HttpEntities.create(ContentTypes.APPLICATION_JSON, payload);
+    HttpResponse response = HttpResponse.create().withEntity(entity);
+
+    Source<JavaTweet, Object> tweets =
+        response.entity().getDataBytes()
+        .via(support.framingDecoder()) // apply JSON framing
+        .mapAsync(1, // unmarshal each element
+            bs -> unmarshal.unmarshal(bs, materializer())
+        );
+
+    //#json-streaming-client-example-raw
+  }
+
   @Test
   public void getTweetsTest() {
     //#response-streaming
     // tests:
     final TestRoute routes = testRoute(tweets());
-    
+
     // test happy path
     final Accept acceptApplication = Accept.create(MediaRanges.create(MediaTypes.APPLICATION_JSON));
     routes.run(HttpRequest.GET("/tweets?n=2").addHeader(acceptApplication))
@@ -126,13 +148,13 @@ public class JsonStreamingExamplesTest extends JUnitRouteTest {
       .assertEntity("Resource representation is only available with these types:\napplication/json");
     //#response-streaming
   }
-  
+
   @Test
   public void csvExampleTweetsTest() {
     //#response-streaming
     // tests --------------------------------------------
     final TestRoute routes = testRoute(csvTweets());
-    
+
     // test happy path
     final Accept acceptCsv = Accept.create(MediaRanges.create(MediaTypes.TEXT_CSV));
     routes.run(HttpRequest.GET("/tweets?n=2").addHeader(acceptCsv))
@@ -150,7 +172,7 @@ public class JsonStreamingExamplesTest extends JUnitRouteTest {
 
   //#models
   private static final class JavaTweet {
-    private int id; 
+    private int id;
     private String message;
 
     public JavaTweet(int id, String message) {

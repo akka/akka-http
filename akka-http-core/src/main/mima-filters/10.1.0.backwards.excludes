@@ -3,3 +3,8 @@ ProblemFilters.exclude[Problem]("akka.http.impl.*")
 
 # Uri conversion additions https://github.com/akka/akka-http/pull/1950
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.Uri.asScala")
+
+# #1938 Transparent websocket ping/pong
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ServerSettings.getWebsocketSettings")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ClientConnectionSettings.websocketSettings")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ServerSettings.websocketSettings")

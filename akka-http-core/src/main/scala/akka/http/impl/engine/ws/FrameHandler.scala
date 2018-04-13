@@ -10,7 +10,7 @@ import akka.util.ByteString
 import Protocol.Opcode
 import akka.annotation.InternalApi
 import akka.event.Logging
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+import akka.stream.stage._
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 
 import scala.util.control.NonFatal
@@ -28,6 +28,7 @@ private[http] object FrameHandler {
     Flow[FrameEventOrError].via(new HandlerStage(server))
 
   private class HandlerStage(server: Boolean) extends GraphStage[FlowShape[FrameEventOrError, Output]] {
+
     val in = Inlet[FrameEventOrError](Logging.simpleName(this) + ".in")
     val out = Outlet[Output](Logging.simpleName(this) + ".out")
     override val shape = FlowShape(in, out)
@@ -47,16 +48,17 @@ private[http] object FrameHandler {
             newHandler.handleFrameStart(start)
           }
 
-          override def handleRegularFrameStart(start: FrameStart): Unit =
+          override def handleRegularFrameStart(start: FrameStart): Unit = {
             (start.header.opcode, start.isFullMessage) match {
               case (Opcode.Binary, true)  ⇒ publishMessagePart(BinaryMessagePart(start.data, last = true))
-              case (Opcode.Binary, false) ⇒ setAndHandleFrameStartWith(new BinaryMessagehandler, start)
+              case (Opcode.Binary, false) ⇒ setAndHandleFrameStartWith(new BinaryMessageHandler, start)
               case (Opcode.Text, _)       ⇒ setAndHandleFrameStartWith(new TextMessageHandler, start)
               case x                      ⇒ pushProtocolError()
             }
+          }
         }
 
-        private class BinaryMessagehandler extends MessageHandler(Opcode.Binary) {
+        private class BinaryMessageHandler extends MessageHandler(Opcode.Binary) {
           override def createMessagePart(data: ByteString, last: Boolean): MessageDataPart =
             BinaryMessagePart(data, last)
         }

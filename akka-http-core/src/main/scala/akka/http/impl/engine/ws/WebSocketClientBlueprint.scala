@@ -39,7 +39,7 @@ private[http] object WebSocketClientBlueprint {
     log:      LoggingAdapter): Http.WebSocketClientLayer =
     (simpleTls.atopMat(handshake(request, settings, log))(Keep.right) atop
       WebSocket.framing atop
-      WebSocket.stack(serverSide = false, maskingRandomFactory = settings.websocketRandomFactory, log = log)).reversed
+      WebSocket.stack(serverSide = false, settings.websocketSettings, log = log)).reversed
 
   /**
    * A bidi flow that injects and inspects the WS handshake and then goes out of the way. This BidiFlow
