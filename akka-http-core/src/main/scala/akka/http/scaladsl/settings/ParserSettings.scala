@@ -90,6 +90,7 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   override def withIllegalHeaderWarnings(newValue: Boolean): ParserSettings = self.copy(illegalHeaderWarnings = newValue)
   override def withIncludeTlsSessionInfoHeader(newValue: Boolean): ParserSettings = self.copy(includeTlsSessionInfoHeader = newValue)
   override def withModeledHeaderParsing(newValue: Boolean): ParserSettings = self.copy(modeledHeaderParsing = newValue)
+  override def withIgnoreIllegalHeaderFor(newValue: List[String]): ParserSettings = self.copy(ignoreIllegalHeaderFor = newValue.map(_.toLowerCase).toSet)
 
   // overloads for idiomatic Scala use
   def withUriParsingMode(newValue: Uri.ParsingMode): ParserSettings = self.copy(uriParsingMode = newValue)
