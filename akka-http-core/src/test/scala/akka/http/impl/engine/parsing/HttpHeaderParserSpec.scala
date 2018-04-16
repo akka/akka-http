@@ -29,7 +29,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
     akka.http.parsing.max-header-name-length = 60
     akka.http.parsing.max-header-value-length = 1000
     akka.http.parsing.header-cache.Host = 300""")
-  val system = ActorSystem(getClass.getSimpleName, testConf)
+  implicit val system = ActorSystem(getClass.getSimpleName, testConf)
 
   s"The HttpHeaderParser (mode: $mode)" should {
     "insert the 1st value" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
@@ -259,13 +259,13 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       parserSettings = createParserSettings(system).withIgnoreIllegalHeaderFor(List("Content-Type"))) {
       //Illegal header is `Retry-After`. So logged warning message
       EventFilter.warning(occurrences = 1).intercept {
-        parser.parseHeaderLine(ByteString(s"Retry-After: -10${newLine}x"))()
-      }(system)
+        parseLine(s"Retry-After: -10${newLine}x")
+      }
 
       //Illegal header is `Content-Type` and it is in the whitelist. So not logged warning message
       EventFilter.warning(occurrences = 0).intercept {
-        parser.parseHeaderLine(ByteString(s"Content-Type: abc:123${newLine}x"))()
-      }(system)
+        parseLine(s"Content-Type: abc:123${newLine}x")
+      }
     }
   }
 
