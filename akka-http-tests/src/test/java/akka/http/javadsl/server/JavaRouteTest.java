@@ -162,6 +162,13 @@ public class JavaRouteTest extends JUnitRouteTest {
   }
 
   @Test
+  public void allowUsingStaticMethodStyleForDirectives() {
+    Route route = AllDirectives.path("hello", () -> complete("world"));
+    runRoute(route, HttpRequest.GET("/hello"))
+      .assertEntity("world")
+  }
+
+  @Test
   public void requiredParamCauses404OnSealedRoute() {
     runRoute(route, HttpRequest.GET("/cookies"))
       .assertStatusCode(StatusCodes.NOT_FOUND)
