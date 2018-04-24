@@ -10,7 +10,7 @@ import akka.util.ByteString
 /**
  * Straight-forward Boyer-Moore string search implementation.
  */
-private class BoyerMoore(needle: Array[Byte]) {
+private[parsing] class BoyerMoore(needle: Array[Byte]) {
   require(needle.length > 0, "needle must be non-empty")
 
   private[this] val nl1 = needle.length - 1

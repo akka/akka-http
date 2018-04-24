@@ -43,21 +43,6 @@ private[http] final class BodyPartParser(
 
   sealed trait StateResult // phantom type for ensuring soundness of our parsing method setup
 
-  private[this] val needle: Array[Byte] = {
-    val array = new Array[Byte](boundary.length + 4)
-    array(0) = '\r'.toByte
-    array(1) = '\n'.toByte
-    array(2) = '-'.toByte
-    array(3) = '-'.toByte
-    boundary.getAsciiBytes(array, 4)
-    array
-  }
-
-  // we use the Boyer-Moore string search algorithm for finding the boundaries in the multipart entity,
-  // TODO: evaluate whether an upgrade to the more efficient FJS is worth the implementation cost
-  // see: http://www.cgjennings.ca/fjs/ and http://ijes.info/4/1/42544103.pdf
-  private[this] val boyerMoore = new BoyerMoore(needle)
-
   // TODO: prevent re-priming header parser from scratch
   private[this] val headerParser = HttpHeaderParser(settings, log)
 
@@ -71,6 +56,9 @@ private[http] final class BodyPartParser(
       private var output = collection.immutable.Queue.empty[Output] // FIXME this probably is too wasteful
       private var state: ByteString ⇒ StateResult = tryParseInitialBoundary
       private var shouldTerminate = false
+      // Will be override at the beginning of the parsing (tryParseInitialBoundary and parsePreamble)
+      // But initially defined here as norm version to avoid NPE
+      private var eolConfiguration: EndOfLineConfiguration = UndefinedEndOfLineConfiguration(boundary)
 
       override def onPush(): Unit = {
         if (!shouldTerminate) {
@@ -125,11 +113,12 @@ private[http] final class BodyPartParser(
 
       def tryParseInitialBoundary(input: ByteString): StateResult =
         // we don't use boyerMoore here because we are testing for the boundary *without* a
-        // preceding CRLF and at a known location (the very beginning of the entity)
+        // preceding LF or CRLF and at a known location (the very beginning of the entity)
         try {
-          if (boundary(input, 0)) {
-            val ix = boundaryLength
-            if (crlf(input, ix)) parseHeaderLines(input, ix + 2)
+          eolConfiguration = eolConfiguration.defineOnce(input)
+          if (eolConfiguration.isBoundary(input, 0)) {
+            val ix = eolConfiguration.boundaryLength
+            if (eolConfiguration.isEndOfLine(input, ix)) parseHeaderLines(input, ix + eolConfiguration.eolLength)
             else if (doubleDash(input, ix)) setShouldTerminate()
             else parsePreamble(input, 0)
           } else parsePreamble(input, 0)
@@ -140,14 +129,15 @@ private[http] final class BodyPartParser(
       def parsePreamble(input: ByteString, offset: Int): StateResult =
         try {
           @tailrec def rec(index: Int): StateResult = {
-            val needleEnd = boyerMoore.nextIndex(input, index) + needle.length
-            if (crlf(input, needleEnd)) parseHeaderLines(input, needleEnd + 2)
+            val needleEnd = eolConfiguration.boyerMoore.nextIndex(input, index) + eolConfiguration.needle.length
+            if (eolConfiguration.isEndOfLine(input, needleEnd)) parseHeaderLines(input, needleEnd + eolConfiguration.eolLength)
             else if (doubleDash(input, needleEnd)) setShouldTerminate()
             else rec(needleEnd)
           }
+          eolConfiguration = eolConfiguration.defineOnce(input)
           rec(offset)
         } catch {
-          case NotEnoughDataException ⇒ continue(input.takeRight(needle.length + 2), 0)(parsePreamble)
+          case NotEnoughDataException ⇒ continue(input.takeRight(eolConfiguration.needle.length + eolConfiguration.eolLength), 0)(parsePreamble)
         }
 
       @tailrec def parseHeaderLines(input: ByteString, lineStart: Int, headers: ListBuffer[HttpHeader] = ListBuffer[HttpHeader](),
@@ -161,7 +151,7 @@ private[http] final class BodyPartParser(
         var lineEnd = 0
         val resultHeader =
           try {
-            if (!boundary(input, lineStart)) {
+            if (!eolConfiguration.isBoundary(input, lineStart)) {
               lineEnd = headerParser.parseHeaderLine(input, lineStart)()
               headerParser.resultHeader
             } else BoundaryHeader
@@ -173,8 +163,8 @@ private[http] final class BodyPartParser(
 
           case BoundaryHeader ⇒
             emit(BodyPartStart(headers.toList, _ ⇒ HttpEntity.empty(contentType)))
-            val ix = lineStart + boundaryLength
-            if (crlf(input, ix)) parseHeaderLines(input, ix + 2)
+            val ix = lineStart + eolConfiguration.boundaryLength
+            if (eolConfiguration.isEndOfLine(input, ix)) parseHeaderLines(input, ix + eolConfiguration.eolLength)
             else if (doubleDash(input, ix)) setShouldTerminate()
             else fail("Illegal multipart boundary in message content")
 
@@ -214,15 +204,15 @@ private[http] final class BodyPartParser(
                       })(input: ByteString, offset: Int): StateResult =
         try {
           @tailrec def rec(index: Int): StateResult = {
-            val currentPartEnd = boyerMoore.nextIndex(input, index)
+            val currentPartEnd = eolConfiguration.boyerMoore.nextIndex(input, index)
             def emitFinalChunk() = emitFinalPartChunk(headers, contentType, input.slice(offset, currentPartEnd))
-            val needleEnd = currentPartEnd + needle.length
-            if (crlf(input, needleEnd)) {
+            val needleEnd = currentPartEnd + eolConfiguration.needle.length
+            if (eolConfiguration.isEndOfLine(input, needleEnd)) {
               emitFinalChunk()
               // Need to trampoline here, otherwise we have a mutual tail recursion between parseHeaderLines and
               // parseEntity that is not tail-call optimized away and may lead to stack overflows on big chunks of data
               // containing many parts.
-              trampoline(parseHeaderLines(input, needleEnd + 2))
+              trampoline(parseHeaderLines(input, needleEnd + eolConfiguration.eolLength))
             } else if (doubleDash(input, needleEnd)) {
               emitFinalChunk()
               setShouldTerminate()
@@ -232,7 +222,7 @@ private[http] final class BodyPartParser(
         } catch {
           case NotEnoughDataException ⇒
             // we cannot emit all input bytes since the end of the input might be the start of the next boundary
-            val emitEnd = input.length - needle.length - 2
+            val emitEnd = input.length - eolConfiguration.needle.length - eolConfiguration.eolLength
             if (emitEnd > offset) {
               emitPartChunk(headers, contentType, input.slice(offset, emitEnd))
               val simpleEmit: (List[HttpHeader], ContentType, ByteString) ⇒ Unit = (_, _, bytes) ⇒ emit(bytes)
@@ -274,15 +264,6 @@ private[http] final class BodyPartParser(
 
       def done(): StateResult = null // StateResult is a phantom type
 
-      // the length of the needle without the preceding CRLF
-      def boundaryLength = needle.length - 2
-
-      @tailrec def boundary(input: ByteString, offset: Int, ix: Int = 2): Boolean =
-        (ix == needle.length) || (byteAt(input, offset + ix - 2) == needle(ix)) && boundary(input, offset, ix + 1)
-
-      def crlf(input: ByteString, offset: Int): Boolean =
-        byteChar(input, offset) == '\r' && byteChar(input, offset + 1) == '\n'
-
       def doubleDash(input: ByteString, offset: Int): Boolean =
         byteChar(input, offset) == '-' && byteChar(input, offset + 1) == '-'
     }
@@ -312,5 +293,58 @@ private[http] object BodyPartParser {
     def maxHeaderCount: Int
     def illegalHeaderWarnings: Boolean
     def defaultHeaderValueCacheLimit: Int
+  }
+
+  sealed trait EndOfLineConfiguration {
+    def eol: String
+    def boundary: String
+    /*
+     * At first, the configuration is mocked with a default value to avoid NPE (CRLF).
+     * We need to define afterward but only once and avoid redefining it several times.
+     */
+    def defineOnce(input: ByteString): EndOfLineConfiguration
+
+    val eolLength: Int = eol.length
+
+    val needle: Array[Byte] = s"$eol--$boundary".asciiBytes
+
+    // the length of the needle without the preceding End Of Line (CRLF or LF)
+    val boundaryLength: Int = needle.length - eolLength
+
+    // we use the Boyer-Moore string search algorithm for finding the boundaries in the multipart entity,
+    // TODO: evaluate whether an upgrade to the more efficient FJS is worth the implementation cost
+    // see: http://www.cgjennings.ca/fjs/ and http://ijes.info/4/1/42544103.pdf
+    val boyerMoore: BoyerMoore = new BoyerMoore(needle)
+
+    def isBoundary(input: ByteString, offset: Int, ix: Int = eolLength): Boolean = {
+      @tailrec def process(input: ByteString, offset: Int, ix: Int): Boolean =
+        (ix == needle.length) || (byteAt(input, offset + ix - eol.length) == needle(ix)) && process(input, offset, ix + 1)
+
+      process(input, offset, ix)
+    }
+
+    def isEndOfLine(input: ByteString, offset: Int): Boolean = {
+      @tailrec def process(input: ByteString, offset: Int, ix: Int): Boolean =
+        (ix == eolLength) || (byteAt(input, offset + ix) == eol(ix)) && process(input, offset, ix + 1)
+
+      process(input, offset, 0)
+    }
+  }
+
+  case class DefinedEndOfLineConfiguration(eol: String, boundary: String) extends EndOfLineConfiguration {
+    override def defineOnce(input: ByteString): EndOfLineConfiguration = this
+  }
+
+  case class UndefinedEndOfLineConfiguration(boundary: String) extends EndOfLineConfiguration {
+    override def eol: String = "\r\n"
+
+    override def defineOnce(byteString: ByteString): EndOfLineConfiguration = {
+      // Hypothesis: There is either CRLF or LF as EOL, no mix possible
+      val cr = '\r'.toByte
+      val lf = '\n'.toByte
+      if (byteString.contains(cr)) DefinedEndOfLineConfiguration("\r\n", boundary)
+      else if (byteString.contains(lf)) DefinedEndOfLineConfiguration("\n", boundary)
+      else this
+    }
   }
 }
