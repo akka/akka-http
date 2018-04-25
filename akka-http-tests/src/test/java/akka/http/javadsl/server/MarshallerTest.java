@@ -17,6 +17,8 @@ import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import akka.util.ByteString;
 
+import static akka.http.javadsl.server.Directives.*;
+
 public class MarshallerTest extends JUnitRouteTest {
 
   @Test

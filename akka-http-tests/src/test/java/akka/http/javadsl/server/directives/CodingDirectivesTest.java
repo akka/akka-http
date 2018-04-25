@@ -19,6 +19,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
+import static akka.http.javadsl.server.Directives.*;
+
 public class CodingDirectivesTest extends JUnitRouteTest {
 
   @Test

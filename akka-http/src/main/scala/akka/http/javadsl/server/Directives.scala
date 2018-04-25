@@ -7,7 +7,6 @@ package akka.http.javadsl.server
 import java.util.function.{ BiFunction, Function, Supplier }
 
 import akka.annotation.ApiMayChange
-import akka.annotation.InternalApi
 import akka.http.javadsl.server.directives.FramedEntityStreamingDirectives
 
 import scala.annotation.varargs
@@ -15,9 +14,10 @@ import scala.annotation.varargs
 abstract class AllDirectives extends FramedEntityStreamingDirectives
 
 /**
- * INTERNAL API
+ * Collects all default directives into one class for simple importing of static functions.
+ *
+ * See [[akka.http.scaladsl.server.Directives]] for ScalaDSL equivalent of this class.
  */
-@InternalApi
 object Directives extends AllDirectives {
 
   // These are repeated here since sometimes (?) the Scala compiler won't actually generate java-compatible

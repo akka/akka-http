@@ -25,8 +25,10 @@ import akka.util.ByteString;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Test;
+
 import static akka.http.javadsl.model.HttpRequest.GET;
 import static akka.http.javadsl.model.MediaTypes.TEXT_EVENT_STREAM;
+import static akka.http.javadsl.server.Directives.completeOK;
 
 public class EventStreamMarshallingTest extends JUnitRouteTest {
 

@@ -19,12 +19,36 @@ import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+//#formField
+import akka.http.javadsl.server.Directives;
+
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.formField;
+
+//#formField
+
+//#formFieldMap
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.formFieldMap;
+
+//#formFieldMap
+//#formFieldList
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.formFieldList;
+
+//#formFieldList
+//#formFieldMultiMap
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.formFieldMultiMap;
+
+//#formFieldMultiMap
+
 public class FormFieldDirectivesExamplesTest extends JUnitRouteTest {
 
   @Test
   public void testFormField() {
     //#formField
-    final Route route = route(
+    final Route route = Directives.route(
       formField("color", color ->
         complete("The color is '" + color + "'")
       ),

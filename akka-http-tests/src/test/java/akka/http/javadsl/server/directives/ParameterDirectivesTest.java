@@ -16,6 +16,8 @@ import akka.http.javadsl.unmarshalling.StringUnmarshallers;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 
+import static akka.http.javadsl.server.Directives.*;
+
 public class ParameterDirectivesTest extends JUnitRouteTest {
 
   @Test
@@ -334,12 +336,9 @@ public class ParameterDirectivesTest extends JUnitRouteTest {
     TestRoute route = testRoute(
       parameterList(paramEntries -> {
         ArrayList<Map.Entry<String, String>> entries = new ArrayList<Map.Entry<String, String>>(paramEntries);
-        Collections.sort(entries, new Comparator<Map.Entry<String, String>>() {
-          @Override
-          public int compare(Map.Entry<String, String> e1, Map.Entry<String, String> e2) {
-            int res = e1.getKey().compareTo(e2.getKey());
-            return res == 0 ? e1.getValue().compareTo(e2.getValue()) : res;
-          }
+        Collections.sort(entries, (e1, e2) -> {
+          int res = e1.getKey().compareTo(e2.getKey());
+          return res == 0 ? e1.getValue().compareTo(e2.getValue()) : res;
         });
 
         StringBuilder res = new StringBuilder();

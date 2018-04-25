@@ -12,7 +12,6 @@ import akka.actor.ActorSystem
 import akka.http.impl.util.JavaMapping.Implicits.AddAsScala
 import akka.http.javadsl.model.HttpRequest
 import akka.http.javadsl.model.headers.Host
-import akka.http.javadsl.server.AllDirectives
 import akka.http.javadsl.server.Directives
 import akka.http.javadsl.server.Route
 import akka.http.javadsl.server.RouteResult
@@ -29,7 +28,7 @@ import akka.testkit.TestDuration
  *
  * See `JUnitRouteTest` for an example of a concrete implementation.
  */
-abstract class RouteTest extends AllDirectives with WSTestRequestBuilding {
+abstract class RouteTest extends WSTestRequestBuilding {
   implicit def system: ActorSystem
   implicit def materializer: Materializer
   implicit def executionContext: ExecutionContextExecutor = system.dispatcher

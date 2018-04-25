@@ -14,6 +14,7 @@ import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.model.StatusCodes;
+import akka.http.javadsl.server.directives.SecurityDirectives.ProvidedCredentials;
 import akka.http.javadsl.unmarshalling.StringUnmarshallers;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.stream.ActorMaterializer;
@@ -21,13 +22,14 @@ import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import scala.concurrent.duration.Duration;
-import scala.runtime.BoxedUnit;
 
 import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.function.Function;
 
-public class JavaTestServer extends AllDirectives { // or import static Directives.*;
+import static akka.http.javadsl.server.Directives.*;
+
+public class JavaTestServer {
 
   public Route createRoute() {
     final Duration timeout = Duration.create(1, TimeUnit.SECONDS);

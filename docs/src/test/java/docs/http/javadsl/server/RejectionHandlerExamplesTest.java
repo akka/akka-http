@@ -20,6 +20,28 @@ import org.junit.Test;
 
 import java.util.stream.Collectors;
 
+//#example1
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.decodeRequestWith;
+import static akka.http.javadsl.server.Directives.get;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.post;
+import static akka.http.javadsl.server.Directives.route;
+
+//#example1
+//#custom-handler-example-java
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.handleRejections;
+
+//#custom-handler-example-java
+//#example-json
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.handleRejections;
+import static akka.http.javadsl.server.Directives.validate;
+
+//#example-json
 public class RejectionHandlerExamplesTest extends JUnitRouteTest {
 
   @Test

@@ -8,12 +8,15 @@ import akka.http.javadsl.model.HttpHeader;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.model.headers.*;
+import akka.http.javadsl.server.Directives;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import akka.japi.pf.PFBuilder;
 import org.junit.Test;
 
 import java.util.Optional;
+
+import static akka.http.javadsl.server.Directives.*;
 
 public class HeaderDirectivesTest extends JUnitRouteTest {
 
@@ -26,7 +29,7 @@ public class HeaderDirectivesTest extends JUnitRouteTest {
       }
       else return Optional.empty();
     },
-    this::complete));
+    Directives::complete));
 
     route
       .run(HttpRequest.create().addHeader(RawHeader.create("X-Test-Header", "woho!")))
@@ -49,7 +52,7 @@ public class HeaderDirectivesTest extends JUnitRouteTest {
       new PFBuilder<HttpHeader, String>().<Host>match(
         Host.class, Host::value
       ).build(),
-      this::complete));
+      Directives::complete));
 
     route
       .run(HttpRequest.create().addHeader(Host.create("example.com")))
@@ -63,7 +66,7 @@ public class HeaderDirectivesTest extends JUnitRouteTest {
 
   @Test
   public void testHeaderValueByName() {
-    TestRoute route = testRoute(headerValueByName("X-Test-Header", this::complete));
+    TestRoute route = testRoute(headerValueByName("X-Test-Header", Directives::complete));
 
     route
       .run(HttpRequest.create().addHeader(RawHeader.create("X-Test-Header", "woho!")))

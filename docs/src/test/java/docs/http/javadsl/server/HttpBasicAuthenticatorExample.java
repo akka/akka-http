@@ -11,8 +11,15 @@ import org.junit.Test;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.headers.Host;
 import akka.http.javadsl.server.Route;
+import akka.http.javadsl.server.directives.SecurityDirectives.ProvidedCredentials;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.scaladsl.model.headers.Authorization;
+
+//#basic-authenticator-java
+import static akka.http.javadsl.server.Directives.authenticateBasic;
+import static akka.http.javadsl.server.Directives.complete;
+
+//#basic-authenticator-java
 
 public class HttpBasicAuthenticatorExample extends JUnitRouteTest {
 

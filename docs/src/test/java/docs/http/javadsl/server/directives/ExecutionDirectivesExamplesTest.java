@@ -17,6 +17,31 @@ import org.junit.Test;
 
 import static akka.http.javadsl.server.PathMatchers.integerSegment;
 
+//#handleExceptions
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.handleExceptions;
+import static akka.http.javadsl.server.Directives.path;
+
+//#handleExceptions
+//#handleRejections
+import akka.http.javadsl.server.Directives;
+
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.handleRejections;
+import static akka.http.javadsl.server.Directives.pathPrefix;
+import static akka.http.javadsl.server.Directives.reject;
+
+//#handleRejections
+//#handleNotFoundWithDefails
+import akka.http.javadsl.server.Directives;
+
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.extractUnmatchedPath;
+import static akka.http.javadsl.server.Directives.handleRejections;
+import static akka.http.javadsl.server.Directives.reject;
+
+//#handleNotFoundWithDefails
+
 public class ExecutionDirectivesExamplesTest extends JUnitRouteTest {
 
   @Test
@@ -51,7 +76,7 @@ public class ExecutionDirectivesExamplesTest extends JUnitRouteTest {
 
     final Route route = pathPrefix("handled", () ->
       handleRejections(totallyMissingHandler, () ->
-        route(
+        Directives.route(
           path("existing", () -> complete("This path exists")),
           path("boom", () -> reject(Rejections.validationRejection("This didn't work.")))
         )
@@ -88,7 +113,7 @@ public class ExecutionDirectivesExamplesTest extends JUnitRouteTest {
       final Route route = 
         handleRejections(totallyMissingHandler, () ->
         pathPrefix("handled", () ->
-          route(
+          Directives.route(
             path("existing", () -> complete("This path exists"))
           )
         )
