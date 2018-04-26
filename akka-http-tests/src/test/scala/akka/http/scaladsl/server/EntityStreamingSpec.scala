@@ -6,7 +6,8 @@ package akka.http.scaladsl.server
 
 import akka.NotUsed
 import akka.http.scaladsl.common.{ EntityStreamingSupport, JsonEntityStreamingSupport }
-import akka.http.scaladsl.marshalling.{ Marshaller, Marshalling, ToResponseMarshallable }
+import akka.http.scaladsl.marshalling._
+import akka.http.scaladsl.model.MediaTypes.`text/plain`
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.unmarshalling.Unmarshal
@@ -247,13 +248,12 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
   "throw when attempting to render a JSON Source of raw Strings" in {
     implicit val jsonStreamingSupport: JsonEntityStreamingSupport =
       EntityStreamingSupport.json()
-
     val route =
       get {
         // This is wrong since we try to render JSON, but String is not a valid top level element
         // we need to provide an explicit Marshaller[String, ByteString] if we really want to render a list of strings.
         val results = Source(List("One", "Two", "Three"))
-        complete(results)
+        complete(ToResponseMarshallable.apply(results))
       }
 
     try {
@@ -270,6 +270,7 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
         cause.getMessage should include("that can render java.lang.String as [application/json]")
     }
   }
+
   "render a JSON Source of raw Strings if String => JsValue is provided" in {
     implicit val stringFormat = Marshaller[String, ByteString] { ec ⇒ s ⇒
       Future.successful {
@@ -298,4 +299,34 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
     }
   }
 
+  "throw an exception constructed with a null class tag (due to using a deprecated method)" in {
+    val stringToByteStringMarshaller: ToByteStringMarshaller[String] = Marshaller.opaque(ByteString.apply)
+
+    val jsonStreamingSupport: JsonEntityStreamingSupport = EntityStreamingSupport.json()
+
+    implicit val toResponseMarshaller: ToResponseMarshaller[Source[String, NotUsed]] =
+      PredefinedToResponseMarshallers.fromEntityStreamingSupportAndByteStringMarshaller[String, NotUsed](jsonStreamingSupport, stringToByteStringMarshaller)
+
+    val route =
+      get {
+        // This is wrong since we try to render JSON, but String is not a valid top level element
+        // we need to provide an explicit Marshaller[String, ByteString] if we really want to render a list of strings.
+        val results = Source(List("One", "Two", "Three"))
+        complete(results)
+      }
+
+    try {
+      Get("/") ~> route ~> check {
+        EventFilter.error(pattern = "None of the available marshallings ", occurrences = 1) intercept {
+          responseAs[String] // should fail
+        }
+      }
+    } catch {
+      case ex: java.lang.RuntimeException if ex.getCause != null ⇒
+        val cause = ex.getCause
+        cause.getClass should ===(classOf[akka.http.scaladsl.marshalling.NoStrictlyCompatibleElementMarshallingAvailableException[_]])
+        cause.getMessage should include("Please provide an implicit `Marshaller[T, HttpEntity]")
+        cause.getMessage should include("that can render as [application/json]")
+    }
+  }
 }
