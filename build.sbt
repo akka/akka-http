@@ -52,7 +52,7 @@ lazy val root = Project(
     id = "akka-http-root",
     base = file(".")
   )
-  .enablePlugins(UnidocRoot, NoPublish, DeployRsync)
+  .enablePlugins(UnidocRoot, NoPublish, DeployRsync, AggregatePRValidation)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .settings(
     // Unidoc doesn't like macros
@@ -86,6 +86,7 @@ lazy val root = Project(
   )
 
 lazy val parsing = project("akka-parsing")
+  .settings(AutomaticModuleName.settings("akka.http.parsing"))
   .addAkkaModuleDependency("akka-actor", "provided")
   .settings(Dependencies.parsing)
   .settings(
@@ -97,6 +98,7 @@ lazy val parsing = project("akka-parsing")
   .disablePlugins(MimaPlugin)
 
 lazy val httpCore = project("akka-http-core")
+  .settings(AutomaticModuleName.settings("akka.http.core"))
   .dependsOn(parsing)
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
@@ -105,6 +107,7 @@ lazy val httpCore = project("akka-http-core")
   .enablePlugins(BootstrapGenjavadoc)
 
 lazy val http = project("akka-http")
+  .settings(AutomaticModuleName.settings("akka.http"))
   .dependsOn(httpCore)
   .addAkkaModuleDependency("akka-stream", "provided")
   .settings(Dependencies.http)
@@ -114,6 +117,7 @@ lazy val http = project("akka-http")
   .enablePlugins(BootstrapGenjavadoc, BoilerplatePlugin)
 
 lazy val http2Support = project("akka-http2-support")
+  .settings(AutomaticModuleName.settings("akka.http.http2"))
   .dependsOn(httpCore, httpTestkit % "test", httpCore % "test->test")
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
@@ -154,6 +158,7 @@ lazy val http2Support = project("akka-http2-support")
   .disablePlugins(MimaPlugin) // experimental module still
 
 lazy val httpTestkit = project("akka-http-testkit")
+  .settings(AutomaticModuleName.settings("akka.http.testkit"))
   .dependsOn(http)
   .addAkkaModuleDependency("akka-stream-testkit")
   .settings(Dependencies.httpTestkit)
@@ -188,35 +193,40 @@ lazy val httpJmhBench = project("akka-http-bench-jmh")
   .disablePlugins(MimaPlugin)
 
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
-  .enablePlugins(NoPublish)
+  .enablePlugins(NoPublish/*, AggregatePRValidation*/)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .aggregate(httpSprayJson, httpXml)
 
 lazy val httpXml =
   httpMarshallersScalaSubproject("xml")
+    .settings(AutomaticModuleName.settings("akka.http.marshallers.scalaxml"))
     .addAkkaModuleDependency("akka-stream", "provided")
     .settings(Dependencies.httpXml)
 
 lazy val httpSprayJson =
   httpMarshallersScalaSubproject("spray-json")
+    .settings(AutomaticModuleName.settings("akka.http.marshallers.sprayjson"))
     .addAkkaModuleDependency("akka-stream", "provided")
     .settings(Dependencies.httpSprayJson)
 
 lazy val httpMarshallersJava = project("akka-http-marshallers-java")
-  .enablePlugins(NoPublish)
+  .enablePlugins(NoPublish/*, AggregatePRValidation*/)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .aggregate(httpJackson)
 
 lazy val httpJackson =
   httpMarshallersJavaSubproject("jackson")
+    .settings(AutomaticModuleName.settings("akka.http.marshallers.jackson"))
     .addAkkaModuleDependency("akka-stream", "provided")
     .settings(Dependencies.httpJackson)
     .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 lazy val httpCaching = project("akka-http-caching")
+  .settings(AutomaticModuleName.settings("akka.http.caching"))
   .addAkkaModuleDependency("akka-stream", "provided")
   .settings(Dependencies.httpCaching)
   .dependsOn(http, httpCore, httpTestkit % "test")
+  .enablePlugins(BootstrapGenjavadoc)
 
 def project(name: String) =
   Project(id = name, base = file(name))

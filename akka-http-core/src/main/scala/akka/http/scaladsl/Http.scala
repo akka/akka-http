@@ -6,8 +6,8 @@ package akka.http.scaladsl
 
 import java.net.InetSocketAddress
 import java.util.concurrent.CompletionStage
-import javax.net.ssl._
 
+import javax.net.ssl._
 import akka.actor._
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
@@ -21,6 +21,7 @@ import akka.http.impl.engine.server._
 import akka.http.impl.engine.ws.WebSocketClientBlueprint
 import akka.http.impl.settings.{ ConnectionPoolSetup, HostConnectionPoolSetup }
 import akka.http.impl.util.StreamUtils
+import akka.http.scaladsl.UseHttp2.{ Always, Never }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.ws.{ Message, WebSocketRequest, WebSocketUpgradeResponse }
@@ -95,17 +96,15 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     baseFlow: ServerLayerBidiFlow,
     handler:  Flow[HttpRequest, HttpResponse, Any]): ServerLayerFlow =
     Flow.fromGraph(
-      StreamUtils.fuseAggressive(
-        Flow[HttpRequest]
-          .watchTermination()(Keep.right)
-          .viaMat(handler)(Keep.left)
-          .watchTermination() { (termWatchBefore, termWatchAfter) ⇒
-            // flag termination when the user handler has gotten (or has emitted) termination
-            // signals in both directions
-            termWatchBefore.flatMap(_ ⇒ termWatchAfter)(ExecutionContexts.sameThreadExecutionContext)
-          }
-          .joinMat(baseFlow)(Keep.left)
-      )
+      Flow[HttpRequest]
+        .watchTermination()(Keep.right)
+        .viaMat(handler)(Keep.left)
+        .watchTermination() { (termWatchBefore, termWatchAfter) ⇒
+          // flag termination when the user handler has gotten (or has emitted) termination
+          // signals in both directions
+          termWatchBefore.flatMap(_ ⇒ termWatchAfter)(ExecutionContexts.sameThreadExecutionContext)
+        }
+        .joinMat(baseFlow)(Keep.left)
     )
 
   private def tcpBind(interface: String, port: Int, settings: ServerSettings): Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
@@ -260,12 +259,16 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     settings:          ServerSettings    = ServerSettings(system),
     parallelism:       Int               = 1,
     log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
-    val enableHttp2 = settings.previewServerSettings.enableHttp2
-    if (enableHttp2 && connectionContext.isSecure) {
+    val http2enabled = settings.previewServerSettings.enableHttp2
+    if (http2enabled && connectionContext.isSecure && connectionContext.http2 != Never) {
+      log.debug("Binding server using HTTP/2...")
+      Http2Shadow.bindAndHandleAsync(handler, interface, port, connectionContext, settings, parallelism, log)(fm)
+    } else if (http2enabled && !connectionContext.isSecure && connectionContext.http2 == Always) {
+      // We do not support HTTP/2 negotiation for insecure connections (h2c), https://github.com/akka/akka-http/issues/1966
       log.debug("Binding server using HTTP/2...")
       Http2Shadow.bindAndHandleAsync(handler, interface, port, connectionContext, settings, parallelism, log)(fm)
     } else {
-      if (enableHttp2)
+      if (http2enabled)
         log.debug("The akka.http.server.preview.enable-http2 flag was set, " +
           "but a plain HttpConnectionContext (not Https) was given, binding using plain HTTP...")
 
@@ -336,7 +339,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
                          localAddress: Option[InetSocketAddress] = None,
                          settings:     ClientConnectionSettings  = ClientConnectionSettings(system),
                          log:          LoggingAdapter            = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
-    _outgoingConnection(host, port, settings.withLocalAddressOverride(localAddress), ConnectionContext.noEncryption(), ClientTransport.TCP, log)
+    _outgoingConnection(host, port, settings.withLocalAddressOverride(localAddress), ConnectionContext.noEncryption(), log)
 
   /**
    * Same as [[#outgoingConnection]] but for encrypted (HTTPS) connections.
@@ -352,7 +355,24 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
                               localAddress:      Option[InetSocketAddress] = None,
                               settings:          ClientConnectionSettings  = ClientConnectionSettings(system),
                               log:               LoggingAdapter            = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
-    _outgoingConnection(host, port, settings.withLocalAddressOverride(localAddress), connectionContext, ClientTransport.TCP, log)
+    _outgoingConnection(host, port, settings.withLocalAddressOverride(localAddress), connectionContext, log)
+
+  /**
+   * Similar to `outgoingConnection` but allows to specify a user-defined context to run the connection on.
+   *
+   * Depending on the kind of `ConnectionContext` the implementation will add TLS between the given transport and the HTTP
+   * implementation
+   *
+   * To configure additional settings for requests made using this method,
+   * use the `akka.http.client` config section or pass in a [[akka.http.scaladsl.settings.ClientConnectionSettings]] explicitly.
+   */
+  def outgoingConnectionUsingContext(
+    host:              String,
+    port:              Int,
+    connectionContext: ConnectionContext,
+    settings:          ClientConnectionSettings = ClientConnectionSettings(system),
+    log:               LoggingAdapter           = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
+    _outgoingConnection(host, port, settings, connectionContext, log)
 
   /**
    * Similar to `outgoingConnection` but allows to specify a user-defined transport layer to run the connection on.
@@ -363,34 +383,33 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    * To configure additional settings for requests made using this method,
    * use the `akka.http.client` config section or pass in a [[akka.http.scaladsl.settings.ClientConnectionSettings]] explicitly.
    */
-  def outgoingConnectionUsingTransport(
+  @deprecated("Deprecated in favor of method outgoingConnectionUsingContext (transport retrieved from ClientConnectionSettings)", "10.1.0")
+  private[http] def outgoingConnectionUsingTransport( // kept as private[http] for binary compatibility
     host:              String,
     port:              Int,
     transport:         ClientTransport,
     connectionContext: ConnectionContext,
     settings:          ClientConnectionSettings = ClientConnectionSettings(system),
     log:               LoggingAdapter           = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
-    _outgoingConnection(host, port, settings, connectionContext, transport, log)
+    _outgoingConnection(host, port, settings.withTransport(transport), connectionContext, log)
 
   private def _outgoingConnection(
     host:              String,
     port:              Int,
     settings:          ClientConnectionSettings,
     connectionContext: ConnectionContext,
-    transport:         ClientTransport,
     log:               LoggingAdapter): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
     val hostHeader = if (port == connectionContext.defaultPort) Host(host) else Host(host, port)
     val layer = clientLayer(hostHeader, settings, log)
-    layer.joinMat(_outgoingTlsConnectionLayer(host, port, settings, connectionContext, transport, log))(Keep.right)
+    layer.joinMat(_outgoingTlsConnectionLayer(host, port, settings, connectionContext, log))(Keep.right)
   }
 
   private def _outgoingTlsConnectionLayer(host: String, port: Int,
                                           settings: ClientConnectionSettings, connectionContext: ConnectionContext,
-                                          transport: ClientTransport,
-                                          log:       LoggingAdapter): Flow[SslTlsOutbound, SslTlsInbound, Future[OutgoingConnection]] = {
+                                          log: LoggingAdapter): Flow[SslTlsOutbound, SslTlsInbound, Future[OutgoingConnection]] = {
     val tlsStage = sslTlsStage(connectionContext, Client, Some(host → port))
 
-    tlsStage.joinMat(transport.connectTo(host, port, settings))(Keep.right)
+    tlsStage.joinMat(settings.transport.connectTo(host, port, settings))(Keep.right)
   }
 
   type ClientLayer = Http.ClientLayer
@@ -682,7 +701,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     val port = uri.effectivePort
 
     webSocketClientLayer(request, settings, log)
-      .joinMat(_outgoingTlsConnectionLayer(host, port, settings.withLocalAddressOverride(localAddress), ctx, ClientTransport.TCP, log))(Keep.left)
+      .joinMat(_outgoingTlsConnectionLayer(host, port, settings.withLocalAddressOverride(localAddress), ctx, log))(Keep.left)
   }
 
   /**
@@ -872,7 +891,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
      *
      * The produced [[scala.concurrent.Future]] is fulfilled when the unbinding has been completed.
      */
-    def unbind(): Future[Unit] = unbindAction()
+    def unbind(): Future[Done] = unbindAction().map(_ ⇒ Done)(ExecutionContexts.sameThreadExecutionContext)
   }
 
   /**

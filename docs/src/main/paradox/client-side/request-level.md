@@ -52,8 +52,9 @@ Java
 
 @@@ warning
 
-Always make sure you consume the response entity streams (of type @scala[@unidoc[Source[ByteString,Unit]]]@java[@unidoc[Source[ByteString, Object]]]) by for example connecting it to a @unidoc[Sink] (for example @scala[`response.discardEntityBytes()`]@java[`response.discardEntityBytes(Materializer)`] if you don't care about the
-response entity), since otherwise Akka HTTP (and the underlying Streams infrastructure) will understand the
+Always make sure you consume the response entity streams (of type @scala[@unidoc[Source[ByteString,Unit]]]@java[@unidoc[Source[ByteString, Object]]]) 
+by for example connecting it to a @unidoc[Sink] or by calling @scala[`response.discardEntityBytes()`]@java[`response.discardEntityBytes(Materializer)`] 
+if you don't care about the response entity. Otherwise Akka HTTP (and the underlying Streams infrastructure) will understand the
 lack of entity consumption as a back-pressure signal and stop reading from the underlying TCP connection!
 
 This is a feature of Akka HTTP that allows consuming entities (and pulling them through the network) in

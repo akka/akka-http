@@ -20,6 +20,7 @@ class CacheConditionDirectivesSpec extends RoutingSpec {
 
     def taggedAndTimestamped = conditional(tag, timestamp) { completeOk }
     def weak = conditional(tag.copy(weak = true), timestamp) { completeOk }
+    def timestampedOnly = conditional(timestamp) { completeOk }
 
     "return OK for new resources" in {
       Get() ~> taggedAndTimestamped ~> check {
@@ -177,6 +178,20 @@ class CacheConditionDirectivesSpec extends RoutingSpec {
       } ~> check {
         status shouldEqual OK
         responseAs[String] shouldEqual "None"
+      }
+    }
+
+    "ignore `If-Match` if the ETag is ommitted" in {
+      Get() ~> `If-Match`(EntityTag("old")) ~> timestampedOnly ~> check {
+        status shouldEqual OK
+        headers should contain theSameElementsAs (List(`Last-Modified`(timestamp)))
+      }
+    }
+
+    "ignore `If-None-Match` if the ETag is ommitted" in {
+      Get() ~> `If-None-Match`(EntityTag("old")) ~> timestampedOnly ~> check {
+        status shouldEqual OK
+        headers should contain theSameElementsAs (List(`Last-Modified`(timestamp)))
       }
     }
   }

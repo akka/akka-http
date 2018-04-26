@@ -818,7 +818,7 @@ class Http2ServerSpec extends AkkaSpec("""
         lazy val theAddress = "127.0.0.1"
         lazy val thePort = 1337
         override def modifyServer(server: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed]) =
-          BidiFlow.fromGraph(StreamUtils.fuseAggressive(server).withAttributes(
+          BidiFlow.fromGraph(server.withAttributes(
             HttpAttributes.remoteAddress(new InetSocketAddress(theAddress, thePort))
           ))
 
@@ -838,7 +838,7 @@ class Http2ServerSpec extends AkkaSpec("""
 
         lazy val expectedSession = SSLContext.getDefault.createSSLEngine.getSession
         override def modifyServer(server: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed]) =
-          BidiFlow.fromGraph(StreamUtils.fuseAggressive(server).withAttributes(
+          BidiFlow.fromGraph(server.withAttributes(
             HttpAttributes.tlsSessionInfo(expectedSession)
           ))
 

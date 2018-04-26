@@ -35,7 +35,7 @@ import akka.annotation.{ DoNotInherit, InternalApi }
 import scala.compat.java8.FutureConverters
 
 /**
- * Models the entity (aka "body" or "content) of an HTTP message.
+ * Models the entity (aka "body" or "content") of an HTTP message.
  */
 sealed trait HttpEntity extends jm.HttpEntity {
   import language.implicitConversions

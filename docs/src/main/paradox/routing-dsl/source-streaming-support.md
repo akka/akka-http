@@ -183,3 +183,8 @@ Scala
 :   @@snip [JsonStreamingFullExamples.scala]($test$/scala/docs/http/scaladsl/server/directives/JsonStreamingFullExamples.scala) { #custom-content-type }
 
 @@@
+
+## Consuming streaming JSON on client-side
+
+For consuming such streaming APIs with, for example, JSON responses refer to @ref[Consuming JSON Streaming style APIs](../common/json-support.md#consuming-json-streaming-style-apis)
+documentation in the JSON support section.

@@ -68,7 +68,7 @@ So, for the example above the `RejectionHandler` will be presented with only one
 <a id="empty-rejections"></a>
 ## Empty Rejections
 
-Internally rejections stored in an immutable list, so you might ask yourself what the semantics of
+Internally rejections are stored in an immutable list, so you might ask yourself what the semantics of
 an empty rejection list are. In fact, empty rejection lists have well defined semantics. They signal that a request was
 not handled because the respective resource could not be found. Akka HTTP reserves the special status of "empty
 rejection" to this most common failure a service is likely to produce.

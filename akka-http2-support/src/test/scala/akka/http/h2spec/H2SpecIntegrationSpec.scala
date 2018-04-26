@@ -18,6 +18,7 @@ import org.scalatest.exceptions.TestPendingException
 
 import scala.concurrent.duration._
 import scala.sys.process._
+import scala.util.control.NoStackTrace
 
 class H2SpecIntegrationSpec extends AkkaSpec(
   """
@@ -87,6 +88,31 @@ class H2SpecIntegrationSpec extends AkkaSpec(
         8.2. Server Push
       """.split("\n").map(_.trim).filterNot(_.isEmpty)
 
+    /** Cases that are known to fail, but we haven't triaged yet */
+    val pendingTestCases = Seq(
+      "4.2",
+      "4.3",
+      "5.1",
+      "5.1.1",
+      "5.5",
+      "6.1",
+      "6.5",
+      "6.5.2",
+      "6.9",
+      "6.9.1",
+      "6.10",
+      "8.1.2",
+      "8.1.2.1",
+      "8.1.2.2",
+      "8.1.2.6"
+    )
+
+    /**
+     * Cases that are known to fail because the TCK's expectations are
+     * different from our interpretation of the specs
+     */
+    val disabledTestCases = Seq()
+
     // execution of tests ------------------------------------------------------------------
     /*
     FIXME: don't fail any tests on jenkins for now
@@ -103,23 +129,26 @@ class H2SpecIntegrationSpec extends AkkaSpec(
 
       testNamesWithSectionNumbers foreach {
         case (name, sectionNr) ⇒
-          s"pass rule: $name" in {
-            runSpec(specSectionNumber = sectionNr)
-          }
+          if (!disabledTestCases.contains(sectionNr))
+            if (pendingTestCases.contains(sectionNr))
+              s"pass rule: $name" ignore {
+                runSpec(specSectionNumber = Some(sectionNr), junitOutput = new File(s"target/test-reports/h2spec-junit-$sectionNr.xml"))
+              }
+            else
+              s"pass rule: $name" in {
+                runSpec(specSectionNumber = Some(sectionNr), junitOutput = new File(s"target/test-reports/h2spec-junit-$sectionNr.xml"))
+              }
       }
     }
     // end of execution of tests -----------------------------------------------------------
 
-    def runSpec(specSectionNumber: String = null, junitOutput: File = null): Unit = {
-      require(specSectionNumber != null ^ junitOutput != null, "Only one of the parameters must be not null, selecting the mode we run in.")
+    def runSpec(specSectionNumber: Option[String] = None, junitOutput: File): Unit = {
       val TestFailureMarker = "×" // that special character is next to test failures, so we detect them by it
 
       val keepAccumulating = new AtomicBoolean(true)
       val sb = new StringBuffer()
 
-      val command =
-        if (specSectionNumber != null) s"""$executable -k -t -p $port -s $specSectionNumber"""
-        else s"""$executable -k -t -p $port -j $junitOutput""" // include junit report
+      val command = s"$executable -k -t -p $port -j $junitOutput" + specSectionNumber.map(" -s " + _).getOrElse("")
       println(s"exec: $command")
       val aggregateTckLogs = ProcessLogger(
         out ⇒ {
@@ -137,8 +166,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
       val output = sb.toString
       info(output)
       if (output.contains(TestFailureMarker)) {
-        throw new TestPendingException // FIXME we'll want to move to marking it as failures instead once we pass
-        // throw new AssertionError("Tck secion failed at least one test: ") with NoStackTrace
+        throw new AssertionError(s"Tck section $specSectionNumber failed at least one test.") with NoStackTrace
       } else if (output.contains("0 failed")) ()
     }
 

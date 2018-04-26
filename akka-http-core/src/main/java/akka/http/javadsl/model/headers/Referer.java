@@ -14,6 +14,6 @@ public abstract class Referer extends akka.http.scaladsl.model.HttpHeader {
     public abstract Uri getUri();
 
     public static Referer create(Uri uri) {
-        return new akka.http.scaladsl.model.headers.Referer(akka.http.impl.util.Util.convertUriToScala(uri));
+        return new akka.http.scaladsl.model.headers.Referer(uri.asScala());
     }
 }

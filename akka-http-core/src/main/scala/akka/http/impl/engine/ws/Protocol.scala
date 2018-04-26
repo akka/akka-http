@@ -13,16 +13,16 @@ import akka.annotation.InternalApi
  */
 @InternalApi
 private[http] object Protocol {
-  val FIN_MASK = 0x80
-  val RSV1_MASK = 0x40
-  val RSV2_MASK = 0x20
-  val RSV3_MASK = 0x10
+  final val FIN_MASK = 0x80
+  final val RSV1_MASK = 0x40
+  final val RSV2_MASK = 0x20
+  final val RSV3_MASK = 0x10
 
-  val FLAGS_MASK = 0xF0
-  val OP_MASK = 0x0F
+  final val FLAGS_MASK = 0xF0
+  final val OP_MASK = 0x0F
 
-  val MASK_MASK = 0x80
-  val LENGTH_MASK = 0x7F
+  final val MASK_MASK = 0x80
+  final val LENGTH_MASK = 0x7F
 
   sealed trait Opcode {
     def code: Byte

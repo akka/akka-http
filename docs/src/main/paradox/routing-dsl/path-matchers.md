@@ -24,6 +24,8 @@ type PathMatcher2[T,U] = PathMatcher[Tuple2[T,U]]
 
 Java
 :   ```java
+package akka.http.javadsl.server;
+
 class PathMatcher0
 class PathMatcher1<T1>
 class PathMatcher2<T1, T2>

@@ -13,7 +13,7 @@ public abstract class LinkValue {
 
     public static LinkValue create(Uri uri, LinkParam... params) {
         return new akka.http.scaladsl.model.headers.LinkValue(
-                Util.convertUriToScala(uri),
+                uri.asScala(),
                 Util.<LinkParam, akka.http.scaladsl.model.headers.LinkParam>convertArray(params));
     }
 }

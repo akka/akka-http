@@ -8,7 +8,7 @@ import akka.actor.{ ActorSystem, ExtendedActorSystem }
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.Http.ServerBinding
-import akka.http.scaladsl.{ ConnectionContext, HttpsConnectionContext }
+import akka.http.scaladsl.ConnectionContext
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.{ ActorMaterializerHelper, Materializer }
@@ -24,25 +24,21 @@ private[akka] object Http2Shadow {
     def bindAndHandleAsync(
       handler:   HttpRequest ⇒ Future[HttpResponse],
       interface: String, port: Int,
-      httpsContext: HttpsConnectionContext,
-      settings:     ServerSettings,
-      parallelism:  Int,
-      log:          LoggingAdapter)(implicit fm: Materializer): Future[ServerBinding]
+      httpContext: ConnectionContext,
+      settings:    ServerSettings,
+      parallelism: Int,
+      log:         LoggingAdapter)(implicit fm: Materializer): Future[ServerBinding]
   }
-  /**
-   * @param httpsContext is required to be an HTTPS context, however we validate this internally,
-   *                     and throw in runtime if it's not. We do this since we support the existing Http() API.
-   */
+
   def bindAndHandleAsync(
     handler:   HttpRequest ⇒ Future[HttpResponse],
     interface: String, port: Int,
-    httpsContext: ConnectionContext,
-    settings:     ServerSettings,
-    parallelism:  Int,
-    log:          LoggingAdapter)(implicit fm: Materializer): Future[ServerBinding] = {
+    httpContext: ConnectionContext,
+    settings:    ServerSettings,
+    parallelism: Int,
+    log:         LoggingAdapter)(implicit fm: Materializer): Future[ServerBinding] = {
 
     val mat = ActorMaterializerHelper.downcast(fm)
-    require(httpsContext.isSecure, "In order to use HTTP/2 you MUST provide an HttpsConnectionContext.")
 
     try {
       val system = mat.system.asInstanceOf[ExtendedActorSystem]
@@ -55,7 +51,7 @@ private[akka] object Http2Shadow {
       extensionInstance.bindAndHandleAsync(
         handler,
         interface, port,
-        httpsContext.asInstanceOf[HttpsConnectionContext],
+        httpContext,
         settings,
         parallelism,
         log)(fm)

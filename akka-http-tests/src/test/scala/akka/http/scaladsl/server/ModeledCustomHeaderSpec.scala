@@ -13,8 +13,8 @@ object ModeledCustomHeaderSpec {
 
   //#modeled-api-key-custom-header
   final class ApiTokenHeader(token: String) extends ModeledCustomHeader[ApiTokenHeader] {
-    override def renderInRequests = false
-    override def renderInResponses = false
+    override def renderInRequests = true
+    override def renderInResponses = true
     override val companion = ApiTokenHeader
     override def value: String = token
   }

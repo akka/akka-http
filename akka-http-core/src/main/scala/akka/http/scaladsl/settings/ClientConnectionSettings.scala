@@ -6,10 +6,13 @@ package akka.http.scaladsl.settings
 
 import java.net.InetSocketAddress
 import java.util.Random
+import java.util.function.Supplier
 
+import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.http.impl.util._
 import akka.http.impl.settings.ClientConnectionSettingsImpl
+import akka.http.scaladsl.ClientTransport
 import akka.http.scaladsl.model.headers.`User-Agent`
 import akka.io.Inet.SocketOption
 import com.typesafe.config.Config
@@ -26,11 +29,16 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   def connectingTimeout: FiniteDuration
   def idleTimeout: Duration
   def requestHeaderSizeHint: Int
+  def websocketSettings: WebSocketSettings
   def websocketRandomFactory: () ⇒ Random
   def socketOptions: immutable.Seq[SocketOption]
   def parserSettings: ParserSettings
   def logUnencryptedNetworkBytes: Option[Int]
   def localAddress: Option[InetSocketAddress]
+
+  /** The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used. */
+  @ApiMayChange
+  def transport: ClientTransport
 
   // ---
 
@@ -40,12 +48,18 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   override def withRequestHeaderSizeHint(newValue: Int): ClientConnectionSettings = self.copy(requestHeaderSizeHint = newValue)
 
   // overloads for idiomatic Scala use
-  def withWebsocketRandomFactory(newValue: () ⇒ Random): ClientConnectionSettings = self.copy(websocketRandomFactory = newValue)
+  def withWebsocketSettings(newValue: WebSocketSettings): ClientConnectionSettings = self.copy(websocketSettings = newValue)
+  def withWebsocketRandomFactory(newValue: () ⇒ Random): ClientConnectionSettings = withWebsocketSettings(websocketSettings.withRandomFactoryFactory(new Supplier[Random] {
+    override def get(): Random = newValue()
+  }))
   def withUserAgentHeader(newValue: Option[`User-Agent`]): ClientConnectionSettings = self.copy(userAgentHeader = newValue)
   def withLogUnencryptedNetworkBytes(newValue: Option[Int]): ClientConnectionSettings = self.copy(logUnencryptedNetworkBytes = newValue)
   def withSocketOptions(newValue: immutable.Seq[SocketOption]): ClientConnectionSettings = self.copy(socketOptions = newValue)
   def withParserSettings(newValue: ParserSettings): ClientConnectionSettings = self.copy(parserSettings = newValue)
   def withLocalAddress(newValue: Option[InetSocketAddress]): ClientConnectionSettings = self.copy(localAddress = newValue)
+
+  @ApiMayChange
+  def withTransport(newTransport: ClientTransport): ClientConnectionSettings = self.copy(transport = newTransport)
 
   /**
    * Returns a new instance with the given local address set if the given override is `Some(address)`, otherwise
