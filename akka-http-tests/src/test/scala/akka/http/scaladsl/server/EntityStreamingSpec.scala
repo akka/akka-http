@@ -7,10 +7,8 @@ package akka.http.scaladsl.server
 import akka.NotUsed
 import akka.http.scaladsl.common.{ EntityStreamingSupport, JsonEntityStreamingSupport }
 import akka.http.scaladsl.marshalling._
-import akka.http.scaladsl.model.MediaTypes.`text/plain`
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl._
 import akka.testkit.EventFilter
 import akka.util.ByteString
