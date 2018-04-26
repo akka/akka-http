@@ -251,7 +251,7 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
         // This is wrong since we try to render JSON, but String is not a valid top level element
         // we need to provide an explicit Marshaller[String, ByteString] if we really want to render a list of strings.
         val results = Source(List("One", "Two", "Three"))
-        complete(ToResponseMarshallable.apply(results))
+        complete(results)
       }
 
     try {
