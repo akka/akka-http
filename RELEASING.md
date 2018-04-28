@@ -11,7 +11,7 @@
 1. Go to https://bintray.com/akka/maven/com.typesafe.akka:akka-http_2.11 and select the just released version
 1. Go to the Maven Central tab and sync with Sonatype
    - (Optional, should happen automatically if selected in Bintray) Log in to Sonatype to Close the staging repository
-   - Run a test against the staging repository to make sure the release went well, for examply by using https://github.com/akka/akka-http-scala-seed.g8 and adding the sonatype staging repo with `resolvers += "Staging Repo" at "https://oss.sonatype.org/content/repositories/comtypesafe-xxx"`
+   - Run a test against the staging repository to make sure the release went well, for example by using https://github.com/akka/akka-http-scala-seed.g8 and adding the sonatype staging repo with `resolvers += "Staging Repo" at "https://oss.sonatype.org/content/repositories/comtypesafe-xxx"`
    - Release the staging repository to Maven Central.
 1. Create a new milestone for the next version at https://github.com/akka/akka-http/milestones , move all unclosed issues there and close the version you're releasing
 1. Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key.
@@ -40,5 +40,5 @@ Here is what happens in detail when Travis CI is building a git tagged commit:
 This could be done automatically via `.travis.yml` in `deploy` by adding section is `akka-http/bintraySyncMavenCentral`, however we prefer to run this step manually after confirming a release is valid.
 
   1. This task syncs all of the artifacts under the [Akka Http](https://bintray.com/akka/maven/akka-http) package in Bintray to Maven Central. For the sync to be successful, the package first needs to be added to JCenter repository. This must be done through Bintray Web interface, and only once when the package is created.
-  2. This task is only ran for one project, because all Akka Http projects are published to a single package on Bintray.
+  2. This task is only run for one project, because all Akka Http projects are published to a single package on Bintray.
   3. Credentials for the `bintraySyncMavenCentral` task are read from the `SONATYPE_USER` and `SONATYPE_PASS` environment variables which are stored encrypted on the `.travis.yml` file. The user under these credentials must have the rights to publish artifacts to the Maven Central under the `com.typesafe.akka` organization name.
