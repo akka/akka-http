@@ -9,6 +9,7 @@ import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.StatusCodes.NotFound
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import org.scalatest.concurrent.Eventually._
 import org.scalatest.concurrent.ScalaFutures
 
 class DiscardEntityDefaultRejectionHandlerSpec extends RoutingSpec with ScalaFutures {
@@ -17,20 +18,24 @@ class DiscardEntityDefaultRejectionHandlerSpec extends RoutingSpec with ScalaFut
     complete("bar")
   }
 
+  private val numElems = 1000
+  @volatile
   private var elementsEmitted = 0
   private def gimmeElement(): ByteString = {
     elementsEmitted = elementsEmitted + 1
     ByteString("Foo")
   }
 
-  private val ThousandElements: Stream[ByteString] = Stream.continually(gimmeElement()).take(1000)
+  private val ThousandElements: Stream[ByteString] = Stream.continually(gimmeElement()).take(numElems)
   private val RequestToNotHandled = Get("/bar", HttpEntity(`text/plain(UTF-8)`, Source[ByteString](ThousandElements)))
 
   "Default RejectionHandler" should {
     "rejectEntity by default" in {
       RequestToNotHandled ~> Route.seal(route) ~> check {
         status shouldBe NotFound
-        elementsEmitted should be > 1
+        eventually {
+          elementsEmitted shouldBe numElems
+        }
       }
     }
   }
