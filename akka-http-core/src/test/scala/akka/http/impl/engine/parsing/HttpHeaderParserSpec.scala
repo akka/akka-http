@@ -10,18 +10,19 @@ import akka.http.scaladsl.settings.ParserSettings
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.annotation.tailrec
-import scala.util.Random
+import scala.util.{ Random, Try }
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import akka.util.ByteString
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{ ErrorInfo, HttpHeader }
+import akka.http.scaladsl.model.{ ErrorInfo, HttpHeader, ParsingException }
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.model.parser.CharacterClasses
 import akka.http.impl.util._
 import akka.http.scaladsl.settings.ParserSettings.IllegalResponseHeaderValueProcessingMode
 import akka.testkit.{ EventFilter, TestKit }
+import org.scalatest.prop.Checkers
 
-abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordSpec with Matchers with BeforeAndAfterAll {
+abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordSpec with Matchers with BeforeAndAfterAll with Checkers {
 
   val testConf: Config = ConfigFactory.parseString("""
     akka.event-handlers = ["akka.testkit.TestEventListener"]
@@ -272,6 +273,23 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
         parseLine(s"Content-Type: abc:123${newLine}x")
       }
     }
+
+    "neatly reject invalid input" in {
+      val parserSettings = createParserSettings(system)
+      val parser = HttpHeaderParser(parserSettings, system.log)
+      check(
+        (bytes: Array[Byte]) ⇒
+          {
+            Try(parser.parseHeaderLine(ByteString(bytes), 0)())
+              .recover {
+                case _: ParsingException    ⇒ 0
+                case NotEnoughDataException ⇒ 0
+              }
+              .isSuccess
+          }
+      )
+    }
+
   }
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
