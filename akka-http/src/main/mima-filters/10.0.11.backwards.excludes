@@ -21,8 +21,13 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.coding.En
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.coding.Decoder.decode")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.coding.Decoder.decode")
 
+# Commonized code in PredefinedToResponseMarshallers #1877
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers.fromEntityStreamingSupportAndByteStringMarshaller")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.marshalling.LowPriorityToResponseMarshallerImplicits.fromEntityStreamingSupportAndByteStringSourceMarshaller")
+
 # Additions to @DoNotInherit directives trait
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.TimeoutDirectives.extractRequestTimeout")
 
 # Adding new overloads with less parameters
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.server.Route.seal")
+
