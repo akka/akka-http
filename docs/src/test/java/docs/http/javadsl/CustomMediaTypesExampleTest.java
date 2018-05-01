@@ -28,6 +28,12 @@ import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
 
+//#application-custom-java
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.extractRequest;
+
+//#application-custom-java
+
 public class CustomMediaTypesExampleTest extends JUnitRouteTest {
 
   @Test

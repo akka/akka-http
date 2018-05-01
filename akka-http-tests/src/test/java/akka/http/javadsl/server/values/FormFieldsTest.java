@@ -14,6 +14,8 @@ import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import akka.japi.Pair;
 
+import static akka.http.javadsl.server.Directives.*;
+
 public class FormFieldsTest extends JUnitRouteTest {
 
     private Pair<String, String> param(String name, String value) {

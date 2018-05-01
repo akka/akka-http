@@ -16,6 +16,38 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.List;
 
+//#multiple-headers
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.respondWithDefaultHeaders;
+
+//#multiple-headers
+//#respondWithHeader
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.respondWithDefaultHeader;
+
+//#respondWithHeader
+//#respondWithDefaultHeader
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.respondWithDefaultHeader;
+import static akka.http.javadsl.server.Directives.respondWithHeader;
+
+//#respondWithDefaultHeader
+//#respondWithHeaders
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.respondWithDefaultHeaders;
+import static akka.http.javadsl.server.Directives.respondWithHeaders;
+
+//#respondWithHeaders
+//#respondWithDefaultHeaders
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.respondWithDefaultHeaders;
+import static akka.http.javadsl.server.Directives.respondWithHeader;
+
+//#respondWithDefaultHeaders
 public class RespondWithDirectivesExamplesTest extends JUnitRouteTest {
 
     @Test
@@ -84,7 +116,7 @@ public class RespondWithDirectivesExamplesTest extends JUnitRouteTest {
     }
 
     @Test
-    public void respondWithHeaders() {
+    public void testRespondWithHeaders() {
         //#respondWithHeaders
         final HttpHeader gonzo = RawHeader.create("Funky-Muppet", "gonzo");
         final HttpHeader akka = Origin.create(HttpOrigin.parse("http://akka.io"));

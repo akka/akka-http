@@ -19,6 +19,8 @@ import akka.http.javadsl.testkit.TestRoute;
 import akka.http.scaladsl.server.MethodRejection;
 import akka.http.scaladsl.server.Rejection;
 
+import static akka.http.javadsl.server.Directives.*;
+
 public class ExecutionDirectivesTest extends JUnitRouteTest {
   @Test
   public void testCatchExceptionThrownFromHandler() {

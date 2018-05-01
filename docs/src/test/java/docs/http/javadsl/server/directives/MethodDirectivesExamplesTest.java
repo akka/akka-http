@@ -12,6 +12,56 @@ import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 
+//#delete
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.delete;
+
+//#delete
+//#head
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.head;
+
+//#head
+//#options
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.options;
+
+//#options
+//#patch
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.patch;
+
+//#patch
+//#post
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.post;
+
+//#post
+//#put
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.put;
+
+//#put
+//#method-example
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.method;
+
+//#method-example
+//#extractMethod
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.get;
+import static akka.http.javadsl.server.Directives.extractMethod;
+
+//#extractMethod
+//#overrideMethodWithParameter
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.get;
+import static akka.http.javadsl.server.Directives.post;
+import static akka.http.javadsl.server.Directives.route;
+import static akka.http.javadsl.server.Directives.overrideMethodWithParameter;
+
+//#overrideMethodWithParameter
+
 public class MethodDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testDelete() {

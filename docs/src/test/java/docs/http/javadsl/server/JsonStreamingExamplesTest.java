@@ -24,6 +24,27 @@ import org.junit.Test;
 
 import java.util.concurrent.CompletionStage;
 
+//#response-streaming
+import static akka.http.javadsl.server.Directives.completeOKWithSource;
+import static akka.http.javadsl.server.Directives.get;
+import static akka.http.javadsl.server.Directives.parameter;
+import static akka.http.javadsl.server.Directives.path;
+
+//#response-streaming
+//#incoming-request-streaming
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.entityAsSourceOf;
+import static akka.http.javadsl.server.Directives.extractMaterializer;
+import static akka.http.javadsl.server.Directives.onComplete;
+import static akka.http.javadsl.server.Directives.post;
+
+//#incoming-request-streaming
+//#csv-example
+import static akka.http.javadsl.server.Directives.get;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.completeWithSource;
+
+//#csv-example
 public class JsonStreamingExamplesTest extends JUnitRouteTest {
 
   //#routes

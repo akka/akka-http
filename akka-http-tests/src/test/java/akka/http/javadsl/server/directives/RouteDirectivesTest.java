@@ -8,11 +8,14 @@ import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.model.Uri;
 import akka.http.javadsl.model.headers.Location;
+import akka.http.javadsl.server.Directives;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import akka.stream.javadsl.Sink;
 import akka.util.ByteString;
 import org.junit.Test;
+
+import static akka.http.javadsl.server.Directives.*;
 
 public class RouteDirectivesTest extends JUnitRouteTest {
 
@@ -37,7 +40,7 @@ public class RouteDirectivesTest extends JUnitRouteTest {
         path("no-limit", () ->
           extractEntity(entity ->
             extractMaterializer(mat ->
-              this.<ByteString>onSuccess(entity // fails to infer type parameter with some older oracle JDK versions
+              Directives.<ByteString>onSuccess(entity // fails to infer type parameter with some older oracle JDK versions
                   .withoutSizeLimit()
                   .getDataBytes()
                   .runWith(Sink.<ByteString>head(), mat),
@@ -59,7 +62,7 @@ public class RouteDirectivesTest extends JUnitRouteTest {
       path("limit-5", () ->
         extractEntity(entity ->
           extractMaterializer(mat ->
-            this.<ByteString>onSuccess(entity // fails to infer type parameter with some older oracle JDK versions
+            Directives.<ByteString>onSuccess(entity // fails to infer type parameter with some older oracle JDK versions
                 .withSizeLimit(5)
                 .getDataBytes()
                 .runWith(Sink.head(), mat),

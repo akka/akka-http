@@ -32,6 +32,9 @@ import akka.http.caching.LfuCache;
 
 //#create-cache-imports
 //#cache
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.extractUri;
+import static akka.http.javadsl.server.Directives.path;
 import static akka.http.javadsl.server.PathMatchers.segment;
 //#cache
 

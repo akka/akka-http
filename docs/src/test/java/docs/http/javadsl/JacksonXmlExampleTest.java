@@ -16,6 +16,8 @@ import akka.http.javadsl.model.*;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
 
+import static akka.http.javadsl.server.Directives.*;
+
 public class JacksonXmlExampleTest extends JUnitRouteTest {
 
   final String xml = "<point><x>3</x><y>4</y></point>";

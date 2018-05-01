@@ -15,6 +15,28 @@ import akka.http.javadsl.model.headers.Host;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 
+//#host1
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.host;
+
+//#host1
+//#host2
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.host;
+
+//#host2
+//#extractHostname
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.extractHost;
+
+//#extractHostname
+//#matchAndExtractHost
+import akka.http.javadsl.server.Directives;
+
+import static akka.http.javadsl.server.Directives.host;
+
+//#matchAndExtractHost
+
 public class HostDirectivesExamplesTest extends JUnitRouteTest {
 
   @Test
@@ -66,7 +88,7 @@ public class HostDirectivesExamplesTest extends JUnitRouteTest {
         complete("You came through " + captured
             + " company"));
 
-    final Route route = route(hostPrefixRoute, hostPartRoute);
+    final Route route = Directives.route(hostPrefixRoute, hostPartRoute);
 
     testRoute(route).run(HttpRequest.GET("/").addHeader(Host.create("api.company.com")))
         .assertStatusCode(StatusCodes.OK).assertEntity("Extracted prefix: api");

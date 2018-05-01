@@ -16,6 +16,8 @@ import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.MediaTypes;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 
+import static akka.http.javadsl.server.Directives.*;
+
 public class CompleteTest extends JUnitRouteTest {
     @Test
     public void completeWithString() {

@@ -27,6 +27,12 @@ import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
+//#withRangeSupport
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.withRangeSupport;
+
+//#withRangeSupport
+
 public class RangeDirectivesExamplesTest extends JUnitRouteTest {
     @Override
     public Config additionalConfig() {

@@ -10,6 +10,8 @@ import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import org.junit.Test;
 
+import static akka.http.javadsl.server.Directives.*;
+
 public class CookieDirectivesTest extends JUnitRouteTest {
   @Test
   public void testCookieValue() {
