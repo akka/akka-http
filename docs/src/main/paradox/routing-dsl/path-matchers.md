@@ -15,22 +15,21 @@ the path matching DSL, which is built around these types:
 
 Scala
 :   ```scala
-trait PathMatcher[L: Tuple]
-type PathMatcher0 = PathMatcher[Unit]
-type PathMatcher1[T] = PathMatcher[Tuple1[T]]
-type PathMatcher2[T,U] = PathMatcher[Tuple2[T,U]]
-// .. etc
-```
+    trait PathMatcher[L: Tuple]
+    type PathMatcher0 = PathMatcher[Unit]
+    type PathMatcher1[T] = PathMatcher[Tuple1[T]]
+    type PathMatcher2[T,U] = PathMatcher[Tuple2[T,U]]
+    // .. etc
+    ```
 
 Java
 :   ```java
-package akka.http.javadsl.server;
-
-class PathMatcher0
-class PathMatcher1<T1>
-class PathMatcher2<T1, T2>
-// .. etc
-```
+    package akka.http.javadsl.server;
+    class PathMatcher0
+    class PathMatcher1<T1>
+    class PathMatcher2<T1, T2>
+    // .. etc
+    ```
 
 The number and types of the values extracted by a `PathMatcher` instance
 @scala[is represented by the `L` type
