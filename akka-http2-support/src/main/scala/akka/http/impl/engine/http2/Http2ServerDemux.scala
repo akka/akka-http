@@ -16,6 +16,7 @@ import akka.stream.impl.io.ByteStringParser.ParsingException
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, StageLogging }
 import akka.util.ByteString
 
+import scala.collection.immutable
 import scala.util.control.NonFatal
 
 import FrameEvent._
@@ -68,7 +69,7 @@ import FrameEvent._
  * only available in this stage.
  */
 @InternalApi
-private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings) extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] {
+private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings, initialDemuxerSettings: immutable.Seq[Setting]) extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] {
   val frameIn = Inlet[FrameEvent]("Demux.frameIn")
   val frameOut = Outlet[FrameEvent]("Demux.frameOut")
 
@@ -89,6 +90,11 @@ private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings) extend
       val multiplexer = createMultiplexer(frameOut, StreamPrioritizer.first())
 
       override def preStart(): Unit = {
+        if (initialDemuxerSettings.nonEmpty) {
+          log.debug("Applying {} initial settings!", initialDemuxerSettings.length)
+          applySettings(initialDemuxerSettings)
+        }
+
         pullFrameIn()
         pull(substreamIn)
 
@@ -209,6 +215,29 @@ private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings) extend
           multiplexer.registerSubStream(sub)
         }
       })
+
+      private def applySettings(settings: immutable.Seq[Setting]): Boolean = {
+        var settingsAppliedOk = true
+
+        settings.foreach {
+          case Setting(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE, value) =>
+            if (value >= 0) {
+              log.debug("Setting initial window to {}", value)
+              multiplexer.updateDefaultWindow(value)
+            } else {
+              pushGOAWAY(FLOW_CONTROL_ERROR, s"Invalid value for SETTINGS_INITIAL_WINDOW_SIZE: $value")
+              settingsAppliedOk = false
+            }
+          case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) =>
+            multiplexer.updateMaxFrameSize(value)
+          case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) =>
+            log.debug("Setting max concurrent streams to {} (not enforced)", value)
+          case Setting(id, value) =>
+            log.debug("Ignoring setting {} -> {} (in Demux)", id, value)
+        }
+        settingsAppliedOk
+      }
+
     }
 
 }

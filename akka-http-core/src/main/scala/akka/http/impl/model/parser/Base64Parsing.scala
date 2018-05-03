@@ -81,6 +81,10 @@ private[http] object Base64Parsing {
   val rfc2045BlockDecoder: Decoder = decodeBlock(Base64.rfc2045())
   val customBlockDecoder: Decoder = decodeBlock(Base64.custom())
 
+  private val base64url = new Base64("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_=")
+  /** as described in RFC4648 5. - https://tools.ietf.org/html/rfc4648#section-5 */
+  val base64UrlStringDecoder: Decoder = decodeString(base64url)
+
   def decodeString(codec: Base64)(chars: Array[Char]): Array[Byte] = codec.decodeFast(chars)
   def decodeBlock(codec: Base64)(chars: Array[Char]): Array[Byte] = codec.decode(chars)
 }

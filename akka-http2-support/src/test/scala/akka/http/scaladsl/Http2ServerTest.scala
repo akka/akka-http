@@ -22,11 +22,15 @@ import scala.concurrent.duration._
 import scala.io.StdIn
 import scala.util.Random
 
+/**
+ * App to manually test an HTTP2 server
+ */
 object Http2ServerTest extends App {
   val testConf: Config = ConfigFactory.parseString("""
-    akka.loglevel = INFO
+    akka.loglevel = debug
     akka.log-dead-letters = off
     akka.stream.materializer.debug.fuzzing-mode = off
+    akka.http.server.preview.enable-http2 = on
     akka.actor.serialize-creators = off
     akka.actor.serialize-messages = off
     #akka.actor.default-dispatcher.throughput = 1000

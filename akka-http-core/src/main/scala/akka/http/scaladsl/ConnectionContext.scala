@@ -12,7 +12,7 @@ import scala.collection.JavaConverters._
 import java.util.{ Optional, Collection => JCollection }
 
 import akka.http.javadsl
-import akka.http.scaladsl.UseHttp2.Negotiated
+import akka.http.scaladsl.UseHttp2.{ Negotiated, Never }
 import javax.net.ssl._
 
 import scala.collection.immutable

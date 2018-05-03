@@ -209,7 +209,7 @@ private[http] object HttpServerBluePrint {
 
     // the initial header parser we initially use for every connection,
     // will not be mutated, all "shared copy" parsers copy on first-write into the header cache
-    val rootParser = new HttpRequestParser(parserSettings, rawRequestUriHeader, HttpHeaderParser(parserSettings, log))
+    val rootParser = new HttpRequestParser(parserSettings, websocketSettings, rawRequestUriHeader, HttpHeaderParser(parserSettings, log))
 
     def establishAbsoluteUri(requestOutput: RequestOutput): RequestOutput = requestOutput match {
       case connect: RequestStart if connect.method == HttpMethods.CONNECT =>
@@ -610,11 +610,11 @@ private[http] object HttpServerBluePrint {
         override def onPush(): Unit =
           grab(fromHttp) match {
             case HttpData(b) => push(toNet, b)
-            case SwitchToWebSocket(bytes, handlerFlow) =>
+            case SwitchToOtherProtocol(bytes, handlerFlow) =>
               push(toNet, bytes)
               complete(toHttp)
               cancel(fromHttp)
-              switchToWebSocket(handlerFlow)
+              switchToOtherProtocol(handlerFlow)
           }
         override def onUpstreamFinish(): Unit = complete(toNet)
         override def onUpstreamFailure(ex: Throwable): Unit = fail(toNet, ex)
@@ -654,15 +654,7 @@ private[http] object HttpServerBluePrint {
           f()
       }
 
-      /*
-       * WebSocket support
-       */
-      def switchToWebSocket(handlerFlow: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]]): Unit = {
-        val frameHandler = handlerFlow match {
-          case Left(frameHandler) => frameHandler
-          case Right(messageHandler) =>
-            WebSocket.stack(serverSide = true, settings.websocketSettings, log = log).join(messageHandler)
-        }
+      def switchToOtherProtocol(newFlow: Flow[ByteString, ByteString, Any]): Unit = {
 
         val sinkIn = new SubSinkInlet[ByteString]("FrameSink")
         sinkIn.setHandler(new InHandler {
@@ -679,7 +671,7 @@ private[http] object HttpServerBluePrint {
               sinkIn.cancel()
             }
           })
-          WebSocket.framing.join(frameHandler).runWith(Source.empty, sinkIn.sink)(subFusingMaterializer)
+          newFlow.runWith(Source.empty, sinkIn.sink)(subFusingMaterializer)
         } else {
           val sourceOut = new SubSourceOutlet[ByteString]("FrameSource")
 
@@ -726,7 +718,7 @@ private[http] object HttpServerBluePrint {
             override def onDownstreamFinish(): Unit = cancel(fromNet)
           })
 
-          WebSocket.framing.join(frameHandler).runWith(sourceOut.source, sinkIn.sink)(subFusingMaterializer)
+          newFlow.runWith(sourceOut.source, sinkIn.sink)(subFusingMaterializer)
         }
       }
     }

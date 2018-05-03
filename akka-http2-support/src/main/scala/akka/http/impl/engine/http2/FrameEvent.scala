@@ -19,7 +19,7 @@ private[http2] sealed trait FrameEvent { self: Product =>
 }
 /** INTERNAL API */
 @InternalApi
-private[http2] object FrameEvent {
+private[http] object FrameEvent {
 
   sealed trait StreamFrameEvent extends FrameEvent { self: Product =>
     def streamId: Int

@@ -45,16 +45,40 @@ Note that `bindAndHandle` currently does not support HTTP/2, you must use `bindA
 While un-encrypted connections are allowed by HTTP/2, this is [sometimes discouraged](https://http2.github.io/faq/#does-http2-require-encryption).
 
 There are 2 ways to implement un-encrypted HTTP/2 connections: by using the
-[HTTP Upgrade mechanism](https://httpwg.org/specs/rfc7540.html#discover-http) or by starting communication in HTTP/2 directly.
-The latter only makes sense when you can assume the client has [Prior Knowledge](https://httpwg.org/specs/rfc7540.html#known-http) of HTTP/2 support.
+[HTTP Upgrade mechanism](http://httpwg.org/specs/rfc7540.html#discover-http)
+or by starting communication in HTTP/2 directly which requires the client to
+have [Prior Knowledge](https://httpwg.org/specs/rfc7540.html#known-http) of
+HTTP/2 support.
 
-We currently only support the approach requiring [Prior Knowledge](https://httpwg.org/specs/rfc7540.html#known-http). It is automatically enabled when HTTP/2 is enabled, on the same port:
+We support both approaches transparently on the same port. This feature is automatically enabled when HTTP/2 is enabled:
 
 Scala
 :   @@snip[Http2Spec.scala]($test$/scala/docs/http/scaladsl/Http2Spec.scala) { #bindAndHandlePlain }
 
 Java
 :   @@snip[Http2Test.java]($test$/java/docs/http/javadsl/Http2Test.java) { #bindAndHandlePlain }
+
+#### h2c Upgrade
+
+The advantage of switching from HTTP/1.1 to HTTP/2 using the
+[HTTP Upgrade mechanism](http://httpwg.org/specs/rfc7540.html#discover-http)
+is that both HTTP/1.1 and HTTP/2 clients can connect to the server on the
+same port, without being aware beforehand which protocol the server supports.
+
+The disadvantage is that relatively few clients support switching to HTTP/2
+in this way. Additionally, HTTP/2 communication cannot start until the first
+request has been completely sent. This means if your first request may be
+large, it might be worth it to start with an empty OPTIONS request to switch
+to HTTP/2 before sending your first 'real' request, at the cost of a roundtrip.
+
+#### h2c with prior knowledge
+
+The other option is to connect and start communicating in HTTP/2 immediately.
+The downside of this approach is the client must know beforehand that the
+server supports HTTP/2.
+For the reason this approach is known as h2c with
+Prior Knowledge](http://httpwg.org/specs/rfc7540.html#known-http) of HTTP/2
+support.
 
 ## Testing with cURL
 
