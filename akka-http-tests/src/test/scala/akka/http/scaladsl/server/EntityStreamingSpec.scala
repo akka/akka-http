@@ -94,6 +94,10 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
     }
   }
 
+  "stream the trailing newlines before the next element is available" in {
+
+  }
+
   "client-consume-streaming-json" in {
     //#json-streaming-client-example
     import MyJsonProtocol._

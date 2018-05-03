@@ -260,18 +260,10 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     parallelism:       Int               = 1,
     log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
     val http2enabled = settings.previewServerSettings.enableHttp2
-    if (http2enabled && connectionContext.isSecure && connectionContext.http2 != Never) {
-      log.debug("Binding server using HTTP/2...")
-      Http2Shadow.bindAndHandleAsync(handler, interface, port, connectionContext, settings, parallelism, log)(fm)
-    } else if (http2enabled && !connectionContext.isSecure && connectionContext.http2 == Always) {
-      // We do not support HTTP/2 negotiation for insecure connections (h2c), https://github.com/akka/akka-http/issues/1966
+    if (http2enabled && connectionContext.http2 != Never) {
       log.debug("Binding server using HTTP/2...")
       Http2Shadow.bindAndHandleAsync(handler, interface, port, connectionContext, settings, parallelism, log)(fm)
     } else {
-      if (http2enabled)
-        log.debug("The akka.http.server.preview.enable-http2 flag was set, " +
-          "but a plain HttpConnectionContext (not Https) was given, binding using plain HTTP...")
-
       bindAndHandle(Flow[HttpRequest].mapAsync(parallelism)(handler), interface, port, connectionContext, settings, log)
     }
   }
