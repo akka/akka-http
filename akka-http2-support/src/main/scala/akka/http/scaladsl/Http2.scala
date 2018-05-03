@@ -9,11 +9,13 @@ import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.{ AlpnSwitch, Http2AlpnSupport, Http2Blueprint }
 import akka.http.impl.engine.server.MasterServerTerminator
-import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
+import akka.http.impl.engine.server.UpgradeToOtherProtocolHeader
 import akka.http.scaladsl.Http.ServerBinding
-import akka.http.scaladsl.UseHttp2.{ Negotiated, Never }
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
+import akka.http.scaladsl.UseHttp2.{ Always, Negotiated, Never }
+import akka.http.scaladsl.model.headers.{ Connection, Upgrade, UpgradeProtocol }
+import akka.http.scaladsl.model.{ HttpHeader, HttpRequest, HttpResponse, StatusCodes }
 import akka.http.scaladsl.settings.ServerSettings
+import akka.http.impl.util.LogByteStringTools._
 import akka.stream.TLSProtocol.{ SendBytes, SessionBytes, SslTlsInbound, SslTlsOutbound }
 import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Sink, TLS, Tcp }
 import akka.stream.{ IgnoreComplete, Materializer }
@@ -23,6 +25,7 @@ import com.typesafe.config.Config
 import javax.net.ssl.SSLEngine
 
 import scala.concurrent.Future
+import scala.collection.immutable
 import scala.util.Success
 import scala.util.control.NonFatal
 
@@ -98,16 +101,52 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
     // TODO: split up similarly to what `Http` does into `serverLayer`, `bindAndHandle`, etc.
     require(connectionContext.http2 != Never)
 
-    if (connectionContext.isSecure) {
+    if (connectionContext.isSecure)
       bindAndHandleAsync(handler, interface, port, connectionContext.asInstanceOf[HttpsConnectionContext], settings, parallelism, log)
-    } else {
-      if (connectionContext.http2 == Negotiated)
-        // https://github.com/akka/akka-http/issues/1966
-        throw new NotImplementedError("h2c not supported")
-      else
-        bindAndHandleWithoutNegotiation(handler, interface, port, settings, parallelism, log)
+    else if (connectionContext.http2 == Always)
+      bindAndHandleWithoutNegotiation(handler, interface, port, settings, parallelism, log)
+    else
+      http.bindAndHandle(Flow[HttpRequest].mapAsync(parallelism)(handleUpgradeRequests(handler, settings, parallelism, log)), interface, port, connectionContext, settings, log)
+  }
+
+  private def handleUpgradeRequests(
+    handler:     HttpRequest ⇒ Future[HttpResponse],
+    settings:    ServerSettings,
+    parallelism: Int,
+    log:         LoggingAdapter
+  ): HttpRequest ⇒ Future[HttpResponse] = { req ⇒
+    req.header[Upgrade] match {
+      case Some(upgrade) if upgrade.protocols.exists(_.name equalsIgnoreCase "h2c") ⇒
+        // TODO remove duplication?
+        val serverLayer: Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(
+          Flow[HttpRequest]
+            .watchTermination()(Keep.right)
+            // FIXME: parallelism should maybe kept in track with SETTINGS_MAX_CONCURRENT_STREAMS so that we don't need
+            // to buffer requests that cannot be handled in parallel
+            .via(Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher))
+            .joinMat(Http2Blueprint.serverStack(settings, log))(Keep.left))
+
+        // TODO consume the HTTP2-Settings header
+        // TODO consume the request entity and make sure it is inserted as an HTTP2 request
+        // https://http2.github.io/http2-spec/#rfc.section.3.2
+
+        Future.successful(
+          HttpResponse(
+            StatusCodes.SwitchingProtocols,
+            immutable.Seq[HttpHeader](
+              ConnectionUpgradeHeader,
+              UpgradeHeader,
+              // TODO add attributes from the request
+              UpgradeToOtherProtocolHeader(serverLayer)
+            )
+          )
+        )
+      case _ ⇒
+        handler(req)
     }
   }
+  val ConnectionUpgradeHeader = Connection(List("upgrade"))
+  val UpgradeHeader = Upgrade(List(UpgradeProtocol("h2c")))
 
   private def bindAndHandleAsync(
     handler:   HttpRequest ⇒ Future[HttpResponse],
