@@ -30,6 +30,34 @@ import java.util.function.Function;
 
 import static scala.compat.java8.JFunction.func;
 
+//#uploadedFile
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.uploadedFile;
+
+//#uploadedFile
+//#storeUploadedFile
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.storeUploadedFile;
+
+//#storeUploadedFile
+//#storeUploadedFiles
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.storeUploadedFiles;
+
+//#storeUploadedFiles
+//#fileUpload
+import static akka.http.javadsl.server.Directives.extractRequestContext;
+import static akka.http.javadsl.server.Directives.fileUpload;
+import static akka.http.javadsl.server.Directives.onSuccess;
+
+//#fileUpload
+//#fileUploadAll
+import static akka.http.javadsl.server.Directives.extractRequestContext;
+import static akka.http.javadsl.server.Directives.fileUploadAll;
+import static akka.http.javadsl.server.Directives.onSuccess;
+
+//#fileUploadAll
+
 public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
 
   @Test
@@ -37,8 +65,10 @@ public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
     //#uploadedFile
     final Route route = uploadedFile("csv", (info, file) -> {
       // do something with the file and file metadata ...
-      file.delete();
-      return complete(StatusCodes.OK);
+      if (file.delete())
+        return complete(StatusCodes.OK);
+      else
+        return complete(StatusCodes.INTERNAL_SERVER_ERROR);
     });
 
     Map<String, String> filenameMapping = new HashMap<>();

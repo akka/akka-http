@@ -29,6 +29,12 @@ import java.util.concurrent.TimeoutException;
 import static akka.http.javadsl.model.HttpProtocols.HTTP_1_1;
 import static akka.http.javadsl.model.RequestEntityAcceptances.Expected;
 
+//#customHttpMethod
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.route;
+import static akka.http.javadsl.server.Directives.extractMethod;
+
+//#customHttpMethod
 public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
 
   @Test

@@ -12,6 +12,8 @@ import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRouteResult;
 import akka.http.scaladsl.model.HttpRequest;
 
+import static akka.http.javadsl.server.Directives.*;
+
 public class HandlerBindingTest extends JUnitRouteTest {
     
     @Test

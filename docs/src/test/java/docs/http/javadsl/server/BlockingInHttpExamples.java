@@ -13,6 +13,16 @@ import org.junit.Test;
 
 import java.util.concurrent.CompletableFuture;
 
+//#blocking-example-in-default-dispatcher
+import static akka.http.javadsl.server.Directives.completeWithFuture;
+import static akka.http.javadsl.server.Directives.post;
+
+//#blocking-example-in-default-dispatcher
+//#blocking-example-in-dedicated-dispatcher
+import static akka.http.javadsl.server.Directives.completeWithFuture;
+import static akka.http.javadsl.server.Directives.post;
+
+//#blocking-example-in-dedicated-dispatcher
 public class BlockingInHttpExamples extends JUnitRouteTest {
 
     @Test

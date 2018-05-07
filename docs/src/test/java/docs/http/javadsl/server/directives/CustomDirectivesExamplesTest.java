@@ -18,6 +18,21 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.function.Function;
 
+//#labeling-1
+import static akka.http.javadsl.server.Directives.get;
+import static akka.http.javadsl.server.Directives.put;
+import static akka.http.javadsl.server.Directives.complete;
+
+//#labeling-1
+//#composition-1
+import static akka.http.javadsl.server.Directives.headerValueByName;
+
+//#composition-1
+//#composition-2
+import static akka.http.javadsl.server.Directives.path;
+
+//#composition-2
+
 public class CustomDirectivesExamplesTest extends JUnitRouteTest {
 
   //#labeling-1

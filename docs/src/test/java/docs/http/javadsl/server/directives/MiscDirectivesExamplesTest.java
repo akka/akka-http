@@ -21,6 +21,51 @@ import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.function.Function;
 
+//#withSizeLimitExample
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.entity;
+import static akka.http.javadsl.server.Directives.withSizeLimit;
+
+//#withSizeLimitExample
+//#withSizeLimitExampleNested
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.entity;
+import static akka.http.javadsl.server.Directives.withSizeLimit;
+
+//#withSizeLimitExampleNested
+//#withoutSizeLimitExample
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.entity;
+import static akka.http.javadsl.server.Directives.withoutSizeLimit;
+
+//#withoutSizeLimitExample
+//#extractClientIP
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.extractClientIP;
+
+//#extractClientIP
+//#requestEntity-empty-present-example
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.requestEntityEmpty;
+import static akka.http.javadsl.server.Directives.requestEntityPresent;
+
+//#requestEntity-empty-present-example
+//#selectPreferredLanguage
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.selectPreferredLanguage;
+
+//#selectPreferredLanguage
+//#validate-example
+import static akka.http.javadsl.server.Directives.extractUri;
+import static akka.http.javadsl.server.Directives.validate;
+
+//#validate-example
+//#rejectEmptyResponse-example
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.rejectEmptyResponse;
+
+//#rejectEmptyResponse-example
 
 public class MiscDirectivesExamplesTest extends JUnitRouteTest {
 
