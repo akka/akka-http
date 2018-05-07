@@ -23,8 +23,60 @@ import akka.japi.JavaPartialFunction;
 import akka.http.javadsl.testkit.TestRoute;
 import scala.PartialFunction;
 
-import static akka.http.javadsl.server.Directives.*;
+
 import static akka.http.javadsl.common.PartialApplication.*;
+
+//#headerValue
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.headerValue;
+
+//#headerValue
+//#headerValue-with-default
+import akka.http.javadsl.server.Directives;
+
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.anyOf;
+//#headerValue-with-default
+//#headerValueByName
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.headerValueByName;
+
+//#headerValueByName
+//#headerValueByType
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.headerValueByType;
+
+//#headerValueByType
+//#headerValuePF
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.headerValuePF;
+
+//#headerValuePF
+//#optionalHeaderValue
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.optionalHeaderValue;
+
+//#optionalHeaderValue
+//#optionalHeaderValueByName
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.optionalHeaderValueByName;
+
+//#optionalHeaderValueByName
+//#optionalHeaderValueByType
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.optionalHeaderValueByType;
+
+//#optionalHeaderValueByType
+//#optionalHeaderValuePF
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.optionalHeaderValuePF;
+
+//#optionalHeaderValuePF
+//#checkSameOrigin
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.checkSameOrigin;
+
+//#checkSameOrigin
 
 public class HeaderDirectivesExamplesTest extends JUnitRouteTest {
 
@@ -65,8 +117,8 @@ public class HeaderDirectivesExamplesTest extends JUnitRouteTest {
     };
 
     final Route route = anyOf(
-      bindParameter(this::headerValue, extractExampleHeader),
-      bindParameter(this::provide, "newValue"),
+      bindParameter(Directives::headerValue, extractExampleHeader),
+      bindParameter(Directives::provide, "newValue"),
       (String value) -> complete("header is " + value));
 
     // tests:

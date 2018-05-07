@@ -6,19 +6,20 @@ package akka.http.javadsl.server.directives;
 
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.StatusCodes;
+import akka.http.javadsl.server.Directives;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import org.junit.Test;
 
-import static akka.http.javadsl.server.Directives.*;
 import static akka.http.javadsl.common.PartialApplication.*;
+import static akka.http.javadsl.server.Directives.*;
 
 public class ComposingDirectivesTest extends JUnitRouteTest {
 
   @Test
   public void testAnyOf0Arg() {
     TestRoute getOrPost = testRoute(path("hello", () ->
-      anyOf(this::get, this::post, () ->
+      anyOf(Directives::get, Directives::post, () ->
         complete("hi"))));
 
     getOrPost
@@ -39,7 +40,7 @@ public class ComposingDirectivesTest extends JUnitRouteTest {
   @Test
   public void testAnyOf1Arg() {
     TestRoute someParam = testRoute(path("param", () ->
-      anyOf(bindParameter(this::parameter, "foo"), bindParameter(this::parameter, "bar"), (String param) -> complete("param is " + param)))
+      anyOf(bindParameter(Directives::parameter, "foo"), bindParameter(Directives::parameter, "bar"), (String param) -> complete("param is " + param)))
     );
 
     someParam
@@ -60,8 +61,8 @@ public class ComposingDirectivesTest extends JUnitRouteTest {
   @Test
   public void testAllOf0Arg() {
     TestRoute charlie = testRoute(allOf(
-      bindParameter(this::pathPrefix, "alice"),
-      bindParameter(this::path, "bob"),
+      bindParameter(Directives::pathPrefix, "alice"),
+      bindParameter(Directives::path, "bob"),
       () -> complete("Charlie!")));
 
     charlie.run(HttpRequest.GET("/alice/bob"))
@@ -78,7 +79,7 @@ public class ComposingDirectivesTest extends JUnitRouteTest {
   @Test
   public void testAllOf1Arg() {
     TestRoute extractTwo = testRoute(path("extractTwo", () ->
-      allOf(this::extractScheme, this::extractMethod, (scheme, method) -> complete("You did a " + method.name() + " using " + scheme))
+      allOf(Directives::extractScheme, Directives::extractMethod, (scheme, method) -> complete("You did a " + method.name() + " using " + scheme))
     ));
 
     extractTwo
@@ -94,7 +95,7 @@ public class ComposingDirectivesTest extends JUnitRouteTest {
 
   @Test
   public void testAllOf0And1Arg() {
-    TestRoute route = testRoute(allOf(bindParameter(this::pathPrefix, "guess"), this::extractMethod, method -> complete("You did a " + method.name())));
+    TestRoute route = testRoute(allOf(bindParameter(Directives::pathPrefix, "guess"), Directives::extractMethod, method -> complete("You did a " + method.name())));
 
     route
       .run(HttpRequest.GET("/guess"))

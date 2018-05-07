@@ -21,6 +21,29 @@ import scala.concurrent.duration.FiniteDuration;
 import static akka.http.javadsl.server.PathMatchers.*;
 import static scala.compat.java8.JFunction.func;
 
+//#onComplete
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.onComplete;
+import static akka.http.javadsl.server.Directives.path;
+
+//#onComplete
+//#onSuccess
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.onSuccess;
+import static akka.http.javadsl.server.Directives.path;
+
+//#onSuccess
+//#completeOrRecoverWith
+import static akka.http.javadsl.server.Directives.completeOrRecoverWith;
+import static akka.http.javadsl.server.Directives.failWith;
+
+//#completeOrRecoverWith
+//#onCompleteWithBreaker
+import static akka.http.javadsl.server.Directives.onCompleteWithBreaker;
+import static akka.http.javadsl.server.Directives.path;
+
+//#onCompleteWithBreaker
+
 public class FutureDirectivesExamplesTest extends JUnitRouteTest {
 
   @Test

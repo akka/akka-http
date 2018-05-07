@@ -13,6 +13,7 @@ import org.junit.Test;
 import scala.util.Left;
 import scala.util.Right;
 import akka.http.javadsl.server.*;
+import akka.http.javadsl.server.directives.SecurityDirectives.ProvidedCredentials;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.headers.Authorization;
 import akka.http.javadsl.model.headers.BasicHttpCredentials;
@@ -20,6 +21,8 @@ import akka.http.javadsl.model.headers.HttpChallenge;
 import akka.http.javadsl.testkit.*;
 
 import static akka.http.javadsl.server.PathMatchers.*;
+
+import static akka.http.javadsl.server.Directives.*;
 
 public class SecurityDirectivesTest extends JUnitRouteTest {
 

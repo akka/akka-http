@@ -18,6 +18,26 @@ import org.junit.Test;
 import java.util.Optional;
 import java.util.OptionalLong;
 
+//#cookie
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.cookie;
+
+//#cookie
+//#optionalCookie
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.optionalCookie;
+
+//#optionalCookie
+//#deleteCookie
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.deleteCookie;
+
+//#deleteCookie
+//#setCookie
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.setCookie;
+
+//#setCookie
 public class CookieDirectivesExamplesTest extends JUnitRouteTest {
 
   @Test

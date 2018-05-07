@@ -20,6 +20,13 @@ import java.util.Optional;
 
 import static org.junit.Assert.*;
 
+//#header-value-pf
+import akka.http.javadsl.server.Directives;
+
+import static akka.http.javadsl.server.Directives.headerValuePF;
+
+//#header-value-pf
+
 public class CustomHeaderExampleTest extends JUnitRouteTest {
   //#modeled-api-key-custom-header
   public static class ApiTokenHeader extends ModeledCustomHeader {
@@ -100,7 +107,7 @@ public class CustomHeaderExampleTest extends JUnitRouteTest {
         }
       };
 
-    final Route route = headerValuePF(extractFromCustomHeader, this::complete);
+    final Route route = headerValuePF(extractFromCustomHeader, Directives::complete);
 
     testRoute(route)
       .run(HttpRequest.GET("/").addHeader(RawHeader.create("apiKey", "TheKey")))

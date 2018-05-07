@@ -7,8 +7,6 @@ package docs.http.javadsl.server.directives;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.model.headers.BasicHttpCredentials;
-import akka.http.javadsl.model.headers.HttpChallenge;
-import akka.http.javadsl.model.headers.HttpCredentials;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.japi.JavaPartialFunction;
@@ -26,6 +24,69 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.Optional;
 import akka.japi.Option;
+
+//#authenticateBasic
+import akka.http.javadsl.server.directives.SecurityDirectives.ProvidedCredentials;
+
+import static akka.http.javadsl.server.Directives.authenticateBasic;
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.path;
+
+//#authenticateBasic
+//#authenticateBasicPF
+import akka.http.javadsl.server.directives.SecurityDirectives.ProvidedCredentials;
+
+import static akka.http.javadsl.server.Directives.authenticateBasicPF;
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.path;
+
+//#authenticateBasicPF
+//#authenticateBasicPFAsync
+import akka.http.javadsl.server.directives.SecurityDirectives.ProvidedCredentials;
+
+import static akka.http.javadsl.server.Directives.authenticateBasicPFAsync;
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.path;
+
+//#authenticateBasicPFAsync
+//#authenticateBasicAsync
+import akka.http.javadsl.server.directives.SecurityDirectives.ProvidedCredentials;
+
+import static akka.http.javadsl.server.Directives.authenticateBasicAsync;
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.path;
+
+//#authenticateBasicAsync
+//#authenticateOrRejectWithChallenge
+import akka.http.javadsl.model.headers.HttpChallenge;
+import akka.http.javadsl.model.headers.HttpCredentials;
+
+import static akka.http.javadsl.server.Directives.authenticateOrRejectWithChallenge;
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.path;
+
+//#authenticateOrRejectWithChallenge
+//#authorize
+import akka.http.javadsl.server.directives.SecurityDirectives.ProvidedCredentials;
+
+import static akka.http.javadsl.server.Directives.authorize;
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.path;
+//#authorize
+//#authorizeAsync
+import akka.http.javadsl.server.directives.SecurityDirectives.ProvidedCredentials;
+
+import static akka.http.javadsl.server.Directives.authorizeAsync;
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.path;
+//#authorizeAsync
+//#extractCredentials
+import akka.http.javadsl.model.headers.HttpCredentials;
+
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.extractCredentials;
+
+//#extractCredentials
 
 public class SecurityDirectivesExamplesTest extends JUnitRouteTest {
 
