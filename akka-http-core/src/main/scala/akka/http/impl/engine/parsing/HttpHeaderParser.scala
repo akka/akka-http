@@ -426,6 +426,7 @@ private[http] object HttpHeaderParser {
     def headerValueCacheLimit(headerName: String): Int
     def customMediaTypes: MediaTypes.FindCustom
     def illegalHeaderWarnings: Boolean
+    def ignoreIllegalHeaderFor: Set[String]
     def illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode
     def errorLoggingVerbosity: ErrorLoggingVerbosity
     def modeledHeaderParsing: Boolean
@@ -461,7 +462,7 @@ private[http] object HttpHeaderParser {
 
   def defaultIllegalHeaderHandler(settings: HttpHeaderParser.Settings, log: LoggingAdapter): ErrorInfo ⇒ Unit =
     if (settings.illegalHeaderWarnings)
-      info ⇒ logParsingError(info withSummaryPrepended "Illegal header", log, settings.errorLoggingVerbosity)
+      info ⇒ logParsingError(info withSummaryPrepended "Illegal header", log, settings.errorLoggingVerbosity, settings.ignoreIllegalHeaderFor)
     else
       (_: ErrorInfo) ⇒ _ // Does exactly what the label says - nothing
 
@@ -529,7 +530,7 @@ private[http] object HttpHeaderParser {
       val header = parser(trimmedHeaderValue) match {
         case HeaderParser.Success(h) ⇒ h
         case HeaderParser.Failure(error) ⇒
-          onIllegalHeader(error.withSummaryPrepended(s"Illegal '$headerName' header"))
+          onIllegalHeader(error.withSummaryPrepended(s"Illegal '$headerName' header").withErrorHeaderName(headerName))
           RawHeader(headerName, trimmedHeaderValue)
         case HeaderParser.RuleNotFound ⇒
           throw new IllegalStateException(s"Unexpected RuleNotFound exception for modeled header [$headerName]")
