@@ -6,7 +6,7 @@ package akka.http.scaladsl.server.directives
 
 import akka.http.scaladsl.marshalling.ToResponseMarshaller
 import akka.http.scaladsl.server.util.Tuple
-import akka.http.scaladsl.server.{Directive, Directive1, Directives, Route}
+import akka.http.scaladsl.server.{ Directive, Directive1, Directives, Route }
 
 import scala.language.implicitConversions
 
@@ -38,7 +38,7 @@ case class WrapDirective[+T](tapply: (T ⇒ Route) ⇒ Route) extends AnyVal {
 private[server] sealed trait AkkaHttpMonadLowPriority {
   // Convert `Directive` to `WrapDirective` to activate new syntax.
   implicit def toWrapped[L](directive: Directive[L]): WrapDirective[L] = WrapDirective(directive.tapply)
-  
+
   // Convert `WrapDirective` back to `Directive`, so that we could use the library functions.
   implicit def fromWrapped[L: Tuple](wrapped: WrapDirective[L]): Directive[L] = Directive(wrapped.tapply)
 }
@@ -51,7 +51,7 @@ object DirectiveMonad extends AkkaHttpMonadLowPriority {
 
   // Convert `WrapDirective` back to `Directive1` when needed.
   implicit def fromWrapped1[L](wrapped: WrapDirective[L]): Directive1[L] = Directive(inner ⇒ wrapped.tapply(t ⇒ inner(Tuple1(t))))
-  
+
   // Adds a `complete` to enable the syntax: `for { _ <- get } yield "OK"`
   implicit def toRoute[L: ToResponseMarshaller](wrapped: WrapDirective[L]): Route =
     wrapped.tapply(response ⇒ Directives.complete(response))

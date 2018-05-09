@@ -5,7 +5,7 @@
 package akka.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.{Directive, Directive1, Route, RoutingSpec, ValidationRejection}
+import akka.http.scaladsl.server.{ Directive, Directive1, Route, RoutingSpec, ValidationRejection }
 import akka.http.scaladsl.server.directives.DirectiveMonad._
 
 class DirectiveMonadSpec extends RoutingSpec {
