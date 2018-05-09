@@ -5,8 +5,7 @@
 package akka.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Directive
-//import akka.http.scaladsl.server.Directives.{complete, get, path, pathPrefix}
+import akka.http.scaladsl.server.{Directive, ValidationRejection}
 import akka.http.scaladsl.server.directives.DirectiveMonad._
 import akka.http.scaladsl.server.{Route, RoutingSpec}
 
@@ -79,22 +78,22 @@ class DirectiveMonadSpec extends RoutingSpec {
   "use recover() on wrapped directives" in {
     def commonDirective(x: Int) = for {
       _ ← get
-      _ ← path("test")
+      _ ← pathPrefix("test")
       if x > 0
     } yield ()
 
     def route(x: Int): Route = for {
-      _ ← commonDirective(x).recover(_ ⇒ (provide(None): Directive[Tuple1[Any]]))
-    } yield "OK"
+      _ ← commonDirective(x) & path("t1")
+      h ← headerValueByName("nonexistent").recover(_ ⇒ provide("header"): Directive[Tuple1[Any]])
+    } yield s"OK: $h"
 
-    Get("/test") ~> route(0) ~> check {
-      responseAs[String] shouldEqual "OK"
+    Get("/test/t1") ~> route(1) ~> check {
+      responseAs[String] shouldEqual "OK: header"
       status shouldEqual StatusCodes.OK
     }
 
-    Get("/test") ~> route(1) ~> check {
-      responseAs[String] shouldEqual "OK"
-      status shouldEqual StatusCodes.OK
+    Get("/test/t1") ~> route(0) ~> check {
+      rejections shouldEqual List()
     }
   }
 }
