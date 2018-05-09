@@ -4,8 +4,11 @@
 
 package akka.http.scaladsl.server.directives
 
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.server.Directive
+//import akka.http.scaladsl.server.Directives.{complete, get, path, pathPrefix}
 import akka.http.scaladsl.server.directives.DirectiveMonad._
-import akka.http.scaladsl.server.{ Route, RoutingSpec }
+import akka.http.scaladsl.server.{Route, RoutingSpec}
 
 class DirectiveMonadSpec extends RoutingSpec {
 
@@ -44,4 +47,54 @@ class DirectiveMonadSpec extends RoutingSpec {
     }
   }
 
+  "factor out common directives from routes" in {
+    val commonDirective = for {
+      _ ← get
+      _ ← pathPrefix("test")
+    } yield ()
+
+    val route1: Route = for {
+      _ ← path("r1")
+    } yield "OK1" // A `complete()` will be added here automatically.
+
+    val route2: Route = for {
+      _ ← path("r2")
+    } yield complete("OK2") // We can write `yield complete()` as well.
+
+    val route: Route = for {
+      _ ← commonDirective
+    } yield route1 ~ route2
+
+    Get("/test/r1") ~> route ~> check {
+      responseAs[String] shouldEqual "OK1"
+      status shouldEqual StatusCodes.OK
+    }
+
+    Get("/test/r2") ~> route ~> check {
+      responseAs[String] shouldEqual "OK2"
+      status shouldEqual StatusCodes.OK
+    }
+  }
+
+  "use recover() on wrapped directives" in {
+    def commonDirective(x: Int) = for {
+      _ ← get
+      _ ← path("test")
+      if x > 0
+    } yield ()
+
+    def route(x: Int): Route = for {
+      _ ← commonDirective(x).recover(_ ⇒ (provide(None): Directive[Tuple1[Any]]))
+    } yield "OK"
+
+    Get("/test") ~> route(0) ~> check {
+      responseAs[String] shouldEqual "OK"
+      status shouldEqual StatusCodes.OK
+    }
+
+    Get("/test") ~> route(1) ~> check {
+      responseAs[String] shouldEqual "OK"
+      status shouldEqual StatusCodes.OK
+    }
+  }
 }
