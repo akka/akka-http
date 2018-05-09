@@ -75,7 +75,7 @@ class DirectiveMonadSpec extends RoutingSpec {
     }
   }
 
-  "use recover() on wrapped directives" in {
+  "use recover() and other methods on wrapped directives" in {
     def commonDirective(x: Int) = for {
       _ ← get
       _ ← pathPrefix("test")
@@ -84,8 +84,8 @@ class DirectiveMonadSpec extends RoutingSpec {
 
     def route(x: Int): Route = for {
       _ ← commonDirective(x) & path("t1")
-      h ← headerValueByName("nonexistent").recover(_ ⇒ provide("header"): Directive[Tuple1[Any]])
-    } yield s"OK: $h"
+      header ← headerValueByName("nonexistent").recover(_ ⇒ provide("header"))
+    } yield s"OK: $header"
 
     Get("/test/t1") ~> route(1) ~> check {
       responseAs[String] shouldEqual "OK: header"
