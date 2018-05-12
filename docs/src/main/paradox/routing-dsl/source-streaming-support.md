@@ -168,8 +168,6 @@ instances, which can be provided using any JSON marshalling library (such as Cir
 When implementing a custom support trait, one should simply extend the @unidoc[EntityStreamingSupport] abstract class
 and implement all of its methods. It's best to use the existing implementations as a guideline.
 
-@@@ div { .group-scala }
-
 ## Supporting custom content types
 
 In order to marshal into custom content types, both a @unidoc[Marshaller] that can handle that content type
@@ -182,7 +180,8 @@ which we hope to add in a future release.
 Scala
 :   @@snip [JsonStreamingFullExamples.scala]($test$/scala/docs/http/scaladsl/server/directives/JsonStreamingFullExamples.scala) { #custom-content-type }
 
-@@@
+Java
+:   @@snip [JsonStreamingFullExample.java]($test$/java/docs/http/javadsl/server/directives/JsonStreamingFullExample.java) { #custom-content-type }
 
 ## Consuming streaming JSON on client-side
 
