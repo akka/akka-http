@@ -36,6 +36,7 @@ abstract class ParserSettings private[akka] () extends BodyPartParser.Settings {
   def getUriParsingMode: Uri.ParsingMode
   def getCookieParsingMode: ParserSettings.CookieParsingMode
   def getIllegalHeaderWarnings: Boolean
+  def getIgnoreIllegalHeaderFor: Set[String]
   def getErrorLoggingVerbosity: ParserSettings.ErrorLoggingVerbosity
   def getIllegalResponseHeaderValueProcessingMode: ParserSettings.IllegalResponseHeaderValueProcessingMode
   def getHeaderValueCacheLimits: ju.Map[String, Int]
@@ -64,6 +65,7 @@ abstract class ParserSettings private[akka] () extends BodyPartParser.Settings {
   def withHeaderValueCacheLimits(newValue: ju.Map[String, Int]): ParserSettings = self.copy(headerValueCacheLimits = newValue.asScala.toMap)
   def withIncludeTlsSessionInfoHeader(newValue: Boolean): ParserSettings = self.copy(includeTlsSessionInfoHeader = newValue)
   def withModeledHeaderParsing(newValue: Boolean): ParserSettings = self.copy(modeledHeaderParsing = newValue)
+  def withIgnoreIllegalHeaderFor(newValue: List[String]): ParserSettings = self.copy(ignoreIllegalHeaderFor = newValue.map(_.toLowerCase).toSet)
 
   // special ---
 

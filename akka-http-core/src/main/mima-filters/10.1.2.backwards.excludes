@@ -1,0 +1,6 @@
+# Don't monitor changes to internal API
+ProblemFilters.exclude[Problem]("akka.http.impl.*")
+
+# #1942 New ignoreIllegalHeaderFor setting
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ParserSettings.getIgnoreIllegalHeaderFor")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ParserSettings.ignoreIllegalHeaderFor")
