@@ -58,8 +58,6 @@ class HeaderParserBenchmark {
   @Benchmark
   def bench_parse_headers(): Int = {
     val next = parser.parseHeaderLine(requestBytes, firstHeaderStart)()
-    val last = parser.parseHeaderLine(requestBytes, next)()
-    require(last == 84, s"Expected to read until 84, but read until $last")
-    last
+    parser.parseHeaderLine(requestBytes, next)()
   }
 }
