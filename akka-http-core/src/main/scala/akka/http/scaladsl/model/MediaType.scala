@@ -286,6 +286,8 @@ object MediaType {
 }
 
 object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
+
+  /** Function used to find a custom media type. Called before the predefined media types. Strings will be lowercase. */
   type FindCustom = (String, String) ⇒ Option[MediaType]
 
   private[this] var extensionMap = Map.empty[String, MediaType]
