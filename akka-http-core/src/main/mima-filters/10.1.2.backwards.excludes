@@ -4,3 +4,6 @@ ProblemFilters.exclude[Problem]("akka.http.impl.*")
 # #1942 New ignoreIllegalHeaderFor setting
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ParserSettings.getIgnoreIllegalHeaderFor")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ParserSettings.ignoreIllegalHeaderFor")
+
+# #2016 add new option to close connections after a period of time
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.maxConnectionKeepAliveTime")
