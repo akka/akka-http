@@ -26,7 +26,7 @@ private[pool] abstract class SlotContext {
   def openConnection(): Future[Http.OutgoingConnection]
   def isConnectionClosed: Boolean
 
-  def pushRequestToConnectionAndThen(request: HttpRequest, nextState: SlotState): SlotState
+  def pushRequestToConnection(request: HttpRequest): Unit
   def dispatchResponseResult(req: RequestContext, result: Try[HttpResponse]): Unit
 
   def willCloseAfter(res: HttpResponse): Boolean
@@ -160,8 +160,8 @@ private[pool] object SlotState {
   }
   sealed trait WithRequestDispatching { _: ConnectedState ⇒
     def dispatchRequestToConnection(ctx: SlotContext, ongoingRequest: RequestContext): SlotState = {
-      val r = ongoingRequest.request
-      ctx.pushRequestToConnectionAndThen(r, WaitingForEndOfRequestEntity(ongoingRequest))
+      ctx.pushRequestToConnection(ongoingRequest.request)
+      WaitingForEndOfRequestEntity(ongoingRequest)
     }
   }
 

@@ -328,15 +328,10 @@ private[client] object NewHostConnectionPool {
             connection = logic.openConnection(this)
             connection.outgoingConnection
           }
-          def pushRequestToConnectionAndThen(request: HttpRequest, nextState: SlotState): SlotState = {
+          def pushRequestToConnection(request: HttpRequest): Unit = {
             if (connection eq null) throw new IllegalStateException("Cannot open push request to connection when there's no connection")
 
-            // bit of a HACK to make sure onRequestEntityCompleted will end up in the right place
-            // TODO do we still needed since we don't have onRequestEntityCompleted anymore then?
-            state = nextState
-
             connection.pushRequest(request)
-            state
           }
           def closeConnection(): Unit =
             if (connection ne null) {
