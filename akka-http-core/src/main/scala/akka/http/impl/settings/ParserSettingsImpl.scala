@@ -55,9 +55,6 @@ private[akka] final case class ParserSettingsImpl(
     headerValueCacheLimits.getOrElse(headerName, defaultHeaderValueCacheLimit)
 
   override def productPrefix = "ParserSettings"
-
-  // optimization: if we see the default value as defined below, we know it hasn't been changed
-  override def areNoCustomMediaTypesDefined: Boolean = customMediaTypes eq ParserSettingsImpl.noCustomMediaTypes
 }
 
 object ParserSettingsImpl extends SettingsCompanion[ParserSettingsImpl]("akka.http.parsing") {
