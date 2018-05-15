@@ -13,7 +13,6 @@ import akka.http.scaladsl.model._
 private[parser] trait CommonActions {
 
   def customMediaTypes: MediaTypes.FindCustom
-  def areNoCustomMediaTypesDefined: Boolean
 
   type StringMapBuilder = scala.collection.mutable.Builder[(String, String), Map[String, String]]
 
@@ -32,24 +31,27 @@ private[parser] trait CommonActions {
         case custom        ⇒ MediaType.customMultipart(custom, params)
       }
       case mainLower ⇒
-        if (areNoCustomMediaTypesDefined) // try to prevent closure creation for usual case without custom media types
-          getPredefinedOrCreateCustom(mainType, subType, charsetDefined, params)
-        else
-          customMediaTypes(mainLower, subLower) getOrElse
-            getPredefinedOrCreateCustom(mainLower, subLower, charsetDefined, params)
+
+        // Faster version of MediaType.withParams for the common case of empty params
+        def withParams(mt: MediaType): MediaType = if (params.isEmpty) mt else mt.withParams(params)
+
+        // Try user-defined function to get a MediaType
+        customMediaTypes(mainLower, subLower) match {
+          case Some(customMediaType) ⇒ withParams(customMediaType)
+          case None ⇒
+            // User-defined function didn't get a MediaType, check for a predefined value
+            MediaTypes.getForKey((mainLower, subLower)) match {
+              case Some(registered) ⇒ withParams(registered)
+              case None ⇒
+                // No predefined value, create custom MediaType
+                if (charsetDefined)
+                  MediaType.customWithOpenCharset(mainLower, subLower, params = params, allowArbitrarySubtypes = true)
+                else
+                  MediaType.customBinary(mainLower, subLower, MediaType.Compressible, params = params, allowArbitrarySubtypes = true)
+            }
+        }
     }
   }
-
-  private def getPredefinedOrCreateCustom(mainLower: String, subLower: String, charsetDefined: Boolean,
-                                          params: Map[String, String]): MediaType =
-    MediaTypes.getForKey((mainLower, subLower)) match {
-      case Some(registered) ⇒ if (params.isEmpty) registered else registered.withParams(params)
-      case None ⇒
-        if (charsetDefined)
-          MediaType.customWithOpenCharset(mainLower, subLower, params = params, allowArbitrarySubtypes = true)
-        else
-          MediaType.customBinary(mainLower, subLower, MediaType.Compressible, params = params, allowArbitrarySubtypes = true)
-    }
 
   def getCharset(name: String): HttpCharset =
     HttpCharsets
