@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.client.pool
 
+import java.time.Instant
 import java.util
 
 import akka.NotUsed
@@ -23,9 +24,9 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.util.OptionVal
 
 import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.util.control.NonFatal
-import scala.util.{ Failure, Success, Try }
+import scala.util.{ Failure, Random, Success, Try }
 
 /**
  * Internal API
@@ -146,6 +147,7 @@ private[client] object NewHostConnectionPool {
 
         final class Slot(val slotId: Int) extends SlotContext {
           private[this] var state: SlotState = SlotState.Unconnected
+          private[this] var disconnectAt: Long = Long.MaxValue
           private[this] var currentTimeoutId: Long = -1
           private[this] var currentTimeout: Cancellable = _
           private[this] var isEnqueuedForResponseDispatch: Boolean = false
@@ -324,10 +326,19 @@ private[client] object NewHostConnectionPool {
 
           def settings: ConnectionPoolSettings = _settings
 
+          private lazy val keepAliveDurationFuzziness: () ⇒ Long = {
+            val random = new Random()
+            val max = (settings.maxConnectionKeepAliveTime / 10).toMillis
+            () ⇒ random.nextLong() % max
+          }
           def openConnection(): Future[Http.OutgoingConnection] = {
             if (connection ne null) throw new IllegalStateException("Cannot open connection when slot still has an open connection")
 
             connection = logic.openConnection(this)
+            connection.outgoingConnection.foreach(_ ⇒ if (settings.maxConnectionKeepAliveTime.isFinite()) {
+
+              disconnectAt = Instant.now().getEpochSecond + settings.maxConnectionKeepAliveTime.toMillis + keepAliveDurationFuzziness()
+            })(ExecutionContexts.sameThreadExecutionContext)
             connection.outgoingConnection
           }
           def pushRequestToConnectionAndThen(request: HttpRequest, nextState: SlotState): SlotState = {
@@ -349,7 +360,13 @@ private[client] object NewHostConnectionPool {
 
           def dispatchResponseResult(req: RequestContext, result: Try[HttpResponse]): Unit = logic.dispatchResponseResult(req, result)
 
-          def willCloseAfter(res: HttpResponse): Boolean = logic.willClose(res)
+          def willCloseAfter(res: HttpResponse): Boolean = {
+            logic.willClose(res) || keepAliveTimeApplies()
+          }
+
+          def keepAliveTimeApplies(): Boolean = if (settings.maxConnectionKeepAliveTime.isFinite()) {
+            Instant.now().toEpochMilli - disconnectAt > 0
+          } else false
 
           private[this] def cancelCurrentTimeout(): Unit =
             if (currentTimeout ne null) {

@@ -19,6 +19,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   maxRetries:                        Int,
   maxOpenRequests:                   Int,
   pipeliningLimit:                   Int,
+  maxConnectionKeepAliveTime:        Duration,
   idleTimeout:                       Duration,
   connectionSettings:                ClientConnectionSettings,
   poolImplementation:                PoolImplementation,
@@ -32,6 +33,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   require(maxOpenRequests > 0, "max-open-requests must be a power of 2 > 0.")
   require((maxOpenRequests & (maxOpenRequests - 1)) == 0, "max-open-requests must be a power of 2. " + suggestPowerOfTwo(maxOpenRequests))
   require(pipeliningLimit > 0, "pipelining-limit must be > 0")
+  require(maxConnectionKeepAliveTime > Duration.Zero, "max-connection-keep-alive-time must be > 0")
   require(idleTimeout >= Duration.Zero, "idle-timeout must be >= 0")
 
   override def productPrefix = "ConnectionPoolSettings"
@@ -57,6 +59,7 @@ object ConnectionPoolSettingsImpl extends SettingsCompanion[ConnectionPoolSettin
       c getInt "max-retries",
       c getInt "max-open-requests",
       c getInt "pipelining-limit",
+      c getPotentiallyInfiniteDuration "max-connection-keep-alive-time",
       c getPotentiallyInfiniteDuration "idle-timeout",
       ClientConnectionSettingsImpl.fromSubConfig(root, c.getConfig("client")),
       c.getString("pool-implementation").toLowerCase match {

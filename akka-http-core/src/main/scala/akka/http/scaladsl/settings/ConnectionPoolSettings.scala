@@ -32,6 +32,7 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   def pipeliningLimit: Int
   def idleTimeout: Duration
   def connectionSettings: ClientConnectionSettings
+  def maxConnectionKeepAliveTime: Duration
 
   /**
    * The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used.
