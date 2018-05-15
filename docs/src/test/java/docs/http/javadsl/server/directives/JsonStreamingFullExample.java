@@ -9,7 +9,6 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
-import akka.http.javadsl.ServerBinding;
 import akka.http.javadsl.common.EntityStreamingSupport;
 import akka.http.javadsl.marshalling.Marshaller;
 import akka.http.javadsl.model.*;
@@ -20,7 +19,6 @@ import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;
 
 import java.util.Random;
-import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
 public class JsonStreamingFullExample extends AllDirectives {
@@ -68,22 +66,14 @@ public class JsonStreamingFullExample extends AllDirectives {
         }
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         ActorSystem system = ActorSystem.create();
         final JsonStreamingFullExample app = new JsonStreamingFullExample();
         final Http http = Http.get(system);
         final ActorMaterializer materializer = ActorMaterializer.create(system);
 
         final Flow<HttpRequest, HttpResponse, NotUsed> routeFlow = app.createRoute().flow(system, materializer);
-        final CompletionStage<ServerBinding> binding = http.bindAndHandle(routeFlow, ConnectHttp.toHost("localhost", 8080), materializer);
-
-        System.out.println("Type RETURN to exit");
-        System.in.read();
-
-        binding
-                .thenCompose(ServerBinding::unbind)
-                .thenAccept(unbound -> system.terminate());
-
+        http.bindAndHandle(routeFlow, ConnectHttp.toHost("localhost", 8080), materializer);
     }
 }
 //#custom-content-type
