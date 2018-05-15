@@ -54,8 +54,6 @@ private[pool] sealed abstract class SlotState extends Product {
 
   def onNewRequest(ctx: SlotContext, requestContext: RequestContext): SlotState = illegalState(ctx, "onNewRequest")
 
-  /** Will be called either immediately if the request entity is strict or otherwise later */
-  def onRequestEntityCompleted(ctx: SlotContext): SlotState = illegalState(ctx, "onRequestEntityCompleted")
   def onRequestEntityFailed(ctx: SlotContext, cause: Throwable): SlotState = illegalState(ctx, "onRequestEntityFailed")
 
   def onResponseReceived(ctx: SlotContext, response: HttpResponse): SlotState = illegalState(ctx, "onResponseReceived")
@@ -218,7 +216,6 @@ private[pool] object SlotState {
     override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = this
     override def onConnectionAttemptFailed(ctx: SlotContext, cause: Throwable): SlotState = this
     override def onRequestEntityFailed(ctx: SlotContext, cause: Throwable): SlotState = this
-    override def onRequestEntityCompleted(ctx: SlotContext): SlotState = this
   }
 
   private[pool] /* to avoid warnings */ trait BusyWithResultAlreadyDispatched extends ConnectedState with BusyState {

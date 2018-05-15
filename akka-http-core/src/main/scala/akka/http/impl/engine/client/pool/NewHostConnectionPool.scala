@@ -124,7 +124,6 @@ private[client] object NewHostConnectionPool {
           val onConnectionAttemptFailed = event[Throwable]("onConnectionAttemptFailed", _.onConnectionAttemptFailed(_, _))
           val onNewRequest = event[RequestContext]("onNewRequest", _.onNewRequest(_, _))
 
-          val onRequestEntityCompleted = event0("onRequestEntityCompleted", _.onRequestEntityCompleted(_))
           val onRequestEntityFailed = event[Throwable]("onRequestEntityFailed", _.onRequestEntityFailed(_, _))
 
           val onResponseReceived = event[HttpResponse]("onResponseReceived", _.onResponseReceived(_, _))
@@ -371,11 +370,7 @@ private[client] object NewHostConnectionPool {
                   request
                 case e ⇒
                   val (newEntity, entityComplete) = HttpEntity.captureTermination(request.entity)
-                  entityComplete.onComplete(safely {
-                    case Success(_)     ⇒
-                    case Failure(cause) ⇒ withSlot(_.onRequestEntityFailed(cause))
-                  })(ExecutionContexts.sameThreadExecutionContext)
-
+                  entityComplete.failed.foreach(cause => withSlot(_.onRequestEntityFailed(cause)))(ExecutionContexts.sameThreadExecutionContext)
                   request.withEntity(newEntity)
               }
 
