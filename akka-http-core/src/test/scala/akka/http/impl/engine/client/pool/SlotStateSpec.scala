@@ -40,10 +40,43 @@ class SlotStateSpec extends AkkaSpec {
       state = state.onResponseDispatchable(context)
       state = state.onResponseEntitySubscribed(context)
       state = state.onResponseEntityCompleted(context)
+      // TODO signal request completion, re-introduce onRequestEntityCompleted signal
+      // that we removed earlier in this PR :).
       state should be(Idle)
 
       state = state.onConnectionCompleted(context)
       state should be(Unconnected)
+    }
+
+    "consider a slot 'idle' only when the request has been successfully sent" in {
+      var state: SlotState = Unconnected
+      val outgoingConnection = Http.OutgoingConnection(
+        InetSocketAddress.createUnresolved("127.0.0.1", 1234),
+        InetSocketAddress.createUnresolved("127.0.0.1", 5678))
+
+      val context = new MockSlotContext(system.log)
+      state = context.expectOpenConnection {
+        state.onPreConnect(context)
+      }
+      state = state.onNewRequest(context, RequestContext(HttpRequest(), Promise[HttpResponse], 0))
+
+      state = state.onConnectionAttemptSucceeded(context, outgoingConnection)
+
+      context.expectRequestDispatchToConnection()
+
+      state = state.onResponseReceived(context, HttpResponse())
+      state = state.onResponseDispatchable(context)
+      state = state.onResponseEntitySubscribed(context)
+      state = state.onResponseEntityCompleted(context)
+      // We don't want this slot to become idle yet, because consuming the request might still take
+      // a while, in which case putting this request on another connection would be lower latency.
+      // In theory we could get higher throughput by allowing requests on busy connections, but
+      // there are also situations where it would have an adverse effect, so better to be safe.
+      state.isIdle should be(false)
+
+      // TODO signal request completion, re-introduce onRequestEntityCompleted signal
+      // that we removed earlier in this PR :).
+      state.isIdle should be(true)
     }
   }
 
