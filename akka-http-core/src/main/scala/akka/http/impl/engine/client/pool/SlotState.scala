@@ -23,7 +23,7 @@ import scala.util.{ Failure, Success, Try }
  */
 @InternalApi
 private[pool] abstract class SlotContext {
-  def openConnection(): Future[Http.OutgoingConnection]
+  def openConnection(): Unit
   def isConnectionClosed: Boolean
 
   def pushRequestToConnection(request: HttpRequest): Unit

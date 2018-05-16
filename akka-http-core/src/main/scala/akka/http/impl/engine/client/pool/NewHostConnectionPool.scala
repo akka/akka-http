@@ -321,11 +321,10 @@ private[client] object NewHostConnectionPool {
 
           def settings: ConnectionPoolSettings = _settings
 
-          def openConnection(): Future[Http.OutgoingConnection] = {
+          def openConnection(): Unit = {
             if (connection ne null) throw new IllegalStateException("Cannot open connection when slot still has an open connection")
 
             connection = logic.openConnection(this)
-            connection.outgoingConnection
           }
           def pushRequestToConnection(request: HttpRequest): Unit = {
             if (connection eq null) throw new IllegalStateException("Cannot open push request to connection when there's no connection")

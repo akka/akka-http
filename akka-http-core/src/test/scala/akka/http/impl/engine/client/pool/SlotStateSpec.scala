@@ -22,16 +22,13 @@ class SlotStateSpec extends AkkaSpec {
       val outgoingConnection = Http.OutgoingConnection(
         InetSocketAddress.createUnresolved("127.0.0.1", 1234),
         InetSocketAddress.createUnresolved("127.0.0.1", 5678))
-      val pendingOutgoingConnection = Promise[Http.OutgoingConnection]()
 
       val context = new MockSlotContext(system.log)
-      state = context.expectOpenConnection(pendingOutgoingConnection.future, {
+      state = context.expectOpenConnection {
         state.onPreConnect(context)
-      })
+      }
       state = state.onNewRequest(context, RequestContext(HttpRequest(), responsePromise, 0))
 
-      // This seems strange?
-      pendingOutgoingConnection.success(outgoingConnection)
       state = state.onConnectionAttemptSucceeded(context, outgoingConnection)
 
       context.expectRequestDispatchToConnection()
@@ -51,14 +48,13 @@ class SlotStateSpec extends AkkaSpec {
 
 
     var connectionClosed = true
-    var nextConnection: Option[Future[Http.OutgoingConnection]] = None
+    var connectionOpenRequested = false
     var pushedRequest: Option[HttpRequest] = None
     var dispatchedResponse: Option[Try[HttpResponse]] = None
 
-    override def openConnection(): Future[Http.OutgoingConnection] = {
-      val result = nextConnection.get
-      nextConnection = None
-      result
+    override def openConnection(): Unit = {
+      connectionOpenRequested should be(false)
+      connectionOpenRequested = true
     }
 
     override def isConnectionClosed: Boolean = connectionClosed
@@ -90,11 +86,14 @@ class SlotStateSpec extends AkkaSpec {
     override def warning(message: String, arg1: AnyRef): Unit =
       log.warning(message, arg1)
 
-    def expectOpenConnection[T](futureToReturn: Future[Http.OutgoingConnection], cb: => T) = {
-      isConnectionClosed should be(true)
-      nextConnection = Some(futureToReturn)
+    def expectOpenConnection[T](cb: => T) = {
+      connectionClosed should be(true)
+      connectionOpenRequested should be(false)
+
       val res = cb
-      nextConnection should be(None)
+      connectionOpenRequested should be(true)
+
+      connectionOpenRequested = false
       connectionClosed = false
       res
     }
