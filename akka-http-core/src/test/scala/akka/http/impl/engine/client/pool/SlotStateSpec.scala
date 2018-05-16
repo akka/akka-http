@@ -18,7 +18,6 @@ class SlotStateSpec extends AkkaSpec {
   "The new connection pool slot state machine" should {
     "successfully complete a 'happy path' request" in {
       var state: SlotState = Unconnected
-      val responsePromise = Promise[HttpResponse]
       val outgoingConnection = Http.OutgoingConnection(
         InetSocketAddress.createUnresolved("127.0.0.1", 1234),
         InetSocketAddress.createUnresolved("127.0.0.1", 5678))
@@ -27,7 +26,7 @@ class SlotStateSpec extends AkkaSpec {
       state = context.expectOpenConnection {
         state.onPreConnect(context)
       }
-      state = state.onNewRequest(context, RequestContext(HttpRequest(), responsePromise, 0))
+      state = state.onNewRequest(context, RequestContext(HttpRequest(), Promise[HttpResponse], 0))
 
       state = state.onConnectionAttemptSucceeded(context, outgoingConnection)
 
