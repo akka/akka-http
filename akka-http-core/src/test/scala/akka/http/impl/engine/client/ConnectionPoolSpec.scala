@@ -6,31 +6,32 @@ package akka.http.impl.engine.client
 
 import java.net.InetSocketAddress
 import java.nio.ByteBuffer
-import java.nio.channels.{ ServerSocketChannel, SocketChannel }
+import java.nio.channels.{ServerSocketChannel, SocketChannel}
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.{ ActorRef, ActorSystem, PoisonPill }
+import akka.actor.{ActorRef, ActorSystem, PoisonPill}
 import akka.http.impl.engine.client.PoolMasterActor.PoolInterfaceRunning
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util._
 import akka.http.scaladsl.Http.OutgoingConnection
-import akka.http.scaladsl.model.HttpEntity.Chunked
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.HttpEntity.{Chunk, ChunkStreamPart, Chunked, LastChunk}
+import akka.http.scaladsl.model.{HttpEntity, _}
 import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, PoolImplementation, ServerSettings }
-import akka.http.scaladsl.{ ClientTransport, ConnectionContext, Http }
-import akka.stream.{ ActorMaterializer, OverflowStrategy }
+import akka.http.scaladsl.settings.{ClientConnectionSettings, ConnectionPoolSettings, PoolImplementation, ServerSettings}
+import akka.http.scaladsl.{ClientTransport, ConnectionContext, Http}
+import akka.stream.{ActorMaterializer, OverflowStrategy, QueueOfferResult}
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
-import akka.stream.testkit.{ TestPublisher, TestSubscriber }
+import akka.stream.testkit.Utils.TE
+import akka.stream.testkit.{TestPublisher, TestSubscriber}
 import akka.testkit._
 import akka.util.ByteString
 
 import scala.collection.immutable
-import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.{Await, Future, Promise}
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extends AkkaSpec("""
     akka.loglevel = DEBUG
@@ -412,17 +413,43 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     }
 
     "support receiving a response before the request is complete" in new LocalTestSetup {
-      val sourceRefPromise = Promise[ActorRef]()
-      val source = Source.actorRef(8, OverflowStrategy.fail).mapMaterializedValue(sourceRefPromise.success)
+      val sourceQueuePromise = Promise[SourceQueueWithComplete[ChunkStreamPart]]()
+      val source = Source.queue(8, OverflowStrategy.fail).mapMaterializedValue(sourceQueuePromise.success)
       val slowEntity = Chunked(ContentTypes.`text/plain(UTF-8)`, source)
       val request = HttpRequest(uri = s"http://$serverHostName:$serverPort/abc?query#fragment", entity = slowEntity)
       val responseFuture = Http().singleRequest(request)
-      val sourceRef = Await.result(sourceRefPromise.future, 3.seconds)
+      val sourceQueue = Await.result(sourceQueuePromise.future, 3.seconds)
       val response = Await.result(responseFuture, 1.second.dilated)
       response.headers should contain(RawHeader("Req-Host", s"$serverHostName:$serverPort"))
 
-      sourceRef ! PoisonPill
-      // TODO maybe extend this test by making the server streaming-echo back the request
+      sourceQueue.offer(HttpEntity.Chunk("lala")).futureValue should be(QueueOfferResult.Enqueued)
+      sourceQueue.offer(LastChunk).futureValue should be(QueueOfferResult.Enqueued)
+      sourceQueue.complete()
+      val bytes = response.entity.dataBytes.runReduce(_ ++ _)
+      Await.result(bytes, 3.seconds) should be(ByteString("lala"))
+    }
+
+    "support receiving a response entity even when the request already failed" in new TestSetup(ServerSettings(system).withRawRequestUriHeader(true), autoAccept = true) {
+      override def testServerHandler(connNr: Int): HttpRequest ⇒ HttpResponse = {
+        r ⇒ HttpResponse(
+          headers = responseHeaders(r, connNr),
+          entity = HttpEntity.Chunked(ContentTypes.`application/octet-stream`, Source(immutable.Seq(HttpEntity.Chunk("lala"), LastChunk))))
+      }
+
+      val sourceQueuePromise = Promise[SourceQueueWithComplete[_]]()
+      val source = Source.queue(8, OverflowStrategy.fail).mapMaterializedValue(sourceQueuePromise.success)
+      val slowEntity = Chunked(ContentTypes.`text/plain(UTF-8)`, source)
+      val request = HttpRequest(uri = s"http://$serverHostName:$serverPort/abc?query#fragment", entity = slowEntity)
+      val responseFuture = Http().singleRequest(request)
+      val sourceQueue = Await.result(sourceQueuePromise.future, 3.seconds)
+      val response = Await.result(responseFuture, 1.second.dilated)
+      response.headers should contain(RawHeader("Req-Host", s"$serverHostName:$serverPort"))
+
+      response.entity.isChunked should be(true)
+      sourceQueue.fail(TE("Request failed though response was already on its way"))
+
+      val bytes = response.entity.dataBytes.runReduce(_ ++ _)
+      Await.result(bytes, 3.seconds) should be(ByteString("lala"))
     }
   }
 

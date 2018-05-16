@@ -159,7 +159,7 @@ private[pool] object SlotState {
   sealed trait WithRequestDispatching { _: ConnectedState ⇒
     def dispatchRequestToConnection(ctx: SlotContext, ongoingRequest: RequestContext): SlotState = {
       ctx.pushRequestToConnection(ongoingRequest.request)
-      WaitingForEndOfRequestEntity(ongoingRequest)
+      WaitingForResponse(ongoingRequest)
     }
   }
 
@@ -192,7 +192,7 @@ private[pool] object SlotState {
       Unconnected
     }
   }
-  final case class WaitingForEndOfRequestEntity(ongoingRequest: RequestContext) extends ConnectedState with BusyState {
+  final case class WaitingForResponse(ongoingRequest: RequestContext) extends ConnectedState with BusyState {
     override def onResponseReceived(ctx: SlotContext, response: HttpResponse): SlotState =
       WaitingForResponseDispatch(ongoingRequest, Success(response))
 
@@ -200,7 +200,7 @@ private[pool] object SlotState {
   }
   final case class WaitingForResponseDispatch(
     ongoingRequest: RequestContext,
-    result:         Try[HttpResponse]) extends ConnectedState with BusyState {
+    result:         Try[HttpResponse]) extends ConnectedState with BusyWithResultAlreadyDetermined {
     /** Called when the response out port is ready to receive a further response (successful or failed) */
     override def onResponseDispatchable(ctx: SlotContext): SlotState = {
       ctx.dispatchResponseResult(ongoingRequest, result)
@@ -210,29 +210,24 @@ private[pool] object SlotState {
         case Failure(cause) ⇒ Unconnected
       }
     }
-
-    // we already got a result so ignore any subsequent errors
-    override def onConnectionCompleted(ctx: SlotContext): SlotState = this
-    override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = this
-    override def onConnectionAttemptFailed(ctx: SlotContext, cause: Throwable): SlotState = this
-    override def onRequestEntityFailed(ctx: SlotContext, cause: Throwable): SlotState = this
   }
 
-  private[pool] /* to avoid warnings */ trait BusyWithResultAlreadyDispatched extends ConnectedState with BusyState {
+  private[pool] /* to avoid warnings */ trait BusyWithResultAlreadyDetermined extends ConnectedState with BusyState {
     override def onResponseEntityFailed(ctx: SlotContext, cause: Throwable): SlotState = {
       ctx.debug(s"Response entity for request [{}] failed with [{}]", ongoingRequest.request.debugString, cause.getMessage)
       // response must have already been dispatched, so don't try to dispatch a response
       Unconnected
     }
 
-    // ignore now, we'll clean up later in onResponseEntityCompleted if connection is closed
+    // ignore since we already accepted the request
     override def onConnectionCompleted(ctx: SlotContext): SlotState = this
     override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = this
+    override def onRequestEntityFailed(ctx: SlotContext, cause: Throwable): SlotState = this
   }
 
   final case class WaitingForResponseEntitySubscription(
     ongoingRequest:  RequestContext,
-    ongoingResponse: HttpResponse, override val stateTimeout: Duration) extends ConnectedState with BusyWithResultAlreadyDispatched {
+    ongoingResponse: HttpResponse, override val stateTimeout: Duration) extends ConnectedState with BusyWithResultAlreadyDetermined {
 
     override def onResponseEntitySubscribed(ctx: SlotContext): SlotState =
       WaitingForEndOfResponseEntity(ongoingRequest, ongoingResponse)
@@ -247,7 +242,7 @@ private[pool] object SlotState {
   }
   final case class WaitingForEndOfResponseEntity(
     ongoingRequest:  RequestContext,
-    ongoingResponse: HttpResponse) extends ConnectedState with BusyWithResultAlreadyDispatched {
+    ongoingResponse: HttpResponse) extends ConnectedState with BusyWithResultAlreadyDetermined {
 
     override def onResponseEntityCompleted(ctx: SlotContext): SlotState =
       if (ctx.willCloseAfter(ongoingResponse) || ctx.isConnectionClosed)
