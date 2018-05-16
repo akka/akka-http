@@ -369,7 +369,7 @@ private[client] object NewHostConnectionPool {
                   request
                 case e ⇒
                   val (newEntity, entityComplete) = HttpEntity.captureTermination(request.entity)
-                  entityComplete.failed.foreach(cause => withSlot(_.onRequestEntityFailed(cause)))(ExecutionContexts.sameThreadExecutionContext)
+                  entityComplete.failed.foreach(cause ⇒ withSlot(_.onRequestEntityFailed(cause)))(ExecutionContexts.sameThreadExecutionContext)
                   request.withEntity(newEntity)
               }
 

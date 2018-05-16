@@ -7,11 +7,11 @@ import akka.http.impl.engine.client.PoolFlow
 import akka.http.impl.engine.client.PoolFlow.RequestContext
 import akka.http.impl.engine.client.pool.SlotState._
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse, headers}
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, headers }
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.testkit.AkkaSpec
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ Future, Promise }
 import scala.util.Try
 
 class SlotStateSpec extends AkkaSpec {
@@ -45,7 +45,6 @@ class SlotStateSpec extends AkkaSpec {
   }
 
   class MockSlotContext(log: LoggingAdapter, val settings: ConnectionPoolSettings = ConnectionPoolSettings("")) extends SlotContext {
-
 
     var connectionClosed = true
     var connectionOpenRequested = false
@@ -86,7 +85,7 @@ class SlotStateSpec extends AkkaSpec {
     override def warning(message: String, arg1: AnyRef): Unit =
       log.warning(message, arg1)
 
-    def expectOpenConnection[T](cb: => T) = {
+    def expectOpenConnection[T](cb: ⇒ T) = {
       connectionClosed should be(true)
       connectionOpenRequested should be(false)
 

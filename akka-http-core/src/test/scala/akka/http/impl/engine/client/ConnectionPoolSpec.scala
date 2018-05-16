@@ -6,32 +6,32 @@ package akka.http.impl.engine.client
 
 import java.net.InetSocketAddress
 import java.nio.ByteBuffer
-import java.nio.channels.{ServerSocketChannel, SocketChannel}
+import java.nio.channels.{ ServerSocketChannel, SocketChannel }
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.{ActorRef, ActorSystem, PoisonPill}
+import akka.actor.{ ActorRef, ActorSystem, PoisonPill }
 import akka.http.impl.engine.client.PoolMasterActor.PoolInterfaceRunning
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util._
 import akka.http.scaladsl.Http.OutgoingConnection
-import akka.http.scaladsl.model.HttpEntity.{Chunk, ChunkStreamPart, Chunked, LastChunk}
-import akka.http.scaladsl.model.{HttpEntity, _}
+import akka.http.scaladsl.model.HttpEntity.{ Chunk, ChunkStreamPart, Chunked, LastChunk }
+import akka.http.scaladsl.model.{ HttpEntity, _ }
 import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.settings.{ClientConnectionSettings, ConnectionPoolSettings, PoolImplementation, ServerSettings}
-import akka.http.scaladsl.{ClientTransport, ConnectionContext, Http}
-import akka.stream.{ActorMaterializer, OverflowStrategy, QueueOfferResult}
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, PoolImplementation, ServerSettings }
+import akka.http.scaladsl.{ ClientTransport, ConnectionContext, Http }
+import akka.stream.{ ActorMaterializer, OverflowStrategy, QueueOfferResult }
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
 import akka.stream.testkit.Utils.TE
-import akka.stream.testkit.{TestPublisher, TestSubscriber}
+import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.testkit._
 import akka.util.ByteString
 
 import scala.collection.immutable
-import scala.concurrent.{Await, Future, Promise}
+import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extends AkkaSpec("""
     akka.loglevel = DEBUG
@@ -431,9 +431,10 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
 
     "support receiving a response entity even when the request already failed" in new TestSetup(ServerSettings(system).withRawRequestUriHeader(true), autoAccept = true) {
       override def testServerHandler(connNr: Int): HttpRequest ⇒ HttpResponse = {
-        r ⇒ HttpResponse(
-          headers = responseHeaders(r, connNr),
-          entity = HttpEntity.Chunked(ContentTypes.`application/octet-stream`, Source(immutable.Seq(HttpEntity.Chunk("lala"), LastChunk))))
+        r ⇒
+          HttpResponse(
+            headers = responseHeaders(r, connNr),
+            entity = HttpEntity.Chunked(ContentTypes.`application/octet-stream`, Source(immutable.Seq(HttpEntity.Chunk("lala"), LastChunk))))
       }
 
       val sourceQueuePromise = Promise[SourceQueueWithComplete[_]]()
