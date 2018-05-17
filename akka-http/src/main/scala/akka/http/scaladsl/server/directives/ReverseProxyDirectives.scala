@@ -117,7 +117,7 @@ object ReverseProxyDirectives extends ReverseProxyDirectives {
     implicit def fromConfig(targetConfig: ReverseProxyTargetConfig)(implicit system: ActorSystem) =
       new ReverseProxyTargetMagnet {
         val config = targetConfig
-        val httpClient = Http().singleRequest(_)
+        val httpClient: HttpRequest ⇒ Future[HttpResponse] = Http().singleRequest(_)
       }
 
     implicit def fromUri(uri: Uri)(implicit system: ActorSystem) = fromConfig(ReverseProxyTargetConfigImpl(uri, false))
