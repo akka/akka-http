@@ -36,16 +36,41 @@ class SlotStateSpec extends AkkaSpec {
 
       context.expectRequestDispatchToConnection()
 
+      state = state.onRequestEntityCompleted(context)
       state = state.onResponseReceived(context, HttpResponse())
       state = state.onResponseDispatchable(context)
       state = state.onResponseEntitySubscribed(context)
       state = state.onResponseEntityCompleted(context)
-      // TODO signal request completion, re-introduce onRequestEntityCompleted signal
-      // that we removed earlier in this PR :).
       state should be(Idle)
 
       state = state.onConnectionCompleted(context)
       state should be(Unconnected)
+    }
+
+    "allow postponing completing the request until just after the response was received" in {
+      var state: SlotState = Unconnected
+      val outgoingConnection = Http.OutgoingConnection(
+        InetSocketAddress.createUnresolved("127.0.0.1", 1234),
+        InetSocketAddress.createUnresolved("127.0.0.1", 5678))
+
+      val context = new MockSlotContext(system.log)
+      state = context.expectOpenConnection {
+        state.onPreConnect(context)
+      }
+      state = state.onNewRequest(context, RequestContext(HttpRequest(), Promise[HttpResponse], 0))
+
+      state = state.onConnectionAttemptSucceeded(context, outgoingConnection)
+
+      context.expectRequestDispatchToConnection()
+
+      state = state.onResponseReceived(context, HttpResponse())
+      state = state.onResponseDispatchable(context)
+
+      state = state.onRequestEntityCompleted(context)
+
+      state = state.onResponseEntitySubscribed(context)
+      state = state.onResponseEntityCompleted(context)
+      state should be(Idle)
     }
 
     "consider a slot 'idle' only when the request has been successfully sent" in {
@@ -74,8 +99,7 @@ class SlotStateSpec extends AkkaSpec {
       // there are also situations where it would have an adverse effect, so better to be safe.
       state.isIdle should be(false)
 
-      // TODO signal request completion, re-introduce onRequestEntityCompleted signal
-      // that we removed earlier in this PR :).
+      state = state.onRequestEntityCompleted(context)
       state.isIdle should be(true)
     }
   }
@@ -94,8 +118,10 @@ class SlotStateSpec extends AkkaSpec {
 
     override def isConnectionClosed: Boolean = connectionClosed
 
-    override def pushRequestToConnection(request: HttpRequest): Unit =
+    override def pushRequestToConnectionAndThen(request: HttpRequest, nextState: SlotState): SlotState = {
       pushedRequest = Some(request)
+      nextState
+    }
 
     override def dispatchResponseResult(req: PoolFlow.RequestContext, result: Try[HttpResponse]): Unit =
       dispatchedResponse = Some(result)
