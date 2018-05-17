@@ -64,6 +64,32 @@ class SlotStateSpec extends AkkaSpec {
       context.expectRequestDispatchToConnection()
 
       state = state.onResponseReceived(context, HttpResponse())
+
+      state = state.onRequestEntityCompleted(context)
+
+      state = state.onResponseDispatchable(context)
+      state = state.onResponseEntitySubscribed(context)
+      state = state.onResponseEntityCompleted(context)
+      state should be(Idle)
+    }
+
+    "allow postponing completing the request until just after the response was dispatchable" in {
+      var state: SlotState = Unconnected
+      val outgoingConnection = Http.OutgoingConnection(
+        InetSocketAddress.createUnresolved("127.0.0.1", 1234),
+        InetSocketAddress.createUnresolved("127.0.0.1", 5678))
+
+      val context = new MockSlotContext(system.log)
+      state = context.expectOpenConnection {
+        state.onPreConnect(context)
+      }
+      state = state.onNewRequest(context, RequestContext(HttpRequest(), Promise[HttpResponse], 0))
+
+      state = state.onConnectionAttemptSucceeded(context, outgoingConnection)
+
+      context.expectRequestDispatchToConnection()
+
+      state = state.onResponseReceived(context, HttpResponse())
       state = state.onResponseDispatchable(context)
 
       state = state.onRequestEntityCompleted(context)

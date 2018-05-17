@@ -210,6 +210,12 @@ private[pool] object SlotState {
     ongoingRequest:               RequestContext,
     result:                       Try[HttpResponse],
     waitingForEndOfRequestEntity: Boolean) extends ConnectedState with BusyWithResultAlreadyDetermined {
+
+    override def onRequestEntityCompleted(ctx: SlotContext): SlotState = {
+      require(waitingForEndOfRequestEntity)
+      WaitingForResponseDispatch(ongoingRequest, result, waitingForEndOfRequestEntity = false)
+    }
+
     /** Called when the response out port is ready to receive a further response (successful or failed) */
     override def onResponseDispatchable(ctx: SlotContext): SlotState = {
       ctx.dispatchResponseResult(ongoingRequest, result)
