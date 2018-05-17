@@ -9,42 +9,11 @@ import akka.http.scaladsl.model.Uri.Authority
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.directives.ReverseProxyDirectives.ReverseProxyTargetMagnet
 import akka.http.scaladsl.server.{ RequestContext, Route }
 import akka.util.ByteString
 
 trait ReverseProxyDirectives {
-
-  trait ReverseProxyTargetConfig {
-    def targetScheme: String
-    def targetAuthority: Authority
-    def useUnmatchedPath: Boolean
-  }
-
-  object ReverseProxyTargetConfig {
-    def apply(baseUri: Uri, useUnmatchedPath: Boolean): ReverseProxyTargetConfig = ReverseProxyTargetConfigImpl(baseUri, useUnmatchedPath)
-  }
-
-  private case class ReverseProxyTargetConfigImpl(baseUri: Uri, useUnmatchedPath: Boolean) extends ReverseProxyTargetConfig {
-    val targetScheme = baseUri.scheme
-    val targetAuthority = baseUri.authority
-  }
-
-  trait ReverseProxyTargetMagnet {
-    def config: ReverseProxyTargetConfig
-    def httpClient: HttpRequest ⇒ Future[HttpResponse]
-  }
-
-  object ReverseProxyTargetMagnet {
-    import scala.language.implicitConversions
-
-    implicit def fromConfig(targetConfig: ReverseProxyTargetConfig)(implicit system: ActorSystem) =
-      new ReverseProxyTargetMagnet {
-        val config = targetConfig
-        val httpClient = Http().singleRequest(_)
-      }
-
-    implicit def fromUri(uri: Uri)(implicit system: ActorSystem) = fromConfig(ReverseProxyTargetConfigImpl(uri, false))
-  }
 
   def reverseProxy(target: ReverseProxyTargetMagnet): Route =
     extractExecutionContext { implicit ec ⇒
@@ -120,4 +89,37 @@ trait ReverseProxyDirectives {
   }
 }
 
-object ReverseProxyDirectives extends ReverseProxyDirectives
+object ReverseProxyDirectives extends ReverseProxyDirectives {
+
+  trait ReverseProxyTargetConfig {
+    def targetScheme: String
+    def targetAuthority: Authority
+    def useUnmatchedPath: Boolean
+  }
+
+  object ReverseProxyTargetConfig {
+    def apply(baseUri: Uri, useUnmatchedPath: Boolean): ReverseProxyTargetConfig = ReverseProxyTargetConfigImpl(baseUri, useUnmatchedPath)
+  }
+
+  private case class ReverseProxyTargetConfigImpl(baseUri: Uri, useUnmatchedPath: Boolean) extends ReverseProxyTargetConfig {
+    val targetScheme = baseUri.scheme
+    val targetAuthority = baseUri.authority
+  }
+
+  trait ReverseProxyTargetMagnet {
+    def config: ReverseProxyTargetConfig
+    def httpClient: HttpRequest ⇒ Future[HttpResponse]
+  }
+
+  object ReverseProxyTargetMagnet {
+    import scala.language.implicitConversions
+
+    implicit def fromConfig(targetConfig: ReverseProxyTargetConfig)(implicit system: ActorSystem) =
+      new ReverseProxyTargetMagnet {
+        val config = targetConfig
+        val httpClient = Http().singleRequest(_)
+      }
+
+    implicit def fromUri(uri: Uri)(implicit system: ActorSystem) = fromConfig(ReverseProxyTargetConfigImpl(uri, false))
+  }
+}
