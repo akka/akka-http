@@ -205,6 +205,7 @@ private[client] object NewHostConnectionPool {
                 cancelCurrentTimeout()
 
                 val previousState = state
+                debug(s"Before event [${event.name}] In state [${state.name}]")
                 state = event.transition(state, this, arg)
                 debug(s"After event [${event.name}] State change [${previousState.name}] -> [${state.name}]")
 

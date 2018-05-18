@@ -11,21 +11,22 @@ import akka.http.impl.engine.client.PoolFlow
 import akka.http.impl.engine.client.PoolFlow.RequestContext
 import akka.http.impl.engine.client.pool.SlotState._
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, headers }
+import akka.http.scaladsl.model.{ HttpMethods, HttpRequest, HttpResponse, headers }
 import akka.http.scaladsl.settings.ConnectionPoolSettings
+import akka.stream.testkit.Utils.TE
 import akka.testkit.AkkaSpec
 
 import scala.concurrent.{ Future, Promise }
 import scala.util.Try
 
 class SlotStateSpec extends AkkaSpec {
+  val outgoingConnection = Http.OutgoingConnection(
+    InetSocketAddress.createUnresolved("127.0.0.1", 1234),
+    InetSocketAddress.createUnresolved("127.0.0.1", 5678))
+
   "The new connection pool slot state machine" should {
     "successfully complete a 'happy path' request" in {
       var state: SlotState = Unconnected
-      val outgoingConnection = Http.OutgoingConnection(
-        InetSocketAddress.createUnresolved("127.0.0.1", 1234),
-        InetSocketAddress.createUnresolved("127.0.0.1", 5678))
-
       val context = new MockSlotContext(system.log)
       state = context.expectOpenConnection {
         state.onPreConnect(context)
@@ -49,10 +50,6 @@ class SlotStateSpec extends AkkaSpec {
 
     "allow postponing completing the request until just after the response was received" in {
       var state: SlotState = Unconnected
-      val outgoingConnection = Http.OutgoingConnection(
-        InetSocketAddress.createUnresolved("127.0.0.1", 1234),
-        InetSocketAddress.createUnresolved("127.0.0.1", 5678))
-
       val context = new MockSlotContext(system.log)
       state = context.expectOpenConnection {
         state.onPreConnect(context)
@@ -75,10 +72,6 @@ class SlotStateSpec extends AkkaSpec {
 
     "allow postponing completing the request until just after the response was dispatchable" in {
       var state: SlotState = Unconnected
-      val outgoingConnection = Http.OutgoingConnection(
-        InetSocketAddress.createUnresolved("127.0.0.1", 1234),
-        InetSocketAddress.createUnresolved("127.0.0.1", 5678))
-
       val context = new MockSlotContext(system.log)
       state = context.expectOpenConnection {
         state.onPreConnect(context)
@@ -101,10 +94,6 @@ class SlotStateSpec extends AkkaSpec {
 
     "consider a slot 'idle' only when the request has been successfully sent" in {
       var state: SlotState = Unconnected
-      val outgoingConnection = Http.OutgoingConnection(
-        InetSocketAddress.createUnresolved("127.0.0.1", 1234),
-        InetSocketAddress.createUnresolved("127.0.0.1", 5678))
-
       val context = new MockSlotContext(system.log)
       state = context.expectOpenConnection {
         state.onPreConnect(context)
@@ -127,6 +116,20 @@ class SlotStateSpec extends AkkaSpec {
 
       state = state.onRequestEntityCompleted(context)
       state.isIdle should be(true)
+    }
+
+    "fail a request if the connection stream fails while waiting for request entity bytes" in {
+      var state: SlotState = Unconnected
+      val context = new MockSlotContext(system.log)
+
+      state = context.expectOpenConnection {
+        state.onNewRequest(context, RequestContext(HttpRequest(method = HttpMethods.POST), Promise[HttpResponse], retriesLeft = 0))
+      }
+      state = state.onConnectionAttemptSucceeded(context, outgoingConnection)
+      state = state.onConnectionFailed(context, TE("server temporarily out for lunch"))
+      // TODO in https://jenkins.akka.io:8498/job/pr-validator-akka-http/2555/consoleFull we seemed to get a
+      // RequestEntityCompleted after the ConnectionFailed - should that happen?
+      // state = state.onRequestEntityCompleted(context)
     }
   }
 
