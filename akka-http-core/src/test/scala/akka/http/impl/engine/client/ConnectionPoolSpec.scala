@@ -430,24 +430,30 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     }
 
     "support receiving a response entity even when the request already failed" in new TestSetup(ServerSettings(system).withRawRequestUriHeader(true), autoAccept = true) {
+      val responseSourceQueuePromise = Promise[SourceQueueWithComplete[ChunkStreamPart]]()
+
       override def testServerHandler(connNr: Int): HttpRequest ⇒ HttpResponse = {
         r ⇒
           HttpResponse(
             headers = responseHeaders(r, connNr),
-            entity = HttpEntity.Chunked(ContentTypes.`application/octet-stream`, Source(immutable.Seq(HttpEntity.Chunk("lala"), LastChunk))))
+            entity = HttpEntity.Chunked(ContentTypes.`application/octet-stream`, Source.queue(8, OverflowStrategy.fail).mapMaterializedValue(responseSourceQueuePromise.success)))
       }
 
-      val sourceQueuePromise = Promise[SourceQueueWithComplete[_]]()
-      val source = Source.queue(8, OverflowStrategy.fail).mapMaterializedValue(sourceQueuePromise.success)
-      val slowEntity = Chunked(ContentTypes.`text/plain(UTF-8)`, source)
-      val request = HttpRequest(uri = s"http://$serverHostName:$serverPort/abc?query#fragment", entity = slowEntity)
+      val requestSourceQueuePromise = Promise[SourceQueueWithComplete[_]]()
+      val requestSource = Source.queue(8, OverflowStrategy.fail).mapMaterializedValue(requestSourceQueuePromise.success)
+      val slowRequestEntity = Chunked(ContentTypes.`text/plain(UTF-8)`, requestSource)
+      val request = HttpRequest(uri = s"http://$serverHostName:$serverPort/abc?query#fragment", entity = slowRequestEntity)
       val responseFuture = Http().singleRequest(request)
-      val sourceQueue = Await.result(sourceQueuePromise.future, 3.seconds)
+      val sourceQueue = Await.result(requestSourceQueuePromise.future, 3.seconds)
       val response = Await.result(responseFuture, 1.second.dilated)
       response.headers should contain(RawHeader("Req-Host", s"$serverHostName:$serverPort"))
 
       response.entity.isChunked should be(true)
       sourceQueue.fail(TE("Request failed though response was already on its way"))
+
+      val responseQueue = Await.result(responseSourceQueuePromise.future, 3.seconds)
+      responseQueue.offer(Chunk("lala"))
+      responseQueue.offer(LastChunk)
 
       val bytes = response.entity.dataBytes.runReduce(_ ++ _)
       Await.result(bytes, 3.seconds) should be(ByteString("lala"))
