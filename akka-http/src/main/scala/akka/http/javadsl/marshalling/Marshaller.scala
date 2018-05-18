@@ -4,15 +4,15 @@
 
 package akka.http.javadsl.marshalling
 
-import java.util.{Optional, function}
+import java.util.{ Optional, function }
 
 import akka.annotation.InternalApi
 import akka.http.impl.util.JavaMapping
-import akka.http.javadsl.model.{ContentType, HttpHeader, HttpResponse, MediaType, RequestEntity, StatusCode}
+import akka.http.javadsl.model.{ ContentType, HttpHeader, HttpResponse, MediaType, RequestEntity, StatusCode }
 import akka.http.scaladsl
 import akka.http.scaladsl.marshalling
 import akka.http.scaladsl.marshalling._
-import akka.http.scaladsl.model.{FormData, HttpCharset, HttpEntity}
+import akka.http.scaladsl.model.{ FormData, HttpCharset }
 import akka.japi.Util
 import akka.util.ByteString
 
