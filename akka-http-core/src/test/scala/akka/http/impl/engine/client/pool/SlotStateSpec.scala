@@ -127,9 +127,8 @@ class SlotStateSpec extends AkkaSpec {
       }
       state = state.onConnectionAttemptSucceeded(context, outgoingConnection)
       state = state.onConnectionFailed(context, TE("server temporarily out for lunch"))
-      // TODO in https://jenkins.akka.io:8498/job/pr-validator-akka-http/2555/consoleFull we seemed to get a
-      // RequestEntityCompleted after the ConnectionFailed - should that happen?
-      // state = state.onRequestEntityCompleted(context)
+      // When the connection fails, we still may get a onRequestEntityCompleted:
+      state = state.onRequestEntityCompleted(context)
     }
   }
 

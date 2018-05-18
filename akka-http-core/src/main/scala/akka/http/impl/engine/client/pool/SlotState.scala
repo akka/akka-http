@@ -104,6 +104,7 @@ private[pool] object SlotState {
   sealed private[pool] /* to avoid warnings */ trait BusyState extends SlotState {
     final override def isIdle = false // no HTTP pipelining right now
     def ongoingRequest: RequestContext
+    def waitingForEndOfRequestEntity: Boolean
 
     override def onShutdown(ctx: SlotContext): Unit = {
       // We would like to dispatch a failure here but responseOut might not be ready (or also already shutting down)
@@ -132,9 +133,10 @@ private[pool] object SlotState {
       ctx.debug("Ongoing request [{}] is failed because of [{}]: [{}]", ongoingRequest.request.debugString, signal, cause.getMessage)
       if (ongoingRequest.canBeRetried) { // push directly because it will be buffered internally
         ctx.dispatchResponseResult(ongoingRequest, Failure(cause))
-        Unconnected
+        if (waitingForEndOfRequestEntity) WaitingForEndOfRequestEntity
+        else Unconnected
       } else
-        WaitingForResponseDispatch(ongoingRequest, Failure(cause), waitingForEndOfRequestEntity = false)
+        WaitingForResponseDispatch(ongoingRequest, Failure(cause), waitingForEndOfRequestEntity)
     }
   }
 
@@ -164,6 +166,8 @@ private[pool] object SlotState {
   }
 
   final case class Connecting(ongoingRequest: RequestContext) extends ConnectedState with BusyState with WithRequestDispatching {
+    val waitingForEndOfRequestEntity = false
+
     override def onConnectionAttemptSucceeded(ctx: SlotContext, outgoingConnection: Http.OutgoingConnection): SlotState = {
       ctx.debug("Slot connection was established")
       dispatchRequestToConnection(ctx, ongoingRequest)
