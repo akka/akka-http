@@ -59,6 +59,16 @@ trait MissingQueryParamRejection extends Rejection {
 
 /**
  * Rejection created by parameter filters.
+ * Signals that the request was rejected because a query parameter value was not equal to required one.
+ */
+trait InvalidRequiredValueForQueryParamRejection extends Rejection {
+  def parameterName: String
+  def expectedValue: String
+  def actualValue: String
+}
+
+/**
+ * Rejection created by parameter filters.
  * Signals that the request was rejected because a query parameter could not be interpreted.
  */
 trait MalformedQueryParamRejection extends Rejection {
@@ -314,6 +324,9 @@ object Rejections {
 
   def missingQueryParam(parameterName: String): MissingQueryParamRejection =
     s.MissingQueryParamRejection(parameterName)
+
+  def invalidRequiredValueForQueryParam(parameterName: String, requiredValue: String, actualValue: String): InvalidRequiredValueForQueryParamRejection =
+    s.InvalidRequiredValueForQueryParamRejection(parameterName, requiredValue, actualValue)
 
   def malformedQueryParam(parameterName: String, errorMsg: String): MalformedQueryParamRejection =
     s.MalformedQueryParamRejection(parameterName, errorMsg)

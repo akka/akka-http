@@ -153,7 +153,8 @@ object ParameterDirectives extends ParameterDirectives {
         import ctx.materializer
         onComplete(fsou(ctx.request.uri.query().get(paramName))) flatMap {
           case Success(value) if value == requiredValue ⇒ pass
-          case _                                        ⇒ reject
+          case Success(value)                           ⇒ reject(InvalidRequiredValueForQueryParamRejection(paramName, requiredValue.toString, value.toString))
+          case _                                        ⇒ reject(MissingQueryParamRejection(paramName))
         }
       }
     implicit def forRVR[T](implicit fsu: FSU[T]): ParamDefAux[RequiredValueReceptacle[T], Directive0] =

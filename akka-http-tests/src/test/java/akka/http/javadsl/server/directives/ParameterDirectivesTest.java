@@ -6,7 +6,6 @@ package akka.http.javadsl.server.directives;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Map;
 
 import org.junit.Test;
@@ -15,8 +14,6 @@ import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.unmarshalling.StringUnmarshallers;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
-
-import static akka.http.javadsl.server.Directives.*;
 
 public class ParameterDirectivesTest extends JUnitRouteTest {
 
@@ -379,5 +376,26 @@ public class ParameterDirectivesTest extends JUnitRouteTest {
       .assertStatusCode(200)
       .assertEntity("Optional[23]");
   }
+
+  @Test
+  public void testRequiredParameterExtraction() {
+    TestRoute route = testRoute(parameterRequiredValue(StringUnmarshallers.INTEGER, 1, "requiredIntParam", () -> complete("OK")));
+
+    route
+      .run(HttpRequest.create().withUri("/abc?someParameter=1"))
+      .assertStatusCode(404)
+      .assertEntity("Request is missing required query parameter 'requiredIntParam'");
+
+    route
+      .run(HttpRequest.create().withUri("/abc?requiredIntParam=12"))
+      .assertStatusCode(404)
+      .assertEntity("Request is missing required value '1' for query parameter 'requiredIntParam', actualValue '12'");
+
+    route
+      .run(HttpRequest.create().withUri("/abc?requiredIntParam=1"))
+      .assertStatusCode(200)
+      .assertEntity("OK");
+  }
+
 
 }
