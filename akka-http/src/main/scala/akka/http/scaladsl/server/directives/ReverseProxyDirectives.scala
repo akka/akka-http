@@ -32,19 +32,19 @@ trait ReverseProxyDirectives {
           )
         }
 
-        extractRequestContext { ctx ⇒
-          // we don't need to use request.effectiveUri here since we're going to overwrite the scheme and authority
-          val incomingUri = ctx.request.uri
-          val outgoingUri =
-            (if (target.config.useUnmatchedPath) incomingUri.withPath(ctx.unmatchedPath) else incomingUri)
-              .withAuthority(target.config.targetAuthority)
-              .withScheme(target.config.targetScheme)
+        mapRequestContext(mapProxyContext) {
+          extractRequestContext { ctx ⇒
+            // we don't need to use request.effectiveUri here since we're going to overwrite the scheme and authority
+            val incomingUri = ctx.request.uri
+            val outgoingUri =
+              (if (target.config.useUnmatchedPath) incomingUri.withPath(ctx.unmatchedPath) else incomingUri)
+                .withAuthority(target.config.targetAuthority)
+                .withScheme(target.config.targetScheme)
 
-          val outgoingRequest = ctx.request.withUri(outgoingUri)
-          val eventualResponse = target.httpClient(outgoingRequest)
+            val outgoingRequest = ctx.request.withUri(outgoingUri)
+            val eventualResponse = target.httpClient(outgoingRequest)
 
-          withRequestTimeoutResponse(processTimeout(eventualResponse)) {
-            mapRequestContext(mapProxyContext) {
+            withRequestTimeoutResponse(processTimeout(eventualResponse)) { // todo how to do this when timeout access header has been
               complete(eventualResponse)
             }
           }
