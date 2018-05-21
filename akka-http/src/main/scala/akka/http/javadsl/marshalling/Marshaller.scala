@@ -62,7 +62,6 @@ object Marshaller {
     fromScala(marshalling.Marshaller.optionMarshaller(scalaMarshaller, EmptyValue.emptyEntity).compose(toOption))
   }
 
-
   // TODO make sure these are actually usable in a sane way
   def wrapEntity[A, C](f: function.BiFunction[ExecutionContext, C, A], m: Marshaller[A, RequestEntity], mediaType: MediaType): Marshaller[C, RequestEntity] = {
     val scalaMarshaller = m.asScalaCastOutput
