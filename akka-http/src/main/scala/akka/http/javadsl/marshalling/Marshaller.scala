@@ -57,6 +57,9 @@ object Marshaller {
   def byteStringMarshaller(t: ContentType): Marshaller[ByteString, RequestEntity] =
     fromScala(scaladsl.marshalling.Marshaller.byteStringMarshaller(t.asScala))
 
+  /**
+   * Marshals an Optional[A] to a RequestEntity an empty optional will yield an empty entity.
+   */
   def optionMarshaller[A](m: Marshaller[A, RequestEntity]): Marshaller[Optional[A], RequestEntity] = {
     val scalaMarshaller = m.asScalaCastOutput
     fromScala(marshalling.Marshaller.optionMarshaller(scalaMarshaller, EmptyValue.emptyEntity).compose(toOption))
