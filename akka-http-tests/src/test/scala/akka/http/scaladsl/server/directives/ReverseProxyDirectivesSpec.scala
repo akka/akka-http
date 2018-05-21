@@ -12,18 +12,9 @@ import akka.http.scaladsl.server.directives.ReverseProxyDirectives._
 
 class ReverseProxyDirectivesSpec extends RoutingSpec {
   "The reverseProxy directive" should {
-    "forward requests to the configured target" in {
-      var receivedRequest: HttpRequest = null
+    "forward requests to the configured target" in new ReverseProxyDirectiveSpecHelper {
 
       val targetConfig = ReverseProxyTargetConfig("https://target.domain:1234", false)
-      val magnet = new ReverseProxyTargetMagnet {
-        def config = targetConfig
-
-        val httpClient: HttpRequest ⇒ Future[HttpResponse] = request ⇒ {
-          receivedRequest = request
-          Future.successful(HttpResponse())
-        }
-      }
 
       Get("http://notthetarget.domain/the/path?foo=bar&bar=baz") ~> reverseProxy(magnet) ~> check {
         status shouldBe StatusCodes.OK
@@ -32,18 +23,9 @@ class ReverseProxyDirectivesSpec extends RoutingSpec {
       }
     }
 
-    "use unmatched the unmatched path as configured" in {
-      var receivedRequest: HttpRequest = null
+    "use unmatched the unmatched path as configured" in new ReverseProxyDirectiveSpecHelper {
 
       val targetConfig = ReverseProxyTargetConfig("https://target.domain:1234", useUnmatchedPath = true)
-      val magnet = new ReverseProxyTargetMagnet {
-        def config = targetConfig
-
-        val httpClient: HttpRequest ⇒ Future[HttpResponse] = request ⇒ {
-          receivedRequest = request
-          Future.successful(HttpResponse())
-        }
-      }
 
       Get("http://notthetarget.domain/the/path?foo=bar&bar=baz") ~> pathPrefix("the")(reverseProxy(magnet)) ~> check {
         status shouldBe StatusCodes.OK
@@ -52,18 +34,9 @@ class ReverseProxyDirectivesSpec extends RoutingSpec {
       }
     }
 
-    "strip hop-by-hop headers" in {
-      var receivedRequest: HttpRequest = null
+    "strip hop-by-hop headers" in new ReverseProxyDirectiveSpecHelper {
 
       val targetConfig = ReverseProxyTargetConfig("https://target.domain:1234", false)
-      val magnet = new ReverseProxyTargetMagnet {
-        def config = targetConfig
-
-        val httpClient: HttpRequest ⇒ Future[HttpResponse] = request ⇒ {
-          receivedRequest = request
-          Future.successful(HttpResponse())
-        }
-      }
 
       val request = Get("http://notthetarget.domain/the/path?foo=bar&bar=baz")
         .withHeaders(
@@ -85,6 +58,21 @@ class ReverseProxyDirectivesSpec extends RoutingSpec {
         receivedRequest.header[`Transfer-Encoding`] should not be defined
         receivedRequest.header[Upgrade] should not be defined
       }
+    }
+  }
+}
+
+trait ReverseProxyDirectiveSpecHelper {
+  var receivedRequest: HttpRequest = null
+
+  def targetConfig: ReverseProxyTargetConfig
+
+  val magnet = new ReverseProxyTargetMagnet {
+    def config = targetConfig
+
+    val httpClient: HttpRequest ⇒ Future[HttpResponse] = request ⇒ {
+      receivedRequest = request
+      Future.successful(HttpResponse())
     }
   }
 }

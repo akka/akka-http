@@ -9,8 +9,8 @@ import akka.http.scaladsl.model.Uri.Authority
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.directives.ReverseProxyDirectives.ReverseProxyTargetMagnet
-import akka.http.scaladsl.server.{ RequestContext, Route }
 import akka.util.ByteString
 
 trait ReverseProxyDirectives {
@@ -19,6 +19,7 @@ trait ReverseProxyDirectives {
     extractExecutionContext { implicit ec ⇒
       extractMaterializer { implicit mat ⇒
         // todo customize response
+        // drain response entity if incoming request timeout occurs
         def processTimeout(proxyResult: Future[HttpResponse]): HttpRequest ⇒ HttpResponse = _ ⇒ {
           proxyResult.andThen {
             case Success(proxyResponse) ⇒ proxyResponse.discardEntityBytes()
@@ -32,35 +33,33 @@ trait ReverseProxyDirectives {
           )
         }
 
-        mapRequestContext(mapProxyContext) {
-          extractRequestContext { ctx ⇒
-            // we don't need to use request.effectiveUri here since we're going to overwrite the scheme and authority
-            val incomingUri = ctx.request.uri
-            val outgoingUri =
-              (if (target.config.useUnmatchedPath) incomingUri.withPath(ctx.unmatchedPath) else incomingUri)
-                .withAuthority(target.config.targetAuthority)
-                .withScheme(target.config.targetScheme)
+        extractRequestContext { ctx ⇒
+          // we don't need to use request.effectiveUri here since we're going to overwrite the scheme and authority
+          val incomingUri = ctx.request.uri
+          val outgoingUri =
+            (if (target.config.useUnmatchedPath) incomingUri.withPath(ctx.unmatchedPath) else incomingUri)
+              .withAuthority(target.config.targetAuthority)
+              .withScheme(target.config.targetScheme)
 
-            val outgoingRequest = ctx.request.withUri(outgoingUri)
-            val eventualResponse = target.httpClient(outgoingRequest)
+          val outgoingRequest = mapProxyRequest(ctx.request).withUri(outgoingUri)
+          val eventualResponse = target.httpClient(outgoingRequest)
 
-            withRequestTimeoutResponse(processTimeout(eventualResponse)) { // todo how to do this when timeout access header has been
-              complete(eventualResponse)
-            }
+          withRequestTimeoutResponse(processTimeout(eventualResponse)) {
+            complete(eventualResponse)
           }
         }
       }
     }
 
   // remove any headers that shouldn't be passed through a proxy
-  private def mapProxyContext(ctx: RequestContext): RequestContext = {
-    val incomingHeaders = ctx.request.headers
+  private def mapProxyRequest(request: HttpRequest): HttpRequest = {
+    val incomingHeaders = request.headers
 
-    val remoteAddressOption = ctx.request.header[`Remote-Address`].map(_.address)
-    val xForwardedForAddressesOption = ctx.request.header[`X-Forwarded-For`].map(_.addresses)
+    val remoteAddressOption = request.header[`Remote-Address`].map(_.address)
+    val xForwardedForAddressesOption = request.header[`X-Forwarded-For`].map(_.addresses)
     //TODO: Add `Via` HttpHeader as defined in https://tools.ietf.org/html/rfc2616#section-14.45 in akka.http.scaladsl.model.incomingHeaders
 
-    val updatedXRealIpHeaderOption = ctx.request.header[`X-Real-Ip`]
+    val updatedXRealIpHeaderOption = request.header[`X-Real-Ip`]
       .map(_.address)
       .orElse(xForwardedForAddressesOption.flatMap(_.headOption))
       .orElse(remoteAddressOption)
@@ -85,7 +84,7 @@ trait ReverseProxyDirectives {
       case h                        ⇒ Some(h)
     }
 
-    ctx.mapRequest(_.withHeaders(outgoingHeaders))
+    request.withHeaders(outgoingHeaders)
   }
 }
 
