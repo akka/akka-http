@@ -196,6 +196,40 @@ class HttpConfigurationSpec extends AkkaSpec {
         settings.port should ===(8080)
       }
     }
+
+    "set `akka.http.client.proxy.https.host` only in" in {
+      configuredSystem(
+        """
+          akka.http.client.proxy.https.host = localhost
+        """) { sys ⇒
+          assertThrows[IllegalArgumentException] {
+            HttpsProxySettings(sys)
+          }
+        }
+    }
+
+    "set `akka.http.client.proxy.https.port` only in" in {
+      configuredSystem(
+        """
+          akka.http.client.proxy.https.port = 8080
+        """) { sys ⇒
+          assertThrows[IllegalArgumentException] {
+            HttpsProxySettings(sys)
+          }
+        }
+    }
+
+    "set `akka.http.client.proxy.https.port` and `akka.http.client.proxy.https.host` in" in {
+      configuredSystem(
+        """
+          akka.http.client.proxy.https.host = localhost
+          akka.http.client.proxy.https.port = 8080
+        """.stripMargin) { sys ⇒
+        val settings = HttpsProxySettings(sys)
+        settings.host should ===("localhost")
+        settings.port should ===(8080)
+      }
+    }
   }
 
   def configuredSystem(overrides: String)(block: ActorSystem ⇒ Unit) = {
