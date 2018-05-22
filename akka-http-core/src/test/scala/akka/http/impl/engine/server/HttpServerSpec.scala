@@ -997,8 +997,8 @@ class HttpServerSpec extends AkkaSpec(
 
       "are programmatically increased (not expiring)" in assertAllStagesStopped(new RequestTimeoutTestSetup(50.millis) {
         send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
-        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(250.millis.dilated))
-        netOut.expectNoBytes(150.millis.dilated)
+        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(250.millis))
+        netOut.expectNoBytes()
         responses.sendNext(HttpResponse())
         expectResponseWithWipedDate(
           """HTTP/1.1 200 OK
@@ -1016,7 +1016,7 @@ class HttpServerSpec extends AkkaSpec(
         send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
 
         scheduler.timePasses(25.millis)
-        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(250.millis.dilated))
+        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(250.millis))
 
         scheduler.timePasses(150.millis)
         netOut.expectNoBytes(Duration.Zero)
@@ -1038,7 +1038,7 @@ class HttpServerSpec extends AkkaSpec(
 
       "are programmatically decreased" in assertAllStagesStopped(new RequestTimeoutTestSetup(250.millis) {
         send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
-        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(50.millis.dilated))
+        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(50.millis))
 
         scheduler.timePasses(40.millis)
         netOut.expectNoBytes(Duration.Zero)
@@ -1364,7 +1364,7 @@ class HttpServerSpec extends AkkaSpec(
   class RequestTimeoutTestSetup(requestTimeout: FiniteDuration) extends TestSetup {
     override def settings = {
       val s = super.settings
-      s.withTimeouts(s.timeouts.withRequestTimeout(requestTimeout.dilated))
+      s.withTimeouts(s.timeouts.withRequestTimeout(requestTimeout))
     }
   }
 }
