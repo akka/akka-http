@@ -34,6 +34,9 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   require((maxOpenRequests & (maxOpenRequests - 1)) == 0, "max-open-requests must be a power of 2. " + suggestPowerOfTwo(maxOpenRequests))
   require(pipeliningLimit > 0, "pipelining-limit must be > 0")
   require(maxConnectionKeepAliveTime > Duration.Zero, "max-connection-keep-alive-time must be > 0")
+  require(
+    maxConnectionKeepAliveTime == Duration.Inf || poolImplementation == PoolImplementation.New,
+    "max-connection-keep-alive-time does not taking effect with legacy pool implementation")
   require(idleTimeout >= Duration.Zero, "idle-timeout must be >= 0")
 
   override def productPrefix = "ConnectionPoolSettings"

@@ -24,7 +24,7 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.util.OptionVal
 
 import scala.concurrent.Future
-import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Random, Success, Try }
 
@@ -328,17 +328,16 @@ private[client] object NewHostConnectionPool {
 
           private lazy val keepAliveDurationFuzziness: () ⇒ Long = {
             val random = new Random()
-            val max = (settings.maxConnectionKeepAliveTime / 10).toMillis
+            val max = math.max(settings.maxConnectionKeepAliveTime.toMillis / 10, 2)
             () ⇒ random.nextLong() % max
           }
           def openConnection(): Future[Http.OutgoingConnection] = {
             if (connection ne null) throw new IllegalStateException("Cannot open connection when slot still has an open connection")
 
             connection = logic.openConnection(this)
-            connection.outgoingConnection.foreach(_ ⇒ if (settings.maxConnectionKeepAliveTime.isFinite()) {
-
-              disconnectAt = Instant.now().getEpochSecond + settings.maxConnectionKeepAliveTime.toMillis + keepAliveDurationFuzziness()
-            })(ExecutionContexts.sameThreadExecutionContext)
+            if (settings.maxConnectionKeepAliveTime.isFinite()) {
+              disconnectAt = Instant.now().toEpochMilli + settings.maxConnectionKeepAliveTime.toMillis + keepAliveDurationFuzziness()
+            }
             connection.outgoingConnection
           }
           def pushRequestToConnectionAndThen(request: HttpRequest, nextState: SlotState): SlotState = {
@@ -365,7 +364,7 @@ private[client] object NewHostConnectionPool {
           }
 
           def keepAliveTimeApplies(): Boolean = if (settings.maxConnectionKeepAliveTime.isFinite()) {
-            Instant.now().toEpochMilli - disconnectAt > 0
+            Instant.now().toEpochMilli > disconnectAt
           } else false
 
           private[this] def cancelCurrentTimeout(): Unit =
