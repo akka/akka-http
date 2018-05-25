@@ -1,11 +1,12 @@
-import akka._
+import java.nio.file.Files
+import java.nio.file.attribute.{PosixFileAttributeView, PosixFilePermission}
+
+import akka.AkkaDependency._
+import akka.Dependencies.{h2specExe, h2specName}
 import akka.ValidatePullRequest._
-import AkkaDependency._
-import Dependencies.{ h2specName, h2specExe }
+import akka._
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
-import java.nio.file.Files
-import java.nio.file.attribute.{ PosixFileAttributeView, PosixFilePermission }
 import sbtdynver.GitDescribeOutput
 import spray.boilerplate.BoilerplatePlugin
 
@@ -189,6 +190,44 @@ lazy val httpTests = project("akka-http-tests")
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency("akka-actor-typed", "provided")
   .addAkkaModuleDependency("akka-multi-node-testkit", "test")
+
+lazy val copyDeps = taskKey[Unit]("Copies all dependencies in a special directory")
+
+lazy val osgiTest = taskKey[Unit]("Executes OSGi integration tests")
+
+lazy val httpOsgiTests = project("akka-http-osgi-tests")
+  .settings(Dependencies.httpOsgiTests)
+  .settings(
+    fork := true,
+    copyDeps := {
+      val httpFile = (http / Compile / OsgiKeys.bundle).value
+      val httpCoreFile = (httpCore / Compile / OsgiKeys.bundle).value
+      val parsingFile = (parsing / Compile / OsgiKeys.bundle).value
+      val dependencies = (Compile / fullClasspath).value.files ++
+        Seq(httpFile, httpCoreFile, parsingFile)
+      val depsTarget = new File(target.value, "dependencies")
+      IO.createDirectory(depsTarget)
+      IO.copy(dependencies.filter(_.isFile)
+        .filterNot(_.getName contains "akka-http-osgi-tests")
+        .map(f => (f, new File(depsTarget, f.getName))))
+
+      val testDependencies = (Test / dependencyClasspath).value.files
+      IO.copy(testDependencies
+        .filter(f => f.getName.contains("scalatest") || f.getName.contains("scalactic") ||
+          f.getName.contains("scala-reflect") || f.getName.contains("scala-xml") ||
+          f.getName.contains("scala-compiler"))
+        .map(f => (f, new File(depsTarget, f.getName))))
+    },
+    osgiTest in Test := Def.sequential(
+      copyDeps,
+      test in Test
+    ).value
+  )
+  .dependsOn(http)
+  .enablePlugins(NoPublish).disablePlugins(BintrayPlugin) // don't release tests
+  .disablePlugins(MimaPlugin) // this is only tests
+  .addAkkaModuleDependency("akka-osgi", "provided")
+  .addAkkaModuleDependency("akka-stream", "provided")
 
 lazy val httpJmhBench = project("akka-http-bench-jmh")
   .dependsOn(http)
