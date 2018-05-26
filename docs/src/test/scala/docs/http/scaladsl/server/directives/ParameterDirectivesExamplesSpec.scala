@@ -92,7 +92,7 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with PredefinedFromStr
 
     Get("/?color=blue&action=false") ~> Route.seal(route) ~> check {
       status shouldEqual StatusCodes.NotFound
-      responseAs[String] shouldEqual "Request is missing required value 'true' for query parameter 'action', actualValue 'false'"
+      responseAs[String] shouldEqual "Request is missing required value 'true' for query parameter 'action'"
     }
     //#required-value
   }

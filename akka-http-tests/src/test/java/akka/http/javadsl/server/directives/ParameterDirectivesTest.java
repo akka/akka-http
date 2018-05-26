@@ -389,7 +389,7 @@ public class ParameterDirectivesTest extends JUnitRouteTest {
     route
       .run(HttpRequest.create().withUri("/abc?requiredIntParam=12"))
       .assertStatusCode(404)
-      .assertEntity("Request is missing required value '1' for query parameter 'requiredIntParam', actualValue '12'");
+      .assertEntity("Request is missing required value '1' for query parameter 'requiredIntParam'");
 
     route
       .run(HttpRequest.create().withUri("/abc?requiredIntParam=1"))

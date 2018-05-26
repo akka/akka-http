@@ -131,7 +131,7 @@ public class ParameterDirectivesExamplesTest extends JUnitRouteTest {
 
     testRoute(route).run(HttpRequest.GET("/?color=blue&action=false"))
       .assertStatusCode(StatusCodes.NOT_FOUND)
-      .assertEntity("Request is missing required value 'true' for query parameter 'action', actualValue 'false'");
+      .assertEntity("Request is missing required value 'true' for query parameter 'action'");
     //#required-value
   }
 
