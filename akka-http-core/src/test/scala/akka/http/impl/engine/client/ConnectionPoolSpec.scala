@@ -430,7 +430,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     }
 
     "support receiving a response entity even when the request already failed" in new TestSetup(ServerSettings(system).withRawRequestUriHeader(true), autoAccept = true) {
-      if(poolImplementation == PoolImplementation.Legacy)
+      if (poolImplementation == PoolImplementation.Legacy)
         pending
 
       val responseSourceQueuePromise = Promise[SourceQueueWithComplete[ChunkStreamPart]]()
