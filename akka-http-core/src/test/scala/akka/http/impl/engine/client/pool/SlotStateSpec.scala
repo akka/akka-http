@@ -117,19 +117,6 @@ class SlotStateSpec extends AkkaSpec {
       state = state.onRequestEntityCompleted(context)
       state.isIdle should be(true)
     }
-
-    "fail a request if the connection stream fails while waiting for request entity bytes" in {
-      var state: SlotState = Unconnected
-      val context = new MockSlotContext(system.log)
-
-      state = context.expectOpenConnection {
-        state.onNewRequest(context, RequestContext(HttpRequest(method = HttpMethods.POST), Promise[HttpResponse], retriesLeft = 0))
-      }
-      state = state.onConnectionAttemptSucceeded(context, outgoingConnection)
-      state = state.onConnectionFailed(context, TE("server temporarily out for lunch"))
-      // When the connection fails, we still may get a onRequestEntityCompleted:
-      state = state.onRequestEntityCompleted(context)
-    }
   }
 
   class MockSlotContext(log: LoggingAdapter, val settings: ConnectionPoolSettings = ConnectionPoolSettings("")) extends SlotContext {

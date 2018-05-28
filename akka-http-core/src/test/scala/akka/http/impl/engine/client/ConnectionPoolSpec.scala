@@ -429,7 +429,12 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       Await.result(bytes, 3.seconds) should be(ByteString("lala"))
     }
 
-    "support receiving a response entity even when the request already failed" in new TestSetup(ServerSettings(system).withRawRequestUriHeader(true), autoAccept = true) {
+    /**
+      * Currently failing the 'outgoing request' part of the connection may also fail the 'incoming reply' part of the connection.
+      * In the future we may want to disconnect those and allow the server we connect to to choose how to handle the failure
+      * of the request entity.
+      */
+    "support receiving a response entity even when the request already failed" ignore new TestSetup(ServerSettings(system).withRawRequestUriHeader(true), autoAccept = true) {
       if (poolImplementation == PoolImplementation.Legacy)
         pending
 
