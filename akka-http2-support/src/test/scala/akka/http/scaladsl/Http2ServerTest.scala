@@ -28,6 +28,7 @@ object Http2ServerTest extends App {
     akka.loglevel = INFO
     akka.log-dead-letters = off
     akka.stream.materializer.debug.fuzzing-mode = off
+    akka.http.server.preview.enable-http2 = on
     akka.actor.serialize-creators = off
     akka.actor.serialize-messages = off
     #akka.actor.default-dispatcher.throughput = 1000
@@ -79,12 +80,14 @@ object Http2ServerTest extends App {
         binding1 ← Http().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9000, ExampleHttpContexts.exampleServerContext)
         binding2 ← Http2().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9001, ExampleHttpContexts.exampleServerContext)
         binding3 ← Http().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9002, HttpConnectionContext(http2 = Always))
-      } yield (binding1, binding2, binding3)
+        binding4 ← Http().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9003, HttpConnectionContext())
+      } yield (binding1, binding2, binding3, binding4)
 
     Await.result(bindings, 1.second) // throws if binding fails
     println("Server (HTTP/1.1) online at https://localhost:9000")
     println(Console.BOLD + "Server (HTTP/2) online at https://localhost:9001" + Console.RESET)
     println(Console.BOLD + "Server (HTTP/2 without negotiation or TLS) online at https://localhost:9002" + Console.RESET)
+    println(Console.BOLD + "Server (HTTP/2 with negotiation but no TLS) online at https://localhost:9003" + Console.RESET)
     println("Press RETURN to stop...")
     StdIn.readLine()
   } finally {
