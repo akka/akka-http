@@ -27,7 +27,8 @@ akka.http.server.preview.enable-http2 = on
 
 ## Use `bindAndHandleAsync` and HTTPS
 
-Only secure HTTP/2 (also known as "over HTTPS" or "with TLS") connections are supported as this is the prime mode of operation for this protocol. While un-encrypted connections are allowed by HTTP/2, clients that support this are rare. See the @ref[HTTPS section](server-https-support.md) for how to set up HTTPS.
+HTTP/2 is primarily used over a secure connection (known as "over HTTPS" or "with TLS"), which also takes care of protocol negotiation and falling back to plain HTTPS when the client does not support HTTP/2.
+See the @ref[HTTPS section](server-https-support.md) for how to set up HTTPS.
 
 You can use @scala[@scaladoc[Http().bindAndHandleAsync](akka.http.scaladsl.HttpExt)]@java[@javadoc[Http().get(system).bindAndHandleAsync()](akka.http.javadsl.HttpExt)] as long as you followed the above steps:
 
@@ -38,6 +39,23 @@ Java
 :   @@snip[Http2Test.java]($test$/java/docs/http/javadsl/Http2Test.java) { #bindAndHandleAsync }
 
 Note that `bindAndHandle` currently does not support HTTP/2, you must use `bindAndHandleAsync`.
+
+### HTTP/2 without HTTPS
+
+While un-encrypted connections are allowed by HTTP/2, this is [generally discouraged](https://http2.github.io/faq/#does-http2-require-encryption).
+
+There are 2 ways to implement un-encrypted HTTP/2 connections: by using the
+[HTTP Upgrade mechanism](http://httpwg.org/specs/rfc7540.html#discover-http) or by starting communication in HTTP/2 directly.
+The latter only makes sense when you can assume the client has [Prior Knowledge](http://httpwg.org/specs/rfc7540.html#known-http) of HTTP/2 support.
+
+We currently only support the approach requiring [Prior Knowledge](http://httpwg.org/specs/rfc7540.html#known-http):
+
+Scala
+:   @@snip[Http2Spec.scala]($test$/scala/docs/http/scaladsl/Http2Spec.scala) { #bindAndHandleWithoutNegotiation }
+
+Java
+:   @@snip[Http2Test.java]($test$/java/docs/http/javadsl/Http2Test.java) { #bindAndHandleWithoutNegotiation }
+
 
 ## Testing with cURL
 

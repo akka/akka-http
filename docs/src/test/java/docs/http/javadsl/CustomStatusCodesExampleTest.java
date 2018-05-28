@@ -8,14 +8,9 @@ import akka.actor.ActorSystem;
 import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.ConnectionContext;
 import akka.http.javadsl.Http;
-import akka.http.javadsl.HttpsConnectionContext;
 import akka.http.javadsl.ServerBinding;
-import akka.http.javadsl.model.HttpCharsets;
-import akka.http.javadsl.model.HttpEntity;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
-import akka.http.javadsl.model.MediaType;
-import akka.http.javadsl.model.MediaTypes;
 import akka.http.javadsl.model.StatusCode;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.Route;
@@ -25,16 +20,20 @@ import akka.http.javadsl.settings.ParserSettings;
 import akka.http.javadsl.settings.ServerSettings;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.stream.Materializer;
-import akka.util.ByteString;
 import org.junit.Test;
 
 import javax.net.ssl.SSLContext;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
+
+//#application-custom-java
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.extractRequest;
+
+//#application-custom-java
 
 public class CustomStatusCodesExampleTest extends JUnitRouteTest {
 

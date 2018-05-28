@@ -11,6 +11,7 @@ import akka.http.impl.util.ExampleHttpContexts
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.http.scaladsl.UseHttp2.Always
 import akka.stream._
 import akka.stream.scaladsl.FileIO
 import com.typesafe.config.Config
@@ -77,11 +78,13 @@ object Http2ServerTest extends App {
       for {
         binding1 ← Http().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9000, ExampleHttpContexts.exampleServerContext)
         binding2 ← Http2().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9001, ExampleHttpContexts.exampleServerContext)
-      } yield (binding1, binding2)
+        binding3 ← Http().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9002, HttpConnectionContext(http2 = Always))
+      } yield (binding1, binding2, binding3)
 
     Await.result(bindings, 1.second) // throws if binding fails
-    println("Server (HTTP/1.1) online at http://localhost:9000")
-    println(Console.BOLD + "Server (HTTP/2) online at http://localhost:9001" + Console.RESET)
+    println("Server (HTTP/1.1) online at https://localhost:9000")
+    println(Console.BOLD + "Server (HTTP/2) online at https://localhost:9001" + Console.RESET)
+    println(Console.BOLD + "Server (HTTP/2 without negotiation or TLS) online at https://localhost:9002" + Console.RESET)
     println("Press RETURN to stop...")
     StdIn.readLine()
   } finally {

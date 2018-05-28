@@ -85,4 +85,3 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.setting
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.TimeoutAccess.getTimeout")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.TimeoutAccess.timeout")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.TimeoutAccess.getTimeout")
-

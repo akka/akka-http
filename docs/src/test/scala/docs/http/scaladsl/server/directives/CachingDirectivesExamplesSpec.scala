@@ -4,15 +4,14 @@
 
 package docs.http.scaladsl.server.directives
 
-import akka.http.scaladsl.model.Uri
 import docs.http.scaladsl.server.RoutingSpec
-import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.model.headers.CacheDirectives._
-import akka.http.scaladsl.server.RequestContext
-import akka.http.scaladsl.server.RouteResult
 //#caching-directives-import
+//#always-cache
+//#cache
 import akka.http.scaladsl.server.directives.CachingDirectives._
 //#caching-directives-import
+//#always-cache
+//#cache
 import akka.http.scaladsl.model.HttpMethods.GET
 import scala.concurrent.duration._
 
@@ -20,6 +19,11 @@ class CachingDirectivesExamplesSpec extends RoutingSpec {
 
   "cache" in {
     //#cache
+    import akka.http.scaladsl.server.RequestContext
+    import akka.http.scaladsl.model.Uri
+    import akka.http.scaladsl.model.headers.{ Authorization, `Cache-Control` }
+    import akka.http.scaladsl.model.headers.CacheDirectives.`no-cache`
+
     //Example keyer for non-authenticated GET requests
     val simpleKeyer: PartialFunction[RequestContext, Uri] = {
       val isGet: RequestContext ⇒ Boolean = _.request.method == GET
@@ -29,30 +33,41 @@ class CachingDirectivesExamplesSpec extends RoutingSpec {
       }
     }
 
+    // Created outside the route to allow using
+    // the same cache across multiple calls
+    val myCache = routeCache[Uri]
+
     var i = 0
     val route =
-      cache(routeCache, simpleKeyer) {
-        complete {
-          i += 1
-          i.toString
+      path("cached") {
+        cache(myCache, simpleKeyer) {
+          complete {
+            i += 1
+            i.toString
+          }
         }
       }
 
-    Get("/") ~> route ~> check {
+    Get("/cached") ~> route ~> check {
       responseAs[String] shouldEqual "1"
     }
     // now cached
-    Get("/") ~> route ~> check {
+    Get("/cached") ~> route ~> check {
       responseAs[String] shouldEqual "1"
     }
     // caching prevented
-    Get("/") ~> `Cache-Control`(`no-cache`) ~> route ~> check {
+    Get("/cached") ~> `Cache-Control`(`no-cache`) ~> route ~> check {
       responseAs[String] shouldEqual "2"
     }
     //#cache
   }
   "alwaysCache" in {
     //#always-cache
+    import akka.http.scaladsl.server.RequestContext
+    import akka.http.scaladsl.model.Uri
+    import akka.http.scaladsl.model.headers.{ Authorization, `Cache-Control` }
+    import akka.http.scaladsl.model.headers.CacheDirectives.`no-cache`
+
     //Example keyer for non-authenticated GET requests
     val simpleKeyer: PartialFunction[RequestContext, Uri] = {
       val isGet: RequestContext ⇒ Boolean = _.request.method == GET
@@ -62,29 +77,38 @@ class CachingDirectivesExamplesSpec extends RoutingSpec {
       }
     }
 
+    // Created outside the route to allow using
+    // the same cache across multiple calls
+    val myCache = routeCache[Uri]
+
     var i = 0
     val route =
-      alwaysCache(routeCache, simpleKeyer) {
-        complete {
-          i += 1
-          i.toString
+      path("cached") {
+        alwaysCache(myCache, simpleKeyer) {
+          complete {
+            i += 1
+            i.toString
+          }
         }
       }
 
-    Get("/") ~> route ~> check {
+    Get("/cached") ~> route ~> check {
       responseAs[String] shouldEqual "1"
     }
     // now cached
-    Get("/") ~> route ~> check {
+    Get("/cached") ~> route ~> check {
       responseAs[String] shouldEqual "1"
     }
-    Get("/") ~> `Cache-Control`(`no-cache`) ~> route ~> check {
+    Get("/cached") ~> `Cache-Control`(`no-cache`) ~> route ~> check {
       responseAs[String] shouldEqual "1"
     }
     //#always-cache
   }
   "cachingProhibited" in {
     //#caching-prohibited
+    import akka.http.scaladsl.model.headers.`Cache-Control`
+    import akka.http.scaladsl.model.headers.CacheDirectives.`no-cache`
+
     val route =
       cachingProhibited {
         complete("abc")
@@ -100,6 +124,10 @@ class CachingDirectivesExamplesSpec extends RoutingSpec {
   }
 
   "createCache" in {
+    import akka.http.scaladsl.server.RequestContext
+    import akka.http.scaladsl.server.RouteResult
+    import akka.http.scaladsl.model.Uri
+
     val keyerFunction: PartialFunction[RequestContext, Uri] = {
       case r: RequestContext ⇒ r.request.uri
     }

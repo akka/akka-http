@@ -699,5 +699,50 @@ class HttpServerExampleSpec extends WordSpec with Matchers
     //#discard-close-connections
   }
 
+  "dynamic routing example" in compileOnlySpec {
+    import akka.actor.ActorSystem
+    import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+    import akka.http.scaladsl.server.Directives._
+    import akka.http.scaladsl.server.Route
+    import akka.stream.ActorMaterializer
+    import spray.json.DefaultJsonProtocol._
+    import spray.json._
 
+    implicit val system = ActorSystem()
+    implicit val materializer = ActorMaterializer()
+
+    //#dynamic-routing-example
+    case class MockDefinition(path: String, requests: Seq[JsValue], responses: Seq[JsValue])
+    implicit val format = jsonFormat3(MockDefinition)
+
+    @volatile var state = Map.empty[String, Map[JsValue, JsValue]]
+
+    // fixed route to update state
+    val fixedRoute: Route = post {
+      pathSingleSlash {
+        entity(as[MockDefinition]) { mock =>
+          val mapping = mock.requests.zip(mock.responses).toMap
+          state = state + (mock.path -> mapping)
+          complete("ok")
+        }
+      }
+    }
+
+    // dynamic routing based on current state
+    val dynamicRoute: Route = ctx => {
+      val routes = state.map { case (segment, responses) =>
+        post {
+          path(segment) {
+            entity(as[JsValue]) { input =>
+              complete(responses.get(input))
+            }
+          }
+        }
+      }
+      concat(routes.toList: _*)(ctx)
+    }
+
+    val route = fixedRoute ~ dynamicRoute
+    //#dynamic-routing-example
+  }
 }

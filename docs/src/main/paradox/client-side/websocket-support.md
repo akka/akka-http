@@ -130,3 +130,38 @@ Scenarios that exist with the two streams in a WebSocket and possible ways to de
 |Two-way communication                 | `Flow.fromSinkAndSource`, or `Flow.map` for a request-response protocol                                              |
 |Infinite incoming stream, no outgoing | @scala[`Flow.fromSinkAndSource(someSink, Source.maybe)`]@java[`Flow.fromSinkAndSource(someSink, Source.maybe())`]    |
 |Infinite outgoing stream, no incoming | @scala[`Flow.fromSinkAndSource(Sink.ignore, yourSource)`]@java[`Flow.fromSinkAndSource(Sink.ignore(), yourSource)`]|
+
+<a id="keep-alive-ping"></a>
+
+## Automatic keep-alive Ping support
+
+Similar to the @ref[server-side kee-alive Ping support](../server-side/websocket-support.md#keep-alive-ping),
+it is possible to configure the client-side to perform automatic keep-alive using Ping (or Pong) frames.
+
+This is supported in a transparent way via configuration by setting the: 
+`akka.http.client.websocket.periodic-keep-alive-max-idle = 1 second` to a specified max idle timeout. The keep alive triggers
+when no other messages are in-flight during the such configured period. Akka HTTP will then automatically send
+a [`Ping` frame](https://tools.ietf.org/html/rfc6455#section-5.5.2) for each of such idle intervals.
+
+By default, the automatic keep-alive feature is disabled.
+
+### Custom keep-alive data payloads
+
+By default, pings do not carry any payload, as it is often enough to simply push *any* frame over the connection
+to ensure the connection stays healthy (or detect if it was severed), however you may configure them to carry a custom 
+payload, to do this you can provide a function that will be asked to emit the payload for each of the ping messages generated:
+
+Scala
+:  @@snip [WebSocketExampleSpec.scala]($test$/scala/docs/http/scaladsl/server/WebSocketExampleSpec.scala) { #websocket-client-ping-payload }
+
+Java
+:  @@snip [WebSocketCoreExample.java]($test$/java/docs/http/javadsl/server/WebSocketCoreExample.java) { #websocket-client-ping-payload }
+
+### Uni-directional Pong keep-alive
+
+
+A Ping response will always be replied to by the client-side with an appropriate `Pong` reply, carrying the same payload.
+It is also possible to configure the keep-alive mechanism to send `Pong` frames instead of `Ping` frames, 
+which enables an [uni-directional heartbeat](https://tools.ietf.org/html/rfc6455#section-5.5.3) mechanism (in which case 
+the client side will *not* reply to such heartbeat). You can configure this mode by setting: 
+`akka.http.client.websocket.periodic-keep-alive-mode = pong`.

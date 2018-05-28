@@ -15,6 +15,43 @@ import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+//#parameter
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.parameter;
+
+//#parameter
+//#parameter
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.parameter;
+
+//#parameter
+//#optional
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.parameter;
+import static akka.http.javadsl.server.Directives.parameterOptional;
+
+//#optional
+//#mapped-value
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.parameter;
+
+//#mapped-value
+//#parameterMap
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.parameterMap;
+
+//#parameterMap
+//#parameterMultiMap
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.parameterMultiMap;
+
+//#parameterMultiMap
+//#parameterSeq
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.parameterList;
+
+//#parameterSeq
+
 public class ParameterDirectivesExamplesTest extends JUnitRouteTest {
 
   @Test

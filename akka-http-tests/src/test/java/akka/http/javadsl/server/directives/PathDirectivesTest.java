@@ -15,6 +15,8 @@ import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import akka.http.scaladsl.model.HttpRequest;
 
+import static akka.http.javadsl.server.Directives.*;
+
 public class PathDirectivesTest extends JUnitRouteTest {
   @Test
   public void testPathPrefixAndPath() {

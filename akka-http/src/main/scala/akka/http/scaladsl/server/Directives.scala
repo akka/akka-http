@@ -38,4 +38,9 @@ trait Directives extends RouteConcatenation
   with WebSocketDirectives
   with FramedEntityStreamingDirectives
 
+/**
+ * Collects all default directives into one object for simple importing.
+ *
+ * See [[akka.http.javadsl.server.Directives]] for JavaDSL equivalent of this trait.
+ */
 object Directives extends Directives

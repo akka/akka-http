@@ -5,12 +5,13 @@
 package akka.http.impl.engine.ws
 
 import akka.http.scaladsl.model.ws._
-import akka.stream.scaladsl.{ Keep, Sink, Flow, Source }
+import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import akka.stream.testkit.Utils
 import akka.util.ByteString
-import org.scalatest.{ Matchers, FreeSpec }
-
+import org.scalatest.{ FreeSpec, Matchers }
 import akka.http.impl.engine.server.HttpServerTestSetupBase
+
+import scala.concurrent.duration._
 
 class WebSocketServerSpec extends FreeSpec with Matchers with WithMaterializerSpec { spec ⇒
 
@@ -102,6 +103,58 @@ class WebSocketServerSpec extends FreeSpec with Matchers with WithMaterializerSp
           expectWSFrame(Protocol.Opcode.Text, ByteString("Message 4"), fin = true)
           sendWSFrame(Protocol.Opcode.Text, ByteString("Message 5"), fin = true, mask = true)
           expectWSFrame(Protocol.Opcode.Text, ByteString("Message 5"), fin = true)
+
+          sendWSCloseFrame(Protocol.CloseCodes.Regular, mask = true)
+          expectWSCloseFrame(Protocol.CloseCodes.Regular)
+
+          closeNetworkInput()
+          expectNetworkClose()
+        }
+      }
+    }
+    "send Ping keep-alive heartbeat" - {
+      "on idle websocket connection" in Utils.assertAllStagesStopped {
+        new TestSetup {
+
+          override def settings = {
+            val defaults = super.settings.websocketSettings
+            super.settings.withWebsocketSettings(defaults
+              .withPeriodicKeepAliveMode("ping")
+              .withPeriodicKeepAliveMaxIdle(100.millis)
+            )
+          }
+
+          send(
+            """GET /echo HTTP/1.1
+              |Host: server.example.com
+              |Upgrade: websocket
+              |Connection: Upgrade
+              |Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+              |Origin: http://example.com
+              |Sec-WebSocket-Version: 13
+              |
+              |""")
+
+          val request = expectRequest()
+          val upgrade = request.header[UpgradeToWebSocket]
+
+          val handler = Flow.fromSinkAndSourceCoupled(Sink.ignore, Source.maybe[Message])
+
+          // since the handler is not doing anything, we expect the server to start sending Ping frames transparently
+          val response = upgrade.get.handleMessages(handler)
+          responses.sendNext(response)
+
+          expectResponseWithWipedDate(
+            """HTTP/1.1 101 Switching Protocols
+              |Upgrade: websocket
+              |Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
+              |Server: akka-http/test
+              |Date: XXXX
+              |Connection: upgrade
+              |
+              |""")
+
+          expectWSFrame(Protocol.Opcode.Ping, ByteString.empty, fin = true)
 
           sendWSCloseFrame(Protocol.CloseCodes.Regular, mask = true)
           expectWSCloseFrame(Protocol.CloseCodes.Regular)

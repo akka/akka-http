@@ -11,14 +11,15 @@ import akka.http.javadsl.Http;
 import akka.http.javadsl.HttpsConnectionContext;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
-import akka.http.javadsl.server.AllDirectives;
 import akka.http.javadsl.server.Route;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Flow;
 
+import static akka.http.javadsl.server.Directives.*;
+
 import java.io.IOException;
 
-public class SimpleServerHttpHttpsApp extends AllDirectives { // or import Directives.*
+public class SimpleServerHttpHttpsApp {
 
   public Route createRoute() {
     return get( () -> complete("Hello World!") );

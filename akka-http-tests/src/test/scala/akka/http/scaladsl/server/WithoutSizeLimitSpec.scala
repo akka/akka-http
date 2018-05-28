@@ -49,7 +49,9 @@ class WithoutSizeLimitSpec extends WordSpec with Matchers with RequestBuilding w
 
       val (hostName, port) = SocketUtil.temporaryServerHostnameAndPort()
 
-      EventFilter[EntityStreamSizeException](occurrences = 1).intercept {
+      // It went from 1 occurrence to 2 after discarding the entity, I think is due to the retrying nature of `handleRejections`
+      // that causes one Exception for the original entity and another one from the rejected one.
+      EventFilter[EntityStreamSizeException](occurrences = 2).intercept {
         val future = for {
           _ ← Http().bindAndHandle(route, hostName, port)
 

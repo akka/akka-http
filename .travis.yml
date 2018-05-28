@@ -3,7 +3,7 @@ language: scala
 sudo: false
 
 scala:
-  - "2.12.4"
+  - "2.12.6"
   - "2.11.12"
 
 jdk:
@@ -33,6 +33,7 @@ script:
 
 deploy:
   provider: script
+  skip_cleanup: true
   script:
     - sbt -J-XX:ReservedCodeCacheSize=256m ++$TRAVIS_SCALA_VERSION publish
 #    - sbt -J-XX:ReservedCodeCacheSize=256m +publish akka-http/bintraySyncMavenCentral # enable if we want to sync to central automatically

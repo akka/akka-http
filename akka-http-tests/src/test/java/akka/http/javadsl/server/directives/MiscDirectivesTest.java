@@ -8,7 +8,6 @@ import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.RemoteAddress;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.model.Uri;
-import akka.http.javadsl.model.headers.RawHeader;
 import akka.http.javadsl.model.headers.XForwardedFor;
 import akka.http.javadsl.model.headers.XRealIp;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
@@ -19,6 +18,8 @@ import org.junit.Test;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+
+import static akka.http.javadsl.server.Directives.*;
 
 public class MiscDirectivesTest extends JUnitRouteTest {
 

@@ -25,8 +25,10 @@ import java.util.concurrent.Executor;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import static akka.http.javadsl.server.Directives.*;
 import static akka.http.javadsl.server.PathMatchers.integerSegment;
 import static akka.http.javadsl.unmarshalling.Unmarshaller.entityToString;
+
 //#https-http-config
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -40,7 +42,7 @@ import akka.http.javadsl.HttpsConnectionContext;
 
 //#https-http-config
 
-public class SimpleServerApp extends AllDirectives { // or import Directives.*
+public class SimpleServerApp {
 
 
   //#https-http-app

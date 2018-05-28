@@ -27,6 +27,29 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
+//#handleWebSocketMessages
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.handleWebSocketMessages;
+
+//#handleWebSocketMessages
+//#handleWebSocketMessagesForProtocol
+import static akka.http.javadsl.server.Directives.route;
+import static akka.http.javadsl.server.Directives.handleWebSocketMessagesForProtocol;
+
+//#handleWebSocketMessagesForProtocol
+//#extractUpgradeToWebSocket
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.extractUpgradeToWebSocket;
+import static akka.http.javadsl.server.Directives.route;
+
+
+//#extractUpgradeToWebSocket
+//#extractOfferedWsProtocols
+import static akka.http.javadsl.server.Directives.route;
+import static akka.http.javadsl.server.Directives.extractOfferedWsProtocols;
+import static akka.http.javadsl.server.Directives.handleWebSocketMessagesForOptionalProtocol;
+
+//#extractOfferedWsProtocols
 public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
 
   @Test
