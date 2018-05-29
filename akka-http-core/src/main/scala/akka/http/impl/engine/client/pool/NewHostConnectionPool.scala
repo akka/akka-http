@@ -324,11 +324,10 @@ private[client] object NewHostConnectionPool {
 
           def settings: ConnectionPoolSettings = _settings
 
-          def openConnection(): Future[Http.OutgoingConnection] = {
+          def openConnection(): Unit = {
             if (connection ne null) throw new IllegalStateException("Cannot open connection when slot still has an open connection")
 
             connection = logic.openConnection(this)
-            connection.outgoingConnection
           }
           def pushRequestToConnectionAndThen(request: HttpRequest, nextState: SlotState): SlotState = {
             if (connection eq null) throw new IllegalStateException("Cannot open push request to connection when there's no connection")
@@ -359,10 +358,9 @@ private[client] object NewHostConnectionPool {
             }
         }
         final class SlotConnection(
-          _slot:                  Slot,
-          requestOut:             SubSourceOutlet[HttpRequest],
-          responseIn:             SubSinkInlet[HttpResponse],
-          val outgoingConnection: Future[Http.OutgoingConnection]
+          _slot:      Slot,
+          requestOut: SubSourceOutlet[HttpRequest],
+          responseIn: SubSinkInlet[HttpResponse]
         ) extends InHandler with OutHandler { connection ⇒
           var ongoingResponseEntity: Option[HttpEntity] = None
 
@@ -470,7 +468,7 @@ private[client] object NewHostConnectionPool {
               .toMat(responseIn.sink)(Keep.left)
               .run()(subFusingMaterializer)
 
-          val slotCon = new SlotConnection(slot, requestOut, responseIn, connection)
+          val slotCon = new SlotConnection(slot, requestOut, responseIn)
           requestOut.setHandler(slotCon)
           responseIn.setHandler(slotCon)
 
