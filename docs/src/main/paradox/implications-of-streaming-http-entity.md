@@ -23,8 +23,7 @@ A client should consume the Entity regardless of the status of the @unidoc[HttpR
 ### Consuming the HTTP Response Entity (Client)
 
 The most common use-case of course is consuming the response entity, which can be done via
-running the underlying `dataBytes` Source. This is as simple as running the dataBytes source,
-(or on the server-side using directives such as `BasicDirectives.extractDataBytes`).
+running the underlying `dataBytes` Source (or on the server-side using directives such as `BasicDirectives.extractDataBytes`).
 
 It is encouraged to use various streaming techniques to utilise the underlying infrastructure to its fullest,
 for example by framing the incoming chunks, parsing them line-by-line and then connecting the flow into another
