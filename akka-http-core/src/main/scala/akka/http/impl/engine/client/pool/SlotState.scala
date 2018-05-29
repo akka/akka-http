@@ -102,7 +102,12 @@ private[pool] object SlotState {
     final override def isIdle = true
   }
   sealed private[pool] /* to avoid warnings */ trait BusyState extends SlotState {
-    final override def isIdle = false // no HTTP pipelining right now
+    // no HTTP pipelining: we could accept a new request when the request has been sent completely (or
+    // even when the response has started to come in). However, that would mean the next request and response
+    // are effectively blocked on the completion on the previous request and response. For this reason we
+    // avoid accepting new connections in this slot while the previous request is still in progress: there might
+    // be another slot available which can process the request with lower latency.
+    final override def isIdle = false
     def ongoingRequest: RequestContext
 
     override def onShutdown(ctx: SlotContext): Unit = {

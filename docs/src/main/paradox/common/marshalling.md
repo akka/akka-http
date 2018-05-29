@@ -94,6 +94,7 @@ Specifically these are:
     * `char[]`
     * `String`
     * @unidoc[FormData]
+    * `Optional<T>` using an existing @unidoc[RequestEntity] marshaller for `T`. An empty optional will yield an empty entity.
  * Predefined @unidoc[HttpResponse] marshallers:
     * `T` using an existing @unidoc[RequestEntity] marshaller for `T`
     * `T` and @unidoc[StatusCode] using an existing @unidoc[RequestEntity] marshaller for `T`

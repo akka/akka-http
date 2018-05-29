@@ -4,7 +4,7 @@
 
 package akka.http.javadsl.marshalling
 
-import java.util.function
+import java.util.{ Optional, function }
 
 import akka.annotation.InternalApi
 import akka.http.impl.util.JavaMapping
@@ -25,6 +25,8 @@ object Marshaller {
   import JavaMapping.Implicits._
 
   def fromScala[A, B](scalaMarshaller: marshalling.Marshaller[A, B]): Marshaller[A, B] = new Marshaller()(scalaMarshaller)
+
+  def toOption[T](opt: Optional[T]): Option[T] = if (opt.isPresent) Some(opt.get()) else None
 
   /**
    * Safe downcasting of the output type of the marshaller to a superclass.
@@ -55,8 +57,15 @@ object Marshaller {
   def byteStringMarshaller(t: ContentType): Marshaller[ByteString, RequestEntity] =
     fromScala(scaladsl.marshalling.Marshaller.byteStringMarshaller(t.asScala))
 
-  // TODO make sure these are actually usable in a sane way
+  /**
+   * Marshals an Optional[A] to a RequestEntity an empty optional will yield an empty entity.
+   */
+  def optionMarshaller[A](m: Marshaller[A, RequestEntity]): Marshaller[Optional[A], RequestEntity] = {
+    val scalaMarshaller = m.asScalaCastOutput
+    fromScala(marshalling.Marshaller.optionMarshaller(scalaMarshaller, EmptyValue.emptyEntity).compose(toOption))
+  }
 
+  // TODO make sure these are actually usable in a sane way
   def wrapEntity[A, C](f: function.BiFunction[ExecutionContext, C, A], m: Marshaller[A, RequestEntity], mediaType: MediaType): Marshaller[C, RequestEntity] = {
     val scalaMarshaller = m.asScalaCastOutput
     fromScala(scalaMarshaller.wrapWithEC(mediaType.asScala) { ctx ⇒ c: C ⇒ f(ctx, c) }(ContentTypeOverrider.forEntity))
