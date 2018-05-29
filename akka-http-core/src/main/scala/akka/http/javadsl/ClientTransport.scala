@@ -53,7 +53,7 @@ object ClientTransport {
    *
    * Pulls the host/port pair from the application.conf: akka.client.proxy.https.{host, port}
    */
-  def httpsProxy()(implicit system: ActorSystem): ClientTransport =
+  def httpsProxy(implicit system: ActorSystem): ClientTransport =
     scaladsl.ClientTransport.httpsProxy().asJava
 
   /**
@@ -75,8 +75,8 @@ object ClientTransport {
    *
    * Pulls the host/port pair from the application.conf: akka.client.proxy.https.{host, port}
    */
-  def httpsProxy(proxyCredentials: HttpCredentials)(implicit system: ActorSystem): ClientTransport =
-    scaladsl.ClientTransport.httpsProxy(proxyCredentials.asScala).asJava
+  def httpsProxy(proxyCredentials: HttpCredentials, system: ActorSystem): ClientTransport =
+    scaladsl.ClientTransport.httpsProxy(proxyCredentials.asScala)(system).asJava
 
   def fromScala(scalaTransport: scaladsl.ClientTransport): ClientTransport =
     scalaTransport match {
