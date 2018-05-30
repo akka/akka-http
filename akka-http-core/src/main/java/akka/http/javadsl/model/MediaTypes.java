@@ -298,6 +298,14 @@ public final class MediaTypes {
         return akka.http.scaladsl.model.MediaType.video(subType, comp, fileEx);
     }
 
+    public static MediaType.Binary customBinary(String mainType, String subType, boolean compressible) {
+        return customBinary(mainType, subType, compressible, java.util.Collections.<String, String>emptyMap(), false);
+    }
+
+    public static MediaType.Binary customBinary(String mainType, String subType, MediaType.Compressibility compressibility) {
+        return customBinary(mainType, subType, compressibility, java.util.Collections.<String, String>emptyMap(), false);
+    }
+
     // arguments have been reordered due to varargs having to be the last argument
     // should we create multiple overloads of this function?
     public static MediaType.Binary customBinary(String mainType, String subType, boolean compressible, java.util.Map<String, String> params, boolean allowArbitrarySubtypes, String... fileExtensions) {

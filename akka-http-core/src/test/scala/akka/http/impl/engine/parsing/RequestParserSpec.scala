@@ -22,7 +22,7 @@ import akka.http.impl.util._
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.HttpProtocols._
-import akka.http.scaladsl.model.MediaType.WithFixedCharset
+import akka.http.scaladsl.model.MediaType.{ WithFixedCharset, WithOpenCharset }
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model.RequestEntityAcceptance.Expected
 import akka.http.scaladsl.model.StatusCodes._
@@ -288,7 +288,6 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
         val oneChunk = s"1${newLine}z\n"
         val manyChunks = (oneChunk * numChunks) + s"0${newLine}"
 
-        val parser = newParser
         val result = multiParse(newParser)(Seq(prep(start + manyChunks)))
         val HttpEntity.Chunked(_, chunks) = result.head.right.get.req.entity
         val strictChunks = chunks.limit(100000).runWith(Sink.seq).awaitResult(awaitAtMost)
@@ -370,6 +369,52 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
           "/",
           List(Host("ping")),
           HttpEntity(ContentTypes.`text/plain(UTF-8)`, "abcdefgh")))
+    }
+
+    "support custom media types that override existing media types" in new Test {
+      // Override the application/json media type and give it an open instead of fixed charset.
+      // This allows us to support various third-party agents which use an explicit charset.
+      val openJson: WithOpenCharset =
+        MediaType.customWithOpenCharset("application", "json")
+
+      override protected def parserSettings: ParserSettings =
+        super.parserSettings.withCustomMediaTypes(openJson).withMaxHeaderValueLength(64)
+
+      """POST /abc HTTP/1.1
+        |Host: ping
+        |Content-Type: application/json
+        |Content-Length: 0
+        |
+        |""" should parseTo(
+        HttpRequest(
+          POST,
+          "/abc",
+          List(Host("ping")),
+          HttpEntity.empty(ContentType.WithMissingCharset(openJson))))
+
+      """POST /def HTTP/1.1
+        |Host: ping
+        |Content-Type: application/json; charset=utf-8
+        |Content-Length: 3
+        |
+        |123""" should parseTo(
+        HttpRequest(
+          POST,
+          "/def",
+          List(Host("ping")),
+          HttpEntity(ContentType(openJson, HttpCharsets.`UTF-8`), "123")))
+
+      """POST /ghi HTTP/1.1
+        |Host: ping
+        |Content-Type: application/json; charset=us-ascii
+        |Content-Length: 8
+        |
+        |abcdefgh""" should parseTo(
+        HttpRequest(
+          POST,
+          "/ghi",
+          List(Host("ping")),
+          HttpEntity(ContentType(openJson, HttpCharsets.`US-ASCII`), "abcdefgh")))
     }
 
     "reject a message chunk with" - {

@@ -263,6 +263,26 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
           Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS → 0x123
         )))
       }
+      // 6.5.3: An endpoint that receives a SETTINGS frame with any unknown or unsupported identifier MUST ignore that setting
+      "with an unknown setting" in {
+        // As observed being sent by grpcc in the first SETTINGS frame:
+        b"""xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=6   # length
+            00000100     # type = 0x4 = SETTINGS
+            00000000     # no flags
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=0   # no stream ID
+            11111110
+            00000011
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=1
+         """ should parseTo(SettingsFrame(Nil), checkRendering = false)
+      }
       "ack" in {
         b"""xxxxxxxx
             xxxxxxxx

@@ -362,10 +362,9 @@ private[client] object NewHostConnectionPool {
             }
         }
         final class SlotConnection(
-          _slot:                  Slot,
-          requestOut:             SubSourceOutlet[HttpRequest],
-          responseIn:             SubSinkInlet[HttpResponse],
-          val outgoingConnection: Future[Http.OutgoingConnection]
+          _slot:      Slot,
+          requestOut: SubSourceOutlet[HttpRequest],
+          responseIn: SubSinkInlet[HttpResponse]
         ) extends InHandler with OutHandler { connection ⇒
           var ongoingResponseEntity: Option[HttpEntity] = None
 
@@ -472,7 +471,7 @@ private[client] object NewHostConnectionPool {
               .toMat(responseIn.sink)(Keep.left)
               .run()(subFusingMaterializer)
 
-          val slotCon = new SlotConnection(slot, requestOut, responseIn, connection)
+          val slotCon = new SlotConnection(slot, requestOut, responseIn)
           requestOut.setHandler(slotCon)
           responseIn.setHandler(slotCon)
 
