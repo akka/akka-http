@@ -173,7 +173,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
       "time out and reconnect when a request is not handled in time" in pending
       "time out when connection cannot be established" in pending
       "fail a request if the request entity fails" in new SetupWithServerProbes {
-        val reqBytesOut = pushChunkedRequest()
+        val reqBytesOut = pushChunkedRequest(numRetries = 0)
 
         val conn1 = expectNextConnection()
         val reqBytesIn = conn1.expectChunkedRequestBytesAsProbe()

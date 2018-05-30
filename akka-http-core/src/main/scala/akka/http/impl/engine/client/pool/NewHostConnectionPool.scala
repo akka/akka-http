@@ -205,6 +205,7 @@ private[client] object NewHostConnectionPool {
                 cancelCurrentTimeout()
 
                 val previousState = state
+                debug(s"Before event [${event.name}] In state [${state.name}]")
                 state = event.transition(state, this, arg)
                 debug(s"After event [${event.name}] State change [${previousState.name}] -> [${state.name}]")
 
@@ -242,10 +243,10 @@ private[client] object NewHostConnectionPool {
                       }
                       OptionVal.None
                     }
-                  case WaitingForResponseEntitySubscription(_, HttpResponse(_, _, _: HttpEntity.Strict, _), _) ⇒
+                  case WaitingForResponseEntitySubscription(_, HttpResponse(_, _, _: HttpEntity.Strict, _), _, _) ⇒
                     // the connection cannot drive these for a strict entity so we have to loop ourselves
                     OptionVal.Some(Event.onResponseEntitySubscribed)
-                  case WaitingForEndOfResponseEntity(_, HttpResponse(_, _, _: HttpEntity.Strict, _)) ⇒
+                  case WaitingForEndOfResponseEntity(_, HttpResponse(_, _, _: HttpEntity.Strict, _), _) ⇒
                     // the connection cannot drive these for a strict entity so we have to loop ourselves
                     OptionVal.Some(Event.onResponseEntityCompleted)
                   case Unconnected if numConnectedSlots < settings.minConnections ⇒
@@ -332,10 +333,13 @@ private[client] object NewHostConnectionPool {
           def pushRequestToConnectionAndThen(request: HttpRequest, nextState: SlotState): SlotState = {
             if (connection eq null) throw new IllegalStateException("Cannot open push request to connection when there's no connection")
 
-            // bit of a HACK to make sure onRequestEntityCompleted will end up in the right place
-            state = nextState
+            // bit of a HACK: pushing the request may cause a onRequestEntityCompleted event on the current thread.
 
+            // To accomodate this we first do an 'early' update of the state:
+            state = nextState
+            // Then execute the action that might cause the 'inline' state change:
             connection.pushRequest(request)
+            // And then return the possibly-again-updated state so we don't overwrite it afterwards:
             state
           }
           def closeConnection(): Unit =
@@ -380,7 +384,6 @@ private[client] object NewHostConnectionPool {
                     case Success(_)     ⇒ withSlot(_.onRequestEntityCompleted())
                     case Failure(cause) ⇒ withSlot(_.onRequestEntityFailed(cause))
                   })(ExecutionContexts.sameThreadExecutionContext)
-
                   request.withEntity(newEntity)
               }
 
