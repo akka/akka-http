@@ -96,7 +96,6 @@ class H2SpecIntegrationSpec extends AkkaSpec(
       "5.1.1",
       "5.5",
       "6.1",
-      "6.5",
       "6.5.2",
       "6.9",
       "6.9.1",
@@ -143,10 +142,13 @@ class H2SpecIntegrationSpec extends AkkaSpec(
     // end of execution of tests -----------------------------------------------------------
 
     def runSpec(specSectionNumber: Option[String] = None, junitOutput: File): Unit = {
+      junitOutput.getParentFile.mkdirs()
+
       val TestFailureMarker = "×" // that special character is next to test failures, so we detect them by it
 
       val keepAccumulating = new AtomicBoolean(true)
-      val sb = new StringBuffer()
+      val stdout = new StringBuffer()
+      val stderr = new StringBuffer()
 
       val command = s"$executable -k -t -p $port -j $junitOutput" + specSectionNumber.map(" -s " + _).getOrElse("")
       println(s"exec: $command")
@@ -155,19 +157,20 @@ class H2SpecIntegrationSpec extends AkkaSpec(
           if (out.contains("All tests passed")) ()
           else if (out.contains("tests, ")) ()
           else if (out.contains("===========================================")) keepAccumulating.set(false)
-          else if (keepAccumulating.get) sb.append(out + Console.RESET + "\n  ")
+          else if (keepAccumulating.get) stdout.append(out + Console.RESET + "\n  ")
         },
-        _ ⇒ () // nothing is writtedn to stdout by this app
+        err ⇒ stderr.append(err)
       )
 
+      // p.exitValue blocks until the process is terminated
       val p = command.run(aggregateTckLogs)
+      val exitedWith = p.exitValue()
 
-      p.exitValue()
-      val output = sb.toString
-      info(output)
-      if (output.contains(TestFailureMarker)) {
-        throw new AssertionError(s"Tck section $specSectionNumber failed at least one test.") with NoStackTrace
-      } else if (output.contains("0 failed")) ()
+      val output = stdout.toString
+      stderr.toString should be("")
+      output shouldNot startWith("Error:")
+      output shouldNot include(TestFailureMarker)
+      exitedWith should be(0)
     }
 
     def executable =
