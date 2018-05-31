@@ -19,6 +19,7 @@ import HttpEncodings._
 import HttpMethods._
 import java.net.InetAddress
 
+import akka.http.scaladsl.model.MediaType.WithOpenCharset
 import org.scalatest.exceptions.TestFailedException
 
 class HttpHeaderSpec extends FreeSpec with Matchers {
@@ -729,6 +730,25 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       val targetUri = Uri("http://example.org/?abc=def=ghi", Uri.ParsingMode.Relaxed)
       HttpHeader.parse("location", "http://example.org/?abc=def=ghi", HeaderParser.Settings(uriParsingMode = Uri.ParsingMode.Relaxed)) shouldEqual
         ParsingResult.Ok(Location(targetUri), Nil)
+    }
+    "parse content-type with custom media types" in {
+      // Override the application/json media type and give it an open instead of fixed charset.
+      // This allows us to support various third-party agents which use an explicit charset.
+      val openJson: WithOpenCharset = MediaType.customWithOpenCharset("application", "json")
+
+      def checkContentType(headerValue: String, contentType: ContentType) = {
+        val customMediaTypes: MediaTypes.FindCustom = {
+          case ("application", "json") ⇒ Some(openJson)
+          case _                       ⇒ None
+        }
+        val headerParserSettings = HeaderParser.Settings(customMediaTypes = customMediaTypes)
+        val header = `Content-Type`(contentType)
+        HttpHeader.parse("content-type", headerValue, headerParserSettings) shouldEqual ParsingResult.Ok(header, Nil)
+        header.toString shouldEqual s"Content-Type: $headerValue"
+      }
+
+      checkContentType("application/json", ContentType.WithMissingCharset(openJson))
+      checkContentType("application/json; charset=UTF-8", ContentType(openJson, HttpCharsets.`UTF-8`))
     }
   }
 
