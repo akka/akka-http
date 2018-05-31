@@ -465,7 +465,7 @@ private[http] object HttpServerBluePrint {
       setHandler(responseCtxOut, new OutHandler {
         override def onPull() = {
           pull(httpResponseIn)
-          // after the iServerTerminationDeadlineReachednitial pull here we only ever pull after having emitted in `onPush` of `httpResponseIn`
+          // after the initial pull here we only ever pull after having emitted in `onPush` of `httpResponseIn`
           setHandler(responseCtxOut, GraphStageLogic.EagerTerminateOutput)
         }
       })

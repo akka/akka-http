@@ -63,7 +63,7 @@ class ServerBinding private[http] (delegate: akka.http.scaladsl.Http.ServerBindi
    *   yet no new requests will be delivered to the user handler. All such drained responses will be replied to with an
    *   termination response (as explained in phase 2).
    *
-   * 3) Close still existing connections
+   * 4) Close still existing connections
    * - Connections are terminated forcefully once the `hardDeadline` is exceeded.
    *   The `whenTerminated` future is completed as well, so the graceful termination (of the `ActorSystem` or entire JVM
    *   itself can be safely performed, as by then it is known that no connections remain alive to this server).
