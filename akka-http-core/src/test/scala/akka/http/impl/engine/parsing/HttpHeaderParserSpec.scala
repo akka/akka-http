@@ -127,6 +127,10 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       parseAndCache(s"Host: spray.io:123${newLine}x")(s"HOST: spray.io:123${newLine}x") shouldEqual Host("spray.io", 123)
     }
 
+    "parse and cache a Set-Cookie header with a value in double quotes" in new TestSetup() {
+      parseAndCache(s"""Set-Cookie: tralala="cookie-value-here"${newLine}x""")() shouldEqual `Set-Cookie`(HttpCookie("tralala", "cookie-value-here"))
+    }
+
     "parse and cache an invalid modelled header as RawHeader" in new TestSetup() {
       parseAndCache(s"Content-Type: abc:123${newLine}x")() shouldEqual RawHeader("content-type", "abc:123")
       parseAndCache(s"Origin: localhost:8080${newLine}x")() shouldEqual RawHeader("origin", "localhost:8080")
@@ -139,6 +143,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
     "parse and cache an X-Real-Ip with a hostname as it's value as a RawHeader" in new TestSetup() {
       parseAndCache(s"X-Real-Ip: akka.io${newLine}x")() shouldEqual RawHeader("x-real-ip", "akka.io")
     }
+
     "parse and cache a raw header" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
       insert("hello: bob", 'Hello)
       val (ixA, headerA) = parseLine(s"Fancy-Pants: foo${newLine}x")
