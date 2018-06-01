@@ -29,7 +29,7 @@ object Dependencies {
     scalaVersion := crossScalaVersions.value.head,
     scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.14.0"),
     scalaTestVersion := "3.0.5",
-    specs2Version := "4.0.4"
+    specs2Version := "4.2.0"
   )
   import Versions._
 
@@ -56,7 +56,7 @@ object Dependencies {
 
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
-      val gson        = "com.google.code.gson"             % "gson"                    % "2.8.3"             % "test"
+      val gson        = "com.google.code.gson"             % "gson"                    % "2.8.5"             % "test"
       val jacksonXml  = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml"  % jacksonVersion      % "test" // ApacheV2
       val reflections = "org.reflections"                  % "reflections"             % "0.9.11"            % "test" // WTFPL
     }
