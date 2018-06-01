@@ -20,7 +20,7 @@ addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.2")
 addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.4")
 addSbtPlugin("com.lightbend.paradox" % "sbt-paradox" % "0.3.2")
 addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.8")
-addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.10")
+addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.12")
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.0.0")
 
 // used in ValidatePullRequest to check github PR comments whether to build all subprojects
