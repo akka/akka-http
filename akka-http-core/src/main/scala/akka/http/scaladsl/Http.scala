@@ -174,9 +174,9 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
         _.map(tcpBinding ⇒
           ServerBinding(tcpBinding.localAddress)(
             () ⇒ tcpBinding.unbind(),
-            timeout ⇒ masterTerminator.terminate(timeout)(ExecutionContexts.sameThreadExecutionContext) // no other available here
+            timeout ⇒ masterTerminator.terminate(timeout)(systemMaterializer.executionContext)
           )
-        )(ExecutionContexts.sameThreadExecutionContext)
+        )(systemMaterializer.executionContext)
       }
   }
 
@@ -241,7 +241,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
               () ⇒ tcpBinding.unbind(),
               timeout ⇒ masterTerminator.terminate(timeout)(fm.executionContext)
             )
-        )(ExecutionContexts.sameThreadExecutionContext)
+        )(fm.executionContext)
       }
       .to(Sink.ignore)
       .run()
@@ -1027,7 +1027,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   final case class IncomingConnection(
     localAddress:  InetSocketAddress,
     remoteAddress: InetSocketAddress,
-    _flow:         Flow[HttpResponse, HttpRequest, ServerTerminator]) { // FIXME may not change mat value I guess
+    _flow:         Flow[HttpResponse, HttpRequest, ServerTerminator]) {
 
     def flow: Flow[HttpResponse, HttpRequest, NotUsed] = _flow.mapMaterializedValue(_ ⇒ NotUsed)
 

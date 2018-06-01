@@ -597,7 +597,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
                 // this is simply a mock, since we do not use termination in these tests anyway
                 def terminate(deadline: FiniteDuration)(implicit ec: ExecutionContext): Future[HttpTerminated] =
                   Future.successful(HttpServerTerminated)
-              }) // FIXME layer should by itself carry the terminator already
+              })
           Http.IncomingConnection(c.localAddress, c.remoteAddress, flow)
         }.runWith(sink)
       if (autoAccept) null else incomingConnections.expectSubscription()

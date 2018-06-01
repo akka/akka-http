@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicReference
 import akka.Done
 import akka.actor.{ ActorSystem, Terminated }
 import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.{ HttpConnectionTerminated, HttpServerTerminated, HttpTerminated }
@@ -107,7 +106,14 @@ private[http] final class MasterServerTerminator(log: LoggingAdapter) extends Se
   }
 }
 
-final class ServerTerminationDeadlineReached()
+/**
+ * INTERNAL API
+ *
+ * Used to fail when terminating connections forcefully at end of termination deadline.
+ * Not intended to be recovered from or caught by user error handlers.
+ */
+@InternalApi
+private[http] final class ServerTerminationDeadlineReached()
   extends RuntimeException("Server termination deadline reached, shutting down all connections and terminating server...")
 
 object GracefulTerminatorStage {
@@ -118,7 +124,7 @@ object GracefulTerminatorStage {
 }
 
 /**
- * See detailed docs termination process on [[akka.http.scaladsl.Http.ServerBinding]].
+ * INTERNAL API: See detailed docs termination process on [[akka.http.scaladsl.Http.ServerBinding]].
  *
  * Stage shape diagram:
  *
@@ -130,7 +136,8 @@ object GracefulTerminatorStage {
  *                      +---+
  * }}}
  */
-final class GracefulTerminatorStage(settings: ServerSettings)
+@InternalApi
+private[http] final class GracefulTerminatorStage(settings: ServerSettings)
   extends GraphStageWithMaterializedValue[BidiShape[HttpResponse, HttpResponse, HttpRequest, HttpRequest], ServerTerminator] {
 
   val fromNet: Inlet[HttpRequest] = Inlet("netIn")
@@ -287,7 +294,7 @@ final class GracefulTerminatorStage(settings: ServerSettings)
             // sending the reply here is a "nice to try", but the stage failure will likely overtake it and terminate the connection first
             emit(toNet, settings.terminationDeadlineExceededResponse, () ⇒ failStage(ex))
           } else {
-            failStage(ex) // TODO think if to throw or fail here? this causes the "dont keep connections around longer than the deadline"
+            failStage(ex)
           }
 
         case unexpected ⇒
