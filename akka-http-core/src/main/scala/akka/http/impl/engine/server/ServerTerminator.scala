@@ -223,7 +223,6 @@ private[http] final class GracefulTerminatorStage(settings: ServerSettings)
         }
       })
 
-      // TODO what other semantics should we change in this phase...
       def installTerminationHandlers(deadline: Deadline): Unit = {
         // we may need to inject a termination response
         setHandler(fromUser, new InHandler {
