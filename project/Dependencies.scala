@@ -4,9 +4,8 @@
 
 package akka
 
-import sbt.Keys._
 import sbt._
-
+import sbt.Keys._
 import scala.language.implicitConversions
 
 object Dependencies {
@@ -20,12 +19,6 @@ object Dependencies {
   val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.zip"
   val alpnAgentVersion = "2.0.7"
 
-  // for OSGi tests
-  val paxExamVersion = "4.11.0"
-  val paxUrlVersion = "2.5.4"
-  val logBackVersion = "1.2.3"
-  val felixVersion = "5.6.10"
-
   lazy val akkaVersion = settingKey[String]("The version of Akka to use.")
   lazy val scalaTestVersion = settingKey[String]("The version of ScalaTest to use.")
   lazy val specs2Version = settingKey[String]("The version of Specs2 to use")
@@ -38,6 +31,7 @@ object Dependencies {
     scalaTestVersion := "3.0.5",
     specs2Version := "4.2.0"
   )
+  import Versions._
 
 
   object Compile {
@@ -111,21 +105,6 @@ object Dependencies {
   )
 
   lazy val httpTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.junitIntf)
-
-  lazy val httpOsgiTests = l ++= Seq(
-    Test.scalatest.value,
-    "org.scala-lang" % "scala-compiler" % crossScalaVersions.value.head % "test",
-    "org.ops4j.pax.exam" % "pax-exam-container-forked" % paxExamVersion % "test",
-    "org.ops4j.pax.exam" % "pax-exam-junit4" % paxExamVersion % "test",
-    "org.ops4j.pax.exam" % "pax-exam-link-mvn" % paxExamVersion % "test",
-    "org.ops4j.pax.url" % "pax-url-aether" % paxUrlVersion % "test",
-    "org.ops4j.pax.url" % "pax-url-classpath" % paxUrlVersion % "test",
-    "org.ops4j.pax.url" % "pax-url-link" % paxUrlVersion % "test",
-    "ch.qos.logback" % "logback-core" % logBackVersion % "test",
-    "ch.qos.logback" % "logback-classic" % logBackVersion % "test",
-    "javax.inject" % "javax.inject" % "1" % "test",
-    "org.apache.felix" % "org.apache.felix.framework" % felixVersion % "test"
-  )
 
   lazy val httpXml = Seq(
     versionDependentDeps(scalaXml),
