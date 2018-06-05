@@ -211,6 +211,10 @@ object RejectionHandler {
           rejectRequestEntityAndComplete((NotFound, "Request is missing required query parameter '" + paramName + '\''))
       }
       .handle {
+        case InvalidRequiredValueForQueryParamRejection(paramName, requiredValue, _) ⇒
+          rejectRequestEntityAndComplete((NotFound, s"Request is missing required value '$requiredValue' for query parameter '$paramName'"))
+      }
+      .handle {
         case RequestEntityExpectedRejection ⇒
           rejectRequestEntityAndComplete((BadRequest, "Request entity expected but not supplied"))
       }

@@ -58,6 +58,13 @@ final case class MissingQueryParamRejection(parameterName: String)
 
 /**
  * Rejection created by parameter filters.
+ * Signals that the request was rejected because a query parameter value was not equal to required one.
+ */
+final case class InvalidRequiredValueForQueryParamRejection(parameterName: String, expectedValue: String, actualValue: String)
+  extends jserver.InvalidRequiredValueForQueryParamRejection with Rejection
+
+/**
+ * Rejection created by parameter filters.
  * Signals that the request was rejected because a query parameter could not be interpreted.
  */
 final case class MalformedQueryParamRejection(parameterName: String, errorMsg: String, cause: Option[Throwable] = None)
