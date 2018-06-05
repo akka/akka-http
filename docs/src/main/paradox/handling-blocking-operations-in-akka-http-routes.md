@@ -132,4 +132,4 @@ applications. It is referred to as "bulkheading" or "isolating" the bad behaving
 parts of an app. In this case, bad behaviour of blocking operations.
 
 There is good documentation available in Akka docs section,
-@extref[Blocking needs careful management](akka-docs:general/actor-systems.html#Blocking_Needs_Careful_Management).
+@extref[Blocking needs careful management](akka-docs:dispatchers.html#blocking-needs-careful-management).

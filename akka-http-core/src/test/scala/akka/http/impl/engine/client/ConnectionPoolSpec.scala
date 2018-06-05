@@ -9,24 +9,29 @@ import java.nio.ByteBuffer
 import java.nio.channels.{ ServerSocketChannel, SocketChannel }
 import java.util.concurrent.atomic.AtomicInteger
 
+import akka.Done
+import akka.actor.{ ActorRef, ActorSystem, PoisonPill }
 import akka.actor.ActorSystem
 import akka.http.impl.engine.client.PoolMasterActor.PoolInterfaceRunning
+import akka.http.impl.engine.server.ServerTerminator
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util._
-import akka.http.scaladsl.Http.OutgoingConnection
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.Http.{ HttpServerTerminated, HttpTerminated, OutgoingConnection }
+import akka.http.scaladsl.model.HttpEntity.{ Chunk, ChunkStreamPart, Chunked, LastChunk }
+import akka.http.scaladsl.model.{ HttpEntity, _ }
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, PoolImplementation, ServerSettings }
 import akka.http.scaladsl.{ ClientTransport, ConnectionContext, Http }
-import akka.stream.ActorMaterializer
+import akka.stream.{ ActorMaterializer, OverflowStrategy, QueueOfferResult }
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
+import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.testkit._
 import akka.util.ByteString
 
 import scala.collection.immutable
-import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
@@ -409,6 +414,61 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       def issueRequest(request: HttpRequest, settings: ConnectionPoolSettings): Future[HttpResponse] =
         Http().singleRequest(request, settings = settings)
     }
+
+    "support receiving a response before the request is complete" in new LocalTestSetup {
+      val sourceQueuePromise = Promise[SourceQueueWithComplete[ChunkStreamPart]]()
+      val source = Source.queue(8, OverflowStrategy.fail).mapMaterializedValue(sourceQueuePromise.success)
+      val slowEntity = Chunked(ContentTypes.`text/plain(UTF-8)`, source)
+      val request = HttpRequest(uri = s"http://$serverHostName:$serverPort/abc?query#fragment", entity = slowEntity)
+      val responseFuture = Http().singleRequest(request)
+      val sourceQueue = Await.result(sourceQueuePromise.future, 3.seconds)
+      val response = Await.result(responseFuture, 1.second.dilated)
+      response.headers should contain(RawHeader("Req-Host", s"$serverHostName:$serverPort"))
+
+      sourceQueue.offer(HttpEntity.Chunk("lala")).futureValue should be(QueueOfferResult.Enqueued)
+      sourceQueue.offer(LastChunk).futureValue should be(QueueOfferResult.Enqueued)
+      sourceQueue.complete()
+      val bytes = response.entity.dataBytes.runReduce(_ ++ _)
+      Await.result(bytes, 3.seconds) should be(ByteString("lala"))
+    }
+
+    /**
+     * Currently failing the 'outgoing request' part of the connection may also fail the 'incoming reply' part of the connection.
+     * In the future we may want to disconnect those and allow the server we connect to to choose how to handle the failure
+     * of the request entity.
+     */
+    "support receiving a response entity even when the request already failed" ignore new TestSetup(ServerSettings(system).withRawRequestUriHeader(true), autoAccept = true) {
+      if (poolImplementation == PoolImplementation.Legacy)
+        pending
+
+      val responseSourceQueuePromise = Promise[SourceQueueWithComplete[ChunkStreamPart]]()
+
+      override def testServerHandler(connNr: Int): HttpRequest ⇒ HttpResponse = {
+        r ⇒
+          HttpResponse(
+            headers = responseHeaders(r, connNr),
+            entity = HttpEntity.Chunked(ContentTypes.`application/octet-stream`, Source.queue(8, OverflowStrategy.fail).mapMaterializedValue(responseSourceQueuePromise.success)))
+      }
+
+      val requestSourceQueuePromise = Promise[SourceQueueWithComplete[_]]()
+      val requestSource = Source.queue(8, OverflowStrategy.fail).mapMaterializedValue(requestSourceQueuePromise.success)
+      val slowRequestEntity = Chunked(ContentTypes.`text/plain(UTF-8)`, requestSource)
+      val request = HttpRequest(uri = s"http://$serverHostName:$serverPort/abc?query#fragment", entity = slowRequestEntity)
+      val responseFuture = Http().singleRequest(request)
+      val sourceQueue = Await.result(requestSourceQueuePromise.future, 3.seconds)
+      val response = Await.result(responseFuture, 1.second.dilated)
+      response.headers should contain(RawHeader("Req-Host", s"$serverHostName:$serverPort"))
+
+      response.entity.isChunked should be(true)
+      sourceQueue.fail(TE("Request failed though response was already on its way"))
+
+      val responseQueue = Await.result(responseSourceQueuePromise.future, 3.seconds)
+      responseQueue.offer(Chunk("lala"))
+      responseQueue.offer(LastChunk)
+
+      val bytes = response.entity.dataBytes.runReduce(_ ++ _)
+      Await.result(bytes, 3.seconds) should be(ByteString("lala"))
+    }
   }
 
   "The superPool client infrastructure" should {
@@ -531,7 +591,14 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       Tcp().bind(serverHostName, serverPort, idleTimeout = serverSettings.timeouts.idleTimeout)
         .map { c ⇒
           val layer = Http().serverLayer(serverSettings, log = log)
-          Http.IncomingConnection(c.localAddress, c.remoteAddress, layer atop rawBytesInjection join c.flow)
+          val flow = (layer atop rawBytesInjection join c.flow)
+            .mapMaterializedValue(_ ⇒
+              new ServerTerminator {
+                // this is simply a mock, since we do not use termination in these tests anyway
+                def terminate(deadline: FiniteDuration)(implicit ec: ExecutionContext): Future[HttpTerminated] =
+                  Future.successful(HttpServerTerminated)
+              })
+          Http.IncomingConnection(c.localAddress, c.remoteAddress, flow)
         }.runWith(sink)
       if (autoAccept) null else incomingConnections.expectSubscription()
     }
