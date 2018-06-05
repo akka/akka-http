@@ -17,32 +17,33 @@ import akka.ConfigurationException
 import akka.annotation.InternalApi
 import akka.io.Inet.SocketOption
 import akka.http.impl.util._
-import akka.http.scaladsl.model.HttpHeader
+import akka.http.scaladsl.model.{ HttpHeader, HttpResponse, StatusCodes }
 import akka.http.scaladsl.model.headers.{ Host, Server }
 import akka.http.scaladsl.settings.ServerSettings.LogUnencryptedNetworkBytes
 
 /** INTERNAL API */
 @InternalApi
 private[akka] final case class ServerSettingsImpl(
-  serverHeader:               Option[Server],
-  previewServerSettings:      PreviewServerSettings,
-  timeouts:                   ServerSettings.Timeouts,
-  maxConnections:             Int,
-  pipeliningLimit:            Int,
-  remoteAddressHeader:        Boolean,
-  rawRequestUriHeader:        Boolean,
-  transparentHeadRequests:    Boolean,
-  verboseErrorMessages:       Boolean,
-  responseHeaderSizeHint:     Int,
-  backlog:                    Int,
-  logUnencryptedNetworkBytes: Option[Int],
-  socketOptions:              immutable.Seq[SocketOption],
-  defaultHostHeader:          Host,
-  websocketSettings:          WebSocketSettings,
-  parserSettings:             ParserSettings,
-  http2Settings:              Http2ServerSettings,
-  defaultHttpPort:            Int,
-  defaultHttpsPort:           Int) extends ServerSettings {
+  serverHeader:                        Option[Server],
+  previewServerSettings:               PreviewServerSettings,
+  timeouts:                            ServerSettings.Timeouts,
+  maxConnections:                      Int,
+  pipeliningLimit:                     Int,
+  remoteAddressHeader:                 Boolean,
+  rawRequestUriHeader:                 Boolean,
+  transparentHeadRequests:             Boolean,
+  verboseErrorMessages:                Boolean,
+  responseHeaderSizeHint:              Int,
+  backlog:                             Int,
+  logUnencryptedNetworkBytes:          Option[Int],
+  socketOptions:                       immutable.Seq[SocketOption],
+  defaultHostHeader:                   Host,
+  websocketSettings:                   WebSocketSettings,
+  parserSettings:                      ParserSettings,
+  http2Settings:                       Http2ServerSettings,
+  defaultHttpPort:                     Int,
+  defaultHttpsPort:                    Int,
+  terminationDeadlineExceededResponse: HttpResponse) extends ServerSettings {
 
   require(0 < maxConnections, "max-connections must be > 0")
   require(0 < pipeliningLimit && pipeliningLimit <= 1024, "pipelining-limit must be > 0 and <= 1024")
@@ -100,5 +101,16 @@ private[http] object ServerSettingsImpl extends SettingsCompanion[ServerSettings
     ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")),
     Http2ServerSettings.Http2ServerSettingsImpl.fromSubConfig(root, c.getConfig("http2")),
     c getInt "default-http-port",
-    c getInt "default-https-port")
+    c getInt "default-https-port",
+    terminationDeadlineExceededResponseFrom(c)
+  )
+
+  private def terminationDeadlineExceededResponseFrom(c: Config): HttpResponse = {
+    val status = c getInt "termination-deadline-exceeded-response.status"
+    HttpResponse(
+      status = StatusCodes.getForKey(status)
+        .getOrElse(throw new IllegalArgumentException(s"Illegal status code set for `termination-deadline-exceeded-response.status`, was: [$status]"))
+    )
+  }
+
 }

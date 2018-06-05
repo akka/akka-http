@@ -6,6 +6,7 @@ package akka.http.scaladsl
 
 import java.net.InetSocketAddress
 import java.util.concurrent.CompletionStage
+import java.util.concurrent.atomic.AtomicReference
 
 import javax.net.ssl._
 import akka.actor._
@@ -42,6 +43,7 @@ import scala.util.Try
 import scala.util.control.NonFatal
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.duration._
 
 /**
  * Akka extension for HTTP which serves as the main entry point into akka-http.
@@ -70,8 +72,8 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
 
   private[this] final val DefaultPortForProtocol = -1 // any negative value
 
-  private type ServerLayerBidiFlow = BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed]
-  private type ServerLayerFlow = Flow[ByteString, ByteString, Future[Done]]
+  private type ServerLayerBidiFlow = BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, ServerTerminator]
+  private type ServerLayerFlow = Flow[ByteString, ByteString, (Future[Done], ServerTerminator)]
 
   private def fuseServerBidiFlow(
     settings:          ServerSettings,
@@ -86,7 +88,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
         case _                 ⇒ httpLayer atop tlsStage
       }
 
-    serverBidiFlow
+    GracefulTerminatorStage(system, settings) atop serverBidiFlow
   }
 
   private def delayCancellationStage(settings: ServerSettings): BidiFlow[SslTlsOutbound, SslTlsOutbound, SslTlsInbound, SslTlsInbound, NotUsed] =
@@ -104,7 +106,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
           // signals in both directions
           termWatchBefore.flatMap(_ ⇒ termWatchAfter)(ExecutionContexts.sameThreadExecutionContext)
         }
-        .joinMat(baseFlow)(Keep.left)
+        .joinMat(baseFlow)(Keep.both)
     )
 
   private def tcpBind(interface: String, port: Int, settings: ServerSettings): Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
@@ -122,9 +124,6 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     if (port >= 0) port
     else if (connectionContext.isSecure) settings.defaultHttpsPort
     else settings.defaultHttpPort
-
-  private def materializeTcpBind(binding: Future[Tcp.ServerBinding]) =
-    binding.map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(ExecutionContexts.sameThreadExecutionContext)
 
   /**
    * Creates a [[akka.stream.scaladsl.Source]] of [[akka.http.scaladsl.Http.IncomingConnection]] instances which represents a prospective HTTP server binding
@@ -161,14 +160,24 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
                              connectionContext: ConnectionContext = defaultServerHttpContext,
                              settings:          ServerSettings    = ServerSettings(system),
                              log:               LoggingAdapter    = system.log): Source[Http.IncomingConnection, Future[ServerBinding]] = {
-    val fullLayer = fuseServerBidiFlow(settings, connectionContext, log)
+    val fullLayer: ServerLayerBidiFlow = fuseServerBidiFlow(settings, connectionContext, log)
+
+    val masterTerminator = new MasterServerTerminator(log)
 
     tcpBind(interface, choosePort(port, connectionContext, settings), settings)
       .map(incoming ⇒ {
-        val serverFlow = fullLayer.addAttributes(prepareAttributes(settings, incoming)) join incoming.flow
+        val preparedLayer: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, ServerTerminator] = fullLayer.addAttributes(prepareAttributes(settings, incoming))
+        val serverFlow: Flow[HttpResponse, HttpRequest, ServerTerminator] = preparedLayer join incoming.flow
         IncomingConnection(incoming.localAddress, incoming.remoteAddress, serverFlow)
       })
-      .mapMaterializedValue(materializeTcpBind)
+      .mapMaterializedValue {
+        _.map(tcpBinding ⇒
+          ServerBinding(tcpBinding.localAddress)(
+            () ⇒ tcpBinding.unbind(),
+            timeout ⇒ masterTerminator.terminate(timeout)(systemMaterializer.executionContext)
+          )
+        )(systemMaterializer.executionContext)
+      }
   }
 
   @deprecated("Binary compatibility method. Use the new `bind` method without the implicit materializer instead.", "10.0.11")
@@ -195,7 +204,10 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     connectionContext: ConnectionContext = defaultServerHttpContext,
     settings:          ServerSettings    = ServerSettings(system),
     log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
-    val fullLayer: Flow[ByteString, ByteString, Future[Done]] = fuseServerFlow(fuseServerBidiFlow(settings, connectionContext, log), handler)
+    val fullLayer: Flow[ByteString, ByteString, (Future[Done], ServerTerminator)] =
+      fuseServerFlow(fuseServerBidiFlow(settings, connectionContext, log), handler)
+
+    val masterTerminator = new MasterServerTerminator(log)
 
     tcpBind(interface, choosePort(port, connectionContext, settings), settings)
       .mapAsyncUnordered(settings.maxConnections) { incoming ⇒
@@ -203,6 +215,11 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
           fullLayer
             .addAttributes(prepareAttributes(settings, incoming))
             .joinMat(incoming.flow)(Keep.left)
+            .mapMaterializedValue {
+              case (future, connectionTerminator) ⇒
+                masterTerminator.registerConnection(connectionTerminator)(fm.executionContext)
+                future // drop the terminator matValue, we already registered is which is all we need to do here
+            }
             .run()
             .recover {
               // Ignore incoming errors from the connection as they will cancel the binding.
@@ -217,7 +234,15 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
             throw e
         }
       }
-      .mapMaterializedValue(materializeTcpBind)
+      .mapMaterializedValue { m ⇒
+        m.map(tcpBinding ⇒
+          ServerBinding(
+            tcpBinding.localAddress)(
+              () ⇒ tcpBinding.unbind(),
+              timeout ⇒ masterTerminator.terminate(timeout)(fm.executionContext)
+            )
+        )(fm.executionContext)
+      }
       .to(Sink.ignore)
       .run()
   }
@@ -298,10 +323,12 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     settings:           ServerSettings            = ServerSettings(system),
     remoteAddress:      Option[InetSocketAddress] = None,
     log:                LoggingAdapter            = system.log,
-    isSecureConnection: Boolean                   = false): ServerLayer =
-    HttpServerBluePrint(settings, log, isSecureConnection)
+    isSecureConnection: Boolean                   = false): ServerLayer = {
+    val server = HttpServerBluePrint(settings, log, isSecureConnection)
       .addAttributes(HttpAttributes.remoteAddress(remoteAddress))
-      .atop(delayCancellationStage(settings))
+
+    server atop delayCancellationStage(settings)
+  }
 
   @deprecated("Binary compatibility method. Use the new `serverLayer` method without the implicit materializer instead.", "10.0.11")
   private[http] def serverLayer()(implicit mat: Materializer): ServerLayer =
@@ -883,16 +910,116 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
    * @param localAddress  The local address of the endpoint bound by the materialization of the `connections` [[akka.stream.scaladsl.Source]]
    *
    */
-  final case class ServerBinding(localAddress: InetSocketAddress)(private val unbindAction: () ⇒ Future[Unit]) {
+  final case class ServerBinding(localAddress: InetSocketAddress)(
+    private val unbindAction:    () ⇒ Future[Unit],
+    private val terminateAction: FiniteDuration ⇒ Future[HttpTerminated]
+  ) {
+
+    private val _whenTerminationSignalIssued = Promise[Deadline]()
+    private val _whenTerminated = Promise[HttpTerminated]()
 
     /**
      * Asynchronously triggers the unbinding of the port that was bound by the materialization of the `connections`
      * [[akka.stream.scaladsl.Source]]
      *
+     * Note that unbinding does NOT terminate existing connections.
+     * Unbinding only means that the server will not accept new connections,
+     * and existing connections are allowed to still perform request/response cycles.
+     * This can be useful when one wants to let clients finish whichever work they have remaining,
+     * while signalling them using some other way that the server will be terminating soon -- e.g.
+     * by sending such information in the still being sent out responses, such that the client can
+     * switch to a new server when it is ready.
+     *
+     * Alternatively you may want to use the [[terminate]] method which unbinds and performs
+     * some level of gracefully replying with
+     *
      * The produced [[scala.concurrent.Future]] is fulfilled when the unbinding has been completed.
      */
-    def unbind(): Future[Done] = unbindAction().map(_ ⇒ Done)(ExecutionContexts.sameThreadExecutionContext)
+    def unbind(): Future[Done] =
+      unbindAction().map(_ ⇒ Done)(ExecutionContexts.sameThreadExecutionContext)
+
+    /**
+     * Triggers "graceful" termination request being handled on this connection.
+     *
+     * Termination works as follows:
+     *
+     * 1) Unbind:
+     * - the server port is unbound; no new connections will be accepted.
+     *
+     * 1.5) Immediately the ServerBinding `whenTerminationSignalIssued` future is completed.
+     * This can be used to signal parts of the application that the http server is shutting down and they should clean up as well.
+     * Note also that for more advanced shut down scenarios you may want to use the Coordinated Shutdown capabilities of Akka.
+     *
+     * 2) Handle in-flight request:
+     * - if a request is "in-flight" (being handled by user code), it is given `hardDeadline` time to complete,
+     *   - if user code emits a response within the timeout, then this response is sent to the client
+     *     - however if it is a streaming response, it is also mandated that it shall complete within the deadline, and if it does not
+     *       the connection will be terminated regardless of status of the streaming response (this is because such response could be infinite,
+     *       which could trap the server in a situation where it could not terminate if it were to wait for a response to "finish")
+     *     - existing streaming responses must complete before the deadline as well.
+     *       When the deadline is reached the connection will be terminated regardless of status of the streaming responses.
+     *   - if user code does not reply with a response within the deadline, we produce a special [[ServerSettings.terminationDeadlineExceededResponse]]
+     *     HTTP response (e.g. 503 Service Unavailable)
+     *
+     * 3) Keep draining incoming requests on existing connection:
+     * - The existing connection will remain alive for until the `hardDeadline` is exceeded,
+     *   yet no new requests will be delivered to the user handler. All such drained responses will be replied to with an
+     *   termination response (as explained in phase 2).
+     *
+     * 4) Close still existing connections
+     * - Connections are terminated forcefully once the `hardDeadline` is exceeded.
+     *   The `whenTerminated` future is completed as well, so the graceful termination (of the `ActorSystem` or entire JVM
+     *   itself can be safely performed, as by then it is known that no connections remain alive to this server).
+     *
+     * Note that the termination response is configurable in [[ServerSettings]], and by default is an `503 Service Unavailable`,
+     * with an empty response entity.
+     *
+     * @param hardDeadline timeout after which all requests and connections shall be forcefully terminated
+     * @return future which completes successfully with a marker object once all connections have been terminated
+     */
+    def terminate(hardDeadline: FiniteDuration): Future[HttpTerminated] = {
+      require(hardDeadline > Duration.Zero, "deadline must be greater than 0, was: " + hardDeadline)
+
+      _whenTerminationSignalIssued.trySuccess(hardDeadline.fromNow)
+      val terminated = unbindAction().flatMap(_ ⇒ terminateAction(hardDeadline))(ExecutionContexts.sameThreadExecutionContext)
+      _whenTerminated.completeWith(terminated)
+      whenTerminated
+    }
+
+    /**
+     * Completes when the [[terminate]] is called and server termination is in progress.
+     * Can be useful to make parts of your application aware that termination has been issued,
+     * and they have [[Deadline]] time remaining to clean-up before the server will forcefully close
+     * existing connections.
+     *
+     * Note that while termination is in progress, no new connections will be accepted (i.e. termination implies prior [[unbind]]).
+     */
+    def whenTerminationSignalIssued: Future[Deadline] =
+      _whenTerminationSignalIssued.future
+
+    /**
+     * This future completes when the termination process, as initiated by an [[terminate]] call has completed.
+     * This means that the server is by then: unbound, and has closed all existing connections.
+     *
+     * This signal can for example be used to safely terminate the underlying ActorSystem.
+     *
+     * Note: This mechanism is currently NOT hooked into the Coordinated Shutdown mechanisms of Akka.
+     *       TODO: This feature request is tracked by: https://github.com/akka/akka-http/issues/1210
+     *
+     * Note that this signal may be used for Coordinated Shutdown to proceed to next steps in the shutdown.
+     * You may also explicitly depend on this future to perform your next shutting down steps.
+     */
+    def whenTerminated: Future[HttpTerminated] =
+      _whenTerminated.future
+
   }
+
+  /** Type used to carry meaningful information when server termination has completed successfully. */
+  @DoNotInherit sealed abstract class HttpTerminated extends akka.http.javadsl.HttpTerminated
+  sealed abstract class HttpServerTerminated extends HttpTerminated
+  object HttpServerTerminated extends HttpServerTerminated
+  sealed abstract class HttpConnectionTerminated extends HttpTerminated
+  object HttpConnectionTerminated extends HttpConnectionTerminated
 
   /**
    * Represents one accepted incoming HTTP connection.
@@ -900,7 +1027,9 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   final case class IncomingConnection(
     localAddress:  InetSocketAddress,
     remoteAddress: InetSocketAddress,
-    flow:          Flow[HttpResponse, HttpRequest, NotUsed]) {
+    _flow:         Flow[HttpResponse, HttpRequest, ServerTerminator]) {
+
+    def flow: Flow[HttpResponse, HttpRequest, NotUsed] = _flow.mapMaterializedValue(_ ⇒ NotUsed)
 
     /**
      * Handles the connection with the given flow, which is materialized exactly once

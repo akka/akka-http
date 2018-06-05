@@ -9,11 +9,14 @@ import java.nio.ByteBuffer
 import java.nio.channels.{ ServerSocketChannel, SocketChannel }
 import java.util.concurrent.atomic.AtomicInteger
 
+import akka.Done
 import akka.actor.{ ActorRef, ActorSystem, PoisonPill }
+import akka.actor.ActorSystem
 import akka.http.impl.engine.client.PoolMasterActor.PoolInterfaceRunning
+import akka.http.impl.engine.server.ServerTerminator
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util._
-import akka.http.scaladsl.Http.OutgoingConnection
+import akka.http.scaladsl.Http.{ HttpServerTerminated, HttpTerminated, OutgoingConnection }
 import akka.http.scaladsl.model.HttpEntity.{ Chunk, ChunkStreamPart, Chunked, LastChunk }
 import akka.http.scaladsl.model.{ HttpEntity, _ }
 import akka.http.scaladsl.model.headers._
@@ -28,7 +31,7 @@ import akka.testkit._
 import akka.util.ByteString
 
 import scala.collection.immutable
-import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
@@ -588,7 +591,14 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       Tcp().bind(serverHostName, serverPort, idleTimeout = serverSettings.timeouts.idleTimeout)
         .map { c ⇒
           val layer = Http().serverLayer(serverSettings, log = log)
-          Http.IncomingConnection(c.localAddress, c.remoteAddress, layer atop rawBytesInjection join c.flow)
+          val flow = (layer atop rawBytesInjection join c.flow)
+            .mapMaterializedValue(_ ⇒
+              new ServerTerminator {
+                // this is simply a mock, since we do not use termination in these tests anyway
+                def terminate(deadline: FiniteDuration)(implicit ec: ExecutionContext): Future[HttpTerminated] =
+                  Future.successful(HttpServerTerminated)
+              })
+          Http.IncomingConnection(c.localAddress, c.remoteAddress, flow)
         }.runWith(sink)
       if (autoAccept) null else incomingConnections.expectSubscription()
     }
