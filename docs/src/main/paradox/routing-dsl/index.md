@@ -42,7 +42,7 @@ It starts an HTTP Server on localhost and replies to GET requests to `/hello` wi
 
 @@@ warning { title="API may change" }
 The following example uses an experimental feature and its API is subjected to change in future releases of Akka HTTP.
-For further information about this marker, see @extref:[The @DoNotInherit and @ApiMayChange markers](akka-docs:common/binary-compatibility-rules.html#The_@DoNotInherit_and_@ApiMayChange_markers)
+For further information about this marker, see @extref:[The @DoNotInherit and @ApiMayChange markers](akka-docs:common/binary-compatibility-rules.html#the-donotinherit-and-apimaychange-markers)
 in the Akka documentation.
 @@@
 
