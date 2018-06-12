@@ -9,7 +9,7 @@ with the exception of `@ApiMayChange`, `@InternalApi` or `@DoNotInherit` marked 
 or other specifically documented special-cases.
 
 For more information and a detailed discussion of these rules and guarantees please refer to
-@extref:[The @DoNotInherit and @ApiMayChange markers](akka-docs:common/binary-compatibility-rules.html#The_@DoNotInherit_and_@ApiMayChange_markers).
+@extref:[The @DoNotInherit and @ApiMayChange markers](akka-docs:common/binary-compatibility-rules.html#the-donotinherit-and-apimaychange-markers).
 
 ### Components with no Binary Compatibility Guarantee
 
