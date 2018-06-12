@@ -31,7 +31,7 @@ package object util {
     refFactory match {
       case x: ActorContext        ⇒ actorSystem(x.system)
       case x: ExtendedActorSystem ⇒ x
-      case _                      ⇒ throw new IllegalStateException
+      case x                      ⇒ throw new IllegalStateException(s"Unknown factory $x")
     }
 
   private[http] implicit def enhanceByteArray(array: Array[Byte]): EnhancedByteArray = new EnhancedByteArray(array)
