@@ -156,7 +156,7 @@ incoming connections, e.g. by using `throttle` or `mapAsync`.
 
 HTTP pipelining is generally discouraged (and [disabled by most browsers](https://en.wikipedia.org/w/index.php?title=HTTP_pipelining&oldid=700966692#Implementation_in_web_browsers)) but
 is nevertheless fully supported in Akka HTTP. The limit is applied on two levels. First, there's the
-`akka.http.server.pipeline-limit` config setting which prevents that more than the given number of outstanding requests
+`akka.http.server.pipelining-limit` config setting which prevents that more than the given number of outstanding requests
 is ever given to the user-supplied handler-flow. On the other hand, the handler flow itself can apply any kind of throttling
 itself. If you use one of the `Http.bindAndHandleSync` or `Http.bindAndHandleAsync`
 entry-points, you can specify the `parallelism` argument (default = 1, i.e. pipelining disabled) to control the
