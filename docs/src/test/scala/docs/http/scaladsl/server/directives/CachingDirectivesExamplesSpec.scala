@@ -22,7 +22,7 @@ class CachingDirectivesExamplesSpec extends RoutingSpec {
     //#cache
     import akka.http.scaladsl.server.RequestContext
     import akka.http.scaladsl.model.Uri
-    import akka.http.scaladsl.model.headers.{Authorization, `Cache-Control`}
+    import akka.http.scaladsl.model.headers.{ Authorization, `Cache-Control` }
     import akka.http.scaladsl.model.headers.CacheDirectives.`no-cache`
 
     //Example keyer for non-authenticated GET requests
@@ -67,7 +67,7 @@ class CachingDirectivesExamplesSpec extends RoutingSpec {
     //#always-cache
     import akka.http.scaladsl.server.RequestContext
     import akka.http.scaladsl.model.Uri
-    import akka.http.scaladsl.model.headers.{Authorization, `Cache-Control`}
+    import akka.http.scaladsl.model.headers.{ Authorization, `Cache-Control` }
     import akka.http.scaladsl.model.headers.CacheDirectives.`no-cache`
 
     //Example keyer for non-authenticated GET requests
