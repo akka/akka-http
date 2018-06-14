@@ -4,13 +4,14 @@
 
 package akka.http.scaladsl.util
 
-import scala.util.control.NoStackTrace
-import scala.concurrent.{ Await, Promise, Future }
-import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
-import org.scalatest.{ FreeSpec, Matchers }
-import scala.util.{ Try, Failure, Success }
 import akka.http.scaladsl.util.FastFuture._
+import org.scalatest.{ FreeSpec, Matchers }
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.concurrent.{ Await, Future, Promise }
+import scala.util.control.NoStackTrace
+import scala.util.{ Failure, Success, Try }
 
 class FastFutureSpec extends FreeSpec with Matchers {
   object TheException extends RuntimeException("Expected exception") with NoStackTrace
@@ -176,8 +177,12 @@ class FastFutureSpec extends FreeSpec with Matchers {
     testLazily()
   }
 
-  def failF: PartialFunction[Any, Nothing] = PartialFunction(_ ⇒ throw TheException)
+  def failF: PartialFunction[Any, Nothing] = {
+    case _ ⇒ throw TheException
+  }
   class UnexpectedException extends RuntimeException("Unexpected exception - should never happen")
   object UnexpectedException extends UnexpectedException with NoStackTrace
-  def neverCalled: PartialFunction[Any, Nothing] = PartialFunction(_ ⇒ throw new UnexpectedException)
+  def neverCalled: PartialFunction[Any, Nothing] = {
+    case _ ⇒ throw new UnexpectedException
+  }
 }

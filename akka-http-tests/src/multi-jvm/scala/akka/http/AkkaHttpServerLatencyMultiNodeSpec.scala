@@ -4,7 +4,6 @@
 
 package akka.http
 
-import java.io.{ BufferedWriter, FileWriter }
 import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
@@ -22,7 +21,6 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.exceptions.TestPendingException
 
-import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Promise }
 import scala.util.Try
