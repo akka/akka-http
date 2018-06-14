@@ -6,7 +6,6 @@ package akka.http.scaladsl
 
 import java.net.InetSocketAddress
 import java.util.concurrent.CompletionStage
-import java.util.concurrent.atomic.AtomicReference
 
 import javax.net.ssl._
 import akka.actor._
