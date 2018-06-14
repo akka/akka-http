@@ -77,6 +77,31 @@ private[http] final class MasterServerTerminator(log: LoggingAdapter) extends Se
     }
   }
 
+  /**
+   * Removes a previously registered per-connection terminator.
+   * Terminators must remove themselves like this once their respective connection is closed,
+   * otherwise they would leak and remain in the set indefinitely.
+   *
+   * If called with terminator that is not registered, false is returned but it is not an error.
+   *
+   * @return true if the terminator has been successfully removed.
+   */
+  @tailrec def removeConnection(terminator: ServerTerminator)(implicit ec: ExecutionContext): Boolean = {
+    terminators.get() match {
+      case v @ AliveConnectionTerminators(ts) ⇒
+        terminators.compareAndSet(v, v.copy(ts = ts - terminator)) ||
+          removeConnection(terminator) // retry
+
+      case Terminating(deadline) ⇒
+        // the `terminator` that we are being called with can only be one that already was registered,
+        // due to the register call happening during materialization, and the remove call happening during
+        // connection stream completion. Since we are in Terminating state, this means `terminate()` was called,
+        // and all existing terminators were invoked to `terminate()`. So if this is an existing one, we must not call
+        // terminate on it, as it would be the 2nd invocation.
+        false
+    }
+  }
+
   // If a connection attempts to register once termination has started, it will immediately be rejected (though
   // since termination also implies unbinding such new connections should not really happen).
   def terminate(timeout: FiniteDuration)(implicit ex: ExecutionContext): Future[HttpTerminated] = {
@@ -92,7 +117,9 @@ private[http] final class MasterServerTerminator(log: LoggingAdapter) extends Se
         if (terminators.compareAndSet(v, Terminating(timeout.fromNow))) {
           // cause the termination for all connections
           val connectionsTerminated = Future.sequence(ts.map { t ⇒
-            t.terminate(timeout)
+            // termination in general always succeeds, but we make sure here in order
+            // to not accidentally short-circuit terminating the other connection-terminators -- all must be terminated
+            t.terminate(timeout).recover { case _ ⇒ HttpServerTerminated }
           })
           val serverTerminated = connectionsTerminated.map(_ ⇒ HttpServerTerminated)
           termination.completeWith(serverTerminated)

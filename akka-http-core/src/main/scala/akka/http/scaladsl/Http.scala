@@ -213,6 +213,13 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
       .mapAsyncUnordered(settings.maxConnections) { incoming ⇒
         try {
           fullLayer
+            .watchTermination() {
+              case ((done, connectionTerminator), whenTerminates) ⇒
+                whenTerminates.onComplete({ _ ⇒
+                  masterTerminator.removeConnection(connectionTerminator)(fm.executionContext)
+                })(fm.executionContext)
+                (done, connectionTerminator)
+            }
             .addAttributes(prepareAttributes(settings, incoming))
             .joinMat(incoming.flow)(Keep.left)
             .mapMaterializedValue {
@@ -220,6 +227,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
                 masterTerminator.registerConnection(connectionTerminator)(fm.executionContext)
                 future // drop the terminator matValue, we already registered is which is all we need to do here
             }
+
             .run()
             .recover {
               // Ignore incoming errors from the connection as they will cancel the binding.
