@@ -216,7 +216,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
             .watchTermination() {
               case ((done, connectionTerminator), whenTerminates) ⇒
                 whenTerminates.onComplete({ _ ⇒
-                  masterTerminator.removeConnection(connectionTerminator)(fm.executionContext)
+                  masterTerminator.removeConnection(connectionTerminator)
                 })(fm.executionContext)
                 (done, connectionTerminator)
             }
