@@ -4,7 +4,6 @@
 
 package docs.http.scaladsl.server.directives
 
-import akka.http.scaladsl.model.HttpMethods
 import docs.http.scaladsl.server.RoutingSpec
 //#caching-directives-import
 //#always-cache
