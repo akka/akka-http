@@ -203,6 +203,11 @@ private[http] final class GracefulTerminatorStage(settings: ServerSettings)
           pendingUserHandlerResponse = false
           push(toNet, response)
         }
+
+        override def onUpstreamFinish(): Unit = {
+          // don't finish the whole bidi stage, just propagate the completion:
+          complete(toNet)
+        }
       })
       setHandler(toUser, new OutHandler {
         override def onPull(): Unit = {
@@ -215,6 +220,11 @@ private[http] final class GracefulTerminatorStage(settings: ServerSettings)
 
           pendingUserHandlerResponse = true
           push(toUser, request)
+        }
+
+        override def onUpstreamFinish(): Unit = {
+          // don't finish the whole bidi stage, just propagate the completion:
+          complete(toUser)
         }
       })
       setHandler(toNet, new OutHandler {
