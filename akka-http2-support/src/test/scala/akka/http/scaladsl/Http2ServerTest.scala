@@ -25,7 +25,7 @@ import scala.util.Random
 
 object Http2ServerTest extends App {
   val testConf: Config = ConfigFactory.parseString("""
-    akka.loglevel = INFO
+    akka.loglevel = debug
     akka.log-dead-letters = off
     akka.stream.materializer.debug.fuzzing-mode = off
     akka.http.server.preview.enable-http2 = on

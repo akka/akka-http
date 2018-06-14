@@ -4,27 +4,31 @@
 
 package akka.http.scaladsl
 
+import javax.net.ssl.SSLEngine
+import akka.{ Done, NotUsed }
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
-import akka.http.impl.engine.http2.{ AlpnSwitch, Http2AlpnSupport, Http2Blueprint }
+import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS
+import akka.http.impl.engine.http2.{ AlpnSwitch, FrameEvent, Http2AlpnSupport, Http2Blueprint }
 import akka.http.impl.engine.server.MasterServerTerminator
 import akka.http.impl.engine.server.UpgradeToOtherProtocolHeader
-import akka.http.scaladsl.Http.ServerBinding
-import akka.http.scaladsl.UseHttp2.{ Always, Negotiated, Never }
-import akka.http.scaladsl.model.headers.{ Connection, Upgrade, UpgradeProtocol }
-import akka.http.scaladsl.model.{ HttpHeader, HttpRequest, HttpResponse, StatusCodes }
-import akka.http.scaladsl.settings.ServerSettings
+import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.impl.util.LogByteStringTools._
+import akka.http.scaladsl.UseHttp2.{ Always, Negotiated, Never }
+import akka.http.scaladsl.Http.ServerBinding
+import akka.http.scaladsl.model.headers.{ Connection, RawHeader, Upgrade, UpgradeProtocol }
+import akka.http.scaladsl.model.http2.{ Http2SettingsHeader, Http2StreamIdHeader }
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.TLSProtocol.{ SendBytes, SessionBytes, SslTlsInbound, SslTlsOutbound }
-import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Sink, TLS, Tcp }
+import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Sink, Source, TLS, Tcp }
 import akka.stream.{ IgnoreComplete, Materializer }
-import akka.util.ByteString
-import akka.{ Done, NotUsed }
+import akka.util.{ ByteString, OptionVal }
 import com.typesafe.config.Config
 import javax.net.ssl.SSLEngine
 
-import scala.concurrent.Future
+import scala.concurrent.{ Future, Promise }
 import scala.collection.immutable
 import scala.util.Success
 import scala.util.control.NonFatal
@@ -114,33 +118,76 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
     settings:    ServerSettings,
     parallelism: Int,
     log:         LoggingAdapter
-  ): HttpRequest ⇒ Future[HttpResponse] = { req ⇒
+  )(implicit mat: Materializer): HttpRequest ⇒ Future[HttpResponse] = { req ⇒
     req.header[Upgrade] match {
       case Some(upgrade) if upgrade.protocols.exists(_.name equalsIgnoreCase "h2c") ⇒
-        // TODO remove duplication?
-        val serverLayer: Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(
-          Flow[HttpRequest]
-            .watchTermination()(Keep.right)
-            // FIXME: parallelism should maybe kept in track with SETTINGS_MAX_CONCURRENT_STREAMS so that we don't need
+
+        // https://http2.github.io/http2-spec/#Http2SettingsHeader 3.2.1 HTTP2-Settings Header Field
+        val upgradeSettings = req.headers.collect {
+          case raw: RawHeader if raw.lowercaseName == Http2SettingsHeader.name ⇒
+            Http2SettingsHeader.parse(raw.value)
+        }
+
+        upgradeSettings match {
+          // Must be exactly one
+          case immutable.Seq(Success(http2settings)) ⇒
+            // TODO remove duplication?
+
+            // TODO inject the HTTP2-Settings -
+            // FIXME: blindly guessed this was the right thing to do...
+            // pre-existing FIXME: parallelism should maybe kept in track with SETTINGS_MAX_CONCURRENT_STREAMS so that we don't need
             // to buffer requests that cannot be handled in parallel
-            .via(Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher))
-            .joinMat(Http2Blueprint.serverStack(settings, log))(Keep.left))
+            val effectiveParallelism =
+              math.min(
+                parallelism,
+                http2settings.find(_.identifier == SETTINGS_MAX_CONCURRENT_STREAMS) match {
+                  case Some(value) ⇒ value.value
+                  case None        ⇒ Int.MaxValue // FIXME can it ever be missing?
+                }
+              )
 
-        // TODO consume the HTTP2-Settings header
-        // TODO consume the request entity and make sure it is inserted as an HTTP2 request
-        // https://http2.github.io/http2-spec/#rfc.section.3.2
+            val injectedRequest =
+              if (req.method != HttpMethods.OPTIONS)
+                // inject the actual upgrade request with a stream identifier of 1
+                // https://http2.github.io/http2-spec/#rfc.section.3.2
+                Source.single(req.addHeader(Http2StreamIdHeader(1)))
+              else {
+                // No 100% sure about this but from the spec:
+                // If concurrency of an initial request with subsequent requests is important, an OPTIONS request
+                // can be used to perform the upgrade to HTTP/2, at the cost of an additional round trip.
+                req.discardEntityBytes()
+                Source.empty[HttpRequest]
+              }
 
-        Future.successful(
-          HttpResponse(
-            StatusCodes.SwitchingProtocols,
-            immutable.Seq[HttpHeader](
-              ConnectionUpgradeHeader,
-              UpgradeHeader,
-              // TODO add attributes from the request
-              UpgradeToOtherProtocolHeader(serverLayer)
+            val serverLayer: Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(
+              Flow[HttpRequest]
+                .watchTermination()(Keep.right)
+                .merge(injectedRequest)
+                .via(Http2Blueprint.handleWithStreamIdHeader(effectiveParallelism)(handler)(system.dispatcher))
+                .joinMat(Http2Blueprint.serverStack(settings, log))(Keep.left))
+
+            // TODO do not respond until the potential http2 request entity was consumed?
+            Future.successful(
+              HttpResponse(
+                StatusCodes.SwitchingProtocols,
+                immutable.Seq[HttpHeader](
+                  ConnectionUpgradeHeader,
+                  UpgradeHeader,
+                  // TODO add attributes from the request
+                  UpgradeToOtherProtocolHeader(serverLayer)
+                )
+              )
             )
-          )
-        )
+
+          case _ ⇒
+            // FIXME
+            log.info("Invalid upgrade request (http2-settings header missing or repeated)")
+            // A server MUST NOT upgrade the connection to HTTP/2 if this header field is not present or if more than one is present
+            Future.successful(HttpResponse(
+              StatusCodes.BadRequest
+            ))
+        }
+
       case _ ⇒
         handler(req)
     }

@@ -10,15 +10,36 @@ import akka.stream.Attributes
 import akka.stream.impl.io.ByteStringParser
 import akka.stream.stage.GraphStageLogic
 import Http2Protocol.FrameType._
-import Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
+import Http2Protocol.{ErrorCode, Flags, FrameType, SettingIdentifier}
 import akka.annotation.InternalApi
-
 import FrameEvent._
+
+import scala.annotation.tailrec
+
+/** INTERNAL API */
+@InternalApi
+private[http] object Http2FrameParsing {
+
+  def readSettings(payload: ByteStringParser.ByteReader): immutable.Seq[Setting] = {
+    @tailrec def readSettings(read: List[Setting]): immutable.Seq[Setting] =
+      if (payload.hasRemaining) {
+        val id = payload.readShortBE()
+        val value = payload.readIntBE()
+        if (isKnownId(id)) readSettings(Setting(SettingIdentifier.byId(id), value) :: read)
+        else readSettings(read)
+      } else read.reverse
+
+    readSettings(Nil)
+  }
+
+}
+
 
 /** INTERNAL API */
 @InternalApi
 private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteStringParser[FrameEvent] {
   import ByteStringParser._
+  import Http2FrameParsing._
 
   abstract class Step extends ParseStep[FrameEvent]
 
@@ -104,16 +125,9 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteS
 
               SettingsAckFrame(Nil) // TODO if we were to send out settings, here would be the spot to include the acks for the ones we've sent out
             } else {
-              def readSettings(read: List[Setting]): immutable.Seq[Setting] =
-                if (payload.hasRemaining) {
-                  val id = payload.readShortBE()
-                  val value = payload.readIntBE()
-                  if (isKnownId(id)) readSettings(Setting(SettingIdentifier.byId(id), value) :: read)
-                  else readSettings(read)
-                } else read.reverse
 
               if (payload.remainingSize % 6 != 0) throw new Http2Compliance.IllegalPayloadLengthInSettingsFrame(payload.remainingSize, "SETTINGS payload MUST be a multiple of multiple of 6 octets")
-              SettingsFrame(readSettings(Nil))
+              SettingsFrame(readSettings(payload))
             }
 
           case WINDOW_UPDATE ⇒
