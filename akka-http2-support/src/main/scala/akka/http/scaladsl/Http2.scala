@@ -5,27 +5,27 @@
 package akka.http.scaladsl
 
 import javax.net.ssl.SSLEngine
-import akka.{Done, NotUsed}
-import akka.actor.{ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.{ Done, NotUsed }
+import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS
-import akka.http.impl.engine.http2.{AlpnSwitch, FrameEvent, Http2AlpnSupport, Http2Blueprint}
+import akka.http.impl.engine.http2.{ AlpnSwitch, FrameEvent, Http2AlpnSupport, Http2Blueprint }
 import akka.http.impl.engine.server.UpgradeToOtherProtocolHeader
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
-import akka.http.scaladsl.UseHttp2.{Always, Negotiated, Never}
+import akka.http.scaladsl.UseHttp2.{ Always, Negotiated, Never }
 import akka.http.scaladsl.Http.ServerBinding
-import akka.http.scaladsl.model.headers.{Connection, RawHeader, Upgrade, UpgradeProtocol}
-import akka.http.scaladsl.model.http2.{Http2SettingsHeader, Http2StreamIdHeader}
+import akka.http.scaladsl.model.headers.{ Connection, RawHeader, Upgrade, UpgradeProtocol }
+import akka.http.scaladsl.model.http2.{ Http2SettingsHeader, Http2StreamIdHeader }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ServerSettings
-import akka.stream.TLSProtocol.{SendBytes, SessionBytes, SslTlsInbound, SslTlsOutbound}
-import akka.stream.scaladsl.{BidiFlow, Flow, Keep, Sink, Source, TLS, Tcp}
-import akka.stream.{IgnoreComplete, Materializer}
-import akka.util.{ByteString, OptionVal}
+import akka.stream.TLSProtocol.{ SendBytes, SessionBytes, SslTlsInbound, SslTlsOutbound }
+import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Sink, Source, TLS, Tcp }
+import akka.stream.{ IgnoreComplete, Materializer }
+import akka.util.{ ByteString, OptionVal }
 import com.typesafe.config.Config
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ Future, Promise }
 import scala.collection.immutable
 import scala.util.Success
 import scala.util.control.NonFatal
@@ -111,13 +111,13 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
 
         // https://http2.github.io/http2-spec/#Http2SettingsHeader 3.2.1 HTTP2-Settings Header Field
         val upgradeSettings = req.headers.collect {
-          case raw: RawHeader if raw.lowercaseName == Http2SettingsHeader.name =>
+          case raw: RawHeader if raw.lowercaseName == Http2SettingsHeader.name ⇒
             Http2SettingsHeader.parse(raw.value)
         }
 
         upgradeSettings match {
           // Must be exactly one
-          case immutable.Seq(Success(http2settings)) =>
+          case immutable.Seq(Success(http2settings)) ⇒
             // TODO remove duplication?
 
             // TODO inject the HTTP2-Settings -
@@ -128,8 +128,8 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
               math.min(
                 parallelism,
                 http2settings.find(_.identifier == SETTINGS_MAX_CONCURRENT_STREAMS) match {
-                  case Some(value) => value.value
-                  case None => Int.MaxValue // FIXME can it ever be missing?
+                  case Some(value) ⇒ value.value
+                  case None        ⇒ Int.MaxValue // FIXME can it ever be missing?
                 }
               )
 
@@ -153,7 +153,6 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
                 .via(Http2Blueprint.handleWithStreamIdHeader(effectiveParallelism)(handler)(system.dispatcher))
                 .joinMat(Http2Blueprint.serverStack(settings, log))(Keep.left))
 
-
             // TODO do not respond until the potential http2 request entity was consumed?
             Future.successful(
               HttpResponse(
@@ -167,7 +166,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
               )
             )
 
-          case _ =>
+          case _ ⇒
             // FIXME
             log.info("Invalid upgrade request (http2-settings header missing or repeated)")
             // A server MUST NOT upgrade the connection to HTTP/2 if this header field is not present or if more than one is present
@@ -175,8 +174,6 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
               StatusCodes.BadRequest
             ))
         }
-
-
 
       case _ ⇒
         handler(req)

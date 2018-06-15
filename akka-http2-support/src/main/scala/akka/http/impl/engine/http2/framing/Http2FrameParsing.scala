@@ -10,7 +10,7 @@ import akka.stream.Attributes
 import akka.stream.impl.io.ByteStringParser
 import akka.stream.stage.GraphStageLogic
 import Http2Protocol.FrameType._
-import Http2Protocol.{ErrorCode, Flags, FrameType, SettingIdentifier}
+import Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
 import akka.annotation.InternalApi
 import FrameEvent._
 
@@ -33,7 +33,6 @@ private[http] object Http2FrameParsing {
   }
 
 }
-
 
 /** INTERNAL API */
 @InternalApi
