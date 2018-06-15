@@ -173,7 +173,6 @@ private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings, initia
         }
       })
 
-
       // FIXME: What if user handler doesn't pull in new substreams? Should we reject them
       //        after a while or buffer only a limited amount? We should also be able to
       //        keep the buffer limited to the number of concurrent streams as negotiated

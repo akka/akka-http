@@ -157,7 +157,6 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
                 //
                 .joinMat(Http2Blueprint.serverStack(settings, log, settingsFromHeader))(Keep.left))
 
-
             Future.successful(
               HttpResponse(
                 StatusCodes.SwitchingProtocols,
