@@ -14,7 +14,7 @@ import akka.http.impl.engine.http2.{ AlpnSwitch, FrameEvent, Http2AlpnSupport, H
 import akka.http.impl.engine.server.MasterServerTerminator
 import akka.http.impl.engine.server.UpgradeToOtherProtocolHeader
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
-import akka.http.impl.util.LogByteStringTools._
+import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.scaladsl.UseHttp2.{ Always, Negotiated, Never }
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.headers.{ Connection, RawHeader, Upgrade, UpgradeProtocol }

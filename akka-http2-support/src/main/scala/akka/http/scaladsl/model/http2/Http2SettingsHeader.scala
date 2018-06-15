@@ -4,7 +4,7 @@
 package akka.http.scaladsl.model.http2
 
 import akka.annotation.InternalApi
-import akka.http.scaladsl.model.headers.{CustomHeader, ModeledCustomHeader, ModeledCustomHeaderCompanion, RequestHeader}
+import akka.http.scaladsl.model.headers.{ CustomHeader, ModeledCustomHeader, ModeledCustomHeaderCompanion, RequestHeader }
 import akka.http.impl.engine.http2.framing.Http2FrameParsing
 import akka.http.impl.engine.http2.FrameEvent.Setting
 import akka.http.impl.model.parser.Base64Parsing
