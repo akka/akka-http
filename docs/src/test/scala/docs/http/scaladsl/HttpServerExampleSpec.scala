@@ -777,12 +777,8 @@ class HttpServerExampleSpec extends WordSpec with Matchers
     // once all connections are terminated,
     // - you can invoke coordinated shutdown to tear down the rest of the system:
     onceAllConnectionsTerminated.flatMap { _ ⇒
-      CoordinatedShutdown(system).run(UnknownReason)
+      system.terminate()
     }
-    // - or terminate the system explicitly:
-    //  onceAllConnectionsTerminated.flatMap { _ ⇒
-    //    system.terminate()
-    //  }
 
     //#graceful-termination
   }

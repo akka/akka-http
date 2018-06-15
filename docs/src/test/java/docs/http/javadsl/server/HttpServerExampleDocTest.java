@@ -341,13 +341,8 @@ public class HttpServerExampleDocTest {
         serverBinding.terminate(Duration.ofSeconds(3));
 
     // once all connections are terminated,
-    HttpTerminated httpTerminated = onceAllConnectionsTerminated.toCompletableFuture().get();
-
-    // - you can invoke coordinated shutdown to tear down the rest of the system:
-    CoordinatedShutdown.get(system).run();
-
-    // - or terminate the system explicitly:
-    //  system.terminate();
+    onceAllConnectionsTerminated.toCompletableFuture().
+        thenAccept(terminated -> system.terminate());
 
     //#graceful-termination
   }
