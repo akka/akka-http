@@ -7,19 +7,20 @@ package akka.http.impl.engine.http2
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
-import akka.http.impl.engine.http2.framing.{ Http2FrameParsing, Http2FrameRendering }
-import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompression }
+import akka.http.impl.engine.http2.framing.{Http2FrameParsing, Http2FrameRendering}
+import akka.http.impl.engine.http2.hpack.{HeaderCompression, HeaderDecompression}
 import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
-import akka.http.scaladsl.settings.{ Http2ServerSettings, ParserSettings, ServerSettings }
-import akka.stream.scaladsl.{ BidiFlow, Flow, Source }
+import akka.http.scaladsl.settings.{Http2ServerSettings, ParserSettings, ServerSettings}
+import akka.stream.scaladsl.{BidiFlow, Flow, Source}
 import akka.util.ByteString
 
-import scala.concurrent.{ ExecutionContext, Future }
-
+import scala.concurrent.{ExecutionContext, Future}
+import scala.collection.immutable
 import FrameEvent._
+
 
 /**
  * Represents one direction of an Http2 substream.
@@ -45,9 +46,12 @@ private[http2] final case class ChunkedHttp2SubStream(
 private[http] object Http2Blueprint {
   
   // format: OFF
-  def serverStack(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
+  def serverStack(
+      settings: ServerSettings,
+      log: LoggingAdapter,
+      initialDemuxerSettings: immutable.Seq[Setting] = Nil): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
     httpLayer(settings, log) atop
-      demux(settings.http2Settings) atop
+      demux(settings.http2Settings, initialDemuxerSettings) atop
       // FrameLogger.bidi atop // enable for debugging
       hpackCoding() atop
       // LogByteStringTools.logToStringBidi("framing") atop // enable for debugging
@@ -77,8 +81,8 @@ private[http] object Http2Blueprint {
    * Creates substreams for every stream and manages stream state machines
    * and handles priorization (TODO: later)
    */
-  def demux(settings: Http2ServerSettings): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
-    BidiFlow.fromGraph(new Http2ServerDemux(settings))
+  def demux(settings: Http2ServerSettings, initialDemuxerSettings: immutable.Seq[Setting]): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
+    BidiFlow.fromGraph(new Http2ServerDemux(settings, initialDemuxerSettings))
 
   /**
    * Translation between substream frames and Http messages (both directions)

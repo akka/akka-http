@@ -122,6 +122,8 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
     req.header[Upgrade] match {
       case Some(upgrade) if upgrade.protocols.exists(_.name equalsIgnoreCase "h2c") ⇒
 
+        log.debug("Got h2c upgrade request from HTTP/1.1 to HTTP2")
+
         // https://http2.github.io/http2-spec/#Http2SettingsHeader 3.2.1 HTTP2-Settings Header Field
         val upgradeSettings = req.headers.collect {
           case raw: RawHeader if raw.lowercaseName == Http2SettingsHeader.name ⇒
@@ -130,21 +132,8 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
 
         upgradeSettings match {
           // Must be exactly one
-          case immutable.Seq(Success(http2settings)) ⇒
+          case immutable.Seq(Success(settingsFromHeader)) ⇒
             // TODO remove duplication?
-
-            // TODO inject the HTTP2-Settings -
-            // FIXME: blindly guessed this was the right thing to do...
-            // pre-existing FIXME: parallelism should maybe kept in track with SETTINGS_MAX_CONCURRENT_STREAMS so that we don't need
-            // to buffer requests that cannot be handled in parallel
-            val effectiveParallelism =
-              math.min(
-                parallelism,
-                http2settings.find(_.identifier == SETTINGS_MAX_CONCURRENT_STREAMS) match {
-                  case Some(value) ⇒ value.value
-                  case None        ⇒ Int.MaxValue // FIXME can it ever be missing?
-                }
-              )
 
             val injectedRequest =
               if (req.method != HttpMethods.OPTIONS)
@@ -163,26 +152,27 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
               Flow[HttpRequest]
                 .watchTermination()(Keep.right)
                 .merge(injectedRequest)
-                .via(Http2Blueprint.handleWithStreamIdHeader(effectiveParallelism)(handler)(system.dispatcher))
-                .joinMat(Http2Blueprint.serverStack(settings, log))(Keep.left))
+                .via(Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher))
+                // the settings from the header are injected into the blueprint as initial demuxer settings
+                //
+                .joinMat(Http2Blueprint.serverStack(settings, log, settingsFromHeader))(Keep.left))
 
-            // TODO do not respond until the potential http2 request entity was consumed?
+
             Future.successful(
               HttpResponse(
                 StatusCodes.SwitchingProtocols,
                 immutable.Seq[HttpHeader](
                   ConnectionUpgradeHeader,
                   UpgradeHeader,
-                  // TODO add attributes from the request
                   UpgradeToOtherProtocolHeader(serverLayer)
                 )
               )
             )
 
           case _ ⇒
-            // FIXME
-            log.info("Invalid upgrade request (http2-settings header missing or repeated)")
+
             // A server MUST NOT upgrade the connection to HTTP/2 if this header field is not present or if more than one is present
+            log.debug("Invalid upgrade request (http2-settings header missing or repeated)")
             Future.successful(HttpResponse(
               StatusCodes.BadRequest
             ))
