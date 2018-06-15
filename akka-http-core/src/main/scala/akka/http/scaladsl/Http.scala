@@ -264,6 +264,11 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
       log.debug("Binding server using HTTP/2...")
       Http2Shadow.bindAndHandleAsync(handler, interface, port, connectionContext, settings, parallelism, log)(fm)
     } else {
+      if (http2enabled)
+        log.debug("The akka.http.server.preview.enable-http2 flag was set, " +
+          "but a plain HttpConnectionContext (not Https) was given, binding using plain HTTP " +
+          "(upgrading to Http2 through h2c supported)")
+
       bindAndHandle(Flow[HttpRequest].mapAsync(parallelism)(handler), interface, port, connectionContext, settings, log)
     }
   }

@@ -31,16 +31,12 @@ class Http2BindingViaConfigSpec extends AkkaSpec("""
 
   "akka.http.server.enable-http2" should {
     "bind using plain HTTP when provided ConnectionContext is HTTP (not HTTPS)" in {
-      // since we're in akka-http core here, the http2 support is not available on classpath,
-      // so the setting + binding should fail
-
       var binding: Future[Http.ServerBinding] = null
       try {
         val p = TestProbe()
         system.eventStream.subscribe(p.ref, classOf[Logging.Debug])
 
         binding = Http().bindAndHandleAsync(helloWorldHandler, host, port)
-        fishForDebugMessage(p, "binding using plain HTTP")
       } finally if (binding ne null) binding.map(_.unbind())
     }
     "bind using HTTP/2 with HttpsConnectionContext provided" in {
