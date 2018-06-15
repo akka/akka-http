@@ -7,20 +7,19 @@ package akka.http.impl.engine.http2
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
-import akka.http.impl.engine.http2.framing.{Http2FrameParsing, Http2FrameRendering}
-import akka.http.impl.engine.http2.hpack.{HeaderCompression, HeaderDecompression}
+import akka.http.impl.engine.http2.framing.{ Http2FrameParsing, Http2FrameRendering }
+import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompression }
 import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
-import akka.http.scaladsl.settings.{Http2ServerSettings, ParserSettings, ServerSettings}
-import akka.stream.scaladsl.{BidiFlow, Flow, Source}
+import akka.http.scaladsl.settings.{ Http2ServerSettings, ParserSettings, ServerSettings }
+import akka.stream.scaladsl.{ BidiFlow, Flow, Source }
 import akka.util.ByteString
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.collection.immutable
 import FrameEvent._
-
 
 /**
  * Represents one direction of an Http2 substream.
