@@ -40,6 +40,7 @@ from a background with non-"streaming first" HTTP Servers.
 * [routing-dsl/index](../routing-dsl/index.md)
 * [websocket-support](websocket-support.md)
 * [server-https-support](server-https-support.md)
+* [graceful-termination](graceful-termination.md)
 * [http2](http2.md)
 
 @@@
