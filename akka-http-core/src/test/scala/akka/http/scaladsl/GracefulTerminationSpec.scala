@@ -73,7 +73,7 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
 
       // termination should kill all connections within the deadline and complete its whenTerminated by then as well
       // (we give it a second wiggle room)
-      val _: Http.HttpTerminated = Await.result(serverBinding.whenTerminated, 3.seconds)
+      Await.result(serverBinding.whenTerminated, 3.seconds)
     }
 
     "provide whenTerminated future that completes once server has completed termination (existing connection, no user reply)" in new TestSetup {
@@ -100,7 +100,7 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
 
       r1.futureValue.status should ===(StatusCodes.OK)
 
-      val _: Http.HttpTerminated = Await.result(serverBinding.whenTerminated, 3.seconds)
+      Await.result(serverBinding.whenTerminated, 3.seconds)
     }
     "provide whenTerminated future that completes once server has completed termination (existing connection, user reply, terminate, no reply)" in new TestSetup {
       val r1 = makeRequest() // establish connection
@@ -116,7 +116,7 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
       // the user handler will not receive this request and we will emit the 503 automatically
       r2.futureValue.status should ===(StatusCodes.ServiceUnavailable) // the injected 503 response
 
-      val _: Http.HttpTerminated = Await.result(serverBinding.whenTerminated, 3.seconds)
+      Await.result(serverBinding.whenTerminated, 3.seconds)
     }
 
     "allow configuring the automatic termination response (in config)" in {
@@ -142,7 +142,7 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
         val r2 = makeRequest() // on the same connection
         r2.futureValue.status should ===(StatusCodes.ImATeapot)
 
-        val _: Http.HttpTerminated = Await.result(serverBinding.whenTerminated, 3.seconds)
+        Await.result(serverBinding.whenTerminated, 3.seconds)
       }
     }
 
@@ -162,7 +162,7 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
         r2.futureValue.status should ===(StatusCodes.EnhanceYourCalm) // the injected 503 response
         r2.futureValue.entity.toStrict(1.second).futureValue.data.utf8String should ===("Chill out, man!")
 
-        val _: Http.HttpTerminated = Await.result(serverBinding.whenTerminated, 3.seconds)
+        Await.result(serverBinding.whenTerminated, 3.seconds)
       }
     }
 
