@@ -213,6 +213,13 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
       .mapAsyncUnordered(settings.maxConnections) { incoming ⇒
         try {
           fullLayer
+            .watchTermination() {
+              case ((done, connectionTerminator), whenTerminates) ⇒
+                whenTerminates.onComplete({ _ ⇒
+                  masterTerminator.removeConnection(connectionTerminator)
+                })(fm.executionContext)
+                (done, connectionTerminator)
+            }
             .addAttributes(prepareAttributes(settings, incoming))
             .joinMat(incoming.flow)(Keep.left)
             .mapMaterializedValue {
@@ -220,6 +227,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
                 masterTerminator.registerConnection(connectionTerminator)(fm.executionContext)
                 future // drop the terminator matValue, we already registered is which is all we need to do here
             }
+
             .run()
             .recover {
               // Ignore incoming errors from the connection as they will cancel the binding.
@@ -958,7 +966,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
      *       which could trap the server in a situation where it could not terminate if it were to wait for a response to "finish")
      *     - existing streaming responses must complete before the deadline as well.
      *       When the deadline is reached the connection will be terminated regardless of status of the streaming responses.
-     *   - if user code does not reply with a response within the deadline, we produce a special [[ServerSettings.terminationDeadlineExceededResponse]]
+     *   - if user code does not reply with a response within the deadline we produce a special [[ServerSettings.terminationDeadlineExceededResponse]]
      *     HTTP response (e.g. 503 Service Unavailable)
      *
      * 3) Keep draining incoming requests on existing connection:

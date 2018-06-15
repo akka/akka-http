@@ -61,7 +61,7 @@ Once you have done this (un)marshalling between JSON and your type `T` should wo
 <a id="json-streaming-client-side"></a>
 ## Consuming JSON Streaming style APIs
 
-A popular way of implementing streaming APIs is [JSON Streaming](https://en.wikipedia.org/wiki/JSON_Streaming) (see [Source Streaming](./routing-dsl/source-streaming-support.md)
+A popular way of implementing streaming APIs is [JSON Streaming](https://en.wikipedia.org/wiki/JSON_Streaming) (see @ref[Source Streaming](../routing-dsl/source-streaming-support.md)
 for documentation on building server-side of such API).
 
 Depending on the way the API returns the streamed JSON (newline delimited, raw sequence of objects, or "infinite array") 
