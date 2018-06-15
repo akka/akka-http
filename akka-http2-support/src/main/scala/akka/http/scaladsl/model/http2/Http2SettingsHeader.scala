@@ -20,10 +20,14 @@ import scala.util.Try
  */
 @InternalApi object Http2SettingsHeader {
   val name: String = "http2-settings"
+
+  def headerValueToBinary(value: String): ByteString =
+    ByteString(Base64Parsing.base64UrlStringDecoder(value.toCharArray))
+
   def parse(value: String): Try[immutable.Seq[Setting]] = Try {
     // settings are a base64url encoded Http2 settings frame
     // https://httpwg.org/specs/rfc7540.html#rfc.section.3.2.1
-    val bytes = ByteString(Base64Parsing.base64UrlStringDecoder(value.toCharArray))
+    val bytes = headerValueToBinary(value)
     val reader = new io.ByteStringParser.ByteReader(bytes)
     Http2FrameParsing.readSettings(reader)
   }
