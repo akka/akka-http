@@ -14,11 +14,9 @@ import akka.http.scaladsl.Http2
 import akka.stream.ActorMaterializer
 import akka.testkit._
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.exceptions.TestPendingException
 
 import scala.concurrent.duration._
 import scala.sys.process._
-import scala.util.control.NoStackTrace
 
 class H2SpecIntegrationSpec extends AkkaSpec(
   """
@@ -141,7 +139,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
     }
     // end of execution of tests -----------------------------------------------------------
 
-    def runSpec(specSectionNumber: Option[String] = None, junitOutput: File): Unit = {
+    def runSpec(specSectionNumber: Option[String], junitOutput: File): Unit = {
       junitOutput.getParentFile.mkdirs()
 
       val TestFailureMarker = "×" // that special character is next to test failures, so we detect them by it

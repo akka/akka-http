@@ -14,7 +14,7 @@ import akka.http.impl.engine.http2.Http2Protocol.{ ErrorCode, Flags, FrameType, 
 import akka.http.impl.engine.http2.framing.FrameRenderer
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.engine.ws.ByteStringSinkProbe
-import akka.http.impl.util.{ StreamUtils, StringRendering, WithLogCapturing }
+import akka.http.impl.util.{ StringRendering, WithLogCapturing }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ CacheDirectives, RawHeader }
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
@@ -85,7 +85,7 @@ class Http2ServerSpec extends AkkaSpec("""
         val headerBlock = hex"00 00 01 01 05 00 00 00 01 40"
         sendHEADERS(1, endStream = false, endHeaders = true, headerBlockFragment = headerBlock)
 
-        val (lastStreamId, errorCode) = expectGOAWAY(0) // since we have not processed any stream
+        val (_, errorCode) = expectGOAWAY(0) // since we have not processed any stream
         errorCode should ===(ErrorCode.COMPRESSION_ERROR)
       }
       "GOAWAY when second request on different stream has invalid headers frame" in new SimpleRequestResponseRoundtripSetup {
@@ -101,7 +101,7 @@ class Http2ServerSpec extends AkkaSpec("""
         val incorrectHeaderBlock = hex"00 00 01 01 05 00 00 00 01 40"
         sendHEADERS(3, endStream = false, endHeaders = true, headerBlockFragment = incorrectHeaderBlock)
 
-        val (lastStreamId, errorCode) = expectGOAWAY(1) // since we have sucessfully started processing stream `1`
+        val (_, errorCode) = expectGOAWAY(1) // since we have sucessfully started processing stream `1`
         errorCode should ===(ErrorCode.COMPRESSION_ERROR)
       }
       "Three consecutive GET requests" in new SimpleRequestResponseRoundtripSetup {
@@ -688,7 +688,7 @@ class Http2ServerSpec extends AkkaSpec("""
         val illegalPayload = hex"cafe babe"
         sendFrame(FrameType.SETTINGS, ackFlag, 0, illegalPayload)
 
-        val (lastStreamId, error) = expectGOAWAY()
+        val (_, error) = expectGOAWAY()
         error should ===(ErrorCode.FRAME_SIZE_ERROR)
       }
       "received SETTINGs frame frame with a length other than a multiple of 6 octets (invalid 6_5)" in new TestSetup with RequestResponseProbes {
@@ -696,7 +696,7 @@ class Http2ServerSpec extends AkkaSpec("""
 
         sendFrame(FrameType.SETTINGS, ByteFlag.Zero, 0, data)
 
-        val (lastStreamId, error) = expectGOAWAY()
+        val (_, error) = expectGOAWAY()
         error should ===(ErrorCode.FRAME_SIZE_ERROR)
       }
 
@@ -765,7 +765,7 @@ class Http2ServerSpec extends AkkaSpec("""
         val invalidIdForPing = 1
         sendFrame(FrameType.PING, ByteFlag.Zero, invalidIdForPing, ByteString("abcd1234"))
 
-        val (lastStreamId, errorCode) = expectGOAWAY()
+        val (_, errorCode) = expectGOAWAY()
         errorCode should ===(ErrorCode.PROTOCOL_ERROR)
       }
       "respond to PING frames giving precedence over any other kind pending frame" in pending
