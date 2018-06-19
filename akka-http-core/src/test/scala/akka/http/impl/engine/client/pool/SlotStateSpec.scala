@@ -11,12 +11,11 @@ import akka.http.impl.engine.client.PoolFlow
 import akka.http.impl.engine.client.PoolFlow.RequestContext
 import akka.http.impl.engine.client.pool.SlotState._
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{ HttpMethods, HttpRequest, HttpResponse, headers }
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, headers }
 import akka.http.scaladsl.settings.ConnectionPoolSettings
-import akka.stream.testkit.Utils.TE
 import akka.testkit.AkkaSpec
 
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.Promise
 import scala.util.Try
 
 class SlotStateSpec extends AkkaSpec {

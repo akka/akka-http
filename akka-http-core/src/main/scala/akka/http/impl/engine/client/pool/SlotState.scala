@@ -11,7 +11,6 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import scala.util.{ Failure, Success, Try }
