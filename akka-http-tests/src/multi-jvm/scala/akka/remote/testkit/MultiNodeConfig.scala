@@ -9,7 +9,7 @@ import java.net.{ InetAddress, InetSocketAddress }
 
 import com.typesafe.config.{ Config, ConfigFactory, ConfigObject }
 
-import scala.concurrent.{ Await, Awaitable, Future }
+import scala.concurrent.{ Await, Awaitable }
 import scala.util.control.NonFatal
 import scala.collection.immutable
 import akka.actor._
