@@ -12,7 +12,7 @@ import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS
 import akka.http.impl.engine.http2.{ AlpnSwitch, FrameEvent, Http2AlpnSupport, Http2Blueprint }
 import akka.http.impl.engine.server.MasterServerTerminator
-import akka.http.impl.engine.server.UpgradeToOtherProtocolHeader
+import akka.http.impl.engine.server.UpgradeToOtherProtocolResponseHeader
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.scaladsl.UseHttp2.{ Always, Negotiated, Never }
@@ -153,7 +153,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
                 immutable.Seq[HttpHeader](
                   ConnectionUpgradeHeader,
                   UpgradeHeader,
-                  UpgradeToOtherProtocolHeader(serverLayer)
+                  UpgradeToOtherProtocolResponseHeader(serverLayer)
                 )
               )
             )

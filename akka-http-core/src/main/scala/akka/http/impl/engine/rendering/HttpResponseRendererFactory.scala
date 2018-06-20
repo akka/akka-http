@@ -5,9 +5,7 @@
 package akka.http.impl.engine.rendering
 
 import akka.NotUsed
-import akka.http.impl.engine.ws.{ FrameEvent, UpgradeToWebSocketResponseHeader }
-import akka.http.scaladsl.model.ws.Message
-import akka.stream.{ Attributes, FlowShape, Graph, Inlet, Outlet }
+import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 
 import scala.collection.immutable
 import scala.annotation.tailrec
@@ -20,7 +18,7 @@ import akka.http.impl.util._
 import RenderSupport._
 import HttpProtocols._
 import akka.annotation.InternalApi
-import akka.http.impl.engine.server.UpgradeToOtherProtocolHeader
+import akka.http.impl.engine.server.UpgradeToOtherProtocolResponseHeader
 import headers._
 
 /**
@@ -205,11 +203,7 @@ private[http] class HttpResponseRendererFactory(
               r ~~ Connection ~~ (if (close) CloseBytes else KeepAliveBytes) ~~ CrLf
             else if (connHeader != null && connHeader.hasUpgrade) {
               r ~~ connHeader ~~ CrLf
-              HttpHeader.fastFind(classOf[UpgradeToWebSocketResponseHeader], headers) match {
-                case OptionVal.Some(header) ⇒ closeMode = SwitchToWebSocket(header.handler)
-                case _                      ⇒ // nothing to do here...
-              }
-              HttpHeader.fastFind(classOf[UpgradeToOtherProtocolHeader], headers) match {
+              HttpHeader.fastFind(classOf[UpgradeToOtherProtocolResponseHeader], headers) match {
                 case OptionVal.Some(header) ⇒ closeMode = SwitchToOtherProtocol(header.handler)
                 case _                      ⇒ // nothing to do here...
               }
@@ -241,7 +235,6 @@ private[http] class HttpResponseRendererFactory(
 
                 Strict {
                   closeMode match {
-                    case SwitchToWebSocket(handler)     ⇒ ResponseRenderingOutput.SwitchToWebSocket(finalBytes, handler)
                     case SwitchToOtherProtocol(handler) ⇒ ResponseRenderingOutput.SwitchToOtherProtocol(finalBytes, handler)
                     case _                              ⇒ ResponseRenderingOutput.HttpData(finalBytes)
                   }
@@ -281,7 +274,6 @@ private[http] class HttpResponseRendererFactory(
   sealed trait CloseMode
   case object DontClose extends CloseMode
   case object CloseConnection extends CloseMode
-  case class SwitchToWebSocket(handler: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]]) extends CloseMode
   case class SwitchToOtherProtocol(handler: Flow[ByteString, ByteString, Any]) extends CloseMode
 }
 
@@ -302,6 +294,5 @@ private[http] sealed trait ResponseRenderingOutput
 @InternalApi
 private[http] object ResponseRenderingOutput {
   private[http] case class HttpData(bytes: ByteString) extends ResponseRenderingOutput
-  private[http] case class SwitchToWebSocket(httpResponseBytes: ByteString, handler: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]]) extends ResponseRenderingOutput
   private[http] case class SwitchToOtherProtocol(httpResponseBytes: ByteString, newHandler: Flow[ByteString, ByteString, Any]) extends ResponseRenderingOutput
 }

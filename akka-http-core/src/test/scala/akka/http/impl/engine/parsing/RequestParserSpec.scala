@@ -16,8 +16,9 @@ import akka.stream.scaladsl._
 import akka.stream.TLSProtocol._
 import org.scalatest.matchers.Matcher
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
-import akka.http.scaladsl.settings.ParserSettings
+import akka.http.scaladsl.settings.{ ParserSettings, WebSocketSettings }
 import akka.http.impl.engine.parsing.ParserOutput._
+import akka.http.impl.settings.WebSocketSettingsImpl
 import akka.http.impl.util._
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model.HttpMethods._
@@ -311,7 +312,7 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
 
     "support `rawRequestUriHeader` setting" in new Test {
       override protected def newParser: HttpRequestParser =
-        new HttpRequestParser(parserSettings, rawRequestUriHeader = true, headerParser = HttpHeaderParser(parserSettings, system.log))
+        new HttpRequestParser(parserSettings, websocketSettings, rawRequestUriHeader = true, headerParser = HttpHeaderParser(parserSettings, system.log))
 
       """GET /f%6f%6fbar?q=b%61z HTTP/1.1
         |Host: ping
@@ -653,7 +654,8 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
         .awaitResult(awaitAtMost)
 
     protected def parserSettings: ParserSettings = ParserSettings(system)
-    protected def newParser = new HttpRequestParser(parserSettings, false, HttpHeaderParser(parserSettings, system.log))
+    protected def websocketSettings: WebSocketSettings = WebSocketSettingsImpl.serverFromRoot(system.settings.config)
+    protected def newParser = new HttpRequestParser(parserSettings, websocketSettings, false, HttpHeaderParser(parserSettings, system.log))
 
     private def compactEntity(entity: RequestEntity): Future[RequestEntity] =
       entity match {
