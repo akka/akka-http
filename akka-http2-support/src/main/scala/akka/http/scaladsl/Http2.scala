@@ -135,18 +135,9 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
           case immutable.Seq(Success(settingsFromHeader)) ⇒
             // TODO remove duplication?
 
-            val injectedRequest =
-              if (req.method != HttpMethods.OPTIONS)
-                // inject the actual upgrade request with a stream identifier of 1
-                // https://http2.github.io/http2-spec/#rfc.section.3.2
-                Source.single(req.addHeader(Http2StreamIdHeader(1)))
-              else {
-                // No 100% sure about this but from the spec:
-                // If concurrency of an initial request with subsequent requests is important, an OPTIONS request
-                // can be used to perform the upgrade to HTTP/2, at the cost of an additional round trip.
-                req.discardEntityBytes()
-                Source.empty[HttpRequest]
-              }
+            // inject the actual upgrade request with a stream identifier of 1
+            // https://http2.github.io/http2-spec/#rfc.section.3.2
+            val injectedRequest = Source.single(req.addHeader(Http2StreamIdHeader(1)))
 
             val serverLayer: Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(
               Flow[HttpRequest]
@@ -154,7 +145,6 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
                 .merge(injectedRequest)
                 .via(Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher))
                 // the settings from the header are injected into the blueprint as initial demuxer settings
-                //
                 .joinMat(Http2Blueprint.serverStack(settings, log, settingsFromHeader))(Keep.left))
 
             Future.successful(
@@ -168,13 +158,11 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
               )
             )
 
+          // A server MUST NOT upgrade the connection to HTTP/2 if this header field
+          // is not present or if more than one is present
           case _ ⇒
-
-            // A server MUST NOT upgrade the connection to HTTP/2 if this header field is not present or if more than one is present
             log.debug("Invalid upgrade request (http2-settings header missing or repeated)")
-            Future.successful(HttpResponse(
-              StatusCodes.BadRequest
-            ))
+            handler(req)
         }
 
       case _ ⇒
