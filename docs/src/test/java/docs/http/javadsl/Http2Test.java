@@ -22,9 +22,11 @@ import static akka.http.javadsl.ConnectHttp.toHostHttps;
 //#bindAndHandleAsync
 
 //#bindAndHandleWithoutNegotiation
+//#bindAndHandleNegotiateUpgrade
 import akka.http.javadsl.UseHttp2;
 import static akka.http.javadsl.ConnectHttp.toHost;
 
+//#bindAndHandleNegotiateUpgrade
 //#bindAndHandleWithoutNegotiation
 
 class Http2Test {
@@ -49,5 +51,14 @@ class Http2Test {
         toHost("127.0.0.1", 8080, UseHttp2.always()),
         materializer);
     //#bindAndHandleWithoutNegotiation
+
+    //#bindAndHandleNegotiateUpgrade
+    Http.get(system)
+      .bindAndHandleAsync(
+        asyncHandler,
+        toHost("127.0.0.1", 8080, UseHttp2.negotiated()),
+        materializer);
+    //#bindAndHandleNegotiateUpgrade
+
   }
 }

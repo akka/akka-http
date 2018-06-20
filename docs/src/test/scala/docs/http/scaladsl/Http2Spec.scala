@@ -20,10 +20,17 @@ import akka.http.scaladsl.Http2
 //#bindAndHandleAsync
 
 //#bindAndHandleWithoutNegotiation
+//#bindAndHandleNegotiateUpgrade
 import akka.http.scaladsl.HttpConnectionContext
+//#bindAndHandleNegotiateUpgrade
 import akka.http.scaladsl.UseHttp2.Always
 
 //#bindAndHandleWithoutNegotiation
+
+//#bindAndHandleNegotiateUpgrade
+import akka.http.scaladsl.UseHttp2.Negotiated
+
+//#bindAndHandleNegotiateUpgrade
 
 import akka.actor.ActorSystem
 import akka.stream.Materializer
@@ -49,4 +56,12 @@ object Http2Spec {
     port = 8080,
     connectionContext = HttpConnectionContext(http2 = Always))
   //#bindAndHandleWithoutNegotiation
+
+  //#bindAndHandleNegotiateUpgrade
+  Http2().bindAndHandleAsync(
+    asyncHandler,
+    interface = "localhost",
+    port = 8080,
+    connectionContext = HttpConnectionContext(http2 = Negotiated))
+  //#bindAndHandleNegotiateUpgrade
 }
