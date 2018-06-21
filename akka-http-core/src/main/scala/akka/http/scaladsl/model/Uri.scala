@@ -765,10 +765,10 @@ object Uri {
     else sb.toString
 
   private[http] def normalizeScheme(scheme: String): String = {
-    @tailrec def verify(ix: Int = scheme.length - 1, allowed: CharPredicate = ALPHA, allLower: Boolean = true): Int =
-      if (ix >= 0) {
+    @tailrec def verify(ix: Int = 0, allowed: CharPredicate = ALPHA, allLower: Boolean = true): Int =
+      if (ix < scheme.length) {
         val c = scheme.charAt(ix)
-        if (allowed(c)) verify(ix - 1, `scheme-char`, allLower && !UPPER_ALPHA(c)) else ix
+        if (allowed(c)) verify(ix + 1, `scheme-char`, allLower && !UPPER_ALPHA(c)) else ix
       } else if (allLower) -1 else -2
     verify() match {
       case -2 ⇒ scheme.toLowerCase

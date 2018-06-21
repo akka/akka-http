@@ -13,6 +13,7 @@ import java.util.Optional
 import java.util.function.{ Function ⇒ JFunction }
 import java.lang.{ Iterable ⇒ JIterable }
 
+import akka.annotation.DoNotInherit
 import akka.http.scaladsl
 import akka.japi.Util
 import akka.pattern.CircuitBreakerOpenException
@@ -37,6 +38,7 @@ trait CustomRejection extends akka.http.scaladsl.server.Rejection
  * Rejection created by method filters.
  * Signals that the request was rejected because the HTTP method is unsupported.
  */
+@DoNotInherit
 trait MethodRejection extends Rejection {
   def supported: HttpMethod
 }
@@ -45,6 +47,7 @@ trait MethodRejection extends Rejection {
  * Rejection created by scheme filters.
  * Signals that the request was rejected because the Uri scheme is unsupported.
  */
+@DoNotInherit
 trait SchemeRejection extends Rejection {
   def supported: String
 }
@@ -53,14 +56,27 @@ trait SchemeRejection extends Rejection {
  * Rejection created by parameter filters.
  * Signals that the request was rejected because a query parameter was not found.
  */
+@DoNotInherit
 trait MissingQueryParamRejection extends Rejection {
   def parameterName: String
 }
 
 /**
  * Rejection created by parameter filters.
+ * Signals that the request was rejected because a query parameter value was not equal to required one.
+ */
+@DoNotInherit
+trait InvalidRequiredValueForQueryParamRejection extends Rejection {
+  def parameterName: String
+  def expectedValue: String
+  def actualValue: String
+}
+
+/**
+ * Rejection created by parameter filters.
  * Signals that the request was rejected because a query parameter could not be interpreted.
  */
+@DoNotInherit
 trait MalformedQueryParamRejection extends Rejection {
   def parameterName: String
   def errorMsg: String
@@ -71,6 +87,7 @@ trait MalformedQueryParamRejection extends Rejection {
  * Rejection created by form field filters.
  * Signals that the request was rejected because a form field was not found.
  */
+@DoNotInherit
 trait MissingFormFieldRejection extends Rejection {
   def fieldName: String
 }
@@ -79,6 +96,7 @@ trait MissingFormFieldRejection extends Rejection {
  * Rejection created by form field filters.
  * Signals that the request was rejected because a form field could not be interpreted.
  */
+@DoNotInherit
 trait MalformedFormFieldRejection extends Rejection {
   def fieldName: String
   def errorMsg: String
@@ -89,6 +107,7 @@ trait MalformedFormFieldRejection extends Rejection {
  * Rejection created by header directives.
  * Signals that the request was rejected because a required header could not be found.
  */
+@DoNotInherit
 trait MissingHeaderRejection extends Rejection {
   def headerName: String
 }
@@ -97,6 +116,7 @@ trait MissingHeaderRejection extends Rejection {
  * Rejection created by header directives.
  * Signals that the request was rejected because a header value is malformed.
  */
+@DoNotInherit
 trait MalformedHeaderRejection extends Rejection {
   def headerName: String
   def errorMsg: String
@@ -107,6 +127,7 @@ trait MalformedHeaderRejection extends Rejection {
  * Rejection created by [[akka.http.scaladsl.server.directives.HeaderDirectives.checkSameOrigin]].
  * Signals that the request was rejected because `Origin` header value is invalid.
  */
+@DoNotInherit
 trait InvalidOriginRejection extends Rejection {
   def getAllowedOrigins: java.util.List[akka.http.javadsl.model.headers.HttpOrigin]
 }
@@ -115,6 +136,7 @@ trait InvalidOriginRejection extends Rejection {
  * Rejection created by unmarshallers.
  * Signals that the request was rejected because the requests content-type is unsupported.
  */
+@DoNotInherit
 trait UnsupportedRequestContentTypeRejection extends Rejection {
   def getSupported: java.util.Set[akka.http.javadsl.model.ContentTypeRange]
 }
@@ -123,6 +145,7 @@ trait UnsupportedRequestContentTypeRejection extends Rejection {
  * Rejection created by decoding filters.
  * Signals that the request was rejected because the requests content encoding is unsupported.
  */
+@DoNotInherit
 trait UnsupportedRequestEncodingRejection extends Rejection {
   def supported: HttpEncoding
 }
@@ -132,6 +155,7 @@ trait UnsupportedRequestEncodingRejection extends Rejection {
  * Signals that the request was rejected because the requests contains only unsatisfiable ByteRanges.
  * The actualEntityLength gives the client a hint to create satisfiable ByteRanges.
  */
+@DoNotInherit
 trait UnsatisfiableRangeRejection extends Rejection {
   def getUnsatisfiableRanges: JIterable[ByteRange]
   def actualEntityLength: Long
@@ -142,6 +166,7 @@ trait UnsatisfiableRangeRejection extends Rejection {
  * Signals that the request contains too many ranges. An irregular high number of ranges
  * indicates a broken client or a denial of service attack.
  */
+@DoNotInherit
 trait TooManyRangesRejection extends Rejection {
   def maxRanges: Int
 }
@@ -153,6 +178,7 @@ trait TooManyRangesRejection extends Rejection {
  * Note that semantic issues with the request content (e.g. because some parameter was out of range)
  * will usually trigger a `ValidationRejection` instead.
  */
+@DoNotInherit
 trait MalformedRequestContentRejection extends Rejection {
   def message: String
   def getCause: Throwable
@@ -162,6 +188,7 @@ trait MalformedRequestContentRejection extends Rejection {
  * Rejection created by unmarshallers.
  * Signals that the request was rejected because an message body entity was expected but not supplied.
  */
+@DoNotInherit
 abstract class RequestEntityExpectedRejection extends Rejection
 object RequestEntityExpectedRejection {
   def get: RequestEntityExpectedRejection = scaladsl.server.RequestEntityExpectedRejection
@@ -172,6 +199,7 @@ object RequestEntityExpectedRejection {
  * Signals that the request was rejected because the service is not capable of producing a response entity whose
  * content type is accepted by the client
  */
+@DoNotInherit
 trait UnacceptedResponseContentTypeRejection extends Rejection {
   def supported: immutable.Set[ContentNegotiator.Alternative]
 }
@@ -181,6 +209,7 @@ trait UnacceptedResponseContentTypeRejection extends Rejection {
  * Signals that the request was rejected because the service is not capable of producing a response entity whose
  * content encoding is accepted by the client
  */
+@DoNotInherit
 trait UnacceptedResponseEncodingRejection extends Rejection {
   def getSupported: java.util.Set[HttpEncoding]
 }
@@ -194,6 +223,7 @@ object UnacceptedResponseEncodingRejection {
  * Signals that the request was rejected because the user could not be authenticated. The reason for the rejection is
  * specified in the cause.
  */
+@DoNotInherit
 trait AuthenticationFailedRejection extends Rejection {
   def cause: AuthenticationFailedRejection.Cause
   def challenge: HttpChallenge
@@ -222,6 +252,7 @@ object AuthenticationFailedRejection {
  * Rejection created by the 'authorize' directive.
  * Signals that the request was rejected because the user is not authorized.
  */
+@DoNotInherit
 trait AuthorizationFailedRejection extends Rejection
 object AuthorizationFailedRejection {
   def get = scaladsl.server.AuthorizationFailedRejection
@@ -231,6 +262,7 @@ object AuthorizationFailedRejection {
  * Rejection created by the `cookie` directive.
  * Signals that the request was rejected because a cookie was not found.
  */
+@DoNotInherit
 trait MissingCookieRejection extends Rejection {
   def cookieName: String
 }
@@ -238,6 +270,7 @@ trait MissingCookieRejection extends Rejection {
 /**
  * Rejection created when a websocket request was expected but none was found.
  */
+@DoNotInherit
 trait ExpectedWebSocketRequestRejection extends Rejection
 object ExpectedWebSocketRequestRejection {
   def get: ExpectedWebSocketRequestRejection = scaladsl.server.ExpectedWebSocketRequestRejection
@@ -247,6 +280,7 @@ object ExpectedWebSocketRequestRejection {
  * Rejection created when a websocket request was not handled because none of the given subprotocols
  * was supported.
  */
+@DoNotInherit
 trait UnsupportedWebSocketSubprotocolRejection extends Rejection {
   def supportedProtocol: String
 }
@@ -256,6 +290,7 @@ trait UnsupportedWebSocketSubprotocolRejection extends Rejection {
  * thrown by domain model constructors (e.g. via `require`).
  * It signals that an expected value was semantically invalid.
  */
+@DoNotInherit
 trait ValidationRejection extends Rejection {
   def message: String
   def getCause: Optional[Throwable]
@@ -265,6 +300,7 @@ trait ValidationRejection extends Rejection {
  * Rejection created by the `onCompleteWithBreaker` directive.
  * Signals that the request was rejected because the supplied circuit breaker is open and requests are failing fast.
  */
+@DoNotInherit
 trait CircuitBreakerOpenRejection extends Rejection {
   def cause: CircuitBreakerOpenException
 }
@@ -287,6 +323,7 @@ trait CircuitBreakerOpenRejection extends Rejection {
  * MethodRejection added by the `get` directive is canceled by the `put` directive (since the HTTP method
  * did indeed match eventually).
  */
+@DoNotInherit
 trait TransformationRejection extends Rejection {
   def getTransform: JFunction[JIterable[Rejection], JIterable[Rejection]]
 }
@@ -314,6 +351,9 @@ object Rejections {
 
   def missingQueryParam(parameterName: String): MissingQueryParamRejection =
     s.MissingQueryParamRejection(parameterName)
+
+  def invalidRequiredValueForQueryParam(parameterName: String, requiredValue: String, actualValue: String): InvalidRequiredValueForQueryParamRejection =
+    s.InvalidRequiredValueForQueryParamRejection(parameterName, requiredValue, actualValue)
 
   def malformedQueryParam(parameterName: String, errorMsg: String): MalformedQueryParamRejection =
     s.MalformedQueryParamRejection(parameterName, errorMsg)

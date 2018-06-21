@@ -203,15 +203,15 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
   }
 
   "The 'parameter' requirement directive should" - {
-    "block requests that do not contain the required parameter" in {
+    "reject the request with a MissingQueryParamRejection if request do not contain the required parameter" in {
       Get("/person?age=19") ~> {
         parameter('nose ! "large") { completeOk }
-      } ~> check { handled shouldEqual false }
+      } ~> check { rejection shouldEqual MissingQueryParamRejection("nose") }
     }
-    "block requests that contain the required parameter but with an unmatching value" in {
+    "reject the request with a InvalidRequiredValueForQueryParamRejection if the required parameter has an unmatching value" in {
       Get("/person?age=19&nose=small") ~> {
         parameter('nose ! "large") { completeOk }
-      } ~> check { handled shouldEqual false }
+      } ~> check { rejection shouldEqual InvalidRequiredValueForQueryParamRejection("nose", "large", "small") }
     }
     "let requests pass that contain the required parameter with its required value" in {
       Get("/person?nose=large&eyes=blue") ~> {

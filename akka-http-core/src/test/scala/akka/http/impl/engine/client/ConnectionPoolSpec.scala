@@ -9,11 +9,12 @@ import java.nio.ByteBuffer
 import java.nio.channels.{ ServerSocketChannel, SocketChannel }
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.{ ActorRef, ActorSystem, PoisonPill }
+import akka.actor.ActorSystem
 import akka.http.impl.engine.client.PoolMasterActor.PoolInterfaceRunning
+import akka.http.impl.engine.server.ServerTerminator
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util._
-import akka.http.scaladsl.Http.OutgoingConnection
+import akka.http.scaladsl.Http.{ HttpServerTerminated, HttpTerminated, OutgoingConnection }
 import akka.http.scaladsl.model.HttpEntity.{ Chunk, ChunkStreamPart, Chunked, LastChunk }
 import akka.http.scaladsl.model.{ HttpEntity, _ }
 import akka.http.scaladsl.model.headers._
@@ -28,7 +29,7 @@ import akka.testkit._
 import akka.util.ByteString
 
 import scala.collection.immutable
-import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
@@ -67,7 +68,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
   "The host-level client infrastructure" should {
 
     "complete a simple request/response cycle" in new TestSetup {
-      val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int]()
+      val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int]()
 
       requestIn.sendNext(HttpRequest(uri = "/") → 42)
 
@@ -78,7 +79,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     }
 
     "open a second connection if the first one is loaded" in new TestSetup {
-      val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int]()
+      val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int]()
 
       requestIn.sendNext(HttpRequest(uri = "/a") → 42)
       requestIn.sendNext(HttpRequest(uri = "/b") → 43)
@@ -98,7 +99,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     }
 
     "open a second connection if the request on the first one is dispatch but not yet completed" in new TestSetup {
-      val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int]()
+      val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int]()
 
       val responseEntityPub = TestPublisher.probe[ByteString]()
 
@@ -143,7 +144,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     }
 
     "not open a second connection if there is an idle one available" in new TestSetup {
-      val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int]()
+      val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int]()
 
       requestIn.sendNext(HttpRequest(uri = "/a") → 42)
       responseOutSub.request(1)
@@ -183,7 +184,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     }
 
     "surface connection-level errors" in new TestSetup(autoAccept = true) {
-      val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int](maxRetries = 0)
+      val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int](maxRetries = 0)
 
       requestIn.sendNext(HttpRequest(uri = "/a") → 42)
       requestIn.sendNext(HttpRequest(uri = "/crash") → 43)
@@ -220,7 +221,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
         }
       }
 
-      val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int](maxRetries = 0)
+      val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int](maxRetries = 0)
 
       requestIn.sendNext(HttpRequest(uri = "/a") → 42)
       responseOutSub.request(2)
@@ -253,7 +254,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     }
 
     "retry failed requests" in new TestSetup(autoAccept = true) {
-      val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int]()
+      val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int]()
 
       requestIn.sendNext(HttpRequest(uri = "/a") → 42)
       requestIn.sendNext(HttpRequest(uri = "/crash") → 43)
@@ -272,7 +273,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     }
 
     "respect the configured `maxRetries` value" in new TestSetup(autoAccept = true) {
-      val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int](maxRetries = 4)
+      val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int](maxRetries = 4)
 
       requestIn.sendNext(HttpRequest(uri = "/a") → 42)
       requestIn.sendNext(HttpRequest(uri = "/crash") → 43)
@@ -313,7 +314,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     }
 
     "don't drop requests during idle-timeout shutdown" in new TestSetup(autoAccept = true) {
-      val (requestIn, responseOut, responseOutSub, hcp) =
+      val (requestIn, responseOut, responseOutSub, _) =
         cachedHostConnectionPool[Int](
           idleTimeout = 1.millisecond, // trigger as many idle-timeouts as possible
           maxConnections = 1,
@@ -490,7 +491,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       val (serverHostName2, serverPort2) = SocketUtil.temporaryServerHostnameAndPort()
       Http().bindAndHandleSync(testServerHandler(0), serverHostName2, serverPort2)
 
-      val (requestIn, responseOut, responseOutSub, hcp) = superPool[Int]()
+      val (requestIn, responseOut, responseOutSub, _) = superPool[Int]()
 
       requestIn.sendNext(HttpRequest(uri = s"http://$serverHostName:$serverPort/a") → 42)
       requestIn.sendNext(HttpRequest(uri = s"http://$serverHostName2:$serverPort2/b") → 43)
@@ -604,7 +605,14 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       Tcp().bind(serverHostName, serverPort, idleTimeout = serverSettings.timeouts.idleTimeout)
         .map { c ⇒
           val layer = Http().serverLayer(serverSettings, log = log)
-          Http.IncomingConnection(c.localAddress, c.remoteAddress, layer atop rawBytesInjection join c.flow)
+          val flow = (layer atop rawBytesInjection join c.flow)
+            .mapMaterializedValue(_ ⇒
+              new ServerTerminator {
+                // this is simply a mock, since we do not use termination in these tests anyway
+                def terminate(deadline: FiniteDuration)(implicit ec: ExecutionContext): Future[HttpTerminated] =
+                  Future.successful(HttpServerTerminated)
+              })
+          Http.IncomingConnection(c.localAddress, c.remoteAddress, flow)
         }.runWith(sink)
       if (autoAccept) null else incomingConnections.expectSubscription()
     }

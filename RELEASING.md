@@ -3,7 +3,6 @@
 1. Communicate that a release is about to be released in [Gitter Akka Dev Channel](https://gitter.im/akka/dev), so that no new Pull Requests are merged
 1. Add a release notes entry in docs/src/main/paradox/scala/http/release-notes.md. As a helper run
 `scripts/commits-for-release-notes.sh <last-version-tag>` which will output a list of commits grouped by submodule, and the closed issues for this milestone.
-1. Update latest Akka 2.5 version variable `akka25Version` in `project/Dependencies.scala`
 1. Create a news item on https://github.com/akka/akka.github.com, using the milestones and `scripts/authors.scala previousVersion thisVersion`
 1. Once the release notes have been merged, create a [new release](https://github.com/akka/akka-http/releases/new) with the next tag version (e.g. `v13.3.7`), title and release description linking to announcement, release notes and milestone.
 1. Travis CI will start a [CI build](https://travis-ci.org/akka/akka-http/builds) for the new tag and publish artifacts to Bintray.
