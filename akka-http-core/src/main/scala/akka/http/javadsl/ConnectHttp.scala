@@ -11,7 +11,7 @@ import scala.compat.java8.OptionConverters._
 
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.http.javadsl.model.Uri
-import akka.http.scaladsl.UseHttp2.Negotiated
+import akka.http.scaladsl.UseHttp2.{ Negotiated, Never }
 
 @DoNotInherit
 abstract class ConnectHttp {
@@ -79,7 +79,7 @@ object ConnectHttp {
     toHost(createUriWithScheme("http", host), port, http2)
   }
 
-  private def toHost(uriHost: Uri, port: Int, http2: UseHttp2 = Negotiated): ConnectHttp = {
+  private def toHost(uriHost: Uri, port: Int, http2: UseHttp2 = Never): ConnectHttp = {
     val s = uriHost.scheme.toLowerCase(Locale.ROOT)
     if (s == "https") new ConnectHttpsImpl(uriHost.host.address, effectivePort(s, port), context = Optional.empty(), http2)
     else new ConnectHttpImpl(uriHost.host.address, effectivePort(s, port), http2)
