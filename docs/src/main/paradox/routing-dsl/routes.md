@@ -184,3 +184,25 @@ Scala
 
 Java
 :   @@snip [RouteSealExample.java]($root$/src/test/java/docs/http/javadsl/RouteSealExample.java) { #route-seal-example }
+
+### Converting routes between Java and Scala DSLs
+
+In some cases when building reusable libraries that expose routes, it may be useful to be able to convert routes between
+their Java and Scala DSL representations. You can do so using the `asScala` method on a Java DSL route, or by using an
+`RouteAdapter` to wrap an Scala DSL route. 
+
+Converting Scala DSL routes to Java DSL:
+
+Scala
+:   @@snip [RouteJavaScalaDslConversionSpec.scala]($akka-http$//akka-http-tests/src/test/scala/akka/http/scaladsl/RouteJavaScalaDslConversionSpec.scala) { #scala-to-java }
+
+Java
+:   @@snip [RouteSealExample.java]($akka-http$/akka-http-tests/src/test/java/docs/http/javadsl/server/RouteJavaScalaDslConversionTest.java) { #scala-to-java }
+
+Converting Java DSL routes to Scala DSL:
+
+Scala
+:   @@snip [RouteJavaScalaDslConversionSpec.scala]($akka-http$//akka-http-tests/src/test/scala/akka/http/scaladsl/RouteJavaScalaDslConversionSpec.scala) { #java-to-scala }
+
+Java
+:   @@snip [RouteSealExample.java]($akka-http$/akka-http-tests/src/test/java/docs/http/javadsl/server/RouteJavaScalaDslConversionTest.java) { #java-to-scala }
