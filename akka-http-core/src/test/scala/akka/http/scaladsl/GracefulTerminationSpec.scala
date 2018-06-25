@@ -138,6 +138,54 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
       Await.result(serverBinding.whenTerminated, 3.seconds)
     }
 
+    "allow configuring the automatic termination response (in config)" in {
+      new TestSetup {
+
+        override def serverSettings: ServerSettings = {
+          val c = ConfigFactory.parseString(
+            """akka.http.server {
+               termination-deadline-exceeded-response.status = 418 # I'm a teapot
+             }""")
+            .withFallback(system.settings.config)
+          ServerSettings(c)
+        }
+
+        val r1 = makeRequest() // establish connection
+        val time: FiniteDuration = 1.seconds
+
+        ensureServerDeliveredRequest() // we want the request to be in the server user's hands before we cause termination
+        serverBinding.terminate(hardDeadline = time)
+
+        akka.pattern.after(2.second, system.scheduler) {
+          Future.successful(reply(_ ⇒ HttpResponse(StatusCodes.OK)))
+        }
+
+        r1.futureValue.status should ===(StatusCodes.ImATeapot)
+
+        Await.result(serverBinding.whenTerminated, 3.seconds)
+      }
+    }
+
+    "allow configuring the automatic termination response (in code)" in {
+      new TestSetup(Some(HttpResponse(status = StatusCodes.EnhanceYourCalm, entity = "Chill out, man!"))) {
+        val r1 = makeRequest() // establish connection
+        val time: FiniteDuration = 1.seconds
+
+        ensureServerDeliveredRequest() // we want the request to be in the server user's hands before we cause termination
+        serverBinding.terminate(hardDeadline = time)
+
+        akka.pattern.after(2.second, system.scheduler) {
+          Future.successful(reply(_ ⇒ HttpResponse(StatusCodes.OK)))
+        }
+
+        // the user handler will not receive this request and we will emit the 503 automatically
+        r1.futureValue.status should ===(StatusCodes.EnhanceYourCalm) // the injected 503 response
+        r1.futureValue.entity.toStrict(1.second).futureValue.data.utf8String should ===("Chill out, man!")
+
+        Await.result(serverBinding.whenTerminated, 3.seconds)
+      }
+    }
+
   }
 
   private def ensureConnectionIsClosed(r: Future[HttpResponse]): Assertion =
