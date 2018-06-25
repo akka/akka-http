@@ -12,7 +12,7 @@ import akka.event.LoggingAdapter
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.{ HttpConnectionTerminated, HttpServerTerminated, HttpTerminated }
 import akka.http.scaladsl.model.headers.Connection
-import akka.http.scaladsl.model.{ HttpHeader, HttpRequest, HttpResponse }
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream._
 import akka.stream.scaladsl.BidiFlow
@@ -260,7 +260,7 @@ private[http] final class GracefulTerminatorStage(settings: ServerSettings)
       })
 
       def installTerminationHandlers(deadline: Deadline): Unit = {
-        //when no inflight requests, complete stage right away
+        // when no inflight requests, complete stage right away
         if (!pendingUserHandlerResponse) completeStage()
 
         setHandler(fromUser, new InHandler {
@@ -274,10 +274,8 @@ private[http] final class GracefulTerminatorStage(settings: ServerSettings)
 
             pendingUserHandlerResponse = false
 
-            //send inflight response with Connection: close
-            //and complete stage
-            push(toNet, response.withHeaders(Connection("close")))
-            completeStage()
+            // send response to pending in-flight request with Connection: close, and complete stage
+            emit(toNet, response.withHeaders(Connection("close")), () ⇒ completeStage())
           }
         })
 
