@@ -5,26 +5,26 @@
 package akka.http.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.{ArrayBlockingQueue, TimeUnit}
+import java.util.concurrent.{ ArrayBlockingQueue, TimeUnit }
 
 import akka.actor.ActorSystem
 import akka.http.impl.util._
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Connection
-import akka.http.scaladsl.settings.{ConnectionPoolSettings, ServerSettings}
+import akka.http.scaladsl.settings.{ ConnectionPoolSettings, ServerSettings }
 import akka.stream.scaladsl._
-import akka.stream.{Server => _, _}
+import akka.stream.{ Server ⇒ _, _ }
 import akka.testkit._
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{ Config, ConfigFactory }
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
-import com.typesafe.sslconfig.ssl.{SSLConfigSettings, SSLLooseConfig}
+import com.typesafe.sslconfig.ssl.{ SSLConfigSettings, SSLLooseConfig }
 import org.scalactic.Tolerance
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import org.scalatest.{Assertion, BeforeAndAfterAll, Matchers, WordSpec}
+import org.scalatest.concurrent.{ Eventually, ScalaFutures }
+import org.scalatest.{ Assertion, BeforeAndAfterAll, Matchers, WordSpec }
 
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future, Promise}
+import scala.concurrent.{ Await, Future, Promise }
 import scala.util.Success
 
 class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures
@@ -141,7 +141,7 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
   }
 
   private def ensureConnectionIsClosed(r: Future[HttpResponse]): Assertion =
-    the [StreamTcpException] thrownBy Await.result(r, 1.second) should have message "Connection failed."
+    the[StreamTcpException] thrownBy Await.result(r, 1.second) should have message "Connection failed."
 
   override def afterAll() = {
     TestKit.shutdownActorSystem(system)
