@@ -31,15 +31,16 @@ This can be used to signal parts of the application that the HTTP server is shut
 Note also that for more advanced shut down scenarios you may want to use the @extref[Coordinated Shutdown](akka-docs:/actors.html#coordinated-shutdown) capabilities of Akka.
 
 Next, all in flight requests will be handled. If a request is "in-flight" (being handled by user code), it is given `hardDeadline` time to complete.
- 
-- if user code emits a response within the timeout, then this response is sent to the client
+
+- if connection has no "in-flight" request, connection is terminated immediately  
+- if user code emits a response within the timeout, then this response is sent to the client with `Connection: close` header and connection is closed.
 - if it is a streaming response, it is also mandated that it shall complete within the deadline, and if it does not
   the connection will be terminated regardless of status of the streaming response. This is because such response could be infinite,
   which could trap the server in a situation where it could not terminate if it were to wait for a response to "finish".
     - existing streaming responses must complete before the deadline as well.
       When the deadline is reached the connection will be terminated regardless of status of the streaming responses.
 - if user code does not reply with a response within the deadline we produce a special @java[`akka.http.javadsl.settings.ServerSettings.getTerminationDeadlineExceededResponse`]@scala[`akka.http.scaladsl.settings.ServerSettings.terminationDeadlineExceededResponse`] 
-HTTP response (e.g. `503 Service Unavailable`)
+HTTP response (e.g. `503 Service Unavailable`) with `Connection: close` and terminate connection.
 
 During that time incoming requests are continue to be served. The existing connections will remain alive for until the 
 `hardDeadline` is exceeded, yet no new requests will be delivered to the user handler. All such drained responses will be replied to with an termination response (as explained in step 2).
