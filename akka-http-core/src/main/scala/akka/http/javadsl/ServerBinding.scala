@@ -47,9 +47,11 @@ class ServerBinding private[http] (delegate: akka.http.scaladsl.Http.ServerBindi
    * This can be used to signal parts of the application that the http server is shutting down and they should clean up as well.
    * Note also that for more advanced shut down scenarios you may want to use the Coordinated Shutdown capabilities of Akka.
    *
-   * 2) Handle in-flight request:
+   * 2) if a connection has no "in-flight" request, it is terminated immediately
+   *
+   * 3) Handle in-flight request:
    * - if a request is "in-flight" (being handled by user code), it is given `hardDeadline` time to complete,
-   *   - if user code emits a response within the timeout, then this response is sent to the client
+   *   - if user code emits a response within the timeout, then this response is sent to the client with a `Connection: close` header and connection is closed.
    *     - however if it is a streaming response, it is also mandated that it shall complete within the deadline, and if it does not
    *       the connection will be terminated regardless of status of the streaming response (this is because such response could be infinite,
    *       which could trap the server in a situation where it could not terminate if it were to wait for a response to "finish")
@@ -58,12 +60,12 @@ class ServerBinding private[http] (delegate: akka.http.scaladsl.Http.ServerBindi
    *   - if user code does not reply with a response within the deadline we produce a special [[akka.http.javadsl.settings.ServerSettings.getTerminationDeadlineExceededResponse]]
    *     HTTP response (e.g. 503 Service Unavailable)
    *
-   * 3) Keep draining incoming requests on existing connection:
+   * 4) Keep draining incoming requests on existing connection:
    * - The existing connection will remain alive for until the `hardDeadline` is exceeded,
    *   yet no new requests will be delivered to the user handler. All such drained responses will be replied to with an
-   *   termination response (as explained in phase 2).
+   *   termination response (as explained in phase 3).
    *
-   * 4) Close still existing connections
+   * 5) Close still existing connections
    * - Connections are terminated forcefully once the `hardDeadline` is exceeded.
    *   The `whenTerminated` future is completed as well, so the graceful termination (of the `ActorSystem` or entire JVM
    *   itself can be safely performed, as by then it is known that no connections remain alive to this server).
