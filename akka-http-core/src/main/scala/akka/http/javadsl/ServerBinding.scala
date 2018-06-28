@@ -51,7 +51,7 @@ class ServerBinding private[http] (delegate: akka.http.scaladsl.Http.ServerBindi
    *
    * 3) Handle in-flight request:
    * - if a request is "in-flight" (being handled by user code), it is given `hardDeadline` time to complete,
-   *   - if user code emits a response within the timeout, then this response is sent to the client with a `Connection: close` header and connection is closed.
+   *   - if user code emits a response within the timeout, then this response is sent to the client with a `Connection: close` header and the connection is closed.
    *     - however if it is a streaming response, it is also mandated that it shall complete within the deadline, and if it does not
    *       the connection will be terminated regardless of status of the streaming response (this is because such response could be infinite,
    *       which could trap the server in a situation where it could not terminate if it were to wait for a response to "finish")
