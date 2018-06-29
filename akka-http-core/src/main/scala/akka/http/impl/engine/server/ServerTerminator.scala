@@ -11,6 +11,7 @@ import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.{ HttpConnectionTerminated, HttpServerTerminated, HttpTerminated }
+import akka.http.scaladsl.model.headers.Connection
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream._
@@ -259,7 +260,9 @@ private[http] final class GracefulTerminatorStage(settings: ServerSettings)
       })
 
       def installTerminationHandlers(deadline: Deadline): Unit = {
-        // we may need to inject a termination response
+        // when no inflight requests, complete stage right away
+        if (!pendingUserHandlerResponse) completeStage()
+
         setHandler(fromUser, new InHandler {
           override def onPush(): Unit = {
             val overdue = deadline.isOverdue()
@@ -270,7 +273,9 @@ private[http] final class GracefulTerminatorStage(settings: ServerSettings)
               } else grab(fromUser)
 
             pendingUserHandlerResponse = false
-            push(toNet, response)
+
+            // send response to pending in-flight request with Connection: close, and complete stage
+            emit(toNet, response.withHeaders(Connection("close")), () ⇒ completeStage())
           }
         })
 
@@ -299,8 +304,8 @@ private[http] final class GracefulTerminatorStage(settings: ServerSettings)
             }(interpreter.materializer.executionContext)
 
             // we can reply right away with an termination response since user handler will never emit a response anymore
-            push(toNet, settings.terminationDeadlineExceededResponse)
-            pull(fromNet)
+            push(toNet, settings.terminationDeadlineExceededResponse.withHeaders(Connection("close")))
+            completeStage()
           }
         })
 

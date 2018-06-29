@@ -11,6 +11,7 @@ import akka.actor.ActorSystem
 import akka.http.impl.util._
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.Connection
 import akka.http.scaladsl.settings.{ ConnectionPoolSettings, ServerSettings }
 import akka.stream.scaladsl._
 import akka.stream.{ Server ⇒ _, _ }
@@ -20,7 +21,7 @@ import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import com.typesafe.sslconfig.ssl.{ SSLConfigSettings, SSLLooseConfig }
 import org.scalactic.Tolerance
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
+import org.scalatest.{ Assertion, BeforeAndAfterAll, Matchers, WordSpec }
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
@@ -113,8 +114,26 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
       r1.futureValue.status should ===(StatusCodes.OK)
 
       val r2 = makeRequest() // on the same connection
-      // the user handler will not receive this request and we will emit the 503 automatically
-      r2.futureValue.status should ===(StatusCodes.ServiceUnavailable) // the injected 503 response
+      // connections should be terminated, and no new requests should be accepted
+      ensureConnectionIsClosed(r2)
+
+      Await.result(serverBinding.whenTerminated, 3.seconds)
+    }
+
+    "in-flight request responses should include Connection: close and connection should be closed" in new TestSetup {
+      val r1 = makeRequest() // establish connection
+      val time: FiniteDuration = 3.seconds
+
+      ensureServerDeliveredRequest() // we want the request to be in the server user's hands before we cause termination
+      serverBinding.terminate(hardDeadline = time)
+      reply(_ ⇒ HttpResponse(StatusCodes.OK))
+
+      val response = r1.futureValue
+      response.header[Connection] shouldBe Some(Connection("close"))
+      response.status should ===(StatusCodes.OK)
+
+      val r2 = makeRequest()
+      ensureConnectionIsClosed(r2)
 
       Await.result(serverBinding.whenTerminated, 3.seconds)
     }
@@ -123,24 +142,25 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
       new TestSetup {
 
         override def serverSettings: ServerSettings = {
-          val c = ConfigFactory.parseString("""akka.http.server {
-              termination-deadline-exceeded-response.status = 418 # I'm a teapot
-            }""")
+          val c = ConfigFactory.parseString(
+            """akka.http.server {
+               termination-deadline-exceeded-response.status = 418 # I'm a teapot
+             }""")
             .withFallback(system.settings.config)
           ServerSettings(c)
         }
 
         val r1 = makeRequest() // establish connection
-        val time: FiniteDuration = 3.seconds
+        val time: FiniteDuration = 1.seconds
 
         ensureServerDeliveredRequest() // we want the request to be in the server user's hands before we cause termination
         serverBinding.terminate(hardDeadline = time)
 
-        reply(_ ⇒ HttpResponse(StatusCodes.OK))
-        r1.futureValue.status should ===(StatusCodes.OK)
+        akka.pattern.after(2.second, system.scheduler) {
+          Future.successful(reply(_ ⇒ HttpResponse(StatusCodes.OK)))
+        }
 
-        val r2 = makeRequest() // on the same connection
-        r2.futureValue.status should ===(StatusCodes.ImATeapot)
+        r1.futureValue.status should ===(StatusCodes.ImATeapot)
 
         Await.result(serverBinding.whenTerminated, 3.seconds)
       }
@@ -149,46 +169,27 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
     "allow configuring the automatic termination response (in code)" in {
       new TestSetup(Some(HttpResponse(status = StatusCodes.EnhanceYourCalm, entity = "Chill out, man!"))) {
         val r1 = makeRequest() // establish connection
-        val time: FiniteDuration = 3.seconds
+        val time: FiniteDuration = 1.seconds
 
         ensureServerDeliveredRequest() // we want the request to be in the server user's hands before we cause termination
         serverBinding.terminate(hardDeadline = time)
 
-        reply(_ ⇒ HttpResponse(StatusCodes.OK))
-        r1.futureValue.status should ===(StatusCodes.OK)
+        akka.pattern.after(2.second, system.scheduler) {
+          Future.successful(reply(_ ⇒ HttpResponse(StatusCodes.OK)))
+        }
 
-        val r2 = makeRequest() // on the same connection
         // the user handler will not receive this request and we will emit the 503 automatically
-        r2.futureValue.status should ===(StatusCodes.EnhanceYourCalm) // the injected 503 response
-        r2.futureValue.entity.toStrict(1.second).futureValue.data.utf8String should ===("Chill out, man!")
+        r1.futureValue.status should ===(StatusCodes.EnhanceYourCalm) // the injected 503 response
+        r1.futureValue.entity.toStrict(1.second).futureValue.data.utf8String should ===("Chill out, man!")
 
         Await.result(serverBinding.whenTerminated, 3.seconds)
       }
     }
 
-    "terminate in-flight requests with automatic 5xx responses (no in flight requests when termination triggered)" in new TestSetup {
-      val r0 = makeRequest()
-      ensureServerDeliveredRequest()
-      reply(_ ⇒ HttpResponse(entity = "reply"))
-      r0.futureValue.status should ===(StatusCodes.OK)
-      // ensure connection is established and next calls will use that connection
-
-      val terminated = serverBinding.terminate(hardDeadline = 3.seconds)
-      Thread.sleep(100)
-
-      val r1 = makeRequest()
-      val r2 = makeRequest()
-
-      r1.futureValue.status should ===(StatusCodes.ServiceUnavailable)
-      r2.futureValue.status should ===(StatusCodes.ServiceUnavailable)
-      val r3 = makeRequest()
-      val r4 = makeRequest()
-      r3.futureValue.status should ===(StatusCodes.ServiceUnavailable)
-      r4.futureValue.status should ===(StatusCodes.ServiceUnavailable)
-
-      terminated.futureValue
-    }
   }
+
+  private def ensureConnectionIsClosed(r: Future[HttpResponse]): Assertion =
+    the[StreamTcpException] thrownBy Await.result(r, 1.second) should have message "Connection failed."
 
   override def afterAll() = {
     TestKit.shutdownActorSystem(system)
