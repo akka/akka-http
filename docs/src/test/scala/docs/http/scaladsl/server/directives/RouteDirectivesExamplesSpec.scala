@@ -4,12 +4,28 @@
 
 package docs.http.scaladsl.server.directives
 
-import akka.http.scaladsl.model.ContentTypes._
+import scala.concurrent.Future
+
+//#complete-examples
+//#reject-examples
 import akka.http.scaladsl.model._
+//#reject-examples
+//#complete-examples
+
+//#complete-examples
+import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.headers.`Content-Type`
-import akka.http.scaladsl.server.{ Route, ValidationRejection }
-import akka.testkit.EventFilter
+
+//#complete-examples
+
+//#reject-examples
+import akka.http.scaladsl.server.ValidationRejection
+
+//#reject-examples
+
+import akka.http.scaladsl.server.Route
 import docs.http.scaladsl.server.RoutingSpec
+import akka.testkit.EventFilter
 
 class RouteDirectivesExamplesSpec extends RoutingSpec {
 
@@ -34,7 +50,10 @@ class RouteDirectivesExamplesSpec extends RoutingSpec {
         path("f") {
           complete(201, List(`Content-Type`(`text/plain(UTF-8)`)), "bar")
         } ~
-        (path("g") & complete("baz")) // `&` also works with `complete` as the 2nd argument
+        path("g") {
+          complete(Future { StatusCodes.Created -> "bar" })
+        } ~
+        (path("h") & complete("baz")) // `&` also works with `complete` as the 2nd argument
 
     // tests:
     Get("/a") ~> route ~> check {
@@ -70,6 +89,11 @@ class RouteDirectivesExamplesSpec extends RoutingSpec {
     }
 
     Get("/g") ~> route ~> check {
+      status shouldEqual StatusCodes.Created
+      responseAs[String] shouldEqual "bar"
+    }
+
+    Get("/h") ~> route ~> check {
       status shouldEqual StatusCodes.OK
       responseAs[String] shouldEqual "baz"
     }
