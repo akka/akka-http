@@ -30,7 +30,7 @@ public class JacksonXmlExampleTest extends JUnitRouteTest {
 
   @Test
   public void marshalXml() throws Exception {
-    final Route route = route(
+    final Route route = routes(
       completeOK(point, JacksonXmlSupport.<Point>marshaller())
     );
 
@@ -44,7 +44,7 @@ public class JacksonXmlExampleTest extends JUnitRouteTest {
   public void unmarshalXml() throws Exception {
     final Unmarshaller<HttpEntity, Point> unmarshaller = JacksonXmlSupport.unmarshaller(Point.class);
 
-    final Route route = route(
+    final Route route = routes(
       entity(unmarshaller, p -> {
         assertEquals(p, point);
         return complete(p.toString());

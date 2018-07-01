@@ -52,7 +52,7 @@ public class RejectionHandlerExamplesTest extends JUnitRouteTest {
   void example1() {
     //#example1
     final Route route = path("order", () ->
-      route(
+      routes(
         get(() ->
           complete("Received GET")
         ),

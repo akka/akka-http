@@ -15,13 +15,11 @@ import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import akka.http.scaladsl.model.HttpRequest;
 
-import static akka.http.javadsl.server.Directives.*;
-
 public class PathDirectivesTest extends JUnitRouteTest {
   @Test
   public void testPathPrefixAndPath() {
     TestRoute route = testRoute(
-      pathPrefix("pet", () -> route(
+      pathPrefix("pet", () -> routes(
         path("cat", () -> complete("The cat!")),
         path("dog", () -> complete("The dog!")),
         pathSingleSlash(() -> complete("Here are only pets."))
@@ -82,7 +80,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
   public void testPathEnd() {
     TestRoute route =
       testRoute(
-        pathPrefix("test", () -> route(
+        pathPrefix("test", () -> routes(
           pathEnd(() -> complete("end")),
           path("abc", () -> complete("abc"))
         ))
@@ -382,7 +380,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
   public void testIgnoreTrailingSlash() {
     TestRoute route = testRoute(
       ignoreTrailingSlash(() ->
-        route(
+        routes(
           path("foo", () -> complete("Ok")),
           path("bar", () -> pathEndOrSingleSlash(() -> complete("Ok"))),
           path(PathMatchers.segment("baz").slash(), () -> complete("Ok"))

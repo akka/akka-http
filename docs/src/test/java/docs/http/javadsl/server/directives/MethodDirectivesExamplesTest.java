@@ -151,7 +151,7 @@ public class MethodDirectivesExamplesTest extends JUnitRouteTest {
   public void testExtractMethodExample() {
     //#extractMethod
 
-    final Route route = route(
+    final Route route = routes(
         get(() -> 
             complete("This is a GET request.")
         ),
@@ -175,9 +175,9 @@ public class MethodDirectivesExamplesTest extends JUnitRouteTest {
   public void testOverrideMethodWithParameter() {
     //#overrideMethodWithParameter
 
-    final Route route = route(
+    final Route route = routes(
         overrideMethodWithParameter("method", () -> 
-          route(
+          routes(
             get(() -> complete("This looks like a GET request.")),
             post(() -> complete("This looks like a POST request."))
           )

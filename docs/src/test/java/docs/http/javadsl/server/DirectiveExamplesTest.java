@@ -103,7 +103,7 @@ public class DirectiveExamplesTest extends JUnitRouteTest {
   //#usingRoute
   Route usingRoute() {
     return path(segment("order").slash(integerSegment()), id ->
-      route(get(() -> complete("Received GET request for order " + id)),
+      routes(get(() -> complete("Received GET request for order " + id)),
             put(() -> complete("Received PUT request for order " + id)))
     );
   }
@@ -112,7 +112,7 @@ public class DirectiveExamplesTest extends JUnitRouteTest {
   //#usingRouteBig
   Route multipleRoutes() {
     return path(segment("order").slash(integerSegment()), id ->
-      route(get(()  -> complete("Received GET request for order " + id)),
+      routes(get(()  -> complete("Received GET request for order " + id)),
             put(()  -> complete("Received PUT request for order " + id)),
             head(() -> complete("Received HEAD request for order " + id)))
     );

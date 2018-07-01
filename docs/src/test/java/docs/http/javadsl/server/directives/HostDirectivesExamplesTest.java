@@ -88,7 +88,7 @@ public class HostDirectivesExamplesTest extends JUnitRouteTest {
         complete("You came through " + captured
             + " company"));
 
-    final Route route = Directives.route(hostPrefixRoute, hostPartRoute);
+    final Route route = Directives.routes(hostPrefixRoute, hostPartRoute);
 
     testRoute(route).run(HttpRequest.GET("/").addHeader(Host.create("api.company.com")))
         .assertStatusCode(StatusCodes.OK).assertEntity("Extracted prefix: api");

@@ -54,7 +54,7 @@ public class RespondWithHeaderHandlerExampleTest extends JUnitSuite {
                     .build();
 
             return respondWithHeader(RawHeader.create("X-Outer-Header", "outer"), () -> //will apply for handled exceptions
-                    handleExceptions(divByZeroHandler, () -> route(
+                    handleExceptions(divByZeroHandler, () -> routes(
                             path("greetings", () -> complete("Hello!")),
                             path("divide", () -> complete("Dividing with zero: " + (1 / 0))),
                             respondWithHeader(RawHeader.create("X-Inner-Header", "inner"), () -> {

@@ -303,7 +303,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
       )
     );
 
-    final Route route = Directives.route(
+    final Route route = Directives.routes(
       pathPrefix("special", () ->
         withMaterializer(special, () -> sample) // `special` materializer will be used
       ),
@@ -353,7 +353,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
       )
     );
 
-    final Route route = Directives.route(
+    final Route route = Directives.routes(
       pathPrefix("special", () ->
         // `special` execution context will be used
         withExecutionContext(special, () -> sample)
@@ -403,7 +403,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
       )
     );
 
-    final Route route = Directives.route(
+    final Route route = Directives.routes(
       pathPrefix("special", () ->
         withLog(special, () -> sample)
       ),
@@ -441,7 +441,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     });
 
     final Route route = get(() ->
-      Directives.route(
+      Directives.routes(
         pathPrefix("special", () ->
           // `special` file-io-dispatcher will be used to read the file
           withSettings(special, () -> sample)
@@ -641,7 +641,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
       creds -> Optional.of("id");
 
     final Route originalRoute = pathPrefix("auth", () ->
-      Directives.route(
+      Directives.routes(
         path("never", () ->
           authenticateBasic("my-realm", neverAuth, obj ->  complete("Welcome to the bat-cave!"))
         ),
