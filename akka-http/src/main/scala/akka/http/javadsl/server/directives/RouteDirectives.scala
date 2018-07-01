@@ -44,7 +44,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
   @varargs def route(alternatives: Route*): Route = RouteAdapter {
     import akka.http.scaladsl.server.Directives._
 
-    require(alternatives.nonEmpty, s"Chaining empty list of routes is illegal.")
+    require(alternatives.nonEmpty, "Chaining empty list of routes is illegal.")
 
     alternatives.map(_.delegate).reduce(_ ~ _)
   }
