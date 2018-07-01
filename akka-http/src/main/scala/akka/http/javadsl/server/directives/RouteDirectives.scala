@@ -8,7 +8,6 @@ import java.util.concurrent.CompletionStage
 
 import akka.dispatch.ExecutionContexts
 import akka.http.javadsl.marshalling.Marshaller
-import akka.http.scaladsl.server._
 import akka.japi.Util
 
 import scala.annotation.varargs
@@ -38,12 +37,27 @@ abstract class RouteDirectives extends RespondWithDirectives {
   /**
    * Java-specific call added so you can chain together multiple alternate routes using comma,
    * rather than having to explicitly call route1.orElse(route2).orElse(route3).
+   * @deprecated Use the `RouteDirectives.routes` method instead.
    */
+  @Deprecated
   @CorrespondsTo("concat")
   @varargs def route(alternatives: Route*): Route = RouteAdapter {
     import akka.http.scaladsl.server.Directives._
 
+    require(alternatives.nonEmpty, s"Chaining empty list of routes is illegal.")
+
     alternatives.map(_.delegate).reduce(_ ~ _)
+  }
+
+  /**
+   * Java-specific call added so you can chain together multiple alternate routes using comma,
+   * rather than having to explicitly call route1.orElse(route2).orElse(route3).
+   */
+  @CorrespondsTo("concat")
+  @varargs def routes(first: Route, alternatives: Route*): Route = RouteAdapter {
+    import akka.http.scaladsl.server.Directives._
+
+    (first +: alternatives).map(_.delegate).reduce(_ ~ _)
   }
 
   /**
