@@ -218,6 +218,7 @@ Java
 
 The third type of failure that can occur is when the connection has been properly established,
 however afterwards is terminated abruptly – for example by the client aborting the underlying TCP connection.
+
 To handle this failure we can use the same pattern as in the previous snippet, however apply it to the connection's Flow:
 
 Scala
@@ -225,6 +226,12 @@ Scala
 
 Java
 :   @@snip [HttpServerExampleDocTest.java]($test$/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #connection-stream-failure-handling }
+
+
+Note that this is when the TCP connection is closed correctly, if the client just goes away, for example because of
+a network failure, it will not be seen as this kind of stream failure. It will instead be detected through the
+@ref[idle timeout](../common/timeouts.md#timeouts)).
+
 
 These failures can be described more or less infrastructure related, they are failing bindings or connections.
 Most of the time you won't need to dive into those very deeply, as Akka will simply log errors of this kind
