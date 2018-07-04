@@ -65,5 +65,5 @@ checking the secret (password) would be a regular string comparison, but doing t
 timing attacks. See for example [Timing Attacks Explained](http://emerose.com/timing-attacks-explained) for an explanation of the problem.
 
 To protect users of the library from that mistake the secret is not available through the API, instead the method
-`Credentials.Provided.verify(String)` should be used. It does a constant time comparison rather than returning early
+`Credentials.ProvidedInRealm.verify(String)` should be used. It does a constant time comparison rather than returning early
 upon finding the first non-equal character.

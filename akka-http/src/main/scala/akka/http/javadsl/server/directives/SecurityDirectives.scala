@@ -23,11 +23,16 @@ object SecurityDirectives {
   /**
    * Represents HTTP Basic or OAuth2 authentication credentials supplied with a request.
    */
-  case class ProvidedCredentials(private val asScala: scaladsl.server.directives.Credentials.Provided) {
+  case class ProvidedCredentials(private val asScala: scaladsl.server.directives.Credentials.Provided.InRealm) {
     /**
      * The username or token provided with the credentials
      */
     def identifier: String = asScala.identifier
+
+    /**
+     * The realm to evaluate the provided credentials in
+     */
+    def realm: String = asScala.realm
 
     /**
      * Safely compares the passed in `secret` with the received secret part of the Credentials.
@@ -39,7 +44,7 @@ object SecurityDirectives {
   }
 
   private def toJava(cred: scaladsl.server.directives.Credentials): Optional[ProvidedCredentials] = cred match {
-    case provided: scaladsl.server.directives.Credentials.Provided ⇒ Optional.of(ProvidedCredentials(provided))
+    case provided: scaladsl.server.directives.Credentials.Provided.InRealm ⇒ Optional.of(ProvidedCredentials(provided))
     case _ ⇒ Optional.empty()
   }
 }

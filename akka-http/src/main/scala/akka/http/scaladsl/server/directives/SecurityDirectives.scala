@@ -95,7 +95,7 @@ trait SecurityDirectives {
   def authenticateBasicAsync[T](realm: String, authenticator: AsyncAuthenticator[T]): AuthenticationDirective[T] =
     extractExecutionContext.flatMap { implicit ec ⇒
       authenticateOrRejectWithChallenge[BasicHttpCredentials, T] { cred ⇒
-        authenticator(Credentials(cred)).fast.map {
+        authenticator(Credentials(cred, realm)).fast.map {
           case Some(t) ⇒ AuthenticationResult.success(t)
           case None    ⇒ AuthenticationResult.failWithChallenge(HttpChallenges.basic(realm))
         }
@@ -156,7 +156,7 @@ trait SecurityDirectives {
         }
 
       extractCredentialsAndAuthenticateOrRejectWithChallenge[OAuth2BearerToken, T](extractCreds, { cred ⇒
-        authenticator(Credentials(cred)).fast.map {
+        authenticator(Credentials(cred, realm)).fast.map {
           case Some(t) ⇒ AuthenticationResult.success(t)
           case None    ⇒ AuthenticationResult.failWithChallenge(HttpChallenges.oAuth2(realm))
         }
@@ -279,14 +279,15 @@ object SecurityDirectives extends SecurityDirectives
 
 /**
  * Represents authentication credentials supplied with a request. Credentials can either be
- * [[Credentials.Missing]] or can be [[Credentials.Provided]] in which case an identifier is
- * supplied and a function to check the known secret against the provided one in a secure fashion.
+ * [[Credentials.Missing]] or can be [[Credentials.Provided.InRealm]] in which case an identifier
+ * and a realm is supplied together with a function to check the known secret against the provided
+ * identifier in a secure fashion. If only the provided identifier (but not the realm) is needed
+ * for checking against the secret, the [[Credentials.Provided]] extractor can be used.
  */
 sealed trait Credentials
 object Credentials {
   case object Missing extends Credentials
-  abstract case class Provided(identifier: String) extends Credentials {
-
+  sealed trait Provided extends Credentials {
     /**
      * First applies the passed in `hasher` function to the received secret part of the Credentials
      * and then safely compares the passed in `secret` with the hashed received secret.
@@ -305,19 +306,28 @@ object Credentials {
      */
     def verify(secret: String): Boolean = verify(secret, x ⇒ x)
   }
+  object Provided {
+    sealed abstract case class InRealm(identifier: String, realm: String) extends Provided
+    /**
+     * Extracts the identifier part from the specified provided (skipping the realm part).
+     */
+    def unapply(provided: Credentials.Provided.InRealm): Option[String] = Option(provided.identifier)
+  }
 
-  def apply(cred: Option[HttpCredentials]): Credentials = {
+  def apply(cred: Option[HttpCredentials], realm: String): Credentials = {
     cred match {
       case Some(BasicHttpCredentials(username, receivedSecret)) ⇒
-        new Credentials.Provided(username) {
+        new Credentials.Provided.InRealm(username, realm) {
           def verify(secret: String, hasher: String ⇒ String): Boolean = secret secure_== hasher(receivedSecret)
         }
       case Some(OAuth2BearerToken(token)) ⇒
-        new Credentials.Provided(token) {
+        new Credentials.Provided.InRealm(token, realm) {
           def verify(secret: String, hasher: String ⇒ String): Boolean = secret secure_== hasher(token)
         }
       case Some(GenericHttpCredentials(scheme, token, params)) ⇒
         throw new UnsupportedOperationException("cannot verify generic HTTP credentials")
+      case Some(cred) ⇒
+        throw new UnsupportedOperationException("cannot verify unknown credentials: " + cred)
       case None ⇒ Credentials.Missing
     }
   }

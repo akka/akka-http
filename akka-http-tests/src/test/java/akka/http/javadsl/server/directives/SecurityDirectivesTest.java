@@ -13,7 +13,6 @@ import org.junit.Test;
 import scala.util.Left;
 import scala.util.Right;
 import akka.http.javadsl.server.*;
-import akka.http.javadsl.server.directives.SecurityDirectives.ProvidedCredentials;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.headers.Authorization;
 import akka.http.javadsl.model.headers.BasicHttpCredentials;
@@ -22,8 +21,6 @@ import akka.http.javadsl.testkit.*;
 
 import static akka.http.javadsl.server.PathMatchers.*;
 
-import static akka.http.javadsl.server.Directives.*;
-
 public class SecurityDirectivesTest extends JUnitRouteTest {
 
   // These authenticators don't have to be async; they're just written that way to test the API.
@@ -31,6 +28,15 @@ public class SecurityDirectivesTest extends JUnitRouteTest {
     return CompletableFuture.completedFuture(
       creds.filter(c ->
         c.identifier().equals("sina") && c.verify("1234")
+      ).map(c ->
+        "sina"
+      ));
+  }
+
+  private CompletionStage<Optional<String>> authenticateUserInRealm(Optional<ProvidedCredentials> creds) {
+    return CompletableFuture.completedFuture(
+      creds.filter(c ->
+        c.realm().equals("test-realm") && c.identifier().equals("sina") && c.verify("1234")
       ).map(c ->
         "sina"
       ));
@@ -47,6 +53,17 @@ public class SecurityDirectivesTest extends JUnitRouteTest {
       ));
   }
 
+  private CompletionStage<Optional<String>> authenticateTokenInRealm(Optional<ProvidedCredentials> creds) {
+    System.out.println(creds);
+
+    return CompletableFuture.completedFuture(
+      creds.filter(c ->
+        c.realm().equals("test-realm") && c.verify("myToken")
+      ).map(c ->
+        "myToken"
+      ));
+  }
+
   public Route securedRoute(String identifier) {
     return complete("Identified as " + identifier + "!");
   }
@@ -56,8 +73,14 @@ public class SecurityDirectivesTest extends JUnitRouteTest {
       path("basicSecure", () ->
         authenticateBasicAsync("test-realm", this::authenticateUser, this::securedRoute)
       ),
+      path("basicSecureInRealm", () ->
+        authenticateBasicAsync("test-realm", this::authenticateUserInRealm, this::securedRoute)
+      ),
       path("oauthSecure", () ->
         authenticateOAuth2Async("test-realm", this::authenticateToken, this::securedRoute)
+      ),
+      path("oauthSecureInRealm", () ->
+        authenticateOAuth2Async("test-realm", this::authenticateTokenInRealm, this::securedRoute)
       ),
       path(segment("authorize").slash(integerSegment()), (n) ->
         authorize(() -> n == 1, () -> complete("authorized"))
