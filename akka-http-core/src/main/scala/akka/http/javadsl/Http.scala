@@ -6,25 +6,28 @@ package akka.http.javadsl
 
 import java.net.InetSocketAddress
 import java.util.Optional
+
 import akka.http.impl.util.JavaMapping
 import akka.http.impl.util.JavaMapping.HttpsConnectionContext
 import akka.http.javadsl.model.ws._
-import akka.http.javadsl.settings.{ ConnectionPoolSettings, ClientConnectionSettings, ServerSettings }
-import akka.{ NotUsed, stream }
+import akka.http.javadsl.settings.{ClientConnectionSettings, ConnectionPoolSettings, ServerSettings}
+import akka.{NotUsed, stream}
 import akka.stream.TLSProtocol._
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
+
 import scala.concurrent.Future
 import scala.util.Try
 import akka.stream.scaladsl.Keep
-import akka.japi.{ Pair, Function }
-import akka.actor.{ ExtendedActorSystem, ActorSystem, ExtensionIdProvider, ExtensionId }
+import akka.japi.{Function, Pair}
+import akka.actor.{ActorSystem, ExtendedActorSystem, ExtensionId, ExtensionIdProvider}
 import akka.event.LoggingAdapter
 import akka.stream.Materializer
-import akka.stream.javadsl.{ BidiFlow, Flow, Source }
+import akka.stream.javadsl.{BidiFlow, Flow, Source}
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.scaladsl.{ model ⇒ sm }
+import akka.http.scaladsl.{HttpConnectionContext, model => sm}
 import akka.http.javadsl.model._
 import akka.http._
+
 import scala.compat.java8.OptionConverters._
 import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
@@ -132,11 +135,13 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
    */
   def bind(connect: ConnectHttp): Source[IncomingConnection, CompletionStage[ServerBinding]] = {
-    val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
+    val connectionContext: scaladsl.ConnectionContext = effectiveConnectionContext(connect)
     new Source(delegate.bindImpl(connect.host, connect.port, connectionContext)
       .map(new IncomingConnection(_))
       .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
   }
+
+
 
   /**
    * Creates a [[akka.stream.javadsl.Source]] of [[IncomingConnection]] instances which represents a prospective HTTP server binding
@@ -156,7 +161,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   def bind(
     connect:  ConnectHttp,
     settings: ServerSettings): Source[IncomingConnection, CompletionStage[ServerBinding]] = {
-    val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
+    val connectionContext: scaladsl.ConnectionContext = effectiveConnectionContext(connect)
     new Source(delegate.bindImpl(connect.host, connect.port, settings = settings.asScala, connectionContext = connectionContext)
       .map(new IncomingConnection(_))
       .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
@@ -181,7 +186,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     connect:  ConnectHttp,
     settings: ServerSettings,
     log:      LoggingAdapter): Source[IncomingConnection, CompletionStage[ServerBinding]] = {
-    val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
+    val connectionContext: scaladsl.ConnectionContext = effectiveConnectionContext(connect)
     new Source(delegate.bindImpl(connect.host, connect.port, connectionContext, settings.asScala, log)
       .map(new IncomingConnection(_))
       .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
@@ -229,9 +234,9 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     handler:      Flow[HttpRequest, HttpResponse, _],
     connect:      ConnectHttp,
     materializer: Materializer): CompletionStage[ServerBinding] = {
-    val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
+    val connectionContext: scaladsl.ConnectionContext = effectiveConnectionContext(connect)
     delegate.bindAndHandle(
-      handler.asInstanceOf[Flow[sm.HttpRequest, sm.HttpResponse, _]].asScala,
+      handler.asInstanceOf[Flow[scaladsl.model.HttpRequest, scaladsl.model.HttpResponse, _]].asScala,
       connect.host, connect.port, connectionContext)(materializer)
       .map(new ServerBinding(_))(ec).toJava
   }
@@ -253,9 +258,9 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     settings:     ServerSettings,
     log:          LoggingAdapter,
     materializer: Materializer): CompletionStage[ServerBinding] = {
-    val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
+    val connectionContext: scaladsl.ConnectionContext = effectiveConnectionContext(connect)
     delegate.bindAndHandle(
-      handler.asInstanceOf[Flow[sm.HttpRequest, sm.HttpResponse, _]].asScala,
+      handler.asInstanceOf[Flow[scaladsl.model.HttpRequest, scaladsl.model.HttpResponse, _]].asScala,
       connect.host, connect.port, connectionContext, settings.asScala, log)(materializer)
       .map(new ServerBinding(_))(ec).toJava
   }
@@ -275,7 +280,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     handler:      Function[HttpRequest, HttpResponse],
     connect:      ConnectHttp,
     materializer: Materializer): CompletionStage[ServerBinding] = {
-    val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
+    val connectionContext: scaladsl.ConnectionContext = effectiveConnectionContext(connect)
     delegate.bindAndHandleSync(handler.apply(_).asScala, connect.host, connect.port, connectionContext)(materializer)
       .map(new ServerBinding(_))(ec).toJava
   }
@@ -297,7 +302,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     settings:     ServerSettings,
     log:          LoggingAdapter,
     materializer: Materializer): CompletionStage[ServerBinding] = {
-    val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
+    val connectionContext: scaladsl.ConnectionContext = effectiveConnectionContext(connect)
     delegate.bindAndHandleSync(
       handler.apply(_).asScala,
       connect.host, connect.port, connectionContext, settings.asScala, log)(materializer)
@@ -319,7 +324,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     handler:      Function[HttpRequest, CompletionStage[HttpResponse]],
     connect:      ConnectHttp,
     materializer: Materializer): CompletionStage[ServerBinding] = {
-    val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
+    val connectionContext: scaladsl.ConnectionContext = effectiveConnectionContext(connect)
     delegate.bindAndHandleAsync(handler.apply(_).toScala, connect.host, connect.port, connectionContext)(materializer)
       .map(new ServerBinding(_))(ec).toJava
   }
@@ -341,7 +346,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     settings:    ServerSettings,
     parallelism: Int, log: LoggingAdapter,
     materializer: Materializer): CompletionStage[ServerBinding] = {
-    val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
+    val connectionContext: scaladsl.ConnectionContext = effectiveConnectionContext(connect)
     delegate.bindAndHandleAsync(
       handler.apply(_).toScala,
       connect.host, connect.port, connectionContext, settings.asScala, parallelism, log)(materializer)
@@ -894,4 +899,17 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     }
   private def adaptWsUpgradeResponse(responseFuture: Future[scaladsl.model.ws.WebSocketUpgradeResponse]): CompletionStage[WebSocketUpgradeResponse] =
     responseFuture.map(WebSocketUpgradeResponse.adapt)(system.dispatcher).toJava
+
+
+  private def effectiveConnectionContext(connect: ConnectHttp) = {
+    val default =
+      if (connect.http2 == UseHttp2.never) defaultServerHttpContext
+      else {
+        defaultServerHttpContext match {
+          case normal: HttpConnectionContext => HttpConnectionContext(connect.http2.asScala)
+          case other => other
+        }
+      }
+    connect.effectiveConnectionContext(default).asScala
+  }
 }
