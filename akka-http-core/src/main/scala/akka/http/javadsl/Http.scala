@@ -10,21 +10,21 @@ import java.util.Optional
 import akka.http.impl.util.JavaMapping
 import akka.http.impl.util.JavaMapping.HttpsConnectionContext
 import akka.http.javadsl.model.ws._
-import akka.http.javadsl.settings.{ClientConnectionSettings, ConnectionPoolSettings, ServerSettings}
-import akka.{NotUsed, stream}
+import akka.http.javadsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
+import akka.{ NotUsed, stream }
 import akka.stream.TLSProtocol._
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 
 import scala.concurrent.Future
 import scala.util.Try
 import akka.stream.scaladsl.Keep
-import akka.japi.{Function, Pair}
-import akka.actor.{ActorSystem, ExtendedActorSystem, ExtensionId, ExtensionIdProvider}
+import akka.japi.{ Function, Pair }
+import akka.actor.{ ActorSystem, ExtendedActorSystem, ExtensionId, ExtensionIdProvider }
 import akka.event.LoggingAdapter
 import akka.stream.Materializer
-import akka.stream.javadsl.{BidiFlow, Flow, Source}
+import akka.stream.javadsl.{ BidiFlow, Flow, Source }
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.scaladsl.{HttpConnectionContext, model => sm}
+import akka.http.scaladsl.{ HttpConnectionContext, model ⇒ sm }
 import akka.http.javadsl.model._
 import akka.http._
 
@@ -140,8 +140,6 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
       .map(new IncomingConnection(_))
       .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
   }
-
-
 
   /**
    * Creates a [[akka.stream.javadsl.Source]] of [[IncomingConnection]] instances which represents a prospective HTTP server binding
@@ -900,14 +898,13 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   private def adaptWsUpgradeResponse(responseFuture: Future[scaladsl.model.ws.WebSocketUpgradeResponse]): CompletionStage[WebSocketUpgradeResponse] =
     responseFuture.map(WebSocketUpgradeResponse.adapt)(system.dispatcher).toJava
 
-
   private def effectiveConnectionContext(connect: ConnectHttp) = {
     val default =
       if (connect.http2 == UseHttp2.never) defaultServerHttpContext
       else {
         defaultServerHttpContext match {
-          case normal: HttpConnectionContext => HttpConnectionContext(connect.http2.asScala)
-          case other => other
+          case normal: HttpConnectionContext ⇒ HttpConnectionContext(connect.http2.asScala)
+          case other                         ⇒ other
         }
       }
     connect.effectiveConnectionContext(default).asScala
