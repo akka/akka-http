@@ -28,6 +28,7 @@ import akka.http.javadsl.server.directives.RouteAdapter;
 import static java.util.regex.Pattern.compile;
 import static akka.http.javadsl.server.PathMatchers.segment;
 import static akka.http.javadsl.server.PathMatchers.integerSegment;
+import static akka.http.javadsl.server.PathMatchers.separateOnSlashes;
 
 //#path-matcher
 
