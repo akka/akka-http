@@ -56,7 +56,7 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   def withMaxOpenRequests(newValue: Int): ConnectionPoolSettings = self.copy(maxOpenRequests = newValue)
   def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copy(pipeliningLimit = newValue)
   def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue)
-  def withMaxConnectionKeepAliveTime(newValue: Duration): ConnectionPoolSettings = self.copy(maxConnectionKeepAliveTime = newValue)
+  def withMaxConnectionLifetime(newValue: Duration): ConnectionPoolSettings = self.copy(maxConnectionLifetime = newValue)
   def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue.asScala)
 
   @ApiMayChange

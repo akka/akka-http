@@ -32,7 +32,7 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   def pipeliningLimit: Int
   def idleTimeout: Duration
   def connectionSettings: ClientConnectionSettings
-  def maxConnectionKeepAliveTime: Duration
+  def maxConnectionLifetime: Duration
 
   /**
    * The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used.
@@ -56,7 +56,7 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   override def withMaxOpenRequests(newValue: Int): ConnectionPoolSettings = self.copy(maxOpenRequests = newValue)
   override def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copy(pipeliningLimit = newValue)
   override def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue)
-  override def withMaxConnectionKeepAliveTime(newValue: Duration): ConnectionPoolSettings = self.copy(maxConnectionKeepAliveTime = newValue)
+  override def withMaxConnectionLifetime(newValue: Duration): ConnectionPoolSettings = self.copy(maxConnectionLifetime = newValue)
 
   // overloads for idiomatic Scala use
   def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue)

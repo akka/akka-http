@@ -11,4 +11,4 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.Http#Serv
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.Http#ServerBinding.apply")
 
 # #2016 add new option to close connections after a period of time
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.maxConnectionKeepAliveTime")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.maxConnectionLifetime")

@@ -329,15 +329,15 @@ private[client] object NewHostConnectionPool {
 
           private lazy val keepAliveDurationFuzziness: () ⇒ Long = {
             val random = new Random()
-            val max = math.max(settings.maxConnectionKeepAliveTime.toMillis / 10, 2)
+            val max = math.max(settings.maxConnectionLifetime.toMillis / 10, 2)
             () ⇒ random.nextLong() % max
           }
           def openConnection(): Unit = {
             if (connection ne null) throw new IllegalStateException("Cannot open connection when slot still has an open connection")
 
             connection = logic.openConnection(this)
-            if (settings.maxConnectionKeepAliveTime.isFinite()) {
-              disconnectAt = Instant.now().toEpochMilli + settings.maxConnectionKeepAliveTime.toMillis + keepAliveDurationFuzziness()
+            if (settings.maxConnectionLifetime.isFinite()) {
+              disconnectAt = Instant.now().toEpochMilli + settings.maxConnectionLifetime.toMillis + keepAliveDurationFuzziness()
             }
           }
           def pushRequestToConnectionAndThen(request: HttpRequest, nextState: SlotState): SlotState = {
@@ -366,7 +366,7 @@ private[client] object NewHostConnectionPool {
             logic.willClose(res) || keepAliveTimeApplies()
           }
 
-          def keepAliveTimeApplies(): Boolean = if (settings.maxConnectionKeepAliveTime.isFinite()) {
+          def keepAliveTimeApplies(): Boolean = if (settings.maxConnectionLifetime.isFinite()) {
             Instant.now().toEpochMilli > disconnectAt
           } else false
 

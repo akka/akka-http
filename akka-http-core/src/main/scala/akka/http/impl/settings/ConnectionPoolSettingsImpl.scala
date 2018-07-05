@@ -19,7 +19,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   maxRetries:                        Int,
   maxOpenRequests:                   Int,
   pipeliningLimit:                   Int,
-  maxConnectionKeepAliveTime:        Duration,
+  maxConnectionLifetime:             Duration,
   idleTimeout:                       Duration,
   connectionSettings:                ClientConnectionSettings,
   poolImplementation:                PoolImplementation,
@@ -33,10 +33,10 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   require(maxOpenRequests > 0, "max-open-requests must be a power of 2 > 0.")
   require((maxOpenRequests & (maxOpenRequests - 1)) == 0, "max-open-requests must be a power of 2. " + suggestPowerOfTwo(maxOpenRequests))
   require(pipeliningLimit > 0, "pipelining-limit must be > 0")
-  require(maxConnectionKeepAliveTime > Duration.Zero, "max-connection-keep-alive-time must be > 0")
+  require(maxConnectionLifetime > Duration.Zero, "max-connection-lifetime must be > 0")
   require(
-    maxConnectionKeepAliveTime == Duration.Inf || poolImplementation == PoolImplementation.New,
-    "max-connection-keep-alive-time does not taking effect with legacy pool implementation")
+    maxConnectionLifetime == Duration.Inf || poolImplementation == PoolImplementation.New,
+    "max-connection-lifetime does not taking effect with legacy pool implementation")
   require(idleTimeout >= Duration.Zero, "idle-timeout must be >= 0")
 
   override def productPrefix = "ConnectionPoolSettings"
@@ -62,7 +62,7 @@ object ConnectionPoolSettingsImpl extends SettingsCompanion[ConnectionPoolSettin
       c getInt "max-retries",
       c getInt "max-open-requests",
       c getInt "pipelining-limit",
-      c getPotentiallyInfiniteDuration "max-connection-keep-alive-time",
+      c getPotentiallyInfiniteDuration "max-connection-lifetime",
       c getPotentiallyInfiniteDuration "idle-timeout",
       ClientConnectionSettingsImpl.fromSubConfig(root, c.getConfig("client")),
       c.getString("pool-implementation").toLowerCase match {

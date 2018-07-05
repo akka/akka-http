@@ -81,9 +81,9 @@ is unable to be established for a given amount of time.
 
 it can be configured using the `akka.http.client.connecting-timeout` setting.
 
-### Connection Keep Alive timeout
+### Connection Lifetime timeout
 
-This timeout configures a maximum amount of time, while the connection will be open. This is useful, when you reach
-the server through a load balancer and client reconnecting helps the process of rebalancing, between service instances.
+This timeout configures a maximum amount of time, while the connection can be kept open. This is useful, when you reach
+the server through a load balancer and client reconnecting helps the process of rebalancing between service instances.
 
-it can be configured using the `akka.http.host-connection-pool.max-connection-keep-alive-time` setting.
+It can be configured using the `akka.http.host-connection-pool.max-connection-lifetime` setting.
