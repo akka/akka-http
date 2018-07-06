@@ -5,9 +5,10 @@
 package akka.http.scaladsl.server
 package directives
 
-import scala.collection.immutable
+import akka.http.impl.engine.ws.Handshake
 
-import akka.http.scaladsl.model.ws.{ UpgradeToWebSocket, Message }
+import scala.collection.immutable
+import akka.http.scaladsl.model.ws.{ Message, UpgradeToWebSocket }
 import akka.stream.scaladsl.Flow
 
 /**
@@ -71,7 +72,7 @@ trait WebSocketDirectives {
    */
   def handleWebSocketMessagesForOptionalProtocol(handler: Flow[Message, Message, Any], subprotocol: Option[String]): Route =
     extractUpgradeToWebSocket { upgrade ⇒
-      if (subprotocol.forall(sub ⇒ upgrade.requestedProtocols.exists(_ equalsIgnoreCase sub)))
+      if (subprotocol.forall(sub ⇒ Handshake.SubProtocolWildcard.equals(sub) || upgrade.requestedProtocols.exists(_ equalsIgnoreCase sub)))
         complete(upgrade.handleMessages(handler, subprotocol))
       else
         reject(UnsupportedWebSocketSubprotocolRejection(subprotocol.get)) // None.forall == true

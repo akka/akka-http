@@ -137,6 +137,29 @@ class WebSocketDirectivesExamplesSpec extends RoutingSpec {
     //#extractUpgradeToWebSocket
   }
 
+  "allWsSubProtocols" in {
+    def echoService: Flow[Message, Message, Any] =
+      Flow[Message]
+        // needed because a noop flow hasn't any buffer that would start processing in tests
+        .buffer(1, OverflowStrategy.backpressure)
+
+    def route = path("all-sub-protocols") {
+      handleWebSocketMessagesForProtocol(echoService, "*")
+    }
+
+    val wsClient = WSProbe()
+    WS("/all-sub-protocols", wsClient.flow, Seq("cat", "dog")) ~> route ~> check {
+      expectWebSocketUpgradeWithProtocol { protocol =>
+        protocol shouldEqual "cat"
+        wsClient.sendMessage("ping")
+        wsClient.expectMessage("ping")
+        wsClient.sendCompletion()
+        wsClient.expectCompletion()
+      }
+    }
+
+  }
+
   "extractOfferedWsProtocols" in {
     //#extractOfferedWsProtocols
     def echoService: Flow[Message, Message, Any] =

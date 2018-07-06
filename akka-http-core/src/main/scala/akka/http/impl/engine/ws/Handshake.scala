@@ -25,6 +25,7 @@ import akka.util.OptionVal
 @InternalApi
 private[http] object Handshake {
   val CurrentWebSocketVersion = 13
+  val SubProtocolWildcard = "*"
 
   object Server {
     /**
@@ -109,9 +110,9 @@ private[http] object Handshake {
 
             def handle(handler: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]], subprotocol: Option[String]): HttpResponse = {
               require(
-                subprotocol.forall(chosen ⇒ clientSupportedSubprotocols.contains(chosen)),
+                subprotocol.forall(chosen ⇒ chosen == SubProtocolWildcard || clientSupportedSubprotocols.contains(chosen)),
                 s"Tried to choose invalid subprotocol '$subprotocol' which wasn't offered by the client: [${requestedProtocols.mkString(", ")}]")
-              buildResponse(key.get, handler, subprotocol)
+              buildResponse(key.get, handler, subprotocol, clientSupportedSubprotocols)
             }
 
             def handleFrames(handlerFlow: Graph[FlowShape[FrameEvent, FrameEvent], Any], subprotocol: Option[String]): HttpResponse =
@@ -144,15 +145,20 @@ private[http] object Handshake {
           concatenated value to obtain a 20-byte value and base64-
           encoding (see Section 4 of [RFC4648]) this 20-byte hash.
     */
-    def buildResponse(key: `Sec-WebSocket-Key`, handler: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]], subprotocol: Option[String]): HttpResponse =
+    def buildResponse(key: `Sec-WebSocket-Key`, handler: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]], subprotocol: Option[String], requestedProtocols: immutable.Seq[String]): HttpResponse =
       HttpResponse(
         StatusCodes.SwitchingProtocols,
-        subprotocol.map(p ⇒ `Sec-WebSocket-Protocol`(Seq(p))).toList :::
+        selectSubProtocol(requestedProtocols, subprotocol).toList :::
           List(
             UpgradeHeader,
             ConnectionUpgradeHeader,
             `Sec-WebSocket-Accept`.forKey(key),
             UpgradeToWebSocketResponseHeader(handler)))
+
+    // subprotocol has been validated to be either * or in the list
+    private[akka] def selectSubProtocol(requestedProtocols: immutable.Seq[String], subprotocol: Option[String]): Option[`Sec-WebSocket-Protocol`] = {
+      subprotocol.map(sp ⇒ `Sec-WebSocket-Protocol`(Seq(if (SubProtocolWildcard.eq(sp)) requestedProtocols.head else sp)))
+    }
   }
 
   object Client {
