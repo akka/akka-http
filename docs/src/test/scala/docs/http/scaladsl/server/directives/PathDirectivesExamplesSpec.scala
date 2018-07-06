@@ -22,7 +22,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
   // matches /foo/bar
   path("foo" / "bar")
 
-  // NOTE: matches "/foo%2Fbar" and doesn't match /foo/bar
+  // NOTE: matches /foo%2Fbar and doesn't match /foo/bar
   path("foo/bar")
 
   // matches /foo/bar
