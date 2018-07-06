@@ -165,7 +165,7 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
     // NOTE: matches "/foo%2Fbar" and doesn't match /foo/bar
     path(segment("foo/bar"), () -> complete(StatusCodes.OK));
 
-    // NOTE: matches "/foo/bar"
+    // NOTE: matches /foo/bar
     path(separateOnSlashes("foo/bar"), () -> complete(StatusCodes.OK));
 
     // matches e.g. /foo/123 and extracts "123" as a String
