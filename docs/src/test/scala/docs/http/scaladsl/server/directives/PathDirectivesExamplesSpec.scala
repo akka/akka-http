@@ -19,6 +19,15 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
   // matches /foo/
   path("foo"./)
 
+  // matches /foo/bar
+  path("foo" / "bar")
+
+  // NOTE: matches /foo%2Fbar and doesn't match /foo/bar
+  path("foo/bar")
+
+  // matches /foo/bar
+  path(separateOnSlashes("foo/bar"))
+
   // matches e.g. /foo/123 and extracts "123" as a String
   path("foo" / """\d+""".r)
 
