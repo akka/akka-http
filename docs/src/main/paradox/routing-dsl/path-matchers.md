@@ -244,9 +244,9 @@ of the underlying matcher:
 
 |If a `matcher` is of type | then `matcher.?` is of type|
 |--------------------------|----------------------------|
-|`PathMatcher0`          | `PathMatcher0`          |
-|`PathMatcher1[T]`       | `PathMatcher1[Option[T]`|
-|`PathMatcher[L: Tuple]` | `PathMatcher[Option[L]]`|
+|`PathMatcher0`          | `PathMatcher0`           |
+|`PathMatcher1[T]`       | `PathMatcher1[Option[T]]`|
+|`PathMatcher[L: Tuple]` | `PathMatcher[Option[L]]` |
 
 repeat(separator: PathMatcher0 = PathMatchers.Neutral)
 :
@@ -256,9 +256,9 @@ extractions. The result type depends on the type of the underlying matcher:
 
 |If a `matcher` is of type | then `matcher.repeat(...)` is of type|
 |--------------------------|--------------------------------------|
-|`PathMatcher0`          | `PathMatcher0`        |
-|`PathMatcher1[T]`       | `PathMatcher1[List[T]`|
-|`PathMatcher[L: Tuple]` | `PathMatcher[List[L]]`|
+|`PathMatcher0`          | `PathMatcher0`         |
+|`PathMatcher1[T]`       | `PathMatcher1[List[T]]`|
+|`PathMatcher[L: Tuple]` | `PathMatcher[List[L]]` |
 
 unary_!
 : By prefixing a matcher with `!` it can be turned into a `PathMatcher0` that only matches if the underlying matcher
