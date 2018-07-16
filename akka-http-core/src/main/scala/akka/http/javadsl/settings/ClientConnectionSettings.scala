@@ -43,6 +43,8 @@ abstract class ClientConnectionSettings private[akka] () { self: ClientConnectio
   }
   final def getLocalAddress: Optional[InetSocketAddress] = OptionConverters.toJava(localAddress)
 
+  implicit val ct = akka.http.impl.util.JavaMappingCore.ClientTransport
+
   /** The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used. */
   @ApiMayChange
   def getTransport: ClientTransport = transport.asJava

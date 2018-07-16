@@ -8,7 +8,6 @@ import akka.actor.ActorSystem
 import akka.annotation.ApiMayChange
 import akka.http.impl.util.JavaMapping
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.impl.util.JavaMapping._
 import akka.http.javadsl.model.headers.HttpCredentials
 import akka.http.javadsl.settings.ClientConnectionSettings
 import akka.http.{ javadsl, scaladsl }
@@ -16,6 +15,7 @@ import akka.stream.javadsl.Flow
 import akka.util.ByteString
 import java.net.InetSocketAddress
 import java.util.concurrent.CompletionStage
+
 import scala.concurrent.Future
 
 /**
@@ -33,6 +33,7 @@ abstract class ClientTransport {
  */
 @ApiMayChange
 object ClientTransport {
+  implicit val ct = akka.http.impl.util.JavaMappingCore.ClientTransport
   def TCP: ClientTransport = scaladsl.ClientTransport.TCP.asJava
 
   /**
@@ -90,12 +91,20 @@ object ClientTransport {
     }
 
   private class ScalaWrapper(val delegate: scaladsl.ClientTransport) extends ClientTransport {
+    import JavaMapping._
+    implicit val ccs = akka.http.impl.util.JavaMappingCore.ClientConnectionSettings
+    implicit val oc = akka.http.impl.util.JavaMappingCore.OutgoingConnection
+
     def connectTo(host: String, port: Int, settings: ClientConnectionSettings, system: ActorSystem): akka.stream.javadsl.Flow[ByteString, ByteString, CompletionStage[javadsl.OutgoingConnection]] = {
       import system.dispatcher
       JavaMapping.toJava(delegate.connectTo(host, port, settings.asScala)(system))
     }
   }
   private class JavaWrapper(val delegate: ClientTransport) extends scaladsl.ClientTransport {
+    import JavaMapping._
+    implicit val ccs = akka.http.impl.util.JavaMappingCore.ClientConnectionSettings
+    implicit val oc = akka.http.impl.util.JavaMappingCore.OutgoingConnection
+
     def connectTo(host: String, port: Int, settings: scaladsl.settings.ClientConnectionSettings)(implicit system: ActorSystem): akka.stream.scaladsl.Flow[ByteString, ByteString, Future[scaladsl.Http.OutgoingConnection]] = {
       import system.dispatcher
       JavaMapping.toScala(delegate.connectTo(host, port, settings.asJava, system))

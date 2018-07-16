@@ -18,8 +18,7 @@ import scala.reflect.ClassTag
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.http.impl.model.{ JavaQuery, JavaUri }
-import akka.http.javadsl.{ ConnectionContext, HttpConnectionContext, HttpsConnectionContext, model ⇒ jm, settings ⇒ js }
-import akka.http.{ javadsl ⇒ jdsl, scaladsl ⇒ sdsl }
+import akka.http.javadsl.{ model ⇒ jm, settings ⇒ js }
 import akka.http.scaladsl.{ model ⇒ sm }
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -66,7 +65,7 @@ private[http] trait JavaMapping[_J, _S] extends J2SMapping[_J] with S2JMapping[_
 
 /** INTERNAL API */
 @InternalApi
-private[http] object JavaMapping {
+private[http] trait JavaMappings {
   trait AsScala[S] {
     def asScala: S
   }
@@ -182,30 +181,11 @@ private[http] object JavaMapping {
     def toScala(javaObject: J): S = cast[S](javaObject)
   }
 
-  implicit object ConnectionContext extends Inherited[ConnectionContext, akka.http.scaladsl.ConnectionContext]
-  implicit object HttpConnectionContext extends Inherited[HttpConnectionContext, akka.http.scaladsl.HttpConnectionContext]
-  implicit object HttpsConnectionContext extends Inherited[HttpsConnectionContext, akka.http.scaladsl.HttpsConnectionContext]
-
-  implicit object ClientConnectionSettings extends Inherited[js.ClientConnectionSettings, akka.http.scaladsl.settings.ClientConnectionSettings]
-  implicit object ConnectionPoolSettings extends Inherited[js.ConnectionPoolSettings, akka.http.scaladsl.settings.ConnectionPoolSettings]
   implicit object ParserSettings extends Inherited[js.ParserSettings, akka.http.scaladsl.settings.ParserSettings]
-  implicit object CookieParsingMode extends Inherited[js.ParserSettings.CookieParsingMode, akka.http.scaladsl.settings.ParserSettings.CookieParsingMode]
-  implicit object ErrorLoggingVerbosity extends Inherited[js.ParserSettings.ErrorLoggingVerbosity, akka.http.scaladsl.settings.ParserSettings.ErrorLoggingVerbosity]
-  implicit object ServerSettings extends Inherited[js.ServerSettings, akka.http.scaladsl.settings.ServerSettings]
-  implicit object PreviewServerSettings extends Inherited[js.PreviewServerSettings, akka.http.scaladsl.settings.PreviewServerSettings]
-  implicit object ServerSettingsT extends Inherited[js.ServerSettings.Timeouts, akka.http.scaladsl.settings.ServerSettings.Timeouts]
-  implicit object Http2ServerSettingT extends Inherited[js.Http2ServerSettings, akka.http.scaladsl.settings.Http2ServerSettings]
-  implicit object PoolImplementationT extends Inherited[js.PoolImplementation, akka.http.scaladsl.settings.PoolImplementation]
   implicit object WebsocketSettings extends Inherited[js.WebSocketSettings, akka.http.scaladsl.settings.WebSocketSettings]
 
-  implicit object OutgoingConnection extends JavaMapping[jdsl.OutgoingConnection, sdsl.Http.OutgoingConnection] {
-    def toScala(javaObject: jdsl.OutgoingConnection): sdsl.Http.OutgoingConnection = javaObject.delegate
-    def toJava(scalaObject: sdsl.Http.OutgoingConnection): jdsl.OutgoingConnection = new jdsl.OutgoingConnection(scalaObject)
-  }
-  implicit object ClientTransport extends JavaMapping[jdsl.ClientTransport, sdsl.ClientTransport] {
-    def toScala(javaObject: jdsl.ClientTransport): sdsl.ClientTransport = jdsl.ClientTransport.toScala(javaObject)
-    def toJava(scalaObject: sdsl.ClientTransport): jdsl.ClientTransport = jdsl.ClientTransport.fromScala(scalaObject)
-  }
+  implicit object CookieParsingMode extends Inherited[js.ParserSettings.CookieParsingMode, akka.http.scaladsl.settings.ParserSettings.CookieParsingMode]
+  implicit object ErrorLoggingVerbosity extends Inherited[js.ParserSettings.ErrorLoggingVerbosity, akka.http.scaladsl.settings.ParserSettings.ErrorLoggingVerbosity]
 
   implicit object DateTime extends Inherited[jm.DateTime, akka.http.scaladsl.model.DateTime]
 
@@ -288,3 +268,7 @@ private[http] object JavaMapping {
           s"Please use only the provided factories in akka.http.javadsl.model.Http")
     }
 }
+
+/** INTERNAL API */
+@InternalApi
+private[http] object JavaMapping extends JavaMappings

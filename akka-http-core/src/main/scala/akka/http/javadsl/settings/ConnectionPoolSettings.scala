@@ -40,6 +40,10 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   @ApiMayChange
   def getResponseEntitySubscriptionTimeout: Duration = responseEntitySubscriptionTimeout
 
+  implicit val ct = akka.http.impl.util.JavaMappingCore.ClientTransport
+  implicit val ccs = akka.http.impl.util.JavaMappingCore.ClientConnectionSettings
+  implicit val pi = akka.http.impl.util.JavaMappingCore.PoolImplementationT
+
   /**
    * The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used.
    */

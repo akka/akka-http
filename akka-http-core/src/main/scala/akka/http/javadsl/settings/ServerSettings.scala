@@ -25,6 +25,11 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
  * Public API but not intended for subclassing
  */
 @DoNotInherit abstract class ServerSettings { self: ServerSettingsImpl ⇒
+
+  implicit val pss = akka.http.impl.util.JavaMappingCore.PreviewServerSettings
+  implicit val sst = akka.http.impl.util.JavaMappingCore.ServerSettingsT
+  implicit val hsst = akka.http.impl.util.JavaMappingCore.Http2ServerSettingT
+
   def getServerHeader: Optional[Server]
   def getPreviewServerSettings: PreviewServerSettings
   def getTimeouts: ServerSettings.Timeouts

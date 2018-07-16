@@ -7,7 +7,6 @@ package akka.http.javadsl
 import java.net.InetSocketAddress
 import java.util.Optional
 import akka.http.impl.util.JavaMapping
-import akka.http.impl.util.JavaMapping.HttpsConnectionContext
 import akka.http.javadsl.model.ws._
 import akka.http.javadsl.settings.{ ConnectionPoolSettings, ClientConnectionSettings, ServerSettings }
 import akka.{ NotUsed, stream }
@@ -39,6 +38,12 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext ⇒ ec }
 
   import language.implicitConversions
+  implicit val serverSettings = akka.http.impl.util.JavaMappingCore.ServerSettings
+  implicit val ccs = akka.http.impl.util.JavaMappingCore.ClientConnectionSettings
+  implicit val cc = akka.http.impl.util.JavaMappingCore.ConnectionContext
+  implicit val httpsCS = akka.http.impl.util.JavaMappingCore.HttpsConnectionContext
+  implicit val cps = akka.http.impl.util.JavaMappingCore.ConnectionPoolSettings
+
   private implicit def completionStageCovariant[T, U >: T](in: CompletionStage[T]): CompletionStage[U] = in.asInstanceOf[CompletionStage[U]]
   private implicit def javaModelIsScalaModel[J <: AnyRef, S <: J](in: Future[J])(implicit ev: JavaMapping.Inherited[J, S]): Future[S] = in.asInstanceOf[Future[S]]
 
