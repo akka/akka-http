@@ -2,3 +2,12 @@
 
 # Removal of deprecated methods in 10.0.1 and 10.0.2
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.server.Route.asScala")
+
+# Make RouteWithConcatentation a value class
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.server.RouteConcatenation._enhanceRouteWithConcatenation")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.server.Directives._enhanceRouteWithConcatenation")
+ProblemFilters.exclude[FinalClassProblem]("akka.http.scaladsl.server.RouteConcatenation$RouteWithConcatenation")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.server.HttpApp._enhanceRouteWithConcatenation")
+
+# Change argument of "~" method to be a by name argument
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.server.RouteConcatenation#RouteWithConcatenation.~")
