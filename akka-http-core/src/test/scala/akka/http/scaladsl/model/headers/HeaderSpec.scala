@@ -100,18 +100,18 @@ class HeaderSpec extends FreeSpec with Matchers {
       }
       "failing parse run because of missing max-age directive" in {
         val Left(List(ErrorInfo(summary, detail))) = `Strict-Transport-Security`.parseFromValueString("includeSubDomains")
-        summary shouldEqual "Illegal HTTP header 'Strict-Transport-Security'"
-        detail shouldEqual "Missing 'max-age' directive!"
+        summary shouldEqual "Illegal HTTP header 'Strict-Transport-Security': requirement failed"
+        detail shouldEqual "exactly one 'max-age' directive required"
       }
       "failing parse run because of too many max-age directives" in {
         val Left(List(ErrorInfo(summary, detail))) = `Strict-Transport-Security`.parseFromValueString("max-age=30; max-age=30")
-        summary shouldEqual "Illegal HTTP header 'Strict-Transport-Security'"
-        detail shouldEqual "Too many 'max-age' directives!"
+        summary shouldEqual "Illegal HTTP header 'Strict-Transport-Security': requirement failed"
+        detail shouldEqual "exactly one 'max-age' directive required"
       }
       "failing parse run because of too many includeSubDomains directives" in {
         val Left(List(ErrorInfo(summary, detail))) = `Strict-Transport-Security`.parseFromValueString("max-age=30; includeSubDomains; includeSubDomains")
-        summary shouldEqual "Illegal HTTP header 'Strict-Transport-Security'"
-        detail shouldEqual "Too many 'includeSubDomains' directives!"
+        summary shouldEqual "Illegal HTTP header 'Strict-Transport-Security': requirement failed"
+        detail shouldEqual "at most one 'includeSubDomains' directive allowed"
       }
     }
   }

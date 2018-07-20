@@ -865,11 +865,10 @@ final case class Server(products: immutable.Seq[ProductVersion]) extends jm.head
 object `Strict-Transport-Security` extends ModeledCompanion[`Strict-Transport-Security`] {
   def apply(directives: StrictTransportSecurityDirective*) = {
     val maxAgeDirectives = directives.filter(_.isInstanceOf[MaxAge])
-    if (maxAgeDirectives.size == 0) throw new IllegalArgumentException("Missing 'max-age' directive!")
-    else if (maxAgeDirectives.size > 1) throw new IllegalArgumentException("Too many 'max-age' directives!")
+    require(maxAgeDirectives.size == 1, "exactly one 'max-age' directive required")
 
     val includeSubDomainsDirectives = directives.filter(_.equals(IncludeSubDomains))
-    if (includeSubDomainsDirectives.size > 1) throw new IllegalArgumentException("Too many 'includeSubDomains' directives!")
+    require(includeSubDomainsDirectives.size <= 1, "at most one 'includeSubDomains' directive allowed")
 
     new `Strict-Transport-Security`(maxAgeDirectives.head.asInstanceOf[MaxAge].value, !includeSubDomainsDirectives.isEmpty)
   }
