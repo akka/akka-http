@@ -187,7 +187,7 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
           |""" should parseTo(HttpRequest(
           GET,
           "/hsts",
-          headers = List(Host("x"), `Strict-Transport-Security`(1, None)),
+          headers = List(Host("x"), `Strict-Transport-Security`(MaxAge(1))),
           protocol = `HTTP/1.1`))
 
         """GET /hsts HTTP/1.1
@@ -197,7 +197,7 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
           |""" should parseTo(HttpRequest(
           GET,
           "/hsts",
-          headers = List(Host("x"), `Strict-Transport-Security`(1, None)),
+          headers = List(Host("x"), `Strict-Transport-Security`(MaxAge(1))),
           protocol = `HTTP/1.1`))
       }
     }

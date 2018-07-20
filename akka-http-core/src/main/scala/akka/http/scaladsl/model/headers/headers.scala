@@ -863,7 +863,16 @@ final case class Server(products: immutable.Seq[ProductVersion]) extends jm.head
 
 // https://tools.ietf.org/html/rfc6797
 object `Strict-Transport-Security` extends ModeledCompanion[`Strict-Transport-Security`] {
-  def apply(maxAge: Long, includeSubDomains: Option[Boolean]) = new `Strict-Transport-Security`(maxAge, includeSubDomains.getOrElse(false))
+  def apply(directives: StrictTransportSecurityDirective*) = {
+    val maxAgeDirectives = directives.filter(_.isInstanceOf[MaxAge])
+    if (maxAgeDirectives.size == 0) throw new IllegalArgumentException("Missing 'max-age' directive!")
+    else if (maxAgeDirectives.size > 1) throw new IllegalArgumentException("Too many 'max-age' directives!")
+
+    val includeSubDomainsDirectives = directives.filter(_.equals(IncludeSubDomains))
+    if (includeSubDomainsDirectives.size > 1) throw new IllegalArgumentException("Too many 'includeSubDomains' directives!")
+
+    new `Strict-Transport-Security`(maxAgeDirectives.head.asInstanceOf[MaxAge].value, !includeSubDomainsDirectives.isEmpty)
+  }
 }
 final case class `Strict-Transport-Security`(maxAge: Long, includeSubDomains: Boolean = false) extends jm.headers.StrictTransportSecurity with ResponseHeader {
   def renderValue[R <: Rendering](r: R): r.type = {
