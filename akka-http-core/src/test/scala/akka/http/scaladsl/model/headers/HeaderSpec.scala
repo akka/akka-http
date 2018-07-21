@@ -91,7 +91,7 @@ class HeaderSpec extends FreeSpec with Matchers {
       "successful parse run with ignored directives" in {
         headers.`Strict-Transport-Security`.parseFromValueString("max-age=30; includeSubDomains; preload; dummy") shouldEqual
           Right(headers.`Strict-Transport-Security`(30, true))
-        headers.`Strict-Transport-Security`.parseFromValueString("max-age=30; includeSubDomains; dummy; preload") shouldEqual
+        headers.`Strict-Transport-Security`.parseFromValueString("max-age=30; includeSubDomains; foo=bar; preload") shouldEqual
           Right(headers.`Strict-Transport-Security`(30, true))
       }
       "successful parse run with trailing semicolons" in {
