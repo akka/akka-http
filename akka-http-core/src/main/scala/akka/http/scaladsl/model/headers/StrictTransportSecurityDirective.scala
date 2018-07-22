@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.http.scaladsl.model.headers
 
 sealed abstract class StrictTransportSecurityDirective
