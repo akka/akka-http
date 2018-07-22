@@ -206,7 +206,8 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
     }
 
     rule {
-      oneOrMore(directives | ignoredDirective).separatedBy(oneOrMore(ws(";"))) ~ zeroOrMore(ws(";")) ~ EOI ~> (`Strict-Transport-Security`(_: _*))
+      oneOrMore(directives | ignoredDirective).separatedBy(oneOrMore(ws(";"))) ~ zeroOrMore(ws(";")) ~ EOI ~>
+        (`Strict-Transport-Security`.fromDirectives(_: _*))
     }
   }
 

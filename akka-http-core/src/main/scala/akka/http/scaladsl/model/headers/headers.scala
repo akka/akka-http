@@ -863,14 +863,16 @@ final case class Server(products: immutable.Seq[ProductVersion]) extends jm.head
 
 // https://tools.ietf.org/html/rfc6797
 object `Strict-Transport-Security` extends ModeledCompanion[`Strict-Transport-Security`] {
-  def apply(directives: StrictTransportSecurityDirective*) = {
+  def apply(maxAge: Long, includeSubDomains: Option[Boolean]) = new `Strict-Transport-Security`(maxAge, includeSubDomains.getOrElse(false))
+
+  def fromDirectives(directives: StrictTransportSecurityDirective*) = {
     val maxAgeDirectives = directives.filter(_.isInstanceOf[MaxAge])
     require(maxAgeDirectives.size == 1, "exactly one 'max-age' directive required")
 
     val includeSubDomainsDirectives = directives.filter(_.equals(IncludeSubDomains))
     require(includeSubDomainsDirectives.size <= 1, "at most one 'includeSubDomains' directive allowed")
 
-    new `Strict-Transport-Security`(maxAgeDirectives.head.asInstanceOf[MaxAge].value, !includeSubDomainsDirectives.isEmpty)
+    new `Strict-Transport-Security`(maxAgeDirectives.head.asInstanceOf[MaxAge].value, includeSubDomainsDirectives.nonEmpty)
   }
 }
 final case class `Strict-Transport-Security`(maxAge: Long, includeSubDomains: Boolean = false) extends jm.headers.StrictTransportSecurity with ResponseHeader {
