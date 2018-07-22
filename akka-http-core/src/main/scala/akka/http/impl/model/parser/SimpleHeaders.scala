@@ -202,7 +202,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
           | ignoreCase("max-age=") ~ `delta-seconds` ~> (MaxAge(_))
       )
     def ignoredDirective = rule {
-      token ~ optional(ws("=") ~ word) ~> ((k: String, v: Option[String]) => IgnoredDirective(k + v.getOrElse("")))
+      token ~ optional(ws("=") ~ word) ~> ((k: String, v: Option[String]) ⇒ IgnoredDirective(k + v.getOrElse("")))
     }
 
     rule {
