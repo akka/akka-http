@@ -45,6 +45,20 @@ object Message {
 }
 
 /**
+ * Represents a WebSocket message that contains complete data.
+ */
+trait StrictMessage extends Message {
+  def isStrict: Boolean = true
+}
+
+/**
+ * Represents a WebSocket message that needs to be streamed.
+ */
+trait StreamedMessage extends Message {
+  def isStrict: Boolean = false
+}
+
+/**
  * Represents a WebSocket text message. A text message can either be strict in which case
  * the complete data is already available or it can be streamed in which case [[getStreamedText]]
  * will return a Source streaming the data as it comes in.
@@ -78,8 +92,7 @@ object TextMessage {
    * Creates a strict text message.
    */
   def create(text: String): TextMessage =
-    new TextMessage {
-      def isStrict: Boolean = true
+    new TextMessage with StrictMessage {
       def getStreamedText: Source[String, _] = Source.single(text)
       def getStrictText: String = text
 
@@ -93,8 +106,7 @@ object TextMessage {
    * Creates a streamed text message.
    */
   def create(textStream: Source[String, _]): TextMessage =
-    new TextMessage {
-      def isStrict: Boolean = false
+    new TextMessage with StreamedMessage {
       def getStrictText: String = throw new IllegalStateException("Cannot get strict text for streamed message.")
       def getStreamedText: Source[String, _] = textStream
 
@@ -142,8 +154,7 @@ object BinaryMessage {
    * Creates a strict binary message.
    */
   def create(data: ByteString): BinaryMessage =
-    new BinaryMessage {
-      def isStrict: Boolean = true
+    new BinaryMessage with StrictMessage {
       def getStreamedData: Source[ByteString, _] = Source.single(data)
       def getStrictData: ByteString = data
 
@@ -158,8 +169,7 @@ object BinaryMessage {
    * Creates a streamed binary message.
    */
   def create(dataStream: Source[ByteString, _]): BinaryMessage =
-    new BinaryMessage {
-      def isStrict: Boolean = false
+    new BinaryMessage with StreamedMessage {
       def getStrictData: ByteString = throw new IllegalStateException("Cannot get strict data for streamed message.")
       def getStreamedData: Source[ByteString, _] = dataStream
 

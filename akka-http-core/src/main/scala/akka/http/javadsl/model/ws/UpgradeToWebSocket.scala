@@ -5,6 +5,8 @@
 package akka.http.javadsl.model.ws
 
 import java.lang.{ Iterable ⇒ JIterable }
+import java.util.Optional
+
 import akka.http.scaladsl.{ model ⇒ sm }
 import akka.http.javadsl.model._
 
@@ -48,4 +50,10 @@ trait UpgradeToWebSocket extends sm.HttpHeader {
    * The given subprotocol must be one of the ones offered by the client.
    */
   def handleMessagesWith(inSink: Graph[SinkShape[Message], _ <: Any], outSource: Graph[SourceShape[Message], _ <: Any], subprotocol: String): HttpResponse
+
+  def handleStrictMessagesWith(
+    handlerFlow:  Graph[FlowShape[StrictMessage, Message], Any],
+    materializer: Materializer,
+    timeout:      Long,
+    subprotocol:  Optional[String]): HttpResponse
 }

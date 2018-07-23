@@ -11,6 +11,7 @@ import akka.http.javadsl.model.Uri;
 import akka.http.javadsl.model.headers.SecWebSocketProtocol;
 import akka.http.javadsl.model.ws.BinaryMessage;
 import akka.http.javadsl.model.ws.Message;
+import akka.http.javadsl.model.ws.StrictMessage;
 import akka.http.javadsl.model.ws.TextMessage;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.testkit.JUnitRouteTest;
@@ -25,6 +26,7 @@ import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 //#handleWebSocketMessages
@@ -93,6 +95,113 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
     wsClient.sendCompletion();
     wsClient.expectCompletion();
     //#handleWebSocketMessages
+  }
+
+  @Test
+  public void testHandleWebSocketStrictMessages() {
+    //#handleWebSocketStrictMessages
+    final Flow<StrictMessage, Message, NotUsed> greeter = Flow.of(StrictMessage.class).map(msg -> {
+      if (msg instanceof TextMessage) {
+        final TextMessage tm = (TextMessage) msg;
+        return TextMessage.create("Hello " + tm.getStrictText() + "!");
+      } else if (msg instanceof BinaryMessage) {
+        final BinaryMessage bm = (BinaryMessage) msg;
+        ByteString data = ByteString.fromString("Binary message received: ").concat(bm.getStrictData());
+        return BinaryMessage.create(data);
+      } else {
+        throw new IllegalArgumentException("Unsupported message type!");
+      }
+    });
+
+    final Route websocketRoute = path("greeter", () ->
+      handleWebSocketStrictMessages(greeter, materializer(), 1000, Optional.empty())
+    );
+
+    // create a testing probe representing the client-side
+    final WSProbe wsClient = WSProbe.create(system(), materializer());
+
+    // WS creates a WebSocket request for testing
+    testRoute(websocketRoute).run(WS(Uri.create("/greeter"), wsClient.flow(), materializer()))
+      .assertStatusCode(StatusCodes.SWITCHING_PROTOCOLS);
+
+    wsClient.sendMessage("Peter");
+    wsClient.expectMessage("Hello Peter!");
+
+    wsClient.sendMessage(BinaryMessage.create(ByteString.fromString("abcdef")));
+    wsClient.expectMessage(ByteString.fromString("Binary message received: abcdef"));
+
+    wsClient.sendMessage(TextMessage.create(Source.single("John")));
+    wsClient.expectMessage("Hello John!");
+
+    wsClient.sendCompletion();
+    wsClient.expectCompletion();
+    //#handleWebSocketStrictMessages
+  }
+
+  @Test
+  public void testHandleWebSocketStrictTextMessages() {
+    //#handleWebSocketStrictTextMessages
+    final Flow<TextMessage, Message, NotUsed> greeter = Flow.of(TextMessage.class).map(tm -> {
+      if (tm instanceof StrictMessage) {
+        return TextMessage.create("Hello " + tm.getStrictText() + "!");
+      } else {
+        throw new IllegalArgumentException("Strict TextMessage expected.");
+      }
+    });
+
+    final Route websocketRoute = path("greeter", () ->
+      handleWebSocketStrictTextMessages(greeter, materializer(), 1000, Optional.empty())
+    );
+
+    // create a testing probe representing the client-side
+    final WSProbe wsClient = WSProbe.create(system(), materializer());
+
+    // WS creates a WebSocket request for testing
+    testRoute(websocketRoute).run(WS(Uri.create("/greeter"), wsClient.flow(), materializer()))
+      .assertStatusCode(StatusCodes.SWITCHING_PROTOCOLS);
+
+    wsClient.sendMessage("Peter");
+    wsClient.expectMessage("Hello Peter!");
+
+    wsClient.sendMessage(TextMessage.create(Source.single("John")));
+    wsClient.expectMessage("Hello John!");
+
+    wsClient.sendCompletion();
+    wsClient.expectCompletion();
+    //#handleWebSocketStrictTextMessages
+  }
+
+  @Test
+  public void testHandleWebSocketStrictBinaryMessages() {
+    //#handleWebSocketStrictBinaryMessages
+    final Flow<BinaryMessage, Message, NotUsed> greeter = Flow.of(BinaryMessage.class).map(tm -> {
+      if (tm instanceof StrictMessage) {
+        return BinaryMessage.create(ByteString.fromString("Binary message received: ").concat(tm.getStrictData()));
+      } else {
+        throw new IllegalArgumentException("Strict BinaryMessage expected.");
+      }
+    });
+
+    final Route websocketRoute = path("greeter", () ->
+      handleWebSocketStrictBinaryMessages(greeter, materializer(), 1000, Optional.empty())
+    );
+
+    // create a testing probe representing the client-side
+    final WSProbe wsClient = WSProbe.create(system(), materializer());
+
+    // WS creates a WebSocket request for testing
+    testRoute(websocketRoute).run(WS(Uri.create("/greeter"), wsClient.flow(), materializer()))
+      .assertStatusCode(StatusCodes.SWITCHING_PROTOCOLS);
+
+    wsClient.sendMessage(ByteString.fromString("abcdef"));
+    wsClient.expectMessage(ByteString.fromString("Binary message received: abcdef"));
+
+    wsClient.sendMessage(BinaryMessage.create(Source.single(ByteString.fromString("123"))));
+    wsClient.expectMessage(ByteString.fromString("Binary message received: 123"));
+
+    wsClient.sendCompletion();
+    wsClient.expectCompletion();
+    //#handleWebSocketStrictBinaryMessages
   }
 
   @Test

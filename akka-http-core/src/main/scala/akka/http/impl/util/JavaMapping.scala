@@ -268,6 +268,9 @@ private[http] object JavaMapping {
     def toScala(javaObject: J): WsMessage.S = javaObject.asScala
     def toJava(scalaObject: S): WsMessage.J = jm.ws.Message.adapt(scalaObject)
   }
+  implicit object StrictMessage extends Inherited[jm.ws.StrictMessage, sm.ws.StrictMessage]
+  implicit object TextMessage extends Inherited[jm.ws.TextMessage, sm.ws.TextMessage]
+  implicit object BinaryMessage extends Inherited[jm.ws.BinaryMessage, sm.ws.BinaryMessage]
 
   implicit object Uri extends JavaMapping[jm.Uri, sm.Uri] {
     def toScala(javaObject: J): Uri.S = cast[JavaUri](javaObject).uri

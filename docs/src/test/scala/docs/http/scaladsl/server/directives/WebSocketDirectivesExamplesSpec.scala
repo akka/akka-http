@@ -12,7 +12,7 @@ import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{ Sink, Source, Flow }
 
 import docs.http.scaladsl.server.RoutingSpec
-import akka.http.scaladsl.model.ws.{ TextMessage, Message, BinaryMessage }
+import akka.http.scaladsl.model.ws.{ TextMessage, Message, StrictMessage, BinaryMessage }
 import akka.http.scaladsl.testkit.WSProbe
 
 class WebSocketDirectivesExamplesSpec extends RoutingSpec {
@@ -105,6 +105,112 @@ class WebSocketDirectivesExamplesSpec extends RoutingSpec {
         }
       }
     //#handle-multiple-protocols
+  }
+
+  "handle strict messages" in {
+    //#handle-strict-messages
+    def greeter: Flow[StrictMessage, Message, Any] =
+      Flow[StrictMessage].map {
+        case TextMessage.Strict(text)   => TextMessage("Hello " + text + "!")
+        case BinaryMessage.Strict(data) => BinaryMessage(ByteString("Binary message received: ") ++ data)
+      }
+    implicit val timeout: FiniteDuration = 1.second
+    val websocketRoute =
+      path("greeter") {
+        handleWebSocketStrictMessages(greeter)
+      }
+
+    // tests:
+    // create a testing probe representing the client-side
+    val wsClient = WSProbe()
+
+    // WS creates a WebSocket request for testing
+    WS("/greeter", wsClient.flow) ~> websocketRoute ~>
+      check {
+        // check response for WS Upgrade headers
+        isWebSocketUpgrade shouldEqual true
+
+        wsClient.sendMessage(TextMessage(Source.single("Peter"))) // non-strict message
+        wsClient.expectMessage("Hello Peter!")
+
+        wsClient.sendMessage(BinaryMessage(Source.single(ByteString("abcdef")))) // non-strict message
+        wsClient.expectMessage(ByteString("Binary message received: abcdef"))
+
+        wsClient.sendMessage("John")
+        wsClient.expectMessage("Hello John!")
+
+        wsClient.sendCompletion()
+        wsClient.expectCompletion()
+      }
+    //#handle-strict-messages
+  }
+
+  "handle strict text messages" in {
+    //#handle-strict-text-messages
+    def greeter: Flow[TextMessage.Strict, Message, Any] =
+      Flow[StrictMessage].map {
+        case TextMessage.Strict(text) => TextMessage("Hello " + text + "!")
+      }
+    implicit val timeout: FiniteDuration = 1.second
+    val websocketRoute =
+      path("greeter") {
+        handleWebSocketStrictTextMessages(greeter)
+      }
+
+    // tests:
+    // create a testing probe representing the client-side
+    val wsClient = WSProbe()
+
+    // WS creates a WebSocket request for testing
+    WS("/greeter", wsClient.flow) ~> websocketRoute ~>
+      check {
+        // check response for WS Upgrade headers
+        isWebSocketUpgrade shouldEqual true
+
+        wsClient.sendMessage(TextMessage(Source.single("Peter"))) // non-strict message
+        wsClient.expectMessage("Hello Peter!")
+
+        wsClient.sendMessage("John")
+        wsClient.expectMessage("Hello John!")
+
+        wsClient.sendCompletion()
+        wsClient.expectCompletion()
+      }
+    //#handle-strict-text-messages
+  }
+
+  "handle strict binary messages" in {
+    //#handle-strict-binary-messages
+    def greeter: Flow[BinaryMessage.Strict, Message, Any] =
+      Flow[StrictMessage].map {
+        case BinaryMessage.Strict(data) => BinaryMessage(ByteString("Binary message received: ") ++ data)
+      }
+    implicit val timeout: FiniteDuration = 1.second
+    val websocketRoute =
+      path("greeter") {
+        handleWebSocketStrictBinaryMessages(greeter)
+      }
+
+    // tests:
+    // create a testing probe representing the client-side
+    val wsClient = WSProbe()
+
+    // WS creates a WebSocket request for testing
+    WS("/greeter", wsClient.flow) ~> websocketRoute ~>
+      check {
+        // check response for WS Upgrade headers
+        isWebSocketUpgrade shouldEqual true
+
+        wsClient.sendMessage(BinaryMessage(Source.single(ByteString("abcdef")))) // non-strict message
+        wsClient.expectMessage(ByteString("Binary message received: abcdef"))
+
+        wsClient.sendMessage(ByteString("abcdef"))
+        wsClient.expectMessage(ByteString("Binary message received: abcdef"))
+
+        wsClient.sendCompletion()
+        wsClient.expectCompletion()
+      }
+    //#handle-strict-binary-messages
   }
 
   "extractUpgradeToWebSocket" in {

@@ -21,6 +21,16 @@ import scala.compat.java8.FutureConverters._
 sealed trait Message extends akka.http.javadsl.model.ws.Message
 
 /**
+ * Represents a WebSocket message that contains complete data.
+ */
+sealed trait StrictMessage extends akka.http.javadsl.model.ws.StrictMessage
+
+/**
+ * Represents a WebSocket message that needs to be streamed.
+ */
+sealed trait StreamedMessage extends akka.http.javadsl.model.ws.StreamedMessage
+
+/**
  * Represents a WebSocket text message. A text message can either be a [[TextMessage.Strict]] in which case
  * the complete data is already available or it can be [[TextMessage.Streamed]] in which case `textStream`
  * will return a Source streaming the data as it comes in.
@@ -59,21 +69,19 @@ object TextMessage {
   /**
    * A strict [[TextMessage]] that contains the complete data as a [[String]].
    */
-  final case class Strict(text: String) extends TextMessage {
+  final case class Strict(text: String) extends TextMessage with StrictMessage {
     def textStream: Source[String, _] = Source.single(text)
     override def toString: String = s"TextMessage.Strict($text)"
 
     /** Java API */
     override def getStrictText: String = text
-    override def isStrict: Boolean = true
   }
 
-  final case class Streamed(textStream: Source[String, _]) extends TextMessage {
+  final case class Streamed(textStream: Source[String, _]) extends TextMessage with StreamedMessage {
     override def toString: String = s"TextMessage.Streamed($textStream)"
 
     /** Java API */
     override def getStrictText: String = throw new IllegalStateException("Cannot get strict text for streamed message.")
-    override def isStrict: Boolean = false
   }
 }
 
@@ -117,19 +125,17 @@ object BinaryMessage {
   /**
    * A strict [[BinaryMessage]] that contains the complete data as a [[akka.util.ByteString]].
    */
-  final case class Strict(data: ByteString) extends BinaryMessage {
+  final case class Strict(data: ByteString) extends BinaryMessage with StrictMessage {
     def dataStream: Source[ByteString, _] = Source.single(data)
     override def toString: String = s"BinaryMessage.Strict($data)"
 
     /** Java API */
     override def getStrictData: ByteString = data
-    override def isStrict: Boolean = true
   }
-  final case class Streamed(dataStream: Source[ByteString, _]) extends BinaryMessage {
+  final case class Streamed(dataStream: Source[ByteString, _]) extends BinaryMessage with StreamedMessage {
     override def toString: String = s"BinaryMessage.Streamed($dataStream)"
 
     /** Java API */
     override def getStrictData: ByteString = throw new IllegalStateException("Cannot get strict data for streamed message.")
-    override def isStrict: Boolean = false
   }
 }

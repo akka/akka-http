@@ -12,6 +12,9 @@ import akka.http.impl.util.JavaMapping
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.model.HttpResponse
 
+import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
+
 /**
  * A custom header that will be added to an WebSocket upgrade HttpRequest that
  * enables a request handler to upgrade this connection to a WebSocket connection and
@@ -54,6 +57,31 @@ trait UpgradeToWebSocket extends jm.ws.UpgradeToWebSocket {
     subprotocol: Option[String]                   = None): HttpResponse =
     handleMessages(scaladsl.Flow.fromSinkAndSource(inSink, outSource), subprotocol)
 
+  def handleStrictMessages(
+    handlerFlow: Graph[FlowShape[StrictMessage, Message], Any],
+    subprotocol: Option[String]                                = None)(implicit mat: Materializer, timeout: FiniteDuration): HttpResponse =
+    handleMessages(scaladsl.Flow[Message].mapAsync(1) {
+      case streamed: TextMessage.Streamed   ⇒ streamed.toStrict(timeout)
+      case streamed: BinaryMessage.Streamed ⇒ streamed.toStrict(timeout)
+      case strict: StrictMessage            ⇒ Future.successful(strict)
+    }.via(handlerFlow), subprotocol)
+
+  def handleStrictTextMessages(
+    handlerFlow: Graph[FlowShape[TextMessage.Strict, Message], Any],
+    subprotocol: Option[String]                                     = None)(implicit mat: Materializer, timeout: FiniteDuration): HttpResponse =
+    handleStrictMessages(scaladsl.Flow[StrictMessage].map {
+      case textMessage: TextMessage.Strict ⇒ textMessage
+      case _: BinaryMessage                ⇒ throw new RuntimeException("Received BinaryMessage while expecting TextMessage.")
+    }.via(handlerFlow), subprotocol)
+
+  def handleStrictBinaryMessages(
+    handlerFlow: Graph[FlowShape[BinaryMessage.Strict, Message], Any],
+    subprotocol: Option[String]                                       = None)(implicit mat: Materializer, timeout: FiniteDuration): HttpResponse =
+    handleStrictMessages(scaladsl.Flow[StrictMessage].map {
+      case binaryMessage: BinaryMessage.Strict ⇒ binaryMessage
+      case _: TextMessage                      ⇒ throw new RuntimeException("Received TextMessage while expecting BinaryMessage.")
+    }.via(handlerFlow), subprotocol)
+
   import scala.collection.JavaConverters._
 
   /**
@@ -87,6 +115,18 @@ trait UpgradeToWebSocket extends jm.ws.UpgradeToWebSocket {
     outSource:   Graph[SourceShape[jm.ws.Message], _ <: Any],
     subprotocol: String): HttpResponse =
     handleMessages(createScalaFlow(inSink, outSource), subprotocol = Some(subprotocol))
+
+  /**
+   * Java API
+   */
+  def handleStrictMessagesWith(
+    handlerFlow:  Graph[FlowShape[jm.ws.StrictMessage, jm.ws.Message], Any],
+    materializer: Materializer,
+    timeout:      Long,
+    subprotocol:  java.util.Optional[String]): HttpResponse = {
+    import scala.concurrent.duration._
+    handleStrictMessages(JavaMapping.toScala(handlerFlow), JavaMapping.toScala(subprotocol))(materializer, timeout.millis)
+  }
 
   private[this] def createScalaFlow(inSink: Graph[SinkShape[jm.ws.Message], _ <: Any], outSource: Graph[SourceShape[jm.ws.Message], _ <: Any]): Graph[FlowShape[Message, Message], NotUsed] =
     JavaMapping.toScala(scaladsl.Flow.fromSinkAndSourceMat(inSink, outSource)(scaladsl.Keep.none): Graph[FlowShape[jm.ws.Message, jm.ws.Message], NotUsed])
