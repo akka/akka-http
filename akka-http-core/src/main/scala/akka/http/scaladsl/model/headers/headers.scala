@@ -867,10 +867,10 @@ object `Strict-Transport-Security` extends ModeledCompanion[`Strict-Transport-Se
 
   def fromDirectives(directives: StrictTransportSecurityDirective*) = {
     val maxAgeDirectives = directives.filter(_.isInstanceOf[MaxAge])
-    require(maxAgeDirectives.size == 1, "exactly one 'max-age' directive required")
+    if (maxAgeDirectives.size != 1) throw new IllegalArgumentException("exactly one 'max-age' directive required")
 
     val includeSubDomainsDirectives = directives.filter(_.equals(IncludeSubDomains))
-    require(includeSubDomainsDirectives.size <= 1, "at most one 'includeSubDomains' directive allowed")
+    if (includeSubDomainsDirectives.size > 1) throw new IllegalArgumentException("at most one 'includeSubDomains' directive allowed")
 
     new `Strict-Transport-Security`(maxAgeDirectives.head.asInstanceOf[MaxAge].value, includeSubDomainsDirectives.nonEmpty)
   }
