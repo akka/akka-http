@@ -3,7 +3,7 @@
 Apart from the @ref[HTTP Client](../client-side/index.md) Akka HTTP also provides an embedded,
 [Reactive-Streams](http://www.reactive-streams.org/)-based, fully asynchronous HTTP/1.1 server implemented on top of @scala[@extref[Streams](akka-docs:scala/stream/index.html)]@java[@extref[Streams](akka-docs:java/stream/index.html)].
 
-It sports the following features:
+It supports the following features:
 
  * Full support for [HTTP persistent connections](http://en.wikipedia.org/wiki/HTTP_persistent_connection)
  * Full support for [HTTP pipelining](http://en.wikipedia.org/wiki/HTTP_pipelining)
@@ -40,6 +40,7 @@ from a background with non-"streaming first" HTTP Servers.
 * [routing-dsl/index](../routing-dsl/index.md)
 * [websocket-support](websocket-support.md)
 * [server-https-support](server-https-support.md)
+* [graceful-termination](graceful-termination.md)
 * [http2](http2.md)
 
 @@@

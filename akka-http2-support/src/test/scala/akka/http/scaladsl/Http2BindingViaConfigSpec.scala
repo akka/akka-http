@@ -68,14 +68,14 @@ class Http2BindingViaConfigSpec extends AkkaSpec("""
       val ext: Http2Ext = Http2()
       // the Shadow is a structural type, so this assignment only works
       // if all the methods it requires exist on the real class
-      val shadow: akka.http.impl.engine.Http2Shadow.ShadowHttp2Ext = ext
+      val _: akka.http.impl.engine.Http2Shadow.ShadowHttp2Ext = ext
     }
   }
 
   private def fishForDebugMessage(a: TestProbe, messagePrefix: String, max: Duration = 3.seconds) {
     a.fishForMessage(max, hint = "expected debug message part: " + messagePrefix) {
       case Logging.Debug(_, _, msg: String) if msg contains messagePrefix ⇒ true
-      case other ⇒ false
+      case _ ⇒ false
     }
   }
 

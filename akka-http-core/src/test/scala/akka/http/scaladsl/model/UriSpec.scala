@@ -468,6 +468,9 @@ class UriSpec extends WordSpec with Matchers {
       Uri("tel:+1-816-555-1212") shouldEqual
         Uri.from(scheme = "tel", path = "+1-816-555-1212")
 
+      Uri("s3:image.png") shouldEqual
+        Uri.from(scheme = "s3", path = "image.png")
+
       Uri("telnet://192.0.2.16:80/") shouldEqual
         Uri.from(scheme = "telnet", host = "192.0.2.16", port = 80, path = "/")
 

@@ -5,17 +5,17 @@
 package akka.http.scaladsl
 
 import java.net.InetSocketAddress
+
 import akka.actor.ActorSystem
 import akka.annotation.ApiMayChange
 import akka.http.impl.engine.client.HttpsProxyGraphStage
-import akka.http.impl.settings.HttpsProxySettingsImpl
 import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model.headers.HttpCredentials
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, HttpsProxySettings }
 import akka.stream.scaladsl.{ Flow, Keep, Tcp }
 import akka.util.ByteString
+
 import scala.concurrent.Future
-import scala.util.{ Failure, Success }
 
 /**
  * Abstraction to allow the creation of alternative transports to run HTTP on.

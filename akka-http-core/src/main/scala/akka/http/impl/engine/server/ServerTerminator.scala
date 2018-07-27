@@ -6,24 +6,22 @@ package akka.http.impl.engine.server
 
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.Done
-import akka.actor.{ ActorSystem, Terminated }
-import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.actor.ActorSystem
+import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.{ HttpConnectionTerminated, HttpServerTerminated, HttpTerminated }
-import akka.http.scaladsl.settings.{ RoutingSettings, ServerSettings }
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, StatusCodes }
-import akka.stream.scaladsl.BidiFlow
-
-import scala.concurrent.duration._
+import akka.http.scaladsl.model.headers.Connection
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
+import akka.http.scaladsl.settings.ServerSettings
 import akka.stream._
+import akka.stream.scaladsl.BidiFlow
 import akka.stream.stage._
 import akka.util.PrettyDuration
 
 import scala.annotation.tailrec
-import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.concurrent.duration.{ Deadline, FiniteDuration }
+import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.util.{ Failure, Success }
 
 /**
@@ -77,6 +75,28 @@ private[http] final class MasterServerTerminator(log: LoggingAdapter) extends Se
     }
   }
 
+  /**
+   * Removes a previously registered per-connection terminator.
+   * Terminators must remove themselves like this once their respective connection is closed,
+   * otherwise they would leak and remain in the set indefinitely.
+   *
+   * @return true if the terminator has been successfully removed.
+   */
+  @tailrec def removeConnection(terminator: ServerTerminator): Unit = {
+    terminators.get() match {
+      case v @ AliveConnectionTerminators(ts) ⇒
+        if (!terminators.compareAndSet(v, v.copy(ts = ts - terminator)))
+          removeConnection(terminator) // retry
+
+      case _: Terminating ⇒
+      // the `terminator` that we are being called with can only be one that already was registered,
+      // due to the register call happening during materialization, and the remove call happening during
+      // connection stream completion. Since we are in Terminating state, this means `terminate()` was called,
+      // and all existing terminators were invoked to `terminate()`. So if this is an existing one, we must not call
+      // terminate on it, as it would be the 2nd invocation.
+    }
+  }
+
   // If a connection attempts to register once termination has started, it will immediately be rejected (though
   // since termination also implies unbinding such new connections should not really happen).
   def terminate(timeout: FiniteDuration)(implicit ex: ExecutionContext): Future[HttpTerminated] = {
@@ -92,7 +112,13 @@ private[http] final class MasterServerTerminator(log: LoggingAdapter) extends Se
         if (terminators.compareAndSet(v, Terminating(timeout.fromNow))) {
           // cause the termination for all connections
           val connectionsTerminated = Future.sequence(ts.map { t ⇒
-            t.terminate(timeout)
+            // termination in general always succeeds, but we make sure here in order
+            // to not accidentally short-circuit terminating the other connection-terminators -- all must be terminated
+            t.terminate(timeout).recover {
+              case ex ⇒
+                log.warning("Ignoring termination failure of {}, failure was: {}", t, ex.getMessage)
+                HttpServerTerminated
+            }
           })
           val serverTerminated = connectionsTerminated.map(_ ⇒ HttpServerTerminated)
           termination.completeWith(serverTerminated)
@@ -203,6 +229,11 @@ private[http] final class GracefulTerminatorStage(settings: ServerSettings)
           pendingUserHandlerResponse = false
           push(toNet, response)
         }
+
+        override def onUpstreamFinish(): Unit = {
+          // don't finish the whole bidi stage, just propagate the completion:
+          complete(toNet)
+        }
       })
       setHandler(toUser, new OutHandler {
         override def onPull(): Unit = {
@@ -216,6 +247,11 @@ private[http] final class GracefulTerminatorStage(settings: ServerSettings)
           pendingUserHandlerResponse = true
           push(toUser, request)
         }
+
+        override def onUpstreamFinish(): Unit = {
+          // don't finish the whole bidi stage, just propagate the completion:
+          complete(toUser)
+        }
       })
       setHandler(toNet, new OutHandler {
         override def onPull(): Unit = {
@@ -224,7 +260,9 @@ private[http] final class GracefulTerminatorStage(settings: ServerSettings)
       })
 
       def installTerminationHandlers(deadline: Deadline): Unit = {
-        // we may need to inject a termination response
+        // when no inflight requests, complete stage right away
+        if (!pendingUserHandlerResponse) completeStage()
+
         setHandler(fromUser, new InHandler {
           override def onPush(): Unit = {
             val overdue = deadline.isOverdue()
@@ -235,7 +273,9 @@ private[http] final class GracefulTerminatorStage(settings: ServerSettings)
               } else grab(fromUser)
 
             pendingUserHandlerResponse = false
-            push(toNet, response)
+
+            // send response to pending in-flight request with Connection: close, and complete stage
+            emit(toNet, response.withHeaders(Connection("close")), () ⇒ completeStage())
           }
         })
 
@@ -264,8 +304,8 @@ private[http] final class GracefulTerminatorStage(settings: ServerSettings)
             }(interpreter.materializer.executionContext)
 
             // we can reply right away with an termination response since user handler will never emit a response anymore
-            push(toNet, settings.terminationDeadlineExceededResponse)
-            pull(fromNet)
+            push(toNet, settings.terminationDeadlineExceededResponse.withHeaders(Connection("close")))
+            completeStage()
           }
         })
 

@@ -26,7 +26,7 @@ are mapped to rejections:
 
 |Left(exception)          | Rejection                                                                |
 |-------------------------|--------------------------------------------------------------------------|
-|`ContentExpected`        | @unidoc[RequestEntityExpectedRejection]                                         |
+|`ContentExpected`        | @unidoc[RequestEntityExpectedRejection$]                                         |
 |`UnsupportedContentType` | @unidoc[UnsupportedRequestContentTypeRejection], which lists the supported types|
 |`MaformedContent`        | @unidoc[MalformedRequestContentRejection], with an error message and cause      |
 
