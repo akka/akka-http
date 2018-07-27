@@ -865,14 +865,15 @@ final case class Server(products: immutable.Seq[ProductVersion]) extends jm.head
 object `Strict-Transport-Security` extends ModeledCompanion[`Strict-Transport-Security`] {
   def apply(maxAge: Long, includeSubDomains: Option[Boolean]) = new `Strict-Transport-Security`(maxAge, includeSubDomains.getOrElse(false))
 
+  private val maxAges: PartialFunction[StrictTransportSecurityDirective, MaxAge] = { case m: MaxAge ⇒ m }
   def fromDirectives(directives: StrictTransportSecurityDirective*) = {
-    val maxAgeDirectives = directives.filter(_.isInstanceOf[MaxAge])
+    val maxAgeDirectives = directives.collect(maxAges)
     if (maxAgeDirectives.size != 1) throw new IllegalArgumentException("exactly one 'max-age' directive required")
 
     val includeSubDomainsDirectives = directives.filter(_.equals(IncludeSubDomains))
     if (includeSubDomainsDirectives.size > 1) throw new IllegalArgumentException("at most one 'includeSubDomains' directive allowed")
 
-    new `Strict-Transport-Security`(maxAgeDirectives.head.asInstanceOf[MaxAge].value, includeSubDomainsDirectives.nonEmpty)
+    new `Strict-Transport-Security`(maxAgeDirectives.head.value, includeSubDomainsDirectives.nonEmpty)
   }
 }
 final case class `Strict-Transport-Security`(maxAge: Long, includeSubDomains: Boolean = false) extends jm.headers.StrictTransportSecurity with ResponseHeader {
