@@ -159,7 +159,7 @@ is nevertheless fully supported in Akka HTTP. The limit is applied on two levels
 `akka.http.server.pipelining-limit` config setting which prevents that more than the given number of outstanding requests
 is ever given to the user-supplied handler-flow. On the other hand, the handler flow itself can apply any kind of throttling
 itself. If you use the `Http.bindAndHandleAsync`
-entry-point, you can specify the `parallelism` argument (default = 1, i.e. pipelining disabled) to control the
+entry-point, you can specify the `parallelism` argument (which defaults to `1`, which means that pipelining is disabled) to control the
 number of concurrent requests per connection. If you use `Http.bindAndHandle` or `Http.bind`, the user-supplied handler
 flow has full control over how many request it accepts simultaneously by applying backpressure. In this case, you can
 e.g. use Akka Stream's `mapAsync` combinator with a given parallelism to limit the number of concurrently handled requests.
