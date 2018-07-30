@@ -219,7 +219,6 @@ public class JsonStreamingExamplesTest extends JUnitRouteTest {
     public String getMessage() {
       return message;
     }
-
   }
   //#tweet-model
 
@@ -248,7 +247,7 @@ public class JsonStreamingExamplesTest extends JUnitRouteTest {
     public int getValue() {
       return value;
     }
-
   }
+  
   //#measurement-model
 }

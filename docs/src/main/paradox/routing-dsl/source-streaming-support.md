@@ -135,10 +135,10 @@ back pressure to the underlying TCP connection should the server be unable to co
 is automatically applied thanks to @extref[Akka Streams](akka-docs:scala/stream/index.html).
 
 Scala
-:   @@snip [JsonStreamingExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala) { #measurement-format }
+:   @@snip [JsonStreamingExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala) { #measurement-model #measurement-format }
 
 Java
-:   @@snip [JsonStreamingExamplesTest.java]($test$/java/docs/http/javadsl/server/JsonStreamingExamplesTest.java) { #measurement-format }
+:   @@snip [JsonStreamingExamplesTest.java]($test$/java/docs/http/javadsl/server/JsonStreamingExamplesTest.java) { #measurement-model #measurement-format }
 
 
 Scala

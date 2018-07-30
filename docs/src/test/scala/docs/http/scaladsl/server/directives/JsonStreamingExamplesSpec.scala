@@ -171,7 +171,8 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
 
   //#measurement-model
   case class Measurement(id: String, value: Int)
-  //#measurement-models
+
+  //#measurement-model
 
   //#measurement-format
   object MyMeasurementJsonProtocol
