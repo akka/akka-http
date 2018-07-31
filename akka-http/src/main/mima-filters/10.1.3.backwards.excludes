@@ -2,3 +2,8 @@
 
 # Removal of deprecated methods in 10.0.1 and 10.0.2
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.server.Route.asScala")
+
+# #1979 Improved handle APIs for websockets that automatically accumulate messages etc
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.WebSocketDirectives.handleWebSocketStrictMessages*")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.WebSocketDirectives.handleWebSocketStrictTextMessages*")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.WebSocketDirectives.handleWebSocketStrictBinaryMessages*")
