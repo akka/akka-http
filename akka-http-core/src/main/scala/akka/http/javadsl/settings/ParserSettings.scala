@@ -9,6 +9,7 @@ import java.util.Optional
 import akka.actor.ActorSystem
 import akka.http.impl.engine.parsing.BodyPartParser
 import akka.http.impl.settings.ParserSettingsImpl
+import akka.http.impl.util._
 import java.{ util ⇒ ju }
 
 import akka.annotation.DoNotInherit
@@ -81,7 +82,7 @@ abstract class ParserSettings private[akka] () extends BodyPartParser.Settings {
   }
   @varargs
   def withCustomMediaTypes(mediaTypes: MediaType*): ParserSettings = {
-    val map = mediaTypes.map(c ⇒ (c.mainType, c.subType) → c.asScala).toMap
+    val map = mediaTypes.map(c ⇒ (c.mainType.toRootLowerCase, c.subType.toRootLowerCase) → c.asScala).toMap
     self.copy(customMediaTypes = (main, sub) ⇒ map.get(main → sub))
   }
 

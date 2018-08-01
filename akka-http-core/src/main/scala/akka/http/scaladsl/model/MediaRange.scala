@@ -57,7 +57,7 @@ object MediaRange {
   private final case class Custom(mainType: String, params: Map[String, String], qValue: Float)
     extends MediaRange with ValueRenderable {
     require(0.0f <= qValue && qValue <= 1.0f, "qValue must be >= 0 and <= 1.0")
-    def matches(mediaType: MediaType) = (mainType == "*" || mediaType.mainType == mainType) &&
+    def matches(mediaType: MediaType) = (mainType == "*" || (mediaType.mainType equalsIgnoreCase mainType)) &&
       this.params.forall { case (key, value) ⇒ mediaType.params.get(key).contains(value) }
     def withParams(params: Map[String, String]) = custom(mainType, params, qValue)
     def withQValue(qValue: Float) = if (qValue != this.qValue) custom(mainType, params, qValue) else this
@@ -67,13 +67,13 @@ object MediaRange {
       if (params.nonEmpty) params foreach { case (k, v) ⇒ r ~~ ';' ~~ ' ' ~~ k ~~ '=' ~~# v }
       r
     }
-    override def isApplication = mainType == "application"
-    override def isAudio = mainType == "audio"
-    override def isImage = mainType == "image"
-    override def isMessage = mainType == "message"
-    override def isMultipart = mainType == "multipart"
-    override def isText = mainType == "text"
-    override def isVideo = mainType == "video"
+    override def isApplication = mainType equalsIgnoreCase "application"
+    override def isAudio = mainType equalsIgnoreCase "audio"
+    override def isImage = mainType equalsIgnoreCase "image"
+    override def isMessage = mainType equalsIgnoreCase "message"
+    override def isMultipart = mainType equalsIgnoreCase "multipart"
+    override def isText = mainType equalsIgnoreCase "text"
+    override def isVideo = mainType equalsIgnoreCase "video"
   }
 
   def custom(mainType: String, params: Map[String, String] = Map.empty, qValue: Float = 1.0f): MediaRange = {
@@ -93,8 +93,8 @@ object MediaRange {
     override def isText = mediaType.isText
     override def isVideo = mediaType.isVideo
     def matches(mediaType: MediaType) =
-      this.mediaType.mainType == mediaType.mainType &&
-        this.mediaType.subType == mediaType.subType &&
+      (this.mediaType.mainType equalsIgnoreCase mediaType.mainType) &&
+        (this.mediaType.subType equalsIgnoreCase mediaType.subType) &&
         this.mediaType.params
         .forall {
           // just ignore charset parameter in `Accept` headers, clients should use `Accept-Charset` instead, see also #1139

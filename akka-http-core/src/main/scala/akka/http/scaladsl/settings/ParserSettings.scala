@@ -106,7 +106,7 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
     self.copy(customStatusCodes = map.get)
   }
   def withCustomMediaTypes(types: MediaType*): ParserSettings = {
-    val map = types.map(c ⇒ (c.mainType, c.subType) → c).toMap
+    val map = types.map(c ⇒ (c.mainType.toRootLowerCase, c.subType.toRootLowerCase) → c).toMap
     self.copy(customMediaTypes = (main, sub) ⇒ map.get((main, sub)))
   }
   def withIllegalResponseHeaderValueProcessingMode(newValue: ParserSettings.IllegalResponseHeaderValueProcessingMode): ParserSettings =
