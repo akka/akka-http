@@ -48,7 +48,7 @@ public class FormFieldDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testFormField() {
     //#formField
-    final Route route = Directives.routes(
+    final Route route = Directives.concat(
       formField("color", color ->
         complete("The color is '" + color + "'")
       ),

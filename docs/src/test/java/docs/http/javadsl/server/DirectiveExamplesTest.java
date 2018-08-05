@@ -22,7 +22,7 @@ import static akka.http.javadsl.server.PathMatchers.integerSegment;
 import static akka.http.javadsl.server.PathMatchers.segment;
 
 //#example1
-//#usingRoute
+//#usingConcat
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.get;
 import static akka.http.javadsl.server.Directives.path;
@@ -32,8 +32,8 @@ import static akka.http.javadsl.server.Directives.route;
 import static akka.http.javadsl.server.PathMatchers.integerSegment;
 import static akka.http.javadsl.server.PathMatchers.segment;
 
-//#usingRoute
-//#usingRouteBig
+//#usingConcat
+//#usingConcatBig
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.get;
 import static akka.http.javadsl.server.Directives.head;
@@ -44,7 +44,7 @@ import static akka.http.javadsl.server.Directives.route;
 import static akka.http.javadsl.server.PathMatchers.integerSegment;
 import static akka.http.javadsl.server.PathMatchers.segment;
 
-//#usingRouteBig
+//#usingConcatBig
 
 //#getOrPut
 import static akka.http.javadsl.server.Directives.complete;
@@ -100,24 +100,24 @@ public class DirectiveExamplesTest extends JUnitRouteTest {
   }
   //#example1
 
-  //#usingRoute
-  Route usingRoute() {
+  //#usingConcat
+  Route usingConcat() {
     return path(segment("order").slash(integerSegment()), id ->
-      routes(get(() -> complete("Received GET request for order " + id)),
+      concat(get(() -> complete("Received GET request for order " + id)),
             put(() -> complete("Received PUT request for order " + id)))
     );
   }
-  //#usingRoute
+  //#usingConcat
 
-  //#usingRouteBig
+  //#usingConcatBig
   Route multipleRoutes() {
     return path(segment("order").slash(integerSegment()), id ->
-      routes(get(()  -> complete("Received GET request for order " + id)),
+      concat(get(()  -> complete("Received GET request for order " + id)),
             put(()  -> complete("Received PUT request for order " + id)),
             head(() -> complete("Received HEAD request for order " + id)))
     );
   }
-  //#usingRouteBig
+  //#usingConcatBig
 
   //#getOrPut
   Route getOrPut(Supplier<Route> inner) {

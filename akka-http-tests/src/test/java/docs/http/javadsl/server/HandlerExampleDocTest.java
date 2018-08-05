@@ -74,7 +74,7 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
       //#simple-handler
 
       Route createRoute() {
-        return routes(
+        return concat(
           get(() ->
             handlerString
           ),
@@ -126,9 +126,9 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
       //#handler2
 
       Route createRoute() {
-        return routes(
+        return concat(
           get(() ->
-            pathPrefix("calculator", () -> routes(
+            pathPrefix("calculator", () -> concat(
               path("multiply", () ->
                 multiplyXAndYParam
               ),
@@ -224,9 +224,9 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
       //#async-handler-2
 
       Route createRoute() {
-        return routes(
+        return concat(
           get(() ->
-            pathPrefix("calculator", () -> routes(
+            pathPrefix("calculator", () -> concat(
               multiplyAsyncRoute,
               addAsyncRoute
             ))

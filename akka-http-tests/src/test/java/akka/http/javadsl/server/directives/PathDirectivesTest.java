@@ -19,7 +19,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
   @Test
   public void testPathPrefixAndPath() {
     TestRoute route = testRoute(
-      pathPrefix("pet", () -> routes(
+      pathPrefix("pet", () -> concat(
         path("cat", () -> complete("The cat!")),
         path("dog", () -> complete("The dog!")),
         pathSingleSlash(() -> complete("Here are only pets."))
@@ -80,7 +80,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
   public void testPathEnd() {
     TestRoute route =
       testRoute(
-        pathPrefix("test", () -> routes(
+        pathPrefix("test", () -> concat(
           pathEnd(() -> complete("end")),
           path("abc", () -> complete("abc"))
         ))
@@ -380,7 +380,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
   public void testIgnoreTrailingSlash() {
     TestRoute route = testRoute(
       ignoreTrailingSlash(() ->
-        routes(
+        concat(
           path("foo", () -> complete("Ok")),
           path("bar", () -> pathEndOrSingleSlash(() -> complete("Ok"))),
           path(PathMatchers.segment("baz").slash(), () -> complete("Ok"))

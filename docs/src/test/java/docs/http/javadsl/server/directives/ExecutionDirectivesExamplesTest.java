@@ -76,7 +76,7 @@ public class ExecutionDirectivesExamplesTest extends JUnitRouteTest {
 
     final Route route = pathPrefix("handled", () ->
       handleRejections(totallyMissingHandler, () ->
-        Directives.routes(
+        Directives.concat(
           path("existing", () -> complete("This path exists")),
           path("boom", () -> reject(Rejections.validationRejection("This didn't work.")))
         )
@@ -113,7 +113,7 @@ public class ExecutionDirectivesExamplesTest extends JUnitRouteTest {
       final Route route = 
         handleRejections(totallyMissingHandler, () ->
         pathPrefix("handled", () ->
-          Directives.routes(
+          Directives.concat(
             path("existing", () -> complete("This path exists"))
           )
         )

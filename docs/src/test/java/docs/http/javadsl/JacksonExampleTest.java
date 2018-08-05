@@ -64,7 +64,7 @@ public class JacksonExampleTest extends AllDirectives {
 
   private Route createRoute() {
 
-    return routes(
+    return concat(
       get(() ->
         pathPrefix("item", () ->
           path(longSegment(), (Long id) -> {

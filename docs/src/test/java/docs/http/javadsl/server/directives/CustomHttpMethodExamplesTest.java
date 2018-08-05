@@ -58,7 +58,7 @@ public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
     final ServerSettings serverSettings =
       ServerSettings.create(system).withParserSettings(parserSettings);
 
-    final Route routes = routes(
+    final Route routes = concat(
       extractMethod( method ->
         complete( "This is a " + method.name() + " request.")
       )

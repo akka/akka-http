@@ -81,7 +81,7 @@ class DirectivesConsistencySpec extends WordSpec with Matchers {
 
   val allowMissing: Map[Class[_], Set[String]] = Map(
     scalaDirectivesClazz → Set(
-      "route", "routes", "request",
+      "route", "request",
       "completeOK", // solved by raw complete() in Scala
       "defaultDirectoryRenderer", "defaultContentTypeResolver" // solved by implicits in Scala
     ),

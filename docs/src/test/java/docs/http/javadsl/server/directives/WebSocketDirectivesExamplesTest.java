@@ -115,7 +115,7 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
     final Flow<Message, Message, NotUsed> echoService = Flow.of(Message.class).buffer(1, OverflowStrategy.backpressure());
 
     final Route websocketMultipleProtocolRoute = path("services", () ->
-      routes(
+      concat(
         handleWebSocketMessagesForProtocol(greeterService, "greeter"),
         handleWebSocketMessagesForProtocol(echoService, "echo")
       )
@@ -149,7 +149,7 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
     final Flow<Message, Message, NotUsed> echoService = Flow.of(Message.class).buffer(1, OverflowStrategy.backpressure());
 
     final Route websocketRoute = path("services", () ->
-      routes(
+      concat(
         extractUpgradeToWebSocket(upgrade ->
           complete(upgrade.handleMessagesWith(echoService, "echo"))
         )
@@ -179,7 +179,7 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
     final Flow<Message, Message, NotUsed> echoService = Flow.of(Message.class).buffer(1, OverflowStrategy.backpressure());
 
     final Route websocketRoute = path("services", () ->
-      routes(
+      concat(
         extractOfferedWsProtocols(protocols ->
           handleWebSocketMessagesForOptionalProtocol(echoService, protocols.stream().findFirst())
         )

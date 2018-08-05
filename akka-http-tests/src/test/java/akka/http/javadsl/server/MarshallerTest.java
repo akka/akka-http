@@ -211,7 +211,7 @@ public class MarshallerTest extends JUnitRouteTest {
     TestRoute route =
           testRoute(
                 get(() ->
-                  routes(
+                  concat(
                         path("notempty", notEmptyHandler),
                         path("empty", emptyHandler)
                 )

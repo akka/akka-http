@@ -66,7 +66,7 @@ public class RouteDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testComplete() {
     //#complete
-    final Route route = routes(
+    final Route route = concat(
       path("a", () -> complete(HttpResponse.create().withEntity("foo"))),
       path("b", () -> complete(StatusCodes.OK)),
       path("c", () -> complete(StatusCodes.CREATED, "bar")),
@@ -118,7 +118,7 @@ public class RouteDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testReject() {
     //#reject
-    final Route route = routes(
+    final Route route = concat(
       path("a", Directives::reject), // don't handle here, continue on
       path("a", () -> complete("foo")),
       path("b", () -> reject(Rejections.validationRejection("Restricted!")))
@@ -137,7 +137,7 @@ public class RouteDirectivesExamplesTest extends JUnitRouteTest {
   public void testRedirect() {
     //#redirect
     final Route route = pathPrefix("foo", () ->
-      routes(
+      concat(
         pathSingleSlash(() -> complete("yes")),
         pathEnd(() -> redirect(Uri.create("/foo/"), StatusCodes.PERMANENT_REDIRECT))
       )

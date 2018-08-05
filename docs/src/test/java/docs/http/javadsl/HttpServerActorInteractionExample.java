@@ -65,8 +65,8 @@ public class HttpServerActorInteractionExample extends AllDirectives {
   }
 
   private Route createRoute() {
-    return routes(
-      path("auction", () -> routes(
+    return concat(
+      path("auction", () -> concat(
         put(() ->
           parameter(StringUnmarshallers.INTEGER, "bid", bid ->
             parameter("user", user -> {

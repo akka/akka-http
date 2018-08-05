@@ -69,7 +69,7 @@ public class SimpleServerApp {
     };
 
     return
-      routes(
+      concat(
         // matches the empty path
         pathSingleSlash(() ->
           getFromResource("web/calculator.html")

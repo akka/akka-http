@@ -41,7 +41,7 @@ public class SchemeDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testRedirection() {
     //#scheme
-    final Route route = routes(
+    final Route route = concat(
       scheme("http", ()->
         extract((ctx) -> ctx.getRequest().getUri(), (uri)->
           redirect(uri.scheme("https"), StatusCodes.MOVED_PERMANENTLY)

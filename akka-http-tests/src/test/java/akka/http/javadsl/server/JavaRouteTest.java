@@ -270,7 +270,7 @@ public class JavaRouteTest extends JUnitRouteTest {
 
 
   public Route getRoute() {
-    return routes(
+    return concat(
       path(segment("hello").slash("world"), () ->
         complete("hello, world")
       ),
@@ -315,7 +315,7 @@ public class JavaRouteTest extends JUnitRouteTest {
           complete("body " + value)
         )
       ),
-      path("uuid", () -> routes(
+      path("uuid", () -> concat(
         put(() ->
           entity(UUID_FROM_BODY, value ->
             complete("uuid " + value)
