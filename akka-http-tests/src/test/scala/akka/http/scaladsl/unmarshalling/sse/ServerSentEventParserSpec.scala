@@ -33,10 +33,10 @@ final class ServerSentEventParserSpec extends AsyncWordSpec with Matchers with B
                      |:no data means event gets ignored
                      |
                      |data
-                     |:emtpy data means event gets ignored
+                     |:empty data means event gets ignored
                      |
                      |data:
-                     |:emtpy data means event gets ignored
+                     |:empty data means event gets ignored
                      |
                      |data: event 3
                      |id

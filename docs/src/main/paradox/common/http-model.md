@@ -399,7 +399,7 @@ in the right style / place.
 
 Similarly to media types, Akka HTTP @scala[@scaladoc:[predefines](akka.http.scaladsl.model.StatusCodes$)]@java[@javadoc:[predefines](akka.http.javaadsl.model.StatusCodes)]
 well-known status codes, however sometimes you may need to use a custom one (or are forced to use an API which returns custom status codes).
-Similarily to the media types registration, you can register custom status codes by configuring @unidoc[ParserSettings] like this:
+Similarly to the media types registration, you can register custom status codes by configuring @unidoc[ParserSettings] like this:
 
 Scala
 :   @@snip [CustomStatusCodesSpec.scala]($akka-http$/akka-http-tests/src/test/scala/akka/http/scaladsl/CustomStatusCodesSpec.scala) { #application-custom }
