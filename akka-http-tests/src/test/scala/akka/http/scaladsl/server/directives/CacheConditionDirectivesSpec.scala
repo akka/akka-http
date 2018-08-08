@@ -181,14 +181,14 @@ class CacheConditionDirectivesSpec extends RoutingSpec {
       }
     }
 
-    "ignore `If-Match` if the ETag is ommitted" in {
+    "ignore `If-Match` if the ETag is omitted" in {
       Get() ~> `If-Match`(EntityTag("old")) ~> timestampedOnly ~> check {
         status shouldEqual OK
         headers should contain theSameElementsAs (List(`Last-Modified`(timestamp)))
       }
     }
 
-    "ignore `If-None-Match` if the ETag is ommitted" in {
+    "ignore `If-None-Match` if the ETag is omitted" in {
       Get() ~> `If-None-Match`(EntityTag("old")) ~> timestampedOnly ~> check {
         status shouldEqual OK
         headers should contain theSameElementsAs (List(`Last-Modified`(timestamp)))

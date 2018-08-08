@@ -24,7 +24,7 @@ class CustomStatusCodesSpec extends AkkaSpec with ScalaFutures
       val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
 
       //#application-custom
-      // similarily in Java: `akka.http.javadsl.settings.[...]`
+      // similarly in Java: `akka.http.javadsl.settings.[...]`
       import akka.http.scaladsl.settings.{ ParserSettings, ServerSettings }
 
       // define custom status code:

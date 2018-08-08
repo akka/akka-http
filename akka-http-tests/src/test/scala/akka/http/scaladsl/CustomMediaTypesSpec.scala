@@ -26,7 +26,7 @@ class CustomMediaTypesSpec extends AkkaSpec with ScalaFutures
 
       //#application-custom
 
-      // similarily in Java: `akka.http.javadsl.settings.[...]`
+      // similarly in Java: `akka.http.javadsl.settings.[...]`
       import akka.http.scaladsl.settings.ParserSettings
       import akka.http.scaladsl.settings.ServerSettings
 
