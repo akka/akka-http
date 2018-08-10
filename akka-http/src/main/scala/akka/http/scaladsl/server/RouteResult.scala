@@ -31,13 +31,13 @@ object RouteResult {
   }
 
   implicit def route2HandlerFlow(route: Route)(
-      implicit routingSettings: RoutingSettings,
-      parserSettings: ParserSettings,
-      materializer: Materializer,
-      routingLog: RoutingLog,
-      executionContext: ExecutionContext = null,
-      rejectionHandler: RejectionHandler = RejectionHandler.default,
-      exceptionHandler: ExceptionHandler = null
+    implicit routingSettings: RoutingSettings,
+    parserSettings: ParserSettings,
+    materializer: Materializer,
+    routingLog: RoutingLog,
+    executionContext: ExecutionContext = null,
+    rejectionHandler: RejectionHandler = RejectionHandler.default,
+    exceptionHandler: ExceptionHandler = null
   ): Flow[HttpRequest, HttpResponse, NotUsed] =
     Route.handlerFlow(route)
 }
