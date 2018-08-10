@@ -73,7 +73,7 @@ abstract class EntityStreamingSupport {
   def parallelism: Int
 
   /**
-   * Write-side / read-side, defines if (un)marshalling of incoming stream elements should be perserved or not.
+   * Write-side / read-side, defines if (un)marshalling of incoming stream elements should be preserved or not.
    *
    * Allowing for parallel and unordered (un)marshalling often yields higher throughput and also allows avoiding
    * head-of-line blocking if some elements are much larger than others.

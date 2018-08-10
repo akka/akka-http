@@ -28,6 +28,7 @@ import HttpProtocols._
 import StatusCodes._
 import HttpEntity._
 import ParserOutput._
+import akka.http.scaladsl.model.MediaType.WithOpenCharset
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.testkit._
 
@@ -228,6 +229,25 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends FreeSpe
             headers = List(`Transfer-Encoding`(TransferEncodings.Extension("fancy"))),
             entity = HttpEntity.Chunked(`application/pdf`, source()))),
           Left(EntityStreamError(ErrorInfo("Entity stream truncation"))))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
+      "a response configured to override a built-in media type" in new Test {
+        // Override the application/json media type and give it an open instead of fixed charset.
+        // This allows us to support various third-party agents which use an explicit charset.
+        val openJson: WithOpenCharset =
+          MediaType.customWithOpenCharset("application", "json")
+
+        override protected def parserSettings: ParserSettings =
+          super.parserSettings.withCustomMediaTypes(openJson).withMaxHeaderValueLength(64)
+
+        """HTTP/1.1 200
+          |Content-Length: 2
+          |Content-Type: application/json; charset=utf-8
+          |
+          |{}""" should parseTo(HttpResponse(
+          entity = HttpEntity.Strict(ContentType(openJson, HttpCharsets.`UTF-8`), ByteString("{}"))
+        ))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
     }

@@ -4,25 +4,24 @@
 
 package akka.http.scaladsl.testkit
 
+import akka.actor.ActorSystem
+import akka.http.scaladsl.client.RequestBuilding
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{ Host, Upgrade, `Sec-WebSocket-Protocol` }
+import akka.http.scaladsl.server._
 import akka.http.scaladsl.settings.RoutingSettings
+import akka.http.scaladsl.unmarshalling._
+import akka.http.scaladsl.util.FastFuture._
+import akka.stream.{ ActorMaterializer, Materializer }
+import akka.testkit.TestKit
 import akka.util.ConstantFun
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.collection.immutable
-import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
-import scala.util.DynamicVariable
+import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.reflect.ClassTag
-import akka.actor.ActorSystem
-import akka.stream.{ ActorMaterializer, Materializer }
-import akka.http.scaladsl.client.RequestBuilding
-import akka.http.scaladsl.util.FastFuture
-import akka.http.scaladsl.server._
-import akka.http.scaladsl.unmarshalling._
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{ Host, Upgrade, `Sec-WebSocket-Protocol` }
-import FastFuture._
-import akka.testkit.TestKit
+import scala.util.DynamicVariable
 
 trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTestResultComponent with MarshallingTestUtils {
   this: TestFrameworkInterface ⇒

@@ -4,6 +4,7 @@
 
 package akka.http.scaladsl.server
 
+import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
@@ -147,6 +148,15 @@ object RejectionHandler {
 
   import Directives._
 
+  private def rejectRequestEntityAndComplete(m: ⇒ ToResponseMarshallable) = {
+    extractRequest { request ⇒
+      extractMaterializer { implicit mat ⇒
+        request.discardEntityBytes()
+        complete(m)
+      }
+    }
+  }
+
   /**
    * Default [[RejectionHandler]] instance.
    */
@@ -154,67 +164,71 @@ object RejectionHandler {
     new Builder(isDefault = true)
       .handleAll[SchemeRejection] { rejections ⇒
         val schemes = rejections.map(_.supported).mkString(", ")
-        complete((BadRequest, "Uri scheme not allowed, supported schemes: " + schemes))
+        rejectRequestEntityAndComplete((BadRequest, "Uri scheme not allowed, supported schemes: " + schemes))
       }
       .handleAll[MethodRejection] { rejections ⇒
         val (methods, names) = rejections.map(r ⇒ r.supported → r.supported.name).unzip
-        complete((MethodNotAllowed, List(Allow(methods)), "HTTP method not allowed, supported methods: " + names.mkString(", ")))
+        rejectRequestEntityAndComplete((MethodNotAllowed, List(Allow(methods)), "HTTP method not allowed, supported methods: " + names.mkString(", ")))
       }
       .handle {
         case AuthorizationFailedRejection ⇒
-          complete((Forbidden, "The supplied authentication is not authorized to access this resource"))
+          rejectRequestEntityAndComplete((Forbidden, "The supplied authentication is not authorized to access this resource"))
       }
       .handle {
         case MalformedFormFieldRejection(name, msg, _) ⇒
-          complete((BadRequest, "The form field '" + name + "' was malformed:\n" + msg))
+          rejectRequestEntityAndComplete((BadRequest, "The form field '" + name + "' was malformed:\n" + msg))
       }
       .handle {
         case MalformedHeaderRejection(headerName, msg, _) ⇒
-          complete((BadRequest, s"The value of HTTP header '$headerName' was malformed:\n" + msg))
+          rejectRequestEntityAndComplete((BadRequest, s"The value of HTTP header '$headerName' was malformed:\n" + msg))
       }
       .handle {
         case MalformedQueryParamRejection(name, msg, _) ⇒
-          complete((BadRequest, "The query parameter '" + name + "' was malformed:\n" + msg))
+          rejectRequestEntityAndComplete((BadRequest, "The query parameter '" + name + "' was malformed:\n" + msg))
       }
       .handle {
         case MalformedRequestContentRejection(msg, _) ⇒
-          complete((BadRequest, "The request content was malformed:\n" + msg))
+          rejectRequestEntityAndComplete((BadRequest, "The request content was malformed:\n" + msg))
       }
       .handle {
         case MissingCookieRejection(cookieName) ⇒
-          complete((BadRequest, "Request is missing required cookie '" + cookieName + '\''))
+          rejectRequestEntityAndComplete((BadRequest, "Request is missing required cookie '" + cookieName + '\''))
       }
       .handle {
         case MissingFormFieldRejection(fieldName) ⇒
-          complete((BadRequest, "Request is missing required form field '" + fieldName + '\''))
+          rejectRequestEntityAndComplete((BadRequest, "Request is missing required form field '" + fieldName + '\''))
       }
       .handle {
         case MissingHeaderRejection(headerName) ⇒
-          complete((BadRequest, "Request is missing required HTTP header '" + headerName + '\''))
+          rejectRequestEntityAndComplete((BadRequest, "Request is missing required HTTP header '" + headerName + '\''))
       }
       .handle {
         case InvalidOriginRejection(allowedOrigins) ⇒
-          complete((Forbidden, s"Allowed `Origin` header values: ${allowedOrigins.mkString(", ")}"))
+          rejectRequestEntityAndComplete((Forbidden, s"Allowed `Origin` header values: ${allowedOrigins.mkString(", ")}"))
       }
       .handle {
         case MissingQueryParamRejection(paramName) ⇒
-          complete((NotFound, "Request is missing required query parameter '" + paramName + '\''))
+          rejectRequestEntityAndComplete((NotFound, "Request is missing required query parameter '" + paramName + '\''))
+      }
+      .handle {
+        case InvalidRequiredValueForQueryParamRejection(paramName, requiredValue, _) ⇒
+          rejectRequestEntityAndComplete((NotFound, s"Request is missing required value '$requiredValue' for query parameter '$paramName'"))
       }
       .handle {
         case RequestEntityExpectedRejection ⇒
-          complete((BadRequest, "Request entity expected but not supplied"))
+          rejectRequestEntityAndComplete((BadRequest, "Request entity expected but not supplied"))
       }
       .handle {
         case TooManyRangesRejection(_) ⇒
-          complete((RequestedRangeNotSatisfiable, "Request contains too many ranges"))
+          rejectRequestEntityAndComplete((RequestedRangeNotSatisfiable, "Request contains too many ranges"))
       }
       .handle {
         case CircuitBreakerOpenRejection(_) ⇒
-          complete(ServiceUnavailable)
+          rejectRequestEntityAndComplete(ServiceUnavailable)
       }
       .handle {
         case UnsatisfiableRangeRejection(unsatisfiableRanges, actualEntityLength) ⇒
-          complete((RequestedRangeNotSatisfiable, List(`Content-Range`(ContentRange.Unsatisfiable(actualEntityLength))),
+          rejectRequestEntityAndComplete((RequestedRangeNotSatisfiable, List(`Content-Range`(ContentRange.Unsatisfiable(actualEntityLength))),
             unsatisfiableRanges.mkString("None of the following requested Ranges were satisfiable:\n", "\n", "")))
       }
       .handleAll[AuthenticationFailedRejection] { rejections ⇒
@@ -229,37 +243,37 @@ object RejectionHandler {
         // See https://code.google.com/p/chromium/issues/detail?id=103220
         // and https://bugzilla.mozilla.org/show_bug.cgi?id=669675
         val authenticateHeaders = rejections.map(r ⇒ `WWW-Authenticate`(r.challenge))
-        complete((Unauthorized, authenticateHeaders, rejectionMessage))
+        rejectRequestEntityAndComplete((Unauthorized, authenticateHeaders, rejectionMessage))
       }
       .handleAll[UnacceptedResponseContentTypeRejection] { rejections ⇒
         val supported = rejections.flatMap(_.supported)
         val msg = supported.map(_.format).mkString("Resource representation is only available with these types:\n", "\n", "")
-        complete((NotAcceptable, msg))
+        rejectRequestEntityAndComplete((NotAcceptable, msg))
       }
       .handleAll[UnacceptedResponseEncodingRejection] { rejections ⇒
         val supported = rejections.flatMap(_.supported)
-        complete((NotAcceptable, "Resource representation is only available with these Content-Encodings:\n" +
+        rejectRequestEntityAndComplete((NotAcceptable, "Resource representation is only available with these Content-Encodings:\n" +
           supported.map(_.value).mkString("\n")))
       }
       .handleAll[UnsupportedRequestContentTypeRejection] { rejections ⇒
         val supported = rejections.flatMap(_.supported).mkString(" or ")
-        complete((UnsupportedMediaType, "The request's Content-Type is not supported. Expected:\n" + supported))
+        rejectRequestEntityAndComplete((UnsupportedMediaType, "The request's Content-Type is not supported. Expected:\n" + supported))
       }
       .handleAll[UnsupportedRequestEncodingRejection] { rejections ⇒
         val supported = rejections.map(_.supported.value).mkString(" or ")
-        complete((BadRequest, "The request's Content-Encoding is not supported. Expected:\n" + supported))
+        rejectRequestEntityAndComplete((BadRequest, "The request's Content-Encoding is not supported. Expected:\n" + supported))
       }
-      .handle { case ExpectedWebSocketRequestRejection ⇒ complete((BadRequest, "Expected WebSocket Upgrade request")) }
+      .handle { case ExpectedWebSocketRequestRejection ⇒ rejectRequestEntityAndComplete((BadRequest, "Expected WebSocket Upgrade request")) }
       .handleAll[UnsupportedWebSocketSubprotocolRejection] { rejections ⇒
         val supported = rejections.map(_.supportedProtocol)
-        complete(HttpResponse(
+        rejectRequestEntityAndComplete(HttpResponse(
           BadRequest,
           entity = s"None of the websocket subprotocols offered in the request are supported. Supported are ${supported.map("'" + _ + "'").mkString(",")}.",
           headers = `Sec-WebSocket-Protocol`(supported) :: Nil))
       }
-      .handle { case ValidationRejection(msg, _) ⇒ complete((BadRequest, msg)) }
+      .handle { case ValidationRejection(msg, _) ⇒ rejectRequestEntityAndComplete((BadRequest, msg)) }
       .handle { case x ⇒ sys.error("Unhandled rejection: " + x) }
-      .handleNotFound { complete((NotFound, "The requested resource could not be found.")) }
+      .handleNotFound { rejectRequestEntityAndComplete((NotFound, "The requested resource could not be found.")) }
       .result()
 
   /**

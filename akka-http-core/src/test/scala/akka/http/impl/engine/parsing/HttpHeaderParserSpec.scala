@@ -19,17 +19,17 @@ import akka.http.scaladsl.model.headers._
 import akka.http.impl.model.parser.CharacterClasses
 import akka.http.impl.util._
 import akka.http.scaladsl.settings.ParserSettings.IllegalResponseHeaderValueProcessingMode
-import akka.testkit.TestKit
+import akka.testkit.{ EventFilter, TestKit }
 
 abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordSpec with Matchers with BeforeAndAfterAll {
 
   val testConf: Config = ConfigFactory.parseString("""
     akka.event-handlers = ["akka.testkit.TestEventListener"]
-    akka.loglevel = ERROR
+    akka.loglevel = WARNING
     akka.http.parsing.max-header-name-length = 60
     akka.http.parsing.max-header-value-length = 1000
     akka.http.parsing.header-cache.Host = 300""")
-  val system = ActorSystem(getClass.getSimpleName, testConf)
+  implicit val system = ActorSystem(getClass.getSimpleName, testConf)
 
   s"The HttpHeaderParser (mode: $mode)" should {
     "insert the 1st value" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
@@ -127,6 +127,10 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       parseAndCache(s"Host: spray.io:123${newLine}x")(s"HOST: spray.io:123${newLine}x") shouldEqual Host("spray.io", 123)
     }
 
+    "parse and cache a Set-Cookie header with a value in double quotes" in new TestSetup() {
+      parseAndCache(s"""Set-Cookie: tralala="cookie-value-here"${newLine}x""")() shouldEqual `Set-Cookie`(HttpCookie("tralala", "cookie-value-here"))
+    }
+
     "parse and cache an invalid modelled header as RawHeader" in new TestSetup() {
       parseAndCache(s"Content-Type: abc:123${newLine}x")() shouldEqual RawHeader("content-type", "abc:123")
       parseAndCache(s"Origin: localhost:8080${newLine}x")() shouldEqual RawHeader("origin", "localhost:8080")
@@ -139,6 +143,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
     "parse and cache an X-Real-Ip with a hostname as it's value as a RawHeader" in new TestSetup() {
       parseAndCache(s"X-Real-Ip: akka.io${newLine}x")() shouldEqual RawHeader("x-real-ip", "akka.io")
     }
+
     "parse and cache a raw header" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
       insert("hello: bob", 'Hello)
       val (ixA, headerA) = parseLine(s"Fancy-Pants: foo${newLine}x")
@@ -254,6 +259,19 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       parseAndCache(s"User-Agent: hmpf${newLine}x")(s"USER-AGENT: hmpf${newLine}x") shouldEqual RawHeader("User-Agent", "hmpf")
       parseAndCache(s"X-Forwarded-Host: localhost:8888${newLine}x")(s"X-FORWARDED-Host: localhost:8888${newLine}x") shouldEqual RawHeader("X-Forwarded-Host", "localhost:8888")
     }
+    "disables the logging of warning message when set the whitelist for illegal headers" in new TestSetup(
+      testSetupMode = TestSetupMode.Default,
+      parserSettings = createParserSettings(system).withIgnoreIllegalHeaderFor(List("Content-Type"))) {
+      //Illegal header is `Retry-After`. So logged warning message
+      EventFilter.warning(occurrences = 1).intercept {
+        parseLine(s"Retry-After: -10${newLine}x")
+      }
+
+      //Illegal header is `Content-Type` and it is in the whitelist. So not logged warning message
+      EventFilter.warning(occurrences = 0).intercept {
+        parseLine(s"Content-Type: abc:123${newLine}x")
+      }
+    }
   }
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
@@ -284,13 +302,13 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       case TestSetupMode.Default  ⇒ HttpHeaderParser(parserSettings, system.log)
     }
 
-    private def defaultIllegalHeaderHandler = (info: ErrorInfo) ⇒ system.log.warning(info.formatPretty)
+    private def defaultIllegalHeaderHandler = (info: ErrorInfo) ⇒ system.log.debug(info.formatPretty)
 
     def insert(line: String, value: AnyRef): Unit =
       if (parser.isEmpty) HttpHeaderParser.insertRemainingCharsAsNewNodes(parser, ByteString(line), value)
       else HttpHeaderParser.insert(parser, ByteString(line), value)
 
-    def parseLine(line: String) = parser.parseHeaderLine(ByteString(line))() → { system.log.warning(parser.resultHeader.getClass.getSimpleName); parser.resultHeader }
+    def parseLine(line: String) = parser.parseHeaderLine(ByteString(line))() → { system.log.debug(parser.resultHeader.getClass.getSimpleName); parser.resultHeader }
 
     def parseAndCache(lineA: String)(lineB: String = lineA): HttpHeader = {
       val (ixA, headerA) = parseLine(lineA)

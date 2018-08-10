@@ -28,6 +28,7 @@ private[akka] final case class ParserSettingsImpl(
   uriParsingMode:                           Uri.ParsingMode,
   cookieParsingMode:                        CookieParsingMode,
   illegalHeaderWarnings:                    Boolean,
+  ignoreIllegalHeaderFor:                   Set[String],
   errorLoggingVerbosity:                    ErrorLoggingVerbosity,
   illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode,
   headerValueCacheLimits:                   Map[String, Int],
@@ -54,9 +55,6 @@ private[akka] final case class ParserSettingsImpl(
     headerValueCacheLimits.getOrElse(headerName, defaultHeaderValueCacheLimit)
 
   override def productPrefix = "ParserSettings"
-
-  // optimization: if we see the default value as defined below, we know it hasn't been changed
-  override def areNoCustomMediaTypesDefined: Boolean = customMediaTypes eq ParserSettingsImpl.noCustomMediaTypes
 }
 
 object ParserSettingsImpl extends SettingsCompanion[ParserSettingsImpl]("akka.http.parsing") {
@@ -82,6 +80,7 @@ object ParserSettingsImpl extends SettingsCompanion[ParserSettingsImpl]("akka.ht
       Uri.ParsingMode(c getString "uri-parsing-mode"),
       CookieParsingMode(c getString "cookie-parsing-mode"),
       c getBoolean "illegal-header-warnings",
+      (c getStringList "ignore-illegal-header-for").asScala.map(_.toLowerCase).toSet,
       ErrorLoggingVerbosity(c getString "error-logging-verbosity"),
       IllegalResponseHeaderValueProcessingMode(c getString "illegal-response-header-value-processing-mode"),
       cacheConfig.entrySet.asScala.map(kvp ⇒ kvp.getKey → cacheConfig.getInt(kvp.getKey))(collection.breakOut),

@@ -111,7 +111,7 @@ To use the task simply type, and the output should include entries like shown be
 ```
 > validatePullRequest
 [info] Diffing [HEAD] to determine changed modules in PR...
-[info] Detected uncomitted changes in directories (including in dependency analysis): [akka-protobuf,project]
+[info] Detected uncommitted changes in directories (including in dependency analysis): [akka-protobuf,project]
 [info] Detected changes in directories: [docs, project, akka-http-tests, akka-protobuf, akka-http-testkit, akka-http, akka-http-core, akka-stream]
 ```
 
@@ -295,7 +295,7 @@ Note, that `OK TO TEST` will only be picked up when the user asking for it is co
 
 ### Scala style
 
-Akka-http uses [Scalariform](https://github.com/daniel-trinh/scalariform) to enforce some of the code style rules.
+Akka-http uses [Scalariform](https://github.com/scala-ide/scalariform) to enforce some of the code style rules.
 
 ### Java style
 
@@ -340,4 +340,4 @@ The cluster is made out of real bare-metal boxes, and maintained by the Akka tea
 
 * [Akka Contributor License Agreement](http://www.lightbend.com/contribute/cla)
 * [Akka HTTP Issue Tracker](https://github.com/akka/akka-http/issues)
-* [Scalariform](https://github.com/daniel-trinh/scalariform)
+* [Scalariform](https://github.com/scala-ide/scalariform)

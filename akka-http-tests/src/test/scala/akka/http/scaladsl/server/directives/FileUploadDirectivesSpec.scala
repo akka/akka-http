@@ -244,8 +244,6 @@ class FileUploadDirectivesSpec extends RoutingSpec {
 
     def echoAsAService =
       extractRequestContext { ctx ⇒
-        implicit val mat = ctx.materializer
-
         fileUploadAll("field1") { files ⇒
           complete {
             Future.traverse(files) { // all the files can be processed in parallel because they are buffered on disk
@@ -313,8 +311,6 @@ class FileUploadDirectivesSpec extends RoutingSpec {
     "reject the file upload if the field name is missing" in {
       val route =
         extractRequestContext { ctx ⇒
-          implicit val mat = ctx.materializer
-
           fileUpload("missing") {
             case (info, bytes) ⇒
               // stream the bytes somewhere

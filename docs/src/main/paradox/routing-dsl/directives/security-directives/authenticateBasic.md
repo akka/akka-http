@@ -23,7 +23,7 @@ Longer-running authentication tasks (like looking up credentials in a database) 
 variant of this directive which allows it to run without blocking routing layer of Akka HTTP, freeing it for other requests.
 
 Standard HTTP-based authentication which uses the `WWW-Authenticate` header containing challenge data and
-@unidoc[Authorization] header for receiving credentials is implemented in subclasses of `HttpAuthenticator`.
+@unidoc[Authorization] header for receiving credentials is implemented in `authenticateOrRejectWithChallenge`.
 
 See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks) for details about verifying the secret.
 

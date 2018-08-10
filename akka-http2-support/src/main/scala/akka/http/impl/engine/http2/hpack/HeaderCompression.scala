@@ -73,7 +73,10 @@ private[http2] object HeaderCompression extends GraphStage[FlowShape[FrameEvent,
         s foreach {
           case Setting(SettingIdentifier.SETTINGS_HEADER_TABLE_SIZE, size) ⇒
             log.debug("Applied SETTINGS_HEADER_TABLE_SIZE({}) in header compression", size)
-            encoder.setMaxHeaderTableSize(os, size)
+            // 'size' is strictly spoken unsigned, but the encoder is allowed to
+            // pick any size equal to or less than this value (6.5.2)
+            if (size >= 0) encoder.setMaxHeaderTableSize(os, size)
+            else encoder.setMaxHeaderTableSize(os, Int.MaxValue)
           case _ ⇒ // ignore, not applicable to this stage
         }
     }

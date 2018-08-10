@@ -36,6 +36,7 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   def uriParsingMode: Uri.ParsingMode
   def cookieParsingMode: ParserSettings.CookieParsingMode
   def illegalHeaderWarnings: Boolean
+  def ignoreIllegalHeaderFor: Set[String]
   def errorLoggingVerbosity: ParserSettings.ErrorLoggingVerbosity
   def illegalResponseHeaderValueProcessingMode: ParserSettings.IllegalResponseHeaderValueProcessingMode
   def headerValueCacheLimits: Map[String, Int]
@@ -55,6 +56,7 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   override def getMaxHeaderValueLength = maxHeaderValueLength
   override def getIncludeTlsSessionInfoHeader = includeTlsSessionInfoHeader
   override def getIllegalHeaderWarnings = illegalHeaderWarnings
+  override def getIgnoreIllegalHeaderFor = ignoreIllegalHeaderFor
   override def getMaxHeaderNameLength = maxHeaderNameLength
   override def getMaxChunkSize = maxChunkSize
   override def getMaxResponseReasonLength = maxResponseReasonLength
@@ -88,6 +90,7 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   override def withIllegalHeaderWarnings(newValue: Boolean): ParserSettings = self.copy(illegalHeaderWarnings = newValue)
   override def withIncludeTlsSessionInfoHeader(newValue: Boolean): ParserSettings = self.copy(includeTlsSessionInfoHeader = newValue)
   override def withModeledHeaderParsing(newValue: Boolean): ParserSettings = self.copy(modeledHeaderParsing = newValue)
+  override def withIgnoreIllegalHeaderFor(newValue: List[String]): ParserSettings = self.copy(ignoreIllegalHeaderFor = newValue.map(_.toLowerCase).toSet)
 
   // overloads for idiomatic Scala use
   def withUriParsingMode(newValue: Uri.ParsingMode): ParserSettings = self.copy(uriParsingMode = newValue)

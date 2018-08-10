@@ -10,7 +10,7 @@ import com.typesafe.config.Config
 trait SettingsCompanion[T] {
 
   /**
-   * WARNING: This MUST overriden in sub-classes as otherwise won't be usable (return type) from Java.
+   * WARNING: This MUST overridden in sub-classes as otherwise won't be usable (return type) from Java.
    * Creates an instance of settings using the configuration provided by the given ActorSystem.
    *
    * Java API

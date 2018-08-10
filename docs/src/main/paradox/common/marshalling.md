@@ -94,6 +94,7 @@ Specifically these are:
     * `char[]`
     * `String`
     * @unidoc[FormData]
+    * `Optional<T>` using an existing @unidoc[RequestEntity] marshaller for `T`. An empty optional will yield an empty entity.
  * Predefined @unidoc[HttpResponse] marshallers:
     * `T` using an existing @unidoc[RequestEntity] marshaller for `T`
     * `T` and @unidoc[StatusCode] using an existing @unidoc[RequestEntity] marshaller for `T`
@@ -127,7 +128,7 @@ a @scala[`ToReponseMarshaller[T]`]@java[@unidoc[Marshaller[T, HttpResponse]]] as
 
 If, however, your marshaller also needs to set things like the response status code, the request method, the request URI
 or any headers then a @scala[`ToEntityMarshaller[T]`]@java[@unidoc[Marshaller[T, MessageEntity]]] won't work. You'll need to fall down to providing a
-@scala[`ToResponseMarshaller[T]`]@java[@unidoc[Marshaller[T, HttpResponse]]] or a @scala[`ToRequestMarshaller[T]]]@java[@unidoc[Marshaller[T, HttpRequest]]] directly.
+@scala[`ToResponseMarshaller[T]`]@java[@unidoc[Marshaller[T, HttpResponse]]] or a @scala[`ToRequestMarshaller[T]]`]@java[@unidoc[Marshaller[T, HttpRequest]]] directly.
 
 For writing your own marshallers you won't have to "manually" implement the @unidoc[Marshaller] @scala[trait]@java[class] directly.
 

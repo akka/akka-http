@@ -11,8 +11,9 @@ import akka.http.scaladsl
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.NotUsed
-import akka.annotation.InternalApi
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.http.javadsl.settings.{ ParserSettings, RoutingSettings }
+import akka.http.scaladsl.server
 
 /**
  * In the Java DSL, a Route can only consist of combinations of the built-in directives. A Route can not be
@@ -34,7 +35,12 @@ import akka.http.javadsl.settings.{ ParserSettings, RoutingSettings }
  * The above example will invoke [inner] whenever the path "fixed/{test}" is matched, where "{test}"
  * is the actual String that was given as method argument.
  */
+@DoNotInherit
 trait Route {
+
+  /** Converts to the Scala DSL form of an Route. */
+  def asScala: server.Route = delegate
+
   /** INTERNAL API */
   @InternalApi
   private[http] def delegate: scaladsl.server.Route

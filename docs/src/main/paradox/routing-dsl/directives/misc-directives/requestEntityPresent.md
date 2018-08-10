@@ -11,7 +11,7 @@
 ## Description
 
 A simple filter that checks if the request entity is present and only then passes processing to the inner route.
-Otherwise, the request is rejected with @unidoc[RequestEntityExpectedRejection].
+Otherwise, the request is rejected with @unidoc[RequestEntityExpectedRejection$].
 
 See also @ref[requestEntityEmpty](requestEntityEmpty.md) for the opposite effect.
 

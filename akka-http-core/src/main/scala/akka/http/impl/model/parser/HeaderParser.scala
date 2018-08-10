@@ -42,7 +42,6 @@ private[http] class HeaderParser(
   import CharacterClasses._
 
   override def customMediaTypes = settings.customMediaTypes
-  override def areNoCustomMediaTypesDefined: Boolean = settings.areNoCustomMediaTypesDefined
 
   // http://www.rfc-editor.org/errata_search.php?rfc=7230 errata id 4189
   def `header-field-value`: Rule1[String] = rule {
@@ -190,7 +189,6 @@ private[http] object HeaderParser {
     def uriParsingMode: Uri.ParsingMode
     def cookieParsingMode: ParserSettings.CookieParsingMode
     def customMediaTypes: MediaTypes.FindCustom
-    def areNoCustomMediaTypesDefined: Boolean
     def illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode
   }
   def Settings(
@@ -208,7 +206,6 @@ private[http] object HeaderParser {
       def uriParsingMode: Uri.ParsingMode = _uriParsingMode
       def cookieParsingMode: CookieParsingMode = _cookieParsingMode
       def customMediaTypes: MediaTypes.FindCustom = _customMediaTypes
-      def areNoCustomMediaTypesDefined: Boolean = _customMediaTypes eq ConstantFun.scalaAnyToNone
 
       def illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode =
         _illegalResponseHeaderValueProcessingMode

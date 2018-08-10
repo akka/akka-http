@@ -78,10 +78,10 @@ The steps are exactly the same for everyone involved in the project (be it core 
 1. If you're not already on the contributors white-list, the @akka-ci bot will ask `Can one of the repo owners verify this patch?`, to which a core member will reply by commenting `OK TO TEST`. This is just a sanity check to prevent malicious code from being run on the Jenkins cluster.
 1. Now both committers and interested people will review your code. This process is to ensure the code we merge is of the best possible quality, and that no silly mistakes slip through. You're expected to follow-up these comments by adding new commits to the same branch. The commit messages of those commits can be more lose, for example: `Removed debugging using printline`, as they all will be squashed into one commit before merging into the main branch.
     - The community and team are really nice people, so don't be afraid to ask follow up questions if you didn't understand some comment, or would like to clarify how to continue with a given feature. We're here to help, so feel free to ask and discuss any kind of questions you might have during review!
-1. After the review you should fix the issues as needed (pushing a new commit for new review etc.), iterating until the reviewers give their thumbs up–which is signalled usually by a comment saying `LGTM`, which means "Looks Good To Me". 
+1. After the review you should fix the issues as needed (pushing a new commit for new review etc.), iterating until the reviewers give their thumbs up–which is signaled usually by a comment saying `LGTM`, which means "Looks Good To Me". 
     - In general a PR is expected to get 2 LGTMs from the team before it is merged. If the PR is trivial, or under special circumstances (such as most of the team being on vacation, a PR was very thoroughly reviewed/tested and surely is correct) one LGTM may be fine as well.
 1. If the code change needs to be applied to other branches as well (for example a bugfix needing to be backported to a previous version), one of the team will either ask you to submit a PR with the same commit to the old branch, or do this for you.
-   - Backport pull requests such as these are marked using the phrase`for validation` in the title to make the purpose clear in the pull request list. They can be merged once validation passes without additional review (if no conflicts).
+   - Backport pull requests such as these are marked using the phrase `for validation` in the title to make the purpose clear in the pull request list. They can be merged once validation passes without additional review (if no conflicts).
 1. Once everything is said and done, your Pull Request gets merged :tada: Your feature will be available with the next “earliest” release milestone (i.e. if back-ported so that it will be in release x.y.z, find the relevant milestone for that release). And of course you will be given credit for the fix in the release stats during the release's announcement. You've made it!
 
 The TL;DR; of the above very precise workflow version is:
@@ -109,7 +109,7 @@ To use the task simply type, and the output should include entries like shown be
 ```
 > validatePullRequest
 [info] Diffing [HEAD] to determine changed modules in PR...
-[info] Detected uncomitted changes in directories (including in dependency analysis): [akka-protobuf,project]
+[info] Detected uncommitted changes in directories (including in dependency analysis): [akka-protobuf,project]
 [info] Detected changes in directories: [docs, project, akka-http-tests, akka-protobuf, akka-http-testkit, akka-http, akka-http-core, akka-stream]
 ```
 
@@ -148,8 +148,9 @@ In such situations it's good to consult with a core team member if the violation
 Situations when it may be fine to ignore a MiMa issued warning include:
 
 - if it is touching any class marked as `private[akka]`, `/** INTERNAL API*/` or similar markers
-- if it is concerning internal classes (often recognisable by package names like `dungeon`, `impl`, `internal` etc.)
+- if it is concerning internal classes (often recognizable by package names like `dungeon`, `impl`, `internal` etc.)
 - if it is adding API to classes / traits which are only meant for extension by Akka itself, i.e. should not be extended by end-users
+- if it is touching any class marked with the `@InternalApi`, `@DoNotInherit`, and `@ApiMayChange`. See [API stability annotations and comments](https://doc.akka.io/docs/akka/current/common/binary-compatibility-rules.html#api-stability-annotations-and-comments)
 - other tricky situations
 
 If it turns out that the change can be safely ignored, please add the filter to the submodule's `src/main/mima-filters/<last-released-version>.backwards.excludes` file using (or creating) the file corresponding to the latest released version.
@@ -293,7 +294,7 @@ Note, that `OK TO TEST` will only be picked up when the user asking for it is co
 
 ### Scala style 
 
-Akka-http uses [Scalariform](https://github.com/daniel-trinh/scalariform) to enforce some of the code style rules.
+Akka-http uses [Scalariform](https://github.com/scala-ide/scalariform) to enforce some of the code style rules.
 
 ### Java style
 
@@ -338,4 +339,4 @@ The cluster is made out of real bare-metal boxes, and maintained by the Akka tea
 
 * [Akka Contributor License Agreement](http://www.lightbend.com/contribute/cla)
 * [Akka HTTP Issue Tracker](https://github.com/akka/akka-http/issues)
-* [Scalariform](https://github.com/daniel-trinh/scalariform)
+* [Scalariform](https://github.com/scala-ide/scalariform)

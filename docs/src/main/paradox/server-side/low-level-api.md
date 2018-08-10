@@ -156,10 +156,10 @@ incoming connections, e.g. by using `throttle` or `mapAsync`.
 
 HTTP pipelining is generally discouraged (and [disabled by most browsers](https://en.wikipedia.org/w/index.php?title=HTTP_pipelining&oldid=700966692#Implementation_in_web_browsers)) but
 is nevertheless fully supported in Akka HTTP. The limit is applied on two levels. First, there's the
-`akka.http.server.pipeline-limit` config setting which prevents that more than the given number of outstanding requests
+`akka.http.server.pipelining-limit` config setting which prevents that more than the given number of outstanding requests
 is ever given to the user-supplied handler-flow. On the other hand, the handler flow itself can apply any kind of throttling
-itself. If you use one of the `Http.bindAndHandleSync` or `Http.bindAndHandleAsync`
-entry-points, you can specify the `parallelism` argument (default = 1, i.e. pipelining disabled) to control the
+itself. If you use the `Http.bindAndHandleAsync`
+entry-point, you can specify the `parallelism` argument (which defaults to `1`, which means that pipelining is disabled) to control the
 number of concurrent requests per connection. If you use `Http.bindAndHandle` or `Http.bind`, the user-supplied handler
 flow has full control over how many request it accepts simultaneously by applying backpressure. In this case, you can
 e.g. use Akka Stream's `mapAsync` combinator with a given parallelism to limit the number of concurrently handled requests.
@@ -218,6 +218,7 @@ Java
 
 The third type of failure that can occur is when the connection has been properly established,
 however afterwards is terminated abruptly – for example by the client aborting the underlying TCP connection.
+
 To handle this failure we can use the same pattern as in the previous snippet, however apply it to the connection's Flow:
 
 Scala
@@ -225,6 +226,12 @@ Scala
 
 Java
 :   @@snip [HttpServerExampleDocTest.java]($test$/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #connection-stream-failure-handling }
+
+
+Note that this is when the TCP connection is closed correctly, if the client just goes away, for example because of
+a network failure, it will not be seen as this kind of stream failure. It will instead be detected through the
+@ref[idle timeout](../common/timeouts.md#timeouts)).
+
 
 These failures can be described more or less infrastructure related, they are failing bindings or connections.
 Most of the time you won't need to dive into those very deeply, as Akka will simply log errors of this kind

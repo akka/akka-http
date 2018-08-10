@@ -1,0 +1,13 @@
+# Don't monitor changes to internal API
+ProblemFilters.exclude[Problem]("akka.http.impl.*")
+
+# #1942 New ignoreIllegalHeaderFor setting
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ParserSettings.getIgnoreIllegalHeaderFor")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ParserSettings.ignoreIllegalHeaderFor")
+
+
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ServerSettings.getTerminationDeadlineExceededResponse")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ServerSettings.terminationDeadlineExceededResponse")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.Http#ServerBinding.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.Http#ServerBinding.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.Http#ServerBinding.apply")

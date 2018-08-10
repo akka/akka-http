@@ -5,7 +5,9 @@
 package akka.http.javadsl.server;
 
 
+import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import akka.http.javadsl.marshalling.Marshaller;
 import akka.http.javadsl.model.*;
@@ -193,5 +195,34 @@ public class MarshallerTest extends JUnitRouteTest {
 
     route.run(HttpRequest.GET("/nummer?n=5").addHeader(Accept.create(MediaTypes.TEXT_PLAIN.toRange())))
       .assertStatusCode(StatusCodes.NOT_ACCEPTABLE);
+  }
+
+  @Test
+  public void testOptionMarshaller() {
+    Marshaller<Optional<String>, RequestEntity> marshaller =
+          Marshaller.optionMarshaller(Marshaller.stringToEntity());
+
+    Supplier<Route> emptyHandler = () ->
+      rejectEmptyResponse(() -> complete(StatusCodes.OK, Optional.empty(), marshaller));
+
+    Supplier<Route> notEmptyHandler = () ->
+            rejectEmptyResponse(() -> complete(StatusCodes.OK, Optional.of("foo"), marshaller));
+
+    TestRoute route =
+          testRoute(
+                get(() ->
+                  route(
+                        path("notempty", notEmptyHandler),
+                        path("empty", emptyHandler)
+                )
+            )
+          );
+
+    route.run(HttpRequest.GET("/notempty"))
+            .assertStatusCode(StatusCodes.OK)
+            .assertEntity("foo");
+
+    route.run(HttpRequest.GET("/empty"))
+            .assertStatusCode(StatusCodes.NOT_FOUND);
   }
 }
