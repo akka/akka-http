@@ -21,7 +21,7 @@ However, if your application is not primarily a web application because its core
 
 Akka HTTP was designed specifically as “not-a-framework”, not because we don’t like frameworks, but for use cases where a framework is not the right choice. Akka HTTP is made for building integration layers based on HTTP and as such tries to “stay on the sidelines”. Therefore you normally don’t build your application “on top of” Akka HTTP, but you build your application on top of whatever makes sense and use Akka HTTP merely for the HTTP integration needs.
 
-On the other hand, if you prefer to build your applications with the guidance of a framework, you should give Play Framework or Lagom a try, which both use Akka internally.
+On the other hand, if you prefer to build your applications with the guidance of a framework, you should give [Play Framework](https://www.playframework.com/) or [Lagom](https://www.lagomframework.com/) a try, which both use Akka internally.
 
 ## Using Akka HTTP
 
@@ -134,7 +134,7 @@ Scala
 Java
 :   @@snip [JacksonExampleTest.java]($test$/java/docs/http/javadsl/JacksonExampleTest.java) { #second-jackson-example }
 
-When you run this server, you can update the inventory via `curl -H "Content-Type: application/json" -X POST -d '{"name":"hhgtg","id":42}' http://localhost:8080/create-order` on your terminal - adding an item named `"hhgtg"` and having an `id=42`; and then view the inventory either in a browser, at a url like: [http://localhost:8080/item/42](http://localhost:8080/item/42) - or on the terminal,
+When you run this server, you can update the inventory via `curl -H "Content-Type: application/json" -X POST -d '{"items":[{"name":"hhgtg","id":42}]}' http://localhost:8080/create-order` on your terminal - adding an item named `"hhgtg"` and having an `id=42`; and then view the inventory either in a browser, at a url like: [http://localhost:8080/item/42](http://localhost:8080/item/42) - or on the terminal,
 via `curl http://localhost:8080/item/42`.
 
 The logic for the marshalling and unmarshalling JSON in this example is provided by the @scala["spray-json"]@java["Jackson"] library

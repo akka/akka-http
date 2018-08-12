@@ -11,12 +11,11 @@ import akka.http.impl.engine.client.PoolFlow
 import akka.http.impl.engine.client.PoolFlow.RequestContext
 import akka.http.impl.engine.client.pool.SlotState._
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{ HttpMethods, HttpRequest, HttpResponse, headers }
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, headers }
 import akka.http.scaladsl.settings.ConnectionPoolSettings
-import akka.stream.testkit.Utils.TE
 import akka.testkit.AkkaSpec
 
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.Promise
 import scala.util.Try
 
 class SlotStateSpec extends AkkaSpec {
@@ -88,6 +87,28 @@ class SlotStateSpec extends AkkaSpec {
       state = state.onRequestEntityCompleted(context)
 
       state = state.onResponseEntitySubscribed(context)
+      state = state.onResponseEntityCompleted(context)
+      state should be(Idle)
+    }
+
+    "allow postponing completing the request until just after the response was subscribed" in {
+      var state: SlotState = Unconnected
+      val context = new MockSlotContext(system.log)
+      state = context.expectOpenConnection {
+        state.onPreConnect(context)
+      }
+      state = state.onNewRequest(context, RequestContext(HttpRequest(), Promise[HttpResponse], 0))
+
+      state = state.onConnectionAttemptSucceeded(context, outgoingConnection)
+
+      context.expectRequestDispatchToConnection()
+
+      state = state.onResponseReceived(context, HttpResponse())
+      state = state.onResponseDispatchable(context)
+      state = state.onResponseEntitySubscribed(context)
+
+      state = state.onRequestEntityCompleted(context)
+
       state = state.onResponseEntityCompleted(context)
       state should be(Idle)
     }

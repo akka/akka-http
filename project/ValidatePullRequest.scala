@@ -192,7 +192,7 @@ object ValidatePullRequest extends AutoPlugin {
             .map(_.takeWhile(_ != '/'))
             .filter(dir => dir.startsWith("akka-") || dir.startsWith("docs") || BuildFilesAndDirectories.contains(dir))
             .toSet
-          log.info("Detected uncomitted changes in directories (including in dependency analysis): " + dirtyDirectories.mkString("[", ",", "]"))
+          log.info("Detected uncommitted changes in directories (including in dependency analysis): " + dirtyDirectories.mkString("[", ",", "]"))
           dirtyDirectories
         }
 

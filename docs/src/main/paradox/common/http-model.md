@@ -345,15 +345,15 @@ Scala
 Java
 :   @@snip [CustomHeaderExampleTest.java]($test$/java/docs/http/javadsl/CustomHeaderExampleTest.java) { #header-value-pf }
 
-One can also directly extend @unidoc[CustomHeader] which requires less boilerplate, however that has the downside of
-@scala[matching against @unidoc[RawHeader]]@java[having to deal with converting @unidoc[HttpHeader]] instances scala[not working out-of-the-box, thus limiting its usefulness in the routing layer
-of Akka HTTP]@java[to your custom one]. For only rendering such header however it would be enough.
-
 @@@ note { .group-scala }
-When defining custom headers, prefer to extend @unidoc[ModeledCustomHeader] instead of @unidoc[CustomHeader] directly
-as it will automatically make your header abide all the expected pattern matching semantics one is accustomed to
-when using built-in types (such as matching a custom header against a @unidoc[RawHeader] as is often the case in routing
-layers of Akka HTTP applications).
+When defining custom headers, it is better to extend @unidoc[ModeledCustomHeader] instead of its parent @unidoc[CustomHeader].
+Custom headers that extend @unidoc[ModeledCustomHeader] automatically comply with the pattern matching semantics that usually apply to built-in
+types (such as matching a custom header against a @unidoc[RawHeader] in routing layers of Akka HTTP applications).
+@@@
+
+@@@ note { .group-java }
+Implement @unidoc[ModeledCustomHeader] and @java[@javadoc[ModeledCustomHeaderFactory](akka.http.javadsl.model.headers.ModeledCustomHeaderFactory)] instead of @unidoc[CustomHeader] to be
+able to use the convenience methods that allow parsing the custom user-defined header from @unidoc[HttpHeader].
 @@@
 
 ## Parsing / Rendering
@@ -399,7 +399,7 @@ in the right style / place.
 
 Similarly to media types, Akka HTTP @scala[@scaladoc:[predefines](akka.http.scaladsl.model.StatusCodes$)]@java[@javadoc:[predefines](akka.http.javaadsl.model.StatusCodes)]
 well-known status codes, however sometimes you may need to use a custom one (or are forced to use an API which returns custom status codes).
-Similarily to the media types registration, you can register custom status codes by configuring @unidoc[ParserSettings] like this:
+Similarly to the media types registration, you can register custom status codes by configuring @unidoc[ParserSettings] like this:
 
 Scala
 :   @@snip [CustomStatusCodesSpec.scala]($akka-http$/akka-http-tests/src/test/scala/akka/http/scaladsl/CustomStatusCodesSpec.scala) { #application-custom }

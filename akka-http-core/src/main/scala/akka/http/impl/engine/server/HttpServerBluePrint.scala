@@ -451,6 +451,11 @@ private[http] object HttpServerBluePrint {
             case IllegalUriException(errorInfo) ⇒
               finishWithIllegalRequestError(StatusCodes.BadRequest, errorInfo)
 
+            case _: ServerTerminationDeadlineReached ⇒
+              val response = settings.terminationDeadlineExceededResponse
+              log.warning(s"Closing connection with [{}] response, termination deadline exceeded. Server is shutting down...", response.status)
+              emitErrorResponse(response)
+
             case NonFatal(e) ⇒
               log.error(e, "Internal server error, sending 500 response")
               emitErrorResponse(HttpResponse(StatusCodes.InternalServerError))

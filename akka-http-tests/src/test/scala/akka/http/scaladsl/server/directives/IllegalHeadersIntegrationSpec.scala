@@ -12,7 +12,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 /**
- * Has to excercise the entire stack, tgus an IntegrationRoutingSpec (not reproducable using just RouteTest).
+ * Has to exercise the entire stack, tgus an IntegrationRoutingSpec (not reproduciable using just RouteTest).
  */
 class IllegalHeadersIntegrationSpec extends IntegrationRoutingSpec {
 

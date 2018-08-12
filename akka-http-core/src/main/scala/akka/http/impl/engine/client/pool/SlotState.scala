@@ -11,7 +11,6 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import scala.util.{ Failure, Success, Try }
@@ -283,6 +282,11 @@ private[pool] object SlotState {
         Unconnected
       else
         Idle
+
+    override def onRequestEntityCompleted(ctx: SlotContext): SlotState = {
+      require(waitingForEndOfRequestEntity)
+      WaitingForEndOfResponseEntity(ongoingRequest, ongoingResponse, waitingForEndOfRequestEntity = false)
+    }
   }
   final case object WaitingForEndOfRequestEntity extends ConnectedState {
     final override def isIdle = false

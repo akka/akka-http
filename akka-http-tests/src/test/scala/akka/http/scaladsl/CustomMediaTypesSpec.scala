@@ -26,7 +26,7 @@ class CustomMediaTypesSpec extends AkkaSpec with ScalaFutures
 
       //#application-custom
 
-      // similarily in Java: `akka.http.javadsl.settings.[...]`
+      // similarly in Java: `akka.http.javadsl.settings.[...]`
       import akka.http.scaladsl.settings.ParserSettings
       import akka.http.scaladsl.settings.ServerSettings
 
@@ -42,7 +42,7 @@ class CustomMediaTypesSpec extends AkkaSpec with ScalaFutures
       val routes = extractRequest { r ⇒
         complete(r.entity.contentType.toString + " = " + r.entity.contentType.getClass)
       }
-      val binding = Http().bindAndHandle(routes, host, port, settings = serverSettings)
+      Http().bindAndHandle(routes, host, port, settings = serverSettings)
       //#application-custom
 
       val request = Get(s"http://$host:$port/").withEntity(HttpEntity(`application/custom`, "~~example~=~value~~"))

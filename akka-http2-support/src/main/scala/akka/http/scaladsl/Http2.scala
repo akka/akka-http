@@ -4,23 +4,23 @@
 
 package akka.http.scaladsl
 
-import javax.net.ssl.SSLEngine
-import akka.{ Done, NotUsed }
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.{ AlpnSwitch, Http2AlpnSupport, Http2Blueprint }
+import akka.http.impl.engine.server.MasterServerTerminator
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
-import akka.http.scaladsl.UseHttp2.{ Negotiated, Never }
 import akka.http.scaladsl.Http.ServerBinding
+import akka.http.scaladsl.UseHttp2.{ Negotiated, Never }
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.TLSProtocol.{ SendBytes, SessionBytes, SslTlsInbound, SslTlsOutbound }
 import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Sink, TLS, Tcp }
 import akka.stream.{ IgnoreComplete, Materializer }
-import akka.stream.{ IgnoreComplete, Materializer }
 import akka.util.ByteString
+import akka.{ Done, NotUsed }
 import com.typesafe.config.Config
+import javax.net.ssl.SSLEngine
 
 import scala.concurrent.Future
 import scala.util.Success
@@ -39,11 +39,12 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
    * Handle requests using HTTP/2 immediately, without any TLS or negotiation layer.
    */
   private def bindAndHandleWithoutNegotiation(
-    handler:   HttpRequest ⇒ Future[HttpResponse],
-    interface: String, port: Int = DefaultPortForProtocol,
-    settings:    ServerSettings = ServerSettings(system),
-    parallelism: Int            = 1,
-    log:         LoggingAdapter = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
+    handler:     HttpRequest ⇒ Future[HttpResponse],
+    interface:   String,
+    port:        Int,
+    settings:    ServerSettings,
+    parallelism: Int,
+    log:         LoggingAdapter)(implicit fm: Materializer): Future[ServerBinding] = {
     val effectivePort = if (port >= 0) port else 80
 
     val serverLayer: Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(
@@ -55,6 +56,8 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
         .joinMat(Http2Blueprint.serverStack(settings, log))(Keep.left))
 
     val connections = Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)
+
+    val masterTerminator = new MasterServerTerminator(log)
 
     connections.mapAsyncUnordered(settings.maxConnections) {
       incoming: Tcp.IncomingConnection ⇒
@@ -74,7 +77,10 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
             throw e
         }
     }.mapMaterializedValue {
-      _.map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(fm.executionContext)
+      _.map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(
+        () ⇒ tcpBinding.unbind(),
+        timeout ⇒ masterTerminator.terminate(timeout)(fm.executionContext)
+      ))(fm.executionContext)
     }.to(Sink.ignore).run()
   }
 
@@ -152,6 +158,8 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
 
     val connections = Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)
 
+    val masterTerminator = new MasterServerTerminator(log)
+
     connections.mapAsyncUnordered(settings.maxConnections) {
       incoming: Tcp.IncomingConnection ⇒
         try {
@@ -170,7 +178,10 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
             throw e
         }
     }.mapMaterializedValue {
-      _.map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(() ⇒ tcpBinding.unbind()))(fm.executionContext)
+      _.map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(
+        () ⇒ tcpBinding.unbind(),
+        timeout ⇒ masterTerminator.terminate(timeout)(fm.executionContext)
+      ))(fm.executionContext)
     }.to(Sink.ignore).run()
   }
 

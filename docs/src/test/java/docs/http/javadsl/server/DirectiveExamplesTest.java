@@ -95,7 +95,7 @@ public class DirectiveExamplesTest extends JUnitRouteTest {
     return path(segment("order").slash(integerSegment()), id ->
       get(() -> complete("Received GET request for order " + id))
         .orElse(
-          put(() -> complete("Recieved PUT request for order " + id)))
+          put(() -> complete("Received PUT request for order " + id)))
     );
   }
   //#example1
