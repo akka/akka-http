@@ -27,12 +27,12 @@ the type plus a trailing plural 's'.
 
 For example:
 
- * Defined @unidoc[HttpMethod] instances @scala[live in]@java[are defined as static fields of] the @unidoc[HttpMethods] @scala[object]@java[class].
- * Defined @unidoc[HttpCharset] instances @scala[live in]@java[are defined as static fields of] the @unidoc[HttpCharsets] @scala[object]@java[class].
- * Defined @unidoc[HttpEncoding] instances @scala[live in]@java[are defined as static fields of] the @unidoc[HttpEncodings] @scala[object]@java[class].
- * Defined @unidoc[HttpProtocol] instances @scala[live in]@java[are defined as static fields of] the @unidoc[HttpProtocols] @scala[object]@java[class].
- * Defined @unidoc[MediaType] instances @scala[live in]@java[are defined as static fields of] the @unidoc[MediaTypes] @scala[object]@java[class].
- * Defined @unidoc[StatusCode] instances @scala[live in]@java[are defined as static fields of] the @unidoc[StatusCodes] @scala[object]@java[class].
+ * Defined @unidoc[HttpMethod] instances @scala[live in]@java[are defined as static fields of] the @scala[@unidoc[HttpMethods$]]@java[@unidoc[HttpMethods]] @scala[object]@java[class].
+ * Defined @unidoc[HttpCharset] instances @scala[live in]@java[are defined as static fields of] the @scala[@unidoc[HttpCharsets$]]@java[@unidoc[HttpCharsets]] @scala[object]@java[class].
+ * Defined @unidoc[HttpEncoding] instances @scala[live in]@java[are defined as static fields of] the @scala[@unidoc[HttpEncodings$]]@java[@unidoc[HttpEncodings]] @scala[object]@java[class].
+ * Defined @unidoc[HttpProtocol] instances @scala[live in]@java[are defined as static fields of] the @scala[@unidoc[HttpProtocols$]]@java[@unidoc[HttpProtocols]] @scala[object]@java[class].
+ * Defined @unidoc[MediaType] instances @scala[live in]@java[are defined as static fields of] the @scala[@unidoc[MediaTypes$]]@java[@unidoc[MediaTypes]] @scala[object]@java[class].
+ * Defined @unidoc[StatusCode] instances @scala[live in]@java[are defined as static fields of] the @scala[@unidoc[StatusCodes$]]@java[@unidoc[StatusCodes]] @scala[object]@java[class].
 
 ## HttpRequest
 
