@@ -19,12 +19,12 @@ object Marshal {
 
   private[marshalling] def selectMarshallingForContentType[T](marshallings: Seq[Marshalling[T]], contentType: ContentType): Option[() ⇒ T] = {
     contentType match {
-      case best @ (_: ContentType.Binary | _: ContentType.WithFixedCharset | _: ContentType.WithMissingCharset) ⇒
-        marshallings collectFirst { case Marshalling.WithFixedContentType(`best`, marshal) ⇒ marshal }
-      case best @ ContentType.WithCharset(bestMT, bestCS) ⇒
+      case _: ContentType.Binary | _: ContentType.WithFixedCharset | _: ContentType.WithMissingCharset ⇒
+        marshallings collectFirst { case Marshalling.WithFixedContentType(`contentType`, marshal) ⇒ marshal }
+      case ContentType.WithCharset(mediaType, charset) ⇒
         marshallings collectFirst {
-          case Marshalling.WithFixedContentType(`best`, marshal) ⇒ marshal
-          case Marshalling.WithOpenCharset(`bestMT`, marshal)    ⇒ () ⇒ marshal(bestCS)
+          case Marshalling.WithFixedContentType(`contentType`, marshal) ⇒ marshal
+          case Marshalling.WithOpenCharset(`mediaType`, marshal)        ⇒ () ⇒ marshal(charset)
         }
     }
   }
