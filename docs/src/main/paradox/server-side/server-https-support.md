@@ -59,7 +59,7 @@ titled [Generating X.509 Certificates](https://lightbend.github.io/ssl-config/Ce
 ## Using HTTPS
 
 Once you have obtained the server certificate, using it is as simple as preparing an @unidoc[HttpsConnectionContext]
-and either setting it as the default one to be used by all servers started by the given @unidoc[Http] extension
+and either setting it as the default one to be used by all servers started by the given @scala[@unidoc[Http$]]@java[@unidoc[Http]] extension
 or passing it in explicitly when binding the server.
 
 The below example shows how setting up HTTPS works.

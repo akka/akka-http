@@ -24,7 +24,7 @@ transport layer itself.
 A @unidoc[ClientTransport] can be configured in the @unidoc[ClientConnectionSettings]. Right now, this is not possible
 through config files but only by code. First, use `ClientConnectionSettings.withTransport` to configure a transport,
 then use `ConnectionPoolSettings.withConnectionSettings`. @unidoc[ClientConnectionSettings] can be passed to all
-client-side entry points in @unidoc[Http].
+client-side entry points in @scala[@unidoc[Http$]]@java[@unidoc[Http]].
 
 ## Predefined Transports
 
