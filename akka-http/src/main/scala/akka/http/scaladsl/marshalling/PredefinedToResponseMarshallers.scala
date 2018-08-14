@@ -105,7 +105,6 @@ trait LowPriorityToResponseMarshallerImplicits {
         Marshalling.WithFixedContentType(s.contentType, () ⇒ {
           val availableMarshallingsPerElement = source.mapAsync(1) { t ⇒ m(t)(ec) }
 
-          // TODO optimise such that we pick the optimal marshalling only once (headAndTail needed?)
           val bestMarshallingPerElement = availableMarshallingsPerElement map { marshallings ⇒
             // pick the Marshalling that matches our EntityStreamingSupport
             // TODO we could either special case for certain known types,

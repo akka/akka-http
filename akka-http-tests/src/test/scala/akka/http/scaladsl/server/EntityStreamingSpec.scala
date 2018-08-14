@@ -225,6 +225,8 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
   }
 
   "opaque-and-non-opaque-marshaller-example" in {
+    // If both an opaque marshaller and a non-opaque marshaller with the right content type are present,
+    // prefer the non-opaque marshaller (even if the opaque one comes first in the sequence).
     val tweetAsOpaqueByteString = Marshaller.opaque[Tweet, ByteString] { t ⇒
       ByteString(s"""${t.uid},"Text: ${t.txt}"""")
     }
