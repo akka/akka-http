@@ -190,6 +190,74 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
     }
   }
 
+  "opaque-marshaller-example" in {
+    implicit val tweetAsOpaqueByteString = Marshaller.opaque[Tweet, ByteString] { t ⇒
+      ByteString(s"""${t.uid},"Text: ${t.txt}"""")
+    }
+
+    implicit val csvStreaming = EntityStreamingSupport.csv()
+
+    val route =
+      path("tweets") {
+        val tweets: Source[Tweet, NotUsed] = getTweets
+        complete(tweets)
+      }
+
+    // tests ------------------------------------------------------------
+    val expectedResponseEntity: String =
+      """1,"Text: #Akka rocks!"""" + "\n" +
+      """2,"Text: Streaming is so hot right now!"""" + "\n" +
+      """3,"Text: You cannot enter the same river twice."""" + "\n"
+
+    val AcceptCsv = Accept(MediaRange(MediaTypes.`text/csv`))
+
+    Get("/tweets").withHeaders(AcceptCsv) ~> route ~> check {
+      responseAs[String] shouldEqual expectedResponseEntity
+    }
+
+    val AcceptJson = Accept(MediaRange(MediaTypes.`application/json`))
+
+    // endpoint can only marshal CSV, so it will *reject* requests for application/json:
+    Get("/tweets").withHeaders(AcceptJson) ~> route ~> check {
+      handled should ===(false)
+      rejection should ===(UnacceptedResponseContentTypeRejection(Set(ContentTypes.`text/csv(UTF-8)`)))
+    }
+  }
+
+  "opaque-and-non-opaque-marshaller-example" in {
+    val tweetAsOpaqueByteString = Marshaller.opaque[Tweet, ByteString] { t ⇒
+      ByteString(s"""${t.uid},"Text: ${t.txt}"""")
+    }
+
+    val tweetAsCsv = Marshaller.strict[Tweet, ByteString] { t ⇒
+      Marshalling.WithFixedContentType(ContentTypes.`text/csv(UTF-8)`, () ⇒ {
+        val txt = t.txt.replaceAll(",", ".")
+        val uid = t.uid
+        ByteString(List(uid, txt).mkString(","))
+      })
+    }
+
+    implicit val tweetMarshaller = Marshaller.oneOf(tweetAsOpaqueByteString, tweetAsCsv)
+
+    implicit val csvStreaming = EntityStreamingSupport.csv()
+
+    val route =
+      path("tweets") {
+        val tweets: Source[Tweet, NotUsed] = getTweets
+        complete(tweets)
+      }
+
+    // tests ------------------------------------------------------------
+    val AcceptCsv = Accept(MediaRange(MediaTypes.`text/csv`))
+
+    Get("/tweets").withHeaders(AcceptCsv) ~> route ~> check {
+      responseAs[String] shouldEqual
+        "1,#Akka rocks!" + "\n" +
+        "2,Streaming is so hot right now!" + "\n" +
+        "3,You cannot enter the same river twice." + "\n"
+    }
+  }
+
   "spray-json-request-streaming" in {
     import MyJsonProtocol._
     implicit val jsonStreamingSupport = EntityStreamingSupport.json()
@@ -296,12 +364,13 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
   }
 
   "throw an exception constructed with a null class tag (due to using a deprecated method)" in {
-    val stringToByteStringMarshaller: ToByteStringMarshaller[String] = Marshaller.opaque(ByteString.apply)
+    val csvStringMarshaller: ToByteStringMarshaller[String] =
+      Marshaller.withFixedContentType(ContentTypes.`text/csv(UTF-8)`)(ByteString.apply)
 
     val jsonStreamingSupport: JsonEntityStreamingSupport = EntityStreamingSupport.json()
 
     implicit val toResponseMarshaller: ToResponseMarshaller[Source[String, NotUsed]] =
-      PredefinedToResponseMarshallers.fromEntityStreamingSupportAndByteStringMarshaller[String, NotUsed](jsonStreamingSupport, stringToByteStringMarshaller)
+      PredefinedToResponseMarshallers.fromEntityStreamingSupportAndByteStringMarshaller[String, NotUsed](jsonStreamingSupport, csvStringMarshaller)
 
     val route =
       get {

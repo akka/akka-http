@@ -112,6 +112,9 @@ trait LowPriorityToResponseMarshallerImplicits {
             // or extend the entity support to be more advanced such that it would negotiate the element content type it
             // is able to render.
             selectMarshallingForContentType(marshallings, s.contentType)
+              .orElse {
+                marshallings collectFirst { case Marshalling.Opaque(marshal) ⇒ marshal }
+              }
               .getOrElse(throw new NoStrictlyCompatibleElementMarshallingAvailableException[T](s.contentType, marshallings))
           }
 
