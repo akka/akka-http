@@ -204,15 +204,13 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
       }
 
     // tests ------------------------------------------------------------
-    val expectedResponseEntity: String =
-      """1,"Text: #Akka rocks!"""" + "\n" +
-      """2,"Text: Streaming is so hot right now!"""" + "\n" +
-      """3,"Text: You cannot enter the same river twice."""" + "\n"
-
     val AcceptCsv = Accept(MediaRange(MediaTypes.`text/csv`))
 
     Get("/tweets").withHeaders(AcceptCsv) ~> route ~> check {
-      responseAs[String] shouldEqual expectedResponseEntity
+      responseAs[String] shouldEqual
+        """1,"Text: #Akka rocks!"""" + "\n" +
+        """2,"Text: Streaming is so hot right now!"""" + "\n" +
+        """3,"Text: You cannot enter the same river twice."""" + "\n"
     }
 
     val AcceptJson = Accept(MediaRange(MediaTypes.`application/json`))
