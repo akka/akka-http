@@ -98,6 +98,7 @@ final class HttpsConnectionContext(
 sealed class HttpConnectionContext(http2: UseHttp2) extends akka.http.javadsl.HttpConnectionContext(http2) with ConnectionContext {
   def this() = this(Negotiated)
 }
+
 final object HttpConnectionContext extends HttpConnectionContext(Negotiated) {
   /** Java API */
   def getInstance() = this

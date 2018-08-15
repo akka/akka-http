@@ -9,6 +9,7 @@ import java.util.Optional
 
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.http.javadsl.model.Uri
+import akka.http.scaladsl.HttpConnectionContext
 import akka.http.scaladsl.UseHttp2.Negotiated
 
 @DoNotInherit
@@ -23,7 +24,7 @@ abstract class ConnectHttp {
   final def effectiveHttpsConnectionContext(fallbackContext: HttpsConnectionContext): HttpsConnectionContext =
     connectionContext.orElse(fallbackContext)
 
-  final def effectiveConnectionContext(fallbackContext: ConnectionContext): ConnectionContext =
+  def effectiveConnectionContext(fallbackContext: ConnectionContext): ConnectionContext =
     if (connectionContext.isPresent) connectionContext.get()
     else fallbackContext
 
@@ -167,6 +168,9 @@ final class ConnectHttpImpl(val host: String, val port: Int, val http2: UseHttp2
   def isHttps: Boolean = false
 
   def connectionContext: Optional[HttpsConnectionContext] = Optional.empty()
+
+  override def effectiveConnectionContext(fallbackContext: ConnectionContext): ConnectionContext =
+    HttpConnectionContext(http2.asScala)
 }
 
 /** INTERNAL API */
