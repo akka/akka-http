@@ -283,28 +283,42 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    *
    * To configure additional settings for a server started using this method,
    * use the `akka.http.server` config section or pass in a [[akka.http.scaladsl.settings.ServerSettings]] explicitly.
+   *
+   * Parameter `parallelism` specifies how many requests are attempted to be handled concurrently per connection. In HTTP/1
+   * this makes only sense if HTTP pipelining is enabled (which is not recommended). The default value of `0` means that
+   * the value is taken from the `akka.http.server.pipelining-limit` setting from the configuration. In HTTP/2,
+   * the default value is taken from `akka.http.server.http2.max-concurrent-streams`.
+   *
+   * Any other value for `parallelism` overrides the setting.
    */
   def bindAndHandleAsync(
     handler:   HttpRequest ⇒ Future[HttpResponse],
     interface: String, port: Int = DefaultPortForProtocol,
     connectionContext: ConnectionContext = defaultServerHttpContext,
     settings:          ServerSettings    = ServerSettings(system),
-    parallelism:       Int               = 1,
+    parallelism:       Int               = 0,
     log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
-    val http2enabled = settings.previewServerSettings.enableHttp2
-    if (http2enabled && connectionContext.isSecure && connectionContext.http2 != Never) {
-      log.debug("Binding server using HTTP/2...")
-      Http2Shadow.bindAndHandleAsync(handler, interface, port, connectionContext, settings, parallelism, log)(fm)
-    } else if (http2enabled && !connectionContext.isSecure && connectionContext.http2 == Always) {
+    val http2Enabled = settings.previewServerSettings.enableHttp2 && connectionContext.http2 != Never
+    val http2Forced = connectionContext.http2 == Always
+    if (http2Enabled && (connectionContext.isSecure || http2Forced)) {
       // We do not support HTTP/2 negotiation for insecure connections (h2c), https://github.com/akka/akka-http/issues/1966
-      log.debug("Binding server using HTTP/2...")
-      Http2Shadow.bindAndHandleAsync(handler, interface, port, connectionContext, settings, parallelism, log)(fm)
+      log.debug("Binding server using HTTP/2{}", if (http2Forced) " (forced to be used without TLS)" else "")
+
+      val definitiveSettings =
+        if (parallelism > 0) settings
+        else if (parallelism < 0) throw new IllegalArgumentException("Only positive values allowed for `parallelism`.")
+        else settings.mapHttp2Settings(_.withMaxConcurrentStreams(parallelism))
+      Http2Shadow.bindAndHandleAsync(handler, interface, port, connectionContext, definitiveSettings, parallelism, log)(fm)
     } else {
-      if (http2enabled)
+      if (http2Enabled)
         log.debug("The akka.http.server.preview.enable-http2 flag was set, " +
           "but a plain HttpConnectionContext (not Https) was given, binding using plain HTTP...")
 
-      bindAndHandle(Flow[HttpRequest].mapAsync(parallelism)(handler), interface, port, connectionContext, settings, log)
+      val definitiveParallelism =
+        if (parallelism > 0) parallelism
+        else if (parallelism < 0) throw new IllegalArgumentException("Only positive values allowed for `parallelism`.")
+        else settings.pipeliningLimit
+      bindAndHandle(Flow[HttpRequest].mapAsync(definitiveParallelism)(handler), interface, port, connectionContext, settings, log)
     }
   }
 
