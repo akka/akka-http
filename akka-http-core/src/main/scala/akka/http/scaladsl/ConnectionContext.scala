@@ -11,6 +11,7 @@ import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import scala.collection.JavaConverters._
 import java.util.{ Optional, Collection ⇒ JCollection }
 
+import akka.http.javadsl
 import akka.http.scaladsl.UseHttp2.Negotiated
 import javax.net.ssl._
 
@@ -93,10 +94,20 @@ final class HttpsConnectionContext(
   override def getEnabledProtocols: Optional[JCollection[String]] = enabledProtocols.map(_.asJavaCollection).asJava
   override def getClientAuth: Optional[TLSClientAuth] = clientAuth.asJava
   override def getSslParameters: Optional[SSLParameters] = sslParameters.asJava
+
+  override def withHttp2(newValue: javadsl.UseHttp2): javadsl.HttpsConnectionContext =
+    withHttp2(newValue.asScala)
+  def withHttp2(newValue: UseHttp2): javadsl.HttpsConnectionContext =
+    new HttpsConnectionContext(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters, newValue)
 }
 
 sealed class HttpConnectionContext(http2: UseHttp2) extends akka.http.javadsl.HttpConnectionContext(http2) with ConnectionContext {
   def this() = this(Negotiated)
+
+  override def withHttp2(newValue: javadsl.UseHttp2): javadsl.HttpConnectionContext =
+    withHttp2(newValue.asScala)
+  def withHttp2(newValue: UseHttp2): javadsl.HttpConnectionContext =
+    new HttpConnectionContext(newValue)
 }
 
 final object HttpConnectionContext extends HttpConnectionContext(Negotiated) {

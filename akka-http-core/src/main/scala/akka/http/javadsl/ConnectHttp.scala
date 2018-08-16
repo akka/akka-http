@@ -7,9 +7,10 @@ package akka.http.javadsl
 import java.util.Locale
 import java.util.Optional
 
+import scala.compat.java8.OptionConverters._
+
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.http.javadsl.model.Uri
-import akka.http.scaladsl.HttpConnectionContext
 import akka.http.scaladsl.UseHttp2.Negotiated
 
 @DoNotInherit
@@ -22,11 +23,14 @@ abstract class ConnectHttp {
   def http2: UseHttp2
 
   final def effectiveHttpsConnectionContext(fallbackContext: HttpsConnectionContext): HttpsConnectionContext =
-    connectionContext.orElse(fallbackContext)
+    connectionContext.asScala
+      .getOrElse(fallbackContext)
+      .withHttp2(http2)
 
-  def effectiveConnectionContext(fallbackContext: ConnectionContext): ConnectionContext =
-    if (connectionContext.isPresent) connectionContext.get()
-    else fallbackContext
+  final def effectiveConnectionContext(fallbackContext: ConnectionContext): ConnectionContext =
+    connectionContext.asScala // Optional doesn't deal well with covariance
+      .getOrElse(fallbackContext)
+      .withHttp2(http2)
 
   override def toString = s"ConnectHttp($host,$port,$isHttps,$connectionContext,$http2)"
 }
@@ -168,9 +172,6 @@ final class ConnectHttpImpl(val host: String, val port: Int, val http2: UseHttp2
   def isHttps: Boolean = false
 
   def connectionContext: Optional[HttpsConnectionContext] = Optional.empty()
-
-  override def effectiveConnectionContext(fallbackContext: ConnectionContext): ConnectionContext =
-    HttpConnectionContext(http2.asScala)
 }
 
 /** INTERNAL API */

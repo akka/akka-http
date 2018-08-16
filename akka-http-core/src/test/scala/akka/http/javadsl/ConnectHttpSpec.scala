@@ -103,6 +103,10 @@ class ConnectHttpSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       val connect = ConnectHttp.toHost("http://127.0.0.1", 8080, UseHttp2.always)
       connect.effectiveConnectionContext(httpsContext).http2 should equal(UseHttp2.always)
     }
+    "connect toHostHttps HTTP/2 only" in {
+      val connect = ConnectHttp.toHostHttps("https://127.0.0.1", 8080, UseHttp2.always)
+      connect.effectiveConnectionContext(httpsContext).http2 should equal(UseHttp2.always)
+    }
 
   }
 }
