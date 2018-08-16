@@ -16,6 +16,18 @@ object Marshal {
 
   final case class UnacceptableResponseContentTypeException(supported: Set[ContentNegotiator.Alternative])
     extends RuntimeException with NoStackTrace
+
+  private[marshalling] def selectMarshallingForContentType[T](marshallings: Seq[Marshalling[T]], contentType: ContentType): Option[() ⇒ T] = {
+    contentType match {
+      case _: ContentType.Binary | _: ContentType.WithFixedCharset | _: ContentType.WithMissingCharset ⇒
+        marshallings collectFirst { case Marshalling.WithFixedContentType(`contentType`, marshal) ⇒ marshal }
+      case ContentType.WithCharset(mediaType, charset) ⇒
+        marshallings collectFirst {
+          case Marshalling.WithFixedContentType(`contentType`, marshal) ⇒ marshal
+          case Marshalling.WithOpenCharset(`mediaType`, marshal)        ⇒ () ⇒ marshal(charset)
+        }
+    }
+  }
 }
 
 class Marshal[A](val value: A) {
@@ -47,15 +59,8 @@ class Marshal[A](val value: A) {
         }(collection.breakOut)
       val bestMarshal = {
         if (supportedAlternatives.nonEmpty) {
-          ctn.pickContentType(supportedAlternatives).flatMap {
-            case best @ (_: ContentType.Binary | _: ContentType.WithFixedCharset | _: ContentType.WithMissingCharset) ⇒
-              marshallings collectFirst { case Marshalling.WithFixedContentType(`best`, marshal) ⇒ marshal }
-            case best @ ContentType.WithCharset(bestMT, bestCS) ⇒
-              marshallings collectFirst {
-                case Marshalling.WithFixedContentType(`best`, marshal) ⇒ marshal
-                case Marshalling.WithOpenCharset(`bestMT`, marshal)    ⇒ () ⇒ marshal(bestCS)
-              }
-          }
+          ctn.pickContentType(supportedAlternatives)
+            .flatMap(selectMarshallingForContentType(marshallings, _))
         } else None
       } orElse {
         marshallings collectFirst { case Marshalling.Opaque(marshal) ⇒ marshal }
