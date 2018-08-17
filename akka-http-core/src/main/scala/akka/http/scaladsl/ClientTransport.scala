@@ -5,14 +5,16 @@
 package akka.http.scaladsl
 
 import java.net.InetSocketAddress
+
 import akka.actor.ActorSystem
 import akka.annotation.ApiMayChange
 import akka.http.impl.engine.client.HttpsProxyGraphStage
 import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model.headers.HttpCredentials
-import akka.http.scaladsl.settings.ClientConnectionSettings
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, HttpsProxySettings }
 import akka.stream.scaladsl.{ Flow, Keep, Tcp }
 import akka.util.ByteString
+
 import scala.concurrent.Future
 
 /**
@@ -59,6 +61,17 @@ object ClientTransport {
 
   /**
    * Returns a [[ClientTransport]] that runs all connection through the given HTTP(S) proxy using the
+   * HTTP CONNECT method.
+   *
+   * Pulls the host/port pair from the application.conf: akka.client.proxy.https.{host, port}
+   */
+  def httpsProxy()(implicit system: ActorSystem): ClientTransport = {
+    val settings = HttpsProxySettings(system.settings.config)
+    httpsProxy(InetSocketAddress.createUnresolved(settings.host, settings.port))
+  }
+
+  /**
+   * Returns a [[ClientTransport]] that runs all connection through the given HTTP(S) proxy using the
    * HTTP CONNECT method. This method also takes [[HttpCredentials]] in order to pass along to the proxy.
    *
    * An HTTP(S) proxy is a proxy that will create one TCP connection to the HTTP(S) proxy for each target connection. The
@@ -68,6 +81,17 @@ object ClientTransport {
    */
   def httpsProxy(proxyAddress: InetSocketAddress, proxyCredentials: HttpCredentials): ClientTransport =
     HttpsProxyTransport(proxyAddress, proxyCredentials = Some(proxyCredentials))
+
+  /**
+   * Returns a [[ClientTransport]] that runs all connection through the given HTTP(S) proxy using the
+   * HTTP CONNECT method. This method also takes [[HttpCredentials]] in order to pass along to the proxy.
+   *
+   * Pulls the host/port pair from the application.conf: akka.client.proxy.https.{host, port}
+   */
+  def httpsProxy(proxyCredentials: HttpCredentials)(implicit system: ActorSystem): ClientTransport = {
+    val settings = HttpsProxySettings(system.settings.config)
+    httpsProxy(InetSocketAddress.createUnresolved(settings.host, settings.port), proxyCredentials)
+  }
 
   private case class HttpsProxyTransport(proxyAddress: InetSocketAddress, underlyingTransport: ClientTransport = TCP, proxyCredentials: Option[HttpCredentials] = None) extends ClientTransport {
     def this(proxyAddress: InetSocketAddress, underlyingTransport: ClientTransport) = this(proxyAddress, underlyingTransport, None)

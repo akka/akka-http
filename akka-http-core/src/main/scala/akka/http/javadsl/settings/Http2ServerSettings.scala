@@ -4,9 +4,11 @@
 
 package akka.http.javadsl.settings
 
+import akka.annotation.DoNotInherit
 import akka.http.scaladsl
 import com.typesafe.config.Config
 
+@DoNotInherit
 trait Http2ServerSettings { self: scaladsl.settings.Http2ServerSettings ⇒
   def getRequestEntityChunkSize: Int = requestEntityChunkSize
   def withRequestEntityChunkSize(newRequestEntityChunkSize: Int): Http2ServerSettings
@@ -16,6 +18,9 @@ trait Http2ServerSettings { self: scaladsl.settings.Http2ServerSettings ⇒
 
   def getIncomingStreamLevelBufferSize: Int = incomingStreamLevelBufferSize
   def withIncomingStreamLevelBufferSize(newIncomingStreamLevelBufferSize: Int): Http2ServerSettings
+
+  def getMaxConcurrentStreams: Int = maxConcurrentStreams
+  def withMaxConcurrentStreams(newValue: Int): Http2ServerSettings
 }
 object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
   def create(config: Config): Http2ServerSettings = scaladsl.settings.Http2ServerSettings(config)

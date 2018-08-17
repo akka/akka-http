@@ -35,10 +35,18 @@ The @ref[handleRejections](directives/execution-directives/handleRejections.md) 
 so it can choose whether it would like to handle the current set of rejections or not.
 Unhandled rejections will simply continue to flow through the route structure.
 
-The default `RejectionHandler` applied by the top-level glue code that turns a @unidoc[Route] into a
+The default `RejectionHandler` applied by the top-level glue code that turns a @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]] into a
 @unidoc[Flow] or async handler function for the @ref[low-level API](../server-side/low-level-api.md)
 @scala[(via `Route.handlerFlow` or `Route.asyncHandler`)]
 will handle *all* rejections that reach it.
+
+
+@@@ note
+Please note that since version `10.1.2`, the default `RejectionHandler` will also discard the entity bytes automatically. If you want to change this behavior,
+please refer to @ref[Customising rejection HTTP Responses](rejections.md#customising-rejections) if you want to change this behavior; however, might cause connections to stall 
+if the entity is not properly rejected or cancelled on the client side.
+@@@
+
 
 ## Rejection Cancellation
 
@@ -92,7 +100,7 @@ After having created a new `Builder` instance
 you can attach handling logic for certain types of rejections through three helper methods:
 
 @scala[handle(PartialFunction[Rejection, Route])]@java[handle(Class<T>, Function<T, Route>)]
-: Handles the provided type of rejections with the given function. The provided function simply produces a @unidoc[Route] which is
+: Handles the provided type of rejections with the given function. The provided function simply produces a @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]] which is
 run when the rejection is "caught". This makes the full power of the Routing DSL available for defining rejection
 handlers and even allows for recursing back into the main route structure if required.
 
@@ -112,7 +120,7 @@ This way the priority between rejections is properly defined via the order of yo
 
 Once you have defined your custom `RejectionHandler` you have two options for "activating" it:
 
- 1. @scala[Bring it into implicit scope at the top-level]@java[Pass it to the `seal()` method of the @unidoc[Route] class]
+ 1. @scala[Bring it into implicit scope at the top-level]@java[Pass it to the `seal()` method of the @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]] class]
  2. Supply it as an argument to the @ref[handleRejections](directives/execution-directives/handleRejections.md) directive
 
 In the first case your handler will be "sealed" (which means that it will receive the default handler as a fallback for
@@ -121,6 +129,7 @@ itself.
 
 The second case allows you to restrict the applicability of your handler to certain branches of your route structure.
 
+<a id="customising-rejections"></a>
 ### Customising rejection HTTP Responses
 
 It is also possible to customise just the responses that are returned by a defined rejection handler.

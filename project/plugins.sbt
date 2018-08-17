@@ -13,15 +13,15 @@ addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.8.1")
 addSbtPlugin("com.dwijnand" % "sbt-dynver" % "2.0.0")
 addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.1")
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "2.1.0")
-addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.3.3")
+addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.3.4")
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.0") // for advanced PR validation features
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.1")
 addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.2")
 addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.4")
 addSbtPlugin("com.lightbend.paradox" % "sbt-paradox" % "0.3.2")
-addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.6")
-addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.10")
-addSbtPlugin("de.heikoseeberger" % "sbt-header" % "4.1.0")
+addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.9")
+addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.12")
+addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.0.0")
 
 // used in ValidatePullRequest to check github PR comments whether to build all subprojects
 libraryDependencies += "org.kohsuke" % "github-api" % "1.92"

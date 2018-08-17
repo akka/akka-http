@@ -16,7 +16,7 @@ It's a simple alias for a function turning a @unidoc[RequestContext] into a `Fut
 
 @@@ div { .group-java }
 
-A @unidoc[Route] itself is a function that operates on a @unidoc[RequestContext] and returns a @unidoc[RouteResult]. The
+A @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]] itself is a function that operates on a @unidoc[RequestContext] and returns a @unidoc[RouteResult]. The
 @unidoc[RequestContext] is a data structure that contains the current request and auxiliary data like the so far unmatched
 path of the request URI that gets passed through the route structure. It also contains the current `ExecutionContext`
 and `akka.stream.Materializer`, so that these don't have to be passed around manually.
@@ -34,15 +34,15 @@ The first case is pretty clear, by calling `complete` a given response is sent t
 request. In the second case "reject" means that the route does not want to handle the request. You'll see further down
 in the section about route composition what this is good for.
 
-A @unidoc[Route] can be "sealed" using `Route.seal`, which relies on the in-scope `RejectionHandler` and @unidoc[ExceptionHandler]
+A @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]] can be "sealed" using `Route.seal`, which relies on the in-scope `RejectionHandler` and @unidoc[ExceptionHandler]
 instances to convert rejections and exceptions into appropriate HTTP responses for the client.
 @ref[Sealing a Route](#sealing-a-route) is described more in detail later. 
 
 
-Using `Route.handlerFlow` or `Route.asyncHandler` a @unidoc[Route] can be lifted into a handler @unidoc[Flow] or async handler
+Using `Route.handlerFlow` or `Route.asyncHandler` a @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]] can be lifted into a handler @unidoc[Flow] or async handler
 function to be used with a `bindAndHandleXXX` call from the @ref[Core Server API](../server-side/low-level-api.md).
 
-Note: There is also an implicit conversion from @unidoc[Route] to @unidoc[Flow[HttpRequest, HttpResponse, Unit]] defined in the
+Note: There is also an implicit conversion from @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]] to @unidoc[Flow[HttpRequest, HttpResponse, Unit]] defined in the
 @unidoc[RouteResult] companion, which relies on `Route.handlerFlow`.
 
 <a id="requestcontext"></a>
@@ -59,7 +59,7 @@ modified copies.
 <a id="routeresult"></a>
 ## RouteResult
 
-@unidoc[RouteResult] is a simple abstract data type (ADT) that models the possible non-error results of a @unidoc[Route].
+@unidoc[RouteResult] is a simple abstract data type (ADT) that models the possible non-error results of a @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]].
 It is defined as such:
 
 @@@ div { .group-scala }
@@ -164,7 +164,7 @@ specific cases up front and the most general cases in the back.
 As described in @ref[Rejections](rejections.md#rejections-scala) and @ref[Exception Handling](exception-handling.md#exception-handling-scala),
 there are generally two ways to handle rejections and exceptions.
 
- * Bring rejection/exception handlers @scala[`into implicit scope at the top-level`]@java[`seal()` method of the @unidoc[Route]]
+ * Bring rejection/exception handlers @scala[`into implicit scope at the top-level`]@java[`seal()` method of the @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]]]
  * Supply handlers as arguments to @ref[handleRejections](directives/execution-directives/handleRejections.md#handlerejections) and @ref[handleExceptions](directives/execution-directives/handleExceptions.md#handleexceptions) directives 
 
 In the first case your handlers will be "sealed", (which means that it will receive the default handler as a fallback for all cases your handler doesn't handle itself) 
@@ -184,3 +184,25 @@ Scala
 
 Java
 :   @@snip [RouteSealExample.java]($root$/src/test/java/docs/http/javadsl/RouteSealExample.java) { #route-seal-example }
+
+### Converting routes between Java and Scala DSLs
+
+In some cases when building reusable libraries that expose routes, it may be useful to be able to convert routes between
+their Java and Scala DSL representations. You can do so using the `asScala` method on a Java DSL route, or by using an
+`RouteAdapter` to wrap an Scala DSL route. 
+
+Converting Scala DSL routes to Java DSL:
+
+Scala
+:   @@snip [RouteJavaScalaDslConversionSpec.scala]($akka-http$//akka-http-tests/src/test/scala/akka/http/scaladsl/RouteJavaScalaDslConversionSpec.scala) { #scala-to-java }
+
+Java
+:   @@snip [RouteSealExample.java]($akka-http$/akka-http-tests/src/test/java/docs/http/javadsl/server/RouteJavaScalaDslConversionTest.java) { #scala-to-java }
+
+Converting Java DSL routes to Scala DSL:
+
+Scala
+:   @@snip [RouteJavaScalaDslConversionSpec.scala]($akka-http$//akka-http-tests/src/test/scala/akka/http/scaladsl/RouteJavaScalaDslConversionSpec.scala) { #java-to-scala }
+
+Java
+:   @@snip [RouteSealExample.java]($akka-http$/akka-http-tests/src/test/java/docs/http/javadsl/server/RouteJavaScalaDslConversionTest.java) { #java-to-scala }

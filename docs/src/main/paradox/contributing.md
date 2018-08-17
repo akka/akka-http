@@ -111,7 +111,7 @@ To use the task simply type, and the output should include entries like shown be
 ```
 > validatePullRequest
 [info] Diffing [HEAD] to determine changed modules in PR...
-[info] Detected uncomitted changes in directories (including in dependency analysis): [akka-protobuf,project]
+[info] Detected uncommitted changes in directories (including in dependency analysis): [akka-protobuf,project]
 [info] Detected changes in directories: [docs, project, akka-http-tests, akka-protobuf, akka-http-testkit, akka-http, akka-http-core, akka-stream]
 ```
 

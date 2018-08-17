@@ -6,6 +6,7 @@ package akka.http.scaladsl.marshalling
 
 import akka.annotation.InternalApi
 import akka.http.scaladsl.common.EntityStreamingSupport
+import akka.http.scaladsl.marshalling.Marshal.selectMarshallingForContentType
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
@@ -104,25 +105,16 @@ trait LowPriorityToResponseMarshallerImplicits {
         Marshalling.WithFixedContentType(s.contentType, () ⇒ {
           val availableMarshallingsPerElement = source.mapAsync(1) { t ⇒ m(t)(ec) }
 
-          // TODO optimise such that we pick the optimal marshalling only once (headAndTail needed?)
-          // TODO, NOTE: this is somewhat duplicated from Marshal.scala it could be made DRYer
           val bestMarshallingPerElement = availableMarshallingsPerElement map { marshallings ⇒
             // pick the Marshalling that matches our EntityStreamingSupport
-            val selectedMarshalling = s.contentType match {
-              case best @ (_: ContentType.Binary | _: ContentType.WithFixedCharset | _: ContentType.WithMissingCharset) ⇒
-                marshallings collectFirst { case Marshalling.WithFixedContentType(`best`, marshal) ⇒ marshal }
-
-              case best @ ContentType.WithCharset(bestMT, bestCS) ⇒
-                marshallings collectFirst {
-                  case Marshalling.WithFixedContentType(`best`, marshal) ⇒ marshal
-                  case Marshalling.WithOpenCharset(`bestMT`, marshal)    ⇒ () ⇒ marshal(bestCS)
-                }
-            }
-
-            // TODO we could either special case for certrain known types,
+            // TODO we could either special case for certain known types,
             // or extend the entity support to be more advanced such that it would negotiate the element content type it
             // is able to render.
-            selectedMarshalling.getOrElse(throw new NoStrictlyCompatibleElementMarshallingAvailableException[T](s.contentType, marshallings))
+            selectMarshallingForContentType(marshallings, s.contentType)
+              .orElse {
+                marshallings collectFirst { case Marshalling.Opaque(marshal) ⇒ marshal }
+              }
+              .getOrElse(throw new NoStrictlyCompatibleElementMarshallingAvailableException[T](s.contentType, marshallings))
           }
 
           val marshalledElements: Source[ByteString, M] =

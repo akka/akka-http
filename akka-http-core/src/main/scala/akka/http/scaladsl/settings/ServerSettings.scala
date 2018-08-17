@@ -12,6 +12,7 @@ import akka.http.impl.util._
 import akka.http.impl.settings.ServerSettingsImpl
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.{ settings ⇒ js }
+import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.headers.Server
 import akka.io.Inet.SocketOption
@@ -49,6 +50,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def http2Settings: Http2ServerSettings
   def defaultHttpPort: Int
   def defaultHttpsPort: Int
+  def terminationDeadlineExceededResponse: HttpResponse
 
   /* Java APIs */
 
@@ -72,7 +74,8 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   }
   override def getDefaultHttpPort: Int = defaultHttpPort
   override def getDefaultHttpsPort: Int = defaultHttpsPort
-
+  override def getTerminationDeadlineExceededResponse: akka.http.javadsl.model.HttpResponse =
+    terminationDeadlineExceededResponse
   // ---
 
   // override for more specific return type
@@ -92,6 +95,8 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   override def getWebsocketSettings: WebSocketSettings = self.websocketSettings
   override def withDefaultHttpPort(newValue: Int): ServerSettings = self.copy(defaultHttpPort = newValue)
   override def withDefaultHttpsPort(newValue: Int): ServerSettings = self.copy(defaultHttpsPort = newValue)
+  override def withTerminationDeadlineExceededResponse(response: akka.http.javadsl.model.HttpResponse): ServerSettings =
+    self.copy(terminationDeadlineExceededResponse = response.asScala)
 
   // overloads for Scala idiomatic use
   def withTimeouts(newValue: ServerSettings.Timeouts): ServerSettings = self.copy(timeouts = newValue)
@@ -104,7 +109,13 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   }))
   def withWebsocketSettings(newValue: WebSocketSettings): ServerSettings = self.copy(websocketSettings = newValue)
   def withSocketOptions(newValue: immutable.Seq[SocketOption]): ServerSettings = self.copy(socketOptions = newValue)
+  def withHttp2Settings(newValue: Http2ServerSettings): ServerSettings = copy(http2Settings = newValue)
 
+  // Scala-only lenses
+  def mapHttp2Settings(f: Http2ServerSettings ⇒ Http2ServerSettings): ServerSettings = withHttp2Settings(f(http2Settings))
+  def mapParserSettings(f: ParserSettings ⇒ ParserSettings): ServerSettings = withParserSettings(f(parserSettings))
+  def mapPreviewServerSettings(f: PreviewServerSettings ⇒ PreviewServerSettings): ServerSettings = withPreviewServerSettings(f(previewServerSettings))
+  def mapWebsocketSettings(f: WebSocketSettings ⇒ WebSocketSettings): ServerSettings = withWebsocketSettings(f(websocketSettings))
 }
 
 object ServerSettings extends SettingsCompanion[ServerSettings] {

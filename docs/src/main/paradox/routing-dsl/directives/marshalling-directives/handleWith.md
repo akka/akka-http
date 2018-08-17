@@ -24,7 +24,7 @@ to a given function without requiring any akka-http-specific functionality.
 
 `handleWith` is similar to `produce`.  The main difference is `handleWith` automatically
 calls `complete` when the function passed to `handleWith` returns. Using `produce` you
-must explicity call the completion function passed from the `produce` function.
+must explicitly call the completion function passed from the `produce` function.
 
 See @ref[marshalling](../../../common/marshalling.md) and @ref[unmarshalling](../../../common/unmarshalling.md) for guidance
 on marshalling entities with akka-http.

@@ -288,7 +288,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
 
-        val HttpResponse(_, _, HttpEntity.Chunked(ct, chunks), _) = expectResponse()
+        val HttpResponse(_, _, HttpEntity.Chunked(_, chunks), _) = expectResponse()
 
         val probe = TestSubscriber.manualProbe[ChunkStreamPart]()
         chunks.runWith(Sink.fromSubscriber(probe))
@@ -479,7 +479,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
 
         sendWireData("4\nDEFXX")
         sub.request(1)
-        val error @ EntityStreamException(info) = probe.expectError()
+        val _@ EntityStreamException(info) = probe.expectError()
         info.summary shouldEqual "Illegal chunk termination"
 
         responses.expectComplete()

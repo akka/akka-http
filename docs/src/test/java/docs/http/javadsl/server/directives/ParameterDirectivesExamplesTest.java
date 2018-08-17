@@ -20,17 +20,22 @@ import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.parameter;
 
 //#parameter
-//#parameter
+//#parameters
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.parameter;
 
-//#parameter
+//#parameters
 //#optional
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.parameter;
 import static akka.http.javadsl.server.Directives.parameterOptional;
 
 //#optional
+//#required-value
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.parameterRequiredValue;
+
+//#required-value
 //#mapped-value
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.parameter;
@@ -95,36 +100,56 @@ public class ParameterDirectivesExamplesTest extends JUnitRouteTest {
   public void testParameterOptional() {
     //#optional
     final Route route = parameter("color", color ->
-            parameterOptional("backgroundColor", backgroundColor ->
-                    complete("The color is '" + color
-                            + "' and the background is '" + backgroundColor.orElse("undefined") + "'")
-            )
+      parameterOptional("backgroundColor", backgroundColor ->
+        complete("The color is '" + color + "' and the background is '"
+          + backgroundColor.orElse("undefined") + "'")
+      )
     );
 
     // tests:
     testRoute(route).run(HttpRequest.GET("/?color=blue&backgroundColor=red"))
-            .assertEntity("The color is 'blue' and the background is 'red'");
+      .assertEntity("The color is 'blue' and the background is 'red'");
 
     testRoute(route).run(HttpRequest.GET("/?color=blue"))
-            .assertEntity("The color is 'blue' and the background is 'undefined'");
+      .assertEntity("The color is 'blue' and the background is 'undefined'");
     //#optional
+  }
+
+  @Test
+  public void testParameterRequiredValue() {
+    //#required-value
+    final Route route = parameter("color", color ->
+      parameterRequiredValue(StringUnmarshallers.BOOLEAN, true, "action", () ->
+        complete("The color is '" + color + "'.")
+      )
+    );
+
+    // tests:
+    testRoute(route).run(HttpRequest.GET("/?color=blue&action=true"))
+      .assertStatusCode(StatusCodes.OK)
+      .assertEntity("The color is 'blue'.");
+
+    testRoute(route).run(HttpRequest.GET("/?color=blue&action=false"))
+      .assertStatusCode(StatusCodes.NOT_FOUND)
+      .assertEntity("Request is missing required value 'true' for query parameter 'action'");
+    //#required-value
   }
 
   @Test
   public void testParameterMappedValue() {
     //#mapped-value
     final Route route = parameter("color", color ->
-            parameter(StringUnmarshallers.INTEGER,"count", count ->
-                    complete("The color is '" + color + "' and you have " + count + " of it.")
-            )
+      parameter(StringUnmarshallers.INTEGER,"count", count ->
+        complete("The color is '" + color + "' and you have " + count + " of it.")
+      )
     );
     // tests:
     testRoute(route).run(HttpRequest.GET("/?color=blue&count=42"))
-            .assertEntity("The color is 'blue' and you have 42 of it.");
+      .assertEntity("The color is 'blue' and you have 42 of it.");
 
     testRoute(route).run(HttpRequest.GET("/?color=blue&count=blub"))
-            .assertStatusCode(StatusCodes.BAD_REQUEST)
-            .assertEntity("The query parameter 'count' was malformed:\n'blub'"
+      .assertStatusCode(StatusCodes.BAD_REQUEST)
+      .assertEntity("The query parameter 'count' was malformed:\n'blub'"
                           +" is not a valid 32-bit signed integer value");
     //#mapped-value
   }

@@ -514,6 +514,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         connSourceSub.cancel()
       }
     }
+
     "complete a request/response when request has `Connection: close` set" in Utils.assertAllStagesStopped {
       // In akka/akka#19542 / akka/akka-http#459 it was observed that when an akka-http closes the connection after
       // a request, the TCP connection is sometimes aborted. Aborting means that `socket.close` is called with SO_LINGER = 0
@@ -555,6 +556,33 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       try {
         (1 to 10).foreach(runOnce)
       } finally server.foreach(_.unbind())
+    }
+
+    "complete a request/response when the request side immediately closes the connection after sending the request" in Utils.assertAllStagesStopped {
+      val (hostname, port) = ("localhost", 8080)
+      val responsePromise = Promise[HttpResponse]()
+
+      // settings adapting network buffer sizes
+      val serverSettings = ServerSettings(system)
+
+      val server = Http().bindAndHandleAsync(_ ⇒ responsePromise.future, hostname, port, settings = serverSettings)
+
+      try {
+        val result = Source.single(ByteString(
+          """GET / HTTP/1.1
+Host: example.com
+
+"""))
+          .via(Tcp().outgoingConnection(hostname, port))
+          .runWith(Sink.reduce[ByteString](_ ++ _))
+        Try(Await.result(result, 2.seconds).utf8String) match {
+          case scala.util.Success(body)                ⇒ fail(body)
+          case scala.util.Failure(_: TimeoutException) ⇒ // Expected
+        }
+      } finally {
+        responsePromise.failure(new TimeoutException())
+        server.foreach(_.unbind())
+      }
     }
 
     "complete a request/response over https when request has `Connection: close` set" in Utils.assertAllStagesStopped {

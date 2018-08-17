@@ -64,5 +64,8 @@ final class RouteAdapter(val delegate: akka.http.scaladsl.server.Route) extends 
 }
 
 object RouteAdapter {
-  def apply(delegate: akka.http.scaladsl.server.Route) = new RouteAdapter(delegate)
+  def apply(delegate: akka.http.scaladsl.server.Route): RouteAdapter = new RouteAdapter(delegate)
+
+  /** Java DSL: Adapt an existing ScalaDSL Route as an Java DSL Route */
+  def asJava(delegate: akka.http.scaladsl.server.Route): Route = new RouteAdapter(delegate)
 }

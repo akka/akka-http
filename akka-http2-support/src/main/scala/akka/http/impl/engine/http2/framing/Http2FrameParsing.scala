@@ -108,10 +108,11 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteS
                 if (payload.hasRemaining) {
                   val id = payload.readShortBE()
                   val value = payload.readIntBE()
-                  readSettings(Setting(SettingIdentifier.byId(id), value) :: read)
+                  if (isKnownId(id)) readSettings(Setting(SettingIdentifier.byId(id), value) :: read)
+                  else readSettings(read)
                 } else read.reverse
 
-              if (payload.remainingSize % 6 != 0) throw new Http2Compliance.IllegalPayloadLengthInSettingsFrame(payload.remainingSize, "SETTINGS payload MUDT be a multiple of multiple of 6 octets")
+              if (payload.remainingSize % 6 != 0) throw new Http2Compliance.IllegalPayloadLengthInSettingsFrame(payload.remainingSize, "SETTINGS payload MUST be a multiple of multiple of 6 octets")
               SettingsFrame(readSettings(Nil))
             }
 

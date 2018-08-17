@@ -24,7 +24,7 @@ transport layer itself.
 A @unidoc[ClientTransport] can be configured in the @unidoc[ClientConnectionSettings]. Right now, this is not possible
 through config files but only by code. First, use `ClientConnectionSettings.withTransport` to configure a transport,
 then use `ConnectionPoolSettings.withConnectionSettings`. @unidoc[ClientConnectionSettings] can be passed to all
-client-side entry points in @unidoc[Http].
+client-side entry points in @scala[@unidoc[Http$]]@java[@unidoc[Http]].
 
 ## Predefined Transports
 
@@ -43,6 +43,20 @@ This approach is commonly used to securely proxy requests to HTTPS endpoints. In
 requests targeting HTTP endpoints, but we have not yet found a proxy that in fact allows this.
 
 Instantiate the HTTP(S) proxy transport using `ClientTransport.httpsProxy(proxyAddress)`.
+
+The proxy transport can also be setup using `ClientTransport.httpsProxy()` or `ClientTransport.httpsProxy(basicHttpCredentials)`
+In order to defined the transport as such, you will need to set the proxy host / port in your `conf` file like the following.
+
+```
+akka.http.client.proxy {
+ https {
+   host = ""
+   port = 443
+ }
+}
+```
+
+If host is left as `""` and you attempt to setup a httpsProxy transport, an exception will be thrown.
 
 ### Use HTTP(S) proxy with @scala[`Http().singleRequest`]@java[`Http.get(...).singleRequest`]
 
