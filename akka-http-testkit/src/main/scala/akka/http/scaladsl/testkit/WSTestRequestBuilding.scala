@@ -4,12 +4,14 @@
 
 package akka.http.scaladsl.testkit
 
+import akka.http.impl.engine.ws.Handshake.Server
 import akka.http.impl.engine.ws.InternalCustomHeader
-import akka.http.scaladsl.model.headers.{ UpgradeProtocol, Upgrade, `Sec-WebSocket-Protocol` }
-import akka.http.scaladsl.model.{ StatusCodes, HttpResponse, HttpRequest, Uri }
-import akka.http.scaladsl.model.ws.{ UpgradeToWebSocket, Message }
+import akka.http.scaladsl.model.headers.{ Upgrade, UpgradeProtocol, `Sec-WebSocket-Protocol` }
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, StatusCodes, Uri }
+import akka.http.scaladsl.model.ws.{ Message, UpgradeToWebSocket }
+
 import scala.collection.immutable
-import akka.stream.{ Materializer, Graph, FlowShape }
+import akka.stream.{ FlowShape, Graph, Materializer }
 import akka.stream.scaladsl.Flow
 
 trait WSTestRequestBuilding {
@@ -23,8 +25,7 @@ trait WSTestRequestBuilding {
           HttpResponse(
             StatusCodes.SwitchingProtocols,
             headers =
-              Upgrade(UpgradeProtocol("websocket") :: Nil) ::
-                subprotocol.map(p ⇒ `Sec-WebSocket-Protocol`(p :: Nil)).toList)
+              Upgrade(UpgradeProtocol("websocket") :: Nil) :: Server.selectSubProtocol(subprotocols.to[immutable.Seq], subprotocol).toList)
         }
       })
 }

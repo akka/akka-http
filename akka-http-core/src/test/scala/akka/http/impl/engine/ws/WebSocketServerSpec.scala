@@ -154,8 +154,6 @@ class WebSocketServerSpec extends FreeSpec with Matchers with WithMaterializerSp
               |
               |""")
 
-          expectWSFrame(Protocol.Opcode.Ping, ByteString.empty, fin = true)
-
           sendWSCloseFrame(Protocol.CloseCodes.Regular, mask = true)
           expectWSCloseFrame(Protocol.CloseCodes.Regular)
 
@@ -164,6 +162,47 @@ class WebSocketServerSpec extends FreeSpec with Matchers with WithMaterializerSp
         }
       }
     }
+
+    "select first sub protocol when accept wildcard" in Utils.assertAllStagesStopped {
+
+      new TestSetup {
+        send(
+          """GET /echo HTTP/1.1
+            |Host: server.example.com
+            |Upgrade: websocket
+            |Connection: Upgrade
+            |Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+            |Sec-WebSocket-Protocol: cat, dog
+            |Origin: http://example.com
+            |Sec-WebSocket-Version: 13
+            |
+            |""")
+
+        val request = expectRequest()
+        val upgrade = request.header[UpgradeToWebSocket]
+        val handler = Flow.fromSinkAndSourceCoupled(Sink.ignore, Source.maybe[Message])
+        val response = upgrade.get.handleMessages(handler, Some("*"))
+        responses.sendNext(response)
+
+        expectResponseWithWipedDate(
+          """HTTP/1.1 101 Switching Protocols
+            |Sec-WebSocket-Protocol: cat
+            |Upgrade: websocket
+            |Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
+            |Server: akka-http/test
+            |Date: XXXX
+            |Connection: upgrade
+            |
+            |""")
+
+        sendWSCloseFrame(Protocol.CloseCodes.Regular, mask = true)
+        expectWSCloseFrame(Protocol.CloseCodes.Regular)
+
+        closeNetworkInput()
+        expectNetworkClose()
+      }
+    }
+
     "prevent the selection of an unavailable subprotocol" in pending
     "reject invalid WebSocket handshakes" - {
       "missing `Upgrade: websocket` header" in pending

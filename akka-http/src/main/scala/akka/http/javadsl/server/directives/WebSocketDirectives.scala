@@ -51,6 +51,8 @@ abstract class WebSocketDirectives extends SecurityDirectives {
   /**
    * Handles WebSocket requests with the given handler if the given subprotocol is offered in the request and
    * rejects other requests with an [[ExpectedWebSocketRequestRejection]] or an [[UnsupportedWebSocketSubprotocolRejection]].
+   *
+   * To support any subprotocol `*` can be used.
    */
   def handleWebSocketMessagesForProtocol[T](handler: Flow[Message, Message, T], subprotocol: String): Route = RouteAdapter {
     D.handleWebSocketMessagesForProtocol(adapt(handler), subprotocol)
@@ -66,6 +68,8 @@ abstract class WebSocketDirectives extends SecurityDirectives {
    * the request is rejected with an [[UnsupportedWebSocketSubprotocolRejection]] rejection.
    *
    * To support several subprotocols you may chain several `handleWebSocketMessagesForOptionalProtocol` routes.
+   *
+   * To support any subprotocol `*` can be used.
    */
   def handleWebSocketMessagesForOptionalProtocol[T](handler: Flow[Message, Message, T], subprotocol: Optional[String]): Route = RouteAdapter {
     D.handleWebSocketMessagesForOptionalProtocol(adapt(handler), subprotocol.asScala)
