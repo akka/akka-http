@@ -84,18 +84,34 @@ class HeaderSpec extends FreeSpec with Matchers {
   "Strict-Transport-Security should" - {
     "provide parseFromValueString method" - {
       "successful parse run" in {
+        headers.`Strict-Transport-Security`.parseFromValueString("max-age=30") shouldEqual Right(headers.`Strict-Transport-Security`(30, false))
         headers.`Strict-Transport-Security`.parseFromValueString("max-age=30; includeSubDomains") shouldEqual Right(headers.`Strict-Transport-Security`(30, true))
-        headers.`Strict-Transport-Security`.parseFromValueString("max-age=30; includeSubDomains; preload") shouldEqual Right(headers.`Strict-Transport-Security`(30, true))
+        headers.`Strict-Transport-Security`.parseFromValueString("includeSubDomains; max-age=30") shouldEqual Right(headers.`Strict-Transport-Security`(30, true))
       }
-      "successful parse run with additional values" in {
+      "successful parse run with ignored directives" in {
         headers.`Strict-Transport-Security`.parseFromValueString("max-age=30; includeSubDomains; preload; dummy") shouldEqual
           Right(headers.`Strict-Transport-Security`(30, true))
-        headers.`Strict-Transport-Security`.parseFromValueString("max-age=30; includeSubDomains; dummy; preload") shouldEqual
+        headers.`Strict-Transport-Security`.parseFromValueString("max-age=30; includeSubDomains; foo=bar; preload") shouldEqual
           Right(headers.`Strict-Transport-Security`(30, true))
       }
-      "failing parse run" in {
-        val Left(List(ErrorInfo(summary, detail))) = `Strict-Transport-Security`.parseFromValueString("max-age=30; includeSubDomains; preload;")
-        summary shouldEqual "Illegal HTTP header 'Strict-Transport-Security': Invalid input 'EOI', expected OWS or token0 (line 1, column 40)"
+      "successful parse run with trailing semicolons" in {
+        headers.`Strict-Transport-Security`.parseFromValueString("max-age=30;") shouldEqual Right(headers.`Strict-Transport-Security`(30, false))
+        headers.`Strict-Transport-Security`.parseFromValueString("max-age=30; includeSubDomains;;;") shouldEqual Right(headers.`Strict-Transport-Security`(30, true))
+      }
+      "failing parse run because of missing max-age directive" in {
+        val Left(List(ErrorInfo(summary, detail))) = `Strict-Transport-Security`.parseFromValueString("includeSubDomains")
+        summary shouldEqual "Illegal HTTP header 'Strict-Transport-Security'"
+        detail shouldEqual "exactly one 'max-age' directive required"
+      }
+      "failing parse run because of too many max-age directives" in {
+        val Left(List(ErrorInfo(summary, detail))) = `Strict-Transport-Security`.parseFromValueString("max-age=30; max-age=30")
+        summary shouldEqual "Illegal HTTP header 'Strict-Transport-Security'"
+        detail shouldEqual "exactly one 'max-age' directive required"
+      }
+      "failing parse run because of too many includeSubDomains directives" in {
+        val Left(List(ErrorInfo(summary, detail))) = `Strict-Transport-Security`.parseFromValueString("max-age=30; includeSubDomains; includeSubDomains")
+        summary shouldEqual "Illegal HTTP header 'Strict-Transport-Security'"
+        detail shouldEqual "at most one 'includeSubDomains' directive allowed"
       }
     }
   }
