@@ -24,7 +24,7 @@ import akka.http.impl.engine.parsing.ParserOutput.{ MessageStartError, NeedMoreD
 import akka.http.impl.engine.parsing.{ HttpHeaderParser, HttpResponseParser, ParserOutput }
 import akka.http.impl.engine.rendering.{ HttpRequestRendererFactory, RequestRenderingContext }
 import akka.http.impl.engine.ws.Handshake.Client.NegotiatedWebSocketSettings
-import akka.http.impl.util.StreamUtils
+import akka.http.impl.util.{ SingletonException, StreamUtils }
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 
 /** INTERNAL API */
@@ -65,13 +65,23 @@ private[http] object WebSocketClientBlueprint {
         new GraphStageLogic(shape) with InHandler with OutHandler {
           // a special version of the parser which only parses one message and then reports the remaining data
           // if some is available
-          val parser = new HttpResponseParser(settings.parserSettings, HttpHeaderParser(settings.parserSettings, log)) {
+          val parser: HttpResponseParser = new HttpResponseParser(settings.parserSettings, HttpHeaderParser(settings.parserSettings, log)) {
             var first = true
             override def handleInformationalResponses = false
             override protected def parseMessage(input: ByteString, offset: Int): StateResult = {
               if (first) {
-                first = false
-                super.parseMessage(input, offset)
+                try {
+                  // If we're called recursively then that's a next message
+                  first = false
+                  super.parseMessage(input, offset)
+                } catch {
+                  // Specifically NotEnoughDataException, but that's not visible here
+                  case t: SingletonException ⇒ {
+                    // If parsing the first message fails, retry and treat it like the first message again.
+                    first = true
+                    throw t
+                  }
+                }
               } else {
                 emit(RemainingBytes(input.drop(offset)))
                 terminate()
