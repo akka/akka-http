@@ -101,7 +101,7 @@ class Http2ServerSpec extends AkkaSpec("""
         val incorrectHeaderBlock = hex"00 00 01 01 05 00 00 00 01 40"
         sendHEADERS(3, endStream = false, endHeaders = true, headerBlockFragment = incorrectHeaderBlock)
 
-        val (_, errorCode) = expectGOAWAY(1) // since we have sucessfully started processing stream `1`
+        val (_, errorCode) = expectGOAWAY(1) // since we have successfully started processing stream `1`
         errorCode should ===(ErrorCode.COMPRESSION_ERROR)
       }
       "Three consecutive GET requests" in new SimpleRequestResponseRoundtripSetup {

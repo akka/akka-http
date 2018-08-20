@@ -45,6 +45,10 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
     settings:    ServerSettings,
     parallelism: Int,
     log:         LoggingAdapter)(implicit fm: Materializer): Future[ServerBinding] = {
+    if (parallelism == 1)
+      log.warning("HTTP/2 `bindAndHandleAsync` was called with default parallelism = 1. This means that request handling " +
+        "concurrency per connection is disabled. This is likely not what you want with HTTP/2.")
+
     val effectivePort = if (port >= 0) port else 80
 
     val serverLayer: Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(

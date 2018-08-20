@@ -177,7 +177,7 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
           "Logged Request:" + request.method().name() + ":" + request.getUri() + ":" + response.status() + ":" + elapsedTime,
           InfoLevel()));
     } else {
-      return Optional.empty();  //not a successfull response
+      return Optional.empty();  //not a successful response
     }
   }
 }

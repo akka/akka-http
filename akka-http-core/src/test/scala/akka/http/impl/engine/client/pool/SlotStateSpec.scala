@@ -91,6 +91,28 @@ class SlotStateSpec extends AkkaSpec {
       state should be(Idle)
     }
 
+    "allow postponing completing the request until just after the response was subscribed" in {
+      var state: SlotState = Unconnected
+      val context = new MockSlotContext(system.log)
+      state = context.expectOpenConnection {
+        state.onPreConnect(context)
+      }
+      state = state.onNewRequest(context, RequestContext(HttpRequest(), Promise[HttpResponse], 0))
+
+      state = state.onConnectionAttemptSucceeded(context, outgoingConnection)
+
+      context.expectRequestDispatchToConnection()
+
+      state = state.onResponseReceived(context, HttpResponse())
+      state = state.onResponseDispatchable(context)
+      state = state.onResponseEntitySubscribed(context)
+
+      state = state.onRequestEntityCompleted(context)
+
+      state = state.onResponseEntityCompleted(context)
+      state should be(Idle)
+    }
+
     "consider a slot 'idle' only when the request has been successfully sent" in {
       var state: SlotState = Unconnected
       val context = new MockSlotContext(system.log)

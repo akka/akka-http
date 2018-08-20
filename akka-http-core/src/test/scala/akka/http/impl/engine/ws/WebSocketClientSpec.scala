@@ -29,6 +29,7 @@ import akka.http.impl.util._
 class WebSocketClientSpec extends FreeSpec with Matchers with WithMaterializerSpec {
   "The client-side WebSocket implementation should" - {
     "establish a websocket connection when the user requests it" in new EstablishedConnectionSetup with ClientEchoes
+
     "establish connection with case insensitive header values" in new TestSetup with ClientEchoes {
       expectWireData(UpgradeRequestBytes)
       sendWireData("""HTTP/1.1 101 Switching Protocols
@@ -43,6 +44,23 @@ class WebSocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
       sendWSFrame(Protocol.Opcode.Text, ByteString("Message 1"), fin = true)
       expectMaskedFrameOnNetwork(Protocol.Opcode.Text, ByteString("Message 1"), fin = true)
     }
+
+    "establish connection with header values sent in parts" in new TestSetup with ClientEchoes {
+      expectWireData(UpgradeRequestBytes)
+      sendWireData("""HTTP/1.1 101 """)
+      sendWireData("""Switching Protocols
+                     |Upgrade: websocket
+                     |Sec-WebSocket-Accept: ujmZX4KXZqjwy6vi1aQFH5p4Ygk=
+                     |Server: akka-http/test
+                     |Sec-WebSocket-Version: 13
+                     |Connection: upgrade
+                     |
+                     |""")
+
+      sendWSFrame(Protocol.Opcode.Text, ByteString("Message 1"), fin = true)
+      expectMaskedFrameOnNetwork(Protocol.Opcode.Text, ByteString("Message 1"), fin = true)
+    }
+
     "reject invalid handshakes" - {
       "other status code" in new TestSetup with ClientEchoes {
         expectWireData(UpgradeRequestBytes)

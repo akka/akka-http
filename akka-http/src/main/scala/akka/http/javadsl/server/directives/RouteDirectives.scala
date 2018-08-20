@@ -54,7 +54,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
   }
 
   /**
-   * Rejects the request with an empty rejection (usualy used for "no directive matched").
+   * Rejects the request with an empty rejection (usually used for "no directive matched").
    */
   def reject(): Route = RouteAdapter {
     D.reject()

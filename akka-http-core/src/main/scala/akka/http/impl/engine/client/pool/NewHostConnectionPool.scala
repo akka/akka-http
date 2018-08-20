@@ -335,7 +335,7 @@ private[client] object NewHostConnectionPool {
 
             // bit of a HACK: pushing the request may cause a onRequestEntityCompleted event on the current thread.
 
-            // To accomodate this we first do an 'early' update of the state:
+            // To accommodate this we first do an 'early' update of the state:
             state = nextState
             // Then execute the action that might cause the 'inline' state change:
             connection.pushRequest(request)

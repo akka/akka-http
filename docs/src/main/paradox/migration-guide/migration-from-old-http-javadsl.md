@@ -15,7 +15,7 @@ The most major changes include:
 @unidoc[HttpApp] (a helper class containing a `main()` implementation) is gone, as we would like to encourage understanding
 how the various elements of the API fit together.
 
-Instead developers should start applications "manually", by converting a @unidoc[Route] to a @unidoc[Flow[HttpRequest, HttpResponse, ?]]
+Instead developers should start applications "manually", by converting a @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]] to a @unidoc[Flow[HttpRequest, HttpResponse, ?]]
 using the `Route.flow` method. For examples of full apps refer to @ref[Route Testkit](../routing-dsl/testkit.md).
 
 ## `RequestVal` is gone
@@ -47,7 +47,7 @@ final Route route =
 
 ## All of ScalaDSL routing has corresponding JavaDSL
 
-Both @unidoc[Route], @unidoc[RouteResult] and other important core concepts such as `Rejections` are now modeled 1:1 with Scala,
+Both @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]], @unidoc[RouteResult] and other important core concepts such as `Rejections` are now modeled 1:1 with Scala,
 making is much simpler to understand one API based on the other one – tremendously useful when learning about some nice
 pattern from blogs which used Scala, yet need to apply it in Java and the other way around.
 

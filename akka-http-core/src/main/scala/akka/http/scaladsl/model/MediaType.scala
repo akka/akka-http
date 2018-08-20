@@ -56,7 +56,7 @@ sealed abstract class MediaType extends jm.MediaType with LazyValueBytesRenderab
       case _            ⇒ false
     }
 
-  override def hashCode(): Int = value.hashCode
+  override def hashCode(): Int = value.toLowerCase.hashCode
 
   /**
    * JAVA API

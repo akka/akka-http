@@ -111,6 +111,25 @@ class HostConnectionPoolSpec extends AkkaSpec(
         resBodyIn.request(1) // FIXME: should we support eager completion here? (reason is substreamHandler in PrepareResponse)
         resBodyIn.expectComplete()
       }
+      "complete a request/response cycle with a chunked request and response with dependent entity bytes" in new SetupWithServerProbes {
+        val reqBody = Source("Hello" :: " World" :: Nil map ByteString.apply)
+        pushRequest(HttpRequest(uri = "/simple", entity = HttpEntity.Chunked.fromData(ContentTypes.`application/octet-stream`, reqBody)))
+
+        val conn1 = expectNextConnection()
+        val HttpRequest(_, _, _, reqEntityIn: HttpEntity.Chunked, _) = conn1.expectRequest()
+
+        // response data stream is bound to request data stream
+        val respDataBytes = reqEntityIn.dataBytes.map(_.map(_.toChar.toUpper.toByte))
+        conn1.pushResponse(HttpResponse().withEntity(HttpEntity.Chunked.fromData(ContentTypes.`application/octet-stream`, respDataBytes)))
+
+        val resBodyIn = expectChunkedResponseBytesAsProbe()
+
+        resBodyIn.expectUtf8EncodedString("HELLO")
+        resBodyIn.expectUtf8EncodedString(" WORLD")
+
+        resBodyIn.request(1) // FIXME: should we support eager completion here? (reason is substreamHandler in PrepareResponse)
+        resBodyIn.expectComplete()
+      }
       "open up to max-connections when enough requests are pending" in new SetupWithServerProbes(_.withMaxConnections(2)) {
         pushRequest(HttpRequest(uri = "/1"))
         val conn1 = expectNextConnection()

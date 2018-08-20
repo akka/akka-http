@@ -282,6 +282,11 @@ private[pool] object SlotState {
         Unconnected
       else
         Idle
+
+    override def onRequestEntityCompleted(ctx: SlotContext): SlotState = {
+      require(waitingForEndOfRequestEntity)
+      WaitingForEndOfResponseEntity(ongoingRequest, ongoingResponse, waitingForEndOfRequestEntity = false)
+    }
   }
   final case object WaitingForEndOfRequestEntity extends ConnectedState {
     final override def isIdle = false

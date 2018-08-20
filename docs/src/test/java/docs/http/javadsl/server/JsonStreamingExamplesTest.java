@@ -49,10 +49,6 @@ public class JsonStreamingExamplesTest extends JUnitRouteTest {
 
   //#routes
   final Route tweets() {
-    //#formats
-    final Unmarshaller<ByteString, JavaTweet> JavaTweets = Jackson.byteStringUnmarshaller(JavaTweet.class);
-    //#formats
-
     //#response-streaming
 
     // Step 1: Enable JSON streaming
@@ -84,16 +80,23 @@ public class JsonStreamingExamplesTest extends JUnitRouteTest {
       )
     );
     //#response-streaming
+    return responseStreaming;
+  }
+
+  final Route measurements() {
+    //#measurement-format
+    final Unmarshaller<ByteString, Measurement> Measurements = Jackson.byteStringUnmarshaller(Measurement.class);
+    //#measurement-format
 
     //#incoming-request-streaming
-    final Route incomingStreaming = path("tweets", () ->
+    final Route incomingStreaming = path("metrics", () ->
       post(() ->
         extractMaterializer(mat -> {
-          final JsonEntityStreamingSupport jsonSupport = EntityStreamingSupport.json();
+            final JsonEntityStreamingSupport jsonSupport = EntityStreamingSupport.json();
 
-          return entityAsSourceOf(JavaTweets, jsonSupport, sourceOfTweets -> {
-              final CompletionStage<Integer> tweetsCount = sourceOfTweets.runFold(0, (acc, tweet) -> acc + 1, mat);
-              return onComplete(tweetsCount, c -> complete("Total number of tweets: " + c));
+            return entityAsSourceOf(Measurements, jsonSupport, sourceOfMeasurements -> {
+              final CompletionStage<Integer> measurementCount = sourceOfMeasurements.runFold(0, (acc, measurement) -> acc + 1, mat);
+              return onComplete(measurementCount, c -> complete("Total number of measurements: " + c));
             });
           }
         )
@@ -101,7 +104,7 @@ public class JsonStreamingExamplesTest extends JUnitRouteTest {
     );
     //#incoming-request-streaming
 
-    return responseStreaming.orElse(incomingStreaming);
+    return incomingStreaming;
   }
 
   final Route csvTweets() {
@@ -191,7 +194,7 @@ public class JsonStreamingExamplesTest extends JUnitRouteTest {
     //#response-streaming
   }
 
-  //#models
+  //#tweet-model
   private static final class JavaTweet {
     private int id;
     private String message;
@@ -216,7 +219,35 @@ public class JsonStreamingExamplesTest extends JUnitRouteTest {
     public String getMessage() {
       return message;
     }
-
   }
-  //#models
+  //#tweet-model
+
+  //#measurement-model
+  private static final class Measurement {
+    private String id;
+    private int value;
+
+    public Measurement(String id, int value) {
+      this.id = id;
+      this.value = value;
+    }
+
+    public String getId() {
+      return id;
+    }
+
+    public void setId(String id) {
+      this.id = id;
+    }
+
+    public void setValue(int value) {
+      this.value = value;
+    }
+
+    public int getValue() {
+      return value;
+    }
+  }
+  
+  //#measurement-model
 }

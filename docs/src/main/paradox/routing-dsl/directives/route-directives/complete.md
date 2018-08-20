@@ -23,7 +23,7 @@ The signature shown is simplified, the real signature uses magnets. <a id="^1" h
 
 Completes the request using the given argument(s).
 
-`complete` uses the given arguments to construct a @unidoc[Route] which simply calls `complete` on the @unidoc[RequestContext]
+`complete` uses the given arguments to construct a @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]] which simply calls `complete` on the @unidoc[RequestContext]
 with the respective @unidoc[HttpResponse] instance.
 Completing the request will send the response "back up" the route structure where all the logic runs that wrapping
 directives have potentially chained into the @ref[RouteResult](../../routes.md#routeresult) future transformation chain.

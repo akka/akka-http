@@ -65,6 +65,8 @@ abstract class ConnectionContext {
   def sslConfig: Option[AkkaSSLConfig]
   def http2: UseHttp2
 
+  def withHttp2(newValue: UseHttp2): ConnectionContext
+
   @deprecated("'default-http-port' and 'default-https-port' configuration properties are used instead", since = "10.0.11")
   def getDefaultPort: Int
 }
@@ -74,12 +76,16 @@ abstract class HttpConnectionContext(override val http2: UseHttp2) extends akka.
   override final def isSecure = false
   override final def getDefaultPort = 80
   override def sslConfig: Option[AkkaSSLConfig] = None
+
+  override def withHttp2(newValue: UseHttp2): HttpConnectionContext
 }
 
 @DoNotInherit
 abstract class HttpsConnectionContext(override val http2: UseHttp2) extends akka.http.javadsl.ConnectionContext {
   override final def isSecure = true
   override final def getDefaultPort = 443
+
+  override def withHttp2(newValue: UseHttp2): HttpsConnectionContext
 
   /** Java API */
   def getEnabledCipherSuites: Optional[JCollection[String]]
