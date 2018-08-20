@@ -5,6 +5,10 @@ sudo: false
 jdk:
   - oraclejdk8
 
+before_install:
+  # make comparing to origin/master work
+  - git remote set-branches --add origin master && git fetch
+
 addons:
   apt:
     packages:
@@ -24,15 +28,17 @@ jobs:
     - stage: mima
       script: sbt -J-XX:ReservedCodeCacheSize=256m +mimaReportBinaryIssues
     - stage: whitesource
-      script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate
+      script: sbt whitesourceCheckPolicies whitesourceUpdate
     - stage: publish
       script: sbt -J-XX:ReservedCodeCacheSize=256m +publish
 
 stages:
   - name: mima
     if: repo=akka/akka-http AND ( ( branch = master AND type = push ) OR tag =~ ^v )
+
   - name: whitesource
     if: repo=akka/akka-http AND ( ( branch = master AND type = push ) OR tag =~ ^v )
+
   - name: publish 
     if: tag =~ ^v
 
