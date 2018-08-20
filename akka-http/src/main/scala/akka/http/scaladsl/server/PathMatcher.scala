@@ -80,24 +80,28 @@ abstract class PathMatcher[L](implicit val ev: Tuple[L]) extends (Path ⇒ PathM
     new PathMatcher[lift.Out]()(lift.OutIsTuple) {
       require(min >= 0, "`min` must be >= 0")
       require(max >= min, "`max` must be >= `min`")
-      def apply(path: Path) = rec(path, 1)
-      def rec(path: Path, count: Int): Matching[lift.Out] = {
-        def done = if (count >= min) Matched(path, lift()) else Unmatched
-        if (count <= max) {
-          self(path) match {
-            case Matched(remaining, extractions) ⇒
-              def done1 = if (count >= min) Matched(remaining, lift(extractions)) else Unmatched
-              separator(remaining) match {
-                case Matched(remaining2, _) ⇒ rec(remaining2, count + 1) match {
-                  case Matched(`remaining2`, _) ⇒ done1 // we made no progress, so "go back" to before the separator
-                  case Matched(rest, result)    ⇒ Matched(rest, lift(extractions, result))
-                  case Unmatched                ⇒ Unmatched
-                }
-                case Unmatched ⇒ done1
-              }
-            case Unmatched ⇒ done
-          }
-        } else done
+
+      def apply(path: Path) = matchNext(path, 0)
+
+      def matchNext(path: Path, alreadyFound: Int): Matching[lift.Out] = {
+        def done = if (alreadyFound >= min) Matched(path, lift()) else Unmatched
+
+        def matchSeparatorIfNeeded(path: Path): Matching[Unit] =
+          if (alreadyFound == 0) Matched(path, ()) else separator(path)
+
+        def matchElement(start: Path): Matching[lift.Out] =
+          self(start)
+            .andThen { (remaining, extractions) ⇒
+              matchNext(remaining, alreadyFound + 1)
+                .map(result ⇒ lift(extractions, result))
+            }
+            .orElse(done)
+
+        if (alreadyFound < max)
+          matchSeparatorIfNeeded(path)
+            .andThen { (remaining, _) ⇒ matchElement(remaining) }
+            .orElse(done)
+        else done
       }
     }
 }

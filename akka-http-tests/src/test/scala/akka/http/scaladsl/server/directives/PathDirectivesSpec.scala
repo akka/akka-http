@@ -351,6 +351,39 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
       "accept [/1.2.3./]" inThe test("List(1, 2, 3):./")
     }
     {
+      val test = testFor(pathPrefix(IntNumber.repeat(min = 1, max = Int.MaxValue, separator = ".")) { echoCaptureAndUnmatchedPath })
+      "reject [/baz]" inThe test()
+      "accept [/1baz]" inThe test("List(1):baz")
+      "accept [/1.baz]" inThe test("List(1):.baz")
+      "accept [/1.2baz]" inThe test("List(1, 2):baz")
+      "accept [/1.2.3.4.5.6.7]" inThe test("List(1, 2, 3, 4, 5, 6, 7):")
+    }
+    {
+      val test = testFor(pathPrefix(IntNumber.repeat(min = 0, max = 0, separator = ".")) { echoCaptureAndUnmatchedPath })
+      "accept [/qux]" inThe test("List():qux")
+      "accept [/1qux]" inThe test("List():1qux")
+    }
+    {
+      val test = testFor(pathPrefix(IntNumber.repeat(min = 0, max = 1, separator = ".")) { echoCaptureAndUnmatchedPath })
+      "accept [/xyz]" inThe test("List():xyz")
+      "accept [/1xyz]" inThe test("List(1):xyz")
+      "accept [/1]" inThe test("List(1):")
+      "accept [/1.xyz]" inThe test("List(1):.xyz")
+      "accept [/1.2.xyz]" inThe test("List(1):.2.xyz")
+    }
+    {
+      val test = testFor(path(IntNumber.repeat(min = 0, max = 2, separator = ".")) { echoCaptureAndUnmatchedPath })
+      "reject [/abc]" inThe test()
+      "reject [/1abc]" inThe test()
+      "reject [/1.abc]" inThe test()
+      "reject [/1.2.abc]" inThe test()
+      "reject [/1.2.3.abc]" inThe test()
+
+      "accept [/]" inThe test("List():")
+      "accept [/2]" inThe test("List(2):")
+      "accept [/3.4]" inThe test("List(3, 4):")
+    }
+    {
       val test = testFor(pathPrefix(IntNumber.repeat(2, ".")) { echoCaptureAndUnmatchedPath })
       "reject [/bar]" inThe test()
       "reject [/1bar]" inThe test()
