@@ -1,0 +1,4 @@
+# Scala 2.11 problem only (methods added to trait providing default implementation)
+# Both traits are de-facto @DoNotInherit
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers.fromEntityStreamingSupportAndByteStringMarshaller")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.marshalling.LowPriorityToResponseMarshallerImplicits.fromEntityStreamingSupportAndByteStringSourceMarshaller")

@@ -1,0 +1,2 @@
+# Changes to @DoNotInherit classes introduced in 5826729506bec56a271ec25bcb2c79e983f0b409
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.server.Route.seal")
