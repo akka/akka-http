@@ -1,0 +1,4 @@
+# Only show up on scala 2.11:
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers.fromEntityStreamingSupportAndByteStringMarshaller")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.marshalling.LowPriorityToResponseMarshallerImplicits.fromEntityStreamingSupportAndByteStringSourceMarshaller")
+
