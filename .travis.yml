@@ -37,7 +37,6 @@ jobs:
 
 stages:
   - name: mima
-    if: repo=akka/akka-http AND ( ( branch = master AND type = push ) OR tag =~ ^v )
 
   - name: whitesource
     if: repo=akka/akka-http AND ( ( branch = master AND type = push ) OR tag =~ ^v )
