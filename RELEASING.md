@@ -3,6 +3,7 @@
 1. Communicate that a release is about to be released in [Gitter Akka Dev Channel](https://gitter.im/akka/dev), so that no new Pull Requests are merged
 1. Add a release notes entry in docs/src/main/paradox/release-notes/. As a helper run
 `scripts/commits-for-release-notes.sh <last-version-tag>` which will output a list of commits grouped by submodule, and the closed issues for this milestone.
+1. Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key.
 1. Create a news item on https://github.com/akka/akka.github.com, using the milestones and `scripts/authors.scala previousVersion thisVersion`
 1. Once the release notes have been merged, create a [new release](https://github.com/akka/akka-http/releases/new) with the next tag version (e.g. `v13.3.7`), title and release description linking to announcement, release notes and milestone.
 1. Travis CI will start a [CI build](https://travis-ci.org/akka/akka-http/builds) for the new tag and publish artifacts to Bintray.
@@ -13,7 +14,6 @@
    - Run a test against the staging repository to make sure the release went well, for example by using https://github.com/akka/akka-http-scala-seed.g8 and adding the sonatype staging repo with `resolvers += "Staging Repo" at "https://oss.sonatype.org/content/repositories/comtypesafe-xxx"`
    - Release the staging repository to Maven Central.
 1. Create a new milestone for the next version at https://github.com/akka/akka-http/milestones , move all unclosed issues there and close the version you're releasing
-1. Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key.
 1. Send a release notification to akka-user and tweet using the akka account (or ask someone to) about the new release
 1. Log into gustav.akka.io as akkarepo and update the `current` links on repo.akka.io to point to the latest version with `ln -nsf <latestversion> www/docs/akka-http/current; ln -nsf <latestversion> www/api/akka-http/current; ln -nsf <latestversion> www/japi/akka-http/current`.
 
