@@ -143,7 +143,7 @@ an error like this:
 ```
 
 In such situations it's good to consult with a core team member if the violation can be safely ignored (by adding the above snippet to the project's
-`src/main/mima-filters`), or if it would indeed break binary compatibility.
+`src/main/mima-filters/<last-released-version>.backwards.excludes`), or if it would indeed break binary compatibility.
 
 Situations when it may be fine to ignore a MiMa issued warning include:
 
