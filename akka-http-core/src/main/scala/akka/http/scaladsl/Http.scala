@@ -305,10 +305,10 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
       log.debug("Binding server using HTTP/2{}", if (http2Forced) " (forced to be used without TLS)" else "")
 
       val definitiveSettings =
-        if (parallelism > 0) settings
+        if (parallelism > 0) settings.mapHttp2Settings(_.withMaxConcurrentStreams(parallelism))
         else if (parallelism < 0) throw new IllegalArgumentException("Only positive values allowed for `parallelism`.")
-        else settings.mapHttp2Settings(_.withMaxConcurrentStreams(parallelism))
-      Http2Shadow.bindAndHandleAsync(handler, interface, port, connectionContext, definitiveSettings, parallelism, log)(fm)
+        else settings
+      Http2Shadow.bindAndHandleAsync(handler, interface, port, connectionContext, definitiveSettings, definitiveSettings.http2Settings.maxConcurrentStreams, log)(fm)
     } else {
       if (http2Enabled)
         log.debug("The akka.http.server.preview.enable-http2 flag was set, " +
