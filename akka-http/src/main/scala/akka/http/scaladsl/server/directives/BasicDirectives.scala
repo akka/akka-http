@@ -22,6 +22,8 @@ import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture._
 
+import scala.util.control.NonFatal
+
 /**
  * @groupname basic Basic directives
  * @groupprio basic 10
@@ -50,7 +52,12 @@ trait BasicDirectives {
    * @group basic
    */
   def mapRouteResultFuture(f: Future[RouteResult] ⇒ Future[RouteResult]): Directive0 =
-    Directive { inner ⇒ ctx ⇒ f(inner(())(ctx)) }
+    Directive { inner ⇒ ctx ⇒
+      // Convert any exceptions that happened in the inner route to failed futures so the handler
+      // can handle those as well.
+      val innerResult = try inner(())(ctx) catch { case NonFatal(ex) ⇒ FastFuture.failed(ex) }
+      f(innerResult)
+    }
 
   /**
    * @group basic
