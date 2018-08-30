@@ -11,3 +11,9 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ParserSettings.maxToStrictBytes")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ParserSettingsImpl.*")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.ParserSettingsImpl.*")
+
+# RoutingSettings is @DoNotInherit
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.RoutingSettings.decodeMaxSize")
+# Impl classes
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.RoutingSettingsImpl.*")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.RoutingSettingsImpl.*")
