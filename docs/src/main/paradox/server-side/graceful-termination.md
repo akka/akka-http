@@ -42,7 +42,7 @@ Next, all in flight requests will be handled. If a request is "in-flight" (being
 - if user code does not reply with a response within the deadline we produce a special @java[`akka.http.javadsl.settings.ServerSettings.getTerminationDeadlineExceededResponse`]@scala[`akka.http.scaladsl.settings.ServerSettings.terminationDeadlineExceededResponse`] 
 HTTP response (e.g. `503 Service Unavailable`) with a `Connection: close` header and close connection.
 
-During that time incoming requests are continue to be served. The existing connections will remain alive for until the 
+During that time incoming requests continue to be served. The existing connections will remain alive until the 
 `hardDeadline` is exceeded, yet no new requests will be delivered to the user handler. All such drained responses will be replied to with an termination response (as explained in step 2).
 
 Finally, all remaining alive connections are forcefully terminated once the `hardDeadline` is exceeded.
