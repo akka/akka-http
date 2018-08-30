@@ -82,14 +82,20 @@ trait CodingDirectives {
           val effectiveDecoder = decoder.withMaxBytesPerChunk(settings.decodeMaxBytesPerChunk)
           mapRequest { request ⇒
             effectiveDecoder.decodeMessage(request).mapEntity { entity ⇒
-              entity.transformDataBytes(Flow[ByteString].recover {
-                case NonFatal(e) ⇒
-                  throw IllegalRequestException(
-                    StatusCodes.BadRequest,
-                    ErrorInfo("The request's encoding is corrupt", e.getMessage))
-              })
+              {
+                val recovered = entity.transformDataBytes(Flow[ByteString].recover {
+                  case NonFatal(e) ⇒
+                    throw IllegalRequestException(
+                      StatusCodes.BadRequest,
+                      ErrorInfo("The request's encoding is corrupt", e.getMessage))
+                })
+                recovered match {
+                  case c: HttpEntity.Chunked ⇒ c.copy(chunks = HttpEntity.limitableChunkSource(c.chunks))
+                  case e: HttpEntity         ⇒ e
+                }
+              }
             }
-          }
+          } & withSizeLimit(settings.decodeMaxSize)
         }
 
     requestEntityEmpty | (
