@@ -17,3 +17,9 @@ ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.P
 
 # Uri conversion additions https://github.com/akka/akka-http/pull/1950
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.Uri.asScala")
+
+# RoutingSettings is @DoNotInherit
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.RoutingSettings.decodeMaxSize")
+# Impl classes
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.RoutingSettingsImpl.*")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.RoutingSettingsImpl.*")
