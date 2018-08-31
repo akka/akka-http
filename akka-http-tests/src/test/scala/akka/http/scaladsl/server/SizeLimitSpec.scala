@@ -62,7 +62,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
       // It went from 1 occurrence to 2 after discarding the entity, I think is due to the retrying nature of `handleRejections`
       // that causes one Exception for the original entity and another one from the rejected one.
       EventFilter[EntityStreamSizeException](occurrences = 2).intercept {
-        Http().singleRequest(Post(s"http:/${binding.localAddress}/noDirective", entityOfSize(maxContentLength+1)))
+        Http().singleRequest(Post(s"http:/${binding.localAddress}/noDirective", entityOfSize(maxContentLength + 1)))
           .futureValue.status shouldEqual StatusCodes.BadRequest
       }
     }
@@ -175,7 +175,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
     val binding = Http().bindAndHandle(route, "localhost", port = 0).futureValue
 
     "accept entities bigger than configured with akka.http.parsing.max-content-length" in {
-      Http().singleRequest(Post(s"http:/${binding.localAddress}/withoutSizeLimit", entityOfSize(maxContentLength+1)))
+      Http().singleRequest(Post(s"http:/${binding.localAddress}/withoutSizeLimit", entityOfSize(maxContentLength + 1)))
         .futureValue.status shouldEqual StatusCodes.OK
     }
   }
