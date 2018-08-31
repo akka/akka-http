@@ -24,16 +24,21 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{ Millis, Seconds, Span }
 
 class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with BeforeAndAfterAll with ScalaFutures {
-  val testConf: Config = ConfigFactory.parseString("""
+
+  val maxContentLength = 800
+  val decodeMaxSize = 800
+
+  val testConf: Config = ConfigFactory.parseString(s"""
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.loglevel = ERROR
     akka.stdout-loglevel = ERROR
-    akka.http.parsing.max-content-length = 800
-    akka.http.routing.decode-max-size = 800
+    akka.http.parsing.max-content-length = $maxContentLength
+    akka.http.routing.decode-max-size = $decodeMaxSize
     """)
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
   implicit val materializer = ActorMaterializer()
+  val random = new scala.util.Random(42)
 
   implicit val defaultPatience = PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
 
@@ -49,7 +54,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
     val binding = Http().bindAndHandle(route, "localhost", port = 0).futureValue
 
     "accept small POST requests" in {
-      Http().singleRequest(Post(s"http:/${binding.localAddress}/noDirective", entityOfSize(700)))
+      Http().singleRequest(Post(s"http:/${binding.localAddress}/noDirective", entityOfSize(maxContentLength)))
         .futureValue.status shouldEqual StatusCodes.OK
     }
 
@@ -57,7 +62,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
       // It went from 1 occurrence to 2 after discarding the entity, I think is due to the retrying nature of `handleRejections`
       // that causes one Exception for the original entity and another one from the rejected one.
       EventFilter[EntityStreamSizeException](occurrences = 2).intercept {
-        Http().singleRequest(Post(s"http:/${binding.localAddress}/noDirective", entityOfSize(801)))
+        Http().singleRequest(Post(s"http:/${binding.localAddress}/noDirective", entityOfSize(maxContentLength+1)))
           .futureValue.status shouldEqual StatusCodes.BadRequest
       }
     }
@@ -77,13 +82,79 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
 
     val binding = Http().bindAndHandle(route, "localhost", port = 0).futureValue
 
-    "reject a small request decodes into a large entity" in {
+    "accept a small request" in {
+      Http().singleRequest(Post(s"http:/${binding.localAddress}/noDirective", entityOfSize(maxContentLength)))
+        .futureValue.status shouldEqual StatusCodes.OK
+    }
 
+    "reject a small request that decodes into a large entity" in {
+      val data = ByteString.fromString("0" * (maxContentLength + 1))
+      val zippedData = Gzip.encode(data)
       val request = HttpRequest(
         HttpMethods.POST,
         s"http:/${binding.localAddress}/noDirective",
         immutable.Seq(`Content-Encoding`(HttpEncodings.gzip)),
-        HttpEntity(ContentTypes.`text/plain(UTF-8)`, Gzip.encode(ByteString.fromString("0" * 801))))
+        HttpEntity(ContentTypes.`text/plain(UTF-8)`, zippedData))
+
+      zippedData.size should be <= maxContentLength
+      data.size should be > decodeMaxSize
+
+      Http().singleRequest(request)
+        .futureValue.status shouldEqual StatusCodes.BadRequest
+    }
+  }
+
+  "a route with decodeRequest followed by withoutSizeLimit" should {
+    val route = path("noDirective") {
+      decodeRequest {
+        withoutSizeLimit {
+          post {
+            entity(as[String]) { e ⇒
+              println(s"Got request with entity of ${e.length} characters")
+              complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>"))
+            }
+          }
+        }
+      }
+    }
+
+    val binding = Http().bindAndHandle(route, "localhost", port = 0).futureValue
+
+    "accept a small request" in {
+      Http().singleRequest(Post(s"http:/${binding.localAddress}/noDirective", entityOfSize(maxContentLength)))
+        .futureValue.status shouldEqual StatusCodes.OK
+    }
+
+    "accept a small request that decodes into a large entity" in {
+      val data = ByteString.fromString("0" * (maxContentLength + 1))
+      val zippedData = Gzip.encode(data)
+      val request = HttpRequest(
+        HttpMethods.POST,
+        s"http:/${binding.localAddress}/noDirective",
+        immutable.Seq(`Content-Encoding`(HttpEncodings.gzip)),
+        HttpEntity(ContentTypes.`text/plain(UTF-8)`, zippedData))
+
+      zippedData.size should be <= maxContentLength
+      data.size should be > decodeMaxSize
+
+      Http().singleRequest(request)
+        .futureValue.status shouldEqual StatusCodes.OK
+    }
+
+    // This is not entirely obvious: the 'withoutSizeLimit' inside the decodeRequest
+    // will also reset the size limit outside the decodeRequest.
+    "accept a large request that decodes into a large entity" in {
+      val data = new Array[Byte](decodeMaxSize)
+      random.nextBytes(data)
+      val zippedData = Gzip.encode(ByteString(data))
+      val request = HttpRequest(
+        HttpMethods.POST,
+        s"http:/${binding.localAddress}/noDirective",
+        immutable.Seq(`Content-Encoding`(HttpEncodings.gzip)),
+        HttpEntity(ContentTypes.`text/plain(UTF-8)`, zippedData))
+
+      zippedData.size should be > maxContentLength
+      data.length should be <= decodeMaxSize
 
       Http().singleRequest(request)
         .futureValue.status shouldEqual StatusCodes.BadRequest
@@ -104,7 +175,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
     val binding = Http().bindAndHandle(route, "localhost", port = 0).futureValue
 
     "accept entities bigger than configured with akka.http.parsing.max-content-length" in {
-      Http().singleRequest(Post(s"http:/${binding.localAddress}/withoutSizeLimit", entityOfSize(801)))
+      Http().singleRequest(Post(s"http:/${binding.localAddress}/withoutSizeLimit", entityOfSize(maxContentLength+1)))
         .futureValue.status shouldEqual StatusCodes.OK
     }
   }
