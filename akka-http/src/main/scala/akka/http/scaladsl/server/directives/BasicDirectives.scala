@@ -362,6 +362,24 @@ trait BasicDirectives {
       }
     }
 
+  /**
+   * WARNING: This will read the entire request entity into memory and effectively disable streaming.
+   *
+   * Extracts the [[akka.http.scaladsl.server.RequestContext]] itself with the strict HTTP entity,
+   * or fails the route if unable to drain the entire request body within the timeout.
+   *
+   * @param timeout The directive is failed if the stream isn't completed after the given timeout.
+   * @group basic
+   */
+  def toStrictEntity(timeout: FiniteDuration, maxBytes: Long): Directive0 =
+    Directive { inner ⇒ ctx ⇒
+      import ctx.{ executionContext, materializer }
+
+      ctx.request.entity.toStrict(timeout, maxBytes).flatMap { strictEntity ⇒
+        val newCtx = ctx.mapRequest(_.copy(entity = strictEntity))
+        inner(())(newCtx)
+      }
+    }
 }
 
 object BasicDirectives extends BasicDirectives {

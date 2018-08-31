@@ -327,4 +327,16 @@ abstract class BasicDirectives {
     D.toStrictEntity(timeout) { inner.get.delegate }
   }
 
+  /**
+   * WARNING: This will read the entire request entity into memory and effectively disable streaming.
+   *
+   * Extracts the [[akka.http.javadsl.server.RequestContext]] itself with the strict HTTP entity,
+   * or fails the route if unable to drain the entire request body within the timeout.
+   *
+   * @param timeout The directive is failed if the stream isn't completed after the given timeout.
+   */
+  def toStrictEntity(timeout: FiniteDuration, maxBytes: Long, inner: Supplier[Route]): Route = RouteAdapter {
+    D.toStrictEntity(timeout, maxBytes) { inner.get.delegate }
+  }
+
 }
