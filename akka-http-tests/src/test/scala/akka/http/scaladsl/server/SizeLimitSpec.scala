@@ -157,7 +157,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
       data.length should be <= decodeMaxSize
 
       Http().singleRequest(request)
-        .futureValue.status shouldEqual StatusCodes.BadRequest
+        .futureValue.status shouldEqual StatusCodes.OK
     }
   }
 
