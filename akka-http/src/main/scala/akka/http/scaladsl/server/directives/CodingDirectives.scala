@@ -90,8 +90,10 @@ trait CodingDirectives {
                       ErrorInfo("The request's encoding is corrupt", e.getMessage))
                 })
                 recovered match {
-                  case c: HttpEntity.Chunked ⇒ c.copy(chunks = HttpEntity.limitableChunkSource(c.chunks))
-                  case e: HttpEntity         ⇒ e
+                  case c: HttpEntity.Chunked ⇒
+                    c.copy(chunks = HttpEntity.limitableChunkSource(c.chunks))
+                  case e: HttpEntity ⇒
+                    e
                 }
               }
             }
