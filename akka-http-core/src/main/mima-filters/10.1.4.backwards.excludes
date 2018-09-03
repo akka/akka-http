@@ -1,0 +1,5 @@
+# Not meant for user extension, so new methods should be fine:
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpEntity.toStrict")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity.toStrict")
+# ToStrict is private[http]
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.ToStrict.this")
