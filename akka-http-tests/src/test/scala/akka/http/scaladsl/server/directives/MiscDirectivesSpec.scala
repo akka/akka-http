@@ -99,7 +99,7 @@ class MiscDirectivesSpec extends RoutingSpec {
         status shouldEqual StatusCodes.OK
       }
 
-      EventFilter[EntityStreamSizeException](occurrences = 1).intercept {
+      EventFilter[EntityStreamSizeException](occurrences = 2).intercept {
         Post("/abc", entityOfSize(501)) ~> Route.seal(route) ~> check {
           status shouldEqual StatusCodes.BadRequest
         }
@@ -118,7 +118,7 @@ class MiscDirectivesSpec extends RoutingSpec {
         status shouldEqual StatusCodes.OK
       }
 
-      EventFilter[EntityStreamSizeException](occurrences = 1).intercept {
+      EventFilter[EntityStreamSizeException](occurrences = 2).intercept {
         Post("/abc", formDataOfSize(128)) ~> Route.seal(route) ~> check {
           status shouldEqual StatusCodes.BadRequest
           responseAs[String] shouldEqual "The request content was malformed:\n" +
@@ -144,7 +144,7 @@ class MiscDirectivesSpec extends RoutingSpec {
         status shouldEqual StatusCodes.OK
       }
 
-      EventFilter[EntityStreamSizeException](occurrences = 1).intercept {
+      EventFilter[EntityStreamSizeException](occurrences = 3).intercept {
         Post("/abc", entityOfSize(801)) ~> Route.seal(route) ~> check {
           status shouldEqual StatusCodes.BadRequest
         }
@@ -163,7 +163,7 @@ class MiscDirectivesSpec extends RoutingSpec {
         status shouldEqual StatusCodes.OK
       }
 
-      EventFilter[EntityStreamSizeException](occurrences = 1).intercept {
+      EventFilter[EntityStreamSizeException](occurrences = 2).intercept {
         Post("/abc", entityOfSize(401)) ~> Route.seal(route2) ~> check {
           status shouldEqual StatusCodes.BadRequest
         }

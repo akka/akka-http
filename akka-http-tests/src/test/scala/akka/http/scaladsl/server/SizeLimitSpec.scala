@@ -63,7 +63,8 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
     "not accept entities bigger than configured with akka.http.parsing.max-content-length" in {
       // It went from 1 occurrence to 2 after discarding the entity, I think is due to the retrying nature of `handleRejections`
       // that causes one Exception for the original entity and another one from the rejected one.
-      EventFilter[EntityStreamSizeException](occurrences = 2).intercept {
+      // Then from 2 to 4 since the change to add a `Limitable` whenever `withSizeLimit` is applied
+      EventFilter[EntityStreamSizeException](occurrences = 4).intercept {
         Http().singleRequest(Post(s"http:/${binding.localAddress}/noDirective", entityOfSize(maxContentLength + 1)))
           .futureValue.status shouldEqual StatusCodes.BadRequest
       }
