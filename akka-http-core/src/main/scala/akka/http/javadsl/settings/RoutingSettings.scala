@@ -20,6 +20,7 @@ abstract class RoutingSettings private[akka] () { self: RoutingSettingsImpl ⇒
   def getRangeCountLimit: Int
   def getRangeCoalescingThreshold: Long
   def getDecodeMaxBytesPerChunk: Int
+  def getToStrictMaxBytes: Long
   def getFileIODispatcher: String
 
   def withVerboseErrorMessages(verboseErrorMessages: Boolean): RoutingSettings = self.copy(verboseErrorMessages = verboseErrorMessages)
@@ -28,6 +29,7 @@ abstract class RoutingSettings private[akka] () { self: RoutingSettingsImpl ⇒
   def withRangeCountLimit(rangeCountLimit: Int): RoutingSettings = self.copy(rangeCountLimit = rangeCountLimit)
   def withRangeCoalescingThreshold(rangeCoalescingThreshold: Long): RoutingSettings = self.copy(rangeCoalescingThreshold = rangeCoalescingThreshold)
   def withDecodeMaxBytesPerChunk(decodeMaxBytesPerChunk: Int): RoutingSettings = self.copy(decodeMaxBytesPerChunk = decodeMaxBytesPerChunk)
+  def withToStrictMaxBytes(toStrictMaxBytes: Long): RoutingSettings = self.copy(toStrictMaxBytes = toStrictMaxBytes)
   def withFileIODispatcher(fileIODispatcher: String): RoutingSettings = self.copy(fileIODispatcher = fileIODispatcher)
 }
 

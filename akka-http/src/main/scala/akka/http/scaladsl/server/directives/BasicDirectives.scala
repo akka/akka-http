@@ -344,7 +344,7 @@ trait BasicDirectives {
     toStrictEntity(timeout) & extract(_.request.entity.asInstanceOf[HttpEntity.Strict])
 
   /**
-   * WARNING: This will read the entire request entity into memory regardless of size and effectively disable streaming.
+   * WARNING: This will read the entire request entity into memory and effectively disable streaming.
    *
    * Extracts the [[akka.http.scaladsl.server.RequestContext]] itself with the strict HTTP entity,
    * or fails the route if unable to drain the entire request body within the timeout.
@@ -353,13 +353,8 @@ trait BasicDirectives {
    * @group basic
    */
   def toStrictEntity(timeout: FiniteDuration): Directive0 =
-    Directive { inner ⇒ ctx ⇒
-      import ctx.{ executionContext, materializer }
-
-      ctx.request.entity.toStrict(timeout).flatMap { strictEntity ⇒
-        val newCtx = ctx.mapRequest(_.copy(entity = strictEntity))
-        inner(())(newCtx)
-      }
+    extractSettings flatMap { settings ⇒
+      toStrictEntity(timeout, settings.toStrictMaxBytes)
     }
 
   /**

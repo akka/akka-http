@@ -19,6 +19,7 @@ class SettingsEqualitySpec extends WordSpec with Matchers {
       range-coalescing-threshold = 80
       range-count-limit = 16
       decode-max-bytes-per-chunk = 1m
+      to-strict-max-bytes = 8m
       file-io-dispatcher = ${akka.stream.blocking-io-dispatcher}
     }
   """).withFallback(ConfigFactory.load).resolve
