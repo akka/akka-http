@@ -188,8 +188,6 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
       response.entity.dataBytes.runReduce(_ ++ _).futureValue.utf8String shouldEqual (s"Got request with entity of ${decodeMaxSize + 1} characters")
     }
 
-    // This is not entirely obvious: the 'withoutSizeLimit' inside the decodeRequest
-    // will also reset the size limit outside the decodeRequest.
     "accept a large request that decodes into a large entity" in {
       val data = new Array[Byte](decodeMaxSize)
       random.nextBytes(data)
