@@ -334,7 +334,7 @@ object HttpEntity {
 
     override def withSizeLimit(maxBytes: Long): UniversalEntity =
       if (data.length <= maxBytes || isKnownEmpty) this
-      else HttpEntity.Default(contentType, data.length, limitableByteSource(Source.single(data))) withSizeLimit maxBytes
+      else HttpEntity.Default(contentType, data.length, Source.single(data)) withSizeLimit maxBytes
 
     override def withoutSizeLimit: UniversalEntity =
       withSizeLimit(SizeLimit.Disabled)
