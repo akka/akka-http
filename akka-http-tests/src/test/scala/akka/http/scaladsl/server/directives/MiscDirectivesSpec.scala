@@ -101,6 +101,7 @@ class MiscDirectivesSpec extends RoutingSpec {
 
       Post("/abc", entityOfSize(501)) ~> Route.seal(route) ~> check {
         status shouldEqual StatusCodes.BadRequest
+        entityAs[String] should include("exceeded content length limit")
       }
     }
 
@@ -142,6 +143,7 @@ class MiscDirectivesSpec extends RoutingSpec {
 
       Post("/abc", entityOfSize(801)) ~> Route.seal(route) ~> check {
         status shouldEqual StatusCodes.BadRequest
+        entityAs[String] should include("exceeded content length limit")
       }
 
       val route2 =
@@ -159,6 +161,7 @@ class MiscDirectivesSpec extends RoutingSpec {
 
       Post("/abc", entityOfSize(401)) ~> Route.seal(route2) ~> check {
         status shouldEqual StatusCodes.BadRequest
+        entityAs[String] should include("exceeded content length limit")
       }
     }
   }
