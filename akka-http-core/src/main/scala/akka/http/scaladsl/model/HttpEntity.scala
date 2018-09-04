@@ -84,7 +84,6 @@ sealed trait HttpEntity extends jm.HttpEntity {
     case Some(contentLength) if contentLength > maxBytes ⇒
       FastFuture.failed(new EntityStreamException(new ErrorInfo("Request too large", s"Request of size $contentLength was longer than the maximum of $maxBytes")))
     case _ ⇒
-      // TODO can we trust the content-length or should we check the actual length anyway?
       dataBytes
         .via(new akka.http.impl.util.ToStrict(timeout, Some(maxBytes), contentType))
         .runWith(Sink.head)
