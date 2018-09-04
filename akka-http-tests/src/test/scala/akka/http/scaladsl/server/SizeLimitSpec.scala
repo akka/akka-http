@@ -64,10 +64,8 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
       // It went from 1 occurrence to 2 after discarding the entity, I think is due to the retrying nature of `handleRejections`
       // that causes one Exception for the original entity and another one from the rejected one.
       // Then from 2 to 4 since the change to add a `Limitable` whenever `withSizeLimit` is applied
-      EventFilter[EntityStreamSizeException](occurrences = 4).intercept {
-        Http().singleRequest(Post(s"http:/${binding.localAddress}/noDirective", entityOfSize(maxContentLength + 1)))
-          .futureValue.status shouldEqual StatusCodes.BadRequest
-      }
+      Http().singleRequest(Post(s"http:/${binding.localAddress}/noDirective", entityOfSize(maxContentLength + 1)))
+        .futureValue.status shouldEqual StatusCodes.BadRequest
     }
   }
 

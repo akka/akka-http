@@ -609,7 +609,7 @@ object HttpEntity {
           case Some(limit: SizeLimit) if limit.isDisabled ⇒
           // "no limit"
           case Some(SizeLimit(bytes, cl @ Some(contentLength))) ⇒
-            if (contentLength > bytes) throw EntityStreamSizeException(bytes, cl)
+            if (contentLength > bytes) failStage(EntityStreamSizeException(bytes, cl))
           // else we still count but never throw an error
           case Some(SizeLimit(bytes, None)) ⇒
             maxBytes = bytes
