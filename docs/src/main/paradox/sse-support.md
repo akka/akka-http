@@ -48,7 +48,7 @@ Java
 
 ## Client-side usage: unmarshalling
 
-In order to unmarshal an event stream as @unidoc[Source[ServerSentEvent, \_]], you have to @scala[bring the implicit `FromEntityUnmarshaller[Source[ServerSentEvent, _]]` defined by @unidoc[EventStreamUnmarshalling] into scope]@java[use the `EventStreamUnmarshalling.fromEventStream` unmarshaller]:
+In order to unmarshal an event stream as @unidoc[Source[ServerSentEvent, \_]], you have to @scala[bring the implicit `FromEntityUnmarshaller[Source[ServerSentEvent, _]]` defined by @unidoc[EventStreamUnmarshalling] into scope]@java[use the `EventStreamUnmarshalling.fromEventsStream` unmarshaller]:
 
 Scala
 :  @@snip [ServerSentEventsExampleSpec.scala]($test$/scala/docs/http/scaladsl/ServerSentEventsExampleSpec.scala) { #event-stream-unmarshalling-example }

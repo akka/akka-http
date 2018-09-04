@@ -70,6 +70,7 @@ Scala
     akka.http.scaladsl.settings.ConnectionPoolSettings#withResponseEntitySubscriptionTimeout
     akka.http.scaladsl.settings.Http2ServerSettings
     akka.http.scaladsl.settings.PreviewServerSettings
+    akka.http.scaladsl.settings.ServerSentEventSettings
     akka.http.scaladsl.model.headers.CacheDirectives.immutableDirective
     akka.http.scaladsl.model.headers.X-Forwarded-Host
     akka.http.scaladsl.model.headers.X-Forwarded-Proto
@@ -86,6 +87,7 @@ Java
     akka.http.javadsl.settings.ConnectionPoolSettings#withResponseEntitySubscriptionTimeout
     akka.http.javadsl.settings.PoolImplementation
     akka.http.javadsl.settings.PreviewServerSettings
+    akka.http.javadsl.settings.ServerSentEventSettings
     ```
   
 ## Versioning and Compatibility
