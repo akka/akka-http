@@ -392,7 +392,7 @@ object HttpEntity {
       if (contentType == this.contentType) this else copy(contentType = contentType)
 
     override def withSizeLimit(maxBytes: Long): HttpEntity.Default =
-      copy(data = data withAttributes Attributes(SizeLimit(maxBytes, Some(contentLength))))
+      copy(data = limitableByteSource(data) withAttributes Attributes(SizeLimit(maxBytes, Some(contentLength))))
 
     override def withoutSizeLimit: HttpEntity.Default =
       withSizeLimit(SizeLimit.Disabled)
@@ -422,7 +422,7 @@ object HttpEntity {
     override def dataBytes: Source[ByteString, Any] = data
 
     override def withSizeLimit(maxBytes: Long): Self =
-      withData(data withAttributes Attributes(SizeLimit(maxBytes)))
+      withData(limitableByteSource(data) withAttributes Attributes(SizeLimit(maxBytes)))
 
     override def withoutSizeLimit: Self =
       withData(data withAttributes Attributes(SizeLimit(SizeLimit.Disabled)))
@@ -490,7 +490,7 @@ object HttpEntity {
     override def dataBytes: Source[ByteString, Any] = chunks.map(_.data).filter(_.nonEmpty)
 
     override def withSizeLimit(maxBytes: Long): HttpEntity.Chunked =
-      copy(chunks = chunks withAttributes Attributes(SizeLimit(maxBytes)))
+      copy(chunks = HttpEntity.limitableChunkSource(chunks) withAttributes Attributes(SizeLimit(maxBytes)))
 
     override def withoutSizeLimit: HttpEntity.Chunked =
       withSizeLimit(SizeLimit.Disabled)
