@@ -69,8 +69,8 @@ object LfuCache {
   private def expiringLfuCache[K, V](maxCapacity: Long, initialCapacity: Int,
                                      timeToLive: Duration, timeToIdle: Duration): LfuCache[K, V] = {
     require(
-      !timeToLive.isFinite || !timeToIdle.isFinite || timeToLive > timeToIdle,
-      s"timeToLive($timeToLive) must be greater than timeToIdle($timeToIdle)")
+      !timeToLive.isFinite || !timeToIdle.isFinite || timeToLive >= timeToIdle,
+      s"timeToLive($timeToLive) must be >= than timeToIdle($timeToIdle)")
 
     def ttl: Caffeine[K, V] ⇒ Caffeine[K, V] = { builder ⇒
       if (timeToLive.isFinite) builder.expireAfterWrite(timeToLive.toMillis, TimeUnit.MILLISECONDS)
