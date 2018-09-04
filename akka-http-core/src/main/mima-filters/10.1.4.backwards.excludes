@@ -3,3 +3,9 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.Ht
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity.toStrict")
 # ToStrict is private[http]
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.ToStrict.this")
+
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.RoutingSettings.getToStrictMaxBytes")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.RoutingSettings.toStrictMaxBytes")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.RoutingSettings.toStrictMaxBytes")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.RoutingSettingsImpl.*")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.RoutingSettingsImpl.*")
