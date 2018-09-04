@@ -27,7 +27,8 @@ import org.scalatest.time.{ Millis, Seconds, Span }
 class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with BeforeAndAfterAll with ScalaFutures {
 
   val maxContentLength = 800
-  val decodeMaxSize = 800
+  // Protect network more than memory:
+  val decodeMaxSize = 1600
 
   val testConf: Config = ConfigFactory.parseString(s"""
     akka.loggers = ["akka.testkit.TestEventListener"]
@@ -89,7 +90,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
     }
 
     "reject a small request that decodes into a large entity" in {
-      val data = ByteString.fromString("0" * (maxContentLength + 1))
+      val data = ByteString.fromString("0" * (decodeMaxSize + 1))
       val zippedData = Gzip.encode(data)
       val request = HttpRequest(
         HttpMethods.POST,
@@ -106,7 +107,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
   }
 
   "a route with decodeRequest that results in a large chunked entity" should {
-    val decoder = decodeTo(chunkedEntityOfSize(maxContentLength + 1))
+    val decoder = decodeTo(chunkedEntityOfSize(decodeMaxSize + 1))
 
     val route = path("noDirective") {
       decodeRequestWith(decoder) {
@@ -128,7 +129,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
   }
 
   "a route with decodeRequest that results in a large non-chunked streaming entity" should {
-    val decoder = decodeTo(nonChunkedEntityOfSize(maxContentLength + 1))
+    val decoder = decodeTo(nonChunkedEntityOfSize(decodeMaxSize + 1))
 
     val route = path("noDirective") {
       decodeRequestWith(decoder) {
@@ -170,7 +171,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
     }
 
     "accept a small request that decodes into a large entity" in {
-      val data = ByteString.fromString("0" * (maxContentLength + 1))
+      val data = ByteString.fromString("0" * (decodeMaxSize + 1))
       val zippedData = Gzip.encode(data)
       val request = HttpRequest(
         HttpMethods.POST,
@@ -183,7 +184,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
 
       val response = Http().singleRequest(request).futureValue
       response.status shouldEqual StatusCodes.OK
-      response.entity.dataBytes.runReduce(_ ++ _).futureValue.utf8String shouldEqual (s"Got request with entity of ${maxContentLength + 1} characters")
+      response.entity.dataBytes.runReduce(_ ++ _).futureValue.utf8String shouldEqual (s"Got request with entity of ${decodeMaxSize + 1} characters")
     }
 
     // This is not entirely obvious: the 'withoutSizeLimit' inside the decodeRequest
