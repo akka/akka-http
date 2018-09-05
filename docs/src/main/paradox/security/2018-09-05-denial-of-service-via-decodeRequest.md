@@ -25,10 +25,10 @@ Rationale for the score:
 
 ## Affected Versions
 
-All previosly released Akka HTTP versions are affected:
+All previously released Akka HTTP versions are affected:
 
- * 10.1.x <= 10.1.4
- * 10.0.x <= 10.0.13
+ * `10.1.x` versions prior to `10.1.5`
+ * `10.0.x` versions prior to `10.0.14`
  * Earlier end-of-lifed versions
 
 Not affected:
