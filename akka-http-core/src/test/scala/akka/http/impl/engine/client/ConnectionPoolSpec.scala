@@ -33,6 +33,8 @@ import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
+import akka.http.metrics.HttpMeasurements
+import akka.http.metrics.HttpMetric.Gauge
 
 abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extends AkkaSpec("""
     akka.loglevel = DEBUG
@@ -67,7 +69,10 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
 
   "The host-level client infrastructure" should {
 
-    "complete a simple request/response cycle" in new TestSetup {
+    "complete a simple request/response cycle and output metrics" in new TestSetup {
+      val metricsReceiver = TestProbe()
+      system.eventStream.subscribe(metricsReceiver.ref, classOf[HttpMeasurements])
+
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int]()
 
       requestIn.sendNext(HttpRequest(uri = "/") → 42)
@@ -76,6 +81,16 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       acceptIncomingConnection()
       val (Success(response), 42) = responseOut.expectNext()
       response.headers should contain(RawHeader("Req-Host", s"$serverHostName:$serverPort"))
+
+      metricsReceiver.fishForMessage(500.milliseconds, "metrics from PoolInterfaceActor") {
+        case m: HttpMeasurements if m.items.exists(_.metric.name == "http.client.queue.used") ⇒ true
+        case other ⇒ false
+      }
+
+      metricsReceiver.fishForMessage(500.milliseconds, "metrics from PoolConductor") {
+        case m: HttpMeasurements if m.items.exists(_.metric.name == "http.client.connections.idle") ⇒ true
+        case other ⇒ false
+      }
     }
 
     "open a second connection if the first one is loaded" in new TestSetup {
@@ -617,6 +632,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       maxOpenRequests: Int                      = 8,
       pipeliningLimit: Int                      = 1,
       idleTimeout:     FiniteDuration           = 5.seconds,
+      metricsInterval: FiniteDuration           = 100.milliseconds,
       ccSettings:      ClientConnectionSettings = ClientConnectionSettings(system)) = {
 
       val settings =
@@ -629,7 +645,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
           .withIdleTimeout(idleTimeout.dilated)
           .withConnectionSettings(ccSettings)
           .withPoolImplementation(poolImplementation)
-
+          .withMetricsInterval(metricsInterval)
       flowTestBench(
         Http().cachedHostConnectionPool[T](serverHostName, serverPort, settings))
     }
@@ -641,6 +657,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       maxOpenRequests: Int                      = 8,
       pipeliningLimit: Int                      = 1,
       idleTimeout:     FiniteDuration           = 5.seconds,
+      metricsInterval: FiniteDuration           = 1.second,
       ccSettings:      ClientConnectionSettings = ClientConnectionSettings(system)) = {
 
       val settings =
@@ -653,6 +670,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
           .withIdleTimeout(idleTimeout.dilated)
           .withConnectionSettings(ccSettings)
           .withPoolImplementation(poolImplementation)
+          .withMetricsInterval(metricsInterval)
       flowTestBench(Http().superPool[T](settings = settings))
     }
 

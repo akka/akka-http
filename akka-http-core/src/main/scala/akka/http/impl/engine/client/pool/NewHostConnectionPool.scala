@@ -4,7 +4,10 @@
 
 package akka.http.impl.engine.client.pool
 
+import akka.http.metrics.HttpMeasurements
+import akka.stream.stage.TimerGraphStageLogic
 import java.util
+import akka.http.impl.engine.client.ClientMetric
 
 import akka.NotUsed
 import akka.actor.Cancellable
@@ -48,19 +51,27 @@ import scala.util.{ Failure, Success, Try }
 private[client] object NewHostConnectionPool {
   def apply(
     connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]],
-    settings:       ConnectionPoolSettings, log: LoggingAdapter): Flow[RequestContext, ResponseContext, NotUsed] =
-    Flow.fromGraph(new HostConnectionPoolStage(connectionFlow, settings, log))
+    settings:       ConnectionPoolSettings,
+    metrics:        ClientMetric,
+    log:            LoggingAdapter): Flow[RequestContext, ResponseContext, NotUsed] =
+    Flow.fromGraph(new HostConnectionPoolStage(connectionFlow, metrics, settings, log))
 
   private final class HostConnectionPoolStage(
     connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]],
+    _metrics:       ClientMetric,
     _settings:      ConnectionPoolSettings, _log: LoggingAdapter
   ) extends GraphStage[FlowShape[RequestContext, ResponseContext]] {
     val requestsIn = Inlet[RequestContext]("HostConnectionPoolStage.requestsIn")
     val responsesOut = Outlet[ResponseContext]("HostConnectionPoolStage.responsesOut")
 
+    private val connIdle = _metrics.gauge("connections.idle")
+    private val connUnconnected = _metrics.gauge("connections.unconnected")
+    private val connBusy = _metrics.gauge("connections.busy")
+    private val requestsInFlight = _metrics.gauge("requests.inflight")
+
     override val shape = FlowShape(requestsIn, responsesOut)
     def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-      new GraphStageLogic(shape) with StageLoggingWithOverride with InHandler with OutHandler { logic ⇒
+      new TimerGraphStageLogic(shape) with StageLoggingWithOverride with InHandler with OutHandler { logic ⇒
         override def logOverride: LoggingAdapter = _log
 
         setHandlers(requestsIn, responsesOut, this)
@@ -74,6 +85,30 @@ private[client] object NewHostConnectionPool {
         override def preStart(): Unit = {
           pull(requestsIn)
           slots.foreach(_.initialize())
+          schedulePeriodically(SendMetrics, _settings.metricsInterval)
+        }
+
+        override protected def onTimer(timerKey: Any): Unit = timerKey match {
+          case SendMetrics ⇒
+            var idle = 0
+            var unconnected = 0
+            // var loaded = 0  // new pool doesn't do pipelining -> no loaded
+            var busy = 0
+            // var inFlight = 0 // no pipelining -> inFlight == busy
+
+            for (s ← slots) {
+              if (!s.isConnected) {
+                unconnected += 1
+              } else if (s.isIdle) {
+                idle += 1
+              } else {
+                busy += 1
+              }
+            }
+
+            ActorMaterializerHelper.downcast(materializer).system.eventStream.publish(HttpMeasurements(
+              connIdle(idle), connUnconnected(unconnected), connBusy(busy), requestsInFlight(busy)
+            ))
         }
 
         def onPush(): Unit = {
@@ -515,4 +550,6 @@ private[client] object NewHostConnectionPool {
         }
       }
   }
+
+  private case object SendMetrics
 }

@@ -74,13 +74,17 @@ private[client] object PoolFlow {
   */
   def apply(
     connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]],
-    settings:       ConnectionPoolSettings, log: LoggingAdapter): Flow[RequestContext, ResponseContext, NotUsed] =
+    settings:       ConnectionPoolSettings, metrics: ClientMetric,
+    log: LoggingAdapter): Flow[RequestContext, ResponseContext, NotUsed] =
     Flow.fromGraph(GraphDSL.create[FlowShape[RequestContext, ResponseContext]]() { implicit b ⇒
       import settings._
       import GraphDSL.Implicits._
 
       val conductor = b.add(
-        PoolConductor(PoolSlotsSetting(maxSlots = maxConnections, minSlots = minConnections), pipeliningLimit, log)
+        PoolConductor(
+          PoolSlotsSetting(maxSlots = maxConnections, minSlots = minConnections,
+            metricsInterval = metricsInterval),
+          pipeliningLimit, metrics, log)
       )
 
       val slots = Vector

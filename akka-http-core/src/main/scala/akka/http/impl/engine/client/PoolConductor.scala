@@ -15,6 +15,9 @@ import akka.macros.LogHelper
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
+import akka.stream.stage.TimerGraphStageLogic
+import akka.http.metrics.HttpMeasurements
+import scala.concurrent.duration.FiniteDuration
 
 private object PoolConductor {
   import PoolFlow.RequestContext
@@ -44,7 +47,7 @@ private object PoolConductor {
         outlets.asInstanceOf[immutable.Seq[Outlet[SlotCommand]]])
   }
 
-  final case class PoolSlotsSetting(minSlots: Int, maxSlots: Int) {
+  final case class PoolSlotsSetting(minSlots: Int, maxSlots: Int, metricsInterval: FiniteDuration) {
     require(minSlots <= maxSlots, "min-connections must be <= max-connections")
   }
 
@@ -70,12 +73,13 @@ private object PoolConductor {
                                   +---------+
 
   */
-  def apply(slotSettings: PoolSlotsSetting, pipeliningLimit: Int, log: LoggingAdapter): Graph[Ports, Any] =
+  def apply(slotSettings: PoolSlotsSetting, pipeliningLimit: Int,
+            metrics: ClientMetric, log: LoggingAdapter): Graph[Ports, Any] =
     GraphDSL.create() { implicit b ⇒
       import GraphDSL.Implicits._
 
       val retryMerge = b.add(MergePreferred[RequestContext](1, eagerComplete = true))
-      val slotSelector = b.add(new SlotSelector(slotSettings, pipeliningLimit, log))
+      val slotSelector = b.add(new SlotSelector(slotSettings, pipeliningLimit, metrics, log))
       val route = b.add(new Route(slotSettings.maxSlots))
       val retrySplit = b.add(Broadcast[RawSlotEvent](2))
       val flatten = Flow[RawSlotEvent].mapAsyncUnordered(slotSettings.maxSlots) {
@@ -117,18 +121,25 @@ private object PoolConductor {
   private case class Busy(openRequests: Int) extends SlotState { require(openRequests > 0) }
   private object Busy extends Busy(1)
 
-  private class SlotSelector(slotSettings: PoolSlotsSetting, pipeliningLimit: Int, val log: LoggingAdapter)
+  private class SlotSelector(slotSettings: PoolSlotsSetting, pipeliningLimit: Int,
+                             metrics: ClientMetric, val log: LoggingAdapter)
     extends GraphStage[FanInShape2[RequestContext, SlotEvent, SwitchSlotCommand]] with LogHelper {
 
     private val requestContextIn = Inlet[RequestContext]("SlotSelector.requestContextIn")
     private val slotEventIn = Inlet[SlotEvent]("SlotSelector.slotEventIn")
     private val slotCommandOut = Outlet[SwitchSlotCommand]("SlotSelector.slotCommandOut")
 
+    private val connIdle = metrics.gauge("connections.idle")
+    private val connUnconnected = metrics.gauge("connections.unconnected")
+    private val connLoaded = metrics.gauge("connections.loaded")
+    private val connBusy = metrics.gauge("connections.busy")
+    private val requestsInFlight = metrics.gauge("requests.inflight")
+
     override def initialAttributes = Attributes.name("SlotSelector")
 
     override val shape = new FanInShape2(requestContextIn, slotEventIn, slotCommandOut)
 
-    override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
+    override def createLogic(effectiveAttributes: Attributes) = new TimerGraphStageLogic(shape) {
       val slotStates = Array.fill[SlotState](slotSettings.maxSlots)(Unconnected)
       var nextSlot = 0
 
@@ -180,6 +191,31 @@ private object PoolConductor {
 
         // eagerly start at least slotSettings.minSlots connections
         (0 until slotSettings.minSlots).foreach { connect }
+        schedulePeriodically(SendMetrics, slotSettings.metricsInterval)
+      }
+
+      override protected def onTimer(timerKey: Any): Unit = timerKey match {
+        case SendMetrics ⇒
+          var idle = 0
+          var unconnected = 0
+          var loaded = 0
+          var busy = 0
+          var inFlight = 0
+          slotStates.foreach(_ match {
+            case Idle ⇒
+              idle += 1
+            case Unconnected ⇒
+              unconnected += 1
+            case Loaded(openIdempotentRequests) ⇒
+              loaded += 1
+              inFlight += openIdempotentRequests
+            case Busy(openRequests) ⇒
+              busy += 1
+              inFlight += openRequests
+          })
+          ActorMaterializerHelper.downcast(materializer).system.eventStream.publish(HttpMeasurements(
+            connIdle(idle), connUnconnected(unconnected), connLoaded(loaded), connBusy(busy), requestsInFlight(inFlight)
+          ))
       }
 
       def connect(slotIx: Int): Unit = {
@@ -263,4 +299,6 @@ private object PoolConductor {
       override def preStart(): Unit = pullIn()
     }
   }
+
+  private case object SendMetrics
 }

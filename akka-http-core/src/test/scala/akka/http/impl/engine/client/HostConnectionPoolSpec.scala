@@ -552,11 +552,12 @@ class HostConnectionPoolSpec extends AkkaSpec(
       }
     }
 
+  val metrics = ClientMetric("testhost", 80)
   case object LegacyPoolImplementation extends PoolImplementation {
-    override def get = PoolFlow(_, _, _)
+    override def get = PoolFlow(_, _, metrics, _)
   }
   case object NewPoolImplementation extends PoolImplementation {
-    override def get = NewHostConnectionPool(_, _, _)
+    override def get = NewHostConnectionPool(_, _, metrics, _)
   }
 
   /** Transport that just passes through requests / responses */
