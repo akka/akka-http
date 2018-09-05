@@ -66,4 +66,13 @@ public class ServerSentEventTest extends JUnitSuite {
         final ServerSentEvent event = ServerSentEvent.create("data", 1000);
         Assert.assertEquals(OptionalInt.of(1000), event.getRetry());
     }
+
+    @Test
+    public void heartbeat() {
+        final ServerSentEvent event = ServerSentEvent.heartbeat();
+        Assert.assertEquals("", event.getData());
+        Assert.assertEquals(Optional.empty(), event.getEventType());
+        Assert.assertEquals(Optional.empty(), event.getId());
+        Assert.assertEquals(OptionalInt.empty(), event.getRetry());
+    }
 }
