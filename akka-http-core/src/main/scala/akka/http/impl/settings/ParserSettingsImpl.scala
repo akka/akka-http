@@ -64,33 +64,34 @@ object ParserSettingsImpl extends SettingsCompanion[ParserSettingsImpl]("akka.ht
   private[this] val noCustomStatusCodes: Int ⇒ Option[StatusCode] = ConstantFun.scalaAnyToNone
   private[ParserSettingsImpl] val noCustomMediaTypes: (String, String) ⇒ Option[MediaType] = ConstantFun.scalaAnyTwoToNone
 
-  def fromSubConfig(root: Config, inner: Config) = {
+  def fromSubConfig(root: Config, inner: Config): ParserSettingsImpl = {
     val c = inner.withFallback(root.getConfig(prefix))
     val cacheConfig = c getConfig "header-cache"
 
     new ParserSettingsImpl(
-      c getIntBytes "max-uri-length",
-      c getIntBytes "max-method-length",
-      c getIntBytes "max-response-reason-length",
-      c getIntBytes "max-header-name-length",
-      c getIntBytes "max-header-value-length",
-      c getIntBytes "max-header-count",
-      c getPossiblyInfiniteBytes "max-content-length",
-      c getPossiblyInfiniteBytes "max-to-strict-bytes",
-      c getIntBytes "max-chunk-ext-length",
-      c getIntBytes "max-chunk-size",
-      Uri.ParsingMode(c getString "uri-parsing-mode"),
-      CookieParsingMode(c getString "cookie-parsing-mode"),
-      c getBoolean "illegal-header-warnings",
-      (c getStringList "ignore-illegal-header-for").asScala.map(_.toLowerCase).toSet,
-      ErrorLoggingVerbosity(c getString "error-logging-verbosity"),
-      IllegalResponseHeaderValueProcessingMode(c getString "illegal-response-header-value-processing-mode"),
+      c.getIntBytes("max-uri-length"),
+      c.getIntBytes("max-method-length"),
+      c.getIntBytes("max-response-reason-length"),
+      c.getIntBytes("max-header-name-length"),
+      c.getIntBytes("max-header-value-length"),
+      c.getIntBytes("max-header-count"),
+      c.getPossiblyInfiniteBytes("max-content-length"),
+      c.getPossiblyInfiniteBytes("max-to-strict-bytes"),
+      c.getIntBytes("max-chunk-ext-length"),
+      c.getIntBytes("max-chunk-size"),
+      Uri.ParsingMode(c.getString("uri-parsing-mode")),
+      CookieParsingMode(c.getString("cookie-parsing-mode")),
+      c.getBoolean("illegal-header-warnings"),
+      c.getStringList("ignore-illegal-header-for").asScala.map(_.toLowerCase).toSet,
+      ErrorLoggingVerbosity(c.getString("error-logging-verbosity")),
+      IllegalResponseHeaderValueProcessingMode(c.getString("illegal-response-header-value-processing-mode")),
       cacheConfig.entrySet.asScala.map(kvp ⇒ kvp.getKey → cacheConfig.getInt(kvp.getKey))(collection.breakOut),
-      c getBoolean "tls-session-info-header",
-      c getBoolean "modeled-header-parsing",
+      c.getBoolean("tls-session-info-header"),
+      c.getBoolean("modeled-header-parsing"),
       noCustomMethods,
       noCustomStatusCodes,
-      noCustomMediaTypes)
+      noCustomMediaTypes
+    )
   }
 
 }

@@ -18,6 +18,6 @@ private[http] final case class PreviewServerSettingsImpl(
 
 object PreviewServerSettingsImpl extends SettingsCompanion[PreviewServerSettingsImpl]("akka.http.server.preview") {
   def fromSubConfig(root: Config, c: Config) = PreviewServerSettingsImpl(
-    c getBoolean "enable-http2"
+    c.getBoolean("enable-http2")
   )
 }

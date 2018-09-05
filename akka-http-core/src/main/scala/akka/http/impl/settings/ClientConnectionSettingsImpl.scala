@@ -49,9 +49,9 @@ private[akka] object ClientConnectionSettingsImpl extends SettingsCompanion[Clie
     val c = inner.withFallback(root.getConfig(prefix))
     new ClientConnectionSettingsImpl(
       userAgentHeader = c.getString("user-agent-header").toOption.map(`User-Agent`(_)),
-      connectingTimeout = c getFiniteDuration "connecting-timeout",
-      idleTimeout = c getPotentiallyInfiniteDuration "idle-timeout",
-      requestHeaderSizeHint = c getIntBytes "request-header-size-hint",
+      connectingTimeout = c.getFiniteDuration("connecting-timeout"),
+      idleTimeout = c.getPotentiallyInfiniteDuration("idle-timeout"),
+      requestHeaderSizeHint = c.getIntBytes("request-header-size-hint"),
       logUnencryptedNetworkBytes = LogUnencryptedNetworkBytes(c getString "log-unencrypted-network-bytes"),
       websocketSettings = WebSocketSettingsImpl.client(c.getConfig("websocket")),
       socketOptions = SocketOptionSettings.fromSubConfig(root, c.getConfig("socket-options")),

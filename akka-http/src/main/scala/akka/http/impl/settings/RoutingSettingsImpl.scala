@@ -27,11 +27,12 @@ private[http] final case class RoutingSettingsImpl(
 
 object RoutingSettingsImpl extends SettingsCompanion[RoutingSettingsImpl]("akka.http.routing") {
   def fromSubConfig(root: Config, c: Config) = new RoutingSettingsImpl(
-    c getBoolean "verbose-error-messages",
-    c getBoolean "file-get-conditional",
-    c getBoolean "render-vanity-footer",
-    c getInt "range-count-limit",
-    c getBytes "range-coalescing-threshold",
-    c getIntBytes "decode-max-bytes-per-chunk",
-    c getPossiblyInfiniteBytes "decode-max-size")
+    c.getBoolean("verbose-error-messages"),
+    c.getBoolean("file-get-conditional"),
+    c.getBoolean("render-vanity-footer"),
+    c.getInt("range-count-limit"),
+    c.getBytes("range-coalescing-threshold"),
+    c.getIntBytes("decode-max-bytes-per-chunk"),
+    c.getPossiblyInfiniteBytes("decode-max-size")
+  )
 }
