@@ -31,6 +31,14 @@ public abstract class ServerSentEvent {
 
     private static final Option<Object> intNone = toScala(OptionalInt.empty());
 
+
+    /**
+     * Provides a [[ServerSentEvent]] with empty data which can be used as a heartbeat
+     */
+    public static ServerSentEvent heartbeat() {
+        return akka.http.scaladsl.model.sse.ServerSentEvent.heartbeat();
+    }
+
     /**
      * Creates a [[ServerSentEvent]].
      *

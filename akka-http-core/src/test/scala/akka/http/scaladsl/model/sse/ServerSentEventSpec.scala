@@ -33,6 +33,13 @@ final class ServerSentEventSpec extends WordSpec with Matchers with GeneratorDri
     }
   }
 
+  "A ServerSentEvent heartbeat" should {
+    "be an empty ServerSentEvent" in {
+      val event = ServerSentEvent.heartbeat
+      event shouldBe ServerSentEvent("")
+    }
+  }
+
   "Calling encode" should {
     "return a single data line" in {
       val event = ServerSentEvent(" ")
