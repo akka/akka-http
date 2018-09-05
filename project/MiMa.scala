@@ -34,7 +34,9 @@ object MiMa extends AutoPlugin {
           "10.0.8",
           "10.0.9",
           "10.0.10",
-          "10.0.11"
+          "10.0.11",
+          "10.0.12",
+          "10.0.13"
       )
         .collect { case version if !ignoredModules.get(name.value).exists(_.contains(version)) =>
           organization.value %% name.value % version

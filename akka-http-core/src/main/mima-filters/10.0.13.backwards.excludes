@@ -1,3 +1,6 @@
+# Don't monitor changes to internal API
+ProblemFilters.exclude[Problem]("akka.http.impl.*")
+
 # Not meant for user extension, so new methods should be fine:
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpEntity.toStrict")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity.toStrict")
@@ -11,3 +14,6 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ParserSettings.maxToStrictBytes")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ParserSettingsImpl.*")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.ParserSettingsImpl.*")
+
+# Uri conversion additions https://github.com/akka/akka-http/pull/1950
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.Uri.asScala")
