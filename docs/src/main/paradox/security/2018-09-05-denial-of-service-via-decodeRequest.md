@@ -1,4 +1,4 @@
-# CVE-2018-16131: Denial of Service via unlimited decoding with decodeRequest directive (“zip bomb”)
+# CVE-2018-16131: Denial of Service via unlimited decoding with decodeRequest directive ("zip bomb")
 
 ## Date
 
@@ -21,7 +21,7 @@ The CVSS score of this vulnerability is 7.3 (High), based on vector
 Rationale for the score:
 
  * A:H: Server runs into OOM, so availability is highly affected.
- * E:H: It’s relatively simple to exploit.
+ * E:H: It's relatively simple to exploit.
 
 ## Affected Versions
 
