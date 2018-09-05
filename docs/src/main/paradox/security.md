@@ -17,6 +17,10 @@ to ensure that a fix can be provided without delay.
 
 ## Fixed Security Vulnerabilities
 
+### Fixed in Akka HTTP 10.1.5 & 10.0.14
+
+* @ref:[Denial of Service via unlimited decoding with decodeRequest directive ("zip bomb")](security/2018-09-05-denial-of-service-via-decodeRequest.md)
+
 ### Fixed in Akka HTTP 10.0.6 & 2.4.11.2
 
 * @ref:[Illegal Media Range in Accept Header Causes StackOverflowError Leading to Denial of Service](security/2017-05-03-illegal-media-range-in-accept-header-causes-stackoverflowerror.md)
@@ -28,3 +32,12 @@ to ensure that a fix can be provided without delay.
 ### Fixed in Akka HTTP 2.4.11
 
 * @ref:[Directory Traversal Vulnerability Announcement](security/2016-09-30-windows-directory-traversal.md)
+
+
+@@@ index
+
+ * [2018](security/2018.md)
+ * [2017](security/2017.md)
+ * [2016](security/2016.md)
+
+@@@
