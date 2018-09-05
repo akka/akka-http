@@ -70,12 +70,31 @@ sealed trait HttpEntity extends jm.HttpEntity {
 
   /**
    * Collects all possible parts and returns a potentially future Strict entity for easier processing.
-   * The Future is failed with an TimeoutException if the stream isn't completed after the given timeout.
+   * The Future is failed with an TimeoutException if the stream isn't completed after the given timeout,
+   * or with a EntityStreamException when the end of the entity is not reached within the maximum number of bytes
+   * as configured in `akka.http.parsing.max-to-strict-bytes`. Not that this method does not support different
+   * defaults for client- and server use: if you want that, use the `toStrict` method and pass in an explicit
+   * maximum number of bytes.
    */
-  def toStrict(timeout: FiniteDuration)(implicit fm: Materializer): Future[HttpEntity.Strict] =
-    dataBytes
-      .via(new akka.http.impl.util.ToStrict(timeout, contentType))
-      .runWith(Sink.head)
+  def toStrict(timeout: FiniteDuration)(implicit fm: Materializer): Future[HttpEntity.Strict] = {
+    import akka.http.impl.util._
+    val config = fm.asInstanceOf[ActorMaterializer].system.settings.config
+    toStrict(timeout, config.getPossiblyInfiniteBytes("akka.http.parsing.max-to-strict-bytes"))
+  }
+
+  /**
+   * Collects all possible parts and returns a potentially future Strict entity for easier processing.
+   * The Future is failed with an TimeoutException if the stream isn't completed after the given timeout,
+   * or with a EntityStreamException when the end of the entity is not reached within the maximum number of bytes.
+   */
+  def toStrict(timeout: FiniteDuration, maxBytes: Long)(implicit fm: Materializer): Future[HttpEntity.Strict] = contentLengthOption match {
+    case Some(contentLength) if contentLength > maxBytes ⇒
+      FastFuture.failed(new EntityStreamException(new ErrorInfo("Request too large", s"Request of size $contentLength was longer than the maximum of $maxBytes")))
+    case _ ⇒
+      dataBytes
+        .via(new akka.http.impl.util.ToStrict(timeout, Some(maxBytes), contentType))
+        .runWith(Sink.head)
+  }
 
   /**
    * Discards the entities data bytes by running the `dataBytes` Source contained in this `entity`.
@@ -172,6 +191,10 @@ sealed trait HttpEntity extends jm.HttpEntity {
 
   /** Java API */
   override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[jm.HttpEntity.Strict] =
+    toStrict(timeoutMillis.millis)(materializer).toJava
+
+  /** Java API */
+  override def toStrict(timeoutMillis: Long, maxBytes: Long, materializer: Materializer): CompletionStage[jm.HttpEntity.Strict] =
     toStrict(timeoutMillis.millis)(materializer).toJava
 
   /** Java API */

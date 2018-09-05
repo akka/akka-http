@@ -20,6 +20,7 @@ import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.impl.util.StreamUtils
 import akka.testkit._
+import org.scalatest.concurrent.ScalaFutures
 
 import scala.util.Random
 
@@ -97,6 +98,45 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
         intercept[TimeoutException] {
           Await.result(Default(tpe, 42, Source.fromFuture(neverCompleted.future)).toStrict(100.millis), awaitAtMost)
         }.getMessage must be("HttpEntity.toStrict timed out after 100 milliseconds while still waiting for outstanding data")
+      }
+    }
+    "support toStrict with the default max size" - {
+      "Infinite data stream" in {
+        intercept[EntityStreamException] {
+          Await.result(Chunked(tpe, Source.repeat(Chunk(abc))).toStrict(awaitAtMost), awaitAtMost)
+        }.getMessage must be("Request too large: Request was longer than the maximum of 8388608")
+      }
+    }
+    "support toStrict with a max size" - {
+      "Strict" in {
+        intercept[EntityStreamException] {
+          Await.result(Strict(tpe, abc).toStrict(awaitAtMost, maxBytes = 1), awaitAtMost)
+        }.getMessage must be("Request too large: Request of size 3 was longer than the maximum of 1")
+      }
+      "Default" in {
+        intercept[EntityStreamException] {
+          Await.result(Default(tpe, 11, source(abc, de, fgh, ijk)).toStrict(awaitAtMost, maxBytes = 1), awaitAtMost)
+        }.getMessage must be("Request too large: Request of size 11 was longer than the maximum of 1")
+      }
+      "CloseDelimited" in {
+        intercept[EntityStreamException] {
+          Await.result(CloseDelimited(tpe, source(abc, de, fgh, ijk)).toStrict(awaitAtMost, maxBytes = 1), awaitAtMost)
+        }.getMessage must be("Request too large: Request was longer than the maximum of 1")
+      }
+      "Chunked w/o LastChunk" in {
+        intercept[EntityStreamException] {
+          Await.result(Chunked(tpe, source(Chunk(abc), Chunk(fgh), Chunk(ijk))).toStrict(awaitAtMost, maxBytes = 1), awaitAtMost)
+        }.getMessage must be("Request too large: Request was longer than the maximum of 1")
+      }
+      "Chunked with LastChunk" in {
+        intercept[EntityStreamException] {
+          Await.result(Chunked(tpe, source(Chunk(abc), Chunk(fgh), Chunk(ijk), LastChunk)).toStrict(awaitAtMost, maxBytes = 1), awaitAtMost)
+        }.getMessage must be("Request too large: Request was longer than the maximum of 1")
+      }
+      "Infinite data stream" in {
+        intercept[EntityStreamException] {
+          Await.result(Chunked(tpe, Source.repeat(Chunk(abc))).toStrict(awaitAtMost, maxBytes = 1), awaitAtMost)
+        }.getMessage must be("Request too large: Request was longer than the maximum of 1")
       }
     }
     "support transformDataBytes" - {
