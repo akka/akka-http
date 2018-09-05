@@ -320,7 +320,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
         case EntityPart(bytes)       ⇒ bytes
         case EntityStreamError(info) ⇒ throw EntityStreamException(info)
       }
-      HttpEntity.Default(contentType(cth), contentLength, HttpEntity.limitableByteSource(data))
+      HttpEntity.Default(contentType(cth), contentLength, data)
     }
 
   protected final def chunkedEntity[A <: ParserOutput](cth: Option[`Content-Type`]) =
@@ -329,7 +329,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
         case EntityChunk(chunk)      ⇒ chunk
         case EntityStreamError(info) ⇒ throw EntityStreamException(info)
       }
-      HttpEntity.Chunked(contentType(cth), HttpEntity.limitableChunkSource(chunks))
+      HttpEntity.Chunked(contentType(cth), chunks)
     }
 
   protected final def addTransferEncodingWithChunkedPeeled(headers: List[HttpHeader], teh: `Transfer-Encoding`): List[HttpHeader] =
