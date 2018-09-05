@@ -68,17 +68,22 @@ sealed trait HttpEntity extends jm.HttpEntity {
 
   /**
    * Collects all possible parts and returns a potentially future Strict entity for easier processing.
-   * The Future is failed with an TimeoutException if the stream isn't completed after the given timeout.
+   * The Future is failed with an TimeoutException if the stream isn't completed after the given timeout,
+   * or with a EntityStreamException when the end of the entity is not reached within the maximum number of bytes
+   * as configured in `akka.http.parsing.max-to-strict-bytes`. Not that this method does not support different
+   * defaults for client- and server use: if you want that, use the `toStrict` method and pass in an explicit
+   * maximum number of bytes.
    */
-  def toStrict(timeout: FiniteDuration)(implicit fm: Materializer): Future[HttpEntity.Strict] =
-    dataBytes
-      .via(new akka.http.impl.util.ToStrict(timeout, maxBytes = None, contentType))
-      .runWith(Sink.head)
+  def toStrict(timeout: FiniteDuration)(implicit fm: Materializer): Future[HttpEntity.Strict] = {
+    import akka.http.impl.util._
+    val config = fm.asInstanceOf[ActorMaterializer].system.settings.config
+    toStrict(timeout, config.getPossiblyInfiniteBytes("akka.http.parsing.max-to-strict-bytes"))
+  }
 
   /**
    * Collects all possible parts and returns a potentially future Strict entity for easier processing.
    * The Future is failed with an TimeoutException if the stream isn't completed after the given timeout,
-   * or with a FooException when the end of the entity is not reached within the maximum number of bytes.
+   * or with a EntityStreamException when the end of the entity is not reached within the maximum number of bytes.
    */
   def toStrict(timeout: FiniteDuration, maxBytes: Long)(implicit fm: Materializer): Future[HttpEntity.Strict] = contentLengthOption match {
     case Some(contentLength) if contentLength > maxBytes ⇒

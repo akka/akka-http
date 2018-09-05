@@ -100,6 +100,13 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
         }.getMessage must be("HttpEntity.toStrict timed out after 100 milliseconds while still waiting for outstanding data")
       }
     }
+    "support toStrict with the default max size" - {
+      "Infinite data stream" in {
+        intercept[EntityStreamException] {
+          Await.result(Chunked(tpe, Source.repeat(Chunk(abc))).toStrict(awaitAtMost), awaitAtMost)
+        }.getMessage must be("Request too large: Request was longer than the maximum of 8388608")
+      }
+    }
     "support toStrict with a max size" - {
       "Strict" in {
         intercept[EntityStreamException] {

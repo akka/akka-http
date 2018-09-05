@@ -95,6 +95,10 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: Materializer): Future[Self] =
     entity.toStrict(timeout).fast.map(this.withEntity)
 
+  /** Returns a shareable and serializable copy of this message with a strict entity. */
+  def toStrict(timeout: FiniteDuration, maxBytes: Long)(implicit ec: ExecutionContext, fm: Materializer): Future[Self] =
+    entity.toStrict(timeout, maxBytes).fast.map(this.withEntity)
+
   /** Returns a copy of this message with the entity and headers set to the given ones. */
   def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: MessageEntity): Self
 
@@ -184,6 +188,11 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def toStrict(timeoutMillis: Long, ec: Executor, materializer: Materializer): CompletionStage[Self] = {
     val ex = ExecutionContext.fromExecutor(ec)
     toStrict(timeoutMillis.millis)(ex, materializer).toJava
+  }
+  /** Java API */
+  def toStrict(timeoutMillis: Long, maxBytes: Long, ec: Executor, materializer: Materializer): CompletionStage[Self] = {
+    val ex = ExecutionContext.fromExecutor(ec)
+    toStrict(timeoutMillis.millis, maxBytes)(ex, materializer).toJava
   }
 }
 

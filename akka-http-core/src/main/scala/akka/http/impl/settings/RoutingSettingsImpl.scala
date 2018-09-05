@@ -17,7 +17,6 @@ private[http] final case class RoutingSettingsImpl(
   rangeCountLimit:          Int,
   rangeCoalescingThreshold: Long,
   decodeMaxBytesPerChunk:   Int,
-  toStrictMaxBytes:         Long,
   fileIODispatcher:         String) extends akka.http.scaladsl.settings.RoutingSettings {
 
   override def productPrefix = "RoutingSettings"
@@ -31,6 +30,5 @@ object RoutingSettingsImpl extends SettingsCompanion[RoutingSettingsImpl]("akka.
     c getInt "range-count-limit",
     c getBytes "range-coalescing-threshold",
     c getIntBytes "decode-max-bytes-per-chunk",
-    c getPossiblyInfiniteBytes "to-strict-max-bytes",
     c getString "file-io-dispatcher")
 }
