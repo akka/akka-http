@@ -303,7 +303,10 @@ abstract class BasicDirectives {
   def extractRequestEntity(inner: JFunction[RequestEntity, Route]): Route = extractEntity(inner)
 
   /**
-   * WARNING: This will read the entire request entity into memory regardless of size and effectively disable streaming.
+   * WARNING: This will read the entire request entity into memory and effectively disable streaming.
+   *
+   * To help protect against excessive memory use, the request will be aborted if the request is larger
+   * than allowed by the `akka.http.parsing.max-to-strict-bytes` configuration setting.
    *
    * Converts the HttpEntity from the [[akka.http.javadsl.server.RequestContext]] into an
    * [[akka.http.javadsl.model.HttpEntity.Strict]] and extracts it, or fails the route if unable to drain the
@@ -316,7 +319,26 @@ abstract class BasicDirectives {
   }
 
   /**
-   * WARNING: This will read the entire request entity into memory regardless of size and effectively disable streaming.
+   * WARNING: This will read the entire request entity into memory and effectively disable streaming.
+   *
+   * To help protect against excessive memory use, the request will be aborted if the request is larger
+   * than allowed by the `akka.http.parsing.max-to-strict-bytes` configuration setting.
+   *
+   * Converts the HttpEntity from the [[akka.http.javadsl.server.RequestContext]] into an
+   * [[akka.http.javadsl.model.HttpEntity.Strict]] and extracts it, or fails the route if unable to drain the
+   * entire request body within the timeout.
+   *
+   * @param timeout The directive is failed if the stream isn't completed after the given timeout.
+   */
+  def extractStrictEntity(timeout: FiniteDuration, maxBytes: Long, inner: JFunction[HttpEntity.Strict, Route]): Route = RouteAdapter {
+    D.extractStrictEntity(timeout, maxBytes) { strict ⇒ inner.apply(strict).delegate }
+  }
+
+  /**
+   * WARNING: This will read the entire request entity into memory and effectively disable streaming.
+   *
+   * To help protect against excessive memory use, the request will be aborted if the request is larger
+   * than allowed by the `akka.http.parsing.max-to-strict-bytes` configuration setting.
    *
    * Extracts the [[akka.http.javadsl.server.RequestContext]] itself with the strict HTTP entity,
    * or fails the route if unable to drain the entire request body within the timeout.
@@ -325,6 +347,21 @@ abstract class BasicDirectives {
    */
   def toStrictEntity(timeout: FiniteDuration, inner: Supplier[Route]): Route = RouteAdapter {
     D.toStrictEntity(timeout) { inner.get.delegate }
+  }
+
+  /**
+   * WARNING: This will read the entire request entity into memory and effectively disable streaming.
+   *
+   * To help protect against excessive memory use, the request will be aborted if the request is larger
+   * than allowed by the `akka.http.parsing.max-to-strict-bytes` configuration setting.
+   *
+   * Extracts the [[akka.http.javadsl.server.RequestContext]] itself with the strict HTTP entity,
+   * or fails the route if unable to drain the entire request body within the timeout.
+   *
+   * @param timeout The directive is failed if the stream isn't completed after the given timeout.
+   */
+  def toStrictEntity(timeout: FiniteDuration, maxBytes: Long, inner: Supplier[Route]): Route = RouteAdapter {
+    D.toStrictEntity(timeout, maxBytes) { inner.get.delegate }
   }
 
 }
