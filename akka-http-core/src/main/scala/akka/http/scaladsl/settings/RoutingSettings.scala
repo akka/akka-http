@@ -19,6 +19,7 @@ abstract class RoutingSettings private[akka] () extends akka.http.javadsl.settin
   def rangeCountLimit: Int
   def rangeCoalescingThreshold: Long
   def decodeMaxBytesPerChunk: Int
+  def decodeMaxSize: Long
   def fileIODispatcher: String
 
   /* Java APIs */
@@ -28,6 +29,7 @@ abstract class RoutingSettings private[akka] () extends akka.http.javadsl.settin
   def getRangeCountLimit: Int = rangeCountLimit
   def getRangeCoalescingThreshold: Long = rangeCoalescingThreshold
   def getDecodeMaxBytesPerChunk: Int = decodeMaxBytesPerChunk
+  def getDecodeMaxSize: Long = decodeMaxSize
   def getFileIODispatcher: String = fileIODispatcher
 
   override def withVerboseErrorMessages(verboseErrorMessages: Boolean): RoutingSettings = self.copy(verboseErrorMessages = verboseErrorMessages)
@@ -36,6 +38,7 @@ abstract class RoutingSettings private[akka] () extends akka.http.javadsl.settin
   override def withRangeCountLimit(rangeCountLimit: Int): RoutingSettings = self.copy(rangeCountLimit = rangeCountLimit)
   override def withRangeCoalescingThreshold(rangeCoalescingThreshold: Long): RoutingSettings = self.copy(rangeCoalescingThreshold = rangeCoalescingThreshold)
   override def withDecodeMaxBytesPerChunk(decodeMaxBytesPerChunk: Int): RoutingSettings = self.copy(decodeMaxBytesPerChunk = decodeMaxBytesPerChunk)
+  override def withDecodeMaxSize(decodeMaxSize: Long): RoutingSettings = self.copy(decodeMaxSize = decodeMaxSize)
   override def withFileIODispatcher(fileIODispatcher: String): RoutingSettings = self.copy(fileIODispatcher = fileIODispatcher)
 }
 

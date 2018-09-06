@@ -28,7 +28,7 @@ class PrepareResponseSpec extends AkkaSpec {
         case EntityChunk(chunk)      ⇒ chunk
         case EntityStreamError(info) ⇒ throw EntityStreamException(info)
       }
-      HttpEntity.Chunked(ContentTypes.`application/octet-stream`, HttpEntity.limitableChunkSource(chunks))
+      HttpEntity.Chunked(ContentTypes.`application/octet-stream`, chunks)
     },
     closeRequested = false)
 

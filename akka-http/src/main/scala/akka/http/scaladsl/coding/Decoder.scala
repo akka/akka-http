@@ -13,13 +13,19 @@ import headers.HttpEncoding
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 
 import scala.concurrent.Future
+import scala.util.control.NonFatal
 
 trait Decoder {
   def encoding: HttpEncoding
 
   def decodeMessage(message: HttpMessage): message.Self =
     if (message.headers exists Encoder.isContentEncodingHeader)
-      message.transformEntityDataBytes(decoderFlow).withHeaders(message.headers filterNot Encoder.isContentEncodingHeader)
+      message.transformEntityDataBytes(decoderFlow.recover {
+        case NonFatal(e) ⇒
+          throw IllegalRequestException(
+            StatusCodes.BadRequest,
+            ErrorInfo("The request's encoding is corrupt", e.getMessage))
+      }).withHeaders(message.headers filterNot Encoder.isContentEncodingHeader)
     else message.self
 
   @deprecated("Use Decoder#decodeMessage instead. No need for implicit mapper.", since = "10.0.6")

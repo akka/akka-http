@@ -38,7 +38,7 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
     akka.loglevel = WARNING
     akka.http.parsing.max-header-value-length = 32
     akka.http.parsing.max-uri-length = 40
-    akka.http.parsing.max-content-length = 4000000000""")
+    akka.http.parsing.max-content-length = infinite""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
 

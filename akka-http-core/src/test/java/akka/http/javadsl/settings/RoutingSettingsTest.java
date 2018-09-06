@@ -22,6 +22,7 @@ public class RoutingSettingsTest extends JUnitSuite {
             "  range-coalescing-threshold = 80\n" +
             "  range-count-limit = 16\n" +
             "  decode-max-bytes-per-chunk = 1m\n" +
+            "  decode-max-size = 8m\n" +
             "  file-io-dispatcher = \"test-only\"\n" +
             "}";
         Config config = ConfigFactory.parseString(testConfig);
