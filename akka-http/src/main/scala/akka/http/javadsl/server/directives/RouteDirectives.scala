@@ -4,7 +4,7 @@
 
 package akka.http.javadsl.server.directives
 
-import java.util.concurrent.CompletionStage
+import java.util.concurrent.{ CompletionException, CompletionStage }
 
 import akka.dispatch.ExecutionContexts
 import akka.http.javadsl.marshalling.Marshaller
@@ -20,7 +20,7 @@ import akka.http.javadsl.model.RequestEntity
 import akka.http.javadsl.model.ResponseEntity
 import akka.http.javadsl.model.StatusCode
 import akka.http.javadsl.model.Uri
-import akka.http.javadsl.server.{ RoutingJavaMapping, Rejection, Route }
+import akka.http.javadsl.server.{ Rejection, Route, RoutingJavaMapping }
 import akka.http.scaladsl
 import akka.http.scaladsl.marshalling.Marshaller._
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
@@ -239,7 +239,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
    */
   @CorrespondsTo("complete")
   def completeWithFuture(value: CompletionStage[HttpResponse]) = RouteAdapter {
-    D.complete(value.asScala.fast.map(_.asScala))
+    D.complete(value.asScala.fast.map(_.asScala).recover(unwrapCompletionException))
   }
 
   /**
@@ -247,7 +247,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
    */
   @CorrespondsTo("complete")
   def completeOKWithFuture(value: CompletionStage[RequestEntity]) = RouteAdapter {
-    D.complete(value.asScala.fast.map(_.asScala))
+    D.complete(value.asScala.fast.map(_.asScala).recover(unwrapCompletionException))
   }
 
   /**
@@ -255,7 +255,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
    */
   @CorrespondsTo("complete")
   def completeOKWithFutureString(value: CompletionStage[String]) = RouteAdapter {
-    D.complete(value.asScala)
+    D.complete(value.asScala.recover(unwrapCompletionException))
   }
 
   /**
@@ -263,7 +263,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
    */
   @CorrespondsTo("complete")
   def completeWithFutureStatus(status: CompletionStage[StatusCode]): Route = RouteAdapter {
-    D.complete(status.asScala.fast.map(_.asScala))
+    D.complete(status.asScala.fast.map(_.asScala).recover(unwrapCompletionException))
   }
 
   /**
@@ -271,7 +271,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
    */
   @CorrespondsTo("complete")
   def completeOKWithFuture[T](value: CompletionStage[T], marshaller: Marshaller[T, RequestEntity]) = RouteAdapter {
-    D.complete(value.asScala.fast.map(v ⇒ ToResponseMarshallable(v)(fromToEntityMarshaller()(marshaller))))
+    D.complete(value.asScala.fast.map(v ⇒ ToResponseMarshallable(v)(fromToEntityMarshaller()(marshaller))).recover(unwrapCompletionException))
   }
 
   /**
@@ -279,7 +279,16 @@ abstract class RouteDirectives extends RespondWithDirectives {
    */
   @CorrespondsTo("complete")
   def completeWithFuture[T](value: CompletionStage[T], marshaller: Marshaller[T, HttpResponse]) = RouteAdapter {
-    D.complete(value.asScala.fast.map(v ⇒ ToResponseMarshallable(v)(marshaller)))
+    D.complete(value.asScala.fast.map(v ⇒ ToResponseMarshallable(v)(marshaller)).recover(unwrapCompletionException))
+  }
+
+  // TODO: This might need to be raised as an issue to scala-java8-compat instead.
+  // Right now, having this in Java:
+  //     CompletableFuture.supplyAsync(() -> { throw new IllegalArgumentException("always failing"); })
+  // will in fact fail the future with CompletionException.
+  private def unwrapCompletionException[T]: PartialFunction[Throwable, T] = {
+    case x: CompletionException if x.getCause ne null ⇒
+      throw x.getCause
   }
 
 }
