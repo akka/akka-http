@@ -23,6 +23,7 @@ public final class MediaTypes {
     public static final MediaType.WithOpenCharset APPLICATION_JAVASCRIPT = akka.http.scaladsl.model.MediaTypes.application$divjavascript();
     public static final MediaType.WithFixedCharset APPLICATION_JSON = akka.http.scaladsl.model.MediaTypes.application$divjson();
     public static final MediaType.WithFixedCharset APPLICATION_JSON_PATCH_JSON = akka.http.scaladsl.model.MediaTypes.application$divjson$minuspatch$plusjson();
+    public static final MediaType.WithFixedCharset APPLICATION_MERGE_PATCH_JSON = akka.http.scaladsl.model.MediaTypes.application$divmerge$minuspatch$plusjson();
     public static final MediaType.Binary APPLICATION_LHA = akka.http.scaladsl.model.MediaTypes.application$divlha();
     public static final MediaType.Binary APPLICATION_LZX = akka.http.scaladsl.model.MediaTypes.application$divlzx();
     public static final MediaType.Binary APPLICATION_MSPOWERPOINT = akka.http.scaladsl.model.MediaTypes.application$divmspowerpoint();
