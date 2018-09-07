@@ -34,7 +34,7 @@ class TimeoutDirectivesSpec extends IntegrationRoutingSpec {
   "allow mapping the response" in {
     val timeoutResponse = HttpResponse(
       StatusCodes.EnhanceYourCalm,
-      entity = "Unable to serve response within time limit, please enchance your calm.")
+      entity = "Unable to serve response within time limit, please enhance your calm.")
 
     val route =
       path("timeout") {
