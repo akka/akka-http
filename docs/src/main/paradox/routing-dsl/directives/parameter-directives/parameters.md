@@ -50,6 +50,7 @@ as required, optional, or repeated, or to filter requests where a parameter has 
 
 `"amount".as(deserializer)`
 : extract value of parameter "amount" with an explicit @unidoc[Unmarshaller]
+
 `"distance".*`
 : extract multiple occurrences of parameter "distance" as `Iterable[String]`
 
