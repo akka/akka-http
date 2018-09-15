@@ -55,7 +55,6 @@ abstract class RouteDirectives extends RespondWithDirectives {
    * Used to chain multiple alternate routes using comma,
    * rather than having to explicitly call route1.orElse(route2).orElse(route3).
    */
-  @CorrespondsTo("concat")
   @varargs def concat(first: Route, alternatives: Route*): Route = RouteAdapter {
     import akka.http.scaladsl.server.Directives._
 
