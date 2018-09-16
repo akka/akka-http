@@ -1,0 +1,18 @@
+# #2146: changes to (now) @DoNotInherit classes
+
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.Http2ServerSettings.withMaxConcurrentStreams")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.Http2ServerSettings.getMaxConcurrentStreams")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.maxConcurrentStreams")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.withMaxConcurrentStreams")
+
+# #2146: changes to implementation classes
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.copy$default$4")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.this")
+
+# #2149: additions to @DoNotInherit classes
+
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.HttpsConnectionContext.withHttp2")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.HttpConnectionContext.withHttp2")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.ConnectionContext.withHttp2")

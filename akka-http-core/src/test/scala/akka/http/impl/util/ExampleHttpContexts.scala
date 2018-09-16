@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.util
@@ -10,6 +10,7 @@ import java.security.cert.{ CertificateFactory, Certificate }
 import javax.net.ssl.{ SSLParameters, SSLContext, TrustManagerFactory, KeyManagerFactory }
 
 import akka.http.scaladsl.HttpsConnectionContext
+import akka.http.impl.util.JavaMapping.Implicits._
 
 /**
  * These are HTTPS example configurations that take key material from the resources/key folder.
@@ -17,6 +18,8 @@ import akka.http.scaladsl.HttpsConnectionContext
 object ExampleHttpContexts {
 
   // TODO show example how to obtain pre-configured context from ssl-config
+
+  def getExampleServerContext() = exampleServerContext.asJava
 
   val exampleServerContext = {
     // never put passwords into code!

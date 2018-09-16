@@ -1,18 +1,22 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.javadsl.server.directives;
 
 import akka.http.javadsl.model.HttpHeader;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.model.headers.*;
+import akka.http.javadsl.server.Directives;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import akka.japi.pf.PFBuilder;
 import org.junit.Test;
 
 import java.util.Optional;
+
+import static akka.http.javadsl.server.Directives.*;
 
 public class HeaderDirectivesTest extends JUnitRouteTest {
 
@@ -25,7 +29,7 @@ public class HeaderDirectivesTest extends JUnitRouteTest {
       }
       else return Optional.empty();
     },
-    this::complete));
+    Directives::complete));
 
     route
       .run(HttpRequest.create().addHeader(RawHeader.create("X-Test-Header", "woho!")))
@@ -48,7 +52,7 @@ public class HeaderDirectivesTest extends JUnitRouteTest {
       new PFBuilder<HttpHeader, String>().<Host>match(
         Host.class, Host::value
       ).build(),
-      this::complete));
+      Directives::complete));
 
     route
       .run(HttpRequest.create().addHeader(Host.create("example.com")))
@@ -62,7 +66,7 @@ public class HeaderDirectivesTest extends JUnitRouteTest {
 
   @Test
   public void testHeaderValueByName() {
-    TestRoute route = testRoute(headerValueByName("X-Test-Header", this::complete));
+    TestRoute route = testRoute(headerValueByName("X-Test-Header", Directives::complete));
 
     route
       .run(HttpRequest.create().addHeader(RawHeader.create("X-Test-Header", "woho!")))
@@ -153,11 +157,11 @@ public class HeaderDirectivesTest extends JUnitRouteTest {
 
   @Test
   public void testOptionalHeaderValueByType() {
-    TestRoute route = testRoute(optionalHeaderValueByType(Server.class,
-      (Optional<Server> s) -> complete(((Boolean)s.isPresent()).toString())));
+    TestRoute route = testRoute(optionalHeaderValueByType(UserAgent.class,
+      (Optional<UserAgent> ua) -> complete(((Boolean)ua.isPresent()).toString())));
 
     route
-      .run(HttpRequest.create().addHeader(Server.create(ProductVersion.create("such-service", "0.6"))))
+      .run(HttpRequest.create().addHeader(UserAgent.create("custom-server/1.2.3")))
       .assertStatusCode(StatusCodes.OK)
       .assertEntity("true");
 

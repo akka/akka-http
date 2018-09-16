@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -80,16 +80,7 @@ trait CodingDirectives {
       else
         extractSettings flatMap { settings ⇒
           val effectiveDecoder = decoder.withMaxBytesPerChunk(settings.decodeMaxBytesPerChunk)
-          mapRequest { request ⇒
-            effectiveDecoder.decodeMessage(request).mapEntity { entity ⇒
-              entity.transformDataBytes(Flow[ByteString].recover {
-                case NonFatal(e) ⇒
-                  throw IllegalRequestException(
-                    StatusCodes.BadRequest,
-                    ErrorInfo("The request's encoding is corrupt", e.getMessage))
-              })
-            }
-          }
+          mapRequest(effectiveDecoder.decodeMessage(_)) & withSizeLimit(settings.decodeMaxSize)
         }
 
     requestEntityEmpty | (

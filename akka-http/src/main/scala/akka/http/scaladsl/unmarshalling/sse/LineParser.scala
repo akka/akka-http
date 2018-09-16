@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http
@@ -41,7 +41,7 @@ private final class LineParser(maxLineSize: Int) extends GraphStage[FlowShape[By
         def parseLines(
           bs:            ByteString,
           from:          Int            = 0,
-          at:            Int            = 0,
+          at:            Int,
           parsedLines:   Vector[String] = Vector.empty,
           lastCharWasCr: Boolean        = false): (ByteString, Vector[String], Boolean) =
           if (at >= bs.length)

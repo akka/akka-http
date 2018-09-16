@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -13,7 +13,8 @@ import akka.testkit.TestKit
 trait WithMaterializerSpec extends BeforeAndAfterAll { _: Suite ⇒
   lazy val testConf: Config = ConfigFactory.parseString("""
   akka.event-handlers = ["akka.testkit.TestEventListener"]
-  akka.loglevel = WARNING""")
+  akka.loglevel = WARNING
+  """)
   implicit lazy val system = ActorSystem(getClass.getSimpleName, testConf)
 
   implicit lazy val materializer = ActorMaterializer()

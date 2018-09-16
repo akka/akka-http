@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.model.headers;
@@ -20,7 +20,7 @@ public final class LinkParams {
         return new akka.http.scaladsl.model.headers.LinkParams.rel(value);
     }
     public static LinkParam anchor(Uri uri) {
-        return new akka.http.scaladsl.model.headers.LinkParams.anchor(Util.convertUriToScala(uri));
+        return new akka.http.scaladsl.model.headers.LinkParams.anchor(uri.asScala());
     }
     public static LinkParam rev(String value) {
         return new akka.http.scaladsl.model.headers.LinkParams.rev(value);

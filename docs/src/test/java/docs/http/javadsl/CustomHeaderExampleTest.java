@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl;
@@ -19,6 +19,13 @@ import scala.PartialFunction;
 import java.util.Optional;
 
 import static org.junit.Assert.*;
+
+//#header-value-pf
+import akka.http.javadsl.server.Directives;
+
+import static akka.http.javadsl.server.Directives.headerValuePF;
+
+//#header-value-pf
 
 public class CustomHeaderExampleTest extends JUnitRouteTest {
   //#modeled-api-key-custom-header
@@ -100,7 +107,7 @@ public class CustomHeaderExampleTest extends JUnitRouteTest {
         }
       };
 
-    final Route route = headerValuePF(extractFromCustomHeader, this::complete);
+    final Route route = headerValuePF(extractFromCustomHeader, Directives::complete);
 
     testRoute(route)
       .run(HttpRequest.GET("/").addHeader(RawHeader.create("apiKey", "TheKey")))

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -90,7 +90,7 @@ private object PoolConductor {
       retrySplit.out(0).filter(!_.isInstanceOf[SlotEvent.RetryRequest]) ~> flatten ~> slotSelector.in1
       retrySplit.out(1).collect { case SlotEvent.RetryRequest(r) ⇒ r } ~> retryMerge.preferred
 
-      Ports(retryMerge.in(0), retrySplit.in, route.outArray.toList)
+      Ports(retryMerge.in(0), retrySplit.in, route.outlets)
     }
 
   sealed trait SlotCommand
@@ -249,13 +249,13 @@ private object PoolConductor {
     override val shape = new UniformFanOutShape[SwitchSlotCommand, SlotCommand](slotCount)
 
     override def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
-      shape.outArray foreach { setHandler(_, ignoreTerminateOutput) }
+      shape.outlets foreach { setHandler(_, ignoreTerminateOutput) }
 
       val in = shape.in
       setHandler(in, new InHandler {
         override def onPush(): Unit = {
           val switchCommand = grab(in)
-          emit(shape.outArray(switchCommand.slotIx), switchCommand.cmd, pullIn)
+          emit(shape.outlets(switchCommand.slotIx), switchCommand.cmd, pullIn)
         }
       })
       val pullIn = () ⇒ pull(in)

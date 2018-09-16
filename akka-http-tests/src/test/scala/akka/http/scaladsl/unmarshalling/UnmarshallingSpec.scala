@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.unmarshalling
@@ -11,6 +11,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model._
 import akka.testkit._
+import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -19,6 +20,8 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
   implicit val system = ActorSystem(getClass.getSimpleName)
   implicit val materializer = ActorMaterializer()
   import system.dispatcher
+
+  override val testConfig = ConfigFactory.load()
 
   "The PredefinedFromEntityUnmarshallers" - {
     "stringUnmarshaller should unmarshal `text/plain` content in UTF-8 to Strings" in {

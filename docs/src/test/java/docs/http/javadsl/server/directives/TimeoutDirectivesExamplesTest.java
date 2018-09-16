@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server.directives;
@@ -54,7 +54,7 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
         return binding.thenAccept(b -> {
             System.out.println(String.format("Unbinding from %s", b.localAddress()));
 
-            final CompletionStage<BoxedUnit> unbound = b.unbind();
+            final CompletionStage<?> unbound = b.unbind();
             try {
                 unbound.toCompletableFuture().get(3, TimeUnit.SECONDS); // block...
             } catch (TimeoutException | InterruptedException | ExecutionException e) {
@@ -176,5 +176,30 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
         StatusCode statusCode = runRoute(system, materializer, route, "timeout").get().status();
         assert (StatusCodes.ENHANCE_YOUR_CALM.equals(statusCode));
         //#withRequestTimeoutResponse
+    }
+
+    @Test
+    public void extractRequestTimeout(){
+        //#extractRequestTimeout
+        Duration timeout1 = Duration.create(500, TimeUnit.MILLISECONDS);
+        Duration timeout2 = Duration.create(1000, TimeUnit.MILLISECONDS);
+        Route route =
+          path("timeout", () ->
+            withRequestTimeout(timeout1, () ->
+              extractRequestTimeout( t1 ->
+                withRequestTimeout(timeout2, () ->
+                  extractRequestTimeout( t2 -> {
+                    if (t1 == timeout1 && t2 == timeout2)
+                      return complete(StatusCodes.OK);
+                    else
+                      return complete(StatusCodes.INTERNAL_SERVER_ERROR);
+                  })
+                )
+              )
+            )
+          );
+        //#extractRequestTimeout
+        StatusCode statusCode = runRoute(system, materializer, route, "timeout").get().status();
+        assert (StatusCodes.OK.equals(statusCode));
     }
 }

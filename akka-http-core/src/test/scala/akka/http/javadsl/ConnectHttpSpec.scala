@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2017 Typesafe Inc. <http://www.typesafe.com>
+/*
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.javadsl
 
 import akka.http.javadsl.model._
@@ -98,5 +99,14 @@ class ConnectHttpSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       }
       ex.getMessage should include("non https scheme!")
     }
+    "connect toHost HTTP/2 only" in {
+      val connect = ConnectHttp.toHost("http://127.0.0.1", 8080, UseHttp2.always)
+      connect.effectiveConnectionContext(httpsContext).http2 should equal(UseHttp2.always)
+    }
+    "connect toHostHttps HTTP/2 only" in {
+      val connect = ConnectHttp.toHostHttps("https://127.0.0.1", 8080, UseHttp2.always)
+      connect.effectiveConnectionContext(httpsContext).http2 should equal(UseHttp2.always)
+    }
+
   }
 }

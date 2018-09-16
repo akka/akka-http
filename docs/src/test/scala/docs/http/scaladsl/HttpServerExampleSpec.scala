@@ -1,17 +1,20 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl
 
+import akka.actor.CoordinatedShutdown
+import akka.actor.CoordinatedShutdown.UnknownReason
 import akka.event.LoggingAdapter
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes
 import akka.testkit.TestActors
 import docs.CompileOnlySpec
 import org.scalatest.{ Matchers, WordSpec }
 
 import scala.language.postfixOps
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ Await, ExecutionContext, Future }
 
 class HttpServerExampleSpec extends WordSpec with Matchers
   with CompileOnlySpec {
@@ -699,5 +702,84 @@ class HttpServerExampleSpec extends WordSpec with Matchers
     //#discard-close-connections
   }
 
+  "dynamic routing example" in compileOnlySpec {
+    import akka.actor.ActorSystem
+    import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+    import akka.http.scaladsl.server.Directives._
+    import akka.http.scaladsl.server.Route
+    import akka.stream.ActorMaterializer
+    import spray.json.DefaultJsonProtocol._
+    import spray.json._
 
+    implicit val system = ActorSystem()
+    implicit val materializer = ActorMaterializer()
+
+    //#dynamic-routing-example
+    case class MockDefinition(path: String, requests: Seq[JsValue], responses: Seq[JsValue])
+    implicit val format = jsonFormat3(MockDefinition)
+
+    @volatile var state = Map.empty[String, Map[JsValue, JsValue]]
+
+    // fixed route to update state
+    val fixedRoute: Route = post {
+      pathSingleSlash {
+        entity(as[MockDefinition]) { mock =>
+          val mapping = mock.requests.zip(mock.responses).toMap
+          state = state + (mock.path -> mapping)
+          complete("ok")
+        }
+      }
+    }
+
+    // dynamic routing based on current state
+    val dynamicRoute: Route = ctx => {
+      val routes = state.map { case (segment, responses) =>
+        post {
+          path(segment) {
+            entity(as[JsValue]) { input =>
+              complete(responses.get(input))
+            }
+          }
+        }
+      }
+      concat(routes.toList: _*)(ctx)
+    }
+
+    val route = fixedRoute ~ dynamicRoute
+    //#dynamic-routing-example
+  }
+
+  "graceful termination" in compileOnlySpec {
+    //#graceful-termination
+    import akka.actor.ActorSystem
+    import akka.http.scaladsl.server.Directives._
+    import akka.http.scaladsl.server.Route
+    import akka.stream.ActorMaterializer
+    import scala.concurrent.duration._
+
+    implicit val system = ActorSystem()
+    implicit val dispatcher = system.dispatcher
+    implicit val materializer = ActorMaterializer()
+
+    val routes = get {
+      complete("Hello world!")
+    }
+
+    val binding: Future[Http.ServerBinding] =
+        Http().bindAndHandle(routes, "127.0.0.1", 8080)
+
+    // ...
+    // once ready to terminate the server, invoke terminate:
+    val onceAllConnectionsTerminated: Future[Http.HttpTerminated] =
+    Await.result(binding, 10.seconds)
+      .terminate(hardDeadline = 3.seconds)
+
+    // once all connections are terminated,
+    // - you can invoke coordinated shutdown to tear down the rest of the system:
+    onceAllConnectionsTerminated.flatMap { _ ⇒
+      system.terminate()
+    }
+
+    //#graceful-termination
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server
@@ -11,8 +11,9 @@ import akka.http.scaladsl
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.NotUsed
-import akka.annotation.InternalApi
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.http.javadsl.settings.{ ParserSettings, RoutingSettings }
+import akka.http.scaladsl.server
 
 /**
  * In the Java DSL, a Route can only consist of combinations of the built-in directives. A Route can not be
@@ -34,7 +35,12 @@ import akka.http.javadsl.settings.{ ParserSettings, RoutingSettings }
  * The above example will invoke [inner] whenever the path "fixed/{test}" is matched, where "{test}"
  * is the actual String that was given as method argument.
  */
+@DoNotInherit
 trait Route {
+
+  /** Converts to the Scala DSL form of an Route. */
+  def asScala: server.Route = delegate
+
   /** INTERNAL API */
   @InternalApi
   private[http] def delegate: scaladsl.server.Route
@@ -46,23 +52,39 @@ trait Route {
    *
    * A sealed route has these properties:
    *  - The result of the route will always be a complete response, i.e. the result of the future is a
-   *    ``Success(RouteResult.Complete(response))``, never a failed future and never a rejected route. These
+   *    `Success(RouteResult.Complete(response))`, never a failed future and never a rejected route. These
+   *    will be already be handled using the implicitly given [[RejectionHandler]] and [[ExceptionHandler]] (or
+   *    the default handlers if none are given or can be found implicitly).
+   *  - Consequently, no route alternatives will be tried that were combined with this route.
+   * @deprecated Use the variant without [[ActorSystem]] and [[Materializer]]
+   */
+  @Deprecated
+  def seal(system: ActorSystem, materializer: Materializer): Route
+
+  /**
+   * Seals a route by wrapping it with default exception handling and rejection conversion.
+   *
+   * A sealed route has these properties:
+   *  - The result of the route will always be a complete response, i.e. the result of the future is a
+   *    `Success(RouteResult.Complete(response))`, never a failed future and never a rejected route. These
    *    will be already be handled using the implicitly given [[RejectionHandler]] and [[ExceptionHandler]] (or
    *    the default handlers if none are given or can be found implicitly).
    *  - Consequently, no route alternatives will be tried that were combined with this route.
    */
-  def seal(system: ActorSystem, materializer: Materializer): Route
+  def seal(): Route
 
   /**
    * Seals a route by wrapping it with explicit exception handling and rejection conversion.
    *
    * A sealed route has these properties:
    *  - The result of the route will always be a complete response, i.e. the result of the future is a
-   *    ``Success(RouteResult.Complete(response))``, never a failed future and never a rejected route. These
+   *    `Success(RouteResult.Complete(response))`, never a failed future and never a rejected route. These
    *    will be already be handled using the implicitly given [[RejectionHandler]] and [[ExceptionHandler]] (or
    *    the default handlers if none are given or can be found implicitly).
    *  - Consequently, no route alternatives will be tried that were combined with this route.
+   * @deprecated Use the variant without [[ActorSystem]] and [[Materializer]]
    */
+  @Deprecated
   def seal(
     routingSettings:  RoutingSettings,
     parserSettings:   ParserSettings,
@@ -70,6 +92,40 @@ trait Route {
     exceptionHandler: ExceptionHandler,
     system:           ActorSystem,
     materializer:     Materializer): Route
+
+  /**
+   * Seals a route by wrapping it with explicit exception handling and rejection conversion.
+   *
+   * A sealed route has these properties:
+   *  - The result of the route will always be a complete response, i.e. the result of the future is a
+   *    `Success(RouteResult.Complete(response))`, never a failed future and never a rejected route. These
+   *    will be already be handled using the implicitly given [[RejectionHandler]] and [[ExceptionHandler]] (or
+   *    the default handlers if none are given or can be found implicitly).
+   *  - Consequently, no route alternatives will be tried that were combined with this route.
+   *
+   * @deprecated Use the variant without [[RoutingSettings]] and [[ParserSettings]]
+   */
+  @Deprecated
+  @deprecated("Use the variant without RoutingSettings, ParserSettings parameters.", since = "10.1.1")
+  def seal(
+    routingSettings:  RoutingSettings,
+    parserSettings:   ParserSettings,
+    rejectionHandler: RejectionHandler,
+    exceptionHandler: ExceptionHandler): Route
+
+  /**
+   * Seals a route by wrapping it with explicit exception handling and rejection conversion.
+   *
+   * A sealed route has these properties:
+   *  - The result of the route will always be a complete response, i.e. the result of the future is a
+   *    `Success(RouteResult.Complete(response))`, never a failed future and never a rejected route. These
+   *    will be already be handled using the implicitly given [[RejectionHandler]] and [[ExceptionHandler]] (or
+   *    the default handlers if none are given or can be found implicitly).
+   *  - Consequently, no route alternatives will be tried that were combined with this route.
+   */
+  def seal(
+    rejectionHandler: RejectionHandler,
+    exceptionHandler: ExceptionHandler): Route
 
   def orElse(alternative: Route): Route
 }

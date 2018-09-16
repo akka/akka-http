@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -499,6 +499,8 @@ object Uri {
     def reverse: Path = reverseAndPrependTo(Path.Empty)
     def reverseAndPrependTo(prefix: Path): Path
     def /(segment: String): Path = this ++ Path.Slash(segment :: Path.Empty)
+    def ?/(segment: String): Path = if (this.endsWithSlash) this + segment else this / segment
+
     def startsWith(that: Path): Boolean
     def dropChars(count: Int): Path
     override def toString = UriRendering.PathRenderer.render(new StringRendering, this).get
@@ -763,10 +765,10 @@ object Uri {
     else sb.toString
 
   private[http] def normalizeScheme(scheme: String): String = {
-    @tailrec def verify(ix: Int = scheme.length - 1, allowed: CharPredicate = ALPHA, allLower: Boolean = true): Int =
-      if (ix >= 0) {
+    @tailrec def verify(ix: Int = 0, allowed: CharPredicate = ALPHA, allLower: Boolean = true): Int =
+      if (ix < scheme.length) {
         val c = scheme.charAt(ix)
-        if (allowed(c)) verify(ix - 1, `scheme-char`, allLower && !UPPER_ALPHA(c)) else ix
+        if (allowed(c)) verify(ix + 1, `scheme-char`, allLower && !UPPER_ALPHA(c)) else ix
       } else if (allLower) -1 else -2
     verify() match {
       case -2 ⇒ scheme.toLowerCase

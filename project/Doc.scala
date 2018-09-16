@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka
 
 import sbt._
@@ -151,7 +152,7 @@ object BootstrapGenjavadoc extends AutoPlugin {
       javacOptions in test += "-Xdoclint:none",
       javacOptions in doc += "-Xdoclint:none",
       scalacOptions in Compile += "-P:genjavadoc:fabricateParams=true",
-      unidocGenjavadocVersion in Global := "0.10"
+      unidocGenjavadocVersion in Global := "0.11"
     )
   ).getOrElse(Seq.empty)
 }

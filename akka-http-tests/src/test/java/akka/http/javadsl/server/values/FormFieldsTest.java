@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.values;
@@ -13,6 +13,8 @@ import akka.http.javadsl.unmarshalling.StringUnmarshallers;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import akka.japi.Pair;
+
+import static akka.http.javadsl.server.Directives.*;
 
 public class FormFieldsTest extends JUnitRouteTest {
 

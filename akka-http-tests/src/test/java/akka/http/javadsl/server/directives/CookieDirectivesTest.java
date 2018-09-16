@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives;
@@ -9,6 +9,8 @@ import akka.http.javadsl.model.headers.HttpCookie;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import org.junit.Test;
+
+import static akka.http.javadsl.server.Directives.*;
 
 public class CookieDirectivesTest extends JUnitRouteTest {
   @Test

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client.pool
@@ -11,7 +11,6 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import scala.util.{ Failure, Success, Try }
@@ -23,13 +22,10 @@ import scala.util.{ Failure, Success, Try }
  */
 @InternalApi
 private[pool] abstract class SlotContext {
-  def openConnection(): Future[Http.OutgoingConnection]
-  def pushRequestToConnectionAndThen(request: HttpRequest, nextState: SlotState): SlotState
-
-  /** Will try to close the current connection. Will do nothing if there is no current connection. */
-  def closeConnection(): Unit
+  def openConnection(): Unit
   def isConnectionClosed: Boolean
 
+  def pushRequestToConnectionAndThen(request: HttpRequest, nextState: SlotState): SlotState
   def dispatchResponseResult(req: RequestContext, result: Try[HttpResponse]): Unit
 
   def willCloseAfter(res: HttpResponse): Boolean
@@ -51,31 +47,31 @@ private[pool] sealed abstract class SlotState extends Product {
   def isIdle: Boolean
   def isConnected: Boolean
 
-  def onPreConnect(ctx: SlotContext): SlotState = illegalState(ctx, "preConnect")
-  def onConnectionAttemptSucceeded(ctx: SlotContext, outgoingConnection: Http.OutgoingConnection): SlotState = illegalState(ctx, "connected attempt succeeded")
-  def onConnectionAttemptFailed(ctx: SlotContext, cause: Throwable): SlotState = illegalState(ctx, "connection attempt failed")
+  def onPreConnect(ctx: SlotContext): SlotState = illegalState(ctx, "onPreConnect")
+  def onConnectionAttemptSucceeded(ctx: SlotContext, outgoingConnection: Http.OutgoingConnection): SlotState = illegalState(ctx, "onConnectionAttemptSucceeded")
+  def onConnectionAttemptFailed(ctx: SlotContext, cause: Throwable): SlotState = illegalState(ctx, "onConnectionAttemptFailed")
 
-  def onNewRequest(ctx: SlotContext, requestContext: RequestContext): SlotState = illegalState(ctx, "new request")
+  def onNewRequest(ctx: SlotContext, requestContext: RequestContext): SlotState = illegalState(ctx, "onNewRequest")
 
   /** Will be called either immediately if the request entity is strict or otherwise later */
-  def onRequestEntityCompleted(ctx: SlotContext): SlotState = illegalState(ctx, "request entity completed")
-  def onRequestEntityFailed(ctx: SlotContext, cause: Throwable): SlotState = illegalState(ctx, "request entity failed")
+  def onRequestEntityCompleted(ctx: SlotContext): SlotState = illegalState(ctx, "onRequestEntityCompleted")
+  def onRequestEntityFailed(ctx: SlotContext, cause: Throwable): SlotState = illegalState(ctx, "onRequestEntityFailed")
 
-  def onResponseReceived(ctx: SlotContext, response: HttpResponse): SlotState = illegalState(ctx, "receive response")
+  def onResponseReceived(ctx: SlotContext, response: HttpResponse): SlotState = illegalState(ctx, "onResponseReceived")
 
   /** Called when the response out port is ready to receive a further response (successful or failed) */
-  def onResponseDispatchable(ctx: SlotContext): SlotState = illegalState(ctx, "responseDispatched")
+  def onResponseDispatchable(ctx: SlotContext): SlotState = illegalState(ctx, "onResponseDispatchable")
 
-  def onResponseEntitySubscribed(ctx: SlotContext): SlotState = illegalState(ctx, "responseEntitySubscribed")
+  def onResponseEntitySubscribed(ctx: SlotContext): SlotState = illegalState(ctx, "onResponseEntitySubscribed")
 
   /** Will be called either immediately if the response entity is strict or otherwise later */
-  def onResponseEntityCompleted(ctx: SlotContext): SlotState = illegalState(ctx, "response entity completed")
-  def onResponseEntityFailed(ctx: SlotContext, cause: Throwable): SlotState = illegalState(ctx, "response entity failed")
+  def onResponseEntityCompleted(ctx: SlotContext): SlotState = illegalState(ctx, "onResponseEntityCompleted")
+  def onResponseEntityFailed(ctx: SlotContext, cause: Throwable): SlotState = illegalState(ctx, "onResponseEntityFailed")
 
-  def onConnectionCompleted(ctx: SlotContext): SlotState = illegalState(ctx, "connection completed")
-  def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = illegalState(ctx, "connection failed")
+  def onConnectionCompleted(ctx: SlotContext): SlotState = illegalState(ctx, "onConnectionCompleted")
+  def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = illegalState(ctx, "onConnectionFailed")
 
-  def onTimeout(ctx: SlotContext): SlotState = illegalState(ctx, "timeout")
+  def onTimeout(ctx: SlotContext): SlotState = illegalState(ctx, "onTimeout")
 
   def onShutdown(ctx: SlotContext): Unit = ()
 
@@ -100,19 +96,19 @@ private[pool] sealed abstract class SlotState extends Product {
 private[pool] object SlotState {
   sealed abstract class ConnectedState extends SlotState {
     def isConnected: Boolean = true
-
-    protected def ignoreAndCloseConnection(ctx: SlotContext, when: String): SlotState = {
-      ctx.debug("Closing connection (and staying in state) when [{}]", when)
-      ctx.closeConnection()
-      this
-    }
   }
   sealed trait IdleState extends SlotState {
     final override def isIdle = true
   }
   sealed private[pool] /* to avoid warnings */ trait BusyState extends SlotState {
-    final override def isIdle = false // no HTTP pipelining right now
+    // no HTTP pipelining: we could accept a new request when the request has been sent completely (or
+    // even when the response has started to come in). However, that would mean the next request and response
+    // are effectively blocked on the completion on the previous request and response. For this reason we
+    // avoid accepting new connections in this slot while the previous request is still in progress: there might
+    // be another slot available which can process the request with lower latency.
+    final override def isIdle = false
     def ongoingRequest: RequestContext
+    def waitingForEndOfRequestEntity: Boolean
 
     override def onShutdown(ctx: SlotContext): Unit = {
       // We would like to dispatch a failure here but responseOut might not be ready (or also already shutting down)
@@ -135,12 +131,16 @@ private[pool] object SlotState {
       // because of the notorious cancel/failure propagation which can convert failures into completion.
       failOngoingRequest(ctx, "connection completed", new IllegalStateException("Connection was shutdown.") with NoStackTrace)
 
-    override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = this failOngoingRequest (ctx, "connection failure", cause)
+    override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = failOngoingRequest(ctx, "connection failure", cause)
 
     private def failOngoingRequest(ctx: SlotContext, signal: String, cause: Throwable): SlotState = {
       ctx.debug("Ongoing request [{}] is failed because of [{}]: [{}]", ongoingRequest.request.debugString, signal, cause.getMessage)
-      ctx.closeConnection()
-      WaitingForResponseDispatch(ongoingRequest, Failure(cause))
+      if (ongoingRequest.canBeRetried) { // push directly because it will be buffered internally
+        ctx.dispatchResponseResult(ongoingRequest, Failure(cause))
+        if (waitingForEndOfRequestEntity) WaitingForEndOfRequestEntity
+        else Unconnected
+      } else
+        WaitingForResponseDispatch(ongoingRequest, Failure(cause), waitingForEndOfRequestEntity)
     }
   }
 
@@ -163,16 +163,15 @@ private[pool] object SlotState {
 
     override def onConnectionCompleted(ctx: SlotContext): SlotState = Unconnected
     override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = Unconnected
-
   }
   sealed trait WithRequestDispatching { _: ConnectedState ⇒
-    def dispatchRequestToConnection(ctx: SlotContext, ongoingRequest: RequestContext): SlotState = {
-      val r = ongoingRequest.request
-      ctx.pushRequestToConnectionAndThen(r, WaitingForEndOfRequestEntity(ongoingRequest))
-    }
+    def dispatchRequestToConnection(ctx: SlotContext, ongoingRequest: RequestContext): SlotState =
+      ctx.pushRequestToConnectionAndThen(ongoingRequest.request, WaitingForResponse(ongoingRequest, waitingForEndOfRequestEntity = true))
   }
 
   final case class Connecting(ongoingRequest: RequestContext) extends ConnectedState with BusyState with WithRequestDispatching {
+    val waitingForEndOfRequestEntity = false
+
     override def onConnectionAttemptSucceeded(ctx: SlotContext, outgoingConnection: Http.OutgoingConnection): SlotState = {
       ctx.debug("Slot connection was established")
       dispatchRequestToConnection(ctx, ongoingRequest)
@@ -198,82 +197,107 @@ private[pool] object SlotState {
 
     private def closeAndGoToUnconnected(ctx: SlotContext, signal: String, cause: Throwable): SlotState = {
       ctx.debug("Connection was closed by [{}] while preconnecting because of [{}]", signal, cause.getMessage)
-      ctx.closeConnection()
       Unconnected
     }
   }
-  final case class WaitingForEndOfRequestEntity(ongoingRequest: RequestContext) extends ConnectedState with BusyState {
-    override def onRequestEntityCompleted(ctx: SlotContext): SlotState =
-      WaitingForResponse(ongoingRequest)
+  final case class WaitingForResponse(ongoingRequest: RequestContext, waitingForEndOfRequestEntity: Boolean) extends ConnectedState with BusyState {
 
-    // connection failures are handled by BusyState implementations
-  }
-  final case class WaitingForResponse(ongoingRequest: RequestContext) extends ConnectedState with BusyState {
-    override def onResponseReceived(ctx: SlotContext, response: HttpResponse): SlotState =
-      WaitingForResponseDispatch(ongoingRequest, Success(response))
+    override def onRequestEntityCompleted(ctx: SlotContext): SlotState = {
+      require(waitingForEndOfRequestEntity)
+      WaitingForResponse(ongoingRequest, waitingForEndOfRequestEntity = false)
+    }
+
+    override def onResponseReceived(ctx: SlotContext, response: HttpResponse): SlotState = {
+      ctx.debug(s"onResponseReceived in WaitingForResponse with $waitingForEndOfRequestEntity")
+      WaitingForResponseDispatch(ongoingRequest, Success(response), waitingForEndOfRequestEntity)
+    }
 
     // connection failures are handled by BusyState implementations
   }
   final case class WaitingForResponseDispatch(
-    ongoingRequest: RequestContext,
-    result:         Try[HttpResponse]) extends ConnectedState with BusyState {
+    ongoingRequest:               RequestContext,
+    result:                       Try[HttpResponse],
+    waitingForEndOfRequestEntity: Boolean) extends ConnectedState with BusyWithResultAlreadyDetermined {
+
+    override def onRequestEntityCompleted(ctx: SlotContext): SlotState = {
+      require(waitingForEndOfRequestEntity)
+      WaitingForResponseDispatch(ongoingRequest, result, waitingForEndOfRequestEntity = false)
+    }
+
     /** Called when the response out port is ready to receive a further response (successful or failed) */
     override def onResponseDispatchable(ctx: SlotContext): SlotState = {
       ctx.dispatchResponseResult(ongoingRequest, result)
 
       result match {
-        case Success(res) ⇒ WaitingForResponseEntitySubscription(ongoingRequest, res, ctx.settings.responseEntitySubscriptionTimeout)
-        case Failure(cause) ⇒
-          ctx.closeConnection()
-          Unconnected
+        case Success(res)   ⇒ WaitingForResponseEntitySubscription(ongoingRequest, res, ctx.settings.responseEntitySubscriptionTimeout, waitingForEndOfRequestEntity)
+        case Failure(cause) ⇒ Unconnected
       }
     }
-
-    // we already got a result so ignore any subsequent errors
-    override def onConnectionCompleted(ctx: SlotContext): SlotState = ignoreAndCloseConnection(ctx, "connection completed")
-    override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = ignoreAndCloseConnection(ctx, "connection failed")
-    override def onConnectionAttemptFailed(ctx: SlotContext, cause: Throwable): SlotState = ignoreAndCloseConnection(ctx, "connection attempt failed")
-    override def onRequestEntityFailed(ctx: SlotContext, cause: Throwable): SlotState = ignoreAndCloseConnection(ctx, "request entity failed")
   }
 
-  private[pool] /* to avoid warnings */ trait BusyWithResultAlreadyDispatched extends ConnectedState with BusyState {
+  private[pool] /* to avoid warnings */ trait BusyWithResultAlreadyDetermined extends ConnectedState with BusyState {
     override def onResponseEntityFailed(ctx: SlotContext, cause: Throwable): SlotState = {
       ctx.debug(s"Response entity for request [{}] failed with [{}]", ongoingRequest.request.debugString, cause.getMessage)
       // response must have already been dispatched, so don't try to dispatch a response
-      ctx.closeConnection()
       Unconnected
     }
 
-    // ignore now, we'll clean up later in onResponseEntityCompleted if connection is closed
+    // ignore since we already accepted the request
     override def onConnectionCompleted(ctx: SlotContext): SlotState = this
     override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = this
+    override def onRequestEntityFailed(ctx: SlotContext, cause: Throwable): SlotState = this
   }
 
   final case class WaitingForResponseEntitySubscription(
     ongoingRequest:  RequestContext,
-    ongoingResponse: HttpResponse, override val stateTimeout: Duration) extends ConnectedState with BusyWithResultAlreadyDispatched {
+    ongoingResponse: HttpResponse, override val stateTimeout: Duration, waitingForEndOfRequestEntity: Boolean) extends ConnectedState with BusyWithResultAlreadyDetermined {
+
+    override def onRequestEntityCompleted(ctx: SlotContext): SlotState = {
+      require(waitingForEndOfRequestEntity)
+      WaitingForResponseEntitySubscription(ongoingRequest, ongoingResponse, stateTimeout, waitingForEndOfRequestEntity = false)
+    }
 
     override def onResponseEntitySubscribed(ctx: SlotContext): SlotState =
-      WaitingForEndOfResponseEntity(ongoingRequest, ongoingResponse)
+      WaitingForEndOfResponseEntity(ongoingRequest, ongoingResponse, waitingForEndOfRequestEntity)
 
     override def onTimeout(ctx: SlotContext): SlotState = {
       ctx.warning(
         s"Response entity was not subscribed after $stateTimeout. Make sure to read the response entity body or call `discardBytes()` on it. " +
           s"${ongoingRequest.request.debugString} -> ${ongoingResponse.debugString}")
-      ctx.closeConnection()
       Unconnected
     }
 
   }
   final case class WaitingForEndOfResponseEntity(
-    ongoingRequest:  RequestContext,
-    ongoingResponse: HttpResponse) extends ConnectedState with BusyWithResultAlreadyDispatched {
+    ongoingRequest:               RequestContext,
+    ongoingResponse:              HttpResponse,
+    waitingForEndOfRequestEntity: Boolean) extends ConnectedState with BusyWithResultAlreadyDetermined {
 
     override def onResponseEntityCompleted(ctx: SlotContext): SlotState =
-      if (ctx.willCloseAfter(ongoingResponse) || ctx.isConnectionClosed) {
-        ctx.closeConnection()
+      if (waitingForEndOfRequestEntity)
+        WaitingForEndOfRequestEntity
+      // TODO can we be *sure* that by skipping to Unconnected if ctx.willCloseAfter(ongoingResponse)
+      // we can't get a connection closed event from the 'previous' connection later?
+      else if (ctx.willCloseAfter(ongoingResponse) || ctx.isConnectionClosed)
         Unconnected
-      } else
+      else
         Idle
+
+    override def onRequestEntityCompleted(ctx: SlotContext): SlotState = {
+      require(waitingForEndOfRequestEntity)
+      WaitingForEndOfResponseEntity(ongoingRequest, ongoingResponse, waitingForEndOfRequestEntity = false)
+    }
+  }
+  final case object WaitingForEndOfRequestEntity extends ConnectedState {
+    final override def isIdle = false
+
+    override def onRequestEntityCompleted(ctx: SlotContext): SlotState =
+      if (ctx.isConnectionClosed) Unconnected
+      else Idle
+    override def onRequestEntityFailed(ctx: SlotContext, cause: Throwable): SlotState =
+      if (ctx.isConnectionClosed) Unconnected
+      else Idle
+    override def onConnectionCompleted(ctx: SlotContext): SlotState = Unconnected
+    override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = Unconnected
   }
 }

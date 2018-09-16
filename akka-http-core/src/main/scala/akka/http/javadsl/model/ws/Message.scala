@@ -1,12 +1,18 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.model.ws
 
+import java.util.concurrent.CompletionStage
+
 import akka.http.scaladsl.{ model ⇒ sm }
+import akka.stream.Materializer
 import akka.stream.javadsl.Source
 import akka.util.ByteString
+
+import scala.concurrent.duration._
+import scala.compat.java8.FutureConverters._
 
 /**
  * Represents a WebSocket message. A message can either be a binary message or a text message.
@@ -62,6 +68,7 @@ abstract class TextMessage extends Message {
   def asTextMessage: TextMessage = this
   def asBinaryMessage: BinaryMessage = throw new ClassCastException("This message is not a binary message.")
   def asScala: sm.ws.TextMessage
+  def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[sm.ws.TextMessage.Strict]
   //#message-model
 }
 //#message-model
@@ -76,6 +83,10 @@ object TextMessage {
       def getStreamedText: Source[String, _] = Source.single(text)
       def getStrictText: String = text
 
+      def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[sm.ws.TextMessage.Strict] = asScala
+        .toStrict(timeoutMillis.millis)(materializer)
+        .toJava
+
       def asScala: sm.ws.TextMessage = sm.ws.TextMessage.Strict(text)
     }
   /**
@@ -86,6 +97,10 @@ object TextMessage {
       def isStrict: Boolean = false
       def getStrictText: String = throw new IllegalStateException("Cannot get strict text for streamed message.")
       def getStreamedText: Source[String, _] = textStream
+
+      def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[sm.ws.TextMessage.Strict] = asScala
+        .toStrict(timeoutMillis.millis)(materializer)
+        .toJava
 
       def asScala: sm.ws.TextMessage = sm.ws.TextMessage(textStream.asScala)
     }
@@ -119,6 +134,7 @@ abstract class BinaryMessage extends Message {
   def asTextMessage: TextMessage = throw new ClassCastException("This message is not a text message.")
   def asBinaryMessage: BinaryMessage = this
   def asScala: sm.ws.BinaryMessage
+  def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[sm.ws.BinaryMessage.Strict]
 }
 
 object BinaryMessage {
@@ -131,6 +147,10 @@ object BinaryMessage {
       def getStreamedData: Source[ByteString, _] = Source.single(data)
       def getStrictData: ByteString = data
 
+      def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[sm.ws.BinaryMessage.Strict] = asScala
+        .toStrict(timeoutMillis.millis)(materializer)
+        .toJava
+
       def asScala: sm.ws.BinaryMessage = sm.ws.BinaryMessage.Strict(data)
     }
 
@@ -142,6 +162,10 @@ object BinaryMessage {
       def isStrict: Boolean = false
       def getStrictData: ByteString = throw new IllegalStateException("Cannot get strict data for streamed message.")
       def getStreamedData: Source[ByteString, _] = dataStream
+
+      def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[sm.ws.BinaryMessage.Strict] = asScala
+        .toStrict(timeoutMillis.millis)(materializer)
+        .toJava
 
       def asScala: sm.ws.BinaryMessage = sm.ws.BinaryMessage(dataStream.asScala)
     }

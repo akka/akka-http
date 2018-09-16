@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives;
@@ -18,6 +18,8 @@ import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import akka.http.scaladsl.server.MethodRejection;
 import akka.http.scaladsl.server.Rejection;
+
+import static akka.http.javadsl.server.Directives.*;
 
 public class ExecutionDirectivesTest extends JUnitRouteTest {
   @Test

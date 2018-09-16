@@ -1,9 +1,10 @@
-/**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  *
  * Copied and adapted from akka-remote
  * https://github.com/akka/akka/blob/c90121485fcfc44a3cee62a0c638e1982d13d812/akka-remote/src/main/scala/akka/remote/artery/StageLogging.scala
  */
+
 package akka.http.impl.util
 
 import akka.annotation.InternalApi
@@ -46,10 +47,13 @@ private[akka] trait StageLoggingWithOverride { self: GraphStageLogic ⇒
 }
 
 /**
+ * INTERNAL API
+ *
  * A copy of NoLogging that can be used as a place-holder for "logging not explicitly specified".
  * It can be matched on to be overridden with default behavior.
  */
-object DefaultNoLogging extends LoggingAdapter {
+@InternalApi
+private[akka] object DefaultNoLogging extends LoggingAdapter {
   /**
    * Java API to return the reference to NoLogging
    * @return The NoLogging instance

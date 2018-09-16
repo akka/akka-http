@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.http.javadsl.server.directives;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -28,8 +29,14 @@ import akka.http.caching.javadsl.Cache;
 import akka.http.caching.javadsl.CachingSettings;
 import akka.http.caching.javadsl.LfuCacheSettings;
 import akka.http.caching.LfuCache;
-
 //#create-cache-imports
+
+//#cache
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.extractUri;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.PathMatchers.segment;
+//#cache
 
 public class CachingDirectivesExamplesTest extends JUnitRouteTest {
 
@@ -50,27 +57,33 @@ public class CachingDirectivesExamplesTest extends JUnitRouteTest {
       }
     };
 
+    // Created outside the route to allow using
+    // the same cache across multiple calls
+    final Cache<Uri, RouteResult> myCache = routeCache(cachingSettings);
+
     final AtomicInteger count = new AtomicInteger(0);
-    final Route route = cache(routeCache(cachingSettings), simpleKeyer, () ->
-      extractUri(uri ->
-        complete(String.format("Request for %s @ count %d", uri, count.incrementAndGet()))
+    final Route route = path(segment("cached"), () ->
+      cache(myCache, simpleKeyer, () ->
+        extractUri(uri ->
+          complete(String.format("Request for %s @ count %d", uri, count.incrementAndGet()))
+        )
       )
     );
 
     // tests:
     testRoute(route)
-      .run(HttpRequest.GET("/"))
-      .assertEntity("Request for http://example.com/ @ count 1");
+      .run(HttpRequest.GET("/cached"))
+      .assertEntity("Request for http://example.com/cached @ count 1");
 
     // now cached
     testRoute(route)
-      .run(HttpRequest.GET("/"))
-      .assertEntity("Request for http://example.com/ @ count 1");
+      .run(HttpRequest.GET("/cached"))
+      .assertEntity("Request for http://example.com/cached @ count 1");
 
     // caching prevented
     final CacheControl noCache = CacheControl.create(CacheDirectives.NO_CACHE);
-    testRoute(route).run(HttpRequest.GET("/").addHeader(noCache))
-      .assertEntity("Request for http://example.com/ @ count 2");
+    testRoute(route).run(HttpRequest.GET("/cached").addHeader(noCache))
+      .assertEntity("Request for http://example.com/cached @ count 2");
     //#cache
   }
 
@@ -92,27 +105,33 @@ public class CachingDirectivesExamplesTest extends JUnitRouteTest {
       }
     };
 
+    // Created outside the route to allow using
+    // the same cache across multiple calls
+    final Cache<Uri, RouteResult> myCache = routeCache(cachingSettings);
+
     final AtomicInteger count = new AtomicInteger(0);
-    final Route route = alwaysCache(routeCache(cachingSettings), simpleKeyer, () ->
-      extractUri(uri ->
-        complete(String.format("Request for %s @ count %d", uri, count.incrementAndGet()))
+    final Route route = path("cached", () ->
+        alwaysCache(myCache, simpleKeyer, () ->
+        extractUri(uri ->
+          complete(String.format("Request for %s @ count %d", uri, count.incrementAndGet()))
+        )
       )
     );
 
     // tests:
     testRoute(route)
-      .run(HttpRequest.GET("/"))
-      .assertEntity("Request for http://example.com/ @ count 1");
+      .run(HttpRequest.GET("/cached"))
+      .assertEntity("Request for http://example.com/cached @ count 1");
 
     // now cached
     testRoute(route)
-      .run(HttpRequest.GET("/"))
-      .assertEntity("Request for http://example.com/ @ count 1");
+      .run(HttpRequest.GET("/cached"))
+      .assertEntity("Request for http://example.com/cached @ count 1");
 
     final CacheControl noCache = CacheControl.create(CacheDirectives.NO_CACHE);
     testRoute(route)
-      .run(HttpRequest.GET("/").addHeader(noCache))
-      .assertEntity("Request for http://example.com/ @ count 1");
+      .run(HttpRequest.GET("/cached").addHeader(noCache))
+      .assertEntity("Request for http://example.com/cached @ count 1");
     //#always-cache
   }
 
@@ -137,11 +156,15 @@ public class CachingDirectivesExamplesTest extends JUnitRouteTest {
 
   @Test
   public void testCreateCache() {
+    //#keyer-function
+
+    // Use the request's URI as the cache's key
     final JavaPartialFunction<RequestContext, Uri> keyerFunction = new JavaPartialFunction<RequestContext, Uri>() {
       public Uri apply(RequestContext in, boolean isCheck) {
         return in.getRequest().getUri();
       }
     };
+    //#keyer-function
 
     final AtomicInteger count = new AtomicInteger(0);
     final Route innerRoute = extractUri(uri ->
@@ -157,6 +180,8 @@ public class CachingDirectivesExamplesTest extends JUnitRouteTest {
       .withTimeToIdle(Duration.create(10, TimeUnit.SECONDS));
     final CachingSettings cachingSettings = defaultCachingSettings.withLfuCacheSettings(lfuCacheSettings);
     final Cache<Uri, RouteResult> lfuCache = LfuCache.create(cachingSettings);
+
+    // Create the route
     final Route route = cache(lfuCache, keyerFunction, () -> innerRoute);
     //#create-cache
 

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.model;
@@ -23,11 +23,13 @@ public final class MediaTypes {
     public static final MediaType.WithOpenCharset APPLICATION_JAVASCRIPT = akka.http.scaladsl.model.MediaTypes.application$divjavascript();
     public static final MediaType.WithFixedCharset APPLICATION_JSON = akka.http.scaladsl.model.MediaTypes.application$divjson();
     public static final MediaType.WithFixedCharset APPLICATION_JSON_PATCH_JSON = akka.http.scaladsl.model.MediaTypes.application$divjson$minuspatch$plusjson();
+    public static final MediaType.WithFixedCharset APPLICATION_MERGE_PATCH_JSON = akka.http.scaladsl.model.MediaTypes.application$divmerge$minuspatch$plusjson();
     public static final MediaType.Binary APPLICATION_LHA = akka.http.scaladsl.model.MediaTypes.application$divlha();
     public static final MediaType.Binary APPLICATION_LZX = akka.http.scaladsl.model.MediaTypes.application$divlzx();
     public static final MediaType.Binary APPLICATION_MSPOWERPOINT = akka.http.scaladsl.model.MediaTypes.application$divmspowerpoint();
     public static final MediaType.Binary APPLICATION_MSWORD = akka.http.scaladsl.model.MediaTypes.application$divmsword();
     public static final MediaType.Binary APPLICATION_OCTET_STREAM = akka.http.scaladsl.model.MediaTypes.application$divoctet$minusstream();
+    public static final MediaType.Binary APPLICATION_GRPC_PROTO = akka.http.scaladsl.model.MediaTypes.application$divgrpc$plusproto();
     public static final MediaType.Binary APPLICATION_PDF = akka.http.scaladsl.model.MediaTypes.application$divpdf();
     public static final MediaType.Binary APPLICATION_POSTSCRIPT = akka.http.scaladsl.model.MediaTypes.application$divpostscript();
     public static final MediaType.WithOpenCharset APPLICATION_RSS_XML = akka.http.scaladsl.model.MediaTypes.application$divrss$plusxml();
@@ -295,6 +297,14 @@ public final class MediaTypes {
         scala.collection.immutable.Seq<String> fileEx = akka.japi.Util.<String>immutableSeq(java.util.Arrays.asList(fileExtensions));
 
         return akka.http.scaladsl.model.MediaType.video(subType, comp, fileEx);
+    }
+
+    public static MediaType.Binary customBinary(String mainType, String subType, boolean compressible) {
+        return customBinary(mainType, subType, compressible, java.util.Collections.<String, String>emptyMap(), false);
+    }
+
+    public static MediaType.Binary customBinary(String mainType, String subType, MediaType.Compressibility compressibility) {
+        return customBinary(mainType, subType, compressibility, java.util.Collections.<String, String>emptyMap(), false);
     }
 
     // arguments have been reordered due to varargs having to be the last argument

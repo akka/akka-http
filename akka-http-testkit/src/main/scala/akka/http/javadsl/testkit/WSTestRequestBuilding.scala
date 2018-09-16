@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.testkit
@@ -17,13 +17,13 @@ import akka.stream.{ Materializer, scaladsl }
 
 trait WSTestRequestBuilding {
 
-  def WS(uri: Uri, clientSideHandler: Flow[Message, Message, Any], materializer: Materializer): HttpRequest = {
+  def WS[T](uri: Uri, clientSideHandler: Flow[Message, Message, T], materializer: Materializer): HttpRequest = {
     WS(uri, clientSideHandler, materializer, java.util.Collections.emptyList())
   }
 
-  def WS(
+  def WS[T](
     uri:               Uri,
-    clientSideHandler: Flow[Message, Message, Any],
+    clientSideHandler: Flow[Message, Message, T],
     materializer:      Materializer,
     subprotocols:      java.util.List[String]): HttpRequest = {
 

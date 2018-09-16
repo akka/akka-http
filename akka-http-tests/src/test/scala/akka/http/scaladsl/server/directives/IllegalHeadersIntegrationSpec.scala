@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server.directives
@@ -12,7 +12,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 /**
- * Has to excercise the entire stack, tgus an IntegrationRoutingSpec (not reproducable using just RouteTest).
+ * Has to exercise the entire stack, tgus an IntegrationRoutingSpec (not reproduciable using just RouteTest).
  */
 class IllegalHeadersIntegrationSpec extends IntegrationRoutingSpec {
 

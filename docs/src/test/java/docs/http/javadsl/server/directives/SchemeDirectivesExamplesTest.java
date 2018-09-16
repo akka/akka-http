@@ -1,23 +1,30 @@
 /*
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server.directives;
-
-import java.util.Arrays;
-import java.util.regex.Pattern;
 
 import org.junit.Test;
 
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.StatusCodes;
-import akka.http.javadsl.model.headers.Host;
 import akka.http.javadsl.server.Route;
-import akka.http.javadsl.server.RequestContext;
 import akka.http.javadsl.testkit.JUnitRouteTest;
-import java.util.function.Function;
-import akka.http.javadsl.model.Uri;
 import akka.http.javadsl.model.headers.Location;
+
+//#extractScheme
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.extractScheme;
+
+//#extractScheme
+//#scheme
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.extract;
+import static akka.http.javadsl.server.Directives.redirect;
+import static akka.http.javadsl.server.Directives.route;
+import static akka.http.javadsl.server.Directives.scheme;
+
+//#scheme
 
 public class SchemeDirectivesExamplesTest extends JUnitRouteTest {
 
@@ -34,7 +41,7 @@ public class SchemeDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testRedirection() {
     //#scheme
-    final Route route = route(
+    final Route route = concat(
       scheme("http", ()->
         extract((ctx) -> ctx.getRequest().getUri(), (uri)->
           redirect(uri.scheme("https"), StatusCodes.MOVED_PERMANENTLY)

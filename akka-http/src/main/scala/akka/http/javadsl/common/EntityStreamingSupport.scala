@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.common
@@ -73,7 +73,7 @@ abstract class EntityStreamingSupport {
   def parallelism: Int
 
   /**
-   * Write-side / read-side, defines if (un)marshalling of incoming stream elements should be perserved or not.
+   * Write-side / read-side, defines if (un)marshalling of incoming stream elements should be preserved or not.
    *
    * Allowing for parallel and unordered (un)marshalling often yields higher throughput and also allows avoiding
    * head-of-line blocking if some elements are much larger than others.

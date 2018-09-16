@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.testkit
@@ -42,7 +42,7 @@ abstract class RouteTest extends AllDirectives with WSTestRequestBuilding {
     runRoute(route, request, defaultHostInfo)
 
   def runRoute(route: Route, request: HttpRequest, defaultHostInfo: DefaultHostInfo): TestRouteResult =
-    runScalaRoute(route.seal(system, materializer).delegate, request, defaultHostInfo)
+    runScalaRoute(route.seal().delegate, request, defaultHostInfo)
 
   def runRouteUnSealed(route: Route, request: HttpRequest): TestRouteResult =
     runRouteUnSealed(route, request, defaultHostInfo)
@@ -72,7 +72,7 @@ abstract class RouteTest extends AllDirectives with WSTestRequestBuilding {
   @varargs
   def testRoute(first: Route, others: Route*): TestRoute =
     new TestRoute {
-      val underlying: Route = Directives.route(first +: others: _*)
+      val underlying: Route = Directives.concat(first, others: _*)
 
       def run(request: HttpRequest): TestRouteResult = runRoute(underlying, request)
       def runWithRejections(request: HttpRequest): TestRouteResult = runRouteUnSealed(underlying, request)

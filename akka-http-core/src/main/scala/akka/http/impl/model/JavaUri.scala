@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.model
@@ -16,7 +16,7 @@ import akka.http.impl.util.JavaMapping.Implicits._
 
 /** INTERNAL API */
 @InternalApi
-case class JavaUri(uri: sm.Uri) extends jm.Uri {
+private[http] case class JavaUri(uri: sm.Uri) extends jm.Uri {
   def isRelative: Boolean = uri.isRelative
   def isAbsolute: Boolean = uri.isAbsolute
   def isEmpty: Boolean = uri.isEmpty
@@ -33,6 +33,7 @@ case class JavaUri(uri: sm.Uri) extends jm.Uri {
   override def getPort(): Int = port()
   override def getUserInfo(): String = userInfo()
   override def getPathString(): String = path()
+  override def asScala(): sm.Uri = uri
 
   def pathSegments(): jl.Iterable[String] = {
     import sm.Uri.Path._

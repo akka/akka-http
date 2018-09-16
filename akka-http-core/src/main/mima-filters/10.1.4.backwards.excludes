@@ -1,0 +1,19 @@
+# Not meant for user extension, so new methods should be fine:
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpEntity.toStrict")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity.toStrict")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMessage#MessageTransformations.toStrict")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.toStrict")
+
+# ToStrict is private[http]
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.util.ToStrict.this")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ParserSettings.getMaxToStrictBytes")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ParserSettings.maxToStrictBytes")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ParserSettings.maxToStrictBytes")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ParserSettingsImpl.*")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.ParserSettingsImpl.*")
+
+# RoutingSettings is @DoNotInherit
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.RoutingSettings.decodeMaxSize")
+# Impl classes
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.RoutingSettingsImpl.*")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.RoutingSettingsImpl.*")

@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.http.javadsl.server.directives;
 
 import akka.http.javadsl.model.HttpEntities;
@@ -20,6 +21,39 @@ import org.junit.Test;
 import java.util.Collections;
 
 import static akka.http.javadsl.unmarshalling.Unmarshaller.entityToString;
+
+//#responseEncodingAccepted
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.responseEncodingAccepted;
+
+//#responseEncodingAccepted
+//#encodeResponse
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.encodeResponse;
+
+//#encodeResponse
+//#encodeResponseWith
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.encodeResponseWith;
+
+//#encodeResponseWith
+//#decodeRequest
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.decodeRequest;
+import static akka.http.javadsl.server.Directives.entity;
+
+//#decodeRequest
+//#decodeRequestWith
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.decodeRequestWith;
+import static akka.http.javadsl.server.Directives.entity;
+
+//#decodeRequestWith
+//#withPrecompressedMediaTypeSupport
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.withPrecompressedMediaTypeSupport;
+
+//#withPrecompressedMediaTypeSupport
 
 public class CodingDirectivesExamplesTest extends JUnitRouteTest {
 

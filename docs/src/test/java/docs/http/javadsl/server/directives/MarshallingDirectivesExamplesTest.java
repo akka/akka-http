@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server.directives;
@@ -15,6 +15,20 @@ import org.junit.Test;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
+
+//#example-entity-with-json
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.entity;
+
+//#example-entity-with-json
+//#example-completeWith-with-json
+import static akka.http.javadsl.server.Directives.completeWith;
+
+//#example-completeWith-with-json
+//#example-handleWith-with-json
+import static akka.http.javadsl.server.Directives.handleWith;
+
+//#example-handleWith-with-json
 
 public class MarshallingDirectivesExamplesTest extends JUnitRouteTest {
 

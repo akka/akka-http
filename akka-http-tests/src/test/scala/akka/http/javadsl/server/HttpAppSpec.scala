@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server
@@ -204,7 +204,6 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
   private def callAndVerify(binding: ServerBinding, path: String) = {
 
-    implicit val mat = ActorMaterializer()
     val host = binding.localAddress.getHostString
     val port = binding.localAddress.getPort
 

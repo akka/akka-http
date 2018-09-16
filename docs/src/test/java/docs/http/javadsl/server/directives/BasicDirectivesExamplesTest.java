@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.http.javadsl.server.directives;
 
 import akka.NotUsed;
@@ -48,6 +49,214 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
 
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.get;
+import static akka.http.javadsl.server.Directives.onSuccess;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.pathPrefix;
+import static akka.http.javadsl.server.Directives.post;
+
+//#extract
+import static akka.http.javadsl.server.Directives.extract;
+
+//#extract
+//#extractLog
+import static akka.http.javadsl.server.Directives.extractLog;
+
+//#extractLog
+//#withMaterializer
+import static akka.http.javadsl.server.Directives.withMaterializer;
+
+//#withMaterializer
+//#extractMaterializer
+import static akka.http.javadsl.server.Directives.extractMaterializer;
+
+//#extractMaterializer
+//#provide
+import static akka.http.javadsl.server.Directives.provide;
+
+//#provide
+//#extractExecutionContext
+import static akka.http.javadsl.server.Directives.extractExecutionContext;
+
+//#extractExecutionContext
+//#withExecutionContext
+import static akka.http.javadsl.server.Directives.withExecutionContext;
+
+//#withExecutionContext
+//#withLog
+import static akka.http.javadsl.server.Directives.withLog;
+
+//#withLog
+//#withSettings
+import static akka.http.javadsl.server.Directives.withSettings;
+
+//#withSettings
+//#mapResponse
+import static akka.http.javadsl.server.Directives.mapResponse;
+
+//#mapResponse
+//#mapRouteResult
+import static akka.http.javadsl.server.Directives.mapRouteResult;
+
+//#mapRouteResult
+//#mapRequest
+import static akka.http.javadsl.server.Directives.mapRequest;
+
+//#mapRequest
+//#mapRouteResultPF
+import static akka.http.javadsl.server.Directives.mapRouteResultPF;
+
+//#mapRouteResultPF
+//#mapRouteResultWithPF
+import static akka.http.javadsl.server.Directives.mapRouteResultWithPF;
+
+//#mapRouteResultWithPF
+//#mapRouteResultWith
+import static akka.http.javadsl.server.Directives.mapRouteResultWith;
+
+//#mapRouteResultWith
+//#pass
+import static akka.http.javadsl.server.Directives.pass;
+
+//#pass
+//#cancelRejections
+import static akka.http.javadsl.server.Directives.cancelRejections;
+
+//#cancelRejections
+//#cancelRejection
+import static akka.http.javadsl.server.Directives.cancelRejection;
+
+//#cancelRejection
+//#extractRequest
+import static akka.http.javadsl.server.Directives.extractRequest;
+
+//#extractRequest
+//#mapSettings
+import static akka.http.javadsl.server.Directives.mapSettings;
+
+//#mapSettings
+//#extractSettings
+import static akka.http.javadsl.server.Directives.extractSettings;
+
+//#extractSettings
+//#extractRequestContext
+import static akka.http.javadsl.server.Directives.extractRequestContext;
+
+//#extractRequestContext
+//#extractParserSettings
+import static akka.http.javadsl.server.Directives.extractParserSettings;
+
+//#extractParserSettings
+//#extractMatchedPath
+import static akka.http.javadsl.server.Directives.extractMatchedPath;
+
+//#extractMatchedPath
+//#extractUri
+import static akka.http.javadsl.server.Directives.extractUri;
+
+//#extractUri
+//#mapUnmatchedPath
+import static akka.http.javadsl.server.Directives.mapUnmatchedPath;
+
+//#mapUnmatchedPath
+//#extractDataBytes
+import static akka.http.javadsl.server.Directives.extractDataBytes;
+
+//#extractDataBytes
+//#extractStrictEntity
+import static akka.http.javadsl.server.Directives.extractStrictEntity;
+
+//#extractStrictEntity
+//#toStrictEntity
+import static akka.http.javadsl.server.Directives.toStrictEntity;
+
+//#toStrictEntity
+//#mapRouteResultFuture
+import static akka.http.javadsl.server.Directives.mapRouteResultFuture;
+
+//#mapRouteResultFuture
+//#mapResponseEntity
+import static akka.http.javadsl.server.Directives.mapResponseEntity;
+
+//#mapResponseEntity
+//#mapResponseHeaders
+import static akka.http.javadsl.server.Directives.mapResponseHeaders;
+
+//#mapResponseHeaders
+//#mapInnerRoute
+import static akka.http.javadsl.server.Directives.mapInnerRoute;
+
+//#mapInnerRoute
+//#mapRejections
+import static akka.http.javadsl.server.Directives.mapRejections;
+
+//#mapRejections
+//#recoverRejections
+import akka.http.javadsl.server.directives.SecurityDirectives.ProvidedCredentials;
+
+import static akka.http.javadsl.server.Directives.authenticateBasic;
+import static akka.http.javadsl.server.Directives.recoverRejections;
+
+//#recoverRejections
+//#recoverRejectionsWith
+import akka.http.javadsl.server.directives.SecurityDirectives.ProvidedCredentials;
+
+import static akka.http.javadsl.server.Directives.authenticateBasic;
+import static akka.http.javadsl.server.Directives.recoverRejectionsWith;
+
+//#recoverRejectionsWith
+//#mapRequest
+import static akka.http.javadsl.server.Directives.extractRequest;
+import static akka.http.javadsl.server.Directives.mapRequest;
+
+//#mapRequest
+//#mapRequestContext
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.extractRequest;
+import static akka.http.javadsl.server.Directives.mapRequestContext;
+
+//#mapRequestContext
+//#mapRouteResult
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.mapRouteResult;
+
+//#mapRouteResult
+//#mapRouteResultPF
+import static akka.http.javadsl.server.Directives.mapRouteResultPF;
+import static akka.http.javadsl.server.Directives.reject;
+
+//#mapRouteResultPF
+//#mapRouteResultWithPF
+import static akka.http.javadsl.server.Directives.mapRouteResultWithPF;
+import static akka.http.javadsl.server.Directives.reject;
+
+//#mapRouteResultWithPF
+//#mapRouteResultWith
+import static akka.http.javadsl.server.Directives.mapRouteResultWith;
+import static akka.http.javadsl.server.Directives.reject;
+
+//#mapRouteResultWith
+//#mapResponseHeaders
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.respondWithHeaders;
+import static akka.http.javadsl.server.Directives.mapResponseHeaders;
+
+//#mapResponseHeaders
+//#extractUnmatchedPath
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.extractUnmatchedPath;
+
+//#extractUnmatchedPath
+//#extractRequestEntity
+import static akka.http.javadsl.server.Directives.extractRequestEntity;
+
+//#extractRequestEntity
+//#extractActorSystem
+import static akka.http.javadsl.server.Directives.extractActorSystem;
+
+//#extractActorSystem
+
 public class BasicDirectivesExamplesTest extends JUnitRouteTest {
 
   @Test
@@ -89,12 +298,12 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
         onSuccess(() ->
           // explicitly use the materializer:
           Source.single("Materialized by " + mat.hashCode() + "!")
-            .runWith(Sink.head(), mat), this::complete
+            .runWith(Sink.head(), mat), Directives::complete
         )
       )
     );
 
-    final Route route = route(
+    final Route route = Directives.concat(
       pathPrefix("special", () ->
         withMaterializer(special, () -> sample) // `special` materializer will be used
       ),
@@ -117,7 +326,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
         onSuccess(() ->
           // explicitly use the materializer:
           Source.single("Materialized by " + mat.hashCode() + "!")
-            .runWith(Sink.head(), mat), this::complete
+            .runWith(Sink.head(), mat), Directives::complete
         )
       )
     ); // default materializer will be used
@@ -139,12 +348,12 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
         onSuccess(() ->
           CompletableFuture.supplyAsync(() ->
             "Run on " + executor.hashCode() + "!", executor
-          ), this::complete
+          ), Directives::complete
         )
       )
     );
 
-    final Route route = route(
+    final Route route = Directives.concat(
       pathPrefix("special", () ->
         // `special` execution context will be used
         withExecutionContext(special, () -> sample)
@@ -165,7 +374,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     //#extractExecutionContext
     final Route route = path("sample", () ->
       extractExecutionContext(executor ->
-        onSuccess(() ->
+        onSuccess(
           CompletableFuture.supplyAsync(
             // uses the `executor` ExecutionContext
             () -> "Run on " + executor.hashCode() + "!", executor
@@ -194,7 +403,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
       )
     );
 
-    final Route route = route(
+    final Route route = Directives.concat(
       pathPrefix("special", () ->
         withLog(special, () -> sample)
       ),
@@ -232,7 +441,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     });
 
     final Route route = get(() ->
-      route(
+      Directives.concat(
         pathPrefix("special", () ->
           // `special` file-io-dispatcher will be used to read the file
           withSettings(special, () -> sample)
@@ -432,7 +641,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
       creds -> Optional.of("id");
 
     final Route originalRoute = pathPrefix("auth", () ->
-      route(
+      Directives.concat(
         path("never", () ->
           authenticateBasic("my-realm", neverAuth, obj ->  complete("Welcome to the bat-cave!"))
         ),
@@ -617,7 +826,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
   }
 
   private Route providePrefixedStringRoute(String value) {
-    return provide("prefix:" + value, this::complete);
+    return provide("prefix:" + value, Directives::complete);
   }
 
   @Test
@@ -739,7 +948,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testExtractMatchedPath() {
     //#extractMatchedPath
-    final Route route = pathPrefix("abc", () -> extractMatchedPath(this::complete));
+    final Route route = pathPrefix("abc", () -> extractMatchedPath(Directives::complete));
 
     // tests:
     testRoute(route).run(HttpRequest.GET("/abc")).assertEntity("/abc");
@@ -835,7 +1044,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     final Route route = extractDataBytes(data -> {
       final CompletionStage<Integer> sum = data.runFold(0, (acc, i) ->
         acc + Integer.valueOf(i.utf8String()), materializer());
-      return onSuccess(() -> sum, s ->
+      return onSuccess(sum, s ->
         complete(HttpResponse.create().withEntity(HttpEntities.create(s.toString()))));
     });
 

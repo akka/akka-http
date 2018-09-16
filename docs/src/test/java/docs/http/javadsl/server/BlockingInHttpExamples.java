@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server;
@@ -13,6 +13,16 @@ import org.junit.Test;
 
 import java.util.concurrent.CompletableFuture;
 
+//#blocking-example-in-default-dispatcher
+import static akka.http.javadsl.server.Directives.completeWithFuture;
+import static akka.http.javadsl.server.Directives.post;
+
+//#blocking-example-in-default-dispatcher
+//#blocking-example-in-dedicated-dispatcher
+import static akka.http.javadsl.server.Directives.completeWithFuture;
+import static akka.http.javadsl.server.Directives.post;
+
+//#blocking-example-in-dedicated-dispatcher
 public class BlockingInHttpExamples extends JUnitRouteTest {
 
     @Test

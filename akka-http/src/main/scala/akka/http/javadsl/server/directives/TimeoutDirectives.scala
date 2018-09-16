@@ -1,10 +1,12 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives
 
 import java.util.function.{ Function ⇒ JFunction, Supplier }
+
+import scala.concurrent.duration.Duration
 
 import akka.http.javadsl.model.{ HttpRequest, HttpResponse }
 import akka.http.javadsl.server.Route
@@ -13,6 +15,10 @@ import akka.http.scaladsl.server.{ Directives ⇒ D }
 import akka.http.impl.util.JavaMapping.Implicits._
 
 abstract class TimeoutDirectives extends WebSocketDirectives {
+
+  def extractRequestTimeout(inner: JFunction[Duration, Route]): RouteAdapter = RouteAdapter {
+    D.extractRequestTimeout { timeout ⇒ inner.apply(timeout).delegate }
+  }
 
   /**
    * Tries to set a new request timeout and handler (if provided) at the same time.

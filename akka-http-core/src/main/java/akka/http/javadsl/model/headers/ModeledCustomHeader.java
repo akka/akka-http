@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.model.headers;
@@ -9,9 +9,8 @@ import akka.util.Helpers;
 
 /**
  * Support class for building user-defined custom headers defined by implementing `name` and `value`.
- * By implementing a {@link ModeledCustomHeader} along with {@link ModeledCustomHeaderFactory} instead of {@link CustomHeader} directly,
- * convenience methods that allow parsing this user-defined header from {@link akka.http.javadsl.model.HttpHeader}  are
- * available to use.
+ * Implement {@link ModeledCustomHeader} and {@link ModeledCustomHeaderFactory} instead of {@link CustomHeader} to be
+ * able to use the convenience methods that allow parsing the custom user-defined header from {@link akka.http.javadsl.model.HttpHeader}.
  */
 public abstract class ModeledCustomHeader extends CustomHeader {
 

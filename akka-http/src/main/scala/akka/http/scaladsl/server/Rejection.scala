@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -54,6 +54,13 @@ final case class SchemeRejection(supported: String)
  */
 final case class MissingQueryParamRejection(parameterName: String)
   extends jserver.MissingQueryParamRejection with Rejection
+
+/**
+ * Rejection created by parameter filters.
+ * Signals that the request was rejected because a query parameter value was not equal to required one.
+ */
+final case class InvalidRequiredValueForQueryParamRejection(parameterName: String, expectedValue: String, actualValue: String)
+  extends jserver.InvalidRequiredValueForQueryParamRejection with Rejection
 
 /**
  * Rejection created by parameter filters.

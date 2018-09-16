@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl
 
 import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import docs.CompileOnlySpec
 import org.scalatest.{ Matchers, WordSpec }
@@ -353,7 +354,9 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
 
     val httpsProxyTransport = ClientTransport.httpsProxy(InetSocketAddress.createUnresolved(proxyHost, proxyPort))
 
-    val settings = ConnectionPoolSettings(system).withTransport(httpsProxyTransport)
+    val settings = ConnectionPoolSettings(system)
+      .withConnectionSettings(ClientConnectionSettings(system)
+        .withTransport(httpsProxyTransport))
     Http().singleRequest(HttpRequest(uri = "https://google.com"), settings = settings)
     //#https-proxy-example-single-request
   }
@@ -379,9 +382,41 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
 
     val httpsProxyTransport = ClientTransport.httpsProxy(proxyAddress, auth)
 
-    val settings = ConnectionPoolSettings(system).withTransport(httpsProxyTransport)
+    val settings = ConnectionPoolSettings(system)
+      .withConnectionSettings(ClientConnectionSettings(system)
+        .withTransport(httpsProxyTransport))
     Http().singleRequest(HttpRequest(uri = "http://akka.io"), settings = settings)
     //#auth-https-proxy-example-single-request
   }
 
+  "collecting_headers-example-for-single-request" in compileOnlySpec {
+    //#collecting-headers-example
+    import akka.actor.ActorSystem
+    import akka.http.scaladsl.Http
+    import akka.http.scaladsl.model.headers.`Set-Cookie`
+    import akka.http.scaladsl.model._
+    import akka.stream.ActorMaterializer
+
+    import scala.concurrent.ExecutionContextExecutor
+    import scala.concurrent.Future
+
+    object Client {
+      def main(args: Array[String]): Unit = {
+        implicit val system: ActorSystem = ActorSystem()
+        implicit val materializer: ActorMaterializer = ActorMaterializer()
+        implicit val executionContext: ExecutionContextExecutor = system.dispatcher
+
+        val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = "http://akka.io"))
+
+        responseFuture.map {
+          case response @ HttpResponse(StatusCodes.OK, _, _, _) =>
+            val setCookies = response.headers[`Set-Cookie`]
+            println(s"Cookies set by a server: $setCookies")
+            response.discardEntityBytes()
+          case _ => sys.error("something wrong")
+        }
+      }
+    }
+    //#collecting-headers-example
+  }
 }

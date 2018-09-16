@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.javadsl.server.directives
 
 import akka.NotUsed
@@ -8,8 +9,7 @@ import akka.actor.ActorSystem
 import akka.http.javadsl.model.HttpRequest
 import akka.http.javadsl.model.HttpResponse
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.javadsl.server.{ ExceptionHandler, RejectionHandler, Route, RoutingJavaMapping }
-import RoutingJavaMapping._
+import akka.http.javadsl.server.{ ExceptionHandler, RejectionHandler, Route }
 import akka.annotation.InternalApi
 import akka.http.javadsl.settings.{ ParserSettings, RoutingSettings }
 import akka.http.scaladsl
@@ -25,8 +25,8 @@ final class RouteAdapter(val delegate: akka.http.scaladsl.server.Route) extends 
     scalaFlow(system, materializer).asJava
 
   private def scalaFlow(system: ActorSystem, materializer: Materializer): Flow[HttpRequest, HttpResponse, NotUsed] = {
-    implicit val s = system
-    implicit val m = materializer
+    implicit val s: ActorSystem = system
+    implicit val m: Materializer = materializer
     Flow[HttpRequest].map(_.asScala).via(delegate).map(_.asJava)
   }
 
@@ -37,21 +37,26 @@ final class RouteAdapter(val delegate: akka.http.scaladsl.server.Route) extends 
     }
 
   override def seal(system: ActorSystem, materializer: Materializer): Route = {
-    implicit val s = system
-    implicit val m = materializer
+    seal()
+  }
 
+  override def seal(): Route = {
     RouteAdapter(scaladsl.server.Route.seal(delegate))
+
   }
 
   override def seal(routingSettings: RoutingSettings, parserSettings: ParserSettings, rejectionHandler: RejectionHandler, exceptionHandler: ExceptionHandler, system: ActorSystem, materializer: Materializer): Route = {
-    implicit val s = system
-    implicit val m = materializer
+    seal(routingSettings, parserSettings, rejectionHandler, exceptionHandler)
+  }
 
+  override def seal(routingSettings: RoutingSettings, parserSettings: ParserSettings, rejectionHandler: RejectionHandler, exceptionHandler: ExceptionHandler): Route = {
+    seal(rejectionHandler, exceptionHandler)
+  }
+
+  override def seal(rejectionHandler: RejectionHandler, exceptionHandler: ExceptionHandler): Route = {
     RouteAdapter(scaladsl.server.Route.seal(delegate)(
-      routingSettings.asScala,
-      parserSettings.asScala,
-      rejectionHandler.asScala,
-      exceptionHandler.asScala))
+      rejectionHandler = rejectionHandler.asScala,
+      exceptionHandler = exceptionHandler.asScala))
   }
 
   override def toString = s"akka.http.javadsl.server.Route($delegate)"
@@ -59,5 +64,8 @@ final class RouteAdapter(val delegate: akka.http.scaladsl.server.Route) extends 
 }
 
 object RouteAdapter {
-  def apply(delegate: akka.http.scaladsl.server.Route) = new RouteAdapter(delegate)
+  def apply(delegate: akka.http.scaladsl.server.Route): RouteAdapter = new RouteAdapter(delegate)
+
+  /** Java DSL: Adapt an existing ScalaDSL Route as an Java DSL Route */
+  def asJava(delegate: akka.http.scaladsl.server.Route): Route = new RouteAdapter(delegate)
 }

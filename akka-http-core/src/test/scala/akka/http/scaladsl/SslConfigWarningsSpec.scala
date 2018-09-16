@@ -1,12 +1,11 @@
-/**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
 
 import akka.actor.ActorSystem
 import akka.event.Logging
-import akka.stream.ActorMaterializer
 import akka.testkit.{ EventFilter, TestKit, TestProbe }
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.{ Matchers, WordSpec }

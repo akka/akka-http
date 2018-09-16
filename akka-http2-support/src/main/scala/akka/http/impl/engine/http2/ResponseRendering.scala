@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -13,6 +13,8 @@ import akka.http.scaladsl.settings.ServerSettings
 
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
+
+import FrameEvent.ParsedHeadersFrame
 
 private[http2] object ResponseRendering {
 
@@ -56,11 +58,23 @@ private[http2] object ResponseRendering {
 
       val headers = ParsedHeadersFrame(streamId, endStream = response.entity.isKnownEmpty, headerPairs.result(), None)
 
-      Http2SubStream(
-        headers,
-        response.entity.dataBytes
-      )
+      response.entity match {
+        case HttpEntity.Chunked(_, chunks) ⇒
+          ChunkedHttp2SubStream(headers, chunks)
+        case _ ⇒
+          ByteHttp2SubStream(headers, response.entity.dataBytes)
+      }
+
     }
+  }
+
+  private[http2] def renderHeaders(
+    headers: immutable.Seq[HttpHeader],
+    log:     LoggingAdapter
+  ): Seq[(String, String)] = {
+    val headerPairs = new VectorBuilder[(String, String)]()
+    renderHeaders(headers, headerPairs, None, log)
+    headerPairs.result()
   }
 
   private[http2] def renderHeaders(

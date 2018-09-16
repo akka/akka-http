@@ -1,15 +1,17 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
 package directives
 
+import java.util.concurrent.ThreadLocalRandom
+
 import akka.http.scaladsl.model._
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+
 import scala.concurrent.duration._
-import java.util.concurrent.ThreadLocalRandom
 
 class BasicDirectivesSpec extends RoutingSpec {
 
@@ -107,6 +109,45 @@ class BasicDirectivesSpec extends RoutingSpec {
           complete(matched.toString)
         }
       } ~> check { responseAs[String] shouldEqual "" }
+    }
+  }
+
+  "The mapRouteResultFuture directive" should {
+    val echoResponse = mapRouteResultFuture { res ⇒
+      def response(msg: String): RouteResult =
+        RouteResult.Complete(HttpResponse(entity = msg))
+
+      res.map {
+        case RouteResult.Complete(res) ⇒
+          response(s"Completed with status ${res.status.intValue}")
+        case RouteResult.Rejected(rejections) ⇒
+          response(s"Rejected with [${rejections.mkString(", ")}]")
+      }.recover {
+        case e ⇒
+          response(s"Failed with exception [${e.getMessage}]")
+      }
+    }
+
+    "be able to handle completed results" in {
+      Get() ~> echoResponse { complete("Hello World") } ~> check {
+        responseAs[String] shouldEqual "Completed with status 200"
+      }
+    }
+    "be able to handle rejections" in {
+      Get() ~> echoResponse { reject } ~> check {
+        responseAs[String] shouldEqual "Rejected with []"
+      }
+    }
+    "be able to handle failures" in {
+      Get() ~> echoResponse { failWith(new IllegalStateException("errrorr")) } ~> check {
+        responseAs[String] shouldEqual "Failed with exception [errrorr]"
+      }
+    }
+    "be able to handle failures created by inner exceptions" in {
+      Get() ~> echoResponse { get { throw new IllegalStateException("errrorr") } } ~> check {
+        status shouldEqual StatusCodes.OK // RouteTest has sealing for exceptions so it'll return a 500 if the exception gets through
+        responseAs[String] shouldEqual "Failed with exception [errrorr]"
+      }
     }
   }
 

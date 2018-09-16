@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.scaladsl.settings
 
 import java.util
@@ -30,11 +31,13 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   def maxHeaderValueLength: Int
   def maxHeaderCount: Int
   def maxContentLength: Long
+  def maxToStrictBytes: Long
   def maxChunkExtLength: Int
   def maxChunkSize: Int
   def uriParsingMode: Uri.ParsingMode
   def cookieParsingMode: ParserSettings.CookieParsingMode
   def illegalHeaderWarnings: Boolean
+  def ignoreIllegalHeaderFor: Set[String]
   def errorLoggingVerbosity: ParserSettings.ErrorLoggingVerbosity
   def illegalResponseHeaderValueProcessingMode: ParserSettings.IllegalResponseHeaderValueProcessingMode
   def headerValueCacheLimits: Map[String, Int]
@@ -51,9 +54,11 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   override def getUriParsingMode: akka.http.javadsl.model.Uri.ParsingMode = uriParsingMode
   override def getMaxHeaderCount = maxHeaderCount
   override def getMaxContentLength = maxContentLength
+  override def getMaxToStrictBytes = maxToStrictBytes
   override def getMaxHeaderValueLength = maxHeaderValueLength
   override def getIncludeTlsSessionInfoHeader = includeTlsSessionInfoHeader
   override def getIllegalHeaderWarnings = illegalHeaderWarnings
+  override def getIgnoreIllegalHeaderFor = ignoreIllegalHeaderFor
   override def getMaxHeaderNameLength = maxHeaderNameLength
   override def getMaxChunkSize = maxChunkSize
   override def getMaxResponseReasonLength = maxResponseReasonLength
@@ -82,11 +87,13 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   override def withMaxHeaderValueLength(newValue: Int): ParserSettings = self.copy(maxHeaderValueLength = newValue)
   override def withMaxHeaderCount(newValue: Int): ParserSettings = self.copy(maxHeaderCount = newValue)
   override def withMaxContentLength(newValue: Long): ParserSettings = self.copy(maxContentLength = newValue)
+  override def withMaxToStrictBytes(newValue: Long): ParserSettings = self.copy(maxToStrictBytes = newValue)
   override def withMaxChunkExtLength(newValue: Int): ParserSettings = self.copy(maxChunkExtLength = newValue)
   override def withMaxChunkSize(newValue: Int): ParserSettings = self.copy(maxChunkSize = newValue)
   override def withIllegalHeaderWarnings(newValue: Boolean): ParserSettings = self.copy(illegalHeaderWarnings = newValue)
   override def withIncludeTlsSessionInfoHeader(newValue: Boolean): ParserSettings = self.copy(includeTlsSessionInfoHeader = newValue)
   override def withModeledHeaderParsing(newValue: Boolean): ParserSettings = self.copy(modeledHeaderParsing = newValue)
+  override def withIgnoreIllegalHeaderFor(newValue: List[String]): ParserSettings = self.copy(ignoreIllegalHeaderFor = newValue.map(_.toLowerCase).toSet)
 
   // overloads for idiomatic Scala use
   def withUriParsingMode(newValue: Uri.ParsingMode): ParserSettings = self.copy(uriParsingMode = newValue)

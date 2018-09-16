@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -9,7 +9,7 @@ import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.stream.scaladsl.Sink
 import akka.stream.testkit.TestSubscriber
-import akka.util.ByteString
+import akka.util.{ ByteString, PrettyByteString }
 
 import scala.annotation.tailrec
 import scala.concurrent.duration.FiniteDuration
@@ -57,7 +57,7 @@ private[http] object ByteStringSinkProbe {
       }
       def expectNoBytes(timeout: FiniteDuration): Unit = {
         ensureRequested()
-        probe.expectNoMsg(timeout)
+        probe.expectNoMessage(timeout)
       }
 
       var inBuffer = ByteString.empty
@@ -73,7 +73,14 @@ private[http] object ByteStringSinkProbe {
 
       def expectBytes(expected: ByteString): Unit = {
         val got = expectBytes(expected.length)
-        assert(got == expected, s"expected ${expected.length} bytes '$expected' but got ${got.length} bytes '$got'")
+        val details =
+          "Expected: \n" +
+            PrettyByteString.asPretty(expected).prettyPrint(1024) +
+            "\n" +
+            "But got: \n" +
+            PrettyByteString.asPretty(got).prettyPrint(1024)
+
+        assert(got == expected, s"expected ${expected.length} bytes, but got ${got.length} bytes \n$details")
       }
 
       def expectUtf8EncodedString(expectedString: String): Unit = {

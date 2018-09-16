@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com/>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives
@@ -34,12 +34,9 @@ object CachingDirectives {
   }
 
   private def toScalaKeyer[K](keyer: PartialFunction[RequestContext, K]): PartialFunction[akka.http.scaladsl.server.RequestContext, K] = {
-    PartialFunction {
-      (scalaRequestContext: akka.http.scaladsl.server.RequestContext) ⇒
-        {
-          val javaRequestContext = akka.http.javadsl.server.RoutingJavaMapping.RequestContext.toJava(scalaRequestContext)
-          keyer(javaRequestContext)
-        }
+    case scalaRequestContext: akka.http.scaladsl.server.RequestContext ⇒ {
+      val javaRequestContext = akka.http.javadsl.server.RoutingJavaMapping.RequestContext.toJava(scalaRequestContext)
+      keyer(javaRequestContext)
     }
   }
 

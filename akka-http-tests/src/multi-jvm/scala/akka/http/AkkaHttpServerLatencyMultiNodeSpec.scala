@@ -1,9 +1,9 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http
 
-import java.io.{ BufferedWriter, FileWriter }
 import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
@@ -21,7 +21,6 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.exceptions.TestPendingException
 
-import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Promise }
 import scala.util.Try
@@ -33,6 +32,7 @@ object AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeConfig {
       akka {
         actor.default-mailbox.mailbox-type = "akka.dispatch.UnboundedMailbox"
         actor.provider = "akka.remote.RemoteActorRefProvider"
+        actor.warn-about-java-serializer-usage = off
         stream.materializer.debug.fuzzing-mode = off
 
         testconductor.barrier-timeout = 30m
@@ -224,15 +224,15 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
         10 → tenXResponseLength,
         100 → hundredXResponseLength
       ) foreach {
-          case (n, lenght) ⇒
-            s"have good Latency (streaming-response($lenght), keep-alive)" taggedAs LongRunningTest in {
-              val id = s"Latency_stream($lenght)_R:${rate}_C:${connections}_p:"
+          case (n, length) ⇒
+            s"have good Latency (streaming-response($length), keep-alive)" taggedAs LongRunningTest in {
+              val id = s"Latency_stream($length)_R:${rate}_C:${connections}_p:"
 
               val wrkOptions = s"""-d ${testDuration}s -R $rate -c $connections -t $connections --u_latency"""
               runLoadTest(id)(s"""wrk $wrkOptions ${url_longResponseStream(n)}""")
             }
-            s"have good Latency (array-response($lenght), keep-alive)" taggedAs LongRunningTest in {
-              val id = s"Latency_array($lenght)_R:${rate}_C:${connections}_p:"
+            s"have good Latency (array-response($length), keep-alive)" taggedAs LongRunningTest in {
+              val id = s"Latency_array($length)_R:${rate}_C:${connections}_p:"
 
               val wrkOptions = s"""-d ${testDuration}s -R $rate -c $connections -t $connections --u_latency"""
               runLoadTest(id)(s"""wrk $wrkOptions ${url_longResponseArray(n)}""")

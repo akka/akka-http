@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives;
@@ -19,7 +19,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
   @Test
   public void testPathPrefixAndPath() {
     TestRoute route = testRoute(
-      pathPrefix("pet", () -> route(
+      pathPrefix("pet", () -> concat(
         path("cat", () -> complete("The cat!")),
         path("dog", () -> complete("The dog!")),
         pathSingleSlash(() -> complete("Here are only pets."))
@@ -80,7 +80,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
   public void testPathEnd() {
     TestRoute route =
       testRoute(
-        pathPrefix("test", () -> route(
+        pathPrefix("test", () -> concat(
           pathEnd(() -> complete("end")),
           path("abc", () -> complete("abc"))
         ))
@@ -380,7 +380,7 @@ public class PathDirectivesTest extends JUnitRouteTest {
   public void testIgnoreTrailingSlash() {
     TestRoute route = testRoute(
       ignoreTrailingSlash(() ->
-        route(
+        concat(
           path("foo", () -> complete("Ok")),
           path("bar", () -> pathEndOrSingleSlash(() -> complete("Ok"))),
           path(PathMatchers.segment("baz").slash(), () -> complete("Ok"))

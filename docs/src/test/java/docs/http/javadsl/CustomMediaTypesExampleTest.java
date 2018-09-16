@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl;
@@ -27,6 +27,12 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
+
+//#application-custom-java
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.extractRequest;
+
+//#application-custom-java
 
 public class CustomMediaTypesExampleTest extends JUnitRouteTest {
 

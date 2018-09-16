@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -13,8 +13,8 @@ object ModeledCustomHeaderSpec {
 
   //#modeled-api-key-custom-header
   final class ApiTokenHeader(token: String) extends ModeledCustomHeader[ApiTokenHeader] {
-    override def renderInRequests = false
-    override def renderInResponses = false
+    override def renderInRequests = true
+    override def renderInResponses = true
     override val companion = ApiTokenHeader
     override def value: String = token
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
@@ -119,6 +119,31 @@ class TimeoutDirectivesExamplesSpec extends AkkaSpec(TimeoutDirectivesInfiniteTi
       // check
       runRoute(route, "timeout").status should ===(StatusCodes.EnhanceYourCalm) // the timeout response
       //#withRequestTimeoutResponse
+    }
+
+    // read currently set timeout
+    "allow extraction of currently set timeout" in {
+      //#extractRequestTimeout
+      val timeout1 = 500.millis
+      val timeout2 = 1000.millis
+      val route =
+        path("timeout") {
+          withRequestTimeout(timeout1) {
+            extractRequestTimeout { t1 ⇒
+              withRequestTimeout(timeout2) {
+                extractRequestTimeout { t2 ⇒
+                  complete(
+                    if (t1 == timeout1 && t2 == timeout2) StatusCodes.OK
+                    else StatusCodes.InternalServerError
+                  )
+                }
+              }
+            }
+          }
+        }
+      //#extractRequestTimeout
+
+      runRoute(route, "timeout").status should ===(StatusCodes.OK)
     }
   }
 

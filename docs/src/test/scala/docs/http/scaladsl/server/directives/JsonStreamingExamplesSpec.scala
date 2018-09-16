@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
@@ -18,10 +18,9 @@ import scala.concurrent.Future
 
 class JsonStreamingExamplesSpec extends RoutingSpec {
 
-  //#models
+  //#tweet-model
   case class Tweet(uid: Int, txt: String)
-  case class Measurement(id: String, value: Int)
-  //#models
+  //#tweet-model
 
   val tweets = List(
     Tweet(1, "#Akka rocks!"),
@@ -29,20 +28,19 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
     Tweet(3, "You cannot enter the same river twice."))
   def getTweets = Source(tweets)
 
-  //#formats
-  object MyJsonProtocol
+  //#tweet-format
+  object MyTweetJsonProtocol
     extends akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
     with spray.json.DefaultJsonProtocol {
 
     implicit val tweetFormat = jsonFormat2(Tweet.apply)
-    implicit val measurementFormat = jsonFormat2(Measurement.apply)
   }
-  //#formats
+  //#tweet-format
 
   "spray-json-response-streaming" in {
     //#spray-json-response-streaming
     // [1] import "my protocol", for marshalling Tweet objects:
-    import MyJsonProtocol._
+    import MyTweetJsonProtocol._
 
     // [2] pick a Source rendering support trait:
     // Note that the default support renders the Source as JSON Array
@@ -78,19 +76,17 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
 
   "line-by-line-json-response-streaming" in {
     //#line-by-line-json-response-streaming
-    import MyJsonProtocol._
+    import MyTweetJsonProtocol._
 
     // Configure the EntityStreamingSupport to render the elements as:
     // {"example":42}
     // {"example":43}
     // ...
     // {"example":1000}
-    val start = ByteString.empty
-    val sep = ByteString("\n")
-    val end = ByteString.empty
+    val newline = ByteString("\n")
 
     implicit val jsonStreamingSupport = EntityStreamingSupport.json()
-      .withFramingRenderer(Flow[ByteString].intersperse(start, sep, end))
+      .withFramingRenderer(Flow[ByteString].map(bs => bs ++ newline))
 
     val route =
       path("tweets") {
@@ -106,7 +102,7 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
       responseAs[String] shouldEqual
         """{"uid":1,"txt":"#Akka rocks!"}""" + "\n" +
         """{"uid":2,"txt":"Streaming is so hot right now!"}""" + "\n" +
-        """{"uid":3,"txt":"You cannot enter the same river twice."}"""
+        """{"uid":3,"txt":"You cannot enter the same river twice."}""" + "\n"
     }
     //#line-by-line-json-response-streaming
   }
@@ -138,16 +134,15 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
       responseAs[String] shouldEqual
         "1,#Akka rocks!" + "\n" +
         "2,Streaming is so hot right now!" + "\n" +
-        "3,You cannot enter the same river twice."
+        "3,You cannot enter the same river twice." + "\n"
     }
     //#csv-example
   }
 
   "response-streaming-modes" in {
-
     {
       //#async-rendering
-      import MyJsonProtocol._
+      import MyTweetJsonProtocol._
       implicit val jsonStreamingSupport: JsonEntityStreamingSupport =
         EntityStreamingSupport.json()
           .withParallelMarshalling(parallelism = 8, unordered = false)
@@ -160,9 +155,8 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
     }
 
     {
-
       //#async-unordered-rendering
-      import MyJsonProtocol._
+      import MyTweetJsonProtocol._
       implicit val jsonStreamingSupport: JsonEntityStreamingSupport =
         EntityStreamingSupport.json()
           .withParallelMarshalling(parallelism = 8, unordered = true)
@@ -175,10 +169,24 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
     }
   }
 
+  //#measurement-model
+  case class Measurement(id: String, value: Int)
+
+  //#measurement-model
+
+  //#measurement-format
+  object MyMeasurementJsonProtocol
+    extends akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+    with spray.json.DefaultJsonProtocol {
+
+    implicit val measurementFormat = jsonFormat2(Measurement.apply)
+  }
+  //#measurement-format
+
   "spray-json-request-streaming" in {
     //#spray-json-request-streaming
     // [1] import "my protocol", for unmarshalling Measurement objects:
-    import MyJsonProtocol._
+    import MyMeasurementJsonProtocol._
 
     // [2] enable Json Streaming
     implicit val jsonStreamingSupport = EntityStreamingSupport.json()

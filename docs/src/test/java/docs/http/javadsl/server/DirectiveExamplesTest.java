@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.http.javadsl.server;
 
 import akka.http.javadsl.model.RemoteAddress;
@@ -11,9 +12,76 @@ import org.junit.Test;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+//#example1
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.get;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.put;
+
 import static akka.http.javadsl.server.PathMatchers.integerSegment;
 import static akka.http.javadsl.server.PathMatchers.segment;
-import static akka.http.javadsl.server.Directives.*;
+
+//#example1
+//#usingConcat
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.get;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.put;
+import static akka.http.javadsl.server.Directives.route;
+
+import static akka.http.javadsl.server.PathMatchers.integerSegment;
+import static akka.http.javadsl.server.PathMatchers.segment;
+
+//#usingConcat
+//#usingConcatBig
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.get;
+import static akka.http.javadsl.server.Directives.head;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.put;
+import static akka.http.javadsl.server.Directives.route;
+
+import static akka.http.javadsl.server.PathMatchers.integerSegment;
+import static akka.http.javadsl.server.PathMatchers.segment;
+
+//#usingConcatBig
+
+//#getOrPut
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.extractMethod;
+import static akka.http.javadsl.server.Directives.get;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.put;
+import static akka.http.javadsl.server.Directives.route;
+
+import static akka.http.javadsl.server.PathMatchers.integerSegment;
+import static akka.http.javadsl.server.PathMatchers.segment;
+
+//#getOrPut
+//#getOrPutUsingAnyOf
+import akka.http.javadsl.server.Directives;
+
+import static akka.http.javadsl.server.Directives.anyOf;
+
+import static akka.http.javadsl.server.PathMatchers.integerSegment;
+import static akka.http.javadsl.server.PathMatchers.segment;
+
+//#getOrPutUsingAnyOf
+//#composeNesting
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.extractClientIP;
+import static akka.http.javadsl.server.Directives.get;
+import static akka.http.javadsl.server.Directives.path;
+
+//#composeNesting
+//#allOf
+import akka.http.javadsl.server.Directives;
+
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.allOf;
+import static akka.http.javadsl.server.Directives.path;
+
+//#allOf
 
 public class DirectiveExamplesTest extends JUnitRouteTest {
 
@@ -27,29 +95,29 @@ public class DirectiveExamplesTest extends JUnitRouteTest {
     return path(segment("order").slash(integerSegment()), id ->
       get(() -> complete("Received GET request for order " + id))
         .orElse(
-          put(() -> complete("Recieved PUT request for order " + id)))
+          put(() -> complete("Received PUT request for order " + id)))
     );
   }
   //#example1
 
-  //#usingRoute
-  Route usingRoute() {
+  //#usingConcat
+  Route usingConcat() {
     return path(segment("order").slash(integerSegment()), id ->
-      route(get(() -> complete("Received GET request for order " + id)),
+      concat(get(() -> complete("Received GET request for order " + id)),
             put(() -> complete("Received PUT request for order " + id)))
     );
   }
-  //#usingRoute
+  //#usingConcat
 
-  //#usingRouteBig
+  //#usingConcatBig
   Route multipleRoutes() {
     return path(segment("order").slash(integerSegment()), id ->
-      route(get(()  -> complete("Received GET request for order " + id)),
+      concat(get(()  -> complete("Received GET request for order " + id)),
             put(()  -> complete("Received PUT request for order " + id)),
             head(() -> complete("Received HEAD request for order " + id)))
     );
   }
-  //#usingRouteBig
+  //#usingConcatBig
 
   //#getOrPut
   Route getOrPut(Supplier<Route> inner) {
@@ -68,7 +136,7 @@ public class DirectiveExamplesTest extends JUnitRouteTest {
   //#getOrPutUsingAnyOf
   Route usingAnyOf() {
     return path(segment("order").slash(integerSegment()), id ->
-      anyOf(this::get, this::put, () ->
+      anyOf(Directives::get, Directives::put, () ->
         extractMethod(method -> complete("Received " + method + " for order " + id)))
     );
   }
@@ -92,7 +160,7 @@ public class DirectiveExamplesTest extends JUnitRouteTest {
   //#composeNestingAllOf
   Route complexRouteUsingAllOf() {
     return path(segment("order").slash(integerSegment()), id ->
-      allOf(this::get, this::extractClientIP, address ->
+      allOf(Directives::get, Directives::extractClientIP, address ->
         complete("Received request for order " + id + " from IP " + address))
     );
   }

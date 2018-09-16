@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -111,7 +111,7 @@ abstract class HttpApp extends Directives {
     bindingFuture
       .flatMap(_.unbind())
       .onComplete(attempt ⇒ {
-        postServerShutdown(attempt.map(_ ⇒ Done), theSystem)
+        postServerShutdown(attempt, theSystem)
         // we created the system. we should cleanup!
         if (system.isEmpty) theSystem.terminate()
       })

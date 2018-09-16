@@ -1,13 +1,12 @@
-/**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.settings
 
 import java.util.Random
 
-import akka.http.impl.engine.ws.Randoms
-import akka.http.scaladsl.settings.{ Http2ServerSettings, ParserSettings, PreviewServerSettings, ServerSettings }
+import akka.http.scaladsl.settings.{ SettingsCompanion ⇒ _, _ }
 import com.typesafe.config.Config
 
 import scala.language.implicitConversions
@@ -18,39 +17,43 @@ import akka.ConfigurationException
 import akka.annotation.InternalApi
 import akka.io.Inet.SocketOption
 import akka.http.impl.util._
-import akka.http.scaladsl.model.HttpHeader
+import akka.http.scaladsl.model.{ HttpHeader, HttpResponse, StatusCodes }
 import akka.http.scaladsl.model.headers.{ Host, Server }
 import akka.http.scaladsl.settings.ServerSettings.LogUnencryptedNetworkBytes
 
 /** INTERNAL API */
 @InternalApi
 private[akka] final case class ServerSettingsImpl(
-  serverHeader:               Option[Server],
-  previewServerSettings:      PreviewServerSettings,
-  timeouts:                   ServerSettings.Timeouts,
-  maxConnections:             Int,
-  pipeliningLimit:            Int,
-  remoteAddressHeader:        Boolean,
-  rawRequestUriHeader:        Boolean,
-  transparentHeadRequests:    Boolean,
-  verboseErrorMessages:       Boolean,
-  responseHeaderSizeHint:     Int,
-  backlog:                    Int,
-  logUnencryptedNetworkBytes: Option[Int],
-  socketOptions:              immutable.Seq[SocketOption],
-  defaultHostHeader:          Host,
-  websocketRandomFactory:     () ⇒ Random,
-  parserSettings:             ParserSettings,
-  http2Settings:              Http2ServerSettings,
-  defaultHttpPort:            Int,
-  defaultHttpsPort:           Int) extends ServerSettings {
+  serverHeader:                        Option[Server],
+  previewServerSettings:               PreviewServerSettings,
+  timeouts:                            ServerSettings.Timeouts,
+  maxConnections:                      Int,
+  pipeliningLimit:                     Int,
+  remoteAddressHeader:                 Boolean,
+  rawRequestUriHeader:                 Boolean,
+  transparentHeadRequests:             Boolean,
+  verboseErrorMessages:                Boolean,
+  responseHeaderSizeHint:              Int,
+  backlog:                             Int,
+  logUnencryptedNetworkBytes:          Option[Int],
+  socketOptions:                       immutable.Seq[SocketOption],
+  defaultHostHeader:                   Host,
+  websocketSettings:                   WebSocketSettings,
+  parserSettings:                      ParserSettings,
+  http2Settings:                       Http2ServerSettings,
+  defaultHttpPort:                     Int,
+  defaultHttpsPort:                    Int,
+  terminationDeadlineExceededResponse: HttpResponse) extends ServerSettings {
 
   require(0 < maxConnections, "max-connections must be > 0")
   require(0 < pipeliningLimit && pipeliningLimit <= 1024, "pipelining-limit must be > 0 and <= 1024")
   require(0 < responseHeaderSizeHint, "response-size-hint must be > 0")
   require(0 < backlog, "backlog must be > 0")
 
+  override def websocketRandomFactory: () ⇒ Random = websocketSettings.randomFactory
+
   override def productPrefix = "ServerSettings"
+
 }
 
 /** INTERNAL API */
@@ -94,9 +97,20 @@ private[http] object ServerSettingsImpl extends SettingsCompanion[ServerSettings
           val info = result.errors.head.withSummary("Configured `default-host-header` is illegal")
           throw new ConfigurationException(info.formatPretty)
       },
-    Randoms.SecureRandomInstances, // can currently only be overridden from code
+    WebSocketSettingsImpl.server(c.getConfig("websocket")),
     ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")),
     Http2ServerSettings.Http2ServerSettingsImpl.fromSubConfig(root, c.getConfig("http2")),
     c getInt "default-http-port",
-    c getInt "default-https-port")
+    c getInt "default-https-port",
+    terminationDeadlineExceededResponseFrom(c)
+  )
+
+  private def terminationDeadlineExceededResponseFrom(c: Config): HttpResponse = {
+    val status = c getInt "termination-deadline-exceeded-response.status"
+    HttpResponse(
+      status = StatusCodes.getForKey(status)
+        .getOrElse(throw new IllegalArgumentException(s"Illegal status code set for `termination-deadline-exceeded-response.status`, was: [$status]"))
+    )
+  }
+
 }

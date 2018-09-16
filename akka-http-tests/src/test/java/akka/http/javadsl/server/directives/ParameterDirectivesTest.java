@@ -1,12 +1,11 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Map;
 
 import org.junit.Test;
@@ -334,12 +333,9 @@ public class ParameterDirectivesTest extends JUnitRouteTest {
     TestRoute route = testRoute(
       parameterList(paramEntries -> {
         ArrayList<Map.Entry<String, String>> entries = new ArrayList<Map.Entry<String, String>>(paramEntries);
-        Collections.sort(entries, new Comparator<Map.Entry<String, String>>() {
-          @Override
-          public int compare(Map.Entry<String, String> e1, Map.Entry<String, String> e2) {
-            int res = e1.getKey().compareTo(e2.getKey());
-            return res == 0 ? e1.getValue().compareTo(e2.getValue()) : res;
-          }
+        Collections.sort(entries, (e1, e2) -> {
+          int res = e1.getKey().compareTo(e2.getKey());
+          return res == 0 ? e1.getValue().compareTo(e2.getValue()) : res;
         });
 
         StringBuilder res = new StringBuilder();
@@ -380,5 +376,26 @@ public class ParameterDirectivesTest extends JUnitRouteTest {
       .assertStatusCode(200)
       .assertEntity("Optional[23]");
   }
+
+  @Test
+  public void testRequiredParameterExtraction() {
+    TestRoute route = testRoute(parameterRequiredValue(StringUnmarshallers.INTEGER, 1, "requiredIntParam", () -> complete("OK")));
+
+    route
+      .run(HttpRequest.create().withUri("/abc?someParameter=1"))
+      .assertStatusCode(404)
+      .assertEntity("Request is missing required query parameter 'requiredIntParam'");
+
+    route
+      .run(HttpRequest.create().withUri("/abc?requiredIntParam=12"))
+      .assertStatusCode(404)
+      .assertEntity("Request is missing required value '1' for query parameter 'requiredIntParam'");
+
+    route
+      .run(HttpRequest.create().withUri("/abc?requiredIntParam=1"))
+      .assertStatusCode(200)
+      .assertEntity("OK");
+  }
+
 
 }

@@ -1,24 +1,32 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
 
+import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicInteger
+
 import akka.NotUsed
 
 import scala.concurrent.duration._
-import scala.util.Random
+import scala.util.{ Failure, Random }
 import org.scalatest.{ FreeSpec, Matchers }
 import akka.stream.scaladsl._
 import akka.stream.testkit._
 import akka.util.ByteString
 import akka.http.scaladsl.model.ws._
 import Protocol.Opcode
+import akka.http.impl.settings.WebSocketSettingsImpl
+import akka.http.scaladsl.settings.WebSocketSettings
 import akka.testkit._
 import akka.stream.OverflowStrategy
-import org.scalatest.concurrent.{ Eventually, PatienceConfiguration }
+import org.scalatest.concurrent.Eventually
+
+import scala.concurrent.Await
 
 class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with Eventually {
+
   import WSTestUtils._
 
   val InvalidUtf8TwoByteSequence: ByteString = ByteString(
@@ -201,7 +209,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
           parts.runWith(Sink.fromSubscriber(sub))
           val s = sub.expectSubscription()
           s.request(4)
-          sub.expectNoMsg(100.millis.dilated)
+          sub.expectNoMessage(100.millis)
 
           val header1 = frameHeader(Opcode.Continuation, data1.size, fin = true)
           pushInput(header1 ++ data1)
@@ -243,8 +251,8 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
 
         // push single-byte ByteStrings without reading anything until it fails
         // this should be after the internal input buffers have filled up
-        eventually(PatienceConfiguration.Timeout(500.millis.dilated), PatienceConfiguration.Interval(1.milli.dilated)) {
-          the[AssertionError] thrownBy pushInput(ByteString("a"))
+        eventually(timeout(1.second.dilated), interval(10.millis)) {
+          an[AssertionError] should be thrownBy pushInput(ByteString("a"))
         }
       }
     }
@@ -446,13 +454,63 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         pushInput(data)
         expectNoNetworkData()
       }
+
+      List("ping", "pong") foreach { keepAliveMode ⇒
+        def expectedOpcode = if (keepAliveMode == "ping") Opcode.Ping else Opcode.Pong
+
+        s"automatically send keep-alive [$keepAliveMode] frames, with empty data, when configured on the server side" in new ServerTestSetup {
+          override def websocketSettings: WebSocketSettings = // configures server to do keep-alive
+            super.websocketSettings
+              .withPeriodicKeepAliveMode(keepAliveMode)
+              .withPeriodicKeepAliveMaxIdle(100.millis)
+
+          expectFrameOnNetwork(expectedOpcode, ByteString.empty, fin = true)
+          expectFrameOnNetwork(expectedOpcode, ByteString.empty, fin = true)
+          expectFrameOnNetwork(expectedOpcode, ByteString.empty, fin = true)
+        }
+        s"automatically send keep-alive [$keepAliveMode] frames, with data payload, when configured on the server side" in new ServerTestSetup {
+          val counter = new AtomicInteger()
+          override def websocketSettings: WebSocketSettings = // configures server to do keep-alive
+            super.websocketSettings
+              .withPeriodicKeepAliveMode(keepAliveMode)
+              .withPeriodicKeepAliveMaxIdle(100.millis)
+              .withPeriodicKeepAliveData(() ⇒ ByteString(s"ping-${counter.incrementAndGet()}"))
+
+          expectFrameOnNetwork(expectedOpcode, ByteString("ping-1"), fin = true)
+          expectFrameOnNetwork(expectedOpcode, ByteString("ping-2"), fin = true)
+          expectFrameOnNetwork(expectedOpcode, ByteString("ping-3"), fin = true)
+        }
+
+        s"automatically send keep-alive [$keepAliveMode] frames, with empty data, when configured on the client side" in new ClientTestSetup {
+          override def websocketSettings: WebSocketSettings = // configures client to do keep-alive
+            super.websocketSettings
+              .withPeriodicKeepAliveMode(keepAliveMode)
+              .withPeriodicKeepAliveMaxIdle(100.millis)
+
+          expectFrameOnNetwork(expectedOpcode, ByteString.empty, fin = true)
+          expectFrameOnNetwork(expectedOpcode, ByteString.empty, fin = true)
+          expectFrameOnNetwork(expectedOpcode, ByteString.empty, fin = true)
+        }
+        s"automatically send keep-alive [$keepAliveMode] frames, with data payload, when configured on the client side" in new ClientTestSetup {
+          val counter = new AtomicInteger()
+          override def websocketSettings: WebSocketSettings = // configures client to do keep-alive
+            super.websocketSettings
+              .withPeriodicKeepAliveMode(keepAliveMode)
+              .withPeriodicKeepAliveMaxIdle(100.millis)
+              .withPeriodicKeepAliveData(() ⇒ ByteString(s"ping-${counter.incrementAndGet()}"))
+
+          expectMaskedFrameOnNetwork(expectedOpcode, ByteString("ping-1"), fin = true)
+          expectMaskedFrameOnNetwork(expectedOpcode, ByteString("ping-2"), fin = true)
+          expectMaskedFrameOnNetwork(expectedOpcode, ByteString("ping-3"), fin = true)
+        }
+      }
     }
     "provide close behavior" - {
       "after receiving regular close frame when idle (user closes immediately)" in new ServerTestSetup {
         pushInput(closeFrame(Protocol.CloseCodes.Regular, mask = true))
         expectComplete(messageIn)
 
-        netIn.expectNoMsg(100.millis.dilated) // especially the cancellation not yet
+        netIn.expectNoMessage(100.millis) // especially the cancellation not yet
         expectNoNetworkData()
         messageOut.sendComplete()
 
@@ -481,7 +539,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         pushInput(closeFrame(Protocol.CloseCodes.Regular, mask = true))
         expectComplete(messageIn)
 
-        netIn.expectNoMsg(100.millis.dilated) // especially the cancellation not yet
+        netIn.expectNoMessage(100.millis) // especially the cancellation not yet
         expectNoNetworkData()
         messageOut.sendComplete()
 
@@ -717,6 +775,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         }
       }
       "highest bit of 64-bit length is set" in new ServerTestSetup {
+
         import BitBuilder._
 
         val header =
@@ -833,6 +892,79 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         expectProtocolErrorOnNetwork()
       }
     }
+    "convert any message to strict message" - {
+      import scala.concurrent.ExecutionContext.Implicits.global
+
+      val msg = "JKS*s';@"
+      val pre = "pre"
+      val post = "post"
+      "convert streamed text with multiple elements to strict text" in {
+        Await.result(
+          TextMessage
+            .Streamed(Source(pre :: msg :: post :: Nil))
+            .toStrict(1.second), 1.second
+        ) should be(TextMessage.Strict(pre + msg + post))
+      }
+      "convert streamed binary with multiple elements to strict binary" in {
+        Await.result(
+          BinaryMessage
+            .Streamed(Source(ByteString(pre.getBytes("UTF-8")) :: ByteString(msg.getBytes("UTF-8")) :: ByteString(post.getBytes("UTF-8")) :: Nil))
+            .toStrict(1.second), 1.second
+        ) should be(BinaryMessage.Strict(ByteString((pre + msg + post).getBytes("UTF-8"))))
+      }
+      "convert streamed text to strict text" in {
+        Await.result(
+          TextMessage
+            .Streamed(Source.single(msg))
+            .toStrict(1.second), 1.second
+        ) should be(TextMessage.Strict(msg))
+      }
+      "convert streamed binary to strict binary" in {
+        Await.result(
+          BinaryMessage
+            .Streamed(Source.single(ByteString(msg.getBytes("UTF-8"))))
+            .toStrict(1.second), 1.second
+        ) should be(BinaryMessage.Strict(ByteString(msg.getBytes("UTF-8"))))
+      }
+      "convert streamed text to strict text if stream is empty" in {
+        Await.result(
+          TextMessage
+            .Streamed(Source.empty)
+            .toStrict(1.second), 1.second
+        ) should be(TextMessage.Strict(""))
+      }
+      "convert streamed binary to strict binary if stream is empty" in {
+        Await.result(
+          BinaryMessage
+            .Streamed(Source.empty)
+            .toStrict(1.second), 1.second
+        ) should be(BinaryMessage.Strict(ByteString()))
+      }
+      "convert streamed text to strict text if stream is infinite" in {
+        val future = Await.ready(
+          TextMessage
+            .Streamed(Source.repeat(msg))
+            .toStrict(1.second), 5.second
+        )
+
+        future.onComplete {
+          case Failure(ex) ⇒ ex.getClass should be(classOf[TimeoutException])
+          case _           ⇒ fail()
+        }
+      }
+      "convert streamed binary to strict binary if stream is infinite" in {
+        val future = Await.ready(
+          BinaryMessage
+            .Streamed(Source.repeat(ByteString(msg.getBytes("UTF-8"))))
+            .toStrict(1.second), 5.second
+        )
+
+        future.onComplete {
+          case Failure(ex) ⇒ ex.getClass should be(classOf[TimeoutException])
+          case _           ⇒ fail()
+        }
+      }
+    }
     "support per-message-compression extension" in pending
   }
 
@@ -845,23 +977,29 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
   abstract class TestSetup {
     protected def serverSide: Boolean
     protected def closeTimeout: FiniteDuration = 1.second.dilated
+    protected def websocketSettings: WebSocketSettings =
+      if (serverSide) WebSocketSettingsImpl.serverFromRoot(system.settings.config)
+      else WebSocketSettingsImpl.clientFromRoot(system.settings.config)
 
     val netIn = TestPublisher.probe[ByteString]()
     val netOut = ByteStringSinkProbe()
-
     val messageIn = TestSubscriber.probe[Message]
     val messageOut = TestPublisher.probe[Message]()
-
     val messageHandler: Flow[Message, Message, NotUsed] =
       Flow.fromSinkAndSource(
         Flow[Message].buffer(1, OverflowStrategy.backpressure).to(Sink.fromSubscriber(messageIn)), // alternatively need to request(1) before expectComplete
         Source.fromPublisher(messageOut))
 
+    def pushInput(data: ByteString): Unit = netIn.sendNext(data)
+
+    def pushMessage(msg: Message): Unit = messageOut.sendNext(msg)
+
     Source.fromPublisher(netIn)
       .via(printEvent("netIn"))
       .via(FrameEventParser)
+      .via(printEvent("stackIn"))
       .via(WebSocket
-        .stack(serverSide, maskingRandomFactory = Randoms.SecureRandomInstances, closeTimeout = closeTimeout, log = system.log)
+        .stack(serverSide, websocketSettings = websocketSettings, closeTimeout = closeTimeout, log = system.log)
         .join(messageHandler))
       .via(printEvent("frameRendererIn"))
       .via(new FrameEventRenderer)
@@ -870,27 +1008,35 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
       .to(netOut.sink)
       .run()
 
-    def pushInput(data: ByteString): Unit = netIn.sendNext(data)
-    def pushMessage(msg: Message): Unit = messageOut.sendNext(msg)
     def expectMessage(message: Message): Unit = messageIn.requestNext(message)
-    def expectMessage(): Message = messageIn.requestNext()
-    def expectBinaryMessage(): BinaryMessage = expectMessage().asInstanceOf[BinaryMessage]
-    def expectBinaryMessage(message: BinaryMessage): Unit = expectBinaryMessage() shouldEqual message
-    def expectTextMessage(): TextMessage = expectMessage().asInstanceOf[TextMessage]
-    def expectTextMessage(message: TextMessage): Unit = expectTextMessage() shouldEqual message
-    final def expectNetworkData(bytes: Int): ByteString = netOut.expectBytes(bytes)
 
-    def expectNetworkData(data: ByteString): Unit = expectNetworkData(data.size) shouldEqual data
+    def expectBinaryMessage(message: BinaryMessage): Unit = expectBinaryMessage() shouldEqual message
+
+    def expectBinaryMessage(): BinaryMessage = expectMessage().asInstanceOf[BinaryMessage]
+
+    def expectTextMessage(message: TextMessage): Unit = expectTextMessage() shouldEqual message
+
+    def expectTextMessage(): TextMessage = expectMessage().asInstanceOf[TextMessage]
+
+    def expectMessage(): Message = messageIn.requestNext()
+
+    def expectNetworkData(data: ByteString): Unit = {
+      val got = expectNetworkData(data.size)
+      got.utf8String shouldEqual data.utf8String
+    }
 
     def expectFrameOnNetwork(opcode: Opcode, data: ByteString, fin: Boolean): Unit = {
       expectFrameHeaderOnNetwork(opcode, data.size, fin)
       expectNetworkData(data)
     }
+
     def expectMaskedFrameOnNetwork(opcode: Opcode, data: ByteString, fin: Boolean): Unit = {
       val Some(mask) = expectFrameHeaderOnNetwork(opcode, data.size, fin)
       val masked = maskedBytes(data, mask)._1
       expectNetworkData(masked)
     }
+
+    final def expectNetworkData(bytes: Int): ByteString = netOut.expectBytes(bytes)
 
     /** Returns the mask if any is available */
     def expectFrameHeaderOnNetwork(opcode: Opcode, length: Long, fin: Boolean): Option[Int] = {
@@ -900,6 +1046,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
       f shouldEqual fin
       m
     }
+
     def expectFrameHeaderOnNetwork(): (Opcode, Long, Boolean, Option[Int]) = {
       val header = expectNetworkData(2)
 
@@ -939,6 +1086,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
     }
 
     def expectProtocolErrorOnNetwork(): Unit = expectCloseCodeOnNetwork(Protocol.CloseCodes.ProtocolError)
+
     def expectCloseCodeOnNetwork(expectedCode: Int): Unit = {
       val (opcode, length, true, mask) = expectFrameHeaderOnNetwork()
       opcode shouldEqual Opcode.Close
@@ -961,15 +1109,17 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
       probe.request(1)
       probe.expectComplete()
     }
+
     def expectError[T](probe: TestSubscriber.Probe[T]): Throwable = {
       probe.ensureSubscription()
       probe.request(1)
       probe.expectError()
     }
+
   }
 
-  val trace = false // set to `true` for debugging purposes
+  final val Trace = false // compile time constant; set to `true` for debugging purposes;
   def printEvent[T](marker: String): Flow[T, T, NotUsed] =
-    if (trace) Flow[T].log(marker)
+    if (Trace) Flow[T].log(marker)
     else Flow[T]
 }

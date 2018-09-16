@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -41,7 +41,8 @@ import scala.util.Failure
  */
 class HostConnectionPoolSpec extends AkkaSpec(
   """
-     akka.loglevel = INFO
+     akka.loglevel = DEBUG
+     akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
      akka.actor {
        serialize-creators = off
        serialize-messages = off
@@ -49,7 +50,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
      }
      akka.http.client.log-unencrypted-network-bytes = 200
   """
-) with Eventually {
+) with Eventually with WithLogCapturing {
   implicit val materializer = ActorMaterializer()
   val singleElementBufferMaterializer = materializer // ActorMaterializer(ActorMaterializerSettings(system).withInputBuffer(1, 1))
   val defaultSettings =
@@ -77,9 +78,9 @@ class HostConnectionPoolSpec extends AkkaSpec(
   testSet(poolImplementation = NewPoolImplementation, clientServerImplementation = AkkaHttpEngineTCP)
   //testSet(poolImplementation = NewPoolImplementation, clientServerImplementation = AkkaHttpEngineTLS)
 
-  testSet(poolImplementation = LegacyPoolImplementation, clientServerImplementation = PassThrough)
-  testSet(poolImplementation = LegacyPoolImplementation, clientServerImplementation = AkkaHttpEngineNoNetwork)
-  testSet(poolImplementation = LegacyPoolImplementation, clientServerImplementation = AkkaHttpEngineTCP)
+  //testSet(poolImplementation = LegacyPoolImplementation, clientServerImplementation = PassThrough)
+  //testSet(poolImplementation = LegacyPoolImplementation, clientServerImplementation = AkkaHttpEngineNoNetwork)
+  //testSet(poolImplementation = LegacyPoolImplementation, clientServerImplementation = AkkaHttpEngineTCP)
   //testSet(poolImplementation = OldPoolImplementation, clientServerImplementation = AkkaHttpEngineTLS)
 
   def testSet(poolImplementation: PoolImplementation, clientServerImplementation: ClientServerImplementation) =
@@ -107,6 +108,25 @@ class HostConnectionPoolSpec extends AkkaSpec(
         resBodyIn.expectUtf8EncodedString("hi")
 
         resBodyOut.sendComplete()
+        resBodyIn.request(1) // FIXME: should we support eager completion here? (reason is substreamHandler in PrepareResponse)
+        resBodyIn.expectComplete()
+      }
+      "complete a request/response cycle with a chunked request and response with dependent entity bytes" in new SetupWithServerProbes {
+        val reqBody = Source("Hello" :: " World" :: Nil map ByteString.apply)
+        pushRequest(HttpRequest(uri = "/simple", entity = HttpEntity.Chunked.fromData(ContentTypes.`application/octet-stream`, reqBody)))
+
+        val conn1 = expectNextConnection()
+        val HttpRequest(_, _, _, reqEntityIn: HttpEntity.Chunked, _) = conn1.expectRequest()
+
+        // response data stream is bound to request data stream
+        val respDataBytes = reqEntityIn.dataBytes.map(_.map(_.toChar.toUpper.toByte))
+        conn1.pushResponse(HttpResponse().withEntity(HttpEntity.Chunked.fromData(ContentTypes.`application/octet-stream`, respDataBytes)))
+
+        val resBodyIn = expectChunkedResponseBytesAsProbe()
+
+        resBodyIn.expectUtf8EncodedString("HELLO")
+        resBodyIn.expectUtf8EncodedString(" WORLD")
+
         resBodyIn.request(1) // FIXME: should we support eager completion here? (reason is substreamHandler in PrepareResponse)
         resBodyIn.expectComplete()
       }
@@ -157,7 +177,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
         val conn1 = expectNextConnection()
         conn1.expectRequestToPath("/1")
 
-        val (resBodyOut, chunks) =
+        val (_, chunks) =
           EventFilter.warning(pattern = ".*Response entity was not subscribed.*", occurrences = 1) intercept {
             val resBodyOut = conn1.pushChunkedResponse()
             val HttpResponse(_, _, HttpEntity.Chunked(_, chunks), _) = expectResponse()
@@ -172,7 +192,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
       "time out and reconnect when a request is not handled in time" in pending
       "time out when connection cannot be established" in pending
       "fail a request if the request entity fails" in new SetupWithServerProbes {
-        val reqBytesOut = pushChunkedRequest()
+        val reqBytesOut = pushChunkedRequest(numRetries = 0)
 
         val conn1 = expectNextConnection()
         val reqBytesIn = conn1.expectChunkedRequestBytesAsProbe()
@@ -245,6 +265,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
         // client already received response, no need to report error another time
       }
       "create a new connection when previous one was closed regularly between requests" in new SetupWithServerProbes {
+        pendingIn(targetImpl = LegacyPoolImplementation) // flaky test, no reason to debug old client pool issues for now
         pushRequest(HttpRequest(uri = "/simple"))
 
         val conn1 = expectNextConnection()
@@ -259,12 +280,35 @@ class HostConnectionPoolSpec extends AkkaSpec(
         conn2.pushResponse(HttpResponse(entity = "response"))
         expectResponseEntityAsString() shouldEqual "response"
       }
-      "create a new connection when previous one failed between requests" in new SetupWithServerProbes {
+      "create a new connection when previous one was closed regularly between requests without sending a `Connection: close` header first" in new SetupWithServerProbes {
+        pendingIn(targetImpl = LegacyPoolImplementation) // flaky test, no reason to debug old client pool issues for now
         pushRequest(HttpRequest(uri = "/simple"))
 
         val conn1 = expectNextConnection()
         val req = conn1.expectRequest()
-        conn1.pushResponse(HttpResponse(headers = headers.Connection("close") :: Nil, entity = req.uri.path.toString))
+        conn1.pushResponse(HttpResponse(entity = req.uri.path.toString))
+        expectResponseEntityAsString() shouldEqual "/simple"
+        conn1.completeHandler()
+
+        // Here's an inherent race condition: we might accidentally schedule the next request on the just-completing
+        // connection. So we add a sleep to increase chances, we've been in the Unconnected state before the new request
+        // is dispatched. If connection still happens to be in the Idle state, the request should be transparently
+        // retried.
+        Thread.sleep(100)
+
+        pushRequest(HttpRequest(uri = "/next"))
+        val conn2 = expectNextConnection()
+        conn2.expectRequestToPath("/next")
+        conn2.pushResponse(HttpResponse(entity = "response"))
+        expectResponseEntityAsString() shouldEqual "response"
+      }
+      "create a new connection when previous one failed between requests" in new SetupWithServerProbes {
+        pendingIn(targetImpl = LegacyPoolImplementation) // flaky test, no reason to debug old client pool issues for now
+        pushRequest(HttpRequest(uri = "/simple"))
+
+        val conn1 = expectNextConnection()
+        val req = conn1.expectRequest()
+        conn1.pushResponse(HttpResponse(entity = req.uri.path.toString))
         expectResponseEntityAsString() shouldEqual "/simple"
         conn1.failConnection(new RuntimeException("broken connection"))
 
@@ -311,6 +355,38 @@ class HostConnectionPoolSpec extends AkkaSpec(
           // should fail eventually because backpressure kicks in and one of the expects / pushes above will timeout
           a[Throwable] should be thrownBy oneCycle()
         }
+      }
+      "dispatch multiple failures on different slots when request entity fails" in new SetupWithServerProbes(_.withMaxConnections(3)) {
+        val req1 = pushChunkedRequest(numRetries = 0)
+        val conn1 = expectNextConnection()
+        conn1.expectChunkedRequestBytesAsProbe()
+
+        val req2 = pushChunkedRequest(numRetries = 0)
+        val conn2 = expectNextConnection()
+        conn2.expectChunkedRequestBytesAsProbe()
+
+        req1.sendError(new RuntimeException("First request stumbled and fell"))
+        conn1.failConnection(new RuntimeException("First connection crash-landed on mars"))
+
+        // don't check for first error yet
+
+        req2.sendError(new RuntimeException("Second request stumbled and flew"))
+        conn2.failConnection(new RuntimeException("Second connection crash-landed on the moon"))
+
+        expectResponseError()
+        expectResponseError()
+
+        // check that we are not still dispatchable (#1726)
+        pushRequest()
+        pushRequest()
+
+        val conn3 = expectNextConnection()
+        val conn4 = expectNextConnection()
+
+        conn3.pushResponse()
+        conn4.pushResponse()
+        expectResponse()
+        expectResponse()
       }
       "not send requests to known-to-be-closed-soon connections" in pending
       "support retries" in pending
@@ -401,7 +477,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
           }
 
           def expectNoRequest(): Unit =
-            serverRequests.expectNoMsg()
+            serverRequests.expectNoMessage(remainingOrDefault)
 
           def pushResponse(response: HttpResponse = HttpResponse()) =
             serverResponses.sendNext(response)
@@ -459,7 +535,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
           serverConnections.expectMsgType[ServerConnection]
 
         def expectNoNewConnection(): Unit =
-          serverConnections.expectNoMsg()
+          serverConnections.expectNoMessage(remainingOrDefault)
 
         protected override lazy val server =
           Flow.fromSinkAndSourceMat(
@@ -546,7 +622,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
     def failsHandlerInputWhenHandlerOutputFails: Boolean = false
 
     override def get(connectionKillSwitch: SharedKillSwitch): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, Future[Http.OutgoingConnection]] =
-      Http().serverLayer() atop
+      Http().serverLayerImpl() atop
         TLSPlacebo() atop
         BidiFlow.fromFlows(connectionKillSwitch.flow[ByteString], connectionKillSwitch.flow[ByteString]) atop
         TLSPlacebo().reversed atop
@@ -564,8 +640,10 @@ class HostConnectionPoolSpec extends AkkaSpec(
   /** Transport that uses actual top-level Http APIs to establish a plaintext HTTP connection */
   case object AkkaHttpEngineTCP extends TopLevelApiClientServerImplementation {
     protected override def bindServerSource = Http().bind("localhost", 0)
-    protected def clientConnectionFlow(connectionKillSwitch: SharedKillSwitch): Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
-      Http().outgoingConnectionUsingTransport(host = "localhost", port = serverBinding.localAddress.getPort, connectionContext = ConnectionContext.noEncryption(), transport = new KillSwitchedClientTransport(connectionKillSwitch))
+    protected def clientConnectionFlow(serverBinding: ServerBinding, connectionKillSwitch: SharedKillSwitch): Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] = {
+      val clientConnectionSettings = ClientConnectionSettings(system).withTransport(new KillSwitchedClientTransport(connectionKillSwitch))
+      Http().outgoingConnectionUsingContext(host = "localhost", port = serverBinding.localAddress.getPort, connectionContext = ConnectionContext.noEncryption(), settings = clientConnectionSettings)
+    }
   }
 
   /**
@@ -575,30 +653,34 @@ class HostConnectionPoolSpec extends AkkaSpec(
    */
   case object AkkaHttpEngineTLS extends TopLevelApiClientServerImplementation {
     protected override def bindServerSource = Http().bind("akka.example.org", 0, connectionContext = ExampleHttpContexts.exampleServerContext)
-    protected def clientConnectionFlow(connectionKillSwitch: SharedKillSwitch): Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
-      Http().outgoingConnectionUsingTransport(host = "akka.example.org", port = serverBinding.localAddress.getPort, connectionContext = ExampleHttpContexts.exampleClientContext, transport = new KillSwitchedClientTransport(connectionKillSwitch))
+    protected def clientConnectionFlow(serverBinding: ServerBinding, connectionKillSwitch: SharedKillSwitch): Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] = {
+      val clientConnectionSettings = ClientConnectionSettings(system).withTransport(new KillSwitchedClientTransport(connectionKillSwitch))
+      Http().outgoingConnectionUsingContext(host = "akka.example.org", port = serverBinding.localAddress.getPort, connectionContext = ExampleHttpContexts.exampleClientContext, settings = clientConnectionSettings)
+    }
   }
   abstract class TopLevelApiClientServerImplementation extends ClientServerImplementation {
     def failsHandlerInputWhenHandlerOutputFails: Boolean = false
 
     protected def bindServerSource: Source[Http.IncomingConnection, Future[ServerBinding]]
-    protected def clientConnectionFlow(connectionKillSwitch: SharedKillSwitch): Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]]
+    protected def clientConnectionFlow(serverBinding: ServerBinding, connectionKillSwitch: SharedKillSwitch): Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]]
 
-    val connectionProbe = TestProbe()
-    val serverBinding: ServerBinding =
-      bindServerSource
-        .to(Sink.foreach { serverConnection ⇒
-          connectionProbe.ref ! serverConnection
-        })
-        .run().awaitResult(3.seconds)
+    override def get(connectionKillSwitch: SharedKillSwitch): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, Future[Http.OutgoingConnection]] = {
+      val connectionProbe = TestProbe()
+      system.log.debug("Binding server for test ...")
+      val serverBinding: ServerBinding =
+        bindServerSource
+          .to(Sink.foreach { serverConnection ⇒
+            connectionProbe.ref ! serverConnection
+          })
+          .run().awaitResult(3.seconds)
+      system.log.debug(s"Server bound to [${serverBinding.localAddress}]")
 
-    override def get(connectionKillSwitch: SharedKillSwitch): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, Future[Http.OutgoingConnection]] =
       // needs to be an involved two step process:
       //   1. setup client flow and proxies on the server side to be able to return that flow immediately
       //   2. when client connection was established, grab server connection as well and attach to proxies
       //      (cannot be implemented with just mapMaterializedValue because there's no transposing constructor for BidiFlow)
       BidiFlow.fromGraph(
-        GraphDSL.create(Sink.asPublisher[HttpResponse](fanout = false), Source.asSubscriber[HttpRequest], clientConnectionFlow(connectionKillSwitch))((_, _, _)) { implicit builder ⇒ (resIn, reqOut, client) ⇒
+        GraphDSL.create(Sink.asPublisher[HttpResponse](fanout = false), Source.asSubscriber[HttpRequest], clientConnectionFlow(serverBinding, connectionKillSwitch))((_, _, _)) { implicit builder ⇒ (resIn, reqOut, client) ⇒
           import GraphDSL.Implicits._
 
           builder.materializedValue ~> Sink.foreach[(Publisher[HttpResponse], Subscriber[HttpRequest], Future[Http.OutgoingConnection])] {
@@ -614,6 +696,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
           BidiShape(resIn.in, client.out, client.in, reqOut.out)
         }
       ).mapMaterializedValue(_._3)
+    }
   }
 
   /** Generates a new unique outgoingConnection */

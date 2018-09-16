@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.javadsl.settings
 
 import java.util.Optional
@@ -30,11 +31,13 @@ abstract class ParserSettings private[akka] () extends BodyPartParser.Settings {
   def getMaxHeaderValueLength: Int
   def getMaxHeaderCount: Int
   def getMaxContentLength: Long
+  def getMaxToStrictBytes: Long
   def getMaxChunkExtLength: Int
   def getMaxChunkSize: Int
   def getUriParsingMode: Uri.ParsingMode
   def getCookieParsingMode: ParserSettings.CookieParsingMode
   def getIllegalHeaderWarnings: Boolean
+  def getIgnoreIllegalHeaderFor: Set[String]
   def getErrorLoggingVerbosity: ParserSettings.ErrorLoggingVerbosity
   def getIllegalResponseHeaderValueProcessingMode: ParserSettings.IllegalResponseHeaderValueProcessingMode
   def getHeaderValueCacheLimits: ju.Map[String, Int]
@@ -54,6 +57,7 @@ abstract class ParserSettings private[akka] () extends BodyPartParser.Settings {
   def withMaxHeaderValueLength(newValue: Int): ParserSettings = self.copy(maxHeaderValueLength = newValue)
   def withMaxHeaderCount(newValue: Int): ParserSettings = self.copy(maxHeaderCount = newValue)
   def withMaxContentLength(newValue: Long): ParserSettings = self.copy(maxContentLength = newValue)
+  def withMaxToStrictBytes(newValue: Long): ParserSettings = self.copy(maxToStrictBytes = newValue)
   def withMaxChunkExtLength(newValue: Int): ParserSettings = self.copy(maxChunkExtLength = newValue)
   def withMaxChunkSize(newValue: Int): ParserSettings = self.copy(maxChunkSize = newValue)
   def withUriParsingMode(newValue: Uri.ParsingMode): ParserSettings = self.copy(uriParsingMode = newValue.asScala)
@@ -63,6 +67,7 @@ abstract class ParserSettings private[akka] () extends BodyPartParser.Settings {
   def withHeaderValueCacheLimits(newValue: ju.Map[String, Int]): ParserSettings = self.copy(headerValueCacheLimits = newValue.asScala.toMap)
   def withIncludeTlsSessionInfoHeader(newValue: Boolean): ParserSettings = self.copy(includeTlsSessionInfoHeader = newValue)
   def withModeledHeaderParsing(newValue: Boolean): ParserSettings = self.copy(modeledHeaderParsing = newValue)
+  def withIgnoreIllegalHeaderFor(newValue: List[String]): ParserSettings = self.copy(ignoreIllegalHeaderFor = newValue.map(_.toLowerCase).toSet)
 
   // special ---
 

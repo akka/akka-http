@@ -1,32 +1,19 @@
 /*
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server.directives;
-
-import java.util.Arrays;
-import java.util.regex.Pattern;
 
 import org.junit.Test;
 
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
-import akka.http.javadsl.model.StatusCodes;
-import akka.http.javadsl.model.headers.Host;
 import akka.http.javadsl.server.Route;
-import akka.http.javadsl.server.RequestContext;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 
 import java.util.function.Function;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 
-import akka.http.javadsl.model.Uri;
-import akka.http.javadsl.model.headers.Location;
-import akka.http.javadsl.server.directives.DebuggingDirectives;
-import akka.http.javadsl.server.directives.RouteDirectives;
-import akka.event.Logging;
-import akka.event.Logging.LogLevel;
 import akka.http.javadsl.server.directives.LogEntry;
 
 import java.util.List;
@@ -37,6 +24,21 @@ import static akka.event.Logging.InfoLevel;
 
 import java.util.stream.Collectors;
 import java.util.Optional;
+
+//#logRequest
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.get;
+import static akka.http.javadsl.server.Directives.logRequest;
+
+//#logRequest
+//#logRequestResult
+import static akka.http.javadsl.server.Directives.logRequestResultOptional;
+
+//#logRequestResult
+//#logResult
+import static akka.http.javadsl.server.Directives.logResult;
+
+//#logResult
 
 public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
 
@@ -175,7 +177,7 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
           "Logged Request:" + request.method().name() + ":" + request.getUri() + ":" + response.status() + ":" + elapsedTime,
           InfoLevel()));
     } else {
-      return Optional.empty();  //not a successfull response
+      return Optional.empty();  //not a successful response
     }
   }
 }

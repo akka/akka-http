@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server;
@@ -11,6 +11,17 @@ import akka.http.javadsl.model.headers.Host;
 import akka.http.javadsl.model.headers.RawHeader;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.testkit.JUnitRouteTest;
+
+//#by-class
+import static akka.http.javadsl.server.Directives.extractHost;
+import static akka.http.javadsl.server.Directives.complete;
+
+//#by-class
+//#by-name
+import static akka.http.javadsl.server.Directives.headerValueByName;
+import static akka.http.javadsl.server.Directives.complete;
+
+//#by-name
 
 public class HeaderRequestValsExampleTest extends JUnitRouteTest {
 

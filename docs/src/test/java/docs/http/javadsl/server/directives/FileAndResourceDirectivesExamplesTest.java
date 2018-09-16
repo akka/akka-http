@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.http.javadsl.server.directives;
 
 import akka.http.javadsl.model.HttpRequest;
@@ -14,6 +15,44 @@ import org.junit.Test;
 import scala.NotImplementedError;
 
 import static akka.http.javadsl.server.PathMatchers.segment;
+
+//#getFromFile
+import static akka.http.javadsl.server.Directives.getFromFile;
+import static akka.http.javadsl.server.Directives.path;
+
+//#getFromFile
+//#getFromResource
+import static akka.http.javadsl.server.Directives.getFromResource;
+import static akka.http.javadsl.server.Directives.path;
+
+//#getFromResource
+//#listDirectoryContents
+import akka.http.javadsl.server.Directives;
+
+import static akka.http.javadsl.server.Directives.listDirectoryContents;
+import static akka.http.javadsl.server.Directives.path;
+
+//#listDirectoryContents
+//#getFromBrowseableDirectory
+import static akka.http.javadsl.server.Directives.getFromBrowseableDirectory;
+import static akka.http.javadsl.server.Directives.path;
+
+//#getFromBrowseableDirectory
+//#getFromBrowseableDirectories
+import static akka.http.javadsl.server.Directives.getFromBrowseableDirectories;
+import static akka.http.javadsl.server.Directives.path;
+
+//#getFromBrowseableDirectories
+//#getFromDirectory
+import static akka.http.javadsl.server.Directives.getFromDirectory;
+import static akka.http.javadsl.server.Directives.pathPrefix;
+
+//#getFromDirectory
+//#getFromResourceDirectory
+import static akka.http.javadsl.server.Directives.getFromResourceDirectory;
+import static akka.http.javadsl.server.Directives.pathPrefix;
+
+//#getFromResourceDirectory
 
 public class FileAndResourceDirectivesExamplesTest extends JUnitRouteTest {
 
@@ -49,7 +88,7 @@ public class FileAndResourceDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testListDirectoryContents() {
     //#listDirectoryContents
-    final Route route = route(
+    final Route route = Directives.concat(
       path("tmp", () -> listDirectoryContents("/tmp")),
       path("custom", () -> {
         // implement your custom renderer here

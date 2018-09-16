@@ -1,11 +1,13 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server;
 
 
+import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import akka.http.javadsl.marshalling.Marshaller;
 import akka.http.javadsl.model.*;
@@ -16,6 +18,8 @@ import org.junit.Test;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 import akka.util.ByteString;
+
+import static akka.http.javadsl.server.Directives.*;
 
 public class MarshallerTest extends JUnitRouteTest {
 
@@ -135,7 +139,7 @@ public class MarshallerTest extends JUnitRouteTest {
           path("nummer", () ->
             parameter(StringUnmarshallers.INTEGER, "n", nummerHandler)
           )
-        ).seal(system(), materializer()) // needed to get the content negotiation, maybe
+        ).seal() // needed to get the content negotiation, maybe
       );
 
     route.run(HttpRequest.GET("/nummer?n=1"))
@@ -191,5 +195,34 @@ public class MarshallerTest extends JUnitRouteTest {
 
     route.run(HttpRequest.GET("/nummer?n=5").addHeader(Accept.create(MediaTypes.TEXT_PLAIN.toRange())))
       .assertStatusCode(StatusCodes.NOT_ACCEPTABLE);
+  }
+
+  @Test
+  public void testOptionMarshaller() {
+    Marshaller<Optional<String>, RequestEntity> marshaller =
+          Marshaller.optionMarshaller(Marshaller.stringToEntity());
+
+    Supplier<Route> emptyHandler = () ->
+      rejectEmptyResponse(() -> complete(StatusCodes.OK, Optional.empty(), marshaller));
+
+    Supplier<Route> notEmptyHandler = () ->
+            rejectEmptyResponse(() -> complete(StatusCodes.OK, Optional.of("foo"), marshaller));
+
+    TestRoute route =
+          testRoute(
+                get(() ->
+                  concat(
+                        path("notempty", notEmptyHandler),
+                        path("empty", emptyHandler)
+                )
+            )
+          );
+
+    route.run(HttpRequest.GET("/notempty"))
+            .assertStatusCode(StatusCodes.OK)
+            .assertEntity("foo");
+
+    route.run(HttpRequest.GET("/empty"))
+            .assertStatusCode(StatusCodes.NOT_FOUND);
   }
 }

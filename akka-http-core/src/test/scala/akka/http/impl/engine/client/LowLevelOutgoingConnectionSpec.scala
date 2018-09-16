@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -288,7 +288,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
 
-        val HttpResponse(_, _, HttpEntity.Chunked(ct, chunks), _) = expectResponse()
+        val HttpResponse(_, _, HttpEntity.Chunked(_, chunks), _) = expectResponse()
 
         val probe = TestSubscriber.manualProbe[ChunkStreamPart]()
         chunks.runWith(Sink.fromSubscriber(probe))
@@ -479,7 +479,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
 
         sendWireData("4\nDEFXX")
         sub.request(1)
-        val error @ EntityStreamException(info) = probe.expectError()
+        val _@ EntityStreamException(info) = probe.expectError()
         info.summary shouldEqual "Illegal chunk termination"
 
         responses.expectComplete()
@@ -724,7 +724,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
         netOutSub.request(1)
-        netOut.expectNoMsg(50.millis.dilated)
+        netOut.expectNoMessage(50.millis)
 
         sendWireData(
           """HTTP/1.1 100 Continue
@@ -761,7 +761,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
         netOutSub.request(1)
-        netOut.expectNoMsg(50.millis.dilated)
+        netOut.expectNoMessage(50.millis)
 
         sendWireData(
           """HTTP/1.1 100 Continue
@@ -798,7 +798,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
         netOutSub.request(1)
-        netOut.expectNoMsg(50.millis.dilated)
+        netOut.expectNoMessage(50.millis)
 
         sendWireData(
           """HTTP/1.1 200 OK
@@ -829,7 +829,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
             |
             |""")
         netOutSub.request(1)
-        netOut.expectNoMsg(50.millis.dilated)
+        netOut.expectNoMessage(50.millis)
 
         sendWireData(
           """HTTP/1.1 400 Bad Request

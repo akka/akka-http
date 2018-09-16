@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.marshalling
@@ -103,7 +103,7 @@ object Marshaller
    * Helper for creating a "super-marshaller" from a number of "sub-marshallers".
    * Content-negotiation determines, which "sub-marshaller" eventually gets to do the job.
    *
-   * Please note that all marshallers will actualy be invoked in order to get the Marshalling object
+   * Please note that all marshallers will actually be invoked in order to get the Marshalling object
    * out of them, and later decide which of the marshallings should be returned. This is by-design,
    * however in ticket as discussed in ticket https://github.com/akka/akka-http/issues/243 it MAY be
    * changed in later versions of Akka HTTP.
@@ -115,7 +115,7 @@ object Marshaller
    * Helper for creating a "super-marshaller" from a number of values and a function producing "sub-marshallers"
    * from these values. Content-negotiation determines, which "sub-marshaller" eventually gets to do the job.
    *
-   * Please note that all marshallers will actualy be invoked in order to get the Marshalling object
+   * Please note that all marshallers will actually be invoked in order to get the Marshalling object
    * out of them, and later decide which of the marshallings should be returned. This is by-design,
    * however in ticket as discussed in ticket https://github.com/akka/akka-http/issues/243 it MAY be
    * changed in later versions of Akka HTTP.

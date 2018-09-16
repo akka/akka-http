@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.http.javadsl;
 //#minimal-routing-example
 import akka.NotUsed;
@@ -42,7 +43,7 @@ public class HttpServerMinimalExampleTest extends AllDirectives {
   }
 
   private Route createRoute() {
-    return route(
+    return concat(
         path("hello", () ->
             get(() ->
                 complete("<h1>Say hello to akka-http</h1>"))));

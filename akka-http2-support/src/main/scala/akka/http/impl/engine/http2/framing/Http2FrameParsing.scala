@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -12,6 +12,8 @@ import akka.stream.stage.GraphStageLogic
 import Http2Protocol.FrameType._
 import Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
 import akka.annotation.InternalApi
+
+import FrameEvent._
 
 /** INTERNAL API */
 @InternalApi
@@ -106,10 +108,11 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteS
                 if (payload.hasRemaining) {
                   val id = payload.readShortBE()
                   val value = payload.readIntBE()
-                  readSettings(Setting(SettingIdentifier.byId(id), value) :: read)
+                  if (isKnownId(id)) readSettings(Setting(SettingIdentifier.byId(id), value) :: read)
+                  else readSettings(read)
                 } else read.reverse
 
-              if (payload.remainingSize % 6 != 0) throw new Http2Compliance.IllegalPayloadLengthInSettingsFrame(payload.remainingSize, "SETTINGS payload MUDT be a multiple of multiple of 6 octets")
+              if (payload.remainingSize % 6 != 0) throw new Http2Compliance.IllegalPayloadLengthInSettingsFrame(payload.remainingSize, "SETTINGS payload MUST be a multiple of multiple of 6 octets")
               SettingsFrame(readSettings(Nil))
             }
 

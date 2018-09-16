@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2.hpack
@@ -16,6 +16,8 @@ import akka.util.ByteString
 import com.twitter.hpack.HeaderListener
 
 import scala.collection.immutable.VectorBuilder
+
+import FrameEvent._
 
 /**
  * INTERNAL API
@@ -41,7 +43,7 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
     // Receiving headers: waiting for CONTINUATION frame
 
     def parseAndEmit(streamId: Int, endStream: Boolean, payload: ByteString, prioInfo: Option[PriorityFrame]): Unit = {
-      var headers = new VectorBuilder[(String, String)]
+      val headers = new VectorBuilder[(String, String)]
       object Receiver extends HeaderListener {
         def addHeader(name: Array[Byte], value: Array[Byte], sensitive: Boolean): Unit =
           // TODO: optimization: use preallocated strings for well-known names, similar to what happens in HeaderParser

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server.directives;
@@ -24,15 +24,111 @@ import static akka.http.javadsl.server.PathMatchers.integerSegment;
 //#path-matcher
 import static akka.http.javadsl.server.PathMatchers.neutral;
 import static akka.http.javadsl.server.PathMatchers.slash;
-import java.util.function.Supplier;
 import akka.http.javadsl.server.directives.RouteAdapter;
 import static java.util.regex.Pattern.compile;
 import static akka.http.javadsl.server.PathMatchers.segment;
 import static akka.http.javadsl.server.PathMatchers.integerSegment;
+import static akka.http.javadsl.server.PathMatchers.separateOnSlashes;
 
 //#path-matcher
 
 //#path-matcher
+
+//#path-prefix-test, path-suffix, raw-path-prefix, raw-path-prefix-test
+import java.util.function.Supplier;
+
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.extractUnmatchedPath;
+
+//#path-prefix-test, path-suffix, raw-path-prefix, raw-path-prefix-test
+
+//#path-dsl
+import static akka.http.javadsl.server.Directives.path;
+
+//#path-dsl
+//#pathPrefix
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.pathPrefix;
+import static akka.http.javadsl.server.Directives.pathEnd;
+import static akka.http.javadsl.server.Directives.route;
+
+//#pathPrefix
+
+//#path-end-or-single-slash
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.pathEndOrSingleSlash;
+import static akka.http.javadsl.server.Directives.route;
+
+//#path-end-or-single-slash
+//#path-prefix
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.pathEnd;
+import static akka.http.javadsl.server.Directives.pathPrefix;
+import static akka.http.javadsl.server.Directives.route;
+
+//#path-prefix
+//#path-prefix-test
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.pathEnd;
+import static akka.http.javadsl.server.Directives.pathPrefix;
+import static akka.http.javadsl.server.Directives.pathPrefixTest;
+import static akka.http.javadsl.server.Directives.route;
+
+//#path-prefix-test
+//#path-single-slash
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.pathPrefix;
+import static akka.http.javadsl.server.Directives.pathSingleSlash;
+import static akka.http.javadsl.server.Directives.route;
+
+//#path-single-slash
+//#path-suffix
+import static akka.http.javadsl.server.Directives.pathPrefix;
+import static akka.http.javadsl.server.Directives.pathSuffix;
+import static akka.http.javadsl.server.Directives.route;
+
+//#path-suffix
+//#path-suffix-test
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.pathSuffixTest;
+import static akka.http.javadsl.server.Directives.route;
+
+//#path-suffix-test
+//#raw-path-prefix
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.rawPathPrefix;
+import static akka.http.javadsl.server.Directives.route;
+
+//#raw-path-prefix
+//#raw-path-prefix-test
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.rawPathPrefixTest;
+import static akka.http.javadsl.server.Directives.route;
+
+//#raw-path-prefix-test
+//#redirect-notrailing-slash-missing
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.redirectToTrailingSlashIfMissing;
+import static akka.http.javadsl.server.Directives.route;
+
+//#redirect-notrailing-slash-missing
+//#redirect-notrailing-slash-present
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.redirectToNoTrailingSlashIfPresent;
+import static akka.http.javadsl.server.Directives.route;
+
+//#redirect-notrailing-slash-present
+//#ignoreTrailingSlash
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.ignoreTrailingSlash;
+import static akka.http.javadsl.server.Directives.route;
+
+//#ignoreTrailingSlash
 
 public class PathDirectivesExamplesTest extends JUnitRouteTest {
 
@@ -63,6 +159,15 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
     // matches /foo/
     path(segment("foo").slash(), () -> complete(StatusCodes.OK));
 
+    // matches /foo/bar
+    path(segment("foo").slash(segment("boo")), () -> complete(StatusCodes.OK));
+
+    // NOTE: matches /foo%2Fbar and doesn't match /foo/bar
+    path(segment("foo/bar"), () -> complete(StatusCodes.OK));
+
+    // NOTE: matches /foo/bar
+    path(separateOnSlashes("foo/bar"), () -> complete(StatusCodes.OK));
+
     // matches e.g. /foo/123 and extracts "123" as a String
     path(segment("foo").slash(segment(compile("\\d+"))), (value) ->
         complete(StatusCodes.OK));
@@ -92,11 +197,11 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   public void testPathExample() {
     //#pathPrefix
     final Route route =
-        route(
+        concat(
             path("foo", () -> complete("/foo")),
             path(segment("foo").slash("bar"), () -> complete("/foo/bar")),
             pathPrefix("ball", () ->
-                route(
+                concat(
                     pathEnd(() -> complete("/ball")),
                     path(integerSegment(), (i) ->
                         complete((i % 2 == 0) ? "even ball" : "odd ball"))
@@ -116,9 +221,9 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   public void testPathEnd() {
     //#path-end
     final Route route =
-        route(
+        concat(
             pathPrefix("foo", () ->
-                route(
+                concat(
                     pathEnd(() -> complete("/foo")),
                     path("bar", () -> complete("/foo/bar"))
                 )
@@ -136,9 +241,9 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   public void testPathEndOrSingleSlash() {
     //#path-end-or-single-slash
     final Route route =
-        route(
+        concat(
             pathPrefix("foo", () ->
-                route(
+                concat(
                     pathEndOrSingleSlash(() -> complete("/foo")),
                     path("bar", () -> complete("/foo/bar"))
                 )
@@ -155,9 +260,9 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   public void testPathPrefix() {
     //#path-prefix
     final Route route =
-        route(
+        concat(
             pathPrefix("ball", () ->
-                route(
+                concat(
                     pathEnd(() -> complete("/ball")),
                     path(integerSegment(), (i) ->
                         complete((i % 2 == 0) ? "even ball" : "odd ball"))
@@ -175,9 +280,9 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   public void testPathPrefixTest() {
     //#path-prefix-test
     final Route route =
-        route(
+        concat(
             pathPrefixTest(segment("foo").orElse("bar"), () ->
-                route(
+                concat(
                       pathPrefix("foo", () -> completeWithUnmatchedPath.get()),
                       pathPrefix("bar", () -> completeWithUnmatchedPath.get())
                 )
@@ -193,10 +298,10 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   public void testPathSingleSlash() {
     //#path-single-slash
     final Route route =
-        route(
+        concat(
             pathSingleSlash(() -> complete("root")),
             pathPrefix("ball", () ->
-                route(
+                concat(
                     pathSingleSlash(() -> complete("/ball/")),
                     path(integerSegment(), (i) -> complete((i % 2 == 0) ? "even ball" : "odd ball"))
                 )
@@ -214,9 +319,9 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   public void testPathSuffix() {
     //#path-suffix
     final Route route =
-        route(
+        concat(
             pathPrefix("start", () ->
-                route(
+                concat(
                     pathSuffix("end", () -> completeWithUnmatchedPath.get()),
                     pathSuffix(segment("foo").slash("bar").concat("baz"), () ->
                         completeWithUnmatchedPath.get())
@@ -233,7 +338,7 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   public void testPathSuffixTest() {
     //#path-suffix-test
     final Route route =
-        route(
+        concat(
             pathSuffixTest(slash(), () -> complete("slashed")),
             complete("unslashed")
         );
@@ -247,9 +352,9 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   public void testRawPathPrefix() {
     //#raw-path-prefix
     final Route route =
-        route(
+        concat(
             pathPrefix("foo", () ->
-                route(
+                concat(
                       rawPathPrefix("bar", () -> completeWithUnmatchedPath.get()),
                       rawPathPrefix("doo", () -> completeWithUnmatchedPath.get())
                 )
@@ -265,7 +370,7 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   public void testRawPathPrefixTest() {
     //#raw-path-prefix-test
     final Route route =
-        route(
+        concat(
             pathPrefix("foo", () ->
                 rawPathPrefixTest("bar", () -> completeWithUnmatchedPath.get())
             )
@@ -282,7 +387,7 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
     final Route route =
         redirectToTrailingSlashIfMissing(
             StatusCodes.MOVED_PERMANENTLY, () ->
-            route(
+            concat(
                 path(segment("foo").slash(), () -> complete("OK")),
                 path(segment("bad-1"), () ->
                     // MISTAKE!
@@ -319,7 +424,7 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
     final Route route =
         redirectToNoTrailingSlashIfPresent(
             StatusCodes.MOVED_PERMANENTLY, () ->
-            route(
+            concat(
                 path("foo", () -> complete("OK")),
                 path(segment("bad").slash(), () ->
                     // MISTAKE!
@@ -351,7 +456,7 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   public void testIgnoreTrailingSlash() {
     //#ignoreTrailingSlash
     final Route route = ignoreTrailingSlash(() ->
-      route(
+      concat(
         path("foo", () ->
           // Thanks to `ignoreTrailingSlash` it will serve both `/foo` and `/foo/`.
           complete("OK")),

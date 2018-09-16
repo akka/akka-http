@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -256,6 +256,10 @@ class UriSpec extends WordSpec with Matchers {
       Path("/abc/def").endsWithSlash shouldBe false
       Path("/abc/def/").endsWithSlash shouldBe true
     }
+    "support the `?/` operator" in {
+      Path("abc") ?/ "def" shouldEqual Path("abc/def")
+      Path("abc/") ?/ "def" shouldEqual Path("abc/def")
+    }
     "support the `dropChars` modifier" in {
       Path./.dropChars(0) shouldEqual Path./
       Path./.dropChars(1) shouldEqual Empty
@@ -464,6 +468,9 @@ class UriSpec extends WordSpec with Matchers {
       Uri("tel:+1-816-555-1212") shouldEqual
         Uri.from(scheme = "tel", path = "+1-816-555-1212")
 
+      Uri("s3:image.png") shouldEqual
+        Uri.from(scheme = "s3", path = "image.png")
+
       Uri("telnet://192.0.2.16:80/") shouldEqual
         Uri.from(scheme = "telnet", host = "192.0.2.16", port = 80, path = "/")
 
@@ -496,7 +503,7 @@ class UriSpec extends WordSpec with Matchers {
 
       // empty host
       Uri("http://:8000/foo") shouldEqual Uri("http", Authority(Host.Empty, 8000), Path / "foo")
-      Uri("http://:80/foo") shouldEqual Uri("http", Authority(Host.Empty, 80), Path / "foo")
+      Uri("http://:80/foo") shouldEqual Uri("http", Authority(Host.Empty, 0), Path / "foo")
     }
 
     "properly complete a normalization cycle" in {
@@ -698,7 +705,7 @@ class UriSpec extends WordSpec with Matchers {
       val nonDefaultUri = Uri("http://host:6060/path?query#fragment")
 
       uri.withScheme("https") shouldEqual Uri("https://host/path?query#fragment")
-      explicitDefault.withScheme("https") shouldEqual Uri("https://host:80/path?query#fragment")
+      explicitDefault.withScheme("https") shouldEqual Uri("https://host/path?query#fragment")
       nonDefaultUri.withScheme("https") shouldEqual Uri("https://host:6060/path?query#fragment")
 
       uri.withAuthority(Authority(Host("other"), 3030)) shouldEqual Uri("http://other:3030/path?query#fragment")
@@ -745,7 +752,7 @@ class UriSpec extends WordSpec with Matchers {
 
     "properly render authority" in {
       Uri("http://localhost/test").authority.toString shouldEqual "localhost"
-      Uri("http://example.com:80/test").authority.toString shouldEqual "example.com:80"
+      Uri("http://example.com:80/test").authority.toString shouldEqual "example.com"
       Uri("ftp://host/").authority.toString shouldEqual "host"
       Uri("http://user@host").authority.toString shouldEqual "user@host"
       Uri("http://user:p%40ssword@host").authority.toString shouldEqual "user:p%40ssword@host"
@@ -762,8 +769,8 @@ class UriSpec extends WordSpec with Matchers {
     }
 
     "properly render as HTTP request target origin forms" in {
-      Uri("http://example.com/foo/bar?query=1#frag").toHttpRequestTargetOriginForm.toString === "/foo/bar?query=1"
-      Uri("http://example.com//foo/bar?query=1#frag").toHttpRequestTargetOriginForm.toString === "//foo/bar?query=1"
+      Uri("http://example.com/foo/bar?query=1#frag").toHttpRequestTargetOriginForm.toString shouldEqual "/foo/bar?query=1"
+      Uri("http://example.com//foo/bar?query=1#frag").toHttpRequestTargetOriginForm.toString shouldEqual "//foo/bar?query=1"
     }
 
     "survive parsing a URI with thousands of path segments" in {

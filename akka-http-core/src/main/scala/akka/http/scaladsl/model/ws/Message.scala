@@ -1,12 +1,18 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model.ws
 
-import akka.stream.javadsl
+import java.util.concurrent.CompletionStage
+
+import akka.stream.{ Materializer, javadsl }
 import akka.stream.scaladsl.Source
-import akka.util.ByteString
+import akka.util.{ ByteString, ByteStringBuilder }
+
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.compat.java8.FutureConverters._
 
 //#message-model
 /**
@@ -25,9 +31,24 @@ sealed trait TextMessage extends akka.http.javadsl.model.ws.TextMessage with Mes
    */
   def textStream: Source[String, _]
 
+  /**
+   * Collects all possible parts and returns a potentially future Strict Message for easier processing.
+   * The Future is failed with an TimeoutException if the stream isn't completed after the given timeout.
+   */
+  def toStrict(timeout: FiniteDuration)(implicit fm: Materializer): Future[TextMessage.Strict] =
+    this match {
+      case TextMessage.Strict(text) ⇒ Future.successful(TextMessage.Strict(text))
+      case TextMessage.Streamed(textStream) ⇒ textStream
+        .completionTimeout(timeout)
+        .runFold(StringBuilder.newBuilder)((b, s) ⇒ b.append(s))
+        .map(b ⇒ b.toString)(fm.executionContext)
+        .map(text ⇒ TextMessage.Strict(text))(fm.executionContext)
+    }
+
   /** Java API */
   override def getStreamedText: javadsl.Source[String, _] = textStream.asJava
   override def asScala: TextMessage = this
+  override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[TextMessage.Strict] = toStrict(timeoutMillis.millis)(materializer).toJava
 }
 //#message-model
 object TextMessage {
@@ -68,9 +89,24 @@ sealed trait BinaryMessage extends akka.http.javadsl.model.ws.BinaryMessage with
    */
   def dataStream: Source[ByteString, _]
 
+  /**
+   * Collects all possible parts and returns a potentially future Strict Message for easier processing.
+   * The Future is failed with an TimeoutException if the stream isn't completed after the given timeout.
+   */
+  def toStrict(timeout: FiniteDuration)(implicit fm: Materializer): Future[BinaryMessage.Strict] =
+    this match {
+      case BinaryMessage.Strict(binary) ⇒ Future.successful(BinaryMessage.Strict(binary))
+      case BinaryMessage.Streamed(binaryStream) ⇒ binaryStream
+        .completionTimeout(timeout)
+        .runFold(new ByteStringBuilder())((b, e) ⇒ b.append(e))
+        .map(b ⇒ b.result)(fm.executionContext)
+        .map(binary ⇒ BinaryMessage.Strict(binary))(fm.executionContext)
+    }
+
   /** Java API */
   override def getStreamedData: javadsl.Source[ByteString, _] = dataStream.asJava
   override def asScala: BinaryMessage = this
+  override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[BinaryMessage.Strict] = toStrict(timeoutMillis.millis)(materializer).toJava
 }
 //#message-model
 object BinaryMessage {

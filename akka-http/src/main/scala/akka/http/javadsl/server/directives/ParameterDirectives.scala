@@ -1,22 +1,20 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.javadsl.server.directives
 
-import java.util.{ Map ⇒ JMap, List ⇒ JList }
 import java.util.AbstractMap.SimpleImmutableEntry
-import java.util.Optional
 import java.util.function.{ Function ⇒ JFunction }
+import java.util.{ Optional, List ⇒ JList, Map ⇒ JMap }
 
+import akka.http.javadsl.server.Route
 import akka.http.javadsl.unmarshalling.Unmarshaller
+import akka.http.scaladsl.server.directives.ParameterDirectives._
+import akka.http.scaladsl.server.directives.{ ParameterDirectives ⇒ D }
 
 import scala.collection.JavaConverters._
 import scala.compat.java8.OptionConverters._
-
-import akka.http.javadsl.server.Route
-import akka.http.scaladsl.server.directives.{ ParameterDirectives ⇒ D }
-import akka.http.scaladsl.server.directives.ParameterDirectives._
-import akka.http.scaladsl.unmarshalling.PredefinedFromStringUnmarshallers._
 
 abstract class ParameterDirectives extends MiscDirectives {
 
@@ -30,6 +28,14 @@ abstract class ParameterDirectives extends MiscDirectives {
     D.parameter(name.?) { value ⇒
       inner.apply(value.asJava).delegate
     })
+
+  @CorrespondsTo("parameter")
+  def parameterRequiredValue[T](t: Unmarshaller[String, T], requiredValue: T, name: String, inner: java.util.function.Supplier[Route]): Route = {
+    import t.asScala
+    RouteAdapter(
+      D.parameter(name.as[T].!(requiredValue)) { inner.get.delegate }
+    )
+  }
 
   @CorrespondsTo("parameterSeq")
   def parameterList(name: String, inner: java.util.function.Function[java.util.List[String], Route]): Route = RouteAdapter(

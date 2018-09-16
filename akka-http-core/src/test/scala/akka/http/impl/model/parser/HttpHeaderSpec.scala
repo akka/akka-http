@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.model.parser
@@ -19,6 +19,7 @@ import HttpEncodings._
 import HttpMethods._
 import java.net.InetAddress
 
+import akka.http.scaladsl.model.MediaType.WithOpenCharset
 import org.scalatest.exceptions.TestFailedException
 
 class HttpHeaderSpec extends FreeSpec with Matchers {
@@ -137,6 +138,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Authorization: bAsIc QWxhZGRpbjpvcGVuIHNlc2FtZQ==" =!=
         Authorization(BasicHttpCredentials("Aladdin", "open sesame")).renderedTo(
           "Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==")
+      "Authorization: Fancy QWxhZGRpbjpvcGVuIHNlc2FtZQ==" =!=
+        Authorization(GenericHttpCredentials("Fancy", "QWxhZGRpbjpvcGVuIHNlc2FtZQ=="))
       """Authorization: Fancy yes="n:o", nonce=42""" =!=
         Authorization(GenericHttpCredentials("Fancy", Map("yes" → "n:o", "nonce" → "42"))).renderedTo(
           """Fancy yes="n:o",nonce=42""")
@@ -152,6 +155,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         Authorization(OAuth2BearerToken("mF_9.B5f-4.1JqM/"))
       "Authorization: NoParamScheme" =!=
         Authorization(GenericHttpCredentials("NoParamScheme", Map.empty[String, String]))
+      "Authorization: NoTokenScheme" =!=
+        Authorization(GenericHttpCredentials("NoTokenScheme", ""))
       "Authorization: QVFJQzV3TTJMWTRTZmN3Zk=" =!=
         ErrorInfo(
           "Illegal HTTP header 'Authorization': Invalid input '=', expected auth-param, OWS, token68, 'EOI' or tchar (line 1, column 23)",
@@ -397,11 +402,15 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     "Proxy-Authenticate" in {
       "Proxy-Authenticate: Basic realm=\"WallyWorld\",attr=\"val>ue\", Fancy realm=\"yeah\"" =!=
         `Proxy-Authenticate`(HttpChallenge("Basic", Some("WallyWorld"), Map("attr" → "val>ue")), HttpChallenge("Fancy", Some("yeah")))
+      """Proxy-Authenticate: NTLM TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg==""" =!=
+        `Proxy-Authenticate`(HttpChallenge("NTLM", None, Map("" → "TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg==")))
     }
 
     "Proxy-Authorization" in {
       """Proxy-Authorization: Fancy yes=no,nonce="4\\2"""" =!=
         `Proxy-Authorization`(GenericHttpCredentials("Fancy", Map("yes" → "no", "nonce" → """4\2""")))
+      "Proxy-Authorization: Fancy QWxhZGRpbjpvcGVuIHNlc2FtZQ==" =!=
+        `Proxy-Authorization`(GenericHttpCredentials("Fancy", "QWxhZGRpbjpvcGVuIHNlc2FtZQ=="))
     }
 
     "Referer" in {
@@ -596,6 +605,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         `WWW-Authenticate`(HttpChallenge("Basic", None, Map("attr" → "value")))
       """WWW-Authenticate: Fancy realm="Secure Area",nonce=42""" =!=
         `WWW-Authenticate`(HttpChallenge("Fancy", Some("Secure Area"), Map("nonce" → "42")))
+      """WWW-Authenticate: NTLM TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg==""" =!=
+        `WWW-Authenticate`(HttpChallenge("NTLM", None, Map("" → "TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg==")))
     }
 
     "X-Forwarded-For" in {
@@ -719,6 +730,25 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       val targetUri = Uri("http://example.org/?abc=def=ghi", Uri.ParsingMode.Relaxed)
       HttpHeader.parse("location", "http://example.org/?abc=def=ghi", HeaderParser.Settings(uriParsingMode = Uri.ParsingMode.Relaxed)) shouldEqual
         ParsingResult.Ok(Location(targetUri), Nil)
+    }
+    "parse content-type with custom media types" in {
+      // Override the application/json media type and give it an open instead of fixed charset.
+      // This allows us to support various third-party agents which use an explicit charset.
+      val openJson: WithOpenCharset = MediaType.customWithOpenCharset("application", "json")
+
+      def checkContentType(headerValue: String, contentType: ContentType) = {
+        val customMediaTypes: MediaTypes.FindCustom = {
+          case ("application", "json") ⇒ Some(openJson)
+          case _                       ⇒ None
+        }
+        val headerParserSettings = HeaderParser.Settings(customMediaTypes = customMediaTypes)
+        val header = `Content-Type`(contentType)
+        HttpHeader.parse("content-type", headerValue, headerParserSettings) shouldEqual ParsingResult.Ok(header, Nil)
+        header.toString shouldEqual s"Content-Type: $headerValue"
+      }
+
+      checkContentType("application/json", ContentType.WithMissingCharset(openJson))
+      checkContentType("application/json; charset=UTF-8", ContentType(openJson, HttpCharsets.`UTF-8`))
     }
   }
 

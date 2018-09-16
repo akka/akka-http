@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
 package directives
 
 import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
 import akka.http.scaladsl.common._
 import akka.http.impl.util._
@@ -110,7 +110,7 @@ object ParameterDirectives extends ParameterDirectives {
     type FSOU[T] = Unmarshaller[Option[String], T]
 
     private def extractParameter[A, B](f: A ⇒ Directive1[B]): ParamDefAux[A, Directive1[B]] = paramDef(f)
-    private def handleParamResult[T](paramName: String, result: Future[T])(implicit ec: ExecutionContext): Directive1[T] =
+    private def handleParamResult[T](paramName: String, result: Future[T]): Directive1[T] =
       onComplete(result).flatMap {
         case Success(x)                               ⇒ provide(x)
         case Failure(Unmarshaller.NoContentException) ⇒ reject(MissingQueryParamRejection(paramName))
@@ -153,7 +153,8 @@ object ParameterDirectives extends ParameterDirectives {
         import ctx.materializer
         onComplete(fsou(ctx.request.uri.query().get(paramName))) flatMap {
           case Success(value) if value == requiredValue ⇒ pass
-          case _                                        ⇒ reject
+          case Success(value)                           ⇒ reject(InvalidRequiredValueForQueryParamRejection(paramName, requiredValue.toString, value.toString))
+          case _                                        ⇒ reject(MissingQueryParamRejection(paramName))
         }
       }
     implicit def forRVR[T](implicit fsu: FSU[T]): ParamDefAux[RequiredValueReceptacle[T], Directive0] =

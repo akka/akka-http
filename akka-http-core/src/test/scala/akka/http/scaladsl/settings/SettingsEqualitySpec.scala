@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.settings
@@ -19,6 +19,7 @@ class SettingsEqualitySpec extends WordSpec with Matchers {
       range-coalescing-threshold = 80
       range-count-limit = 16
       decode-max-bytes-per-chunk = 1m
+      decode-max-size = 8m
       file-io-dispatcher = ${akka.stream.blocking-io-dispatcher}
     }
   """).withFallback(ConfigFactory.load).resolve

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.unmarshalling
@@ -19,11 +19,16 @@ import akka.http.impl.util._
 import akka.http.scaladsl.model.headers._
 import MediaTypes._
 import akka.testkit._
+import com.typesafe.config.ConfigFactory
 
-class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAfterAll with ScalatestUtils {
+trait MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAfterAll with ScalatestUtils {
   implicit val system = ActorSystem(getClass.getSimpleName)
   implicit val materializer = ActorMaterializer()
   import system.dispatcher
+
+  def lineFeed: String
+
+  override val testConfig = ConfigFactory.load()
 
   "The MultipartUnmarshallers." - {
 
@@ -32,7 +37,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
         val entity = HttpEntity(
           `multipart/mixed` withBoundary "XYZABC",
           ByteString("""--XYZABC
-                       |--XYZABC--""".stripMarginWithNewline("\r\n")))
+                       |--XYZABC--""".stripMarginWithNewline(lineFeed)))
         Unmarshal(entity).to[Multipart.General] should haveParts(
           Multipart.General.BodyPart.Strict(HttpEntity.empty(ContentTypes.`text/plain(UTF-8)`)))
       }
@@ -41,7 +46,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
           `multipart/mixed` withBoundary "XYZABC",
           ByteString("""--XYZABC
                        |--XYZABC
-                       |--XYZABC--""".stripMarginWithNewline("\r\n")))).to[Multipart.General] should haveParts(
+                       |--XYZABC--""".stripMarginWithNewline(lineFeed)))).to[Multipart.General] should haveParts(
           Multipart.General.BodyPart.Strict(HttpEntity.empty(ContentTypes.`text/plain(UTF-8)`)),
           Multipart.General.BodyPart.Strict(HttpEntity.empty(ContentTypes.`text/plain(UTF-8)`)))
       }
@@ -51,7 +56,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
           ByteString("""--XYZABC
                        |Content-type: text/xml; charset=UTF-8
                        |Age: 12
-                       |--XYZABC--""".stripMarginWithNewline("\r\n")))).to[Multipart.General] should haveParts(
+                       |--XYZABC--""".stripMarginWithNewline(lineFeed)))).to[Multipart.General] should haveParts(
           Multipart.General.BodyPart.Strict(HttpEntity.empty(ContentTypes.`text/xml(UTF-8)`), List(Age(12))))
       }
       "an implicitly typed part (without headers) (Strict)" in {
@@ -60,14 +65,14 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
           ByteString("""--XYZABC
                        |
                        |Perfectly fine part content.
-                       |--XYZABC--""".stripMarginWithNewline("\r\n")))).to[Multipart.General] should haveParts(
+                       |--XYZABC--""".stripMarginWithNewline(lineFeed)))).to[Multipart.General] should haveParts(
           Multipart.General.BodyPart.Strict(HttpEntity(ContentTypes.`text/plain(UTF-8)`, "Perfectly fine part content.")))
       }
       "an implicitly typed part (without headers) (Default)" in {
         val content = """--XYZABC
                         |
                         |Perfectly fine part content.
-                        |--XYZABC--""".stripMarginWithNewline("\r\n")
+                        |--XYZABC--""".stripMarginWithNewline(lineFeed)
         val byteStrings = content.map(c ⇒ ByteString(c.toString)) // one-char ByteStrings
         Unmarshal(HttpEntity.Default(`multipart/mixed` withBoundary "XYZABC", content.length, Source(byteStrings)))
           .to[Multipart.General] should haveParts(
@@ -81,7 +86,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
                        |content-disposition: form-data; name="email"
                        |
                        |test@there.com
-                       |-----""".stripMarginWithNewline("\r\n")))).to[Multipart.General] should haveParts(
+                       |-----""".stripMarginWithNewline(lineFeed)))).to[Multipart.General] should haveParts(
           Multipart.General.BodyPart.Strict(
             HttpEntity(ContentTypes.`text/plain(UTF-8)`, "test@there.com"),
             List(`Content-Disposition`(ContentDispositionTypes.`form-data`, Map("name" → "email")))))
@@ -98,8 +103,8 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
                        |Content-Transfer-Encoding: binary
                        |
                        |filecontent
-                       |--12345--""".stripMarginWithNewline("\r\n")))).to[Multipart.General] should haveParts(
-          Multipart.General.BodyPart.Strict(HttpEntity(ContentTypes.`text/plain(UTF-8)`, "first part, with a trailing newline\r\n")),
+                       |--12345--""".stripMarginWithNewline(lineFeed)))).to[Multipart.General] should haveParts(
+          Multipart.General.BodyPart.Strict(HttpEntity(ContentTypes.`text/plain(UTF-8)`, s"first part, with a trailing newline${lineFeed}")),
           Multipart.General.BodyPart.Strict(
             HttpEntity(`application/octet-stream`, ByteString("filecontent")),
             List(RawHeader("Content-Transfer-Encoding", "binary"))))
@@ -112,7 +117,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
                        |content-disposition: form-data; name=email
                        |
                        |test@there.com
-                       |--XYZABC--""".stripMarginWithNewline("\r\n")))).to[Multipart.General] should haveParts(
+                       |--XYZABC--""".stripMarginWithNewline(lineFeed)))).to[Multipart.General] should haveParts(
           Multipart.General.BodyPart.Strict(
             HttpEntity(ContentTypes.`text/plain(UTF-8)`, "test@there.com"),
             List(
@@ -132,7 +137,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
                        |second part, explicitly typed
                        |--12345--
                        |epilogue and
-                       |more epilogue""".stripMarginWithNewline("\r\n")))).to[Multipart.General] should haveParts(
+                       |more epilogue""".stripMarginWithNewline(lineFeed)))).to[Multipart.General] should haveParts(
           Multipart.General.BodyPart.Strict(HttpEntity(ContentTypes.`text/plain(UTF-8)`, "first part, implicitly typed")),
           Multipart.General.BodyPart.Strict(HttpEntity(`application/octet-stream`, ByteString("second part, explicitly typed"))))
       }
@@ -148,7 +153,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
                         |second part, explicitly typed
                         |--12345--
                         |epilogue and
-                        |more epilogue""".stripMarginWithNewline("\r\n")
+                        |more epilogue""".stripMarginWithNewline(lineFeed)
         val byteStrings = content.map(c ⇒ ByteString(c.toString)) // one-char ByteStrings
         Unmarshal(HttpEntity.Default(`multipart/mixed` withBoundary "12345", content.length, Source(byteStrings)))
           .to[Multipart.General] should haveParts(
@@ -159,7 +164,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
         Unmarshal(HttpEntity(
           `multipart/mixed` withBoundary "simple boundary",
           ByteString("""--simple boundary
-                       |--simple boundary--""".stripMarginWithNewline("\r\n")))).to[Multipart.General] should haveParts(
+                       |--simple boundary--""".stripMarginWithNewline(lineFeed)))).to[Multipart.General] should haveParts(
           Multipart.General.BodyPart.Strict(HttpEntity.empty(ContentTypes.`text/plain(UTF-8)`)))
       }
       "many small parts received in one go" in {
@@ -168,7 +173,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
           """--12345
             |
             |data
-            |""".stripMarginWithNewline("\r\n")
+            |""".stripMarginWithNewline(lineFeed)
 
         val manyParts = singlePart * num + "--12345--"
 
@@ -191,7 +196,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
         Await.result(Unmarshal(HttpEntity(
           `multipart/mixed` withBoundary "XYZABC",
           ByteString("""this is
-                       |just preamble text""".stripMarginWithNewline("\r\n"))))
+                       |just preamble text""".stripMarginWithNewline(lineFeed))))
           .to[Multipart.General].failed, 1.second.dilated).getMessage shouldEqual "Unexpected end of multipart entity"
       }
       "a stray boundary" in {
@@ -201,7 +206,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
                        |Content-type: text/plain; charset=UTF8
                        |--ABCContent-type: application/json
                        |content-disposition: form-data; name="email"
-                       |-----""".stripMarginWithNewline("\r\n"))))
+                       |-----""".stripMarginWithNewline(lineFeed))))
           .to[Multipart.General].failed, 1.second.dilated).getMessage shouldEqual "Illegal multipart boundary in message content"
       }
       "duplicate Content-Type header" in {
@@ -213,7 +218,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
                        |content-disposition: form-data; name="email"
                        |
                        |test@there.com
-                       |-----""".stripMarginWithNewline("\r\n"))))
+                       |-----""".stripMarginWithNewline(lineFeed))))
           .to[Multipart.General].failed, 1.second.dilated).getMessage shouldEqual
           "multipart part must not contain more than one Content-Type header"
       }
@@ -222,7 +227,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
           `multipart/form-data` withBoundary "-",
           ByteString("""---
                        |not good here
-                       |-----""".stripMarginWithNewline("\r\n"))))
+                       |-----""".stripMarginWithNewline(lineFeed))))
           .to[Multipart.General].failed, 1.second.dilated).getMessage shouldEqual "Illegal character ' ' in header name"
       }
       "a missing header-separating CRLF (in Default entity)" in {
@@ -231,7 +236,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
                         |ok
                         |---
                         |not ok
-                        |-----""".stripMarginWithNewline("\r\n")
+                        |-----""".stripMarginWithNewline(lineFeed)
         val byteStrings = content.map(c ⇒ ByteString(c.toString)) // one-char ByteStrings
         val contentType = `multipart/form-data` withBoundary "-"
         Await.result(Unmarshal(HttpEntity.Default(contentType, content.length, Source(byteStrings)))
@@ -265,7 +270,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
                      |Content-Type: text/plain; charset=UTF-8
                      |
                      |XYZ
-                     |--12345--""".stripMarginWithNewline("\r\n")))).to[Multipart.ByteRanges] should haveParts(
+                     |--12345--""".stripMarginWithNewline(lineFeed)))).to[Multipart.ByteRanges] should haveParts(
         Multipart.ByteRanges.BodyPart.Strict(ContentRange(0, 2, 26), HttpEntity(ContentTypes.`text/plain(UTF-8)`, "ABC")),
         Multipart.ByteRanges.BodyPart.Strict(ContentRange(23, 25, 26), HttpEntity(ContentTypes.`text/plain(UTF-8)`, "XYZ")))
     }
@@ -278,7 +283,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
                        |content-disposition: form-data; name=email
                        |
                        |test@there.com
-                       |--XYZABC--""".stripMarginWithNewline("\r\n")))).to[Multipart.FormData] should haveParts(
+                       |--XYZABC--""".stripMarginWithNewline(lineFeed)))).to[Multipart.FormData] should haveParts(
           Multipart.FormData.BodyPart.Strict("email", HttpEntity(ContentTypes.`text/plain(UTF-8)`, "test@there.com")))
       }
       "with one element" in {
@@ -289,7 +294,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
                        |Content-Type: application/octet-stream
                        |
                        |test@there.com
-                       |--XYZABC--""".stripMarginWithNewline("\r\n")))).to[Multipart.FormData] should haveParts(
+                       |--XYZABC--""".stripMarginWithNewline(lineFeed)))).to[Multipart.FormData] should haveParts(
           Multipart.FormData.BodyPart.Strict("email", HttpEntity(`application/octet-stream`, ByteString("test@there.com"))))
       }
       "with one element and name value in quotes" in {
@@ -300,7 +305,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
             |Content-Type: application/octet-stream
             |
             |test@there.com
-            |--XYZABC--""".stripMarginWithNewline("\r\n")))).to[Multipart.FormData] should haveParts(
+            |--XYZABC--""".stripMarginWithNewline(lineFeed)))).to[Multipart.FormData] should haveParts(
           Multipart.FormData.BodyPart.Strict("email", HttpEntity(`application/octet-stream`, ByteString("test@there.com"))))
       }
       "with a file" in {
@@ -317,7 +322,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
                     |
                     |test@there.com
                     |--XYZABC
-                    |Content-Dispo""".stripMarginWithNewline("\r\n")
+                    |Content-Dispo""".stripMarginWithNewline(lineFeed)
                 },
                 ByteString {
                   """sition: form-data; name="userfile"; filename="test€.dat"
@@ -327,7 +332,7 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
                     |Content-Additional-2: really-anything
                     |
                     |filecontent
-                    |--XYZABC--""".stripMarginWithNewline("\r\n")
+                    |--XYZABC--""".stripMarginWithNewline(lineFeed)
                 })
             })
         }.to[Multipart.FormData].flatMap(_.toStrict(1.second.dilated)) should haveParts(
@@ -370,4 +375,12 @@ class MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
         }
         .fast.recover { case _: NoSuchElementException ⇒ Nil }, 1.second.dilated)
     }
+}
+
+class MultipartUnmarshallersSpecCRLF extends MultipartUnmarshallersSpec {
+  override def lineFeed = "\r\n"
+}
+
+class MultipartUnmarshallersSpecLF extends MultipartUnmarshallersSpec {
+  override def lineFeed = "\n"
 }

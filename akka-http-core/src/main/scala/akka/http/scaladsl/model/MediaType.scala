@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -56,7 +56,7 @@ sealed abstract class MediaType extends jm.MediaType with LazyValueBytesRenderab
       case _            ⇒ false
     }
 
-  override def hashCode(): Int = value.hashCode
+  override def hashCode(): Int = value.toLowerCase.hashCode
 
   /**
    * JAVA API
@@ -286,6 +286,8 @@ object MediaType {
 }
 
 object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
+
+  /** Function used to find a custom media type. Called before the predefined media types. Strings will be lowercase. */
   type FindCustom = (String, String) ⇒ Option[MediaType]
 
   private[this] var extensionMap = Map.empty[String, MediaType]
@@ -334,6 +336,8 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   val `application/javascript`                                                    = awoc("javascript", "js")
   val `application/json`                                                          = awfc("json", HttpCharsets.`UTF-8`, "json")
   val `application/json-patch+json`                                               = awfc("json-patch+json", HttpCharsets.`UTF-8`)
+  val `application/merge-patch+json`                                              = awfc("merge-patch+json", HttpCharsets.`UTF-8`)
+  val `application/grpc+proto`                                                    = abin("grpc+proto", NotCompressible)
   val `application/lha`                                                           = abin("lha", NotCompressible, "lha")
   val `application/lzx`                                                           = abin("lzx", NotCompressible, "lzx")
   val `application/mspowerpoint`                                                  = abin("mspowerpoint", NotCompressible, "pot", "pps", "ppt", "ppz")

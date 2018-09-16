@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
@@ -18,6 +18,15 @@ class PathDirectivesExamplesSpec extends RoutingSpec {
   //#path-dsl
   // matches /foo/
   path("foo"./)
+
+  // matches /foo/bar
+  path("foo" / "bar")
+
+  // NOTE: matches /foo%2Fbar and doesn't match /foo/bar
+  path("foo/bar")
+
+  // matches /foo/bar
+  path(separateOnSlashes("foo/bar"))
 
   // matches e.g. /foo/123 and extracts "123" as a String
   path("foo" / """\d+""".r)

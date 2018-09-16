@@ -1,10 +1,11 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.framing.{ Http2FrameParsing, Http2FrameRendering }
 import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompression }
@@ -18,16 +19,30 @@ import akka.util.ByteString
 
 import scala.concurrent.{ ExecutionContext, Future }
 
+import FrameEvent._
+
 /**
  * Represents one direction of an Http2 substream.
  */
-private[http2] final case class Http2SubStream(
-  initialHeaders: ParsedHeadersFrame,
-  data:           Source[ByteString, Any]) {
+private[http2] sealed trait Http2SubStream {
+  val initialHeaders: ParsedHeadersFrame
+  val data: Source[Any, Any]
   def streamId: Int = initialHeaders.streamId
 }
 
-object Http2Blueprint {
+private[http2] final case class ByteHttp2SubStream(
+  initialHeaders: ParsedHeadersFrame,
+  data:           Source[ByteString, Any]
+) extends Http2SubStream
+
+private[http2] final case class ChunkedHttp2SubStream(
+  initialHeaders: ParsedHeadersFrame,
+  data:           Source[HttpEntity.ChunkStreamPart, Any]
+) extends Http2SubStream
+
+/** INTERNAL API */
+@InternalApi
+private[http] object Http2Blueprint {
   
   // format: OFF
   def serverStack(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =

@@ -1,16 +1,11 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.model;
 
-import akka.Done;
 import akka.http.impl.util.JavaAccessors;
 import akka.http.javadsl.model.headers.HttpEncoding;
-import akka.stream.Materializer;
-import akka.stream.javadsl.Sink;
-
-import java.util.concurrent.CompletionStage;
 
 /**
  * Represents an Http response.

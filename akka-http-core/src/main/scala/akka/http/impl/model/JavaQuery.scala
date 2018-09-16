@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.model
@@ -22,7 +22,7 @@ import akka.http.impl.util.JavaMapping.Implicits._
 
 /** INTERNAL API */
 @InternalApi
-final case class JavaQuery(query: sm.Uri.Query) extends jm.Query {
+final private[http] case class JavaQuery(query: sm.Uri.Query) extends jm.Query {
   override def get(key: String): Optional[String] = query.get(key).asJava
   override def toMap: ju.Map[String, String] = query.toMap.asJava
   override def toList: ju.List[Pair[String, String]] = query.map(_.asJava).asJava

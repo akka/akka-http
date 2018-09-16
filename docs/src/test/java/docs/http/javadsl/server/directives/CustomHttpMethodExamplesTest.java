@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.http.javadsl.server.directives;
 
 import akka.NotUsed;
@@ -28,6 +29,12 @@ import java.util.concurrent.TimeoutException;
 import static akka.http.javadsl.model.HttpProtocols.HTTP_1_1;
 import static akka.http.javadsl.model.RequestEntityAcceptances.Expected;
 
+//#customHttpMethod
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.route;
+import static akka.http.javadsl.server.Directives.extractMethod;
+
+//#customHttpMethod
 public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
 
   @Test
@@ -51,7 +58,7 @@ public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
     final ServerSettings serverSettings =
       ServerSettings.create(system).withParserSettings(parserSettings);
 
-    final Route routes = route(
+    final Route routes = concat(
       extractMethod( method ->
         complete( "This is a " + method.name() + " request.")
       )

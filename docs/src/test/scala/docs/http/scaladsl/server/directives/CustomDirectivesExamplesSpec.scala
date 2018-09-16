@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model.StatusCodes._
@@ -37,7 +38,7 @@ class CustomDirectivesExamplesSpec extends RoutingSpec {
 
     // tests:
     Get("/?text=abcdefg") ~> lengthDirective(x => complete(x.toString)) ~> check {
-      responseAs[String] === "7"
+      responseAs[String] shouldEqual "7"
     }
     //#map-0
   }
@@ -54,7 +55,7 @@ class CustomDirectivesExamplesSpec extends RoutingSpec {
 
     // tests:
     Get("/?a=2&b=5") ~> myDirective(x => complete(x)) ~> check {
-      responseAs[String] === "7"
+      responseAs[String] shouldEqual "7"
     }
     //#tmap-1
   }
@@ -71,10 +72,10 @@ class CustomDirectivesExamplesSpec extends RoutingSpec {
 
     // tests:
     Get("/?a=21") ~> myDirective(i => complete(i.toString)) ~> check {
-      responseAs[String] === "42"
+      responseAs[String] shouldEqual "42"
     }
     Get("/?a=-18") ~> myDirective(i => complete(i.toString)) ~> check {
-      handled === false
+      handled shouldEqual false
     }
     //#flatMap-0
   }
@@ -92,8 +93,8 @@ class CustomDirectivesExamplesSpec extends RoutingSpec {
     }
 
     Get() ~> Host("akka.io", 8080) ~> route ~> check {
-      status === OK
-      responseAs[String] === "The hostname is akka.io and the port is 8080"
+      status shouldEqual OK
+      responseAs[String] shouldEqual "The hostname is akka.io and the port is 8080"
     }
     //#scratch-1
   }
@@ -113,8 +114,8 @@ class CustomDirectivesExamplesSpec extends RoutingSpec {
     }
 
     Get() ~> Host("akka.io", 8080) ~> route ~> check {
-      status === OK
-      responseAs[String] === "The hostname is akka.io and the port is 8080"
+      status shouldEqual OK
+      responseAs[String] shouldEqual "The hostname is akka.io and the port is 8080"
     }
     //#scratch-2
   }

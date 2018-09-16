@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.model;
@@ -171,6 +171,12 @@ public abstract class Uri {
    */
   public abstract String getPathString();
 
+  /**
+   * Returns the Scala DSL representation of this Uri.
+   */
+  public abstract akka.http.scaladsl.model.Uri asScala();
+
+
   public static final akka.http.scaladsl.model.Uri.ParsingMode STRICT = UriJavaAccessor.pmStrict();
   public static final akka.http.scaladsl.model.Uri.ParsingMode RELAXED = UriJavaAccessor.pmRelaxed();
 
@@ -184,6 +190,13 @@ public abstract class Uri {
    */
   public static Uri create(String uri) {
     return new JavaUri(akka.http.scaladsl.model.Uri.apply(uri));
+  }
+
+  /**
+   * Returns the Java DSL representation of a Scala DSL Uri.
+   */
+  public static Uri create(akka.http.scaladsl.model.Uri uri) {
+    return new JavaUri(uri);
   }
 
   /**

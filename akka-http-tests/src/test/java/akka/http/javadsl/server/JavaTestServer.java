@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.javadsl.server;
 
 import akka.NotUsed;
@@ -13,6 +14,7 @@ import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.model.StatusCodes;
+import akka.http.javadsl.server.directives.SecurityDirectives.ProvidedCredentials;
 import akka.http.javadsl.unmarshalling.StringUnmarshallers;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.stream.ActorMaterializer;
@@ -20,13 +22,14 @@ import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import scala.concurrent.duration.Duration;
-import scala.runtime.BoxedUnit;
 
 import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.function.Function;
 
-public class JavaTestServer extends AllDirectives { // or import static Directives.*;
+import static akka.http.javadsl.server.Directives.*;
+
+public class JavaTestServer {
 
   public Route createRoute() {
     final Duration timeout = Duration.create(1, TimeUnit.SECONDS);
@@ -153,7 +156,7 @@ public class JavaTestServer extends AllDirectives { // or import static Directiv
     return binding.thenAccept(b -> {
       System.out.println(String.format("Unbinding from %s", b.localAddress()));
 
-      final CompletionStage<BoxedUnit> unbound = b.unbind();
+      final CompletionStage<?> unbound = b.unbind();
       try {
         unbound.toCompletableFuture().get(3, TimeUnit.SECONDS); // block...
       } catch (TimeoutException | InterruptedException | ExecutionException e) {

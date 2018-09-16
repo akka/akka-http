@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.http.javadsl.server.directives;
 
 import akka.http.javadsl.model.HttpRequest;
@@ -25,6 +26,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+
+//#withRangeSupport
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.withRangeSupport;
+
+//#withRangeSupport
 
 public class RangeDirectivesExamplesTest extends JUnitRouteTest {
     @Override

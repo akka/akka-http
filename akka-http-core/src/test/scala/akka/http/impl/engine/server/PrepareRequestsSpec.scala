@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.impl.engine.server
 
 import akka.http.impl.engine.parsing.ParserOutput
@@ -28,7 +29,7 @@ class PrepareRequestsSpec extends AkkaSpec {
           case EntityChunk(chunk)      ⇒ chunk
           case EntityStreamError(info) ⇒ throw EntityStreamException(info)
         }
-        HttpEntity.Chunked(ContentTypes.`application/octet-stream`, HttpEntity.limitableChunkSource(chunks))
+        HttpEntity.Chunked(ContentTypes.`application/octet-stream`, chunks)
       },
       expect100Continue = true,
       closeRequested = false)
@@ -93,7 +94,7 @@ class PrepareRequestsSpec extends AkkaSpec {
       inSub.expectRequest(1)
 
       // bug would fail stream here with exception
-      upstreamProbe.expectNoMsg(100.millis.dilated)
+      upstreamProbe.expectNoMessage(100.millis)
 
       inSub.sendNext(ParserOutput.EntityChunk(HttpEntity.ChunkStreamPart(ByteString("abc"))))
       entityProbe.expectNext()

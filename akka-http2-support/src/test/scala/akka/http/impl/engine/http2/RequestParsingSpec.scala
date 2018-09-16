@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -15,6 +15,8 @@ import akka.testkit.AkkaSpec
 import akka.util.ByteString
 import org.scalatest.{ Inside, Inspectors }
 
+import FrameEvent._
+
 class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
 
   "RequestParsing" should {
@@ -27,7 +29,7 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
       uriParsingMode: Uri.ParsingMode         = Uri.ParsingMode.Relaxed
     ): HttpRequest = {
       // Stream containing the request
-      val subStream = Http2SubStream(
+      val subStream = ByteHttp2SubStream(
         initialHeaders = ParsedHeadersFrame(
           streamId = 1,
           endStream = true,

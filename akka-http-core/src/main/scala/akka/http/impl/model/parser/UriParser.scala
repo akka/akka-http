@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.model.parser
@@ -98,13 +98,21 @@ private[http] final class UriParser(
     case _                      ⇒ `relaxed-fragment-char`
   }
 
-  var _scheme = ""
-  var _userinfo = ""
-  var _host: Host = Host.Empty
-  var _port: Int = 0
-  var _path: Path = Path.Empty
-  var _rawQueryString: Option[String] = None
-  var _fragment: Option[String] = None
+  private[this] var _scheme = ""
+  private[this] var _userinfo = ""
+  private[this] var _host: Host = Host.Empty
+  private[this] var _port: Int = 0
+  private[this] var _path: Path = Path.Empty
+  private[this] var _rawQueryString: Option[String] = None
+  private[this] var _fragment: Option[String] = None
+
+  private[this] def setScheme(scheme: String): Unit = _scheme = scheme
+  private[this] def setUserInfo(userinfo: String): Unit = _userinfo = userinfo
+  private[this] def setHost(host: Host): Unit = _host = host
+  private[this] def setPort(port: Int): Unit = _port = port
+  private[this] def setPath(path: Path): Unit = _path = path
+  private[this] def setRawQueryString(rawQueryString: String): Unit = _rawQueryString = Some(rawQueryString)
+  private[this] def setFragment(fragment: String): Unit = _fragment = Some(fragment)
 
   // http://tools.ietf.org/html/rfc3986#appendix-A
 
@@ -133,15 +141,15 @@ private[http] final class UriParser(
       | `path-empty`)
 
   def scheme = rule(
-    'h' ~ 't' ~ 't' ~ 'p' ~ (&(':') ~ run(_scheme = "http") | 's' ~ &(':') ~ run(_scheme = "https"))
-      | clearSB() ~ ALPHA ~ appendLowered() ~ zeroOrMore(`scheme-char` ~ appendLowered()) ~ &(':') ~ run(_scheme = sb.toString))
+    'h' ~ 't' ~ 't' ~ 'p' ~ (&(':') ~ run(setScheme("http")) | 's' ~ &(':') ~ run(setScheme("https")))
+      | clearSB() ~ ALPHA ~ appendLowered() ~ zeroOrMore(`scheme-char` ~ appendLowered()) ~ &(':') ~ run(setScheme(sb.toString)))
 
-  def `scheme-pushed` = rule { oneOrMore(`scheme-char` ~ appendLowered()) ~ run(_scheme = sb.toString) ~ push(_scheme) }
+  def `scheme-pushed` = rule { oneOrMore(`scheme-char` ~ appendLowered()) ~ run(setScheme(sb.toString)) ~ push(_scheme) }
 
   def authority = rule { optional(userinfo) ~ hostAndPort }
 
   def userinfo = rule {
-    clearSBForDecoding() ~ zeroOrMore(`userinfo-char` ~ appendSB() | `pct-encoded`) ~ '@' ~ run(_userinfo = getDecodedString())
+    clearSBForDecoding() ~ zeroOrMore(`userinfo-char` ~ appendSB() | `pct-encoded`) ~ '@' ~ run(setUserInfo(getDecodedString()))
   }
 
   def hostAndPort = rule { host ~ optional(':' ~ port) }
@@ -154,22 +162,22 @@ private[http] final class UriParser(
   def relaxedHost = rule { `IP-literal` | ipv6Host | ipv4Host | `reg-name` }
 
   def port = rule {
-    DIGIT ~ run(_port = lastChar - '0') ~ optional(
-      DIGIT ~ run(_port = 10 * _port + lastChar - '0') ~ optional(
-        DIGIT ~ run(_port = 10 * _port + lastChar - '0') ~ optional(
-          DIGIT ~ run(_port = 10 * _port + lastChar - '0') ~ optional(
-            DIGIT ~ run(_port = 10 * _port + lastChar - '0')))))
+    DIGIT ~ run(setPort(lastChar - '0')) ~ optional(
+      DIGIT ~ run(setPort(10 * _port + lastChar - '0')) ~ optional(
+        DIGIT ~ run(setPort(10 * _port + lastChar - '0')) ~ optional(
+          DIGIT ~ run(setPort(10 * _port + lastChar - '0')) ~ optional(
+            DIGIT ~ run(setPort(10 * _port + lastChar - '0'))))))
   }
 
   def `IP-literal` = rule { '[' ~ ipv6Host ~ ']' } // IPvFuture not currently recognized
 
   def ipv4Host = rule { capture(`ip-v4-address`) ~ &(colonSlashEOI) ~> ((b, a) ⇒ _host = IPv4Host(b, a)) }
-  def ipv6Host = rule { capture(`ip-v6-address`) ~> ((b, a) ⇒ _host = IPv6Host(b, a)) }
+  def ipv6Host = rule { capture(`ip-v6-address`) ~> ((b, a) ⇒ setHost(IPv6Host(b, a))) }
 
   def `reg-name` = rule(
     clearSBForDecoding() ~ oneOrMore(`lower-reg-name-char` ~ appendSB() | UPPER_ALPHA ~ appendLowered() | `pct-encoded`) ~
-      run(_host = NamedHost(getDecodedStringAndLowerIfEncoded(UTF8)))
-      | run(_host = Host.Empty))
+      run(setHost(NamedHost(getDecodedStringAndLowerIfEncoded(UTF8))))
+      | run(setHost(Host.Empty)))
 
   def `path-abempty` = rule { clearSB() ~ slashSegments ~ savePath() }
   def `path-absolute` = rule { clearSB() ~ '/' ~ appendSB('/') ~ optional(`segment-nz` ~ slashSegments) ~ savePath() }
@@ -186,7 +194,7 @@ private[http] final class UriParser(
   def pchar = rule { `path-segment-char` ~ appendSB() | `pct-encoded` }
 
   def rawQueryString = rule {
-    clearSB() ~ oneOrMore(`raw-query-char` ~ appendSB()) ~ run(_rawQueryString = Some(sb.toString)) | run(_rawQueryString = Some(""))
+    clearSB() ~ oneOrMore(`raw-query-char` ~ appendSB()) ~ run(setRawQueryString(sb.toString)) | run(setRawQueryString(""))
   }
 
   // http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1
@@ -227,8 +235,8 @@ private[http] final class UriParser(
   }
 
   def fragment = rule(
-    clearSBForDecoding() ~ oneOrMore(`fragment-char` ~ appendSB() | `pct-encoded`) ~ run(_fragment = Some(getDecodedString()))
-      | run(_fragment = Some("")))
+    clearSBForDecoding() ~ oneOrMore(`fragment-char` ~ appendSB() | `pct-encoded`) ~ run(setFragment(getDecodedString()))
+      | run(setFragment("")))
 
   def `pct-encoded` = rule {
     '%' ~ HEXDIG ~ HEXDIG ~ run {
@@ -287,7 +295,7 @@ private[http] final class UriParser(
 
   private def appendLowered(): Rule0 = rule { run(sb.append(CharUtils.toLowerCase(lastChar))) }
 
-  private def savePath() = rule { run(_path = Path(sb.toString, uriParsingCharset)) }
+  private def savePath() = rule { run(setPath(Path(sb.toString, uriParsingCharset))) }
 
   private[this] var firstPercentIx = -1
 
@@ -301,7 +309,7 @@ private[http] final class UriParser(
 
   private def createUriReference(): Uri = {
     val path = if (_scheme.isEmpty) _path else collapseDotSegments(_path)
-    create(_scheme, _userinfo, _host, _port, path, _rawQueryString, _fragment)
+    create(_scheme, _userinfo, _host, normalizePort(_port, _scheme), path, _rawQueryString, _fragment)
   }
 }
 

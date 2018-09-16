@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.util
@@ -18,7 +18,7 @@ import akka.http.scaladsl.model
  *  Accessors for constructors with default arguments to be used from the Java implementation
  */
 @InternalApi
-object JavaAccessors {
+private[http] object JavaAccessors {
   /** INTERNAL API */
   def HttpRequest(): HttpRequest = model.HttpRequest()
 

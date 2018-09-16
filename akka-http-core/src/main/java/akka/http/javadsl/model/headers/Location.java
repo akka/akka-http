@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.model.headers;
@@ -14,7 +14,7 @@ public abstract class Location extends akka.http.scaladsl.model.HttpHeader {
     public abstract Uri getUri();
 
     public static Location create(Uri uri) {
-        return new akka.http.scaladsl.model.headers.Location(akka.http.impl.util.Util.convertUriToScala(uri));
+        return new akka.http.scaladsl.model.headers.Location(uri.asScala());
     }
     public static Location create(String uri) {
         return create(Uri.create(uri));

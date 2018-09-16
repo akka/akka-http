@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.http.javadsl.server;
 
 import akka.Done;
@@ -28,6 +29,22 @@ import java.util.concurrent.CompletionStage;
 
 import static akka.http.javadsl.server.PathMatchers.longSegment;
 import static akka.http.javadsl.server.PathMatchers.segment;
+
+//#simple-upload
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.entity;
+import static akka.http.javadsl.server.Directives.onSuccess;
+import static akka.http.javadsl.server.Directives.path;
+
+//#simple-upload
+
+//#stream-csv-upload
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.entity;
+import static akka.http.javadsl.server.Directives.onComplete;
+import static akka.http.javadsl.server.Directives.path;
+
+//#stream-csv-upload
 
 public class FileUploadExamplesTest extends JUnitRouteTest {
 
@@ -76,7 +93,7 @@ public class FileUploadExamplesTest extends JUnitRouteTest {
           ));
 
         // when processing have finished create a response for the user
-        return onSuccess(() -> allParts, x -> complete("ok!"));
+        return onSuccess(allParts, x -> complete("ok!"));
       })
     );
     //#simple-upload

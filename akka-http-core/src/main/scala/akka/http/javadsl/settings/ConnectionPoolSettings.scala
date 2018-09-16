@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.javadsl.settings
 
 import akka.actor.ActorSystem
@@ -39,7 +40,11 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   @ApiMayChange
   def getResponseEntitySubscriptionTimeout: Duration = responseEntitySubscriptionTimeout
 
-  /** The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used. */
+  /**
+   * The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used.
+   */
+  @deprecated("Deprecated in favor of getConnectionSettings.getTransport.", "10.1.0")
+  @Deprecated
   def getTransport: ClientTransport = transport.asJava
 
   // ---
@@ -58,7 +63,7 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   @ApiMayChange
   def withResponseEntitySubscriptionTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(responseEntitySubscriptionTimeout = newValue)
 
-  def withTransport(newValue: ClientTransport): ConnectionPoolSettings = self.copy(transport = newValue.asScala)
+  def withTransport(newValue: ClientTransport): ConnectionPoolSettings = withUpdatedConnectionSettings(_.withTransport(newValue.asScala))
 }
 
 object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] {

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -22,6 +22,7 @@ import akka.http.impl.util._
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.HttpProtocols._
+import akka.http.scaladsl.model.MediaType.{ WithFixedCharset, WithOpenCharset }
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.model.RequestEntityAcceptance.Expected
 import akka.http.scaladsl.model.StatusCodes._
@@ -37,7 +38,7 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
     akka.loglevel = WARNING
     akka.http.parsing.max-header-value-length = 32
     akka.http.parsing.max-uri-length = 40
-    akka.http.parsing.max-content-length = 4000000000""")
+    akka.http.parsing.max-content-length = infinite""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
 
@@ -255,6 +256,16 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
+      "with incorrect but harmless whitespace after chunk size" in new Test {
+        Seq(
+          start,
+          """|0\u0020\u0020
+             |
+             |""") should generalMultiParseTo(
+            Right(baseRequest.withEntity(Chunked(`application/pdf`, source(LastChunk)))))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
       "message end with extension and trailer" in new Test {
         Seq(
           start,
@@ -277,7 +288,6 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
         val oneChunk = s"1${newLine}z\n"
         val manyChunks = (oneChunk * numChunks) + s"0${newLine}"
 
-        val parser = newParser
         val result = multiParse(newParser)(Seq(prep(start + manyChunks)))
         val HttpEntity.Chunked(_, chunks) = result.head.right.get.req.entity
         val strictChunks = chunks.limit(100000).runWith(Sink.seq).awaitResult(awaitAtMost)
@@ -317,6 +327,96 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
           HttpEntity.empty(`application/pdf`)))
     }
 
+    "support custom media type parsing" in new Test {
+      val `application/custom`: WithFixedCharset =
+        MediaType.customWithFixedCharset("application", "custom", HttpCharsets.`UTF-8`)
+
+      override protected def parserSettings: ParserSettings =
+        super.parserSettings.withCustomMediaTypes(`application/custom`)
+
+      """POST / HTTP/1.1
+        |Host: ping
+        |Content-Type: application/custom
+        |Content-Length: 0
+        |
+        |""" should parseTo(
+        HttpRequest(
+          POST,
+          "/",
+          List(Host("ping")),
+          HttpEntity.empty(`application/custom`)))
+
+      """POST / HTTP/1.1
+        |Host: ping
+        |Content-Type: application/json
+        |Content-Length: 3
+        |
+        |123""" should parseTo(
+        HttpRequest(
+          POST,
+          "/",
+          List(Host("ping")),
+          HttpEntity(ContentTypes.`application/json`, "123")))
+
+      """POST / HTTP/1.1
+        |Host: ping
+        |Content-Type: text/plain; charset=UTF-8
+        |Content-Length: 8
+        |
+        |abcdefgh""" should parseTo(
+        HttpRequest(
+          POST,
+          "/",
+          List(Host("ping")),
+          HttpEntity(ContentTypes.`text/plain(UTF-8)`, "abcdefgh")))
+    }
+
+    "support custom media types that override existing media types" in new Test {
+      // Override the application/json media type and give it an open instead of fixed charset.
+      // This allows us to support various third-party agents which use an explicit charset.
+      val openJson: WithOpenCharset =
+        MediaType.customWithOpenCharset("application", "json")
+
+      override protected def parserSettings: ParserSettings =
+        super.parserSettings.withCustomMediaTypes(openJson).withMaxHeaderValueLength(64)
+
+      """POST /abc HTTP/1.1
+        |Host: ping
+        |Content-Type: application/json
+        |Content-Length: 0
+        |
+        |""" should parseTo(
+        HttpRequest(
+          POST,
+          "/abc",
+          List(Host("ping")),
+          HttpEntity.empty(ContentType.WithMissingCharset(openJson))))
+
+      """POST /def HTTP/1.1
+        |Host: ping
+        |Content-Type: application/json; charset=utf-8
+        |Content-Length: 3
+        |
+        |123""" should parseTo(
+        HttpRequest(
+          POST,
+          "/def",
+          List(Host("ping")),
+          HttpEntity(ContentType(openJson, HttpCharsets.`UTF-8`), "123")))
+
+      """POST /ghi HTTP/1.1
+        |Host: ping
+        |Content-Type: application/json; charset=us-ascii
+        |Content-Length: 8
+        |
+        |abcdefgh""" should parseTo(
+        HttpRequest(
+          POST,
+          "/ghi",
+          List(Host("ping")),
+          HttpEntity(ContentType(openJson, HttpCharsets.`US-ASCII`), "abcdefgh")))
+    }
+
     "reject a message chunk with" - {
       val start =
         """PATCH /data HTTP/1.1
@@ -331,10 +431,10 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
       "an illegal char after chunk size" in new Test {
         Seq(
           start,
-          """15 ;
+          """15_;
             |""") should generalMultiParseTo(
             Right(baseRequest),
-            Left(EntityStreamError(ErrorInfo("Illegal character ' ' in chunk start"))))
+            Left(EntityStreamError(ErrorInfo("Illegal character '_' in chunk start"))))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
@@ -429,13 +529,13 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
       "with a too-long header name" in new Test {
         """|GET / HTTP/1.1
           |UserxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxAgent: curl/7.19.7""" should parseToError(
-          BadRequest, ErrorInfo("HTTP header name exceeds the configured limit of 64 characters"))
+          RequestHeaderFieldsTooLarge, ErrorInfo("HTTP header name exceeds the configured limit of 64 characters"))
       }
 
       "with a too-long header-value" in new Test {
         """|GET / HTTP/1.1
           |Fancy: 123456789012345678901234567890123""" should parseToError(
-          BadRequest,
+          RequestHeaderFieldsTooLarge,
           ErrorInfo("HTTP header value exceeds the configured limit of 32 characters"))
       }
 

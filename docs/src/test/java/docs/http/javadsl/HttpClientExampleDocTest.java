@@ -1,18 +1,18 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl;
 
 import akka.Done;
 import akka.actor.*;
-import akka.http.javadsl.model.headers.BasicHttpCredentials;
 import akka.http.javadsl.model.headers.HttpCredentials;
-import akka.stream.Materializer;
+import akka.http.javadsl.model.headers.SetCookie;
 import akka.util.ByteString;
 import scala.concurrent.ExecutionContextExecutor;
 import akka.stream.javadsl.*;
 import akka.http.javadsl.ClientTransport;
+import akka.http.javadsl.settings.ClientConnectionSettings;
 import akka.http.javadsl.settings.ConnectionPoolSettings;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.OutgoingConnection;
@@ -33,11 +33,26 @@ import akka.http.javadsl.model.*;
 import scala.concurrent.duration.FiniteDuration;
 //#manual-entity-consume-example-1
 
+//#single-request-in-actor-example
+import akka.actor.AbstractActor;
+import akka.http.javadsl.Http;
+import akka.http.javadsl.model.HttpRequest;
+import akka.http.javadsl.model.HttpResponse;
+import akka.stream.ActorMaterializer;
+import akka.stream.Materializer;
+import scala.concurrent.ExecutionContextExecutor;
+
+import java.util.concurrent.CompletionStage;
+
+import static akka.pattern.PatternsCS.pipe;
+
+//#single-request-in-actor-example
+
 @SuppressWarnings("unused")
 public class HttpClientExampleDocTest {
 
   static HttpResponse responseFromSomewhere() {
-    return null;
+    return HttpResponse.create();
   }
 
   void manualEntityComsumeExample() {
@@ -58,6 +73,7 @@ public class HttpClientExampleDocTest {
       .map(transformEachLine::apply)
       .runWith(FileIO.toPath(new File("/tmp/example.out").toPath()), materializer);
     //#manual-entity-consume-example-1
+    system.terminate();
   }
 
   private static class ConsumeExample2 {
@@ -107,6 +123,7 @@ public class HttpClientExampleDocTest {
       System.out.println("Entity discarded completely!");
     });
     //#manual-entity-discard-example-1
+    system.terminate();
   }
 
   void manualEntityDiscardExample2() {
@@ -123,6 +140,7 @@ public class HttpClientExampleDocTest {
       System.out.println("Entity discarded completely!");
     });
     //#manual-entity-discard-example-2
+    system.terminate();
   }
 
 
@@ -151,18 +169,41 @@ public class HttpClientExampleDocTest {
                     .via(connectionFlow)
                     .runWith(Sink.<HttpResponse>head(), materializer);
     //#outgoing-connection-example
+    system.terminate();
   }
 
   // compile only test
   public void testSingleRequestExample() {
     //#single-request-example
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
 
     final CompletionStage<HttpResponse> responseFuture =
       Http.get(system)
-          .singleRequest(HttpRequest.create("http://akka.io"), materializer);
+          .singleRequest(HttpRequest.create("http://akka.io"));
     //#single-request-example
+    system.terminate();
+  }
+
+  // compile only test
+  public void singleRequestInActorExample1() {
+    //#single-request-in-actor-example
+    class SingleRequestInActorExample extends AbstractActor {
+      final Http http = Http.get(context().system());
+      final ExecutionContextExecutor dispatcher = context().dispatcher();
+      final Materializer materializer = ActorMaterializer.create(context());
+
+      @Override
+      public Receive createReceive() {
+        return receiveBuilder()
+          .match(String.class, url -> pipe(fetch(url), dispatcher).to(self()))
+          .build();
+      }
+
+      CompletionStage<HttpResponse> fetch(String url) {
+        return http.singleRequest(HttpRequest.create(url));
+      }
+    }
+    //#single-request-in-actor-example
   }
 
   // compile only test
@@ -170,10 +211,10 @@ public class HttpClientExampleDocTest {
     //#https-proxy-example-single-request
 
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
 
     ClientTransport proxy = ClientTransport.httpsProxy(InetSocketAddress.createUnresolved("192.168.2.5", 8080));
-    ConnectionPoolSettings poolSettingsWithHttpsProxy = ConnectionPoolSettings.create(system).withTransport(proxy);
+    ConnectionPoolSettings poolSettingsWithHttpsProxy = ConnectionPoolSettings.create(system)
+        .withConnectionSettings(ClientConnectionSettings.create(system).withTransport(proxy));
 
     final CompletionStage<HttpResponse> responseFuture =
         Http.get(system)
@@ -181,17 +222,16 @@ public class HttpClientExampleDocTest {
                   HttpRequest.create("https://github.com"),
                   Http.get(system).defaultClientHttpsContext(),
                   poolSettingsWithHttpsProxy, // <- pass in the custom settings here
-                  system.log(),
-                  materializer);
+                  system.log());
 
     //#https-proxy-example-single-request
+    system.terminate();
   }
 
   // compile only test
   public void testSingleRequestWithHttpsProxyExampleWithAuth() {
 
     final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
 
     //#auth-https-proxy-example-single-request
     InetSocketAddress proxyAddress =
@@ -200,7 +240,8 @@ public class HttpClientExampleDocTest {
       HttpCredentials.createBasicHttpCredentials("proxy-user", "secret-proxy-pass-dont-tell-anyone");
 
     ClientTransport proxy = ClientTransport.httpsProxy(proxyAddress, credentials); // include credentials
-    ConnectionPoolSettings poolSettingsWithHttpsProxy = ConnectionPoolSettings.create(system).withTransport(proxy);
+    ConnectionPoolSettings poolSettingsWithHttpsProxy = ConnectionPoolSettings.create(system)
+        .withConnectionSettings(ClientConnectionSettings.create(system).withTransport(proxy));
 
     final CompletionStage<HttpResponse> responseFuture =
         Http.get(system)
@@ -208,9 +249,27 @@ public class HttpClientExampleDocTest {
                   HttpRequest.create("https://github.com"),
                   Http.get(system).defaultClientHttpsContext(),
                   poolSettingsWithHttpsProxy, // <- pass in the custom settings here
-                  system.log(),
-                  materializer);
+                  system.log());
 
     //#auth-https-proxy-example-single-request
+    system.terminate();
   }
+
+  // compile only test
+  public void testCollectingHeadersExample() {
+
+    final ActorSystem system = ActorSystem.create();
+    final ActorMaterializer materializer = ActorMaterializer.create(system);
+
+    //#collecting-headers-example
+    final HttpResponse response = responseFromSomewhere();
+
+    final Iterable<SetCookie> setCookies = response.getHeaders(SetCookie.class);
+
+    System.out.println("Cookies set by a server: " + setCookies);
+    response.discardEntityBytes(materializer);
+    //#collecting-headers-example
+    system.terminate();
+  }
+
 }

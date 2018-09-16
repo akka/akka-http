@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.examples.simple;
@@ -25,8 +25,10 @@ import java.util.concurrent.Executor;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import static akka.http.javadsl.server.Directives.*;
 import static akka.http.javadsl.server.PathMatchers.integerSegment;
 import static akka.http.javadsl.unmarshalling.Unmarshaller.entityToString;
+
 //#https-http-config
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -40,7 +42,7 @@ import akka.http.javadsl.HttpsConnectionContext;
 
 //#https-http-config
 
-public class SimpleServerApp extends AllDirectives { // or import Directives.*
+public class SimpleServerApp {
 
 
   //#https-http-app
@@ -67,7 +69,7 @@ public class SimpleServerApp extends AllDirectives { // or import Directives.*
     };
 
     return
-      route(
+      concat(
         // matches the empty path
         pathSingleSlash(() ->
           getFromResource("web/calculator.html")
@@ -87,7 +89,7 @@ public class SimpleServerApp extends AllDirectives { // or import Directives.*
         ),
         path(PathMatchers.segment("multiplyAsync").slash(integerSegment()).slash(integerSegment()), (x, y) ->
           extractExecutionContext(ctx ->
-            onSuccess(() -> multiplyAsync(ctx, x, y), Function.identity())
+            onSuccess(multiplyAsync(ctx, x, y), Function.identity())
           )
         ),
         post(() ->

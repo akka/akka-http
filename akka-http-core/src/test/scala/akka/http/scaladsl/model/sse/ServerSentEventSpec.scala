@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http
@@ -30,6 +30,13 @@ final class ServerSentEventSpec extends WordSpec with Matchers with GeneratorDri
           an[IllegalArgumentException] should be thrownBy ServerSentEvent("data", n)
         }
       }
+    }
+  }
+
+  "A ServerSentEvent heartbeat" should {
+    "be an empty ServerSentEvent" in {
+      val event = ServerSentEvent.heartbeat
+      event shouldBe ServerSentEvent("")
     }
   }
 

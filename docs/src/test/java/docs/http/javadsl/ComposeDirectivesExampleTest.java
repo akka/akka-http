@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.http.javadsl;
 
 import akka.NotUsed;
@@ -52,7 +53,7 @@ public class ComposeDirectivesExampleTest extends AllDirectives {
   private Route createRoute() {
     BiFunction<PathMatcher1<Integer>, Function<Integer,Route>, Route> pathWithInteger = this::path;
 
-    return route(
+    return concat(
       //anyOf examples
       path("hello", () ->
         anyOf(this::get, this::put, () ->

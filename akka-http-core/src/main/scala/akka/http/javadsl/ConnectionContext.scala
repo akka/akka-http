@@ -1,15 +1,17 @@
-/**
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.javadsl
 
-import java.util.{ Collection ⇒ JCollection, Optional }
-import javax.net.ssl.{ SSLContext, SSLParameters }
+import java.util.{ Optional, Collection ⇒ JCollection }
+
+import akka.annotation.DoNotInherit
 import akka.http.scaladsl
 import akka.japi.Util
 import akka.stream.TLSClientAuth
-import akka.http.impl.util.JavaMapping.Implicits._
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
+import javax.net.ssl.{ SSLContext, SSLParameters }
 
 import scala.compat.java8.OptionConverters
 
@@ -57,23 +59,33 @@ object ConnectionContext {
     scaladsl.ConnectionContext.noEncryption()
 }
 
+@DoNotInherit
 abstract class ConnectionContext {
   def isSecure: Boolean
   def sslConfig: Option[AkkaSSLConfig]
+  def http2: UseHttp2
+
+  def withHttp2(newValue: UseHttp2): ConnectionContext
 
   @deprecated("'default-http-port' and 'default-https-port' configuration properties are used instead", since = "10.0.11")
   def getDefaultPort: Int
 }
 
-abstract class HttpConnectionContext extends akka.http.javadsl.ConnectionContext {
+@DoNotInherit
+abstract class HttpConnectionContext(override val http2: UseHttp2) extends akka.http.javadsl.ConnectionContext {
   override final def isSecure = false
   override final def getDefaultPort = 80
   override def sslConfig: Option[AkkaSSLConfig] = None
+
+  override def withHttp2(newValue: UseHttp2): HttpConnectionContext
 }
 
-abstract class HttpsConnectionContext extends akka.http.javadsl.ConnectionContext {
+@DoNotInherit
+abstract class HttpsConnectionContext(override val http2: UseHttp2) extends akka.http.javadsl.ConnectionContext {
   override final def isSecure = true
   override final def getDefaultPort = 443
+
+  override def withHttp2(newValue: UseHttp2): HttpsConnectionContext
 
   /** Java API */
   def getEnabledCipherSuites: Optional[JCollection[String]]

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.common
@@ -26,7 +26,7 @@ final class CsvEntityStreamingSupport private[akka] (
       maxObjectSize,
       ContentTypeRange(ContentTypes.`text/csv(UTF-8)`),
       ContentTypes.`text/csv(UTF-8)`,
-      Flow[ByteString].intersperse(ByteString("\n")),
+      { val newline = ByteString("\n"); Flow[ByteString].map(bs ⇒ bs ++ newline) },
       1, false)
 
   override val framingDecoder: Flow[ByteString, ByteString, NotUsed] =

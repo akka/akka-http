@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2009-2017 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.javadsl.server;
 
 import static akka.http.javadsl.server.PathMatchers.*;
@@ -27,6 +28,8 @@ import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.scaladsl.model.headers.CustomHeader;
 import akka.japi.pf.PFBuilder;
 import akka.util.ByteString;
+
+import static akka.http.javadsl.server.Directives.*;
 
 public class JavaRouteTest extends JUnitRouteTest {
   private final Route route = getRoute();
@@ -267,7 +270,7 @@ public class JavaRouteTest extends JUnitRouteTest {
 
 
   public Route getRoute() {
-    return route(
+    return concat(
       path(segment("hello").slash("world"), () ->
         complete("hello, world")
       ),
@@ -289,7 +292,7 @@ public class JavaRouteTest extends JUnitRouteTest {
       ),
       path("shouldnotfail", () ->
         handleExceptions(xHandler, () ->
-          onSuccess(() -> throwExceptionInFuture(), value ->
+          onSuccess(throwExceptionInFuture(), value ->
             complete("never reaches here")
           )
         )
@@ -312,7 +315,7 @@ public class JavaRouteTest extends JUnitRouteTest {
           complete("body " + value)
         )
       ),
-      path("uuid", () -> route(
+      path("uuid", () -> concat(
         put(() ->
           entity(UUID_FROM_BODY, value ->
             complete("uuid " + value)

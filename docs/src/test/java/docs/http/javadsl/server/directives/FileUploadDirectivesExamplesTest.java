@@ -1,6 +1,7 @@
-/**
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.http.javadsl.server.directives;
 
 import akka.http.impl.engine.rendering.BodyPartRenderer;
@@ -29,6 +30,34 @@ import java.util.function.Function;
 
 import static scala.compat.java8.JFunction.func;
 
+//#uploadedFile
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.uploadedFile;
+
+//#uploadedFile
+//#storeUploadedFile
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.storeUploadedFile;
+
+//#storeUploadedFile
+//#storeUploadedFiles
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.storeUploadedFiles;
+
+//#storeUploadedFiles
+//#fileUpload
+import static akka.http.javadsl.server.Directives.extractRequestContext;
+import static akka.http.javadsl.server.Directives.fileUpload;
+import static akka.http.javadsl.server.Directives.onSuccess;
+
+//#fileUpload
+//#fileUploadAll
+import static akka.http.javadsl.server.Directives.extractRequestContext;
+import static akka.http.javadsl.server.Directives.fileUploadAll;
+import static akka.http.javadsl.server.Directives.onSuccess;
+
+//#fileUploadAll
+
 public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
 
   @Test
@@ -36,8 +65,10 @@ public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
     //#uploadedFile
     final Route route = uploadedFile("csv", (info, file) -> {
       // do something with the file and file metadata ...
-      file.delete();
-      return complete(StatusCodes.OK);
+      if (file.delete())
+        return complete(StatusCodes.OK);
+      else
+        return complete(StatusCodes.INTERNAL_SERVER_ERROR);
     });
 
     Map<String, String> filenameMapping = new HashMap<>();
@@ -146,7 +177,7 @@ public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
             .mapConcat(bs -> Arrays.asList(bs.utf8String().split(",")))
             .map(s -> Integer.parseInt(s))
             .runFold(0, (acc, n) -> acc + n, ctx.getMaterializer());
-        return onSuccess(() -> sumF, sum -> complete("Sum: " + sum));
+        return onSuccess(sumF, sum -> complete("Sum: " + sum));
       });
     });
 
@@ -186,7 +217,7 @@ public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
             return accF.thenCombine(intF, (a, b) -> a + b);
           });
 
-        return onSuccess(() -> sumF, sum -> complete("Sum: " + sum));
+        return onSuccess(sumF, sum -> complete("Sum: " + sum));
       });
     });
 
@@ -225,7 +256,7 @@ public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
             .mapConcat(bs -> Arrays.asList(bs.utf8String().split(",")))
             .map(s -> Integer.parseInt(s))
             .runFold(0, (acc, n) -> acc + n, ctx.getMaterializer());
-          return onSuccess(() -> sumF, sum -> complete("Sum: " + sum));
+          return onSuccess(sumF, sum -> complete("Sum: " + sum));
         };
       return fileUpload("csv", processUploadedFile);
     });

@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.javadsl.model;
 
 import akka.stream.javadsl.Source;
@@ -30,7 +31,7 @@ public final class Multiparts {
      * Constructor for `multipart/form-data` content as defined in http://tools.ietf.org/html/rfc2388.
      * All parts must have distinct names. (This is not verified!)
      */
-    public static Multipart.FormData createFormDataFromSourceParts(Source<Multipart.FormData.BodyPart, Object> parts) {
+    public static Multipart.FormData createFormDataFromSourceParts(Source<Multipart.FormData.BodyPart, ? extends Object> parts) {
         return akka.http.scaladsl.model.Multipart.FormData$.MODULE$.createSource(parts.asScala());
     }
 

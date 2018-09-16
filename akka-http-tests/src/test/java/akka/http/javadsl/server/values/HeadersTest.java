@@ -1,11 +1,9 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.values;
 
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 import org.junit.Test;
 
 import akka.http.javadsl.testkit.JUnitRouteTest;
@@ -14,6 +12,8 @@ import akka.http.javadsl.testkit.TestRoute;
 import akka.http.javadsl.model.*;
 import akka.http.javadsl.model.headers.Age;
 import akka.http.javadsl.model.headers.RawHeader;
+
+import static akka.http.javadsl.server.Directives.*;
 
 public class HeadersTest extends JUnitRouteTest {
   final RawHeader testHeaderInstance = RawHeader.create("X-Test-Header", "abcdef-test");

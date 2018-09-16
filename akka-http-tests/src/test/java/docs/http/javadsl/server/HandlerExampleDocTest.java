@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server;
@@ -22,11 +22,39 @@ import akka.http.javadsl.unmarshalling.StringUnmarshallers;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRoute;
 
+//#simple-handler-example-full
+import static akka.http.javadsl.server.Directives.get;
+import static akka.http.javadsl.server.Directives.route;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.post;
+//#simple-handler
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.extractMethod;
+import static akka.http.javadsl.server.Directives.extractUri;
+
+//#simple-handler
+//#simple-handler-example-full
+
+//#handler2-example-full
+import static akka.http.javadsl.server.Directives.get;
+import static akka.http.javadsl.server.Directives.parameter;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.pathPrefix;
+
+//#handler2-example-full
+
+//#async-handler-1
+import static akka.http.javadsl.server.Directives.extractExecutionContext;
+import static akka.http.javadsl.server.Directives.onSuccess;
+import static akka.http.javadsl.server.Directives.path;
+
+//#async-handler-1
+
 public class HandlerExampleDocTest extends JUnitRouteTest {
   @Test
   public void testSimpleHandler() {
     //#simple-handler-example-full
-    class TestHandler extends akka.http.javadsl.server.AllDirectives {
+    class TestHandler {
       //#simple-handler
       Route handlerString = extractMethod(method ->
         extractUri(uri ->
@@ -46,7 +74,7 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
       //#simple-handler
 
       Route createRoute() {
-        return route(
+        return concat(
           get(() ->
             handlerString
           ),
@@ -77,7 +105,7 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
   @Test
   public void testCalculator() {
     //#handler2-example-full
-    class TestHandler extends akka.http.javadsl.server.AllDirectives {
+    class TestHandler {
 
       final Route multiplyXAndYParam =
         parameter(StringUnmarshallers.INTEGER, "x", x ->
@@ -98,9 +126,9 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
       //#handler2
 
       Route createRoute() {
-        return route(
+        return concat(
           get(() ->
-            pathPrefix("calculator", () -> route(
+            pathPrefix("calculator", () -> concat(
               path("multiply", () ->
                 multiplyXAndYParam
               ),
@@ -146,7 +174,7 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
     }
     //#async-service-definition
 
-    class TestHandler extends akka.http.javadsl.server.AllDirectives {
+    class TestHandler {
 
       /**
        * Returns a route that applies the (required) request parameters "x" and "y", as integers, to
@@ -175,7 +203,7 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
         extractExecutionContext(ctx ->
           path("multiply", () ->
             paramXY((x, y) ->
-              onSuccess(() -> multiplyAsync(ctx, x, y), Function.identity())
+              onSuccess(multiplyAsync(ctx, x, y), Function.identity())
             )
           )
         );
@@ -186,7 +214,7 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
       public Route addAsync(int x, int y) {
         CompletionStage<Integer> result = calculatorService.add(x, y);
 
-        return onSuccess(() -> result, sum -> complete("x + y = " + sum));
+        return onSuccess(result, sum -> complete("x + y = " + sum));
       }
 
       Route addAsyncRoute =
@@ -196,9 +224,9 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
       //#async-handler-2
 
       Route createRoute() {
-        return route(
+        return concat(
           get(() ->
-            pathPrefix("calculator", () -> route(
+            pathPrefix("calculator", () -> concat(
               multiplyAsyncRoute,
               addAsyncRoute
             ))

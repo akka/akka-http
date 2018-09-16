@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -7,7 +7,7 @@ package akka.http.impl.engine.client
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ParserSettings }
-import akka.stream.impl.ConstantFun
+import akka.util.ConstantFun
 
 import scala.annotation.tailrec
 import scala.concurrent.Promise
@@ -280,7 +280,7 @@ private[http] object OutgoingConnectionBlueprint {
    * 2. Read from the dataInput until exactly one response has been fully received
    * 3. Go back to 1.
    */
-  private class ResponseParsingMerge(rootParser: HttpResponseParser)
+  private[client] final class ResponseParsingMerge(rootParser: HttpResponseParser)
     extends GraphStage[FanInShape2[SessionBytes, BypassData, List[ResponseOutput]]] {
     private val dataIn = Inlet[SessionBytes]("ResponseParsingMerge.dataIn")
     private val bypassIn = Inlet[BypassData]("ResponseParsingMerge.bypassIn")
@@ -295,6 +295,7 @@ private[http] object OutgoingConnectionBlueprint {
       // which builds a cache of all header instances seen on that connection
       val parser = rootParser.createShallowCopy()
       var waitingForMethod = true
+      var completeStagePending = false
 
       setHandler(bypassIn, new InHandler {
         override def onPush(): Unit = {
@@ -319,6 +320,7 @@ private[http] object OutgoingConnectionBlueprint {
             if (parser.onUpstreamFinish()) {
               completeStage()
             } else {
+              completeStagePending = true
               emit(responseOut, parser.onPull() :: Nil, () ⇒ completeStage())
             }
           }
@@ -334,8 +336,10 @@ private[http] object OutgoingConnectionBlueprint {
 
       val getNextData = () ⇒ {
         waitingForMethod = false
-        if (isClosed(dataIn)) completeStage()
-        else pull(dataIn)
+        if (isClosed(dataIn)) {
+          if (!completeStagePending)
+            completeStage()
+        } else pull(dataIn)
       }
 
       @tailrec def drainParser(current: ResponseOutput, b: ListBuffer[ResponseOutput] = ListBuffer.empty): Unit = {

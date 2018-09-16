@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -15,14 +15,15 @@ private[http2] trait IncomingFlowController {
   def onStreamDataDispatched(outstandingConnectionLevelWindow: Int, totalBufferedData: Int,
                              outstandingStreamLevelWindow: Int, streamBufferedData: Int): IncomingFlowController.WindowIncrements
 }
+
+/** INTERNAL API */
+@InternalApi
 private[http2] object IncomingFlowController {
-  /** INTERNAL API */
-  @InternalApi
-  private[http2] case class WindowIncrements(connectionLevel: Int, streamLevel: Int) {
+  case class WindowIncrements(connectionLevel: Int, streamLevel: Int) {
     require(connectionLevel >= 0, s"Connection-level window increment must be >= 0 but was $connectionLevel")
     require(streamLevel >= 0, s"Stream-level window increment must be >= 0 but was $streamLevel")
   }
-  private[http2] object WindowIncrements {
+  object WindowIncrements {
     val NoIncrements = WindowIncrements(0, 0)
   }
 

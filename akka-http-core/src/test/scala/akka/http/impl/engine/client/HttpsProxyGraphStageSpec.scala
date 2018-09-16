@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -29,7 +29,7 @@ class HttpsProxyGraphStageSpec extends AkkaSpec {
         flowOutProbe.sendNext(ByteString("HTTP/1.0 200 Connection established\r\n\r\n"))
 
         // we deliberately wait here some time to see if ProxyGraphStage properly handles slow demand from HTTP(S) proxy
-        flowInProbe.expectNoMsg(300.millis)
+        flowInProbe.expectNoMessage(300.millis)
 
         source.sendNext(ByteString("something"))
         flowInProbe.requestNext(ByteString("anything"))
@@ -61,7 +61,7 @@ class HttpsProxyGraphStageSpec extends AkkaSpec {
         flowOutProbe.sendNext(ByteString("HTTP/1.0 200 Connection established\r\n\r\n"))
 
         // we deliberately wait here some time to see if ProxyGraphStage properly handles slow demand from HTTP(S) proxy
-        flowInProbe.expectNoMsg(300.millis)
+        flowInProbe.expectNoMessage(300.millis)
 
         source.sendNext(ByteString("something"))
         flowInProbe.requestNext(ByteString("anything"))

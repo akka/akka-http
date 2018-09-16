@@ -1,17 +1,18 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
 
 import akka.NotUsed
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
+import akka.http.scaladsl.server.directives.BasicDirectives
 import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
+import akka.http.scaladsl.util.FastFuture._
+import akka.stream.scaladsl.Flow
 import akka.stream.{ ActorMaterializerHelper, Materializer }
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
-import akka.stream.scaladsl.Flow
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
-import akka.http.scaladsl.util.FastFuture._
 
 object Route {
 
@@ -32,14 +33,21 @@ object Route {
    *    using the ``~`` on routes or the [[Directive.|]] operator on directives.
    */
   def seal(route: Route)(implicit
-    routingSettings: RoutingSettings,
+    routingSettings: RoutingSettings = null,
                          parserSettings:   ParserSettings   = null,
                          rejectionHandler: RejectionHandler = RejectionHandler.default,
                          exceptionHandler: ExceptionHandler = null): Route = {
     import directives.ExecutionDirectives._
     // optimized as this is the root handler for all akka-http applications
-    (handleExceptions(ExceptionHandler.seal(exceptionHandler)) & handleRejections(rejectionHandler.seal))
-      .tapply(_ ⇒ route) // execute above directives eagerly, avoiding useless laziness of Directive.addByNameNullaryApply
+    BasicDirectives.extractSettings { theSettings ⇒
+      val effectiveRoutingSettings = if (routingSettings eq null) theSettings else routingSettings
+
+      {
+        implicit val routingSettings: RoutingSettings = effectiveRoutingSettings
+        (handleExceptions(ExceptionHandler.seal(exceptionHandler)) & handleRejections(rejectionHandler.seal))
+          .tapply(_ ⇒ route) // execute above directives eagerly, avoiding useless laziness of Directive.addByNameNullaryApply
+      }
+    }
   }
 
   /**
@@ -73,7 +81,6 @@ object Route {
     {
       implicit val executionContext = effectiveEC // overrides parameter
       val effectiveParserSettings = if (parserSettings ne null) parserSettings else ParserSettings(ActorMaterializerHelper.downcast(materializer).system)
-
       val sealedRoute = seal(route)
       request ⇒
         sealedRoute(new RequestContextImpl(request, routingLog.requestLog(request), routingSettings, effectiveParserSettings)).fast

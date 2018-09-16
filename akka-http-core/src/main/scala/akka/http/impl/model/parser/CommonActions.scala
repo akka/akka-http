@@ -1,14 +1,12 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.model.parser
 
 import akka.annotation.InternalApi
 import akka.http.impl.util._
-import akka.http.scaladsl.model.MediaType.Binary
 import akka.http.scaladsl.model._
-import akka.stream.impl.ConstantFun
 
 /** INTERNAL API */
 @InternalApi
@@ -33,29 +31,30 @@ private[parser] trait CommonActions {
         case custom        ⇒ MediaType.customMultipart(custom, params)
       }
       case mainLower ⇒
-        // attempt fetching custom media type if configured
-        if (areCustomMediaTypesDefined)
-          customMediaTypes(mainLower, subType) getOrElse fallbackMediaType(subType, params, mainLower)
-        else MediaTypes.getForKey((mainLower, subLower)) match {
-          case Some(registered) ⇒ if (params.isEmpty) registered else registered.withParams(params)
+
+        // Faster version of MediaType.withParams for the common case of empty params
+        def withParams(mt: MediaType): MediaType = if (params.isEmpty) mt else mt.withParams(params)
+
+        // Try user-defined function to get a MediaType
+        customMediaTypes(mainLower, subLower) match {
+          case Some(customMediaType) ⇒ withParams(customMediaType)
           case None ⇒
-            if (charsetDefined)
-              MediaType.customWithOpenCharset(mainLower, subType, params = params, allowArbitrarySubtypes = true)
-            else
-              fallbackMediaType(subType, params, mainLower)
+            // User-defined function didn't get a MediaType, check for a predefined value
+            MediaTypes.getForKey((mainLower, subLower)) match {
+              case Some(registered) ⇒ withParams(registered)
+              case None ⇒
+                // No predefined value, create custom MediaType
+                if (charsetDefined)
+                  MediaType.customWithOpenCharset(mainLower, subLower, params = params, allowArbitrarySubtypes = true)
+                else
+                  MediaType.customBinary(mainLower, subLower, MediaType.Compressible, params = params, allowArbitrarySubtypes = true)
+            }
         }
     }
   }
-
-  /** Provide a generic MediaType when no known-ones matched. */
-  private def fallbackMediaType(subType: String, params: Map[String, String], mainLower: String): Binary =
-    MediaType.customBinary(mainLower, subType, MediaType.Compressible, params = params, allowArbitrarySubtypes = true)
 
   def getCharset(name: String): HttpCharset =
     HttpCharsets
       .getForKeyCaseInsensitive(name)
       .getOrElse(HttpCharset.custom(name))
-
-  @inline private def areCustomMediaTypesDefined: Boolean = customMediaTypes ne ConstantFun.two2none
-
 }

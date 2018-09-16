@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -188,7 +188,7 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
               emitResponseStart {
                 StreamedEntityCreator { entityParts ⇒
                   val data = entityParts.collect { case EntityPart(bytes) ⇒ bytes }
-                  HttpEntity.CloseDelimited(contentType(cth), HttpEntity.limitableByteSource(data))
+                  HttpEntity.CloseDelimited(contentType(cth), data)
                 }
               }
               setCompletionHandling(HttpMessageParser.CompletionOk)

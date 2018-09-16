@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.http.javadsl.server.directives;
 
 import akka.NotUsed;
@@ -26,6 +27,29 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
+//#handleWebSocketMessages
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.handleWebSocketMessages;
+
+//#handleWebSocketMessages
+//#handleWebSocketMessagesForProtocol
+import static akka.http.javadsl.server.Directives.route;
+import static akka.http.javadsl.server.Directives.handleWebSocketMessagesForProtocol;
+
+//#handleWebSocketMessagesForProtocol
+//#extractUpgradeToWebSocket
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.extractUpgradeToWebSocket;
+import static akka.http.javadsl.server.Directives.route;
+
+
+//#extractUpgradeToWebSocket
+//#extractOfferedWsProtocols
+import static akka.http.javadsl.server.Directives.route;
+import static akka.http.javadsl.server.Directives.extractOfferedWsProtocols;
+import static akka.http.javadsl.server.Directives.handleWebSocketMessagesForOptionalProtocol;
+
+//#extractOfferedWsProtocols
 public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
 
   @Test
@@ -91,7 +115,7 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
     final Flow<Message, Message, NotUsed> echoService = Flow.of(Message.class).buffer(1, OverflowStrategy.backpressure());
 
     final Route websocketMultipleProtocolRoute = path("services", () ->
-      route(
+      concat(
         handleWebSocketMessagesForProtocol(greeterService, "greeter"),
         handleWebSocketMessagesForProtocol(echoService, "echo")
       )
@@ -125,7 +149,7 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
     final Flow<Message, Message, NotUsed> echoService = Flow.of(Message.class).buffer(1, OverflowStrategy.backpressure());
 
     final Route websocketRoute = path("services", () ->
-      route(
+      concat(
         extractUpgradeToWebSocket(upgrade ->
           complete(upgrade.handleMessagesWith(echoService, "echo"))
         )
@@ -155,7 +179,7 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
     final Flow<Message, Message, NotUsed> echoService = Flow.of(Message.class).buffer(1, OverflowStrategy.backpressure());
 
     final Route websocketRoute = path("services", () ->
-      route(
+      concat(
         extractOfferedWsProtocols(protocols ->
           handleWebSocketMessagesForOptionalProtocol(echoService, protocols.stream().findFirst())
         )

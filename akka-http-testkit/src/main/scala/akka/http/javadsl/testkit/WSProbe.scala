@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.testkit
@@ -26,7 +26,7 @@ import scala.concurrent.duration._
  */
 class WSProbe(delegate: st.WSProbe) {
 
-  def flow: Flow[Message, Message, Any] = {
+  def flow: Flow[Message, Message, NotUsed] = {
     val underlying = scaladsl.Flow[Message].map(_.asScala).via(delegate.flow).map(_.asJava)
     new Flow[Message, Message, NotUsed](underlying)
   }

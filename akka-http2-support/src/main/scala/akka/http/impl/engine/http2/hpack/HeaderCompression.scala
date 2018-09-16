@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2.hpack
@@ -15,6 +15,8 @@ import akka.util.ByteString
 
 import scala.collection.immutable
 
+import FrameEvent._
+
 /**
  * INTERNAL API
  */
@@ -26,7 +28,7 @@ private[http2] object HeaderCompression extends GraphStage[FlowShape[FrameEvent,
   val shape = FlowShape(eventsIn, eventsOut)
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new HandleOrPassOnStage[FrameEvent, FrameEvent](shape) with StageLogging {
-    var currentMaxFrameSize = Http2Protocol.InitialMaxFrameSize
+    val currentMaxFrameSize = Http2Protocol.InitialMaxFrameSize
 
     val encoder = new com.twitter.hpack.Encoder(Http2Protocol.InitialMaxHeaderTableSize)
     val os = new ByteArrayOutputStream()
@@ -71,7 +73,10 @@ private[http2] object HeaderCompression extends GraphStage[FlowShape[FrameEvent,
         s foreach {
           case Setting(SettingIdentifier.SETTINGS_HEADER_TABLE_SIZE, size) ⇒
             log.debug("Applied SETTINGS_HEADER_TABLE_SIZE({}) in header compression", size)
-            encoder.setMaxHeaderTableSize(os, size)
+            // 'size' is strictly spoken unsigned, but the encoder is allowed to
+            // pick any size equal to or less than this value (6.5.2)
+            if (size >= 0) encoder.setMaxHeaderTableSize(os, size)
+            else encoder.setMaxHeaderTableSize(os, Int.MaxValue)
           case _ ⇒ // ignore, not applicable to this stage
         }
     }

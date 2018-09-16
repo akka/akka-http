@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -98,7 +98,7 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
     import setup.{ connectionContext, settings }
 
     val connectionFlow =
-      Http().outgoingConnectionUsingTransport(host, port, settings.transport, connectionContext, settings.connectionSettings, setup.log)
+      Http().outgoingConnectionUsingContext(host, port, connectionContext, settings.connectionSettings, setup.log)
 
     val poolFlow =
       settings.poolImplementation match {

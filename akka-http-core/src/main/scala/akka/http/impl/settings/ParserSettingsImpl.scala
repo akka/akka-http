@@ -1,12 +1,12 @@
-/**
- * Copyright (C) 2009-2014 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.settings
 
 import akka.annotation.InternalApi
 import akka.http.scaladsl.settings.ParserSettings.{ CookieParsingMode, ErrorLoggingVerbosity, IllegalResponseHeaderValueProcessingMode }
-import akka.stream.impl.ConstantFun
+import akka.util.ConstantFun
 import com.typesafe.config.Config
 
 import scala.collection.JavaConverters._
@@ -23,11 +23,13 @@ private[akka] final case class ParserSettingsImpl(
   maxHeaderValueLength:                     Int,
   maxHeaderCount:                           Int,
   maxContentLength:                         Long,
+  maxToStrictBytes:                         Long,
   maxChunkExtLength:                        Int,
   maxChunkSize:                             Int,
   uriParsingMode:                           Uri.ParsingMode,
   cookieParsingMode:                        CookieParsingMode,
   illegalHeaderWarnings:                    Boolean,
+  ignoreIllegalHeaderFor:                   Set[String],
   errorLoggingVerbosity:                    ErrorLoggingVerbosity,
   illegalResponseHeaderValueProcessingMode: IllegalResponseHeaderValueProcessingMode,
   headerValueCacheLimits:                   Map[String, Int],
@@ -60,7 +62,7 @@ object ParserSettingsImpl extends SettingsCompanion[ParserSettingsImpl]("akka.ht
 
   private[this] val noCustomMethods: String ⇒ Option[HttpMethod] = ConstantFun.scalaAnyToNone
   private[this] val noCustomStatusCodes: Int ⇒ Option[StatusCode] = ConstantFun.scalaAnyToNone
-  private[this] val noCustomMediaTypes: (String, String) ⇒ Option[MediaType] = ConstantFun.scalaAnyTwoToNone
+  private[ParserSettingsImpl] val noCustomMediaTypes: (String, String) ⇒ Option[MediaType] = ConstantFun.scalaAnyTwoToNone
 
   def fromSubConfig(root: Config, inner: Config) = {
     val c = inner.withFallback(root.getConfig(prefix))
@@ -74,11 +76,13 @@ object ParserSettingsImpl extends SettingsCompanion[ParserSettingsImpl]("akka.ht
       c getIntBytes "max-header-value-length",
       c getIntBytes "max-header-count",
       c getPossiblyInfiniteBytes "max-content-length",
+      c getPossiblyInfiniteBytes "max-to-strict-bytes",
       c getIntBytes "max-chunk-ext-length",
       c getIntBytes "max-chunk-size",
       Uri.ParsingMode(c getString "uri-parsing-mode"),
       CookieParsingMode(c getString "cookie-parsing-mode"),
       c getBoolean "illegal-header-warnings",
+      (c getStringList "ignore-illegal-header-for").asScala.map(_.toLowerCase).toSet,
       ErrorLoggingVerbosity(c getString "error-logging-verbosity"),
       IllegalResponseHeaderValueProcessingMode(c getString "illegal-response-header-value-processing-mode"),
       cacheConfig.entrySet.asScala.map(kvp ⇒ kvp.getKey → cacheConfig.getInt(kvp.getKey))(collection.breakOut),

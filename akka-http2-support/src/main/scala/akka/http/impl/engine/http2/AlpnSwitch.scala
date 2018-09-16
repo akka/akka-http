@@ -1,18 +1,23 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.impl.engine.http2
 
 import javax.net.ssl.SSLException
 
 import akka.NotUsed
+import akka.annotation.InternalApi
+import akka.http.impl.engine.server.HttpAttributes
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.stream.TLSProtocol.{ SessionBytes, SessionTruncated, SslTlsInbound, SslTlsOutbound }
 import akka.stream.scaladsl.{ BidiFlow, Flow }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream._
 
-object AlpnSwitch {
+/** INTERNAL API */
+@InternalApi
+private[http] object AlpnSwitch {
   type HttpServerBidiFlow = BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed]
 
   def apply(
@@ -52,7 +57,7 @@ object AlpnSwitch {
                 case first @ SessionBytes(session, bytes) ⇒
                   val chosen = chosenProtocolAccessor()
                   chosen match {
-                    case "h2" ⇒ install(http2Stack, first)
+                    case "h2" ⇒ install(http2Stack.addAttributes(HttpAttributes.tlsSessionInfo(session)), first)
                     case _    ⇒ install(http1Stack, first)
                   }
                 case SessionTruncated ⇒ failStage(new SSLException("TLS session was truncated (probably missing a close_notify packet)."))

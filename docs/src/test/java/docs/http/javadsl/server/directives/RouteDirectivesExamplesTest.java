@@ -1,28 +1,72 @@
 /*
- * Copyright (C) 2016-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.http.javadsl.server.directives;
 
-import akka.http.javadsl.model.HttpEntities;
-import akka.http.javadsl.model.HttpRequest;
-import akka.http.javadsl.model.Uri;
+import akka.http.javadsl.model.*;
 import akka.http.javadsl.model.headers.ContentType;
-import akka.http.javadsl.model.ContentTypes;
-import akka.http.javadsl.model.HttpResponse;
-import akka.http.javadsl.model.StatusCodes;
+import akka.http.javadsl.model.headers.Location;
 import akka.http.javadsl.server.Rejections;
+import akka.http.javadsl.server.RequestContext;
 import akka.http.javadsl.server.Route;
+import akka.http.javadsl.server.RouteResult;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import org.junit.Test;
 
 import java.util.Collections;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
+
+//#complete
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.path;
+
+//#complete
+
+//#reject
+import akka.http.javadsl.server.Directives;
+
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.reject;
+import static akka.http.javadsl.server.Directives.route;
+
+//#reject
+//#redirect
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.pathEnd;
+import static akka.http.javadsl.server.Directives.pathPrefix;
+import static akka.http.javadsl.server.Directives.pathSingleSlash;
+import static akka.http.javadsl.server.Directives.redirect;
+import static akka.http.javadsl.server.Directives.route;
+
+//#redirect
+//#failWith
+import static akka.http.javadsl.server.Directives.failWith;
+import static akka.http.javadsl.server.Directives.path;
+
+//#failWith
 
 public class RouteDirectivesExamplesTest extends JUnitRouteTest {
 
   @Test
+  public void testShowRedirectOnCompleteWithTerms() {
+    final StatusCode redirectionType = StatusCodes.FOUND;
+    final Uri uri = Uri.create("http://akka.io");
+    final Function<RequestContext, CompletionStage<RouteResult>> route = rc ->
+            //#red-impl
+            rc.completeWith(HttpResponse.create()
+                    .withStatus(redirectionType)
+                    .addHeader(Location.create(uri))
+            //#red-impl
+            );
+  }
+
+  @Test
   public void testComplete() {
     //#complete
-    final Route route = route(
+    final Route route = concat(
       path("a", () -> complete(HttpResponse.create().withEntity("foo"))),
       path("b", () -> complete(StatusCodes.OK)),
       path("c", () -> complete(StatusCodes.CREATED, "bar")),
@@ -74,8 +118,8 @@ public class RouteDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testReject() {
     //#reject
-    final Route route = route(
-      path("a", this::reject), // don't handle here, continue on
+    final Route route = concat(
+      path("a", Directives::reject), // don't handle here, continue on
       path("a", () -> complete("foo")),
       path("b", () -> reject(Rejections.validationRejection("Restricted!")))
     );
@@ -93,7 +137,7 @@ public class RouteDirectivesExamplesTest extends JUnitRouteTest {
   public void testRedirect() {
     //#redirect
     final Route route = pathPrefix("foo", () ->
-      route(
+      concat(
         pathSingleSlash(() -> complete("yes")),
         pathEnd(() -> redirect(Uri.create("/foo/"), StatusCodes.PERMANENT_REDIRECT))
       )

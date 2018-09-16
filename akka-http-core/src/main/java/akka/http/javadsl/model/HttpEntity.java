@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.model;
@@ -128,7 +128,7 @@ public interface HttpEntity {
     HttpEntity withoutSizeLimit();
 
     /**
-     * Returns a future of a strict entity that contains the same data as this entity
+     * Returns a CompletionStage of a strict entity that contains the same data as this entity
      * which is only completed when the complete entity has been collected. As the
      * duration of receiving the complete entity cannot be predicted, a timeout needs to
      * be specified to guard the process against running and keeping resources infinitely.
@@ -137,6 +137,17 @@ public interface HttpEntity {
      * is likely to take a long time.
      */
     CompletionStage<HttpEntity.Strict> toStrict(long timeoutMillis, Materializer materializer);
+
+    /**
+     * Returns a CompletionStage of a strict entity that contains the same data as this entity
+     * which is only completed when the complete entity has been collected. As the
+     * duration of receiving the complete entity cannot be predicted, a timeout needs to
+     * be specified to guard the process against running and keeping resources infinitely.
+     *
+     * Use getDataBytes and stream processing instead if the expected data is big or
+     * is likely to take a long time.
+     */
+    CompletionStage<HttpEntity.Strict> toStrict(long timeoutMillis, long maxBytes, Materializer materializer);
 
     /**
      * Discards the entities data bytes by running the {@code dataBytes} Source contained in this entity.

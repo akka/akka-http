@@ -1,12 +1,16 @@
 language: scala
 
-sudo: false
-
 scala:
-  - "2.11.8"
+  - "2.12.6"
+
+sudo: false
 
 jdk:
   - oraclejdk8
+
+before_install:
+  # make comparing to origin/master work
+  - git remote set-branches --add origin master && git fetch
 
 addons:
   apt:
@@ -22,28 +26,28 @@ cache:
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot
 
-script:
-  # need to override as the default is to test
-  - sbt -J-XX:ReservedCodeCacheSize=256m +update
-  # make 'git branch' work again
-  - git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH"
-  # check policies, if on master also upload
-  - if [[ "$TRAVIS_SECURE_ENV_VARS" == "true" ]]; then if [[ "$TRAVIS_BRANCH" == "master" && "$TRAVIS_EVENT_TYPE" == "push" ]]; then sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies whitesourceUpdate; else sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies; fi ; fi
+jobs:
+  include:
+    - stage: mima
+      script: sbt -J-XX:ReservedCodeCacheSize=256m +mimaReportBinaryIssues
+    - stage: whitesource
+      script: sbt whitesourceCheckPolicies whitesourceUpdate
+    - stage: publish
+      script: sbt -J-XX:ReservedCodeCacheSize=256m +publish
 
-deploy:
-  provider: script
-  script:
-    - sbt -J-XX:ReservedCodeCacheSize=256m +publish
-    - sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceUpdate
-#    - sbt -J-XX:ReservedCodeCacheSize=256m +publish akka-http/bintraySyncMavenCentral # enable if we want to sync to central automatically
-  on:
-    tags: true
-    repo: akka/akka-http
+stages:
+  - name: mima
+
+  - name: whitesource
+    if: repo=akka/akka-http AND ( ( branch = master AND type = push ) OR tag =~ ^v )
+
+  - name: publish 
+    if: tag =~ ^v
 
 env:
   global:
-    # encrypt with: travis encrypt WHITESOURCE_KEY=...
-    - secure: "E/3196XY+pkliegzUSqjRsM/nfwWp+xTysKdhTDkt6gt3CarwjAIiDQ/iXltlfQ5CMFsZJ5nmafDCxtOvyXWxgDVGR7qOXjRx7wCJOMp7KFham5OE5rS1Vfzxhd/zMnVrG64Oidm3zmqpSbTIJUCp+unsMY3tCZVuiQJPtW4/gF/l2yr5CJSBuQXhSrbYExffDgVNyYl/VAq/N08SCzQ9bn99kiowVrRXUt2xtrPOdT3CugOSFyzWw4P/quZWd79dJDdBCc8XbrwCTsNKs4L9AOt1SrvCtP7j1qUWFPnFV4FAY8Eq2l1Xlklg20OxiubJ6ZN+th6zDSQVuerCr/PZ6rGNGl4u1+oG/zlfVgLP7TSBPgOJiq6RHPtcjdlf7WJj6yZmmXVTka3XubCYswjco9gUjaAzcnBXv9p1GED3OvB0yM8Z9jf9MxEfTJiWiidHPSNqri9t+tPHj7eql2LMduJXx62aLPIVGQozSfHE085NEOrVyfhMaCBKT1Zo8bvt29bIe2gw+5EqN6WDLNCqgzgrdrUPu3AD8LO5Cq7EDhiHT+ZAWoPgo7soTEKXGB4YB24c3tbmVegH5PIThdot6+Hmk48a92OwTn8gFZWPZ/T2CqnK0oa2Is3Lch71HcyTiFTdJ1i4OVYVQ7bvkUhwiI7qNdYXEaGIBHEEIO5t7E="
+    # encrypt with: travis encrypt WHITESOURCE_PASSWORD=...
+    - secure: "O3bUB/B1CusDUGTcGaMndQK2nPw+XK5GMrecQ9awLCtnX6bkqSdX18pK9l2XP8r7yR+DYyFoyknf1rJ6JiybsBrc3udNpSBBTTG+4EMAMK12kxiQmy82JEepZrD/BkGtmMhzD6X41s+J2tY0XDa6p/Xqbr2Hb+oTQ7+WXdhfwyfdrszUcEL/t1IrdI2jgh37NJlBMuoHUWOXanpVv6KR7Kfjahd34k79bbfEK/8sX4kv7YU7uZWe/UxJse1b767sbijAqInFm+3n3lxv8eqnbbaAcdTuZBYkwkf5uZcXmV/Px1xupPBt1C6k49vfogT148KxJ7CzYawAC3oZq10m8I/6NREPUpoLN6ie+K9g3P+FcvCbKju8sxaoYmxNW+V+r6B/I+mXrbpD5YHT7WpvfF9gZt3HJk3V6/+Cu9vvgrnTGkUYymTWymEGRRq5TB2Q+/IDR7Qq8XTwkzA7UwcQ3WBotVY7TQKMEp9LvILTBnP0GZiUfeq+OXzLUN7sjsaEevD1dV0ZkIeILAFDwEmzPXKlmV70+IIM+Km8uCZ4XJ6GOklnEar+zltwBdFPrcvC6Pcb77O02DeMz773Uu9PxXgdUcjsW06v0wUO+5KXB9Y+6+9SJtW0gs5BtaiUnY7d38YPoXWq9Gm+sNUnJe5NH/nBdjF/O8xqAhUgs0OPApE=" 
     # encrypt with: travis encrypt BINTRAY_USER=...
     - secure: "sfWa3rhVepJtmCtbe/ABdP2XPth5vKlrFbcsdsS2D2Rstruc8naoWDq+Qhsn6DLtAVw6SqqqTXoLGgRUAsroP1cxuRAddOulCqwYvjQZfsMg/ULo6aeYPENHvmlUrTZx7BerRAI6mmmyZ9kiyLCmG0KCvt1UOTcKwTHJVoi3kAa3+4JYuyq5dEeglCUg5xfvjR17RAG1QwV24EP7aBkFqu/LhNaZt/uyR3GaV0eDIzSvYZ2mnxWbYejlJ1cWsYFu/Sx3PtS4kgm/kCwFBCzQ2vK4+npXFKFwrZLAQnAL1uvmGAtlWo1RGg04LLmRisQnqGGSESAXyKT26u+iDY2E12MLpNUB+QpfX6DvCAAiwx0WXAPf4TCu1MZ+TFOiOVA31k/p1eG+lBGxctB+Ru+CUZCW2Jk0V85fjLXGLyHq8DY/kv7akIpASQvDjFNSe80nF1aKv7d7OKPdGmsntMC8IrB9jjuyCbYFbtGraYY3dmbfn/0CFyaZeW4jMfURzD5XV2kbLX0DLARWKB7XNcvjsc4WnJBHSSRFvhVMGZmuRuhZ6A7ysUtY+N+3UDstVXkb2hb/DVIVVF/u2+6VRe4ixnyP8FmLSTMR/gGn+WQB9wYhHCUvhwOpsqLJ0pBburG0ReiqK4NbrxRUG6vLJYiYOW9WcNBhGTR54bB/GB/HlP8="
     # encrypt with: travis encrypt BINTRAY_PASS=...

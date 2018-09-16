@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.scaladsl.server.directives
 
 import java.io.File
@@ -119,7 +120,6 @@ trait FileUploadDirectives {
     entity(as[Multipart.FormData]).flatMap { formData ⇒
       extractRequestContext.flatMap { ctx ⇒
         implicit val mat = ctx.materializer
-        implicit val ec = ctx.executionContext
 
         val onePartSource: Source[(FileInfo, Source[ByteString, Any]), Any] = formData.parts
           .filter(part ⇒ part.filename.isDefined && part.name == fieldName)
@@ -147,7 +147,6 @@ trait FileUploadDirectives {
   @ApiMayChange
   def fileUploadAll(fieldName: String): Directive1[immutable.Seq[(FileInfo, Source[ByteString, Any])]] =
     extractRequestContext.flatMap { ctx ⇒
-      implicit val mat = ctx.materializer
       implicit val ec = ctx.executionContext
 
       def tempDest(fileInfo: FileInfo): File = {

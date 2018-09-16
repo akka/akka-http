@@ -1,11 +1,18 @@
 /*
- * Copyright (C) 2009-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server
 
-import akka.http.scaladsl.model.ws.BinaryMessage
-import akka.stream.scaladsl.Sink
+import java.util.concurrent.atomic.AtomicInteger
+
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.ws.{ BinaryMessage, Message, WebSocketRequest }
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, ServerSettings }
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{ Flow, Sink }
+import akka.util.ByteString
 import docs.CompileOnlySpec
 import org.scalatest.{ Matchers, WordSpec }
 
@@ -109,5 +116,50 @@ class WebSocketExampleSpec extends WordSpec with Matchers with CompileOnlySpec {
     bindingFuture
       .flatMap(_.unbind()) // trigger unbinding from the port
       .onComplete(_ => system.terminate()) // and shutdown when done
+  }
+
+  "ping-server-example" in compileOnlySpec {
+    implicit val system: ActorSystem = ???
+    implicit val mat: ActorMaterializer = ???
+    //#websocket-ping-payload-server
+    val defaultSettings = ServerSettings(system)
+
+    val pingCounter = new AtomicInteger()
+    val customWebsocketSettings =
+      defaultSettings.websocketSettings
+        .withPeriodicKeepAliveData(() ⇒ ByteString(s"debug-${pingCounter.incrementAndGet()}"))
+
+    val customServerSettings =
+      defaultSettings.withWebsocketSettings(customWebsocketSettings)
+
+    Http().bindAndHandle(???, "127.0.0.1", settings = customServerSettings)
+    //#websocket-ping-payload-server
+  }
+
+  "ping-example" in compileOnlySpec {
+    implicit val system: ActorSystem = ???
+    implicit val mat: ActorMaterializer = ???
+    //#websocket-client-ping-payload
+    val defaultSettings = ClientConnectionSettings(system)
+
+    val pingCounter = new AtomicInteger()
+    val customWebsocketSettings =
+      defaultSettings.websocketSettings
+        .withPeriodicKeepAliveData(() ⇒ ByteString(s"debug-${pingCounter.incrementAndGet()}"))
+
+    val customSettings =
+      defaultSettings.withWebsocketSettings(customWebsocketSettings)
+
+    val request = WebSocketRequest("ws://127.0.0.1")
+
+    Http().singleWebSocketRequest(
+      request,
+      Flow[Message],
+      Http().defaultClientHttpsContext,
+      None,
+      customSettings,
+      system.log
+    )
+    //#websocket-client-ping-payload
   }
 }

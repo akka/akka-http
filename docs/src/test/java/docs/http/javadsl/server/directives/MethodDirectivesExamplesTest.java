@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2017 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server.directives;
@@ -11,6 +11,56 @@ import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.testkit.JUnitRouteTest;
+
+//#delete
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.delete;
+
+//#delete
+//#head
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.head;
+
+//#head
+//#options
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.options;
+
+//#options
+//#patch
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.patch;
+
+//#patch
+//#post
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.post;
+
+//#post
+//#put
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.put;
+
+//#put
+//#method-example
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.method;
+
+//#method-example
+//#extractMethod
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.get;
+import static akka.http.javadsl.server.Directives.extractMethod;
+
+//#extractMethod
+//#overrideMethodWithParameter
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.get;
+import static akka.http.javadsl.server.Directives.post;
+import static akka.http.javadsl.server.Directives.route;
+import static akka.http.javadsl.server.Directives.overrideMethodWithParameter;
+
+//#overrideMethodWithParameter
 
 public class MethodDirectivesExamplesTest extends JUnitRouteTest {
   @Test
@@ -101,7 +151,7 @@ public class MethodDirectivesExamplesTest extends JUnitRouteTest {
   public void testExtractMethodExample() {
     //#extractMethod
 
-    final Route route = route(
+    final Route route = concat(
         get(() -> 
             complete("This is a GET request.")
         ),
@@ -125,9 +175,9 @@ public class MethodDirectivesExamplesTest extends JUnitRouteTest {
   public void testOverrideMethodWithParameter() {
     //#overrideMethodWithParameter
 
-    final Route route = route(
+    final Route route = concat(
         overrideMethodWithParameter("method", () -> 
-          route(
+          concat(
             get(() -> complete("This looks like a GET request.")),
             post(() -> complete("This looks like a POST request."))
           )
