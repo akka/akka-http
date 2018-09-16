@@ -122,7 +122,7 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
 
     "in-flight request responses should include Connection: close and connection should be closed" in new TestSetup {
       val r1 = makeRequest() // establish connection
-      val time: FiniteDuration = 3.seconds
+      val time: FiniteDuration = 6.seconds
 
       ensureServerDeliveredRequest() // we want the request to be in the server user's hands before we cause termination
       serverBinding.terminate(hardDeadline = time)
