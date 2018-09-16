@@ -56,7 +56,7 @@ public class HighLevelServerExample extends AllDirectives {
       // here the complete behavior for this server is defined
 
       // only handle GET requests
-      get(() -> route(
+      get(() -> concat(
         // matches the empty path
         pathSingleSlash(() ->
           // return a constant string with a certain content type

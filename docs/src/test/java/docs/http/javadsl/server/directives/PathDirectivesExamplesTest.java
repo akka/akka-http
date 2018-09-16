@@ -197,11 +197,11 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   public void testPathExample() {
     //#pathPrefix
     final Route route =
-        route(
+        concat(
             path("foo", () -> complete("/foo")),
             path(segment("foo").slash("bar"), () -> complete("/foo/bar")),
             pathPrefix("ball", () ->
-                route(
+                concat(
                     pathEnd(() -> complete("/ball")),
                     path(integerSegment(), (i) ->
                         complete((i % 2 == 0) ? "even ball" : "odd ball"))
@@ -221,9 +221,9 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   public void testPathEnd() {
     //#path-end
     final Route route =
-        route(
+        concat(
             pathPrefix("foo", () ->
-                route(
+                concat(
                     pathEnd(() -> complete("/foo")),
                     path("bar", () -> complete("/foo/bar"))
                 )
@@ -241,9 +241,9 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   public void testPathEndOrSingleSlash() {
     //#path-end-or-single-slash
     final Route route =
-        route(
+        concat(
             pathPrefix("foo", () ->
-                route(
+                concat(
                     pathEndOrSingleSlash(() -> complete("/foo")),
                     path("bar", () -> complete("/foo/bar"))
                 )
@@ -260,9 +260,9 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   public void testPathPrefix() {
     //#path-prefix
     final Route route =
-        route(
+        concat(
             pathPrefix("ball", () ->
-                route(
+                concat(
                     pathEnd(() -> complete("/ball")),
                     path(integerSegment(), (i) ->
                         complete((i % 2 == 0) ? "even ball" : "odd ball"))
@@ -280,9 +280,9 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   public void testPathPrefixTest() {
     //#path-prefix-test
     final Route route =
-        route(
+        concat(
             pathPrefixTest(segment("foo").orElse("bar"), () ->
-                route(
+                concat(
                       pathPrefix("foo", () -> completeWithUnmatchedPath.get()),
                       pathPrefix("bar", () -> completeWithUnmatchedPath.get())
                 )
@@ -298,10 +298,10 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   public void testPathSingleSlash() {
     //#path-single-slash
     final Route route =
-        route(
+        concat(
             pathSingleSlash(() -> complete("root")),
             pathPrefix("ball", () ->
-                route(
+                concat(
                     pathSingleSlash(() -> complete("/ball/")),
                     path(integerSegment(), (i) -> complete((i % 2 == 0) ? "even ball" : "odd ball"))
                 )
@@ -319,9 +319,9 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   public void testPathSuffix() {
     //#path-suffix
     final Route route =
-        route(
+        concat(
             pathPrefix("start", () ->
-                route(
+                concat(
                     pathSuffix("end", () -> completeWithUnmatchedPath.get()),
                     pathSuffix(segment("foo").slash("bar").concat("baz"), () ->
                         completeWithUnmatchedPath.get())
@@ -338,7 +338,7 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   public void testPathSuffixTest() {
     //#path-suffix-test
     final Route route =
-        route(
+        concat(
             pathSuffixTest(slash(), () -> complete("slashed")),
             complete("unslashed")
         );
@@ -352,9 +352,9 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   public void testRawPathPrefix() {
     //#raw-path-prefix
     final Route route =
-        route(
+        concat(
             pathPrefix("foo", () ->
-                route(
+                concat(
                       rawPathPrefix("bar", () -> completeWithUnmatchedPath.get()),
                       rawPathPrefix("doo", () -> completeWithUnmatchedPath.get())
                 )
@@ -370,7 +370,7 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   public void testRawPathPrefixTest() {
     //#raw-path-prefix-test
     final Route route =
-        route(
+        concat(
             pathPrefix("foo", () ->
                 rawPathPrefixTest("bar", () -> completeWithUnmatchedPath.get())
             )
@@ -387,7 +387,7 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
     final Route route =
         redirectToTrailingSlashIfMissing(
             StatusCodes.MOVED_PERMANENTLY, () ->
-            route(
+            concat(
                 path(segment("foo").slash(), () -> complete("OK")),
                 path(segment("bad-1"), () ->
                     // MISTAKE!
@@ -424,7 +424,7 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
     final Route route =
         redirectToNoTrailingSlashIfPresent(
             StatusCodes.MOVED_PERMANENTLY, () ->
-            route(
+            concat(
                 path("foo", () -> complete("OK")),
                 path(segment("bad").slash(), () ->
                     // MISTAKE!
@@ -456,7 +456,7 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   public void testIgnoreTrailingSlash() {
     //#ignoreTrailingSlash
     final Route route = ignoreTrailingSlash(() ->
-      route(
+      concat(
         path("foo", () ->
           // Thanks to `ignoreTrailingSlash` it will serve both `/foo` and `/foo/`.
           complete("OK")),

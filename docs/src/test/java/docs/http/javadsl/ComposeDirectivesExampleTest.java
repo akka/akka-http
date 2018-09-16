@@ -53,7 +53,7 @@ public class ComposeDirectivesExampleTest extends AllDirectives {
   private Route createRoute() {
     BiFunction<PathMatcher1<Integer>, Function<Integer,Route>, Route> pathWithInteger = this::path;
 
-    return route(
+    return concat(
       //anyOf examples
       path("hello", () ->
         anyOf(this::get, this::put, () ->

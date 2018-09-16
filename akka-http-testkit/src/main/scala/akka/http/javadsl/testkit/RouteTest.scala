@@ -72,7 +72,7 @@ abstract class RouteTest extends AllDirectives with WSTestRequestBuilding {
   @varargs
   def testRoute(first: Route, others: Route*): TestRoute =
     new TestRoute {
-      val underlying: Route = Directives.route(first +: others: _*)
+      val underlying: Route = Directives.concat(first, others: _*)
 
       def run(request: HttpRequest): TestRouteResult = runRoute(underlying, request)
       def runWithRejections(request: HttpRequest): TestRouteResult = runRouteUnSealed(underlying, request)

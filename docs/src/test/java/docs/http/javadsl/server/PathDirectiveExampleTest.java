@@ -72,7 +72,7 @@ public class PathDirectiveExampleTest extends JUnitRouteTest {
 
     // matches "/user/" with the first subroute, "/user" (without a trailing slash)
     // with the second subroute, and "/user/<user-id>" with the last one.
-    pathPrefix("user", () -> route(
+    pathPrefix("user", () -> concat(
       pathSingleSlash(() ->
         complete(StatusCodes.OK)
       ),

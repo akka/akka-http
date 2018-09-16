@@ -15,8 +15,6 @@ import akka.stream.javadsl.Sink;
 import akka.util.ByteString;
 import org.junit.Test;
 
-import static akka.http.javadsl.server.Directives.*;
-
 public class RouteDirectivesTest extends JUnitRouteTest {
 
   @Test
@@ -92,5 +90,10 @@ public class RouteDirectivesTest extends JUnitRouteTest {
       .run(HttpRequest.create("/limit-5").withEntity("1234567890"))
       .assertStatusCode(StatusCodes.INTERNAL_SERVER_ERROR)
       .assertEntity("There was an internal server error.");
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testEmptyRoutesConcatenation() {
+    route();
   }
 }

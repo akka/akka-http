@@ -142,11 +142,11 @@ to creating routes via @scala[@scaladoc[Route](akka.http.scaladsl.server.index#R
 
 @@@ div { .group-java }
 
-Writing multiple routes that are tried as alternatives (in-order of definition), is as simple as using the `route(route1, route2)`,
+Writing multiple routes that are tried as alternatives (in-order of definition), is as simple as using the `concat(route1, route2)`,
 method:
 
 ```java
-Route routes = route(
+Route routes = concat(
   pathSingleSlash(() ->
     getFromResource("web/calculator.html")
   ),
@@ -301,13 +301,13 @@ Again, instead of extracting own combined directives to its own method, we can m
 
 In this previous example, the the inner route function provided to `allOf` will be called when the request is a `GET` and with the extracted client IP obtained from the second directive.
 
-As you have already seen in the previous section, you can also use the `route` method defined in @unidoc[RouteDirectives] as an alternative to `orElse` chaining. Here you can see the first example again, rewritten using `route`:
+As you have already seen in the previous section, you can also use the `concat` method defined in @unidoc[RouteDirectives] as an alternative to `orElse` chaining. Here you can see the first example again, rewritten using `concat`:
 
-@@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #usingRoute }
+@@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #usingConcat }
 
-The `route` combinator comes handy when you want to avoid nesting. Here you can see an illustrative example:
+The `concat` combinator comes handy when you want to avoid nesting. Here you can see an illustrative example:
  
-@@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #usingRouteBig }
+@@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #usingConcatBig }
 
 Notice how you could adjust the indentation in these last two examples to have a more readable code.
 

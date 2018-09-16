@@ -71,7 +71,7 @@ public class HttpServerDynamicRoutingExampleTest extends AllDirectives {
       ).reduce(reject(), Route::orElse)
     );
 
-    return route(fixedRoute, dynamicRoute);
+    return concat(fixedRoute, dynamicRoute);
   }
 
   private static class MockDefinition {

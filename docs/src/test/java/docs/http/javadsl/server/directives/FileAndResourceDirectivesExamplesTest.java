@@ -88,7 +88,7 @@ public class FileAndResourceDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testListDirectoryContents() {
     //#listDirectoryContents
-    final Route route = Directives.route(
+    final Route route = Directives.concat(
       path("tmp", () -> listDirectoryContents("/tmp")),
       path("custom", () -> {
         // implement your custom renderer here

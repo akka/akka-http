@@ -43,7 +43,7 @@ public class HttpServerMinimalExampleTest extends AllDirectives {
   }
 
   private Route createRoute() {
-    return route(
+    return concat(
         path("hello", () ->
             get(() ->
                 complete("<h1>Say hello to akka-http</h1>"))));
