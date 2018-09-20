@@ -54,6 +54,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   with DefaultSSLContextCreation {
 
   akka.http.Version.check(system.settings.config)
+  akka.AkkaVersion.require("akka-http", akka.http.Version.supportedAkkaVersion)
 
   import Http._
 

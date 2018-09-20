@@ -23,6 +23,7 @@ object VersionGenerator {
          |
          |object Version {
          |  val current: String = "%s"
+         |  val supportedAkkaVersion = "%s"
          |  def check(config: Config): Unit = {
          |    val configVersion = config.getString("akka.http.version")
          |    if (configVersion != current) {
@@ -37,7 +38,7 @@ object VersionGenerator {
 
   def generateVersion(dir: SettingKey[File], locate: File => File, template: String) = Def.task[Seq[File]] {
     val file = locate(dir.value)
-    val content = template.stripMargin.format(version.value)
+    val content = template.stripMargin.format(version.value, AkkaDependency.akkaVersion)
     if (!file.exists || IO.read(file) != content) IO.write(file, content)
     Seq(file)
   }
