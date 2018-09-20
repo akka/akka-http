@@ -37,6 +37,7 @@ class DiscardEntityDefaultExceptionHandlerSpec extends RoutingSpec with ScalaFut
 
   private val ThousandElements: Stream[ByteString] = Stream.continually(gimmeElement()).take(numElems)
   private val RequestToCrash = Get("/crash", HttpEntity(`text/plain(UTF-8)`, Source[ByteString](ThousandElements)))
+  private val RequestToCrashConsumingFirst = Get("/crashAfterConsuming", HttpEntity(`text/plain(UTF-8)`, Source[ByteString](ThousandElements)))
 
   "Default ExceptionHandler" should {
     "rejectEntity by default" in {
@@ -48,7 +49,7 @@ class DiscardEntityDefaultExceptionHandlerSpec extends RoutingSpec with ScalaFut
       }
     }
     "rejectEntity by default even if consumed already" in {
-      RequestToCrash ~> Route.seal(route) ~> check {
+      RequestToCrashConsumingFirst ~> Route.seal(route) ~> check {
         status shouldBe InternalServerError
         eventually {
           elementsEmitted shouldBe numElems
