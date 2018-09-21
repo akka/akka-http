@@ -13,7 +13,7 @@
    - Run a test against the staging repository to make sure the release went well, for example by using https://github.com/akka/akka-http-scala-seed.g8 and adding the sonatype staging repo with `resolvers += "Staging Repo" at "https://oss.sonatype.org/content/repositories/comtypesafe-xxx"`
    - Release the staging repository to Maven Central.
 1. Create a new milestone for the next version at https://github.com/akka/akka-http/milestones , move all unclosed issues there and close the version you're releasing
-1. Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key.
+1. Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key *of all current compatible branches*.
 1. Send a release notification to akka-user and tweet using the akka account (or ask someone to) about the new release
 1. Log into gustav.akka.io as akkarepo and update the `current` links on repo.akka.io to point to the latest version with `ln -nsf <latestversion> www/docs/akka-http/current; ln -nsf <latestversion> www/api/akka-http/current; ln -nsf <latestversion> www/japi/akka-http/current`.
 
