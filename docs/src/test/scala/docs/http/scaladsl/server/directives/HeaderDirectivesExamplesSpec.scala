@@ -112,10 +112,10 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
         case Some(userId) => complete(s"The user is $userId")
         case None         => complete(s"No user was provided")
       } ~ // can also be written as:
-        optionalHeaderValueByName("port") { port =>
+        optionalHeaderValueByName("X-User-Id") { userId =>
           complete {
-            port match {
-              case Some(p) => s"The user is $p"
+            userId match {
+              case Some(u) => s"The user is $u"
               case _       => "No user was provided"
             }
           }
