@@ -27,33 +27,33 @@ class DiscardEntityDefaultExceptionHandlerSpec extends RoutingSpec with ScalaFut
     }
   )
 
-  private val numElems = 1000
-  @volatile
-  private var elementsEmitted = 0
-  private def gimmeElement(): ByteString = {
-    elementsEmitted = elementsEmitted + 1
-    ByteString("Foo")
+  trait Fixture {
+    @volatile
+    var streamConsumed = false
+    val thousandElements: Stream[ByteString] = Stream.continually(ByteString("foo")).take(999).append {
+      streamConsumed = true
+      Seq(ByteString("end"))
+    }
+
   }
 
-  private val ThousandElements: Stream[ByteString] = Stream.continually(gimmeElement()).take(numElems)
-  private val RequestToCrash = Get("/crash", HttpEntity(`text/plain(UTF-8)`, Source[ByteString](ThousandElements)))
-  private val RequestToCrashConsumingFirst = Get("/crashAfterConsuming", HttpEntity(`text/plain(UTF-8)`, Source[ByteString](ThousandElements)))
-
   "Default ExceptionHandler" should {
-    "rejectEntity by default" in {
-      RequestToCrash ~> Route.seal(route) ~> check {
+    "rejectEntity by default" in new Fixture {
+      streamConsumed shouldBe false
+      Get("/crash", HttpEntity(`text/plain(UTF-8)`, Source[ByteString](thousandElements))) ~> Route.seal(route) ~> check {
         status shouldBe InternalServerError
-        eventually {
-          elementsEmitted shouldBe numElems
+        eventually { // Stream will be eventually consumed, once all the stream bytes are successfully discarded
+          streamConsumed shouldBe true
         }
       }
     }
-    "rejectEntity by default even if consumed already" in {
-      RequestToCrashConsumingFirst ~> Route.seal(route) ~> check {
+
+    "rejectEntity by default even if consumed already" in new Fixture {
+      streamConsumed shouldBe false
+      Get("/crashAfterConsuming", HttpEntity(`text/plain(UTF-8)`, Source[ByteString](thousandElements))) ~> Route.seal(route) ~> check {
+        // Stream should be consumed immediately after the request finishes
+        streamConsumed shouldBe true
         status shouldBe InternalServerError
-        eventually {
-          elementsEmitted shouldBe numElems
-        }
       }
     }
   }
