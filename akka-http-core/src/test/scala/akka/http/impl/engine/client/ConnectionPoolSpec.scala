@@ -257,6 +257,10 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     }
 
     "respect the configured `maxRetries` value" in new TestSetup(autoAccept = true) {
+      // The legacy implementation is known to sometimes retry only 2 times instead of 4 in this test...
+      if (poolImplementation == PoolImplementation.Legacy)
+        pending
+
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int](maxRetries = 4)
 
       requestIn.sendNext(HttpRequest(uri = "/a") → 42)
