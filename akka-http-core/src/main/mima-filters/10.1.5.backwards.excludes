@@ -1,0 +1,7 @@
+# HttpEntity hierarchy is sealed / @DoNotInherit
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpEntity.isStrict")
+# Scala 2.11 only:
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity.isStrict")
+
+# Internal API
+ProblemFilters.exclude[Problem]("akka.http.impl.*")

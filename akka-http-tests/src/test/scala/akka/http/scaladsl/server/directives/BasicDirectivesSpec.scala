@@ -160,7 +160,7 @@ class BasicDirectivesSpec extends RoutingSpec {
         extractRequestEntity { before ⇒
           extractStrictEntity(200.millis) { _ ⇒
             extractRequestEntity { after ⇒
-              complete(Seq(before, after).map(_.isInstanceOf[HttpEntity.Strict]).mkString(" => "))
+              complete(Seq(before, after).map(_.isStrict).mkString(" => "))
             }
           }
         }
