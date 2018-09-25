@@ -8,7 +8,7 @@ import akka.annotation.InternalApi
 import akka.http.impl.engine.client.PoolFlow.RequestContext
 import akka.http.impl.util._
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
+import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 
 import scala.concurrent.duration._
@@ -25,7 +25,6 @@ private[pool] abstract class SlotContext {
   def openConnection(): Unit
   def isConnectionClosed: Boolean
 
-  def pushRequestToConnectionAndThen(request: HttpRequest, nextState: SlotState): SlotState
   def dispatchResponseResult(req: RequestContext, result: Try[HttpResponse]): Unit
 
   def willCloseAfter(res: HttpResponse): Boolean
@@ -52,6 +51,8 @@ private[pool] sealed abstract class SlotState extends Product {
   def onConnectionAttemptFailed(ctx: SlotContext, cause: Throwable): SlotState = illegalState(ctx, "onConnectionAttemptFailed")
 
   def onNewRequest(ctx: SlotContext, requestContext: RequestContext): SlotState = illegalState(ctx, "onNewRequest")
+
+  def onRequestDispatched(ctx: SlotContext): SlotState = illegalState(ctx, "onRequestDispatched")
 
   /** Will be called either immediately if the request entity is strict or otherwise later */
   def onRequestEntityCompleted(ctx: SlotContext): SlotState = illegalState(ctx, "onRequestEntityCompleted")
@@ -157,29 +158,24 @@ private[pool] object SlotState {
       Connecting(requestContext)
     }
   }
-  case object Idle extends ConnectedState with IdleState with WithRequestDispatching {
+  case object Idle extends ConnectedState with IdleState {
     override def onNewRequest(ctx: SlotContext, requestContext: RequestContext): SlotState =
-      dispatchRequestToConnection(ctx, requestContext)
+      PushingRequestToConnection(requestContext)
 
     override def onConnectionCompleted(ctx: SlotContext): SlotState = Unconnected
     override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = Unconnected
   }
-  sealed trait WithRequestDispatching { _: ConnectedState ⇒
-    def dispatchRequestToConnection(ctx: SlotContext, ongoingRequest: RequestContext): SlotState =
-      ctx.pushRequestToConnectionAndThen(ongoingRequest.request, WaitingForResponse(ongoingRequest, waitingForEndOfRequestEntity = true))
-  }
-
-  final case class Connecting(ongoingRequest: RequestContext) extends ConnectedState with BusyState with WithRequestDispatching {
+  final case class Connecting(ongoingRequest: RequestContext) extends ConnectedState with BusyState {
     val waitingForEndOfRequestEntity = false
 
     override def onConnectionAttemptSucceeded(ctx: SlotContext, outgoingConnection: Http.OutgoingConnection): SlotState = {
       ctx.debug("Slot connection was established")
-      dispatchRequestToConnection(ctx, ongoingRequest)
+      PushingRequestToConnection(ongoingRequest)
     }
     // connection failures are handled by BusyState implementations
   }
 
-  case object PreConnecting extends ConnectedState with IdleState with WithRequestDispatching {
+  case object PreConnecting extends ConnectedState with IdleState {
     override def onConnectionAttemptSucceeded(ctx: SlotContext, outgoingConnection: Http.OutgoingConnection): SlotState = {
       ctx.debug("Slot connection was (pre-)established")
       Idle
@@ -199,6 +195,13 @@ private[pool] object SlotState {
       ctx.debug("Connection was closed by [{}] while preconnecting because of [{}]", signal, cause.getMessage)
       Unconnected
     }
+  }
+  final case class PushingRequestToConnection(ongoingRequest: RequestContext) extends ConnectedState with BusyState {
+    override def waitingForEndOfRequestEntity: Boolean = ???
+
+    override def onRequestDispatched(ctx: SlotContext): SlotState =
+      if (ongoingRequest.request.entity.isStrict) WaitingForResponse(ongoingRequest, waitingForEndOfRequestEntity = false)
+      else WaitingForResponse(ongoingRequest, waitingForEndOfRequestEntity = true)
   }
   final case class WaitingForResponse(ongoingRequest: RequestContext, waitingForEndOfRequestEntity: Boolean) extends ConnectedState with BusyState {
 
