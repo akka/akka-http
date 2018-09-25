@@ -138,14 +138,23 @@ private[client] object NewHostConnectionPool {
 
           val onTimeout = event0("onTimeout", _.onTimeout(_))
 
-          val setState = event[SlotState]("setState", (old, slot, newState) ⇒ newState)
-
           private def event0(name: String, transition: (SlotState, Slot) ⇒ SlotState): Event[Unit] = new Event(name, (state, slot, _) ⇒ transition(state, slot))
           private def event[T](name: String, transition: (SlotState, Slot, T) ⇒ SlotState): Event[T] = new Event[T](name, transition)
         }
 
-        final class Slot(val slotId: Int) extends SlotContext {
-          private[this] var state: SlotState = SlotState.Unconnected
+        protected trait StateHandling {
+          private[this] var _state: SlotState = Unconnected
+          private[this] var _changedIntoThisStateNanos: Long = System.nanoTime()
+
+          def changedIntoThisStateNanos: Long = _changedIntoThisStateNanos
+          def state: SlotState = _state
+          def state_=(newState: SlotState): Unit = {
+            _state = newState
+            _changedIntoThisStateNanos = System.nanoTime()
+          }
+        }
+
+        final class Slot(val slotId: Int) extends SlotContext with StateHandling {
           private[this] var currentTimeoutId: Long = -1
           private[this] var currentTimeout: Cancellable = _
           private[this] var isEnqueuedForResponseDispatch: Boolean = false
@@ -205,7 +214,9 @@ private[client] object NewHostConnectionPool {
                 cancelCurrentTimeout()
 
                 val previousState = state
-                debug(s"Before event [${event.name}] In state [${state.name}]")
+                val timeInState = System.nanoTime() - changedIntoThisStateNanos
+
+                debug(s"Before event [${event.name}] In state [${state.name}] for [${timeInState / 1000000} ms]")
                 state = event.transition(state, this, arg)
                 debug(s"After event [${event.name}] State change [${previousState.name}] -> [${state.name}]")
 
@@ -291,9 +302,6 @@ private[client] object NewHostConnectionPool {
 
             loop(event, arg, 10)
           }
-
-          protected def setState(newState: SlotState): Unit =
-            updateState(Event.setState, newState)
 
           def debug(msg: String): Unit =
             if (log.isDebugEnabled)
