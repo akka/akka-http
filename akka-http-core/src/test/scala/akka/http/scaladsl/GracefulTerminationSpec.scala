@@ -126,6 +126,7 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
 
       ensureServerDeliveredRequest() // we want the request to be in the server user's hands before we cause termination
       serverBinding.terminate(hardDeadline = time)
+      Thread.sleep(time.toMillis / 2)
       reply(_ ⇒ HttpResponse(StatusCodes.OK))
 
       val response = r1.futureValue
