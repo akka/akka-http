@@ -43,7 +43,7 @@ will handle *all* rejections that reach it.
 
 @@@ note
 Please note that since version `10.1.2`, the default `RejectionHandler` will also discard the entity bytes automatically. If you want to change this behavior,
-please refer to @ref[Customising rejection HTTP Responses](rejections.md#customising-rejections) if you want to change this behavior; however, might cause connections to stall 
+please refer to @ref[Customising rejection HTTP Responses](rejections.md#customising-rejections); however, might cause connections to stall 
 if the entity is not properly rejected or cancelled on the client side.
 @@@
 

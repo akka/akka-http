@@ -82,7 +82,7 @@ have a read at this excellent post by A. Shipilёv: [The Exceptional Performance
 
 @@@ note
 Please note that since version `10.1.6`, the default `ExceptionHandler` will also discard the entity bytes automatically. If you want to change this behavior,
-please refer to @ref[the section above](exception-handling.md#exception-handling) if you want to change this behavior; however, might cause connections to stall
+please refer to @ref[the section above](exception-handling.md#exception-handling); however, might cause connections to stall
 if the entity is not properly rejected or cancelled on the client side.
 @@@
 
