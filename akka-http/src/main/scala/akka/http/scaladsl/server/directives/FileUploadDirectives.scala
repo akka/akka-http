@@ -15,6 +15,7 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import akka.stream.scaladsl._
 import akka.http.javadsl
+import akka.http.scaladsl.server.RouteResult
 
 /**
  * @groupname fileupload File upload directives
@@ -23,7 +24,6 @@ import akka.http.javadsl
 trait FileUploadDirectives {
 
   import BasicDirectives._
-  import RouteDirectives._
   import FutureDirectives._
   import MarshallingDirectives._
 
@@ -118,22 +118,28 @@ trait FileUploadDirectives {
    */
   def fileUpload(fieldName: String): Directive1[(FileInfo, Source[ByteString, Any])] =
     entity(as[Multipart.FormData]).flatMap { formData ⇒
-      extractRequestContext.flatMap { ctx ⇒
-        implicit val mat = ctx.materializer
+      Directive[Tuple1[(FileInfo, Source[ByteString, Any])]] { inner ⇒ ctx ⇒
+        import ctx.materializer
+        import ctx.executionContext
 
-        val onePartSource: Source[(FileInfo, Source[ByteString, Any]), Any] = formData.parts
-          .filter(part ⇒ part.filename.isDefined && part.name == fieldName)
-          .map(part ⇒ (FileInfo(part.name, part.filename.get, part.entity.contentType), part.entity.dataBytes))
-          .take(1)
+        // Streamed multipart data must be processed in a certain way, that is, before you can expect the next part you
+        // must have fully read the entity of the current part.
+        // That means, we cannot just do `formData.parts.runWith(Sink.seq)` and then look for the part we are interested in
+        // but instead, we must actively process all the parts, regardless of whether we are interested in the data or not.
+        // Fortunately, continuation passing style of routing allows adding pre- and post-processing quite naturally.
+        formData.parts
+          .runFoldAsync(Option.empty[RouteResult]) {
+            case (None, part) if part.filename.isDefined && part.name == fieldName ⇒
 
-        val onePartF = onePartSource.runWith(Sink.headOption[(FileInfo, Source[ByteString, Any])])
+              val data = (FileInfo(part.name, part.filename.get, part.entity.contentType), part.entity.dataBytes)
+              inner(Tuple1(data))(ctx).map(Some(_))
 
-        onSuccess(onePartF)
+            case (res, part) ⇒
+              part.entity.discardBytes()
+              Future.successful(res)
+          }
+          .map(_.getOrElse(RouteResult.Rejected(MissingFormFieldRejection(fieldName) :: Nil)))
       }
-
-    }.flatMap {
-      case Some(tuple) ⇒ provide(tuple)
-      case None        ⇒ reject(MissingFormFieldRejection(fieldName))
     }
 
   /**
