@@ -11,6 +11,7 @@ import akka.http.scaladsl.ClientTransport
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.Duration
+import scala.concurrent.duration.FiniteDuration
 
 @ApiMayChange
 sealed trait PoolImplementation extends js.PoolImplementation
@@ -30,6 +31,8 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   def maxRetries: Int
   def maxOpenRequests: Int
   def pipeliningLimit: Int
+  def baseConnectionBackoff: FiniteDuration
+  def maxConnectionBackoff: FiniteDuration
   def idleTimeout: Duration
   def connectionSettings: ClientConnectionSettings
 
@@ -54,6 +57,9 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   override def withMaxRetries(n: Int): ConnectionPoolSettings = self.copy(maxRetries = n)
   override def withMaxOpenRequests(newValue: Int): ConnectionPoolSettings = self.copy(maxOpenRequests = newValue)
   override def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copy(pipeliningLimit = newValue)
+  override def withBaseConnectionBackoff(newValue: FiniteDuration): ConnectionPoolSettings = self.copy(baseConnectionBackoff = newValue)
+  override def withMaxConnectionBackoff(newValue: FiniteDuration): ConnectionPoolSettings = self.copy(maxConnectionBackoff = newValue)
+
   override def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue)
 
   // overloads for idiomatic Scala use

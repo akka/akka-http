@@ -10,6 +10,7 @@ import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSet
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.Duration
+import scala.concurrent.duration.FiniteDuration
 
 /** INTERNAL API */
 @InternalApi
@@ -19,6 +20,8 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   maxRetries:                        Int,
   maxOpenRequests:                   Int,
   pipeliningLimit:                   Int,
+  baseConnectionBackoff:             FiniteDuration,
+  maxConnectionBackoff:              FiniteDuration,
   idleTimeout:                       Duration,
   connectionSettings:                ClientConnectionSettings,
   poolImplementation:                PoolImplementation,
@@ -49,7 +52,9 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   }
 }
 
-object ConnectionPoolSettingsImpl extends SettingsCompanion[ConnectionPoolSettingsImpl]("akka.http.host-connection-pool") {
+/** INTERNAL API */
+@InternalApi
+private[akka] object ConnectionPoolSettingsImpl extends SettingsCompanion[ConnectionPoolSettingsImpl]("akka.http.host-connection-pool") {
   def fromSubConfig(root: Config, c: Config) = {
     new ConnectionPoolSettingsImpl(
       c getInt "max-connections",
@@ -57,6 +62,8 @@ object ConnectionPoolSettingsImpl extends SettingsCompanion[ConnectionPoolSettin
       c getInt "max-retries",
       c getInt "max-open-requests",
       c getInt "pipelining-limit",
+      c getFiniteDuration "base-connection-backoff",
+      c getFiniteDuration "max-connection-backoff",
       c getPotentiallyInfiniteDuration "idle-timeout",
       ClientConnectionSettingsImpl.fromSubConfig(root, c.getConfig("client")),
       c.getString("pool-implementation").toLowerCase match {

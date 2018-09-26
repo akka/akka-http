@@ -23,7 +23,7 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.util.OptionVal
 
 import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
@@ -70,6 +70,9 @@ private[client] object NewHostConnectionPool {
         val slots = Vector.tabulate(_settings.maxConnections)(new Slot(_))
         val slotsWaitingForDispatch: util.Deque[Slot] = new util.ArrayDeque[Slot]
         val retryBuffer: util.Deque[RequestContext] = new util.ArrayDeque[RequestContext]
+        var _connectionEmbargo: FiniteDuration = Duration.Zero
+        def baseEmbargo: FiniteDuration = _settings.baseConnectionBackoff
+        def maxBaseEmbargo: FiniteDuration = _settings.maxConnectionBackoff / 2 // because we'll add a random component of the same size to the base
 
         override def preStart(): Unit = {
           pull(requestsIn)
@@ -77,8 +80,12 @@ private[client] object NewHostConnectionPool {
         }
 
         def onPush(): Unit = {
-          dispatchRequest(grab(requestsIn))
-          pullIfNeeded()
+          val nextRequest = grab(requestsIn)
+          if (hasIdleSlots) {
+            dispatchRequest(nextRequest)
+            pullIfNeeded()
+          } else // embargo might change state from unconnected -> embargoed losing an idle slot between the pull and the push here
+            retryBuffer.addLast(nextRequest)
         }
         def onPull(): Unit =
           if (!slotsWaitingForDispatch.isEmpty)
@@ -115,13 +122,29 @@ private[client] object NewHostConnectionPool {
 
         def numConnectedSlots: Int = slots.count(_.isConnected)
 
+        def onConnectionAttemptFailed(atPreviousEmbargoLevel: FiniteDuration): Unit = {
+          _connectionEmbargo match {
+            case Duration.Zero            ⇒ _connectionEmbargo = baseEmbargo
+            case `atPreviousEmbargoLevel` ⇒ _connectionEmbargo = (_connectionEmbargo * 2) min maxBaseEmbargo
+            case _                        ⇒
+            // don't increase if the embargo level has already changed since the start of the connection attempt
+          }
+          slots.foreach(_.onNewConnectionEmbargo(_connectionEmbargo))
+        }
+        def onConnectionAttemptSucceeded(): Unit = _connectionEmbargo = Duration.Zero
+        def currentEmbargo: FiniteDuration = _connectionEmbargo
+
         final case class Event[T](name: String, transition: (SlotState, Slot, T) ⇒ SlotState) {
+          def preApply(t: T): Event[Unit] = Event(name, (state, slot, _) ⇒ transition(state, slot, t))
           override def toString: String = s"Event($name)"
         }
         object Event {
           val onPreConnect = event0("onPreConnect", _.onPreConnect(_))
           val onConnectionAttemptSucceeded = event[Http.OutgoingConnection]("onConnectionAttemptSucceeded", _.onConnectionAttemptSucceeded(_, _))
           val onConnectionAttemptFailed = event[Throwable]("onConnectionAttemptFailed", _.onConnectionAttemptFailed(_, _))
+
+          val onNewConnectionEmbargo = event[FiniteDuration]("onNewConnectionEmbargo", _.onNewConnectionEmbargo(_, _))
+
           val onNewRequest = event[RequestContext]("onNewRequest", _.onNewRequest(_, _))
 
           val onRequestDispatched = event0("onRequestDispatched", _.onRequestDispatched(_))
@@ -180,6 +203,9 @@ private[client] object NewHostConnectionPool {
           def onConnectionAttemptFailed(cause: Throwable): Unit =
             updateState(Event.onConnectionAttemptFailed, cause)
 
+          def onNewConnectionEmbargo(embargo: FiniteDuration): Unit =
+            updateState(Event.onNewConnectionEmbargo, embargo)
+
           def onNewRequest(req: RequestContext): Unit =
             updateState(Event.onNewRequest, req)
 
@@ -235,12 +261,12 @@ private[client] object NewHostConnectionPool {
                   case _ ⇒ // no timeout set, nothing to do
                 }
 
-                if (state == Unconnected && connection != null) {
+                if (!state.isConnected && connection != null) {
                   debug(s"State change from [${previousState.name}] to [Unconnected]. Closing the existing connection.")
                   closeConnection()
                 }
 
-                if (!previousState.isIdle && state.isIdle) {
+                if (!previousState.isIdle && state.isIdle && !(state == Unconnected && currentEmbargo != Duration.Zero)) {
                   debug("Slot became idle... Trying to pull")
                   pullIfNeeded()
                 }
@@ -266,7 +292,9 @@ private[client] object NewHostConnectionPool {
                   case WaitingForEndOfResponseEntity(_, HttpResponse(_, _, _: HttpEntity.Strict, _), _) ⇒
                     // the connection cannot drive these for a strict entity so we have to loop ourselves
                     OptionVal.Some(Event.onResponseEntityCompleted)
-                  case Unconnected if numConnectedSlots < settings.minConnections ⇒
+                  case Unconnected if currentEmbargo != Duration.Zero ⇒
+                    OptionVal.Some(Event.onNewConnectionEmbargo.preApply(currentEmbargo))
+                  case s if !s.isConnected && s.isIdle && numConnectedSlots < settings.minConnections ⇒
                     debug(s"Preconnecting because number of connected slots fell down to $numConnectedSlots")
                     OptionVal.Some(Event.onPreConnect)
                   case _ ⇒ OptionVal.None
@@ -370,6 +398,7 @@ private[client] object NewHostConnectionPool {
           responseIn: SubSinkInlet[HttpResponse]
         ) extends InHandler with OutHandler { connection ⇒
           var ongoingResponseEntity: Option[HttpEntity] = None
+          var connectionEstablished: Boolean = false
 
           /** Will only be executed if this connection is still the current connection for its slot */
           def withSlot(f: Slot ⇒ Unit): Unit =
@@ -435,10 +464,11 @@ private[client] object NewHostConnectionPool {
               slot.onConnectionCompleted()
             }
           override def onUpstreamFailure(ex: Throwable): Unit =
-            withSlot { slot ⇒
-              slot.debug("Connection failed")
-              slot.onConnectionFailed(ex)
-            }
+            if (connectionEstablished)
+              withSlot { slot ⇒
+                slot.debug("Connection failed")
+                slot.onConnectionFailed(ex)
+              }
 
           def onPull(): Unit = () // emitRequests makes sure not to push too early
 
@@ -461,6 +491,8 @@ private[client] object NewHostConnectionPool {
               })
         }
         def openConnection(slot: Slot): SlotConnection = {
+          val currentEmbargoLevel = currentEmbargo
+
           val requestOut = new SubSourceOutlet[HttpRequest](s"PoolSlot[${slot.slotId}].requestOut")
           val responseIn = new SubSinkInlet[HttpResponse](s"PoolSlot[${slot.slotId}].responseIn")
           responseIn.pull()
@@ -477,8 +509,19 @@ private[client] object NewHostConnectionPool {
           responseIn.setHandler(slotCon)
 
           connection.onComplete(safely {
-            case Success(outgoingConnection) ⇒ slotCon.withSlot(_.onConnectionAttemptSucceeded(outgoingConnection))
-            case Failure(cause)              ⇒ slotCon.withSlot(_.onConnectionAttemptFailed(cause))
+            case Success(outgoingConnection) ⇒
+              slotCon.withSlot { sl ⇒
+                slotCon.connectionEstablished = true
+                slot.debug("Connection attempt succeeded")
+                onConnectionAttemptSucceeded()
+                sl.onConnectionAttemptSucceeded(outgoingConnection)
+              }
+            case Failure(cause) ⇒
+              slotCon.withSlot { sl ⇒
+                slot.debug("Connection attempt failed with {}", cause.getMessage)
+                onConnectionAttemptFailed(currentEmbargoLevel)
+                sl.onConnectionAttemptFailed(cause)
+              }
           })(ExecutionContexts.sameThreadExecutionContext)
 
           slotCon

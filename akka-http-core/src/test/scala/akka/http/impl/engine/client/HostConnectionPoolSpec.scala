@@ -394,7 +394,44 @@ class HostConnectionPoolSpec extends AkkaSpec(
       "provide access to basic metrics as the materialized value" in pending
       "ignore the pipelining setting (for now)" in pending
       "work correctly in the presence of `Connection: close` headers" in pending
-      "if connecting attempt fails, backup the next connection attempts" in pending
+      "if connecting attempt fails, backup the next connection attempts" in new SetupWithServerProbes(
+        _.withBaseConnectionBackoff(200.millis)
+          .withMaxConnectionBackoff(2000.millis)
+          .withMinConnections(1)
+          .withMaxConnections(2)
+      ) {
+        expectNextConnectionAttempt()
+          .failConnectionAttempt(new RuntimeException("Server out of coffee"))
+
+        // leave a bit room for the failure to trigger backoff
+        Thread.sleep(10)
+
+        pushRequest()
+        pushRequest()
+
+        expectNoNewConnection(within = 190.millis) // 10 millis of wiggle room
+        expectNextConnectionAttempt()
+          .failConnectionAttempt(new RuntimeException("Server out of coffee"))
+
+        expectNoNewConnection(within = 390.millis) // 10 millis of wiggle room
+        expectNextConnectionAttempt()
+          .failConnectionAttempt(new RuntimeException("Server out of coffee"))
+
+        expectNoNewConnection(within = 790.millis) // 10 millis of wiggle room
+        expectNextConnectionAttempt()
+          .failConnectionAttempt(new RuntimeException("Server out of coffee"))
+
+        // expect that both connections come up after a while
+        val conn1 = expectNextConnection()
+        val conn2 = expectNextConnection()
+
+        conn1.expectRequest()
+        conn2.expectRequest()
+        conn1.pushResponse()
+        conn2.pushResponse()
+        expectResponse()
+        expectResponse()
+      }
 
       def pendingIn(targetImpl: PoolImplementation = null, targetTrans: ClientServerImplementation = null): Unit =
         if ((targetImpl == null || poolImplementation == targetImpl) &&
@@ -455,6 +492,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
         override protected def settings = changeSettings(defaultSettings)
 
         class ServerConnection(requestPublisher: Publisher[HttpRequest], responseSubscriber: Subscriber[HttpResponse]) {
+          val acceptConnectionPromise = Promise[Http.OutgoingConnection]()
           val serverRequests = TestSubscriber.probe[HttpRequest]()
           val serverResponses = TestPublisher.probe[HttpResponse]()
           val killSwitch = KillSwitches.shared("connection-kill-switch")
@@ -505,10 +543,12 @@ class HostConnectionPoolSpec extends AkkaSpec(
             // FIXME: verify server behavior
             expectErrorOrCompleteOnRequestSide()
           }
+
           def expectError(): Unit = {
             serverResponses.expectCancellation()
             expectErrorOrCompleteOnRequestSide()
           }
+
           def expectErrorOrCompleteOnRequestSide(): Unit =
             serverRequests.expectEventPF {
               case _: TestSubscriber.OnError ⇒
@@ -527,15 +567,30 @@ class HostConnectionPoolSpec extends AkkaSpec(
                   Source.fromPublisher(requestPublisher)
                 ))
               .run()(singleElementBufferMaterializer)
+
+          def acceptConnection(): Unit =
+            acceptConnectionPromise.completeWith(outgoingConnection)
+
+          def failConnectionAttempt(cause: Throwable): Unit = {
+            acceptConnectionPromise.failure(cause)
+            Source.failed(cause).runWith(Sink.fromSubscriber(responseSubscriber))
+            Source.fromPublisher(requestPublisher).runWith(Sink.cancelled)
+          }
         }
 
         private lazy val serverConnections = TestProbe()
 
-        def expectNextConnection(): ServerConnection =
+        def expectNextConnectionAttempt(): ServerConnection =
           serverConnections.expectMsgType[ServerConnection]
 
-        def expectNoNewConnection(): Unit =
-          serverConnections.expectNoMessage(remainingOrDefault)
+        def expectNextConnection(): ServerConnection = {
+          val conn = serverConnections.expectMsgType[ServerConnection]
+          conn.acceptConnection()
+          conn
+        }
+
+        def expectNoNewConnection(within: FiniteDuration = remainingOrDefault): Unit =
+          serverConnections.expectNoMessage(within)
 
         protected override lazy val server =
           Flow.fromSinkAndSourceMat(
@@ -547,7 +602,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
               case (requestPublisher, responseSubscriber) ⇒
                 val connection = new ServerConnection(requestPublisher, responseSubscriber)
                 serverConnections.ref ! connection
-                connection.outgoingConnection
+                connection.acceptConnectionPromise.future
             }
       }
     }
