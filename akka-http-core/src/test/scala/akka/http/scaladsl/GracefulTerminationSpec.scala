@@ -248,14 +248,17 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
         .bindAndHandle(routes, hostname, port, connectionContext = serverConnectionContext, settings = serverSettings)
         .futureValue
 
+    val basePoolSettings = ConnectionPoolSettings(system).withBaseConnectionBackoff(Duration.Zero)
+
     def makeRequest(ensureNewConnection: Boolean = false): Future[HttpResponse] = {
       if (ensureNewConnection) {
         // by changing the settings, we ensure we'll hit a new connection pool, which means it will be a new connection for sure.
         idleTimeoutBaseForUniqueness += 1
-        val clientSettings = ConnectionPoolSettings(system).withIdleTimeout(idleTimeoutBaseForUniqueness.seconds)
+        val clientSettings = basePoolSettings.withIdleTimeout(idleTimeoutBaseForUniqueness.seconds)
+
         Http().singleRequest(nextRequest, connectionContext = clientConnectionContext, settings = clientSettings)
       } else {
-        Http().singleRequest(nextRequest, connectionContext = clientConnectionContext)
+        Http().singleRequest(nextRequest, connectionContext = clientConnectionContext, settings = basePoolSettings)
       }
     }
   }
