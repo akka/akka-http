@@ -1025,6 +1025,7 @@ class Http2ServerSpec extends AkkaSpec("""
           if (streamId == 0) updateToServerWindowForConnection(_ + windowSizeIncrement)
           else updateToServerWindows(streamId, _ + windowSizeIncrement)
       }
+
     final def pollForWindowUpdates(duration: FiniteDuration): Unit =
       try {
         toNet.within(duration)(expectWindowUpdate())
@@ -1032,7 +1033,10 @@ class Http2ServerSpec extends AkkaSpec("""
         pollForWindowUpdates(duration)
       } catch {
         case e: AssertionError if e.getMessage contains "Expected OnNext(_), yet no element signaled during" ⇒
-        // timeout, that's expected
+          // timeout, that's expected
+        case e: AssertionError if (e.getMessage contains "block took") && (e.getMessage contains "exceeding") =>
+          // pause like GC, poll again just to be sure
+          pollForWindowUpdates(duration)
       }
 
     // keep counters that are updated on outgoing sendDATA and incoming WINDOW_UPDATE frames
