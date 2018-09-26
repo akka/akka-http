@@ -156,11 +156,14 @@ private[pool] object SlotState {
 
     override val stateTimeout: Duration = newLevelTimeout()
 
-    private def newLevelTimeout(): FiniteDuration = {
-      val minMillis = embargoDuration.toMillis
-      val maxMillis = minMillis * 2
-      ThreadLocalRandom.current().nextLong(minMillis, maxMillis).millis
-    }
+    private def newLevelTimeout(): FiniteDuration =
+      if (embargoDuration.toMillis > 0) {
+        val minMillis = embargoDuration.toMillis
+        val maxMillis = minMillis * 2
+        ThreadLocalRandom.current().nextLong(minMillis, maxMillis).millis
+      } else
+        Duration.Zero
+
     override def onTimeout(ctx: SlotContext): SlotState = OutOfEmbargo
 
     override def onNewConnectionEmbargo(ctx: SlotContext, embargoDuration: FiniteDuration): SlotState =
