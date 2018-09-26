@@ -41,15 +41,20 @@ object ExceptionHandler {
         if (!knownToBeSealed) ExceptionHandler(knownToBeSealed = true)(this orElse default(settings)) else this
     }
 
+  /**
+   * Default [[ExceptionHandler]] that discards the request's entity by default.
+   */
   def default(settings: RoutingSettings): ExceptionHandler =
     apply(knownToBeSealed = true) {
       case IllegalRequestException(info, status) ⇒ ctx ⇒ {
         ctx.log.warning("Illegal request: '{}'. Completing with {} response.", info.summary, status)
+        ctx.request.discardEntityBytes(ctx.materializer)
         ctx.complete((status, info.format(settings.verboseErrorMessages)))
       }
       case NonFatal(e) ⇒ ctx ⇒ {
         val message = Option(e.getMessage).getOrElse(s"${e.getClass.getName} (No error message supplied)")
         ctx.log.error(e, ErrorMessageTemplate, message, InternalServerError)
+        ctx.request.discardEntityBytes(ctx.materializer)
         ctx.complete(InternalServerError)
       }
     }

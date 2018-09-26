@@ -79,6 +79,13 @@ To understand the performance implications of (mis-)using exceptions,
 have a read at this excellent post by A. Shipilёv: [The Exceptional Performance of Lil' Exception](https://shipilev.net/blog/2014/exceptional-performance).
 @@@
 
+
+@@@ note
+Please note that since version `10.1.6`, the default `ExceptionHandler` will also discard the entity bytes automatically. If you want to change this behavior,
+please refer to @ref[the section above](exception-handling.md#exception-handling); however, might cause connections to stall
+if the entity is not properly rejected or cancelled on the client side.
+@@@
+
 ## Respond with headers and Exception Handler
 
 If you wrap an ExceptionHandler inside a different directive, then that directive will still apply. Example below shows
