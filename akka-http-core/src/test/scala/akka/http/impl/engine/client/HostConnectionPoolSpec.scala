@@ -27,6 +27,7 @@ import akka.testkit._
 import akka.util.ByteString
 import org.reactivestreams.{ Publisher, Subscriber }
 import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
@@ -395,31 +396,40 @@ class HostConnectionPoolSpec extends AkkaSpec(
       "ignore the pipelining setting (for now)" in pending
       "work correctly in the presence of `Connection: close` headers" in pending
       "if connecting attempt fails, backup the next connection attempts" in new SetupWithServerProbes(
-        _.withBaseConnectionBackoff(200.millis)
+        _.withBaseConnectionBackoff(100.millis)
           .withMaxConnectionBackoff(2000.millis)
           .withMinConnections(1)
           .withMaxConnections(2)
       ) {
-        expectNextConnectionAttempt()
-          .failConnectionAttempt(new RuntimeException("Server out of coffee"))
+        @volatile var shouldFail = true
+        val connectionCounter = new AtomicInteger()
+        override def onNewConnection(requestPublisher: Publisher[HttpRequest], responseSubscriber: Subscriber[HttpResponse]): Future[Http.OutgoingConnection] = {
+          connectionCounter.incrementAndGet()
+          if (shouldFail)
+            Future.failed(new RuntimeException("Server out of coffee"))
+          else
+            super.onNewConnection(requestPublisher, responseSubscriber)
+        }
 
-        // leave a bit room for the failure to trigger backoff
-        Thread.sleep(10)
+        eventually(Timeout(500.millis))(
+          connectionCounter.get() should be > 0
+        )
+        val previousCounter = connectionCounter.get()
 
+        log.debug("Pushing 2 requests")
         pushRequest()
         pushRequest()
 
-        expectNoNewConnection(within = 190.millis) // 10 millis of wiggle room
-        expectNextConnectionAttempt()
-          .failConnectionAttempt(new RuntimeException("Server out of coffee"))
+        log.debug("Sleeping for 1000 millis")
+        Thread.sleep(1000)
+        // 1000 ms, should contain these backoff intervals 100 + 200 + 400  = 700ms ~ 3 requests per connection = 6 connections have been made
+        val newCounter = connectionCounter.get()
+        newCounter should be < (previousCounter + 6)
+        newCounter should be >= (previousCounter + 2) // should have managed to do at least 2 extra connection attempts in 1000ms > 200ms + 400ms
 
-        expectNoNewConnection(within = 390.millis) // 10 millis of wiggle room
-        expectNextConnectionAttempt()
-          .failConnectionAttempt(new RuntimeException("Server out of coffee"))
-
-        expectNoNewConnection(within = 790.millis) // 10 millis of wiggle room
-        expectNextConnectionAttempt()
-          .failConnectionAttempt(new RuntimeException("Server out of coffee"))
+        // now heal
+        shouldFail = false
+        log.debug("Healing the connection")
 
         // expect that both connections come up after a while
         val conn1 = expectNextConnection()
@@ -592,6 +602,12 @@ class HostConnectionPoolSpec extends AkkaSpec(
         def expectNoNewConnection(within: FiniteDuration = remainingOrDefault): Unit =
           serverConnections.expectNoMessage(within)
 
+        def onNewConnection(requestPublisher: Publisher[HttpRequest], responseSubscriber: Subscriber[HttpResponse]): Future[Http.OutgoingConnection] = {
+          val connection = new ServerConnection(requestPublisher, responseSubscriber)
+          serverConnections.ref ! connection
+          connection.acceptConnectionPromise.future
+        }
+
         protected override lazy val server =
           Flow.fromSinkAndSourceMat(
             // buffer is needed because the async subscriber/publisher boundary will otherwise request > 1
@@ -600,9 +616,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
             Source.asSubscriber[HttpResponse])(Keep.both)
             .mapMaterializedValue {
               case (requestPublisher, responseSubscriber) ⇒
-                val connection = new ServerConnection(requestPublisher, responseSubscriber)
-                serverConnections.ref ! connection
-                connection.acceptConnectionPromise.future
+                onNewConnection(requestPublisher, responseSubscriber)
             }
       }
     }
