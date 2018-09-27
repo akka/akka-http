@@ -36,6 +36,10 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   require((maxOpenRequests & (maxOpenRequests - 1)) == 0, "max-open-requests must be a power of 2. " + suggestPowerOfTwo(maxOpenRequests))
   require(pipeliningLimit > 0, "pipelining-limit must be > 0")
   require(idleTimeout >= Duration.Zero, "idle-timeout must be >= 0")
+  require(
+    minConnections == 0 || (baseConnectionBackoff.toMillis > 0 && maxConnectionBackoff.toMillis > 10),
+    "If min-connections > 0, you need to set a base-connection-backoff must be > 0 and max-connection-backoff must be > 10 millis " +
+      "to avoid client pools excessively trying to open up new connections.")
 
   override def productPrefix = "ConnectionPoolSettings"
 
