@@ -123,13 +123,17 @@ private[client] object NewHostConnectionPool {
         def numConnectedSlots: Int = slots.count(_.isConnected)
 
         def onConnectionAttemptFailed(atPreviousEmbargoLevel: FiniteDuration): Unit = {
+          val oldValue = _connectionEmbargo
           _connectionEmbargo match {
             case Duration.Zero            ⇒ _connectionEmbargo = baseEmbargo
             case `atPreviousEmbargoLevel` ⇒ _connectionEmbargo = (_connectionEmbargo * 2) min maxBaseEmbargo
             case _                        ⇒
             // don't increase if the embargo level has already changed since the start of the connection attempt
           }
-          slots.foreach(_.onNewConnectionEmbargo(_connectionEmbargo))
+          if (_connectionEmbargo != oldValue) {
+            log.warning(s"Connection attempt failed. Backing off new connection attempts for at least ${_connectionEmbargo}.")
+            slots.foreach(_.onNewConnectionEmbargo(_connectionEmbargo))
+          }
         }
         def onConnectionAttemptSucceeded(): Unit = _connectionEmbargo = Duration.Zero
         def currentEmbargo: FiniteDuration = _connectionEmbargo
