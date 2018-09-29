@@ -45,29 +45,36 @@ class ConnectionPoolSettingsSpec extends AkkaSpec {
 
       val settingsString =
         """
-              |akka.http.host-connection-pool {
-              |  max-connections = 7
-              |
-              |  per-host-override {
-              |    "akka.io" = { # can use same things as in global `host-connection-pool` section
-              |      max-connections = 47
-              |    }
-              |
-              |   "*.example.com" = { # allow `*` to apply overrides for all subdomains
-              |      max-connections = 34
-              |   }
-              |
-              |   "glob:*example2.com" = {
-              |      max-connections = 39
-              |   }
-              |
-              |   "regex:((w{3})?\\.)?scala-lang\\.(com|org)" = {
-              |      max-connections = 36
-              |
-              |   }
-              |  }
-              |}
-            """.stripMargin
+          |akka.http.host-connection-pool {
+          |  max-connections = 7
+          |
+          |  per-host-override : [
+          |    {
+          |      "akka.io" : { # can use same things as in global `host-connection-pool` section
+          |        max-connections = 47
+          |      }
+          |    },
+          |
+          |   {
+          |     "*.example.com" : { # allow `*` to apply overrides for all subdomains
+          |       max-connections = 34
+          |     }
+          |   },
+          |
+          |   {
+          |     "glob:*example2.com" : {
+          |       max-connections = 39
+          |     }
+          |   },
+          |
+          |   {
+          |     "regex:((w{3})?\\.)?scala-lang\\.(com|org)" : {
+          |       max-connections = 36
+          |     }
+          |   }
+          |  ]
+          |}
+        """.stripMargin
 
       ConnectionPoolSettings.forDefault(
         ConfigFactory.parseString(settingsString)
@@ -134,11 +141,13 @@ class ConnectionPoolSettingsSpec extends AkkaSpec {
           |akka.http.host-connection-pool {
           |  max-connections = 7
           |
-          |  per-host-override {
-          |    "akka.io" = { # can use same things as in global `host-connection-pool` section
-          |      max-connections = 47
+          |  per-host-override : [
+          |    {
+          |      "akka.io" = { # can use same things as in global `host-connection-pool` section
+          |        max-connections = 47
+          |      }
           |    }
-          |  }
+          |  ]
           |}
         """.stripMargin
 
@@ -146,43 +155,6 @@ class ConnectionPoolSettingsSpec extends AkkaSpec {
         ConfigFactory.parseString(settingsString)
           .withFallback(ConfigFactory.defaultReference(getClass.getClassLoader))).forHost("akka.io").maxConnections shouldEqual 7
 
-    }
-
-    "allow modifying host overrides in code" in {
-      val settingsString =
-        """
-          |akka.http.host-connection-pool {
-          |  max-connections = 7
-          |
-          |  per-host-override {
-          |    "akka.io" = { # can use same things as in global `host-connection-pool` section
-          |      max-connections = 47
-          |    }
-          |  }
-          |}
-        """.stripMargin
-
-      val pool = ConnectionPoolSettings.forDefault(
-        ConfigFactory.parseString(settingsString)
-          .withFallback(ConfigFactory.defaultReference(getClass.getClassLoader)))
-
-      val poolWithHostOverride = pool.withHostOverride(
-
-        "lightbend.com", ConnectionPoolSettings.apply(ConfigFactory.defaultReference(getClass.getClassLoader)).withMaxConnections(33)
-      )
-
-      poolWithHostOverride.forHost("akka.io").maxConnections shouldEqual 47
-      poolWithHostOverride.forHost("lightbend.com").maxConnections shouldEqual 33
-
-      val poolWithHostMap = poolWithHostOverride.withHostMap(
-        Map(
-          "example.com" -> ConnectionPoolSettings.apply(ConfigFactory.defaultReference(getClass.getClassLoader)).withMaxConnections(39)
-        )
-      )
-
-      poolWithHostMap.forHost("akka.io").maxConnections shouldEqual 7
-      poolWithHostMap.forHost("lightbend.com").maxConnections shouldEqual 7
-      poolWithHostMap.forHost("example.com").maxConnections shouldEqual 39
     }
 
     def expectError(configString: String): String = Try(config(configString)) match {

@@ -13,7 +13,6 @@ import akka.http.javadsl.{ settings ⇒ js }
 import akka.http.scaladsl.ClientTransport
 import com.typesafe.config.Config
 
-import scala.collection.immutable
 import scala.concurrent.duration.Duration
 
 @ApiMayChange
@@ -71,10 +70,6 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   override def withMaxOpenRequests(newValue: Int): ConnectionPoolSettings = self.copy(maxOpenRequests = newValue)
   override def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copy(pipeliningLimit = newValue)
   override def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue)
-  def withHostMap(newValue: immutable.Map[String, ConnectionPoolSettings]): ConnectionPoolSettings =
-    self.copy(hostMap = newValue.map { case (k, v) ⇒ ConnectionPoolSettingsImpl.hostRegex(k) -> v })
-  def withHostOverride(hostPattern: String, settings: ConnectionPoolSettings): ConnectionPoolSettings =
-    self.copy(hostMap = hostMap.updated(ConnectionPoolSettingsImpl.hostRegex(hostPattern), settings))
 
   // overloads for idiomatic Scala use
   def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue)
@@ -116,11 +111,12 @@ object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] 
   private[akka] def forDefault(config: Config): ConnectionPoolSettings = {
     import scala.collection.JavaConverters._
 
-    val configOverrides = config.getObject("akka.http.host-connection-pool.per-host-override").asScala.toMap.map {
-      case (h, hostConfig) ⇒
-        ConnectionPoolSettingsImpl.hostRegex(h) -> ConnectionPoolSettingsImpl(hostConfig.atPath("akka.http.host-connection-pool").withFallback(config))
+    val configOverrides = config.getConfigList("akka.http.host-connection-pool.per-host-override").asScala.toList.flatMap { cfg =>
+        cfg.root.entrySet().asScala.map { entry =>
+          ConnectionPoolSettingsImpl.hostRegex(entry.getKey) ->
+          ConnectionPoolSettingsImpl(entry.getValue.atPath("akka.http.host-connection-pool").withFallback(config))
+        }
     }
-
     ConnectionPoolSettingsImpl(config).copy(hostMap = configOverrides)
 
   }

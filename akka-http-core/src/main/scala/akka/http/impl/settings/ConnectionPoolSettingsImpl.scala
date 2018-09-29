@@ -25,7 +25,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   connectionSettings:                ClientConnectionSettings,
   poolImplementation:                PoolImplementation,
   responseEntitySubscriptionTimeout: Duration,
-  hostMap:                           immutable.Map[Regex, ConnectionPoolSettings])
+  hostMap:                           immutable.Seq[(Regex, ConnectionPoolSettings)])
   extends ConnectionPoolSettings {
 
   require(maxConnections > 0, "max-connections must be > 0")
@@ -94,7 +94,7 @@ object ConnectionPoolSettingsImpl extends SettingsCompanion[ConnectionPoolSettin
         case "new"    ⇒ PoolImplementation.New
       },
       c getPotentiallyInfiniteDuration "response-entity-subscription-timeout",
-      Map.empty
+      List.empty
     )
   }
 

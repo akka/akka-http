@@ -56,12 +56,6 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copy(pipeliningLimit = newValue)
   def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue)
   def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue.asScala)
-  /** Java API */
-  def withHostMap(newValue: java.util.Map[String, ConnectionPoolSettings]): ConnectionPoolSettings =
-    self.copy(hostMap = newValue.asScala.map { case (k, v) ⇒ ConnectionPoolSettingsImpl.hostRegex(k) -> v.asScala })
-  /** Java API */
-  def withHostOverride(hostPattern: String, settings: ConnectionPoolSettings): ConnectionPoolSettings =
-    self.copy(hostMap = hostMap.updated(ConnectionPoolSettingsImpl.hostRegex(hostPattern), settings.asScala))
 
   @ApiMayChange
   def withPoolImplementation(newValue: PoolImplementation): ConnectionPoolSettings = self.copy(poolImplementation = newValue.asScala)
