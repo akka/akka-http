@@ -6,8 +6,7 @@ package akka
 
 import java.io._
 
-import akka.MimaWithPrValidation.MimaResult
-import akka.MimaWithPrValidation.Problems
+import akka.MimaWithPrValidation.{MimaResult, NoErrors, Problems}
 import net.virtualvoid.sbt.graph.ModuleGraph
 import net.virtualvoid.sbt.graph.backend.SbtUpdateReport
 import org.kohsuke.github.GHIssueComment
@@ -413,6 +412,7 @@ object AggregatePRValidation extends AutoPlugin {
           case KeyValue(key, Problems(desc)) =>
             write(s"Problems for ${key.scope.project.toOption.get.asInstanceOf[ProjectRef].project}:\n$desc")
             write("")
+          case KeyValue(_, NoErrors) =>
         }
         write("```")
         write("")
