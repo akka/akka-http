@@ -8,7 +8,6 @@ import java.io._
 
 import akka.MimaWithPrValidation.MimaResult
 import akka.MimaWithPrValidation.Problems
-import com.typesafe.tools.mima.plugin.SbtLogger
 import net.virtualvoid.sbt.graph.ModuleGraph
 import net.virtualvoid.sbt.graph.backend.SbtUpdateReport
 import org.kohsuke.github.GHIssueComment
