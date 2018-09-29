@@ -368,7 +368,7 @@ object AggregatePRValidation extends AutoPlugin {
       write("# Pull request validation report")
       write("")
 
-      def showKey(key: ScopedKey[_]): String = Project.showContextKey(extracted.session, extracted.structure).show(key)//Project.showContextKey(newState).show(key)
+      def showKey(key: ScopedKey[_]): String = Project.showContextKey2(extracted.session).show(key)
 
       def totalCount(suiteResult: SuiteResult): Int = {
         import suiteResult._
