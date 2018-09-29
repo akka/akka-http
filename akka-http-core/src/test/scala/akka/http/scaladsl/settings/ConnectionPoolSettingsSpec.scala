@@ -76,55 +76,55 @@ class ConnectionPoolSettingsSpec extends AkkaSpec {
           |}
         """.stripMargin
 
-      ConnectionPoolSettings.forDefault(
+      ConnectionPoolSettings.withOverrides(
         ConfigFactory.parseString(settingsString)
           .withFallback(ConfigFactory.defaultReference(getClass.getClassLoader))).forHost("akka.io").maxConnections shouldEqual 47
 
-      ConnectionPoolSettings.forDefault(
+      ConnectionPoolSettings.withOverrides(
         ConfigFactory.parseString(settingsString)
           .withFallback(ConfigFactory.defaultReference(getClass.getClassLoader))).forHost("test.akka.io").maxConnections shouldEqual 7
 
-      ConnectionPoolSettings.forDefault(
+      ConnectionPoolSettings.withOverrides(
         ConfigFactory.parseString(settingsString)
           .withFallback(ConfigFactory.defaultReference(getClass.getClassLoader))).forHost("example.com").maxConnections shouldEqual 34
 
-      ConnectionPoolSettings.forDefault(
+      ConnectionPoolSettings.withOverrides(
         ConfigFactory.parseString(settingsString)
           .withFallback(ConfigFactory.defaultReference(getClass.getClassLoader))).forHost("www.example.com").maxConnections shouldEqual 34
 
-      ConnectionPoolSettings.forDefault(
+      ConnectionPoolSettings.withOverrides(
         ConfigFactory.parseString(settingsString)
           .withFallback(ConfigFactory.defaultReference(getClass.getClassLoader))).forHost("example2.com").maxConnections shouldEqual 39
 
-      ConnectionPoolSettings.forDefault(
+      ConnectionPoolSettings.withOverrides(
         ConfigFactory.parseString(settingsString)
           .withFallback(ConfigFactory.defaultReference(getClass.getClassLoader))).forHost("www.example2.com").maxConnections shouldEqual 39
 
-      ConnectionPoolSettings.forDefault(
+      ConnectionPoolSettings.withOverrides(
         ConfigFactory.parseString(settingsString)
           .withFallback(ConfigFactory.defaultReference(getClass.getClassLoader))).forHost("www.someexample2.com").maxConnections shouldEqual 39
 
-      ConnectionPoolSettings.forDefault(
+      ConnectionPoolSettings.withOverrides(
         ConfigFactory.parseString(settingsString)
           .withFallback(ConfigFactory.defaultReference(getClass.getClassLoader))).forHost("test.example.com").maxConnections shouldEqual 34
 
-      ConnectionPoolSettings.forDefault(
+      ConnectionPoolSettings.withOverrides(
         ConfigFactory.parseString(settingsString)
           .withFallback(ConfigFactory.defaultReference(getClass.getClassLoader))).forHost("lightbend.com").maxConnections shouldEqual 7
 
-      ConnectionPoolSettings.forDefault(
+      ConnectionPoolSettings.withOverrides(
         ConfigFactory.parseString(settingsString)
           .withFallback(ConfigFactory.defaultReference(getClass.getClassLoader))).forHost("www.scala-lang.org").maxConnections shouldEqual 36
 
-      ConnectionPoolSettings.forDefault(
+      ConnectionPoolSettings.withOverrides(
         ConfigFactory.parseString(settingsString)
           .withFallback(ConfigFactory.defaultReference(getClass.getClassLoader))).forHost("scala-lang.org").maxConnections shouldEqual 36
 
-      ConnectionPoolSettings.forDefault(
+      ConnectionPoolSettings.withOverrides(
         ConfigFactory.parseString(settingsString)
           .withFallback(ConfigFactory.defaultReference(getClass.getClassLoader))).forHost("ww.scala-lang.org").maxConnections shouldEqual 7
 
-      ConnectionPoolSettings.forDefault(
+      ConnectionPoolSettings.withOverrides(
         ConfigFactory.parseString(settingsString)
           .withFallback(ConfigFactory.defaultReference(getClass.getClassLoader))).forHost("scala-lang.com").maxConnections shouldEqual 36
 

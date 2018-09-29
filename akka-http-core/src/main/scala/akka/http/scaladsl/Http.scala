@@ -61,7 +61,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   override val sslConfig = AkkaSSLConfig(system)
   validateAndWarnAboutLooseSettings()
 
-  private[this] val defaultConnectionPoolSettings = ConnectionPoolSettings.forDefault(system)
+  private[this] val defaultConnectionPoolSettings = ConnectionPoolSettings.withOverrides(system)
 
   // configured default HttpsContext for the client-side
   // SYNCHRONIZED ACCESS ONLY!

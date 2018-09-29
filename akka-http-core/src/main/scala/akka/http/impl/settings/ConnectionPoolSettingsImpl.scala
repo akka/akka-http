@@ -6,7 +6,7 @@ package akka.http.impl.settings
 
 import akka.annotation.InternalApi
 import akka.http.impl.util.{ SettingsCompanion, _ }
-import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, PoolImplementation }
+import akka.http.scaladsl.settings._
 import com.typesafe.config.Config
 
 import scala.collection.immutable
@@ -25,7 +25,8 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   connectionSettings:                ClientConnectionSettings,
   poolImplementation:                PoolImplementation,
   responseEntitySubscriptionTimeout: Duration,
-  hostMap:                           immutable.Seq[(Regex, ConnectionPoolSettings)])
+  hostOverrides:                     immutable.Seq[(Regex, ConnectionPoolSettings)],
+  hostOverrideImpl:                  HostOverride)
   extends ConnectionPoolSettings {
 
   require(maxConnections > 0, "max-connections must be > 0")
@@ -40,7 +41,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   override def productPrefix = "ConnectionPoolSettings"
 
   def withUpdatedConnectionSettings(f: ClientConnectionSettings ⇒ ClientConnectionSettings): ConnectionPoolSettingsImpl =
-    copy(connectionSettings = f(connectionSettings))
+    copy(connectionSettings = f(connectionSettings), hostOverrides = hostOverrides.map { case (k, v) ⇒ k -> v.withUpdatedConnectionSettings(f) })
 
   private def suggestPowerOfTwo(around: Int): String = {
     val firstBit = 31 - Integer.numberOfLeadingZeros(around)
@@ -94,7 +95,8 @@ object ConnectionPoolSettingsImpl extends SettingsCompanion[ConnectionPoolSettin
         case "new"    ⇒ PoolImplementation.New
       },
       c getPotentiallyInfiniteDuration "response-entity-subscription-timeout",
-      List.empty
+      List.empty,
+      NoOpHostOverride
     )
   }
 

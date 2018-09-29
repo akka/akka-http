@@ -4,8 +4,6 @@
 
 package akka.http.scaladsl.settings
 
-import java.util
-
 import akka.actor.ActorSystem
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
@@ -13,7 +11,9 @@ import akka.http.javadsl.{ settings ⇒ js }
 import akka.http.scaladsl.ClientTransport
 import com.typesafe.config.Config
 
+import scala.collection.immutable
 import scala.concurrent.duration.Duration
+import scala.util.matching.Regex
 
 @ApiMayChange
 sealed trait PoolImplementation extends js.PoolImplementation
@@ -21,6 +21,24 @@ sealed trait PoolImplementation extends js.PoolImplementation
 object PoolImplementation {
   case object Legacy extends PoolImplementation
   case object New extends PoolImplementation
+}
+
+@ApiMayChange
+trait HostOverride {
+  def apply(host: String, settings: ConnectionPoolSettings): ConnectionPoolSettings
+}
+
+private[akka] object NoOpHostOverride extends HostOverride {
+  override def apply(host: String, settings: ConnectionPoolSettings): ConnectionPoolSettings = settings
+}
+
+private[akka] object DefaultHostOverride extends HostOverride {
+  override def apply(host: String, settings: ConnectionPoolSettings): ConnectionPoolSettings = {
+    if (settings.hostOverrides.isEmpty) settings
+    else {
+      settings.hostOverrides.find(_._1.pattern.matcher(host).matches()).map(_._2).getOrElse(settings)
+    }
+  }
 }
 
 /**
@@ -35,6 +53,7 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   def pipeliningLimit: Int
   def idleTimeout: Duration
   def connectionSettings: ClientConnectionSettings
+  private[akka] def hostOverrides: immutable.Seq[(Regex, ConnectionPoolSettings)]
 
   /**
    * This checks to see if there's a matching host override. `hostMap` will only ever be populated
@@ -42,10 +61,7 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
    * never have any overrides, so will always use the object passed explicitly
    */
   private[akka] def forHost(h: String): ConnectionPoolSettings = {
-    if (hostMap.isEmpty) this
-    else {
-      hostMap.find(_._1.pattern.matcher(h).matches()).map(_._2).getOrElse(this)
-    }
+    hostOverrideImpl.apply(h, this)
   }
 
   /**
@@ -64,28 +80,26 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   // ---
 
   // overrides for more precise return type
-  override def withMaxConnections(n: Int): ConnectionPoolSettings = self.copy(maxConnections = n)
-  override def withMinConnections(n: Int): ConnectionPoolSettings = self.copy(minConnections = n)
-  override def withMaxRetries(n: Int): ConnectionPoolSettings = self.copy(maxRetries = n)
-  override def withMaxOpenRequests(newValue: Int): ConnectionPoolSettings = self.copy(maxOpenRequests = newValue)
-  override def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copy(pipeliningLimit = newValue)
-  override def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue)
-
-  // overloads for idiomatic Scala use
-  def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue)
+  override def withMaxConnections(n: Int): ConnectionPoolSettings = self.copy(maxConnections = n, hostOverrides = hostOverrides.map { case (k, v) ⇒ k -> v.withMaxConnections(n) })
+  override def withMinConnections(n: Int): ConnectionPoolSettings = self.copy(minConnections = n, hostOverrides = hostOverrides.map { case (k, v) ⇒ k -> v.withMinConnections(n) })
+  override def withMaxRetries(n: Int): ConnectionPoolSettings = self.copy(maxRetries = n, hostOverrides = hostOverrides.map { case (k, v) ⇒ k -> v.withMaxRetries(n) })
+  override def withMaxOpenRequests(newValue: Int): ConnectionPoolSettings = self.copy(maxOpenRequests = newValue, hostOverrides = hostOverrides.map { case (k, v) ⇒ k -> v.withMaxOpenRequests(newValue) })
+  override def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copy(pipeliningLimit = newValue, hostOverrides = hostOverrides.map { case (k, v) ⇒ k -> v.withPipeliningLimit(newValue) })
+  override def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue, hostOverrides = hostOverrides.map { case (k, v) ⇒ k -> v.withIdleTimeout(newValue) })
+  def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue, hostOverrides = hostOverrides.map { case (k, v) ⇒ k -> v.withConnectionSettings(newValue) })
 
   @ApiMayChange
-  def withPoolImplementation(newValue: PoolImplementation): ConnectionPoolSettings = self.copy(poolImplementation = newValue)
+  def withPoolImplementation(newValue: PoolImplementation): ConnectionPoolSettings = self.copy(poolImplementation = newValue, hostOverrides = hostOverrides.map { case (k, v) ⇒ k -> v.withPoolImplementation(newValue) })
 
   @ApiMayChange
-  override def withResponseEntitySubscriptionTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(responseEntitySubscriptionTimeout = newValue)
+  override def withResponseEntitySubscriptionTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(responseEntitySubscriptionTimeout = newValue, hostOverrides = hostOverrides.map { case (k, v) ⇒ k -> v.withResponseEntitySubscriptionTimeout(newValue) })
 
   /**
    * Since 10.1.0, the transport is configured in [[ClientConnectionSettings]]. This method is a shortcut for
    * `withUpdatedConnectionSettings(_.withTransport(newTransport))`.
    */
-  def withTransport(newTransport: ClientTransport): ConnectionPoolSettings =
-    withUpdatedConnectionSettings(_.withTransport(newTransport))
+  def withTransport(newValue: ClientTransport): ConnectionPoolSettings =
+    withUpdatedConnectionSettings(_.withTransport(newValue))
 
   def withUpdatedConnectionSettings(f: ClientConnectionSettings ⇒ ClientConnectionSettings): ConnectionPoolSettings
 }
@@ -94,8 +108,19 @@ object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] 
 
   override def apply(config: Config) = ConnectionPoolSettingsImpl(config)
 
-  private[akka] def forDefault(system: ActorSystem): ConnectionPoolSettings = {
-    forDefault(system.settings.config)
+  /**
+   * Builds a ConnectionPoolSettings that has the host specific overrides populated from config
+   *
+   * This is the ONLY place that a connection pool object can be created that has the abililty to be configured per
+   * host, and it's ONLY used by `HttpExt.defaultConnectionPoolSettings`. The intent is NOT to let users define or use
+   * this, or even for akka internally to use this. Think of this more like a placeholder for the
+   * `defaultConnectionPoolSettings` provided in the HttpExt.singleRequest and other client methods instead of breaking
+   * binary compatibility by making those calls take an `Option[_]`or using `null`
+   *
+   */
+  @ApiMayChange
+  def withOverrides(system: ActorSystem): ConnectionPoolSettings = {
+    withOverrides(system.settings.config)
   }
 
   /**
@@ -108,17 +133,18 @@ object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] 
    * binary compatibility by making those calls take an `Option[_]`or using `null`
    *
    */
-  private[akka] def forDefault(config: Config): ConnectionPoolSettings = {
+  @ApiMayChange
+  def withOverrides(config: Config, overrideImpl: HostOverride = DefaultHostOverride): ConnectionPoolSettings = {
     import scala.collection.JavaConverters._
 
-    val configOverrides = config.getConfigList("akka.http.host-connection-pool.per-host-override").asScala.toList.flatMap { cfg =>
-        cfg.root.entrySet().asScala.map { entry =>
-          ConnectionPoolSettingsImpl.hostRegex(entry.getKey) ->
+    val configOverrides = config.getConfigList("akka.http.host-connection-pool.per-host-override").asScala.toList.flatMap { cfg ⇒
+      cfg.root.entrySet().asScala.map { entry ⇒
+        ConnectionPoolSettingsImpl.hostRegex(entry.getKey) ->
           ConnectionPoolSettingsImpl(entry.getValue.atPath("akka.http.host-connection-pool").withFallback(config))
-        }
+      }
     }
-    ConnectionPoolSettingsImpl(config).copy(hostMap = configOverrides)
 
+    ConnectionPoolSettingsImpl(config).copy(hostOverrides = configOverrides, hostOverrideImpl = overrideImpl)
   }
 
   override def apply(configOverrides: String) = ConnectionPoolSettingsImpl(configOverrides)

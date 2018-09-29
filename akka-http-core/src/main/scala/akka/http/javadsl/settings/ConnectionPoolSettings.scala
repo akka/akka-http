@@ -49,19 +49,19 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
 
   // ---
 
-  def withMaxConnections(n: Int): ConnectionPoolSettings = self.copy(maxConnections = n)
-  def withMinConnections(n: Int): ConnectionPoolSettings = self.copy(minConnections = n)
-  def withMaxRetries(n: Int): ConnectionPoolSettings = self.copy(maxRetries = n)
-  def withMaxOpenRequests(newValue: Int): ConnectionPoolSettings = self.copy(maxOpenRequests = newValue)
-  def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copy(pipeliningLimit = newValue)
-  def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue)
-  def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue.asScala)
+  def withMaxConnections(n: Int): ConnectionPoolSettings = self.copy(maxConnections = n, hostOverrides = hostOverrides.map { case (k, v) ⇒ k -> v.withMaxConnections(n) })
+  def withMinConnections(n: Int): ConnectionPoolSettings = self.copy(minConnections = n, hostOverrides = hostOverrides.map { case (k, v) ⇒ k -> v.withMinConnections(n) })
+  def withMaxRetries(n: Int): ConnectionPoolSettings = self.copy(maxRetries = n, hostOverrides = hostOverrides.map { case (k, v) ⇒ k -> v.withMaxRetries(n) })
+  def withMaxOpenRequests(newValue: Int): ConnectionPoolSettings = self.copy(maxOpenRequests = newValue, hostOverrides = hostOverrides.map { case (k, v) ⇒ k -> v.withMaxOpenRequests(newValue) })
+  def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copy(pipeliningLimit = newValue, hostOverrides = hostOverrides.map { case (k, v) ⇒ k -> v.withPipeliningLimit(newValue) })
+  def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue, hostOverrides = hostOverrides.map { case (k, v) ⇒ k -> v.withIdleTimeout(newValue) })
+  def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue.asScala, hostOverrides = hostOverrides.map { case (k, v) ⇒ k -> v.withConnectionSettings(newValue).asScala })
 
   @ApiMayChange
-  def withPoolImplementation(newValue: PoolImplementation): ConnectionPoolSettings = self.copy(poolImplementation = newValue.asScala)
+  def withPoolImplementation(newValue: PoolImplementation): ConnectionPoolSettings = self.copy(poolImplementation = newValue.asScala, hostOverrides = hostOverrides.map { case (k, v) ⇒ k -> v.withPoolImplementation(newValue).asScala })
 
   @ApiMayChange
-  def withResponseEntitySubscriptionTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(responseEntitySubscriptionTimeout = newValue)
+  def withResponseEntitySubscriptionTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(responseEntitySubscriptionTimeout = newValue, hostOverrides = hostOverrides.map { case (k, v) ⇒ k -> v.withResponseEntitySubscriptionTimeout(newValue) })
 
   def withTransport(newValue: ClientTransport): ConnectionPoolSettings = withUpdatedConnectionSettings(_.withTransport(newValue.asScala))
 }
