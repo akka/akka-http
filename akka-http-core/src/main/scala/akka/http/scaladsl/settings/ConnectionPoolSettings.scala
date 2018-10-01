@@ -5,9 +5,9 @@
 package akka.http.scaladsl.settings
 
 import akka.actor.ActorSystem
-import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.annotation.{ApiMayChange, DoNotInherit, InternalApi}
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
-import akka.http.javadsl.{ settings ⇒ js }
+import akka.http.javadsl.{settings => js}
 import akka.http.scaladsl.ClientTransport
 import com.typesafe.config.Config
 
@@ -28,10 +28,12 @@ trait HostOverride {
   def apply(host: String, settings: ConnectionPoolSettings): ConnectionPoolSettings
 }
 
+@InternalApi
 private[akka] object NoOpHostOverride extends HostOverride {
   override def apply(host: String, settings: ConnectionPoolSettings): ConnectionPoolSettings = settings
 }
 
+@InternalApi
 private[akka] object DefaultHostOverride extends HostOverride {
   override def apply(host: String, settings: ConnectionPoolSettings): ConnectionPoolSettings = {
     if (settings.hostOverrides.isEmpty) settings
@@ -80,6 +82,13 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   // ---
 
   // overrides for more precise return type
+
+  @ApiMayChange
+  def withHostOverrides(hostOverrides: immutable.Seq[(String, ConnectionPoolSettings)]): ConnectionPoolSettings = self.copy(hostOverrides = hostOverrides.map{case (h, s) => ConnectionPoolSettingsImpl.hostRegex(h) -> s})
+
+  @ApiMayChange
+  def appendHostOverride(hostPattern: String, settings: ConnectionPoolSettings): ConnectionPoolSettings = self.copy(hostOverrides = hostOverrides :+ (ConnectionPoolSettingsImpl.hostRegex(hostPattern) -> settings))
+
   override def withMaxConnections(n: Int): ConnectionPoolSettings = self.copy(maxConnections = n, hostOverrides = hostOverrides.map { case (k, v) ⇒ k -> v.withMaxConnections(n) })
   override def withMinConnections(n: Int): ConnectionPoolSettings = self.copy(minConnections = n, hostOverrides = hostOverrides.map { case (k, v) ⇒ k -> v.withMinConnections(n) })
   override def withMaxRetries(n: Int): ConnectionPoolSettings = self.copy(maxRetries = n, hostOverrides = hostOverrides.map { case (k, v) ⇒ k -> v.withMaxRetries(n) })
