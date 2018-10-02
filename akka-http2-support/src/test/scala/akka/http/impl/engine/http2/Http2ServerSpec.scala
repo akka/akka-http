@@ -347,6 +347,18 @@ class Http2ServerSpec extends AkkaSpec("""
         sendRST_STREAM(TheStreamId, ErrorCode.CANCEL)
         entityDataOut.expectCancellation()
       }
+
+      "handle RST_STREAM while data is in buffer" in new WaitingForResponseDataSetup {
+        val data1 = ByteString("abcd")
+        entityDataOut.sendNext(data1)
+
+        sendRST_STREAM(TheStreamId, ErrorCode.CANCEL)
+        // pull the network (in reality the bug #2236 only happens with more than one stream, this is the minimal repeater)
+        toNet.request(9)
+        toNet.expectNoBytes()
+        entityDataOut.expectCancellation()
+      }
+
       "cancel entity data source when peer sends RST_STREAM before entity is subscribed" in new TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
         val theRequest = HttpRequest(protocol = HttpProtocols.`HTTP/2.0`)
         sendRequest(1, theRequest)
