@@ -52,7 +52,7 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   @ApiMayChange
   def withHostOverrides(hostOverrides: java.util.List[(String, ConnectionPoolSettings)]): ConnectionPoolSettings = {
     import scala.collection.JavaConverters._
-    self.copy(hostOverrides = hostOverrides.asScala.toList.map{case (h, s) => ConnectionPoolSettingsImpl.hostRegex(h) -> s.asScala})
+    self.copy(hostOverrides = hostOverrides.asScala.toList.map { case (h, s) ⇒ ConnectionPoolSettingsImpl.hostRegex(h) -> s.asScala })
   }
 
   @ApiMayChange

@@ -5,9 +5,9 @@
 package akka.http.scaladsl.settings
 
 import akka.actor.ActorSystem
-import akka.annotation.{ApiMayChange, DoNotInherit, InternalApi}
+import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
-import akka.http.javadsl.{settings => js}
+import akka.http.javadsl.{ settings ⇒ js }
 import akka.http.scaladsl.ClientTransport
 import com.typesafe.config.Config
 
@@ -84,7 +84,7 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   // overrides for more precise return type
 
   @ApiMayChange
-  def withHostOverrides(hostOverrides: immutable.Seq[(String, ConnectionPoolSettings)]): ConnectionPoolSettings = self.copy(hostOverrides = hostOverrides.map{case (h, s) => ConnectionPoolSettingsImpl.hostRegex(h) -> s})
+  def withHostOverrides(hostOverrides: immutable.Seq[(String, ConnectionPoolSettings)]): ConnectionPoolSettings = self.copy(hostOverrides = hostOverrides.map { case (h, s) ⇒ ConnectionPoolSettingsImpl.hostRegex(h) -> s })
 
   @ApiMayChange
   def appendHostOverride(hostPattern: String, settings: ConnectionPoolSettings): ConnectionPoolSettings = self.copy(hostOverrides = hostOverrides :+ (ConnectionPoolSettingsImpl.hostRegex(hostPattern) -> settings))
