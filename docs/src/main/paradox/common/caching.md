@@ -54,12 +54,12 @@ store. After the maximum capacity is reached the cache will evicts entries that 
 less likely to be used again. For example, the cache may evict an entry
 because it hasn't been used recently or very often.
 
-Time-based entry expiration is enabled when a time-to-live and/or time-to-idle
+Time-based entry expiration is enabled when time-to-live and/or time-to-idle
 expirations are set to a finite duration. The former provides an
 upper limit to the time period an entry is allowed to remain in the cache while
 the latter limits the maximum time an entry is kept without having been
 accessed, ie. either read or updated. If both values are finite the time-to-live
-has to be strictly greater than the time-to-idle.
+has to be greater or equal than the time-to-idle.
 
 @@@ note
 
