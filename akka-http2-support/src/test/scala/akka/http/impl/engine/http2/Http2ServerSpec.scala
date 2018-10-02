@@ -348,13 +348,27 @@ class Http2ServerSpec extends AkkaSpec("""
         entityDataOut.expectCancellation()
       }
 
-      "handle RST_STREAM while data is in buffer" in new WaitingForResponseDataSetup {
+      "handle RST_STREAM while data is waiting in outgoing stream buffer" in new WaitingForResponseDataSetup {
         val data1 = ByteString("abcd")
         entityDataOut.sendNext(data1)
 
         sendRST_STREAM(TheStreamId, ErrorCode.CANCEL)
         // pull the network (in reality the bug #2236 only happens with more than one stream, this is the minimal repeater)
         toNet.request(9)
+        toNet.expectNoBytes()
+        entityDataOut.expectCancellation()
+      }
+
+      "handle RST_STREAM while waiting for a window update" in new WaitingForResponseDataSetup {
+        entityDataOut.sendNext(bytes(70000, 0x23)) // 70000 > Http2Protocol.InitialWindowSize
+        expectDATA(TheStreamId, false, Http2Protocol.InitialWindowSize)
+
+        expectNoBytes()
+
+        sendWINDOW_UPDATE(TheStreamId, 10000) // > than the remaining bytes (70000 - InitialWindowSize)
+        // now the demuxer is in the WaitingForConnectionWindow state, cancel the connection
+        sendRST_STREAM(TheStreamId, ErrorCode.CANCEL)
+
         toNet.expectNoBytes()
         entityDataOut.expectCancellation()
       }

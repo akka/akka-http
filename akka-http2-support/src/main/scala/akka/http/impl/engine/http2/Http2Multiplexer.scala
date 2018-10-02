@@ -43,7 +43,7 @@ private[http2] trait Http2Multiplexer {
 @InternalApi
 private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with StageLogging ⇒
   def createMultiplexer(outlet: GenericOutlet[FrameEvent], prioritizer: StreamPrioritizer): Http2Multiplexer =
-    new Http2Multiplexer with OutHandler with StateTimingSupport with LogSupport {
+    new Http2Multiplexer with OutHandler with StateTimingSupport with LogSupport { self ⇒
       outlet.setHandler(this)
 
       class OutStream(
@@ -111,7 +111,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           buffer = ByteString.empty
           trailer = None
           maybeInlet.foreach(_.cancel())
-          state.closeStream(this)
+          self.closeStream(this)
 
           if (maybeInlet.isDefined) {
             maybeInlet = None
@@ -216,6 +216,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
       }
 
       def enqueueOutStream(outStream: OutStream): Unit = state.enqueueOutStream(outStream)
+      def closeStream(outStream: OutStream): Unit = state.closeStream(outStream)
 
       override def onDownstreamFinish(): Unit = {
         outStreams.values.foreach(_.cancelStream())
@@ -295,11 +296,17 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           if (!sendableOutstreams.contains(outStream.streamId))
             become(copy(sendableOutstreams = sendableOutstreams + outStream.streamId))
 
-        def closeStream(outStream: OutStream): Unit = ()
+        def closeStream(outStream: OutStream): Unit = {
+          if (sendableOutstreams.contains(outStream.streamId)) {
+            val sendableExceptClosed = sendableOutstreams - outStream.streamId
+            become(copy(sendableOutstreams = sendableExceptClosed))
+          }
+        }
       }
 
       abstract class WithSendableOutStreams extends MultiplexerState {
         def sendableOutstreams: immutable.Set[Int]
+        def withSendableOutstreams(sendableOutStreams: immutable.Set[Int]): WithSendableOutStreams
 
         protected def sendNext(): Unit = {
           val chosenId = prioritizer.chooseSubstream(sendableOutstreams)
@@ -312,6 +319,15 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
 
           become(nextStateAfterPushingDataFrame(outStream, sendableOutstreams))
         }
+
+        def closeStream(outStream: OutStream): Unit =
+          if (sendableOutstreams.contains(outStream.streamId)) {
+            val sendableExceptClosed = sendableOutstreams - outStream.streamId
+
+            if (sendableExceptClosed.isEmpty) become(Idle)
+            else become(withSendableOutstreams(sendableExceptClosed))
+          }
+
       }
 
       case class WaitingForNetworkToSendData(sendableOutstreams: immutable.Set[Int]) extends WithSendableOutStreams {
@@ -327,13 +343,8 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           if (!sendableOutstreams.contains(outStream.streamId))
             become(copy(sendableOutstreams = sendableOutstreams + outStream.streamId))
 
-        def closeStream(outStream: OutStream): Unit =
-          if (sendableOutstreams.contains(outStream.streamId)) {
-            val sendableExceptClosed = sendableOutstreams - outStream.streamId
-
-            if (sendableExceptClosed.isEmpty) become(Idle)
-            else become(WaitingForNetworkToSendData(sendableExceptClosed))
-          }
+        def withSendableOutstreams(sendableOutStreams: Set[Int]) =
+          WaitingForNetworkToSendData(sendableOutStreams)
       }
 
       /** Pulled and data is pending but no connection-level window available */
@@ -349,13 +360,8 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           if (!sendableOutstreams.contains(outStream.streamId))
             become(copy(sendableOutstreams = sendableOutstreams + outStream.streamId))
 
-        def closeStream(outStream: OutStream): Unit =
-          if (sendableOutstreams.contains(outStream.streamId)) {
-            val sendableExceptClosed = sendableOutstreams - outStream.streamId
-
-            if (sendableExceptClosed.isEmpty) become(Idle)
-            else become(WaitingForNetworkToSendData(sendableExceptClosed))
-          }
+        def withSendableOutstreams(sendableOutStreams: Set[Int]) =
+          WaitingForConnectionWindow(sendableOutStreams)
       }
 
       private def maxBytesToBufferPerSubstream = 2 * currentMaxFrameSize // for now, let's buffer two frames per substream
