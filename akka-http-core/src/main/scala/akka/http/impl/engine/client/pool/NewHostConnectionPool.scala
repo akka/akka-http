@@ -12,7 +12,7 @@ import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.client.PoolFlow.{ RequestContext, ResponseContext }
-import akka.http.impl.engine.client.pool.SlotState.{ Unconnected, WaitingForEndOfResponseEntity, WaitingForResponseDispatch, WaitingForResponseEntitySubscription }
+import akka.http.impl.engine.client.pool.SlotState._
 import akka.http.impl.util.{ RichHttpRequest, StageLoggingWithOverride, StreamUtils }
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse, headers }
@@ -124,6 +124,7 @@ private[client] object NewHostConnectionPool {
           val onConnectionAttemptFailed = event[Throwable]("onConnectionAttemptFailed", _.onConnectionAttemptFailed(_, _))
           val onNewRequest = event[RequestContext]("onNewRequest", _.onNewRequest(_, _))
 
+          val onRequestDispatched = event0("onRequestDispatched", _.onRequestDispatched(_))
           val onRequestEntityCompleted = event0("onRequestEntityCompleted", _.onRequestEntityCompleted(_))
           val onRequestEntityFailed = event[Throwable]("onRequestEntityFailed", _.onRequestEntityFailed(_, _))
 
@@ -245,6 +246,10 @@ private[client] object NewHostConnectionPool {
                 }
 
                 state match {
+                  case PushingRequestToConnection(ctx) ⇒
+                    connection.pushRequest(ctx.request)
+                    OptionVal.Some(Event.onRequestDispatched)
+
                   case _: WaitingForResponseDispatch ⇒
                     if (isAvailable(responsesOut)) OptionVal.Some(Event.onResponseDispatchable)
                     else {
@@ -254,6 +259,7 @@ private[client] object NewHostConnectionPool {
                       }
                       OptionVal.None
                     }
+
                   case WaitingForResponseEntitySubscription(_, HttpResponse(_, _, _: HttpEntity.Strict, _), _, _) ⇒
                     // the connection cannot drive these for a strict entity so we have to loop ourselves
                     OptionVal.Some(Event.onResponseEntitySubscribed)
@@ -338,18 +344,7 @@ private[client] object NewHostConnectionPool {
 
             connection = logic.openConnection(this)
           }
-          def pushRequestToConnectionAndThen(request: HttpRequest, nextState: SlotState): SlotState = {
-            if (connection eq null) throw new IllegalStateException("Cannot open push request to connection when there's no connection")
 
-            // bit of a HACK: pushing the request may cause a onRequestEntityCompleted event on the current thread.
-
-            // To accommodate this we first do an 'early' update of the state:
-            state = nextState
-            // Then execute the action that might cause the 'inline' state change:
-            connection.pushRequest(request)
-            // And then return the possibly-again-updated state so we don't overwrite it afterwards:
-            state
-          }
           def closeConnection(): Unit =
             if (connection ne null) {
               connection.close()
@@ -383,9 +378,7 @@ private[client] object NewHostConnectionPool {
           def pushRequest(request: HttpRequest): Unit = {
             val newRequest =
               request.entity match {
-                case _: HttpEntity.Strict ⇒
-                  withSlot(_.onRequestEntityCompleted())
-                  request
+                case _: HttpEntity.Strict ⇒ request
                 case e ⇒
                   val (newEntity, entityComplete) = HttpEntity.captureTermination(request.entity)
                   entityComplete.onComplete(safely {

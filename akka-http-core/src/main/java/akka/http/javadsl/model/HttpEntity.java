@@ -5,6 +5,7 @@
 package akka.http.javadsl.model;
 
 import akka.Done;
+import akka.annotation.DoNotInherit;
 import akka.http.impl.util.Util;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Source;
@@ -39,8 +40,11 @@ import java.util.concurrent.CompletionStage;
  *
  * Use the static constructors in HttpEntities to construct instances.
  *
+ * Not meant for user extension.
+ *
  * @see HttpEntities for javadsl convenience methods.
  */
+@DoNotInherit
 public interface HttpEntity {
     /**
      * Returns the content-type of this entity
@@ -62,6 +66,11 @@ public interface HttpEntity {
      * Returns if this entity is a subtype of HttpEntityChunked.
      */
     boolean isChunked();
+
+    /**
+     * Returns if this entity is a subtype of HttpEntityStrict.
+     */
+    boolean isStrict();
 
     /**
      * Returns if this entity is a subtype of HttpEntityDefault.

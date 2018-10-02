@@ -174,6 +174,7 @@ sealed trait HttpEntity extends jm.HttpEntity {
   // default implementations, should be overridden
   override def isCloseDelimited: Boolean = false
   override def isIndefiniteLength: Boolean = false
+  override def isStrict: Boolean = false
   override def isDefault: Boolean = false
   override def isChunked: Boolean = false
 
@@ -328,8 +329,8 @@ object HttpEntity {
     extends jm.HttpEntity.Strict with UniversalEntity {
 
     override def contentLength: Long = data.length
-
     override def isKnownEmpty: Boolean = data.isEmpty
+    override def isStrict: Boolean = true
 
     override def dataBytes: Source[ByteString, NotUsed] = Source(data :: Nil)
 
