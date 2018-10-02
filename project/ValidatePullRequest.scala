@@ -6,9 +6,7 @@ package akka
 
 import java.io._
 
-import akka.MimaWithPrValidation.MimaResult
-import akka.MimaWithPrValidation.Problems
-import com.typesafe.tools.mima.plugin.SbtLogger
+import akka.MimaWithPrValidation.{MimaResult, NoErrors, Problems}
 import net.virtualvoid.sbt.graph.ModuleGraph
 import net.virtualvoid.sbt.graph.backend.SbtUpdateReport
 import org.kohsuke.github.GHIssueComment
@@ -369,7 +367,7 @@ object AggregatePRValidation extends AutoPlugin {
       write("# Pull request validation report")
       write("")
 
-      def showKey(key: ScopedKey[_]): String = Project.showContextKey(extracted.session, extracted.structure).show(key)//Project.showContextKey(newState).show(key)
+      def showKey(key: ScopedKey[_]): String = Project.showContextKey2(extracted.session).show(key)
 
       def totalCount(suiteResult: SuiteResult): Int = {
         import suiteResult._
@@ -414,6 +412,7 @@ object AggregatePRValidation extends AutoPlugin {
           case KeyValue(key, Problems(desc)) =>
             write(s"Problems for ${key.scope.project.toOption.get.asInstanceOf[ProjectRef].project}:\n$desc")
             write("")
+          case KeyValue(_, NoErrors) =>
         }
         write("```")
         write("")

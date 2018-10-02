@@ -10,7 +10,6 @@ import akka.stream.Materializer
 import org.scalatest.Suite
 import org.scalatest.matchers.Matcher
 
-import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.util.Try
 
