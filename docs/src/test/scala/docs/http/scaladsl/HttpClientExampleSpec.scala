@@ -312,9 +312,11 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
     )
     //#create-post-request
 
+    implicit val materializer: ActorMaterializer = null
     val response: HttpResponse = null
     //#unmarshal-response-body
     import akka.http.scaladsl.unmarshalling.Unmarshal
+    import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
     import spray.json.DefaultJsonProtocol._
 
     case class Pet(name: String)
