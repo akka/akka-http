@@ -7,6 +7,7 @@ sudo: false
 
 jdk:
   - oraclejdk8
+  - openjdk11
 
 before_install:
   # make comparing to origin/master work
