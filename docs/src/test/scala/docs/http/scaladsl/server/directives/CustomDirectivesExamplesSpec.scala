@@ -6,7 +6,7 @@ package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.Host
-import akka.http.scaladsl.server.{ Directive, Directive1, Route }
+import akka.http.scaladsl.server.{ Directive, Directive1, Route, MissingQueryParamRejection }
 import docs.http.scaladsl.server.RoutingSpec
 
 class CustomDirectivesExamplesSpec extends RoutingSpec {
@@ -58,6 +58,26 @@ class CustomDirectivesExamplesSpec extends RoutingSpec {
       responseAs[String] shouldEqual "7"
     }
     //#tmap-1
+  }
+
+  "collect-1" in {
+    //#collect-1
+    val intParameter: Directive1[Int] = parameter("x".as[Int])
+
+    val myRejection = MissingQueryParamRejection("test")
+
+    val myDirective: Directive1[Int] =
+      intParameter.collect({ case x if x % 2 == 0 => x + 1 }, myRejection)
+
+    // tests:
+    Get("/?x=2") ~> myDirective(x => complete(x.toString)) ~> check {
+      responseAs[String] shouldEqual "3"
+    }
+    Get("/?x=3") ~> myDirective(x => complete(x.toString)) ~> check {
+      rejection shouldEqual myRejection
+    }
+
+    //#collect-1
   }
 
   "flatMap-0" in {
