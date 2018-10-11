@@ -106,9 +106,9 @@ private[http] object StreamUtils {
 
         var remaining = ByteString.empty
 
-        def splitAndPush(elem: ByteString): Unit = {
-          val toPush = remaining.take(maxBytesPerChunk)
-          val toKeep = remaining.drop(maxBytesPerChunk)
+        def splitAndPush(data: ByteString): Unit = {
+          val toPush = data.take(maxBytesPerChunk)
+          val toKeep = data.drop(maxBytesPerChunk)
           push(out, toPush)
           remaining = toKeep
         }
