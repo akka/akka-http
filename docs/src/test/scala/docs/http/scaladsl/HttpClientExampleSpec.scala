@@ -299,6 +299,31 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
       }
     }
     //#single-request-example
+
+    //#create-simple-request
+    HttpRequest(uri = "https://akka.io")
+    //#create-simple-request
+
+    //#create-post-request
+    HttpRequest(
+      method = HttpMethods.POST,
+      uri = "https://userservice.example/users",
+      entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "data")
+    )
+    //#create-post-request
+
+    implicit val materializer: ActorMaterializer = null
+    val response: HttpResponse = null
+    //#unmarshal-response-body
+    import akka.http.scaladsl.unmarshalling.Unmarshal
+    import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+    import spray.json.DefaultJsonProtocol._
+
+    case class Pet(name: String)
+    implicit val petFormat = jsonFormat1(Pet)
+
+    val pet: Future[Pet] = Unmarshal(response).to[Pet]
+    //#unmarshal-response-body
   }
 
   "single-request-in-actor-example" in compileOnlySpec {

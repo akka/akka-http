@@ -22,6 +22,11 @@ At its core an @unidoc[Unmarshaller[A, B]] is very similar to a @scala[function 
 than its @ref[marshalling](marshalling.md) counterpart. The process of unmarshalling does not have to support
 content negotiation which saves two additional layers of indirection that are required on the marshalling side.
 
+## Using unmarshallers
+
+For an example on how to use an unmarshaller on the server side, see for example the @ref[Dynamic Routing Example](../routing-dsl/index.md#dynamic-routing-example).
+For the client side, see @ref[Processing Responses](../client-side/request-and-response.md#processing-responses)
+
 ## Predefined Unmarshallers
 
 Akka HTTP already predefines a number of unmarshallers for the most common types.
