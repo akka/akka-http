@@ -5,7 +5,6 @@
 package akka.http.scaladsl.coding
 
 import java.io.{ OutputStream, InputStream, ByteArrayInputStream, ByteArrayOutputStream }
-import java.util
 import java.util.zip.DataFormatException
 import akka.NotUsed
 
@@ -113,20 +112,22 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
     }
 
     "shouldn't produce huge ByteStrings for some input" in {
-      val array = new Array[Byte](10) // FIXME
-      util.Arrays.fill(array, 1.toByte)
+      val array = new Array[Byte](100007)
+      val random = ThreadLocalRandom.current()
+      random.nextBytes(array)
       val compressed = streamEncode(ByteString(array))
       val limit = 10000
       val resultBs =
         Source.single(compressed)
           .via(Coder.withMaxBytesPerChunk(limit).decoderFlow)
-          .limit(4200).runWith(Sink.seq)
+          .runWith(Sink.seq)
           .awaitResult(3.seconds.dilated)
 
       forAll(resultBs) { bs ⇒
-        bs.length should be < limit
-        bs.forall(_ == 1) should equal(true)
+        bs.length should be <= limit
       }
+      val result = resultBs.reduce(_ ++ _)
+      result should equal(array)
     }
 
     "be able to decode chunk-by-chunk (depending on input chunks)" in {
