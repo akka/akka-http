@@ -83,7 +83,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           } else
             maybePull()
 
-          debug(s"[$streamId] sending ${toSend.size} bytes, endStream = $endStream")
+          debug(s"[$streamId] sending ${toSend.size} bytes, endStream = $endStream, remaining buffer [${buffer.size}], remaining stream-level WINDOW [$outboundWindowLeft]")
 
           DataFrame(streamId, endStream, toSend)
         }

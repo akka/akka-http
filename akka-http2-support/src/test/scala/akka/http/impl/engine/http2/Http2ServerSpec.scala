@@ -42,7 +42,7 @@ import FrameEvent._
 class Http2ServerSpec extends AkkaSpec("""
     akka.loglevel = debug
     akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
-    
+
     akka.http.server.remote-address-header = on
   """)
   with WithInPendingUntilFixed with Eventually with WithLogCapturing {
@@ -353,24 +353,29 @@ class Http2ServerSpec extends AkkaSpec("""
         entityDataOut.sendNext(data1)
 
         sendRST_STREAM(TheStreamId, ErrorCode.CANCEL)
-        // pull the network (in reality the bug #2236 only happens with more than one stream, this is the minimal repeater)
-        toNet.request(9)
-        toNet.expectNoBytes()
+
         entityDataOut.expectCancellation()
+        toNet.expectNoBytes() // the whole stage failed with bug #2236
       }
 
       "handle RST_STREAM while waiting for a window update" in new WaitingForResponseDataSetup {
         entityDataOut.sendNext(bytes(70000, 0x23)) // 70000 > Http2Protocol.InitialWindowSize
+        sendWINDOW_UPDATE(TheStreamId, 10000) // enough window for the stream but not for the window
+
         expectDATA(TheStreamId, false, Http2Protocol.InitialWindowSize)
 
+        // enough stream-level WINDOW, but too little connection-level WINDOW
         expectNoBytes()
 
-        sendWINDOW_UPDATE(TheStreamId, 10000) // > than the remaining bytes (70000 - InitialWindowSize)
         // now the demuxer is in the WaitingForConnectionWindow state, cancel the connection
         sendRST_STREAM(TheStreamId, ErrorCode.CANCEL)
 
-        toNet.expectNoBytes()
         entityDataOut.expectCancellation()
+        expectNoBytes()
+
+        // now increase connection-level window again and see if everything still works
+        sendWINDOW_UPDATE(0, 10000)
+        expectNoBytes() // don't expect anything, stream has been cancelled in the meantime
       }
 
       "cancel entity data source when peer sends RST_STREAM before entity is subscribed" in new TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
