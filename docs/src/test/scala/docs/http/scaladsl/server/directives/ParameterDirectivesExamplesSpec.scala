@@ -232,6 +232,9 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with PredefinedFromStr
     Get("/?names=Caplin,John") ~> route ~> check {
       responseAs[String] shouldEqual "The parameters are Caplin, John"
     }
+    Get("/?names=Caplin,John,") ~> route ~> check {
+      responseAs[String] shouldEqual "The parameters are Caplin, John, "
+    }
     //#csv
   }
 }

@@ -89,6 +89,11 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
         responseAs[String] shouldEqual "The parameters are Caplin, John"
       }
     }
+    "extract a number of names, including last empty name" in {
+      Get("/?names=Caplin,John,") ~> route ~> check {
+        responseAs[String] shouldEqual "The parameters are Caplin, John, "
+      }
+    }
   }
 
   "when used with 'as(HexInt)' the parameter directive should" - {
