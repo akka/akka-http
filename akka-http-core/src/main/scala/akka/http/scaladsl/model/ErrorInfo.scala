@@ -67,7 +67,7 @@ object ErrorInfo {
 }
 
 /** Marker for exceptions that provide an ErrorInfo */
-abstract class ExceptionWithErrorInfo(val info: ErrorInfo) extends RuntimeException(info.formatPretty)
+abstract class ExceptionWithErrorInfo(val info: ErrorInfo) extends RuntimeException(info.format(withDetail = false))
 
 case class IllegalUriException(override val info: ErrorInfo) extends ExceptionWithErrorInfo(info)
 object IllegalUriException {
