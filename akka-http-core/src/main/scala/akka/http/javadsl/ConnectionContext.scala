@@ -19,8 +19,10 @@ object ConnectionContext {
   //#https-context-creation
   // ConnectionContext
   /** Used to serve HTTPS traffic. */
-  def https(sslContext: SSLContext): HttpsConnectionContext =
+  def https(sslContext: SSLContext): HttpsConnectionContext = // ...
+    //#https-context-creation
     scaladsl.ConnectionContext.https(sslContext)
+  //#https-context-creation
 
   /** Used to serve HTTPS traffic. */
   def https(
@@ -29,7 +31,8 @@ object ConnectionContext {
     enabledCipherSuites: Optional[JCollection[String]],
     enabledProtocols:    Optional[JCollection[String]],
     clientAuth:          Optional[TLSClientAuth],
-    sslParameters:       Optional[SSLParameters]) =
+    sslParameters:       Optional[SSLParameters]) = // ...
+    //#https-context-creation
     scaladsl.ConnectionContext.https(
       sslContext,
       OptionConverters.toScala(sslConfig),
@@ -37,7 +40,6 @@ object ConnectionContext {
       OptionConverters.toScala(enabledProtocols).map(Util.immutableSeq(_)),
       OptionConverters.toScala(clientAuth),
       OptionConverters.toScala(sslParameters))
-  //#https-context-creation
 
   /** Used to serve HTTPS traffic. */
   // for binary-compatibility, since 2.4.7
