@@ -160,7 +160,7 @@ lazy val http2Support = project("akka-http2-support")
 lazy val httpTestkit = project("akka-http-testkit")
   .settings(AutomaticModuleName.settings("akka.http.testkit"))
   .dependsOn(http)
-  .addAkkaModuleDependency("akka-stream-testkit")
+  .addAkkaModuleDependency("akka-stream-testkit", "provided")
   .settings(Dependencies.httpTestkit)
   .settings(
     // don't ignore Suites which is the default for the junit-interface
