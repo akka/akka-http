@@ -224,6 +224,7 @@ lazy val httpJackson =
 lazy val httpCaching = project("akka-http-caching")
   .settings(AutomaticModuleName.settings("akka.http.caching"))
   .addAkkaModuleDependency("akka-stream", "provided")
+  .addAkkaModuleDependency("akka-stream-testkit", "provided")
   .settings(Dependencies.httpCaching)
   .dependsOn(http, httpCore, httpTestkit % "test")
   .enablePlugins(BootstrapGenjavadoc)
