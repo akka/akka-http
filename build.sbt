@@ -160,7 +160,7 @@ lazy val http2Support = project("akka-http2-support")
 lazy val httpTestkit = project("akka-http-testkit")
   .settings(AutomaticModuleName.settings("akka.http.testkit"))
   .dependsOn(http)
-  .addAkkaModuleDependency("akka-stream-testkit")
+  .addAkkaModuleDependency("akka-stream-testkit", "provided")
   .settings(Dependencies.httpTestkit)
   .settings(
     // don't ignore Suites which is the default for the junit-interface
@@ -224,6 +224,7 @@ lazy val httpJackson =
 lazy val httpCaching = project("akka-http-caching")
   .settings(AutomaticModuleName.settings("akka.http.caching"))
   .addAkkaModuleDependency("akka-stream", "provided")
+  .addAkkaModuleDependency("akka-stream-testkit", "provided")
   .settings(Dependencies.httpCaching)
   .dependsOn(http, httpCore, httpTestkit % "test")
   .enablePlugins(BootstrapGenjavadoc)
