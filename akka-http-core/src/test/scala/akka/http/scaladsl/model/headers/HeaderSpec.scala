@@ -209,4 +209,15 @@ class HeaderSpec extends FreeSpec with Matchers {
       }
     }
   }
+  "RawHeader should" - {
+    "check for valid arguments" - {
+      "successful parse run" in {
+        RawHeader("foo", "bar").toString shouldEqual "foo: bar"
+      }
+      "failing parse run" in {
+        an[IllegalArgumentException] should be thrownBy RawHeader(null, "bar")
+        an[IllegalArgumentException] should be thrownBy RawHeader("foo", null)
+      }
+    }
+  }
 }

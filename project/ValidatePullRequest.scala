@@ -49,7 +49,7 @@ object ValidatePullRequest extends AutoPlugin {
   case object BuildQuick extends BuildMode {
     override def task = Some(executeTests in ValidatePR)
     def log(projectName: String, l: Logger) =
-      l.info(s"Building [$projectName] in quick mode, as it's dependencies were affected by PR.")
+      l.info(s"Building [$projectName] in quick mode, as its dependencies were affected by PR.")
   }
 
   case object BuildProjectChangedQuick extends BuildMode {
