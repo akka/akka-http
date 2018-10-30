@@ -68,7 +68,14 @@ public final class StatusCodes {
     public static final StatusCode UNPROCESSABLE_ENTITY = akka.http.scaladsl.model.StatusCodes.UnprocessableEntity();
     public static final StatusCode LOCKED = akka.http.scaladsl.model.StatusCodes.Locked();
     public static final StatusCode FAILED_DEPENDENCY = akka.http.scaladsl.model.StatusCodes.FailedDependency();
+
+    /**
+     * @deprecated Non-standard Unordered Collection should not be used, deprecated in favor of Too Early
+     */
+    @Deprecated
     public static final StatusCode UNORDERED_COLLECTION = akka.http.scaladsl.model.StatusCodes.UnorderedCollection();
+
+    public static final StatusCode TOO_EARLY = akka.http.scaladsl.model.StatusCodes.TooEarly();
     public static final StatusCode UPGRADE_REQUIRED = akka.http.scaladsl.model.StatusCodes.UpgradeRequired();
     public static final StatusCode PRECONDITION_REQUIRED = akka.http.scaladsl.model.StatusCodes.PreconditionRequired();
     public static final StatusCode TOO_MANY_REQUESTS = akka.http.scaladsl.model.StatusCodes.TooManyRequests();
