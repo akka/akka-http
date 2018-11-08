@@ -38,12 +38,12 @@ class FormFieldDirectivesSpec extends RoutingSpec {
     Multipart.FormData.BodyPart.Strict("file", HttpEntity(ContentTypes.`text/xml(UTF-8)`, "<int>42</int>"),
       Map("filename" → "age.xml")))
 
-  def nanoBench(block: => Unit): Long = {
+  def nanoBench(block: ⇒ Unit): Long = {
     // great microbenchmark (the comment must be kept, otherwise it's not true)
     val f = block _
 
     // warmup
-    (1 to 10).foreach(_ => f())
+    (1 to 10).foreach(_ ⇒ f())
 
     val start = System.nanoTime()
     f()
@@ -186,12 +186,12 @@ class FormFieldDirectivesSpec extends RoutingSpec {
       val numKeys = 10000
       val value = "null"
 
-      val regularKeys = Iterator.from(1).map(i => s"key_$i").take(numKeys)
+      val regularKeys = Iterator.from(1).map(i ⇒ s"key_$i").take(numKeys)
       val collidingKeys = HashCodeCollider.zeroHashCodeIterator().take(numKeys)
 
       def createFormData(keys: Iterator[String]): FormData = {
         val tuples = keys.map((_, value)).toSeq
-        val query = tuples.foldLeft(Uri.Query.newBuilder)((acc, pair) => acc += pair)
+        val query = tuples.foldLeft(Uri.Query.newBuilder)((acc, pair) ⇒ acc += pair)
         FormData(query.result())
       }
 
@@ -200,12 +200,12 @@ class FormFieldDirectivesSpec extends RoutingSpec {
 
       val regularTime = nanoBench {
         Post("/", regularFormData) ~> {
-          formFieldMap { _ => complete(StatusCodes.OK) }
+          formFieldMap { _ ⇒ complete(StatusCodes.OK) }
         } ~> check {}
       }
       val collidingTime = nanoBench {
         Post("/", collidingDormData) ~> {
-          formFieldMap { _ => complete(StatusCodes.OK) }
+          formFieldMap { _ ⇒ complete(StatusCodes.OK) }
         }
       }
 
@@ -236,12 +236,12 @@ class FormFieldDirectivesSpec extends RoutingSpec {
       val numKeys = 10000
       val value = "null"
 
-      val regularKeys = Iterator.from(1).map(i => s"key_$i").take(numKeys)
+      val regularKeys = Iterator.from(1).map(i ⇒ s"key_$i").take(numKeys)
       val collidingKeys = HashCodeCollider.zeroHashCodeIterator().take(numKeys)
 
       def createFormData(keys: Iterator[String]): FormData = {
         val tuples = keys.map((_, value)).toSeq
-        val query = tuples.foldLeft(Uri.Query.newBuilder)((acc, pair) => acc += pair)
+        val query = tuples.foldLeft(Uri.Query.newBuilder)((acc, pair) ⇒ acc += pair)
         FormData(query.result())
       }
 
@@ -250,12 +250,12 @@ class FormFieldDirectivesSpec extends RoutingSpec {
 
       val regularTime = nanoBench {
         Post("/", regularFormData) ~> {
-          formFieldMultiMap { _ => complete(StatusCodes.OK) }
+          formFieldMultiMap { _ ⇒ complete(StatusCodes.OK) }
         } ~> check {}
       }
       val collidingTime = nanoBench {
         Post("/", collidingDormData) ~> {
-          formFieldMultiMap { _ => complete(StatusCodes.OK) }
+          formFieldMultiMap { _ ⇒ complete(StatusCodes.OK) }
         }
       }
 
