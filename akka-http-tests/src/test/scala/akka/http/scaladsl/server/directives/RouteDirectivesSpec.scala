@@ -101,7 +101,7 @@ class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
       import akka.http.scaladsl.model.headers.Accept
       Get().withHeaders(Accept(MediaTypes.`application/json`)) ~> route ~> check {
         responseAs[String] shouldEqual
-          """{"name":"Ida","age":83}"""
+          """{"age":83,"name":"Ida"}"""
       }
       Get().withHeaders(Accept(MediaTypes.`text/xml`)) ~> route ~> check {
         responseAs[xml.NodeSeq] shouldEqual <data><name>Ida</name><age>83</age></data>
