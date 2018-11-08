@@ -4,6 +4,8 @@
 
 package akka.http.impl.model.parser
 
+import scala.collection.immutable.TreeMap
+
 import akka.parboiled2.Parser
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.{ MediaRange, MediaRanges }
@@ -22,11 +24,11 @@ private[parser] trait AcceptHeader { this: Parser with CommonRules with CommonAc
       if (sub == "*") {
         val mainLower = main.toRootLowerCase
         MediaRanges.getForKey(mainLower) match {
-          case Some(registered) ⇒ if (params.isEmpty) registered else registered.withParams(params.toMap)
-          case None             ⇒ MediaRange.custom(mainLower, params.toMap)
+          case Some(registered) ⇒ if (params.isEmpty) registered else registered.withParams(TreeMap(params: _*))
+          case None             ⇒ MediaRange.custom(mainLower, TreeMap(params: _*))
         }
       } else {
-        val (p, q) = MediaRange.splitOffQValue(params.toMap)
+        val (p, q) = MediaRange.splitOffQValue(TreeMap(params: _*))
         MediaRange(getMediaType(main, sub, p contains "charset", p), q)
       }
     }

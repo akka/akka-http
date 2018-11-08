@@ -14,6 +14,7 @@ import scala.util.Random
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import akka.util.ByteString
 import akka.actor.ActorSystem
+import akka.http.HashCodeColliderr
 import akka.http.scaladsl.model.{ ErrorInfo, HttpHeader }
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.model.parser.CharacterClasses
@@ -272,9 +273,52 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
         parseLine(s"Content-Type: abc:123${newLine}x")
       }
     }
+    "not show bad performance characteristics when parameter names' hashCodes collide" in new TestSetup(
+      parserSettings = createParserSettings(system).withMaxHeaderValueLength(500 * 1024)
+    ) {
+      // This is actually quite rare since it needs upping the max header value length
+      val numKeys = 10000
+      val value = "null"
+
+      val regularKeys = Iterator.from(1).map(i ⇒ s"key_$i").take(numKeys)
+      private val zeroHashStrings: Iterator[String] = HashCodeColliderr.zeroHashCodeIterator()
+      val collidingKeys = zeroHashStrings
+        .filter(_.forall(CharacterClasses.tchar))
+        .take(numKeys)
+
+      def createHeader(keys: Iterator[String]): String = "Accept: text/plain" + keys.mkString(";", "=x;", "=x") + newLine + "x"
+
+      val regularHeader = createHeader(regularKeys)
+      val collidingHeader = createHeader(collidingKeys)
+      zeroHashStrings.next().hashCode should be(0)
+
+      val regularTime = nanoBench {
+        val (_, accept: Accept) = parseLine(regularHeader)
+        accept.mediaRanges.head.getParams.size should be(numKeys)
+      }
+      val collidingTime = nanoBench {
+        val (_, accept: Accept) = parseLine(collidingHeader)
+        accept.mediaRanges.head.getParams.size should be(numKeys)
+      }
+
+      collidingTime / regularTime should be < 2L // speed must be in same order of magnitude
+    }
   }
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
+
+  def nanoBench(block: ⇒ Unit): Long = {
+    // great microbenchmark (the comment must be kept, otherwise it's not true)
+    val f = block _
+
+    // warmup
+    (1 to 10).foreach(_ ⇒ f())
+
+    val start = System.nanoTime()
+    f()
+    val end = System.nanoTime()
+    end - start
+  }
 
   def check(pair: (String, String)) = {
     val (expected, actual) = pair
