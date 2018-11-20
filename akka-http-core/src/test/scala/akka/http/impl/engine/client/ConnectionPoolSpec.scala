@@ -146,7 +146,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       connNr(response2) shouldEqual 1
     }
 
-    "be able to handle 500 pipelined requests against the test server" in new TestSetup {
+    "be able to handle 500 requests against the test server" in new TestSetup {
       val settings = ConnectionPoolSettings(system).withMaxConnections(4).withPipeliningLimit(2)
       val poolFlow = Http().cachedHostConnectionPool[Int](serverHostName, serverPort, settings = settings)
 
@@ -520,7 +520,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     Await.result(idSum, 10.seconds.dilated) shouldEqual N * (N + 1) / 2
   }
 
-  "be able to handle 500 pipelined requests with connection termination" in new TestSetup(autoAccept = true) {
+  "be able to handle 500 requests with connection termination" in new TestSetup(autoAccept = true) {
     def closeHeader(): List[Connection] =
       if (util.Random.nextInt(8) == 0) Connection("close") :: Nil
       else Nil
