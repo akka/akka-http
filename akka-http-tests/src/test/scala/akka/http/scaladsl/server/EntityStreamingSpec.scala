@@ -56,9 +56,9 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
     Get("/tweets").withHeaders(AcceptJson) ~> route ~> check {
       responseAs[String] shouldEqual
         """[""" +
-        """{"uid":1,"txt":"#Akka rocks!"},""" +
-        """{"uid":2,"txt":"Streaming is so hot right now!"},""" +
-        """{"uid":3,"txt":"You cannot enter the same river twice."}""" +
+        """{"txt":"#Akka rocks!","uid":1},""" +
+        """{"txt":"Streaming is so hot right now!","uid":2},""" +
+        """{"txt":"You cannot enter the same river twice.","uid":3}""" +
         """]"""
     }
 
@@ -88,9 +88,9 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
 
     Get("/tweets").withHeaders(AcceptJson) ~> route ~> check {
       responseAs[String] shouldEqual
-        """{"uid":1,"txt":"#Akka rocks!"}""" + "\n" +
-        """{"uid":2,"txt":"Streaming is so hot right now!"}""" + "\n" +
-        """{"uid":3,"txt":"You cannot enter the same river twice."}""" + "\n"
+        """{"txt":"#Akka rocks!","uid":1}""" + "\n" +
+        """{"txt":"Streaming is so hot right now!","uid":2}""" + "\n" +
+        """{"txt":"You cannot enter the same river twice.","uid":3}""" + "\n"
     }
   }
 
