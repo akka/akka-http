@@ -85,6 +85,11 @@ Scala
 Java
 :  @@snip [Unmarshallers.scala]($akka-http$/akka-http/src/main/java/akka/http/javadsl/unmarshalling/Unmarshallers.java) { #unmarshaller-creation }
 
+@@@ note
+To avoid unnecessary memory pressure, unmarshallers should make sure to either fully consume the incoming entity data stream, or make sure it is properly cancelled on error.
+Failure to do so might keep the remaining part of the stream in memory for longer than necessary.
+@@@
+
 ## Deriving Unmarshallers
 
 Sometimes you can save yourself some work by reusing existing unmarshallers for your custom ones.
