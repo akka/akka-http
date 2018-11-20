@@ -104,11 +104,13 @@ object FormFieldDirectives extends FormFieldDirectives {
 
     _formFieldSeq.map {
       case seq ⇒
-        append(Map.empty, seq)
+        append(immutable.TreeMap.empty, seq)
     }
   }
 
-  private val _formFieldMap: Directive1[Map[String, String]] = _formFieldSeq.map(_.toMap)
+  private val _formFieldMap: Directive1[Map[String, String]] = _formFieldSeq.map(toMap)
+
+  private def toMap(seq: Seq[(String, String)]): Map[String, String] = immutable.TreeMap(seq: _*)
 
   sealed trait FieldMagnet {
     type Out
