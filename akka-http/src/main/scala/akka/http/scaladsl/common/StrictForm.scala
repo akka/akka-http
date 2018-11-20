@@ -40,6 +40,9 @@ sealed abstract class StrictForm {
 }
 
 object StrictForm {
+  // TODO: make timeout configurable
+  val toStrictTimeout = 10.seconds
+
   sealed trait Field
   object Field {
     private[http] def fromString(value: String): Field = FromString(value)
@@ -115,7 +118,7 @@ object StrictForm {
         def tryUnmarshalToMultipartForm: Future[StrictForm] =
           for {
             multiPartFD ← multipartUM(entity).fast
-            strictMultiPartFD ← multiPartFD.toStrict(10.seconds).fast // TODO: make timeout configurable
+            strictMultiPartFD ← multiPartFD.toStrict(toStrictTimeout).fast
           } yield {
             new StrictForm {
               val fields = strictMultiPartFD.strictParts.map {
