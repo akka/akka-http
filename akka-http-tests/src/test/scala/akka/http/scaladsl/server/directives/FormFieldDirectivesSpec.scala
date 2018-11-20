@@ -5,6 +5,7 @@
 package akka.http.scaladsl.server
 package directives
 
+import akka.http.HashCodeCollider
 import akka.http.scaladsl.common.StrictForm
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.unmarshalling.Unmarshaller.HexInt
@@ -36,6 +37,19 @@ class FormFieldDirectivesSpec extends RoutingSpec {
   val multipartFormWithFile = Multipart.FormData(
     Multipart.FormData.BodyPart.Strict("file", HttpEntity(ContentTypes.`text/xml(UTF-8)`, "<int>42</int>"),
       Map("filename" → "age.xml")))
+
+  def nanoBench(block: ⇒ Unit): Long = {
+    // great microbenchmark (the comment must be kept, otherwise it's not true)
+    val f = block _
+
+    // warmup
+    (1 to 10).foreach(_ ⇒ f())
+
+    val start = System.nanoTime()
+    f()
+    val end = System.nanoTime()
+    end - start
+  }
 
   "The 'formFields' extraction directive" should {
     "properly extract the value of www-urlencoded form fields" in {
@@ -168,6 +182,35 @@ class FormFieldDirectivesSpec extends RoutingSpec {
         formFieldMap { echoComplete }
       } ~> check { responseAs[String] shouldEqual "Map(age -> 42, numberA -> 3, numberB -> 5)" }
     }
+    "not show bad performance characteristics when field names' hashCodes collide" in {
+      val numKeys = 10000
+      val value = "null"
+
+      val regularKeys = Iterator.from(1).map(i ⇒ s"key_$i").take(numKeys)
+      val collidingKeys = HashCodeCollider.zeroHashCodeIterator().take(numKeys)
+
+      def createFormData(keys: Iterator[String]): FormData = {
+        val tuples = keys.map((_, value)).toSeq
+        val query = tuples.foldLeft(Uri.Query.newBuilder)((acc, pair) ⇒ acc += pair)
+        FormData(query.result())
+      }
+
+      val regularFormData = createFormData(regularKeys)
+      val collidingDormData = createFormData(collidingKeys)
+
+      val regularTime = nanoBench {
+        Post("/", regularFormData) ~> {
+          formFieldMap { _ ⇒ complete(StatusCodes.OK) }
+        } ~> check {}
+      }
+      val collidingTime = nanoBench {
+        Post("/", collidingDormData) ~> {
+          formFieldMap { _ ⇒ complete(StatusCodes.OK) }
+        }
+      }
+
+      collidingTime / regularTime should be < 2L // speed must be in same order of magnitude
+    }
   }
 
   "The 'formFieldSeq' directive" should {
@@ -188,6 +231,35 @@ class FormFieldDirectivesSpec extends RoutingSpec {
       Post("/", FormData("age" → "42", "number" → "3", "number" → "5")) ~> {
         formFieldMultiMap { echoComplete }
       } ~> check { responseAs[String] shouldEqual "Map(age -> List(42), number -> List(5, 3))" }
+    }
+    "not show bad performance characteristics when field names' hashCodes collide" in {
+      val numKeys = 10000
+      val value = "null"
+
+      val regularKeys = Iterator.from(1).map(i ⇒ s"key_$i").take(numKeys)
+      val collidingKeys = HashCodeCollider.zeroHashCodeIterator().take(numKeys)
+
+      def createFormData(keys: Iterator[String]): FormData = {
+        val tuples = keys.map((_, value)).toSeq
+        val query = tuples.foldLeft(Uri.Query.newBuilder)((acc, pair) ⇒ acc += pair)
+        FormData(query.result())
+      }
+
+      val regularFormData = createFormData(regularKeys)
+      val collidingDormData = createFormData(collidingKeys)
+
+      val regularTime = nanoBench {
+        Post("/", regularFormData) ~> {
+          formFieldMultiMap { _ ⇒ complete(StatusCodes.OK) }
+        } ~> check {}
+      }
+      val collidingTime = nanoBench {
+        Post("/", collidingDormData) ~> {
+          formFieldMultiMap { _ ⇒ complete(StatusCodes.OK) }
+        }
+      }
+
+      collidingTime / regularTime should be < 2L // speed must be in same order of magnitude
     }
   }
 }
