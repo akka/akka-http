@@ -53,6 +53,7 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   def withMinConnections(n: Int): ConnectionPoolSettings = self.copy(minConnections = n)
   def withMaxRetries(n: Int): ConnectionPoolSettings = self.copy(maxRetries = n)
   def withMaxOpenRequests(newValue: Int): ConnectionPoolSettings = self.copy(maxOpenRequests = newValue)
+  /** Client-side pipelining is not currently supported, see https://github.com/akka/akka-http/issues/32 */
   def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copy(pipeliningLimit = newValue)
   def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue)
   def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue.asScala)

@@ -41,11 +41,6 @@ eventually be slowed down in sending requests.
 Any errors occurring on the underlying connection are surfaced as exceptions terminating the response stream (and
 canceling the request source).
 
-Note that, if the source produces subsequent requests before the prior responses have arrived, these requests will be
-[pipelined](http://en.wikipedia.org/wiki/HTTP_pipelining) across the connection, which is something that is not supported by all HTTP servers.
-Also, if the server closes the connection before responses to all requests have been received this will result in the
-response stream being terminated with a truncation error.
-
 ## Closing Connections
 
 Akka HTTP actively closes an established connection upon reception of a response containing `Connection: close` header.

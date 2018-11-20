@@ -46,9 +46,7 @@ back `3` different client flow instances for the same pool. If each of these cli
 (concurrently) the application will have 12 concurrently running client flow materializations.
 All of these share the resources of the single pool.
 
-This means that, if the pool's `pipelining-limit` is left at `1` (effectively disabling pipelining), no more than 12 requests can be open at any time.
-With a `pipelining-limit` of `8` and 12 concurrent client flow materializations the theoretical open requests
-maximum is `96`.
+This means that no more than 12 requests can be open at any time.
 
 The `max-open-requests` config setting allows for applying a hard limit which serves mainly as a protection against
 erroneous connection pool use, e.g. because the application is materializing too many client flows that all compete for
@@ -101,12 +99,8 @@ This is how Akka HTTP allocates incoming requests to the available connection "s
  1. If there is a connection alive and currently idle then schedule the request across this connection.
  2. If no connection is idle and there is still an unconnected slot then establish a new connection.
  3. If all connections are already established and "loaded" with other requests then pick the connection with the least
-open requests (< the configured `pipelining-limit`) that only has requests with idempotent methods scheduled to it,
-if there is one.
+open requests that only has requests with idempotent methods scheduled to it, if there is one.
  4. Otherwise apply back-pressure to the request source, i.e. stop accepting new requests.
-
-For more information about scheduling more than one request at a time across a single connection see
-[this Wikipedia entry on HTTP pipelining](http://en.wikipedia.org/wiki/HTTP_pipelining).
 
 ## Retrying a Request
 
