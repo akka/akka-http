@@ -5,6 +5,8 @@
 package akka.http.impl.model.parser
 
 import scala.annotation.tailrec
+import scala.collection.immutable.TreeMap
+
 import akka.parboiled2.Parser
 import akka.http.scaladsl.model._
 
@@ -35,7 +37,7 @@ private[parser] trait ContentTypeHeader { this: Parser with CommonRules with Com
         contentType(main, sub, tail, Some(getCharset(value)), builder)
 
       case Seq(kvp, tail @ _*) ⇒
-        val b = if (builder eq null) Map.newBuilder[String, String] else builder
+        val b = if (builder eq null) TreeMap.newBuilder[String, String] else builder
         b += kvp
         contentType(main, sub, tail, charset, b)
     }
