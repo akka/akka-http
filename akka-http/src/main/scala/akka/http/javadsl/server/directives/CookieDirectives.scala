@@ -68,7 +68,7 @@ abstract class CookieDirectives extends CodingDirectives {
   def deleteCookie(cookies: JIterable[HttpCookie], inner: Supplier[Route]): Route = RouteAdapter {
     cookies.asScala.toList match {
       case head :: tail ⇒
-        D.deleteCookie(head.asScala, tail.map(_.asScala).toSeq: _*) {
+        D.deleteCookie(head.asScala, tail.map(_.asScala): _*) {
           inner.get.delegate
         }
       case _ ⇒

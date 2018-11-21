@@ -54,7 +54,7 @@ abstract class CodingDirectives extends CacheConditionDirectives {
   def encodeResponseWith(coders: java.lang.Iterable[Coder], inner: Supplier[Route]): Route = RouteAdapter {
     coders.asScala.toList match {
       case head :: tail ⇒
-        D.encodeResponseWith(head._underlyingScalaCoder, tail.toSeq.map(_._underlyingScalaCoder): _*) {
+        D.encodeResponseWith(head._underlyingScalaCoder, tail.map(_._underlyingScalaCoder): _*) {
           inner.get.delegate
         }
       case _ ⇒

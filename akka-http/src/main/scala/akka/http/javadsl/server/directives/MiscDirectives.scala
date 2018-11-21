@@ -97,7 +97,7 @@ abstract class MiscDirectives extends MethodDirectives {
   def selectPreferredLanguage(languages: JIterable[Language], inner: JFunction[Language, Route]): Route = RouteAdapter {
     languages.asScala.toList match {
       case head :: tail ⇒
-        D.selectPreferredLanguage(head.asScala, tail.map(_.asScala).toSeq: _*) { lang ⇒ inner.apply(lang).delegate }
+        D.selectPreferredLanguage(head.asScala, tail.map(_.asScala): _*) { lang ⇒ inner.apply(lang).delegate }
       case _ ⇒
         D.reject()
     }
