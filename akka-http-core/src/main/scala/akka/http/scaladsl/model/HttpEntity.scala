@@ -184,7 +184,7 @@ sealed trait HttpEntity extends jm.HttpEntity {
 
   /** Java API */
   override def toStrict(timeoutMillis: Long, maxBytes: Long, materializer: Materializer): CompletionStage[jm.HttpEntity.Strict] =
-    toStrict(timeoutMillis.millis)(materializer).toJava
+    toStrict(timeoutMillis.millis, maxBytes)(materializer).toJava
 
   /** Java API */
   override def withContentType(contentType: jm.ContentType): HttpEntity = {
