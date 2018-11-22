@@ -35,7 +35,7 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 - [ ] Create a news item draft on https://github.com/akka/akka.github.com, using the milestones and `scripts/authors.scala previousVersion thisVersion`
 - [ ] In the same PR update Akka HTTP dependency for akka.io website: https://github.com/akka/akka.github.com/blob/master/_config.yml
 - [ ] Move all unclosed issues there and close the version you're releasing
-- [ ] Release notes PR has been merge
+- [ ] Release notes PR has been merged
 
 ### Cutting the release
 
