@@ -126,7 +126,7 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
     }
 
     Post("/abc", entityOfSize(501)) ~> Route.seal(route) ~> check {
-      status shouldEqual StatusCodes.BadRequest
+      status shouldEqual StatusCodes.RequestEntityTooLarge
     }
 
     //#withSizeLimit-example
@@ -171,7 +171,7 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
     }
 
     Post("/abc", entityOfSize(801)) ~> Route.seal(route) ~> check {
-      status shouldEqual StatusCodes.BadRequest
+      status shouldEqual StatusCodes.RequestEntityTooLarge
     }
     //#withSizeLimit-nested-example
   }
