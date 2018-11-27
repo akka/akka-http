@@ -187,8 +187,13 @@ object RejectionHandler {
           rejectRequestEntityAndComplete((BadRequest, "The query parameter '" + name + "' was malformed:\n" + msg))
       }
       .handle {
-        case MalformedRequestContentRejection(msg, _) ⇒
-          rejectRequestEntityAndComplete((BadRequest, "The request content was malformed:\n" + msg))
+        case MalformedRequestContentRejection(msg, throwable) ⇒ {
+          val rejectionMessage = "The request content was malformed:\n" + msg
+          throwable match {
+            case _: EntityStreamSizeException ⇒ rejectRequestEntityAndComplete((RequestEntityTooLarge, rejectionMessage))
+            case _                            ⇒ rejectRequestEntityAndComplete((BadRequest, rejectionMessage))
+          }
+        }
       }
       .handle {
         case MissingCookieRejection(cookieName) ⇒
