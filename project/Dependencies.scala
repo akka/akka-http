@@ -27,7 +27,7 @@ object Dependencies {
     crossScalaVersions := Seq("2.12.8", "2.11.12", "2.13.0-M5"),
     scalaVersion := crossScalaVersions.value.head,
     scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.14.0"),
-    scalaTestVersion := "3.0.5",
+    scalaTestVersion := "3.0.6-SNAP5",
     specs2Version := "4.3.6"
   )
   import Versions._
@@ -85,7 +85,8 @@ object Dependencies {
       Dependencies.Compile.scalaReflect % "provided"
     ),
     l += collectionCompat,
-    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full)
+    // Does not seem to be needed?
+    // addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full))
   )
 
   lazy val httpCore = l ++= Seq(
