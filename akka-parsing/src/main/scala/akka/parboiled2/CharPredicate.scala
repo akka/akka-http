@@ -118,7 +118,7 @@ object CharPredicate {
       case x                ⇒ General(x)
     }
 
-  def apply(magnets: ApplyMagnet*): CharPredicate = (Empty /: magnets) { (a, m) ⇒ a ++ m.predicate }
+  def apply(magnets: ApplyMagnet*): CharPredicate = magnets.foldLeft(Empty) { (a, m) ⇒ a ++ m.predicate }
 
   class ApplyMagnet(val predicate: CharPredicate)
   object ApplyMagnet {

@@ -18,6 +18,7 @@ package akka.parboiled2.support
 
 import scala.annotation.tailrec
 import akka.parboiled2._
+import scala.collection.compat._
 
 trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
   val c: OpTreeCtx
@@ -638,7 +639,7 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
           case Block(statements, res) ⇒ block(statements, actionBody(res))
 
           case x @ (Ident(_) | Select(_, _)) ⇒
-            val valNames: List[TermName] = argTypes.indices.map { i ⇒ TermName("value" + i) }(collection.breakOut)
+            val valNames: List[TermName] = argTypes.indices.iterator.map { i ⇒ TermName("value" + i) }.to(scala.collection.immutable.List)
             val args = valNames map Ident.apply
             block(popToVals(valNames), q"__push($x(..$args))")
 
