@@ -21,6 +21,7 @@ import akka.Done
 import akka.parboiled2.CharUtils
 import akka.stream.Materializer
 import akka.util.{ ByteString, HashCode, OptionVal }
+import akka.http.ccompat
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.util.FastFuture._
@@ -70,7 +71,7 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def withHeaders(headers: HttpHeader*): Self = withHeaders(headers.toList)
 
   /** Returns a copy of this message with the list of headers set to the given ones. */
-  def withHeaders(headers: immutable.Seq[HttpHeader]): Self
+  def withHeaders(headers: ccompat.VASeq[HttpHeader]): Self
 
   /**
    * Returns a new message that contains all of the given default headers which didn't already
@@ -82,7 +83,7 @@ sealed trait HttpMessage extends jm.HttpMessage {
    * Returns a new message that contains all of the given default headers which didn't already
    * exist (by case-insensitive header name) in this message.
    */
-  def withDefaultHeaders(defaultHeaders: immutable.Seq[HttpHeader]): Self =
+  def withDefaultHeaders(defaultHeaders: ccompat.VASeq[HttpHeader]): Self =
     withHeaders {
       if (headers.isEmpty) defaultHeaders
       else defaultHeaders.foldLeft(headers) { (acc, h) ⇒ if (headers.exists(_ is h.lowercaseName)) acc else h +: acc }
@@ -298,8 +299,10 @@ final class HttpRequest(
    */
   def canBeRetried = method.isIdempotent
 
-  override def withHeaders(headers: immutable.Seq[HttpHeader]): HttpRequest =
-    if (headers eq this.headers) this else copy(headers = headers)
+  override def withHeaders(headers: ccompat.VASeq[HttpHeader]): HttpRequest = {
+    import akka.http.ccompat._
+    if (headers eq this.headers) this else copy(headers = headers.xSeq)
+  }
 
   override def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: RequestEntity): HttpRequest = copy(headers = headers, entity = entity)
   override def withEntity(entity: jm.RequestEntity): HttpRequest = copy(entity = entity.asInstanceOf[RequestEntity])
@@ -452,8 +455,10 @@ final class HttpResponse(
   override def isRequest = false
   override def isResponse = true
 
-  override def withHeaders(headers: immutable.Seq[HttpHeader]): HttpResponse =
-    if (headers eq this.headers) this else copy(headers = headers)
+  override def withHeaders(headers: ccompat.VASeq[HttpHeader]): HttpResponse = {
+    import akka.http.ccompat._
+    if (headers eq this.headers) this else copy(headers = headers.xSeq)
+  }
 
   override def withProtocol(protocol: akka.http.javadsl.model.HttpProtocol): akka.http.javadsl.model.HttpResponse = withProtocol(protocol.asInstanceOf[HttpProtocol])
   def withProtocol(protocol: HttpProtocol): HttpResponse = copy(protocol = protocol)

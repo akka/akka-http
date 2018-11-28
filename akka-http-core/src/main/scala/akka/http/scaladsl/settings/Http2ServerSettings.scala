@@ -7,7 +7,7 @@ package akka.http.scaladsl.settings
 import akka.annotation.DoNotInherit
 import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.http.javadsl
-import akka.http.impl.util._
+import akka.http.impl.util.{ SettingsCompanion ⇒ _, _ }
 import com.typesafe.config.Config
 
 /**

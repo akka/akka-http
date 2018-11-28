@@ -10,6 +10,7 @@ import scala.annotation.{ tailrec, varargs }
 import scala.collection.immutable
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.ccompat
 
 sealed trait CacheDirective extends Renderable with jm.headers.CacheDirective {
   def value: String
@@ -31,15 +32,17 @@ object CacheDirective {
     CustomCacheDirective(name, content)
 
   sealed abstract class FieldNamesDirective extends Product with ValueRenderable {
-    def fieldNames: immutable.Seq[String]
+    import akka.http.ccompat._
+    def fieldNames: ccompat.VASeq[String]
     final def render[R <: Rendering](r: R): r.type =
       if (fieldNames.nonEmpty) {
         r ~~ productPrefix ~~ '=' ~~ '"'
-        @tailrec def rec(i: Int = 0): r.type =
-          if (i < fieldNames.length) {
-            if (i > 0) r ~~ ','
-            r.putEscaped(fieldNames(i))
-            rec(i + 1)
+        val i: Iterator[String] = fieldNames.iterator
+        @tailrec def rec(first: Boolean = true): r.type =
+          if (i.hasNext) {
+            if (first) r ~~ ','
+            r.putEscaped(i.next())
+            rec(first = false)
           } else r ~~ '"'
         rec()
       } else r ~~ productPrefix
@@ -115,7 +118,7 @@ object CacheDirectives {
    * For a fuller description of the use case, see
    * http://tools.ietf.org/html/rfc7234#section-5.2.2.2
    */
-  final case class `no-cache`(fieldNames: immutable.Seq[String]) extends FieldNamesDirective with ResponseDirective
+  final case class `no-cache`(fieldNames: ccompat.VASeq[String]) extends FieldNamesDirective with ResponseDirective
 
   /**
    * For a fuller description of the use case, see
@@ -130,7 +133,7 @@ object CacheDirectives {
    * For a fuller description of the use case, see
    * http://tools.ietf.org/html/rfc7234#section-5.2.2.6
    */
-  final case class `private`(fieldNames: immutable.Seq[String]) extends FieldNamesDirective with ResponseDirective
+  final case class `private`(fieldNames: ccompat.VASeq[String]) extends FieldNamesDirective with ResponseDirective
   object `private` {
     def apply(fieldNames: String*): `private` = new `private`(immutable.Seq(fieldNames: _*))
   }

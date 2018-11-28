@@ -7,6 +7,7 @@ package akka.http.scaladsl.model.headers
 import language.implicitConversions
 import scala.collection.immutable
 import akka.parboiled2.UTF8
+import akka.http.ccompat
 import akka.http.impl.model.parser.UriParser
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
@@ -40,7 +41,7 @@ final case class HttpOrigin(scheme: String, host: Host) extends jm.headers.HttpO
 }
 
 object HttpOrigin {
-  implicit val originsRenderer: Renderer[immutable.Seq[HttpOrigin]] = Renderer.seqRenderer(" ", "null")
+  implicit val originsRenderer: Renderer[ccompat.VASeq[HttpOrigin]] = Renderer.seqRenderer(" ", "null")
 
   implicit def apply(str: String): HttpOrigin = {
     val parser = new UriParser(str, UTF8, Uri.ParsingMode.Relaxed)

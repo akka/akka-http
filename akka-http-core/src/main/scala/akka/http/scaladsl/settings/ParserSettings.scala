@@ -10,7 +10,7 @@ import java.util.function.Function
 
 import akka.annotation.DoNotInherit
 import akka.http.impl.settings.ParserSettingsImpl
-import akka.http.impl.util._
+import akka.http.impl.util.{ SettingsCompanion ⇒ _, _ }
 import akka.http.javadsl.model
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.{ settings ⇒ js }

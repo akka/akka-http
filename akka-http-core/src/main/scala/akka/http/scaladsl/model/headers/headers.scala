@@ -22,6 +22,7 @@ import akka.event.Logging
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.model._
+import akka.http.ccompat
 
 sealed abstract class ModeledCompanion[T: ClassTag] extends Renderable {
   val name = ModeledCompanion.nameFromClass(getClass)
@@ -128,14 +129,17 @@ object Accept extends ModeledCompanion[Accept] {
   def apply(mediaRanges: MediaRange*): Accept = apply(immutable.Seq(mediaRanges: _*))
   implicit val mediaRangesRenderer = Renderer.defaultSeqRenderer[MediaRange] // cache
 }
-final case class Accept(mediaRanges: immutable.Seq[MediaRange]) extends jm.headers.Accept with RequestHeader {
+final case class Accept(mediaRanges: ccompat.VASeq[MediaRange]) extends jm.headers.Accept with RequestHeader {
   import Accept.mediaRangesRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ mediaRanges
   protected def companion = Accept
   def acceptsAll = mediaRanges.exists(mr ⇒ mr.isWildcard && mr.qValue > 0f)
 
   /** Java API */
-  def getMediaRanges: Iterable[jm.MediaRange] = mediaRanges.asJava
+  def getMediaRanges: Iterable[jm.MediaRange] = {
+    import akka.http.ccompat._
+    mediaRanges.asJava
+  }
 }
 
 // http://tools.ietf.org/html/rfc7231#section-5.3.3
@@ -159,14 +163,17 @@ object `Accept-Encoding` extends ModeledCompanion[`Accept-Encoding`] {
   def apply(encodings: HttpEncodingRange*): `Accept-Encoding` = apply(immutable.Seq(encodings: _*))
   implicit val encodingsRenderer = Renderer.defaultSeqRenderer[HttpEncodingRange] // cache
 }
-final case class `Accept-Encoding`(encodings: immutable.Seq[HttpEncodingRange]) extends jm.headers.AcceptEncoding
+final case class `Accept-Encoding`(encodings: ccompat.VASeq[HttpEncodingRange]) extends jm.headers.AcceptEncoding
   with RequestHeader {
   import `Accept-Encoding`.encodingsRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ encodings
   protected def companion = `Accept-Encoding`
 
   /** Java API */
-  def getEncodings: Iterable[jm.headers.HttpEncodingRange] = encodings.asJava
+  def getEncodings: Iterable[jm.headers.HttpEncodingRange] = {
+    import akka.http.ccompat._
+    encodings.asJava
+  }
 }
 
 // http://tools.ietf.org/html/rfc7231#section-5.3.5
@@ -190,14 +197,17 @@ object `Accept-Ranges` extends ModeledCompanion[`Accept-Ranges`] {
   def apply(rangeUnits: RangeUnit*): `Accept-Ranges` = apply(immutable.Seq(rangeUnits: _*))
   implicit val rangeUnitsRenderer = Renderer.defaultSeqRenderer[RangeUnit] // cache
 }
-final case class `Accept-Ranges`(rangeUnits: immutable.Seq[RangeUnit]) extends jm.headers.AcceptRanges
+final case class `Accept-Ranges`(rangeUnits: ccompat.VASeq[RangeUnit]) extends jm.headers.AcceptRanges
   with ResponseHeader {
   import `Accept-Ranges`.rangeUnitsRenderer
   def renderValue[R <: Rendering](r: R): r.type = if (rangeUnits.isEmpty) r ~~ "none" else r ~~ rangeUnits
   protected def companion = `Accept-Ranges`
 
   /** Java API */
-  def getRangeUnits: Iterable[jm.headers.RangeUnit] = rangeUnits.asJava
+  def getRangeUnits: Iterable[jm.headers.RangeUnit] = {
+    import akka.http.ccompat._
+    rangeUnits.asJava
+  }
 }
 
 // http://www.w3.org/TR/cors/#access-control-allow-credentials-response-header
@@ -213,14 +223,17 @@ object `Access-Control-Allow-Headers` extends ModeledCompanion[`Access-Control-A
   def apply(headers: String*): `Access-Control-Allow-Headers` = apply(immutable.Seq(headers: _*))
   implicit val headersRenderer = Renderer.defaultSeqRenderer[String] // cache
 }
-final case class `Access-Control-Allow-Headers`(headers: immutable.Seq[String])
+final case class `Access-Control-Allow-Headers`(headers: ccompat.VASeq[String])
   extends jm.headers.AccessControlAllowHeaders with ResponseHeader {
   import `Access-Control-Allow-Headers`.headersRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ headers
   protected def companion = `Access-Control-Allow-Headers`
 
   /** Java API */
-  def getHeaders: Iterable[String] = headers.asJava
+  def getHeaders: Iterable[String] = {
+    import akka.http.ccompat._
+    headers.asJava
+  }
 }
 
 // http://www.w3.org/TR/cors/#access-control-allow-methods-response-header
@@ -228,14 +241,17 @@ object `Access-Control-Allow-Methods` extends ModeledCompanion[`Access-Control-A
   def apply(methods: HttpMethod*): `Access-Control-Allow-Methods` = apply(immutable.Seq(methods: _*))
   implicit val methodsRenderer = Renderer.defaultSeqRenderer[HttpMethod] // cache
 }
-final case class `Access-Control-Allow-Methods`(methods: immutable.Seq[HttpMethod])
+final case class `Access-Control-Allow-Methods`(methods: ccompat.VASeq[HttpMethod])
   extends jm.headers.AccessControlAllowMethods with ResponseHeader {
   import `Access-Control-Allow-Methods`.methodsRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ methods
   protected def companion = `Access-Control-Allow-Methods`
 
   /** Java API */
-  def getMethods: Iterable[jm.HttpMethod] = methods.asJava
+  def getMethods: Iterable[jm.HttpMethod] = {
+    import akka.http.ccompat._
+    methods.asJava
+  }
 }
 
 // http://www.w3.org/TR/cors/#access-control-allow-origin-response-header
@@ -264,14 +280,17 @@ object `Access-Control-Expose-Headers` extends ModeledCompanion[`Access-Control-
   def apply(headers: String*): `Access-Control-Expose-Headers` = apply(immutable.Seq(headers: _*))
   implicit val headersRenderer = Renderer.defaultSeqRenderer[String] // cache
 }
-final case class `Access-Control-Expose-Headers`(headers: immutable.Seq[String])
+final case class `Access-Control-Expose-Headers`(headers: ccompat.VASeq[String])
   extends jm.headers.AccessControlExposeHeaders with ResponseHeader {
   import `Access-Control-Expose-Headers`.headersRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ headers
   protected def companion = `Access-Control-Expose-Headers`
 
   /** Java API */
-  def getHeaders: Iterable[String] = headers.asJava
+  def getHeaders: Iterable[String] = {
+    import akka.http.ccompat._
+    headers.asJava
+  }
 }
 
 // http://www.w3.org/TR/cors/#access-control-max-age-response-header
@@ -287,14 +306,17 @@ object `Access-Control-Request-Headers` extends ModeledCompanion[`Access-Control
   def apply(headers: String*): `Access-Control-Request-Headers` = apply(immutable.Seq(headers: _*))
   implicit val headersRenderer = Renderer.defaultSeqRenderer[String] // cache
 }
-final case class `Access-Control-Request-Headers`(headers: immutable.Seq[String])
+final case class `Access-Control-Request-Headers`(headers: ccompat.VASeq[String])
   extends jm.headers.AccessControlRequestHeaders with RequestHeader {
   import `Access-Control-Request-Headers`.headersRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ headers
   protected def companion = `Access-Control-Request-Headers`
 
   /** Java API */
-  def getHeaders: Iterable[String] = headers.asJava
+  def getHeaders: Iterable[String] = {
+    import akka.http.ccompat._
+    headers.asJava
+  }
 }
 
 // http://www.w3.org/TR/cors/#access-control-request-method-request-header
@@ -317,13 +339,16 @@ object Allow extends ModeledCompanion[Allow] {
   def apply(methods: HttpMethod*): Allow = apply(immutable.Seq(methods: _*))
   implicit val methodsRenderer = Renderer.defaultSeqRenderer[HttpMethod] // cache
 }
-final case class Allow(methods: immutable.Seq[HttpMethod]) extends jm.headers.Allow with ResponseHeader {
+final case class Allow(methods: ccompat.VASeq[HttpMethod]) extends jm.headers.Allow with ResponseHeader {
   import Allow.methodsRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ methods
   protected def companion = Allow
 
   /** Java API */
-  def getMethods: Iterable[jm.HttpMethod] = methods.asJava
+  def getMethods: Iterable[jm.HttpMethod] = {
+    import akka.http.ccompat._
+    methods.asJava
+  }
 }
 
 // http://tools.ietf.org/html/rfc7235#section-4.2
@@ -451,14 +476,17 @@ object Cookie extends ModeledCompanion[Cookie] {
   def apply(values: (String, String)*): Cookie = apply(values.map(HttpCookiePair(_)).toList)
   implicit val cookiePairsRenderer = Renderer.seqRenderer[HttpCookiePair](separator = "; ") // cache
 }
-final case class Cookie(cookies: immutable.Seq[HttpCookiePair]) extends jm.headers.Cookie with RequestHeader {
+final case class Cookie(cookies: ccompat.VASeq[HttpCookiePair]) extends jm.headers.Cookie with RequestHeader {
   require(cookies.nonEmpty, "cookies must not be empty")
   import Cookie.cookiePairsRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ cookies
   protected def companion = Cookie
 
   /** Java API */
-  def getCookies: Iterable[jm.headers.HttpCookiePair] = cookies.asJava
+  def getCookies: Iterable[jm.headers.HttpCookiePair] = {
+    import akka.http.ccompat._
+    cookies.asJava
+  }
 }
 
 // http://tools.ietf.org/html/rfc7231#section-7.1.1.2
@@ -595,13 +623,16 @@ object Link extends ModeledCompanion[Link] {
   def apply(values: LinkValue*): Link = apply(immutable.Seq(values: _*))
   implicit val valuesRenderer = Renderer.defaultSeqRenderer[LinkValue] // cache
 }
-final case class Link(values: immutable.Seq[LinkValue]) extends jm.headers.Link with RequestResponseHeader {
+final case class Link(values: ccompat.VASeq[LinkValue]) extends jm.headers.Link with RequestResponseHeader {
   import Link.valuesRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ values
   protected def companion = Link
 
   /** Java API */
-  def getValues: Iterable[jm.headers.LinkValue] = values.asJava
+  def getValues: Iterable[jm.headers.LinkValue] = {
+    import akka.http.ccompat._
+    values.asJava
+  }
 }
 
 // http://tools.ietf.org/html/rfc7231#section-7.1.2
@@ -618,12 +649,15 @@ final case class Location(uri: Uri) extends jm.headers.Location with ResponseHea
 object Origin extends ModeledCompanion[Origin] {
   def apply(origins: HttpOrigin*): Origin = apply(immutable.Seq(origins: _*))
 }
-final case class Origin(origins: immutable.Seq[HttpOrigin]) extends jm.headers.Origin with RequestHeader {
+final case class Origin(origins: ccompat.VASeq[HttpOrigin]) extends jm.headers.Origin with RequestHeader {
   def renderValue[R <: Rendering](r: R): r.type = if (origins.isEmpty) r ~~ "null" else r ~~ origins
   protected def companion = Origin
 
   /** Java API */
-  def getOrigins: Iterable[jm.headers.HttpOrigin] = origins.asJava
+  def getOrigins: Iterable[jm.headers.HttpOrigin] = {
+    import akka.http.ccompat._
+    origins.asJava
+  }
 }
 
 // http://tools.ietf.org/html/rfc7235#section-4.3

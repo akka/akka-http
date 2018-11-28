@@ -10,7 +10,7 @@ import java.util.function.Supplier
 
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
-import akka.http.impl.util._
+import akka.http.impl.util.{ SettingsCompanion ⇒ _, _ }
 import akka.http.impl.settings.ClientConnectionSettingsImpl
 import akka.http.scaladsl.ClientTransport
 import akka.http.scaladsl.model.headers.`User-Agent`

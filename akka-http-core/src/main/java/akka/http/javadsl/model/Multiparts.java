@@ -5,16 +5,19 @@
 package akka.http.javadsl.model;
 
 import akka.stream.javadsl.Source;
+import scala.collection.immutable.HashMap;
 import scala.collection.immutable.List;
+import scala.collection.immutable.Map$;
 import scala.collection.immutable.Nil$;
 
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 
+import akka.http.ccompat.MapHelpers;
+
 import static akka.http.impl.util.Util.convertArray;
 import static akka.http.impl.util.Util.convertMapToScala;
-import static akka.http.impl.util.Util.emptyMap;
 
 /**
  * Constructors for Multipart instances
@@ -140,7 +143,7 @@ public final class Multiparts {
     }
 
     private static scala.collection.immutable.Map<String, HttpEntity.Strict> toScalaMap(Map<String, HttpEntity.Strict> map) {
-        return emptyMap.$plus$plus(scala.collection.JavaConverters.mapAsScalaMapConverter(map).asScala());
+        return MapHelpers.convertMapToScala(map);
     }
 
     private static scala.collection.Iterable<HttpHeader> toScalaSeq(java.util.List<HttpHeader> _headers) {

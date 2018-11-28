@@ -10,6 +10,7 @@ import akka.http.impl.util._
 import akka.http.scaladsl.model.WithQValue
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
+import akka.http.ccompat
 
 sealed trait LanguageRange extends jm.headers.LanguageRange with ValueRenderable with WithQValue[LanguageRange] {
   def qValue: Float
@@ -45,7 +46,10 @@ object LanguageRange {
         language.subTags.size <= l.subTags.size &&
         (language.subTags zip l.subTags).forall(t ⇒ t._1 equalsIgnoreCase t._2)
     def primaryTag = language.primaryTag
-    def subTags = language.subTags
+    def subTags = {
+      import akka.http.ccompat._
+      language.subTags.xSeq
+    }
     def withQValue(qValue: Float) = One(language, qValue)
   }
 
@@ -53,7 +57,7 @@ object LanguageRange {
   def apply(language: Language, qValue: Float): LanguageRange = One(language, qValue)
 }
 
-final case class Language(primaryTag: String, subTags: immutable.Seq[String])
+final case class Language(primaryTag: String, subTags: ccompat.VASeq[String])
   extends jm.headers.Language with ValueRenderable with WithQValue[LanguageRange] {
   def withQValue(qValue: Float) = LanguageRange(this, qValue.toFloat)
   def render[R <: Rendering](r: R): r.type = {
@@ -63,7 +67,10 @@ final case class Language(primaryTag: String, subTags: immutable.Seq[String])
   }
 
   /** Java API */
-  def getSubTags: java.lang.Iterable[String] = subTags.asJava
+  def getSubTags: java.lang.Iterable[String] = {
+    import akka.http.ccompat._
+    subTags.asJava
+  }
 }
 object Language {
   implicit def apply(compoundTag: String): Language =

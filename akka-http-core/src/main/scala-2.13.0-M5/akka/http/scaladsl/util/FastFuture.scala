@@ -7,9 +7,9 @@ package akka.http.scaladsl.util
 import scala.language.higherKinds
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
+import scala.collection.compat._
 import scala.concurrent.duration.Duration
 import scala.concurrent._
-import scala.collection.compat._
 
 /**
  * Provides alternative implementations of the basic transformation operations defined on [[scala.concurrent.Future]],
@@ -106,6 +106,7 @@ object FastFuture {
       (fr, fa) ⇒ for (r ← fr.fast; a ← fa.asInstanceOf[Future[T]].fast) yield r += a
     }.fast.map(_.result())
 
+  /* FIXME
   def fold[T, R](futures: IterableOnce[Future[T]])(zero: R)(f: (R, T) ⇒ R)(implicit executor: ExecutionContext): Future[R] =
     if (futures.isEmpty) successful(zero)
     else sequence(futures).fast.map(_.foldLeft(zero)(f))
@@ -113,6 +114,7 @@ object FastFuture {
   def reduce[T, R >: T](futures: IterableOnce[Future[T]])(op: (R, T) ⇒ R)(implicit executor: ExecutionContext): Future[R] =
     if (futures.isEmpty) failed(new NoSuchElementException("reduce attempted on empty collection"))
     else sequence(futures).fast.map(_ reduceLeft op)
+*/
 
   def traverse[A, B, M[_] <: IterableOnce[_]](in: M[A])(fn: A ⇒ Future[B])(implicit cbf: BuildFrom[M[A], B, M[B]], executor: ExecutionContext): Future[M[B]] =
     in.foldLeft(successful(cbf.newBuilder(in))) { (fr, a) ⇒
