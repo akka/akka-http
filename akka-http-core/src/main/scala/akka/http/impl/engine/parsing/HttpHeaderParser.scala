@@ -22,6 +22,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ EmptyHeader, RawHeader }
 import akka.http.impl.model.parser.HeaderParser
 import akka.http.impl.model.parser.CharacterClasses._
+import scala.collection.compat._
 
 /**
  * INTERNAL API
@@ -476,10 +477,10 @@ private[http] object HttpHeaderParser {
 
     val valueParsers: Seq[HeaderValueParser] =
       HeaderParser.ruleNames
-        .filter(headerParserFilter)
+        .filter(headerParserFilter).iterator
         .map { name ⇒
           new ModeledHeaderValueParser(name, parser.settings.maxHeaderValueLength, parser.settings.headerValueCacheLimit(name), parser.log, parser.settings)
-        }(collection.breakOut)
+        }.to(scala.collection.immutable.IndexedSeq)
 
     def insertInGoodOrder(items: Seq[Any])(startIx: Int = 0, endIx: Int = items.size): Unit =
       if (endIx - startIx > 0) {
