@@ -45,7 +45,8 @@ inThisBuild(Def.settings(
   Dependencies.Versions,
   Formatting.formatSettings,
   shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
-  concurrentRestrictions in Global += Tags.limit(Tags.Test, 1)
+  concurrentRestrictions in Global += Tags.limit(Tags.Test, 1),
+  resolvers += "Akka Snapshot Repository" at "http://repo.akka.io/snapshots/",
 ))
 
 lazy val root = Project(
