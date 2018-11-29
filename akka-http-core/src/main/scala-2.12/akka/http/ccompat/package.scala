@@ -21,6 +21,6 @@ package object ccompat {
     def addOne(elem: Elem): this.type = self.+=(elem)
   }
 
-  type LinearSeqOptimized[+A, +Repr <: LinearSeqOptimized[A, Repr]] = scala.collection.LinearSeqOptimized[A, Repr]
+  type QuerySeqOptimized = scala.collection.immutable.LinearSeq[(String, String)] with scala.collection.LinearSeqOptimized[(String, String), akka.http.scaladsl.model.Uri.Query]
 
 }

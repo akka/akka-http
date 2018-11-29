@@ -13,7 +13,7 @@ import scala.annotation.tailrec
 import scala.collection.{ immutable, mutable }
 import scala.collection.immutable.LinearSeq
 import akka.parboiled2.{ CharPredicate, CharUtils, ParserInput }
-import akka.http.ccompat.{ LinearSeqOptimized, Builder }
+import akka.http.ccompat.{ QuerySeqOptimized, Builder }
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.model.parser.UriParser
 import akka.http.impl.model.parser.CharacterClasses._
@@ -581,7 +581,7 @@ object Uri {
     }
   }
 
-  sealed abstract class Query extends LinearSeq[(String, String)] with LinearSeqOptimized[(String, String), Query] {
+  sealed abstract class Query extends QuerySeqOptimized {
     def key: String
     def value: String
     def +:(kvp: (String, String)) = Query.Cons(kvp._1, kvp._2, this)

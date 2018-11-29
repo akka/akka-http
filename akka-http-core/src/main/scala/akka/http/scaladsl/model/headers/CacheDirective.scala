@@ -40,7 +40,7 @@ object CacheDirective {
         val i: Iterator[String] = fieldNames.iterator
         @tailrec def rec(first: Boolean = true): r.type =
           if (i.hasNext) {
-            if (first) r ~~ ','
+            if (!first) r ~~ ','
             r.putEscaped(i.next())
             rec(first = false)
           } else r ~~ '"'

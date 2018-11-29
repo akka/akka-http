@@ -23,8 +23,12 @@ package object ccompat {
 
   type Builder[-A, +To] = scala.collection.mutable.Builder[A, To]
 
-  trait LinearSeqOptimized[+A, +C <: scala.collection.LinearSeq[A] with scala.collection.StrictOptimizedLinearSeqOps[A, scala.collection.immutable.LinearSeq, C]]
-    extends scala.collection.StrictOptimizedLinearSeqOps[A, scala.collection.immutable.LinearSeq, C] {
+  import akka.http.scaladsl.model.Uri.Query
+  trait QuerySeqOptimized extends scala.collection.immutable.LinearSeq[(String, String)] with scala.collection.StrictOptimizedLinearSeqOps[(String, String), scala.collection.immutable.LinearSeq, Query] {
+
+    override protected def fromSpecific(coll: IterableOnce[(String, String)]): Query =
+      Query(coll.toSeq: _*)
+
     def newBuilder: Any = ???
   }
 }
