@@ -71,6 +71,12 @@ trait RequestBuilding extends TransformerPipelineSupport {
       case result                              ⇒ throw new IllegalArgumentException(result.errors.head.formatPretty)
     }
 
+  def addHeader(header: HttpHeader, parseToModelHeader: Boolean = false): RequestTransformer = if (parseToModelHeader) {
+    addHeader(header.name, header.value)
+  } else {
+    addHeader(header)
+  }
+
   def addHeaders(first: HttpHeader, more: HttpHeader*): RequestTransformer = _.mapHeaders(_ ++ (first +: more))
 
   def mapHeaders(f: immutable.Seq[HttpHeader] ⇒ immutable.Seq[HttpHeader]): RequestTransformer = _.mapHeaders(f)
