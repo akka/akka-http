@@ -624,7 +624,6 @@ object Uri {
         if (q.isEmpty) map else append(map.updated(q.key, map.getOrElse(q.key, Nil) :+ q.value), q.tail)
       append(Map.empty, this)
     }
-    override def newBuilder: mutable.Builder[(String, String), Query] = Query.newBuilder
     override def toString = UriRendering.QueryRenderer.render(new StringRendering, this).get
   }
   object Query {

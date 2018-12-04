@@ -21,6 +21,9 @@ package object ccompat {
     def addOne(elem: Elem): this.type = self.+=(elem)
   }
 
-  type QuerySeqOptimized = scala.collection.immutable.LinearSeq[(String, String)] with scala.collection.LinearSeqOptimized[(String, String), akka.http.scaladsl.model.Uri.Query]
+  trait QuerySeqOptimized extends scala.collection.immutable.LinearSeq[(String, String)] with scala.collection.LinearSeqOptimized[(String, String), akka.http.scaladsl.model.Uri.Query] {
+    self: akka.http.scaladsl.model.Uri.Query ⇒
+    override def newBuilder: mutable.Builder[(String, String), akka.http.scaladsl.model.Uri.Query] = akka.http.scaladsl.model.Uri.Query.newBuilder
+  }
 
 }
