@@ -79,14 +79,10 @@ object MyImplicitExceptionHandler {
 
 object ExceptionHandlerInSealExample {
   //#seal-handler-example
-  import akka.actor.ActorSystem
   import akka.http.scaladsl.model.HttpResponse
   import akka.http.scaladsl.model.StatusCodes._
   import akka.http.scaladsl.server._
   import Directives._
-  import akka.http.scaladsl.Http
-  import akka.stream.ActorMaterializer
-  import SealedRouteWithCustomExceptionHandler.route
 
   object SealedRouteWithCustomExceptionHandler {
 
@@ -105,13 +101,6 @@ object ExceptionHandlerInSealExample {
       }
     ) // this one takes `myExceptionHandler` implicitly
 
-  }
-
-  object MyApp extends App {
-    implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
-
-    Http().bindAndHandle(route, "localhost", 8080)
   }
   //#seal-handler-example
 }

@@ -4,6 +4,7 @@
 
 package docs.http.javadsl;
 
+//#explicit-handler-example
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.ConnectHttp;
@@ -19,11 +20,9 @@ import akka.http.javadsl.Http;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Flow;
 
-import java.io.IOException;
 import java.util.concurrent.CompletionStage;
 import static akka.http.javadsl.server.PathMatchers.integerSegment;
 
-//#explicit-handler-example
 public class ExceptionHandlerExample extends AllDirectives {
   public static void main(String[] args) {
     final ActorSystem system = ActorSystem.create();
