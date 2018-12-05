@@ -5,3 +5,7 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.H
 
 # Internal API
 ProblemFilters.exclude[Problem]("akka.http.impl.*")
+
+# New setting in @DoNotInherit class
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.baseConnectionBackoff")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.maxConnectionBackoff")

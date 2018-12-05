@@ -13,6 +13,8 @@ import scala.concurrent.duration.Duration
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.ClientTransport
 
+import scala.concurrent.duration.FiniteDuration
+
 @ApiMayChange
 trait PoolImplementation
 @ApiMayChange
@@ -31,6 +33,8 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   def getMaxRetries: Int = maxRetries
   def getMaxOpenRequests: Int = maxOpenRequests
   def getPipeliningLimit: Int = pipeliningLimit
+  def getBaseConnectionBackoff: FiniteDuration = baseConnectionBackoff
+  def getMaxConnectionBackoff: FiniteDuration = maxConnectionBackoff
   def getIdleTimeout: Duration = idleTimeout
   def getConnectionSettings: ClientConnectionSettings = connectionSettings
 
@@ -55,6 +59,8 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   def withMaxOpenRequests(newValue: Int): ConnectionPoolSettings = self.copy(maxOpenRequests = newValue)
   /** Client-side pipelining is not currently supported, see https://github.com/akka/akka-http/issues/32 */
   def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copy(pipeliningLimit = newValue)
+  def withBaseConnectionBackoff(newValue: FiniteDuration): ConnectionPoolSettings = self.copy(baseConnectionBackoff = newValue)
+  def withMaxConnectionBackoff(newValue: FiniteDuration): ConnectionPoolSettings = self.copy(maxConnectionBackoff = newValue)
   def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue)
   def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue.asScala)
 

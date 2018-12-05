@@ -121,6 +121,11 @@ Since the host connector cannot know which one of these possible reasons caused 
 In these cases, as well as when all retries have not yielded a proper response, the pool produces a failed `Try`
 (i.e. a `scala.util.Failure`) together with the custom request context.
 
+If a request fails during connecting to the server, for example, because the DNS name cannot be resolved or the server
+is currently unavailable, retries are attempted with exponential backoff delay. See the documentation of the
+`akka.http.host-connection-pool.base-connection-backoff` setting in the @ref[configuration](../configuration.md).
+
+
 ## Pool Shutdown
 
 Completing a pool client flow will simply detach the flow from the pool. The connection pool itself will continue to run
