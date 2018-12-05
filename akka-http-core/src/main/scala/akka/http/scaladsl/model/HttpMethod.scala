@@ -4,6 +4,8 @@
 
 package akka.http.scaladsl.model
 
+import java.util.Locale
+
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.model.RequestEntityAcceptance._
@@ -67,4 +69,7 @@ object HttpMethods extends ObjectRegistry[String, HttpMethod] {
   val PUT     = register(HttpMethod("PUT"    , isSafe = false, isIdempotent = true , requestEntityAcceptance = Expected))
   val TRACE   = register(HttpMethod("TRACE"  , isSafe = true , isIdempotent = true , requestEntityAcceptance = Disallowed))
   // format: ON
+
+  override def getForKeyCaseInsensitive(key: String)(implicit conv: String <:< String): Option[HttpMethod] =
+    getForKey(conv(key.toUpperCase(Locale.ROOT)))
 }
