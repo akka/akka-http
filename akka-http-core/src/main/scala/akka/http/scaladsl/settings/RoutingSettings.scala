@@ -20,7 +20,7 @@ abstract class RoutingSettings private[akka] () extends akka.http.javadsl.settin
   def rangeCoalescingThreshold: Long
   def decodeMaxBytesPerChunk: Int
   def decodeMaxSize: Long
-  @deprecated("binary compatibility method. Use `akka.stream.materializer.blocking-io-dispatcher` to configure the dispatcher", since = "10.1.1")
+  @deprecated("binary compatibility method. Use `akka.stream.materializer.blocking-io-dispatcher` to configure the dispatcher", since = "10.1.6")
   def fileIODispatcher: String
 
   /* Java APIs */
@@ -31,7 +31,7 @@ abstract class RoutingSettings private[akka] () extends akka.http.javadsl.settin
   def getRangeCoalescingThreshold: Long = rangeCoalescingThreshold
   def getDecodeMaxBytesPerChunk: Int = decodeMaxBytesPerChunk
   def getDecodeMaxSize: Long = decodeMaxSize
-  @deprecated("binary compatibility method. Use `akka.stream.materializer.blocking-io-dispatcher` to configure the dispatcher", since = "10.1.1")
+  @deprecated("binary compatibility method. Use `akka.stream.materializer.blocking-io-dispatcher` to configure the dispatcher", since = "10.1.6")
   @Deprecated
   def getFileIODispatcher: String = fileIODispatcher
 
@@ -42,7 +42,7 @@ abstract class RoutingSettings private[akka] () extends akka.http.javadsl.settin
   override def withRangeCoalescingThreshold(rangeCoalescingThreshold: Long): RoutingSettings = self.copy(rangeCoalescingThreshold = rangeCoalescingThreshold)
   override def withDecodeMaxBytesPerChunk(decodeMaxBytesPerChunk: Int): RoutingSettings = self.copy(decodeMaxBytesPerChunk = decodeMaxBytesPerChunk)
   override def withDecodeMaxSize(decodeMaxSize: Long): RoutingSettings = self.copy(decodeMaxSize = decodeMaxSize)
-  @deprecated("binary compatibility method. Use `akka.stream.materializer.blocking-io-dispatcher` to configure the dispatcher", since = "10.1.1")
+  @deprecated("binary compatibility method. Use `akka.stream.materializer.blocking-io-dispatcher` to configure the dispatcher", since = "10.1.6")
   @Deprecated
   override def withFileIODispatcher(fileIODispatcher: String): RoutingSettings = self
 }

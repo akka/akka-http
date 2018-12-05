@@ -4,8 +4,6 @@
 
 package docs.http.scaladsl.server.directives
 
-import java.nio.file.Paths
-
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.model._
@@ -14,7 +12,7 @@ import akka.http.scaladsl.server.RouteResult.{ Complete, Rejected }
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.settings.RoutingSettings
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ FileIO, Sink, Source }
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
 import docs.http.scaladsl.server.RoutingSpec
 
