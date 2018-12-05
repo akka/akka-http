@@ -1,6 +1,10 @@
+/*
+ * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.http.scaladsl.model
 
-import org.scalatest.{ FlatSpec, WordSpec }
+import org.scalatest.WordSpec
 
 class HttpMethodsSpec extends WordSpec {
   "HttpMethods.getForKeyCaseInsensitive()" must {
