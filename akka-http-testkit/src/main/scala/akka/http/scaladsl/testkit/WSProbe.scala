@@ -69,9 +69,7 @@ trait WSProbe {
 
   /**
    * Expect no message on the input side of the flow.
-   * @deprecated Use the variant with [[FiniteDuration]]
    */
-  @deprecated("Use the variant with a [[FiniteDuration]]", "10.1.6")
   def expectNoMessage(): Unit
 
   /**

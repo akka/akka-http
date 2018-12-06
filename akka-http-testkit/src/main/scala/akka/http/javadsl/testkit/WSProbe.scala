@@ -72,9 +72,7 @@ class WSProbe(delegate: st.WSProbe) {
 
   /**
    * Expect no message on the input side of the flow.
-   * @deprecated Use the variant with [[FiniteDuration]]
    */
-  @Deprecated
   def expectNoMessage(): Unit = delegate.expectNoMessage()
 
   /**
