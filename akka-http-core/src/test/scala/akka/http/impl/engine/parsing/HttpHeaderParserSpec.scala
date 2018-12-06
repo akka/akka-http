@@ -174,6 +174,12 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       parseAndCache(s"4-UTF8-Bytes: Surrogate pairs: \uD801\uDC1B\uD801\uDC04\uD801\uDC1B!${newLine}x")() shouldEqual
         RawHeader("4-UTF8-Bytes", "Surrogate pairs: \uD801\uDC1B\uD801\uDC04\uD801\uDC1B!")
     }
+    "parse and cache a header with UTF8 chars in the value after an incomplete line" in new TestSetup() {
+      a[NotEnoughDataException.type] should be thrownBy parseLineFromBytes(ByteString(s"3-UTF8-Bytes: The €").dropRight(1))
+
+      parseAndCache(s"4-UTF8-Bytes: Surrogate pairs: \uD801\uDC1B\uD801\uDC04\uD801\uDC1B!${newLine}x")() shouldEqual
+        RawHeader("4-UTF8-Bytes", "Surrogate pairs: \uD801\uDC1B\uD801\uDC04\uD801\uDC1B!")
+    }
 
     "produce an error message for lines with an illegal header name" in new TestSetup() {
       the[ParsingException] thrownBy parseLine(s" Connection: close${newLine}x") should have message "Illegal character ' ' in header name"
@@ -352,7 +358,8 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       if (parser.isEmpty) HttpHeaderParser.insertRemainingCharsAsNewNodes(parser, ByteString(line), value)
       else HttpHeaderParser.insert(parser, ByteString(line), value)
 
-    def parseLine(line: String) = parser.parseHeaderLine(ByteString(line))() → { system.log.debug(parser.resultHeader.getClass.getSimpleName); parser.resultHeader }
+    def parseLineFromBytes(bytes: ByteString) = parser.parseHeaderLine(bytes)() → { system.log.debug(parser.resultHeader.getClass.getSimpleName); parser.resultHeader }
+    def parseLine(line: String) = parseLineFromBytes(ByteString(line))
 
     def parseAndCache(lineA: String)(lineB: String = lineA): HttpHeader = {
       val (ixA, headerA) = parseLine(lineA)
