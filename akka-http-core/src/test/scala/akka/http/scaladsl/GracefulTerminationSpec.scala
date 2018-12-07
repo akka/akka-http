@@ -59,10 +59,7 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
 
       // immediately trying a new connection should cause `Connection failed` since we unbind immediately:
       val r3 = makeRequest(ensureNewConnection = true)
-      val ex = intercept[StreamTcpException] {
-        Await.result(r3, 2.seconds)
-      }
-      ex.getMessage should include("Connection failed")
+      ensureConnectionIsClosed(r3)
     }
 
     "provide whenTerminated future that completes once server has completed termination (no connections)" in new TestSetup {
@@ -190,7 +187,7 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
   }
 
   private def ensureConnectionIsClosed(r: Future[HttpResponse]): Assertion =
-    the[StreamTcpException] thrownBy Await.result(r, 1.second) should have message "Connection failed."
+    intercept[StreamTcpException](Await.result(r, 1.second)).getMessage should include regex "Connection (failed|refused)"
 
   override def afterAll() = {
     TestKit.shutdownActorSystem(system)
