@@ -1,3 +1,6 @@
 # Changes against 10.1.7
 
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.unmarshalling.sse.EventStreamUnmarshalling.fromEventsStream")
+
+# Websocket API #1979
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.WebSocketDirectives.handleWsMessages")

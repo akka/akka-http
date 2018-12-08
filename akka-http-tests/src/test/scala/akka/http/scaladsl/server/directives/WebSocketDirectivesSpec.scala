@@ -14,7 +14,7 @@ import akka.stream.scaladsl.{ Source, Sink, Flow }
 import akka.http.scaladsl.testkit.WSProbe
 
 import akka.http.scaladsl.model.headers.`Sec-WebSocket-Protocol`
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{ HttpResponse, StatusCodes, WebSocketStreamException }
 import akka.http.scaladsl.model.ws._
 import akka.http.scaladsl.server.{ UnsupportedWebSocketSubprotocolRejection, ExpectedWebSocketRequestRejection, Route, RoutingSpec }
 
@@ -88,8 +88,8 @@ class WebSocketDirectivesSpec extends RoutingSpec {
     }
   }
 
-  "the handleWebSocketStrictMessages directive" should {
-    "handle websocket requests by converting them to Strict" in {
+  "the handleWsMessages directive" should {
+    "handle websocket requests by converting them to StrictMessage" in {
       val wsClient = WSProbe()
 
       WS("http://localhost/", wsClient.flow) ~> strictWebsocketRoute ~>
@@ -115,9 +115,21 @@ class WebSocketDirectivesSpec extends RoutingSpec {
         check {
           isWebSocketUpgrade shouldEqual true
 
-          wsClient.sendMessage(TextMessage(Source.repeat("John")))
+          wsClient.sendMessage(TextMessage(Source.repeat("J")))
           val error = wsClient.inProbe.expectSubscriptionAndError()
           error.getClass should be(classOf[TimeoutException])
+        }
+    }
+    "fail flow with WebSocketStreamException when a message size is larger than the maximum setting" in {
+      val wsClient = WSProbe()
+
+      WS("http://localhost/", wsClient.flow) ~> websocketBuilder(_.toStrictTimeout(1.minute).maxStrictSize(1L).handleWith(strictGreeter)) ~>
+        check {
+          isWebSocketUpgrade shouldEqual true
+
+          wsClient.sendMessage(TextMessage(Source.repeat("John")))
+          val error = wsClient.inProbe.expectSubscriptionAndError()
+          error.getClass should be(classOf[WebSocketStreamException])
         }
     }
     "choose subprotocol from offered ones" in {
@@ -143,12 +155,6 @@ class WebSocketDirectivesSpec extends RoutingSpec {
         }
     }
     "reject websocket requests if no subprotocol matches" in {
-      WS("http://localhost/", Flow[Message], List("other")) ~> strictWebsocketMultipleProtocolRoute ~> check {
-        rejections.collect {
-          case UnsupportedWebSocketSubprotocolRejection(p) ⇒ p
-        }.toSet shouldEqual Set("greeter", "echo")
-      }
-
       WS("http://localhost/", Flow[Message], List("other")) ~> Route.seal(websocketMultipleProtocolRoute) ~> check {
         status shouldEqual StatusCodes.BadRequest
         responseAs[String] shouldEqual "None of the websocket subprotocols offered in the request are supported. Supported are 'echo','greeter'."
@@ -165,10 +171,7 @@ class WebSocketDirectivesSpec extends RoutingSpec {
         responseAs[String] shouldEqual "Expected WebSocket Upgrade request"
       }
     }
-  }
-
-  "the handleWebSocketStrictTextMessages directive" should {
-    "handle text messages by converting them to strict form" in {
+    "handle only text messages by converting them to strict form" in {
       val wsClient = WSProbe()
 
       WS("http://localhost/", wsClient.flow) ~> strictTextWebsocketRoute ~>
@@ -184,7 +187,7 @@ class WebSocketDirectivesSpec extends RoutingSpec {
           wsClient.expectCompletion()
         }
     }
-    "fail flow with MatchError when a binary message received" in {
+    "fail flow with RuntimeException when received a binary message while configured for text messages" in {
       val wsClient = WSProbe()
 
       WS("http://localhost/", wsClient.flow) ~> strictTextWebsocketRoute ~>
@@ -192,6 +195,7 @@ class WebSocketDirectivesSpec extends RoutingSpec {
           wsClient.sendMessage(BinaryMessage(ByteString("abcdef")))
           val error = wsClient.inProbe.expectSubscriptionAndError()
           error.getClass should be(classOf[RuntimeException])
+          error.getMessage should be("Received BinaryMessage while expecting TextMessage.")
         }
     }
     "fail flow with TimeoutException when a text message cannot be consumed within the timeout" in {
@@ -206,10 +210,7 @@ class WebSocketDirectivesSpec extends RoutingSpec {
           error.getClass should be(classOf[TimeoutException])
         }
     }
-  }
-
-  "the handleWebSocketStrictBinaryMessages directive" should {
-    "handle text messages by converting them to strict form" in {
+    "handle only binary messages by converting them to strict form" in {
       val wsClient = WSProbe()
 
       WS("http://localhost/", wsClient.flow) ~> strictBinaryWebsocketRoute ~>
@@ -225,7 +226,7 @@ class WebSocketDirectivesSpec extends RoutingSpec {
           wsClient.expectCompletion()
         }
     }
-    "fail flow with MatchError when a text message received" in {
+    "fail flow with RuntimeException when received a text message while configured for binary messages" in {
       val wsClient = WSProbe()
 
       WS("http://localhost/", wsClient.flow) ~> strictBinaryWebsocketRoute ~>
@@ -233,16 +234,17 @@ class WebSocketDirectivesSpec extends RoutingSpec {
           wsClient.sendMessage(TextMessage("Peter"))
           val error = wsClient.inProbe.expectSubscriptionAndError()
           error.getClass should be(classOf[RuntimeException])
+          error.getMessage should be("Received TextMessage while expecting BinaryMessage.")
         }
     }
-    "fail flow with TimeoutException when a text message cannot be consumed within the timeout" in {
+    "fail flow with TimeoutException when a binary message cannot be consumed within the timeout" in {
       val wsClient = WSProbe()
 
       WS("http://localhost/", wsClient.flow) ~> strictBinaryWebsocketRoute(1.millisecond) ~>
         check {
           isWebSocketUpgrade shouldEqual true
 
-          wsClient.sendMessage(BinaryMessage(Source.repeat(ByteString("abcdef"))))
+          wsClient.sendMessage(BinaryMessage(Source.repeat(ByteString("a"))))
           val error = wsClient.inProbe.expectSubscriptionAndError()
           error.getClass should be(classOf[TimeoutException])
         }
@@ -250,15 +252,19 @@ class WebSocketDirectivesSpec extends RoutingSpec {
   }
 
   def websocketRoute = handleWebSocketMessages(greeter)
-  def strictWebsocketRoute(implicit timeout: FiniteDuration = 1.second) = handleWebSocketStrictMessages(strictGreeter)
-  def strictTextWebsocketRoute(implicit timeout: FiniteDuration = 1.second) = handleWebSocketStrictTextMessages(strictGreeter)
-  def strictBinaryWebsocketRoute(implicit timeout: FiniteDuration = 1.second) = handleWebSocketStrictBinaryMessages(strictGreeter)
+  def websocketBuilder(build: WebSocketResponseBuilder[Message] ⇒ HttpResponse) = handleWsMessages(build)
+  def strictWebsocketRoute(implicit timeout: FiniteDuration = 1.second) =
+    handleWsMessages(builder ⇒ builder.toStrictTimeout(timeout).handleWith(strictGreeter))
+  def strictTextWebsocketRoute(implicit timeout: FiniteDuration = 1.second) =
+    handleWsMessages(builder ⇒ builder.only[TextMessage].toStrictTimeout(timeout).handleWith(strictTextGreeter))
+  def strictBinaryWebsocketRoute(implicit timeout: FiniteDuration = 1.second) =
+    handleWsMessages(builder ⇒ builder.only[BinaryMessage].toStrictTimeout(timeout).handleWith(strictBinaryGreeter))
   def websocketMultipleProtocolRoute =
     handleWebSocketMessagesForProtocol(echo, "echo") ~
       handleWebSocketMessagesForProtocol(greeter, "greeter")
   def strictWebsocketMultipleProtocolRoute(implicit timeout: FiniteDuration = 1.second) =
-    handleWebSocketStrictMessages(strictEcho, Some("echo")) ~
-      handleWebSocketStrictMessages(strictGreeter, Some("greeter"))
+    handleWsMessages(builder ⇒ builder.toStrictTimeout(timeout).forProtocol("echo").handleWith(strictEcho)) ~
+      handleWsMessages(builder ⇒ builder.forProtocol("greeter").toStrictTimeout(timeout).handleWith(strictGreeter))
 
   def greeter: Flow[Message, Message, Any] =
     Flow[Message].mapConcat {
@@ -274,11 +280,21 @@ class WebSocketDirectivesSpec extends RoutingSpec {
       case BinaryMessage.Strict(binary) ⇒ BinaryMessage(ByteString("Binary message received: ") ++ binary) :: Nil
     }
 
+  def strictTextGreeter: Flow[TextMessage.Strict, Message, Any] =
+    Flow[StrictMessage].mapConcat {
+      case TextMessage.Strict(text) ⇒ TextMessage("Hello " + text + "!") :: Nil
+    }
+
+  def strictBinaryGreeter: Flow[BinaryMessage.Strict, Message, Any] =
+    Flow[StrictMessage].mapConcat {
+      case BinaryMessage.Strict(binary) ⇒ BinaryMessage(ByteString("Binary message received: ") ++ binary) :: Nil
+    }
+
   def echo: Flow[Message, Message, Any] =
     Flow[Message]
       .buffer(1, OverflowStrategy.backpressure) // needed because a noop flow hasn't any buffer that would start processing
 
   def strictEcho: Flow[StrictMessage, Message, Any] =
-    Flow[StrictMessage].map(_.asScala)
+    Flow[StrictMessage].map(_.asInstanceOf[Message])
       .buffer(1, OverflowStrategy.backpressure) // needed because a noop flow hasn't any buffer that would start processing
 }

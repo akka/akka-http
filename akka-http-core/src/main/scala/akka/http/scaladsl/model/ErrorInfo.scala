@@ -106,6 +106,11 @@ object EntityStreamException {
   def apply(summary: String, detail: String = ""): EntityStreamException = apply(ErrorInfo(summary, detail))
 }
 
+case class WebSocketStreamException(override val info: ErrorInfo) extends ExceptionWithErrorInfo(info)
+object WebSocketStreamException {
+  def apply(summary: String, detail: String = ""): WebSocketStreamException = apply(ErrorInfo(summary, detail))
+}
+
 /**
  * This exception is thrown when the size of the HTTP Entity exceeds the configured limit.
  * It is possible to configure the limit using configuration options `akka.http.parsing.max-content-length`

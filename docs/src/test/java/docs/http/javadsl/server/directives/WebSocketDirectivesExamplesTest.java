@@ -98,8 +98,8 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
   }
 
   @Test
-  public void testHandleWebSocketStrictMessages() {
-    //#handleWebSocketStrictMessages
+  public void testHandleWSMessages() {
+    //#handleWsMessages
     final Flow<StrictMessage, Message, NotUsed> greeter = Flow.of(StrictMessage.class).map(msg -> {
       if (msg instanceof TextMessage) {
         final TextMessage tm = (TextMessage) msg;
@@ -114,7 +114,7 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
     });
 
     final Route websocketRoute = path("greeter", () ->
-      handleWebSocketStrictMessages(greeter, materializer(), 1000, Optional.empty())
+      handleWsMessages(builder -> builder.maxStrictSize(1000).toStrictTimeout(1000).handleWith(greeter))
     );
 
     // create a testing probe representing the client-side
@@ -135,12 +135,12 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
 
     wsClient.sendCompletion();
     wsClient.expectCompletion();
-    //#handleWebSocketStrictMessages
+    //#handleWsMessages
   }
 
   @Test
-  public void testHandleWebSocketStrictTextMessages() {
-    //#handleWebSocketStrictTextMessages
+  public void testHandleTextMessagesWith() {
+    //#handleTextMessagesWith
     final Flow<TextMessage, Message, NotUsed> greeter = Flow.of(TextMessage.class).map(tm -> {
       if (tm instanceof StrictMessage) {
         return TextMessage.create("Hello " + tm.getStrictText() + "!");
@@ -150,7 +150,7 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
     });
 
     final Route websocketRoute = path("greeter", () ->
-      handleWebSocketStrictTextMessages(greeter, materializer(), 1000, Optional.empty())
+      handleWsMessages(builder -> builder.toStrictTimeout(1000).handleTextMessagesWith(greeter))
     );
 
     // create a testing probe representing the client-side
@@ -168,12 +168,12 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
 
     wsClient.sendCompletion();
     wsClient.expectCompletion();
-    //#handleWebSocketStrictTextMessages
+    //#handleTextMessagesWith
   }
 
   @Test
-  public void testHandleWebSocketStrictBinaryMessages() {
-    //#handleWebSocketStrictBinaryMessages
+  public void testHandleBinaryMessagesWith() {
+    //#handleBinaryMessagesWith
     final Flow<BinaryMessage, Message, NotUsed> greeter = Flow.of(BinaryMessage.class).map(tm -> {
       if (tm instanceof StrictMessage) {
         return BinaryMessage.create(ByteString.fromString("Binary message received: ").concat(tm.getStrictData()));
@@ -183,7 +183,7 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
     });
 
     final Route websocketRoute = path("greeter", () ->
-      handleWebSocketStrictBinaryMessages(greeter, materializer(), 1000, Optional.empty())
+      handleWsMessages(builder -> builder.toStrictTimeout(1000).handleBinaryMessagesWith(greeter))
     );
 
     // create a testing probe representing the client-side
@@ -201,7 +201,54 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
 
     wsClient.sendCompletion();
     wsClient.expectCompletion();
-    //#handleWebSocketStrictBinaryMessages
+    //#handleBinaryMessagesWith
+  }
+
+  @Test
+  public void testhandleWsMessagesForProtocol() {
+    //#handleWsMessagesForProtocol
+    final Flow<StrictMessage, Message, NotUsed> greeter = Flow.of(StrictMessage.class).map(msg -> {
+      if (msg instanceof TextMessage) {
+        final TextMessage tm = (TextMessage) msg;
+        return TextMessage.create("Hello " + tm.getStrictText() + "!");
+      } else if (msg instanceof BinaryMessage) {
+        final BinaryMessage bm = (BinaryMessage) msg;
+        ByteString data = ByteString.fromString("Binary message received: ").concat(bm.getStrictData());
+        return BinaryMessage.create(data);
+      } else {
+        throw new IllegalArgumentException("Unsupported message type!");
+      }
+    });
+
+    final Flow<StrictMessage, Message, NotUsed> echo = Flow.of(StrictMessage.class).map(msg -> (Message) msg);
+
+    final Route websocketMultipleProtocolRoute = path("greeter", () ->
+            concat(
+              handleWsMessages(builder -> builder.forProtocol("greeter").handleWith(greeter)),
+              handleWsMessages(builder -> builder.forProtocol("echo").handleWith(echo))
+            )
+    );
+
+    // create a testing probe representing the client-side
+    final WSProbe wsClient = WSProbe.create(system(), materializer());
+
+    // WS creates a WebSocket request for testing
+    testRoute(websocketMultipleProtocolRoute)
+            .run(WS(Uri.create("/greeter"), wsClient.flow(), materializer(), Arrays.asList("other", "greeter")))
+            .assertHeaderExists(SecWebSocketProtocol.create("greeter"));
+
+    wsClient.sendMessage("Peter");
+    wsClient.expectMessage("Hello Peter!");
+
+    wsClient.sendMessage(BinaryMessage.create(ByteString.fromString("abcdef")));
+    wsClient.expectMessage(ByteString.fromString("Binary message received: abcdef"));
+
+    wsClient.sendMessage(TextMessage.create(Source.single("John")));
+    wsClient.expectMessage("Hello John!");
+
+    wsClient.sendCompletion();
+    wsClient.expectCompletion();
+    //#handleWsMessagesForProtocol
   }
 
   @Test

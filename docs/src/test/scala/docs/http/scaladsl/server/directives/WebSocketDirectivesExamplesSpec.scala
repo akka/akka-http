@@ -107,17 +107,20 @@ class WebSocketDirectivesExamplesSpec extends RoutingSpec {
     //#handle-multiple-protocols
   }
 
-  "handle strict messages" in {
-    //#handle-strict-messages
+  "handle-messages-builder" in {
+    //#handle-messages-builder
     def greeter: Flow[StrictMessage, Message, Any] =
       Flow[StrictMessage].map {
         case TextMessage.Strict(text)   => TextMessage("Hello " + text + "!")
-        case BinaryMessage.Strict(data) => BinaryMessage(ByteString("Binary message received: ") ++ data)
+        case BinaryMessage.Strict(data) => BinaryMessage(Source.single(ByteString("Binary message received: ") ++ data))
       }
-    implicit val timeout: FiniteDuration = 1.second
+    val timeout: FiniteDuration = 1.second
+    val maxBytes: Long = 1000
     val websocketRoute =
       path("greeter") {
-        handleWebSocketStrictMessages(greeter)
+        handleWsMessages { builder =>
+          builder.toStrictTimeout(timeout).maxStrictSize(maxBytes).handleWith(greeter)
+        }
       }
 
     // tests:
@@ -142,19 +145,21 @@ class WebSocketDirectivesExamplesSpec extends RoutingSpec {
         wsClient.sendCompletion()
         wsClient.expectCompletion()
       }
-    //#handle-strict-messages
+    //#handle-messages-builder
   }
 
-  "handle strict text messages" in {
-    //#handle-strict-text-messages
-    def greeter: Flow[TextMessage.Strict, Message, Any] =
+  "handle-only-text-messages-builder" in {
+    //#handle-only-text-messages-builder
+    def greeter: Flow[StrictMessage, Message, Any] =
       Flow[StrictMessage].map {
         case TextMessage.Strict(text) => TextMessage("Hello " + text + "!")
       }
-    implicit val timeout: FiniteDuration = 1.second
+    val timeout: FiniteDuration = 1.second
     val websocketRoute =
       path("greeter") {
-        handleWebSocketStrictTextMessages(greeter)
+        handleWsMessages { builder =>
+          builder.only[TextMessage].toStrictTimeout(timeout).handleWith(greeter)
+        }
       }
 
     // tests:
@@ -176,19 +181,21 @@ class WebSocketDirectivesExamplesSpec extends RoutingSpec {
         wsClient.sendCompletion()
         wsClient.expectCompletion()
       }
-    //#handle-strict-text-messages
+    //#handle-only-text-messages-builder
   }
 
-  "handle strict binary messages" in {
-    //#handle-strict-binary-messages
-    def greeter: Flow[BinaryMessage.Strict, Message, Any] =
+  "handle-only-binary-messages-builder" in {
+    //#handle-only-binary-messages-builder
+    def greeter: Flow[StrictMessage, Message, Any] =
       Flow[StrictMessage].map {
         case BinaryMessage.Strict(data) => BinaryMessage(ByteString("Binary message received: ") ++ data)
       }
-    implicit val timeout: FiniteDuration = 1.second
+    val timeout: FiniteDuration = 1.second
     val websocketRoute =
       path("greeter") {
-        handleWebSocketStrictBinaryMessages(greeter)
+        handleWsMessages { builder =>
+          builder.only[BinaryMessage].toStrictTimeout(timeout).handleWith(greeter)
+        }
       }
 
     // tests:
@@ -210,7 +217,7 @@ class WebSocketDirectivesExamplesSpec extends RoutingSpec {
         wsClient.sendCompletion()
         wsClient.expectCompletion()
       }
-    //#handle-strict-binary-messages
+    //#handle-only-binary-messages-builder
   }
 
   "extractUpgradeToWebSocket" in {
@@ -231,7 +238,7 @@ class WebSocketDirectivesExamplesSpec extends RoutingSpec {
     val wsClient = WSProbe()
 
     // WS creates a WebSocket request for testing
-    WS("/services", wsClient.flow, Nil) ~> route ~> check {
+    WS("/services", wsClient.flow, List("echo")) ~> route ~> check {
       expectWebSocketUpgradeWithProtocol { protocol =>
         protocol shouldEqual "echo"
         wsClient.sendMessage("ping")

@@ -47,14 +47,14 @@ object Message {
 /**
  * Represents a WebSocket message that contains complete data.
  */
-trait StrictMessage extends Message {
+trait StrictMessage {
   def isStrict: Boolean = true
 }
 
 /**
  * Represents a WebSocket message that needs to be streamed.
  */
-trait StreamedMessage extends Message {
+trait StreamedMessage {
   def isStrict: Boolean = false
 }
 

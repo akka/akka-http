@@ -14,11 +14,11 @@ import akka.http.impl.util.JavaMapping
 
 import scala.collection.JavaConverters._
 import akka.http.scaladsl.model.{ ws ⇒ s }
+import akka.http.javadsl.model.HttpResponse
 import akka.http.javadsl.model.ws._
-import akka.http.javadsl.model.ws.UpgradeToWebSocket
 import akka.http.scaladsl.server.{ Directives ⇒ D }
 import akka.stream.javadsl.Flow
-import akka.stream.{ Materializer, scaladsl }
+import akka.stream.scaladsl
 
 abstract class WebSocketDirectives extends SecurityDirectives {
   import akka.http.impl.util.JavaMapping.Implicits._
@@ -74,55 +74,28 @@ abstract class WebSocketDirectives extends SecurityDirectives {
   }
 
   /**
-   * Handles WebSocket requests with the given handler by transforming [[Message]] to [[StrictMessage]] within the given `timeout` (in milliseconds).
+   * Handles WebSocket requests with the given [[WebSocketResponseBuilder]] by transforming [[Message]] to [[StrictMessage]] within a configurable timeout.
    * Rejects other requests with an [[ExpectedWebSocketRequestRejection]].
    *
-   * If the `subprotocol` parameter is None any WebSocket request is accepted. If the `subprotocol` parameter is
-   * `Some(protocol)` a WebSocket request is only accepted if the list of subprotocols supported by the client (as
+   * If the `subprotocol` parameter is not provided via [[WebSocketResponseBuilder.forProtocol()]] any WebSocket request is accepted.
+   * If the `subprotocol` parameter is provided a WebSocket request is only accepted if the list of subprotocols supported by the client (as
    * announced in the WebSocket request) contains `protocol`. If the client did not offer the protocol in question
    * the request is rejected with an [[UnsupportedWebSocketSubprotocolRejection]] rejection.
    *
    * To support several subprotocols you may chain several `handleWebSocketMessagesForOptionalProtocol` routes.
    */
-  def handleWebSocketStrictMessages[T](handler: Flow[StrictMessage, Message, T], materializer: Materializer, timeout: Long, subprotocol: Optional[String]): Route = RouteAdapter {
-    import scala.concurrent.duration._
-    D.handleWebSocketStrictMessages(adapt(handler), subprotocol.asScala)(materializer, timeout.millis)
-  }
-
-  /**
-   * Handles WebSocket requests with the given handler for message type [[TextMessage]]. Within the given `timeout` (in milliseconds) transforms any
-   * [[TextMessage]] to [[StrictMessage]], so [[TextMessage.isStrict]] will hold true.
-   * Fails the `handler` flow if [[BinaryMessage]] is received.
-   * Rejects other requests with an [[ExpectedWebSocketRequestRejection]].
-   *
-   * If the `subprotocol` parameter is None any WebSocket request is accepted. If the `subprotocol` parameter is
-   * `Some(protocol)` a WebSocket request is only accepted if the list of subprotocols supported by the client (as
-   * announced in the WebSocket request) contains `protocol`. If the client did not offer the protocol in question
-   * the request is rejected with an [[UnsupportedWebSocketSubprotocolRejection]] rejection.
-   *
-   * To support several subprotocols you may chain several `handleWebSocketMessagesForOptionalProtocol` routes.
-   */
-  def handleWebSocketStrictTextMessages[T](handler: Flow[TextMessage, Message, T], materializer: Materializer, timeout: Long, subprotocol: Optional[String]): Route = RouteAdapter {
-    import scala.concurrent.duration._
-    D.handleWebSocketStrictTextMessages(adapt(handler), subprotocol.asScala)(materializer, timeout.millis)
-  }
-
-  /**
-   * Handles WebSocket requests with the given handler for message type [[BinaryMessage]]. Within the given `timeout` (in milliseconds) transforms any
-   * [[BinaryMessage]] to [[StrictMessage]], so [[BinaryMessage.isStrict]] will hold true.
-   * Fails the `handler` flow if [[TextMessage]] is received.
-   * Rejects other requests with an [[ExpectedWebSocketRequestRejection]].
-   *
-   * If the `subprotocol` parameter is None any WebSocket request is accepted. If the `subprotocol` parameter is
-   * `Some(protocol)` a WebSocket request is only accepted if the list of subprotocols supported by the client (as
-   * announced in the WebSocket request) contains `protocol`. If the client did not offer the protocol in question
-   * the request is rejected with an [[UnsupportedWebSocketSubprotocolRejection]] rejection.
-   *
-   * To support several subprotocols you may chain several `handleWebSocketMessagesForOptionalProtocol` routes.
-   */
-  def handleWebSocketStrictBinaryMessages[T](handler: Flow[BinaryMessage, Message, T], materializer: Materializer, timeout: Long, subprotocol: Optional[String]): Route = RouteAdapter {
-    import scala.concurrent.duration._
-    D.handleWebSocketStrictBinaryMessages(adapt(handler), subprotocol.asScala)(materializer, timeout.millis)
+  def handleWsMessages(inner: JFunction[WebSocketResponseBuilder, HttpResponse]): Route = RouteAdapter {
+    D.extractActorSystem { system ⇒
+      D.extractUpgradeToWebSocket { upgrade ⇒
+        try {
+          val response = inner(upgrade.handleMessagesWith(system))
+          complete(response).delegate
+        } catch {
+          case s.WebSocketUnsupportedSubprotocolException(subprotocol, _, _) ⇒
+            reject(akka.http.scaladsl.server.UnsupportedWebSocketSubprotocolRejection(subprotocol)).delegate
+        }
+      }
+    }
   }
 
   private def adapt[JM, SM, T](handler: Flow[JM, Message, T])(implicit mapping: JavaMapping[JM, SM]): scaladsl.Flow[SM, s.Message, NotUsed] = {

@@ -18,7 +18,11 @@ import scala.compat.java8.FutureConverters._
 /**
  * The ADT for WebSocket messages. A message can either be a binary or a text message.
  */
-sealed trait Message extends akka.http.javadsl.model.ws.Message
+sealed trait Message extends akka.http.javadsl.model.ws.Message {
+  type Strict <: StrictMessage
+
+  def toStrict(timeout: FiniteDuration, maxBytes: Long): Source[Strict, _]
+}
 
 /**
  * Represents a WebSocket message that contains complete data.
@@ -36,6 +40,7 @@ sealed trait StreamedMessage extends akka.http.javadsl.model.ws.StreamedMessage
  * will return a Source streaming the data as it comes in.
  */
 sealed trait TextMessage extends akka.http.javadsl.model.ws.TextMessage with Message {
+  type Strict = TextMessage.Strict
   /**
    * The contents of this message as a stream.
    */
@@ -71,6 +76,7 @@ object TextMessage {
    */
   final case class Strict(text: String) extends TextMessage with StrictMessage {
     def textStream: Source[String, _] = Source.single(text)
+    override def toStrict(timeout: FiniteDuration, maxBytes: Long): Source[TextMessage.Strict, _] = Source.single(this)
     override def toString: String = s"TextMessage.Strict($text)"
 
     /** Java API */
@@ -78,6 +84,7 @@ object TextMessage {
   }
 
   final case class Streamed(textStream: Source[String, _]) extends TextMessage with StreamedMessage {
+    override def toStrict(timeout: FiniteDuration, maxBytes: Long): Source[TextMessage.Strict, _] = textStream.via(new TextToStrict(timeout, maxBytes))
     override def toString: String = s"TextMessage.Streamed($textStream)"
 
     /** Java API */
@@ -92,6 +99,7 @@ object TextMessage {
  */
 //#message-model
 sealed trait BinaryMessage extends akka.http.javadsl.model.ws.BinaryMessage with Message {
+  type Strict = BinaryMessage.Strict
   /**
    * The contents of this message as a stream.
    */
@@ -127,12 +135,14 @@ object BinaryMessage {
    */
   final case class Strict(data: ByteString) extends BinaryMessage with StrictMessage {
     def dataStream: Source[ByteString, _] = Source.single(data)
+    override def toStrict(timeout: FiniteDuration, maxBytes: Long): Source[BinaryMessage.Strict, _] = Source.single(this)
     override def toString: String = s"BinaryMessage.Strict($data)"
 
     /** Java API */
     override def getStrictData: ByteString = data
   }
   final case class Streamed(dataStream: Source[ByteString, _]) extends BinaryMessage with StreamedMessage {
+    override def toStrict(timeout: FiniteDuration, maxBytes: Long): Source[BinaryMessage.Strict, _] = dataStream.via(new BinaryToStrict(timeout, maxBytes))
     override def toString: String = s"BinaryMessage.Streamed($dataStream)"
 
     /** Java API */
