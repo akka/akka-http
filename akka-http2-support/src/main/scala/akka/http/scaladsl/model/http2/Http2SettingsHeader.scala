@@ -19,7 +19,8 @@ import scala.util.Try
 /**
  * Internal API
  */
-@InternalApi object Http2SettingsHeader {
+@InternalApi
+private[akka] object Http2SettingsHeader {
   val name: String = "http2-settings"
 
   def headerValueToBinary(value: String): ByteString =
