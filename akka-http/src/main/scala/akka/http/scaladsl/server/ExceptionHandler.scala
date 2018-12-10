@@ -51,7 +51,7 @@ object ExceptionHandler {
         ctx.request.discardEntityBytes(ctx.materializer)
         ctx.complete((status, info.format(settings.verboseErrorMessages)))
       }
-      case e: ExceptionWithErrorInfo => ctx => {
+      case e: ExceptionWithErrorInfo ⇒ ctx ⇒ {
         ctx.log.error(e, ErrorMessageTemplate, e.info.formatPretty, InternalServerError)
         ctx.request.discardEntityBytes(ctx.materializer)
         ctx.complete((InternalServerError, e.info.format(settings.verboseErrorMessages)))
