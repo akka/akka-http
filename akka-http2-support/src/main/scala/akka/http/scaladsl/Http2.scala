@@ -133,8 +133,6 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
         upgradeSettings match {
           // Must be exactly one
           case immutable.Seq(Success(settingsFromHeader)) ⇒
-            // TODO remove duplication?
-
             // inject the actual upgrade request with a stream identifier of 1
             // https://http2.github.io/http2-spec/#rfc.section.3.2
             val injectedRequest = Source.single(req.addHeader(Http2StreamIdHeader(1)))
