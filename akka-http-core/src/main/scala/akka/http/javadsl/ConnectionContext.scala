@@ -39,7 +39,8 @@ object ConnectionContext {
       OptionConverters.toScala(enabledCipherSuites).map(Util.immutableSeq(_)),
       OptionConverters.toScala(enabledProtocols).map(Util.immutableSeq(_)),
       OptionConverters.toScala(clientAuth),
-      OptionConverters.toScala(sslParameters))
+      OptionConverters.toScala(sslParameters),
+      scaladsl.UseHttp2.Negotiated)
 
   /** Used to serve HTTPS traffic. */
   // for binary-compatibility, since 2.4.7
@@ -51,10 +52,12 @@ object ConnectionContext {
     sslParameters:       Optional[SSLParameters]) =
     scaladsl.ConnectionContext.https(
       sslContext,
+      None,
       OptionConverters.toScala(enabledCipherSuites).map(Util.immutableSeq(_)),
       OptionConverters.toScala(enabledProtocols).map(Util.immutableSeq(_)),
       OptionConverters.toScala(clientAuth),
-      OptionConverters.toScala(sslParameters))
+      OptionConverters.toScala(sslParameters),
+      scaladsl.UseHttp2.Negotiated)
 
   /** Used to serve HTTP traffic. */
   def noEncryption(): HttpConnectionContext =

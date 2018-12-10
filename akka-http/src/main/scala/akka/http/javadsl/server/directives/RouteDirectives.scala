@@ -40,7 +40,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
    * @deprecated Use the `RouteDirectives.concat` method instead.
    */
   @Deprecated
-  @deprecated("Use the RouteDirectives.concat method instead.")
+  @deprecated("Use the RouteDirectives.concat method instead.", "10.1.6")
   @CorrespondsTo("concat")
   @varargs def route(alternatives: Route*): Route = RouteAdapter {
     import akka.http.scaladsl.server.Directives._

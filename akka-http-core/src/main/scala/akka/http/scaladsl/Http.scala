@@ -1204,7 +1204,14 @@ trait DefaultSSLContextCreation {
       defaultParams.setEndpointIdentificationAlgorithm("https")
     }
 
-    new HttpsConnectionContext(sslContext, Some(sslConfig), Some(cipherSuites.toList), Some(defaultProtocols.toList), clientAuth, Some(defaultParams))
+    new HttpsConnectionContext(
+      sslContext,
+      Some(sslConfig),
+      Some(cipherSuites.toList),
+      Some(defaultProtocols.toList),
+      clientAuth,
+      Some(defaultParams),
+      UseHttp2.Negotiated)
   }
 
 }
