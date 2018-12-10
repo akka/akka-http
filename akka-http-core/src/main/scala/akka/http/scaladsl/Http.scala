@@ -331,7 +331,9 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     } else {
       if (http2Enabled)
         log.debug("The akka.http.server.preview.enable-http2 flag was set, " +
-          "but a plain HttpConnectionContext (not Https) was given, binding using plain HTTP...")
+          "but a plain HttpConnectionContext (not Https) was given, binding using plain HTTP. " +
+          "Upgrading to Http2 through h2c is currently disabled on this port, " +
+          "this can be enabled by setting http2 to Negotiated in the ConnectionContext.")
 
       val definitiveParallelism =
         if (parallelism > 0) parallelism
