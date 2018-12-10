@@ -51,6 +51,11 @@ object ExceptionHandler {
         ctx.request.discardEntityBytes(ctx.materializer)
         ctx.complete((status, info.format(settings.verboseErrorMessages)))
       }
+      case e: ExceptionWithErrorInfo => ctx => {
+        ctx.log.error(e, ErrorMessageTemplate, e.info.formatPretty, InternalServerError)
+        ctx.request.discardEntityBytes(ctx.materializer)
+        ctx.complete((InternalServerError, e.info.format(settings.verboseErrorMessages)))
+      }
       case NonFatal(e) ⇒ ctx ⇒ {
         val message = Option(e.getMessage).getOrElse(s"${e.getClass.getName} (No error message supplied)")
         ctx.log.error(e, ErrorMessageTemplate, message, InternalServerError)
