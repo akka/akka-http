@@ -14,18 +14,7 @@ public class RoutingSettingsTest extends JUnitSuite {
 
     @Test
     public void testCreateWithActorSystem() {
-        String testConfig =
-            "akka.http.routing {\n" +
-            "  verbose-error-messages = off\n" +
-            "  file-get-conditional = on\n" +
-            "  render-vanity-footer = yes\n" +
-            "  range-coalescing-threshold = 80\n" +
-            "  range-count-limit = 16\n" +
-            "  decode-max-bytes-per-chunk = 1m\n" +
-            "  decode-max-size = 8m\n" +
-            "  file-io-dispatcher = \"test-only\"\n" +
-            "}";
-        Config config = ConfigFactory.parseString(testConfig);
+        Config config = ConfigFactory.load().resolve();
         ActorSystem sys = ActorSystem.create("test", config);
         RoutingSettings settings = RoutingSettings.create(sys);
     }

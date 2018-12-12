@@ -9,3 +9,9 @@ ProblemFilters.exclude[Problem]("akka.http.impl.*")
 # New setting in @DoNotInherit class
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.baseConnectionBackoff")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.maxConnectionBackoff")
+
+# moved to akka-http
+ProblemFilters.exclude[MissingClassProblem]("akka.http.javadsl.settings.RoutingSettings")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.javadsl.settings.RoutingSettings$")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.settings.RoutingSettings")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.settings.RoutingSettings$")
