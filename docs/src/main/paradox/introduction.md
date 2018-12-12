@@ -125,7 +125,7 @@ at the following url: [http://localhost:8080/hello](http://localhost:8080/hello)
 
 A common use case is to reply to a request using a model object having the marshaller transform it into JSON. In
 this case shown by two separate routes. The first route queries an asynchronous database and marshalls the
-@scala[`Future[Option[Item]]`]@java[`CompletionStage<Optional<Item>>`] result into a JSON response. The second unmarshalls an `Order` from the incoming request
+@scala[`Future[Option[Item]]`]@java[`CompletionStage<Optional<Item>>`] result into a JSON response. The second unmarshalls an `Order` from the incoming request,
 saves it to the database and replies with an OK when done.
 
 Scala
