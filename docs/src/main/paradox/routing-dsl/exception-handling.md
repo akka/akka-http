@@ -29,6 +29,14 @@ Once you have defined your custom @unidoc[ExceptionHandler] you have two options
 In the first case your handler will be "sealed" (which means that it will receive the default handler as a fallback for
 all cases your handler doesn't handle itself) and used for all exceptions that are not handled within the route
 structure itself.
+Here you can see an example of it:
+
+Scala
+:   @@snip [ExceptionHandlerExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala) { #seal-handler-example }
+
+Java
+:   @@snip [ExceptionHandlerExamplesTest.java]($test$/java/docs/http/javadsl/ExceptionHandlerInSealExample.java) { #seal-handler-example }
+
 
 The second case allows you to restrict the applicability of your handler to certain branches of your route structure.
 
