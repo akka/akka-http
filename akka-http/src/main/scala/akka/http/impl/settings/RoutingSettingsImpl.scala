@@ -17,8 +17,10 @@ private[http] final case class RoutingSettingsImpl(
   rangeCountLimit:          Int,
   rangeCoalescingThreshold: Long,
   decodeMaxBytesPerChunk:   Int,
-  decodeMaxSize:            Long,
-  fileIODispatcher:         String) extends akka.http.scaladsl.settings.RoutingSettings {
+  decodeMaxSize:            Long) extends akka.http.scaladsl.settings.RoutingSettings {
+
+  @deprecated("binary compatibility method. Use `akka.stream.materializer.blocking-io-dispatcher` to configure the dispatcher", since = "10.1.6")
+  override def fileIODispatcher: String = ""
 
   override def productPrefix = "RoutingSettings"
 }
@@ -31,6 +33,5 @@ object RoutingSettingsImpl extends SettingsCompanion[RoutingSettingsImpl]("akka.
     c getInt "range-count-limit",
     c getBytes "range-coalescing-threshold",
     c getIntBytes "decode-max-bytes-per-chunk",
-    c getPossiblyInfiniteBytes "decode-max-size",
-    c getString "file-io-dispatcher")
+    c getPossiblyInfiniteBytes "decode-max-size")
 }

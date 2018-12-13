@@ -4,8 +4,6 @@
 
 package docs.http.scaladsl.server.directives
 
-import java.nio.file.Paths
-
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.model._
@@ -14,7 +12,7 @@ import akka.http.scaladsl.server.RouteResult.{ Complete, Rejected }
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.settings.RoutingSettings
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ FileIO, Sink, Source }
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
 import docs.http.scaladsl.server.RoutingSpec
 
@@ -184,24 +182,21 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
   }
   "withSettings-0" in compileOnlySpec {
     //#withSettings-0
-    val special = RoutingSettings(system).withFileIODispatcher("special-io-dispatcher")
+    val special = RoutingSettings(system).withFileGetConditional(false)
 
     def sample() =
       path("sample") {
-        complete {
-          // internally uses the configured fileIODispatcher:
-          val source = FileIO.fromPath(Paths.get("example.json"))
-          HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, source))
-        }
+        // internally uses fileGetConditional setting
+        getFromFile("example.json")
       }
 
     val route =
       get {
         pathPrefix("special") {
           withSettings(special) {
-            sample() // `special` file-io-dispatcher will be used to read the file
+            sample() // ETag/`If-Modified-Since` disabled
           }
-        } ~ sample() // default file-io-dispatcher will be used to read the file
+        } ~ sample() // ETag/`If-Modified-Since` enabled
       }
 
     // tests:
