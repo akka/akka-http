@@ -154,6 +154,18 @@ One example of a predefined directive relying `recoverPF` is the `optionalHeader
 
 @@signature [HeaderDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala) { #optionalHeaderValue }
 
+### collect and tcollect
+
+With collect and tcollect you can filter and map in one go, it mimics the collect known from the regular Scala collections.
+
+Here is an example, first via map and filter and finally using collect:
+
+```
+parameter("a".as[Int]).filter(x => x != 0, MissingQueryParamRejection("a")).map(x => 42 / x)
+
+parameter("a".as[Int]).collect({ case x if x != 0 => 42 / x }, MissingQueryParamRejection("a"))
+```
+
 ## Directives from Scratch
 
 The third option for creating custom directives is to do it “from scratch”,
@@ -182,7 +194,7 @@ type Directive1[T] = Directive[Tuple1[T]]
 ```
 
 A `Directive[(String, Int)]` extracts a `String` value and an `Int` value
-(like a `parameters('a.as[String], 'b.as[Int])` directive). Such a directive can be defined to extract the 
+(like a `parameters('a.as[String], 'b.as[Int])` directive). Such a directive can be defined to extract the
 hostname and port of a request:
 
 @@snip [CustomDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #scratch-1 }
