@@ -5,12 +5,18 @@
 package akka.http.scaladsl.server
 package directives
 
+import akka.stream.scaladsl.Source
+
 import akka.http.HashCodeCollider
 import akka.http.scaladsl.common.StrictForm
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.unmarshalling.Unmarshaller.HexInt
 import akka.http.scaladsl.model._
-import MediaTypes._
+import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
+import akka.http.scaladsl.model.MediaTypes._
+
+import akka.http.impl.model.parser.CharacterClasses
+import akka.http.impl.util.StringRendering
 
 class FormFieldDirectivesSpec extends RoutingSpec {
   // FIXME: unfortunately, it has make a come back, this time it's reproducible ...
@@ -115,6 +121,19 @@ class FormFieldDirectivesSpec extends RoutingSpec {
       } ~> check {
         responseAs[String] shouldEqual "Mike42None<b>no</b>"
       }
+    }
+    "work even when the entity is streaming rather than strict" in {
+      val charset = HttpCharsets.`UTF-8`
+      val render: StringRendering = UriRendering.renderQuery(new StringRendering, urlEncodedForm.fields, charset.nioCharset, CharacterClasses.unreserved)
+      val streamingForm: RequestEntity = HttpEntity.Chunked(
+        `application/x-www-form-urlencoded` withCharset charset,
+        Source.single(ChunkStreamPart(render.get)).via(AllowMaterializationOnlyOnce())
+      )
+      Post("/", streamingForm) ~> {
+        formFields('firstName, "age".as[Int], 'sex.?, "VIP" ? false) { (firstName, age, sex, vip) ⇒
+          complete(firstName + age + sex + vip)
+        }
+      } ~> check { responseAs[String] shouldEqual "Mike42Nonefalse" }
     }
   }
   "The 'formField' requirement directive" should {

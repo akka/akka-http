@@ -8,7 +8,6 @@ import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
 import java.net.InetSocketAddress
 import java.nio.ByteOrder
 import javax.net.ssl.SSLContext
-
 import akka.NotUsed
 import akka.http.impl.engine.http2.Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
 import akka.http.impl.engine.http2.framing.FrameRenderer
@@ -23,7 +22,7 @@ import akka.stream.impl.io.ByteStringParser.ByteReader
 import akka.stream.scaladsl.{ BidiFlow, Flow, Sink, Source, SourceQueueWithComplete }
 import akka.stream.testkit.TestPublisher.ManualProbe
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
-import akka.stream.{ ActorMaterializer, Materializer, OverflowStrategies }
+import akka.stream.{ ActorMaterializer, Materializer, OverflowStrategy }
 import akka.testkit._
 import akka.util.{ ByteString, ByteStringBuilder }
 import com.twitter.hpack.{ Decoder, Encoder, HeaderListener }
@@ -36,7 +35,6 @@ import scala.collection.immutable.VectorBuilder
 import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-
 import FrameEvent._
 
 class Http2ServerSpec extends AkkaSpec("""
@@ -506,7 +504,7 @@ class Http2ServerSpec extends AkkaSpec("""
 
         val response = HttpResponse(entity = HttpEntity.Chunked(
           ContentTypes.`application/octet-stream`,
-          Source.queue[HttpEntity.ChunkStreamPart](100, OverflowStrategies.Fail)
+          Source.queue[HttpEntity.ChunkStreamPart](100, OverflowStrategy.fail)
             .mapMaterializedValue(queuePromise.success(_))
         ))
         emitResponse(TheStreamId, response)
@@ -527,7 +525,7 @@ class Http2ServerSpec extends AkkaSpec("""
 
         val response = HttpResponse(entity = HttpEntity.Chunked(
           ContentTypes.`application/octet-stream`,
-          Source.queue[HttpEntity.ChunkStreamPart](100, OverflowStrategies.Fail)
+          Source.queue[HttpEntity.ChunkStreamPart](100, OverflowStrategy.fail)
             .mapMaterializedValue(queuePromise.success(_))
         ))
         emitResponse(TheStreamId, response)
@@ -556,7 +554,7 @@ class Http2ServerSpec extends AkkaSpec("""
 
         val response = HttpResponse(entity = HttpEntity.Chunked(
           ContentTypes.`application/octet-stream`,
-          Source.queue[HttpEntity.ChunkStreamPart](100, OverflowStrategies.Fail)
+          Source.queue[HttpEntity.ChunkStreamPart](100, OverflowStrategy.fail)
             .mapMaterializedValue(queuePromise.success(_))
         ))
         emitResponse(TheStreamId, response)

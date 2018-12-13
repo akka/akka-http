@@ -83,6 +83,16 @@ abstract class Directive[L](implicit val ev: Tuple[L]) {
     Directive[L] { inner ⇒ tapply { values ⇒ ctx ⇒ if (predicate(values)) inner(values)(ctx) else ctx.reject(rejections: _*) } }
 
   /**
+   * If the given [[scala.PartialFunction]] is defined for the input, maps this directive with the given function,
+   * which can produce either a tuple or any other value.
+   * If it is not defined however, the returned directive will reject with the given rejections.
+   */
+  def tcollect[R](pf: PartialFunction[L, R], rejections: Rejection*)(implicit tupler: Tupler[R]): Directive[tupler.Out] =
+    Directive[tupler.Out] { inner ⇒
+      tapply { values ⇒ ctx ⇒ { if (pf.isDefinedAt(values)) inner(tupler(pf(values)))(ctx) else ctx.reject(rejections: _*) } }
+    }(tupler.OutIsTuple)
+
+  /**
    * Creates a new directive that is able to recover from rejections that were produced by `this` Directive
    * **before the inner route was applied**.
    */
@@ -145,6 +155,9 @@ object Directive {
 
     def filter(predicate: T ⇒ Boolean, rejections: Rejection*): Directive1[T] =
       underlying.tfilter({ case Tuple1(value) ⇒ predicate(value) }, rejections: _*)
+
+    def collect[R](pf: PartialFunction[T, R], rejections: Rejection*)(implicit tupler: Tupler[R]): Directive[tupler.Out] =
+      underlying.tcollect({ case Tuple1(value) if pf.isDefinedAt(value) ⇒ pf(value) }, rejections: _*)
   }
 }
 

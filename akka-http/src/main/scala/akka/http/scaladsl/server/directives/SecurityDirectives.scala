@@ -265,12 +265,10 @@ trait SecurityDirectives {
    * @group security
    */
   def authorizeAsync(check: RequestContext ⇒ Future[Boolean]): Directive0 =
-    extractExecutionContext.flatMap { implicit ec ⇒
-      extract(check).flatMap[Unit] { fa ⇒
-        onComplete(fa).flatMap {
-          case Success(true) ⇒ pass
-          case _             ⇒ reject(AuthorizationFailedRejection)
-        }
+    extract(check).flatMap[Unit] { fa ⇒
+      onComplete(fa).flatMap {
+        case Success(true) ⇒ pass
+        case _             ⇒ reject(AuthorizationFailedRejection)
       }
     }
 }

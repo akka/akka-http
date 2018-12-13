@@ -153,10 +153,10 @@ object StatusCodes extends ObjectRegistry[Int, StatusCode] {
   val Locked                       = reg(c(423)("Locked", "The resource that is being accessed is locked."))
   val FailedDependency             = reg(c(424)("Failed Dependency", "The request failed due to failure of a previous request."))
 
-  @deprecated("Non-standard Unordered Collection should not be used, deprecated in favor of Too Early", "10.1.6")
-  val UnorderedCollection          = TooEarly
 
   val TooEarly                     = reg(c(425)("Too Early", "The server is unwilling to risk processing a request that might be replayed.")) // RFC 8470
+  @deprecated("Non-standard Unordered Collection should not be used, deprecated in favor of Too Early", "10.1.6")
+  val UnorderedCollection          = TooEarly
   val UpgradeRequired              = reg(c(426)("Upgrade Required", "The client should switch to a different protocol."))
   val PreconditionRequired         = reg(c(428)("Precondition Required", "The server requires the request to be conditional."))
   val TooManyRequests              = reg(c(429)("Too Many Requests", "The user has sent too many requests in a given amount of time."))

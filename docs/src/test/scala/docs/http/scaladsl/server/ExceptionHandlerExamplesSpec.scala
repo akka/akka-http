@@ -77,6 +77,34 @@ object MyImplicitExceptionHandler {
   //#implicit-handler-example
 }
 
+object ExceptionHandlerInSealExample {
+  //#seal-handler-example
+  import akka.http.scaladsl.model.HttpResponse
+  import akka.http.scaladsl.model.StatusCodes._
+  import akka.http.scaladsl.server._
+  import Directives._
+
+  object SealedRouteWithCustomExceptionHandler {
+
+    implicit def myExceptionHandler: ExceptionHandler =
+      ExceptionHandler {
+        case _: ArithmeticException =>
+          extractUri { uri =>
+            println(s"Request to $uri could not be handled normally")
+            complete(HttpResponse(InternalServerError, entity = "Bad numbers, bad result!!!"))
+          }
+      }
+
+    val route: Route = Route.seal(
+      path("divide") {
+        complete((1 / 0).toString) //Will throw ArithmeticException
+      }
+    ) // this one takes `myExceptionHandler` implicitly
+
+  }
+  //#seal-handler-example
+}
+
 object RespondWithHeaderExceptionHandlerExample {
   //#respond-with-header-exceptionhandler-example
   import akka.actor.ActorSystem
@@ -91,7 +119,7 @@ object RespondWithHeaderExceptionHandlerExample {
 
 
   object RespondWithHeaderExceptionHandler {
-    implicit def myExceptionHandler: ExceptionHandler =
+    def myExceptionHandler: ExceptionHandler =
       ExceptionHandler {
         case _: ArithmeticException =>
           extractUri { uri =>
@@ -155,6 +183,14 @@ class ExceptionHandlerExamplesSpec extends RoutingSpec {
 
     Get("/divide") ~> route ~> check {
       header("X-Outer-Header") shouldEqual Some(RawHeader("X-Outer-Header", "outer"))
+      responseAs[String] shouldEqual "Bad numbers, bad result!!!"
+    }
+  }
+
+  "test sealed route" in {
+    import ExceptionHandlerInSealExample.SealedRouteWithCustomExceptionHandler.route
+
+    Get("/divide") ~> route ~> check {
       responseAs[String] shouldEqual "Bad numbers, bad result!!!"
     }
   }

@@ -382,7 +382,7 @@ object DirectoryListing {
       |""".stripMarginWithNewline("\n") split '$'
 
   def directoryMarshaller(renderVanityFooter: Boolean): ToEntityMarshaller[DirectoryListing] =
-    Marshaller.StringMarshaller.wrapWithEC(MediaTypes.`text/html`) { implicit ec ⇒ listing ⇒
+    Marshaller.StringMarshaller.wrap(MediaTypes.`text/html`) { listing ⇒
       val DirectoryListing(path, isRoot, files) = listing
       val filesAndNames = files.map(file ⇒ file → file.getName).sortBy(_._2)
       val deduped = filesAndNames.zipWithIndex.flatMap {
