@@ -50,7 +50,7 @@ caching in your routes.
 ## Frequency-biased LFU cache
 
 The frequency-biased LFU cache implementation has a defined maximum number of entries it can
-store. After the maximum capacity is reached the cache will evicts entries that are
+store. After the maximum capacity is reached the cache will evict entries that are
 less likely to be used again. For example, the cache may evict an entry
 because it hasn't been used recently or very often.
 
