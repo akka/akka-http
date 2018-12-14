@@ -329,7 +329,7 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
 
   val `application/atom+xml`                                                      = awoc("atom+xml", "atom")
   val `application/base64`                                                        = awoc("base64", "mm", "mme")
-  @deprecated("This format is unofficial and should not be used", "10.1.6")
+  @deprecated("This format is unofficial and should not be used. Use application/vnd.ms-excel instead.", "10.1.6")
   val `application/excel`                                                         = abin("excel", NotCompressible)
   val `application/font-woff`                                                     = abin("font-woff", NotCompressible, "woff")
   val `application/gnutar`                                                        = abin("gnutar", NotCompressible, "tgz")
@@ -341,7 +341,7 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   val `application/grpc+proto`                                                    = abin("grpc+proto", NotCompressible)
   val `application/lha`                                                           = abin("lha", NotCompressible, "lha")
   val `application/lzx`                                                           = abin("lzx", NotCompressible, "lzx")
-  @deprecated("This format is unofficial and should not be used", "10.1.6")
+  @deprecated("This format is unofficial and should not be used. Use application/vnd.ms-powerpoint instead.", "10.1.6")
   val `application/mspowerpoint`                                                  = abin("mspowerpoint", NotCompressible)
   val `application/msword`                                                        = abin("msword", NotCompressible, "doc", "dot", "w6w", "wiz", "word", "wri")
   val `application/octet-stream`                                                  = abin("octet-stream", NotCompressible, "a", "bin", "class", "dump", "exe", "lhx", "lzh", "o", "psd", "saveme", "zoo")

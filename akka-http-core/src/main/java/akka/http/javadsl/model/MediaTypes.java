@@ -16,6 +16,10 @@ public final class MediaTypes {
 
     public static final MediaType.WithOpenCharset APPLICATION_ATOM_XML = akka.http.scaladsl.model.MediaTypes.application$divatom$plusxml();
     public static final MediaType.WithOpenCharset APPLICATION_BASE64 = akka.http.scaladsl.model.MediaTypes.application$divbase64();
+    /**
+     * @deprecated This format is unofficial and should not be used.
+     *              Use {@link{#APPLICATION_VND_MS_EXCEL} instead.
+     */
     @Deprecated
     public static final MediaType.Binary APPLICATION_EXCEL = akka.http.scaladsl.model.MediaTypes.application$divexcel();
     public static final MediaType.Binary APPLICATION_FONT_WOFF = akka.http.scaladsl.model.MediaTypes.application$divfont$minuswoff();
@@ -27,6 +31,10 @@ public final class MediaTypes {
     public static final MediaType.WithFixedCharset APPLICATION_MERGE_PATCH_JSON = akka.http.scaladsl.model.MediaTypes.application$divmerge$minuspatch$plusjson();
     public static final MediaType.Binary APPLICATION_LHA = akka.http.scaladsl.model.MediaTypes.application$divlha();
     public static final MediaType.Binary APPLICATION_LZX = akka.http.scaladsl.model.MediaTypes.application$divlzx();
+    /**
+     * @deprecated This format is unofficial and should not be used.
+     *              Use {@link{#APPLICATION_VND_MS_POWERPOINT} instead.
+     */
     @Deprecated
     public static final MediaType.Binary APPLICATION_MSPOWERPOINT = akka.http.scaladsl.model.MediaTypes.application$divmspowerpoint();
     public static final MediaType.Binary APPLICATION_MSWORD = akka.http.scaladsl.model.MediaTypes.application$divmsword();
