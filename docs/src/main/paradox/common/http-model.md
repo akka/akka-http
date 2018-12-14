@@ -397,7 +397,7 @@ in the right style / place.
 <a id="registeringcustomstatuscodes"></a>
 ## Registering Custom Status Codes
 
-Similarly to media types, Akka HTTP @scala[@scaladoc:[predefines](akka.http.scaladsl.model.StatusCodes$)]@java[@javadoc:[predefines](akka.http.javaadsl.model.StatusCodes)]
+Similarly to media types, Akka HTTP @scala[@scaladoc:[predefines](akka.http.scaladsl.model.StatusCodes$)]@java[@javadoc:[predefines](akka.http.javadsl.model.StatusCodes)]
 well-known status codes, however sometimes you may need to use a custom one (or are forced to use an API which returns custom status codes).
 Similarly to the media types registration, you can register custom status codes by configuring @unidoc[ParserSettings] like this:
 
