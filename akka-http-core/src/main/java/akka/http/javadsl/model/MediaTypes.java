@@ -44,13 +44,13 @@ public final class MediaTypes {
     public static final MediaType.Binary APPLICATION_VND_MS_EXCEL_SHEET_BINARY_MACROENABLED_12 = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Ems$minusexcel$u002Esheet$u002Ebinary$u002EmacroEnabled$u002E12();
     public static final MediaType.Binary APPLICATION_VND_MS_EXCEL_SHEET_MACROENABLED_12 = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Ems$minusexcel$u002Esheet$u002EmacroEnabled$u002E12();
     public static final MediaType.Binary APPLICATION_VND_MS_EXCEL_TEMPLATE_MACROENABLED_12 = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Ems$minusexcel$u002Etemplate$u002EmacroEnabled$u002E12();
+    public static final MediaType.Binary APPLICATION_VND_MS_FONTOBJECT = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Ems$minusfontobject();
     public static final MediaType.Binary APPLICATION_VND_MS_POWERPOINT = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Ems$minuspowerpoint();
     public static final MediaType.Binary APPLICATION_VND_MS_POWERPOINT_ADDIN_MACROENABLED_12 = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Ems$minuspowerpoint$u002Eaddin$u002EmacroEnabled$u002E12();
     public static final MediaType.Binary APPLICATION_VND_MS_POWERPOINT_PRESENTATION_MACROENABLED_12 = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Ems$minuspowerpoint$u002Epresentation$u002EmacroEnabled$u002E12();
     public static final MediaType.Binary APPLICATION_VND_MS_POWERPOINT_SLIDESHOW_MACROENABLED_12 = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Ems$minuspowerpoint$u002Eslideshow$u002EmacroEnabled$u002E12();
     public static final MediaType.Binary APPLICATION_VND_MS_WORD_DOCUMENT_MACROENABLED_12 = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Ems$minusword$u002Edocument$u002EmacroEnabled$u002E12();
     public static final MediaType.Binary APPLICATION_VND_MS_WORD_TEMPLATE_MACROENABLED_12 = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Ems$minusword$u002Etemplate$u002EmacroEnabled$u002E12();
-    public static final MediaType.Binary APPLICATION_VND_MS_FONTOBJECT = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Ems$minusfontobject();
     public static final MediaType.Binary APPLICATION_VND_OASIS_OPENDOCUMENT_CHART = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Eoasis$u002Eopendocument$u002Echart();
     public static final MediaType.Binary APPLICATION_VND_OASIS_OPENDOCUMENT_DATABASE = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Eoasis$u002Eopendocument$u002Edatabase();
     public static final MediaType.Binary APPLICATION_VND_OASIS_OPENDOCUMENT_FORMULA = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Eoasis$u002Eopendocument$u002Eformula();
