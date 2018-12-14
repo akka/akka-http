@@ -22,14 +22,15 @@ class CustomMediaTypesSpec extends AkkaSpec with ScalaFutures
   "Http" should {
     "find media types in a set if they differ in casing" in {
       val set: java.util.Set[MediaType] = new java.util.HashSet
-      set.add(MediaTypes.`application/excel`)
-      set.add(MediaTypes.`application/mspowerpoint`)
+      set.add(MediaTypes.`application/vnd.ms-excel`)
+      set.add(MediaTypes.`application/vnd.ms-powerpoint`)
       set.add(MediaTypes.`application/msword`)
       set.add(MediaType.customBinary("application", "x-Akka-TEST", MediaType.NotCompressible))
 
       set.contains(MediaType.parse("application/msword").right.get) should ===(true)
       set.contains(MediaType.parse("application/MsWord").right.get) should ===(true)
-      set.contains(MediaType.parse("application/EXCEL").right.get) should ===(true)
+      set.contains(MediaType.parse("application/vnd.ms-POWERPOINT").right.get) should ===(true)
+      set.contains(MediaType.parse("application/VnD.MS-eXceL").right.get) should ===(true)
       set.contains(MediaType.parse("application/x-akka-test").right.get) should ===(true)
       set.contains(MediaType.parse("application/x-Akka-TEST").right.get) should ===(true)
     }
