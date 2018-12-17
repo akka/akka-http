@@ -94,6 +94,19 @@ please refer to @ref[the section above](exception-handling.md#exception-handling
 if the entity is not properly rejected or cancelled on the client side.
 @@@
 
+## Including sensitive data in exceptions
+
+To prevent certain types of attack, it is not recommended to include arbitrary invalid user input in the response.
+However, sometimes it can be useful to include it in the exception and logging for diagnostic reasons.
+In such cases, you can use exceptions that extend `ExceptionWithErrorInfo`, such as `IllegalHeaderException`:
+
+Scala
+:   @@snip [ExceptionHandlerExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala) { #no-exception-details-in-response }
+
+Java
+:   @@snip [ExceptionHandlerExamplesTest.java]($test$/java/docs/http/javadsl/RespondWithHeaderHandlerExampleTest.java) { #no-exception-details-in-response  }
+
+
 ## Respond with headers and Exception Handler
 
 If you wrap an ExceptionHandler inside a different directive, then that directive will still apply. Example below shows

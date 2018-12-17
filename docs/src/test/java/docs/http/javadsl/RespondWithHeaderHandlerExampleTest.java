@@ -23,16 +23,42 @@ import akka.stream.javadsl.Flow;
 import java.io.IOException;
 import java.util.concurrent.CompletionStage;
 //#respond-with-header-exceptionhandler-example
-import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
 
-public class RespondWithHeaderHandlerExampleTest extends JUnitSuite {
+//#no-exception-details-in-response
+import static akka.http.javadsl.server.Directives.get;
+
+import akka.http.scaladsl.model.IllegalHeaderException;
+import akka.http.scaladsl.model.ErrorInfo;
+
+import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.testkit.TestRoute;
+import static junit.framework.TestCase.assertTrue;
+//#no-exception-details-in-response
+
+import org.junit.Test;
+
+public class RespondWithHeaderHandlerExampleTest extends JUnitRouteTest {
 
     @Test
     public void compileOnlySpec() throws Exception {
-        // just making sure for it to be really compiled / run even if empty
+        //#no-exception-details-in-response
+        TestRoute route = testRoute(
+          get(() -> {
+              throw new IllegalHeaderException(new ErrorInfo(
+                "Value of header Foo was illegal",
+                "Found illegal value \"<script>alert('evil_xss_or_xsrf_reflection')</script>\""));
+          })
+        );
+
+        String response = route
+          .run(HttpRequest.GET("/"))
+          .entityString();
+        assertTrue(response.contains("header Foo was illegal"));
+        assertTrue(!response.contains("evil_xss_or_xsrf_reflection"));
+        //#no-exception-details-in-response
     }
 
+    // The the other examples are only compiled, not tested:
     static
     //#respond-with-header-exceptionhandler-example
     class RespondWithHeaderHandlerExample extends AllDirectives {
