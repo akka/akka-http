@@ -32,8 +32,9 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 
 - [ ] If this is a new minor (not patch) release, rename the 'akka-http-x.x-stable' reporting project in [WhiteSource](https://saas.whitesourcesoftware.com/) accordingly
 - [ ] Add a release notes entry in docs/src/main/paradox/release-notes/. As a helper run `scripts/commits-for-release-notes.sh <last-version-tag>` which will output a list of commits grouped by submodule, and the closed issues for this milestone.
-- [ ] Create a news item draft on https://github.com/akka/akka.github.com, using the milestones and `scripts/authors.scala previousVersion thisVersion`
-- [ ] In the same PR update Akka HTTP dependency for akka.io website: https://github.com/akka/akka.github.com/blob/master/_config.yml
+- [ ] Create a PR on https://github.com/akka/akka.github.com with this
+  - a news item draft, using the milestones and `scripts/authors.scala previousVersion thisVersion`
+  - update Akka HTTP dependency for akka.io website: https://github.com/akka/akka.github.com/blob/master/_config.yml
 - [ ] Move all unclosed issues there and close the version you're releasing
 - [ ] Release notes PR has been merged
 
@@ -41,13 +42,14 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 
 - [ ] Make sure there are no stray staging repos on sonatype
 - [ ] Create a [new release](https://github.com/akka/akka-http/releases/new) with the next tag version (e.g. `v13.3.7`), title and release description linking to announcement, release notes and milestone.
-- [ ] Check that Travis CI release build has executed successfully (Travis will start a [CI build](https://travis-ci.org/akka/akka-http/builds) for the new tag and publish artifacts to Bintray)
+- [ ] Check that the Travis CI release build has executed successfully
 - [ ] Go to https://bintray.com/akka/maven/com.typesafe.akka:akka-http_2.11 and select the just released version
 - [ ] Go to the Maven Central tab and sync with Sonatype
 - [ ] Log in to Sonatype to Close the staging repository (optional, should happen automatically if selected in Bintray)
+- [ ] Notify Telemetry / Play team to check against staged artifacts
 - [ ] Run a test against the staging repository to make sure the release went well, for example by using https://github.com/akka/akka-http-scala-seed.g8 and adding the sonatype staging repo with `resolvers += "Staging Repo" at "https://oss.sonatype.org/content/repositories/comtypesafe-xxx"`
 - [ ] Release the staging repository to Maven Central.
-- [ ] Checkout the newly created tag and run `sbt -Dakka.genjavadoc.enabled=true ++2.12.7 "deployRsync akkarepo@gustav.akka.io"` to deploy API and reference documentation.
+- [ ] Checkout the newly created tag and run `sbt -Dakka.genjavadoc.enabled=true ++2.12.8 "deployRsync akkarepo@gustav.akka.io"` to deploy API and reference documentation.
 
 ### Check availability
 - [ ] Check release on sonatype: https://oss.sonatype.org/content/repositories/releases/com/typesafe/akka/akka-http-core_2.11/
@@ -64,9 +66,6 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 
 ### Afterwards
 - [ ] Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key *of all current compatible branches*.
-- Update Akka HTTP dependency in akka-http seed templates
- - [ ] [scala](https://github.com/akka/akka-http-scala-seed.g8/)
- - [ ] [java](https://github.com/akka/akka-http-java-seed.g8/)
-- [ ] Update Akka HTTP dependency in [akka-management](https://github.com/akka/akka-management/blob/master/project/Dependencies.scala)
-- [ ] Update Akka HTTP reference in [reactive-platform-docs](https://github.com/typesafehub/reactive-platform-docs/blob/master/build.sbt#L29)
+- [ ] Update Akka HTTP dependency in [akka-management](https://github.com/akka/akka-management/edit/master/project/Dependencies.scala)
+- [ ] Update Akka HTTP reference in [reactive-platform-docs](https://github.com/typesafehub/reactive-platform-docs/edit/master/build.sbt#L29)
 - Close this issue
