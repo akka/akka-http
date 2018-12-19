@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * It offers additional hooks to modify the default behavior.
  */
 @ApiMayChange
-public abstract class HttpApp extends AllDirectives {
+public abstract class HttpApp {
 
   private AtomicReference<ServerBinding> serverBinding = new AtomicReference<>();
   /**

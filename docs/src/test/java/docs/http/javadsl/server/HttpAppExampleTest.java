@@ -10,6 +10,7 @@ import akka.Done;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.server.HttpApp;
 import akka.http.javadsl.server.Route;
+import static akka.http.javadsl.server.Directives.*;
 //#minimal-imports
 import akka.http.javadsl.settings.ServerSettings;
 import akka.http.javadsl.ServerBinding;

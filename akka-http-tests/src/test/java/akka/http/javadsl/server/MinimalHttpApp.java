@@ -7,7 +7,7 @@ package akka.http.javadsl.server;
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.ServerBinding;
-import akka.http.scaladsl.Http;
+import static akka.http.javadsl.server.Directives.*;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CompletableFuture;

@@ -1,0 +1,4 @@
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.server.HttpApp.*")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.server.HttpApp.*")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.scaladsl.server.HttpApp")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.javadsl.server.HttpApp")

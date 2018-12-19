@@ -4,6 +4,7 @@
 
 package docs.http.scaladsl
 
+import akka.http.scaladsl.server.Directives
 import docs.CompileOnlySpec
 import org.scalatest.{ Matchers, WordSpec }
 
@@ -18,6 +19,8 @@ class HttpAppExampleSpec extends WordSpec with Matchers
 
     // Server definition
     object WebServer extends HttpApp {
+      import Directives._
+
       override def routes: Route =
         path("hello") {
           get {
@@ -41,6 +44,8 @@ class HttpAppExampleSpec extends WordSpec with Matchers
 
     // Server definition
     object WebServer extends HttpApp {
+      import Directives._
+
       override def routes: Route =
         path("hello") {
           get {
@@ -64,6 +69,8 @@ class HttpAppExampleSpec extends WordSpec with Matchers
 
     // Server definition
     object WebServer extends HttpApp {
+      import Directives._
+
       override def routes: Route =
         path("hello") {
           get {
@@ -90,6 +97,8 @@ class HttpAppExampleSpec extends WordSpec with Matchers
 
     // Server definition
     object WebServer extends HttpApp {
+      import Directives._
+
       override def routes: Route =
         path("hello") {
           get {
@@ -117,6 +126,8 @@ class HttpAppExampleSpec extends WordSpec with Matchers
 
     // Server definition
     object WebServer extends HttpApp {
+      import Directives._
+
       override def routes: Route =
         path("hello") {
           get {
@@ -156,6 +167,8 @@ class HttpAppExampleSpec extends WordSpec with Matchers
 
     // Server definition
     object WebServer extends HttpApp {
+      import Directives._
+
       override def routes: Route =
         path("hello") {
           get {
@@ -186,6 +199,8 @@ class HttpAppExampleSpec extends WordSpec with Matchers
 
     // Server definition
     class WebServer extends HttpApp {
+      import Directives._
+
       override def routes: Route =
         path("hello") {
           get {

@@ -27,7 +27,7 @@ import scala.util.{ Failure, Success, Try }
  * It offers additional hooks to modify the default behavior.
  */
 @ApiMayChange
-abstract class HttpApp extends Directives {
+abstract class HttpApp {
 
   private val serverBinding = new AtomicReference[ServerBinding]()
   /**

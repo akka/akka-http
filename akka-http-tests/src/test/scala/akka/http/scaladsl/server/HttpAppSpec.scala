@@ -28,6 +28,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
   import system.dispatcher
 
   class MinimalApp extends HttpApp {
+    import Directives._
 
     val shutdownPromise = Promise[Done]()
     val bindingPromise = Promise[ServerBinding]()
