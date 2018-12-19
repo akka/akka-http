@@ -11,17 +11,13 @@ Variables to be expanded in this template:
 Key links:
   - akka/akka-http milestone: https://github.com/akka/akka-http/milestone/?
 
-### N weeks before the release
+### ~ 1 week before the release
 - [ ] Check that open PRs and issues assigned to the milestone are reasonable
 - [ ] Triage tickets that should be ready for this release, add "pick next" label and release milestone
 - [ ] Triage open PRs and apply "pick next" label and maybe add to release milestone. Some PRs might be explicitly scheduled for this release, others might be ready enough to bring them over the finish line 
 Wind down PR queue. There has to be enough time after the last (non-trivial) PR is merged and the next phase. The core of the eco-system needs time to prepare for the final!
-- [ ] Estimate expected release date
-
-### ~ 1 week before the release
 - [ ] Decide on planned release date
 - [ ] Notify depending projects (notably Play + cinnamon) about upcoming release
-- [ ] Create a new milestone for the next version at https://github.com/akka/akka-http/milestones
 
 ### 1 day before the release
 - [ ] Make sure all important / big PRs have been merged by now
@@ -35,8 +31,9 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 - [ ] Create a PR on https://github.com/akka/akka.github.com with this
   - a news item draft, using the milestones and `scripts/authors.scala previousVersion thisVersion`
   - update Akka HTTP dependency for akka.io website: https://github.com/akka/akka.github.com/blob/master/_config.yml
-- [ ] Move all unclosed issues there and close the version you're releasing
 - [ ] Release notes PR has been merged
+- [ ] Create a new milestone for the next version at https://github.com/akka/akka-http/milestones
+- [ ] Move all unclosed issues to the newly created milestone (or remove milestone) and close the version you're releasing
 
 ### Cutting the release
 
