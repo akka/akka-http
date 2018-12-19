@@ -11,13 +11,13 @@ import scala.language.implicitConversions
 object Dependencies {
   import DependencyHelpers._
 
-  val jacksonVersion = "2.9.5"
+  val jacksonVersion = "2.9.8"
   val junitVersion = "4.12"
   val h2specVersion = "1.5.0"
   val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
   val h2specExe = "h2spec" + DependencyHelpers.exeIfWindows
   val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.zip"
-  val alpnAgentVersion = "2.0.7"
+  val alpnAgentVersion = "2.0.9"
 
   lazy val scalaTestVersion = settingKey[String]("The version of ScalaTest to use.")
   lazy val specs2Version = settingKey[String]("The version of Specs2 to use")
@@ -28,13 +28,13 @@ object Dependencies {
     scalaVersion := crossScalaVersions.value.head,
     scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.14.0"),
     scalaTestVersion := "3.0.5",
-    specs2Version := "4.2.0"
+    specs2Version := "4.3.6"
   )
   import Versions._
 
 
   object Compile {
-    val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.1.0" // Scala License
+    val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.1.1" // Scala License
     val scalaReflect  = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _) // Scala License
 
     // For akka-http spray-json support
