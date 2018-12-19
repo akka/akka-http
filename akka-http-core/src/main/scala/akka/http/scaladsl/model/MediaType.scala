@@ -332,6 +332,7 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   @deprecated("This format is unofficial and should not be used. Use application/vnd.ms-excel instead.", "10.1.6")
   val `application/excel`                                                         = abin("excel", NotCompressible)
   val `application/font-woff`                                                     = abin("font-woff", NotCompressible, "woff")
+  val `application/font-woff2`                                                    = abin("font-woff2", NotCompressible, "woff2")
   val `application/gnutar`                                                        = abin("gnutar", NotCompressible, "tgz")
   val `application/java-archive`                                                  = abin("java-archive", NotCompressible, "jar", "war", "ear")
   val `application/javascript`                                                    = awoc("javascript", "js")
