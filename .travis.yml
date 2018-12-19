@@ -31,7 +31,7 @@ jobs:
     - stage: mima
       script: sbt -J-XX:ReservedCodeCacheSize=256m +mimaReportBinaryIssues
     - stage: whitesource
-      script: sbt whitesourceCheckPolicies whitesourceUpdate
+      script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate
     - stage: publish
       script: sbt -J-XX:ReservedCodeCacheSize=256m +publish
 
