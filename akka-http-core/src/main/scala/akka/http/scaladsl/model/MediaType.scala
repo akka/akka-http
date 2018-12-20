@@ -45,6 +45,7 @@ sealed abstract class MediaType extends jm.MediaType with LazyValueBytesRenderab
   override def isMultipart: Boolean = false
   override def isText: Boolean = false
   override def isVideo: Boolean = false
+  override def isFont: Boolean = false
 
   def withParams(params: Map[String, String]): MediaType
   def withComp(comp: Compressibility): MediaType
@@ -71,6 +72,11 @@ object MediaType {
   def applicationBinary(subType: String, comp: Compressibility, fileExtensions: String*): Binary =
     new Binary("application/" + subType, "application", subType, comp, fileExtensions.toList) {
       override def isApplication = true
+    }
+
+  def fontBinary(subType: String, comp: Compressibility, fileExtensions: String*): Binary =
+    new Binary("font/" + subType, "font", subType, comp, fileExtensions.toList) {
+      override def isFont = true
     }
 
   def applicationWithFixedCharset(subType: String, charset: HttpCharset,
@@ -127,6 +133,7 @@ object MediaType {
       override def isMessage = mainType == "message"
       override def isText = mainType == "text"
       override def isVideo = mainType == "video"
+      override def isFont = mainType == "font"
     }
   }
 
@@ -144,6 +151,7 @@ object MediaType {
       override def isMessage = mainType == "message"
       override def isText = mainType == "text"
       override def isVideo = mainType == "video"
+      override def isFont = mainType == "font"
     }
   }
 
@@ -161,6 +169,7 @@ object MediaType {
       override def isMessage = mainType == "message"
       override def isText = mainType == "text"
       override def isVideo = mainType == "video"
+      override def isFont = mainType == "font"
     }
   }
 
@@ -298,7 +307,10 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   private def registerFileExtensions[T <: MediaType](mediaType: T): T = {
     mediaType.fileExtensions.foreach { ext ⇒
       val lcExt = ext.toLowerCase
-      require(!extensionMap.contains(lcExt), s"Extension '$ext' clash: media-types '${extensionMap(lcExt)}' and '$mediaType'")
+      /* Remove this condition of already registered media type should application/font-woff media type only once this media type is removed */
+      val extensionNotAlreadyRegistered = !extensionMap.contains(lcExt)
+      val errorMessage = s"Extension '$ext' clash: media-types '${extensionMap(lcExt)}' and '$mediaType'"
+      require(extensionNotAlreadyRegistered || extensionMap(lcExt).equals(`application/font-woff`), errorMessage)
       extensionMap = extensionMap.updated(lcExt, mediaType)
     }
     mediaType
@@ -323,6 +335,7 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   private def txt(st: String, fe: String*)                      = register(text(st, fe: _*))
   private def txtfc(st: String, cs: HttpCharset, fe: String*)   = register(textWithFixedCharset(st, cs, fe: _*))
   private def vid(st: String, fe: String*)                      = register(video(st, NotCompressible, fe: _*))
+  private def font(st: String, c: Compressibility, fe: String*) = register(fontBinary(st, c, fe: _*))
 
   // dummy value currently only used by ContentType.NoContentType
   private[http] val NoMediaType = MediaType.customBinary("none", "none", comp = NotCompressible)
@@ -331,8 +344,8 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   val `application/base64`                                                        = awoc("base64", "mm", "mme")
   @deprecated("This format is unofficial and should not be used. Use application/vnd.ms-excel instead.", "10.1.6")
   val `application/excel`                                                         = abin("excel", NotCompressible)
+  @deprecated("This format is unofficial and should not be used. Use font/woff instead.", "10.1.7")
   val `application/font-woff`                                                     = abin("font-woff", NotCompressible, "woff")
-  val `application/font-woff2`                                                    = abin("font-woff2", NotCompressible, "woff2")
   val `application/gnutar`                                                        = abin("gnutar", NotCompressible, "tgz")
   val `application/java-archive`                                                  = abin("java-archive", NotCompressible, "jar", "war", "ear")
   val `application/javascript`                                                    = awoc("javascript", "js")
@@ -428,6 +441,9 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   val `audio/x-psid`      = aud("x-psid", Compressible, "sid")
   val `audio/xm`          = aud("xm", NotCompressible, "xm")
   val `audio/webm`        = aud("webm", NotCompressible)
+
+  val `font/woff`  = font("woff", NotCompressible, "woff")
+  val `font/woff2` = font("woff2", NotCompressible, "woff2")
 
   val `image/gif`         = img("gif", NotCompressible, "gif")
   val `image/jpeg`        = img("jpeg", NotCompressible, "jpe", "jpeg", "jpg")
