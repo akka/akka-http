@@ -38,7 +38,7 @@ object MultiNode extends AutoPlugin {
     // -DMultiJvm.akka.cluster.Stress.nrOfNodes=15
     val MultinodeJvmArgs = "multinode\\.(D|X)(.*)".r
     val knownPrefix = Set("multnode.", "akka.", "MultiJvm.")
-    val akkaProperties = System.getProperties.propertyNames.asScala.toList.collect {
+    val akkaProperties = System.getProperties.propertyNames.asInstanceOf[java.util.Enumeration[String]].asScala.toList.collect {
       case MultinodeJvmArgs(a, b) =>
         val value = System.getProperty("multinode." + a + b)
         "-" + a + b + (if (value == "") "" else "=" + value)
