@@ -338,6 +338,7 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   val `application/json`                                                          = awfc("json", HttpCharsets.`UTF-8`, "json")
   val `application/json-patch+json`                                               = awfc("json-patch+json", HttpCharsets.`UTF-8`)
   val `application/merge-patch+json`                                              = awfc("merge-patch+json", HttpCharsets.`UTF-8`)
+  val `application/problem+json`                                                  = awfc("problem+json", HttpCharsets.`UTF-8`)
   val `application/grpc+proto`                                                    = abin("grpc+proto", NotCompressible)
   val `application/lha`                                                           = abin("lha", NotCompressible, "lha")
   val `application/lzx`                                                           = abin("lzx", NotCompressible, "lzx")
@@ -411,6 +412,7 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   val `application/xhtml+xml`                                                     = awoc("xhtml+xml")
   val `application/xml-dtd`                                                       = awoc("xml-dtd")
   val `application/xml`                                                           = awoc("xml")
+  val `application/problem+xml`                                                   = awoc("problem+xml")
   val `application/zip`                                                           = abin("zip", NotCompressible, "zip")
 
   val `audio/aiff`        = aud("aiff", Compressible, "aif", "aifc", "aiff")
