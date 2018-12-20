@@ -152,7 +152,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
         executable,
         "-k", "-t",
         "-p", port.toString,
-        "-j", "junitOutput"
+        "-j", junitOutput.getPath
       ) ++
         specSectionNumber.toList.flatMap(number ⇒ Seq("-s", number))
 
