@@ -74,7 +74,7 @@ object Dependencies {
       val sprayJson    = Compile.sprayJson                                                                   % "test" // ApacheV2
 
       // HTTP/2
-      val alpnAgent    = "org.mortbay.jetty.alpn"      % "jetty-alpn-agent"             % "2.0.6"            % "test" // ApacheV2
+      val alpnAgent    = "org.mortbay.jetty.alpn"      % "jetty-alpn-agent"             % "2.0.9"            % "test" // ApacheV2
       val h2spec       = "io.github.summerwind"        % h2specName                     % h2specVersion      % "test" from(h2specUrl) // MIT
     }
   }
