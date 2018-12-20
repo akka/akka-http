@@ -73,6 +73,7 @@ lazy val root = Project(
     }
   )
   .aggregate(
+    // When this is or other aggregates are updated the set of modules in HttpExt.allModules should also be updated
     parsing,
     httpCore,
     http2Support,

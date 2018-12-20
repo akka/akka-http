@@ -32,6 +32,7 @@ import akka.stream._
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
 import akka.util.ByteString
+import akka.util.ManifestInfo
 import com.typesafe.config.Config
 import com.typesafe.sslconfig.akka._
 import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
@@ -55,6 +56,24 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
 
   akka.http.Version.check(system.settings.config)
   akka.AkkaVersion.require("akka-http", akka.http.Version.supportedAkkaVersion)
+
+  // Used for ManifestInfo.checkSameVersion
+  private def allModules: List[String] = List(
+    "akka-parsing",
+    "akka-http-core",
+    "akka-http2-support",
+    "akka-http",
+    "akka-http-caching",
+    "akka-http-testkit",
+    "akka-http-tests",
+    "akka-http-marshallers-scala",
+    "akka-http-marshallers-java",
+    "akka-http-spray-json",
+    "akka-http-xml",
+    "akka-http-jackson"
+  )
+
+  ManifestInfo(system).checkSameVersion("Akka HTTP", allModules, logWarning = true)
 
   import Http._
 
