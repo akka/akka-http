@@ -36,13 +36,14 @@ import com.typesafe.config.Config
 import com.typesafe.sslconfig.akka._
 import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
 import com.typesafe.sslconfig.ssl.ConfigSSLContextBuilder
-
 import scala.concurrent._
 import scala.util.Try
 import scala.util.control.NonFatal
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.concurrent.duration._
+
+import akka.util.ManifestInfo
 
 /**
  * Akka extension for HTTP which serves as the main entry point into akka-http.
@@ -1108,8 +1109,26 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
 
   def lookup() = Http
 
-  def createExtension(system: ExtendedActorSystem): HttpExt =
+  // Used for ManifestInfo.checkSameVersion
+  private def allModules: List[String] = List(
+    "akka-parsing",
+    "akka-http-core",
+    "akka-http2-support",
+    "akka-http",
+    "akka-http-caching",
+    "akka-http-testkit",
+    "akka-http-tests",
+    "akka-http-marshallers-scala",
+    "akka-http-marshallers-java",
+    "akka-http-spray-json",
+    "akka-http-xml",
+    "akka-http-jackson"
+  )
+
+  def createExtension(system: ExtendedActorSystem): HttpExt = {
+    ManifestInfo(system).checkSameVersion("Akka HTTP", allModules, logWarning = true)
     new HttpExt(system.settings.config getConfig "akka.http")(system)
+  }
 
   @InternalApi
   private[akka] def prepareAttributes(settings: ServerSettings, incoming: Tcp.IncomingConnection) =
