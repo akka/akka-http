@@ -32,18 +32,18 @@ import akka.stream._
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
 import akka.util.ByteString
+import akka.util.ManifestInfo
 import com.typesafe.config.Config
 import com.typesafe.sslconfig.akka._
 import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
 import com.typesafe.sslconfig.ssl.ConfigSSLContextBuilder
+
 import scala.concurrent._
 import scala.util.Try
 import scala.util.control.NonFatal
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.concurrent.duration._
-
-import akka.util.ManifestInfo
 
 /**
  * Akka extension for HTTP which serves as the main entry point into akka-http.
@@ -56,6 +56,24 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
 
   akka.http.Version.check(system.settings.config)
   akka.AkkaVersion.require("akka-http", akka.http.Version.supportedAkkaVersion)
+
+  // Used for ManifestInfo.checkSameVersion
+  private def allModules: List[String] = List(
+    "akka-parsing",
+    "akka-http-core",
+    "akka-http2-support",
+    "akka-http",
+    "akka-http-caching",
+    "akka-http-testkit",
+    "akka-http-tests",
+    "akka-http-marshallers-scala",
+    "akka-http-marshallers-java",
+    "akka-http-spray-json",
+    "akka-http-xml",
+    "akka-http-jackson"
+  )
+
+  ManifestInfo(system).checkSameVersion("Akka HTTP", allModules, logWarning = true)
 
   import Http._
 
@@ -1109,26 +1127,8 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
 
   def lookup() = Http
 
-  // Used for ManifestInfo.checkSameVersion
-  private def allModules: List[String] = List(
-    "akka-parsing",
-    "akka-http-core",
-    "akka-http2-support",
-    "akka-http",
-    "akka-http-caching",
-    "akka-http-testkit",
-    "akka-http-tests",
-    "akka-http-marshallers-scala",
-    "akka-http-marshallers-java",
-    "akka-http-spray-json",
-    "akka-http-xml",
-    "akka-http-jackson"
-  )
-
-  def createExtension(system: ExtendedActorSystem): HttpExt = {
-    ManifestInfo(system).checkSameVersion("Akka HTTP", allModules, logWarning = true)
+  def createExtension(system: ExtendedActorSystem): HttpExt =
     new HttpExt(system.settings.config getConfig "akka.http")(system)
-  }
 
   @InternalApi
   private[akka] def prepareAttributes(settings: ServerSettings, incoming: Tcp.IncomingConnection) =
