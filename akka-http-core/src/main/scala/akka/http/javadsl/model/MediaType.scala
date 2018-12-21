@@ -89,8 +89,6 @@ trait MediaType {
 
   def isVideo: Boolean
 
-  def isFont: Boolean
-
   /**
    * Creates a media-range from this media-type.
    */

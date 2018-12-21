@@ -22,7 +22,6 @@ sealed abstract class MediaRange extends jm.MediaRange with Renderable with With
   def isMultipart = false
   def isText = false
   def isVideo = false
-  def isFont = false
   def isWildcard = mainType == "*"
 
   /**
@@ -93,7 +92,6 @@ object MediaRange {
     override def isMultipart = mediaType.isMultipart
     override def isText = mediaType.isText
     override def isVideo = mediaType.isVideo
-    override def isFont = mediaType.isFont
     def matches(mediaType: MediaType) =
       this.mediaType.mainType == mediaType.mainType &&
         this.mediaType.subType == mediaType.subType &&
