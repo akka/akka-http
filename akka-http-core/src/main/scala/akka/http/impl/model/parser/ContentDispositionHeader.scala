@@ -4,6 +4,8 @@
 
 package akka.http.impl.model.parser
 
+import scala.collection.immutable.TreeMap
+
 import akka.parboiled2.Parser
 import akka.http.scaladsl.model.headers._
 
@@ -11,7 +13,7 @@ private[parser] trait ContentDispositionHeader { this: Parser with CommonRules w
 
   // http://tools.ietf.org/html/rfc6266#section-4.1
   def `content-disposition` = rule {
-    `disposition-type` ~ zeroOrMore(ws(';') ~ `disposition-parm`) ~ EOI ~> (_.toMap) ~> (`Content-Disposition`(_, _))
+    `disposition-type` ~ zeroOrMore(ws(';') ~ `disposition-parm`) ~ EOI ~> (p ⇒ TreeMap(p: _*)) ~> (`Content-Disposition`(_, _))
   }
 
   def `disposition-type` = rule(

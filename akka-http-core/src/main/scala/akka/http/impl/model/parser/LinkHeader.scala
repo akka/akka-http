@@ -5,6 +5,8 @@
 package akka.http.impl.model.parser
 
 import scala.annotation.tailrec
+import scala.collection.immutable.TreeMap
+
 import akka.parboiled2.Parser
 import akka.http.scaladsl.model.{ ParsingException, IllegalUriException }
 import akka.http.scaladsl.model.headers._
@@ -62,7 +64,7 @@ private[parser] trait LinkHeader { this: Parser with CommonRules with CommonActi
     }
   }
 
-  def `link-media-type` = rule { `media-type` ~> ((mt, st, pm) ⇒ getMediaType(mt, st, pm contains "charset", pm.toMap)) }
+  def `link-media-type` = rule { `media-type` ~> ((mt, st, pm) ⇒ getMediaType(mt, st, pm contains "charset", TreeMap(pm: _*))) }
 
   // filter out subsequent `rel`, `media`, `title`, `type` and `type*` params
   @tailrec private def sanitize(params: Seq[LinkParam], result: Seq[LinkParam] = Nil, seenRel: Boolean = false,
