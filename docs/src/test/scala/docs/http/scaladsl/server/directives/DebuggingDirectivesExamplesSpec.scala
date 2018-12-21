@@ -130,7 +130,7 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
     }
     def printResponseTime(log: LoggingAdapter) = {
       val requestTimestamp = System.nanoTime
-      akkaResponseTimeLoggingFunction(log, requestTimestamp)(_)
+      akkaResponseTimeLoggingFunction(log, requestTimestamp) _
     }
 
     val logResponseTime = DebuggingDirectives.logRequestResult(LoggingMagnet(printResponseTime))
