@@ -22,6 +22,11 @@ public final class MediaTypes {
      */
     @Deprecated
     public static final MediaType.Binary APPLICATION_EXCEL = akka.http.scaladsl.model.MediaTypes.application$divexcel();
+    /**
+     * @deprecated This format is unofficial and should not be used.
+     *              Use {@link{#FONT_WOFF} instead.
+     */
+    @Deprecated
     public static final MediaType.Binary APPLICATION_FONT_WOFF = akka.http.scaladsl.model.MediaTypes.application$divfont$minuswoff();
     public static final MediaType.Binary APPLICATION_GNUTAR = akka.http.scaladsl.model.MediaTypes.application$divgnutar();
     public static final MediaType.Binary APPLICATION_JAVA_ARCHIVE = akka.http.scaladsl.model.MediaTypes.application$divjava$minusarchive();
@@ -122,6 +127,9 @@ public final class MediaTypes {
     public static final MediaType.Binary AUDIO_X_PSID = akka.http.scaladsl.model.MediaTypes.audio$divx$minuspsid();
     public static final MediaType.Binary AUDIO_XM = akka.http.scaladsl.model.MediaTypes.audio$divxm();
     public static final MediaType.Binary AUDIO_WEBM = akka.http.scaladsl.model.MediaTypes.audio$divwebm();
+
+    public static final MediaType.Binary FONT_WOFF = akka.http.scaladsl.model.MediaTypes.font$divwoff();
+    public static final MediaType.Binary FONT_WOFF_2 = akka.http.scaladsl.model.MediaTypes.font$divwoff2();
 
     public static final MediaType.Binary IMAGE_GIF = akka.http.scaladsl.model.MediaTypes.image$divgif();
     public static final MediaType.Binary IMAGE_JPEG = akka.http.scaladsl.model.MediaTypes.image$divjpeg();

@@ -73,9 +73,6 @@ object MediaType {
       override def isApplication = true
     }
 
-  def fontBinary(subType: String, comp: Compressibility, fileExtensions: String*): Binary =
-    new Binary("font/" + subType, "font", subType, comp, fileExtensions.toList) {}
-
   def applicationWithFixedCharset(subType: String, charset: HttpCharset,
                                   fileExtensions: String*): WithFixedCharset =
     new WithFixedCharset("application/" + subType, "application", subType, charset, fileExtensions.toList) {
@@ -116,6 +113,9 @@ object MediaType {
     new Binary("video/" + subType, "video", subType, comp, fileExtensions.toList) {
       override def isVideo = true
     }
+
+  def font(subType: String, comp: Compressibility, fileExtensions: String*): Binary =
+    new Binary("font/" + subType, "font", subType, comp, fileExtensions.toList) {}
 
   def customBinary(mainType: String, subType: String, comp: Compressibility, fileExtensions: List[String] = Nil,
                    params: Map[String, String] = Map.empty, allowArbitrarySubtypes: Boolean = false): Binary = {
@@ -326,7 +326,7 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   private def txt(st: String, fe: String*)                      = register(text(st, fe: _*))
   private def txtfc(st: String, cs: HttpCharset, fe: String*)   = register(textWithFixedCharset(st, cs, fe: _*))
   private def vid(st: String, fe: String*)                      = register(video(st, NotCompressible, fe: _*))
-  private def font(st: String, c: Compressibility, fe: String*) = register(fontBinary(st, c, fe: _*))
+  private def fnt(st: String, c: Compressibility, fe: String*) = register(font(st, c, fe: _*))
 
   // dummy value currently only used by ContentType.NoContentType
   private[http] val NoMediaType = MediaType.customBinary("none", "none", comp = NotCompressible)
@@ -434,8 +434,8 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   val `audio/webm`        = aud("webm", NotCompressible)
 
   /* Refer to https://tools.ietf.org/html/rfc8081#page-15 for Font being main type woff and woff2 being subtype*/
-  val `font/woff`  = font("woff", NotCompressible, "woff")
-  val `font/woff2` = font("woff2", NotCompressible, "woff2")
+  val `font/woff`  = fnt("woff", NotCompressible, "woff")
+  val `font/woff2` = fnt("woff2", NotCompressible, "woff2")
 
   val `image/gif`         = img("gif", NotCompressible, "gif")
   val `image/jpeg`        = img("jpeg", NotCompressible, "jpe", "jpeg", "jpg")
