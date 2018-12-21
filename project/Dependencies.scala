@@ -11,7 +11,7 @@ import scala.language.implicitConversions
 object Dependencies {
   import DependencyHelpers._
 
-  val jacksonVersion = "2.9.2"
+  val jacksonVersion = "2.9.8"
   val junitVersion = "4.12"
   val h2specVersion = "1.5.0"
   val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
@@ -26,7 +26,7 @@ object Dependencies {
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.11.12", "2.12.7"),
+    crossScalaVersions := Seq("2.11.12", "2.12.8"),
     scalaVersion := crossScalaVersions.value.head,
     akkaVersion := System.getProperty("akka.build.version", "2.4.20"),
     scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.13.5"),
