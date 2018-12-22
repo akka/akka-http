@@ -14,10 +14,16 @@ import ByteStringParser.{ ParseResult, ParseStep }
 import akka.annotation.InternalApi
 import akka.util.ByteString
 
-class Gzip(val messageFilter: HttpMessage ⇒ Boolean) extends Coder with StreamDecoder {
+class Gzip private (compressionLevel: Int, val messageFilter: HttpMessage ⇒ Boolean) extends Coder with StreamDecoder {
+  def this(messageFilter: HttpMessage ⇒ Boolean) = {
+    this(GzipCompressor.DefaultCompressionLevel, messageFilter)
+  }
+
   val encoding = HttpEncodings.gzip
-  def newCompressor = new GzipCompressor
+  def newCompressor = new GzipCompressor(compressionLevel)
   def newDecompressorStage(maxBytesPerChunk: Int) = () ⇒ new GzipDecompressor(maxBytesPerChunk)
+
+  def withLevel(level: Int): Gzip = new Gzip(level, messageFilter)
 }
 
 /**
@@ -29,11 +35,15 @@ object Gzip extends Gzip(Encoder.DefaultFilter) {
 
 /** Internal API */
 @InternalApi
-private[coding] class GzipCompressor extends DeflateCompressor {
-  override protected lazy val deflater = new Deflater(Deflater.BEST_COMPRESSION, true)
+private[coding] class GzipCompressor(compressionLevel: Int) extends DeflateCompressor(compressionLevel) {
+  override protected lazy val deflater = new Deflater(compressionLevel, true)
   private val checkSum = new CRC32 // CRC32 of uncompressed data
   private var headerSent = false
   private var bytesRead = 0L
+
+  def this() {
+    this(GzipCompressor.DefaultCompressionLevel)
+  }
 
   override protected def compressWithBuffer(input: ByteString, buffer: Array[Byte]): ByteString = {
     updateCrc(input)
@@ -60,6 +70,12 @@ private[coding] class GzipCompressor extends DeflateCompressor {
 
     trailer
   }
+}
+
+/** Internal API */
+@InternalApi
+private[coding] object GzipCompressor {
+  val DefaultCompressionLevel = 6
 }
 
 /** Internal API */

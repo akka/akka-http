@@ -63,6 +63,12 @@ class CodingDirectivesExamplesSpec extends RoutingSpec {
     Get("/") ~> `Accept-Encoding`(identity) ~> route ~> check {
       rejection shouldEqual UnacceptedResponseEncodingRejection(gzip)
     }
+
+    // with custom compression level:
+    val routeWithLevel9 = encodeResponseWith(Gzip.withLevel(9)) { complete("content") }
+    Get("/") ~> routeWithLevel9 ~> check {
+      response should haveContentEncoding(gzip)
+    }
     //#encodeResponseWith
   }
 
