@@ -8,6 +8,7 @@ import akka.http.javadsl.coding.Coder;
 import akka.http.javadsl.model.ContentTypes;
 import akka.http.javadsl.model.HttpEntity;
 import akka.http.javadsl.model.HttpRequest;
+import akka.http.javadsl.model.MediaTypes;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.AuthorizationFailedRejection;
 import akka.http.javadsl.server.MethodRejection;
@@ -29,6 +30,12 @@ import static akka.http.javadsl.server.Directives.post;
 import static akka.http.javadsl.server.Directives.route;
 
 //#example1
+//#rfc7807json-rejection-handler-example-java
+import static akka.http.javadsl.server.Directives.complete;
+import static akka.http.javadsl.server.Directives.path;
+import static akka.http.javadsl.server.Directives.handleRejections;
+
+//#rfc7807json-rejection-handler-example-java
 //#custom-handler-example-java
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.path;
@@ -63,6 +70,28 @@ public class RejectionHandlerExamplesTest extends JUnitRouteTest {
         )
       ));
     //#example1
+  }
+
+  @Test
+  public void rfc7807jsonRejectionHandlerExample() {
+    //#rfc7807json-rejection-handler-example-java
+    final Route route = handleRejections(RejectionHandler.rfc7807JsonHandler(), () ->
+      path("order", () ->
+        concat(
+          get(() ->
+            complete("Received GET")
+          )
+        )
+      )
+    );
+
+    // tests:
+    testRoute(route)
+      .run(HttpRequest.GET("/nope"))
+      .assertStatusCode(StatusCodes.NOT_FOUND)
+      .assertContentType(MediaTypes.APPLICATION_PROBLEM_JSON.toContentType())
+      .assertEntity("{\"type\": \"about:blank\", \"title\": \"The requested resource could not be found.\"}");
+    //#rfc7807json-rejection-handler-example-java
   }
 
   void customRejectionHandler() {

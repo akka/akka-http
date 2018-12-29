@@ -88,6 +88,28 @@ class RejectionHandlerExamplesSpec extends RoutingSpec {
       }
     //#example-1
   }
+
+  "rfc7807json-rejection-handler-example" in {
+    //#rfc7807json-rejection-handler-example
+    import akka.http.scaladsl.model._
+    import akka.http.scaladsl.server.RejectionHandler
+
+    val route =
+      handleRejections(RejectionHandler.rfc7807Json) {
+        path("order") {
+          get {
+            complete("Received GET")
+          }
+        }
+      }
+
+    Get("/nope") ~> route ~> check {
+      status shouldEqual StatusCodes.NotFound
+      contentType shouldEqual ContentType(MediaTypes.`application/problem+json`)
+      responseAs[String] shouldEqual """{"type": "about:blank", "title": "The requested resource could not be found."}"""
+    }
+    //#rfc7807json-rejection-handler-example
+  }
   
   "example-2-all-exceptions-json" in {
     //#example-json

@@ -282,6 +282,43 @@ object RejectionHandler {
       .result()
 
   /**
+   * [[https://tools.ietf.org/html/rfc7807 RFC 7807]] [[RejectionHandler]] instance.
+   */
+  final val rfc7807Json = default.mapRejectionResponse {
+    case res @ HttpResponse(_, _, ent: HttpEntity.Strict, _) ⇒
+      val title = ent.data.utf8String.replaceAll("\"", """\"""")
+
+      res.copy(
+        entity = HttpEntity(
+          MediaTypes.`application/problem+json`,
+          s"""{"type": "about:blank", "title": "$title"}"""
+        )
+      )
+    case x ⇒ x
+  }
+
+  /**
+   * [[https://tools.ietf.org/html/rfc7807 RFC 7807]] [[RejectionHandler]] instance.
+   */
+  final val rfc7807Xml = default.mapRejectionResponse {
+    case res @ HttpResponse(_, _, ent: HttpEntity.Strict, _) ⇒
+      val title = ent.data.utf8String
+
+      res.copy(
+        entity = HttpEntity(
+          ContentType(MediaTypes.`application/problem+xml`, HttpCharsets.`UTF-8`),
+          s"""<?xml version="1.0" encoding="UTF-8"?>
+             |<problem xmlns="urn:ietf:rfc:7807">
+             |  <type>about:blank</type>
+             |  <title>$title</title>
+             |</problem>
+           """.stripMargin
+        )
+      )
+    case x ⇒ x
+  }
+
+  /**
    * Filters out all TransformationRejections from the given sequence and applies them (in order) to the
    * remaining rejections.
    */

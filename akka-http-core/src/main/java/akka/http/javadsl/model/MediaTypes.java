@@ -29,6 +29,7 @@ public final class MediaTypes {
     public static final MediaType.WithFixedCharset APPLICATION_JSON = akka.http.scaladsl.model.MediaTypes.application$divjson();
     public static final MediaType.WithFixedCharset APPLICATION_JSON_PATCH_JSON = akka.http.scaladsl.model.MediaTypes.application$divjson$minuspatch$plusjson();
     public static final MediaType.WithFixedCharset APPLICATION_MERGE_PATCH_JSON = akka.http.scaladsl.model.MediaTypes.application$divmerge$minuspatch$plusjson();
+    public static final MediaType.WithFixedCharset APPLICATION_PROBLEM_JSON = akka.http.scaladsl.model.MediaTypes.application$divproblem$plusjson();
     public static final MediaType.Binary APPLICATION_LHA = akka.http.scaladsl.model.MediaTypes.application$divlha();
     public static final MediaType.Binary APPLICATION_LZX = akka.http.scaladsl.model.MediaTypes.application$divlzx();
     /**
@@ -106,6 +107,7 @@ public final class MediaTypes {
     public static final MediaType.WithOpenCharset APPLICATION_XHTML_XML = akka.http.scaladsl.model.MediaTypes.application$divxhtml$plusxml();
     public static final MediaType.WithOpenCharset APPLICATION_XML_DTD = akka.http.scaladsl.model.MediaTypes.application$divxml$minusdtd();
     public static final MediaType.WithOpenCharset APPLICATION_XML = akka.http.scaladsl.model.MediaTypes.application$divxml();
+    public static final MediaType.WithOpenCharset APPLICATION_PROBLEM_XML = akka.http.scaladsl.model.MediaTypes.application$divproblem$plusxml();
     public static final MediaType.Binary APPLICATION_ZIP = akka.http.scaladsl.model.MediaTypes.application$divzip();
 
     public static final MediaType.Binary AUDIO_AIFF = akka.http.scaladsl.model.MediaTypes.audio$divaiff();

@@ -20,6 +20,10 @@ object RejectionHandler {
   def newBuilder = new RejectionHandlerBuilder(server.RejectionHandler.newBuilder)
 
   def defaultHandler = new RejectionHandler(server.RejectionHandler.default)
+
+  def rfc7807JsonHandler = new RejectionHandler(server.RejectionHandler.rfc7807Json)
+
+  def rfc7807XmlHandler = new RejectionHandler(server.RejectionHandler.rfc7807Xml)
 }
 
 final class RejectionHandler(val asScala: server.RejectionHandler) {
