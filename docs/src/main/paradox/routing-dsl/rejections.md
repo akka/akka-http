@@ -84,6 +84,18 @@ rejection" to this most common failure a service is likely to produce.
 So, for example, if the @ref[path](directives/path-directives/path.md) directive rejects a request it does so with an empty rejection list. The
 @ref[host](directives/host-directives/host.md) directive behaves in the same way.
 
+## Use RFC 7807 Response Format
+
+If you want to use [RFC 7807 Response Format](https://tools.ietf.org/html/rfc7807) instead of default "text/plain" format,
+you can use predefined handlers.
+
+Scala
+:  @@snip [RejectionHandlerExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/RejectionHandlerExamplesSpec.scala) { #rfc7807json-rejection-handler-example }
+
+Java
+:  @@snip [RejectionHandlerExamplesTest.java]($test$/java/docs/http/javadsl/server/RejectionHandlerExamplesTest.java) { #rfc7807json-rejection-handler-example-java }
+
+
 ## Customizing Rejection Handling
 
 If you'd like to customize the way certain rejections are handled you'll have to write a custom
