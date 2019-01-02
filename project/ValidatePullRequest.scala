@@ -460,7 +460,9 @@ object AggregatePRValidation extends AutoPlugin {
       log.info(s"Wrote PR validation report to ${outputFile.getAbsolutePath}")
       //write(s"Overall result was: $result")
 
-      if (failed.nonEmpty || mimaFailures.nonEmpty || failedTasks.nonEmpty) throw new RuntimeException("Pull request validation failed!")
+      if (failed.nonEmpty) throw new RuntimeException(s"Pull request validation failed! Tests failed: $failed")
+      else if (mimaFailures.nonEmpty) throw new RuntimeException(s"Pull request validation failed! Mima failures: $mimaFailures")
+      else if (failedTasks.nonEmpty) throw new RuntimeException(s"Pull request validation failed! Failed tasks: $failedTasks")
       ()
     }
   )
