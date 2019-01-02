@@ -114,6 +114,9 @@ object MediaType {
       override def isVideo = true
     }
 
+  def font(subType: String, comp: Compressibility, fileExtensions: String*): Binary =
+    new Binary("font/" + subType, "font", subType, comp, fileExtensions.toList) {}
+
   def customBinary(mainType: String, subType: String, comp: Compressibility, fileExtensions: List[String] = Nil,
                    params: Map[String, String] = Map.empty, allowArbitrarySubtypes: Boolean = false): Binary = {
     require(mainType != "multipart", "Cannot create a MediaType.Multipart here, use `customMultipart` instead!")
@@ -323,6 +326,7 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   private def txt(st: String, fe: String*)                      = register(text(st, fe: _*))
   private def txtfc(st: String, cs: HttpCharset, fe: String*)   = register(textWithFixedCharset(st, cs, fe: _*))
   private def vid(st: String, fe: String*)                      = register(video(st, NotCompressible, fe: _*))
+  private def fnt(st: String, c: Compressibility, fe: String*) = register(font(st, c, fe: _*))
 
   // dummy value currently only used by ContentType.NoContentType
   private[http] val NoMediaType = MediaType.customBinary("none", "none", comp = NotCompressible)
@@ -331,7 +335,8 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   val `application/base64`                                                        = awoc("base64", "mm", "mme")
   @deprecated("This format is unofficial and should not be used. Use application/vnd.ms-excel instead.", "10.1.6")
   val `application/excel`                                                         = abin("excel", NotCompressible)
-  val `application/font-woff`                                                     = abin("font-woff", NotCompressible, "woff")
+  @deprecated("This format is unofficial and should not be used. Use font/woff instead.", "10.1.7")
+  val `application/font-woff`                                                     = abin("font-woff", NotCompressible)
   val `application/gnutar`                                                        = abin("gnutar", NotCompressible, "tgz")
   val `application/java-archive`                                                  = abin("java-archive", NotCompressible, "jar", "war", "ear")
   val `application/javascript`                                                    = awoc("javascript", "js")
@@ -429,6 +434,10 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   val `audio/x-psid`      = aud("x-psid", Compressible, "sid")
   val `audio/xm`          = aud("xm", NotCompressible, "xm")
   val `audio/webm`        = aud("webm", NotCompressible)
+
+  /* Refer to https://tools.ietf.org/html/rfc8081#page-15 for Font being main type woff and woff2 being subtype*/
+  val `font/woff`  = fnt("woff", NotCompressible, "woff")
+  val `font/woff2` = fnt("woff2", NotCompressible, "woff2")
 
   val `image/gif`         = img("gif", NotCompressible, "gif")
   val `image/jpeg`        = img("jpeg", NotCompressible, "jpe", "jpeg", "jpg")
