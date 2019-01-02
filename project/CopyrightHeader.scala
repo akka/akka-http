@@ -31,7 +31,7 @@ object CopyrightHeader extends AutoPlugin {
     additionalTasks in ValidatePR += headerCheck in Test
   )
 
-  val CurrentYear = java.time.Year.now.getValue.toString
+  val CurrentYear = "2018"
   val CopyrightPattern = "Copyright \\([Cc]\\) (\\d{4}(-\\d{4})?) (Lightbend|Typesafe) Inc. <.*>".r
   val CopyrightHeaderPattern = s"(?s).*${CopyrightPattern}.*".r
 
