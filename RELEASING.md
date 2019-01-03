@@ -1,5 +1,14 @@
 ## Releasing
 
+### Snapshot releases
+
+To publish a development snapshot, run "sbt +publish" from a development
+machine using jdk 8. The build will be published to bintray at
+https://bintray.com/akka/maven/com.typesafe.akka:akka-http_2.11 - don't be
+alarmed by the '2.11', that is merely a historical naming issue in bintray.
+
+### Regular releases
+
 Create a new issue from the [Akka HTTP Release Train Issue Template](notes/release-train-issue-template.md) and follow the steps.
 
 A few more background information about the process can be found below.
