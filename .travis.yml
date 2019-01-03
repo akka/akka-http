@@ -5,12 +5,12 @@ scala:
 
 sudo: false
 
-jdk:
-  - oraclejdk8
-
 before_install:
   # make comparing to origin/master work
   - git remote set-branches --add origin master && git fetch
+  # using jabba for custom jdk management
+  - curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.1/install.sh | bash && . ~/.jabba/jabba.sh
+  - jabba install adopt@1.8.192-12
 
 addons:
   apt:
@@ -25,15 +25,21 @@ cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot
+    - $HOME/.jabba/jdk
+
+script:
+  - jabba use "adopt@1.8.192-12"
+  - java -version
+  - sbt -jvm-opts .jvmopts-travis "$CMD"
 
 jobs:
   include:
     - stage: mima
-      script: sbt -J-XX:ReservedCodeCacheSize=256m +mimaReportBinaryIssues
+      env: CMD="+mimaReportBinaryIssues"
     - stage: whitesource
       script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate
     - stage: publish
-      script: sbt -J-XX:ReservedCodeCacheSize=256m +publish
+      env: CMD="+publish"
 
 stages:
   - name: mima
