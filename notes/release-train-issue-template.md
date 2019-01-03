@@ -38,6 +38,7 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 ### Cutting the release
 
 - [ ] Make sure there are no stray staging repos on sonatype
+- [ ] Wait until [master build finished](https://travis-ci.org/akka/akka-http/builds/) after merging the release notes
 - [ ] Create a [new release](https://github.com/akka/akka-http/releases/new) with the next tag version (e.g. `v13.3.7`), title and release description linking to announcement, release notes and milestone.
 - [ ] Check that the Travis CI release build has executed successfully
 - [ ] Go to https://bintray.com/akka/maven/com.typesafe.akka:akka-http_2.11 and select the just released version
