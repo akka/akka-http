@@ -287,7 +287,7 @@ object RejectionHandler {
    */
   def applyTransformations(rejections: immutable.Seq[Rejection]): immutable.Seq[Rejection] = {
     val (transformations, rest) = rejections.partition(_.isInstanceOf[TransformationRejection])
-    (rest.distinct /: transformations.asInstanceOf[Seq[TransformationRejection]]) {
+    transformations.asInstanceOf[Seq[TransformationRejection]].foldLeft(rest.distinct) {
       case (remaining, transformation) ⇒ transformation.transform(remaining)
     }
   }

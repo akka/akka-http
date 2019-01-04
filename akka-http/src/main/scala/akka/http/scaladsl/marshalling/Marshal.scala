@@ -10,6 +10,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture._
 
 import scala.util.control.NoStackTrace
+import scala.collection.compat._
 
 object Marshal {
   def apply[T](value: T): Marshal[T] = new Marshal(value)
@@ -53,10 +54,10 @@ class Marshal[A](val value: A) {
 
     m(value).fast.map { marshallings ⇒
       val supportedAlternatives: List[ContentNegotiator.Alternative] =
-        marshallings.collect {
+        marshallings.iterator.collect {
           case Marshalling.WithFixedContentType(ct, _) ⇒ ContentNegotiator.Alternative(ct)
           case Marshalling.WithOpenCharset(mt, _)      ⇒ ContentNegotiator.Alternative(mt)
-        }(collection.breakOut)
+        }.to(scala.collection.immutable.List)
       val bestMarshal = {
         if (supportedAlternatives.nonEmpty) {
           ctn.pickContentType(supportedAlternatives)
