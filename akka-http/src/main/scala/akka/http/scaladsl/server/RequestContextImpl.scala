@@ -15,6 +15,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
+import akka.http.ccompat._
 
 /**
  * INTERNAL API
@@ -99,7 +100,7 @@ private[http] class RequestContextImpl(
         case `accept` ⇒
           val acceptAll =
             if (ranges.exists(_.isWildcard)) ranges.map(r ⇒ if (r.isWildcard) MediaRanges.`*/*;q=MIN` else r)
-            else ranges :+ MediaRanges.`*/*;q=MIN`
+            else ranges.xSeq :+ MediaRanges.`*/*;q=MIN`
           accept.copy(mediaRanges = acceptAll)
         case x ⇒ x
       }))

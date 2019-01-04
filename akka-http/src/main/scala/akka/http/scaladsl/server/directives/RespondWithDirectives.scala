@@ -6,6 +6,7 @@ package akka.http.scaladsl.server
 package directives
 
 import akka.http.scaladsl.model._
+import akka.http.ccompat._
 import scala.collection.immutable
 
 /**
@@ -43,8 +44,8 @@ trait RespondWithDirectives {
    *
    * @group response
    */
-  def respondWithHeaders(responseHeaders: immutable.Seq[HttpHeader]): Directive0 =
-    mapResponseHeaders(responseHeaders ++ _)
+  def respondWithHeaders(responseHeaders: VASeq[HttpHeader]): Directive0 =
+    mapResponseHeaders(responseHeaders.xSeq ++ _)
 
   /**
    * Adds the given response headers to all HTTP responses of its inner Route,
@@ -61,7 +62,7 @@ trait RespondWithDirectives {
    *
    * @group response
    */
-  def respondWithDefaultHeaders(responseHeaders: immutable.Seq[HttpHeader]): Directive0 =
+  def respondWithDefaultHeaders(responseHeaders: VASeq[HttpHeader]): Directive0 =
     mapResponse(_.withDefaultHeaders(responseHeaders))
 }
 

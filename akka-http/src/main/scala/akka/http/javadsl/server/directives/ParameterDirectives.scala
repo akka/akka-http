@@ -83,7 +83,7 @@ abstract class ParameterDirectives extends MiscDirectives {
   }
 
   def parameterMultiMap(inner: JFunction[JMap[String, JList[String]], Route]): Route = RouteAdapter {
-    D.parameterMultiMap { map ⇒ inner.apply(map.mapValues { l ⇒ l.asJava }.asJava).delegate }
+    D.parameterMultiMap { map ⇒ inner.apply(map.mapValues { l ⇒ l.asJava }.toMap.asJava).delegate }
   }
 
   @CorrespondsTo("parameterSeq")

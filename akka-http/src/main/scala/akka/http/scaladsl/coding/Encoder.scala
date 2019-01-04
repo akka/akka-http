@@ -38,7 +38,7 @@ trait Encoder {
     def encodeChunk(bytes: ByteString): ByteString = compressor.compressAndFlush(bytes)
     def finish(): ByteString = compressor.finish()
 
-    StreamUtils.byteStringTransformer(encodeChunk, finish)
+    StreamUtils.byteStringTransformer(encodeChunk, () ⇒ finish)
   }
 }
 
