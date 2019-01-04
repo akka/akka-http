@@ -202,7 +202,10 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
   override def afterAll() = TestKit.shutdownActorSystem(system)
 
   protected class FixedRandom extends java.util.Random {
-    override def nextBytes(array: Array[Byte]): Unit = "my-stable-boundary".getBytes("UTF-8").copyToArray(array)
+    override def nextBytes(array: Array[Byte]): Unit = {
+      val bytes = "my-stable-boundary".getBytes("UTF-8")
+      bytes.copyToArray(array, 0, bytes.length)
+    }
   }
   override protected val multipartBoundaryRandom = new FixedRandom // fix for stable value
 }

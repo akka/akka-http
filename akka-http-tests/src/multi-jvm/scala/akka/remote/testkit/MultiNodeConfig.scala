@@ -359,7 +359,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
   def enterBarrier(name: String*): Unit =
     testConductor.enter(
       Timeout.durationToTimeout(remainingOr(testConductor.Settings.BarrierTimeout.duration)),
-      name.to[immutable.Seq])
+      name.to(immutable.Seq))
 
   /**
    * Query the controller for the transport address of the given node (by role name) and
