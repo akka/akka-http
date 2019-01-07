@@ -1,3 +1,5 @@
 # =htc #507 allow easier handling websockets with sink/source
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.ws.UpgradeToWebSocket.handleMessagesWithSource")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.ws.UpgradeToWebSocket.handleMessagesWithSink")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.ws.UpgradeToWebSocket.handleMessagesWithSource")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.ws.UpgradeToWebSocket.handleMessagesWithSink")
