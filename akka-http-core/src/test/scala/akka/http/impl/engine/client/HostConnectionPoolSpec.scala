@@ -404,6 +404,12 @@ class HostConnectionPoolSpec extends AkkaSpec(
         @volatile var shouldFail = true
         val connectionCounter = new AtomicInteger()
         override def onNewConnection(requestPublisher: Publisher[HttpRequest], responseSubscriber: Subscriber[HttpResponse]): Future[Http.OutgoingConnection] = {
+          while (connectionCounter == null) {
+            // Just creating the connection pool will pre-connect, which means a new
+            // connection may come in before the test constructor has even finished.
+            // So possibly wait for that:
+            Thread.sleep(1)
+          }
           connectionCounter.incrementAndGet()
           if (shouldFail)
             Future.failed(new RuntimeException("Server out of coffee"))
