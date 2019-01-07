@@ -307,7 +307,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
         accept.mediaRanges.head.getParams.size should be(numKeys)
       }
 
-      collidingTime / regularTime should be < 2L // speed must be in same order of magnitude
+      collidingTime.toDouble / regularTime should be < 3.0 // speed must be in same order of magnitude
     }
   }
 
