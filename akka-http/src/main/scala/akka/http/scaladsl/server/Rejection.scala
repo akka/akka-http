@@ -285,4 +285,4 @@ final case class CircuitBreakerOpenRejection(cause: CircuitBreakerOpenException)
  * rejection rather than an Exception that is handled by the nearest ExceptionHandler.
  * (Custom marshallers can of course use it as well.)
  */
-final case class RejectionError(rejection: Rejection) extends RuntimeException
+final case class RejectionError(rejection: Rejection) extends RuntimeException(rejection.toString)
