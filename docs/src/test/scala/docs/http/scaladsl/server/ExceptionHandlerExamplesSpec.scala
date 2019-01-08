@@ -4,6 +4,8 @@
 
 package docs.http.scaladsl.server
 
+import akka.http.scaladsl.server.ExceptionHandler
+
 // format: OFF
 
 object MyExplicitExceptionHandler {
@@ -193,5 +195,21 @@ class ExceptionHandlerExamplesSpec extends RoutingSpec {
     Get("/divide") ~> route ~> check {
       responseAs[String] shouldEqual "Bad numbers, bad result!!!"
     }
+  }
+
+  "do not include possibly-sensitive details in the error response" in {
+    //#no-exception-details-in-response
+    import akka.http.scaladsl.model.IllegalHeaderException
+
+    val route = get {
+      throw IllegalHeaderException("Value of header Foo was illegal", "Found illegal value \"<script>alert('evil_xss_or_xsrf_reflection')</script>\"")
+    }
+
+    // Test:
+    Get("/") ~> route ~> check {
+      responseAs[String] should include("header Foo was illegal")
+      responseAs[String] shouldNot include("evil_xss_or_xsrf_reflection")
+    }
+    //#no-exception-details-in-response
   }
 }

@@ -67,41 +67,41 @@ object ErrorInfo {
 }
 
 /** Marker for exceptions that provide an ErrorInfo */
-abstract class ExceptionWithErrorInfo(info: ErrorInfo) extends RuntimeException(info.formatPretty)
+abstract class ExceptionWithErrorInfo(val info: ErrorInfo) extends RuntimeException(info.formatPretty)
 
-case class IllegalUriException(info: ErrorInfo) extends ExceptionWithErrorInfo(info)
+case class IllegalUriException(override val info: ErrorInfo) extends ExceptionWithErrorInfo(info)
 object IllegalUriException {
   def apply(summary: String, detail: String = ""): IllegalUriException = apply(ErrorInfo(summary, detail))
 }
 
-case class IllegalHeaderException(info: ErrorInfo) extends ExceptionWithErrorInfo(info)
+case class IllegalHeaderException(override val info: ErrorInfo) extends ExceptionWithErrorInfo(info)
 object IllegalHeaderException {
   def apply(summary: String, detail: String = ""): IllegalHeaderException = apply(ErrorInfo(summary, detail))
 }
 
-case class InvalidContentLengthException(info: ErrorInfo) extends ExceptionWithErrorInfo(info)
+case class InvalidContentLengthException(override val info: ErrorInfo) extends ExceptionWithErrorInfo(info)
 object InvalidContentLengthException {
   def apply(summary: String, detail: String = ""): InvalidContentLengthException = apply(ErrorInfo(summary, detail))
 }
 
-case class ParsingException(info: ErrorInfo) extends ExceptionWithErrorInfo(info)
+case class ParsingException(override val info: ErrorInfo) extends ExceptionWithErrorInfo(info)
 object ParsingException {
   def apply(summary: String, detail: String = ""): ParsingException = apply(ErrorInfo(summary, detail))
 }
 
-case class IllegalRequestException(info: ErrorInfo, status: ClientError) extends ExceptionWithErrorInfo(info)
+case class IllegalRequestException(override val info: ErrorInfo, status: ClientError) extends ExceptionWithErrorInfo(info)
 object IllegalRequestException {
   def apply(status: ClientError): IllegalRequestException = apply(ErrorInfo(status.defaultMessage), status)
   def apply(status: ClientError, info: ErrorInfo): IllegalRequestException = apply(info.withFallbackSummary(status.defaultMessage), status)
   def apply(status: ClientError, detail: String): IllegalRequestException = apply(ErrorInfo(status.defaultMessage, detail), status)
 }
 
-case class IllegalResponseException(info: ErrorInfo) extends ExceptionWithErrorInfo(info)
+case class IllegalResponseException(override val info: ErrorInfo) extends ExceptionWithErrorInfo(info)
 object IllegalResponseException {
   def apply(summary: String, detail: String = ""): IllegalResponseException = apply(ErrorInfo(summary, detail))
 }
 
-case class EntityStreamException(info: ErrorInfo) extends ExceptionWithErrorInfo(info)
+case class EntityStreamException(override val info: ErrorInfo) extends ExceptionWithErrorInfo(info)
 object EntityStreamException {
   def apply(summary: String, detail: String = ""): EntityStreamException = apply(ErrorInfo(summary, detail))
 }
