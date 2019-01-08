@@ -228,7 +228,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
         }
       }
 
-      collidingTime / regularTime should be < 2L // speed must be in same order of magnitude
+      collidingTime.toDouble / regularTime should be < 3.0 // speed must be in same order of magnitude
     }
   }
 
@@ -278,7 +278,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
         }
       }
 
-      collidingTime / regularTime should be < 2L // speed must be in same order of magnitude
+      collidingTime.toDouble / regularTime should be < 3.0 // speed must be in same order of magnitude
     }
   }
 }
