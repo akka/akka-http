@@ -51,7 +51,7 @@ class DeflateSpec extends CoderSpec {
 
   private def encodeMessage(request: HttpRequest, compressionLevel: Int, noWrap: Boolean): HttpRequest = {
     val deflaterWithoutWrapping = new Deflate(Encoder.DefaultFilter) {
-      override def newCompressor = new DeflateCompressor {
+      override def newCompressor = new DeflateCompressor(compressionLevel) {
         override lazy val deflater = new Deflater(compressionLevel, noWrap)
       }
     }

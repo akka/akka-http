@@ -16,17 +16,28 @@ import scala.annotation.tailrec
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.HttpEncodings
 
-class Deflate(val messageFilter: HttpMessage ⇒ Boolean) extends Coder with StreamDecoder {
+class Deflate private (compressionLevel: Int, val messageFilter: HttpMessage ⇒ Boolean) extends Coder with StreamDecoder {
+  def this(messageFilter: HttpMessage ⇒ Boolean) = {
+    this(DeflateCompressor.DefaultCompressionLevel, messageFilter)
+  }
+
   val encoding = HttpEncodings.deflate
-  def newCompressor = new DeflateCompressor
+  def newCompressor = new DeflateCompressor(compressionLevel)
   def newDecompressorStage(maxBytesPerChunk: Int) = () ⇒ new DeflateDecompressor(maxBytesPerChunk)
+
+  def withLevel(level: Int): Deflate = new Deflate(level, messageFilter)
 }
 object Deflate extends Deflate(Encoder.DefaultFilter)
 
-class DeflateCompressor extends Compressor {
+class DeflateCompressor private[coding] (compressionLevel: Int) extends Compressor {
+  require(compressionLevel >= 0 && compressionLevel <= 9, "Compression level needs to be between 0 and 9")
   import DeflateCompressor._
 
-  protected lazy val deflater = new Deflater(Deflater.BEST_COMPRESSION, false)
+  def this() {
+    this(DeflateCompressor.DefaultCompressionLevel)
+  }
+
+  protected lazy val deflater = new Deflater(compressionLevel, false)
 
   override final def compressAndFlush(input: ByteString): ByteString = {
     val buffer = newTempBuffer(input.size)
@@ -76,6 +87,7 @@ class DeflateCompressor extends Compressor {
 @InternalApi
 private[coding] object DeflateCompressor {
   val MinBufferSize = 1024
+  val DefaultCompressionLevel = 6
 
   @tailrec
   def drainDeflater(deflater: Deflater, buffer: Array[Byte], result: ByteStringBuilder = new ByteStringBuilder()): ByteString = {

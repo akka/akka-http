@@ -12,7 +12,7 @@ import java.util.zip.{ ZipException, GZIPInputStream, GZIPOutputStream }
 import akka.util.ByteString
 
 class GzipSpec extends CoderSpec {
-  protected def Coder: Coder with StreamDecoder = Gzip
+  protected def Coder: Coder with StreamDecoder = Gzip.withLevel(9)
 
   protected def newDecodedInputStream(underlying: InputStream): InputStream =
     new GZIPInputStream(underlying)
