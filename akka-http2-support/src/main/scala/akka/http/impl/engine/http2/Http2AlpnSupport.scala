@@ -39,11 +39,14 @@ private[http] object Http2AlpnSupport {
     def setHandshakeApplicationProtocolSelector(selector: BiFunction[SSLEngine, ju.List[String], String]): Unit
   }
   def jdkAlpnSupport(engine: SSLEngine, setChosenProtocol: String ⇒ Unit): SSLEngine = {
-    engine.asInstanceOf[JDK9SSLEngine].setHandshakeApplicationProtocolSelector { (_, protocols: ju.List[String]) ⇒
-      val chosen = chooseProtocol(protocols)
-      setChosenProtocol(chosen)
-      chosen
-    }
+    engine.asInstanceOf[JDK9SSLEngine].setHandshakeApplicationProtocolSelector(new BiFunction[SSLEngine, ju.List[String], String] {
+      // explicit style needed here as automatic SAM-support doesn't seem to work out with Scala 2.11
+      override def apply(engine: SSLEngine, protocols: ju.List[String]): String = {
+        val chosen = chooseProtocol(protocols)
+        setChosenProtocol(chosen)
+        chosen
+      }
+    })
 
     engine
   }
