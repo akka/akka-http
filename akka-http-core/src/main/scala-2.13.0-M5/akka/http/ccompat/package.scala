@@ -6,6 +6,9 @@ package akka.http
 
 import akka.http.impl.util.JavaMapping
 
+/**
+ * INTERNAL API
+ */
 package object ccompat {
 
   /**

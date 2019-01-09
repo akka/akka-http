@@ -6,6 +6,9 @@ package akka.http
 
 import scala.collection.mutable
 
+/**
+ * INTERNAL API
+ */
 package object ccompat {
 
   /**
