@@ -48,7 +48,7 @@ stages:
     if: repo=akka/akka-http AND ( ( branch = master AND type = push ) OR tag =~ ^v )
 
   - name: publish 
-    if: tag =~ ^v
+    if: repo=akka/akka-http AND ( ( branch = master AND type = push ) OR tag =~ ^v )
 
 env:
   global:
