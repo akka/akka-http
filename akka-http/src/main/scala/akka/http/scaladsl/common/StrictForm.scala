@@ -9,11 +9,11 @@ import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
 import akka.stream.Materializer
+import akka.http.ccompat._
 import akka.http.scaladsl.unmarshalling._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture
 import FastFuture._
-import scala.collection.compat._
 
 /**
  * Read-only abstraction on top of `application/x-www-form-urlencoded` and multipart form data,

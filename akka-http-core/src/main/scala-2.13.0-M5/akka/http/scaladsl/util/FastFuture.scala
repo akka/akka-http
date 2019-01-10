@@ -7,9 +7,11 @@ package akka.http.scaladsl.util
 import scala.language.higherKinds
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
-import scala.collection.compat._
+import scala.collection.BuildFrom
 import scala.concurrent.duration.Duration
 import scala.concurrent._
+
+import akka.http.ccompat._
 
 /**
  * Provides alternative implementations of the basic transformation operations defined on [[scala.concurrent.Future]],

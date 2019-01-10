@@ -16,9 +16,8 @@
 
 package akka.parboiled2
 
-import scala.annotation.tailrec
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
-import scala.collection.compat._
+import scala.annotation.tailrec
 
 /**
  * Abstraction for error formatting logic.
@@ -134,7 +133,7 @@ class ErrorFormatter(
    * Formats what is expected at the error location as a [[List]] of Strings.
    */
   def formatExpectedAsList(error: ParseError): List[String] = {
-    val distinctStrings: Set[String] = error.effectiveTraces.iterator.map(formatAsExpected).to(scala.collection.immutable.Set)
+    val distinctStrings: Set[String] = error.effectiveTraces.iterator.map(formatAsExpected).toSet
     distinctStrings.toList
   }
 

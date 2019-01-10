@@ -53,8 +53,6 @@ object Dependencies {
     val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.6.2"
     val jsr305      = "com.google.code.findbugs"      % "jsr305"                       % "3.0.2"             % Provided // ApacheV2
 
-    val collectionCompat = "org.scala-lang.modules" %% "scala-collection-compat" % "0.2.1"
-
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
       val gson        = "com.google.code.gson"             % "gson"                    % "2.8.5"             % "test"
@@ -84,7 +82,6 @@ object Dependencies {
     DependencyHelpers.versionDependentDeps(
       Dependencies.Compile.scalaReflect % "provided"
     ),
-    l += collectionCompat,
     // Does not seem to be needed?
     // addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full))
   )

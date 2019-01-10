@@ -68,7 +68,7 @@ final case class Language(primaryTag: String, subTags: ccompat.VASeq[String])
 
   /** Java API */
   def getSubTags: java.lang.Iterable[String] = {
-    import akka.http.ccompat._
+    import scala.collection.JavaConverters._
     subTags.asJava
   }
 }

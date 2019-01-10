@@ -17,12 +17,12 @@ import akka.http.scaladsl.settings.ParserSettings
 import scala.annotation.tailrec
 import akka.parboiled2.CharUtils
 import akka.util.ByteString
+import akka.http.ccompat._
 import akka.http.impl.util._
 import akka.http.scaladsl.model.{ ErrorInfo, HttpHeader, MediaTypes, StatusCode, StatusCodes }
 import akka.http.scaladsl.model.headers.{ EmptyHeader, RawHeader }
 import akka.http.impl.model.parser.HeaderParser
 import akka.http.impl.model.parser.CharacterClasses._
-import scala.collection.compat._
 
 /**
  * INTERNAL API

@@ -137,8 +137,9 @@ final case class Accept(mediaRanges: ccompat.VASeq[MediaRange]) extends jm.heade
 
   /** Java API */
   def getMediaRanges: Iterable[jm.MediaRange] = {
+    import JavaMapping._
     import akka.http.ccompat._
-    mediaRanges.asJava
+    mediaRanges.xSeq.asJava
   }
 }
 
@@ -171,8 +172,9 @@ final case class `Accept-Encoding`(encodings: ccompat.VASeq[HttpEncodingRange]) 
 
   /** Java API */
   def getEncodings: Iterable[jm.headers.HttpEncodingRange] = {
+    import JavaMapping._
     import akka.http.ccompat._
-    encodings.asJava
+    encodings.xSeq.asJava
   }
 }
 
@@ -205,8 +207,9 @@ final case class `Accept-Ranges`(rangeUnits: ccompat.VASeq[RangeUnit]) extends j
 
   /** Java API */
   def getRangeUnits: Iterable[jm.headers.RangeUnit] = {
+    import JavaMapping._
     import akka.http.ccompat._
-    rangeUnits.asJava
+    rangeUnits.xSeq.asJava
   }
 }
 
@@ -231,7 +234,7 @@ final case class `Access-Control-Allow-Headers`(headers: ccompat.VASeq[String])
 
   /** Java API */
   def getHeaders: Iterable[String] = {
-    import akka.http.ccompat._
+    import scala.collection.JavaConverters._
     headers.asJava
   }
 }
@@ -249,8 +252,9 @@ final case class `Access-Control-Allow-Methods`(methods: ccompat.VASeq[HttpMetho
 
   /** Java API */
   def getMethods: Iterable[jm.HttpMethod] = {
+    import JavaMapping._
     import akka.http.ccompat._
-    methods.asJava
+    methods.xSeq.asJava
   }
 }
 
@@ -288,7 +292,7 @@ final case class `Access-Control-Expose-Headers`(headers: ccompat.VASeq[String])
 
   /** Java API */
   def getHeaders: Iterable[String] = {
-    import akka.http.ccompat._
+    import scala.collection.JavaConverters._
     headers.asJava
   }
 }
@@ -314,7 +318,7 @@ final case class `Access-Control-Request-Headers`(headers: ccompat.VASeq[String]
 
   /** Java API */
   def getHeaders: Iterable[String] = {
-    import akka.http.ccompat._
+    import scala.collection.JavaConverters._
     headers.asJava
   }
 }
@@ -346,8 +350,9 @@ final case class Allow(methods: ccompat.VASeq[HttpMethod]) extends jm.headers.Al
 
   /** Java API */
   def getMethods: Iterable[jm.HttpMethod] = {
+    import JavaMapping._
     import akka.http.ccompat._
-    methods.asJava
+    methods.xSeq.asJava
   }
 }
 
@@ -484,8 +489,9 @@ final case class Cookie(cookies: ccompat.VASeq[HttpCookiePair]) extends jm.heade
 
   /** Java API */
   def getCookies: Iterable[jm.headers.HttpCookiePair] = {
+    import JavaMapping._
     import akka.http.ccompat._
-    cookies.asJava
+    cookies.xSeq.asJava
   }
 }
 
@@ -630,8 +636,9 @@ final case class Link(values: ccompat.VASeq[LinkValue]) extends jm.headers.Link 
 
   /** Java API */
   def getValues: Iterable[jm.headers.LinkValue] = {
+    import JavaMapping._
     import akka.http.ccompat._
-    values.asJava
+    values.xSeq.asJava
   }
 }
 
@@ -655,8 +662,9 @@ final case class Origin(origins: ccompat.VASeq[HttpOrigin]) extends jm.headers.O
 
   /** Java API */
   def getOrigins: Iterable[jm.headers.HttpOrigin] = {
+    import JavaMapping._
     import akka.http.ccompat._
-    origins.asJava
+    origins.xSeq.asJava
   }
 }
 

@@ -11,12 +11,12 @@ import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import akka.util.ByteString
 import akka.actor.ActorSystem
+import akka.http.ccompat._
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.testkit._
 import headers._
-import scala.collection.compat._
 
 /**
  * Integration test for external HTTP libraries that are built on top of

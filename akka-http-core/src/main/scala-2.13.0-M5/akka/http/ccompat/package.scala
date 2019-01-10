@@ -19,8 +19,9 @@ package object ccompat {
    */
   type VASeq[+A] = scala.collection.immutable.Iterable[A]
   implicit class ConvertableVASeq[A](val seq: VASeq[A]) extends AnyVal {
-    def asJava[JA](implicit mapping: JavaMapping[JA, A]): java.lang.Iterable[JA] =
-      scala.collection.JavaConverters.asJavaCollection(seq.map(mapping.toJava(_)))
+    // This will almost always be 'asSeq', since the only reason 'VASeq' is 'Iterable'
+    // and not 'Seq' is to avoid ambiguity. Still seems strange to call this 'asSeq'
+    // when the compiler cannot guarantee it is not 'toSeq'...
     def xSeq: scala.collection.immutable.Seq[A] = seq match {
       case s: Seq[A] ⇒ s
       case _         ⇒ seq.toSeq

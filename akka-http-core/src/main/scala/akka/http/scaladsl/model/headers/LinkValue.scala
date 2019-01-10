@@ -23,7 +23,7 @@ final case class LinkValue(uri: Uri, params: ccompat.VASeq[LinkParam]) extends j
   def getUri: jm.Uri = uri.asJava
   def getParams: java.lang.Iterable[jm.headers.LinkParam] = {
     import akka.http.ccompat._
-    params.asJava
+    params.xSeq.asJava
   }
 }
 

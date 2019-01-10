@@ -4,12 +4,28 @@
 
 package akka.http
 
-import scala.collection.mutable
+import scala.collection.generic.{ CanBuildFrom, GenericCompanion }
+import scala.collection.{ GenTraversable, mutable }
+import scala.{ collection ⇒ c }
 
 /**
  * INTERNAL API
+ *
+ * Partly based on https://github.com/scala/scala-collection-compat/blob/master/compat/src/main/scala-2.11_2.12/scala/collection/compat/PackageShared.scala
+ * but reproduced here so we don't need to add a dependency on this library. It contains much more than we need right now, and is
+ * not promising binary compatibility yet at the time of writing.
  */
 package object ccompat {
+  import CompatImpl._
+
+  implicit def genericCompanionToCBF[A, CC[X] <: GenTraversable[X]](
+    fact: GenericCompanion[CC]): CanBuildFrom[Any, A, CC[A]] =
+    simpleCBF(fact.newBuilder[A])
+
+  // This really belongs into scala.collection but there's already a package object
+  // in scala-library so we can't add to it
+  type IterableOnce[+X] = c.TraversableOnce[X]
+  val IterableOnce = c.TraversableOnce
 
   /**
    * On scala 2.12, we often provide the same method both in 'immutable.Seq' and 'varargs' variation.
