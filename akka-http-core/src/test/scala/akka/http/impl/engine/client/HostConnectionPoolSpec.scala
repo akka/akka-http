@@ -395,52 +395,55 @@ class HostConnectionPoolSpec extends AkkaSpec(
       "provide access to basic metrics as the materialized value" in pending
       "ignore the pipelining setting (for now)" in pending
       "work correctly in the presence of `Connection: close` headers" in pending
-      "if connecting attempt fails, backup the next connection attempts" in new SetupWithServerProbes(
-        _.withBaseConnectionBackoff(100.millis)
-          .withMaxConnectionBackoff(2000.millis)
-          .withMinConnections(1)
-          .withMaxConnections(2)
-      ) {
+      "if connecting attempt fails, backup the next connection attempts" in {
         @volatile var shouldFail = true
         val connectionCounter = new AtomicInteger()
-        override def onNewConnection(requestPublisher: Publisher[HttpRequest], responseSubscriber: Subscriber[HttpResponse]): Future[Http.OutgoingConnection] = {
-          connectionCounter.incrementAndGet()
-          if (shouldFail)
-            Future.failed(new RuntimeException("Server out of coffee"))
-          else
-            super.onNewConnection(requestPublisher, responseSubscriber)
+
+        new SetupWithServerProbes(
+          _.withBaseConnectionBackoff(100.millis)
+            .withMaxConnectionBackoff(2000.millis)
+            .withMinConnections(1)
+            .withMaxConnections(2)
+        ) {
+          override def onNewConnection(requestPublisher: Publisher[HttpRequest], responseSubscriber: Subscriber[HttpResponse]): Future[Http.OutgoingConnection] = {
+            connectionCounter.incrementAndGet()
+            if (shouldFail)
+              Future.failed(new RuntimeException("Server out of coffee"))
+            else
+              super.onNewConnection(requestPublisher, responseSubscriber)
+          }
+
+          eventually(Timeout(500.millis))(
+            connectionCounter.get() should be > 0
+          )
+          val previousCounter = connectionCounter.get()
+
+          log.debug("Pushing 2 requests")
+          pushRequest()
+          pushRequest()
+
+          log.debug("Sleeping for 1000 millis")
+          Thread.sleep(1000)
+          // 1000 ms, should contain these backoff intervals 100 + 200 + 400  = 700ms ~ 3 requests per connection = 6 connections have been made
+          val newCounter = connectionCounter.get()
+          newCounter should be < (previousCounter + 6)
+          newCounter should be >= (previousCounter + 2) // should have managed to do at least 2 extra connection attempts in 1000ms > 200ms + 400ms
+
+          // now heal
+          shouldFail = false
+          log.debug("Healing the connection")
+
+          // expect that both connections come up after a while
+          val conn1 = expectNextConnection()
+          val conn2 = expectNextConnection()
+
+          conn1.expectRequest()
+          conn2.expectRequest()
+          conn1.pushResponse()
+          conn2.pushResponse()
+          expectResponse()
+          expectResponse()
         }
-
-        eventually(Timeout(500.millis))(
-          connectionCounter.get() should be > 0
-        )
-        val previousCounter = connectionCounter.get()
-
-        log.debug("Pushing 2 requests")
-        pushRequest()
-        pushRequest()
-
-        log.debug("Sleeping for 1000 millis")
-        Thread.sleep(1000)
-        // 1000 ms, should contain these backoff intervals 100 + 200 + 400  = 700ms ~ 3 requests per connection = 6 connections have been made
-        val newCounter = connectionCounter.get()
-        newCounter should be < (previousCounter + 6)
-        newCounter should be >= (previousCounter + 2) // should have managed to do at least 2 extra connection attempts in 1000ms > 200ms + 400ms
-
-        // now heal
-        shouldFail = false
-        log.debug("Healing the connection")
-
-        // expect that both connections come up after a while
-        val conn1 = expectNextConnection()
-        val conn2 = expectNextConnection()
-
-        conn1.expectRequest()
-        conn2.expectRequest()
-        conn1.pushResponse()
-        conn2.pushResponse()
-        expectResponse()
-        expectResponse()
       }
 
       def pendingIn(targetImpl: PoolImplementation = null, targetTrans: ClientServerImplementation = null): Unit =
