@@ -96,7 +96,7 @@ object ValidatePullRequest extends AutoPlugin {
   // running validation
   val validatePullRequest = taskKey[Unit]("Validate pull request and report aggregated results")
   val executePullRequestValidation = taskKey[Seq[KeyValue[Result[Any]]]]("Run pull request per project")
-  val additionalTasks = taskKey[Seq[TaskKey[_]]]("Additional tasks for pull request validation")
+  val additionalTasks = settingKey[Seq[TaskKey[_]]]("Additional tasks for pull request validation")
 
   // The set of (top-level) files or directories to watch for build changes.
   val BuildFilesAndDirectories = Set("project", "build.sbt")
