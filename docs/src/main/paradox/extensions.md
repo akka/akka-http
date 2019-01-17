@@ -4,7 +4,7 @@ There are several third party libraries that expand the functionality of Akka Ht
 
 Among those, we want to highlight the following:
 
-- [Akka-http-json](https://github.com/hseeberger/akka-http-json): Integrate some of the best JSON libs in Scala with Akka HTTP
+- [akka-http-json](https://github.com/hseeberger/akka-http-json): Integrate some of the best JSON libs in Scala with Akka HTTP
 - [Swakka](https://github.com/jtownson/swakka): A Scala library for creating Swagger definitions in a type-safe fashion wth Akka-Http. Generates Open API (a.k.a. Swagger) from code
 - [Guardrail](https://github.com/twilio/guardrail): Guardrail is a code generation tool, capable of reading from OpenAPI/Swagger specification files and generating Akka HTTP code
 - [akka-http-cors](https://github.com/lomigmegard/akka-http-cors): Akka Http directives implementing the CORS specifications defined by W3C
