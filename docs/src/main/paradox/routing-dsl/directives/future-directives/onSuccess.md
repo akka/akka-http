@@ -6,7 +6,7 @@
 
 ```scala
 def onSuccess(unitFuture: Future[Unit]): Directive0
-def onSuccess(simpleTypeFuture: Future[T_0]): Directive1[T_0]
+def onSuccess(simpleTypeFuture: Future[T]): Directive1[T]
 def onSuccess(hlistFuture: Future[T_0 :: ... T_i ... :: HNil]): Directive[T_0 :: ... T_i ... :: HNil]
 ```
 
