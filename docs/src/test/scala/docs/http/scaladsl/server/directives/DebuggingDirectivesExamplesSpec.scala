@@ -44,7 +44,7 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
   }
   "logRequestResult" in {
     //#logRequestResult
-    // different possibilities of using logRequestResponse
+    // different possibilities of using logRequestResult
 
     // The first alternatives use an implicitly available LoggingContext for logging
     // marks with "get-user", log with debug level, HttpRequest.toString, HttpResponse.toString
