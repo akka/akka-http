@@ -54,7 +54,7 @@ object ExceptionHandler {
       case e: EntityStreamSizeException ⇒ ctx ⇒ {
         ctx.log.error(e, ErrorMessageTemplate, e, RequestEntityTooLarge)
         ctx.request.discardEntityBytes(ctx.materializer)
-        ctx.complete((RequestEntityTooLarge, e.toString.format(settings.verboseErrorMessages)))
+        ctx.complete((RequestEntityTooLarge, e.getMessage))
       }
       case e: ExceptionWithErrorInfo ⇒ ctx ⇒ {
         ctx.log.error(e, ErrorMessageTemplate, e.info.formatPretty, InternalServerError)
