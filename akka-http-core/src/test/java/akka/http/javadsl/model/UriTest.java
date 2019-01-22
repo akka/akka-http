@@ -7,7 +7,7 @@ package akka.http.javadsl.model;
 import akka.http.scaladsl.model.IllegalUriException;
 import akka.japi.Pair;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
