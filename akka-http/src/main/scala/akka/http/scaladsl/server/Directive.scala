@@ -143,7 +143,12 @@ object Directive {
   implicit def addByNameNullaryApply(directive: Directive0): (⇒ Route) ⇒ Route =
     r ⇒ directive.tapply(_ ⇒ r)
 
-  implicit class SingleValueModifiers[T](underlying: Directive1[T]) extends AnyRef {
+  /**
+   * "Standard" transformers for [[Directive1]].
+   * Easier to use than `tmap`, `tflatMap`, etc. defined on [[Directive]] itself,
+   * because they provide transparent conversion from [[Tuple1]].
+   */
+  implicit class SingleValueTransformers[T](val underlying: Directive1[T]) extends AnyVal {
     def map[R](f: T ⇒ R)(implicit tupler: Tupler[R]): Directive[tupler.Out] =
       underlying.tmap { case Tuple1(value) ⇒ f(value) }
 
@@ -158,6 +163,23 @@ object Directive {
 
     def collect[R](pf: PartialFunction[T, R], rejections: Rejection*)(implicit tupler: Tupler[R]): Directive[tupler.Out] =
       underlying.tcollect({ case Tuple1(value) if pf.isDefinedAt(value) ⇒ pf(value) }, rejections: _*)
+  }
+
+  // previous, non-value class implementation kept around for binary compatibility
+  // TODO: remove with next binary incompatible release bump
+  private[server] def SingleValueModifiers[T](underlying: Directive1[T]): SingleValueModifiers[T] =
+    new SingleValueModifiers(underlying)
+  private[server] class SingleValueModifiers[T](underlying: Directive1[T]) {
+    def map[R](f: T ⇒ R)(implicit tupler: Tupler[R]): Directive[tupler.Out] =
+      underlying.map(f)
+    def flatMap[R: Tuple](f: T ⇒ Directive[R]): Directive[R] =
+      underlying.flatMap(f)
+    def require(predicate: T ⇒ Boolean, rejections: Rejection*): Directive0 =
+      underlying.require(predicate, rejections: _*)
+    def filter(predicate: T ⇒ Boolean, rejections: Rejection*): Directive1[T] =
+      underlying.filter(predicate, rejections: _*)
+    def collect[R](pf: PartialFunction[T, R], rejections: Rejection*)(implicit tupler: Tupler[R]): Directive[tupler.Out] =
+      underlying.collect(pf, rejections: _*)
   }
 }
 
