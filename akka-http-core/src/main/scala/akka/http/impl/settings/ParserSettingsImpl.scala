@@ -58,7 +58,7 @@ private[akka] final case class ParserSettingsImpl(
   override def productPrefix = "ParserSettings"
 }
 
-object ParserSettingsImpl extends SettingsCompanion[ParserSettingsImpl]("akka.http.parsing") {
+object ParserSettingsImpl extends SettingsCompanionImpl[ParserSettingsImpl]("akka.http.parsing") {
 
   private[this] val noCustomMethods: String ⇒ Option[HttpMethod] = ConstantFun.scalaAnyToNone
   private[this] val noCustomStatusCodes: Int ⇒ Option[StatusCode] = ConstantFun.scalaAnyToNone

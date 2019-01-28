@@ -6,7 +6,7 @@ package akka.http.caching.scaladsl
 
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.http.caching.javadsl
-import akka.http.impl.util.SettingsCompanion
+import akka.http.impl.util.SettingsCompanionImpl
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.Duration
@@ -62,7 +62,7 @@ private[http] final case class LfuCacheSettingsImpl(
   override def productPrefix = "LfuCacheSettings"
 }
 
-object CachingSettings extends SettingsCompanion[CachingSettings]("akka.http.caching") {
+object CachingSettings extends SettingsCompanionImpl[CachingSettings]("akka.http.caching") {
   def fromSubConfig(root: Config, c: Config): CachingSettingsImpl = {
     val lfuConfig = c.getConfig("lfu-cache")
     CachingSettingsImpl(

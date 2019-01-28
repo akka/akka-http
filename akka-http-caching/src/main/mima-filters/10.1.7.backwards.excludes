@@ -1,0 +1,2 @@
+# Scala 2.13.0-M5
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.caching.scaladsl.CachingSettings$")

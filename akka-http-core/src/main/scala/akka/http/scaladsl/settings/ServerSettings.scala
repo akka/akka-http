@@ -8,8 +8,8 @@ import java.util.Random
 import java.util.function.Supplier
 
 import akka.annotation.DoNotInherit
-import akka.http.impl.util.{ SettingsCompanion ⇒ _, _ }
 import akka.http.impl.settings.ServerSettingsImpl
+import akka.http.impl.util._
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.{ settings ⇒ js }
 import akka.http.scaladsl.model.HttpResponse

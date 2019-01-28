@@ -5,7 +5,7 @@
 package akka.http.impl.settings
 
 import akka.annotation.InternalApi
-import akka.http.impl.util.SettingsCompanion
+import akka.http.impl.util.SettingsCompanionImpl
 import com.typesafe.config.Config
 
 /** INTERNAL API */
@@ -20,7 +20,7 @@ private[http] final case class HttpsProxySettingsImpl(
   override def productPrefix = "HttpsProxySettings"
 }
 
-object HttpsProxySettingsImpl extends SettingsCompanion[HttpsProxySettingsImpl]("akka.http.client.proxy.https") {
+object HttpsProxySettingsImpl extends SettingsCompanionImpl[HttpsProxySettingsImpl]("akka.http.client.proxy.https") {
   override def fromSubConfig(root: Config, c: Config): HttpsProxySettingsImpl = {
     new HttpsProxySettingsImpl(
       c.getString("host"),
