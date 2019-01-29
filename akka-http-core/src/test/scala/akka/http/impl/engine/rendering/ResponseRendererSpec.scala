@@ -19,6 +19,7 @@ import akka.util.ByteString
 import akka.stream.scaladsl._
 import akka.stream.ActorMaterializer
 import HttpEntity._
+import akka.http.impl.engine.rendering.ResponseRenderingContext.CloseRequested
 import akka.testkit._
 
 class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
@@ -572,6 +573,10 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       //#connection-header-table
       // format: ON
 
+      def closing(requested: Boolean): CloseRequested =
+        if (requested) CloseRequested.RequestAskedForClosing
+        else CloseRequested.Unspecified
+
       forAll(table)((reqProto, headReq, reqCH, resProto, resCH, resCD, renCH, close) ⇒
         ResponseRenderingContext(
           response = HttpResponse(200, headers = resCH.toList,
@@ -581,7 +586,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
             else HttpEntity("ENTITY"), protocol = resProto),
           requestMethod = if (headReq) HttpMethods.HEAD else HttpMethods.GET,
           requestProtocol = reqProto,
-          closeRequested = HttpMessage.connectionCloseExpected(reqProto, reqCH)) should renderTo(
+          closeRequested = closing(HttpMessage.connectionCloseExpected(reqProto, reqCH))) should renderTo(
             s"""${resProto.value} 200 OK
                  |Server: akka-http/1.0.0
                  |Date: Thu, 25 Aug 2011 09:10:29 GMT

@@ -10,7 +10,6 @@ import akka.http.scaladsl.model.ws.Message
 import akka.stream.{ Attributes, FlowShape, Graph, Inlet, Outlet }
 
 import scala.collection.immutable
-
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
 import akka.util.{ ByteString, OptionVal }
@@ -21,6 +20,7 @@ import akka.http.impl.util._
 import RenderSupport._
 import HttpProtocols._
 import akka.annotation.InternalApi
+import ResponseRenderingContext.CloseRequested
 import headers._
 
 /**
@@ -124,6 +124,7 @@ private[http] class HttpResponseRendererFactory(
             protocol match {
               case `HTTP/1.1` ⇒ if (status eq StatusCodes.OK) r ~~ DefaultStatusLineBytes else r ~~ StatusLineStartBytes ~~ status ~~ CrLf
               case `HTTP/1.0` ⇒ r ~~ protocol ~~ ' ' ~~ status ~~ CrLf
+              case other      ⇒ throw new IllegalStateException(s"Unexpected protocol '$other'")
             }
 
           def render(h: HttpHeader) = r ~~ h ~~ CrLf
@@ -186,19 +187,22 @@ private[http] class HttpResponseRendererFactory(
             closeIf {
               // if we are prohibited to keep-alive by the spec
               alwaysClose ||
-                // if the client wants to close and we don't override
-                (ctx.closeRequested && ((connHeader eq null) || !connHeader.hasKeepAlive)) ||
+                // if the controller asked for closing (error, early response, etc. overrides anything
+                ctx.closeRequested.wasForced ||
+                // if the client wants to close and the response doesn't override
+                (ctx.closeRequested.shouldClose && ((connHeader eq null) || !connHeader.hasKeepAlive)) ||
                 // if the application wants to close explicitly
                 (protocol match {
                   case `HTTP/1.1` ⇒ (connHeader ne null) && connHeader.hasClose
                   case `HTTP/1.0` ⇒ if (connHeader eq null) ctx.requestProtocol == `HTTP/1.1` else !connHeader.hasKeepAlive
+                  case other      ⇒ throw new IllegalStateException(s"Unexpected protocol '$other'")
                 })
             }
 
             // Do we render an explicit Connection header?
             val renderConnectionHeader =
               protocol == `HTTP/1.0` && !close || protocol == `HTTP/1.1` && close || // if we don't follow the default behavior
-                close != ctx.closeRequested || // if we override the client's closing request
+                close != ctx.closeRequested.shouldClose || // if we override the client's closing request
                 protocol != ctx.requestProtocol // if we reply with a mismatching protocol (let's be very explicit in this case)
 
             if (renderConnectionHeader)
@@ -285,9 +289,34 @@ private[http] class HttpResponseRendererFactory(
 @InternalApi
 private[http] final case class ResponseRenderingContext(
   response:        HttpResponse,
-  requestMethod:   HttpMethod   = HttpMethods.GET,
-  requestProtocol: HttpProtocol = HttpProtocols.`HTTP/1.1`,
-  closeRequested:  Boolean      = false)
+  requestMethod:   HttpMethod     = HttpMethods.GET,
+  requestProtocol: HttpProtocol   = HttpProtocols.`HTTP/1.1`,
+  closeRequested:  CloseRequested = CloseRequested.Unspecified)
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[http] object ResponseRenderingContext {
+  sealed trait CloseRequested {
+    def shouldClose: Boolean
+    def wasForced: Boolean
+  }
+  object CloseRequested {
+    case object Unspecified extends CloseRequested {
+      override def shouldClose: Boolean = false
+      override def wasForced: Boolean = false
+    }
+    case object RequestAskedForClosing extends CloseRequested {
+      override def shouldClose: Boolean = true
+      override def wasForced: Boolean = false
+    }
+    case object ForceClose extends CloseRequested {
+      override def shouldClose: Boolean = true
+      override def wasForced: Boolean = true
+    }
+  }
+}
 
 /** INTERNAL API */
 @InternalApi
