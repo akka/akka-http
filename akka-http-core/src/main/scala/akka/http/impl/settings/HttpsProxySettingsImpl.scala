@@ -21,10 +21,10 @@ private[http] final case class HttpsProxySettingsImpl(
 }
 
 object HttpsProxySettingsImpl extends SettingsCompanion[HttpsProxySettingsImpl]("akka.http.client.proxy.https") {
-  override def fromSubConfig(root: Config, c: Config) = {
+  override def fromSubConfig(root: Config, c: Config): HttpsProxySettingsImpl = {
     new HttpsProxySettingsImpl(
-      c getString "host",
-      c getInt "port"
+      c.getString("host"),
+      c.getInt("port")
     )
   }
 }

@@ -63,14 +63,14 @@ private[http] final case class LfuCacheSettingsImpl(
 }
 
 object CachingSettings extends SettingsCompanion[CachingSettings]("akka.http.caching") {
-  def fromSubConfig(root: Config, c: Config) = {
+  def fromSubConfig(root: Config, c: Config): CachingSettingsImpl = {
     val lfuConfig = c.getConfig("lfu-cache")
     CachingSettingsImpl(
       LfuCacheSettingsImpl(
-        lfuConfig getInt "max-capacity",
-        lfuConfig getInt "initial-capacity",
-        lfuConfig getPotentiallyInfiniteDuration "time-to-live",
-        lfuConfig getPotentiallyInfiniteDuration "time-to-idle"
+        lfuConfig.getInt("max-capacity"),
+        lfuConfig.getInt("initial-capacity"),
+        lfuConfig.getPotentiallyInfiniteDuration("time-to-live"),
+        lfuConfig.getPotentiallyInfiniteDuration("time-to-idle")
       )
     )
   }
