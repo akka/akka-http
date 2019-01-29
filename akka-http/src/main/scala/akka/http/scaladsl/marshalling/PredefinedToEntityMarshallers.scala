@@ -48,7 +48,7 @@ trait PredefinedToEntityMarshallers extends MultipartMarshallers {
     Marshaller.withFixedContentType(mediaType) { s ⇒ HttpEntity(mediaType, s) }
 
   implicit val FormDataMarshaller: ToEntityMarshaller[FormData] =
-    Marshaller.withOpenCharset(`application/x-www-form-urlencoded`) { _ toEntity _ }
+    Marshaller.withFixedContentType(`application/x-www-form-urlencoded`) { _ toEntity }
 
   implicit val MessageEntityMarshaller: ToEntityMarshaller[MessageEntity] =
     Marshaller strict { value ⇒ Marshalling.WithFixedContentType(value.contentType, () ⇒ value) }

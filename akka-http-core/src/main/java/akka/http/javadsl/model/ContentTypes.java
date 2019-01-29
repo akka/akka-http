@@ -30,6 +30,8 @@ public final class ContentTypes {
           akka.http.scaladsl.model.ContentTypes.text$divcsv$u0028UTF$minus8$u0029();
 
   public static final ContentType.Binary APPLICATION_GRPC_PROTO = MediaTypes.APPLICATION_GRPC_PROTO.toContentType();
+  public static final ContentType.WithFixedCharset APPLICATION_X_WWW_FORM_URLENCODED =
+      akka.http.scaladsl.model.ContentTypes.application$divx$minuswww$minusform$minusurlencoded();
 
   public static final ContentType.Binary NO_CONTENT_TYPE =
           akka.http.scaladsl.model.ContentTypes.NoContentType();

@@ -278,6 +278,8 @@ object HttpEntity {
   implicit def apply(data: ByteString): HttpEntity.Strict = apply(ContentTypes.`application/octet-stream`, data)
   def apply(contentType: ContentType.NonBinary, string: String): HttpEntity.Strict =
     if (string.isEmpty) empty(contentType) else apply(contentType, ByteString(string.getBytes(contentType.charset.nioCharset)))
+  def apply(contentType: ContentType.WithFixedCharset, string: String): HttpEntity.Strict =
+    if (string.isEmpty) empty(contentType) else apply(contentType, ByteString(string.getBytes(contentType.charset.nioCharset)))
   def apply(contentType: ContentType, bytes: Array[Byte]): HttpEntity.Strict =
     if (bytes.length == 0) empty(contentType) else apply(contentType, ByteString(bytes))
   def apply(contentType: ContentType, data: ByteString): HttpEntity.Strict =
