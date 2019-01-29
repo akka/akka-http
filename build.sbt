@@ -87,7 +87,19 @@ lazy val root = Project(
     docs
   )
 
+val commonSettings = Seq(
+  scalacOptions ++= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, n)) if n >= 13 =>
+        Seq("-Ymacro-annotations")
+      case _                       =>
+        Seq.empty
+    }
+  },
+)
+
 lazy val parsing = project("akka-parsing")
+  .settings(commonSettings)
   .settings(AutomaticModuleName.settings("akka.http.parsing"))
   .addAkkaModuleDependency("akka-actor", "provided")
   .settings(Dependencies.parsing)
@@ -109,6 +121,7 @@ lazy val httpCore = project("akka-http-core")
   .enablePlugins(BootstrapGenjavadoc)
 
 lazy val http = project("akka-http")
+  .settings(commonSettings)
   .settings(AutomaticModuleName.settings("akka.http"))
   .dependsOn(httpCore)
   .addAkkaModuleDependency("akka-stream", "provided")

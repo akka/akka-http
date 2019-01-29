@@ -32,7 +32,7 @@ class RespondWithDirectivesSpec extends RoutingSpec {
   }
   "respondWithDefaultHeader" should {
     def route(extraHeaders: HttpHeader*) = respondWithDefaultHeader(customHeader) {
-      respondWithHeaders(extraHeaders: _*) {
+      respondWithHeaders(extraHeaders.toList) {
         completeOk
       }
     }
@@ -46,7 +46,7 @@ class RespondWithDirectivesSpec extends RoutingSpec {
   }
   "respondWithDefaultHeaders" should {
     def route(extraHeaders: HttpHeader*) = respondWithDefaultHeaders(customHeader, customHeader2) {
-      respondWithHeaders(extraHeaders: _*) {
+      respondWithHeaders(extraHeaders.toList) {
         completeOk
       }
     }

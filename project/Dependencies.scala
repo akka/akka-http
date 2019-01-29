@@ -32,6 +32,9 @@ object Dependencies {
   )
   import Versions._
 
+  object Provided {
+    val scalaCompiler = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-compiler" % _) % "provided" // Scala license
+  }
 
   object Compile {
     val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.1.1" // Scala License
@@ -51,7 +54,7 @@ object Dependencies {
     val alpnApi     = "org.eclipse.jetty.alpn"        % "alpn-api"                     % "1.1.3.v20160715" // ApacheV2
 
     val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.6.2"
-    val jsr305      = "com.google.code.findbugs"      % "jsr305"                       % "3.0.2"             % Provided // ApacheV2
+    val jsr305      = "com.google.code.findbugs"      % "jsr305"                       % "3.0.2"             % "provided" // ApacheV2
 
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
@@ -82,17 +85,29 @@ object Dependencies {
     DependencyHelpers.versionDependentDeps(
       Dependencies.Compile.scalaReflect % "provided"
     ),
-    // Does not seem to be needed?
-    // addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full))
+    l ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, n)) if n < 13 => Seq(compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full))
+      case _                       => Seq.empty
+    })
   )
 
-  lazy val httpCore = l ++= Seq(
+  lazy val httpCore = Seq(
+    DependencyHelpers.versionDependentDeps(
+      Provided.scalaCompiler
+    ),
+    l ++= Seq(
     Test.sprayJson, // for WS Autobahn test metadata
     Test.scalatest.value, Test.scalacheck.value, Test.junit)
+  )
 
   lazy val httpCaching = l ++= Seq(caffeine, jsr305, Test.scalatest.value)
 
-  lazy val http = l ++= Seq()
+  lazy val http = Seq(
+    l ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, n)) if n < 13 => Seq(compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full))
+      case _                       => Seq.empty
+    })
+  )
 
   lazy val http2 = l ++= Seq(hpack, alpnApi)
 
