@@ -37,7 +37,6 @@ public abstract class Util {
     }
     public static scala.collection.immutable.Map<String, String> convertMapToScala(Map<String, String> map) {
         return MapHelpers.convertMapToScala(map);
-        //emptyMap.<String>concat(scala.collection.JavaConverters.mapAsScalaMapConverter(map).asScala());
     }
     @SuppressWarnings("unchecked") // contains an upcast
     public static <T, U extends T> scala.Option<U> convertOptionalToScala(Optional<T> o) {
