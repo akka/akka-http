@@ -33,6 +33,8 @@ object Dependencies {
   import Versions._
 
   object Provided {
+    val jsr305 = "com.google.code.findbugs" % "jsr305" % "3.0.2" % "provided" // ApacheV2
+
     val scalaCompiler = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-compiler" % _) % "provided" // Scala license
   }
 
@@ -54,7 +56,6 @@ object Dependencies {
     val alpnApi     = "org.eclipse.jetty.alpn"        % "alpn-api"                     % "1.1.3.v20160715" // ApacheV2
 
     val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.6.2"
-    val jsr305      = "com.google.code.findbugs"      % "jsr305"                       % "3.0.2"             % "provided" // ApacheV2
 
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
@@ -105,7 +106,11 @@ object Dependencies {
     })
   )
 
-  lazy val httpCaching = l ++= Seq(caffeine, jsr305, Test.scalatest.value)
+  lazy val httpCaching = l ++= Seq(
+    caffeine,
+    Provided.jsr305,
+    Test.scalatest.value
+  )
 
   lazy val http = Seq(
     l ++= (CrossVersion.partialVersion(scalaVersion.value) match {
