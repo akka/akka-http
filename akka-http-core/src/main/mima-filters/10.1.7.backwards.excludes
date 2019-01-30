@@ -1,7 +1,3 @@
-# This method only existed in the 10.1.7 2.13.0-M5 milestone release, not in non-milestone released versions
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.ccompat.package#ConvertableVASeq.asJava$extension")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.ccompat.package#ConvertableVASeq.asJava")
-
 # 2.13.0-M5 support:
 ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.SettingsCompanion")
 ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.SettingsCompanion$")

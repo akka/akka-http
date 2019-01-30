@@ -96,8 +96,13 @@ object Dependencies {
       Provided.scalaCompiler
     ),
     l ++= Seq(
-    Test.sprayJson, // for WS Autobahn test metadata
-    Test.scalatest.value, Test.scalacheck.value, Test.junit)
+      Test.sprayJson, // for WS Autobahn test metadata
+      Test.scalatest.value, Test.scalacheck.value, Test.junit
+    ),
+    l ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, n)) if n < 13 => Seq(compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full))
+      case _                       => Seq.empty
+    })
   )
 
   lazy val httpCaching = l ++= Seq(caffeine, jsr305, Test.scalatest.value)

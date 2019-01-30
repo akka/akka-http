@@ -59,6 +59,7 @@ trait RespondWithDirectives {
    *
    * @group response
    */
+  @pre213
   def respondWithDefaultHeaders(responseHeaders: HttpHeader*): Directive0 =
     respondWithDefaultHeaders(responseHeaders.toList)
 
@@ -68,8 +69,19 @@ trait RespondWithDirectives {
    *
    * @group response
    */
-  def respondWithDefaultHeaders(responseHeaders: VASeq[HttpHeader]): Directive0 =
+  def respondWithDefaultHeaders(responseHeaders: immutable.Seq[HttpHeader]): Directive0 =
     mapResponse(_.withDefaultHeaders(responseHeaders))
+
+  /**
+   * Adds the given response headers to all HTTP responses of its inner Route,
+   * if a header already exists it is not added again.
+   *
+   * @group response
+   */
+  @since213
+  def respondWithDefaultHeaders(firstHeader: HttpHeader, otherHeaders: HttpHeader*): Directive0 =
+    respondWithDefaultHeaders(firstHeader +: otherHeaders.toList)
+
 }
 
 object RespondWithDirectives extends RespondWithDirectives

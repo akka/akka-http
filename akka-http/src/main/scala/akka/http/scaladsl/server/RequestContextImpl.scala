@@ -100,7 +100,7 @@ private[http] class RequestContextImpl(
         case `accept` ⇒
           val acceptAll =
             if (ranges.exists(_.isWildcard)) ranges.map(r ⇒ if (r.isWildcard) MediaRanges.`*/*;q=MIN` else r)
-            else ranges.xSeq :+ MediaRanges.`*/*;q=MIN`
+            else ranges :+ MediaRanges.`*/*;q=MIN`
           accept.copy(mediaRanges = acceptAll)
         case x ⇒ x
       }))

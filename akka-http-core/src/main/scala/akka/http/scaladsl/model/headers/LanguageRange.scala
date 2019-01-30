@@ -10,7 +10,7 @@ import akka.http.impl.util._
 import akka.http.scaladsl.model.WithQValue
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.ccompat
+import akka.http.ccompat.{ pre213, since213 }
 
 sealed trait LanguageRange extends jm.headers.LanguageRange with ValueRenderable with WithQValue[LanguageRange] {
   def qValue: Float
@@ -46,10 +46,7 @@ object LanguageRange {
         language.subTags.size <= l.subTags.size &&
         (language.subTags zip l.subTags).forall(t ⇒ t._1 equalsIgnoreCase t._2)
     def primaryTag = language.primaryTag
-    def subTags = {
-      import akka.http.ccompat._
-      language.subTags.xSeq
-    }
+    def subTags = language.subTags
     def withQValue(qValue: Float) = One(language, qValue)
   }
 
@@ -57,7 +54,7 @@ object LanguageRange {
   def apply(language: Language, qValue: Float): LanguageRange = One(language, qValue)
 }
 
-final case class Language(primaryTag: String, subTags: ccompat.VASeq[String])
+final case class Language(primaryTag: String, subTags: immutable.Seq[String])
   extends jm.headers.Language with ValueRenderable with WithQValue[LanguageRange] {
   def withQValue(qValue: Float) = LanguageRange(this, qValue.toFloat)
   def render[R <: Rendering](r: R): r.type = {
@@ -67,10 +64,7 @@ final case class Language(primaryTag: String, subTags: ccompat.VASeq[String])
   }
 
   /** Java API */
-  def getSubTags: java.lang.Iterable[String] = {
-    import scala.collection.JavaConverters._
-    subTags.asJava
-  }
+  def getSubTags: java.lang.Iterable[String] = subTags.asJava
 }
 object Language {
   implicit def apply(compoundTag: String): Language =
@@ -78,5 +72,11 @@ object Language {
       val tags = compoundTag.split('-')
       new Language(tags.head, immutable.Seq(tags.tail: _*))
     } else new Language(compoundTag, immutable.Seq.empty)
-  def apply(primaryTag: String, subTags: String*): Language = new Language(primaryTag, immutable.Seq(subTags: _*))
+  @pre213
+  def apply(primaryTag: String, subTags: String*): Language =
+    new Language(primaryTag, immutable.Seq(subTags: _*))
+  @since213
+  def apply(primaryTag: String, firstSubTag: String, otherSubTags: String*): Language =
+    new Language(primaryTag, firstSubTag +: otherSubTags)
+
 }

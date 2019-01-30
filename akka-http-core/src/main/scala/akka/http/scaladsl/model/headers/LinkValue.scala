@@ -10,10 +10,10 @@ import akka.http.impl.util._
 import akka.http.scaladsl.model._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.ccompat
 import UriRendering.UriRenderer
+import akka.http.ccompat.{ pre213, since213 }
 
-final case class LinkValue(uri: Uri, params: ccompat.VASeq[LinkParam]) extends jm.headers.LinkValue with ValueRenderable {
+final case class LinkValue(uri: Uri, params: immutable.Seq[LinkParam]) extends jm.headers.LinkValue with ValueRenderable {
   def render[R <: Rendering](r: R): r.type = {
     r ~~ '<' ~~ uri ~~ '>'
     if (params.nonEmpty) r ~~ "; " ~~ params
@@ -21,14 +21,14 @@ final case class LinkValue(uri: Uri, params: ccompat.VASeq[LinkParam]) extends j
   }
 
   def getUri: jm.Uri = uri.asJava
-  def getParams: java.lang.Iterable[jm.headers.LinkParam] = {
-    import akka.http.ccompat._
-    params.xSeq.asJava
-  }
+  def getParams: java.lang.Iterable[jm.headers.LinkParam] = params.asJava
 }
 
 object LinkValue {
+  @pre213
   def apply(uri: Uri, params: LinkParam*): LinkValue = apply(uri, immutable.Seq(params: _*))
+  @since213
+  def apply(uri: Uri, firstParam: LinkParam, otherParams: LinkParam*): LinkValue = apply(uri, firstParam +: otherParams)
 }
 
 sealed abstract class LinkParam extends jm.headers.LinkParam with ToStringRenderable {
@@ -36,7 +36,7 @@ sealed abstract class LinkParam extends jm.headers.LinkParam with ToStringRender
   def value: AnyRef
 }
 object LinkParam {
-  implicit val paramsRenderer: Renderer[ccompat.VASeq[LinkParam]] = Renderer.seqRenderer(separator = "; ")
+  implicit val paramsRenderer: Renderer[immutable.Seq[LinkParam]] = Renderer.seqRenderer(separator = "; ")
 }
 
 object LinkParams {

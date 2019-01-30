@@ -10,7 +10,7 @@ import scala.annotation.{ tailrec, varargs }
 import scala.collection.immutable
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
-import akka.http.ccompat
+import akka.http.ccompat.{ pre213, since213 }
 
 sealed trait CacheDirective extends Renderable with jm.headers.CacheDirective {
   def value: String
@@ -32,17 +32,15 @@ object CacheDirective {
     CustomCacheDirective(name, content)
 
   sealed abstract class FieldNamesDirective extends Product with ValueRenderable {
-    import akka.http.ccompat._
-    def fieldNames: ccompat.VASeq[String]
+    def fieldNames: immutable.Seq[String]
     final def render[R <: Rendering](r: R): r.type =
       if (fieldNames.nonEmpty) {
         r ~~ productPrefix ~~ '=' ~~ '"'
-        val i: Iterator[String] = fieldNames.iterator
-        @tailrec def rec(first: Boolean = true): r.type =
-          if (i.hasNext) {
-            if (!first) r ~~ ','
-            r.putEscaped(i.next())
-            rec(first = false)
+        @tailrec def rec(i: Int = 0): r.type =
+          if (i < fieldNames.length) {
+            if (i > 0) r ~~ ','
+            r.putEscaped(fieldNames(i))
+            rec(i + 1)
           } else r ~~ '"'
         rec()
       } else r ~~ productPrefix
@@ -85,7 +83,12 @@ object CacheDirectives {
    * http://tools.ietf.org/html/rfc7234#section-5.2.1.4
    */
   case object `no-cache` extends SingletonValueRenderable with RequestDirective with ResponseDirective {
-    def apply(fieldNames: String*): `no-cache` = new `no-cache`(immutable.Seq(fieldNames: _*))
+    @pre213
+    def apply(fieldNames: String*): `no-cache` =
+      new `no-cache`(immutable.Seq(fieldNames: _*))
+    @since213
+    def apply(firstFieldName: String, otherFieldNames: String*): `no-cache` =
+      new `no-cache`(firstFieldName +: otherFieldNames.toList)
   }
 
   /**
@@ -118,7 +121,7 @@ object CacheDirectives {
    * For a fuller description of the use case, see
    * http://tools.ietf.org/html/rfc7234#section-5.2.2.2
    */
-  final case class `no-cache`(fieldNames: ccompat.VASeq[String]) extends FieldNamesDirective with ResponseDirective
+  final case class `no-cache`(fieldNames: immutable.Seq[String]) extends FieldNamesDirective with ResponseDirective
 
   /**
    * For a fuller description of the use case, see
@@ -133,9 +136,14 @@ object CacheDirectives {
    * For a fuller description of the use case, see
    * http://tools.ietf.org/html/rfc7234#section-5.2.2.6
    */
-  final case class `private`(fieldNames: ccompat.VASeq[String]) extends FieldNamesDirective with ResponseDirective
+  final case class `private`(fieldNames: immutable.Seq[String]) extends FieldNamesDirective with ResponseDirective
   object `private` {
+    @pre213
     def apply(fieldNames: String*): `private` = new `private`(immutable.Seq(fieldNames: _*))
+    @since213
+    def apply(): `private` = new `private`(immutable.Seq.empty)
+    @since213
+    def apply(firstFieldName: String, otherFieldNames: String*): `private` = new `private`(firstFieldName +: otherFieldNames)
   }
 
   /** Java API */

@@ -112,6 +112,7 @@ lazy val parsing = project("akka-parsing")
   .disablePlugins(MimaPlugin)
 
 lazy val httpCore = project("akka-http-core")
+  .settings(commonSettings)
   .settings(AutomaticModuleName.settings("akka.http.core"))
   .dependsOn(parsing)
   .addAkkaModuleDependency("akka-stream", "provided")
