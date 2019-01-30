@@ -9,7 +9,7 @@ object pre213macro {
     case Seq(method) ⇒
       import c.universe._
       if (scala.util.Properties.versionNumberString.startsWith("2.13"))
-        c.Expr[Nothing](Literal(Constant(())))
+        c.Expr[Nothing](EmptyTree)
       else
         method
     case _ ⇒

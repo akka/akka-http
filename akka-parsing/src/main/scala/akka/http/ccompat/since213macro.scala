@@ -11,7 +11,7 @@ object since213macro {
       if (scala.util.Properties.versionNumberString.startsWith("2.13"))
         method
       else
-        c.Expr[Nothing](Literal(Constant(())))
+        c.Expr[Nothing](EmptyTree)
     case _ ⇒
       throw new IllegalArgumentException("Please annotate single expressions")
   }
