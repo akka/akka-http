@@ -30,17 +30,15 @@ object Dependencies {
     scalaTestVersion := "3.0.6-SNAP5",
     specs2Version := "4.3.6"
   )
-  import Versions._
 
   object Provided {
     val jsr305 = "com.google.code.findbugs" % "jsr305" % "3.0.2" % "provided" // ApacheV2
 
-    val scalaCompiler = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-compiler" % _) % "provided" // Scala license
+    val scalaReflect  = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _ % "provided") // Scala License
   }
 
   object Compile {
     val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.1.1" // Scala License
-    val scalaReflect  = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _) // Scala License
 
     // For akka-http spray-json support
     val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.5"       // ApacheV2
@@ -84,26 +82,13 @@ object Dependencies {
 
   lazy val parsing = Seq(
     DependencyHelpers.versionDependentDeps(
-      Dependencies.Compile.scalaReflect % "provided"
+      Dependencies.Provided.scalaReflect
     ),
-    l ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, n)) if n < 13 => Seq(compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full))
-      case _                       => Seq.empty
-    })
   )
 
-  lazy val httpCore = Seq(
-    DependencyHelpers.versionDependentDeps(
-      Provided.scalaCompiler
-    ),
-    l ++= Seq(
-      Test.sprayJson, // for WS Autobahn test metadata
-      Test.scalatest.value, Test.scalacheck.value, Test.junit
-    ),
-    l ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, n)) if n < 13 => Seq(compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full))
-      case _                       => Seq.empty
-    })
+  lazy val httpCore = l ++= Seq(
+    Test.sprayJson, // for WS Autobahn test metadata
+    Test.scalatest.value, Test.scalacheck.value, Test.junit
   )
 
   lazy val httpCaching = l ++= Seq(
@@ -112,12 +97,7 @@ object Dependencies {
     Test.scalatest.value
   )
 
-  lazy val http = Seq(
-    l ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, n)) if n < 13 => Seq(compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full))
-      case _                       => Seq.empty
-    })
-  )
+  lazy val http = Seq()
 
   lazy val http2 = l ++= Seq(hpack, alpnApi)
 
