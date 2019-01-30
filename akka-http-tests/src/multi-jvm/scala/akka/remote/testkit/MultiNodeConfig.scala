@@ -14,7 +14,8 @@ import scala.util.control.NonFatal
 import scala.collection.immutable
 import akka.actor._
 import akka.util.Timeout
-import akka.remote.testconductor.{ RoleName, TestConductor, TestConductorExt }
+import akka.http.ccompat._
+import akka.remote.testconductor.{ TestConductor, TestConductorExt }
 import akka.testkit._
 import akka.testkit.TestEvent._
 
