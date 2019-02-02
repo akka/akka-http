@@ -44,6 +44,12 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def headers: immutable.Seq[HttpHeader]
   def entity: ResponseEntity
   def protocol: HttpProtocol
+  def stringRepresentation: Self ⇒ String
+
+  override def toString: String = stringRepresentation(self)
+
+  /** Returns a copy of this message where `f` is used to generate its string representation. **/
+  def withStringRepresentation(f: Self ⇒ String): Self
 
   /**
    * Discards the entities data bytes by running the `dataBytes` Source contained in this HttpMessage.
@@ -268,8 +274,13 @@ final class HttpRequest(
   val uri:      Uri,
   val headers:  immutable.Seq[HttpHeader],
   val entity:   RequestEntity,
-  val protocol: HttpProtocol)
-  extends jm.HttpRequest with HttpMessage {
+  val protocol: HttpProtocol,
+  val stringRepresentation: HttpRequest ⇒ String = { request ⇒
+    import request._
+    s"""HttpRequest(${_1},${_2},${_3},${_4},${_5})"""
+  }
+) extends jm.HttpRequest
+  with HttpMessage {
 
   HttpRequest.verifyUri(uri)
   require(entity.isKnownEmpty || method.isEntityAccepted, s"Requests with method '${method.value}' must have an empty entity")
@@ -326,20 +337,27 @@ final class HttpRequest(
 
   def transformEntityDataBytes[M](transformer: Graph[FlowShape[ByteString, ByteString], M]): HttpRequest = copy(entity = entity.transformDataBytes(Flow.fromGraph(transformer)))
 
+  /** Returns a copy of this message where `f` is used to generate its string representation. **/
+  override def withStringRepresentation(f: HttpRequest ⇒ String): HttpRequest = copy(stringRepresentation = f)
+
   import JavaMapping.Implicits._
+
   /** Java API */
   override def getUri: jm.Uri = uri.asJava
+
   /** Java API */
   override def withUri(uri: jm.Uri): HttpRequest = copy(uri = uri.asScala)
 
   /* Manual Case Class things, to easen bin-compat */
 
   def copy(
-    method:   HttpMethod                = method,
-    uri:      Uri                       = uri,
-    headers:  immutable.Seq[HttpHeader] = headers,
-    entity:   RequestEntity             = entity,
-    protocol: HttpProtocol              = protocol) = new HttpRequest(method, uri, headers, entity, protocol)
+    method:               HttpMethod                = method,
+    uri:                  Uri                       = uri,
+    headers:              immutable.Seq[HttpHeader] = headers,
+    entity:               RequestEntity             = entity,
+    protocol:             HttpProtocol              = protocol,
+    stringRepresentation: HttpRequest ⇒ String      = stringRepresentation
+  ) = new HttpRequest(method, uri, headers, entity, protocol, stringRepresentation)
 
   override def hashCode(): Int = {
     var result = HashCode.SEED
@@ -360,8 +378,6 @@ final class HttpRequest(
         protocol == _protocol
     case _ ⇒ false
   }
-
-  override def toString = s"""HttpRequest(${_1},${_2},${_3},${_4},${_5})"""
 
   // name-based unapply accessors
   def _1 = method
@@ -450,8 +466,13 @@ final class HttpResponse(
   val status:   StatusCode,
   val headers:  immutable.Seq[HttpHeader],
   val entity:   ResponseEntity,
-  val protocol: HttpProtocol)
-  extends jm.HttpResponse with HttpMessage {
+  val protocol: HttpProtocol,
+  val stringRepresentation: HttpResponse ⇒ String = { response ⇒
+    import response._
+    s"""HttpResponse(${_1},${_2},${_3},${_4})"""
+  }
+) extends jm.HttpResponse
+  with HttpMessage {
 
   require(entity.isKnownEmpty || status.allowsEntity, "Responses with this status code must have an empty entity")
   require(
@@ -482,13 +503,18 @@ final class HttpResponse(
 
   def transformEntityDataBytes[T](transformer: Graph[FlowShape[ByteString, ByteString], T]): HttpResponse = copy(entity = entity.transformDataBytes(Flow.fromGraph(transformer)))
 
+  /** Returns a copy of this message where `f` is used to generate its string representation. **/
+  override def withStringRepresentation(f: HttpResponse ⇒ String): HttpResponse = copy(stringRepresentation = f)
+
   /* Manual Case Class things, to ease bin-compat */
 
   def copy(
-    status:   StatusCode                = status,
-    headers:  immutable.Seq[HttpHeader] = headers,
-    entity:   ResponseEntity            = entity,
-    protocol: HttpProtocol              = protocol) = new HttpResponse(status, headers, entity, protocol)
+    status:               StatusCode                = status,
+    headers:              immutable.Seq[HttpHeader] = headers,
+    entity:               ResponseEntity            = entity,
+    protocol:             HttpProtocol              = protocol,
+    stringRepresentation: HttpResponse ⇒ String     = stringRepresentation
+  ) = new HttpResponse(status, headers, entity, protocol, stringRepresentation)
 
   override def equals(obj: scala.Any): Boolean = obj match {
     case HttpResponse(_status, _headers, _entity, _protocol) ⇒
@@ -507,8 +533,6 @@ final class HttpResponse(
     result = HashCode.hash(result, _4)
     result
   }
-
-  override def toString = s"""HttpResponse(${_1},${_2},${_3},${_4})"""
 
   // name-based unapply accessors
   def _1 = this.status

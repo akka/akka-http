@@ -183,4 +183,18 @@ class BasicDirectivesSpec extends RoutingSpec {
       } ~> check { responseAs[String] shouldEqual "1" }
     }
   }
+
+  "The `mapRequest` directive" should {
+    "change request to use a custom string representation" in {
+      Get("/abc") ~> {
+        mapRequest(_.withStringRepresentation(_ ⇒ "123")) {
+          path("abc") {
+            extractRequest { request ⇒
+              complete(request.toString)
+            }
+          }
+        }
+      } ~> check { responseAs[String] shouldEqual "123" }
+    }
+  }
 }
