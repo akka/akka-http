@@ -4,8 +4,6 @@
 
 package akka.http
 
-import akka.http.impl.util.JavaMapping
-
 /**
  * INTERNAL API
  */
@@ -21,7 +19,7 @@ package ccompat {
   import akka.http.scaladsl.model.Uri.Query
   trait QuerySeqOptimized extends scala.collection.immutable.LinearSeq[(String, String)] with scala.collection.StrictOptimizedLinearSeqOps[(String, String), scala.collection.immutable.LinearSeq, Query] {
     override protected def fromSpecific(coll: IterableOnce[(String, String)]): Query =
-      Query(coll.toSeq: _*)
+      Query(coll.iterator.to(Seq): _*)
 
     def newBuilder: Any = akka.http.scaladsl.model.Uri.Query.newBuilder
   }
