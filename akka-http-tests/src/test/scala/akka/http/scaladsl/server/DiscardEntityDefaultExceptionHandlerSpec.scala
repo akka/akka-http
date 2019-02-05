@@ -4,6 +4,7 @@
 
 package akka.http.scaladsl.server
 
+import akka.http.impl.util.WithLogCapturing
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.StatusCodes.InternalServerError
@@ -11,10 +12,11 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import org.scalatest.concurrent.Eventually._
 import org.scalatest.concurrent.ScalaFutures
+import akka.http.ccompat.imm._
 
 import scala.concurrent.Future
 
-class DiscardEntityDefaultExceptionHandlerSpec extends RoutingSpec with ScalaFutures {
+class DiscardEntityDefaultExceptionHandlerSpec extends RoutingSpec with ScalaFutures with WithLogCapturing {
 
   private val route = concat(
     path("crash") {
@@ -30,7 +32,7 @@ class DiscardEntityDefaultExceptionHandlerSpec extends RoutingSpec with ScalaFut
   trait Fixture {
     @volatile
     var streamConsumed = false
-    val thousandElements: Stream[ByteString] = Stream.continually(ByteString("foo")).take(999).append {
+    val thousandElements: Stream[ByteString] = Stream.continually(ByteString("foo")).take(999).lazyAppendedAll {
       streamConsumed = true
       Seq(ByteString("end"))
     }
