@@ -21,7 +21,6 @@ import akka.Done
 import akka.parboiled2.CharUtils
 import akka.stream.Materializer
 import akka.util.{ ByteString, HashCode, OptionVal }
-import akka.http.ccompat
 import akka.http.ccompat.{ pre213, since213 }
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }

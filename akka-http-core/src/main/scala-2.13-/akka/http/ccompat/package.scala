@@ -26,7 +26,12 @@ package object ccompat {
   // in scala-library so we can't add to it
   type IterableOnce[+X] = c.TraversableOnce[X]
   val IterableOnce = c.TraversableOnce
+}
 
+/**
+ * INTERNAL API
+ */
+package ccompat {
   trait Builder[-Elem, +To] extends mutable.Builder[Elem, To] { self ⇒
     // This became final in 2.13 so cannot be overridden there anymore
     final override def +=(elem: Elem): this.type = addOne(elem)
@@ -37,5 +42,4 @@ package object ccompat {
     self: akka.http.scaladsl.model.Uri.Query ⇒
     override def newBuilder: mutable.Builder[(String, String), akka.http.scaladsl.model.Uri.Query] = akka.http.scaladsl.model.Uri.Query.newBuilder
   }
-
 }

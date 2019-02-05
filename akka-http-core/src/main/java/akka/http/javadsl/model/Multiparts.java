@@ -5,9 +5,7 @@
 package akka.http.javadsl.model;
 
 import akka.stream.javadsl.Source;
-import scala.collection.immutable.HashMap;
 import scala.collection.immutable.List;
-import scala.collection.immutable.Map$;
 import scala.collection.immutable.Nil$;
 
 import java.nio.file.Path;
