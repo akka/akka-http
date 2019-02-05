@@ -23,6 +23,6 @@ package ccompat {
     override protected def fromSpecific(coll: IterableOnce[(String, String)]): Query =
       Query(coll.toSeq: _*)
 
-    def newBuilder: Any = ???
+    def newBuilder: Any = akka.http.scaladsl.model.Uri.Query.newBuilder
   }
 }
