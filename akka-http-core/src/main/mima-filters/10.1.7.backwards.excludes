@@ -1,0 +1,10 @@
+# 2.13.0-M5 support:
+ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.SettingsCompanion")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.SettingsCompanion$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.settings.HttpsProxySettingsImpl$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.settings.ParserSettingsImpl$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.settings.ServerSettingsImpl$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.settings.PreviewServerSettingsImpl$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.settings.ClientConnectionSettingsImpl$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.scaladsl.settings.Http2ServerSettings$Http2ServerSettingsImpl$")

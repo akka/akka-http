@@ -5,6 +5,7 @@
 package akka.http.scaladsl.marshalling
 
 import scala.concurrent.{ ExecutionContext, Future }
+import akka.http.ccompat._
 import akka.http.scaladsl.server.ContentNegotiator
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture._
@@ -53,10 +54,10 @@ class Marshal[A](val value: A) {
 
     m(value).fast.map { marshallings ⇒
       val supportedAlternatives: List[ContentNegotiator.Alternative] =
-        marshallings.collect {
+        marshallings.iterator.collect {
           case Marshalling.WithFixedContentType(ct, _) ⇒ ContentNegotiator.Alternative(ct)
           case Marshalling.WithOpenCharset(mt, _)      ⇒ ContentNegotiator.Alternative(mt)
-        }(collection.breakOut)
+        }.to(scala.collection.immutable.List)
       val bestMarshal = {
         if (supportedAlternatives.nonEmpty) {
           ctn.pickContentType(supportedAlternatives)

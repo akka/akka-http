@@ -44,7 +44,7 @@ private[akka] final case class ClientConnectionSettingsImpl(
 
 /** INTERNAL API */
 @InternalApi
-private[akka] object ClientConnectionSettingsImpl extends SettingsCompanion[ClientConnectionSettingsImpl]("akka.http.client") {
+private[akka] object ClientConnectionSettingsImpl extends SettingsCompanionImpl[ClientConnectionSettingsImpl]("akka.http.client") {
   def fromSubConfig(root: Config, inner: Config): ClientConnectionSettingsImpl = {
     val c = inner.withFallback(root.getConfig(prefix))
     new ClientConnectionSettingsImpl(

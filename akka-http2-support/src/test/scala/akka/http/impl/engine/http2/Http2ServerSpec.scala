@@ -1069,12 +1069,12 @@ class Http2ServerSpec extends AkkaSpec("""
       }
 
     // keep counters that are updated on outgoing sendDATA and incoming WINDOW_UPDATE frames
-    private var toServerWindows = Map.empty[Int, Int].withDefaultValue(Http2Protocol.InitialWindowSize)
+    private var toServerWindows: Map[Int, Int] = Map.empty.withDefaultValue(Http2Protocol.InitialWindowSize)
     private var toServerWindowForConnection = Http2Protocol.InitialWindowSize
     def remainingToServerWindowForConnection: Int = toServerWindowForConnection
     def remainingToServerWindowFor(streamId: Int): Int = toServerWindows(streamId) min remainingToServerWindowForConnection
 
-    private var fromServerWindows = Map.empty[Int, Int].withDefaultValue(Http2Protocol.InitialWindowSize)
+    private var fromServerWindows: Map[Int, Int] = Map.empty.withDefaultValue(Http2Protocol.InitialWindowSize)
     private var fromServerWindowForConnection = Http2Protocol.InitialWindowSize
     // keep counters that are updated for incoming DATA frames and outgoing WINDOW_UPDATE frames
     def remainingFromServerWindowForConnection: Int = fromServerWindowForConnection

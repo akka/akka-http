@@ -9,6 +9,7 @@ import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
 import akka.stream.Materializer
+import akka.http.ccompat._
 import akka.http.scaladsl.unmarshalling._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture
@@ -111,7 +112,7 @@ object StrictForm {
         def tryUnmarshalToQueryForm: Future[StrictForm] =
           for (formData ← formDataUM(entity).fast) yield {
             new StrictForm {
-              val fields = formData.fields.map { case (name, value) ⇒ name → Field.FromString(value) }(collection.breakOut)
+              val fields = formData.fields.iterator.map { case (name, value) ⇒ name → Field.FromString(value) }.to(scala.collection.immutable.IndexedSeq)
             }
           }
 
@@ -121,9 +122,9 @@ object StrictForm {
             strictMultiPartFD ← multiPartFD.toStrict(toStrictTimeout).fast
           } yield {
             new StrictForm {
-              val fields = strictMultiPartFD.strictParts.map {
+              val fields = strictMultiPartFD.strictParts.iterator.map {
                 case x: Multipart.FormData.BodyPart.Strict ⇒ x.name → Field.FromPart(x)
-              }(collection.breakOut)
+              }.to(scala.collection.immutable.IndexedSeq)
             }
           }
 

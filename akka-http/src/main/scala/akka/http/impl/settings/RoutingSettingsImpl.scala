@@ -25,7 +25,7 @@ private[http] final case class RoutingSettingsImpl(
   override def productPrefix = "RoutingSettings"
 }
 
-object RoutingSettingsImpl extends SettingsCompanion[RoutingSettingsImpl]("akka.http.routing") {
+object RoutingSettingsImpl extends SettingsCompanionImpl[RoutingSettingsImpl]("akka.http.routing") {
   def fromSubConfig(root: Config, c: Config) = new RoutingSettingsImpl(
     c.getBoolean("verbose-error-messages"),
     c.getBoolean("file-get-conditional"),

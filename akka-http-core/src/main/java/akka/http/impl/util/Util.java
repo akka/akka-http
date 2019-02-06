@@ -9,6 +9,7 @@ import scala.None$;
 import scala.collection.immutable.Map$;
 import scala.collection.immutable.Seq;
 import akka.stream.scaladsl.Source;
+import akka.http.ccompat.MapHelpers;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -35,7 +36,7 @@ public abstract class Util {
         return (Source<U, scala.Unit>)(Object) p;
     }
     public static scala.collection.immutable.Map<String, String> convertMapToScala(Map<String, String> map) {
-        return emptyMap.$plus$plus(scala.collection.JavaConverters.mapAsScalaMapConverter(map).asScala());
+        return MapHelpers.convertMapToScala(map);
     }
     @SuppressWarnings("unchecked") // contains an upcast
     public static <T, U extends T> scala.Option<U> convertOptionalToScala(Optional<T> o) {

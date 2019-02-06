@@ -5,7 +5,7 @@
 package akka.http.impl.settings
 
 import akka.annotation.InternalApi
-import akka.http.impl.util.SettingsCompanion
+import akka.http.impl.util.SettingsCompanionImpl
 import com.typesafe.config.Config
 
 @InternalApi
@@ -16,7 +16,7 @@ private[http] final case class PreviewServerSettingsImpl(
   override def productPrefix: String = "PreviewServerSettings"
 }
 
-object PreviewServerSettingsImpl extends SettingsCompanion[PreviewServerSettingsImpl]("akka.http.server.preview") {
+object PreviewServerSettingsImpl extends SettingsCompanionImpl[PreviewServerSettingsImpl]("akka.http.server.preview") {
   def fromSubConfig(root: Config, c: Config) = PreviewServerSettingsImpl(
     c.getBoolean("enable-http2")
   )

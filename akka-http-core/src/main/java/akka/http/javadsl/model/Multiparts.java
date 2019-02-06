@@ -12,9 +12,10 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 
+import akka.http.ccompat.MapHelpers;
+
 import static akka.http.impl.util.Util.convertArray;
 import static akka.http.impl.util.Util.convertMapToScala;
-import static akka.http.impl.util.Util.emptyMap;
 
 /**
  * Constructors for Multipart instances
@@ -140,7 +141,7 @@ public final class Multiparts {
     }
 
     private static scala.collection.immutable.Map<String, HttpEntity.Strict> toScalaMap(Map<String, HttpEntity.Strict> map) {
-        return emptyMap.$plus$plus(scala.collection.JavaConverters.mapAsScalaMapConverter(map).asScala());
+        return MapHelpers.convertMapToScala(map);
     }
 
     private static scala.collection.Iterable<HttpHeader> toScalaSeq(java.util.List<HttpHeader> _headers) {

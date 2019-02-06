@@ -28,7 +28,7 @@ trait WSTestRequestBuilding {
     subprotocols:      java.util.List[String]): HttpRequest = {
 
     val handler = scaladsl.Flow[sm.ws.Message].map(_.asJava).via(clientSideHandler).map(_.asScala)
-    st.WSTestRequestBuilding.WS(uri.asScala, handler, subprotocols.asScala)(materializer)
+    st.WSTestRequestBuilding.WS(uri.asScala, handler, subprotocols.asScala.toSeq)(materializer)
   }
 
 }

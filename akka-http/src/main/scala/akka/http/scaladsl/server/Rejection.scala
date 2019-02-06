@@ -266,9 +266,11 @@ final case class ValidationRejection(message: String, cause: Option[Throwable] =
 final case class TransformationRejection(transform: immutable.Seq[Rejection] ⇒ immutable.Seq[Rejection])
   extends jserver.TransformationRejection with Rejection {
   override def getTransform = new Function[Iterable[jserver.Rejection], Iterable[jserver.Rejection]] {
-    override def apply(t: Iterable[jserver.Rejection]): Iterable[jserver.Rejection] =
-      // explicit collects instead of implicits is because of unidoc failing compilation on .asScala and .asJava here
-      transform(Util.immutableSeq(t).collect { case r: Rejection ⇒ r }).collect[jserver.Rejection, Seq[jserver.Rejection]] { case j: jserver.Rejection ⇒ j }.asJava // TODO "asJavaDeep" and optimise?
+    override def apply(t: Iterable[jserver.Rejection]): Iterable[jserver.Rejection] = {
+      // explicit collects assignment is because of unidoc failing compilation on .asScala and .asJava here
+      val transformed: Seq[jserver.Rejection] = transform(Util.immutableSeq(t).collect { case r: Rejection ⇒ r }).collect { case j: jserver.Rejection ⇒ j }
+      transformed.asJava // TODO "asJavaDeep" and optimise?
+    }
   }
 }
 
