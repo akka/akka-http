@@ -4,6 +4,8 @@
 
 package akka.http.javadsl.server
 
+import java.net.InetSocketAddress
+import java.net.ServerSocket
 import java.util.concurrent.TimeUnit
 import java.net.SocketException
 
@@ -189,13 +191,19 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
       }
 
       "after binding is unsuccessful" in withSneaky { sneaky ⇒
-        EventFilter[SocketException](message = "Permission denied", occurrences = 1) intercept {
-          sneaky.startServer("localhost", 1, system)
-        }
+        val serverSocket = new ServerSocket()
+        serverSocket.bind(new InetSocketAddress("127.0.0.1", 0))
+        val port = serverSocket.getLocalPort
 
-        eventually {
-          sneaky.postBindingFailureCalled.get() should ===(true)
-        }
+        try {
+          EventFilter[SocketException](message = "Address already in use", occurrences = 1) intercept {
+            sneaky.startServer("localhost", port, system)
+          }
+
+          eventually {
+            sneaky.postBindingFailureCalled.get() should ===(true)
+          }
+        } finally serverSocket.close()
       }
 
     }
