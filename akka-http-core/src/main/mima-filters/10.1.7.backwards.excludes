@@ -1,4 +1,5 @@
-# 2.13.0-M5 support:
+# 2.13.0-M5 support / internals
+
 ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.SettingsCompanion")
 ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.SettingsCompanion$")
 ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl$")
@@ -8,3 +9,14 @@ ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.settings.ServerSetti
 ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.settings.PreviewServerSettingsImpl$")
 ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.settings.ClientConnectionSettingsImpl$")
 ProblemFilters.exclude[MissingTypesProblem]("akka.http.scaladsl.settings.Http2ServerSettings$Http2ServerSettingsImpl$")
+
+# Changes to internals
+
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.closeRequested")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.copy")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.copy$default$4")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.this")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext$")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.apply$default$4")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.apply")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.<init>$default$4")
