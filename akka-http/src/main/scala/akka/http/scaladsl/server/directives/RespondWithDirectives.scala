@@ -6,6 +6,7 @@ package akka.http.scaladsl.server
 package directives
 
 import akka.http.scaladsl.model._
+import akka.http.ccompat._
 import scala.collection.immutable
 
 /**
@@ -20,7 +21,8 @@ trait RespondWithDirectives {
    *
    * @group response
    */
-  def respondWithHeader(responseHeader: HttpHeader): Directive0 = respondWithHeaders(responseHeader)
+  def respondWithHeader(responseHeader: HttpHeader): Directive0 =
+    respondWithHeaders(immutable.Seq(responseHeader))
 
   /**
    * Adds the given response header to all HTTP responses of its inner Route,
@@ -35,6 +37,7 @@ trait RespondWithDirectives {
    *
    * @group response
    */
+  @pre213
   def respondWithHeaders(responseHeaders: HttpHeader*): Directive0 =
     respondWithHeaders(responseHeaders.toList)
 
@@ -44,7 +47,11 @@ trait RespondWithDirectives {
    * @group response
    */
   def respondWithHeaders(responseHeaders: immutable.Seq[HttpHeader]): Directive0 =
-    mapResponseHeaders(responseHeaders ++ _)
+    mapResponseHeaders(responseHeaders.toList ++ _)
+
+  @since213
+  def respondWithHeaders(firstHeader: HttpHeader, otherHeaders: HttpHeader*): Directive0 =
+    respondWithHeaders(firstHeader +: otherHeaders.toList)
 
   /**
    * Adds the given response headers to all HTTP responses of its inner Route,
@@ -52,6 +59,7 @@ trait RespondWithDirectives {
    *
    * @group response
    */
+  @pre213
   def respondWithDefaultHeaders(responseHeaders: HttpHeader*): Directive0 =
     respondWithDefaultHeaders(responseHeaders.toList)
 
@@ -63,6 +71,17 @@ trait RespondWithDirectives {
    */
   def respondWithDefaultHeaders(responseHeaders: immutable.Seq[HttpHeader]): Directive0 =
     mapResponse(_.withDefaultHeaders(responseHeaders))
+
+  /**
+   * Adds the given response headers to all HTTP responses of its inner Route,
+   * if a header already exists it is not added again.
+   *
+   * @group response
+   */
+  @since213
+  def respondWithDefaultHeaders(firstHeader: HttpHeader, otherHeaders: HttpHeader*): Directive0 =
+    respondWithDefaultHeaders(firstHeader +: otherHeaders.toList)
+
 }
 
 object RespondWithDirectives extends RespondWithDirectives

@@ -11,6 +11,7 @@ import akka.japi.Pair
 import org.scalatest.{ FreeSpec, MustMatchers }
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 
 class JavaApiSpec extends FreeSpec with MustMatchers {
   "The Java API should work for" - {
@@ -49,7 +50,7 @@ class JavaApiSpec extends FreeSpec with MustMatchers {
           .query().toMap.asScala must contain allOf ("name" → "blub", "age" → "28")
       }
       "access parameters" in {
-        val Seq(param1, param2, param3) =
+        val mutable.Seq(param1, param2, param3) =
           Uri.create("/abc?name=blub&age=28&name=blub2")
             .query().toList.asScala.map(_.toScala)
 

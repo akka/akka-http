@@ -7,6 +7,7 @@ package akka.http.scaladsl.model.headers
 import language.implicitConversions
 import scala.collection.immutable
 import akka.parboiled2.UTF8
+import akka.http.ccompat
 import akka.http.impl.model.parser.UriParser
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }

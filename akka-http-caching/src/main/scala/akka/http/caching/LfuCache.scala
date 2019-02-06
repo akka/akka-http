@@ -38,7 +38,7 @@ object LfuCache {
     require(settings.maxCapacity >= 0, "maxCapacity must not be negative")
     require(settings.initialCapacity <= settings.maxCapacity, "initialCapacity must be <= maxCapacity")
 
-    if (settings.timeToLive.isFinite() || settings.timeToIdle.isFinite()) expiringLfuCache(settings.maxCapacity, settings.initialCapacity, settings.timeToLive, settings.timeToIdle)
+    if (settings.timeToLive.isFinite || settings.timeToIdle.isFinite) expiringLfuCache(settings.maxCapacity, settings.initialCapacity, settings.timeToLive, settings.timeToIdle)
     else simpleLfuCache(settings.maxCapacity, settings.initialCapacity)
   }
 

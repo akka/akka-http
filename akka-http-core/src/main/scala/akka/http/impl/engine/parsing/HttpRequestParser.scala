@@ -11,7 +11,7 @@ import akka.http.scaladsl.settings.ParserSettings
 import akka.util.{ ByteString, OptionVal }
 import akka.http.impl.engine.ws.Handshake
 import akka.http.impl.model.parser.CharacterClasses
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.{ ParsingException ⇒ _, _ }
 import headers._
 import StatusCodes._
 import ParserOutput._

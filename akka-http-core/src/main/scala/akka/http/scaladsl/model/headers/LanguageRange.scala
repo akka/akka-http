@@ -10,6 +10,7 @@ import akka.http.impl.util._
 import akka.http.scaladsl.model.WithQValue
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.util.JavaMapping.Implicits._
+import akka.http.ccompat.{ pre213, since213 }
 
 sealed trait LanguageRange extends jm.headers.LanguageRange with ValueRenderable with WithQValue[LanguageRange] {
   def qValue: Float
@@ -71,5 +72,11 @@ object Language {
       val tags = compoundTag.split('-')
       new Language(tags.head, immutable.Seq(tags.tail: _*))
     } else new Language(compoundTag, immutable.Seq.empty)
-  def apply(primaryTag: String, subTags: String*): Language = new Language(primaryTag, immutable.Seq(subTags: _*))
+  @pre213
+  def apply(primaryTag: String, subTags: String*): Language =
+    new Language(primaryTag, immutable.Seq(subTags: _*))
+  @since213
+  def apply(primaryTag: String, firstSubTag: String, otherSubTags: String*): Language =
+    new Language(primaryTag, firstSubTag +: otherSubTags)
+
 }

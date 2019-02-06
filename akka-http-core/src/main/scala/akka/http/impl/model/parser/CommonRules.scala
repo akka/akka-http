@@ -156,7 +156,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   // http://tools.ietf.org/html/rfc4647#section-2.1
   // ******************************************************************************************
   def language = rule {
-    `primary-tag` ~ zeroOrMore('-' ~ `sub-tag`) ~> (Language(_, _: _*))
+    `primary-tag` ~ zeroOrMore('-' ~ `sub-tag`) ~> (Language(_, _))
   }
 
   def `primary-tag` = rule { capture(oneOrMore(ALPHA)) ~ OWS }

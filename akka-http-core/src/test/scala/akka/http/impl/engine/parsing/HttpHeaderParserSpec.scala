@@ -202,7 +202,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
     "continue parsing raw headers even if the overall cache value capacity is reached" in new TestSetup() {
       val randomHeaders = Stream.continually {
         val name = nextRandomString(nextRandomAlphaNumChar _, nextRandomInt(4, 16))
-        val value = nextRandomString(nextRandomPrintableChar, nextRandomInt(4, 16))
+        val value = nextRandomString(() ⇒ nextRandomPrintableChar, nextRandomInt(4, 16))
         RawHeader(name, value)
       }
       randomHeaders.take(300).foldLeft(0) {
@@ -234,7 +234,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
 
     "continue parsing raw headers even if the header-specific cache capacity is reached" in new TestSetup() {
       val randomHeaders = Stream.continually {
-        val value = nextRandomString(nextRandomPrintableChar, nextRandomInt(4, 16))
+        val value = nextRandomString(() ⇒ nextRandomPrintableChar, nextRandomInt(4, 16))
         RawHeader("Fancy", value)
       }
       randomHeaders.take(20).foldLeft(0) {

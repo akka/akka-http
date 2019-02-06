@@ -144,7 +144,7 @@ object CodingDirectives extends CodingDirectives {
   private def _encodeResponse(encoders: immutable.Seq[Encoder]): Directive0 =
     BasicDirectives.extractRequest.flatMap { request ⇒
       val negotiator = EncodingNegotiator(request.headers)
-      val encodings: List[HttpEncoding] = encoders.map(_.encoding)(collection.breakOut)
+      val encodings: List[HttpEncoding] = encoders.map(_.encoding).toList
       val bestEncoder = negotiator.pickEncoding(encodings).flatMap(be ⇒ encoders.find(_.encoding == be))
       bestEncoder match {
         case Some(encoder) ⇒ mapResponse(encoder.encodeMessage(_))

@@ -45,7 +45,7 @@ inThisBuild(Def.settings(
   Dependencies.Versions,
   Formatting.formatSettings,
   shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
-  concurrentRestrictions in Global += Tags.limit(Tags.Test, 1)
+  concurrentRestrictions in Global += Tags.limit(Tags.Test, 1),
 ))
 
 lazy val root = Project(
@@ -86,7 +86,36 @@ lazy val root = Project(
     docs
   )
 
+val commonSettings = Seq(
+  // Adds a `src/main/scala-2.13+` source directory for Scala 2.13 and newer
+  // and a `src/main/scala-2.13-` source directory for Scala version older than 2.13
+  unmanagedSourceDirectories in Compile += {
+    val sourceDir = (sourceDirectory in Compile).value
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, n)) if n >= 13 => sourceDir / "scala-2.13+"
+      case _                       => sourceDir / "scala-2.13-"
+    }
+  },
+)
+
+val scalaMacroSupport = Seq(
+  scalacOptions ++= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, n)) if n >= 13 =>
+        Seq("-Ymacro-annotations")
+      case _                       =>
+        Seq.empty
+    }
+  },
+  libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, n)) if n < 13 => Seq(compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full))
+    case _                       => Seq.empty
+  }),
+)
+
+
 lazy val parsing = project("akka-parsing")
+  .settings(commonSettings)
   .settings(AutomaticModuleName.settings("akka.http.parsing"))
   .addAkkaModuleDependency("akka-actor", "provided")
   .settings(Dependencies.parsing)
@@ -95,19 +124,23 @@ lazy val parsing = project("akka-parsing")
     scalacOptions += "-language:_",
     unmanagedSourceDirectories in ScalariformKeys.format in Test := (unmanagedSourceDirectories in Test).value
   )
+  .settings(scalaMacroSupport)
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
   .disablePlugins(MimaPlugin)
 
 lazy val httpCore = project("akka-http-core")
+  .settings(commonSettings)
   .settings(AutomaticModuleName.settings("akka.http.core"))
   .dependsOn(parsing)
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
   .settings(Dependencies.httpCore)
   .settings(VersionGenerator.versionSettings)
+  .settings(scalaMacroSupport)
   .enablePlugins(BootstrapGenjavadoc)
 
 lazy val http = project("akka-http")
+  .settings(commonSettings)
   .settings(AutomaticModuleName.settings("akka.http"))
   .dependsOn(httpCore)
   .addAkkaModuleDependency("akka-stream", "provided")
@@ -115,9 +148,11 @@ lazy val http = project("akka-http")
   .settings(
     scalacOptions in Compile += "-language:_"
   )
+  .settings(scalaMacroSupport)
   .enablePlugins(BootstrapGenjavadoc, BoilerplatePlugin)
 
 lazy val http2Support = project("akka-http2-support")
+  .settings(commonSettings)
   .settings(AutomaticModuleName.settings("akka.http.http2"))
   .dependsOn(httpCore, httpTestkit % "test", httpCore % "test->test")
   .addAkkaModuleDependency("akka-stream", "provided")
@@ -159,6 +194,7 @@ lazy val http2Support = project("akka-http2-support")
   .disablePlugins(MimaPlugin) // experimental module still
 
 lazy val httpTestkit = project("akka-http-testkit")
+  .settings(commonSettings)
   .settings(AutomaticModuleName.settings("akka.http.testkit"))
   .dependsOn(http)
   .addAkkaModuleDependency("akka-stream-testkit", "provided")
@@ -173,6 +209,7 @@ lazy val httpTestkit = project("akka-http-testkit")
   .disablePlugins(MimaPlugin) // testkit, no bin compat guaranteed
 
 lazy val httpTests = project("akka-http-tests")
+  .settings(commonSettings)
   .settings(Dependencies.httpTests)
   .dependsOn(httpSprayJson, httpXml, httpJackson,
     httpTestkit % "test", httpCore % "test->test")
@@ -187,6 +224,7 @@ lazy val httpTests = project("akka-http-tests")
   .addAkkaModuleDependency("akka-multi-node-testkit", "test")
 
 lazy val httpJmhBench = project("akka-http-bench-jmh")
+  .settings(commonSettings)
   .dependsOn(http)
   .addAkkaModuleDependency("akka-stream")
   .enablePlugins(JmhPlugin)
@@ -194,6 +232,7 @@ lazy val httpJmhBench = project("akka-http-bench-jmh")
   .disablePlugins(MimaPlugin)
 
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
+  .settings(commonSettings)
   .enablePlugins(NoPublish/*, AggregatePRValidation*/)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .aggregate(httpSprayJson, httpXml)
@@ -211,6 +250,7 @@ lazy val httpSprayJson =
     .settings(Dependencies.httpSprayJson)
 
 lazy val httpMarshallersJava = project("akka-http-marshallers-java")
+  .settings(commonSettings)
   .enablePlugins(NoPublish/*, AggregatePRValidation*/)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .aggregate(httpJackson)
@@ -223,6 +263,7 @@ lazy val httpJackson =
     .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 lazy val httpCaching = project("akka-http-caching")
+  .settings(commonSettings)
   .settings(AutomaticModuleName.settings("akka.http.caching"))
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency("akka-stream-testkit", "provided")
@@ -239,6 +280,7 @@ def httpMarshallersScalaSubproject(name: String) =
     base = file(s"akka-http-marshallers-scala/akka-http-$name")
   )
   .dependsOn(http)
+  .settings(commonSettings)
   .enablePlugins(BootstrapGenjavadoc)
 
 def httpMarshallersJavaSubproject(name: String) =
@@ -247,6 +289,7 @@ def httpMarshallersJavaSubproject(name: String) =
     base = file(s"akka-http-marshallers-java/akka-http-$name"),
   )
   .dependsOn(http)
+  .settings(commonSettings)
   .enablePlugins(BootstrapGenjavadoc)
 
 lazy val docs = project("docs")

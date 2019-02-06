@@ -11,6 +11,7 @@ import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import akka.util.ByteString
 import akka.actor.ActorSystem
+import akka.http.ccompat._
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
@@ -89,7 +90,7 @@ class HttpModelIntegrationSpec extends WordSpec with Matchers with BeforeAndAfte
       // Finally convert the body into an Array[Byte].
 
       val entityBytes: Array[Byte] = Await.result(request.entity.toStrict(1.second.dilated), 2.seconds.dilated).data.toArray
-      entityBytes.to[Seq] shouldEqual ByteString("hello").to[Seq]
+      entityBytes.to(Seq) shouldEqual ByteString("hello").to(Seq)
     }
 
     "be able to build an HttpResponse from String headers and Array[Byte] body" in {

@@ -11,7 +11,6 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.annotation.ApiMayChange
 import akka.http.impl.settings.ServerSentEventSettingsImpl
-import akka.http.impl.util.SettingsCompanion
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.sse.ServerSentEvent

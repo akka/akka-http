@@ -19,7 +19,7 @@ import akka.annotation.InternalApi
  * INTERNAL API
  */
 @InternalApi
-private[http] abstract class SettingsCompanion[T](protected val prefix: String) {
+private[http] abstract class SettingsCompanionImpl[T](protected val prefix: String) {
   private final val MaxCached = 8
   private[this] var cache = ListMap.empty[ActorSystem, T]
 
@@ -44,7 +44,7 @@ private[http] abstract class SettingsCompanion[T](protected val prefix: String) 
 
   def apply(configOverrides: String): T =
     apply(parseString(configOverrides)
-      .withFallback(SettingsCompanion.configAdditions)
+      .withFallback(SettingsCompanionImpl.configAdditions)
       .withFallback(defaultReference(getClass.getClassLoader)))
 
   def apply(config: Config): T =
@@ -53,7 +53,7 @@ private[http] abstract class SettingsCompanion[T](protected val prefix: String) 
   def fromSubConfig(root: Config, c: Config): T
 }
 
-private[http] object SettingsCompanion {
+private[http] object SettingsCompanionImpl {
   lazy val configAdditions: Config = {
     val localHostName =
       try new InetSocketAddress(InetAddress.getLocalHost, 80).getHostString

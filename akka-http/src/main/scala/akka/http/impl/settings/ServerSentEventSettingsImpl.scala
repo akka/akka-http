@@ -5,7 +5,7 @@
 package akka.http.impl.settings
 
 import akka.annotation.InternalApi
-import akka.http.impl.util.SettingsCompanion
+import akka.http.impl.util.SettingsCompanionImpl
 import com.typesafe.config.Config
 
 @InternalApi
@@ -20,7 +20,7 @@ private[http] final case class ServerSentEventSettingsImpl(
 
 }
 
-object ServerSentEventSettingsImpl extends SettingsCompanion[ServerSentEventSettingsImpl]("akka.http.sse") {
+object ServerSentEventSettingsImpl extends SettingsCompanionImpl[ServerSentEventSettingsImpl]("akka.http.sse") {
   def fromSubConfig(root: Config, c: Config) = ServerSentEventSettingsImpl(
     c.getInt("max-event-size"),
     c.getInt("max-line-size")

@@ -15,6 +15,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
+import akka.http.ccompat._
 
 /**
  * INTERNAL API

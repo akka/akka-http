@@ -10,9 +10,10 @@ import java.lang.{ Iterable, StringBuilder ⇒ JStringBuilder }
 import java.nio.charset.Charset
 
 import scala.annotation.tailrec
-import scala.collection.{ LinearSeqOptimized, immutable, mutable }
+import scala.collection.{ immutable, mutable }
 import scala.collection.immutable.LinearSeq
 import akka.parboiled2.{ CharPredicate, CharUtils, ParserInput }
+import akka.http.ccompat.{ QuerySeqOptimized, Builder }
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.impl.model.parser.UriParser
 import akka.http.impl.model.parser.CharacterClasses._
@@ -580,7 +581,7 @@ object Uri {
     }
   }
 
-  sealed abstract class Query extends LinearSeq[(String, String)] with LinearSeqOptimized[(String, String), Query] {
+  sealed abstract class Query extends QuerySeqOptimized {
     def key: String
     def value: String
     def +:(kvp: (String, String)) = Query.Cons(kvp._1, kvp._2, this)
@@ -623,7 +624,6 @@ object Uri {
         if (q.isEmpty) map else append(map.updated(q.key, map.getOrElse(q.key, Nil) :+ q.value), q.tail)
       append(Map.empty, this)
     }
-    override def newBuilder: mutable.Builder[(String, String), Query] = Query.newBuilder
     override def toString = UriRendering.QueryRenderer.render(new StringRendering, this).get
   }
   object Query {
@@ -648,11 +648,13 @@ object Uri {
       params.foldRight(Query.Empty: Query) { case ((key, value), acc) ⇒ Cons(key, value, acc) }
     def apply(params: Map[String, String]): Query = apply(params.toSeq: _*)
 
-    def newBuilder: mutable.Builder[(String, String), Query] = new mutable.Builder[(String, String), Query] {
+    def newBuilder: mutable.Builder[(String, String), Query] = new Builder[(String, String), Query] {
       val b = mutable.ArrayBuffer.newBuilder[(String, String)]
-      def +=(elem: (String, String)): this.type = { b += elem; this }
+      override def addOne(elem: (String, String)): this.type = { b += elem; this }
       def clear() = b.clear()
-      def result() = apply(b.result(): _*)
+      def result() = {
+        apply(b.result().toSeq: _*)
+      }
     }
 
     case object Empty extends Query {

@@ -56,7 +56,7 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
     require(incomingStreamLevelBufferSize > 0, "incoming-stream-level-buffer-size must be > 0")
   }
 
-  private[http] object Http2ServerSettingsImpl extends akka.http.impl.util.SettingsCompanion[Http2ServerSettingsImpl]("akka.http.server.http2") {
+  private[http] object Http2ServerSettingsImpl extends akka.http.impl.util.SettingsCompanionImpl[Http2ServerSettingsImpl]("akka.http.server.http2") {
     def fromSubConfig(root: Config, c: Config): Http2ServerSettingsImpl = Http2ServerSettingsImpl(
       maxConcurrentStreams = c.getInt("max-concurrent-streams"),
       requestEntityChunkSize = c.getIntBytes("request-entity-chunk-size"),

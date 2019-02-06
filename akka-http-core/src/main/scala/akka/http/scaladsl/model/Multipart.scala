@@ -19,6 +19,7 @@ import akka.util.ConstantFun
 import akka.stream.Materializer
 import akka.stream.javadsl.{ Source ⇒ JSource }
 import akka.stream.scaladsl._
+import akka.http.ccompat._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.engine.rendering.BodyPartRenderer
@@ -357,7 +358,7 @@ object Multipart {
     /** INTERNAL API */
     @InternalApi
     private[akka] def createStrict(fields: Map[String, akka.http.javadsl.model.HttpEntity.Strict]): Multipart.FormData.Strict = Multipart.FormData.Strict {
-      fields.map { case (name, entity: akka.http.scaladsl.model.HttpEntity.Strict) ⇒ Multipart.FormData.BodyPart.Strict(name, entity) }(collection.breakOut)
+      fields.iterator.map { case (name, entity: akka.http.scaladsl.model.HttpEntity.Strict) ⇒ Multipart.FormData.BodyPart.Strict(name, entity) }.to(scala.collection.immutable.IndexedSeq)
     }
     /** INTERNAL API */
     @InternalApi
@@ -366,7 +367,7 @@ object Multipart {
     }
 
     def apply(fields: Map[String, HttpEntity.Strict]): Multipart.FormData.Strict = Multipart.FormData.Strict {
-      fields.map { case (name, entity) ⇒ Multipart.FormData.BodyPart.Strict(name, entity) }(collection.breakOut)
+      fields.iterator.map { case (name, entity) ⇒ Multipart.FormData.BodyPart.Strict(name, entity) }.to(scala.collection.immutable.IndexedSeq)
     }
 
     def apply(_parts: Source[Multipart.FormData.BodyPart, Any]): Multipart.FormData =
@@ -508,7 +509,7 @@ object Multipart {
         def create(_name: String, _entity: BodyPartEntity,
                    _additionalDispositionParams: Map[String, String],
                    _additionalHeaders:           Iterable[akka.http.javadsl.model.HttpHeader]): Multipart.FormData.BodyPart = {
-          val _headers = _additionalHeaders.to[immutable.Seq] map { case h: akka.http.scaladsl.model.HttpHeader ⇒ h }
+          val _headers = _additionalHeaders.to(immutable.Seq) map { case h: akka.http.scaladsl.model.HttpHeader ⇒ h }
           apply(_name, _entity, _additionalDispositionParams, _headers)
         }
       }
@@ -519,7 +520,7 @@ object Multipart {
         def createStrict(_name: String, _entity: HttpEntity.Strict,
                          _additionalDispositionParams: Map[String, String],
                          _additionalHeaders:           Iterable[akka.http.javadsl.model.HttpHeader]): Multipart.FormData.BodyPart.Strict = {
-          val _headers = _additionalHeaders.to[immutable.Seq] map { case h: akka.http.scaladsl.model.HttpHeader ⇒ h }
+          val _headers = _additionalHeaders.to(immutable.Seq) map { case h: akka.http.scaladsl.model.HttpHeader ⇒ h }
           Strict(_name, _entity, _additionalDispositionParams, _headers)
         }
       }

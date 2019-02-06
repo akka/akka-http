@@ -145,9 +145,9 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
         Http2AlpnSupport.applySessionParameters(engine, httpsContext.firstSession)
         Http2AlpnSupport.enableForServer(engine, setChosenProtocol)
       }
-      val tls = TLS(createEngine, _ ⇒ Success(()), IgnoreComplete)
+      val tls = TLS(() ⇒ createEngine, _ ⇒ Success(()), IgnoreComplete)
 
-      AlpnSwitch(getChosenProtocol, http.serverLayer(settings, None, log), http2Layer()) atop
+      AlpnSwitch(() ⇒ getChosenProtocol, http.serverLayer(settings, None, log), http2Layer()) atop
         tls
     }
 

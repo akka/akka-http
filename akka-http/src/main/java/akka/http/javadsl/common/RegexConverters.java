@@ -6,7 +6,7 @@ package akka.http.javadsl.common;
 
 import java.util.regex.Pattern;
 
-import scala.collection.Seq;
+import scala.collection.immutable.Seq;
 import scala.collection.immutable.VectorBuilder;
 import scala.util.matching.Regex;
 

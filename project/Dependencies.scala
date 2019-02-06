@@ -24,18 +24,21 @@ object Dependencies {
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.12.8", "2.11.12"/*, "2.13.0-M3"*/),
+    crossScalaVersions := Seq("2.12.8", "2.11.12", "2.13.0-M5"),
     scalaVersion := crossScalaVersions.value.head,
     scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.14.0"),
-    scalaTestVersion := "3.0.5",
+    scalaTestVersion := "3.0.6-SNAP5",
     specs2Version := "4.3.6"
   )
-  import Versions._
 
+  object Provided {
+    val jsr305 = "com.google.code.findbugs" % "jsr305" % "3.0.2" % "provided" // ApacheV2
+
+    val scalaReflect  = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _ % "provided") // Scala License
+  }
 
   object Compile {
     val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.1.1" // Scala License
-    val scalaReflect  = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _) // Scala License
 
     // For akka-http spray-json support
     val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.5"       // ApacheV2
@@ -51,7 +54,6 @@ object Dependencies {
     val alpnApi     = "org.eclipse.jetty.alpn"        % "alpn-api"                     % "1.1.3.v20160715" // ApacheV2
 
     val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.6.2"
-    val jsr305      = "com.google.code.findbugs"      % "jsr305"                       % "3.0.2"             % Provided // ApacheV2
 
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
@@ -80,18 +82,22 @@ object Dependencies {
 
   lazy val parsing = Seq(
     DependencyHelpers.versionDependentDeps(
-      Dependencies.Compile.scalaReflect % "provided"
+      Dependencies.Provided.scalaReflect
     ),
-    addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full)
   )
 
   lazy val httpCore = l ++= Seq(
     Test.sprayJson, // for WS Autobahn test metadata
-    Test.scalatest.value, Test.scalacheck.value, Test.junit)
+    Test.scalatest.value, Test.scalacheck.value, Test.junit
+  )
 
-  lazy val httpCaching = l ++= Seq(caffeine, jsr305, Test.scalatest.value)
+  lazy val httpCaching = l ++= Seq(
+    caffeine,
+    Provided.jsr305,
+    Test.scalatest.value
+  )
 
-  lazy val http = l ++= Seq()
+  lazy val http = Seq()
 
   lazy val http2 = l ++= Seq(hpack, alpnApi)
 

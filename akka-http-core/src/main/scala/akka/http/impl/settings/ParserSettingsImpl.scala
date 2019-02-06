@@ -58,7 +58,7 @@ private[akka] final case class ParserSettingsImpl(
   override def productPrefix = "ParserSettings"
 }
 
-object ParserSettingsImpl extends SettingsCompanion[ParserSettingsImpl]("akka.http.parsing") {
+object ParserSettingsImpl extends SettingsCompanionImpl[ParserSettingsImpl]("akka.http.parsing") {
 
   private[this] val noCustomMethods: String ⇒ Option[HttpMethod] = ConstantFun.scalaAnyToNone
   private[this] val noCustomStatusCodes: Int ⇒ Option[StatusCode] = ConstantFun.scalaAnyToNone
@@ -85,7 +85,7 @@ object ParserSettingsImpl extends SettingsCompanion[ParserSettingsImpl]("akka.ht
       c.getStringList("ignore-illegal-header-for").asScala.map(_.toLowerCase).toSet,
       ErrorLoggingVerbosity(c.getString("error-logging-verbosity")),
       IllegalResponseHeaderValueProcessingMode(c.getString("illegal-response-header-value-processing-mode")),
-      cacheConfig.entrySet.asScala.map(kvp ⇒ kvp.getKey → cacheConfig.getInt(kvp.getKey))(collection.breakOut),
+      cacheConfig.entrySet.asScala.iterator.map(kvp ⇒ kvp.getKey → cacheConfig.getInt(kvp.getKey)).toMap,
       c.getBoolean("tls-session-info-header"),
       c.getBoolean("modeled-header-parsing"),
       noCustomMethods,

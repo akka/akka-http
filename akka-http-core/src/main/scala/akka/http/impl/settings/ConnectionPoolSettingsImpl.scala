@@ -5,7 +5,7 @@
 package akka.http.impl.settings
 
 import akka.annotation.InternalApi
-import akka.http.impl.util.{ SettingsCompanion, _ }
+import akka.http.impl.util._
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, PoolImplementation }
 import com.typesafe.config.Config
 
@@ -58,7 +58,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
 
 /** INTERNAL API */
 @InternalApi
-private[akka] object ConnectionPoolSettingsImpl extends SettingsCompanion[ConnectionPoolSettingsImpl]("akka.http.host-connection-pool") {
+private[akka] object ConnectionPoolSettingsImpl extends SettingsCompanionImpl[ConnectionPoolSettingsImpl]("akka.http.host-connection-pool") {
   def fromSubConfig(root: Config, c: Config): ConnectionPoolSettingsImpl = {
     new ConnectionPoolSettingsImpl(
       c.getInt("max-connections"),
