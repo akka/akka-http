@@ -181,6 +181,9 @@ public interface HttpMessage {
          */
         <T> Self transformEntityDataBytes(Graph<FlowShape<ByteString, ByteString>, T> transformer);
 
+        /** Returns a copy of this message where `f` is used to generate its string representation. **/
+        Self withStringRepresentation(java.util.function.Function<Self, String> f);
+
         /**
          * Returns a CompletionStage of Self message with strict entity that contains the same data as this entity
          * which is only completed when the complete entity has been collected. As the

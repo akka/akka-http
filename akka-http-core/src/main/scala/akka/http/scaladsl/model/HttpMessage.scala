@@ -212,6 +212,7 @@ sealed trait HttpMessage extends jm.HttpMessage {
     val ex = ExecutionContext.fromExecutor(ec)
     toStrict(timeoutMillis.millis, maxBytes)(ex, materializer).toJava
   }
+
 }
 
 object HttpMessage {
@@ -347,6 +348,10 @@ final class HttpRequest(
 
   /** Java API */
   override def withUri(uri: jm.Uri): HttpRequest = copy(uri = uri.asScala)
+
+  /** Java API **/
+  override def withStringRepresentation(f: java.util.function.Function[jm.HttpRequest, String]): jm.HttpRequest =
+    withStringRepresentation((request: HttpRequest) ⇒ f(request))
 
   /* Manual Case Class things, to easen bin-compat */
 
@@ -505,6 +510,10 @@ final class HttpResponse(
 
   /** Returns a copy of this message where `f` is used to generate its string representation. **/
   override def withStringRepresentation(f: HttpResponse ⇒ String): HttpResponse = copy(stringRepresentation = f)
+
+  /** Java API **/
+  override def withStringRepresentation(f: java.util.function.Function[jm.HttpResponse, String]): jm.HttpResponse =
+    withStringRepresentation((response: HttpResponse) ⇒ f(response))
 
   /* Manual Case Class things, to ease bin-compat */
 
