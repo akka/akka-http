@@ -4,8 +4,6 @@
 
 package akka.http.ccompat
 
-import scala.collection.immutable
-
 /**
  * INTERNAL API
  */
