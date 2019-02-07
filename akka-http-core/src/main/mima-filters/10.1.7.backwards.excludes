@@ -20,3 +20,8 @@ ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.engine.rendering.Res
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.apply$default$4")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.apply")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.<init>$default$4")
+
+# FormData uses WithFixedCharset with UTF-8 instead of WithOpenCharset https://github.com/akka/akka-http/pull/2402
+# This change is binary incompatible but there's no other way to fix it.
+ProblemFilters.exclude[IncompatibleFieldTypeProblem]("akka.http.javadsl.model.MediaTypes.APPLICATION_X_WWW_FORM_URLENCODED")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.model.MediaTypes.application/x-www-form-urlencoded")

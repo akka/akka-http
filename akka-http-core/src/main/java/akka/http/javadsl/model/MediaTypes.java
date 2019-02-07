@@ -105,7 +105,7 @@ public final class MediaTypes {
     public static final MediaType.Binary APPLICATION_X_TEX = akka.http.scaladsl.model.MediaTypes.application$divx$minustex();
     public static final MediaType.Binary APPLICATION_X_TEXINFO = akka.http.scaladsl.model.MediaTypes.application$divx$minustexinfo();
     public static final MediaType.WithOpenCharset APPLICATION_X_VRML = akka.http.scaladsl.model.MediaTypes.application$divx$minusvrml();
-    public static final MediaType.WithOpenCharset APPLICATION_X_WWW_FORM_URLENCODED = akka.http.scaladsl.model.MediaTypes.application$divx$minuswww$minusform$minusurlencoded();
+    public static final MediaType.WithFixedCharset APPLICATION_X_WWW_FORM_URLENCODED = akka.http.scaladsl.model.MediaTypes.application$divx$minuswww$minusform$minusurlencoded();
     public static final MediaType.Binary APPLICATION_X_X509_CA_CERT = akka.http.scaladsl.model.MediaTypes.application$divx$minusx509$minusca$minuscert();
     public static final MediaType.Binary APPLICATION_X_XPINSTALL = akka.http.scaladsl.model.MediaTypes.application$divx$minusxpinstall();
     public static final MediaType.WithOpenCharset APPLICATION_XHTML_XML = akka.http.scaladsl.model.MediaTypes.application$divxhtml$plusxml();

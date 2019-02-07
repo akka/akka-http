@@ -411,7 +411,7 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   val `application/x-tex`                                                         = abin("x-tex", Compressible, "tex")
   val `application/x-texinfo`                                                     = abin("x-texinfo", Compressible, "texi", "texinfo")
   val `application/x-vrml`                                                        = awoc("x-vrml", "vrml")
-  val `application/x-www-form-urlencoded`                                         = awoc("x-www-form-urlencoded")
+  val `application/x-www-form-urlencoded`                                         = awfc("x-www-form-urlencoded", HttpCharsets.`UTF-8`)
   val `application/x-x509-ca-cert`                                                = abin("x-x509-ca-cert", Compressible, "der")
   val `application/x-xpinstall`                                                   = abin("x-xpinstall", NotCompressible, "xpi")
   val `application/xhtml+xml`                                                     = awoc("xhtml+xml")

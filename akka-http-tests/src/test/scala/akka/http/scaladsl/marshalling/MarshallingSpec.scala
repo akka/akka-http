@@ -41,7 +41,7 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
     }
     "FormDataMarshaller should marshal FormData instances to application/x-www-form-urlencoded content" in {
       marshal(FormData(Map("name" → "Bob", "pass" → "hällo", "admin" → ""))) shouldEqual
-        HttpEntity(`application/x-www-form-urlencoded` withCharset `UTF-8`, "name=Bob&pass=h%C3%A4llo&admin=")
+        HttpEntity(`application/x-www-form-urlencoded`, "name=Bob&pass=h%C3%A4llo&admin=")
     }
   }
 
