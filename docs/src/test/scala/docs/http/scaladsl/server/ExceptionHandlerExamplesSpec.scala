@@ -5,6 +5,8 @@
 package docs.http.scaladsl.server
 
 import akka.http.scaladsl.server.ExceptionHandler
+import akka.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
 // format: OFF
 
@@ -159,7 +161,7 @@ object RespondWithHeaderExceptionHandlerExample {
 }
 
 
-class ExceptionHandlerExamplesSpec extends RoutingSpec {
+class ExceptionHandlerExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   "test explicit example" in {
     // tests:

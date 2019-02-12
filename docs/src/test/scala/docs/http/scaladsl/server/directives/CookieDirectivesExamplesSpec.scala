@@ -5,11 +5,11 @@
 package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.server._
-import akka.http.scaladsl.model.headers.{ HttpCookie, Cookie, `Set-Cookie` }
-import docs.http.scaladsl.server.RoutingSpec
+import akka.http.scaladsl.model.headers.{ Cookie, HttpCookie, `Set-Cookie` }
 import akka.http.scaladsl.model.DateTime
+import docs.CompileOnlySpec
 
-class CookieDirectivesExamplesSpec extends RoutingSpec {
+class CookieDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "cookie" in {
     //#cookie
     val route =

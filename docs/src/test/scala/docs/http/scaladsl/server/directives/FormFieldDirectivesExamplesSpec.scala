@@ -6,9 +6,10 @@ package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.model._
-import docs.http.scaladsl.server.RoutingSpec
+import akka.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
-class FormFieldDirectivesExamplesSpec extends RoutingSpec {
+class FormFieldDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "formFields" in {
     //#formFields
     val route =

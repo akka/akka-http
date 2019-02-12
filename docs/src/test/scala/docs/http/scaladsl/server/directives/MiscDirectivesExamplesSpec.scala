@@ -7,10 +7,11 @@ package docs.http.scaladsl.server.directives
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
 import headers._
-import docs.http.scaladsl.server.RoutingSpec
 import java.net.InetAddress
 
-class MiscDirectivesExamplesSpec extends RoutingSpec {
+import docs.CompileOnlySpec
+
+class MiscDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   "extractClientIP-example" in {
     //#extractClientIP-example

@@ -6,9 +6,9 @@ package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
-import docs.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
-class PathDirectivesExamplesSpec extends RoutingSpec {
+class PathDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   //#path-matcher
   val matcher: PathMatcher1[Option[Int]] =

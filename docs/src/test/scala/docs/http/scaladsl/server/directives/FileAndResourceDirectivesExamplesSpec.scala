@@ -6,12 +6,12 @@ package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.server.RoutingSpec
 import akka.http.scaladsl.server.directives.DirectoryListing
 import akka.http.scaladsl.server.directives.FileAndResourceDirectives.DirectoryRenderer
-import docs.http.scaladsl.server.RoutingSpec
-import docs.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
-class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
+class FileAndResourceDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "getFromFile-examples" in compileOnlySpec {
     //#getFromFile-examples
     import akka.http.scaladsl.server.directives._

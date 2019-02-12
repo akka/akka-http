@@ -5,17 +5,15 @@
 package docs.http.scaladsl.server.directives
 
 import scala.concurrent.duration._
-
 import akka.util.ByteString
-
 import akka.stream.OverflowStrategy
-import akka.stream.scaladsl.{ Sink, Source, Flow }
-
-import docs.http.scaladsl.server.RoutingSpec
-import akka.http.scaladsl.model.ws.{ TextMessage, Message, BinaryMessage }
+import akka.stream.scaladsl.{ Flow, Sink, Source }
+import akka.http.scaladsl.model.ws.{ BinaryMessage, Message, TextMessage }
+import akka.http.scaladsl.server.RoutingSpec
 import akka.http.scaladsl.testkit.WSProbe
+import docs.CompileOnlySpec
 
-class WebSocketDirectivesExamplesSpec extends RoutingSpec {
+class WebSocketDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "greeter-service" in {
     //#greeter-service
     def greeter: Flow[Message, Message, Any] =

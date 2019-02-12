@@ -7,19 +7,19 @@ package docs.http.scaladsl.server.directives
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{ Server, RawHeader }
+import akka.http.scaladsl.model.headers.{ RawHeader, Server }
 import akka.http.scaladsl.server.RouteResult.{ Complete, Rejected }
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.settings.RoutingSettings
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
-import docs.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
 import scala.concurrent.Future
 import scala.util.control.NonFatal
 
-class BasicDirectivesExamplesSpec extends RoutingSpec {
+class BasicDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "0extract" in {
     //#extract0
     val uriLength = extract(_.request.uri.toString.length)

@@ -3,9 +3,10 @@
  */
 
 package docs.http.scaladsl.server.directives
-import docs.http.scaladsl.server.RoutingSpec
+import akka.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
-class SchemeDirectivesExamplesSpec extends RoutingSpec {
+class SchemeDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "example-1" in {
     //#example-1
     val route =

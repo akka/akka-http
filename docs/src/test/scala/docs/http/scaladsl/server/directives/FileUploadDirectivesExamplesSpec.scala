@@ -10,12 +10,15 @@ import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.stream.scaladsl.Framing
 import akka.testkit.TestDuration
 import akka.util.ByteString
-import docs.http.scaladsl.server.RoutingSpec
 import java.io.File
+
+import akka.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
+
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class FileUploadDirectivesExamplesSpec extends RoutingSpec {
+class FileUploadDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   override def testConfigSource = "akka.actor.default-mailbox.mailbox-type = \"akka.dispatch.UnboundedMailbox\""
 

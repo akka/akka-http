@@ -4,7 +4,8 @@
 
 package docs.http.scaladsl.server.directives
 
-import docs.http.scaladsl.server.RoutingSpec
+import akka.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 //#caching-directives-import
 //#always-cache
 //#cache
@@ -15,7 +16,7 @@ import akka.http.scaladsl.server.directives.CachingDirectives._
 import akka.http.scaladsl.model.HttpMethods.GET
 import scala.concurrent.duration._
 
-class CachingDirectivesExamplesSpec extends RoutingSpec {
+class CachingDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   "cache" in {
     //#cache

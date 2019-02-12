@@ -5,14 +5,15 @@
 package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model._
-import com.typesafe.config.{ ConfigFactory, Config }
-
+import akka.http.scaladsl.server.RoutingSpec
+import com.typesafe.config.{ Config, ConfigFactory }
+import docs.CompileOnlySpec
 import headers._
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import docs.http.scaladsl.server.RoutingSpec
 
-class RangeDirectivesExamplesSpec extends RoutingSpec {
+class RangeDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   override def testConfig: Config =
     ConfigFactory.parseString("akka.http.routing.range-coalescing-threshold=2").withFallback(super.testConfig)

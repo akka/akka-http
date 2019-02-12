@@ -4,6 +4,9 @@
 
 package docs.http.scaladsl.server.directives
 
+import akka.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
+
 import scala.concurrent.Future
 
 //#complete-examples
@@ -24,10 +27,9 @@ import akka.http.scaladsl.server.ValidationRejection
 //#reject-examples
 
 import akka.http.scaladsl.server.Route
-import docs.http.scaladsl.server.RoutingSpec
 import akka.testkit.EventFilter
 
-class RouteDirectivesExamplesSpec extends RoutingSpec {
+class RouteDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   "complete-examples" in {
     //#complete-examples

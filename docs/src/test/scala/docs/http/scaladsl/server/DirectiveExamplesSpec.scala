@@ -5,8 +5,9 @@
 package docs.http.scaladsl.server
 
 import akka.http.scaladsl.server._
+import docs.CompileOnlySpec
 
-class DirectiveExamplesSpec extends RoutingSpec {
+class DirectiveExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   // format: OFF
 

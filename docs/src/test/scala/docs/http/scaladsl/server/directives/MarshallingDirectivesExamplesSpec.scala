@@ -5,10 +5,11 @@
 package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import docs.http.scaladsl.server.RoutingSpec
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model._
-import spray.json.{ JsValue, DefaultJsonProtocol }
+import akka.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
+import spray.json.{ DefaultJsonProtocol, JsValue }
 
 //#person-case-class
 case class Person(name: String, favoriteNumber: Int)
@@ -20,7 +21,7 @@ object PersonJsonSupport extends DefaultJsonProtocol with SprayJsonSupport {
 }
 //#person-json-support
 
-class MarshallingDirectivesExamplesSpec extends RoutingSpec {
+class MarshallingDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   "example-entity-with-json" in {
     //#example-entity-with-json
