@@ -111,7 +111,7 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
             .map(parse)
         }
 
-    // Run each akka http flow to completion, then continue processing. You'll want to tune the `parralelism`
+    // Run each akka http flow to completion, then continue processing. You'll want to tune the `parallelism`
     // parameter to mapAsync -- higher values will create more cpu and memory load which may or may not positively
     // impact performance.
     requests
