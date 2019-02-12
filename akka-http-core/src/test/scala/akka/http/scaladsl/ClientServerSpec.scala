@@ -565,7 +565,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       // settings adapting network buffer sizes
       val serverSettings = ServerSettings(system)
 
-      val server = Http().bindAndHandleAsync(_ ⇒ responsePromise.future, hostname, port, settings = serverSettings)
+      val server = Http().bindAndHandleAsync(_ ⇒ responsePromise.future, hostname, port, settings = serverSettings).futureValue
 
       try {
         val result = Source.single(ByteString(
@@ -581,7 +581,7 @@ Host: example.com
         }
       } finally {
         responsePromise.failure(new TimeoutException())
-        server.foreach(_.unbind())
+        server.unbind()
       }
     }
 
