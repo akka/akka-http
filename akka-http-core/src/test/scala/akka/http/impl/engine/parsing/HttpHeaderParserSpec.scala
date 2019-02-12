@@ -14,7 +14,7 @@ import scala.util.Random
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import akka.util.ByteString
 import akka.actor.ActorSystem
-import akka.http.HashCodeColliderr
+import akka.http.HashCodeCollider
 import akka.http.scaladsl.model.{ ErrorInfo, HttpHeader }
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.model.parser.CharacterClasses
@@ -287,7 +287,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       val value = "null"
 
       val regularKeys = Iterator.from(1).map(i ⇒ s"key_$i").take(numKeys)
-      private val zeroHashStrings: Iterator[String] = HashCodeColliderr.zeroHashCodeIterator()
+      private val zeroHashStrings: Iterator[String] = HashCodeCollider.zeroHashCodeIterator()
       val collidingKeys = zeroHashStrings
         .filter(_.forall(CharacterClasses.tchar))
         .take(numKeys)
@@ -298,33 +298,20 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       val collidingHeader = createHeader(collidingKeys)
       zeroHashStrings.next().hashCode should be(0)
 
-      val regularTime = nanoBench {
+      def regular(): Unit = {
         val (_, accept: Accept) = parseLine(regularHeader)
         accept.mediaRanges.head.getParams.size should be(numKeys)
       }
-      val collidingTime = nanoBench {
+      def colliding(): Unit = {
         val (_, accept: Accept) = parseLine(collidingHeader)
         accept.mediaRanges.head.getParams.size should be(numKeys)
       }
 
-      collidingTime.toDouble / regularTime should be < 3.0 // speed must be in same order of magnitude
+      BenchUtils.nanoRace(regular, colliding) should be < 3.0 // speed must be in same order of magnitude
     }
   }
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
-
-  def nanoBench(block: ⇒ Unit): Long = {
-    // great microbenchmark (the comment must be kept, otherwise it's not true)
-    val f = block _
-
-    // warmup
-    (1 to 10).foreach(_ ⇒ f())
-
-    val start = System.nanoTime()
-    f()
-    val end = System.nanoTime()
-    end - start
-  }
 
   def check(pair: (String, String)) = {
     val (expected, actual) = pair
