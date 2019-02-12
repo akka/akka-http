@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2048 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -51,8 +51,6 @@ class TlsEndpointVerificationSpec extends AkkaSpec("""
       val pipe = pipeline(ExampleHttpContexts.exampleClientContext, hostname = "hijack.de") // example context does include custom CA
 
       whenReady(pipe(HttpRequest(uri = "https://hijack.de/")).failed, timeout) { e ⇒
-
-
 
         e shouldBe an[Exception]
       }
