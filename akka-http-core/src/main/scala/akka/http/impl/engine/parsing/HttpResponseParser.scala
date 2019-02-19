@@ -34,21 +34,9 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
   final def setContextForNextResponse(responseContext: ResponseContext): Unit =
     if (contextForCurrentResponse.isEmpty) contextForCurrentResponse = Some(responseContext)
 
-  final def onPull(): ResponseOutput =
-    if (result.nonEmpty) {
-      val head = result.head
-      result.remove(0) // faster than `ListBuffer::drop`
-      head
-    } else if (terminated) StreamEnd else NeedMoreData
+  final def onPull(): ResponseOutput = doPull()
 
-  final def onUpstreamFinish(): Boolean = {
-    completionHandling() match {
-      case Some(x) ⇒ emit(x)
-      case None    ⇒ // nothing to do
-    }
-    terminated = true
-    result.isEmpty
-  }
+  final def onUpstreamFinish(): Boolean = shouldComplete()
 
   override final def emit(output: ResponseOutput): Unit = {
     if (output == MessageEnd) contextForCurrentResponse = None
