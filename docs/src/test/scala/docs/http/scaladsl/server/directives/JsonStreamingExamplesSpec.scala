@@ -9,14 +9,15 @@ import akka.http.scaladsl.common.{ EntityStreamingSupport, JsonEntityStreamingSu
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Accept
+import akka.http.scaladsl.server.RoutingSpec
 import akka.http.scaladsl.server.{ UnacceptedResponseContentTypeRejection, UnsupportedRequestContentTypeRejection }
 import akka.stream.scaladsl.{ Flow, Source }
 import akka.util.ByteString
-import docs.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
 import scala.concurrent.Future
 
-class JsonStreamingExamplesSpec extends RoutingSpec {
+class JsonStreamingExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   //#tweet-model
   case class Tweet(uid: Int, txt: String)

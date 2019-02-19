@@ -5,16 +5,16 @@
 package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.coding._
-import docs.http.scaladsl.server.RoutingSpec
-import akka.http.scaladsl.model.{ HttpResponse, HttpEntity }
-import akka.http.scaladsl.model.headers.{ HttpEncodings, HttpEncoding, `Accept-Encoding`, `Content-Encoding` }
+import akka.http.scaladsl.model.{ HttpEntity, HttpResponse }
+import akka.http.scaladsl.model.headers.{ HttpEncoding, HttpEncodings, `Accept-Encoding`, `Content-Encoding` }
 import akka.http.scaladsl.model.headers.HttpEncodings._
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.server._
 import akka.util.ByteString
+import docs.CompileOnlySpec
 import org.scalatest.matchers.Matcher
 
-class CodingDirectivesExamplesSpec extends RoutingSpec {
+class CodingDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "responseEncodingAccepted" in {
     //#responseEncodingAccepted
     val route = responseEncodingAccepted(gzip) { complete("content") }

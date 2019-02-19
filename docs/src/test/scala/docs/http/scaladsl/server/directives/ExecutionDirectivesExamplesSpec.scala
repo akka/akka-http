@@ -6,9 +6,9 @@ package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
-import docs.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
-class ExecutionDirectivesExamplesSpec extends RoutingSpec {
+class ExecutionDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "handleExceptions" in {
     //#handleExceptions
     val divByZeroHandler = ExceptionHandler {

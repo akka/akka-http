@@ -7,12 +7,13 @@ package docs.http.scaladsl.server.directives
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.RoutingSpec
 import akka.http.scaladsl.server.directives.Credentials
+import docs.CompileOnlySpec
 
 import scala.concurrent.Future
-import docs.http.scaladsl.server.RoutingSpec
 
-class SecurityDirectivesExamplesSpec extends RoutingSpec {
+class SecurityDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   "authenticateBasic-0" in {
     //#authenticateBasic-0

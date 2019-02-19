@@ -6,10 +6,11 @@ package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model.headers.Host
-import akka.http.scaladsl.server.{ Directive, Directive1, Route, MissingQueryParamRejection }
-import docs.http.scaladsl.server.RoutingSpec
+import akka.http.scaladsl.server.RoutingSpec
+import akka.http.scaladsl.server.{ Directive, Directive1, MissingQueryParamRejection, Route }
+import docs.CompileOnlySpec
 
-class CustomDirectivesExamplesSpec extends RoutingSpec {
+class CustomDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   "labeling" in {
     //#labeling

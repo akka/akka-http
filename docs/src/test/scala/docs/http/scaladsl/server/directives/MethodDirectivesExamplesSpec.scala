@@ -6,9 +6,10 @@ package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
-import docs.http.scaladsl.server.RoutingSpec
+import akka.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
-class MethodDirectivesExamplesSpec extends RoutingSpec {
+class MethodDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   "delete-method" in {
     //#delete-method

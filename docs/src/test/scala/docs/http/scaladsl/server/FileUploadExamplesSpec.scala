@@ -12,12 +12,14 @@ import akka.http.scaladsl.model.Multipart.FormData.BodyPart
 import akka.stream.scaladsl.Framing
 import akka.stream.scaladsl._
 import akka.http.scaladsl.model.Multipart
+import akka.http.scaladsl.server.RoutingSpec
 import akka.util.ByteString
+import docs.CompileOnlySpec
 
 import scala.concurrent.duration._
 import scala.concurrent.Future
 
-class FileUploadExamplesSpec extends RoutingSpec {
+class FileUploadExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   case class Video(file: File, title: String, author: String)
   object db {

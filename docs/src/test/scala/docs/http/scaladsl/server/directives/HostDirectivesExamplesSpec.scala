@@ -5,11 +5,12 @@
 package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model._
-import docs.http.scaladsl.server.RoutingSpec
 import headers._
 import StatusCodes._
+import akka.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
-class HostDirectivesExamplesSpec extends RoutingSpec {
+class HostDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   "extractHost" in {
     //#extractHost

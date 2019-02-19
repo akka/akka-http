@@ -5,8 +5,10 @@
 package docs.http.scaladsl
 
 import akka.http.scaladsl.server.Directives
+import akka.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
-class SprayJsonPrettyMarshalSpec extends server.RoutingSpec {
+class SprayJsonPrettyMarshalSpec extends RoutingSpec with CompileOnlySpec {
 
   "spray-json example" in {
     //#example
