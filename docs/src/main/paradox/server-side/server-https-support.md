@@ -18,31 +18,6 @@ If defined encryption is enabled on all accepted connections. Otherwise it is di
 
 For detailed documentation for client-side HTTPS support refer to @ref[Client-Side HTTPS Support](../client-side/client-https-support.md).
 
-<a id="ssl-config"></a>
-## SSL-Config
-
-Akka HTTP heavily relies on, and delegates most configuration of any SSL/TLS related options to
-[Lightbend SSL-Config](https://lightbend.github.io/ssl-config/), which is a library specialized in providing an secure-by-default SSLContext
-and related options.
-
-Please refer to the [Lightbend SSL-Config](https://lightbend.github.io/ssl-config/) documentation for detailed documentation of all available settings.
-
-SSL Config settings used by Akka HTTP (as well as Streaming TCP) are located under the *akka.ssl-config* namespace.
-
-In order to use SSL-Config in Akka so it logs to the right ActorSystem-wise logger etc., the
-`AkkaSSLConfig` extension is provided. Obtaining it is as simple as:
-
-Scala
-:  @@snip [HttpsServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #akka-ssl-config }
-
-Java
-:  @@snip [HttpsServerExampleTest.java]($test$/java/docs/http/javadsl/server/HttpsServerExampleTest.java) { #akka-ssl-config }
-
-While typical usage, for example for configuring http client settings would be applied globally by configuring
-ssl-config in `application.conf`, it's possible to obtain the extension and `copy` it while modifying any
-configuration that you might need to change and then use that specific `AkkaSSLConfig` instance while establishing
-connections be it client or server-side.
-
 ## Obtaining SSL/TLS Certificates
 
 In order to run an HTTPS server a certificate has to be provided, which usually is either obtained from a signing
@@ -100,8 +75,6 @@ Scala
 
 Java
 :  @@snip [SimpleServerApp.java]($akka-http$/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/simple/SimpleServerApp.java) { #https-http-config }
-
-or via [SSL-Config](#ssl-config) (not explained here though).
 
 Then, call `bind...` methods twice like below.
 @scala[The passed `https` context is from the above code snippet.]
