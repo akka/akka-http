@@ -203,6 +203,30 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         responses.expectComplete()
       }
 
+      "has a request with a overridden Host RawHeader" in new TestSetup {
+        val request = HttpRequest().addHeader(RawHeader("Host", "testhost.com"))
+        requestsSub.sendNext(request)
+        expectWireData(
+          """GET / HTTP/1.1
+            |Host: testhost.com
+            |User-Agent: akka-http/test
+            |
+            |""")
+
+        sendWireData(
+          """HTTP/1.1 200 OK
+            |Content-Length: 0
+            |
+            |""")
+
+        expectResponse() shouldEqual HttpResponse()
+
+        requestsSub.sendComplete()
+        netOut.expectComplete()
+        netInSub.sendComplete()
+        responses.expectComplete()
+      }
+
       "exhibits eager request stream completion" in new TestSetup {
         requestsSub.sendNext(HttpRequest())
         requestsSub.sendComplete()
