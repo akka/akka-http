@@ -62,10 +62,6 @@ Maven
     @@@
 
 
-Mind that Akka HTTP comes in two main modules: `akka-http` and `akka-http-core`. Because `akka-http`
-depends on `akka-http-core` you don't need to bring the latter explicitly. Still you may need to do this in case you rely
-solely on the low-level API; make sure the Scala version is a recent release of version `2.11` or `2.12`.
-
 Alternatively, you can bootstrap a new sbt project with Akka HTTP already
 configured using the [Giter8](http://www.foundweekends.org/giter8/) template:
 
@@ -83,8 +79,7 @@ From there on the prepared project can be built using Gradle or Maven.
 
 More instructions can be found on the @scala[[template
 project](https://github.com/akka/akka-http-scala-seed.g8)]@java[[template
-project](https://github.com/akka/akka-http-java-seed.g8)]. Note, requires
-sbt version 0.13.13 or newer.
+project](https://github.com/akka/akka-http-java-seed.g8)].
 
 ## Routing DSL for HTTP servers
 
@@ -95,21 +90,6 @@ request.
 For example one route might start with matching the `path` of the request, only matching if it is "/hello", then
 narrowing it down to only handle HTTP `get` requests and then `complete` those with a string literal, which
 will be sent back as a HTTP OK with the string as response body.
-
-Transforming request and response bodies between over-the-wire formats and objects to be used in your application is
-done separately from the route declarations, in marshallers, which are pulled in implicitly using the "magnet" pattern.
-This means that you can `complete` a request with any kind of object as long as there is an implicit marshaller
-available in scope.
-
-@@@ div { .group-scala }
-Default marshallers are provided for simple objects like String or ByteString, and you can define your own for example
-for JSON. An additional module provides JSON serialization using the spray-json library (see @ref[JSON Support](common/json-support.md)
-for details).
-@@@
-@@@ div { .group-java }
-JSON support is possible in `akka-http` by the use of Jackson, an external artifact (see @ref[JSON Support](common/json-support.md#json-jackson-support-java)
-for details).
-@@@
 
 The @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]] created using the Route DSL is then "bound" to a port to start serving HTTP requests:
 
@@ -122,6 +102,36 @@ Java
 When you run this server, you can either open the page in a browser,
 at the following url: [http://localhost:8080/hello](http://localhost:8080/hello), or call it in your terminal, via `curl http://localhost:8080/hello`.
 
+## Marshalling
+
+Transforming request and response bodies between over-the-wire formats and objects to be used in your application is
+done separately from the route declarations, in marshallers, which are pulled in implicitly using the "magnet" pattern.
+This means that you can `complete` a request with any kind of object as long as there is an implicit marshaller
+available in scope.
+
+@@@ div { .group-scala }
+Default marshallers are provided for simple objects like String or ByteString, and you can define your own for example
+for JSON. An additional module provides JSON serialization using the spray-json library (see @ref[JSON Support](common/json-support.md)
+for details):
+
+@@dependency [sbt,Gradle,Maven] {
+  group="com.typesafe.akka"
+  artifact="akka-http-spray-json_$scala.binary.version$"
+  version="$project.version$"
+}
+
+@@@
+@@@ div { .group-java }
+JSON support is possible in `akka-http` by the use of Jackson, an external artifact (see @ref[JSON Support](common/json-support.md#json-jackson-support-java)
+for details):
+
+@@dependency [sbt,Gradle,Maven] {
+  group="com.typesafe.akka"
+  artifact="akka-http-jackson_$scala.binary.version$"
+  version="$project.version$"
+}
+
+@@@
 
 A common use case is to reply to a request using a model object having the marshaller transform it into JSON. In
 this case shown by two separate routes. The first route queries an asynchronous database and marshalls the
@@ -139,6 +149,8 @@ via `curl http://localhost:8080/item/42`.
 
 The logic for the marshalling and unmarshalling JSON in this example is provided by the @scala["spray-json"]@java["Jackson"] library
 (details on how to use that here: @scala[@ref[JSON Support](common/json-support.md))]@java[@ref[JSON Support](common/json-support.md#json-jackson-support-java))].
+
+## Streaming
 
 One of the strengths of Akka HTTP is that streaming data is at its heart meaning that both request and response bodies
 can be streamed through the server achieving constant memory usage even for very large requests or responses. Streaming
@@ -177,7 +189,8 @@ Read more about the details of the high level APIs in the section @ref[High-leve
 ## Low-level HTTP server APIs
 
 The low-level Akka HTTP server APIs allows for handling connections or individual requests by accepting
-@unidoc[HttpRequest] s and answering them by producing @unidoc[HttpResponse] s. This is provided by the `akka-http-core` module.
+@unidoc[HttpRequest] s and answering them by producing @unidoc[HttpResponse] s. This is provided by the `akka-http-core` module,
+which is included automatically when you depend on `akka-http` but can also be used on its own.
 APIs for handling such request-responses as function calls and as a @unidoc[Flow[HttpRequest, HttpResponse, \_]] are available.
 
 Scala
