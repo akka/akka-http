@@ -10,7 +10,7 @@ package akka.http
  * Adapted from MIT-licensed code by Andriy Plokhotnyuk
  * at https://github.com/plokhotnyuk/jsoniter-scala/blob/26b5ecdd4f8c2ab7e97bd8106cefdda4c1e701ce/jsoniter-scala-benchmark/src/main/scala/com/github/plokhotnyuk/jsoniter_scala/macros/HashCodeCollider.scala#L6.
  */
-object HashCodeColliderr {
+object HashCodeCollider {
   val visibleChars = (33 until 127).filterNot(c ⇒ c == '\\' || c == '"')
   def asciiChars: Iterator[Int] = visibleChars.toIterator
   def asciiCharsAndHash(previousHash: Int): Iterator[(Int, Int)] = visibleChars.toIterator.map(c ⇒ c -> (previousHash + c) * 31)

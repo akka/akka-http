@@ -6,7 +6,6 @@ package akka.http.scaladsl.server
 package directives
 
 import akka.stream.scaladsl.Source
-
 import akka.http.HashCodeCollider
 import akka.http.scaladsl.common.StrictForm
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
@@ -14,13 +13,11 @@ import akka.http.scaladsl.unmarshalling.Unmarshaller.HexInt
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model.MediaTypes._
-
 import akka.http.impl.model.parser.CharacterClasses
+import akka.http.impl.util.BenchUtils
 import akka.http.impl.util.StringRendering
 
 class FormFieldDirectivesSpec extends RoutingSpec {
-  // FIXME: unfortunately, it has make a come back, this time it's reproducible ...
-
   implicit val nodeSeqUnmarshaller =
     ScalaXmlSupport.nodeSeqUnmarshaller(`text/xml`, `text/html`, `text/plain`)
 
@@ -43,19 +40,6 @@ class FormFieldDirectivesSpec extends RoutingSpec {
   val multipartFormWithFile = Multipart.FormData(
     Multipart.FormData.BodyPart.Strict("file", HttpEntity(ContentTypes.`text/xml(UTF-8)`, "<int>42</int>"),
       Map("filename" → "age.xml")))
-
-  def nanoBench(block: ⇒ Unit): Long = {
-    // great microbenchmark (the comment must be kept, otherwise it's not true)
-    val f = block _
-
-    // warmup
-    (1 to 10).foreach(_ ⇒ f())
-
-    val start = System.nanoTime()
-    f()
-    val end = System.nanoTime()
-    end - start
-  }
 
   "The 'formFields' extraction directive" should {
     "properly extract the value of www-urlencoded form fields" in {
@@ -226,18 +210,17 @@ class FormFieldDirectivesSpec extends RoutingSpec {
       val regularFormData = createFormData(regularKeys)
       val collidingDormData = createFormData(collidingKeys)
 
-      val regularTime = nanoBench {
+      def regular(): Unit =
         Post("/", regularFormData) ~> {
           formFieldMap { _ ⇒ complete(StatusCodes.OK) }
         } ~> check {}
-      }
-      val collidingTime = nanoBench {
+
+      def colliding(): Unit =
         Post("/", collidingDormData) ~> {
           formFieldMap { _ ⇒ complete(StatusCodes.OK) }
         }
-      }
 
-      collidingTime.toDouble / regularTime should be < 3.0 // speed must be in same order of magnitude
+      BenchUtils.nanoRace(colliding(), regular()) should be < 3.0 // speed must be in same order of magnitude
     }
   }
 
@@ -283,18 +266,17 @@ class FormFieldDirectivesSpec extends RoutingSpec {
       val regularFormData = createFormData(regularKeys)
       val collidingDormData = createFormData(collidingKeys)
 
-      val regularTime = nanoBench {
+      def regular(): Unit =
         Post("/", regularFormData) ~> {
           formFieldMultiMap { _ ⇒ complete(StatusCodes.OK) }
         } ~> check {}
-      }
-      val collidingTime = nanoBench {
+
+      def colliding(): Unit =
         Post("/", collidingDormData) ~> {
           formFieldMultiMap { _ ⇒ complete(StatusCodes.OK) }
         }
-      }
 
-      collidingTime.toDouble / regularTime should be < 3.0 // speed must be in same order of magnitude
+      BenchUtils.nanoRace(colliding(), regular()) should be < 3.0 // speed must be in same order of magnitude
     }
   }
 }
