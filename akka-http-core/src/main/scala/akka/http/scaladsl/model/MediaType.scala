@@ -333,6 +333,7 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
 
   val `application/atom+xml`                                                      = awoc("atom+xml", "atom")
   val `application/base64`                                                        = awoc("base64", "mm", "mme")
+  val `application/cbor`                                                          = abin("cbor", Compressible, "cbor")
   @deprecated("This format is unofficial and should not be used. Use application/vnd.ms-excel instead.", "10.1.6")
   val `application/excel`                                                         = abin("excel", NotCompressible)
   @deprecated("This format is unofficial and should not be used. Use font/woff instead.", "10.1.7")
