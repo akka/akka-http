@@ -57,7 +57,7 @@ between http and stream buffering. This manifests as errors such as the followin
 Response entity was not subscribed after 1 second. Make sure to read the response entity body or call `discardBytes()` on it.
 ```
 
-This error indicatesy that the http response has been available for too long without being consumed. It can be 
+This error indicates that the http response has been available for too long without being consumed. It can be 
 partially worked around by increasing the subscription timeout, but you will still run the risk of running into network 
 level timeouts and could still exceed the timeout under load so it's best to resolve the issue properly such as in 
 the examples below: 
