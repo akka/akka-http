@@ -54,7 +54,7 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
           parameter("amount".as[Int].?) { echoComplete }
         } ~> check {
           inside(rejection) {
-            case MalformedRequestContentRejection("The request's query string is invalid: amount=1%2", _) ⇒
+            case MalformedRequestContentRejection("The request's query string is invalid.", _) ⇒
           }
         }
       }

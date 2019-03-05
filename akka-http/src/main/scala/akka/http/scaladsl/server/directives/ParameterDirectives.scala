@@ -125,7 +125,7 @@ object ParameterDirectives extends ParameterDirectives {
         import ctx.materializer
         Try(ctx.request.uri.query()) match {
           case Success(query) ⇒ handleParamResult(paramName, fsou(query.get(paramName)))
-          case Failure(t)     ⇒ reject(MalformedRequestContentRejection(s"The request's query string is invalid: ${ctx.request.uri.rawQueryString.getOrElse("")}", t))
+          case Failure(t)     ⇒ reject(MalformedRequestContentRejection("The request's query string is invalid.", t))
         }
       }
     implicit def forString(implicit fsu: FSU[String]): ParamDefAux[String, Directive1[String]] =
