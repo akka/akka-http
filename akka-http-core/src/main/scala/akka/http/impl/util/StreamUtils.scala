@@ -276,7 +276,7 @@ private[http] object StreamUtils {
    */
   @InternalApi
   object CaptureTerminationOp extends EntityStreamOp[Future[Unit]] {
-    def strictM: Future[Unit] = Future.successful(())
+    val strictM: Future[Unit] = Future.successful(())
     def apply[T, Mat](source: Source[T, Mat]): (Source[T, Mat], Future[Unit]) = StreamUtils.captureTermination(source)
   }
 
