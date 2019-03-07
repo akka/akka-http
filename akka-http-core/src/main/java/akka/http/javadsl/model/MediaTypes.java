@@ -16,6 +16,7 @@ public final class MediaTypes {
 
     public static final MediaType.WithOpenCharset APPLICATION_ATOM_XML = akka.http.scaladsl.model.MediaTypes.application$divatom$plusxml();
     public static final MediaType.WithOpenCharset APPLICATION_BASE64 = akka.http.scaladsl.model.MediaTypes.application$divbase64();
+    public static final MediaType.Binary APPLICATION_CBOR = akka.http.scaladsl.model.MediaTypes.application$divcbor();
     /**
      * @deprecated This format is unofficial and should not be used.
      *              Use {@link{#APPLICATION_VND_MS_EXCEL} instead.
