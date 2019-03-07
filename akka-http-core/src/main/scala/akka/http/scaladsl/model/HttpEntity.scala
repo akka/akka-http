@@ -669,7 +669,8 @@ object HttpEntity {
    */
   @InternalApi
   private[http] def captureTermination[T <: HttpEntity](entity: T): (T, Future[Unit]) =
-    StreamUtils.transformEntityStream(entity, StreamUtils.CaptureTerminationOp)
+    if (entity.isStrict) (entity, StreamUtils.CaptureTerminationOp.strictM) // fast path for the common case
+    else StreamUtils.transformEntityStream(entity, StreamUtils.CaptureTerminationOp)
 
   /**
    * Represents the currently being-drained HTTP Entity which triggers completion of the contained

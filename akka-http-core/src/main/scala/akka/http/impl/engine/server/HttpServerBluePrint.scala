@@ -265,7 +265,7 @@ private[http] object HttpServerBluePrint {
           val access = new TimeoutAccessImpl(request, initialTimeout, requestEnd, callback,
             interpreter.materializer, log)
           openTimeouts = openTimeouts.enqueue(access)
-          push(requestOut, request.copy(headers = request.headers :+ `Timeout-Access`(access), entity = entity))
+          push(requestOut, request.copy(headers = `Timeout-Access`(access) +: request.headers, entity = entity))
         }
         override def onUpstreamFinish() = complete(requestOut)
         override def onUpstreamFailure(ex: Throwable) = fail(requestOut, ex)
