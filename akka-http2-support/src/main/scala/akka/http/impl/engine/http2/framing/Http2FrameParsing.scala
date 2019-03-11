@@ -138,6 +138,7 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteS
 
           case RST_STREAM ⇒
             Http2Compliance.requireFrameSize(payload.remainingSize, 4)
+            Http2Compliance.requireNonZeroStreamId(streamId)
             RstStreamFrame(streamId, ErrorCode.byId(payload.readIntBE()))
 
           case PRIORITY ⇒
