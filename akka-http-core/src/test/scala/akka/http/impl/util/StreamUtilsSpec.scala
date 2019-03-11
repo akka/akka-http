@@ -4,8 +4,8 @@
 
 package akka.http.impl.util
 
-import akka.stream.{ActorMaterializer, Attributes}
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.{ ActorMaterializer, Attributes }
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
 import akka.testkit._
 import org.scalatest.concurrent.ScalaFutures
@@ -75,12 +75,13 @@ class StreamUtilsSpec extends AkkaSpec with ScalaFutures {
         Source(0L to totalElements)
           .map { _ ⇒ pack }
           .via(StreamUtils.sliceBytesTransformer(start, length))
-          .fold(0L) { case (sum, element) ⇒
-            sum + element.length
+          .fold(0L) {
+            case (sum, element) ⇒
+              sum + element.length
           }
           .runWith(Sink.head)
 
-      Await.result(whenCompleted, 3.seconds.dilated) should be (length)
+      Await.result(whenCompleted, 3.seconds.dilated) should be(length)
     }
   }
 }
