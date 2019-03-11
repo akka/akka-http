@@ -89,7 +89,9 @@ private[http] object StreamUtils {
             push(out, data)
             if (remaining <= 0) completeStage()
           }
-          toSkip -= element.length
+
+          if (toSkip > 0)
+            toSkip -= element.length
         }
 
         setHandlers(in, out, this)
