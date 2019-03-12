@@ -30,7 +30,11 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
 
   import HttpMessageParser._
 
-  protected final val result = new ListBuffer[Output]
+  // Either:
+  //   - null: currently no output
+  //   - Output: one output element
+  //   - ListBuffer: several output elements
+  private[this] var result: AnyRef = null
   private[this] var state: ByteString ⇒ StateResult = startNewMessage(_, 0)
   private[this] var protocol: HttpProtocol = `HTTP/1.1`
   protected var completionHandling: CompletionHandling = CompletionOk
@@ -74,17 +78,23 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
         case x             ⇒ x
       }
 
-    if (result.nonEmpty) throw new IllegalStateException("Unexpected `onPush`")
+    if (result ne null) throw new IllegalStateException("Unexpected `onPush`")
     run(state)
     doPull()
   }
 
   protected final def doPull(): Output =
-    if (result.nonEmpty) {
-      val head = result.head
-      result.remove(0) // faster than `ListBuffer::drop`
-      head
-    } else if (terminated) StreamEnd else NeedMoreData
+    result match {
+      case null ⇒ if (terminated) StreamEnd else NeedMoreData
+      case buffer: ListBuffer[Output] ⇒
+        val head = buffer.head
+        buffer.remove(0) // faster than `ListBuffer::drop`
+        if (buffer.isEmpty) result = null
+        head
+      case ele: Output @unchecked ⇒
+        result = null
+        ele
+    }
 
   protected final def shouldComplete(): Boolean = {
     completionHandling() match {
@@ -92,7 +102,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
       case None    ⇒ // nothing to do
     }
     terminated = true
-    result.isEmpty
+    result eq null
   }
 
   protected final def startNewMessage(input: ByteString, offset: Int): StateResult = {
@@ -254,7 +264,15 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
     }
   }
 
-  protected def emit(output: Output): Unit = result += output
+  protected def emit(output: Output): Unit = result match {
+    case null                       ⇒ result = output
+    case buffer: ListBuffer[Output] ⇒ buffer += output
+    case old: Output @unchecked ⇒
+      val buffer = new ListBuffer[Output]
+      buffer += old
+      buffer += output
+      result = buffer
+  }
 
   protected final def continue(input: ByteString, offset: Int)(next: (ByteString, Int) ⇒ StateResult): StateResult = {
     state =

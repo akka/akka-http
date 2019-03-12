@@ -68,16 +68,21 @@ private[http] final class HttpRequestParser(
       }
     }
 
-    override def parseMessage(input: ByteString, offset: Int): StateResult = {
-      var cursor = parseMethod(input, offset)
-      cursor = parseRequestTarget(input, cursor)
-      cursor = parseProtocol(input, cursor)
-      if (byteChar(input, cursor) == '\r' && byteChar(input, cursor + 1) == '\n')
-        parseHeaderLines(input, cursor + 2)
-      else if (byteChar(input, cursor) == '\n')
-        parseHeaderLines(input, cursor + 1)
-      else onBadProtocol
-    }
+    override def parseMessage(input: ByteString, offset: Int): StateResult =
+      if (offset < input.length) {
+        var cursor = parseMethod(input, offset)
+        cursor = parseRequestTarget(input, cursor)
+        cursor = parseProtocol(input, cursor)
+        if (byteChar(input, cursor) == '\r' && byteChar(input, cursor + 1) == '\n')
+          parseHeaderLines(input, cursor + 2)
+        else if (byteChar(input, cursor) == '\n')
+          parseHeaderLines(input, cursor + 1)
+        else onBadProtocol()
+      } else
+        // Without HTTP pipelining it's likely that buffer is exhausted after reading one message,
+        // so we check above explicitly if we are done and stop work here without running into NotEnoughDataException
+        // when continuing to parse.
+        continue(startNewMessage)
 
     def parseMethod(input: ByteString, cursor: Int): Int = {
       @tailrec def parseCustomMethod(ix: Int = 0, sb: JStringBuilder = new JStringBuilder(16)): Int =
@@ -152,7 +157,7 @@ private[http] final class HttpRequestParser(
       uriEnd + 1
     }
 
-    override def onBadProtocol() = throw new ParsingException(HTTPVersionNotSupported)
+    override def onBadProtocol(): Nothing = throw new ParsingException(HTTPVersionNotSupported)
 
     // http://tools.ietf.org/html/rfc7230#section-3.3
     override def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
