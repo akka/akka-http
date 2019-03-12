@@ -6,6 +6,7 @@ package akka.http.impl.util
 
 import akka.stream.{ ActorMaterializer, Attributes }
 import akka.stream.scaladsl.{ Sink, Source }
+import akka.util.ByteString
 import akka.testkit._
 import org.scalatest.concurrent.ScalaFutures
 
@@ -62,4 +63,25 @@ class StreamUtilsSpec extends AkkaSpec with ScalaFutures {
     }
   }
 
+  "sliceBytesTransformer" should {
+    "not discard data when slicing more that Int.MaxValue" in {
+      val start = Int.MaxValue + 10L
+      val length = Int.MaxValue * 10L
+      val elementSize = 100 * 1024 * 1024
+      val pack = ByteString(new Array[Byte](elementSize))
+      val totalElements = (start + length) / elementSize
+
+      val whenCompleted =
+        Source(0L to totalElements)
+          .map { _ ⇒ pack }
+          .via(StreamUtils.sliceBytesTransformer(start, length))
+          .fold(0L) {
+            case (sum, element) ⇒
+              sum + element.length
+          }
+          .runWith(Sink.head)
+
+      Await.result(whenCompleted, 3.seconds.dilated) should be(length)
+    }
+  }
 }
