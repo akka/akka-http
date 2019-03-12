@@ -29,11 +29,12 @@ import scala.reflect.ClassTag
 import scala.util.Random
 
 class HttpServerSpec extends AkkaSpec(
-  """akka.loggers = []
-     akka.loglevel = OFF
+  """akka.loglevel = DEBUG
+     akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
      akka.http.server.request-timeout = infinite
+     akka.http.server.log-unencrypted-network-bytes = 1000
      akka.scheduler.implementation = "akka.testkit.ExplicitlyTriggeredScheduler"
-  """) with Inside { spec ⇒
+  """) with Inside with WithLogCapturing { spec ⇒
   implicit val materializer = ActorMaterializer()
 
   "The server implementation" should {
@@ -1128,6 +1129,64 @@ class HttpServerSpec extends AkkaSpec(
       netIn.sendComplete()
     })
 
+    "not add `Connection: close` to responses after LastChunk has been seen" in assertAllStagesStopped(new BaseTestSetup {
+      implicit val ec = system.dispatcher
+      override def userFlow: Flow[HttpRequest, HttpResponse, Any] =
+        Flow[HttpRequest]
+          .mapAsync(1) { req ⇒
+            req.entity.asInstanceOf[HttpEntity.Chunked]
+              .chunks.takeWhile(!_.isLastChunk)
+              .runFold(0)((v, _) ⇒ v + 1)
+              .map(result ⇒ HttpResponse(entity = result.toString))
+          }
+      send("""POST / HTTP/1.1
+             |Host: example.com
+             |Transfer-Encoding: chunked
+             |
+             |4
+             |abcd
+             |3
+             |efg
+             |0
+             |
+             |""")
+
+      expectResponseWithWipedDate(
+        """HTTP/1.1 200 OK
+          |Server: akka-http/test
+          |Date: XXXX
+          |Content-Type: text/plain; charset=UTF-8
+          |Content-Length: 1
+          |
+          |2""")
+
+      // send another request to check that connection is still fully alive
+      send("""POST / HTTP/1.1
+             |Host: example.com
+             |Transfer-Encoding: chunked
+             |
+             |4
+             |abcd
+             |3
+             |efg
+             |5
+             |hijkl
+             |0
+             |
+             |""")
+
+      expectResponseWithWipedDate(
+        """HTTP/1.1 200 OK
+          |Server: akka-http/test
+          |Date: XXXX
+          |Content-Type: text/plain; charset=UTF-8
+          |Content-Length: 1
+          |
+          |2""")
+
+      shutdownBlueprint()
+    })
+
     "support request length verification" which afterWord("is defined via") {
 
       class LengthVerificationTest(maxContentLength: Int) extends TestSetup(maxContentLength) {
@@ -1375,9 +1434,12 @@ class HttpServerSpec extends AkkaSpec(
     })
 
   }
-  class TestSetup(maxContentLength: Int = -1) extends HttpServerTestSetupBase {
+  trait BaseTestSetup extends HttpServerTestSetupBaseUserFlow {
     implicit def system = spec.system
     implicit def materializer = spec.materializer
+  }
+
+  class TestSetup(maxContentLength: Int = -1) extends HttpServerTestSetupBase with BaseTestSetup {
     val scheduler = spec.system.scheduler.asInstanceOf[ExplicitlyTriggeredScheduler]
 
     override def settings = {

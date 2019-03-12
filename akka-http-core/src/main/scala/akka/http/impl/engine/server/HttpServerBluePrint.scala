@@ -34,6 +34,7 @@ import akka.http.javadsl.model
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws.Message
 import akka.http.impl.util.LogByteStringTools._
+import akka.http.scaladsl.model.HttpEntity.LastChunk
 
 /**
  * INTERNAL API
@@ -102,14 +103,10 @@ private[http] object HttpServerBluePrint {
 
       var downstreamPullWaiting = false
       var completionDeferred = false
+      var lastChunkSeen = false
       var entitySource: SubSourceOutlet[RequestOutput] = _
 
-      // optimization: to avoid allocations the "idle" case in and out handlers are put directly on the GraphStageLogic itself
-      override def onPull(): Unit = {
-        pull(in)
-      }
-
-      // optimization: this callback is used to handle entity substream cancellation to avoid allocating a dedicated handler
+      override def onPull(): Unit = pull(in)
       override def onDownstreamFinish(): Unit = {
         if (entitySource ne null) {
           // application layer has cancelled or only partially consumed response entity:
@@ -155,52 +152,58 @@ private[http] object HttpServerBluePrint {
           case StreamedEntityCreator(creator) ⇒ streamRequestEntity(creator)
         }
 
+      object ChunkedRequestHandling extends InHandler with OutHandler {
+        def onPush(): Unit = {
+          grab(in) match {
+            case MessageEnd ⇒
+              entitySource.complete()
+              entitySource = null
+              setIdleHandlers()
+
+            case e @ EntityChunk(_: LastChunk) ⇒
+              lastChunkSeen = true
+              entitySource.push(e)
+
+            case x ⇒ entitySource.push(x)
+          }
+        }
+        override def onUpstreamFinish(): Unit = {
+          entitySource.complete()
+          completeStage()
+        }
+        override def onUpstreamFailure(ex: Throwable): Unit = {
+          entitySource.fail(ex)
+          failStage(ex)
+        }
+        override def onPull(): Unit = {
+          // remember this until we are done with the chunked entity
+          // so can pull downstream then
+          downstreamPullWaiting = true
+        }
+        override def onDownstreamFinish(): Unit = {
+          // downstream signalled not wanting any more requests
+          // we should keep processing the entity stream and then
+          // when it completes complete the stage
+          completionDeferred = true
+        }
+      }
+      object EntityStreamOutHandler extends OutHandler {
+        override def onPull(): Unit = pull(in)
+        override def onDownstreamFinish(): Unit =
+          if (!lastChunkSeen) completeStage()
+      }
+
       def streamRequestEntity(creator: (Source[ParserOutput.RequestOutput, NotUsed]) ⇒ RequestEntity): RequestEntity = {
         // stream incoming chunks into the request entity until we reach the end of it
         // and then toggle back to "idle"
 
         entitySource = new SubSourceOutlet[RequestOutput]("EntitySource")
-        // optimization: re-use the idle outHandler
-        entitySource.setHandler(this)
+        entitySource.setHandler(EntityStreamOutHandler)
 
-        // optimization: handlers are combined to reduce allocations
-        val chunkedRequestHandler = new InHandler with OutHandler {
-          def onPush(): Unit = {
-            grab(in) match {
-              case MessageEnd ⇒
-                entitySource.complete()
-                entitySource = null
-                setIdleHandlers()
-
-              case x ⇒ entitySource.push(x)
-            }
-          }
-          override def onUpstreamFinish(): Unit = {
-            entitySource.complete()
-            completeStage()
-          }
-          override def onUpstreamFailure(ex: Throwable): Unit = {
-            entitySource.fail(ex)
-            failStage(ex)
-          }
-          override def onPull(): Unit = {
-            // remember this until we are done with the chunked entity
-            // so can pull downstream then
-            downstreamPullWaiting = true
-          }
-          override def onDownstreamFinish(): Unit = {
-            // downstream signalled not wanting any more requests
-            // we should keep processing the entity stream and then
-            // when it completes complete the stage
-            completionDeferred = true
-          }
-        }
-
-        setHandler(in, chunkedRequestHandler)
-        setHandler(out, chunkedRequestHandler)
+        lastChunkSeen = false
+        setHandlers(in, out, ChunkedRequestHandling)
         creator(Source.fromGraph(entitySource.source))
       }
-
     }
   }
 
@@ -397,6 +400,9 @@ private[http] object HttpServerBluePrint {
             case x: EntityStreamError if messageEndPending && openRequests.isEmpty ⇒
               // client terminated the connection after receiving an early response to 100-continue
               completeStage()
+            case c @ EntityChunk(_: LastChunk) ⇒
+              messageEndPending = false
+              push(requestPrepOut, c)
             case x ⇒
               push(requestPrepOut, x)
           }

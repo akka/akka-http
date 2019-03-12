@@ -6,7 +6,6 @@ package akka.http.impl.engine.server
 
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.scaladsl.settings.ServerSettings
-import akka.stream.TLSProtocol._
 
 import scala.concurrent.duration.FiniteDuration
 import akka.actor.ActorSystem
@@ -20,12 +19,11 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.{ ProductVersion, Server }
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 
-abstract class HttpServerTestSetupBase {
+abstract class HttpServerTestSetupBaseUserFlow {
   implicit def system: ActorSystem
   implicit def materializer: Materializer
 
-  val requests = TestSubscriber.probe[HttpRequest]
-  val responses = TestPublisher.probe[HttpResponse]()
+  def userFlow: Flow[HttpRequest, HttpResponse, Any]
 
   def settings = ServerSettings(system)
     .withServerHeader(Some(Server(List(ProductVersion("akka-http", "test")))))
@@ -37,14 +35,14 @@ abstract class HttpServerTestSetupBase {
     val netIn = TestPublisher.probe[ByteString]()
     val netOut = ByteStringSinkProbe()
 
-    RunnableGraph.fromGraph(GraphDSL.create(modifyServer(HttpServerBluePrint(settings, log = NoLogging, isSecureConnection = false))) { implicit b ⇒ server ⇒
-      import GraphDSL.Implicits._
-      Source.fromPublisher(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> server.in2
-      server.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x }.buffer(1, OverflowStrategy.backpressure) ~> netOut.sink
-      server.out2 ~> Sink.fromSubscriber(requests)
-      Source.fromPublisher(responses) ~> server.in1
-      ClosedShape
-    }).run()
+    val net = Flow.fromSinkAndSource(netOut.sink, Source.fromPublisher(netIn))
+    val serverImpl = modifyServer(HttpServerBluePrint(settings, log = NoLogging, isSecureConnection = false))
+    val buffering = BidiFlow.fromFlows(Flow[ByteString].buffer(1, OverflowStrategy.backpressure), Flow[ByteString])
+
+    userFlow
+      .join(serverImpl atop TLSPlacebo() atop buffering)
+      .join(net)
+      .run()
 
     netIn → netOut
   }
@@ -63,8 +61,6 @@ abstract class HttpServerTestSetupBase {
       case s                          ⇒ s
     }.mkString("\n")
 
-  def expectRequest(): HttpRequest = requests.requestNext()
-  def expectNoRequest(max: FiniteDuration): Unit = requests.expectNoMessage(max)
   def expectSubscribe(): Unit = netOut.expectComplete()
   def expectSubscribeAndNetworkClose(): Unit = netOut.expectSubscriptionAndComplete()
   def expectNetworkClose(): Unit = netOut.expectComplete()
@@ -76,10 +72,27 @@ abstract class HttpServerTestSetupBase {
 
   def shutdownBlueprint(): Unit = {
     netIn.sendComplete()
-    requests.expectComplete()
-
-    responses.sendComplete()
+    shutdownUserFlow()
     netOut.expectBytes(ByteString("HTT")) // ???
     netOut.expectComplete()
+  }
+
+  def shutdownUserFlow(): Unit = {}
+}
+
+/** Implements the userFlow in terms of request and response probes */
+abstract class HttpServerTestSetupBase extends HttpServerTestSetupBaseUserFlow {
+  lazy val requests = TestSubscriber.probe[HttpRequest]
+  lazy val responses = TestPublisher.probe[HttpResponse]()
+
+  override def userFlow: Flow[HttpRequest, HttpResponse, Any] =
+    Flow.fromSinkAndSource(Sink.fromSubscriber(requests), Source.fromPublisher(responses))
+
+  def expectRequest(): HttpRequest = requests.requestNext()
+  def expectNoRequest(max: FiniteDuration): Unit = requests.expectNoMessage(max)
+
+  override def shutdownUserFlow(): Unit = {
+    requests.expectComplete()
+    responses.sendComplete()
   }
 }
