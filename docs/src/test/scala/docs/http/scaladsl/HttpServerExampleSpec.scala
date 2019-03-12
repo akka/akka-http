@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl
@@ -293,12 +293,12 @@ class HttpServerExampleSpec extends WordSpec with Matchers
             pathSingleSlash {
               complete(HttpEntity(ContentTypes.`text/html(UTF-8)`,"<html><body>Hello world!</body></html>"))
             } ~
-              path("ping") {
-                complete("PONG!")
-              } ~
-              path("crash") {
-                sys.error("BOOM!")
-              }
+            path("ping") {
+              complete("PONG!")
+            } ~
+            path("crash") {
+              sys.error("BOOM!")
+            }
           }
 
         // `route` will be implicitly converted to `Flow` using `RouteResult.route2HandlerFlow`

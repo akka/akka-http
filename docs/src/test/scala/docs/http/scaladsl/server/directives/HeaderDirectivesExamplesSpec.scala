@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
@@ -7,11 +7,12 @@ package docs.http.scaladsl.server.directives
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.server.RoutingSpec
 import akka.http.scaladsl.server.{ InvalidOriginRejection, MissingHeaderRejection, Route }
-import docs.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 import org.scalatest.Inside
 
-class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
+class HeaderDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec with Inside {
   "headerValueByName-0" in {
     //#headerValueByName-0
     val route =
@@ -112,10 +113,10 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
         case Some(userId) => complete(s"The user is $userId")
         case None         => complete(s"No user was provided")
       } ~ // can also be written as:
-        optionalHeaderValueByName("port") { port =>
+        optionalHeaderValueByName("X-User-Id") { userId =>
           complete {
-            port match {
-              case Some(p) => s"The user is $p"
+            userId match {
+              case Some(u) => s"The user is $u"
               case _       => "No user was provided"
             }
           }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server.directives;
@@ -88,7 +88,7 @@ public class HostDirectivesExamplesTest extends JUnitRouteTest {
         complete("You came through " + captured
             + " company"));
 
-    final Route route = Directives.route(hostPrefixRoute, hostPartRoute);
+    final Route route = Directives.concat(hostPrefixRoute, hostPartRoute);
 
     testRoute(route).run(HttpRequest.GET("/").addHeader(Host.create("api.company.com")))
         .assertStatusCode(StatusCodes.OK).assertEntity("Extracted prefix: api");

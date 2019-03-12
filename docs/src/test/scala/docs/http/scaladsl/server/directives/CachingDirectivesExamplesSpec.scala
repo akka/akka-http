@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
 
-import docs.http.scaladsl.server.RoutingSpec
+import akka.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 //#caching-directives-import
 //#always-cache
 //#cache
@@ -15,7 +16,7 @@ import akka.http.scaladsl.server.directives.CachingDirectives._
 import akka.http.scaladsl.model.HttpMethods.GET
 import scala.concurrent.duration._
 
-class CachingDirectivesExamplesSpec extends RoutingSpec {
+class CachingDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   "cache" in {
     //#cache
@@ -29,9 +30,10 @@ class CachingDirectivesExamplesSpec extends RoutingSpec {
       val isGet: RequestContext ⇒ Boolean = _.request.method == GET
       val isAuthorized: RequestContext ⇒ Boolean =
         _.request.headers.exists(_.is(Authorization.lowercaseName))
-      PartialFunction {
+      val result: PartialFunction[RequestContext, Uri] = {
         case r: RequestContext if isGet(r) && !isAuthorized(r) ⇒ r.request.uri
       }
+      result
     }
 
     // Created outside the route to allow using
@@ -74,9 +76,10 @@ class CachingDirectivesExamplesSpec extends RoutingSpec {
       val isGet: RequestContext ⇒ Boolean = _.request.method == GET
       val isAuthorized: RequestContext ⇒ Boolean =
         _.request.headers.exists(_.is(Authorization.lowercaseName))
-      PartialFunction {
+      val result: PartialFunction[RequestContext, Uri] = {
         case r: RequestContext if isGet(r) && !isAuthorized(r) ⇒ r.request.uri
       }
+      result
     }
 
     // Created outside the route to allow using

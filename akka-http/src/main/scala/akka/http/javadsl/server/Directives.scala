@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server
@@ -23,6 +23,7 @@ object Directives extends AllDirectives {
   // These are repeated here since sometimes (?) the Scala compiler won't actually generate java-compatible
   // signatures for varargs methods, making them show up as Seq<Object> instead of T... in Java.
 
+  @Deprecated
   @varargs override def route(alternatives: Route*): Route =
     super.route(alternatives: _*)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -54,7 +54,7 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
           parameter("amount".as[Int].?) { echoComplete }
         } ~> check {
           inside(rejection) {
-            case MalformedRequestContentRejection("The request's query string is invalid: amount=1%2", _) ⇒
+            case MalformedRequestContentRejection("The request's query string is invalid.", _) ⇒
           }
         }
       }
@@ -87,6 +87,11 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
     "extract a number of names" in {
       Get("/?names=Caplin,John") ~> route ~> check {
         responseAs[String] shouldEqual "The parameters are Caplin, John"
+      }
+    }
+    "extract a number of names, including last empty name" in {
+      Get("/?names=Caplin,John,") ~> route ~> check {
+        responseAs[String] shouldEqual "The parameters are Caplin, John, "
       }
     }
   }

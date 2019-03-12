@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives
@@ -83,7 +83,7 @@ abstract class ParameterDirectives extends MiscDirectives {
   }
 
   def parameterMultiMap(inner: JFunction[JMap[String, JList[String]], Route]): Route = RouteAdapter {
-    D.parameterMultiMap { map ⇒ inner.apply(map.mapValues { l ⇒ l.asJava }.asJava).delegate }
+    D.parameterMultiMap { map ⇒ inner.apply(map.mapValues { l ⇒ l.asJava }.toMap.asJava).delegate }
   }
 
   @CorrespondsTo("parameterSeq")

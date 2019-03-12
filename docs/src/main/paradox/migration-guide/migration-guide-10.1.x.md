@@ -4,6 +4,15 @@
 
 See the general @ref[compatibility guidelines](../compatibility-guidelines.md).
 
+## Akka HTTP 10.1.4 -> 10.1.5
+
+To avoid excessive memory usage we introduced two new limits that apply per default:
+
+ * `akka.http.routing.decode-max-size`: This limit applies when you use `decodeRequest` to limit the amount of decompressed data. The default limit is 8 megabytes.
+ * `akka.http.parsing.max-to-strict-bytes`: This limit applies when you use `HttpEntity.toStrict` or the `toStrictEntity` directive (and related directives). It will only collect up to the given amount data and fail otherwise. The default limit is 8 megabytes.
+
+Depending on your application requirements, you may want to change these settings.
+
 ## Akka HTTP 10.0.11 - > 10.1.0
 
 ### Depend on akka-stream explicitly

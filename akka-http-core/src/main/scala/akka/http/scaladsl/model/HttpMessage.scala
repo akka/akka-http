@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -21,6 +21,7 @@ import akka.Done
 import akka.parboiled2.CharUtils
 import akka.stream.Materializer
 import akka.util.{ ByteString, HashCode, OptionVal }
+import akka.http.ccompat.{ pre213, since213 }
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }
 import akka.http.scaladsl.util.FastFuture._
@@ -67,15 +68,22 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def discardEntityBytes(mat: Materializer): HttpMessage.DiscardedEntity = entity.discardBytes()(mat)
 
   /** Returns a copy of this message with the list of headers set to the given ones. */
+  @pre213
   def withHeaders(headers: HttpHeader*): Self = withHeaders(headers.toList)
 
   /** Returns a copy of this message with the list of headers set to the given ones. */
   def withHeaders(headers: immutable.Seq[HttpHeader]): Self
 
+  /** Returns a copy of this message with the list of headers set to the given ones. */
+  @since213
+  def withHeaders(firstHeader: HttpHeader, otherHeaders: HttpHeader*): Self =
+    withHeaders(firstHeader +: otherHeaders.toList)
+
   /**
    * Returns a new message that contains all of the given default headers which didn't already
    * exist (by case-insensitive header name) in this message.
    */
+  @pre213
   def withDefaultHeaders(defaultHeaders: HttpHeader*): Self = withDefaultHeaders(defaultHeaders.toList)
 
   /**
@@ -88,12 +96,20 @@ sealed trait HttpMessage extends jm.HttpMessage {
       else defaultHeaders.foldLeft(headers) { (acc, h) ⇒ if (headers.exists(_ is h.lowercaseName)) acc else h +: acc }
     }
 
+  @since213
+  def withDefaultHeaders(firstHeader: HttpHeader, otherHeaders: HttpHeader*): Self =
+    withDefaultHeaders(firstHeader +: otherHeaders.toList)
+
   /** Returns a copy of this message with the entity set to the given one. */
   def withEntity(entity: MessageEntity): Self
 
   /** Returns a shareable and serializable copy of this message with a strict entity. */
   def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: Materializer): Future[Self] =
     entity.toStrict(timeout).fast.map(this.withEntity)
+
+  /** Returns a shareable and serializable copy of this message with a strict entity. */
+  def toStrict(timeout: FiniteDuration, maxBytes: Long)(implicit ec: ExecutionContext, fm: Materializer): Future[Self] =
+    entity.toStrict(timeout, maxBytes).fast.map(this.withEntity)
 
   /** Returns a copy of this message with the entity and headers set to the given ones. */
   def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: MessageEntity): Self
@@ -185,6 +201,11 @@ sealed trait HttpMessage extends jm.HttpMessage {
     val ex = ExecutionContext.fromExecutor(ec)
     toStrict(timeoutMillis.millis)(ex, materializer).toJava
   }
+  /** Java API */
+  def toStrict(timeoutMillis: Long, maxBytes: Long, ec: Executor, materializer: Materializer): CompletionStage[Self] = {
+    val ex = ExecutionContext.fromExecutor(ec)
+    toStrict(timeoutMillis.millis, maxBytes)(ex, materializer).toJava
+  }
 }
 
 object HttpMessage {
@@ -253,7 +274,7 @@ final class HttpRequest(
   HttpRequest.verifyUri(uri)
   require(entity.isKnownEmpty || method.isEntityAccepted, s"Requests with method '${method.value}' must have an empty entity")
   require(
-    protocol != HttpProtocols.`HTTP/1.0` || !entity.isInstanceOf[HttpEntity.Chunked],
+    protocol != HttpProtocols.`HTTP/1.0` || !entity.isChunked,
     "HTTP/1.0 requests must not have a chunked entity")
 
   type Self = HttpRequest
@@ -434,7 +455,7 @@ final class HttpResponse(
 
   require(entity.isKnownEmpty || status.allowsEntity, "Responses with this status code must have an empty entity")
   require(
-    protocol == HttpProtocols.`HTTP/1.1` || !entity.isInstanceOf[HttpEntity.Chunked],
+    protocol != HttpProtocols.`HTTP/1.0` || !entity.isChunked,
     "HTTP/1.0 responses must not have a chunked entity")
 
   type Self = HttpResponse

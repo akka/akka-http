@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.marshalling
@@ -20,7 +20,7 @@ trait MultipartMarshallers {
     }
 
   /**
-   * The random instance that is used to create multipart boundaries. This can be overriden (e.g. in tests) to
+   * The random instance that is used to create multipart boundaries. This can be overridden (e.g. in tests) to
    * choose how a boundary is created.
    */
   protected def multipartBoundaryRandom: java.util.Random = ThreadLocalRandom.current()

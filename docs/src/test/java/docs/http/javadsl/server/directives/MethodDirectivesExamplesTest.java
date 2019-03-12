@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server.directives;
@@ -151,7 +151,7 @@ public class MethodDirectivesExamplesTest extends JUnitRouteTest {
   public void testExtractMethodExample() {
     //#extractMethod
 
-    final Route route = route(
+    final Route route = concat(
         get(() -> 
             complete("This is a GET request.")
         ),
@@ -175,9 +175,9 @@ public class MethodDirectivesExamplesTest extends JUnitRouteTest {
   public void testOverrideMethodWithParameter() {
     //#overrideMethodWithParameter
 
-    final Route route = route(
+    final Route route = concat(
         overrideMethodWithParameter("method", () -> 
-          route(
+          concat(
             get(() -> complete("This looks like a GET request.")),
             post(() -> complete("This looks like a POST request."))
           )

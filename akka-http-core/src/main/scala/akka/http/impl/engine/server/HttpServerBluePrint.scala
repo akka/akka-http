@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.server
@@ -23,6 +23,7 @@ import akka.stream.stage._
 import akka.http.scaladsl.settings.ServerSettings
 import akka.http.impl.engine.parsing.ParserOutput._
 import akka.http.impl.engine.parsing._
+import akka.http.impl.engine.rendering.ResponseRenderingContext.CloseRequested
 import akka.http.impl.engine.rendering.{ HttpResponseRendererFactory, ResponseRenderingContext, ResponseRenderingOutput }
 import akka.http.impl.engine.ws._
 import akka.http.impl.util._
@@ -264,7 +265,7 @@ private[http] object HttpServerBluePrint {
           val access = new TimeoutAccessImpl(request, initialTimeout, requestEnd, callback,
             interpreter.materializer, log)
           openTimeouts = openTimeouts.enqueue(access)
-          push(requestOut, request.copy(headers = request.headers :+ `Timeout-Access`(access), entity = entity))
+          push(requestOut, request.copy(headers = `Timeout-Access`(access) +: request.headers, entity = entity))
         }
         override def onUpstreamFinish() = complete(requestOut)
         override def onUpstreamFailure(ex: Throwable) = fail(requestOut, ex)
@@ -419,17 +420,22 @@ private[http] object HttpServerBluePrint {
           val isEarlyResponse = messageEndPending && openRequests.isEmpty
           if (isEarlyResponse && response.status.isSuccess)
             log.warning(
-              "Sending an 2xx 'early' response before end of request was received... " +
+              s"Sending an 2xx 'early' response before end of request for ${requestStart.uri} received... " +
                 "Note that the connection will be closed after this response. Also, many clients will not read early responses! " +
                 "Consider only issuing this response after the request data has been completely read!")
-          val close = requestStart.closeRequested ||
+          val forceClose =
             (requestStart.expect100Continue && oneHundredContinueResponsePending) ||
-            (isClosed(requestParsingIn) && openRequests.isEmpty) ||
-            isEarlyResponse
+              (isClosed(requestParsingIn) && openRequests.isEmpty) ||
+              isEarlyResponse
+
+          val close =
+            if (forceClose) CloseRequested.ForceClose
+            else if (requestStart.closeRequested) CloseRequested.RequestAskedForClosing
+            else CloseRequested.Unspecified
 
           emit(responseCtxOut, ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close),
             pullHttpResponseIn)
-          if (!isClosed(requestParsingIn) && close && requestStart.expect100Continue) maybePullRequestParsingIn()
+          if (!isClosed(requestParsingIn) && close.shouldClose && requestStart.expect100Continue) maybePullRequestParsingIn()
         }
         override def onUpstreamFinish() =
           if (openRequests.isEmpty && isClosed(requestParsingIn)) completeStage()
@@ -479,7 +485,7 @@ private[http] object HttpServerBluePrint {
       }
 
       def emitErrorResponse(response: HttpResponse): Unit =
-        emit(responseCtxOut, ResponseRenderingContext(response, closeRequested = true), () ⇒ completeStage())
+        emit(responseCtxOut, ResponseRenderingContext(response, closeRequested = CloseRequested.ForceClose), () ⇒ completeStage())
 
       def maybePullRequestParsingIn(): Unit =
         if (pullSuppressed) {

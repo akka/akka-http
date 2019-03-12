@@ -109,7 +109,7 @@ To use the task simply type, and the output should include entries like shown be
 ```
 > validatePullRequest
 [info] Diffing [HEAD] to determine changed modules in PR...
-[info] Detected uncomitted changes in directories (including in dependency analysis): [akka-protobuf,project]
+[info] Detected uncommitted changes in directories (including in dependency analysis): [akka-protobuf,project]
 [info] Detected changes in directories: [docs, project, akka-http-tests, akka-protobuf, akka-http-testkit, akka-http, akka-http-core, akka-stream]
 ```
 
@@ -177,7 +177,7 @@ For a Pull Request to be considered at all it has to meet these requirements:
 
 Some additional guidelines regarding source code are:
 
-- files should start with a ``Copyright (C) 2018 Lightbend Inc. <http://www.lightbend.com>`` copyright header 
+- files should start with a ``Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>`` copyright header
 - keep the code [DRY](http://programmer.97things.oreilly.com/wiki/index.php/Don%27t_Repeat_Yourself)
 - apply the [Boy Scout Rule](http://programmer.97things.oreilly.com/wiki/index.php/The_Boy_Scout_Rule) whenever you have the chance to
 - Never delete or change existing copyright notices, just add additional info.  

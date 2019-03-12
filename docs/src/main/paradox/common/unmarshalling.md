@@ -22,6 +22,11 @@ At its core an @unidoc[Unmarshaller[A, B]] is very similar to a @scala[function 
 than its @ref[marshalling](marshalling.md) counterpart. The process of unmarshalling does not have to support
 content negotiation which saves two additional layers of indirection that are required on the marshalling side.
 
+## Using unmarshallers
+
+For an example on how to use an unmarshaller on the server side, see for example the @ref[Dynamic Routing Example](../routing-dsl/index.md#dynamic-routing-example).
+For the client side, see @ref[Processing Responses](../client-side/request-and-response.md#processing-responses)
+
 ## Predefined Unmarshallers
 
 Akka HTTP already predefines a number of unmarshallers for the most common types.
@@ -79,6 +84,11 @@ Scala
 
 Java
 :  @@snip [Unmarshallers.scala]($akka-http$/akka-http/src/main/java/akka/http/javadsl/unmarshalling/Unmarshallers.java) { #unmarshaller-creation }
+
+@@@ note
+To avoid unnecessary memory pressure, unmarshallers should make sure to either fully consume the incoming entity data stream, or make sure it is properly cancelled on error.
+Failure to do so might keep the remaining part of the stream in memory for longer than necessary.
+@@@
 
 ## Deriving Unmarshallers
 

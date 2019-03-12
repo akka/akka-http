@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -118,6 +118,7 @@ object ContentType {
 object ContentTypes {
   val `application/json` = ContentType(MediaTypes.`application/json`)
   val `application/octet-stream` = ContentType(MediaTypes.`application/octet-stream`)
+  val `application/x-www-form-urlencoded` = ContentType(MediaTypes.`application/x-www-form-urlencoded`)
   val `text/plain(UTF-8)` = MediaTypes.`text/plain` withCharset HttpCharsets.`UTF-8`
   val `text/html(UTF-8)` = MediaTypes.`text/html` withCharset HttpCharsets.`UTF-8`
   val `text/xml(UTF-8)` = MediaTypes.`text/xml` withCharset HttpCharsets.`UTF-8`

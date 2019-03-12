@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -33,7 +33,7 @@ class TightRequestTimeoutSpec extends WordSpec with Matchers with BeforeAndAfter
 
   "Tight request timeout" should {
 
-    "not cause double push error caused by the late response attemting to push" in {
+    "not cause double push error caused by the late response attempting to push" in {
       val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
       val slowHandler = Flow[HttpRequest].map(_ ⇒ HttpResponse()).delay(500.millis.dilated, OverflowStrategy.backpressure)
       val binding = Http().bindAndHandle(slowHandler, hostname, port)

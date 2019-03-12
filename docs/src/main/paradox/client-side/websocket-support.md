@@ -62,7 +62,7 @@ Java
 
 ## webSocketClientFlow
 
-`webSocketClientFlow` takes a request, and returns a @scala[@unidoc[Flow[Message, Message, Future[WebSocketUpgradeResponse]]]]@java[`Flow<Message, Message, CompletionStage<WebSocketUpgradeResponse>>`].
+`webSocketClientFlow` takes a request, and returns a @scala[@unidoc[Flow[Message, Message, Future[WebSocketUpgradeResponse]]]]@java[@unidoc[Flow[Message, Message, CompletionStage[WebSocketUpgradeResponse]]]].
 
 The future that is materialized from the flow will succeed when the WebSocket connection has been established or
 the server returned a regular HTTP response, or fail if the connection fails with an exception.
@@ -85,7 +85,7 @@ Java
 Just like the @ref[Stand-Alone HTTP Layer Usage](connection-level.md#http-client-layer) for regular HTTP requests, the WebSocket layer can be used fully detached from the
 underlying TCP interface. The same scenarios as described for regular HTTP requests apply here.
 
-The returned layer forms a @scala[@unidoc[BidiFlow[Message, SslTlsOutbound, SslTlsInbound, Message, Future[WebSocketUpgradeResponse]]]]@java[`BidiFlow<Message, SslTlsOutbound, SslTlsInbound, Message, CompletionStage<WebSocketUpgradeResponse>>`].
+The returned layer forms a @scala[@unidoc[BidiFlow[Message, SslTlsOutbound, SslTlsInbound, Message, Future[WebSocketUpgradeResponse]]]]@java[@unidoc[BidiFlow[Message, SslTlsOutbound, SslTlsInbound, Message, CompletionStage[WebSocketUpgradeResponse]]]].
 
 <a id="half-closed-client-websockets"></a>
 ## Half-Closed WebSockets

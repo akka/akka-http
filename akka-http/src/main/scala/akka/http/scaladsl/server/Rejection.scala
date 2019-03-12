@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -266,9 +266,11 @@ final case class ValidationRejection(message: String, cause: Option[Throwable] =
 final case class TransformationRejection(transform: immutable.Seq[Rejection] ⇒ immutable.Seq[Rejection])
   extends jserver.TransformationRejection with Rejection {
   override def getTransform = new Function[Iterable[jserver.Rejection], Iterable[jserver.Rejection]] {
-    override def apply(t: Iterable[jserver.Rejection]): Iterable[jserver.Rejection] =
-      // explicit collects instead of implicits is because of unidoc failing compilation on .asScala and .asJava here
-      transform(Util.immutableSeq(t).collect { case r: Rejection ⇒ r }).collect[jserver.Rejection, Seq[jserver.Rejection]] { case j: jserver.Rejection ⇒ j }.asJava // TODO "asJavaDeep" and optimise?
+    override def apply(t: Iterable[jserver.Rejection]): Iterable[jserver.Rejection] = {
+      // explicit collects assignment is because of unidoc failing compilation on .asScala and .asJava here
+      val transformed: Seq[jserver.Rejection] = transform(Util.immutableSeq(t).collect { case r: Rejection ⇒ r }).collect { case j: jserver.Rejection ⇒ j }
+      transformed.asJava // TODO "asJavaDeep" and optimise?
+    }
   }
 }
 
@@ -285,4 +287,4 @@ final case class CircuitBreakerOpenRejection(cause: CircuitBreakerOpenException)
  * rejection rather than an Exception that is handled by the nearest ExceptionHandler.
  * (Custom marshallers can of course use it as well.)
  */
-final case class RejectionError(rejection: Rejection) extends RuntimeException
+final case class RejectionError(rejection: Rejection) extends RuntimeException(rejection.toString)

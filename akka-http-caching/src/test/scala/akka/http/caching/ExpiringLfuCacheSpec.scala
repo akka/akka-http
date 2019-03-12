@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.caching
@@ -107,6 +107,9 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
       views.transpose.foreach { ints: Seq[Int] ⇒
         ints.filter(_ != 0).reduceLeft((a, b) ⇒ if (a == b) a else 0) should not be 0
       }
+    }
+    "be created with the same ttl and tti" in {
+      lfuCache[Int](timeToLive = 5.seconds, timeToIdle = 5.seconds) shouldBe a[LfuCache[_, _]]
     }
   }
 

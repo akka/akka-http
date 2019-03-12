@@ -1,9 +1,11 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server
 
+import java.net.InetSocketAddress
+import java.net.ServerSocket
 import java.util.concurrent.TimeUnit
 import java.net.SocketException
 
@@ -13,7 +15,6 @@ import akka.http.javadsl.settings.ServerSettings
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.{ HttpRequest, StatusCodes }
-import akka.stream.ActorMaterializer
 import akka.testkit.{ AkkaSpec, EventFilter }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
@@ -189,13 +190,19 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
       }
 
       "after binding is unsuccessful" in withSneaky { sneaky ⇒
-        EventFilter[SocketException](message = "Permission denied", occurrences = 1) intercept {
-          sneaky.startServer("localhost", 1, system)
-        }
+        val serverSocket = new ServerSocket()
+        serverSocket.bind(new InetSocketAddress("127.0.0.1", 0))
+        val port = serverSocket.getLocalPort
 
-        eventually {
-          sneaky.postBindingFailureCalled.get() should ===(true)
-        }
+        try {
+          EventFilter[SocketException](message = "Address already in use", occurrences = 1) intercept {
+            sneaky.startServer("localhost", port, system)
+          }
+
+          eventually {
+            sneaky.postBindingFailureCalled.get() should ===(true)
+          }
+        } finally serverSocket.close()
       }
 
     }

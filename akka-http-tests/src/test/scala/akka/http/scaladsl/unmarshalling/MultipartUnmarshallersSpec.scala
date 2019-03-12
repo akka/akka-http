@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.unmarshalling
@@ -19,6 +19,7 @@ import akka.http.impl.util._
 import akka.http.scaladsl.model.headers._
 import MediaTypes._
 import akka.testkit._
+import com.typesafe.config.ConfigFactory
 
 trait MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAfterAll with ScalatestUtils {
   implicit val system = ActorSystem(getClass.getSimpleName)
@@ -26,6 +27,8 @@ trait MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
   import system.dispatcher
 
   def lineFeed: String
+
+  override val testConfig = ConfigFactory.load()
 
   "The MultipartUnmarshallers." - {
 

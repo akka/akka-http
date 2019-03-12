@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server;
@@ -72,7 +72,7 @@ public class PathDirectiveExampleTest extends JUnitRouteTest {
 
     // matches "/user/" with the first subroute, "/user" (without a trailing slash)
     // with the second subroute, and "/user/<user-id>" with the last one.
-    pathPrefix("user", () -> route(
+    pathPrefix("user", () -> concat(
       pathSingleSlash(() ->
         complete(StatusCodes.OK)
       ),

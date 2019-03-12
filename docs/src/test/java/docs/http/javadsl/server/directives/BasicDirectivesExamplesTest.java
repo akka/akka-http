@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server.directives;
@@ -303,7 +303,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
       )
     );
 
-    final Route route = Directives.route(
+    final Route route = Directives.concat(
       pathPrefix("special", () ->
         withMaterializer(special, () -> sample) // `special` materializer will be used
       ),
@@ -353,7 +353,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
       )
     );
 
-    final Route route = Directives.route(
+    final Route route = Directives.concat(
       pathPrefix("special", () ->
         // `special` execution context will be used
         withExecutionContext(special, () -> sample)
@@ -403,7 +403,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
       )
     );
 
-    final Route route = Directives.route(
+    final Route route = Directives.concat(
       pathPrefix("special", () ->
         withLog(special, () -> sample)
       ),
@@ -426,27 +426,18 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     final RoutingSettings special =
       RoutingSettings
         .create(system().settings().config())
-        .withFileIODispatcher("special-io-dispatcher");
+        .withFileGetConditional(false);
 
-    final Route sample = path("sample", () -> {
-      // internally uses the configured fileIODispatcher:
-      // ContentTypes.APPLICATION_JSON, source
-      final Source<ByteString, Object> source =
-        FileIO.fromPath(Paths.get("example.json"))
-          .mapMaterializedValue(completionStage -> (Object) completionStage);
-      return complete(
-        HttpResponse.create()
-          .withEntity(HttpEntities.create(ContentTypes.APPLICATION_JSON, source))
-      );
-    });
+    // internally uses fileGetConditional setting
+    final Route sample = path("sample", () -> getFromFile("example.json"));
 
     final Route route = get(() ->
-      Directives.route(
+      Directives.concat(
         pathPrefix("special", () ->
-          // `special` file-io-dispatcher will be used to read the file
+          // ETag/`If-Modified-Since` disabled
           withSettings(special, () -> sample)
         ),
-        sample // default file-io-dispatcher will be used to read the file
+        sample // ETag/`If-Modified-Since` enabled
       )
     );
 
@@ -641,7 +632,7 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
       creds -> Optional.of("id");
 
     final Route originalRoute = pathPrefix("auth", () ->
-      Directives.route(
+      Directives.concat(
         path("never", () ->
           authenticateBasic("my-realm", neverAuth, obj ->  complete("Welcome to the bat-cave!"))
         ),

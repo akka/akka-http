@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -8,7 +8,6 @@ import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
 import java.net.InetSocketAddress
 import java.nio.ByteOrder
 import javax.net.ssl.SSLContext
-
 import akka.NotUsed
 import akka.http.impl.engine.http2.Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
 import akka.http.impl.engine.http2.framing.FrameRenderer
@@ -23,7 +22,7 @@ import akka.stream.impl.io.ByteStringParser.ByteReader
 import akka.stream.scaladsl.{ BidiFlow, Flow, Sink, Source, SourceQueueWithComplete }
 import akka.stream.testkit.TestPublisher.ManualProbe
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
-import akka.stream.{ ActorMaterializer, Materializer, OverflowStrategies }
+import akka.stream.{ ActorMaterializer, Materializer, OverflowStrategy }
 import akka.testkit._
 import akka.util.{ ByteString, ByteStringBuilder }
 import com.twitter.hpack.{ Decoder, Encoder, HeaderListener }
@@ -36,13 +35,12 @@ import scala.collection.immutable.VectorBuilder
 import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-
 import FrameEvent._
 
 class Http2ServerSpec extends AkkaSpec("""
     akka.loglevel = debug
     akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
-    
+
     akka.http.server.remote-address-header = on
   """)
   with WithInPendingUntilFixed with Eventually with WithLogCapturing {
@@ -101,7 +99,7 @@ class Http2ServerSpec extends AkkaSpec("""
         val incorrectHeaderBlock = hex"00 00 01 01 05 00 00 00 01 40"
         sendHEADERS(3, endStream = false, endHeaders = true, headerBlockFragment = incorrectHeaderBlock)
 
-        val (_, errorCode) = expectGOAWAY(1) // since we have sucessfully started processing stream `1`
+        val (_, errorCode) = expectGOAWAY(1) // since we have successfully started processing stream `1`
         errorCode should ===(ErrorCode.COMPRESSION_ERROR)
       }
       "Three consecutive GET requests" in new SimpleRequestResponseRoundtripSetup {
@@ -347,6 +345,37 @@ class Http2ServerSpec extends AkkaSpec("""
         sendRST_STREAM(TheStreamId, ErrorCode.CANCEL)
         entityDataOut.expectCancellation()
       }
+
+      "handle RST_STREAM while data is waiting in outgoing stream buffer" in new WaitingForResponseDataSetup {
+        val data1 = ByteString("abcd")
+        entityDataOut.sendNext(data1)
+
+        sendRST_STREAM(TheStreamId, ErrorCode.CANCEL)
+
+        entityDataOut.expectCancellation()
+        toNet.expectNoBytes() // the whole stage failed with bug #2236
+      }
+
+      "handle RST_STREAM while waiting for a window update" in new WaitingForResponseDataSetup {
+        entityDataOut.sendNext(bytes(70000, 0x23)) // 70000 > Http2Protocol.InitialWindowSize
+        sendWINDOW_UPDATE(TheStreamId, 10000) // enough window for the stream but not for the window
+
+        expectDATA(TheStreamId, false, Http2Protocol.InitialWindowSize)
+
+        // enough stream-level WINDOW, but too little connection-level WINDOW
+        expectNoBytes()
+
+        // now the demuxer is in the WaitingForConnectionWindow state, cancel the connection
+        sendRST_STREAM(TheStreamId, ErrorCode.CANCEL)
+
+        entityDataOut.expectCancellation()
+        expectNoBytes()
+
+        // now increase connection-level window again and see if everything still works
+        sendWINDOW_UPDATE(0, 10000)
+        expectNoBytes() // don't expect anything, stream has been cancelled in the meantime
+      }
+
       "cancel entity data source when peer sends RST_STREAM before entity is subscribed" in new TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
         val theRequest = HttpRequest(protocol = HttpProtocols.`HTTP/2.0`)
         sendRequest(1, theRequest)
@@ -475,7 +504,7 @@ class Http2ServerSpec extends AkkaSpec("""
 
         val response = HttpResponse(entity = HttpEntity.Chunked(
           ContentTypes.`application/octet-stream`,
-          Source.queue[HttpEntity.ChunkStreamPart](100, OverflowStrategies.Fail)
+          Source.queue[HttpEntity.ChunkStreamPart](100, OverflowStrategy.fail)
             .mapMaterializedValue(queuePromise.success(_))
         ))
         emitResponse(TheStreamId, response)
@@ -496,7 +525,7 @@ class Http2ServerSpec extends AkkaSpec("""
 
         val response = HttpResponse(entity = HttpEntity.Chunked(
           ContentTypes.`application/octet-stream`,
-          Source.queue[HttpEntity.ChunkStreamPart](100, OverflowStrategies.Fail)
+          Source.queue[HttpEntity.ChunkStreamPart](100, OverflowStrategy.fail)
             .mapMaterializedValue(queuePromise.success(_))
         ))
         emitResponse(TheStreamId, response)
@@ -525,7 +554,7 @@ class Http2ServerSpec extends AkkaSpec("""
 
         val response = HttpResponse(entity = HttpEntity.Chunked(
           ContentTypes.`application/octet-stream`,
-          Source.queue[HttpEntity.ChunkStreamPart](100, OverflowStrategies.Fail)
+          Source.queue[HttpEntity.ChunkStreamPart](100, OverflowStrategy.fail)
             .mapMaterializedValue(queuePromise.success(_))
         ))
         emitResponse(TheStreamId, response)
@@ -1025,6 +1054,7 @@ class Http2ServerSpec extends AkkaSpec("""
           if (streamId == 0) updateToServerWindowForConnection(_ + windowSizeIncrement)
           else updateToServerWindows(streamId, _ + windowSizeIncrement)
       }
+
     final def pollForWindowUpdates(duration: FiniteDuration): Unit =
       try {
         toNet.within(duration)(expectWindowUpdate())
@@ -1033,15 +1063,18 @@ class Http2ServerSpec extends AkkaSpec("""
       } catch {
         case e: AssertionError if e.getMessage contains "Expected OnNext(_), yet no element signaled during" ⇒
         // timeout, that's expected
+        case e: AssertionError if (e.getMessage contains "block took") && (e.getMessage contains "exceeding") ⇒
+          // pause like GC, poll again just to be sure
+          pollForWindowUpdates(duration)
       }
 
     // keep counters that are updated on outgoing sendDATA and incoming WINDOW_UPDATE frames
-    private var toServerWindows = Map.empty[Int, Int].withDefaultValue(Http2Protocol.InitialWindowSize)
+    private var toServerWindows: Map[Int, Int] = Map.empty.withDefaultValue(Http2Protocol.InitialWindowSize)
     private var toServerWindowForConnection = Http2Protocol.InitialWindowSize
     def remainingToServerWindowForConnection: Int = toServerWindowForConnection
     def remainingToServerWindowFor(streamId: Int): Int = toServerWindows(streamId) min remainingToServerWindowForConnection
 
-    private var fromServerWindows = Map.empty[Int, Int].withDefaultValue(Http2Protocol.InitialWindowSize)
+    private var fromServerWindows: Map[Int, Int] = Map.empty.withDefaultValue(Http2Protocol.InitialWindowSize)
     private var fromServerWindowForConnection = Http2Protocol.InitialWindowSize
     // keep counters that are updated for incoming DATA frames and outgoing WINDOW_UPDATE frames
     def remainingFromServerWindowForConnection: Int = fromServerWindowForConnection

@@ -1,17 +1,14 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
 package directives
 
 import scala.collection.immutable
-import scala.util.control.NonFatal
 import akka.http.scaladsl.model.headers.{ HttpEncoding, HttpEncodings }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.coding._
-import akka.stream.scaladsl.Flow
-import akka.util.ByteString
 
 /**
  * @groupname coding Coding directives
@@ -80,16 +77,7 @@ trait CodingDirectives {
       else
         extractSettings flatMap { settings ⇒
           val effectiveDecoder = decoder.withMaxBytesPerChunk(settings.decodeMaxBytesPerChunk)
-          mapRequest { request ⇒
-            effectiveDecoder.decodeMessage(request).mapEntity { entity ⇒
-              entity.transformDataBytes(Flow[ByteString].recover {
-                case NonFatal(e) ⇒
-                  throw IllegalRequestException(
-                    StatusCodes.BadRequest,
-                    ErrorInfo("The request's encoding is corrupt", e.getMessage))
-              })
-            }
-          }
+          mapRequest(effectiveDecoder.decodeMessage(_)) & withSizeLimit(settings.decodeMaxSize)
         }
 
     requestEntityEmpty | (
@@ -156,7 +144,7 @@ object CodingDirectives extends CodingDirectives {
   private def _encodeResponse(encoders: immutable.Seq[Encoder]): Directive0 =
     BasicDirectives.extractRequest.flatMap { request ⇒
       val negotiator = EncodingNegotiator(request.headers)
-      val encodings: List[HttpEncoding] = encoders.map(_.encoding)(collection.breakOut)
+      val encodings: List[HttpEncoding] = encoders.map(_.encoding).toList
       val bestEncoder = negotiator.pickEncoding(encodings).flatMap(be ⇒ encoders.find(_.encoding == be))
       bestEncoder match {
         case Some(encoder) ⇒ mapResponse(encoder.encodeMessage(_))

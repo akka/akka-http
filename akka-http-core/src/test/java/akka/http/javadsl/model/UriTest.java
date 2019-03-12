@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.model;
@@ -7,7 +7,7 @@ package akka.http.javadsl.model;
 import akka.http.scaladsl.model.IllegalUriException;
 import akka.japi.Pair;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;

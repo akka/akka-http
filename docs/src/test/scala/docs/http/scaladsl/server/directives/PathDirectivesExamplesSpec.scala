@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server._
-import docs.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
-class PathDirectivesExamplesSpec extends RoutingSpec {
+class PathDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   //#path-matcher
   val matcher: PathMatcher1[Option[Int]] =

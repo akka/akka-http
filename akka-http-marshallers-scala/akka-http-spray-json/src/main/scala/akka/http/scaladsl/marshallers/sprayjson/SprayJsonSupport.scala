@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.marshallers.sprayjson
@@ -34,7 +34,7 @@ trait SprayJsonSupport {
       .andThen(sprayJsValueByteStringUnmarshaller)
 
   implicit def sprayJsValueByteStringUnmarshaller[T]: FromByteStringUnmarshaller[JsValue] =
-    Unmarshaller.withMaterializer[ByteString, JsValue](_ ⇒ implicit mat ⇒ { bs ⇒
+    Unmarshaller.withMaterializer[ByteString, JsValue](_ ⇒ _ ⇒ { bs ⇒
       // .compact so addressing into any address is very fast (also for large chunks)
       // TODO we could optimise ByteStrings to better handle linear access like this (or provide ByteStrings.linearAccessOptimised)
       // TODO IF it's worth it.

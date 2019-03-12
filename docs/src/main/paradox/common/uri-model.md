@@ -125,7 +125,7 @@ is equivalent to:
   Query("a=b")
 ```
 
-As in the [section 3.4 of RFTC 3986](http://tools.ietf.org/html/rfc3986#section-3.4),
+As in the [section 3.4 of RFC 3986](http://tools.ietf.org/html/rfc3986#section-3.4),
 some special characters like "/" and "?" are allowed inside a query string, without escaping them using ("%") signs.
 
 > The characters slash ("/") and question mark ("?") may represent data within the query component.

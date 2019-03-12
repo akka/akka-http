@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.h2spec
@@ -24,10 +24,10 @@ class H2SpecIntegrationSpec extends AkkaSpec(
        loglevel = DEBUG
        loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
        http.server.log-unencrypted-network-bytes = off
-        
+
        actor.serialize-creators = off
        actor.serialize-messages = off
-       
+
        stream.materializer.debug.fuzzing-mode = off
      }
   """) with Directives with ScalaFutures with WithLogCapturing {
@@ -148,7 +148,14 @@ class H2SpecIntegrationSpec extends AkkaSpec(
       val stdout = new StringBuffer()
       val stderr = new StringBuffer()
 
-      val command = s"$executable -k -t -p $port -j $junitOutput" + specSectionNumber.map(" -s " + _).getOrElse("")
+      val command = Seq( // need to use Seq[String] form for command because executable path may contain spaces
+        executable,
+        "-k", "-t",
+        "-p", port.toString,
+        "-j", junitOutput.getPath
+      ) ++
+        specSectionNumber.toList.flatMap(number ⇒ Seq("-s", number))
+
       println(s"exec: $command")
       val aggregateTckLogs = ProcessLogger(
         out ⇒ {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server.directives;
@@ -76,7 +76,7 @@ public class ExecutionDirectivesExamplesTest extends JUnitRouteTest {
 
     final Route route = pathPrefix("handled", () ->
       handleRejections(totallyMissingHandler, () ->
-        Directives.route(
+        Directives.concat(
           path("existing", () -> complete("This path exists")),
           path("boom", () -> reject(Rejections.validationRejection("This didn't work.")))
         )
@@ -113,7 +113,7 @@ public class ExecutionDirectivesExamplesTest extends JUnitRouteTest {
       final Route route = 
         handleRejections(totallyMissingHandler, () ->
         pathPrefix("handled", () ->
-          Directives.route(
+          Directives.concat(
             path("existing", () -> complete("This path exists"))
           )
         )

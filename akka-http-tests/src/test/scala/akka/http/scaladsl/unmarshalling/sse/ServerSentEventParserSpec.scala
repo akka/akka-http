@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http
@@ -33,10 +33,10 @@ final class ServerSentEventParserSpec extends AsyncWordSpec with Matchers with B
                      |:no data means event gets ignored
                      |
                      |data
-                     |:emtpy data means event gets ignored
+                     |:empty data means event gets ignored
                      |
                      |data:
-                     |:emtpy data means event gets ignored
+                     |:empty data means event gets ignored
                      |
                      |data: event 3
                      |id

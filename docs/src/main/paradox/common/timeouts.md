@@ -44,12 +44,6 @@ The default @unidoc[HttpResponse] that is written when a request timeout is exce
 A default request timeout is applied globally to all routes and can be configured using the
 `akka.http.server.request-timeout` setting (which defaults to 20 seconds).
 
-@@@ note
-Please note that if multiple requests (`R1,R2,R3,...`) were sent by a client (see "HTTP pipelining")
-using the same connection and the `n-th` request triggers a request timeout the server will reply with an Http Response
-and close the connection, leaving the `(n+1)-th` (and subsequent requests on the same connection) unhandled.
-@@@
-
 The request timeout can be configured at run-time for a given route using the any of the @ref[TimeoutDirectives](../routing-dsl/directives/timeout-directives/index.md).
 
 ### Bind timeout

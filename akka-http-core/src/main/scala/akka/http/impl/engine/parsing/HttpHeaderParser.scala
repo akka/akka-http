@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -17,8 +17,9 @@ import akka.http.scaladsl.settings.ParserSettings
 import scala.annotation.tailrec
 import akka.parboiled2.CharUtils
 import akka.util.ByteString
+import akka.http.ccompat._
 import akka.http.impl.util._
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.{ ErrorInfo, HttpHeader, MediaTypes, StatusCode, StatusCodes }
 import akka.http.scaladsl.model.headers.{ EmptyHeader, RawHeader }
 import akka.http.impl.model.parser.HeaderParser
 import akka.http.impl.model.parser.CharacterClasses._
@@ -476,10 +477,10 @@ private[http] object HttpHeaderParser {
 
     val valueParsers: Seq[HeaderValueParser] =
       HeaderParser.ruleNames
-        .filter(headerParserFilter)
+        .filter(headerParserFilter).iterator
         .map { name ⇒
           new ModeledHeaderValueParser(name, parser.settings.maxHeaderValueLength, parser.settings.headerValueCacheLimit(name), parser.log, parser.settings)
-        }(collection.breakOut)
+        }.to(scala.collection.immutable.IndexedSeq)
 
     def insertInGoodOrder(items: Seq[Any])(startIx: Int = 0, endIx: Int = items.size): Unit =
       if (endIx - startIx > 0) {
@@ -558,6 +559,7 @@ private[http] object HttpHeaderParser {
 
   @tailrec private def scanHeaderValue(hhp: HttpHeaderParser, input: ByteString, start: Int, limit: Int, log: LoggingAdapter,
                                        mode: IllegalResponseHeaderValueProcessingMode)(sb: JStringBuilder = null, ix: Int = start): (String, Int) = {
+    hhp.byteBuffer.clear()
 
     def appended(c: Char) = (if (sb != null) sb else new JStringBuilder(asciiString(input, start, ix))).append(c)
     def appended2(c: Int) = if ((c >> 16) != 0) appended(c.toChar).append((c >> 16).toChar) else appended(c.toChar)

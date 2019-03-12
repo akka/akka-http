@@ -1,19 +1,23 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
 package directives
 
+import akka.stream.scaladsl.Source
+import akka.http.HashCodeCollider
 import akka.http.scaladsl.common.StrictForm
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.unmarshalling.Unmarshaller.HexInt
 import akka.http.scaladsl.model._
-import MediaTypes._
+import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
+import akka.http.scaladsl.model.MediaTypes._
+import akka.http.impl.model.parser.CharacterClasses
+import akka.http.impl.util.BenchUtils
+import akka.http.impl.util.StringRendering
 
 class FormFieldDirectivesSpec extends RoutingSpec {
-  // FIXME: unfortunately, it has make a come back, this time it's reproducible ...
-
   implicit val nodeSeqUnmarshaller =
     ScalaXmlSupport.nodeSeqUnmarshaller(`text/xml`, `text/html`, `text/plain`)
 
@@ -102,6 +106,21 @@ class FormFieldDirectivesSpec extends RoutingSpec {
         responseAs[String] shouldEqual "Mike42None<b>no</b>"
       }
     }
+    "work even when the entity is streaming rather than strict" in {
+      val charset = HttpCharsets.`UTF-8`
+      val render: StringRendering = UriRendering.renderQuery(new StringRendering, urlEncodedForm.fields, charset.nioCharset, CharacterClasses.unreserved)
+      val streamingForm: RequestEntity = HttpEntity.Chunked(
+        `application/x-www-form-urlencoded`,
+        Source.single(ChunkStreamPart(render.get)).via(AllowMaterializationOnlyOnce())
+      )
+
+      streamingForm.getContentType shouldEqual ContentTypes.`application/x-www-form-urlencoded`
+      Post("/", streamingForm) ~> {
+        formFields('firstName, "age".as[Int], 'sex.?, "VIP" ? false) { (firstName, age, sex, vip) ⇒
+          complete(firstName + age + sex + vip)
+        }
+      } ~> check { responseAs[String] shouldEqual "Mike42Nonefalse" }
+    }
   }
   "The 'formField' requirement directive" should {
     "block requests that do not contain the required formField" in {
@@ -164,9 +183,44 @@ class FormFieldDirectivesSpec extends RoutingSpec {
 
   "The 'formFieldMap' directive" should {
     "extract fields with different keys" in {
+      var res: Map[String, String] = null
+
       Post("/", FormData("age" → "42", "numberA" → "3", "numberB" → "5")) ~> {
-        formFieldMap { echoComplete }
-      } ~> check { responseAs[String] shouldEqual "Map(age -> 42, numberA -> 3, numberB -> 5)" }
+        formFieldMap { map ⇒
+          res = map
+          completeOk
+        }
+      } ~> check {
+        res shouldEqual Map("age" -> "42", "numberA" -> "3", "numberB" -> "5")
+      }
+    }
+    "not show bad performance characteristics when field names' hashCodes collide" in {
+      val numKeys = 10000
+      val value = "null"
+
+      val regularKeys = Iterator.from(1).map(i ⇒ s"key_$i").take(numKeys)
+      val collidingKeys = HashCodeCollider.zeroHashCodeIterator().take(numKeys)
+
+      def createFormData(keys: Iterator[String]): FormData = {
+        val tuples = keys.map((_, value)).toSeq
+        val query = tuples.foldLeft(Uri.Query.newBuilder)((acc, pair) ⇒ acc += pair)
+        FormData(query.result())
+      }
+
+      val regularFormData = createFormData(regularKeys)
+      val collidingDormData = createFormData(collidingKeys)
+
+      def regular(): Unit =
+        Post("/", regularFormData) ~> {
+          formFieldMap { _ ⇒ complete(StatusCodes.OK) }
+        } ~> check {}
+
+      def colliding(): Unit =
+        Post("/", collidingDormData) ~> {
+          formFieldMap { _ ⇒ complete(StatusCodes.OK) }
+        }
+
+      BenchUtils.nanoRace(colliding(), regular()) should be < 3.0 // speed must be in same order of magnitude
     }
   }
 
@@ -185,9 +239,44 @@ class FormFieldDirectivesSpec extends RoutingSpec {
 
   "The 'formFieldMultiMap' directive" should {
     "extract fields with different keys (with duplicates)" in {
+      var res: Map[String, List[String]] = null
+
       Post("/", FormData("age" → "42", "number" → "3", "number" → "5")) ~> {
-        formFieldMultiMap { echoComplete }
-      } ~> check { responseAs[String] shouldEqual "Map(age -> List(42), number -> List(5, 3))" }
+        formFieldMultiMap { m ⇒
+          res = m
+          completeOk
+        }
+      } ~> check {
+        res shouldEqual Map("age" -> List("42"), "number" -> List("5", "3"))
+      }
+    }
+    "not show bad performance characteristics when field names' hashCodes collide" in {
+      val numKeys = 10000
+      val value = "null"
+
+      val regularKeys = Iterator.from(1).map(i ⇒ s"key_$i").take(numKeys)
+      val collidingKeys = HashCodeCollider.zeroHashCodeIterator().take(numKeys)
+
+      def createFormData(keys: Iterator[String]): FormData = {
+        val tuples = keys.map((_, value)).toSeq
+        val query = tuples.foldLeft(Uri.Query.newBuilder)((acc, pair) ⇒ acc += pair)
+        FormData(query.result())
+      }
+
+      val regularFormData = createFormData(regularKeys)
+      val collidingDormData = createFormData(collidingKeys)
+
+      def regular(): Unit =
+        Post("/", regularFormData) ~> {
+          formFieldMultiMap { _ ⇒ complete(StatusCodes.OK) }
+        } ~> check {}
+
+      def colliding(): Unit =
+        Post("/", collidingDormData) ~> {
+          formFieldMultiMap { _ ⇒ complete(StatusCodes.OK) }
+        }
+
+      BenchUtils.nanoRace(colliding(), regular()) should be < 3.0 // speed must be in same order of magnitude
     }
   }
 }

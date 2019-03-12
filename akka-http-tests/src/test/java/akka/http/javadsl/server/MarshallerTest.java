@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server;
@@ -211,7 +211,7 @@ public class MarshallerTest extends JUnitRouteTest {
     TestRoute route =
           testRoute(
                 get(() ->
-                  route(
+                  concat(
                         path("notempty", notEmptyHandler),
                         path("empty", emptyHandler)
                 )

@@ -30,7 +30,7 @@ The @ref[complete](route-directives/complete.md) directive simply completes the 
 @@@ div { .group-scala }
 
 
-Since @unidoc[Route] is just a type alias for a function type @unidoc[Route] instances can be written in any way in which function
+Since @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]] is just a type alias for a function type @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]] instances can be written in any way in which function
 instances can be written, e.g. as a function literal:
 
 ```scala
@@ -59,7 +59,7 @@ Route route = complete("yeah");
 
 @@@ div { .group-scala }
 
-These three ways of writing this @unidoc[Route] are fully equivalent, the created `route` will behave identically in all
+These three ways of writing this @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]] are fully equivalent, the created `route` will behave identically in all
 cases.
 
 Let's look at a slightly more complicated example to highlight one important point in particular.
@@ -136,17 +136,17 @@ Here, the inner route of the @ref[get](method-directives/get.md) directive is wr
 However, as you can see from these examples, building routes with directives rather than "manually" results in code that
 is a lot more concise and as such more readable and maintainable. In addition it provides for better composability (as
 you will see in the coming sections). So, when using Akka HTTP's Routing DSL you should almost never have to fall back
-to creating routes via @unidoc[Route] function literals that directly manipulate the @ref[RequestContext](../routes.md#requestcontext).
+to creating routes via @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]] function literals that directly manipulate the @ref[RequestContext](../routes.md#requestcontext).
 
 @@@
 
 @@@ div { .group-java }
 
-Writing multiple routes that are tried as alternatives (in-order of definition), is as simple as using the `route(route1, route2)`,
+Writing multiple routes that are tried as alternatives (in-order of definition), is as simple as using the `concat(route1, route2)`,
 method:
 
 ```java
-Route routes = route(
+Route routes = concat(
   pathSingleSlash(() ->
     getFromResource("web/calculator.html")
   ),
@@ -193,7 +193,7 @@ It has a name, zero or more arguments and optionally an inner route (The @ref[Ro
 are always used at the leaf-level and as such cannot have inner routes).
 
 Additionally directives can "extract" a number of values and make them available to their inner routes as function
-arguments. When seen "from the outside" a directive with its inner route form an expression of type @unidoc[Route].
+arguments. When seen "from the outside" a directive with its inner route form an expression of type @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]].
 
 ## What Directives do
 
@@ -257,7 +257,7 @@ Java
 
 @@@ div { .group-scala }
 
-Or better (without dropping down to writing an explicit @unidoc[Route] function manually):
+Or better (without dropping down to writing an explicit @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]] function manually):
 
 @@snip [DirectiveExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #getOrPutUsingPipeAndExtractMethod }
 
@@ -301,13 +301,13 @@ Again, instead of extracting own combined directives to its own method, we can m
 
 In this previous example, the the inner route function provided to `allOf` will be called when the request is a `GET` and with the extracted client IP obtained from the second directive.
 
-As you have already seen in the previous section, you can also use the `route` method defined in @unidoc[RouteDirectives] as an alternative to `orElse` chaining. Here you can see the first example again, rewritten using `route`:
+As you have already seen in the previous section, you can also use the `concat` method defined in @unidoc[RouteDirectives] as an alternative to `orElse` chaining. Here you can see the first example again, rewritten using `concat`:
 
-@@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #usingRoute }
+@@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #usingConcat }
 
-The `route` combinator comes handy when you want to avoid nesting. Here you can see an illustrative example:
+The `concat` combinator comes handy when you want to avoid nesting. Here you can see an illustrative example:
  
-@@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #usingRouteBig }
+@@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #usingConcatBig }
 
 Notice how you could adjust the indentation in these last two examples to have a more readable code.
 
@@ -362,7 +362,7 @@ anyOf(bindParameter(this::parameter, "foo"), bindParameter(this::parameter, "bar
 ```
 In this previous example we make use of the `bindParameter` function located in `akka-http/akka.http.javadsl.common.PartialApplication`.
 In order to be able to call `anyOf`, we need to convert our directive that takes 2 parameters to a function that takes only 1.
-In this particular case we want to use the `parameter` directive that takes a `String` and a function from `String` to @unidoc[Route],
+In this particular case we want to use the `parameter` directive that takes a `String` and a function from `String` to @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]],
 so to be able to use it in combination with `anyOf`, we need to bind the first parameter to `foo` and to `bar` in the second one. `bindParameter(this::parameter, "foo")` is equivalent 
 to define your own function like this:
 ```java

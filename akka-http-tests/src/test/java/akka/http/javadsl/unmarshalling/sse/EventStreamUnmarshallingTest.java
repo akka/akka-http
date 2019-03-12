@@ -27,13 +27,13 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 import static scala.compat.java8.FutureConverters.toJava;
 
 public class EventStreamUnmarshallingTest extends JUnitSuite {
 
     @Test
-    public void testFromEventStream() throws Exception {
+    public void testFromEventsStream() throws Exception {
         ActorSystem system = ActorSystem.create();
         try {
             Materializer mat = ActorMaterializer.create(system);
@@ -43,7 +43,7 @@ public class EventStreamUnmarshallingTest extends JUnitSuite {
 
             //#event-stream-unmarshalling-example
             List<ServerSentEvent> unmarshalledEvents =
-                    EventStreamUnmarshalling.fromEventStream()
+                    EventStreamUnmarshalling.fromEventsStream(system)
                             .unmarshal(entity, system.dispatcher(), mat)
                             .thenCompose(source -> source.runWith(Sink.seq(), mat))
                             .toCompletableFuture()

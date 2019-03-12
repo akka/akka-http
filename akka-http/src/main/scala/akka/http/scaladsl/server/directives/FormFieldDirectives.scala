@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -104,11 +104,13 @@ object FormFieldDirectives extends FormFieldDirectives {
 
     _formFieldSeq.map {
       case seq ⇒
-        append(Map.empty, seq)
+        append(immutable.TreeMap.empty, seq)
     }
   }
 
-  private val _formFieldMap: Directive1[Map[String, String]] = _formFieldSeq.map(_.toMap)
+  private val _formFieldMap: Directive1[Map[String, String]] = _formFieldSeq.map(toMap)
+
+  private def toMap(seq: Seq[(String, String)]): Map[String, String] = immutable.TreeMap(seq: _*)
 
   sealed trait FieldMagnet {
     type Out
@@ -215,7 +217,7 @@ object FormFieldDirectives extends FormFieldDirectives {
     import akka.http.scaladsl.server.util.TupleOps._
 
     implicit def forTuple[T](implicit fold: FoldLeft[Directive0, T, ConvertFieldDefAndConcatenate.type]): FieldDefAux[T, fold.Out] =
-      fieldDef[T, fold.Out](fold(pass, _))
+      fieldDef[T, fold.Out](fold(toStrictEntity(StrictForm.toStrictTimeout), _))
 
     object ConvertFieldDefAndConcatenate extends BinaryPolyFunc {
       implicit def from[P, TA, TB](implicit fdef: FieldDefAux[P, Directive[TB]], ev: Join[TA, TB]): BinaryPolyFunc.Case[Directive[TA], P, ConvertFieldDefAndConcatenate.type] { type Out = Directive[ev.Out] } =

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.examples.petstore;
@@ -55,12 +55,12 @@ public class PetStoreExample {
 
     // The directives here are statically imported, but you can also inherit from AllDirectives.
     return
-      route(
+      concat(
         path("", () ->
           getFromResource("web/index.html")
         ),
         pathPrefix("pet", () -> 
-          path(INTEGER, petId -> route(
+          path(INTEGER, petId -> concat(
             // demonstrates different ways of handling requests:
 
             // 1. using a Function

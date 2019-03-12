@@ -170,13 +170,13 @@ object CharUtils {
    * Efficiently lower-cases the given character.
    * Note: only works for 7-bit ASCII letters.
    */
-  def toLowerCase(c: Char): Char = if (CharPredicate.UpperAlpha(c)) (c + 0x20).toChar else c
+  def toLowerCase(c: Char): Char = if (c >= 'A' && c <= 'Z') (c + 0x20 /* - 'A' + 'a' */ ).toChar else c
 
   /**
    * Efficiently upper-cases the given character.
    * Note: only works for 7-bit ASCII letters.
    */
-  def toUpperCase(c: Char): Char = if (CharPredicate.LowerAlpha(c)) (c + 0x20).toChar else c
+  def toUpperCase(c: Char): Char = if (c >= 'a' && c <= 'z') (c - 0x20 /* - 'a' + 'A' */ ).toChar else c
 
   def escape(c: Char): String = c match {
     case '\t'                           ⇒ "\\t"

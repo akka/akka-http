@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -18,7 +18,7 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
 
   "The connection-level client implementation" should {
 
-    "be able to handle 100 pipelined requests across one connection" in Utils.assertAllStagesStopped {
+    "be able to handle 100 requests across one connection" in Utils.assertAllStagesStopped {
       val (serverHostName, serverPort) = SocketUtil.temporaryServerHostnameAndPort()
 
       val binding = Http().bindAndHandleSync(
@@ -37,7 +37,7 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
       binding.futureValue.unbind()
     }
 
-    "be able to handle 100 pipelined requests across 4 connections (client-flow is reusable)" in Utils.assertAllStagesStopped {
+    "be able to handle 100 requests across 4 connections (client-flow is reusable)" in Utils.assertAllStagesStopped {
       val (serverHostName, serverPort) = SocketUtil.temporaryServerHostnameAndPort()
 
       val binding = Http().bindAndHandleSync(

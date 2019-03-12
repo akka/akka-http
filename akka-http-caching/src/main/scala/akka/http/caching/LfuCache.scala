@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.caching
@@ -38,7 +38,7 @@ object LfuCache {
     require(settings.maxCapacity >= 0, "maxCapacity must not be negative")
     require(settings.initialCapacity <= settings.maxCapacity, "initialCapacity must be <= maxCapacity")
 
-    if (settings.timeToLive.isFinite() || settings.timeToIdle.isFinite()) expiringLfuCache(settings.maxCapacity, settings.initialCapacity, settings.timeToLive, settings.timeToIdle)
+    if (settings.timeToLive.isFinite || settings.timeToIdle.isFinite) expiringLfuCache(settings.maxCapacity, settings.initialCapacity, settings.timeToLive, settings.timeToIdle)
     else simpleLfuCache(settings.maxCapacity, settings.initialCapacity)
   }
 
@@ -69,8 +69,8 @@ object LfuCache {
   private def expiringLfuCache[K, V](maxCapacity: Long, initialCapacity: Int,
                                      timeToLive: Duration, timeToIdle: Duration): LfuCache[K, V] = {
     require(
-      !timeToLive.isFinite || !timeToIdle.isFinite || timeToLive > timeToIdle,
-      s"timeToLive($timeToLive) must be greater than timeToIdle($timeToIdle)")
+      !timeToLive.isFinite || !timeToIdle.isFinite || timeToLive >= timeToIdle,
+      s"timeToLive($timeToLive) must be >= than timeToIdle($timeToIdle)")
 
     def ttl: Caffeine[K, V] ⇒ Caffeine[K, V] = { builder ⇒
       if (timeToLive.isFinite) builder.expireAfterWrite(timeToLive.toMillis, TimeUnit.MILLISECONDS)

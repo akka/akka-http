@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -45,6 +45,10 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
     settings:    ServerSettings,
     parallelism: Int,
     log:         LoggingAdapter)(implicit fm: Materializer): Future[ServerBinding] = {
+    if (parallelism == 1)
+      log.warning("HTTP/2 `bindAndHandleAsync` was called with default parallelism = 1. This means that request handling " +
+        "concurrency per connection is disabled. This is likely not what you want with HTTP/2.")
+
     val effectivePort = if (port >= 0) port else 80
 
     val serverLayer: Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(
@@ -141,9 +145,9 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
         Http2AlpnSupport.applySessionParameters(engine, httpsContext.firstSession)
         Http2AlpnSupport.enableForServer(engine, setChosenProtocol)
       }
-      val tls = TLS(createEngine, _ ⇒ Success(()), IgnoreComplete)
+      val tls = TLS(() ⇒ createEngine, _ ⇒ Success(()), IgnoreComplete)
 
-      AlpnSwitch(getChosenProtocol, http.serverLayer(settings, None, log), http2Layer()) atop
+      AlpnSwitch(() ⇒ getChosenProtocol, http.serverLayer(settings, None, log), http2Layer()) atop
         tls
     }
 

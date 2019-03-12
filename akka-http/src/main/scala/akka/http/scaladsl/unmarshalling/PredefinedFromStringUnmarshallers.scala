@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.unmarshalling
@@ -45,7 +45,7 @@ trait PredefinedFromStringUnmarshallers {
 
   implicit def CsvSeq[T](implicit unmarshaller: Unmarshaller[String, T]): Unmarshaller[String, immutable.Seq[T]] =
     Unmarshaller.strict[String, immutable.Seq[String]] { string ⇒
-      string.split(",").toList
+      string.split(",", -1).toList
     } flatMap { implicit ec ⇒ implicit mat ⇒ strings ⇒
       FastFuture.sequence(strings.map(unmarshaller(_)))
     }

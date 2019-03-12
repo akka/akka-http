@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -56,7 +56,7 @@ sealed abstract class MediaType extends jm.MediaType with LazyValueBytesRenderab
       case _            ⇒ false
     }
 
-  override def hashCode(): Int = value.hashCode
+  override def hashCode(): Int = value.toLowerCase.hashCode
 
   /**
    * JAVA API
@@ -113,6 +113,9 @@ object MediaType {
     new Binary("video/" + subType, "video", subType, comp, fileExtensions.toList) {
       override def isVideo = true
     }
+
+  def font(subType: String, comp: Compressibility, fileExtensions: String*): Binary =
+    new Binary("font/" + subType, "font", subType, comp, fileExtensions.toList) {}
 
   def customBinary(mainType: String, subType: String, comp: Compressibility, fileExtensions: List[String] = Nil,
                    params: Map[String, String] = Map.empty, allowArbitrarySubtypes: Boolean = false): Binary = {
@@ -323,23 +326,30 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   private def txt(st: String, fe: String*)                      = register(text(st, fe: _*))
   private def txtfc(st: String, cs: HttpCharset, fe: String*)   = register(textWithFixedCharset(st, cs, fe: _*))
   private def vid(st: String, fe: String*)                      = register(video(st, NotCompressible, fe: _*))
+  private def fnt(st: String, c: Compressibility, fe: String*) = register(font(st, c, fe: _*))
 
   // dummy value currently only used by ContentType.NoContentType
   private[http] val NoMediaType = MediaType.customBinary("none", "none", comp = NotCompressible)
 
   val `application/atom+xml`                                                      = awoc("atom+xml", "atom")
   val `application/base64`                                                        = awoc("base64", "mm", "mme")
-  val `application/excel`                                                         = abin("excel", NotCompressible, "xl", "xla", "xlb", "xlc", "xld", "xlk", "xll", "xlm", "xls", "xlt", "xlv", "xlw")
-  val `application/font-woff`                                                     = abin("font-woff", NotCompressible, "woff")
+  val `application/cbor`                                                          = abin("cbor", Compressible, "cbor")
+  @deprecated("This format is unofficial and should not be used. Use application/vnd.ms-excel instead.", "10.1.6")
+  val `application/excel`                                                         = abin("excel", NotCompressible)
+  @deprecated("This format is unofficial and should not be used. Use font/woff instead.", "10.1.7")
+  val `application/font-woff`                                                     = abin("font-woff", NotCompressible)
   val `application/gnutar`                                                        = abin("gnutar", NotCompressible, "tgz")
   val `application/java-archive`                                                  = abin("java-archive", NotCompressible, "jar", "war", "ear")
   val `application/javascript`                                                    = awoc("javascript", "js")
   val `application/json`                                                          = awfc("json", HttpCharsets.`UTF-8`, "json")
   val `application/json-patch+json`                                               = awfc("json-patch+json", HttpCharsets.`UTF-8`)
+  val `application/merge-patch+json`                                              = awfc("merge-patch+json", HttpCharsets.`UTF-8`)
+  val `application/problem+json`                                                  = awfc("problem+json", HttpCharsets.`UTF-8`)
   val `application/grpc+proto`                                                    = abin("grpc+proto", NotCompressible)
   val `application/lha`                                                           = abin("lha", NotCompressible, "lha")
   val `application/lzx`                                                           = abin("lzx", NotCompressible, "lzx")
-  val `application/mspowerpoint`                                                  = abin("mspowerpoint", NotCompressible, "pot", "pps", "ppt", "ppz")
+  @deprecated("This format is unofficial and should not be used. Use application/vnd.ms-powerpoint instead.", "10.1.6")
+  val `application/mspowerpoint`                                                  = abin("mspowerpoint", NotCompressible)
   val `application/msword`                                                        = abin("msword", NotCompressible, "doc", "dot", "w6w", "wiz", "word", "wri")
   val `application/octet-stream`                                                  = abin("octet-stream", NotCompressible, "a", "bin", "class", "dump", "exe", "lhx", "lzh", "o", "psd", "saveme", "zoo")
   val `application/pdf`                                                           = abin("pdf", NotCompressible, "pdf")
@@ -349,7 +359,18 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   val `application/vnd.api+json`                                                  = awfc("vnd.api+json", HttpCharsets.`UTF-8`)
   val `application/vnd.google-earth.kml+xml`                                      = awoc("vnd.google-earth.kml+xml", "kml")
   val `application/vnd.google-earth.kmz`                                          = abin("vnd.google-earth.kmz", NotCompressible, "kmz")
+  val `application/vnd.ms-excel`                                                  = abin("vnd.ms-excel", NotCompressible, "xl", "xla", "xlb", "xlc", "xld", "xlk", "xll", "xlm", "xls", "xlt", "xlv", "xlw")
+  val `application/vnd.ms-excel.addin.macroEnabled.12`                            = abin("vnd.ms-excel.addin.macroEnabled.12", NotCompressible, "xlam")
+  val `application/vnd.ms-excel.sheet.binary.macroEnabled.12`                     = abin("vnd.ms-excel.sheet.binary.macroEnabled.12", NotCompressible, "xlsb")
+  val `application/vnd.ms-excel.sheet.macroEnabled.12`                            = abin("vnd.ms-excel.sheet.macroEnabled.12",NotCompressible, "xlsm")
+  val `application/vnd.ms-excel.template.macroEnabled.12`                         = abin("vnd.ms-excel.template.macroEnabled.12", NotCompressible, "xltm")
   val `application/vnd.ms-fontobject`                                             = abin("vnd.ms-fontobject", Compressible, "eot")
+  val `application/vnd.ms-powerpoint`                                             = abin("vnd.ms-powerpoint", NotCompressible, "pot", "ppa", "pps", "ppt", "ppz")
+  val `application/vnd.ms-powerpoint.addin.macroEnabled.12`                       = abin("vnd.ms-powerpoint.addin.macroEnabled.12", NotCompressible, "ppam")
+  val `application/vnd.ms-powerpoint.presentation.macroEnabled.12`                = abin("vnd.ms-powerpoint.presentation.macroEnabled.12", NotCompressible, "pptm", "potm")
+  val `application/vnd.ms-powerpoint.slideshow.macroEnabled.12`                   = abin("vnd.ms-powerpoint.slideshow.macroEnabled.12", NotCompressible, "ppsm")
+  val `application/vnd.ms-word.document.macroEnabled.12`                          = abin("vnd.ms-word.document.macroEnabled.12", NotCompressible, "docm")
+  val `application/vnd.ms-word.template.macroEnabled.12`                          = abin("vnd.ms-word.template.macroEnabled.12", NotCompressible, "dotm")
   val `application/vnd.oasis.opendocument.chart`                                  = abin("vnd.oasis.opendocument.chart", Compressible, "odc")
   val `application/vnd.oasis.opendocument.database`                               = abin("vnd.oasis.opendocument.database", Compressible, "odb")
   val `application/vnd.oasis.opendocument.formula`                                = abin("vnd.oasis.opendocument.formula", Compressible, "odf")
@@ -391,12 +412,13 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   val `application/x-tex`                                                         = abin("x-tex", Compressible, "tex")
   val `application/x-texinfo`                                                     = abin("x-texinfo", Compressible, "texi", "texinfo")
   val `application/x-vrml`                                                        = awoc("x-vrml", "vrml")
-  val `application/x-www-form-urlencoded`                                         = awoc("x-www-form-urlencoded")
+  val `application/x-www-form-urlencoded`                                         = awfc("x-www-form-urlencoded", HttpCharsets.`UTF-8`)
   val `application/x-x509-ca-cert`                                                = abin("x-x509-ca-cert", Compressible, "der")
   val `application/x-xpinstall`                                                   = abin("x-xpinstall", NotCompressible, "xpi")
   val `application/xhtml+xml`                                                     = awoc("xhtml+xml")
   val `application/xml-dtd`                                                       = awoc("xml-dtd")
   val `application/xml`                                                           = awoc("xml")
+  val `application/problem+xml`                                                   = awoc("problem+xml")
   val `application/zip`                                                           = abin("zip", NotCompressible, "zip")
 
   val `audio/aiff`        = aud("aiff", Compressible, "aif", "aifc", "aiff")
@@ -413,6 +435,10 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   val `audio/x-psid`      = aud("x-psid", Compressible, "sid")
   val `audio/xm`          = aud("xm", NotCompressible, "xm")
   val `audio/webm`        = aud("webm", NotCompressible)
+
+  /* Refer to https://tools.ietf.org/html/rfc8081#page-15 for Font being main type woff and woff2 being subtype*/
+  val `font/woff`  = fnt("woff", NotCompressible, "woff")
+  val `font/woff2` = fnt("woff2", NotCompressible, "woff2")
 
   val `image/gif`         = img("gif", NotCompressible, "gif")
   val `image/jpeg`        = img("jpeg", NotCompressible, "jpe", "jpeg", "jpg")

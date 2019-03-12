@@ -1,10 +1,13 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.model.parser
 
 import scala.annotation.tailrec
+import scala.collection.immutable
+import scala.collection.immutable.TreeMap
+
 import akka.parboiled2.Parser
 import akka.http.scaladsl.model.{ ParsingException, IllegalUriException }
 import akka.http.scaladsl.model.headers._
@@ -18,7 +21,7 @@ private[parser] trait LinkHeader { this: Parser with CommonRules with CommonActi
   }
 
   def `link-value` = rule {
-    ws('<') ~ UriReference('>') ~ ws('>') ~ oneOrMore(ws(';') ~ `link-param`) ~> (sanitize(_)) ~> (LinkValue(_, _: _*))
+    ws('<') ~ UriReference('>') ~ ws('>') ~ oneOrMore(ws(';') ~ `link-param`) ~> (sanitize(_)) ~> (LinkValue(_, _))
   }
 
   def `link-param` = rule(
@@ -62,12 +65,12 @@ private[parser] trait LinkHeader { this: Parser with CommonRules with CommonActi
     }
   }
 
-  def `link-media-type` = rule { `media-type` ~> ((mt, st, pm) ⇒ getMediaType(mt, st, pm contains "charset", pm.toMap)) }
+  def `link-media-type` = rule { `media-type` ~> ((mt, st, pm) ⇒ getMediaType(mt, st, pm contains "charset", TreeMap(pm: _*))) }
 
   // filter out subsequent `rel`, `media`, `title`, `type` and `type*` params
-  @tailrec private def sanitize(params: Seq[LinkParam], result: Seq[LinkParam] = Nil, seenRel: Boolean = false,
+  @tailrec private def sanitize(params: Seq[LinkParam], result: immutable.Seq[LinkParam] = Nil, seenRel: Boolean = false,
                                 seenMedia: Boolean = false, seenTitle: Boolean = false, seenTitleS: Boolean = false,
-                                seenType: Boolean = false): Seq[LinkParam] =
+                                seenType: Boolean = false): immutable.Seq[LinkParam] =
     params match {
       case Seq((x: LinkParams.rel), tail @ _*)      ⇒ sanitize(tail, if (seenRel) result else result :+ x, seenRel = true, seenMedia, seenTitle, seenTitleS, seenType)
       case Seq((x: LinkParams.media), tail @ _*)    ⇒ sanitize(tail, if (seenMedia) result else result :+ x, seenRel, seenMedia = true, seenTitle, seenTitleS, seenType)

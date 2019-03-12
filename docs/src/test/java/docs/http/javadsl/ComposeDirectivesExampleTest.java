@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl;
@@ -53,7 +53,7 @@ public class ComposeDirectivesExampleTest extends AllDirectives {
   private Route createRoute() {
     BiFunction<PathMatcher1<Integer>, Function<Integer,Route>, Route> pathWithInteger = this::path;
 
-    return route(
+    return concat(
       //anyOf examples
       path("hello", () ->
         anyOf(this::get, this::put, () ->

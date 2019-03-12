@@ -1,15 +1,16 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.settings
 
 import akka.annotation.InternalApi
-import akka.http.impl.util.{ SettingsCompanion, _ }
+import akka.http.impl.util._
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, PoolImplementation }
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.Duration
+import scala.concurrent.duration.FiniteDuration
 
 /** INTERNAL API */
 @InternalApi
@@ -20,6 +21,8 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   maxOpenRequests:                   Int,
   pipeliningLimit:                   Int,
   maxConnectionLifetime:             Duration,
+  baseConnectionBackoff:             FiniteDuration,
+  maxConnectionBackoff:              FiniteDuration,
   idleTimeout:                       Duration,
   connectionSettings:                ClientConnectionSettings,
   poolImplementation:                PoolImplementation,
@@ -38,6 +41,10 @@ private[akka] final case class ConnectionPoolSettingsImpl(
     maxConnectionLifetime == Duration.Inf || poolImplementation == PoolImplementation.New,
     "max-connection-lifetime does not taking effect with legacy pool implementation")
   require(idleTimeout >= Duration.Zero, "idle-timeout must be >= 0")
+  require(
+    minConnections == 0 || (baseConnectionBackoff.toMillis > 0 && maxConnectionBackoff.toMillis > 10),
+    "If min-connections > 0, you need to set a base-connection-backoff must be > 0 and max-connection-backoff must be > 10 millis " +
+      "to avoid client pools excessively trying to open up new connections.")
 
   override def productPrefix = "ConnectionPoolSettings"
 
@@ -54,22 +61,26 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   }
 }
 
-object ConnectionPoolSettingsImpl extends SettingsCompanion[ConnectionPoolSettingsImpl]("akka.http.host-connection-pool") {
-  def fromSubConfig(root: Config, c: Config) = {
+/** INTERNAL API */
+@InternalApi
+private[akka] object ConnectionPoolSettingsImpl extends SettingsCompanionImpl[ConnectionPoolSettingsImpl]("akka.http.host-connection-pool") {
+  def fromSubConfig(root: Config, c: Config): ConnectionPoolSettingsImpl = {
     new ConnectionPoolSettingsImpl(
-      c getInt "max-connections",
-      c getInt "min-connections",
-      c getInt "max-retries",
-      c getInt "max-open-requests",
-      c getInt "pipelining-limit",
-      c getPotentiallyInfiniteDuration "max-connection-lifetime",
-      c getPotentiallyInfiniteDuration "idle-timeout",
+      c.getInt("max-connections"),
+      c.getInt("min-connections"),
+      c.getInt("max-retries"),
+      c.getInt("max-open-requests"),
+      c.getInt("pipelining-limit"),
+      c.getPotentiallyInfiniteDuration("max-connection-lifetime"),
+      c.getFiniteDuration("base-connection-backoff"),
+      c.getFiniteDuration("max-connection-backoff"),
+      c.getPotentiallyInfiniteDuration("idle-timeout"),
       ClientConnectionSettingsImpl.fromSubConfig(root, c.getConfig("client")),
       c.getString("pool-implementation").toLowerCase match {
         case "legacy" ⇒ PoolImplementation.Legacy
         case "new"    ⇒ PoolImplementation.New
       },
-      c getPotentiallyInfiniteDuration "response-entity-subscription-timeout"
+      c.getPotentiallyInfiniteDuration("response-entity-subscription-timeout")
     )
   }
 }

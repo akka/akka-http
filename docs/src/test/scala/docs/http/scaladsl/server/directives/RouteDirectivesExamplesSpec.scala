@@ -1,8 +1,11 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
+
+import akka.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
 import scala.concurrent.Future
 
@@ -24,10 +27,9 @@ import akka.http.scaladsl.server.ValidationRejection
 //#reject-examples
 
 import akka.http.scaladsl.server.Route
-import docs.http.scaladsl.server.RoutingSpec
 import akka.testkit.EventFilter
 
-class RouteDirectivesExamplesSpec extends RoutingSpec {
+class RouteDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   "complete-examples" in {
     //#complete-examples

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.coding
@@ -38,7 +38,7 @@ trait Encoder {
     def encodeChunk(bytes: ByteString): ByteString = compressor.compressAndFlush(bytes)
     def finish(): ByteString = compressor.finish()
 
-    StreamUtils.byteStringTransformer(encodeChunk, finish)
+    StreamUtils.byteStringTransformer(encodeChunk, () ⇒ finish)
   }
 }
 

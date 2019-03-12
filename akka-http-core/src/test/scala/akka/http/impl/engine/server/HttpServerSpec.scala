@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.server
@@ -31,7 +31,9 @@ import scala.util.Random
 class HttpServerSpec extends AkkaSpec(
   """akka.loggers = []
      akka.loglevel = OFF
-     akka.http.server.request-timeout = infinite""") with Inside { spec ⇒
+     akka.http.server.request-timeout = infinite
+     akka.scheduler.implementation = "akka.testkit.ExplicitlyTriggeredScheduler"
+  """) with Inside { spec ⇒
   implicit val materializer = ActorMaterializer()
 
   "The server implementation" should {
@@ -977,6 +979,8 @@ class HttpServerSpec extends AkkaSpec(
       "are defined via the config" in assertAllStagesStopped(new RequestTimeoutTestSetup(10.millis) {
         send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
         expectRequest().header[`Timeout-Access`] shouldBe defined
+
+        scheduler.timePasses(20.millis)
         expectResponseWithWipedDate(
           """HTTP/1.1 503 Service Unavailable
             |Server: akka-http/test
@@ -993,8 +997,8 @@ class HttpServerSpec extends AkkaSpec(
 
       "are programmatically increased (not expiring)" in assertAllStagesStopped(new RequestTimeoutTestSetup(50.millis) {
         send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
-        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(250.millis.dilated))
-        netOut.expectNoBytes(150.millis.dilated)
+        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(250.millis))
+        netOut.expectNoBytes()
         responses.sendNext(HttpResponse())
         expectResponseWithWipedDate(
           """HTTP/1.1 200 OK
@@ -1010,8 +1014,14 @@ class HttpServerSpec extends AkkaSpec(
 
       "are programmatically increased (expiring)" in assertAllStagesStopped(new RequestTimeoutTestSetup(50.millis) {
         send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
-        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(250.millis.dilated))
-        netOut.expectNoBytes(150.millis.dilated)
+
+        scheduler.timePasses(25.millis)
+        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(250.millis))
+
+        scheduler.timePasses(150.millis)
+        netOut.expectNoBytes(Duration.Zero)
+
+        scheduler.timePasses(100.millis)
         expectResponseWithWipedDate(
           """HTTP/1.1 503 Service Unavailable
             |Server: akka-http/test
@@ -1028,8 +1038,12 @@ class HttpServerSpec extends AkkaSpec(
 
       "are programmatically decreased" in assertAllStagesStopped(new RequestTimeoutTestSetup(250.millis) {
         send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
-        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(50.millis.dilated))
-        val mark = System.nanoTime()
+        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateTimeout(50.millis))
+
+        scheduler.timePasses(40.millis)
+        netOut.expectNoBytes(Duration.Zero)
+
+        scheduler.timePasses(10.millis)
         expectResponseWithWipedDate(
           """HTTP/1.1 503 Service Unavailable
             |Server: akka-http/test
@@ -1039,7 +1053,6 @@ class HttpServerSpec extends AkkaSpec(
             |
             |The server was not able to produce a timely response to your request.
             |Please try again in a short while!""")
-        (System.nanoTime() - mark) should be < (200 * 1000000L)
 
         netIn.sendComplete()
         netOut.expectComplete()
@@ -1048,7 +1061,9 @@ class HttpServerSpec extends AkkaSpec(
       "have a programmatically set timeout handler" in assertAllStagesStopped(new RequestTimeoutTestSetup(400.millis) {
         send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
         val timeoutResponse = HttpResponse(StatusCodes.InternalServerError, entity = "OOPS!")
-        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateHandler(_ ⇒ timeoutResponse))
+        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateHandler((_: HttpRequest) ⇒ timeoutResponse))
+
+        scheduler.timePasses(500.millis)
         expectResponseWithWipedDate(
           """HTTP/1.1 500 Internal Server Error
             |Server: akka-http/test
@@ -1083,9 +1098,34 @@ class HttpServerSpec extends AkkaSpec(
           |
           |""")
 
-      netIn.sendComplete()
       requests.expectComplete()
       netOut.expectComplete()
+      netIn.sendComplete()
+    })
+
+    "add `Connection: close` to early responses if HttpResponse includes `Connection: keep-alive` header" in assertAllStagesStopped(new TestSetup {
+      send("""POST / HTTP/1.1
+             |Host: example.com
+             |Content-Length: 100000
+             |
+             |""")
+
+      val HttpRequest(POST, _, _, entity, _) = expectRequest()
+      responses.sendNext(HttpResponse(status = StatusCodes.InsufficientStorage, headers = Connection("keep-alive") :: Nil))
+      entity.dataBytes.runWith(Sink.ignore)
+
+      expectResponseWithWipedDate(
+        """HTTP/1.1 507 Insufficient Storage
+          |Server: akka-http/test
+          |Date: XXXX
+          |Connection: close
+          |Content-Length: 0
+          |
+          |""")
+
+      requests.expectComplete()
+      netOut.expectComplete()
+      netIn.sendComplete()
     })
 
     "support request length verification" which afterWord("is defined via") {
@@ -1338,6 +1378,7 @@ class HttpServerSpec extends AkkaSpec(
   class TestSetup(maxContentLength: Int = -1) extends HttpServerTestSetupBase {
     implicit def system = spec.system
     implicit def materializer = spec.materializer
+    val scheduler = spec.system.scheduler.asInstanceOf[ExplicitlyTriggeredScheduler]
 
     override def settings = {
       val s = super.settings
@@ -1348,7 +1389,7 @@ class HttpServerSpec extends AkkaSpec(
   class RequestTimeoutTestSetup(requestTimeout: FiniteDuration) extends TestSetup {
     override def settings = {
       val s = super.settings
-      s.withTimeouts(s.timeouts.withRequestTimeout(requestTimeout.dilated))
+      s.withTimeouts(s.timeouts.withRequestTimeout(requestTimeout))
     }
   }
 }

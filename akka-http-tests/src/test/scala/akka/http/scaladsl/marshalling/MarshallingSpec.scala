@@ -1,29 +1,33 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.marshalling
 
-import scala.collection.immutable
-import scala.collection.immutable.ListMap
-import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
-import akka.util.ByteString
 import akka.actor.ActorSystem
+import akka.http.impl.util._
+import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
+import akka.http.scaladsl.model.HttpCharsets._
+import akka.http.scaladsl.model.MediaTypes._
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.testkit.MarshallingTestUtils
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
-import akka.http.scaladsl.testkit.MarshallingTestUtils
-import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
-import akka.http.impl.util._
-import akka.http.scaladsl.model._
-import headers._
-import HttpCharsets._
-import MediaTypes._
 import akka.testkit.TestKit
+import akka.util.ByteString
+import com.typesafe.config.ConfigFactory
+import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
+
+import scala.collection.immutable
+import scala.collection.immutable.ListMap
 
 class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with MultipartMarshallers with MarshallingTestUtils {
   implicit val system = ActorSystem(getClass.getSimpleName)
   implicit val materializer = ActorMaterializer()
   import system.dispatcher
+
+  override val testConfig = ConfigFactory.load()
 
   "The PredefinedToEntityMarshallers" - {
     "StringMarshaller should marshal strings to `text/plain` content in UTF-8" in {
@@ -37,7 +41,7 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
     }
     "FormDataMarshaller should marshal FormData instances to application/x-www-form-urlencoded content" in {
       marshal(FormData(Map("name" → "Bob", "pass" → "hällo", "admin" → ""))) shouldEqual
-        HttpEntity(`application/x-www-form-urlencoded` withCharset `UTF-8`, "name=Bob&pass=h%C3%A4llo&admin=")
+        HttpEntity(`application/x-www-form-urlencoded`, "name=Bob&pass=h%C3%A4llo&admin=")
     }
   }
 
@@ -198,7 +202,10 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
   override def afterAll() = TestKit.shutdownActorSystem(system)
 
   protected class FixedRandom extends java.util.Random {
-    override def nextBytes(array: Array[Byte]): Unit = "my-stable-boundary".getBytes("UTF-8").copyToArray(array)
+    override def nextBytes(array: Array[Byte]): Unit = {
+      val bytes = "my-stable-boundary".getBytes("UTF-8")
+      bytes.copyToArray(array, 0, bytes.length)
+    }
   }
   override protected val multipartBoundaryRandom = new FixedRandom // fix for stable value
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.settings
@@ -31,6 +31,7 @@ abstract class ParserSettings private[akka] () extends BodyPartParser.Settings {
   def getMaxHeaderValueLength: Int
   def getMaxHeaderCount: Int
   def getMaxContentLength: Long
+  def getMaxToStrictBytes: Long
   def getMaxChunkExtLength: Int
   def getMaxChunkSize: Int
   def getUriParsingMode: Uri.ParsingMode
@@ -56,6 +57,7 @@ abstract class ParserSettings private[akka] () extends BodyPartParser.Settings {
   def withMaxHeaderValueLength(newValue: Int): ParserSettings = self.copy(maxHeaderValueLength = newValue)
   def withMaxHeaderCount(newValue: Int): ParserSettings = self.copy(maxHeaderCount = newValue)
   def withMaxContentLength(newValue: Long): ParserSettings = self.copy(maxContentLength = newValue)
+  def withMaxToStrictBytes(newValue: Long): ParserSettings = self.copy(maxToStrictBytes = newValue)
   def withMaxChunkExtLength(newValue: Int): ParserSettings = self.copy(maxChunkExtLength = newValue)
   def withMaxChunkSize(newValue: Int): ParserSettings = self.copy(maxChunkSize = newValue)
   def withUriParsingMode(newValue: Uri.ParsingMode): ParserSettings = self.copy(uriParsingMode = newValue.asScala)

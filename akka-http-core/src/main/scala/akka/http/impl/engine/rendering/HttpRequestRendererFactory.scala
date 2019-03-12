@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.rendering
@@ -87,10 +87,18 @@ private[http] class HttpRequestRendererFactory(
             if (x.renderInRequests) render(x)
             renderHeaders(tail, hostHeaderSeen, userAgentSeen, transferEncodingSeen)
 
-          case x: RawHeader if (x is "content-type") || (x is "content-length") || (x is "transfer-encoding") ||
-            (x is "host") || (x is "user-agent") ⇒
+          case x: RawHeader if (x is "content-type") || (x is "content-length") ||
+            (x is "transfer-encoding") ⇒
             suppressionWarning(log, x, "illegal RawHeader")
             renderHeaders(tail, hostHeaderSeen, userAgentSeen, transferEncodingSeen)
+
+          case x: RawHeader if x is "user-agent" ⇒
+            render(x)
+            renderHeaders(tail, hostHeaderSeen, userAgentSeen = true, transferEncodingSeen)
+
+          case x: RawHeader if x is "host" ⇒
+            render(x)
+            renderHeaders(tail, hostHeaderSeen = true, userAgentSeen, transferEncodingSeen)
 
           case x ⇒
             if (x.renderInRequests) render(x)

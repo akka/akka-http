@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server;
@@ -16,7 +16,7 @@ import akka.http.javadsl.ServerBinding;
 import com.typesafe.config.ConfigFactory;
 //#imports
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 //#selfClosing
 import scala.concurrent.duration.Duration;

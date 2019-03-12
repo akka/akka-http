@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.coding
@@ -51,7 +51,7 @@ class DeflateSpec extends CoderSpec {
 
   private def encodeMessage(request: HttpRequest, compressionLevel: Int, noWrap: Boolean): HttpRequest = {
     val deflaterWithoutWrapping = new Deflate(Encoder.DefaultFilter) {
-      override def newCompressor = new DeflateCompressor {
+      override def newCompressor = new DeflateCompressor(compressionLevel) {
         override lazy val deflater = new Deflater(compressionLevel, noWrap)
       }
     }

@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server
 
 import akka.http.scaladsl.server._
+import docs.CompileOnlySpec
 
-class DirectiveExamplesSpec extends RoutingSpec {
+class DirectiveExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   // format: OFF
 

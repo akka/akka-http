@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
@@ -7,10 +7,11 @@ package docs.http.scaladsl.server.directives
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
 import headers._
-import docs.http.scaladsl.server.RoutingSpec
 import java.net.InetAddress
 
-class MiscDirectivesExamplesSpec extends RoutingSpec {
+import docs.CompileOnlySpec
+
+class MiscDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   "extractClientIP-example" in {
     //#extractClientIP-example
@@ -126,7 +127,7 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
     }
 
     Post("/abc", entityOfSize(501)) ~> Route.seal(route) ~> check {
-      status shouldEqual StatusCodes.BadRequest
+      status shouldEqual StatusCodes.RequestEntityTooLarge
     }
 
     //#withSizeLimit-example
@@ -171,7 +172,7 @@ class MiscDirectivesExamplesSpec extends RoutingSpec {
     }
 
     Post("/abc", entityOfSize(801)) ~> Route.seal(route) ~> check {
-      status shouldEqual StatusCodes.BadRequest
+      status shouldEqual StatusCodes.RequestEntityTooLarge
     }
     //#withSizeLimit-nested-example
   }

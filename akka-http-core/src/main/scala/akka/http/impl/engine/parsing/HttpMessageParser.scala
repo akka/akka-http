@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -14,7 +14,7 @@ import akka.parboiled2.CharUtils
 import akka.util.ByteString
 import akka.http.impl.model.parser.CharacterClasses
 import akka.http.scaladsl.settings.ParserSettings
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.{ ParsingException ⇒ _, _ }
 import headers._
 import HttpProtocols._
 import ParserOutput._
@@ -30,7 +30,11 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
 
   import HttpMessageParser._
 
-  protected final val result = new ListBuffer[Output]
+  // Either:
+  //   - null: currently no output
+  //   - Output: one output element
+  //   - ListBuffer: several output elements
+  private[this] var result: AnyRef = null
   private[this] var state: ByteString ⇒ StateResult = startNewMessage(_, 0)
   private[this] var protocol: HttpProtocol = `HTTP/1.1`
   protected var completionHandling: CompletionHandling = CompletionOk
@@ -74,17 +78,23 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
         case x             ⇒ x
       }
 
-    if (result.nonEmpty) throw new IllegalStateException("Unexpected `onPush`")
+    if (result ne null) throw new IllegalStateException("Unexpected `onPush`")
     run(state)
     doPull()
   }
 
   protected final def doPull(): Output =
-    if (result.nonEmpty) {
-      val head = result.head
-      result.remove(0) // faster than `ListBuffer::drop`
-      head
-    } else if (terminated) StreamEnd else NeedMoreData
+    result match {
+      case null ⇒ if (terminated) StreamEnd else NeedMoreData
+      case buffer: ListBuffer[Output] ⇒
+        val head = buffer.head
+        buffer.remove(0) // faster than `ListBuffer::drop`
+        if (buffer.isEmpty) result = null
+        head
+      case ele: Output @unchecked ⇒
+        result = null
+        ele
+    }
 
   protected final def shouldComplete(): Boolean = {
     completionHandling() match {
@@ -92,7 +102,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
       case None    ⇒ // nothing to do
     }
     terminated = true
-    result.isEmpty
+    result eq null
   }
 
   protected final def startNewMessage(input: ByteString, offset: Int): StateResult = {
@@ -254,7 +264,15 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
     }
   }
 
-  protected def emit(output: Output): Unit = result += output
+  protected def emit(output: Output): Unit = result match {
+    case null                       ⇒ result = output
+    case buffer: ListBuffer[Output] ⇒ buffer += output
+    case old: Output @unchecked ⇒
+      val buffer = new ListBuffer[Output]
+      buffer += old
+      buffer += output
+      result = buffer
+  }
 
   protected final def continue(input: ByteString, offset: Int)(next: (ByteString, Int) ⇒ StateResult): StateResult = {
     state =
@@ -320,7 +338,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
         case EntityPart(bytes)       ⇒ bytes
         case EntityStreamError(info) ⇒ throw EntityStreamException(info)
       }
-      HttpEntity.Default(contentType(cth), contentLength, HttpEntity.limitableByteSource(data))
+      HttpEntity.Default(contentType(cth), contentLength, data)
     }
 
   protected final def chunkedEntity[A <: ParserOutput](cth: Option[`Content-Type`]) =
@@ -329,7 +347,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
         case EntityChunk(chunk)      ⇒ chunk
         case EntityStreamError(info) ⇒ throw EntityStreamException(info)
       }
-      HttpEntity.Chunked(contentType(cth), HttpEntity.limitableChunkSource(chunks))
+      HttpEntity.Chunked(contentType(cth), chunks)
     }
 
   protected final def addTransferEncodingWithChunkedPeeled(headers: List[HttpHeader], teh: `Transfer-Encoding`): List[HttpHeader] =

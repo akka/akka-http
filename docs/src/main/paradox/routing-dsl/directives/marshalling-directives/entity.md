@@ -28,7 +28,7 @@ are mapped to rejections:
 |-------------------------|--------------------------------------------------------------------------|
 |`ContentExpected`        | @unidoc[RequestEntityExpectedRejection$]                                         |
 |`UnsupportedContentType` | @unidoc[UnsupportedRequestContentTypeRejection], which lists the supported types|
-|`MaformedContent`        | @unidoc[MalformedRequestContentRejection], with an error message and cause      |
+|`MalformedContent`       | @unidoc[MalformedRequestContentRejection], with an error message and cause      |
 
 ## Examples
 

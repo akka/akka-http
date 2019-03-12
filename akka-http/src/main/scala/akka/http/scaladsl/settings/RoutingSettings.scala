@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.settings
@@ -19,6 +19,8 @@ abstract class RoutingSettings private[akka] () extends akka.http.javadsl.settin
   def rangeCountLimit: Int
   def rangeCoalescingThreshold: Long
   def decodeMaxBytesPerChunk: Int
+  def decodeMaxSize: Long
+  @deprecated("binary compatibility method. Use `akka.stream.materializer.blocking-io-dispatcher` to configure the dispatcher", since = "10.1.6")
   def fileIODispatcher: String
 
   /* Java APIs */
@@ -28,6 +30,9 @@ abstract class RoutingSettings private[akka] () extends akka.http.javadsl.settin
   def getRangeCountLimit: Int = rangeCountLimit
   def getRangeCoalescingThreshold: Long = rangeCoalescingThreshold
   def getDecodeMaxBytesPerChunk: Int = decodeMaxBytesPerChunk
+  def getDecodeMaxSize: Long = decodeMaxSize
+  @deprecated("binary compatibility method. Use `akka.stream.materializer.blocking-io-dispatcher` to configure the dispatcher", since = "10.1.6")
+  @Deprecated
   def getFileIODispatcher: String = fileIODispatcher
 
   override def withVerboseErrorMessages(verboseErrorMessages: Boolean): RoutingSettings = self.copy(verboseErrorMessages = verboseErrorMessages)
@@ -36,7 +41,10 @@ abstract class RoutingSettings private[akka] () extends akka.http.javadsl.settin
   override def withRangeCountLimit(rangeCountLimit: Int): RoutingSettings = self.copy(rangeCountLimit = rangeCountLimit)
   override def withRangeCoalescingThreshold(rangeCoalescingThreshold: Long): RoutingSettings = self.copy(rangeCoalescingThreshold = rangeCoalescingThreshold)
   override def withDecodeMaxBytesPerChunk(decodeMaxBytesPerChunk: Int): RoutingSettings = self.copy(decodeMaxBytesPerChunk = decodeMaxBytesPerChunk)
-  override def withFileIODispatcher(fileIODispatcher: String): RoutingSettings = self.copy(fileIODispatcher = fileIODispatcher)
+  override def withDecodeMaxSize(decodeMaxSize: Long): RoutingSettings = self.copy(decodeMaxSize = decodeMaxSize)
+  @deprecated("binary compatibility method. Use `akka.stream.materializer.blocking-io-dispatcher` to configure the dispatcher", since = "10.1.6")
+  @Deprecated
+  override def withFileIODispatcher(fileIODispatcher: String): RoutingSettings = self
 }
 
 object RoutingSettings extends SettingsCompanion[RoutingSettings] {

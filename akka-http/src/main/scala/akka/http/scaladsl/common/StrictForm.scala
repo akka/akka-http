@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.common
@@ -9,6 +9,7 @@ import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
 import akka.stream.Materializer
+import akka.http.ccompat._
 import akka.http.scaladsl.unmarshalling._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture
@@ -40,6 +41,9 @@ sealed abstract class StrictForm {
 }
 
 object StrictForm {
+  // TODO: make timeout configurable
+  val toStrictTimeout = 10.seconds
+
   sealed trait Field
   object Field {
     private[http] def fromString(value: String): Field = FromString(value)
@@ -108,19 +112,19 @@ object StrictForm {
         def tryUnmarshalToQueryForm: Future[StrictForm] =
           for (formData ← formDataUM(entity).fast) yield {
             new StrictForm {
-              val fields = formData.fields.map { case (name, value) ⇒ name → Field.FromString(value) }(collection.breakOut)
+              val fields = formData.fields.iterator.map { case (name, value) ⇒ name → Field.FromString(value) }.to(scala.collection.immutable.IndexedSeq)
             }
           }
 
         def tryUnmarshalToMultipartForm: Future[StrictForm] =
           for {
             multiPartFD ← multipartUM(entity).fast
-            strictMultiPartFD ← multiPartFD.toStrict(10.seconds).fast // TODO: make timeout configurable
+            strictMultiPartFD ← multiPartFD.toStrict(toStrictTimeout).fast
           } yield {
             new StrictForm {
-              val fields = strictMultiPartFD.strictParts.map {
+              val fields = strictMultiPartFD.strictParts.iterator.map {
                 case x: Multipart.FormData.BodyPart.Strict ⇒ x.name → Field.FromPart(x)
-              }(collection.breakOut)
+              }.to(scala.collection.immutable.IndexedSeq)
             }
           }
 

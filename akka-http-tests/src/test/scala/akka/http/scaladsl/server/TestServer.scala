@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -49,7 +49,7 @@ object TestServer extends App {
       path("") {
         withRequestTimeout(1.milli, _ ⇒ HttpResponse(
           StatusCodes.EnhanceYourCalm,
-          entity = "Unable to serve response within time limit, please enchance your calm.")) {
+          entity = "Unable to serve response within time limit, please enhance your calm.")) {
           Thread.sleep(1000)
           complete(index)
         }

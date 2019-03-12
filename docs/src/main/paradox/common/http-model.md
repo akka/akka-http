@@ -27,12 +27,12 @@ the type plus a trailing plural 's'.
 
 For example:
 
- * Defined @unidoc[HttpMethod] instances @scala[live in]@java[are defined as static fields of] the @unidoc[HttpMethods] @scala[object]@java[class].
- * Defined @unidoc[HttpCharset] instances @scala[live in]@java[are defined as static fields of] the @unidoc[HttpCharsets] @scala[object]@java[class].
- * Defined @unidoc[HttpEncoding] instances @scala[live in]@java[are defined as static fields of] the @unidoc[HttpEncodings] @scala[object]@java[class].
- * Defined @unidoc[HttpProtocol] instances @scala[live in]@java[are defined as static fields of] the @unidoc[HttpProtocols] @scala[object]@java[class].
- * Defined @unidoc[MediaType] instances @scala[live in]@java[are defined as static fields of] the @unidoc[MediaTypes] @scala[object]@java[class].
- * Defined @unidoc[StatusCode] instances @scala[live in]@java[are defined as static fields of] the @unidoc[StatusCodes] @scala[object]@java[class].
+ * Defined @unidoc[HttpMethod] instances @scala[live in]@java[are defined as static fields of] the @scala[@unidoc[HttpMethods$]]@java[@unidoc[HttpMethods]] @scala[object]@java[class].
+ * Defined @unidoc[HttpCharset] instances @scala[live in]@java[are defined as static fields of] the @scala[@unidoc[HttpCharsets$]]@java[@unidoc[HttpCharsets]] @scala[object]@java[class].
+ * Defined @unidoc[HttpEncoding] instances @scala[live in]@java[are defined as static fields of] the @scala[@unidoc[HttpEncodings$]]@java[@unidoc[HttpEncodings]] @scala[object]@java[class].
+ * Defined @unidoc[HttpProtocol] instances @scala[live in]@java[are defined as static fields of] the @scala[@unidoc[HttpProtocols$]]@java[@unidoc[HttpProtocols]] @scala[object]@java[class].
+ * Defined @unidoc[MediaType] instances @scala[live in]@java[are defined as static fields of] the @scala[@unidoc[MediaTypes$]]@java[@unidoc[MediaTypes]] @scala[object]@java[class].
+ * Defined @unidoc[StatusCode] instances @scala[live in]@java[are defined as static fields of] the @scala[@unidoc[StatusCodes$]]@java[@unidoc[StatusCodes]] @scala[object]@java[class].
 
 ## HttpRequest
 
@@ -397,9 +397,9 @@ in the right style / place.
 <a id="registeringcustomstatuscodes"></a>
 ## Registering Custom Status Codes
 
-Similarly to media types, Akka HTTP @scala[@scaladoc:[predefines](akka.http.scaladsl.model.StatusCodes$)]@java[@javadoc:[predefines](akka.http.javaadsl.model.StatusCodes)]
+Similarly to media types, Akka HTTP @scala[@scaladoc:[predefines](akka.http.scaladsl.model.StatusCodes$)]@java[@javadoc:[predefines](akka.http.javadsl.model.StatusCodes)]
 well-known status codes, however sometimes you may need to use a custom one (or are forced to use an API which returns custom status codes).
-Similarily to the media types registration, you can register custom status codes by configuring @unidoc[ParserSettings] like this:
+Similarly to the media types registration, you can register custom status codes by configuring @unidoc[ParserSettings] like this:
 
 Scala
 :   @@snip [CustomStatusCodesSpec.scala]($akka-http$/akka-http-tests/src/test/scala/akka/http/scaladsl/CustomStatusCodesSpec.scala) { #application-custom }

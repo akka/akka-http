@@ -1,12 +1,10 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
 
 import java.util.concurrent.TimeUnit
-
-import docs.http.scaladsl.server.RoutingSpec
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -15,11 +13,13 @@ import akka.http.scaladsl.server.{ CircuitBreakerOpenRejection, ExceptionHandler
 import akka.util.Timeout
 import akka.http.scaladsl.model._
 import StatusCodes._
+import akka.http.scaladsl.server.RoutingSpec
 import akka.pattern.CircuitBreaker
+import docs.CompileOnlySpec
 
 // format: OFF
 
-class FutureDirectivesExamplesSpec extends RoutingSpec {
+class FutureDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec{
   object TestException extends Throwable
 
   implicit val myExceptionHandler =

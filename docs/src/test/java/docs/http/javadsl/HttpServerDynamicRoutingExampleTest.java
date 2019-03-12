@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl;
@@ -71,7 +71,7 @@ public class HttpServerDynamicRoutingExampleTest extends AllDirectives {
       ).reduce(reject(), Route::orElse)
     );
 
-    return route(fixedRoute, dynamicRoute);
+    return concat(fixedRoute, dynamicRoute);
   }
 
   private static class MockDefinition {

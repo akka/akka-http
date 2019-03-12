@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -57,12 +57,12 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
       serverBinding.terminate(hardDeadline = 2.seconds)
       Thread.sleep(200)
 
-      // immediately trying a new connection should cause `Connection failed` since we unbind immediately:
+      // immediately trying a new connection should cause `Connection refused` since we unbind immediately:
       val r3 = makeRequest(ensureNewConnection = true)
       val ex = intercept[StreamTcpException] {
         Await.result(r3, 2.seconds)
       }
-      ex.getMessage should include("Connection failed")
+      ex.getMessage should include("Connection refused")
     }
 
     "provide whenTerminated future that completes once server has completed termination (no connections)" in new TestSetup {
@@ -126,6 +126,7 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
 
       ensureServerDeliveredRequest() // we want the request to be in the server user's hands before we cause termination
       serverBinding.terminate(hardDeadline = time)
+      Thread.sleep(time.toMillis / 2)
       reply(_ ⇒ HttpResponse(StatusCodes.OK))
 
       val response = r1.futureValue
@@ -189,7 +190,7 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
   }
 
   private def ensureConnectionIsClosed(r: Future[HttpResponse]): Assertion =
-    the[StreamTcpException] thrownBy Await.result(r, 1.second) should have message "Connection failed."
+    (the[StreamTcpException] thrownBy Await.result(r, 1.second)).getMessage should endWith("Connection refused")
 
   override def afterAll() = {
     TestKit.shutdownActorSystem(system)
@@ -247,14 +248,17 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
         .bindAndHandle(routes, hostname, port, connectionContext = serverConnectionContext, settings = serverSettings)
         .futureValue
 
+    val basePoolSettings = ConnectionPoolSettings(system).withBaseConnectionBackoff(Duration.Zero)
+
     def makeRequest(ensureNewConnection: Boolean = false): Future[HttpResponse] = {
       if (ensureNewConnection) {
         // by changing the settings, we ensure we'll hit a new connection pool, which means it will be a new connection for sure.
         idleTimeoutBaseForUniqueness += 1
-        val clientSettings = ConnectionPoolSettings(system).withIdleTimeout(idleTimeoutBaseForUniqueness.seconds)
+        val clientSettings = basePoolSettings.withIdleTimeout(idleTimeoutBaseForUniqueness.seconds)
+
         Http().singleRequest(nextRequest, connectionContext = clientConnectionContext, settings = clientSettings)
       } else {
-        Http().singleRequest(nextRequest, connectionContext = clientConnectionContext)
+        Http().singleRequest(nextRequest, connectionContext = clientConnectionContext, settings = basePoolSettings)
       }
     }
   }

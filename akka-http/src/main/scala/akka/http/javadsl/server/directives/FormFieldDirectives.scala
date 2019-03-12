@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives
@@ -77,7 +77,7 @@ abstract class FormFieldDirectives extends FileUploadDirectives {
    * Extracts HTTP form fields from the request as a ``Map<String, List<String>>``.
    */
   def formFieldMultiMap(inner: JFunction[JMap[String, JList[String]], Route]): Route = RouteAdapter {
-    D.formFieldMultiMap { map ⇒ inner.apply(map.mapValues { l ⇒ l.asJava }.asJava).delegate }
+    D.formFieldMultiMap { map ⇒ inner.apply(map.mapValues { l ⇒ l.asJava }.toMap.asJava).delegate }
   }
 
   /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model.headers
@@ -7,6 +7,7 @@ package akka.http.scaladsl.model.headers
 import language.implicitConversions
 import scala.collection.immutable
 import akka.parboiled2.UTF8
+import akka.http.ccompat
 import akka.http.impl.model.parser.UriParser
 import akka.http.impl.util._
 import akka.http.javadsl.{ model ⇒ jm }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl;
@@ -65,8 +65,8 @@ public class HttpServerActorInteractionExample extends AllDirectives {
   }
 
   private Route createRoute() {
-    return route(
-      path("auction", () -> route(
+    return concat(
+      path("auction", () -> concat(
         put(() ->
           parameter(StringUnmarshallers.INTEGER, "bid", bid ->
             parameter("user", user -> {

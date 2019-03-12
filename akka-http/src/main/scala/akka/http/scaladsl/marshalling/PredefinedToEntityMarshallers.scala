@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.marshalling
@@ -48,7 +48,7 @@ trait PredefinedToEntityMarshallers extends MultipartMarshallers {
     Marshaller.withFixedContentType(mediaType) { s ⇒ HttpEntity(mediaType, s) }
 
   implicit val FormDataMarshaller: ToEntityMarshaller[FormData] =
-    Marshaller.withOpenCharset(`application/x-www-form-urlencoded`) { _ toEntity _ }
+    Marshaller.withFixedContentType(`application/x-www-form-urlencoded`) { _ toEntity }
 
   implicit val MessageEntityMarshaller: ToEntityMarshaller[MessageEntity] =
     Marshaller strict { value ⇒ Marshalling.WithFixedContentType(value.contentType, () ⇒ value) }

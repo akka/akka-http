@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -11,7 +11,7 @@ import akka.http.scaladsl.settings.ParserSettings
 import akka.util.{ ByteString, OptionVal }
 import akka.http.impl.engine.ws.Handshake
 import akka.http.impl.model.parser.CharacterClasses
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.{ ParsingException ⇒ _, _ }
 import headers._
 import StatusCodes._
 import ParserOutput._
@@ -68,16 +68,21 @@ private[http] final class HttpRequestParser(
       }
     }
 
-    override def parseMessage(input: ByteString, offset: Int): StateResult = {
-      var cursor = parseMethod(input, offset)
-      cursor = parseRequestTarget(input, cursor)
-      cursor = parseProtocol(input, cursor)
-      if (byteChar(input, cursor) == '\r' && byteChar(input, cursor + 1) == '\n')
-        parseHeaderLines(input, cursor + 2)
-      else if (byteChar(input, cursor) == '\n')
-        parseHeaderLines(input, cursor + 1)
-      else onBadProtocol
-    }
+    override def parseMessage(input: ByteString, offset: Int): StateResult =
+      if (offset < input.length) {
+        var cursor = parseMethod(input, offset)
+        cursor = parseRequestTarget(input, cursor)
+        cursor = parseProtocol(input, cursor)
+        if (byteChar(input, cursor) == '\r' && byteChar(input, cursor + 1) == '\n')
+          parseHeaderLines(input, cursor + 2)
+        else if (byteChar(input, cursor) == '\n')
+          parseHeaderLines(input, cursor + 1)
+        else onBadProtocol()
+      } else
+        // Without HTTP pipelining it's likely that buffer is exhausted after reading one message,
+        // so we check above explicitly if we are done and stop work here without running into NotEnoughDataException
+        // when continuing to parse.
+        continue(startNewMessage)
 
     def parseMethod(input: ByteString, cursor: Int): Int = {
       @tailrec def parseCustomMethod(ix: Int = 0, sb: JStringBuilder = new JStringBuilder(16)): Int =
@@ -92,17 +97,11 @@ private[http] final class HttpRequestParser(
               }
             case c ⇒ parseCustomMethod(ix + 1, sb.append(c))
           }
-        } else {
-          if (sb.length > 0 && sb.charAt(0) == 0x16)
-            throw new ParsingException(
-              BadRequest,
-              ErrorInfo("Unsupported HTTP method", s"The HTTP method started with 0x16 rather than any known HTTP method. " +
-                "Perhaps this was an HTTPS request sent to an HTTP endpoint?"))
-          else throw new ParsingException(
+        } else
+          throw new ParsingException(
             BadRequest,
             ErrorInfo("Unsupported HTTP method", s"HTTP method too long (started with '${sb.toString}'). " +
               "Increase `akka.http.server.parsing.max-method-length` to support HTTP methods with more characters."))
-        }
 
       @tailrec def parseMethod(meth: HttpMethod, ix: Int = 1): Int =
         if (ix == meth.value.length)
@@ -127,7 +126,12 @@ private[http] final class HttpRequestParser(
         case 'O' ⇒ parseMethod(OPTIONS)
         case 'T' ⇒ parseMethod(TRACE)
         case 'C' ⇒ parseMethod(CONNECT)
-        case _   ⇒ parseCustomMethod()
+        case 0x16 ⇒
+          throw new ParsingException(
+            BadRequest,
+            ErrorInfo("Unsupported HTTP method", s"The HTTP method started with 0x16 rather than any known HTTP method. " +
+              "Perhaps this was an HTTPS request sent to an HTTP endpoint?"))
+        case _ ⇒ parseCustomMethod()
       }
     }
 
@@ -153,7 +157,7 @@ private[http] final class HttpRequestParser(
       uriEnd + 1
     }
 
-    override def onBadProtocol() = throw new ParsingException(HTTPVersionNotSupported)
+    override def onBadProtocol(): Nothing = throw new ParsingException(HTTPVersionNotSupported)
 
     // http://tools.ietf.org/html/rfc7230#section-3.3
     override def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,

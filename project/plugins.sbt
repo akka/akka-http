@@ -8,7 +8,7 @@ resolvers += Resolver.jcenterRepo
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.4.0")
 addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.9.3")
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.2.0")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.3.0")
 addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.8.1")
 addSbtPlugin("com.dwijnand" % "sbt-dynver" % "2.0.0")
 addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.1")
@@ -18,9 +18,8 @@ addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.0") // for advan
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.1")
 addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.2")
 addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.4")
-addSbtPlugin("com.lightbend.paradox" % "sbt-paradox" % "0.3.2")
-addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.8")
-addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.12")
+addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.14")
+addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.13")
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.0.0")
 
 // used in ValidatePullRequest to check github PR comments whether to build all subprojects

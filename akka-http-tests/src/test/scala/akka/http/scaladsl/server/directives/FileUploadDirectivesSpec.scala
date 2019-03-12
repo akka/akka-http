@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server.directives
@@ -184,7 +184,6 @@ class FileUploadDirectivesSpec extends RoutingSpec {
         status shouldEqual StatusCodes.OK
         responseAs[String] shouldEqual str1
       }
-
     }
 
     "stream the first file upload if multiple with the same name are posted" in {
@@ -238,6 +237,74 @@ class FileUploadDirectivesSpec extends RoutingSpec {
 
     }
 
+    "not cancel the stream after providing the expected part" in {
+      val route = echoAsAService
+      val str1 = "some data"
+
+      @volatile var secondWasFullyRead = false
+      val secondSource =
+        Source.fromIterator(() ⇒ Iterator.from(1))
+          .take(100)
+          .map { i ⇒
+            if (i == 100) secondWasFullyRead = true
+            akka.util.ByteString("abcdefghij")
+          }
+
+      val multipartForm =
+        Multipart.FormData(
+          Source(
+            Vector(
+              Multipart.FormData.BodyPart.Strict(
+                "field1",
+                HttpEntity(str1),
+                Map("filename" → "data1.txt")
+              ),
+              Multipart.FormData.BodyPart(
+                "field2",
+                HttpEntity.IndefiniteLength(ContentTypes.`application/octet-stream`, secondSource)
+              )
+            )
+          )
+        )
+
+      Post("/", multipartForm) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        responseAs[String] shouldEqual str1
+        secondWasFullyRead shouldEqual true
+      }
+    }
+
+    "not be head-of-line-blocked if there is another big part before the part we are interested in" in {
+      val route = echoAsAService
+      val str1 = "some data"
+
+      val firstSource =
+        Source.repeat(ByteString("abcdefghij" * 100))
+          .take(1000) // 1MB
+
+      val multipartForm =
+        Multipart.FormData(
+          Source(
+            Vector(
+              // big part comes before the one we are interested in
+              Multipart.FormData.BodyPart(
+                "field2",
+                HttpEntity.IndefiniteLength(ContentTypes.`application/octet-stream`, firstSource)
+              ),
+              Multipart.FormData.BodyPart.Strict(
+                "field1",
+                HttpEntity(str1),
+                Map("filename" → "data1.txt")
+              )
+            )
+          )
+        )
+
+      Post("/", multipartForm) ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        responseAs[String] shouldEqual str1
+      }
+    }
   }
 
   "the fileUploadAll directive" should {

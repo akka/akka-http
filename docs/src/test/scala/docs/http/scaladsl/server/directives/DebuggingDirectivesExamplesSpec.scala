@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
@@ -9,10 +9,11 @@ import akka.event.Logging.LogLevel
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.server.RouteResult
 import akka.http.scaladsl.server.RouteResult.{ Complete, Rejected }
+import akka.http.scaladsl.server.RoutingSpec
 import akka.http.scaladsl.server.directives.{ DebuggingDirectives, LogEntry, LoggingMagnet }
-import docs.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
-class DebuggingDirectivesExamplesSpec extends RoutingSpec {
+class DebuggingDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "logRequest-0" in {
     //#logRequest-0
     // different possibilities of using logRequest
@@ -44,7 +45,7 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
   }
   "logRequestResult" in {
     //#logRequestResult
-    // different possibilities of using logRequestResponse
+    // different possibilities of using logRequestResult
 
     // The first alternatives use an implicitly available LoggingContext for logging
     // marks with "get-user", log with debug level, HttpRequest.toString, HttpResponse.toString
@@ -130,7 +131,7 @@ class DebuggingDirectivesExamplesSpec extends RoutingSpec {
     }
     def printResponseTime(log: LoggingAdapter) = {
       val requestTimestamp = System.nanoTime
-      akkaResponseTimeLoggingFunction(log, requestTimestamp)(_)
+      akkaResponseTimeLoggingFunction(log, requestTimestamp)_
     }
 
     val logResponseTime = DebuggingDirectives.logRequestResult(LoggingMagnet(printResponseTime))

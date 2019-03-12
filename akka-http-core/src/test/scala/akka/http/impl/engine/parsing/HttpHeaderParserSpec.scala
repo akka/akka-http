@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -14,6 +14,7 @@ import scala.util.Random
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import akka.util.ByteString
 import akka.actor.ActorSystem
+import akka.http.HashCodeCollider
 import akka.http.scaladsl.model.{ ErrorInfo, HttpHeader }
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.model.parser.CharacterClasses
@@ -173,6 +174,12 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       parseAndCache(s"4-UTF8-Bytes: Surrogate pairs: \uD801\uDC1B\uD801\uDC04\uD801\uDC1B!${newLine}x")() shouldEqual
         RawHeader("4-UTF8-Bytes", "Surrogate pairs: \uD801\uDC1B\uD801\uDC04\uD801\uDC1B!")
     }
+    "parse and cache a header with UTF8 chars in the value after an incomplete line" in new TestSetup() {
+      a[NotEnoughDataException.type] should be thrownBy parseLineFromBytes(ByteString(s"3-UTF8-Bytes: The €").dropRight(1))
+
+      parseAndCache(s"4-UTF8-Bytes: Surrogate pairs: \uD801\uDC1B\uD801\uDC04\uD801\uDC1B!${newLine}x")() shouldEqual
+        RawHeader("4-UTF8-Bytes", "Surrogate pairs: \uD801\uDC1B\uD801\uDC04\uD801\uDC1B!")
+    }
 
     "produce an error message for lines with an illegal header name" in new TestSetup() {
       the[ParsingException] thrownBy parseLine(s" Connection: close${newLine}x") should have message "Illegal character ' ' in header name"
@@ -195,7 +202,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
     "continue parsing raw headers even if the overall cache value capacity is reached" in new TestSetup() {
       val randomHeaders = Stream.continually {
         val name = nextRandomString(nextRandomAlphaNumChar _, nextRandomInt(4, 16))
-        val value = nextRandomString(nextRandomPrintableChar, nextRandomInt(4, 16))
+        val value = nextRandomString(() ⇒ nextRandomPrintableChar, nextRandomInt(4, 16))
         RawHeader(name, value)
       }
       randomHeaders.take(300).foldLeft(0) {
@@ -227,7 +234,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
 
     "continue parsing raw headers even if the header-specific cache capacity is reached" in new TestSetup() {
       val randomHeaders = Stream.continually {
-        val value = nextRandomString(nextRandomPrintableChar, nextRandomInt(4, 16))
+        val value = nextRandomString(() ⇒ nextRandomPrintableChar, nextRandomInt(4, 16))
         RawHeader("Fancy", value)
       }
       randomHeaders.take(20).foldLeft(0) {
@@ -272,6 +279,36 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
         parseLine(s"Content-Type: abc:123${newLine}x")
       }
     }
+    "not show bad performance characteristics when parameter names' hashCodes collide" in new TestSetup(
+      parserSettings = createParserSettings(system).withMaxHeaderValueLength(500 * 1024)
+    ) {
+      // This is actually quite rare since it needs upping the max header value length
+      val numKeys = 10000
+      val value = "null"
+
+      val regularKeys = Iterator.from(1).map(i ⇒ s"key_$i").take(numKeys)
+      private val zeroHashStrings: Iterator[String] = HashCodeCollider.zeroHashCodeIterator()
+      val collidingKeys = zeroHashStrings
+        .filter(_.forall(CharacterClasses.tchar))
+        .take(numKeys)
+
+      def createHeader(keys: Iterator[String]): String = "Accept: text/plain" + keys.mkString(";", "=x;", "=x") + newLine + "x"
+
+      val regularHeader = createHeader(regularKeys)
+      val collidingHeader = createHeader(collidingKeys)
+      zeroHashStrings.next().hashCode should be(0)
+
+      def regular(): Unit = {
+        val (_, accept: Accept) = parseLine(regularHeader)
+        accept.mediaRanges.head.getParams.size should be(numKeys)
+      }
+      def colliding(): Unit = {
+        val (_, accept: Accept) = parseLine(collidingHeader)
+        accept.mediaRanges.head.getParams.size should be(numKeys)
+      }
+
+      BenchUtils.nanoRace(regular, colliding) should be < 3.0 // speed must be in same order of magnitude
+    }
   }
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
@@ -308,7 +345,8 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       if (parser.isEmpty) HttpHeaderParser.insertRemainingCharsAsNewNodes(parser, ByteString(line), value)
       else HttpHeaderParser.insert(parser, ByteString(line), value)
 
-    def parseLine(line: String) = parser.parseHeaderLine(ByteString(line))() → { system.log.debug(parser.resultHeader.getClass.getSimpleName); parser.resultHeader }
+    def parseLineFromBytes(bytes: ByteString) = parser.parseHeaderLine(bytes)() → { system.log.debug(parser.resultHeader.getClass.getSimpleName); parser.resultHeader }
+    def parseLine(line: String) = parseLineFromBytes(ByteString(line))
 
     def parseAndCache(lineA: String)(lineB: String = lineA): HttpHeader = {
       val (ixA, headerA) = parseLine(lineA)

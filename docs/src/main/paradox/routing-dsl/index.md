@@ -131,7 +131,7 @@ Exception handling within the Routing DSL is done by providing @unidoc[Exception
 in the @ref[Exception Handling](exception-handling.md) section of the documentation. You can use them to transform exceptions into
 @unidoc[HttpResponse] s with appropriate error codes and human-readable failure descriptions.
 
-### File uploads
+## File uploads
 
 For high level directives to handle uploads see the @ref[FileUploadDirectives](directives/file-upload-directives/index.md).
 

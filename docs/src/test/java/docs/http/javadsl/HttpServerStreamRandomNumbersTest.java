@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl;
@@ -53,7 +53,7 @@ public class HttpServerStreamRandomNumbersTest extends AllDirectives {
     // and use it for every request
     Source<Integer, NotUsed> numbers = Source.fromIterator(() -> Stream.generate(rnd::nextInt).iterator());
 
-    return route(
+    return concat(
         path("random", () ->
             get(() ->
                 complete(HttpEntities.create(ContentTypes.TEXT_PLAIN_UTF8,

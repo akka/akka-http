@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.settings
@@ -8,8 +8,8 @@ import java.util.Random
 import java.util.function.Supplier
 
 import akka.annotation.DoNotInherit
-import akka.http.impl.util._
 import akka.http.impl.settings.ServerSettingsImpl
+import akka.http.impl.util._
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.{ settings ⇒ js }
 import akka.http.scaladsl.model.HttpResponse
@@ -109,7 +109,13 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   }))
   def withWebsocketSettings(newValue: WebSocketSettings): ServerSettings = self.copy(websocketSettings = newValue)
   def withSocketOptions(newValue: immutable.Seq[SocketOption]): ServerSettings = self.copy(socketOptions = newValue)
+  def withHttp2Settings(newValue: Http2ServerSettings): ServerSettings = copy(http2Settings = newValue)
 
+  // Scala-only lenses
+  def mapHttp2Settings(f: Http2ServerSettings ⇒ Http2ServerSettings): ServerSettings = withHttp2Settings(f(http2Settings))
+  def mapParserSettings(f: ParserSettings ⇒ ParserSettings): ServerSettings = withParserSettings(f(parserSettings))
+  def mapPreviewServerSettings(f: PreviewServerSettings ⇒ PreviewServerSettings): ServerSettings = withPreviewServerSettings(f(previewServerSettings))
+  def mapWebsocketSettings(f: WebSocketSettings ⇒ WebSocketSettings): ServerSettings = withWebsocketSettings(f(websocketSettings))
 }
 
 object ServerSettings extends SettingsCompanion[ServerSettings] {

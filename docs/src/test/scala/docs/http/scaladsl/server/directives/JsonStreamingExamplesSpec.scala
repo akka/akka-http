@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
@@ -9,19 +9,19 @@ import akka.http.scaladsl.common.{ EntityStreamingSupport, JsonEntityStreamingSu
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Accept
+import akka.http.scaladsl.server.RoutingSpec
 import akka.http.scaladsl.server.{ UnacceptedResponseContentTypeRejection, UnsupportedRequestContentTypeRejection }
 import akka.stream.scaladsl.{ Flow, Source }
 import akka.util.ByteString
-import docs.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
 import scala.concurrent.Future
 
-class JsonStreamingExamplesSpec extends RoutingSpec {
+class JsonStreamingExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
-  //#models
+  //#tweet-model
   case class Tweet(uid: Int, txt: String)
-  case class Measurement(id: String, value: Int)
-  //#models
+  //#tweet-model
 
   val tweets = List(
     Tweet(1, "#Akka rocks!"),
@@ -29,20 +29,19 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
     Tweet(3, "You cannot enter the same river twice."))
   def getTweets = Source(tweets)
 
-  //#formats
-  object MyJsonProtocol
+  //#tweet-format
+  object MyTweetJsonProtocol
     extends akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
     with spray.json.DefaultJsonProtocol {
 
     implicit val tweetFormat = jsonFormat2(Tweet.apply)
-    implicit val measurementFormat = jsonFormat2(Measurement.apply)
   }
-  //#formats
+  //#tweet-format
 
   "spray-json-response-streaming" in {
     //#spray-json-response-streaming
     // [1] import "my protocol", for marshalling Tweet objects:
-    import MyJsonProtocol._
+    import MyTweetJsonProtocol._
 
     // [2] pick a Source rendering support trait:
     // Note that the default support renders the Source as JSON Array
@@ -62,9 +61,9 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
     Get("/tweets").withHeaders(AcceptJson) ~> route ~> check {
       responseAs[String] shouldEqual
         """[""" +
-        """{"uid":1,"txt":"#Akka rocks!"},""" +
-        """{"uid":2,"txt":"Streaming is so hot right now!"},""" +
-        """{"uid":3,"txt":"You cannot enter the same river twice."}""" +
+        """{"txt":"#Akka rocks!","uid":1},""" +
+        """{"txt":"Streaming is so hot right now!","uid":2},""" +
+        """{"txt":"You cannot enter the same river twice.","uid":3}""" +
         """]"""
     }
 
@@ -78,7 +77,7 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
 
   "line-by-line-json-response-streaming" in {
     //#line-by-line-json-response-streaming
-    import MyJsonProtocol._
+    import MyTweetJsonProtocol._
 
     // Configure the EntityStreamingSupport to render the elements as:
     // {"example":42}
@@ -102,9 +101,9 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
 
     Get("/tweets").withHeaders(AcceptJson) ~> route ~> check {
       responseAs[String] shouldEqual
-        """{"uid":1,"txt":"#Akka rocks!"}""" + "\n" +
-        """{"uid":2,"txt":"Streaming is so hot right now!"}""" + "\n" +
-        """{"uid":3,"txt":"You cannot enter the same river twice."}""" + "\n"
+        """{"txt":"#Akka rocks!","uid":1}""" + "\n" +
+        """{"txt":"Streaming is so hot right now!","uid":2}""" + "\n" +
+        """{"txt":"You cannot enter the same river twice.","uid":3}""" + "\n"
     }
     //#line-by-line-json-response-streaming
   }
@@ -142,10 +141,9 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
   }
 
   "response-streaming-modes" in {
-
     {
       //#async-rendering
-      import MyJsonProtocol._
+      import MyTweetJsonProtocol._
       implicit val jsonStreamingSupport: JsonEntityStreamingSupport =
         EntityStreamingSupport.json()
           .withParallelMarshalling(parallelism = 8, unordered = false)
@@ -158,9 +156,8 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
     }
 
     {
-
       //#async-unordered-rendering
-      import MyJsonProtocol._
+      import MyTweetJsonProtocol._
       implicit val jsonStreamingSupport: JsonEntityStreamingSupport =
         EntityStreamingSupport.json()
           .withParallelMarshalling(parallelism = 8, unordered = true)
@@ -173,10 +170,24 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
     }
   }
 
+  //#measurement-model
+  case class Measurement(id: String, value: Int)
+
+  //#measurement-model
+
+  //#measurement-format
+  object MyMeasurementJsonProtocol
+    extends akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+    with spray.json.DefaultJsonProtocol {
+
+    implicit val measurementFormat = jsonFormat2(Measurement.apply)
+  }
+  //#measurement-format
+
   "spray-json-request-streaming" in {
     //#spray-json-request-streaming
     // [1] import "my protocol", for unmarshalling Measurement objects:
-    import MyJsonProtocol._
+    import MyMeasurementJsonProtocol._
 
     // [2] enable Json Streaming
     implicit val jsonStreamingSupport = EntityStreamingSupport.json()

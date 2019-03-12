@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl;
@@ -30,7 +30,7 @@ public class JacksonXmlExampleTest extends JUnitRouteTest {
 
   @Test
   public void marshalXml() throws Exception {
-    final Route route = route(
+    final Route route = concat(
       completeOK(point, JacksonXmlSupport.<Point>marshaller())
     );
 
@@ -44,7 +44,7 @@ public class JacksonXmlExampleTest extends JUnitRouteTest {
   public void unmarshalXml() throws Exception {
     final Unmarshaller<HttpEntity, Point> unmarshaller = JacksonXmlSupport.unmarshaller(Point.class);
 
-    final Route route = route(
+    final Route route = concat(
       entity(unmarshaller, p -> {
         assertEquals(p, point);
         return complete(p.toString());

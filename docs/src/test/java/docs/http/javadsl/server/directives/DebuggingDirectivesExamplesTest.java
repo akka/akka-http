@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server.directives;
@@ -177,7 +177,7 @@ public class DebuggingDirectivesExamplesTest extends JUnitRouteTest {
           "Logged Request:" + request.method().name() + ":" + request.getUri() + ":" + response.status() + ":" + elapsedTime,
           InfoLevel()));
     } else {
-      return Optional.empty();  //not a successfull response
+      return Optional.empty();  //not a successful response
     }
   }
 }

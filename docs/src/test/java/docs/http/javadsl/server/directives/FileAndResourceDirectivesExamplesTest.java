@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server.directives;
@@ -88,7 +88,7 @@ public class FileAndResourceDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testListDirectoryContents() {
     //#listDirectoryContents
-    final Route route = Directives.route(
+    final Route route = Directives.concat(
       path("tmp", () -> listDirectoryContents("/tmp")),
       path("custom", () -> {
         // implement your custom renderer here

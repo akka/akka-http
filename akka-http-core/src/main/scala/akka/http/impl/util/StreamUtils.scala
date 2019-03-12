@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.util
@@ -89,7 +89,9 @@ private[http] object StreamUtils {
             push(out, data)
             if (remaining <= 0) completeStage()
           }
-          toSkip -= element.length
+
+          if (toSkip > 0)
+            toSkip -= element.length
         }
 
         setHandlers(in, out, this)
@@ -106,9 +108,9 @@ private[http] object StreamUtils {
 
         var remaining = ByteString.empty
 
-        def splitAndPush(elem: ByteString): Unit = {
-          val toPush = remaining.take(maxBytesPerChunk)
-          val toKeep = remaining.drop(maxBytesPerChunk)
+        def splitAndPush(data: ByteString): Unit = {
+          val toPush = data.take(maxBytesPerChunk)
+          val toKeep = data.drop(maxBytesPerChunk)
           push(out, toPush)
           remaining = toKeep
         }
@@ -276,7 +278,7 @@ private[http] object StreamUtils {
    */
   @InternalApi
   object CaptureTerminationOp extends EntityStreamOp[Future[Unit]] {
-    def strictM: Future[Unit] = Future.successful(())
+    val strictM: Future[Unit] = Future.successful(())
     def apply[T, Mat](source: Source[T, Mat]): (Source[T, Mat], Future[Unit]) = StreamUtils.captureTermination(source)
   }
 

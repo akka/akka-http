@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server;
@@ -74,7 +74,7 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
       //#simple-handler
 
       Route createRoute() {
-        return route(
+        return concat(
           get(() ->
             handlerString
           ),
@@ -126,9 +126,9 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
       //#handler2
 
       Route createRoute() {
-        return route(
+        return concat(
           get(() ->
-            pathPrefix("calculator", () -> route(
+            pathPrefix("calculator", () -> concat(
               path("multiply", () ->
                 multiplyXAndYParam
               ),
@@ -224,9 +224,9 @@ public class HandlerExampleDocTest extends JUnitRouteTest {
       //#async-handler-2
 
       Route createRoute() {
-        return route(
+        return concat(
           get(() ->
-            pathPrefix("calculator", () -> route(
+            pathPrefix("calculator", () -> concat(
               multiplyAsyncRoute,
               addAsyncRoute
             ))

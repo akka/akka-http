@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server.directives;
@@ -115,7 +115,7 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
     final Flow<Message, Message, NotUsed> echoService = Flow.of(Message.class).buffer(1, OverflowStrategy.backpressure());
 
     final Route websocketMultipleProtocolRoute = path("services", () ->
-      route(
+      concat(
         handleWebSocketMessagesForProtocol(greeterService, "greeter"),
         handleWebSocketMessagesForProtocol(echoService, "echo")
       )
@@ -149,7 +149,7 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
     final Flow<Message, Message, NotUsed> echoService = Flow.of(Message.class).buffer(1, OverflowStrategy.backpressure());
 
     final Route websocketRoute = path("services", () ->
-      route(
+      concat(
         extractUpgradeToWebSocket(upgrade ->
           complete(upgrade.handleMessagesWith(echoService, "echo"))
         )
@@ -179,7 +179,7 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
     final Flow<Message, Message, NotUsed> echoService = Flow.of(Message.class).buffer(1, OverflowStrategy.backpressure());
 
     final Route websocketRoute = path("services", () ->
-      route(
+      concat(
         extractOfferedWsProtocols(protocols ->
           handleWebSocketMessagesForOptionalProtocol(echoService, protocols.stream().findFirst())
         )

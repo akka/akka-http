@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -177,6 +177,54 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         // explicit `requestsSub.sendComplete()` not needed
         responses.expectComplete()
         netOut.expectComplete()
+      }
+
+      "has a request with a overridden User-Agent RawHeader" in new TestSetup {
+        val request = HttpRequest().addHeader(RawHeader("User-Agent", "akka-http/test-overridden"))
+        requestsSub.sendNext(request)
+        expectWireData(
+          """GET / HTTP/1.1
+            |User-Agent: akka-http/test-overridden
+            |Host: example.com
+            |
+            |""")
+
+        sendWireData(
+          """HTTP/1.1 200 OK
+            |Content-Length: 0
+            |
+            |""")
+
+        expectResponse() shouldEqual HttpResponse()
+
+        requestsSub.sendComplete()
+        netOut.expectComplete()
+        netInSub.sendComplete()
+        responses.expectComplete()
+      }
+
+      "has a request with a overridden Host RawHeader" in new TestSetup {
+        val request = HttpRequest().addHeader(RawHeader("Host", "testhost.com"))
+        requestsSub.sendNext(request)
+        expectWireData(
+          """GET / HTTP/1.1
+            |Host: testhost.com
+            |User-Agent: akka-http/test
+            |
+            |""")
+
+        sendWireData(
+          """HTTP/1.1 200 OK
+            |Content-Length: 0
+            |
+            |""")
+
+        expectResponse() shouldEqual HttpResponse()
+
+        requestsSub.sendComplete()
+        netOut.expectComplete()
+        netInSub.sendComplete()
+        responses.expectComplete()
       }
 
       "exhibits eager request stream completion" in new TestSetup {

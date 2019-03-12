@@ -1,15 +1,16 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model._
-import docs.http.scaladsl.server.RoutingSpec
 import headers._
 import StatusCodes._
+import akka.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
-class HostDirectivesExamplesSpec extends RoutingSpec {
+class HostDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   "extractHost" in {
     //#extractHost

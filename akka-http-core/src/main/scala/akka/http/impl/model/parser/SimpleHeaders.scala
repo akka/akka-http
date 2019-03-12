@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.model.parser
@@ -194,8 +194,21 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
   // http://tools.ietf.org/html/rfc7231#section-7.4.2
   def server = rule { products ~ EOI ~> (Server(_)) }
 
-  def `strict-transport-security` = rule {
-    ignoreCase("max-age=") ~ `delta-seconds` ~ optional(ws(";") ~ ignoreCase("includesubdomains") ~ push(true)) ~ zeroOrMore(ws(";") ~ token0) ~ EOI ~> (`Strict-Transport-Security`(_, _))
+  // https://tools.ietf.org/html/rfc6797#section-6
+  def `strict-transport-security` = {
+    def directives =
+      rule(
+        ignoreCase("includesubdomains") ~ push(IncludeSubDomains)
+          | ignoreCase("max-age=") ~ `delta-seconds` ~> (MaxAge(_))
+      )
+    def ignoredDirective = rule {
+      token ~ optional(ws("=") ~ word) ~> ((k: String, v: Option[String]) ⇒ IgnoredDirective(k + v.getOrElse("")))
+    }
+
+    rule {
+      oneOrMore(directives | ignoredDirective).separatedBy(oneOrMore(ws(";"))) ~ zeroOrMore(ws(";")) ~ EOI ~>
+        (`Strict-Transport-Security`.fromDirectives(_: _*))
+    }
   }
 
   // http://tools.ietf.org/html/rfc7230#section-3.3.1

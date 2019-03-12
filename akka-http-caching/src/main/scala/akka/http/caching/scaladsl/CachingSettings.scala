@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.caching.scaladsl
 
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.http.caching.javadsl
-import akka.http.impl.util.SettingsCompanion
+import akka.http.impl.util.SettingsCompanionImpl
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.Duration
@@ -62,15 +62,15 @@ private[http] final case class LfuCacheSettingsImpl(
   override def productPrefix = "LfuCacheSettings"
 }
 
-object CachingSettings extends SettingsCompanion[CachingSettings]("akka.http.caching") {
-  def fromSubConfig(root: Config, c: Config) = {
+object CachingSettings extends SettingsCompanionImpl[CachingSettings]("akka.http.caching") {
+  def fromSubConfig(root: Config, c: Config): CachingSettingsImpl = {
     val lfuConfig = c.getConfig("lfu-cache")
     CachingSettingsImpl(
       LfuCacheSettingsImpl(
-        lfuConfig getInt "max-capacity",
-        lfuConfig getInt "initial-capacity",
-        lfuConfig getPotentiallyInfiniteDuration "time-to-live",
-        lfuConfig getPotentiallyInfiniteDuration "time-to-idle"
+        lfuConfig.getInt("max-capacity"),
+        lfuConfig.getInt("initial-capacity"),
+        lfuConfig.getPotentiallyInfiniteDuration("time-to-live"),
+        lfuConfig.getPotentiallyInfiniteDuration("time-to-idle")
       )
     )
   }

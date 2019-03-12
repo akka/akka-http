@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server.directives;
@@ -41,7 +41,7 @@ public class SchemeDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testRedirection() {
     //#scheme
-    final Route route = route(
+    final Route route = concat(
       scheme("http", ()->
         extract((ctx) -> ctx.getRequest().getUri(), (uri)->
           redirect(uri.scheme("https"), StatusCodes.MOVED_PERMANENTLY)

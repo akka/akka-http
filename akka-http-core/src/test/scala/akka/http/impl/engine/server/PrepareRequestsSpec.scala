@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.server
@@ -29,7 +29,7 @@ class PrepareRequestsSpec extends AkkaSpec {
           case EntityChunk(chunk)      ⇒ chunk
           case EntityStreamError(info) ⇒ throw EntityStreamException(info)
         }
-        HttpEntity.Chunked(ContentTypes.`application/octet-stream`, HttpEntity.limitableChunkSource(chunks))
+        HttpEntity.Chunked(ContentTypes.`application/octet-stream`, chunks)
       },
       expect100Continue = true,
       closeRequested = false)

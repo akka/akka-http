@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server.directives
@@ -32,7 +32,7 @@ class RespondWithDirectivesSpec extends RoutingSpec {
   }
   "respondWithDefaultHeader" should {
     def route(extraHeaders: HttpHeader*) = respondWithDefaultHeader(customHeader) {
-      respondWithHeaders(extraHeaders: _*) {
+      respondWithHeaders(extraHeaders.toList) {
         completeOk
       }
     }
@@ -46,7 +46,7 @@ class RespondWithDirectivesSpec extends RoutingSpec {
   }
   "respondWithDefaultHeaders" should {
     def route(extraHeaders: HttpHeader*) = respondWithDefaultHeaders(customHeader, customHeader2) {
-      respondWithHeaders(extraHeaders: _*) {
+      respondWithHeaders(extraHeaders.toList) {
         completeOk
       }
     }

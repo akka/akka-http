@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -32,6 +32,8 @@ abstract class DontLeakActorsOnFailingConnectionSpecs(poolImplementation: String
       loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
 
       http.host-connection-pool.pool-implementation = $poolImplementation
+
+      http.host-connection-pool.base-connection-backoff = 0 ms
     }""").withFallback(ConfigFactory.load())
   implicit val system = ActorSystem("DontLeakActorsOnFailingConnectionSpecs-" + poolImplementation, config)
   implicit val materializer = ActorMaterializer()

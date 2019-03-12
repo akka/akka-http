@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.util
@@ -19,7 +19,7 @@ private[http] class Timestamp private (val timestampNanos: Long) extends AnyVal 
 
   def +(period: Duration): Timestamp =
     if (isNever) this
-    else if (!period.isFinite()) Timestamp.never
+    else if (!period.isFinite) Timestamp.never
     else new Timestamp(timestampNanos + period.toNanos)
 
   def -(other: Timestamp): Duration =

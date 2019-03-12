@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
 
 import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.util.AsciiTreeLayout
+import akka.http.ccompat.imm._
 
 import scala.collection.immutable
 import scala.collection.immutable.{ TreeMap, TreeSet }
@@ -103,7 +104,7 @@ private[http2] object PriorityTree {
       create(
         (nodes - streamId) +
           (info.streamDependency → dependencyInfo.copy(childrenIds = dependencyInfo.childrenIds - streamId)) ++
-          info.childrenIds.map(id ⇒
+          info.childrenIds.unsorted.map(id ⇒
             id → nodes(id).copy(streamDependency = info.streamDependency)
           )
       )

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl
@@ -92,11 +92,12 @@ package object util {
 
 package util {
 
-  import akka.http.scaladsl.model.{ ContentType, HttpEntity }
-  import akka.stream.{ Attributes, Outlet, Inlet, FlowShape }
+  import akka.http.scaladsl.model.{ ContentType, EntityStreamException, ErrorInfo, HttpEntity }
+  import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
+
   import scala.concurrent.duration.FiniteDuration
 
-  private[http] class ToStrict(timeout: FiniteDuration, contentType: ContentType)
+  private[http] class ToStrict(timeout: FiniteDuration, maxBytes: Option[Long], contentType: ContentType)
     extends GraphStage[FlowShape[ByteString, HttpEntity.Strict]] {
 
     val byteStringIn = Inlet[ByteString]("ToStrict.byteStringIn")
@@ -124,7 +125,12 @@ package util {
       setHandler(byteStringIn, new InHandler {
         override def onPush(): Unit = {
           bytes ++= grab(byteStringIn)
-          pull(byteStringIn)
+          maxBytes match {
+            case Some(max) if bytes.length > max ⇒
+              failStage(new EntityStreamException(new ErrorInfo("Request too large", s"Request was longer than the maximum of $max")))
+            case _ ⇒
+              pull(byteStringIn)
+          }
         }
         override def onUpstreamFinish(): Unit = {
           if (isAvailable(httpEntityOut)) {

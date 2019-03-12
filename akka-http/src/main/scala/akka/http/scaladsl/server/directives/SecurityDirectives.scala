@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -265,12 +265,10 @@ trait SecurityDirectives {
    * @group security
    */
   def authorizeAsync(check: RequestContext ⇒ Future[Boolean]): Directive0 =
-    extractExecutionContext.flatMap { implicit ec ⇒
-      extract(check).flatMap[Unit] { fa ⇒
-        onComplete(fa).flatMap {
-          case Success(true) ⇒ pass
-          case _             ⇒ reject(AuthorizationFailedRejection)
-        }
+    extract(check).flatMap[Unit] { fa ⇒
+      onComplete(fa).flatMap {
+        case Success(true) ⇒ pass
+        case _             ⇒ reject(AuthorizationFailedRejection)
       }
     }
 }

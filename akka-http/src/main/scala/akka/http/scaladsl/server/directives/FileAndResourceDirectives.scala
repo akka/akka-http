@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -9,7 +9,6 @@ import java.io.File
 import java.net.{ URI, URL }
 
 import akka.http.javadsl.{ marshalling, model }
-import akka.stream.ActorAttributes
 import akka.stream.scaladsl.{ FileIO, StreamConverters }
 
 import scala.annotation.tailrec
@@ -66,11 +65,8 @@ trait FileAndResourceDirectives {
       if (file.isFile && file.canRead)
         conditionalFor(file.length, file.lastModified) {
           if (file.length > 0) {
-            withRangeSupportAndPrecompressedMediaTypeSupportAndExtractSettings { settings ⇒
-              complete {
-                HttpEntity.Default(contentType, file.length,
-                  FileIO.fromPath(file.toPath).withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher)))
-              }
+            withRangeSupportAndPrecompressedMediaTypeSupport {
+              complete(HttpEntity.Default(contentType, file.length, FileIO.fromPath(file.toPath)))
             }
           } else complete(HttpEntity.Empty)
         }
@@ -107,12 +103,8 @@ trait FileAndResourceDirectives {
           case Some(ResourceFile(url, length, lastModified)) ⇒
             conditionalFor(length, lastModified) {
               if (length > 0) {
-                withRangeSupportAndPrecompressedMediaTypeSupportAndExtractSettings { settings ⇒
-                  complete {
-                    HttpEntity.Default(contentType, length,
-                      StreamConverters.fromInputStream(() ⇒ url.openStream())
-                        .withAttributes(ActorAttributes.dispatcher(settings.fileIODispatcher))) // TODO is this needed? It already uses `val inputStreamSource = name("inputStreamSource") and IODispatcher`
-                  }
+                withRangeSupportAndPrecompressedMediaTypeSupport {
+                  complete(HttpEntity.Default(contentType, length, StreamConverters.fromInputStream(() ⇒ url.openStream())))
                 }
               } else complete(HttpEntity.Empty)
             }
@@ -210,10 +202,9 @@ trait FileAndResourceDirectives {
 }
 
 object FileAndResourceDirectives extends FileAndResourceDirectives {
-  private val withRangeSupportAndPrecompressedMediaTypeSupportAndExtractSettings =
+  private val withRangeSupportAndPrecompressedMediaTypeSupport =
     RangeDirectives.withRangeSupport &
-      CodingDirectives.withPrecompressedMediaTypeSupport &
-      BasicDirectives.extractSettings
+      CodingDirectives.withPrecompressedMediaTypeSupport
 
   private def withTrailingSlash(path: String): String = if (path endsWith "/") path else path + '/'
 
@@ -391,7 +382,7 @@ object DirectoryListing {
       |""".stripMarginWithNewline("\n") split '$'
 
   def directoryMarshaller(renderVanityFooter: Boolean): ToEntityMarshaller[DirectoryListing] =
-    Marshaller.StringMarshaller.wrapWithEC(MediaTypes.`text/html`) { implicit ec ⇒ listing ⇒
+    Marshaller.StringMarshaller.wrap(MediaTypes.`text/html`) { listing ⇒
       val DirectoryListing(path, isRoot, files) = listing
       val filesAndNames = files.map(file ⇒ file → file.getName).sortBy(_._2)
       val deduped = filesAndNames.zipWithIndex.flatMap {

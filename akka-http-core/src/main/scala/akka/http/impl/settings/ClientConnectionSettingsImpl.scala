@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.settings
@@ -44,14 +44,14 @@ private[akka] final case class ClientConnectionSettingsImpl(
 
 /** INTERNAL API */
 @InternalApi
-private[akka] object ClientConnectionSettingsImpl extends SettingsCompanion[ClientConnectionSettingsImpl]("akka.http.client") {
+private[akka] object ClientConnectionSettingsImpl extends SettingsCompanionImpl[ClientConnectionSettingsImpl]("akka.http.client") {
   def fromSubConfig(root: Config, inner: Config): ClientConnectionSettingsImpl = {
     val c = inner.withFallback(root.getConfig(prefix))
     new ClientConnectionSettingsImpl(
       userAgentHeader = c.getString("user-agent-header").toOption.map(`User-Agent`(_)),
-      connectingTimeout = c getFiniteDuration "connecting-timeout",
-      idleTimeout = c getPotentiallyInfiniteDuration "idle-timeout",
-      requestHeaderSizeHint = c getIntBytes "request-header-size-hint",
+      connectingTimeout = c.getFiniteDuration("connecting-timeout"),
+      idleTimeout = c.getPotentiallyInfiniteDuration("idle-timeout"),
+      requestHeaderSizeHint = c.getIntBytes("request-header-size-hint"),
       logUnencryptedNetworkBytes = LogUnencryptedNetworkBytes(c getString "log-unencrypted-network-bytes"),
       websocketSettings = WebSocketSettingsImpl.client(c.getConfig("websocket")),
       socketOptions = SocketOptionSettings.fromSubConfig(root, c.getConfig("socket-options")),

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server
@@ -11,7 +11,6 @@ import scala.collection.JavaConverters._
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.coding.Coder
 import akka.http.javadsl.model.headers.HttpEncoding
-import akka.http.javadsl.server.Route
 import akka.http.scaladsl.server.{ Directives ⇒ D }
 
 abstract class CodingDirectives extends CacheConditionDirectives {
@@ -55,7 +54,7 @@ abstract class CodingDirectives extends CacheConditionDirectives {
   def encodeResponseWith(coders: java.lang.Iterable[Coder], inner: Supplier[Route]): Route = RouteAdapter {
     coders.asScala.toList match {
       case head :: tail ⇒
-        D.encodeResponseWith(head._underlyingScalaCoder, tail.toSeq.map(_._underlyingScalaCoder): _*) {
+        D.encodeResponseWith(head._underlyingScalaCoder, tail.map(_._underlyingScalaCoder): _*) {
           inner.get.delegate
         }
       case _ ⇒

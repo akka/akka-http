@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -29,7 +29,7 @@ object Scaladoc extends AutoPlugin {
 
   val validateDiagrams = settingKey[Boolean]("Validate generated scaladoc diagrams")
 
-  override lazy val projectSettings = {
+  override lazy val projectSettings =
     inTask(doc)(Seq(
       scalacOptions in Compile ++= scaladocOptions(version.value, (baseDirectory in ThisBuild).value),
       autoAPIMappings := CliOptions.scaladocAutoAPI.get
@@ -40,8 +40,14 @@ object Scaladoc extends AutoPlugin {
       if ((validateDiagrams in Compile).value)
         scaladocVerifier(docs)
       docs
-    })
-  }
+    }) ++ Seq(
+      // -Ymacro-annotations is not enabled for scaladoc in 2.13.0-M5 which fails the scaladoc build
+      // Therefore, we disable publishing of docs for the 2.13.0-M5 build for now.
+      // This is already fixed on 2.13.x and will be released with 2.13.0-M6/RC, so it
+      // can be removed once we move to 2.13.0-M6.
+      // See https://github.com/scala/bug/issues/11045 for more info on the underlying issue.
+      publishArtifact in (Compile, packageDoc) := scalaVersion.value != "2.13.0-M5"
+    )
 
   def scaladocOptions(ver: String, base: File): List[String] = {
     val urlString = GitHub.url(ver) + "/€{FILE_PATH}.scala"
@@ -69,7 +75,10 @@ object Scaladoc extends AutoPlugin {
           if (name.endsWith(".html") && !name.startsWith("index-") &&
               !name.equals("index.html") && !name.equals("package.html")) {
             val source = scala.io.Source.fromFile(f)(scala.io.Codec.UTF8)
-            val hd = try source.getLines().exists(_.contains("<div class=\"toggleContainer block diagram-container\" id=\"inheritance-diagram-container\">"))
+            val hd = try source.getLines().exists(lines =>
+              lines.contains("<div class=\"toggleContainer block diagram-container\" id=\"inheritance-diagram-container\">") ||
+              lines.contains("<svg id=\"graph")
+            )
             catch {
               case e: Exception => throw new IllegalStateException("Scaladoc verification failed for file '"+f+"'", e)
             } finally source.close()

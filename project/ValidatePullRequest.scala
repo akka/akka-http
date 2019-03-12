@@ -1,13 +1,12 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
 
 import java.io._
 
-import akka.MimaWithPrValidation.MimaResult
-import akka.MimaWithPrValidation.Problems
+import akka.MimaWithPrValidation.{MimaResult, NoErrors, Problems}
 import net.virtualvoid.sbt.graph.ModuleGraph
 import net.virtualvoid.sbt.graph.backend.SbtUpdateReport
 import org.kohsuke.github.GHIssueComment
@@ -50,7 +49,7 @@ object ValidatePullRequest extends AutoPlugin {
   case object BuildQuick extends BuildMode {
     override def task = Some(executeTests in ValidatePR)
     def log(projectName: String, l: Logger) =
-      l.info(s"Building [$projectName] in quick mode, as it's dependencies were affected by PR.")
+      l.info(s"Building [$projectName] in quick mode, as its dependencies were affected by PR.")
   }
 
   case object BuildProjectChangedQuick extends BuildMode {
@@ -97,7 +96,7 @@ object ValidatePullRequest extends AutoPlugin {
   // running validation
   val validatePullRequest = taskKey[Unit]("Validate pull request and report aggregated results")
   val executePullRequestValidation = taskKey[Seq[KeyValue[Result[Any]]]]("Run pull request per project")
-  val additionalTasks = taskKey[Seq[TaskKey[_]]]("Additional tasks for pull request validation")
+  val additionalTasks = settingKey[Seq[TaskKey[_]]]("Additional tasks for pull request validation")
 
   // The set of (top-level) files or directories to watch for build changes.
   val BuildFilesAndDirectories = Set("project", "build.sbt")
@@ -192,7 +191,7 @@ object ValidatePullRequest extends AutoPlugin {
             .map(_.takeWhile(_ != '/'))
             .filter(dir => dir.startsWith("akka-") || dir.startsWith("docs") || BuildFilesAndDirectories.contains(dir))
             .toSet
-          log.info("Detected uncomitted changes in directories (including in dependency analysis): " + dirtyDirectories.mkString("[", ",", "]"))
+          log.info("Detected uncommitted changes in directories (including in dependency analysis): " + dirtyDirectories.mkString("[", ",", "]"))
           dirtyDirectories
         }
 
@@ -368,7 +367,7 @@ object AggregatePRValidation extends AutoPlugin {
       write("# Pull request validation report")
       write("")
 
-      def showKey(key: ScopedKey[_]): String = Project.showContextKey(extracted.session, extracted.structure).show(key)//Project.showContextKey(newState).show(key)
+      def showKey(key: ScopedKey[_]): String = Project.showContextKey2(extracted.session).show(key)
 
       def totalCount(suiteResult: SuiteResult): Int = {
         import suiteResult._
@@ -413,6 +412,7 @@ object AggregatePRValidation extends AutoPlugin {
           case KeyValue(key, Problems(desc)) =>
             write(s"Problems for ${key.scope.project.toOption.get.asInstanceOf[ProjectRef].project}:\n$desc")
             write("")
+          case KeyValue(_, NoErrors) =>
         }
         write("```")
         write("")
@@ -460,7 +460,9 @@ object AggregatePRValidation extends AutoPlugin {
       log.info(s"Wrote PR validation report to ${outputFile.getAbsolutePath}")
       //write(s"Overall result was: $result")
 
-      if (failed.nonEmpty || mimaFailures.nonEmpty || failedTasks.nonEmpty) throw new RuntimeException("Pull request validation failed!")
+      if (failed.nonEmpty) throw new RuntimeException(s"Pull request validation failed! Tests failed: $failed")
+      else if (mimaFailures.nonEmpty) throw new RuntimeException(s"Pull request validation failed! Mima failures: $mimaFailures")
+      else if (failedTasks.nonEmpty) throw new RuntimeException(s"Pull request validation failed! Failed tasks: $failedTasks")
       ()
     }
   )
@@ -557,7 +559,7 @@ object MimaWithPrValidation extends AutoPlugin {
               mimaCurrentClassfiles.value,
               (fullClasspath in mimaFindBinaryIssues).value,
               mimaCheckDirection.value,
-              streams.value
+              new SbtLogger(streams.value)
             )
 
             val binary = mimaBinaryIssueFilters.value

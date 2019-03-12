@@ -4,7 +4,15 @@
 
 ## Signature
 
-@@signature [FutureDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/FutureDirectives.scala) { #onSuccess }
+```scala
+def onSuccess(unitFuture: Future[Unit]): Directive0
+def onSuccess(simpleTypeFuture: Future[T]): Directive1[T]
+def onSuccess(hlistFuture: Future[T_0 :: ... T_i ... :: HNil]): Directive[T_0 :: ... T_i ... :: HNil]
+```
+
+The signature shown is simplified and written in pseudo-syntax, the real signature uses magnets. <a id="^1" href="#1">[1]</a>.
+
+> <a id="1" href="#^1">[1]</a> See [The Magnet Pattern](http://spray.io/blog/2012-12-13-the-magnet-pattern/) for an explanation of magnet-based overloading.
 
 @@@
 

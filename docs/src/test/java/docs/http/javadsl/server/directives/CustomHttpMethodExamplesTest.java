@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server.directives;
@@ -58,7 +58,7 @@ public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
     final ServerSettings serverSettings =
       ServerSettings.create(system).withParserSettings(parserSettings);
 
-    final Route routes = route(
+    final Route routes = concat(
       extractMethod( method ->
         complete( "This is a " + method.name() + " request.")
       )

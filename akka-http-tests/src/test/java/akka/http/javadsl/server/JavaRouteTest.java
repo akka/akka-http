@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server;
@@ -270,7 +270,7 @@ public class JavaRouteTest extends JUnitRouteTest {
 
 
   public Route getRoute() {
-    return route(
+    return concat(
       path(segment("hello").slash("world"), () ->
         complete("hello, world")
       ),
@@ -315,7 +315,7 @@ public class JavaRouteTest extends JUnitRouteTest {
           complete("body " + value)
         )
       ),
-      path("uuid", () -> route(
+      path("uuid", () -> concat(
         put(() ->
           entity(UUID_FROM_BODY, value ->
             complete("uuid " + value)

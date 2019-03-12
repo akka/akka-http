@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.settings
 
 import akka.annotation.InternalApi
-import akka.http.impl.util.SettingsCompanion
+import akka.http.impl.util.SettingsCompanionImpl
 import com.typesafe.config.Config
 
 /** INTERNAL API */
@@ -20,11 +20,11 @@ private[http] final case class HttpsProxySettingsImpl(
   override def productPrefix = "HttpsProxySettings"
 }
 
-object HttpsProxySettingsImpl extends SettingsCompanion[HttpsProxySettingsImpl]("akka.http.client.proxy.https") {
-  override def fromSubConfig(root: Config, c: Config) = {
+object HttpsProxySettingsImpl extends SettingsCompanionImpl[HttpsProxySettingsImpl]("akka.http.client.proxy.https") {
+  override def fromSubConfig(root: Config, c: Config): HttpsProxySettingsImpl = {
     new HttpsProxySettingsImpl(
-      c getString "host",
-      c getInt "port"
+      c.getString("host"),
+      c.getInt("port")
     )
   }
 }

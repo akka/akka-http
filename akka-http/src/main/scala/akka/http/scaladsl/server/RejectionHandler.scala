@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -187,8 +187,13 @@ object RejectionHandler {
           rejectRequestEntityAndComplete((BadRequest, "The query parameter '" + name + "' was malformed:\n" + msg))
       }
       .handle {
-        case MalformedRequestContentRejection(msg, _) ⇒
-          rejectRequestEntityAndComplete((BadRequest, "The request content was malformed:\n" + msg))
+        case MalformedRequestContentRejection(msg, throwable) ⇒ {
+          val rejectionMessage = "The request content was malformed:\n" + msg
+          throwable match {
+            case _: EntityStreamSizeException ⇒ rejectRequestEntityAndComplete((RequestEntityTooLarge, rejectionMessage))
+            case _                            ⇒ rejectRequestEntityAndComplete((BadRequest, rejectionMessage))
+          }
+        }
       }
       .handle {
         case MissingCookieRejection(cookieName) ⇒
@@ -282,7 +287,7 @@ object RejectionHandler {
    */
   def applyTransformations(rejections: immutable.Seq[Rejection]): immutable.Seq[Rejection] = {
     val (transformations, rest) = rejections.partition(_.isInstanceOf[TransformationRejection])
-    (rest.distinct /: transformations.asInstanceOf[Seq[TransformationRejection]]) {
+    transformations.asInstanceOf[Seq[TransformationRejection]].foldLeft(rest.distinct) {
       case (remaining, transformation) ⇒ transformation.transform(remaining)
     }
   }

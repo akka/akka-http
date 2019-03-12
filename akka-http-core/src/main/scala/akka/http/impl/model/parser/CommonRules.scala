@@ -1,10 +1,12 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.model.parser
 
 import scala.collection.immutable
+import scala.collection.immutable.TreeMap
+
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.parboiled2._
@@ -154,7 +156,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   // http://tools.ietf.org/html/rfc4647#section-2.1
   // ******************************************************************************************
   def language = rule {
-    `primary-tag` ~ zeroOrMore('-' ~ `sub-tag`) ~> (Language(_, _: _*))
+    `primary-tag` ~ zeroOrMore('-' ~ `sub-tag`) ~> (Language(_, _))
   }
 
   def `primary-tag` = rule { capture(oneOrMore(ALPHA)) ~ OWS }
@@ -178,7 +180,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
         case (token, Nil) ⇒ HttpChallenge(scheme, None, Map("" → token))
         case (_, params) ⇒ {
           val (realms, otherParams) = params.partition(_._1 equalsIgnoreCase "realm")
-          HttpChallenge(scheme, realms.headOption.map(_._2), otherParams.toMap)
+          HttpChallenge(scheme, realms.headOption.map(_._2), TreeMap(otherParams: _*))
         }
       }
     }
@@ -228,7 +230,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   def `generic-credentials` = rule {
     `challenge-or-credentials` ~> ((scheme, tokenAndParams) ⇒ {
       val (token, params) = tokenAndParams
-      GenericHttpCredentials(scheme, token, params.toMap)
+      GenericHttpCredentials(scheme, token, TreeMap(params: _*))
     })
   }
 
@@ -403,7 +405,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
       | `transfer-extension`)
 
   def `transfer-extension` = rule {
-    token ~ zeroOrMore(ws(';') ~ `transfer-parameter`) ~> (_.toMap) ~> (TransferEncodings.Extension(_, _))
+    token ~ zeroOrMore(ws(';') ~ `transfer-parameter`) ~> (p ⇒ TreeMap(p: _*)) ~> (TransferEncodings.Extension(_, _))
   }
 
   def `transfer-parameter` = rule { token ~ ws('=') ~ word ~> (_ → _) }

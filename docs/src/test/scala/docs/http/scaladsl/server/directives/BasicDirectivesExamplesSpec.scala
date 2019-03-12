@@ -1,27 +1,25 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
 
-import java.nio.file.Paths
-
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{ Server, RawHeader }
+import akka.http.scaladsl.model.headers.{ RawHeader, Server }
 import akka.http.scaladsl.server.RouteResult.{ Complete, Rejected }
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.settings.RoutingSettings
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ FileIO, Sink, Source }
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
-import docs.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
 import scala.concurrent.Future
 import scala.util.control.NonFatal
 
-class BasicDirectivesExamplesSpec extends RoutingSpec {
+class BasicDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "0extract" in {
     //#extract0
     val uriLength = extract(_.request.uri.toString.length)
@@ -184,24 +182,21 @@ class BasicDirectivesExamplesSpec extends RoutingSpec {
   }
   "withSettings-0" in compileOnlySpec {
     //#withSettings-0
-    val special = RoutingSettings(system).withFileIODispatcher("special-io-dispatcher")
+    val special = RoutingSettings(system).withFileGetConditional(false)
 
     def sample() =
       path("sample") {
-        complete {
-          // internally uses the configured fileIODispatcher:
-          val source = FileIO.fromPath(Paths.get("example.json"))
-          HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, source))
-        }
+        // internally uses fileGetConditional setting
+        getFromFile("example.json")
       }
 
     val route =
       get {
         pathPrefix("special") {
           withSettings(special) {
-            sample() // `special` file-io-dispatcher will be used to read the file
+            sample() // ETag/`If-Modified-Since` disabled
           }
-        } ~ sample() // default file-io-dispatcher will be used to read the file
+        } ~ sample() // ETag/`If-Modified-Since` enabled
       }
 
     // tests:

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server;
@@ -52,7 +52,7 @@ public class RejectionHandlerExamplesTest extends JUnitRouteTest {
   void example1() {
     //#example1
     final Route route = path("order", () ->
-      route(
+      concat(
         get(() ->
           complete("Received GET")
         ),

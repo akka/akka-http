@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -13,11 +13,12 @@ import akka.http.scaladsl.model.MediaTypes._
  */
 final case class FormData(fields: Uri.Query) {
   def toEntity: akka.http.scaladsl.model.RequestEntity =
-    toEntity(HttpCharsets.`UTF-8`)
+    toEntity(`application/x-www-form-urlencoded`.charset)
 
+  @deprecated("FormData always uses charset UTF-8 without appending the charset to 'Content-Type: application/x-www-form-urlencoded', use toEntity() instead.", "10.1.7")
   def toEntity(charset: HttpCharset): akka.http.scaladsl.model.RequestEntity = {
     val render: StringRendering = UriRendering.renderQuery(new StringRendering, this.fields, charset.nioCharset, CharacterClasses.unreserved)
-    HttpEntity(`application/x-www-form-urlencoded` withCharset charset, render.get)
+    HttpEntity(`application/x-www-form-urlencoded`, render.get)
   }
 }
 

@@ -1,13 +1,14 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model.headers._
-import docs.http.scaladsl.server.RoutingSpec
+import akka.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
-class RespondWithDirectivesExamplesSpec extends RoutingSpec {
+class RespondWithDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   "multiple-headers" in {
     //#multiple-headers

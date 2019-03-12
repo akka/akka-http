@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -24,7 +24,7 @@ class CustomStatusCodesSpec extends AkkaSpec with ScalaFutures
       val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
 
       //#application-custom
-      // similarily in Java: `akka.http.javadsl.settings.[...]`
+      // similarly in Java: `akka.http.javadsl.settings.[...]`
       import akka.http.scaladsl.settings.{ ParserSettings, ServerSettings }
 
       // define custom status code:

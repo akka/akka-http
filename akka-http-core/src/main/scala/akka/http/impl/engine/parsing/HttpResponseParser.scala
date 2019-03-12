@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -10,7 +10,7 @@ import scala.util.control.NoStackTrace
 import akka.http.scaladsl.settings.ParserSettings
 import akka.http.impl.model.parser.CharacterClasses
 import akka.util.ByteString
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.{ ParsingException ⇒ MParsingException, _ }
 import headers._
 import ParserOutput._
 import akka.annotation.InternalApi
@@ -34,21 +34,9 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
   final def setContextForNextResponse(responseContext: ResponseContext): Unit =
     if (contextForCurrentResponse.isEmpty) contextForCurrentResponse = Some(responseContext)
 
-  final def onPull(): ResponseOutput =
-    if (result.nonEmpty) {
-      val head = result.head
-      result.remove(0) // faster than `ListBuffer::drop`
-      head
-    } else if (terminated) StreamEnd else NeedMoreData
+  final def onPull(): ResponseOutput = doPull()
 
-  final def onUpstreamFinish(): Boolean = {
-    completionHandling() match {
-      case Some(x) ⇒ emit(x)
-      case None    ⇒ // nothing to do
-    }
-    terminated = true
-    result.isEmpty
-  }
+  final def onUpstreamFinish(): Boolean = shouldComplete()
 
   override final def emit(output: ResponseOutput): Unit = {
     if (output == MessageEnd) contextForCurrentResponse = None
@@ -188,7 +176,7 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
               emitResponseStart {
                 StreamedEntityCreator { entityParts ⇒
                   val data = entityParts.collect { case EntityPart(bytes) ⇒ bytes }
-                  HttpEntity.CloseDelimited(contentType(cth), HttpEntity.limitableByteSource(data))
+                  HttpEntity.CloseDelimited(contentType(cth), data)
                 }
               }
               setCompletionHandling(HttpMessageParser.CompletionOk)

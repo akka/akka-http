@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -565,7 +565,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       // settings adapting network buffer sizes
       val serverSettings = ServerSettings(system)
 
-      val server = Http().bindAndHandleAsync(_ ⇒ responsePromise.future, hostname, port, settings = serverSettings)
+      val server = Http().bindAndHandleAsync(_ ⇒ responsePromise.future, hostname, port, settings = serverSettings).futureValue
 
       try {
         val result = Source.single(ByteString(
@@ -581,7 +581,7 @@ Host: example.com
         }
       } finally {
         responsePromise.failure(new TimeoutException())
-        server.foreach(_.unbind())
+        server.unbind()
       }
     }
 
@@ -746,8 +746,9 @@ Host: example.com
       val binding = Http().bindAndHandle(dummyFlow, "127.0.0.1", port = 0).futureValue
       val uri = "https://" + binding.localAddress.getHostString + ":" + binding.localAddress.getPort
 
-      EventFilter.warning(pattern = "Perhaps this was an HTTPS request sent to an HTTP endpoint", occurrences = 6) intercept {
-        Await.ready(Http().singleRequest(HttpRequest(uri = uri)), 30.seconds)
+      EventFilter.warning(pattern = "Perhaps this was an HTTPS request sent to an HTTP endpoint", occurrences = 1) intercept {
+        // Test with a POST so auto-retry isn't triggered:
+        Await.ready(Http().singleRequest(HttpRequest(uri = uri, method = HttpMethods.POST)), 30.seconds)
       }
 
       Await.result(binding.unbind(), 10.seconds)
