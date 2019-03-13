@@ -68,11 +68,11 @@ private[http] object Http2AlpnSupport {
       } finally ALPN.remove(engine)
     }
     val wrapped = new WrappedSSLEngine(engine) {
-      override def beginHandshake(): Unit = try{
+      override def beginHandshake(): Unit = try {
         ALPN.put(engine, serverProvider)
         engine.beginHandshake()
       } catch {
-        case _:SSLException => ALPN.remove(engine)
+        case _: SSLException ⇒ ALPN.remove(engine)
       }
     }
     wrapped
@@ -112,7 +112,7 @@ private[http] object Http2AlpnSupport {
   }
 }
 
-abstract class WrappedSSLEngine(delegate: SSLEngine) extends SSLEngine{
+abstract class WrappedSSLEngine(delegate: SSLEngine) extends SSLEngine {
   override def wrap(byteBuffers: Array[ByteBuffer], i: Int, i1: Int, byteBuffer: ByteBuffer): SSLEngineResult = delegate(byteBuffers, i, i1, byteBuffer)
   override def unwrap(byteBuffer: ByteBuffer, byteBuffers: Array[ByteBuffer], i: Int, i1: Int): SSLEngineResult = delegate.unwrap(byteBuffer, byteBuffers, i, i1)
   override def getDelegatedTask: Runnable = delegate.getDelegatedTask
