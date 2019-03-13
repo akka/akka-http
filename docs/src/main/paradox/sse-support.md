@@ -1,6 +1,6 @@
 # Server-Sent Events Support
 
-Server-Sent Events (SSE) is a lightweight and [standardized](http://www.w3.org/TR/eventsource)
+Server-Sent Events (SSE) is a lightweight and [standardized](https://www.w3.org/TR/eventsource)
 protocol for pushing notifications from a HTTP server to a client. In contrast to WebSocket, which
 offers bi-directional communication, SSE only allows for one-way communication from the server to
 the client. If that's all you need, SSE has the advantages to be much simpler, to rely on HTTP only
@@ -57,5 +57,5 @@ Java
 :  @@snip [EventStreamMarshallingTest.java]($akka-http$/akka-http-tests/src/test/java/akka/http/javadsl/unmarshalling/sse/EventStreamUnmarshallingTest.java) { #event-stream-unmarshalling-example }
 
 Notice that if you are looking for a resilient way to permanently subscribe to an event stream,
-Alpakka provides the [EventSource](http://developer.lightbend.com/docs/alpakka/current/sse.html)
+Alpakka provides the [EventSource](https://developer.lightbend.com/docs/alpakka/current/sse.html)
 connector which reconnects automatically with the id of the last seen event.

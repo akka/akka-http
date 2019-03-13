@@ -127,7 +127,7 @@ The distinction of @scala[`Strict`]@java[`HttpEntityStrict`] and @scala[`Default
 both kinds of entities look the same.
 
 @scala[HttpEntity.Chunked]@java[HttpEntityChunked]
-: The model for HTTP/1.1 [chunked content](http://tools.ietf.org/html/rfc7230#section-4.1) (i.e. sent with `Transfer-Encoding: chunked`).
+: The model for HTTP/1.1 [chunked content](https://tools.ietf.org/html/rfc7230#section-4.1) (i.e. sent with `Transfer-Encoding: chunked`).
 The content length is unknown and the individual chunks are presented as a @scala[`Source[HttpEntity.ChunkStreamPart]`]@java[@unidoc[Source[ChunkStreamPart, ?]]].
 A `ChunkStreamPart` is either a non-empty @scala[`Chunk`]@java[chunk] or @scala[a `LastChunk`]@java[the empty last chunk] containing optional trailer headers.
 The stream consists of zero or more @scala[`Chunked`]@java[non-empty chunks] parts and can be terminated by an optional @scala[`LastChunk` part]@java[last chunk].
@@ -221,7 +221,7 @@ Generally this behavior should be in line with your expectations.
 
 ### Special processing for HEAD requests
 
-[RFC 7230](http://tools.ietf.org/html/rfc7230#section-3.3.3) defines very clear rules for the entity length of HTTP messages.
+[RFC 7230](https://tools.ietf.org/html/rfc7230#section-3.3.3) defines very clear rules for the entity length of HTTP messages.
 
 Especially this rule requires special treatment in Akka HTTP:
 
@@ -310,7 +310,7 @@ Strict-Transport-Security
 man-in-the-middle attacks. The SSL-stripping attack works by transparently converting a secure HTTPS connection into a
 plain HTTP connection. The user can see that the connection is insecure, but crucially there is no way of knowing
 whether the connection should be secure. HSTS addresses this problem by informing the browser that connections to the
-site should always use TLS/SSL. See also [RFC 6797](http://tools.ietf.org/html/rfc6797).
+site should always use TLS/SSL. See also [RFC 6797](https://tools.ietf.org/html/rfc6797).
 
 
 <a id="custom-headers"></a>

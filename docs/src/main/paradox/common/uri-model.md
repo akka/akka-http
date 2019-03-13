@@ -6,7 +6,7 @@ escaping and other URI specific semantics are applied.
 
 ### Parsing a URI string
 
-We follow [RFC 3986](http://tools.ietf.org/html/rfc3986#section-1.1.2) to implement the URI parsing rules.
+We follow [RFC 3986](https://tools.ietf.org/html/rfc3986#section-1.1.2) to implement the URI parsing rules.
 When you try to parse a URI string, Akka HTTP internally creates an instance of the @unidoc[Uri] class, which holds the modeled URI components inside.
 
 For example, the following creates an instance of a simple valid URI:
@@ -33,7 +33,7 @@ Scala
 Java
 :   @@snip [UriTest.scala]($akka-http$/akka-http-core/src/test/java/akka/http/javadsl/model/UriTest.java) { #valid-uri-examples }
 
-For exact definitions of the parts of a URI, like `scheme`, `path` and `query` refer to [RFC 3986](http://tools.ietf.org/html/rfc3986#section-1.1.2).
+For exact definitions of the parts of a URI, like `scheme`, `path` and `query` refer to [RFC 3986](https://tools.ietf.org/html/rfc3986#section-1.1.2).
 Here's a little overview:
 
 ```
@@ -125,7 +125,7 @@ is equivalent to:
   Query("a=b")
 ```
 
-As in the [section 3.4 of RFC 3986](http://tools.ietf.org/html/rfc3986#section-3.4),
+As in the [section 3.4 of RFC 3986](https://tools.ietf.org/html/rfc3986#section-3.4),
 some special characters like "/" and "?" are allowed inside a query string, without escaping them using ("%") signs.
 
 > The characters slash ("/") and question mark ("?") may represent data within the query component.

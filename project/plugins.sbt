@@ -2,7 +2,7 @@ resolvers += Classpaths.sbtPluginReleases
 resolvers += Classpaths.typesafeReleases
 resolvers += Resolver.sonatypeRepo("releases") // to more quickly obtain paradox rigth after release
 
-// need this to resolve http://jcenter.bintray.com/org/jenkins-ci/jenkins/1.26/
+// need this to resolve https://jcenter.bintray.com/org/jenkins-ci/jenkins/1.26/
 // which is used by plugin "org.kohsuke" % "github-api" % "1.68"
 resolvers += Resolver.jcenterRepo
 

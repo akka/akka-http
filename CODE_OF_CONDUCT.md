@@ -28,6 +28,6 @@ If you have a concern about the conduct of other community members, we recommend
 
 ## Thanks
 
-Some of the ideas and wording for the statements above were based on work by the [Python](http://www.python.org/community/diversity), [Ubuntu](http://www.ubuntu.com/about/about-ubuntu/conduct), [Mozilla](https://wiki.mozilla.org/Code_of_Conduct/Draft), [TwitterOSS](https://engineering.twitter.com/opensource/code-of-conduct), and [Play Framework](https://playframework.com/conduct) communities. We are thankful for their work.
+Some of the ideas and wording for the statements above were based on work by the [Python](https://www.python.org/community/diversity), [Ubuntu](https://www.ubuntu.com/community/code-of-conduct), [Mozilla](https://www.mozilla.org/en-US/about/governance/policies/participation/), [TwitterOSS](https://github.com/twitter/code-of-conduct), and [Play Framework](https://playframework.com/conduct) communities. We are thankful for their work.
 
-*The Akka of Conduct is licensed under the [Creative Commons Attribution-Share Alike 3.0 license](http://creativecommons.org/licenses/by-sa/3.0/). You may re-use it for your own project, and modify it as you wish, just please allow others to use your modifications and give credit to Akka and other communities listed above.*
+*The Akka of Conduct is licensed under the [Creative Commons Attribution-Share Alike 3.0 license](https://creativecommons.org/licenses/by-sa/3.0/). You may re-use it for your own project, and modify it as you wish, just please allow others to use your modifications and give credit to Akka and other communities listed above.*

@@ -74,7 +74,7 @@ The steps are exactly the same for everyone involved in the project (be it core 
    - Please write additional tests covering your feature and adjust existing ones if needed before submitting your Pull Request. The `validatePullRequest` sbt task ([explained below](#the-validatepullrequest-task)) may come in handy to verify your changes are correct.
 1. Once your feature is complete, prepare the commit following our [Creating Commits And Writing Commit Messages](#creating-commits-and-writing-commit-messages). For example, a good commit message would be: `Adding compression support for Manifests #22222` (note the reference to the ticket it aimed to resolve).
 1. Now it's finally time to [submit the Pull Request](https://help.github.com/articles/using-pull-requests)!
-1. If you have not already done so, you will be asked by our CLA bot to [sign the Lightbend CLA](http://www.lightbend.com/contribute/cla) online CLA stands for Contributor License Agreement and is a way of protecting intellectual property disputes from harming the project.
+1. If you have not already done so, you will be asked by our CLA bot to [sign the Lightbend CLA](https://www.lightbend.com/contribute/cla) online CLA stands for Contributor License Agreement and is a way of protecting intellectual property disputes from harming the project.
 1. If you're not already on the contributors white-list, the @akka-ci bot will ask `Can one of the repo owners verify this patch?`, to which a core member will reply by commenting `OK TO TEST`. This is just a sanity check to prevent malicious code from being run on the Jenkins cluster.
 1. Now both committers and interested people will review your code. This process is to ensure the code we merge is of the best possible quality, and that no silly mistakes slip through. You're expected to follow-up these comments by adding new commits to the same branch. The commit messages of those commits can be more lose, for example: `Removed debugging using printline`, as they all will be squashed into one commit before merging into the main branch.
     - The community and team are really nice people, so don't be afraid to ask follow up questions if you didn't understand some comment, or would like to clarify how to continue with a given feature. We're here to help, so feel free to ask and discuss any kind of questions you might have during review!
@@ -130,7 +130,7 @@ This allows simple and fast iterations on changes that would need to be introduc
 
 ## Binary compatibility
 Binary compatibility rules and guarantees are described in depth in the [Binary Compatibility Rules
-](http://doc.akka.io/docs/akka/snapshot/common/binary-compatibility-rules.html) section of the documentation.
+](https://doc.akka.io/docs/akka/current/common/binary-compatibility-rules.html) section of the documentation.
 
 Akka-http uses MiMa (which is short for [Lightbend Migration Manager](https://github.com/lightbend/migration-manager)) to
 validate binary compatibility of incoming Pull Requests. If your PR fails due to binary compatibility issues, you may see 
@@ -168,7 +168,7 @@ For a Pull Request to be considered at all it has to meet these requirements:
 1. All Lightbend projects must include Lightbend copyright notices.  Each project can choose between one of two approaches:
 
     1. All source files in the project must have a Lightbend copyright notice in the file header.
-    1. The Notices file for the project includes the Lightbend copyright notice and no other files contain copyright notices.  See http://www.apache.org/legal/src-headers.html for instructions for managing this approach for copyrights.
+    1. The Notices file for the project includes the Lightbend copyright notice and no other files contain copyright notices.  See https://www.apache.org/legal/src-headers.html for instructions for managing this approach for copyrights.
 
     Akka-http uses the first choice, having copyright notices in every file header.
 
@@ -178,8 +178,8 @@ For a Pull Request to be considered at all it has to meet these requirements:
 Some additional guidelines regarding source code are:
 
 - files should start with a ``Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>`` copyright header
-- keep the code [DRY](http://programmer.97things.oreilly.com/wiki/index.php/Don%27t_Repeat_Yourself)
-- apply the [Boy Scout Rule](http://programmer.97things.oreilly.com/wiki/index.php/The_Boy_Scout_Rule) whenever you have the chance to
+- keep the code [DRY](https://www.oreilly.com/library/view/97-things-every/9780596809515/ch30.html)
+- apply the [Boy Scout Rule](https://www.oreilly.com/library/view/97-things-every/9780596809515/ch08.html) whenever you have the chance to
 - Never delete or change existing copyright notices, just add additional info.  
 - Do not use ``@author`` tags since it does not encourage [Collective Code Ownership](http://www.extremeprogramming.org/rules/collective.html).
   - Contributors , each project should make sure that the contributors gets the credit they deserve—in a text file or page on the project website and in the release notes etc.
@@ -226,7 +226,7 @@ Which will generate JavaDoc style docs in `./target/javaunidoc/index.html`
 
 ## External Dependencies
 
-All the external runtime dependencies for the project, including transitive dependencies, must have an open source license that is equal to, or compatible with, [Apache 2](http://www.apache.org/licenses/LICENSE-2.0).
+All the external runtime dependencies for the project, including transitive dependencies, must have an open source license that is equal to, or compatible with, [Apache 2](https://www.apache.org/licenses/LICENSE-2.0).
 
 This must be ensured by manually verifying the license for all the dependencies for the project:
 
@@ -234,9 +234,9 @@ This must be ensured by manually verifying the license for all the dependencies 
 2. Whenever a committer to the project adds a new dependency.
 3. Whenever a new release is cut (public or private for a customer).
 
-Which licenses are compatible with Apache 2 are defined in [this doc](http://www.apache.org/legal/3party.html#category-a), where you can see that the licenses that are listed under ``Category A`` automatically compatible with Apache 2, while the ones listed under ``Category B`` needs additional action:
+Which licenses are compatible with Apache 2 are defined in [this doc](https://www.apache.org/legal/resolved.html#category-a), where you can see that the licenses that are listed under ``Category A`` automatically compatible with Apache 2, while the ones listed under ``Category B`` needs additional action:
 
-> Each license in this category requires some degree of [reciprocity](http://www.apache.org/legal/3party.html#define-reciprocal); therefore, additional action must be taken in order to minimize the chance that a user of an Apache product will create a derivative work of a reciprocally-licensed portion of an Apache product without being aware of the applicable requirements.
+> Each license in this category requires some degree of reciprocity. This may mean that additional action is warranted in order to minimize the chance that a user of an Apache product will create a derivative work of a differently-licensed portion of an Apache product without being aware of the applicable requirements.
 
 Each project must also create and maintain a list of all dependencies and their licenses, including all their transitive dependencies. This can be done either in the documentation or in the build file next to each dependency.
 
@@ -246,7 +246,7 @@ Follow these guidelines when creating public commits and writing commit messages
 
 1. If your work spans multiple local commits (for example; if you do safe point commits while working in a feature branch or work in a branch for a long time doing merges/rebases etc.) then please do not commit it all but rewrite the history by squashing the commits into a single big commit which you write a good commit message for (like discussed in the following sections). For more info read this article: [Git Workflow](http://sandofsky.com/blog/git-workflow.html). Every commit should be able to be used in isolation, cherry picked etc.
 
-2. First line should be a descriptive sentence what the commit is doing, including the ticket number. It should be possible to fully understand what the commit does—but not necessarily how it does it—by just reading this single line. We follow the “imperative present tense” style for commit messages ([more info here](http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html)).
+2. First line should be a descriptive sentence what the commit is doing, including the ticket number. It should be possible to fully understand what the commit does—but not necessarily how it does it—by just reading this single line. We follow the “imperative present tense” style for commit messages ([more info here](https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html)).
 
    It is **not ok** to only list the ticket number, type "minor fix" or similar.
    If the commit is a small fix, then you are done. If not, go to 3.
@@ -303,7 +303,7 @@ Thus we ask Java contributions to follow these simple guidelines:
 
 - 2 spaces
 - `{` on same line as method name
-- in all other aspects, follow the [Oracle Java Style Guide](http://www.oracle.com/technetwork/java/codeconvtoc-136057.html)
+- in all other aspects, follow the [Oracle Java Style Guide](https://www.oracle.com/technetwork/java/codeconvtoc-136057.html)
 
 ### Preferred ways to use timeouts in tests
 
@@ -337,6 +337,6 @@ The cluster is made out of real bare-metal boxes, and maintained by the Akka tea
 
 ## Related links
 
-* [Akka Contributor License Agreement](http://www.lightbend.com/contribute/cla)
+* [Akka Contributor License Agreement](https://www.lightbend.com/contribute/cla)
 * [Akka HTTP Issue Tracker](https://github.com/akka/akka-http/issues)
 * [Scalariform](https://github.com/scala-ide/scalariform)
