@@ -4,10 +4,11 @@
 
 package akka.http.impl.engine.http2
 
+import java.nio.ByteBuffer
 import java.util.function.BiFunction
 import java.{ util ⇒ ju }
 
-import javax.net.ssl.{ SSLEngine, SSLParameters }
+import javax.net.ssl._
 import akka.annotation.InternalApi
 import akka.http.impl.util.JavaVersion
 import akka.stream.TLSClientAuth
@@ -52,7 +53,7 @@ private[http] object Http2AlpnSupport {
   }
 
   def jettyAlpnSupport(engine: SSLEngine, setChosenProtocol: String ⇒ Unit): SSLEngine = {
-    ALPN.put(engine, new ServerProvider {
+    val serverProvider: ServerProvider = new ServerProvider {
       override def select(protocols: ju.List[String]): String =
         choose {
           chooseProtocol(protocols)
@@ -65,8 +66,16 @@ private[http] object Http2AlpnSupport {
         setChosenProtocol(protocol)
         protocol
       } finally ALPN.remove(engine)
-    })
-    engine
+    }
+    val wrapped = new WrappedSSLEngine(engine) {
+      override def beginHandshake(): Unit = try{
+        ALPN.put(engine, serverProvider)
+        engine.beginHandshake()
+      } catch {
+        case _:SSLException => ALPN.remove(engine)
+      }
+    }
+    wrapped
   }
 
   def chooseProtocol(protocols: ju.List[String]): String =
@@ -101,4 +110,30 @@ private[http] object Http2AlpnSupport {
     newParameters.setWantClientAuth(old.getWantClientAuth)
     newParameters
   }
+}
+
+abstract class WrappedSSLEngine(delegate: SSLEngine) extends SSLEngine{
+  override def wrap(byteBuffers: Array[ByteBuffer], i: Int, i1: Int, byteBuffer: ByteBuffer): SSLEngineResult = delegate(byteBuffers, i, i1, byteBuffer)
+  override def unwrap(byteBuffer: ByteBuffer, byteBuffers: Array[ByteBuffer], i: Int, i1: Int): SSLEngineResult = delegate.unwrap(byteBuffer, byteBuffers, i, i1)
+  override def getDelegatedTask: Runnable = delegate.getDelegatedTask
+  override def closeInbound(): Unit = delegate.closeInbound()
+  override def isInboundDone: Boolean = delegate.isInboundDone
+  override def closeOutbound(): Unit = delegate.closeOutbound()
+  override def isOutboundDone: Boolean = delegate.isOutboundDone
+  override def getSupportedCipherSuites: Array[String] = delegate.getSupportedCipherSuites
+  override def getEnabledCipherSuites: Array[String] = delegate.getEnabledCipherSuites
+  override def setEnabledCipherSuites(strings: Array[String]): Unit = delegate.setEnabledCipherSuites(strings)
+  override def getSupportedProtocols: Array[String] = delegate.getSupportedProtocols
+  override def getEnabledProtocols: Array[String] = delegate.getEnabledProtocols
+  override def setEnabledProtocols(strings: Array[String]): Unit = delegate.setEnabledProtocols(strings)
+  override def getSession: SSLSession = delegate.getSession
+  override def getHandshakeStatus: SSLEngineResult.HandshakeStatus = delegate.getHandshakeStatus
+  override def setUseClientMode(b: Boolean): Unit = delegate.setUseClientMode(b)
+  override def getUseClientMode: Boolean = delegate.getUseClientMode
+  override def setNeedClientAuth(b: Boolean): Unit = delegate.setNeedClientAuth(b)
+  override def getNeedClientAuth: Boolean = delegate.getNeedClientAuth
+  override def setWantClientAuth(b: Boolean): Unit = delegate.setWantClientAuth(b)
+  override def getWantClientAuth: Boolean = delegate.getWantClientAuth
+  override def setEnableSessionCreation(b: Boolean): Unit = delegate.setEnableSessionCreation(b)
+  override def getEnableSessionCreation: Boolean = delegate.getEnableSessionCreation
 }
