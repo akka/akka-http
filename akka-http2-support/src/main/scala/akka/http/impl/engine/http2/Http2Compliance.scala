@@ -44,6 +44,9 @@ private[http2] object Http2Compliance {
   final def requireZeroStreamId(id: Int): Unit =
     if (id != 0) throw new IllegalHttp2StreamIdException(id, "MUST BE == 0.")
 
+  final def requireNonZeroStreamId(id: Int): Unit =
+    if (id == 0) throw new Http2ProtocolException(ErrorCode.PROTOCOL_ERROR, "Stream ID MUST be > 0") // cause GOAWAY
+
   final def requirePositiveWindowUpdateIncrement(streamId: Int, increment: Int): Unit =
     if (increment <= 0)
       if (streamId == 0) throw new Http2ProtocolException(ErrorCode.PROTOCOL_ERROR, "WINDOW_UPDATE MUST be > 0, was: " + increment) // cause GOAWAY

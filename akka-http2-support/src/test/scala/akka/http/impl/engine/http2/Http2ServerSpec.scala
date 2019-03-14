@@ -245,6 +245,17 @@ class Http2ServerSpec extends AkkaSpec("""
         val error = entityDataIn.expectError()
         error.getMessage shouldBe "Stream with ID [1] was closed by peer with code INTERNAL_ERROR(0x02)"
       }
+      "not fail the whole connection when one stream is RST twice" in new WaitingForRequestData {
+        sendRST_STREAM(TheStreamId, ErrorCode.STREAM_CLOSED)
+        val error = entityDataIn.expectError()
+        error.getMessage shouldBe "Stream with ID [1] was closed by peer with code STREAM_CLOSED(0x05)"
+        expectNoBytes()
+
+        // https://http2.github.io/http2-spec/#StreamStates
+        // Endpoints MUST ignore WINDOW_UPDATE or RST_STREAM frames received in this state,
+        sendRST_STREAM(TheStreamId, ErrorCode.STREAM_CLOSED)
+        expectNoBytes()
+      }
       "send RST_STREAM if entity stream is canceled" in new WaitingForRequestData {
         val data1 = ByteString("abcdef")
         sendDATA(TheStreamId, endStream = false, data1)
