@@ -18,7 +18,7 @@ inThisBuild(Def.settings(
   isSnapshot :=  { isSnapshot.value || hasCommitsAfterTag(dynverGitDescribeOutput.value) },
   apiURL := {
     val apiVersion = if (isSnapshot.value) "current" else version.value
-    Some(url(s"http://doc.akka.io/api/akka-http/$apiVersion/"))
+    Some(url(s"https://doc.akka.io/api/akka-http/$apiVersion/"))
   },
   scmInfo := Some(
     ScmInfo(url("https://github.com/akka/akka-http"), "git@github.com:akka/akka-http.git")),
@@ -316,16 +316,16 @@ lazy val docs = project("docs")
         case _                  => "cross CrossVersion.full"
       }),
       "jackson.version" -> Dependencies.jacksonVersion,
-      "extref.akka-docs.base_url" -> s"http://doc.akka.io/docs/akka/${AkkaDependency.akkaVersion}/%s",
-      "extref.akka25-docs.base_url" -> s"http://doc.akka.io/docs/akka/2.5/%s",
+      "extref.akka-docs.base_url" -> s"https://doc.akka.io/docs/akka/${AkkaDependency.akkaVersion}/%s",
+      "extref.akka25-docs.base_url" -> s"https://doc.akka.io/docs/akka/2.5/%s",
       "javadoc.akka.http.base_url" -> {
         val v = if (isSnapshot.value) "current" else version.value
-        s"http://doc.akka.io/japi/akka-http/$v"
+        s"https://doc.akka.io/japi/akka-http/$v"
       },
       "javadoc.akka.base_url" -> s"https://doc.akka.io/japi/akka/${AkkaDependency.akkaVersion}",
       "scaladoc.akka.http.base_url" -> {
         val v = if (isSnapshot.value) "current" else version.value
-        s"http://doc.akka.io/api/akka-http/$v"
+        s"https://doc.akka.io/api/akka-http/$v"
       },
       "scaladoc.akka.base_url" -> s"https://doc.akka.io/api/akka/${AkkaDependency.akkaVersion}",
       "algolia.docsearch.api_key" -> "0ccbb8bf5148554a406fbf07df0a93b9",

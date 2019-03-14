@@ -3,8 +3,8 @@ Keys for running Tls tests using the `ExampleHttpContexts`
 
 Instructions adapted from
 
- * http://datacenteroverlords.com/2012/03/01/creating-your-own-ssl-certificate-authority/
- * http://security.stackexchange.com/questions/9600/how-to-use-openssl-generated-keys-in-java
+ * https://datacenteroverlords.com/2012/03/01/creating-your-own-ssl-certificate-authority/
+ * https://security.stackexchange.com/questions/9600/how-to-use-openssl-generated-keys-in-java
 
 
 # Create a rootCA key:

@@ -11,7 +11,7 @@ Java
 :  @@snip [HttpServerExampleDocTest.java]($test$/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #request-handler }
 
 While it'd be perfectly possible to define a complete REST API service purely by @scala[pattern-matching against]@java[inspecting] the incoming
-@unidoc[HttpRequest] @scala[(maybe with the help of a few extractors in the way of [Unfiltered](http://unfiltered.databinder.net/))] this approach becomes somewhat
+@unidoc[HttpRequest] @scala[(maybe with the help of a few extractors in the way of [Unfiltered](https://unfiltered.ws/))] this approach becomes somewhat
 unwieldy for larger services due to the amount of syntax "ceremony" required. Also, it doesn't help in keeping your
 service definition as [DRY](http://en.wikipedia.org/wiki/Don%27t_repeat_yourself) as you might like.
 
@@ -75,7 +75,7 @@ For learning how to work with the Routing DSL you should first understand the co
 
 > <a id="1" href="#^1">[1]</a> To be picked up automatically, the implicit conversion needs to be provided in the companion object of the source
 type. However, as @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]] is just a type alias for `RequestContext => Future[RouteResult]`, there's no
-companion object for @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]]. Fortunately, the [implicit scope](http://www.scala-lang.org/files/archive/spec/2.11/07-implicits.html#implicit-parameters) for finding an implicit conversion also
+companion object for @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]]. Fortunately, the [implicit scope](https://www.scala-lang.org/files/archive/spec/2.11/07-implicits.html#implicit-parameters) for finding an implicit conversion also
 includes all types that are "associated with any part" of the source type which in this case means that the
 implicit conversion will also be picked up from `RouteResult.route2HandlerFlow` automatically.
 

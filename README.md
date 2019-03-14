@@ -51,7 +51,7 @@ In addition to that, you may enjoy following:
 [gitter-user-badge]:   https://img.shields.io/badge/gitter%3A-akka%2Fakka-blue.svg?style=flat-square
 [gitter-user]:         https://gitter.im/akka/akka
 [stackoverflow-badge]: https://img.shields.io/badge/stackoverflow%3A-akka--http-blue.svg?style=flat-square
-[stackoverflow]:       http://stackoverflow.com/questions/tagged/akka-http
+[stackoverflow]:       https://stackoverflow.com/questions/tagged/akka-http
 [github-issues-badge]: https://img.shields.io/badge/github%3A-issues-blue.svg?style=flat-square
 [github-issues]:       https://github.com/akka/akka-http/issues
 [scaladex-badge]:      https://index.scala-lang.org/count.svg?q=dependencies:akka/akka-http*&subject=scaladex:&color=blue&style=flat-square
