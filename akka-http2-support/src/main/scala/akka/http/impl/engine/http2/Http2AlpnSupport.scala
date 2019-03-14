@@ -113,7 +113,7 @@ private[http] object Http2AlpnSupport {
 }
 
 abstract class WrappedSSLEngine(delegate: SSLEngine) extends SSLEngine {
-  override def wrap(byteBuffers: Array[ByteBuffer], i: Int, i1: Int, byteBuffer: ByteBuffer): SSLEngineResult = delegate(byteBuffers, i, i1, byteBuffer)
+  override def wrap(byteBuffers: Array[ByteBuffer], i: Int, i1: Int, byteBuffer: ByteBuffer): SSLEngineResult = delegate.wrap(byteBuffers, i, i1, byteBuffer)
   override def unwrap(byteBuffer: ByteBuffer, byteBuffers: Array[ByteBuffer], i: Int, i1: Int): SSLEngineResult = delegate.unwrap(byteBuffer, byteBuffers, i, i1)
   override def getDelegatedTask: Runnable = delegate.getDelegatedTask
   override def closeInbound(): Unit = delegate.closeInbound()
