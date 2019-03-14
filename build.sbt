@@ -29,6 +29,7 @@ inThisBuild(Def.settings(
   startYear := Some(2014),
   //  test in assembly := {},
   licenses := Seq("Apache-2.0" -> url("https://opensource.org/licenses/Apache-2.0")),
+  description := "Akka Http: Modern, fast, asynchronous, streaming-first HTTP server and client.",
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8", // yes, this is 2 args
@@ -306,6 +307,7 @@ lazy val docs = project("docs")
     paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     paradoxProperties in Compile ++= Map(
       "project.name" -> "Akka HTTP",
+      "canonical.base_url" -> "https://doc.akka.io/docs/akka-http/current",
       "akka.version" -> AkkaDependency.akkaVersion,
       "alpn-agent.version" -> Dependencies.alpnAgentVersion,
       "scala.binary_version" -> scalaBinaryVersion.value, // to be consistent with Akka build
