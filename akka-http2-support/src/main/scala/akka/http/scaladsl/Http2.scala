@@ -16,7 +16,8 @@ import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.TLSProtocol.{ SendBytes, SessionBytes, SslTlsInbound, SslTlsOutbound }
 import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Sink, TLS, Tcp }
-import akka.stream.{ IgnoreComplete, Materializer }
+import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+import akka.stream.{ Attributes, BidiShape, IgnoreComplete, Inlet, Materializer, Outlet }
 import akka.util.ByteString
 import akka.{ Done, NotUsed }
 import com.typesafe.config.Config
@@ -139,16 +140,49 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
         else throw new IllegalStateException("ChosenProtocol was set twice. Http2.serverLayer is not reusable.")
       def getChosenProtocol(): String = chosenProtocol.getOrElse("h1") // default to http/1, e.g. when ALPN jar is missing
 
+      var eng: Option[SSLEngine] = None
       def createEngine(): SSLEngine = {
         val engine = httpsContext.sslContext.createSSLEngine()
+        eng = Some(engine)
         engine.setUseClientMode(false)
         Http2AlpnSupport.applySessionParameters(engine, httpsContext.firstSession)
         Http2AlpnSupport.enableForServer(engine, setChosenProtocol)
       }
       val tls = TLS(() ⇒ createEngine, _ ⇒ Success(()), IgnoreComplete)
 
+      def removeEngineOnTerminate[I, O] =
+        BidiFlow.fromGraph(new GraphStage[BidiShape[I, I, O, O]]() {
+          val in1 = Inlet[I]("ot-in1")
+          val out1 = Outlet[I]("ot-in1")
+          val in2 = Inlet[O]("ot-in1")
+          val out2 = Outlet[O]("ot-in1")
+
+          override def shape: BidiShape[I, I, O, O] = BidiShape.of(in1, out1, in2, out2)
+
+          override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+            new GraphStageLogic(shape) {
+              setHandler(in1, new InHandler {
+                override def onPush(): Unit = emit(out1, grab(in1))
+              })
+              setHandler(out1, new OutHandler {
+                override def onPull(): Unit = pull(in1)
+              })
+              setHandler(in2, new InHandler {
+                override def onPush(): Unit = emit(out2, grab(in2))
+              })
+              setHandler(out2, new OutHandler {
+                override def onPull(): Unit = pull(in2)
+              })
+
+              override def postStop(): Unit = {
+                super.postStop()
+                eng.foreach(Http2AlpnSupport.cleanupForServer)
+              }
+            }
+        })
+
       AlpnSwitch(() ⇒ getChosenProtocol, http.serverLayer(settings, None, log), http2Layer()) atop
-        tls
+        tls atop removeEngineOnTerminate
     }
 
     // Not reusable, see above.
