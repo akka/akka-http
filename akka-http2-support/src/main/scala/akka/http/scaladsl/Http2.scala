@@ -152,11 +152,10 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
       val removeEngineOnTerminate: BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] = {
         implicit val ec = fm.executionContext
         BidiFlow.fromFlows(
-          Flow.fromFunction(identity),
-          Flow
-            .fromFunction[ByteString, ByteString](identity)
-            .watchTermination()((n, fd) => {
-              fd.onComplete(_ => eng.foreach(Http2AlpnSupport.cleanupForServer))
+          Flow[ByteString],
+          Flow[ByteString]
+            .watchTermination()((n, fd) ⇒ {
+              fd.onComplete(_ ⇒ eng.foreach(Http2AlpnSupport.cleanupForServer))
               n
             })
         )
