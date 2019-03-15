@@ -155,8 +155,8 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
           Flow.fromFunction(identity),
           Flow
             .fromFunction[ByteString, ByteString](identity)
-            .watchTermination()((n, fd) => {
-              fd.onComplete(_ => eng.foreach(Http2AlpnSupport.cleanupForServer))
+            .watchTermination()((n, fd) ⇒ {
+              fd.onComplete(_ ⇒ eng.foreach(Http2AlpnSupport.cleanupForServer))
               n
             })
         )
