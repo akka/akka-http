@@ -16,8 +16,7 @@ import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.TLSProtocol.{ SendBytes, SessionBytes, SslTlsInbound, SslTlsOutbound }
 import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Sink, TLS, Tcp }
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
-import akka.stream.{ Attributes, BidiShape, IgnoreComplete, Inlet, Materializer, Outlet }
+import akka.stream.{ IgnoreComplete, Materializer }
 import akka.util.ByteString
 import akka.{ Done, NotUsed }
 import com.typesafe.config.Config
@@ -150,36 +149,18 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
       }
       val tls = TLS(() ⇒ createEngine, _ ⇒ Success(()), IgnoreComplete)
 
-      def removeEngineOnTerminate[I, O] =
-        BidiFlow.fromGraph(new GraphStage[BidiShape[I, I, O, O]]() {
-          val in1 = Inlet[I]("ot-in1")
-          val out1 = Outlet[I]("ot-in1")
-          val in2 = Inlet[O]("ot-in1")
-          val out2 = Outlet[O]("ot-in1")
-
-          override def shape: BidiShape[I, I, O, O] = BidiShape.of(in1, out1, in2, out2)
-
-          override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-            new GraphStageLogic(shape) {
-              setHandler(in1, new InHandler {
-                override def onPush(): Unit = emit(out1, grab(in1))
-              })
-              setHandler(out1, new OutHandler {
-                override def onPull(): Unit = pull(in1)
-              })
-              setHandler(in2, new InHandler {
-                override def onPush(): Unit = emit(out2, grab(in2))
-              })
-              setHandler(out2, new OutHandler {
-                override def onPull(): Unit = pull(in2)
-              })
-
-              override def postStop(): Unit = {
-                super.postStop()
-                eng.foreach(Http2AlpnSupport.cleanupForServer)
-              }
-            }
-        })
+      val removeEngineOnTerminate: BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] = {
+        implicit val ec = fm.executionContext
+        BidiFlow.fromFlows(
+          Flow.fromFunction(identity),
+          Flow
+            .fromFunction[ByteString, ByteString](identity)
+            .watchTermination()((n, fd) => {
+              fd.onComplete(_ => eng.foreach(Http2AlpnSupport.cleanupForServer))
+              n
+            })
+        )
+      }
 
       AlpnSwitch(() ⇒ getChosenProtocol, http.serverLayer(settings, None, log), http2Layer()) atop
         tls atop removeEngineOnTerminate
