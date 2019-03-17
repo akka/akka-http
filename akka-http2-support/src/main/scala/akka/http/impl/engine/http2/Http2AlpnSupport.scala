@@ -101,4 +101,8 @@ private[http] object Http2AlpnSupport {
     newParameters.setWantClientAuth(old.getWantClientAuth)
     newParameters
   }
+
+  def cleanupForServer(engine: SSLEngine): Unit =
+    if (!isAlpnSupportedByJDK) ALPN.remove(engine)
+
 }

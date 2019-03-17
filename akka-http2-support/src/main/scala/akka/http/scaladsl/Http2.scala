@@ -139,16 +139,30 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
         else throw new IllegalStateException("ChosenProtocol was set twice. Http2.serverLayer is not reusable.")
       def getChosenProtocol(): String = chosenProtocol.getOrElse("h1") // default to http/1, e.g. when ALPN jar is missing
 
+      var eng: Option[SSLEngine] = None
       def createEngine(): SSLEngine = {
         val engine = httpsContext.sslContext.createSSLEngine()
+        eng = Some(engine)
         engine.setUseClientMode(false)
         Http2AlpnSupport.applySessionParameters(engine, httpsContext.firstSession)
         Http2AlpnSupport.enableForServer(engine, setChosenProtocol)
       }
       val tls = TLS(() ⇒ createEngine, _ ⇒ Success(()), IgnoreComplete)
 
+      val removeEngineOnTerminate: BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] = {
+        implicit val ec = fm.executionContext
+        BidiFlow.fromFlows(
+          Flow[ByteString],
+          Flow[ByteString]
+            .watchTermination()((n, fd) ⇒ {
+              fd.onComplete(_ ⇒ eng.foreach(Http2AlpnSupport.cleanupForServer))
+              n
+            })
+        )
+      }
+
       AlpnSwitch(() ⇒ getChosenProtocol, http.serverLayer(settings, None, log), http2Layer()) atop
-        tls
+        tls atop removeEngineOnTerminate
     }
 
     // Not reusable, see above.
