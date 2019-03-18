@@ -382,7 +382,7 @@ private[client] object NewHostConnectionPool {
             if (connection ne null) throw new IllegalStateException("Cannot open connection when slot still has an open connection")
 
             connection = logic.openConnection(this)
-            if (settings.maxConnectionLifetime.isFinite()) {
+            if (settings.maxConnectionLifetime.isFinite) {
               disconnectAt = Instant.now().toEpochMilli + settings.maxConnectionLifetime.toMillis + keepAliveDurationFuzziness()
             }
           }
@@ -401,7 +401,7 @@ private[client] object NewHostConnectionPool {
             logic.willClose(res) || keepAliveTimeApplies()
           }
 
-          def keepAliveTimeApplies(): Boolean = if (settings.maxConnectionLifetime.isFinite()) {
+          def keepAliveTimeApplies(): Boolean = if (settings.maxConnectionLifetime.isFinite) {
             Instant.now().toEpochMilli > disconnectAt
           } else false
 
