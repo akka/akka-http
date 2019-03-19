@@ -35,6 +35,7 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   def maxConnectionBackoff: FiniteDuration
   def idleTimeout: Duration
   def connectionSettings: ClientConnectionSettings
+  def maxConnectionLifetime: Duration
 
   /**
    * The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used.
@@ -61,6 +62,7 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   override def withMaxConnectionBackoff(newValue: FiniteDuration): ConnectionPoolSettings = self.copy(maxConnectionBackoff = newValue)
 
   override def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue)
+  override def withMaxConnectionLifetime(newValue: Duration): ConnectionPoolSettings = self.copy(maxConnectionLifetime = newValue)
 
   // overloads for idiomatic Scala use
   def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue)

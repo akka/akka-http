@@ -42,7 +42,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     akka.test.single-expect-default = 5000 # timeout for checks, adjust as necessary, set here to 5s
     akka.scheduler.tick-duration = 1ms     # to make race conditions in Pool idle-timeout more likely
     akka.http.client.log-unencrypted-network-bytes = 200
-                                          """) with WithLogCapturing {
+                                          """) with WithLogCapturing { testSuite ⇒
   implicit val materializer = ActorMaterializer()
 
   // FIXME: Extract into proper util class to be reusable
@@ -125,6 +125,22 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       acceptIncomingConnection()
       val (Success(r2), 43) = responseOut.expectNext()
       connNr(r2) shouldEqual 2
+    }
+
+    "automatically open a new connection after configured max-connection-lifetime elapsed" in new TestSetup(autoAccept = true) {
+      if (poolImplementation == PoolImplementation.Legacy) { testSuite.cancel("Not implemented for legacy pool") }
+      val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int](
+        maxConnections = 1,
+        minConnections = 1,
+        idleTimeout = 10.minutes,
+        maxConnectionLifetime = 1.seconds)
+
+      awaitCond({
+        requestIn.sendNext(HttpRequest(uri = "/uri") → 42)
+        responseOutSub.request(1)
+        val (Success(response), 42) = responseOut.expectNext()
+        connNr(response) == 2
+      }, max = 2.seconds)
     }
 
     "not open a second connection if there is an idle one available" in new TestSetup {
@@ -615,13 +631,14 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       c.handleWithAsyncHandler(asyncTestServerHandler(incomingConnectionCounter.incrementAndGet()))
 
     def cachedHostConnectionPool[T](
-      maxConnections:  Int                      = 2,
-      minConnections:  Int                      = 0,
-      maxRetries:      Int                      = 2,
-      maxOpenRequests: Int                      = 8,
-      pipeliningLimit: Int                      = 1,
-      idleTimeout:     FiniteDuration           = 5.seconds,
-      ccSettings:      ClientConnectionSettings = ClientConnectionSettings(system)) = {
+      maxConnections:        Int                      = 2,
+      minConnections:        Int                      = 0,
+      maxRetries:            Int                      = 2,
+      maxOpenRequests:       Int                      = 8,
+      pipeliningLimit:       Int                      = 1,
+      idleTimeout:           FiniteDuration           = 5.seconds,
+      maxConnectionLifetime: Duration                 = Duration.Inf,
+      ccSettings:            ClientConnectionSettings = ClientConnectionSettings(system)) = {
 
       val settings =
         ConnectionPoolSettings(system)
@@ -631,6 +648,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
           .withMaxOpenRequests(maxOpenRequests)
           .withPipeliningLimit(pipeliningLimit)
           .withIdleTimeout(idleTimeout.dilated)
+          .withMaxConnectionLifetime(maxConnectionLifetime)
           .withConnectionSettings(ccSettings)
           .withPoolImplementation(poolImplementation)
 

@@ -20,6 +20,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   maxRetries:                        Int,
   maxOpenRequests:                   Int,
   pipeliningLimit:                   Int,
+  maxConnectionLifetime:             Duration,
   baseConnectionBackoff:             FiniteDuration,
   maxConnectionBackoff:              FiniteDuration,
   idleTimeout:                       Duration,
@@ -35,6 +36,10 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   require(maxOpenRequests > 0, "max-open-requests must be a power of 2 > 0.")
   require((maxOpenRequests & (maxOpenRequests - 1)) == 0, "max-open-requests must be a power of 2. " + suggestPowerOfTwo(maxOpenRequests))
   require(pipeliningLimit > 0, "pipelining-limit must be > 0")
+  require(maxConnectionLifetime > Duration.Zero, "max-connection-lifetime must be > 0")
+  require(
+    maxConnectionLifetime == Duration.Inf || poolImplementation == PoolImplementation.New,
+    "max-connection-lifetime does not taking effect with legacy pool implementation")
   require(idleTimeout >= Duration.Zero, "idle-timeout must be >= 0")
   require(
     minConnections == 0 || (baseConnectionBackoff.toMillis > 0 && maxConnectionBackoff.toMillis > 10),
@@ -66,6 +71,7 @@ private[akka] object ConnectionPoolSettingsImpl extends SettingsCompanionImpl[Co
       c.getInt("max-retries"),
       c.getInt("max-open-requests"),
       c.getInt("pipelining-limit"),
+      c.getPotentiallyInfiniteDuration("max-connection-lifetime"),
       c.getFiniteDuration("base-connection-backoff"),
       c.getFiniteDuration("max-connection-backoff"),
       c.getPotentiallyInfiniteDuration("idle-timeout"),

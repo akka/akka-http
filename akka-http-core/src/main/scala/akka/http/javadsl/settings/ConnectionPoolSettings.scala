@@ -12,6 +12,7 @@ import com.typesafe.config.Config
 import scala.concurrent.duration.Duration
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.ClientTransport
+import akka.http.scaladsl.settings.ConnectionPoolSettings
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -62,6 +63,7 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   def withBaseConnectionBackoff(newValue: FiniteDuration): ConnectionPoolSettings = self.copy(baseConnectionBackoff = newValue)
   def withMaxConnectionBackoff(newValue: FiniteDuration): ConnectionPoolSettings = self.copy(maxConnectionBackoff = newValue)
   def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue)
+  def withMaxConnectionLifetime(newValue: Duration): ConnectionPoolSettings = self.copy(maxConnectionLifetime = newValue)
   def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue.asScala)
 
   @ApiMayChange

@@ -28,3 +28,10 @@ ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.model.
 
 # Changes to implementation internals
 ProblemFilters.exclude[Problem]("akka.http.impl.engine.parsing.*")
+
+# #2016 add new option to close connections after a period of time
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.maxConnectionLifetime")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.apply")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.copy$default$*")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.this")

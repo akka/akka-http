@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.client.pool
 
+import java.time.Instant
 import java.util
 
 import akka.NotUsed
@@ -25,7 +26,7 @@ import akka.util.OptionVal
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-import scala.util.{ Failure, Success, Try }
+import scala.util.{ Failure, Random, Success, Try }
 
 /**
  * Internal API
@@ -185,6 +186,7 @@ private[client] object NewHostConnectionPool {
         final class Slot(val slotId: Int) extends SlotContext with StateHandling {
           private[this] var currentTimeoutId: Long = -1
           private[this] var currentTimeout: Cancellable = _
+          private[this] var disconnectAt: Long = Long.MaxValue
           private[this] var isEnqueuedForResponseDispatch: Boolean = false
 
           private[this] var connection: SlotConnection = _
@@ -371,10 +373,18 @@ private[client] object NewHostConnectionPool {
 
           def settings: ConnectionPoolSettings = _settings
 
+          private lazy val keepAliveDurationFuzziness: () ⇒ Long = {
+            val random = new Random()
+            val max = math.max(settings.maxConnectionLifetime.toMillis / 10, 2)
+            () ⇒ random.nextLong() % max
+          }
           def openConnection(): Unit = {
             if (connection ne null) throw new IllegalStateException("Cannot open connection when slot still has an open connection")
 
             connection = logic.openConnection(this)
+            if (settings.maxConnectionLifetime.isFinite) {
+              disconnectAt = Instant.now().toEpochMilli + settings.maxConnectionLifetime.toMillis + keepAliveDurationFuzziness()
+            }
           }
 
           def closeConnection(): Unit =
@@ -387,7 +397,13 @@ private[client] object NewHostConnectionPool {
 
           def dispatchResponseResult(req: RequestContext, result: Try[HttpResponse]): Unit = logic.dispatchResponseResult(req, result)
 
-          def willCloseAfter(res: HttpResponse): Boolean = logic.willClose(res)
+          def willCloseAfter(res: HttpResponse): Boolean = {
+            logic.willClose(res) || keepAliveTimeApplies()
+          }
+
+          def keepAliveTimeApplies(): Boolean = if (settings.maxConnectionLifetime.isFinite) {
+            Instant.now().toEpochMilli > disconnectAt
+          } else false
 
           private[this] def cancelCurrentTimeout(): Unit =
             if (currentTimeout ne null) {
