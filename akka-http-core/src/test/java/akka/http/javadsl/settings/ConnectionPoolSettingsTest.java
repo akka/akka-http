@@ -6,7 +6,7 @@ package akka.http.javadsl.settings;
 
 import akka.actor.ActorSystem;
 import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
+import org.scalatest.junit.JUnitSuite;
 
 public class ConnectionPoolSettingsTest extends JUnitSuite {
 
