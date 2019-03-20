@@ -16,7 +16,7 @@ import akka.http.javadsl.ServerBinding;
 import com.typesafe.config.ConfigFactory;
 //#imports
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 //#selfClosing
 import scala.concurrent.duration.Duration;
