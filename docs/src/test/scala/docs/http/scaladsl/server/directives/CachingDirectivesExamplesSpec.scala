@@ -14,7 +14,6 @@ import akka.http.scaladsl.server.directives.CachingDirectives._
 //#always-cache
 //#cache
 import akka.http.scaladsl.model.HttpMethods.GET
-import scala.concurrent.duration._
 
 class CachingDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
@@ -137,6 +136,7 @@ class CachingDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     import akka.http.scaladsl.server.RouteResult
     import akka.http.scaladsl.model.Uri
     import akka.http.scaladsl.server.directives.CachingDirectives._
+    import scala.concurrent.duration._
 
     // Use the request's URI as the cache's key
     val keyerFunction: PartialFunction[RequestContext, Uri] = {
