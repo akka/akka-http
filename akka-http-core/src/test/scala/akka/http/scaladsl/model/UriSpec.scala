@@ -256,6 +256,30 @@ class UriSpec extends WordSpec with Matchers {
       Path("/abc/def").endsWithSlash shouldBe false
       Path("/abc/def/").endsWithSlash shouldBe true
     }
+    "support the `endsWith` predicate" in {
+      Empty.endsWith("foo") shouldBe false
+      Empty.endsWith("foo", ignoreTrailingSlash = true) shouldBe false
+      Path./.endsWith("foo") shouldBe false
+      Path./.endsWith("foo", ignoreTrailingSlash = true) shouldBe false
+      Path("foo").endsWith("foo") shouldBe true
+      Path("foo").endsWith("foo", ignoreTrailingSlash = true) shouldBe true
+      Path("foo/").endsWith("foo") shouldBe false
+      Path("foo/").endsWith("foo", ignoreTrailingSlash = true) shouldBe true
+      Path("/foo").endsWith("foo") shouldBe true
+      Path("/foo").endsWith("foo", ignoreTrailingSlash = true) shouldBe true
+      Path("/foo/").endsWith("foo") shouldBe false
+      Path("/foo/").endsWith("foo", ignoreTrailingSlash = true) shouldBe true
+      Path("/abc/foo").endsWith("foo") shouldBe true
+      Path("/abc/foo").endsWith("foo", ignoreTrailingSlash = true) shouldBe true
+      Path("/abc/foo/").endsWith("foo") shouldBe false
+      Path("/abc/foo/").endsWith("foo", ignoreTrailingSlash = true) shouldBe true
+      Path("/abc").endsWith("foo") shouldBe false
+      Path("/abc").endsWith("foo", ignoreTrailingSlash = true) shouldBe false
+      Path("/abc/def").endsWith("foo") shouldBe false
+      Path("/abc/def").endsWith("foo", ignoreTrailingSlash = true) shouldBe false
+      Path("/abc/def/").endsWith("foo") shouldBe false
+      Path("/abc/def/").endsWith("foo", ignoreTrailingSlash = true) shouldBe false
+    }
     "support the `?/` operator" in {
       Path("abc") ?/ "def" shouldEqual Path("abc/def")
       Path("abc/") ?/ "def" shouldEqual Path("abc/def")
