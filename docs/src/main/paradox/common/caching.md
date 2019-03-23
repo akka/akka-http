@@ -76,7 +76,7 @@ For more advanced usage you can create an @unidoc[LfuCache$] with settings
 specialized for your use case:
 
 Java
-:  @@snip [CachingDirectivesExamplesTest.java]($root$/src/test/java/docs/http/javadsl/server/directives/CachingDirectivesExamplesTest.java) { #create-cache-imports #caching-directives-import #keyer-function #create-cache }
+:  @@snip [CachingDirectivesExamplesTest.java]($root$/src/test/java/docs/http/javadsl/server/directives/CachingDirectivesExamplesTest.java) { #create-cache-imports #caching-directives-import #time-unit-import #keyer-function #create-cache }
 
 Scala
 :  @@snip [CachingDirectivesExamplesSpec.java]($root$/src/test/scala/docs/http/scaladsl/server/directives/CachingDirectivesExamplesSpec.scala) { #keyer-function #create-cache }
