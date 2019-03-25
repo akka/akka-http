@@ -22,16 +22,35 @@ object NoPublish extends AutoPlugin {
 }
 
 object Publish extends AutoPlugin {
-  import bintray.BintrayPlugin
-  import bintray.BintrayPlugin.autoImport._
+//  import bintray.BintrayPlugin
+//  import bintray.BintrayPlugin.autoImport._
 
   override def trigger = allRequirements
-  override def requires = BintrayPlugin
+//  override def requires = BintrayPlugin
 
   override def projectSettings = Seq(
-    bintrayOrganization := Some("akka"),
-    bintrayPackage := "com.typesafe.akka:akka-http_2.11",
-    bintrayRepository := (if (isSnapshot.value) "snapshots" else "maven")
+    publishMavenStyle := true,
+    publishTo := {
+      val nexus = "https://oss.sonatype.org/"
+      if (isSnapshot.value)
+        Some("snapshots" at nexus + "content/repositories/snapshots")
+      else
+        Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+    }
+  ) ++ sonatypeSettings
+
+  val sonatypeSettings: Seq[Setting[_]] = Seq(
+    publishMavenStyle := true,
+    publishArtifact in Test := false,
+    pomIncludeRepository := { _ => false },
+    publishTo := {
+      val nexus = "https://oss.sonatype.org/"
+      if (version.value.trim.endsWith("SNAPSHOT"))
+        Some("snapshots" at nexus + "content/repositories/snapshots")
+      else
+        Some("releases" at nexus + "service/local/staging/deploy/maven2")
+    },
+    credentials += Credentials(Path.userHome / ".sbt" / "sonatype.properties")
   )
 }
 
