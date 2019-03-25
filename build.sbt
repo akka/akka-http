@@ -47,6 +47,7 @@ inThisBuild(Def.settings(
   Formatting.formatSettings,
   shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
   concurrentRestrictions in Global += Tags.limit(Tags.Test, 1),
+  publishTo := sonatypePublishTo.value,
 ))
 
 lazy val root = Project(

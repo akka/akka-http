@@ -27,3 +27,6 @@ libraryDependencies += "org.kohsuke" % "github-api" % "1.92"
 
 // used for @unidoc directive
 libraryDependencies += "io.github.lukehutch" % "fast-classpath-scanner" % "2.12.3"
+
+addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "2.5")
+addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.1.0")
