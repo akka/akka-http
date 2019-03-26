@@ -59,7 +59,9 @@ object Dependencies {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
       val gson        = "com.google.code.gson"             % "gson"                    % "2.8.5"             % "test"
       val jacksonXml  = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml"  % jacksonVersion      % "test" // ApacheV2
-      val reflections = "org.reflections"                  % "reflections"             % "0.9.11"            % "test" // WTFPL
+
+      // workaround for https://github.com/ronmamo/reflections/issues/169
+      val reflections = "org.reflections"                  % "reflections"             % "0.9.11"            % "test" artifacts(Artifact("reflections", "", "jar")) // WTFPL
     }
 
     object Test {
