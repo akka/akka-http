@@ -55,10 +55,13 @@ object MiMa extends AutoPlugin {
           "10.1.5",
           "10.1.6",
           "10.1.7",
+          "10.1.8",
       )
       val post213Versions = Set(
-          // We don't promise binary compatibility
-          // for 2.13 milestones yet
+          // We don't promise binary compatibility for 2.13 milestones yet,
+          // but it can't hurt to check it. When it fails, either fix it,
+          // add an exclusion, or remove 10.1.8 from this list:
+          "10.1.8",
       )
 
       val versions =
