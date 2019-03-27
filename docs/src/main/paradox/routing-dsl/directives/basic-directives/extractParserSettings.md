@@ -10,7 +10,7 @@
 
 ## Description
 
-Extracts the request's underlying @unidoc[ParserSettings], which can be useful when you want to access custom status codes and media types.
+Extracts the request's underlying @apidoc[ParserSettings], which can be useful when you want to access custom status codes and media types.
 
 ## Example
 

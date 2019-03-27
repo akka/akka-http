@@ -10,7 +10,7 @@
 
 ## Description
 
-Extracts the @unidoc[ActorSystem] from the @unidoc[RequestContext], which can be useful when the external API
+Extracts the @apidoc[ActorSystem] from the @apidoc[RequestContext], which can be useful when the external API
 in your route needs one.
 
 @@@ warning

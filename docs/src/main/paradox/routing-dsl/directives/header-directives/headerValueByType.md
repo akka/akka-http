@@ -18,13 +18,13 @@ The signature shown is simplified, the real signature uses magnets. <a id="^1" h
 Traverses the list of request headers and extracts the first header of the given type.
 
 The `headerValueByType` directive finds a header of the given type in the list of request header. If no header of
-the given type is found the request is rejected with a @unidoc[MissingHeaderRejection].
+the given type is found the request is rejected with a @apidoc[MissingHeaderRejection].
 
 If the header is expected to be missing in some cases or to customize handling when the header
 is missing use the @ref[optionalHeaderValueByType](optionalHeaderValueByType.md) directive instead.
 
 @@@ note
-Custom headers will only be matched by this directive if they extend @unidoc[ModeledCustomHeader]
+Custom headers will only be matched by this directive if they extend @apidoc[ModeledCustomHeader]
 @scala[and provide a companion extending `ModeledCustomHeaderCompanion`, otherwise the routing
 infrastructure does now know where to search for the needed companion and header name.]
 @java[from the Scala DSL and there is currently no API for the Java DSL ([Issue 219](https://github.com/akka/akka-http/issues/219))]

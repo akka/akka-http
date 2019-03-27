@@ -8,6 +8,7 @@ import java.nio.file.Files
 import java.nio.file.attribute.{ PosixFileAttributeView, PosixFilePermission }
 import sbtdynver.GitDescribeOutput
 import spray.boilerplate.BoilerplatePlugin
+import com.lightbend.paradox.apidoc.ApidocPlugin.autoImport.apidocRootPackage
 
 inThisBuild(Def.settings(
   organization := "com.typesafe.akka",
@@ -340,6 +341,7 @@ lazy val docs = project("docs")
       "signature.test.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
       "signature.akka-http.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath
     ),
+    apidocRootPackage := "akka",
     Formatting.docFormatSettings,
     additionalTasks in ValidatePR += paradox in Compile,
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka-http/${version.value}")

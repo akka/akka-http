@@ -1,6 +1,6 @@
 # HttpRequest and HttpResponse
 
-All 3 Akka HTTP Client API levels use the same basic model of @unidoc[HttpRequest] and @unidoc[HttpResponse].
+All 3 Akka HTTP Client API levels use the same basic model of @apidoc[HttpRequest] and @apidoc[HttpResponse].
 
 ## Creating requests
 
@@ -20,7 +20,7 @@ Scala
 Java
 :  @@snip[ClientSingleRequestExample.java](/docs/src/test/java/docs/http/javadsl/ClientSingleRequestExample.java){ #create-post-request }
 
-See the API documentation of @unidoc[HttpRequest] for more information on how to customize your requests.
+See the API documentation of @apidoc[HttpRequest] for more information on how to customize your requests.
 
 ## Processing responses
 

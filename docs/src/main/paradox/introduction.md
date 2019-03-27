@@ -91,7 +91,7 @@ For example one route might start with matching the `path` of the request, only 
 narrowing it down to only handle HTTP `get` requests and then `complete` those with a string literal, which
 will be sent back as a HTTP OK with the string as response body.
 
-The @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]] created using the Route DSL is then "bound" to a port to start serving HTTP requests:
+The @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@apidoc[Route]] created using the Route DSL is then "bound" to a port to start serving HTTP requests:
 
 Scala
 :   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #minimal-routing-example }
@@ -189,9 +189,9 @@ Read more about the details of the high level APIs in the section @ref[High-leve
 ## Low-level HTTP server APIs
 
 The low-level Akka HTTP server APIs allows for handling connections or individual requests by accepting
-@unidoc[HttpRequest] s and answering them by producing @unidoc[HttpResponse] s. This is provided by the `akka-http-core` module,
+@apidoc[HttpRequest] s and answering them by producing @apidoc[HttpResponse] s. This is provided by the `akka-http-core` module,
 which is included automatically when you depend on `akka-http` but can also be used on its own.
-APIs for handling such request-responses as function calls and as a @unidoc[Flow[HttpRequest, HttpResponse, \_]] are available.
+APIs for handling such request-responses as function calls and as a @apidoc[Flow[HttpRequest, HttpResponse, \_]] are available.
 
 Scala
 :   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #low-level-server-example }
@@ -203,7 +203,7 @@ Read more details about the low level APIs in the section @ref[Core Server API](
 
 ## HTTP client API
 
-The client APIs provide methods for calling a HTTP server using the same @unidoc[HttpRequest] and @unidoc[HttpResponse] abstractions
+The client APIs provide methods for calling a HTTP server using the same @apidoc[HttpRequest] and @apidoc[HttpResponse] abstractions
 that Akka HTTP server uses but adds the concept of connection pools to allow multiple requests to the same server to be
 handled more performantly by re-using TCP connections to the server.
 
