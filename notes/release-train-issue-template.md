@@ -58,6 +58,7 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 
 ### Announcements
 - [ ] Merge draft news item at https://github.com/akka/akka.github.com
+- [ ] Update current_akka_http_version in https://github.com/akka/akka.github.com/blob/master/_config.yml
 - [ ] Send a release notification to https://discuss.akka.io
 - [ ] Tweet using the akka account (or ask someone to) about the new release
 - [ ] Announce on Gitter at https://gitter.im/akka/akka
