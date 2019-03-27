@@ -28,9 +28,8 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 
 - [ ] If this is a new minor (not patch) release, rename the 'akka-http-x.x-stable' reporting project in [WhiteSource](https://saas.whitesourcesoftware.com/) accordingly
 - [ ] Add a release notes entry in docs/src/main/paradox/release-notes/. As a helper run `scripts/commits-for-release-notes.sh <last-version-tag>` which will output a list of commits grouped by submodule, and the closed issues for this milestone.
-- [ ] Create a PR on https://github.com/akka/akka.github.com with this
-  - a news item draft, using the milestones and `scripts/authors.scala previousVersion thisVersion`
-  - update Akka HTTP dependency for akka.io website: https://github.com/akka/akka.github.com/blob/master/_config.yml
+- [ ] Create a PR on https://github.com/akka/akka.github.com with a news item draft, using the milestones and `scripts/authors.scala previousVersion thisVersion`
+- [ ] Create a PR on https://github.com/akka/akka.github.com updating Akka HTTP dependency for akka.io website: https://github.com/akka/akka.github.com/blob/master/_config.yml
 - [ ] Release notes PR has been merged
 - [ ] Create a new milestone for the next version at https://github.com/akka/akka-http/milestones
 - [ ] Move all unclosed issues to the newly created milestone (or remove milestone) and close the version you're releasing
@@ -58,7 +57,6 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 
 ### Announcements
 - [ ] Merge draft news item at https://github.com/akka/akka.github.com
-- [ ] Update current_akka_http_version in https://github.com/akka/akka.github.com/blob/master/_config.yml
 - [ ] Send a release notification to https://discuss.akka.io
 - [ ] Tweet using the akka account (or ask someone to) about the new release
 - [ ] Announce on Gitter at https://gitter.im/akka/akka
