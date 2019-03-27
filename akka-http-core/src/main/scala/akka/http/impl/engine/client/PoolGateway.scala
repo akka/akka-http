@@ -25,6 +25,8 @@ import scala.concurrent.{ Future, Promise }
  */
 private[http] final class PoolGateway(gatewayRef: ActorRef, val hcps: HostConnectionPoolSetup, val gatewayId: GatewayIdentifier)(implicit fm: Materializer) {
 
+  private var shutdownFutureOpt: Option[Future[Done]] = None
+
   /**
    * Send a request through the corresponding pool. If the pool is not running, it will be started
    * automatically. If it is shutting down, it will restart as soon as the shutdown operation is
@@ -60,9 +62,13 @@ private[http] final class PoolGateway(gatewayRef: ActorRef, val hcps: HostConnec
    * @return a Future completed when the pool has been shutdown.
    */
   def shutdown(): Future[Done] = {
-    val shutdownCompletedPromise = Promise[Done]()
-    gatewayRef ! Shutdown(this, shutdownCompletedPromise)
-    shutdownCompletedPromise.future
+    shutdownFutureOpt.getOrElse {
+      val shutdownCompletedPromise = Promise[Done]()
+      gatewayRef ! Shutdown(this, shutdownCompletedPromise)
+      val future = shutdownCompletedPromise.future
+      shutdownFutureOpt = Some(future)
+      future
+    }
   }
 
   override def toString = s"PoolGateway(hcps = $hcps)"
