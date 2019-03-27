@@ -91,7 +91,10 @@ For example one route might start with matching the `path` of the request, only 
 narrowing it down to only handle HTTP `get` requests and then `complete` those with a string literal, which
 will be sent back as a HTTP OK with the string as response body.
 
-The @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@apidoc[Route]] created using the Route DSL is then "bound" to a port to start serving HTTP requests:
+The
+@scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]
+@java[@javadoc[Route](akka.http.scaladsl.server.Route)]
+created using the Route DSL is then "bound" to a port to start serving HTTP requests:
 
 Scala
 :   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #minimal-routing-example }
