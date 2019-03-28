@@ -706,7 +706,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
       Flow[ByteString]
         .via(connectionKillSwitch.flow[ByteString])
         .viaMat(ClientTransport.TCP.connectTo(host, port, settings))(Keep.right)
-        .viaMat(connectionKillSwitch.flow[ByteString])(Keep.left)
+        .via(connectionKillSwitch.flow[ByteString])
   }
 
   /** Transport that uses actual top-level Http APIs to establish a plaintext HTTP connection */

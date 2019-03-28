@@ -521,7 +521,7 @@ private[client] object NewHostConnectionPool {
           val connection =
             Source.fromGraph(requestOut.source)
               .viaMat(connectionFlow)(Keep.right)
-              .toMat(responseIn.sink)(Keep.left)
+              .to(responseIn.sink)
               .run()(subFusingMaterializer)
 
           val slotCon = new SlotConnection(slot, requestOut, responseIn)

@@ -118,7 +118,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     Flow.fromGraph(
       Flow[HttpRequest]
         .watchTermination()(Keep.right)
-        .viaMat(handler)(Keep.left)
+        .via(handler)
         .watchTermination() { (termWatchBefore, termWatchAfter) =>
           // flag termination when the user handler has gotten (or has emitted) termination
           // signals in both directions
@@ -239,7 +239,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
                 (done, connectionTerminator)
             }
             .addAttributes(prepareAttributes(settings, incoming))
-            .joinMat(incoming.flow)(Keep.left)
+            .join(incoming.flow)
             .mapMaterializedValue {
               case (future, connectionTerminator) =>
                 masterTerminator.registerConnection(connectionTerminator)(fm.executionContext)
@@ -762,7 +762,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     val port = uri.effectivePort
 
     webSocketClientLayer(request, settings, log)
-      .joinMat(_outgoingTlsConnectionLayer(host, port, settings.withLocalAddressOverride(localAddress), ctx, log))(Keep.left)
+      .join(_outgoingTlsConnectionLayer(host, port, settings.withLocalAddressOverride(localAddress), ctx, log))
   }
 
   /**
