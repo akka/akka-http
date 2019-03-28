@@ -1,0 +1,3 @@
+# @InternalApi
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.caching.LfuCache.store")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.caching.LfuCache.this")
