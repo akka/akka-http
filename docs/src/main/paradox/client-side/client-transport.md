@@ -21,10 +21,10 @@ transport layer itself.
 
 ## Configuring Client Transports
 
-A @unidoc[ClientTransport] can be configured in the @unidoc[ClientConnectionSettings]. Right now, this is not possible
+A @apidoc[ClientTransport] can be configured in the @apidoc[ClientConnectionSettings]. Right now, this is not possible
 through config files but only by code. First, use `ClientConnectionSettings.withTransport` to configure a transport,
-then use `ConnectionPoolSettings.withConnectionSettings`. @unidoc[ClientConnectionSettings] can be passed to all
-client-side entry points in @scala[@unidoc[Http$]]@java[@unidoc[Http]].
+then use `ConnectionPoolSettings.withConnectionSettings`. @apidoc[ClientConnectionSettings] can be passed to all
+client-side entry points in @scala[@apidoc[Http$]]@java[@apidoc[Http]].
 
 ## Predefined Transports
 
@@ -71,7 +71,7 @@ Java
 
 ### Use HTTP(S) proxy that requires authentication
 
-In order to use a HTTP(S) proxy that requires authentication, you need to provide @unidoc[HttpCredentials] that will be used
+In order to use a HTTP(S) proxy that requires authentication, you need to provide @apidoc[HttpCredentials] that will be used
 when making the CONNECT request to the proxy:
 
 

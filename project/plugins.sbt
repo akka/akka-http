@@ -19,6 +19,7 @@ addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.1")
 addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.2")
 addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.4")
 addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.18")
+addSbtPlugin("com.lightbend.paradox" % "sbt-paradox-apidoc" % "0.1+6-ff00ea16")
 addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.13")
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.0.0")
 

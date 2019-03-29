@@ -13,7 +13,7 @@
 
 Wraps the inner route with OAuth Bearer Token authentication support using a given @scala[`AsyncAuthenticatorPF[T]`]@java[`AsyncAuthenticatorPF<T>`].
 
-Provides support for extracting the so-called "*Bearer Token*" from the @unidoc[Authorization] HTTP Header,
+Provides support for extracting the so-called "*Bearer Token*" from the @apidoc[Authorization] HTTP Header,
 which is used to initiate an OAuth2 authorization.
 
 @@@ warning
@@ -24,7 +24,7 @@ by extracting the needed token from the HTTP headers.
 Refer to @ref[authenticateOAuth2](authenticateOAuth2.md) for a detailed description of this directive.
 
 Its semantics are equivalent to `authenticateOAuth2PF` 's, where not handling a case in the Partial Function (PF)
-leaves the request to be rejected with a @unidoc[AuthenticationFailedRejection] rejection.
+leaves the request to be rejected with a @apidoc[AuthenticationFailedRejection] rejection.
 
 See also @ref[authenticateOAuth2PF](authenticateOAuth2PF.md) if the authorization operation is rather quick, and does not have to execute asynchronously.
 

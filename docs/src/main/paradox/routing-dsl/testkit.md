@@ -38,8 +38,8 @@ REQUEST ~> ROUTE ~> check {
 }
 ```
 
-In this template *REQUEST* is an expression evaluating to an @unidoc[HttpRequest] instance.
-In most cases your test will, in one way or another, extend from @unidoc[RouteTest] which itself mixes in the
+In this template *REQUEST* is an expression evaluating to an @apidoc[HttpRequest] instance.
+In most cases your test will, in one way or another, extend from @apidoc[RouteTest] which itself mixes in the
 `akka.http.scaladsl.client.RequestBuilding` trait, which gives you a concise and convenient way of constructing
 test requests. <a id="^1" href="#1">[1]</a>
 
@@ -69,14 +69,14 @@ The following inspectors are defined:
 |`contentType: ContentType`                   | Identical to `responseEntity.contentType`                                                                                                                           |
 |`definedCharset: Option[HttpCharset]`        | Identical to `contentType.definedCharset`                                                                                                                           |
 |`entityAs[T :FromEntityUnmarshaller]: T`     | Unmarshals the response entity using the in-scope `FromEntityUnmarshaller` for the given type. Any errors in the process trigger a test failure.                    |
-|`handled: Boolean`                           | Indicates whether the route produced an @unidoc[HttpResponse] for the request. If the route rejected the request `handled` evaluates to `false`.                           |
+|`handled: Boolean`                           | Indicates whether the route produced an @apidoc[HttpResponse] for the request. If the route rejected the request `handled` evaluates to `false`.                           |
 |`header(name: String): Option[HttpHeader]`   | Returns the response header with the given name or `None` if no such header is present in the response.                                                             |
 |`header[T <: HttpHeader]: Option[T]`         | Identical to `response.header[T]`                                                                                                                                   |
 |`headers: Seq[HttpHeader]`                   | Identical to `response.headers`                                                                                                                                     |
 |`mediaType: MediaType`                       | Identical to `contentType.mediaType`                                                                                                                                |
 |`rejection: Rejection`                       | The rejection produced by the route. If the route did not produce exactly one rejection a test failure is triggered.                                                |
 |`rejections: Seq[Rejection]`                 | The rejections produced by the route. If the route did not reject the request a test failure is triggered.                                                          |
-|`response: HttpResponse`                     | The @unidoc[HttpResponse] returned by the route. If the route did not return an @unidoc[HttpResponse] instance (e.g. because it rejected the request) a test failure is triggered.|
+|`response: HttpResponse`                     | The @apidoc[HttpResponse] returned by the route. If the route did not return an @apidoc[HttpResponse] instance (e.g. because it rejected the request) a test failure is triggered.|
 |`responseAs[T: FromResponseUnmarshaller]: T` | Unmarshals the response entity using the in-scope `FromResponseUnmarshaller` for the given type. Any errors in the process trigger a test failure.                  |
 |`responseEntity: HttpEntity`                 | Returns the response entity.                                                                                                                                        |
 |`status: StatusCode`                         | Identical to `response.status`                                                                                                                                      |
@@ -119,7 +119,7 @@ Java
 
 The testkit supports a fluent DSL to write compact assertions on the response by chaining assertions
 using "dot-syntax". To simplify working with streamed responses the entity of the response is first "strictified", i.e.
-entity data is collected into a single @unidoc[akka.util.ByteString] and provided the entity is supplied as an `HttpEntityStrict`. This
+entity data is collected into a single @apidoc[akka.util.ByteString] and provided the entity is supplied as an `HttpEntityStrict`. This
 allows to write several assertions against the same entity data which wouldn't (necessarily) be possible for the
 streamed version.
 
@@ -130,9 +130,9 @@ Currently, these methods are defined on `TestResponse` to assert on the response
 |Inspector                                                           | Description                                                                                                                         |
 |--------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------|
 |`assertStatusCode(int expectedCode)`                                | Asserts that the numeric response status code equals the expected one                                                               |
-|`assertStatusCode(StatusCode expectedCode)`                         | Asserts that the response @unidoc[StatusCode] equals the expected one                                                                      |
+|`assertStatusCode(StatusCode expectedCode)`                         | Asserts that the response @apidoc[StatusCode] equals the expected one                                                                      |
 |`assertMediaType(String expectedType)`                              | Asserts that the media type part of the response's content type matches the given String                                            |
-|`assertMediaType(MediaType expectedType)`                           | Asserts that the media type part of the response's content type matches the given @unidoc[MediaType]                                       |
+|`assertMediaType(MediaType expectedType)`                           | Asserts that the media type part of the response's content type matches the given @apidoc[MediaType]                                       |
 |`assertEntity(String expectedStringContent)`                        | Asserts that the entity data interpreted as UTF8 equals the expected String                                                         |
 |`assertEntityBytes(ByteString expectedBytes)`                       | Asserts that the entity data bytes equal the expected ones                                                                          |
 |`assertEntityAs(Unmarshaller<T> unmarshaller, expectedValue: T)`    | Asserts that the entity data if unmarshalled with the given marshaller equals the given value                                       |
@@ -163,7 +163,7 @@ with HTTP response parts or rejections. Sometimes, however, you will want to ver
 You do this by calling the `Route.seal()` method. The `Route.seal()` method applies the logic of the @scala[in-scope]
 @ref[ExceptionHandler](exception-handling.md) and @ref[RejectionHandler](rejections.md#the-rejectionhandler)
 @java[passed as method arguments] to all exceptions and rejections coming back from the
-route, and translates them to the respective @unidoc[HttpResponse].
+route, and translates them to the respective @apidoc[HttpResponse].
 
 Note that explicit call on the `Route.seal` method is needed in test code, but in your application code it is not necessary.
 As described in @ref[Sealing a Route](routes.md#sealing-a-route), your application code only needs to bring

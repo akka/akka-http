@@ -10,7 +10,7 @@
 
 ## Description
 
-Extracts the entities data bytes as @unidoc[Source[ByteString, \_]] from the @unidoc[RequestContext].
+Extracts the entities data bytes as @apidoc[Source[ByteString, \_]] from the @apidoc[RequestContext].
 
 The directive returns a stream containing the request data bytes.
 

@@ -20,7 +20,7 @@ The signature shown is simplified, the real signature uses magnets. <a id="^1" h
 
 ## Description
 
-@scala[Logs the request using the supplied `LoggingMagnet[HttpRequest => Unit]` using the @unidoc[LoggingAdapter] of the @unidoc[RequestContext]. The `LoggingMagnet` is a wrapped
+@scala[Logs the request using the supplied `LoggingMagnet[HttpRequest => Unit]` using the @apidoc[LoggingAdapter] of the @apidoc[RequestContext]. The `LoggingMagnet` is a wrapped
 function `HttpRequest => Unit` that can be implicitly created from the different constructors shown above. These
 constructors build a `LoggingMagnet` from these components:]
 @java[Logs the request. The directive is available with the following parameters:]
@@ -29,12 +29,12 @@ constructors build a `LoggingMagnet` from these components:]
  * A marker to prefix each log message with.
  * A log level.
  * A `show` function that calculates a string representation for a request.
- * A function that creates a @unidoc[LogEntry] which is a combination of the elements above.
+ * A function that creates a @apidoc[LogEntry] which is a combination of the elements above.
 @@@
 @@@ div { .group-java }
  * A marker to prefix each log message with.
  * A log level.
- * A function that creates a @unidoc[LogEntry] which is a combination of the elements above.
+ * A function that creates a @apidoc[LogEntry] which is a combination of the elements above.
 @@@
 
 @scala[It is also possible to use any other function `HttpRequest => Unit` for logging by wrapping it with `LoggingMagnet`.
