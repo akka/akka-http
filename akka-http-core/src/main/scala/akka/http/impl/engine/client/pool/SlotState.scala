@@ -303,7 +303,8 @@ private[pool] object SlotState {
 
     override def onTimeout(ctx: SlotContext): SlotState = {
       ctx.warning(
-        s"Response entity was not subscribed after $stateTimeout. Make sure to read the response entity body or call `discardBytes()` on it. " +
+        s"Response entity was not subscribed after $stateTimeout. Make sure to 1) read the response entity body or call `discardBytes()` on it. " +
+          s"2) eliminate the blocking operation in the stream pipeline. " +
           s"${ongoingRequest.request.debugString} -> ${ongoingResponse.debugString}")
       Unconnected
     }
