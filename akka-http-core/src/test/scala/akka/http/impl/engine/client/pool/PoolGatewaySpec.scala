@@ -1,16 +1,20 @@
+/*
+ * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.http.impl.engine.client.pool
 
 import akka.Done
 import akka.actor.ActorRef
 import akka.http.impl.engine.client.PoolGateway
-import akka.http.impl.engine.client.PoolMasterActor.{SendRequest, Shutdown, StartPool}
-import akka.http.impl.settings.{ConnectionPoolSetup, HostConnectionPoolSetup}
+import akka.http.impl.engine.client.PoolMasterActor.{ SendRequest, Shutdown, StartPool }
+import akka.http.impl.settings.{ ConnectionPoolSetup, HostConnectionPoolSetup }
 import akka.http.scaladsl.ConnectionContext
-import akka.http.scaladsl.model.{HttpMethods, HttpRequest, HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.{ HttpMethods, HttpRequest, HttpResponse, StatusCodes }
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.ActorMaterializer
 import akka.testkit.TestActor.AutoPilot
-import akka.testkit.{AkkaSpec, TestProbe}
+import akka.testkit.{ AkkaSpec, TestProbe }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -51,7 +55,7 @@ class PoolGatewaySpec extends AkkaSpec {
       val firstFuture = poolGateway.shutdown()
       val secondFuture = poolGateway.shutdown()
 
-      firstFuture shouldBe theSameInstanceAs (secondFuture)
+      firstFuture shouldBe theSameInstanceAs(secondFuture)
     }
   }
 
@@ -75,7 +79,7 @@ class PoolGatewaySpec extends AkkaSpec {
       Await.result(poolGateway.apply(httpRequest), 3.seconds) shouldBe httpResponse
 
       gatewayActorProbe.expectMsgPF() {
-        case SendRequest(gateway, request, _, _) if gateway == poolGateway && request == httpRequest => ()
+        case SendRequest(gateway, request, _, _) if gateway == poolGateway && request == httpRequest ⇒ ()
       }
     }
   }
