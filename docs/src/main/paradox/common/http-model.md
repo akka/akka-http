@@ -28,11 +28,11 @@ the type plus a trailing plural 's'.
 For example:
 
  * Defined @apidoc[HttpMethod] instances @scala[live in]@java[are defined as static fields of] the @scala[@apidoc[HttpMethods$]]@java[@apidoc[HttpMethods]] @scala[object]@java[class].
- * Defined @apidoc[HttpCharset] instances @scala[live in]@java[are defined as static fields of] the @scala[@apidoc[HttpCharsets$]]@java[@apidoc[HttpCharsets]] @scala[object]@java[class].
- * Defined @apidoc[HttpEncoding] instances @scala[live in]@java[are defined as static fields of] the @scala[@apidoc[HttpEncodings$]]@java[@apidoc[HttpEncodings]] @scala[object]@java[class].
- * Defined @apidoc[HttpProtocol] instances @scala[live in]@java[are defined as static fields of] the @scala[@apidoc[HttpProtocols$]]@java[@apidoc[HttpProtocols]] @scala[object]@java[class].
- * Defined @apidoc[MediaType] instances @scala[live in]@java[are defined as static fields of] the @scala[@apidoc[MediaTypes$]]@java[@apidoc[MediaTypes]] @scala[object]@java[class].
- * Defined @apidoc[StatusCode] instances @scala[live in]@java[are defined as static fields of] the @scala[@apidoc[StatusCodes$]]@java[@apidoc[StatusCodes]] @scala[object]@java[class].
+ * Defined @apidoc[HttpCharset] instances @scala[live in]@java[are defined as static fields of] the @apidoc[HttpCharsets$] @scala[object]@java[class].
+ * Defined @apidoc[HttpEncoding] instances @scala[live in]@java[are defined as static fields of] the @apidoc[HttpEncodings$] @scala[object]@java[class].
+ * Defined @apidoc[HttpProtocol] instances @scala[live in]@java[are defined as static fields of] the @apidoc[HttpProtocols$] @scala[object]@java[class].
+ * Defined @apidoc[MediaType] instances @scala[live in]@java[are defined as static fields of] the @apidoc[MediaTypes$] @scala[object]@java[class].
+ * Defined @apidoc[StatusCode] instances @scala[live in]@java[are defined as static fields of] the @apidoc[StatusCodes$] @scala[object]@java[class].
 
 ## HttpRequest
 
