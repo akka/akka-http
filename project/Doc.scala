@@ -31,7 +31,15 @@ object Scaladoc extends AutoPlugin {
 
   override lazy val projectSettings =
     inTask(doc)(Seq(
-      scalacOptions in Compile ++= scaladocOptions(version.value, (baseDirectory in ThisBuild).value),
+      scalacOptions in Compile ++=
+        scaladocOptions(
+          version.value,
+          (baseDirectory in ThisBuild).value,
+          libraryDependencies.value
+            .filter(_.configurations.contains("plugin->default(compile)"))
+            // Can we get the from the classpath somehow?
+            .map(module => file(s"~/.ivy2/cache/${module.organization}/${module.name}_${scalaVersion.value}/jars/${module.name}_${scalaVersion.value}-${module.revision}.jar"))
+        ),
       autoAPIMappings := CliOptions.scaladocAutoAPI.get
     )) ++
     Seq(validateDiagrams in Compile := true) ++
@@ -49,7 +57,7 @@ object Scaladoc extends AutoPlugin {
       publishArtifact in (Compile, packageDoc) := scalaVersion.value != "2.13.0-M5"
     )
 
-  def scaladocOptions(ver: String, base: File): List[String] = {
+  def scaladocOptions(ver: String, base: File, plugins: Seq[File]): List[String] = {
     val urlString = GitHub.url(ver) + "/€{FILE_PATH}.scala"
     val opts = List(
       "-implicits",
@@ -59,8 +67,9 @@ object Scaladoc extends AutoPlugin {
       "-doc-title", "Akka HTTP",
       "-doc-version", ver,
       // Workaround https://issues.scala-lang.org/browse/SI-10028
-      "-skip-packages", "akka.pattern:org.specs2"
-    )
+      "-skip-packages", "akka.pattern:org.specs2",
+    ) ++
+      plugins.map(plugin => "-Xplugin:" + plugin)
     CliOptions.scaladocDiagramsEnabled.ifTrue("-diagrams").toList ::: opts
   }
 
