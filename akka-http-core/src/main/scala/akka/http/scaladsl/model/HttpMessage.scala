@@ -271,17 +271,27 @@ object HttpMessage {
  * The immutable model HTTP request model.
  */
 final class HttpRequest(
-  val method:   HttpMethod,
-  val uri:      Uri,
-  val headers:  immutable.Seq[HttpHeader],
-  val entity:   RequestEntity,
-  val protocol: HttpProtocol,
-  val stringRepresentation: HttpRequest ⇒ String = { request ⇒
-    import request._
-    s"""HttpRequest(${_1},${_2},${_3},${_4},${_5})"""
-  }
+  val method:               HttpMethod,
+  val uri:                  Uri,
+  val headers:              immutable.Seq[HttpHeader],
+  val entity:               RequestEntity,
+  val protocol:             HttpProtocol,
+  val stringRepresentation: HttpRequest ⇒ String
 ) extends jm.HttpRequest
   with HttpMessage {
+
+  def this(
+    method:   HttpMethod,
+    uri:      Uri,
+    headers:  immutable.Seq[HttpHeader],
+    entity:   RequestEntity,
+    protocol: HttpProtocol
+  ) = this(method, uri, headers, entity, protocol,
+    stringRepresentation = { request: HttpRequest ⇒
+      import request._
+      s"""HttpRequest(${_1},${_2},${_3},${_4},${_5})"""
+    }
+  )
 
   HttpRequest.verifyUri(uri)
   require(entity.isKnownEmpty || method.isEntityAccepted, s"Requests with method '${method.value}' must have an empty entity")
@@ -362,7 +372,16 @@ final class HttpRequest(
     entity:               RequestEntity             = entity,
     protocol:             HttpProtocol              = protocol,
     stringRepresentation: HttpRequest ⇒ String      = stringRepresentation
-  ) = new HttpRequest(method, uri, headers, entity, protocol, stringRepresentation)
+  ): HttpRequest = new HttpRequest(method, uri, headers, entity, protocol, stringRepresentation)
+
+  @deprecated("for binary-compatibility", "10.1.8")
+  def copy(
+    method:   HttpMethod,
+    uri:      Uri,
+    headers:  immutable.Seq[HttpHeader],
+    entity:   RequestEntity,
+    protocol: HttpProtocol): HttpRequest =
+    copy(method, uri, headers, entity, protocol, stringRepresentation)
 
   override def hashCode(): Int = {
     var result = HashCode.SEED
@@ -468,16 +487,25 @@ object HttpRequest {
  * The immutable HTTP response model.
  */
 final class HttpResponse(
-  val status:   StatusCode,
-  val headers:  immutable.Seq[HttpHeader],
-  val entity:   ResponseEntity,
-  val protocol: HttpProtocol,
-  val stringRepresentation: HttpResponse ⇒ String = { response ⇒
-    import response._
-    s"""HttpResponse(${_1},${_2},${_3},${_4})"""
-  }
+  val status:               StatusCode,
+  val headers:              immutable.Seq[HttpHeader],
+  val entity:               ResponseEntity,
+  val protocol:             HttpProtocol,
+  val stringRepresentation: HttpResponse ⇒ String
 ) extends jm.HttpResponse
   with HttpMessage {
+
+  def this(
+    status:   StatusCode,
+    headers:  immutable.Seq[HttpHeader],
+    entity:   ResponseEntity,
+    protocol: HttpProtocol
+  ) = this(status, headers, entity, protocol,
+    stringRepresentation = { response: HttpResponse ⇒
+      import response._
+      s"""HttpResponse(${_1},${_2},${_3},${_4})"""
+    }
+  )
 
   require(entity.isKnownEmpty || status.allowsEntity, "Responses with this status code must have an empty entity")
   require(
@@ -523,7 +551,15 @@ final class HttpResponse(
     entity:               ResponseEntity            = entity,
     protocol:             HttpProtocol              = protocol,
     stringRepresentation: HttpResponse ⇒ String     = stringRepresentation
-  ) = new HttpResponse(status, headers, entity, protocol, stringRepresentation)
+  ): HttpResponse = new HttpResponse(status, headers, entity, protocol, stringRepresentation)
+
+  @deprecated("for binary-compatibility", "10.1.8")
+  def copy(
+    status:   StatusCode,
+    headers:  immutable.Seq[HttpHeader],
+    entity:   ResponseEntity,
+    protocol: HttpProtocol
+  ): HttpResponse = copy(status, headers, entity, protocol)
 
   override def equals(obj: scala.Any): Boolean = obj match {
     case HttpResponse(_status, _headers, _entity, _protocol) ⇒

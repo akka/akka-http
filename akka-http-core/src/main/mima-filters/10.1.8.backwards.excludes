@@ -1,0 +1,6 @@
+# HttpMessage declares new methods to represent and set its string representation
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.withStringRepresentation")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpMessage.stringRepresentation")
+
+# jm.HttpMessage declares new methods to set its string representation
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.HttpMessage#MessageTransformations.withStringRepresentation")
