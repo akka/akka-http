@@ -11,7 +11,7 @@
 ## Description
 
 Handles WebSocket requests with the given handler and rejects other requests with an
-@apidoc[ExpectedWebSocketRequestRejection].
+@apidoc[ExpectedWebSocketRequestRejection$].
 
 If the `subprotocol` parameter is @scala[None]@java[@javadoc:[empty](java.util.optional#empty--)] any WebSocket request is accepted. If the `subprotocol` parameter is
 @scala[`Some(protocol)`]@java[a non-empty @javadoc:[Optional](java.util.Optional)] a WebSocket request is only accepted if the list of subprotocols supported by the client (as
