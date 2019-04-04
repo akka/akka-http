@@ -27,6 +27,13 @@ private[http] final class PoolGateway(gatewayRef: ActorRef, val hcps: HostConnec
 
   private val shutdownCompletedPromise: Promise[Done] = Promise[Done]()
 
+  {
+    implicit val ec = fm.executionContext
+    shutdownCompletedPromise.future.foreach { _ ⇒
+      gatewayRef ! Shutdown(this, shutdownCompletedPromise)
+    }
+  }
+
   /**
    * Send a request through the corresponding pool. If the pool is not running, it will be started
    * automatically. If it is shutting down, it will restart as soon as the shutdown operation is
@@ -62,13 +69,8 @@ private[http] final class PoolGateway(gatewayRef: ActorRef, val hcps: HostConnec
    * @return a Future completed when the pool has been shutdown.
    */
   def shutdown(): Future[Done] = {
-    implicit val ec = fm.executionContext
-    val shutdownFuture = shutdownCompletedPromise.future
-    shutdownFuture.foreach { _ ⇒
-      gatewayRef ! Shutdown(this, shutdownCompletedPromise)
-    }
     shutdownCompletedPromise.trySuccess(Done)
-    shutdownFuture
+    shutdownCompletedPromise.future
   }
 
   override def toString = s"PoolGateway(hcps = $hcps)"
