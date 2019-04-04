@@ -23,15 +23,9 @@ class PoolGatewaySpec extends AkkaSpec {
   implicit val materializer = ActorMaterializer()
 
   "PoolGateway#shutdown" should {
-    "proxy shutdown request to PoolMasterActor" in {
+    "proxy request to PoolMasterActor" in {
       val gatewayActorProbe = TestProbe()
-      gatewayActorProbe.setAutoPilot(new AutoPilot {
-        override def run(sender: ActorRef, msg: Any): AutoPilot = msg match {
-          case Shutdown(_, shutdownPromise) ⇒
-            shutdownPromise.success(Done)
-            this
-        }
-      })
+
       val hcps = HostConnectionPoolSetup("localhost", 8080,
         ConnectionPoolSetup(ConnectionPoolSettings(system), ConnectionContext.noEncryption(), log))
       val poolGateway = new PoolGateway(gatewayActorProbe.ref, hcps, PoolGateway.UniqueGateway(1))
@@ -45,7 +39,7 @@ class PoolGatewaySpec extends AkkaSpec {
       Await.result(result, 3.seconds) shouldBe Done
     }
 
-    "return same future" in {
+    "return same future on each call" in {
       val gatewayActorProbe = TestProbe()
 
       val hcps = HostConnectionPoolSetup("localhost", 8080,
@@ -68,7 +62,7 @@ class PoolGatewaySpec extends AkkaSpec {
       gatewayActorProbe.setAutoPilot(new AutoPilot {
         override def run(sender: ActorRef, msg: Any): AutoPilot = msg match {
           case SendRequest(_, _, requestPromise, _) ⇒
-            requestPromise.success(httpResponse)
+            requestPromise.trySuccess(httpResponse)
             this
         }
       })
