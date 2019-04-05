@@ -120,7 +120,7 @@ class ModeledCustomHeaderSpec extends RoutingSpec {
       }
 
       Get().withHeaders(RawHeader("somethingElse", "TheKey")) ~> routes ~> check {
-        rejection should ===(MissingHeaderRejection("ApiTokenHeader"))
+        rejection should ===(MissingHeaderRejection("apiKey"))
       }
 
       Get().withHeaders(ApiTokenHeader("TheKey")) ~> routes ~> check {

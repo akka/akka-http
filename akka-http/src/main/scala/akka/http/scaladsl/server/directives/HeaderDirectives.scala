@@ -186,6 +186,7 @@ object HeaderMagnet extends LowPriorityHeaderMagnetImplicits {
       override def extractPF = {
         case h if h.is(companion.lowercaseName) ⇒ companion.apply(h.value)
       }
+      override def headerName: String = companion.name
     }
 
 }
