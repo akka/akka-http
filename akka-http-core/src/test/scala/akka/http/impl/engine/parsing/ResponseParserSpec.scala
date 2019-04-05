@@ -42,6 +42,7 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends FreeSpe
 
   implicit val materializer = ActorMaterializer()
   val ServerOnTheMove = StatusCodes.custom(331, "Server on the move")
+  val TotallyUnrecognized = StatusCodes.custom(456, "Totally unrecognized")
 
   s"The response parsing logic should (mode: $mode)" - {
     "properly parse" - {
@@ -74,7 +75,7 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends FreeSpe
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
-      "a response with a custom status code" in new Test {
+      "a response with a registered custom status code" in new Test {
         override def parserSettings: ParserSettings =
           super.parserSettings.withCustomStatusCodes(ServerOnTheMove)
 
@@ -82,6 +83,17 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends FreeSpe
           |Content-Length: 0
           |
           |""" should parseTo(HttpResponse(ServerOnTheMove))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
+      "a response with an unrecognized status code" in new Test {
+        // A client must understand the class of any status code, as indicated by the first digit, and
+        // treat an unrecognized status code as being equivalent to the x00 status code of that class
+        // https://tools.ietf.org/html/rfc7231#section-6
+        """HTTP/1.1 456 Totally unrecognized
+          |Content-Length: 0
+          |
+          |""" should parseTo(HttpResponse(TotallyUnrecognized))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
