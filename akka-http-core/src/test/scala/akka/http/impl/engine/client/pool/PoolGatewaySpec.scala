@@ -50,7 +50,7 @@ class PoolGatewaySpec extends AkkaSpec {
       val secondFuture = poolGateway.shutdown()
 
       gatewayActorProbe.expectMsgType[Shutdown]
-      gatewayActorProbe.expectNoMessage()
+      gatewayActorProbe.expectNoMessage(500.milliseconds)
 
       firstFuture shouldBe theSameInstanceAs(secondFuture)
     }
