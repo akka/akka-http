@@ -4,6 +4,8 @@
 
 package akka.http.scaladsl.unmarshalling
 
+import java.util.UUID
+
 import akka.http.scaladsl.unmarshalling.Unmarshaller.EitherUnmarshallingException
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import akka.http.scaladsl.testkit.ScalatestUtils
@@ -39,6 +41,10 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
     "booleanUnmarshaller should unmarshal '1' => true '0' => false" in {
       Unmarshal("1").to[Boolean] should evaluateTo(true)
       Unmarshal("0").to[Boolean] should evaluateTo(false)
+    }
+    "uuidUnmarshaller should unmarshal valid uuid" in {
+      val uuid = UUID.randomUUID()
+      Unmarshal(uuid.toString).to[UUID] should evaluateTo(uuid)
     }
   }
 
