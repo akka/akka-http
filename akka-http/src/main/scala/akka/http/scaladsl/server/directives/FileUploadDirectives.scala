@@ -7,8 +7,8 @@ package akka.http.scaladsl.server.directives
 import java.io.File
 
 import akka.annotation.ApiMayChange
-import akka.http.scaladsl.server.{ Directive, Directive1, MissingFormFieldRejection }
-import akka.http.scaladsl.model.{ ContentType, Multipart }
+import akka.http.scaladsl.server.{Directive, Directive1, MissingFormFieldRejection}
+import akka.http.scaladsl.model.{ContentType, Multipart}
 import akka.util.ByteString
 
 import scala.collection.immutable
@@ -16,6 +16,9 @@ import scala.concurrent.Future
 import akka.stream.scaladsl._
 import akka.http.javadsl
 import akka.http.scaladsl.server.RouteResult
+import akka.stream.IOResult
+
+import scala.util.{Failure, Success}
 
 /**
  * @groupname fileupload File upload directives
@@ -60,7 +63,10 @@ trait FileUploadDirectives {
           val uploadedF: Future[(FileInfo, File)] =
             bytes
               .runWith(FileIO.toPath(dest.toPath))
-              .map(_ => (fileInfo, dest))
+              .map {
+                case IOResult(_, Success(_))  ⇒ (fileInfo, dest)
+                case IOResult(_, Failure(ex)) ⇒ throw ex
+              }
               .recoverWith {
                 case ex =>
                   dest.delete()
@@ -97,8 +103,9 @@ trait FileUploadDirectives {
             val fileInfo = FileInfo(part.name, part.filename.get, part.entity.contentType)
             val dest = destFn(fileInfo)
 
-            part.entity.dataBytes.runWith(FileIO.toPath(dest.toPath)).map { _ =>
-              (fileInfo, dest)
+            part.entity.dataBytes.runWith(FileIO.toPath(dest.toPath)).map {
+              case IOResult(_, Success(_))  ⇒ (fileInfo, dest)
+              case IOResult(_, Failure(ex)) ⇒ throw ex
             }
           }
 
