@@ -7,18 +7,17 @@ package akka.http.scaladsl.server.directives
 import java.io.File
 
 import akka.annotation.ApiMayChange
-import akka.http.scaladsl.server.{Directive, Directive1, MissingFormFieldRejection}
-import akka.http.scaladsl.model.{ContentType, Multipart}
+import akka.http.scaladsl.server.{ Directive, Directive1, MissingFormFieldRejection }
+import akka.http.scaladsl.model.{ ContentType, Multipart }
 import akka.util.ByteString
 
 import scala.collection.immutable
 import scala.concurrent.Future
+import scala.util.{ Failure, Success }
 import akka.stream.scaladsl._
 import akka.http.javadsl
 import akka.http.scaladsl.server.RouteResult
 import akka.stream.IOResult
-
-import scala.util.{Failure, Success}
 
 /**
  * @groupname fileupload File upload directives
