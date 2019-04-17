@@ -331,8 +331,11 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
       val `application/custom`: WithFixedCharset =
         MediaType.customWithFixedCharset("application", "custom", HttpCharsets.`UTF-8`)
 
+      val `APPLICATION/CuStOm+JsOn`: WithFixedCharset =
+        MediaType.customWithFixedCharset("APPLICATION", "CuStOm+JsOn", HttpCharsets.`UTF-8`)
+
       override protected def parserSettings: ParserSettings =
-        super.parserSettings.withCustomMediaTypes(`application/custom`)
+        super.parserSettings.withCustomMediaTypes(`application/custom`, `APPLICATION/CuStOm+JsOn`)
 
       """POST / HTTP/1.1
         |Host: ping
@@ -345,6 +348,30 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
           "/",
           List(Host("ping")),
           HttpEntity.empty(`application/custom`)))
+
+      """POST / HTTP/1.1
+        |Host: ping
+        |Content-Type: application/custom+json
+        |Content-Length: 0
+        |
+        |""" should parseTo(
+        HttpRequest(
+          POST,
+          "/",
+          List(Host("ping")),
+          HttpEntity.empty(`APPLICATION/CuStOm+JsOn`)))
+
+      """POST / HTTP/1.1
+        |Host: ping
+        |Content-Type: APPLICATION/CUSTOM+JSON
+        |Content-Length: 0
+        |
+        |""" should parseTo(
+        HttpRequest(
+          POST,
+          "/",
+          List(Host("ping")),
+          HttpEntity.empty(`APPLICATION/CuStOm+JsOn`)))
 
       """POST / HTTP/1.1
         |Host: ping

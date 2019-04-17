@@ -119,10 +119,10 @@ object MediaType {
 
   def customBinary(mainType: String, subType: String, comp: Compressibility, fileExtensions: List[String] = Nil,
                    params: Map[String, String] = Map.empty, allowArbitrarySubtypes: Boolean = false): Binary = {
-    require(mainType != "multipart", "Cannot create a MediaType.Multipart here, use `customMultipart` instead!")
-    require(allowArbitrarySubtypes || subType != "*", "Cannot create a MediaRange here, use `MediaRange.custom` instead!")
-    val _params = params
-    new Binary(renderValue(mainType, subType, params), mainType, subType, comp, fileExtensions) {
+    val (_params, _mainType, _subType) = (params, mainType.toRootLowerCase, subType.toRootLowerCase)
+    require(_mainType != "multipart", "Cannot create a MediaType.Multipart here, use `customMultipart` instead!")
+    require(allowArbitrarySubtypes || _subType != "*", "Cannot create a MediaRange here, use `MediaRange.custom` instead!")
+    new Binary(renderValue(_mainType, _subType, params), _mainType, _subType, comp, fileExtensions) {
       override def params = _params
       override def isApplication = mainType == "application"
       override def isAudio = mainType == "audio"
@@ -136,10 +136,10 @@ object MediaType {
   def customWithFixedCharset(mainType: String, subType: String, charset: HttpCharset, fileExtensions: List[String] = Nil,
                              params:                 Map[String, String] = Map.empty,
                              allowArbitrarySubtypes: Boolean             = false): WithFixedCharset = {
-    require(mainType != "multipart", "Cannot create a MediaType.Multipart here, use `customMultipart` instead!")
-    require(allowArbitrarySubtypes || subType != "*", "Cannot create a MediaRange here, use `MediaRange.custom` instead!")
-    val _params = params
-    new WithFixedCharset(renderValue(mainType, subType, params), mainType, subType, charset, fileExtensions) {
+    val (_params, _mainType, _subType) = (params, mainType.toRootLowerCase, subType.toRootLowerCase)
+    require(_mainType != "multipart", "Cannot create a MediaType.Multipart here, use `customMultipart` instead!")
+    require(allowArbitrarySubtypes || _subType != "*", "Cannot create a MediaRange here, use `MediaRange.custom` instead!")
+    new WithFixedCharset(renderValue(_mainType, _subType, params), _mainType, _subType, charset, fileExtensions) {
       override def params = _params
       override def isApplication = mainType == "application"
       override def isAudio = mainType == "audio"
@@ -153,10 +153,10 @@ object MediaType {
   def customWithOpenCharset(mainType: String, subType: String, fileExtensions: List[String] = Nil,
                             params:                 Map[String, String] = Map.empty,
                             allowArbitrarySubtypes: Boolean             = false): WithOpenCharset = {
-    require(mainType != "multipart", "Cannot create a MediaType.Multipart here, use `customMultipart` instead!")
-    require(allowArbitrarySubtypes || subType != "*", "Cannot create a MediaRange here, use `MediaRange.custom` instead!")
-    val _params = params
-    new NonMultipartWithOpenCharset(renderValue(mainType, subType, params), mainType, subType, fileExtensions) {
+    val (_params, _mainType, _subType) = (params, mainType.toRootLowerCase, subType.toRootLowerCase)
+    require(_mainType != "multipart", "Cannot create a MediaType.Multipart here, use `customMultipart` instead!")
+    require(allowArbitrarySubtypes || _subType != "*", "Cannot create a MediaRange here, use `MediaRange.custom` instead!")
+    new NonMultipartWithOpenCharset(renderValue(_mainType, _subType, params), _mainType, _subType, fileExtensions) {
       override def params = _params
       override def isApplication = mainType == "application"
       override def isAudio = mainType == "audio"
