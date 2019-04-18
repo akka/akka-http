@@ -4,6 +4,8 @@
 
 package akka.http.javadsl.model
 
+import akka.http.impl.util._
+
 /**
  * Represents an Http media-type. A media-type consists of a main-type and a sub-type.
  *
@@ -55,6 +57,12 @@ object MediaType {
 }
 
 trait MediaType {
+  /**
+   * We would like to be certain that both mainType and subType are lowercase
+   */
+  require(mainType.toRootLowerCase == mainType, s"Expected `${mainType.toRootLowerCase}` but got `$mainType`")
+  require(subType.toRootLowerCase == subType, s"Expected `${subType.toRootLowerCase}` but got `$subType`")
+
   /**
    * The main-type of this media-type.
    */

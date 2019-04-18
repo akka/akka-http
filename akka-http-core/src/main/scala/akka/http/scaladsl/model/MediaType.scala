@@ -119,10 +119,10 @@ object MediaType {
 
   def customBinary(mainType: String, subType: String, comp: Compressibility, fileExtensions: List[String] = Nil,
                    params: Map[String, String] = Map.empty, allowArbitrarySubtypes: Boolean = false): Binary = {
-    val (_params, _mainType, _subType) = (params, mainType.toRootLowerCase, subType.toRootLowerCase)
-    require(_mainType != "multipart", "Cannot create a MediaType.Multipart here, use `customMultipart` instead!")
-    require(allowArbitrarySubtypes || _subType != "*", "Cannot create a MediaRange here, use `MediaRange.custom` instead!")
-    new Binary(renderValue(_mainType, _subType, params), _mainType, _subType, comp, fileExtensions) {
+    require(mainType != "multipart", "Cannot create a MediaType.Multipart here, use `customMultipart` instead!")
+    require(allowArbitrarySubtypes || subType != "*", "Cannot create a MediaRange here, use `MediaRange.custom` instead!")
+    val _params = params
+    new Binary(renderValue(mainType, subType, params), mainType, subType, comp, fileExtensions) {
       override def params = _params
       override def isApplication = mainType == "application"
       override def isAudio = mainType == "audio"
@@ -136,10 +136,10 @@ object MediaType {
   def customWithFixedCharset(mainType: String, subType: String, charset: HttpCharset, fileExtensions: List[String] = Nil,
                              params:                 Map[String, String] = Map.empty,
                              allowArbitrarySubtypes: Boolean             = false): WithFixedCharset = {
-    val (_params, _mainType, _subType) = (params, mainType.toRootLowerCase, subType.toRootLowerCase)
-    require(_mainType != "multipart", "Cannot create a MediaType.Multipart here, use `customMultipart` instead!")
-    require(allowArbitrarySubtypes || _subType != "*", "Cannot create a MediaRange here, use `MediaRange.custom` instead!")
-    new WithFixedCharset(renderValue(_mainType, _subType, params), _mainType, _subType, charset, fileExtensions) {
+    require(mainType != "multipart", "Cannot create a MediaType.Multipart here, use `customMultipart` instead!")
+    require(allowArbitrarySubtypes || subType != "*", "Cannot create a MediaRange here, use `MediaRange.custom` instead!")
+    val _params = params
+    new WithFixedCharset(renderValue(mainType, subType, params), mainType, subType, charset, fileExtensions) {
       override def params = _params
       override def isApplication = mainType == "application"
       override def isAudio = mainType == "audio"
@@ -153,10 +153,10 @@ object MediaType {
   def customWithOpenCharset(mainType: String, subType: String, fileExtensions: List[String] = Nil,
                             params:                 Map[String, String] = Map.empty,
                             allowArbitrarySubtypes: Boolean             = false): WithOpenCharset = {
-    val (_params, _mainType, _subType) = (params, mainType.toRootLowerCase, subType.toRootLowerCase)
-    require(_mainType != "multipart", "Cannot create a MediaType.Multipart here, use `customMultipart` instead!")
-    require(allowArbitrarySubtypes || _subType != "*", "Cannot create a MediaRange here, use `MediaRange.custom` instead!")
-    new NonMultipartWithOpenCharset(renderValue(_mainType, _subType, params), _mainType, _subType, fileExtensions) {
+    require(mainType != "multipart", "Cannot create a MediaType.Multipart here, use `customMultipart` instead!")
+    require(allowArbitrarySubtypes || subType != "*", "Cannot create a MediaRange here, use `MediaRange.custom` instead!")
+    val _params = params
+    new NonMultipartWithOpenCharset(renderValue(mainType, subType, params), mainType, subType, fileExtensions) {
       override def params = _params
       override def isApplication = mainType == "application"
       override def isAudio = mainType == "audio"
@@ -197,9 +197,11 @@ object MediaType {
     r.get
   }
 
-  sealed abstract class Binary(val value: String, val mainType: String, val subType: String, val comp: Compressibility,
+  sealed abstract class Binary(val value: String, val _mainType: String, val _subType: String, val comp: Compressibility,
                                val fileExtensions: List[String]) extends MediaType with jm.MediaType.Binary {
     def binary = true
+    def mainType: String = _mainType.toRootLowerCase
+    def subType: String = _subType.toRootLowerCase
     def params: Map[String, String] = Map.empty
     def withParams(params: Map[String, String]): Binary with MediaType =
       customBinary(mainType, subType, comp, fileExtensions, params)
@@ -219,9 +221,11 @@ object MediaType {
       customBinary(mainType, subType, comp, fileExtensions, params)
   }
 
-  sealed abstract class WithFixedCharset(val value: String, val mainType: String, val subType: String,
+  sealed abstract class WithFixedCharset(val value: String, val _mainType: String, val _subType: String,
                                          val charset: HttpCharset, val fileExtensions: List[String])
     extends NonBinary with jm.MediaType.WithFixedCharset {
+    def mainType: String = _mainType.toRootLowerCase
+    def subType: String = _subType.toRootLowerCase
     def params: Map[String, String] = Map.empty
     def withParams(params: Map[String, String]): WithFixedCharset with MediaType =
       customWithFixedCharset(mainType, subType, charset, fileExtensions, params)
@@ -267,9 +271,11 @@ object MediaType {
     def toContentTypeWithMissingCharset: ContentType.WithMissingCharset = withMissingCharset
   }
 
-  sealed abstract class NonMultipartWithOpenCharset(val value: String, val mainType: String, val subType: String,
+  sealed abstract class NonMultipartWithOpenCharset(val value: String, val _mainType: String, val _subType: String,
                                                     val fileExtensions: List[String]) extends WithOpenCharset {
     def params: Map[String, String] = Map.empty
+    def mainType: String = _mainType.toRootLowerCase
+    def subType: String = _subType.toRootLowerCase
   }
 
   final class Multipart(subType: String, _params: Map[String, String])
