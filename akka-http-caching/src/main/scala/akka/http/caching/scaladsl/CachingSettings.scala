@@ -4,20 +4,18 @@
 
 package akka.http.caching.scaladsl
 
-import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.annotation.DoNotInherit
+import akka.http.caching.impl.settings.CachingSettingsImpl
 import akka.http.caching.javadsl
-import akka.http.impl.util.SettingsCompanionImpl
+import akka.http.scaladsl.settings.SettingsCompanion
 import com.typesafe.config.Config
-
-import scala.concurrent.duration.Duration
-import akka.http.impl.util._
 
 /**
  * Public API but not intended for subclassing
  */
 @DoNotInherit
 abstract class CachingSettings private[http] () extends javadsl.CachingSettings { self: CachingSettingsImpl ⇒
-  override def lfuCacheSettings: LfuCacheSettings
+  def lfuCacheSettings: LfuCacheSettings
 
   // overloads for idiomatic Scala use
   def withLfuCacheSettings(newSettings: LfuCacheSettings): CachingSettings =
@@ -62,16 +60,7 @@ private[http] final case class LfuCacheSettingsImpl(
   override def productPrefix = "LfuCacheSettings"
 }
 
-object CachingSettings extends SettingsCompanionImpl[CachingSettings]("akka.http.caching") {
-  def fromSubConfig(root: Config, c: Config): CachingSettingsImpl = {
-    val lfuConfig = c.getConfig("lfu-cache")
-    CachingSettingsImpl(
-      LfuCacheSettingsImpl(
-        lfuConfig.getInt("max-capacity"),
-        lfuConfig.getInt("initial-capacity"),
-        lfuConfig.getPotentiallyInfiniteDuration("time-to-live"),
-        lfuConfig.getPotentiallyInfiniteDuration("time-to-idle")
-      )
-    )
-  }
+object CachingSettings extends SettingsCompanion[CachingSettings] {
+  override def apply(config: Config): CachingSettings = CachingSettingsImpl(config)
+  override def apply(configOverrides: String): CachingSettings = CachingSettingsImpl(configOverrides)
 }
