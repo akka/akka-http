@@ -19,8 +19,8 @@ abstract class CachingSettings private[http] () { self: CachingSettingsImpl ⇒
 
   // overloads for idiomatic Scala use
   def withLfuCacheSettings(newSettings: LfuCacheSettings): CachingSettings = {
-    import akka.http.caching.CacheJavaMapping.Implicits._
     import akka.http.impl.util.JavaMapping.Implicits._
+    import akka.http.caching.CacheJavaMapping.Implicits._
 
     self.copy(lfuCacheSettings = newSettings.asScala)
   }

@@ -4,7 +4,6 @@
 
 package akka.http.caching.javadsl
 
-import akka.actor.ActorSystem
 import akka.annotation.DoNotInherit
 import akka.http.caching.impl.settings.LfuCachingSettingsImpl
 import akka.http.javadsl.settings.SettingsCompanion
