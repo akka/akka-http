@@ -32,5 +32,4 @@ abstract class LfuCacheSettings private[http] () { self: LfuCachingSettingsImpl 
 object LfuCacheSettings extends SettingsCompanion[LfuCacheSettings] {
   def create(config: Config): LfuCacheSettings = LfuCachingSettingsImpl(config)
   def create(configOverrides: String): LfuCacheSettings = LfuCachingSettingsImpl(configOverrides)
-  override def create(system: ActorSystem): LfuCacheSettings = create(system.settings.config)
 }

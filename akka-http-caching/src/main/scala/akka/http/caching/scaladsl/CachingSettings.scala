@@ -23,6 +23,6 @@ abstract class CachingSettings private[http] () extends javadsl.CachingSettings 
 }
 
 object CachingSettings extends SettingsCompanion[CachingSettings] {
-  override def apply(config: Config): CachingSettings = CachingSettingsImpl(config)
-  override def apply(configOverrides: String): CachingSettings = CachingSettingsImpl(configOverrides)
+  def apply(config: Config): CachingSettings = CachingSettingsImpl(config)
+  def apply(configOverrides: String): CachingSettings = CachingSettingsImpl(configOverrides)
 }

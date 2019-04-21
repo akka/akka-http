@@ -27,7 +27,7 @@ abstract class CachingSettings private[http] () { self: CachingSettingsImpl ⇒
 }
 
 object CachingSettings extends SettingsCompanion[CachingSettings] {
-  override def create(config: Config): CachingSettings = CachingSettingsImpl(config)
-  override def create(configOverrides: String): CachingSettings = CachingSettingsImpl(configOverrides)
+  def create(config: Config): CachingSettings = CachingSettingsImpl(config)
+  def create(configOverrides: String): CachingSettings = CachingSettingsImpl(configOverrides)
   override def create(system: ActorSystem): CachingSettings = create(system.settings.config)
 }

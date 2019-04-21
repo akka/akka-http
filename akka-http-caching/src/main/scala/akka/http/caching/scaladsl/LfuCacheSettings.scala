@@ -34,6 +34,6 @@ abstract class LfuCacheSettings private[http] () extends javadsl.LfuCacheSetting
 }
 
 object LfuCacheSettings extends SettingsCompanion[LfuCacheSettings] {
-  override def apply(config: Config): LfuCacheSettings = LfuCachingSettingsImpl(config)
-  override def apply(configOverrides: String): LfuCacheSettings = LfuCachingSettingsImpl(configOverrides)
+  def apply(config: Config): LfuCacheSettings = LfuCachingSettingsImpl(config)
+  def apply(configOverrides: String): LfuCacheSettings = LfuCachingSettingsImpl(configOverrides)
 }
