@@ -26,22 +26,6 @@ abstract class CachingSettings private[http] () { self: CachingSettingsImpl ⇒
   }
 }
 
-/**
- * Public API but not intended for subclassing
- */
-@DoNotInherit
-abstract class LfuCacheSettings private[http] () { self: LfuCacheSettingsImpl ⇒
-  def getMaxCapacity: Int
-  def getInitialCapacity: Int
-  def getTimeToLive: Duration
-  def getTimeToIdle: Duration
-
-  def withMaxCapacity(newMaxCapacity: Int): LfuCacheSettings
-  def withInitialCapacity(newInitialCapacity: Int): LfuCacheSettings
-  def withTimeToLive(newTimeToLive: Duration): LfuCacheSettings
-  def withTimeToIdle(newTimeToIdle: Duration): LfuCacheSettings
-}
-
 object CachingSettings extends SettingsCompanion[CachingSettings] {
   override def create(config: Config): CachingSettings = CachingSettingsImpl(config)
   override def create(configOverrides: String): CachingSettings = CachingSettingsImpl(configOverrides)
