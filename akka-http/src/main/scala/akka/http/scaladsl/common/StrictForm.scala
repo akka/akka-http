@@ -14,6 +14,7 @@ import akka.http.scaladsl.unmarshalling._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture
 import FastFuture._
+import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
 
 /**
  * Read-only abstraction on top of `application/x-www-form-urlencoded` and multipart form data,
@@ -129,10 +130,10 @@ object StrictForm {
           }
 
         tryUnmarshalToQueryForm.fast.recoverWith {
-          case Unmarshaller.UnsupportedContentTypeException(supported1) =>
+          case UnsupportedContentTypeException(supported1, _) =>
             tryUnmarshalToMultipartForm.fast.recoverWith {
-              case Unmarshaller.UnsupportedContentTypeException(supported2) =>
-                FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(supported1 ++ supported2))
+              case UnsupportedContentTypeException(supported2, contentType) =>
+                FastFuture.failed(UnsupportedContentTypeException(supported1 ++ supported2, contentType))
             }
         }
     }
@@ -145,7 +146,7 @@ object StrictForm {
   object FileData {
     implicit val unmarshaller: FromStrictFormFieldUnmarshaller[FileData] =
       Unmarshaller strict {
-        case Field.FromString(_)  => throw Unmarshaller.UnsupportedContentTypeException(MediaTypes.`application/x-www-form-urlencoded`)
+        case Field.FromString(_)  => throw UnsupportedContentTypeException(None, MediaTypes.`application/x-www-form-urlencoded`)
         case Field.FromPart(part) => FileData(part.filename, part.entity)
       }
   }

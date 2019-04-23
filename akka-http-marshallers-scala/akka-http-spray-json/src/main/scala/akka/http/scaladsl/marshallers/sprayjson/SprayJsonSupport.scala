@@ -11,6 +11,7 @@ import akka.http.scaladsl.common.EntityStreamingSupport
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
 import akka.http.scaladsl.unmarshalling.{ FromByteStringUnmarshaller, FromEntityUnmarshaller, Unmarshaller }
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.scaladsl.{ Flow, Keep, Source }
@@ -55,7 +56,7 @@ trait SprayJsonSupport {
           else Flow[ByteString].mapAsync(support.parallelism)(unmarshal)
         val elements = frames.viaMat(unmarshallingFlow)(Keep.right)
         FastFuture.successful(elements)
-      } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(support.supported))
+      } else FastFuture.failed(UnsupportedContentTypeException(Some(e.contentType), support.supported))
     }
 
   //#sprayJsonMarshallerConverter

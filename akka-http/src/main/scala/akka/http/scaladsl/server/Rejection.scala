@@ -9,11 +9,9 @@ import java.util.Optional
 import java.util.function.Function
 
 import akka.japi.Util
-
-import scala.collection.immutable
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{ ByteRange, HttpChallenge, HttpEncoding }
 import akka.http.javadsl.{ model, server => jserver }
-import headers._
 import akka.http.impl.util.JavaMapping._
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.pattern.CircuitBreakerOpenException
@@ -21,7 +19,9 @@ import akka.http.javadsl.model.headers.{ HttpOrigin => JHttpOrigin }
 import akka.http.scaladsl.model.headers.{ HttpOrigin => SHttpOrigin }
 
 import scala.collection.JavaConverters._
+import scala.collection.immutable
 import scala.compat.java8.OptionConverters
+import scala.runtime.AbstractFunction1
 
 /**
  * A rejection encapsulates a specific reason why a Route was not able to handle a request. Rejections are gathered
@@ -111,9 +111,39 @@ final case class InvalidOriginRejection(allowedOrigins: immutable.Seq[SHttpOrigi
  * Rejection created by unmarshallers.
  * Signals that the request was rejected because the requests content-type is unsupported.
  */
-final case class UnsupportedRequestContentTypeRejection(supported: immutable.Set[ContentTypeRange])
-  extends jserver.UnsupportedRequestContentTypeRejection with Rejection {
-  override def getSupported: java.util.Set[model.ContentTypeRange] = supported.map(_.asJava).asJava
+final case class UnsupportedRequestContentTypeRejection(
+  supported:   Set[ContentTypeRange],
+  contentType: Option[ContentType]   = None)
+  extends jserver.UnsupportedRequestContentTypeRejection
+  with Rejection {
+
+  override def getSupported: java.util.Set[model.ContentTypeRange] =
+    scala.collection.mutable.Set(supported.map(_.asJava).toVector: _*).asJava // TODO optimise
+
+  @deprecated("for binary compatibility", since = "10.1.9")
+  def this(supported: Set[ContentTypeRange]) = this(supported, None)
+
+  @deprecated("for binary compatibility", since = "10.1.9")
+  def copy(supported: Set[ContentTypeRange]) =
+    new UnsupportedRequestContentTypeRejection(supported, this.contentType)
+
+  @deprecated("for binary compatibility", since = "10.1.9")
+  def copy$default$1(supported: Set[ContentTypeRange]) =
+    new UnsupportedRequestContentTypeRejection(supported, this.contentType)
+
+  @deprecated("for binary compatibility", since = "10.1.9")
+  def copy(
+    supported:   Set[ContentTypeRange] = this.supported,
+    contentType: Option[ContentType]   = this.contentType) =
+    UnsupportedRequestContentTypeRejection(supported, contentType)
+}
+
+object UnsupportedRequestContentTypeRejection
+  extends AbstractFunction1[Set[ContentTypeRange], UnsupportedRequestContentTypeRejection] {
+
+  @deprecated("for binary compatibility", since = "10.1.9")
+  def apply(supported: Set[ContentTypeRange]): UnsupportedRequestContentTypeRejection =
+    new UnsupportedRequestContentTypeRejection(supported, None)
 }
 
 /**
@@ -163,7 +193,7 @@ case object RequestEntityExpectedRejection
  * Signals that the request was rejected because the service is not capable of producing a response entity whose
  * content type is accepted by the client
  */
-final case class UnacceptedResponseContentTypeRejection(supported: immutable.Set[ContentNegotiator.Alternative])
+final case class UnacceptedResponseContentTypeRejection(supported: Set[ContentNegotiator.Alternative])
   extends jserver.UnacceptedResponseContentTypeRejection with Rejection
 
 /**
@@ -171,7 +201,7 @@ final case class UnacceptedResponseContentTypeRejection(supported: immutable.Set
  * Signals that the request was rejected because the service is not capable of producing a response entity whose
  * content encoding is accepted by the client
  */
-final case class UnacceptedResponseEncodingRejection(supported: immutable.Set[HttpEncoding])
+final case class UnacceptedResponseEncodingRejection(supported: Set[HttpEncoding])
   extends jserver.UnacceptedResponseEncodingRejection with Rejection {
   override def getSupported: java.util.Set[model.headers.HttpEncoding] = supported.map(_.asJava).asJava
 }
