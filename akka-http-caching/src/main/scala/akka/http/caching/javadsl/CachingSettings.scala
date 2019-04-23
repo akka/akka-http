@@ -6,9 +6,8 @@ package akka.http.caching.javadsl
 
 import akka.actor.ActorSystem
 import akka.annotation.DoNotInherit
-import akka.http.caching.scaladsl.{ CachingSettingsImpl, LfuCacheSettingsImpl }
+import akka.http.caching.impl.settings.CachingSettingsImpl
 import akka.http.javadsl.settings.SettingsCompanion
-import scala.concurrent.duration.Duration
 import com.typesafe.config.Config
 
 /**
@@ -18,6 +17,7 @@ import com.typesafe.config.Config
 abstract class CachingSettings private[http] () { self: CachingSettingsImpl ⇒
   def lfuCacheSettings: LfuCacheSettings
 
+  // overloads for idiomatic Scala use
   def withLfuCacheSettings(newSettings: LfuCacheSettings): CachingSettings = {
     import akka.http.impl.util.JavaMapping.Implicits._
     import akka.http.caching.CacheJavaMapping.Implicits._
@@ -26,26 +26,8 @@ abstract class CachingSettings private[http] () { self: CachingSettingsImpl ⇒
   }
 }
 
-/**
- * Public API but not intended for subclassing
- */
-@DoNotInherit
-abstract class LfuCacheSettings private[http] () { self: LfuCacheSettingsImpl ⇒
-  def getMaxCapacity: Int
-  def getInitialCapacity: Int
-  def getTimeToLive: Duration
-  def getTimeToIdle: Duration
-
-  def withMaxCapacity(newMaxCapacity: Int): LfuCacheSettings
-  def withInitialCapacity(newInitialCapacity: Int): LfuCacheSettings
-  def withTimeToLive(newTimeToLive: Duration): LfuCacheSettings
-  def withTimeToIdle(newTimeToIdle: Duration): LfuCacheSettings
-}
-
 object CachingSettings extends SettingsCompanion[CachingSettings] {
-  override def create(config: Config): CachingSettings =
-    akka.http.caching.scaladsl.CachingSettings(config)
-  override def create(configOverrides: String): CachingSettings =
-    akka.http.caching.scaladsl.CachingSettings(configOverrides)
+  def create(config: Config): CachingSettings = CachingSettingsImpl(config)
+  def create(configOverrides: String): CachingSettings = CachingSettingsImpl(configOverrides)
   override def create(system: ActorSystem): CachingSettings = create(system.settings.config)
 }
