@@ -1,4 +1,5 @@
-# Scala 2.13.0-M5
+# Type hierarchy of `CachingSettings` changed because `SettingCompanionImpl` is not a
+# supertype any more. `SettingCompanionImpl` is `@InternalApi` so it's ok.
 ProblemFilters.exclude[MissingTypesProblem]("akka.http.caching.scaladsl.CachingSettings$")
 
 # CachingSettings public/impl classes split
