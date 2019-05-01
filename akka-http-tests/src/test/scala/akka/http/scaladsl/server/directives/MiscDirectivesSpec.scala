@@ -194,8 +194,6 @@ class MiscDirectivesSpec extends RoutingSpec {
         }
         body { availableLangs =>
           val selected = Promise[String]()
-          val first = Language(availableLangs.head)
-          val more = availableLangs.tail.map(Language(_))
           Get() ~> addHeader(acceptLanguageHeader) ~> {
             selectPreferredLanguage(first, more: _*) { lang =>
               complete(lang.toString)
