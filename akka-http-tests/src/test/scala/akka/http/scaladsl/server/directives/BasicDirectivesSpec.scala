@@ -71,7 +71,7 @@ class BasicDirectivesSpec extends RoutingSpec {
 
     "extract bar with slash if /foo/ with slash has been matched for /foo/bar" in {
       Get("/foo/") ~> {
-        pathPrefix("foo"/) {
+        pathPrefix("foo"./) {
           extractMatchedPath { matched ⇒
             complete(matched.toString)
           }

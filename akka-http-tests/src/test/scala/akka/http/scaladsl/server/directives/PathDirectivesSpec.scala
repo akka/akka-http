@@ -53,8 +53,8 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
     "accept [/foo] and clear the unmatchedPath=" inThe test("")
   }
 
-  """path("foo" /)""" should {
-    val test = testFor(path("foo" /) { echoUnmatchedPath })
+  """path("foo"./)""" should {
+    val test = testFor(path("foo"./) { echoUnmatchedPath })
     "reject [/foo]" inThe test()
     "accept [/foo/] and clear the unmatchedPath" inThe test("")
   }
@@ -301,15 +301,15 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
     "reject [/foo]" inThe test()
   }
 
-  "pathPrefix(IntNumber?)" should {
-    val test = testFor(pathPrefix(IntNumber?) { echoCaptureAndUnmatchedPath })
+  "pathPrefix(IntNumber.?)" should {
+    val test = testFor(pathPrefix(IntNumber.?) { echoCaptureAndUnmatchedPath })
     "accept [/12]" inThe test("Some(12):")
     "accept [/12a]" inThe test("Some(12):a")
     "accept [/foo]" inThe test("None:foo")
   }
 
-  """pathPrefix("foo"?)""" should {
-    val test = testFor(pathPrefix("foo"?) { echoUnmatchedPath })
+  """pathPrefix("foo".?)""" should {
+    val test = testFor(pathPrefix("foo".?) { echoUnmatchedPath })
     "accept [/foo]" inThe test("")
     "accept [/fool]" inThe test("l")
     "accept [/bar]" inThe test("bar")
@@ -418,12 +418,12 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
       "support the map modifier in accept [/yes-no]" inThe test("List(yes, no)")
     }
     {
-      val test = testFor(path(Remaining.tflatMap { case Tuple1(s) ⇒ Some(s).filter("yes" ==).map(x ⇒ Tuple1(x)) }) { echoComplete })
+      val test = testFor(path(Remaining.tflatMap { case Tuple1(s) ⇒ Some(s).filter("yes".==).map(x ⇒ Tuple1(x)) }) { echoComplete })
       "support the hflatMap modifier in accept [/yes]" inThe test("yes")
       "support the hflatMap modifier in reject [/blub]" inThe test()
     }
     {
-      val test = testFor(path(Remaining.flatMap(s ⇒ Some(s).filter("yes" ==))) { echoComplete })
+      val test = testFor(path(Remaining.flatMap(s ⇒ Some(s).filter("yes".==))) { echoComplete })
       "support the flatMap modifier in accept [/yes]" inThe test("yes")
       "support the flatMap modifier reject [/blub]" inThe test()
     }
@@ -528,7 +528,7 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
         (pathPrefix("bar") & pathEndOrSingleSlash) {
           complete(s"${counter.get()}")
         } ~
-        path("baz" /) {
+        path("baz"./) {
           complete(s"${counter.get()}")
         }
     }
