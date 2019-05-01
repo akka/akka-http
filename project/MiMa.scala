@@ -57,12 +57,12 @@ object MiMa extends AutoPlugin {
           "10.1.7",
       )
       val post213Versions = Set(
-          // We don't promise binary compatibility
-          // for 2.13 milestones yet
+          // To be updated once we have released
+          // for 2.13.0-RC2
       )
 
       val versions =
-        if (scalaBinaryVersion.value == "2.13.0-M5") post213Versions
+        if (scalaBinaryVersion.value == Dependencies.Scala213) post213Versions
         else pre213Versions ++ post213Versions
 
       versions.collect { case version if !ignoredModules.get(name.value).exists(_.contains(version)) =>
