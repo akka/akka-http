@@ -11,7 +11,6 @@ import java.nio.charset.Charset
 
 import scala.annotation.tailrec
 import scala.collection.{ immutable, mutable }
-import scala.collection.immutable.LinearSeq
 import akka.parboiled2.{ CharPredicate, CharUtils, ParserInput }
 import akka.http.ccompat.{ QuerySeqOptimized, Builder }
 import akka.http.javadsl.{ model ⇒ jm }
