@@ -184,19 +184,17 @@ class MiscDirectivesSpec extends RoutingSpec {
   }
 
   implicit class AddStringToIn(acceptLanguageHeaderString: String) {
-    def test(body: ((String*) ⇒ String) ⇒ Unit): Unit =
+    def test(body: ((String, String) ⇒ String) ⇒ Unit): Unit =
       s"properly handle `$acceptLanguageHeaderString`" in {
         val Array(name, value) = acceptLanguageHeaderString.split(':')
         val acceptLanguageHeader = HttpHeader.parse(name.trim, value) match {
           case HttpHeader.ParsingResult.Ok(h: `Accept-Language`, Nil) ⇒ h
           case result ⇒ fail(result.toString)
         }
-        body { availableLangs ⇒
+        body { (one, other) ⇒
           val selected = Promise[String]()
-          val first = Language(availableLangs.head)
-          val more = availableLangs.tail.map(Language(_))
           Get() ~> addHeader(acceptLanguageHeader) ~> {
-            selectPreferredLanguage(first, more: _*) { lang ⇒
+            selectPreferredLanguage(Language(one), Language(other)) { lang ⇒
               complete(lang.toString)
             }
           } ~> check(selected.complete(Try(responseAs[String])))
