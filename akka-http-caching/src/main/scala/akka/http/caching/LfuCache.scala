@@ -12,7 +12,7 @@ import akka.annotation.{ ApiMayChange, InternalApi }
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future, Promise }
 import com.github.benmanes.caffeine.cache.{ AsyncCacheLoader, AsyncLoadingCache, Caffeine }
 import akka.http.caching.LfuCache.toJavaMappingFunction
 import akka.http.caching.scaladsl.Cache
@@ -21,6 +21,7 @@ import akka.http.caching.CacheJavaMapping.Implicits._
 
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.FunctionConverters._
+import scala.util.{ Failure, Success }
 
 @ApiMayChange
 object LfuCache {
@@ -91,8 +92,8 @@ object LfuCache {
   }
 
   //LfuCache requires a loader function on creation - this will not be used.
-  private def dummyLoader[K, V] = new AsyncCacheLoader[K, V] {
-    def asyncLoad(k: K, e: Executor) =
+  private def dummyLoader[K, V]: AsyncCacheLoader[K, V] = new AsyncCacheLoader[K, V] {
+    def asyncLoad(k: K, e: Executor): CompletableFuture[V] =
       Future.failed[V](new RuntimeException("Dummy loader should not be used by LfuCache")).toJava.toCompletableFuture
   }
 
@@ -111,7 +112,20 @@ private[caching] class LfuCache[K, V](val store: AsyncLoadingCache[K, V]) extend
 
   def apply(key: K, genValue: () ⇒ Future[V]): Future[V] = store.get(key, toJavaMappingFunction[K, V](genValue)).toScala
 
-  def getOrLoad(key: K, loadValue: K ⇒ Future[V]) = store.get(key, toJavaMappingFunction[K, V](loadValue)).toScala
+  def getOrLoad(key: K, loadValue: K ⇒ Future[V]): Future[V] =
+    store.get(key, toJavaMappingFunction[K, V](loadValue)).toScala
+
+  def put(key: K, mayBeValue: Future[V])(implicit ex: ExecutionContext): Future[Unit] = {
+    val cachedBefore = store.synchronous().asMap().containsKey(key)
+    val promise = Promise[Unit]
+    if (cachedBefore) {
+      mayBeValue.onComplete {
+        case Success(value)      ⇒ promise.completeWith(Future(store.synchronous().put(key, value)))
+        case failure: Failure[_] ⇒ promise.failure(failure.exception)
+      }
+    } else promise.completeWith(Future(store.put(key, toJava(mayBeValue).toCompletableFuture)))
+    promise.future
+  }
 
   def remove(key: K): Unit = store.synchronous().invalidate(key)
 

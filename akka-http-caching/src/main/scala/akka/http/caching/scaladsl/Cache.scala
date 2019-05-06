@@ -13,7 +13,7 @@ import akka.japi.{ Creator, Procedure }
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.compat.java8.FutureConverters.{ toJava ⇒ futureToJava, toScala ⇒ futureToScala }
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.{ ExecutionContext, Future, Promise }
 
 /**
  * API MAY CHANGE
@@ -57,6 +57,12 @@ abstract class Cache[K, V] extends akka.http.caching.javadsl.Cache[K, V] {
   def get(key: K): Option[Future[V]]
   override def getOptional(key: K): Optional[CompletionStage[V]] =
     Optional.ofNullable(get(key).map(f ⇒ futureToJava(f)).orNull)
+
+  /**
+   * Cache the given future if not cache previously.
+   * Or Replace the old cache on successful completion of given future.
+   */
+  def put(key: K, mayBeValue: Future[V])(implicit ex: ExecutionContext): Future[Unit]
 
   /**
    * Removes the cache item for the given key.
