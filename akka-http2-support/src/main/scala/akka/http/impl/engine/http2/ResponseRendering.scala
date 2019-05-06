@@ -83,9 +83,10 @@ private[http2] object ResponseRendering {
     serverHeader: Option[(String, String)],
     log:          LoggingAdapter
   ): Unit = {
-    def suppressionWarning(h: HttpHeader, msg: String): Unit =
-      log.warning("Explicitly set HTTP header '{}' is ignored, {}", h, msg)
-
+    def suppressionWarning(h: HttpHeader, settings: ServerSetttings, msg: String): Unit =
+      if (settings.verboseErrorMessages) {
+        log.warning("Explicitly set HTTP header '{}' is ignored, {}", h, msg)
+      }
     // optimized, as it is done for every response
     val headers = headersSeq.toArray
     var serverSeen, dateSeen = false
