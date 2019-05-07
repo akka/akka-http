@@ -62,7 +62,7 @@ abstract class Cache[K, V] extends akka.http.caching.javadsl.Cache[K, V] {
    * Cache the given future if not cache previously.
    * Or Replace the old cache on successful completion of given future.
    */
-  def put(key: K, mayBeValue: Future[V])(implicit ex: ExecutionContext): Future[Unit]
+  def put(key: K, mayBeValue: Future[V])(implicit ex: ExecutionContext): Future[V]
 
   /**
    * Removes the cache item for the given key.
