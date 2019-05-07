@@ -116,15 +116,14 @@ private[caching] class LfuCache[K, V](val store: AsyncLoadingCache[K, V]) extend
     store.get(key, toJavaMappingFunction[K, V](loadValue)).toScala
 
   def put(key: K, mayBeValue: Future[V])(implicit ex: ExecutionContext): Future[Unit] = {
-    val cachedBefore = store.synchronous().asMap().containsKey(key)
-    val promise = Promise[Unit]
-    if (cachedBefore) {
-      mayBeValue.onComplete {
-        case Success(value)      ⇒ promise.completeWith(Future(store.synchronous().put(key, value)))
-        case failure: Failure[_] ⇒ promise.failure(failure.exception)
-      }
-    } else promise.completeWith(Future(store.put(key, toJava(mayBeValue).toCompletableFuture)))
-    promise.future
+    val previouslyCacheValue = Option(store.getIfPresent(key))
+
+    previouslyCacheValue match {
+      case None ⇒
+        store.put(key, toJava(mayBeValue).toCompletableFuture)
+        Future.successful(())
+      case _ ⇒ mayBeValue.map(value ⇒ store.put(key, toJava(Future.successful(value)).toCompletableFuture))
+    }
   }
 
   def remove(key: K): Unit = store.synchronous().invalidate(key)
