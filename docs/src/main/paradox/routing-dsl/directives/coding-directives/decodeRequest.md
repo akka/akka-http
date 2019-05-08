@@ -11,9 +11,9 @@
 ## Description
 
 Decompresses the incoming request if it is `gzip` or `deflate` compressed. Uncompressed requests are passed through untouched.
-If the request encoded with another encoding the request is rejected with an @unidoc[UnsupportedRequestEncodingRejection].
+If the request encoded with another encoding the request is rejected with an @apidoc[UnsupportedRequestEncodingRejection].
 If the request entity after decoding exceeds `akka.http.routing.decode-max-size` the stream fails with an
-@unidoc[akka.http.scaladsl.model.EntityStreamSizeException].
+@apidoc[akka.http.scaladsl.model.EntityStreamSizeException].
 
 
 ## Example

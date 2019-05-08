@@ -13,7 +13,7 @@
 Unmarshalls the request entity to the given type and passes it to its inner Route.  An unmarshaller
 returns an `Either` with `Right(value)` if successful or `Left(exception)` for a failure.
 The `entity` method will either pass the `value` to the inner route or map the `exception` to a
-@unidoc[Rejection].
+@apidoc[Rejection].
 
 @scala[The `entity` directive works in conjunction with `as` and `akka.http.scaladsl.unmarshalling` to
 convert some serialized "wire format" value into a higher-level object structure.]  
@@ -21,14 +21,14 @@ convert some serialized "wire format" value into a higher-level object structure
 This directive simplifies extraction and error handling to the specified type from the request.
 
 An unmarshaller will return a `Left(exception)` in the case of an error.  This is converted to a
-@unidoc[Rejection] within the `entity` directive.  The following table lists how exceptions
+@apidoc[Rejection] within the `entity` directive.  The following table lists how exceptions
 are mapped to rejections:
 
 |Left(exception)          | Rejection                                                                |
 |-------------------------|--------------------------------------------------------------------------|
-|`ContentExpected`        | @unidoc[RequestEntityExpectedRejection$]                                         |
-|`UnsupportedContentType` | @unidoc[UnsupportedRequestContentTypeRejection], which lists the supported types|
-|`MalformedContent`       | @unidoc[MalformedRequestContentRejection], with an error message and cause      |
+|`ContentExpected`        | @apidoc[RequestEntityExpectedRejection$]                                         |
+|`UnsupportedContentType` | @apidoc[UnsupportedRequestContentTypeRejection], which lists the supported types|
+|`MalformedContent`       | @apidoc[MalformedRequestContentRejection], with an error message and cause      |
 
 ## Examples
 

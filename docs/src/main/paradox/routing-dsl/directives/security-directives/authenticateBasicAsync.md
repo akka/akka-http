@@ -17,11 +17,11 @@ This variant of the @ref[authenticateBasic](authenticateBasic.md) directive retu
 layer of Akka HTTP, freeing it for other requests. It should be used whenever an authentication is expected to take
 a longer amount of time (e.g. looking up the user in a database).
 
-In case the returned option is @scala[`None`]@java[an empty `Optional`] the request is rejected with a @unidoc[AuthenticationFailedRejection],
+In case the returned option is @scala[`None`]@java[an empty `Optional`] the request is rejected with a @apidoc[AuthenticationFailedRejection],
 which by default is mapped to an `401 Unauthorized` response.
 
 Standard HTTP-based authentication which uses the `WWW-Authenticate` header containing challenge data and
-@unidoc[Authorization] header for receiving credentials is implemented in `authenticateOrRejectWithChallenge`.
+@apidoc[Authorization] header for receiving credentials is implemented in `authenticateOrRejectWithChallenge`.
 
 See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks) for details about verifying the secret.
 

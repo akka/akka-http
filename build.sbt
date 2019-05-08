@@ -8,6 +8,7 @@ import java.nio.file.Files
 import java.nio.file.attribute.{ PosixFileAttributeView, PosixFilePermission }
 import sbtdynver.GitDescribeOutput
 import spray.boilerplate.BoilerplatePlugin
+import com.lightbend.paradox.apidoc.ApidocPlugin.autoImport.apidocRootPackage
 
 inThisBuild(Def.settings(
   organization := "com.typesafe.akka",
@@ -56,8 +57,10 @@ lazy val root = Project(
   .enablePlugins(UnidocRoot, NoPublish, DeployRsync, AggregatePRValidation)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .settings(
-    // Unidoc doesn't like macros
-    unidocProjectExcludes := Seq(parsing, httpJmhBench),
+    // Unidoc doesn't like macro definitions
+    unidocProjectExcludes := Seq(parsing),
+    // Support applying macros in unidoc:
+    scalaMacroSupport,
     unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get,
     deployRsyncArtifact := {
       val unidocArtifacts = (unidoc in Compile).value
@@ -199,6 +202,7 @@ lazy val httpTestkit = project("akka-http-testkit")
   .settings(AutomaticModuleName.settings("akka.http.testkit"))
   .dependsOn(http)
   .addAkkaModuleDependency("akka-stream-testkit", "provided")
+  .addAkkaModuleDependency("akka-testkit", "provided")
   .settings(Dependencies.httpTestkit)
   .settings(
     // don't ignore Suites which is the default for the junit-interface
@@ -340,6 +344,7 @@ lazy val docs = project("docs")
       "signature.test.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
       "signature.akka-http.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath
     ),
+    apidocRootPackage := "akka",
     Formatting.docFormatSettings,
     additionalTasks in ValidatePR += paradox in Compile,
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka-http/${version.value}")

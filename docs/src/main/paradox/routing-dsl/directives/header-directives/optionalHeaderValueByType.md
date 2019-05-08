@@ -21,7 +21,7 @@ The `optionalHeaderValueByType` directive is similar to the @ref[headerValueByTy
 an @scala[`Option`]@java[`Optional`] value instead of rejecting the request if no matching header could be found.
 
 @@@ note
-Custom headers will only be matched by this directive if they extend @unidoc[ModeledCustomHeader]
+Custom headers will only be matched by this directive if they extend @apidoc[ModeledCustomHeader]
 @scala[and provide a companion extending `ModeledCustomHeaderCompanion`, otherwise the routing
 infrastructure does now know where to search for the needed companion and header name.]
 @java[from the Scala DSL and there is currently no API for the Java DSL ([Issue 219](https://github.com/akka/akka-http/issues/219))]

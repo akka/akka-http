@@ -18,7 +18,7 @@ The signature shown is simplified, the real signature uses magnets. <a id="^1" h
 
 ## Description
 
-Logs both the request and the response using the @unidoc[LoggingAdapter] of the @unidoc[RequestContext].
+Logs both the request and the response using the @apidoc[LoggingAdapter] of the @apidoc[RequestContext].
 
 This directive is a combination of @ref[logRequest](logRequest.md) and @ref[logResult](logResult.md).
 
@@ -34,7 +34,7 @@ Java
 
 ## Building Advanced Directives
 
-This example will showcase the advanced logging using the @unidoc[DebuggingDirectives].
+This example will showcase the advanced logging using the @apidoc[DebuggingDirectives].
 The built *logResponseTime* directive will log the request time (or rejection reason):
 
 Scala

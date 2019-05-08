@@ -15,19 +15,22 @@ object AkkaDependency {
   // else if akka.version is anything else, then the given version will be used
 
   val defaultAkkaVersion = "2.5.19"
-  val akkaVersion = {
-    val res = System.getProperty("akka.build.version", defaultAkkaVersion)
-    if (res == "default") defaultAkkaVersion
-    else res
-  }
+  val akkaVersion =
+    System.getProperty("akka.build.version", defaultAkkaVersion) match {
+      case "default" => defaultAkkaVersion
+      case x => x
+    }
 
   // Needs to be a URI like git://github.com/akka/akka.git#master or file:///xyz/akka
   val akkaSourceDependencyUri = {
     val fallback =
-      if (akkaVersion == "master") "git://github.com/akka/akka.git#master"
-      else ""
+      akkaVersion match {
+        case "master" => "git://github.com/akka/akka.git#master"
+        case "release-2.5" => "git://github.com/akka/akka.git#release-2.5"
+        case x => ""
+      }
 
-    System.getProperty("akka.sources",fallback)
+    System.getProperty("akka.sources", fallback)
   }
   val shouldUseSourceDependency = akkaSourceDependencyUri != ""
 

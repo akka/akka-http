@@ -5,7 +5,7 @@ For being able to work with the @ref[PathDirectives](directives/path-directives/
 
 ## Overview
 
-When a request (or rather the respective @unidoc[RequestContext] instance) enters the route structure it has an
+When a request (or rather the respective @apidoc[RequestContext] instance) enters the route structure it has an
 "unmatched path" that is identical to the `request.uri.path`. As it descends the routing tree and passes through one
 or more @ref[pathPrefix](directives/path-directives/pathPrefix.md) or @ref[path](directives/path-directives/path.md) directives the "unmatched path" progressively gets "eaten into" from the
 left until, in most cases, it eventually has been consumed completely.
@@ -144,7 +144,7 @@ If the given prefix is empty the returned matcher matches always and consumes no
 A path matcher is a description of a part of a path to match. The simplest path matcher is `PathMatcher.segment` which
 matches exactly one path segment against the supplied constant string.
 
-Other path matchers defined in @unidoc[PathMatchers] match the end of the path (`PathMatchers.END`), a single slash
+Other path matchers defined in @apidoc[PathMatchers] match the end of the path (`PathMatchers.END`), a single slash
 (`PathMatchers.SLASH`), or nothing at all (`PathMatchers.NEUTRAL`).
 
 Many path matchers are hybrids that can both match (by using them with one of the PathDirectives) and extract values,

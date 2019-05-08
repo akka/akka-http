@@ -10,7 +10,7 @@
 
 ## Description
 
-Adds a @unidoc[TransformationRejection] cancelling all rejections equal to the
+Adds a @apidoc[TransformationRejection] cancelling all rejections equal to the
 given one to the rejections potentially coming back from the inner route.
 
 Read @ref[Rejections](../../rejections.md) to learn more about rejections.

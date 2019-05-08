@@ -11,7 +11,7 @@
 ## Description
 
 Bubbles up the given error through the route structure where it is dealt with by the closest `handleExceptions`
-directive and its @unidoc[ExceptionHandler].
+directive and its @apidoc[ExceptionHandler].
 
 `failWith` explicitly raises an exception that gets bubbled up through the route structure to be picked up by the
 nearest `handleExceptions` directive. Using `failWith` rather than simply throwing an exception enables the route
@@ -20,9 +20,9 @@ asynchronously on another thread (e.g. in a `Future` or separate actor).
 
 If no `handleExceptions` is present above the respective location in the
 route structure the top-level routing logic will handle the exception and translate it into a corresponding
-@unidoc[HttpResponse] using the in-scope @unidoc[ExceptionHandler] (see also the @ref[Exception Handling](../../exception-handling.md) chapter).
+@apidoc[HttpResponse] using the in-scope @apidoc[ExceptionHandler] (see also the @ref[Exception Handling](../../exception-handling.md) chapter).
 
-There is one notable special case: If the given exception is a @unidoc[RejectionError] exception it is *not* bubbled up,
+There is one notable special case: If the given exception is a @apidoc[RejectionError] exception it is *not* bubbled up,
 but rather the wrapped exception is unpacked and "executed". This allows the "tunneling" of a rejection via an
 exception.
 
