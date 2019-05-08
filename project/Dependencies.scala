@@ -53,7 +53,7 @@ object Dependencies {
 
     val alpnApi     = "org.eclipse.jetty.alpn"        % "alpn-api"                     % "1.1.3.v20160715" // ApacheV2
 
-    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.6.2"
+    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.7.0"
 
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
