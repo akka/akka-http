@@ -6,6 +6,8 @@ package akka.http.scaladsl.server
 package directives
 
 import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
+
 import akka.http.impl.util._
 import akka.http.scaladsl.common._
 import akka.http.scaladsl.model.EntityStreamSizeException
@@ -17,12 +19,13 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.{ Failure, Success }
+import BasicDirectives._
 
 /**
  * @groupname form Form field directives
  * @groupprio form 90
  */
-trait FormFieldDirectives extends ToNameReceptacleEnhancements {
+trait FormFieldDirectives extends ToNameReceptacleEnhancements with FormFieldDirectivesCompat {
   import FormFieldDirectives._
 
   /**
@@ -52,7 +55,7 @@ trait FormFieldDirectives extends ToNameReceptacleEnhancements {
    *
    * @group form
    */
-  def formField(pdm: FieldMagnet): pdm.Out = pdm()
+  override def formField(pdm: FieldMagnet): Directive[pdm.U] = formFields(pdm)
 
   /**
    * Extracts a number of HTTP form field from the request.
@@ -60,14 +63,27 @@ trait FormFieldDirectives extends ToNameReceptacleEnhancements {
    *
    * @group form
    */
-  def formFields(pdm: FieldMagnet): pdm.Out = pdm()
+  override def formFields(pdm: FieldMagnet): Directive[pdm.U] =
+    toStrictEntity(StrictForm.toStrictTimeout).wrap { pdm() }
+}
 
+/**
+ * Superclass for FormFieldDirectives to provide bridge methods with the old signatures for binary compatibility
+ *
+ * Internal API
+ */
+@InternalApi
+trait FormFieldDirectivesCompat {
+  import FormFieldDirectives.FieldMagnet
+  @deprecated("Bridge method will be removed in the future", "10.1.9")
+  private[akka] def formField(pdm: FieldMagnet): AnyRef
+  @deprecated("Bridge method will be removed in the future", "10.1.9")
+  private[akka] def formFields(pdm: FieldMagnet): AnyRef
 }
 
 object FormFieldDirectives extends FormFieldDirectives {
 
   private val _formFieldSeq: Directive1[immutable.Seq[(String, String)]] = {
-    import BasicDirectives._
     import FutureDirectives._
     import akka.http.scaladsl.unmarshalling._
 
@@ -113,27 +129,28 @@ object FormFieldDirectives extends FormFieldDirectives {
   private def toMap(seq: Seq[(String, String)]): Map[String, String] = immutable.TreeMap(seq: _*)
 
   sealed trait FieldMagnet {
-    type Out
-    def apply(): Out
+    type U
+    def apply(): Directive[U]
   }
+
   object FieldMagnet {
-    implicit def apply[T](value: T)(implicit fdef: FieldDef[T]): FieldMagnet { type Out = fdef.Out } =
+    implicit def apply[T](value: T)(implicit fdef: FieldDef[T]): FieldMagnet { type U = fdef.U } =
       new FieldMagnet {
-        type Out = fdef.Out
-        def apply() = fdef(value)
+        type U = fdef.U
+        def apply(): Directive[U] = fdef(value)
       }
   }
 
-  type FieldDefAux[A, B] = FieldDef[A] { type Out = B }
+  type FieldDefAux[A, B] = FieldDef[A] { type U = B }
   sealed trait FieldDef[T] {
-    type Out
-    def apply(value: T): Out
+    type U
+    def apply(value: T): Directive[U]
   }
   object FieldDef extends LowLevelFieldDefImplicits {
-    protected def fieldDef[A, B](f: A => B): FieldDefAux[A, B] =
+    protected def fieldDef[A, B](f: A => Directive[B]): FieldDefAux[A, B] =
       new FieldDef[A] {
-        type Out = B
-        def apply(value: A) = f(value)
+        type U = B
+        def apply(value: A): Directive[B] = f(value)
       }
 
     import BasicDirectives._
@@ -144,7 +161,7 @@ object FormFieldDirectives extends FormFieldDirectives {
     type SFU = FromEntityUnmarshaller[StrictForm]
     type FSFFOU[T] = Unmarshaller[Option[StrictForm.Field], T]
 
-    protected def extractField[A, B](f: A => Directive1[B]): FieldDefAux[A, Directive1[B]] = fieldDef(f)
+    protected def extractField[A, B](f: A => Directive1[B]): FieldDefAux[A, Tuple1[B]] = fieldDef(f)
     protected def handleFieldResult[T](fieldName: String, result: Future[T]): Directive1[T] = onComplete(result).flatMap {
       case Success(x)                                  => provide(x)
       case Failure(Unmarshaller.NoContentException)    => reject(MissingFormFieldRejection(fieldName))
@@ -166,21 +183,21 @@ object FormFieldDirectives extends FormFieldDirectives {
     private def filter[T](fieldName: String, fu: FSFFOU[T]): Directive1[T] =
       extract(fieldOfForm(fieldName, fu)).flatMap(r => handleFieldResult(fieldName, r))
 
-    implicit def forString: FieldDefAux[String, Directive1[String]] =
+    implicit def forString: FieldDefAux[String, Tuple1[String]] =
       extractField[String, String] { fieldName => filter(fieldName, stringFromStrictForm) }
-    implicit def forSymbol: FieldDefAux[Symbol, Directive1[String]] =
+    implicit def forSymbol: FieldDefAux[Symbol, Tuple1[String]] =
       extractField[Symbol, String] { symbol => filter(symbol.name, stringFromStrictForm) }
-    implicit def forNR[T](implicit fu: FSFFU[T]): FieldDefAux[NameReceptacle[T], Directive1[T]] =
+    implicit def forNR[T](implicit fu: FSFFU[T]): FieldDefAux[NameReceptacle[T], Tuple1[T]] =
       extractField[NameReceptacle[T], T] { nr => filter(nr.name, fu) }
-    implicit def forNUR[T]: FieldDefAux[NameUnmarshallerReceptacle[T], Directive1[T]] =
+    implicit def forNUR[T]: FieldDefAux[NameUnmarshallerReceptacle[T], Tuple1[T]] =
       extractField[NameUnmarshallerReceptacle[T], T] { nr => filter(nr.name, StrictForm.Field.unmarshallerFromFSU(nr.um)) }
-    implicit def forNOR[T](implicit fu: FSFFOU[T]): FieldDefAux[NameOptionReceptacle[T], Directive1[Option[T]]] =
+    implicit def forNOR[T](implicit fu: FSFFOU[T]): FieldDefAux[NameOptionReceptacle[T], Tuple1[Option[T]]] =
       extractField[NameOptionReceptacle[T], Option[T]] { nr => filter[Option[T]](nr.name, fu) }
-    implicit def forNDR[T](implicit fu: FSFFOU[T]): FieldDefAux[NameDefaultReceptacle[T], Directive1[T]] =
+    implicit def forNDR[T](implicit fu: FSFFOU[T]): FieldDefAux[NameDefaultReceptacle[T], Tuple1[T]] =
       extractField[NameDefaultReceptacle[T], T] { nr => filter(nr.name, fu withDefaultValue nr.default) }
-    implicit def forNOUR[T]: FieldDefAux[NameOptionUnmarshallerReceptacle[T], Directive1[Option[T]]] =
+    implicit def forNOUR[T]: FieldDefAux[NameOptionUnmarshallerReceptacle[T], Tuple1[Option[T]]] =
       extractField[NameOptionUnmarshallerReceptacle[T], Option[T]] { nr => filter[Option[T]](nr.name, StrictForm.Field.unmarshallerFromFSU(nr.um): FSFFOU[T]) }
-    implicit def forNDUR[T]: FieldDefAux[NameDefaultUnmarshallerReceptacle[T], Directive1[T]] =
+    implicit def forNDUR[T]: FieldDefAux[NameDefaultUnmarshallerReceptacle[T], Tuple1[T]] =
       extractField[NameDefaultUnmarshallerReceptacle[T], T] { nr => filter(nr.name, (StrictForm.Field.unmarshallerFromFSU(nr.um): FSFFOU[T]) withDefaultValue nr.default) }
 
     //////////////////// required formField support ////////////////////
@@ -192,10 +209,11 @@ object FormFieldDirectives extends FormFieldDirectives {
           case _                                        => reject
         }
       }
-    implicit def forRVR[T](implicit fu: FSFFU[T]): FieldDefAux[RequiredValueReceptacle[T], Directive0] =
-      fieldDef[RequiredValueReceptacle[T], Directive0] { rvr => requiredFilter(rvr.name, fu, rvr.requiredValue) }
-    implicit def forRVDR[T]: FieldDefAux[RequiredValueUnmarshallerReceptacle[T], Directive0] =
-      fieldDef[RequiredValueUnmarshallerReceptacle[T], Directive0] { rvr => requiredFilter(rvr.name, StrictForm.Field.unmarshallerFromFSU(rvr.um), rvr.requiredValue) }
+
+    implicit def forRVR[T](implicit fu: FSFFU[T]): FieldDefAux[RequiredValueReceptacle[T], Unit] =
+      fieldDef[RequiredValueReceptacle[T], Unit] { rvr => requiredFilter(rvr.name, fu, rvr.requiredValue) }
+    implicit def forRVDR[T]: FieldDefAux[RequiredValueUnmarshallerReceptacle[T], Unit] =
+      fieldDef[RequiredValueUnmarshallerReceptacle[T], Unit] { rvr => requiredFilter(rvr.name, StrictForm.Field.unmarshallerFromFSU(rvr.um), rvr.requiredValue) }
 
     //////////////////// repeated formField support ////////////////////
 
@@ -206,9 +224,9 @@ object FormFieldDirectives extends FormFieldDirectives {
       }.flatMap { result =>
         handleFieldResult(fieldName, result)
       }
-    implicit def forRepVR[T](implicit fu: FSFFU[T]): FieldDefAux[RepeatedValueReceptacle[T], Directive1[Iterable[T]]] =
+    implicit def forRepVR[T](implicit fu: FSFFU[T]): FieldDefAux[RepeatedValueReceptacle[T], Tuple1[Iterable[T]]] =
       extractField[RepeatedValueReceptacle[T], Iterable[T]] { rvr => repeatedFilter(rvr.name, fu) }
-    implicit def forRepVDR[T]: FieldDefAux[RepeatedValueUnmarshallerReceptacle[T], Directive1[Iterable[T]]] =
+    implicit def forRepVDR[T]: FieldDefAux[RepeatedValueUnmarshallerReceptacle[T], Tuple1[Iterable[T]]] =
       extractField[RepeatedValueUnmarshallerReceptacle[T], Iterable[T]] { rvr => repeatedFilter(rvr.name, StrictForm.Field.unmarshallerFromFSU(rvr.um)) }
 
     //////////////////// tuple support ////////////////////
@@ -216,15 +234,19 @@ object FormFieldDirectives extends FormFieldDirectives {
     import akka.http.scaladsl.server.util.BinaryPolyFunc
     import akka.http.scaladsl.server.util.TupleOps._
 
-    implicit def forTuple[T](implicit fold: FoldLeft[Directive0, T, ConvertFieldDefAndConcatenate.type]): FieldDefAux[T, fold.Out] =
-      fieldDef[T, fold.Out](fold(toStrictEntity(StrictForm.toStrictTimeout), _))
+    implicit def forTuple[T, O](implicit fold: FoldLeft[Directive0, T, ConvertFieldDefAndConcatenate.type] { type Out = Directive[O] }): FieldDefAux[T, O] =
+      fieldDef(fold(pass, _))
 
     object ConvertFieldDefAndConcatenate extends BinaryPolyFunc {
-      implicit def from[P, TA, TB](implicit fdef: FieldDefAux[P, Directive[TB]], ev: Join[TA, TB]): BinaryPolyFunc.Case[Directive[TA], P, ConvertFieldDefAndConcatenate.type] { type Out = Directive[ev.Out] } =
-        at[Directive[TA], P] { (a, t) => a & fdef(t) }
+      implicit def from[P, TA, TB](implicit fdef: FieldDefAux[P, TB], ev: Join[TA, TB]): BinaryPolyFunc.Case[Directive[TA], P, ConvertFieldDefAndConcatenate.type] { type Out = Directive[ev.Out] } =
+        at[Directive[TA], P].apply[Directive[ev.Out]] { (a, t) => a & fdef(t) }
     }
   }
 
+  /**
+   * Deprecated compatibility implicit instances. Will be removed in a future version.
+   */
+  @InternalApi
   @DoNotInherit
   abstract class LowLevelFieldDefImplicits { self: FieldDef.type =>
     import BasicDirectives._
@@ -245,28 +267,28 @@ object FormFieldDirectives extends FormFieldDirectives {
       extract(fieldOfForm(fieldName, fu)).flatMap(r => handleFieldResult(fieldName, r))
 
     @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
-    implicit def forString(implicit sfu: SFU, fu: FSFFU[String]): FieldDefAux[String, Directive1[String]] =
+    implicit def forString(implicit sfu: SFU, fu: FSFFU[String]): FieldDefAux[String, Tuple1[String]] =
       extractField[String, String] { fieldName => filter(fieldName, fu) }
     @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
-    implicit def forSymbol(implicit sfu: SFU, fu: FSFFU[String]): FieldDefAux[Symbol, Directive1[String]] =
+    implicit def forSymbol(implicit sfu: SFU, fu: FSFFU[String]): FieldDefAux[Symbol, Tuple1[String]] =
       extractField[Symbol, String] { symbol => filter(symbol.name, fu) }
     @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
-    implicit def forNR[T](implicit sfu: SFU, fu: FSFFU[T]): FieldDefAux[NameReceptacle[T], Directive1[T]] =
+    implicit def forNR[T](implicit sfu: SFU, fu: FSFFU[T]): FieldDefAux[NameReceptacle[T], Tuple1[T]] =
       extractField[NameReceptacle[T], T] { nr => filter(nr.name, fu) }
     @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
-    implicit def forNUR[T](implicit sfu: SFU): FieldDefAux[NameUnmarshallerReceptacle[T], Directive1[T]] =
+    implicit def forNUR[T](implicit sfu: SFU): FieldDefAux[NameUnmarshallerReceptacle[T], Tuple1[T]] =
       extractField[NameUnmarshallerReceptacle[T], T] { nr => filter(nr.name, StrictForm.Field.unmarshallerFromFSU(nr.um)) }
     @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
-    implicit def forNOR[T](implicit sfu: SFU, fu: FSFFOU[T]): FieldDefAux[NameOptionReceptacle[T], Directive1[Option[T]]] =
+    implicit def forNOR[T](implicit sfu: SFU, fu: FSFFOU[T]): FieldDefAux[NameOptionReceptacle[T], Tuple1[Option[T]]] =
       extractField[NameOptionReceptacle[T], Option[T]] { nr => filter[Option[T]](nr.name, fu) }
     @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
-    implicit def forNDR[T](implicit sfu: SFU, fu: FSFFOU[T]): FieldDefAux[NameDefaultReceptacle[T], Directive1[T]] =
+    implicit def forNDR[T](implicit sfu: SFU, fu: FSFFOU[T]): FieldDefAux[NameDefaultReceptacle[T], Tuple1[T]] =
       extractField[NameDefaultReceptacle[T], T] { nr => filter(nr.name, fu withDefaultValue nr.default) }
     @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
-    implicit def forNOUR[T](implicit sfu: SFU): FieldDefAux[NameOptionUnmarshallerReceptacle[T], Directive1[Option[T]]] =
+    implicit def forNOUR[T](implicit sfu: SFU): FieldDefAux[NameOptionUnmarshallerReceptacle[T], Tuple1[Option[T]]] =
       extractField[NameOptionUnmarshallerReceptacle[T], Option[T]] { nr => filter[Option[T]](nr.name, StrictForm.Field.unmarshallerFromFSU(nr.um): FSFFOU[T]) }
     @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
-    implicit def forNDUR[T](implicit sfu: SFU): FieldDefAux[NameDefaultUnmarshallerReceptacle[T], Directive1[T]] =
+    implicit def forNDUR[T](implicit sfu: SFU): FieldDefAux[NameDefaultUnmarshallerReceptacle[T], Tuple1[T]] =
       extractField[NameDefaultUnmarshallerReceptacle[T], T] { nr => filter(nr.name, (StrictForm.Field.unmarshallerFromFSU(nr.um): FSFFOU[T]) withDefaultValue nr.default) }
 
     //////////////////// required formField support ////////////////////
@@ -280,11 +302,11 @@ object FormFieldDirectives extends FormFieldDirectives {
         }
       }
     @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
-    implicit def forRVR[T](implicit sfu: SFU, fu: FSFFU[T]): FieldDefAux[RequiredValueReceptacle[T], Directive0] =
-      fieldDef[RequiredValueReceptacle[T], Directive0] { rvr => requiredFilter(rvr.name, fu, rvr.requiredValue) }
+    implicit def forRVR[T](implicit sfu: SFU, fu: FSFFU[T]): FieldDefAux[RequiredValueReceptacle[T], Unit] =
+      fieldDef[RequiredValueReceptacle[T], Unit] { rvr => requiredFilter(rvr.name, fu, rvr.requiredValue) }
     @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
-    implicit def forRVDR[T](implicit sfu: SFU): FieldDefAux[RequiredValueUnmarshallerReceptacle[T], Directive0] =
-      fieldDef[RequiredValueUnmarshallerReceptacle[T], Directive0] { rvr => requiredFilter(rvr.name, StrictForm.Field.unmarshallerFromFSU(rvr.um), rvr.requiredValue) }
+    implicit def forRVDR[T](implicit sfu: SFU): FieldDefAux[RequiredValueUnmarshallerReceptacle[T], Unit] =
+      fieldDef[RequiredValueUnmarshallerReceptacle[T], Unit] { rvr => requiredFilter(rvr.name, StrictForm.Field.unmarshallerFromFSU(rvr.um), rvr.requiredValue) }
 
     //////////////////// repeated formField support ////////////////////
 
@@ -296,10 +318,10 @@ object FormFieldDirectives extends FormFieldDirectives {
         handleFieldResult(fieldName, result)
       }
     @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
-    implicit def forRepVR[T](implicit sfu: SFU, fu: FSFFU[T]): FieldDefAux[RepeatedValueReceptacle[T], Directive1[Iterable[T]]] =
+    implicit def forRepVR[T](implicit sfu: SFU, fu: FSFFU[T]): FieldDefAux[RepeatedValueReceptacle[T], Tuple1[Iterable[T]]] =
       extractField[RepeatedValueReceptacle[T], Iterable[T]] { rvr => repeatedFilter(rvr.name, fu) }
     @deprecated(message = "Customizing FromEntityUnmarshaller[StrictForm] is not supported any more. Use variant without the implicit SFU.", since = "10.0.11")
-    implicit def forRepVDR[T](implicit sfu: SFU): FieldDefAux[RepeatedValueUnmarshallerReceptacle[T], Directive1[Iterable[T]]] =
+    implicit def forRepVDR[T](implicit sfu: SFU): FieldDefAux[RepeatedValueUnmarshallerReceptacle[T], Tuple1[Iterable[T]]] =
       extractField[RepeatedValueUnmarshallerReceptacle[T], Iterable[T]] { rvr => repeatedFilter(rvr.name, StrictForm.Field.unmarshallerFromFSU(rvr.um)) }
   }
 }

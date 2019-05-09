@@ -144,6 +144,16 @@ object Directive {
     r => directive.tapply(_ => r)
 
   /**
+   * Adds helper functions to `Directive0`
+   */
+  implicit class Directive0Support(val underlying: Directive0) extends AnyVal {
+    def wrap[R](f: => Directive[R]): Directive[R] =
+      underlying.tflatMap { _ =>
+        f
+      }(Tuple.yes[R]) // we will create a Directive[R], so we know it will be tupled correctly
+  }
+
+  /**
    * "Standard" transformers for [[Directive1]].
    * Easier to use than `tmap`, `tflatMap`, etc. defined on [[Directive]] itself,
    * because they provide transparent conversion from [[Tuple1]].

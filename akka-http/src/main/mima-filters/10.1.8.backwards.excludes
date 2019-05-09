@@ -1,3 +1,15 @@
 # Changes against 10.1.8
 # PredefinedFromStringUnmarshallers is a good candidate for @DoNotInherit anyway. See 10.1.1.backwards.excludes for similar.
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.unmarshalling.PredefinedFromStringUnmarshallers.*")
+
+# Fixing some aspects of form fields wrt to streamed entities
+
+# Added new superclass to FormFieldDirectives. Would only be a problem if FormFieldDirectives was extended by a third party.
+ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.http.scaladsl.server.directives.FormFieldDirectivesCompat.formFields")
+ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.http.scaladsl.server.directives.FormFieldDirectivesCompat.formField")
+
+# FieldMagnet / FieldDef should not be extended or called by third-part code.
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives#FieldMagnet.apply")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives#FieldMagnet.apply")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives#FieldDef.apply")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives#FieldDef.apply")
