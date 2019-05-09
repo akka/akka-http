@@ -54,7 +54,7 @@ object Scaladoc extends AutoPlugin {
       // This is already fixed on 2.13.x and will be released with 2.13.0-M6/RC, so it
       // can be removed once we move to 2.13.0-M6.
       // See https://github.com/scala/bug/issues/11045 for more info on the underlying issue.
-      publishArtifact in (Compile, packageDoc) := scalaVersion.value != "2.13.0-M5"
+      publishArtifact in (Compile, packageDoc) := scalaVersion.value != "2.13.0-RC1"
     )
 
   def scaladocOptions(ver: String, base: File, plugins: Seq[File]): List[String] = {
