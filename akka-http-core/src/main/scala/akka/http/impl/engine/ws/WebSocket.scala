@@ -139,19 +139,21 @@ private[http] object WebSocket {
       Flow[MessageDataPart]
         .prefixAndTail(1)
         .collect {
-          case ((first: TextMessagePart) +: Nil, remaining) ⇒
+          case (TextMessagePart(text, true) +: Nil, remaining) ⇒
+            StreamUtils.cancelSource(remaining)(StreamUtils.OnlyRunInGraphInterpreterContext)
+            TextMessage.Strict(text)
+          case ((first @ TextMessagePart(_, false)) +: Nil, remaining) ⇒
             TextMessage(
               (Source.single(first) ++ remaining)
-                .collect {
-                  case t: TextMessagePart if t.data.nonEmpty ⇒ t.data
-                }
+                .collect { case t: TextMessagePart if t.data.nonEmpty ⇒ t.data }
             )
-          case ((first: BinaryMessagePart) +: Nil, remaining) ⇒
+          case (BinaryMessagePart(data, true) +: Nil, remaining) ⇒
+            StreamUtils.cancelSource(remaining)(StreamUtils.OnlyRunInGraphInterpreterContext)
+            BinaryMessage.Strict(data)
+          case ((first @ BinaryMessagePart(_, false)) +: Nil, remaining) ⇒
             BinaryMessage(
               (Source.single(first) ++ remaining)
-                .collect {
-                  case b: BinaryMessagePart if b.data.nonEmpty ⇒ b.data
-                }
+                .collect { case b: BinaryMessagePart if b.data.nonEmpty ⇒ b.data }
             )
         }
 
