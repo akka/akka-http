@@ -138,36 +138,29 @@ private[http] object WebSocket {
     val collectMessage: Flow[MessageDataPart, Message, NotUsed] =
       Flow[MessageDataPart]
         .prefixAndTail(1)
-        .mapConcat {
-          // happens if we get a MessageEnd first which creates a new substream but which is then
-          // filtered out by collect in `prepareMessages` below
-          case (Nil, _) ⇒ Nil
-          case (first +: Nil, remaining) ⇒ (first match {
-            case TextMessagePart(text, true) ⇒
-              StreamUtils.cancelSource(remaining)(StreamUtils.OnlyRunInGraphInterpreterContext)
-              TextMessage.Strict(text)
-            case first @ TextMessagePart(text, false) ⇒
-              TextMessage(
-                (Source.single(first) ++ remaining)
-                  .collect {
-                    case t: TextMessagePart if t.data.nonEmpty ⇒ t.data
-                  })
-            case BinaryMessagePart(data, true) ⇒
-              StreamUtils.cancelSource(remaining)(StreamUtils.OnlyRunInGraphInterpreterContext)
-              BinaryMessage.Strict(data)
-            case first @ BinaryMessagePart(data, false) ⇒
-              BinaryMessage(
-                (Source.single(first) ++ remaining)
-                  .collect {
-                    case t: BinaryMessagePart if t.data.nonEmpty ⇒ t.data
-                  })
-          }) :: Nil
+        .map {
+          case (TextMessagePart(text, true) +: Nil, remaining) ⇒
+            StreamUtils.cancelSource(remaining)(StreamUtils.OnlyRunInGraphInterpreterContext)
+            TextMessage.Strict(text)
+          case ((first @ TextMessagePart(_, false)) +: Nil, remaining) ⇒
+            TextMessage(
+              (Source.single(first) ++ remaining)
+                .collect { case t: TextMessagePart if t.data.nonEmpty ⇒ t.data }
+            )
+          case (BinaryMessagePart(data, true) +: Nil, remaining) ⇒
+            StreamUtils.cancelSource(remaining)(StreamUtils.OnlyRunInGraphInterpreterContext)
+            BinaryMessage.Strict(data)
+          case ((first @ BinaryMessagePart(_, false)) +: Nil, remaining) ⇒
+            BinaryMessage(
+              (Source.single(first) ++ remaining)
+                .collect { case b: BinaryMessagePart if b.data.nonEmpty ⇒ b.data }
+            )
         }
 
     def prepareMessages: Flow[MessagePart, Message, NotUsed] =
       Flow[MessagePart]
         .via(PrepareForUserHandler)
-        .splitWhen(_.isMessageEnd) // FIXME using splitAfter from #16885 would simplify protocol a lot
+        .splitAfter(_.isMessageEnd)
         .collect {
           case m: MessageDataPart ⇒ m
         }
