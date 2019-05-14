@@ -12,6 +12,7 @@ import akka.http.scaladsl.model._
 import akka.testkit._
 import headers._
 import java.net.InetAddress
+import akka.http.scaladsl.server.util.VarArgsFunction1
 
 class MiscDirectivesSpec extends RoutingSpec {
 
@@ -44,34 +45,34 @@ class MiscDirectivesSpec extends RoutingSpec {
 
   "the selectPreferredLanguage directive" should {
     "Accept-Language: de, en" test { selectFrom ⇒
-      selectFrom(Seq("de", "en")) shouldEqual "de"
-      selectFrom(Seq("en", "de")) shouldEqual "en"
+      selectFrom("de", "en") shouldEqual "de"
+      selectFrom("en", "de") shouldEqual "en"
     }
     "Accept-Language: en, de;q=.5" test { selectFrom ⇒
-      selectFrom(Seq("de", "en")) shouldEqual "en"
-      selectFrom(Seq("en", "de")) shouldEqual "en"
+      selectFrom("de", "en") shouldEqual "en"
+      selectFrom("en", "de") shouldEqual "en"
     }
     "Accept-Language: en;q=.5, de" test { selectFrom ⇒
-      selectFrom(Seq("de", "en")) shouldEqual "de"
-      selectFrom(Seq("en", "de")) shouldEqual "de"
+      selectFrom("de", "en") shouldEqual "de"
+      selectFrom("en", "de") shouldEqual "de"
     }
     "Accept-Language: en-US, en;q=.7, *;q=.1, de;q=.5" test { selectFrom ⇒
-      selectFrom(Seq("en", "en-US")) shouldEqual "en-US"
-      selectFrom(Seq("de", "en")) shouldEqual "en"
-      selectFrom(Seq("de", "hu")) shouldEqual "de"
-      selectFrom(Seq("de-DE", "hu")) shouldEqual "de-DE"
-      selectFrom(Seq("hu", "es")) shouldEqual "hu"
-      selectFrom(Seq("es", "hu")) shouldEqual "es"
+      selectFrom("en", "en-US") shouldEqual "en-US"
+      selectFrom("de", "en") shouldEqual "en"
+      selectFrom("de", "hu") shouldEqual "de"
+      selectFrom("de-DE", "hu") shouldEqual "de-DE"
+      selectFrom("hu", "es") shouldEqual "hu"
+      selectFrom("es", "hu") shouldEqual "es"
     }
     "Accept-Language: en, *;q=.5, de;q=0" test { selectFrom ⇒
-      selectFrom(Seq("es", "de")) shouldEqual "es"
-      selectFrom(Seq("de", "es")) shouldEqual "es"
-      selectFrom(Seq("es", "en")) shouldEqual "en"
+      selectFrom("es", "de") shouldEqual "es"
+      selectFrom("de", "es") shouldEqual "es"
+      selectFrom("es", "en") shouldEqual "en"
     }
     "Accept-Language: en, *;q=0" test { selectFrom ⇒
-      selectFrom(Seq("es", "de")) shouldEqual "es"
-      selectFrom(Seq("de", "es")) shouldEqual "de"
-      selectFrom(Seq("es", "en")) shouldEqual "en"
+      selectFrom("es", "de") shouldEqual "es"
+      selectFrom("de", "es") shouldEqual "de"
+      selectFrom("es", "en") shouldEqual "en"
     }
   }
 
@@ -184,7 +185,7 @@ class MiscDirectivesSpec extends RoutingSpec {
   }
 
   implicit class AddStringToIn(acceptLanguageHeaderString: String) {
-    def test(body: ((Seq[String]) ⇒ String) ⇒ Unit): Unit =
+    def test(body: VarArgsFunction1[String, String] ⇒ Unit): Unit =
       s"properly handle `$acceptLanguageHeaderString`" in {
         val Array(name, value) = acceptLanguageHeaderString.split(':')
         val acceptLanguageHeader = HttpHeader.parse(name.trim, value) match {
