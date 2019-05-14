@@ -16,8 +16,15 @@ import akka.http.scaladsl.model._
 import StatusCodes._
 import HttpMethods._
 import Directives._
+import scala.concurrent.Future
+import scala.concurrent.Await
+import scala.concurrent.Promise
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import scala.concurrent.ExecutionContext
+import akka.actor.ActorSystem
 
 class ScalatestRouteTestSpec extends FreeSpec with Matchers with ScalatestRouteTest {
+  implicit val timeout = RouteTestTimeout(5.seconds)
 
   "The ScalatestRouteTest should support" - {
 
@@ -36,6 +43,22 @@ class ScalatestRouteTestSpec extends FreeSpec with Matchers with ScalatestRouteT
         responseEntity shouldEqual HttpEntity(ContentTypes.`text/plain(UTF-8)`, "abc")
         header("Fancy") shouldEqual Some(pinkHeader)
       }
+    }
+
+    "a route that immediately responds in Future.successful" in {
+      stringResponse(Get("http://localhost/futures/quick") ~> Route.seal(Routes.route)) shouldEqual "done-quick"
+    }
+
+    "a route with a quick async boundary" in {
+      stringResponse(Get("http://localhost/futures/buggy") ~> Route.seal(Routes.route)) shouldEqual "done-buggy"
+    }
+
+    "a long running future" in {
+      stringResponse(Get("http://localhost/futures/long") ~> Route.seal(Routes.route)) shouldEqual "done-long"
+    }
+
+    def stringResponse(result: RouteTestResult): String = {
+      Await.result(Unmarshal(result.response).to[String], 5.seconds)
     }
 
     "proper rejection collection" in {
@@ -73,5 +96,28 @@ class ScalatestRouteTestSpec extends FreeSpec with Matchers with ScalatestRouteT
         header("Fancy") shouldEqual Some(pinkHeader)
       }(result)
     }
+  }
+}
+
+object Routes {
+  def route(implicit ec: ExecutionContext, system: ActorSystem): Route =
+    pathPrefix("futures") {
+      pathPrefix("quick") {
+        complete(Future.successful("done-quick"))
+      } ~ pathPrefix("buggy") {
+        complete(Future.successful(()).map(_ => "done-buggy"))
+      } ~ pathPrefix("long") {
+        complete(longFuture("done-long"))
+      }
+    }
+
+  private def longFuture(result: String)(implicit ec: ExecutionContext, system: ActorSystem): Future[String] = {
+    val promise = Promise[String]()
+
+    system.scheduler.scheduleOnce(1.seconds) {
+      val _ = promise.success(result)
+    }
+
+    promise.future
   }
 }
