@@ -41,7 +41,7 @@ object Dependencies {
     val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.2.0" // Scala License
 
     // For akka-http spray-json support
-    val sprayJson   = "io.crashbox"                  %% "spray-json"                   % "1.3.5-3"       // ApacheV2
+    val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.5"       // ApacheV2
 
     // For akka-http-jackson support
     val jackson     = "com.fasterxml.jackson.core"    % "jackson-databind"             % jacksonVersion // ApacheV2
