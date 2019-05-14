@@ -45,21 +45,46 @@ class ScalatestRouteTestSpec extends FreeSpec with Matchers with ScalatestRouteT
       }
     }
 
-    "a route that immediately responds in Future.successful" in {
+    //tests that run the route without check() - these complete immediately even if the future doesn't
+    "a route that immediately responds in Future.successful - without check {}" in {
       stringResponse(Get("http://localhost/futures/quick") ~> Route.seal(Routes.route)) shouldEqual "done-quick"
     }
 
-    "a route with a quick async boundary" in {
+    "a route with a quick async boundary - without check {}" in {
       stringResponse(Get("http://localhost/futures/buggy") ~> Route.seal(Routes.route)) shouldEqual "done-buggy"
     }
 
-    "a long running future" in {
+    "a long running future - without check {}" in {
       stringResponse(Get("http://localhost/futures/long") ~> Route.seal(Routes.route)) shouldEqual "done-long"
     }
 
     def stringResponse(result: RouteTestResult): String = {
       Await.result(Unmarshal(result.response).to[String], 5.seconds)
     }
+
+    //tests that run after an async boundary - these complete after the future is completed or the timeout hits
+    "a route that immediately responds in Future.successful - with check {}" in afterAsyncBoundary {
+      Get("http://localhost/futures/quick") ~> Route.seal(Routes.route) ~> check {
+        responseAs[String] shouldEqual "done-quick"
+      }
+    }
+
+    "a route with a quick async boundary - with check {}" in afterAsyncBoundary {
+      Get("http://localhost/futures/buggy") ~> Route.seal(Routes.route) ~> check {
+        responseAs[String] shouldEqual "done-buggy"
+      }
+    }
+
+    "a long running future - with check {}" in afterAsyncBoundary {
+      Get("http://localhost/futures/long") ~> Route.seal(Routes.route) ~> check {
+        responseAs[String] shouldEqual "done-long"
+      }
+    }
+
+    def afterAsyncBoundary[A](a: => A): A = {
+      Await.result(Future.successful(()).map(_ => a), 10.seconds)
+    }
+
 
     "proper rejection collection" in {
       Post("/abc", "content") ~> {
