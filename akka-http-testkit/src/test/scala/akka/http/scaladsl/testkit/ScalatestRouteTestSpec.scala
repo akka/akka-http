@@ -105,7 +105,7 @@ object Routes {
       pathPrefix("quick") {
         complete(Future.successful("done-quick"))
       } ~ pathPrefix("buggy") {
-        complete(Future.successful(()).map(_ => "done-buggy"))
+        complete(Future.successful(()).map(_ ⇒ "done-buggy"))
       } ~ pathPrefix("long") {
         complete(longFuture("done-long"))
       }
