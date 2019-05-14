@@ -138,7 +138,7 @@ private[http] object WebSocket {
     val collectMessage: Flow[MessageDataPart, Message, NotUsed] =
       Flow[MessageDataPart]
         .prefixAndTail(1)
-        .collect {
+        .map {
           case (TextMessagePart(text, true) +: Nil, remaining) ⇒
             StreamUtils.cancelSource(remaining)(StreamUtils.OnlyRunInGraphInterpreterContext)
             TextMessage.Strict(text)
