@@ -20,6 +20,7 @@ import akka.http.javadsl.settings.ServerSettings;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.stream.Materializer;
 import akka.util.ByteString;
+import akka.util.ByteString$;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -83,7 +84,7 @@ public class CustomMediaTypesExampleTest extends JUnitRouteTest {
 
     assertEquals(StatusCodes.OK, response.status());
     final String body = response.entity().toStrict(1000, materializer).toCompletableFuture().get()
-      .getDataBytes().runFold(ByteString.empty(), (a, b) -> a.$plus$plus(b), materializer)
+      .getDataBytes().runFold(ByteString$.MODULE$.empty(), (a, b) -> a.$plus$plus(b), materializer)
       .toCompletableFuture().get().utf8String();
     assertEquals("application/custom = class akka.http.scaladsl.model.ContentType$WithFixedCharset", body); // it's the Scala DSL package because it's the only instance of the Java DSL
   }
