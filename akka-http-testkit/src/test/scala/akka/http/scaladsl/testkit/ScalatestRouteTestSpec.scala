@@ -81,10 +81,9 @@ class ScalatestRouteTestSpec extends FreeSpec with Matchers with ScalatestRouteT
       }
     }
 
-    def afterAsyncBoundary[A](a: => A): A = {
-      Await.result(Future.successful(()).map(_ => a), 10.seconds)
+    def afterAsyncBoundary[A](a: ⇒ A): A = {
+      Await.result(Future.successful(()).map(_ ⇒ a), 10.seconds)
     }
-
 
     "proper rejection collection" in {
       Post("/abc", "content") ~> {
