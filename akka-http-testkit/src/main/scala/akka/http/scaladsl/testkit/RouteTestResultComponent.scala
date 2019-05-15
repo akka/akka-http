@@ -70,7 +70,7 @@ trait RouteTestResultComponent {
         } else failTest("Route completed/rejected more than once")
       }
 
-    private[testkit] def awaitResult: this.type = {
+    private[testkit] def awaitResult: this.type = scala.concurrent.blocking {
       latch.await(timeout.toMillis, MILLISECONDS)
       this
     }
