@@ -4,6 +4,8 @@
 
 package akka.http.scaladsl.unmarshalling
 
+import java.util.UUID
+
 import scala.collection.immutable
 import akka.http.scaladsl.util.FastFuture
 import akka.util.ByteString
@@ -40,6 +42,15 @@ trait PredefinedFromStringUnmarshallers {
         case "false" | "no" | "off" | "0" ⇒ false
         case ""                           ⇒ throw Unmarshaller.NoContentException
         case x                            ⇒ throw new IllegalArgumentException(s"'$x' is not a valid Boolean value")
+      }
+    }
+
+  implicit val uuidFromStringUnmarshaller: Unmarshaller[String, UUID] =
+    Unmarshaller.strict { string ⇒
+      try UUID.fromString(string)
+      catch {
+        case e: IllegalArgumentException ⇒
+          throw new IllegalArgumentException(s"'$string' is not a valid UUID value", e)
       }
     }
 
