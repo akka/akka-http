@@ -12,6 +12,7 @@ import akka.http.scaladsl.model._
 import akka.testkit._
 import headers._
 import java.net.InetAddress
+import akka.http.scaladsl.server.util.VarArgsFunction1
 
 class MiscDirectivesSpec extends RoutingSpec {
 
@@ -184,7 +185,7 @@ class MiscDirectivesSpec extends RoutingSpec {
   }
 
   implicit class AddStringToIn(acceptLanguageHeaderString: String) {
-    def test(body: ((String*) ⇒ String) ⇒ Unit): Unit =
+    def test(body: VarArgsFunction1[String, String] ⇒ Unit): Unit =
       s"properly handle `$acceptLanguageHeaderString`" in {
         val Array(name, value) = acceptLanguageHeaderString.split(':')
         val acceptLanguageHeader = HttpHeader.parse(name.trim, value) match {

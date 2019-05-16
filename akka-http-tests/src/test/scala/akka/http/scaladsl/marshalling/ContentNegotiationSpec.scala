@@ -9,12 +9,13 @@ import scala.concurrent.duration._
 import akka.http.scaladsl.server.MediaTypeNegotiator
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
 import akka.util.ByteString
-import org.scalatest.{ Matchers, FreeSpec }
+import org.scalatest.{ FreeSpec, Matchers }
 import akka.http.scaladsl.util.FastFuture._
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
 import MediaTypes._
 import HttpCharsets._
+import akka.http.scaladsl.server.util.VarArgsFunction1
 
 class ContentNegotiationSpec extends FreeSpec with Matchers {
   "Content Negotiation should work properly for requests with header(s)" - {
@@ -177,7 +178,7 @@ class ContentNegotiationSpec extends FreeSpec with Matchers {
     }
   }
 
-  def testHeaders[U](headers: HttpHeader*)(body: ((Alternative*) ⇒ Option[ContentType]) ⇒ U): U = {
+  def testHeaders[U](headers: HttpHeader*)(body: VarArgsFunction1[Alternative, Option[ContentType]] ⇒ U): U = {
     val request = HttpRequest(headers = headers.toVector)
     body { alternatives ⇒
       import scala.concurrent.ExecutionContext.Implicits.global
@@ -209,7 +210,7 @@ class ContentNegotiationSpec extends FreeSpec with Matchers {
   }
 
   implicit class AddStringToIn(example: String) {
-    def test(body: ((Alternative*) ⇒ Option[ContentType]) ⇒ Unit): Unit = example in {
+    def test(body: VarArgsFunction1[Alternative, Option[ContentType]] ⇒ Unit): Unit = example in {
       val headers =
         if (example != "(without headers)") {
           parseHeaders(example)

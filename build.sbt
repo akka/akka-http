@@ -90,17 +90,23 @@ lazy val root = Project(
     docs
   )
 
-val commonSettings = Seq(
-  // Adds a `src/main/scala-2.13+` source directory for Scala 2.13 and newer
-  // and a `src/main/scala-2.13-` source directory for Scala version older than 2.13
-  unmanagedSourceDirectories in Compile += {
-    val sourceDir = (sourceDirectory in Compile).value
+/**
+ * Adds a `src/.../scala-2.13+` source directory for Scala 2.13 and newer
+ * and a `src/.../scala-2.13-` source directory for Scala version older than 2.13
+ */
+def add213CrossDirs(config: Configuration): Seq[Setting[_]] = Seq(
+  unmanagedSourceDirectories in config += {
+    val sourceDir = (sourceDirectory in config).value
     CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, n)) if n >= 13 => sourceDir / "scala-2.13+"
       case _                       => sourceDir / "scala-2.13-"
     }
-  },
+  }
 )
+
+val commonSettings =
+  add213CrossDirs(Compile) ++
+  add213CrossDirs(Test)
 
 val scalaMacroSupport = Seq(
   scalacOptions ++= {
