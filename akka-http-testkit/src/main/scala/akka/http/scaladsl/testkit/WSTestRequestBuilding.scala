@@ -24,7 +24,7 @@ trait WSTestRequestBuilding {
             StatusCodes.SwitchingProtocols,
             headers =
               Upgrade(UpgradeProtocol("websocket") :: Nil) ::
-                subprotocol.map(p ⇒ `Sec-WebSocket-Protocol`(p :: Nil)).toList)
+                subprotocol.map(p => `Sec-WebSocket-Protocol`(p :: Nil)).toList)
         }
       })
 }

@@ -198,7 +198,7 @@ class UriSpec extends WordSpec with Matchers {
     import Path.Empty
     "be parsed and rendered correctly" in {
       def roundTripTo(p: Path, cs: Charset = UTF8) =
-        Matcher[String] { s ⇒
+        Matcher[String] { s =>
           val rendering = UriRendering.renderPath(new StringRendering, p, cs).get
           if (rendering != s) MatchResult(matches = false, s"The path rendered to '$rendering' rather than '$s'", "<?>")
           else if (Path(s, cs) != p) MatchResult(matches = false, s"The string parsed to '${Path(s, cs)}' rather than '$p'", "<?>")

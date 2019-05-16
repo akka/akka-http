@@ -4,7 +4,7 @@
 
 package akka.http.impl.engine
 
-import java.lang.{ StringBuilder ⇒ JStringBuilder }
+import java.lang.{ StringBuilder => JStringBuilder }
 import akka.http.scaladsl.settings.ParserSettings
 
 import scala.annotation.tailrec
@@ -19,11 +19,11 @@ import akka.http.impl.util.SingletonException
 package object parsing {
 
   private[http] def escape(c: Char): String = c match {
-    case '\t'                           ⇒ "\\t"
-    case '\r'                           ⇒ "\\r"
-    case '\n'                           ⇒ "\\n"
-    case x if Character.isISOControl(x) ⇒ "\\u%04x" format c.toInt
-    case x                              ⇒ x.toString
+    case '\t'                           => "\\t"
+    case '\r'                           => "\\r"
+    case '\n'                           => "\\n"
+    case x if Character.isISOControl(x) => "\\u%04x" format c.toInt
+    case x                              => x.toString
   }
 
   private[http] def byteChar(input: ByteString, ix: Int): Char = byteAt(input, ix).toChar
@@ -41,11 +41,11 @@ package object parsing {
                                     settings:          ParserSettings.ErrorLoggingVerbosity,
                                     ignoreHeaderNames: Set[String]                          = Set.empty): Unit =
     settings match {
-      case ParserSettings.ErrorLoggingVerbosity.Off ⇒ // nothing to do
-      case ParserSettings.ErrorLoggingVerbosity.Simple ⇒
+      case ParserSettings.ErrorLoggingVerbosity.Off => // nothing to do
+      case ParserSettings.ErrorLoggingVerbosity.Simple =>
         if (!ignoreHeaderNames.contains(info.errorHeaderName))
           log.warning(info.summary)
-      case ParserSettings.ErrorLoggingVerbosity.Full ⇒
+      case ParserSettings.ErrorLoggingVerbosity.Full =>
         if (!ignoreHeaderNames.contains(info.errorHeaderName))
           log.warning(info.formatPretty)
     }

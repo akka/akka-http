@@ -9,7 +9,7 @@ import scala.collection.immutable
 import akka.NotUsed
 import akka.stream._
 import akka.http.impl.util.JavaMapping
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 import akka.http.scaladsl.model.HttpResponse
 
 /**

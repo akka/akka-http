@@ -740,8 +740,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
 
       def checkContentType(headerValue: String, contentType: ContentType) = {
         val customMediaTypes: MediaTypes.FindCustom = {
-          case ("application", "json") ⇒ Some(openJson)
-          case _                       ⇒ None
+          case ("application", "json") => Some(openJson)
+          case _                       => None
         }
         val headerParserSettings = HeaderParser.Settings(customMediaTypes = customMediaTypes)
         val header = `Content-Type`(contentType)
@@ -765,8 +765,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       header.toString shouldEqual header.renderedTo(expectedRendering).rendering("")
     }
   }
-  sealed trait TestExample extends (String ⇒ Unit)
-  implicit class TestHeader(val header: HttpHeader) extends TestExample { outer ⇒
+  sealed trait TestExample extends (String => Unit)
+  implicit class TestHeader(val header: HttpHeader) extends TestExample { outer =>
     def apply(line: String) = {
       val Array(name, value) = line.split(": ", 2)
       val parseResult = HttpHeader.parse(name, value, settings)
@@ -774,7 +774,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       val HttpHeader.ParsingResult.Ok(parsedHeader, Nil) = parseResult
       try parsedHeader should equal(header)
       catch {
-        case e: TestFailedException if parsedHeader.toString == header.toString ⇒
+        case e: TestFailedException if parsedHeader.toString == header.toString =>
           def className[T](t: T): String = scala.reflect.NameTransformer.decode(t.getClass.getName)
           throw new AssertionError(s"Test equals failed with equal toString. parsedHeader class was ${className(parsedHeader)}, " +
             s"header class was ${className(header)}", e)
@@ -786,8 +786,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       new TestHeader(header) {
         override def rendering(line: String): String =
           header match {
-            case x: ModeledHeader ⇒ x.name + ": " + expectedRendering
-            case _                ⇒ expectedRendering
+            case x: ModeledHeader => x.name + ": " + expectedRendering
+            case _                => expectedRendering
           }
 
         override def settings: Settings = outer.settings
@@ -811,11 +811,11 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
 
   def renderFromHeaderTo(header: TestHeader, line: String): Matcher[HttpHeader.ParsingResult] =
     Matcher {
-      case HttpHeader.ParsingResult.Ok(h, Nil) ⇒
+      case HttpHeader.ParsingResult.Ok(h, Nil) =>
         MatchResult(
           h.toString === header.rendering(line),
           s"doesn't render to '${header.rendering(line)}' but '${h.toString}'", "XXX")
-      case result ⇒
+      case result =>
         val info = result.errors.head
         fail(s"Input `${header.header}` failed to parse:\n${info.summary}\n${info.detail}")
     }

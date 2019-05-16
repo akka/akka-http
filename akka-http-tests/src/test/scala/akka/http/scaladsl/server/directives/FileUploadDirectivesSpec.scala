@@ -39,7 +39,7 @@ class FileUploadDirectivesSpec extends RoutingSpec {
       try {
         Post("/", simpleMultipartUpload) ~> {
           uploadedFile("fieldName") {
-            case (info, tmpFile) ⇒
+            case (info, tmpFile) =>
               file = Some(tmpFile)
               complete(info.toString)
           }
@@ -69,7 +69,7 @@ class FileUploadDirectivesSpec extends RoutingSpec {
 
         try {
           Post("/", formDataUpload) ~>
-            storeUploadedFile("fieldName", tempDest) { (info, tmpFile) ⇒
+            storeUploadedFile("fieldName", tempDest) { (info, tmpFile) =>
               complete(info.toString)
             } ~> check {
               file.isDefined shouldEqual true
@@ -112,9 +112,9 @@ class FileUploadDirectivesSpec extends RoutingSpec {
 
         try {
           Post("/", formDataUpload) ~> {
-            storeUploadedFiles("fieldName", tempDest) { fields ⇒
+            storeUploadedFiles("fieldName", tempDest) { fields =>
               val content = fields.foldLeft("") {
-                case (acc, (fileInfo, tmpFile)) ⇒
+                case (acc, (fileInfo, tmpFile)) =>
                   acc + read(tmpFile)
               }
               complete(content)
@@ -157,14 +157,14 @@ class FileUploadDirectivesSpec extends RoutingSpec {
   "the fileUpload directive" should {
 
     def echoAsAService =
-      extractRequestContext { ctx ⇒
+      extractRequestContext { ctx =>
         fileUpload("field1") {
-          case (info, bytes) ⇒
+          case (info, bytes) =>
             // stream the bytes somewhere
-            val allBytesF = bytes.runFold(ByteString.empty) { (all, bytes) ⇒ all ++ bytes }
+            val allBytesF = bytes.runFold(ByteString.empty) { (all, bytes) => all ++ bytes }
 
             // sum all individual file sizes
-            onSuccess(allBytesF) { allBytes ⇒
+            onSuccess(allBytesF) { allBytes =>
               complete(allBytes)
             }
         }
@@ -211,14 +211,14 @@ class FileUploadDirectivesSpec extends RoutingSpec {
 
     "reject the file upload if the field name is missing" in {
       val route =
-        extractRequestContext { ctx ⇒
+        extractRequestContext { ctx =>
           fileUpload("missing") {
-            case (info, bytes) ⇒
+            case (info, bytes) =>
               // stream the bytes somewhere
-              val allBytesF = bytes.runFold(ByteString.empty) { (all, bytes) ⇒ all ++ bytes }
+              val allBytesF = bytes.runFold(ByteString.empty) { (all, bytes) => all ++ bytes }
 
               // sum all individual file sizes
-              onSuccess(allBytesF) { allBytes ⇒
+              onSuccess(allBytesF) { allBytes =>
                 complete(allBytes)
               }
           }
@@ -243,9 +243,9 @@ class FileUploadDirectivesSpec extends RoutingSpec {
 
       @volatile var secondWasFullyRead = false
       val secondSource =
-        Source.fromIterator(() ⇒ Iterator.from(1))
+        Source.fromIterator(() => Iterator.from(1))
           .take(100)
-          .map { i ⇒
+          .map { i =>
             if (i == 100) secondWasFullyRead = true
             akka.util.ByteString("abcdefghij")
           }
@@ -310,11 +310,11 @@ class FileUploadDirectivesSpec extends RoutingSpec {
   "the fileUploadAll directive" should {
 
     def echoAsAService =
-      extractRequestContext { ctx ⇒
-        fileUploadAll("field1") { files ⇒
+      extractRequestContext { ctx =>
+        fileUploadAll("field1") { files =>
           complete {
             Future.traverse(files) { // all the files can be processed in parallel because they are buffered on disk
-              case (info, bytes) ⇒
+              case (info, bytes) =>
                 // concatenate all data from a single
                 bytes.runFold(ByteString.empty)(_ ++ _)
             }.map(_.reduce(_ ++ _)) // and then from all files
@@ -377,14 +377,14 @@ class FileUploadDirectivesSpec extends RoutingSpec {
 
     "reject the file upload if the field name is missing" in {
       val route =
-        extractRequestContext { ctx ⇒
+        extractRequestContext { ctx =>
           fileUpload("missing") {
-            case (info, bytes) ⇒
+            case (info, bytes) =>
               // stream the bytes somewhere
-              val allBytesF = bytes.runFold(ByteString.empty) { (all, bytes) ⇒ all ++ bytes }
+              val allBytesF = bytes.runFold(ByteString.empty) { (all, bytes) => all ++ bytes }
 
               // sum all individual file sizes
-              onSuccess(allBytesF) { allBytes ⇒
+              onSuccess(allBytesF) { allBytes =>
                 complete(allBytes)
               }
           }
@@ -415,5 +415,5 @@ class FileUploadDirectivesSpec extends RoutingSpec {
   }
 
   private def inChunks(input: String, chunkSize: Int = 10000): Source[ByteString, NotUsed] =
-    Source.fromIterator(() ⇒ input.grouped(10000).map(ByteString(_)))
+    Source.fromIterator(() => input.grouped(10000).map(ByteString(_)))
 }

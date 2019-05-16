@@ -61,7 +61,7 @@ private[akka] class CollectorStage[T] extends GraphStageWithMaterializedValue[Si
       var collectedElements = new VectorBuilder[T]()
       val state = new AtomicReference[State](Uninitialized)
 
-      val collectNowCallback = getAsyncCallback[Promise[(Seq[T], Boolean)]] { promise ⇒
+      val collectNowCallback = getAsyncCallback[Promise[(Seq[T], Boolean)]] { promise =>
         require(state.get().isInstanceOf[Scheduled])
         promise.complete(Success(collectedElements.result() → false))
         completeStage()
@@ -73,12 +73,12 @@ private[akka] class CollectorStage[T] extends GraphStageWithMaterializedValue[Si
 
         @tailrec def handleState(): Unit =
           state.get() match {
-            case Uninitialized ⇒
+            case Uninitialized =>
               if (!state.compareAndSet(Uninitialized, Initialized)) handleState()
-            case early @ Scheduled(callback) ⇒
+            case early @ Scheduled(callback) =>
               // make sure to go through asynchandler -> actor interpreter mailbox
               Future(collectNowCallback.invoke(callback))(materializer.executionContext)
-            case s ⇒ throw new IllegalStateException(s"Unexpected state $s")
+            case s => throw new IllegalStateException(s"Unexpected state $s")
           }
         handleState()
       }
@@ -93,13 +93,13 @@ private[akka] class CollectorStage[T] extends GraphStageWithMaterializedValue[Si
 
         @tailrec def handleState(): Unit =
           state.get() match {
-            case Initialized ⇒
+            case Initialized =>
               if (!state.compareAndSet(Initialized, Scheduled(p))) handleState()
               else collectNowCallback.invoke(p)
-            case Uninitialized ⇒
+            case Uninitialized =>
               if (!state.compareAndSet(Uninitialized, Scheduled(p))) handleState()
-            case Completed(result) ⇒ p.complete(result)
-            case s                 ⇒ throw new IllegalStateException(s"Unexpected state $s")
+            case Completed(result) => p.complete(result)
+            case s                 => throw new IllegalStateException(s"Unexpected state $s")
           }
 
         handleState()
@@ -111,15 +111,15 @@ private[akka] class CollectorStage[T] extends GraphStageWithMaterializedValue[Si
 
       def onCompletion(els: Try[(Seq[T], Boolean)]): Unit =
         state.get() match {
-          case Scheduled(p) ⇒
+          case Scheduled(p) =>
             p.complete(els)
             completeStage()
 
-          case Initialized ⇒
+          case Initialized =>
             // unfortunately we need an extra state here because the stage will not receive any more async callbacks
             // when the single inlet has completed
             if (!state.compareAndSet(Initialized, Completed(els))) onCompletion(els)
-          case s ⇒ throw new IllegalStateException(s"Unexpected state $s")
+          case s => throw new IllegalStateException(s"Unexpected state $s")
         }
     }
     (logic, logic)

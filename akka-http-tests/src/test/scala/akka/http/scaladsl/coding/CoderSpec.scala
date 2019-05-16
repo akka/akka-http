@@ -88,8 +88,8 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
     "support chunked round-trip encoding/decoding" in {
       val chunks = largeTextBytes.grouped(512).toVector
       val comp = Coder.newCompressor
-      val compressedChunks = chunks.map { chunk ⇒ comp.compressAndFlush(chunk) } :+ comp.finish()
-      val uncompressed = decodeFromIterator(() ⇒ compressedChunks.iterator)
+      val compressedChunks = chunks.map { chunk => comp.compressAndFlush(chunk) } :+ comp.finish()
+      val uncompressed = decodeFromIterator(() => compressedChunks.iterator)
 
       uncompressed should readAs(largeText)
     }
@@ -123,7 +123,7 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
           .runWith(Sink.seq)
           .awaitResult(3.seconds.dilated)
 
-      forAll(resultBs) { bs ⇒
+      forAll(resultBs) { bs =>
         bs.length should be <= limit
       }
       val result = resultBs.reduce(_ ++ _)
@@ -141,7 +141,7 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
         ByteString(Array.fill(size)(1.toByte))
 
       val sizesAfterRoundtrip =
-        Source.fromIterator(() ⇒ sizes.toIterator.map(createByteString))
+        Source.fromIterator(() => sizes.toIterator.map(createByteString))
           .via(Coder.encoderFlow)
           .via(Coder.decoderFlow)
           .runFold(Seq.empty[Int])(_ :+ _.size)
@@ -188,7 +188,7 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
   def decodeChunks(input: Source[ByteString, NotUsed]): ByteString =
     input.via(Coder.decoderFlow).join.awaitResult(3.seconds.dilated)
 
-  def decodeFromIterator(iterator: () ⇒ Iterator[ByteString]): ByteString =
+  def decodeFromIterator(iterator: () => Iterator[ByteString]): ByteString =
     Await.result(Source.fromIterator(iterator).via(Coder.decoderFlow).join, 3.seconds.dilated)
 
   implicit class EnhancedThrowable(val throwable: Throwable) {

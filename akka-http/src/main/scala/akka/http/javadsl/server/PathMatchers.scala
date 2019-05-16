@@ -11,8 +11,8 @@ import akka.http.scaladsl.model.Uri.Path
 
 import scala.collection.JavaConverters._
 
-import akka.http.scaladsl.server.{ PathMatcher ⇒ SPathMatcher }
-import akka.http.scaladsl.server.{ PathMatchers ⇒ SPathMatchers }
+import akka.http.scaladsl.server.{ PathMatcher => SPathMatcher }
+import akka.http.scaladsl.server.{ PathMatchers => SPathMatchers }
 import akka.http.javadsl.common.RegexConverters.toScala
 
 final class PathMatchers
@@ -20,11 +20,11 @@ final class PathMatchers
 object PathMatchers {
   import JavaPathMatchers._
 
-  private[this] val IntegerSegment: PathMatcher1[java.lang.Integer] = fromScala1(SPathMatchers.IntNumber.map { i ⇒ i: java.lang.Integer })
-  private[this] val LongSegment: PathMatcher1[java.lang.Long] = fromScala1(SPathMatchers.LongNumber.map { i ⇒ i: java.lang.Long })
-  private[this] val HexIntegerSegment: PathMatcher1[java.lang.Integer] = fromScala1(SPathMatchers.HexIntNumber.map { i ⇒ i: java.lang.Integer })
-  private[this] val HexLongSegment: PathMatcher1[java.lang.Long] = fromScala1(SPathMatchers.HexLongNumber.map { i ⇒ i: java.lang.Long })
-  private[this] val DoubleSegment: PathMatcher1[java.lang.Double] = fromScala1(SPathMatchers.DoubleNumber.map { i ⇒ i: java.lang.Double })
+  private[this] val IntegerSegment: PathMatcher1[java.lang.Integer] = fromScala1(SPathMatchers.IntNumber.map { i => i: java.lang.Integer })
+  private[this] val LongSegment: PathMatcher1[java.lang.Long] = fromScala1(SPathMatchers.LongNumber.map { i => i: java.lang.Long })
+  private[this] val HexIntegerSegment: PathMatcher1[java.lang.Integer] = fromScala1(SPathMatchers.HexIntNumber.map { i => i: java.lang.Integer })
+  private[this] val HexLongSegment: PathMatcher1[java.lang.Long] = fromScala1(SPathMatchers.HexLongNumber.map { i => i: java.lang.Long })
+  private[this] val DoubleSegment: PathMatcher1[java.lang.Double] = fromScala1(SPathMatchers.DoubleNumber.map { i => i: java.lang.Double })
   private[this] val UUIDSegment: PathMatcher1[UUID] = fromScala1(SPathMatchers.JavaUUID)
 
   private[this] val Neutral = fromScala0(SPathMatchers.Neutral)

@@ -75,7 +75,7 @@ private[client] object PoolFlow {
   def apply(
     connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]],
     settings:       ConnectionPoolSettings, log: LoggingAdapter): Flow[RequestContext, ResponseContext, NotUsed] =
-    Flow.fromGraph(GraphDSL.create[FlowShape[RequestContext, ResponseContext]]() { implicit b ⇒
+    Flow.fromGraph(GraphDSL.create[FlowShape[RequestContext, ResponseContext]]() { implicit b =>
       import settings._
       import GraphDSL.Implicits._
 

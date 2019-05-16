@@ -462,7 +462,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
 
   private def parseMultipleTo(events: Seq[FrameEvent], checkRendering: Boolean): Matcher[Seq[ByteString]] =
     equal(events).matcher[Seq[FrameEvent]].compose {
-      (chunks: Seq[ByteString]) ⇒
+      (chunks: Seq[ByteString]) =>
         val result = parseToEvents(chunks)
         result shouldEqual events
 

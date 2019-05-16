@@ -14,7 +14,7 @@ import com.typesafe.config.Config
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class CachingSettings private[http] () extends javadsl.CachingSettings { self: CachingSettingsImpl ⇒
+abstract class CachingSettings private[http] () extends javadsl.CachingSettings { self: CachingSettingsImpl =>
   def lfuCacheSettings: LfuCacheSettings
 
   // overloads for idiomatic Scala use

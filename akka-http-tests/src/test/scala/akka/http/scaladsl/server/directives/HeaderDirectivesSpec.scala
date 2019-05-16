@@ -12,7 +12,7 @@ import org.scalatest.Inside
 class HeaderDirectivesSpec extends RoutingSpec with Inside {
 
   "The headerValuePF directive" should {
-    lazy val myHeaderValue = headerValuePF { case Connection(tokens) ⇒ tokens.head }
+    lazy val myHeaderValue = headerValuePF { case Connection(tokens) => tokens.head }
 
     "extract the respective header value if a matching request header is present" in {
       Get("/abc") ~> addHeader(Connection("close")) ~> myHeaderValue { echoComplete } ~> check {
@@ -26,16 +26,16 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
 
     "reject with a MalformedHeaderRejection if the extract function throws an exception" in {
       Get("/abc") ~> addHeader(Connection("close")) ~> {
-        (headerValuePF { case _ ⇒ sys.error("Naah!") }) { echoComplete }
+        (headerValuePF { case _ => sys.error("Naah!") }) { echoComplete }
       } ~> check {
-        inside(rejection) { case MalformedHeaderRejection("Connection", "Naah!", _) ⇒ }
+        inside(rejection) { case MalformedHeaderRejection("Connection", "Naah!", _) => }
       }
     }
   }
 
   "The headerValueByType directive" should {
     val route =
-      headerValueByType[Origin]() { origin ⇒
+      headerValueByType[Origin]() { origin =>
         complete(s"The first origin was ${origin.origins.head}")
       }
     "extract a header if the type is matching" in {
@@ -47,17 +47,17 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
     "reject a request if no header of the given type is present" in {
       Get("abc") ~> route ~> check {
         inside(rejection) {
-          case MissingHeaderRejection("Origin") ⇒
+          case MissingHeaderRejection("Origin") =>
         }
       }
     }
     "reject a request for missing header, and format it properly when header included special characters (e.g. `-`)" in {
-      val route = headerValueByType[`User-Agent`]() { agent ⇒
+      val route = headerValueByType[`User-Agent`]() { agent =>
         complete(s"Agent: ${agent}")
       }
       Get("abc") ~> route ~> check {
         inside(rejection) {
-          case MissingHeaderRejection("User-Agent") ⇒
+          case MissingHeaderRejection("User-Agent") =>
         }
       }
     }
@@ -65,7 +65,7 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
 
   "The headerValueByName directive" should {
     lazy val route =
-      headerValueByName("Referer") { referer ⇒
+      headerValueByName("Referer") { referer =>
         complete(s"The referer was $referer")
       }
 
@@ -77,7 +77,7 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
 
     "extract a header with Symbol name" in {
       lazy val symbolRoute =
-        headerValueByName('Referer) { referer ⇒
+        headerValueByName('Referer) { referer =>
           complete(s"The symbol referer was $referer")
         }
 
@@ -89,7 +89,7 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
     "reject a request if no header of the given type is present" in {
       Get("abc") ~> route ~> check {
         inside(rejection) {
-          case MissingHeaderRejection("Referer") ⇒
+          case MissingHeaderRejection("Referer") =>
         }
       }
     }
@@ -97,7 +97,7 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
 
   "The optionalHeaderValueByName directive" should {
     lazy val route =
-      optionalHeaderValueByName("Referer") { referer ⇒
+      optionalHeaderValueByName("Referer") { referer =>
         complete(s"The referer was $referer")
       }
 
@@ -109,7 +109,7 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
 
     "extract a header with Symbol name" in {
       lazy val symbolRoute =
-        optionalHeaderValueByName('Referer) { referer ⇒
+        optionalHeaderValueByName('Referer) { referer =>
           complete(s"The symbol referer was $referer")
         }
 
@@ -127,8 +127,8 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
 
   "The optionalHeaderValue directive" should {
     lazy val myHeaderValue = optionalHeaderValue {
-      case Connection(tokens) ⇒ Some(tokens.head)
-      case _                  ⇒ None
+      case Connection(tokens) => Some(tokens.head)
+      case _                  => None
     }
 
     "extract the respective header value if a matching request header is present" in {
@@ -143,10 +143,10 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
 
     "reject with a MalformedHeaderRejection if the extract function throws an exception" in {
       Get("/abc") ~> addHeader(Connection("close")) ~> {
-        val myHeaderValue = optionalHeaderValue { case _ ⇒ sys.error("Naaah!") }
+        val myHeaderValue = optionalHeaderValue { case _ => sys.error("Naaah!") }
         myHeaderValue { echoComplete }
       } ~> check {
-        inside(rejection) { case MalformedHeaderRejection("Connection", "Naaah!", _) ⇒ }
+        inside(rejection) { case MalformedHeaderRejection("Connection", "Naaah!", _) => }
       }
     }
   }
@@ -154,8 +154,8 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
   "The optionalHeaderValueByType directive" should {
     val route =
       optionalHeaderValueByType[Origin]() {
-        case Some(origin) ⇒ complete(s"The first origin was ${origin.origins.head}")
-        case None         ⇒ complete("No Origin header found.")
+        case Some(origin) => complete(s"The first origin was ${origin.origins.head}")
+        case None         => complete("No Origin header found.")
       }
     "extract Some(header) if the type is matching" in {
       val originHeader = Origin(HttpOrigin("http://localhost:8080"))
@@ -184,7 +184,7 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
     "reject request with missed origin header" in {
       Get("abc") ~> route ~> check {
         inside(rejection) {
-          case MissingHeaderRejection(headerName) ⇒ headerName shouldEqual Origin.name
+          case MissingHeaderRejection(headerName) => headerName shouldEqual Origin.name
         }
       }
     }
@@ -193,7 +193,7 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
       val invalidOriginHeader = Origin(invalidHttpOrigin)
       Get("abc") ~> invalidOriginHeader ~> route ~> check {
         inside(rejection) {
-          case InvalidOriginRejection(allowedOrigins) ⇒ allowedOrigins shouldEqual Seq(correctOrigin)
+          case InvalidOriginRejection(allowedOrigins) => allowedOrigins shouldEqual Seq(correctOrigin)
         }
       }
       Get("abc") ~> invalidOriginHeader ~> Route.seal(route) ~> check {

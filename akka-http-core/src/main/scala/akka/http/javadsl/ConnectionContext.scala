@@ -4,7 +4,7 @@
 
 package akka.http.javadsl
 
-import java.util.{ Optional, Collection ⇒ JCollection }
+import java.util.{ Optional, Collection => JCollection }
 
 import akka.annotation.DoNotInherit
 import akka.http.scaladsl

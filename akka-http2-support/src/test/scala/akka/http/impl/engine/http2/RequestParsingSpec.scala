@@ -39,7 +39,7 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
         data = data
       )
       // Create the parsing function
-      val parseRequest: Http2SubStream ⇒ HttpRequest = {
+      val parseRequest: Http2SubStream => HttpRequest = {
         val (serverSettings, parserSettings) = {
           val ss = ServerSettings(system)
           val ps = ss.parserSettings.withUriParsingMode(uriParsingMode)
@@ -51,7 +51,7 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
       parseRequest(subStream)
     }
 
-    def shouldThrowMalformedRequest[T](block: ⇒ T): Exception = {
+    def shouldThrowMalformedRequest[T](block: => T): Exception = {
       val thrown = the[RuntimeException] thrownBy block
       thrown.getMessage should startWith("Malformed request: ")
       thrown
@@ -86,7 +86,7 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
           ":scheme" → "https",
           ":path" → "/"
         )
-        forAll(0 until pseudoHeaders.length) { insertPoint: Int ⇒
+        forAll(0 until pseudoHeaders.length) { insertPoint: Int =>
           // Insert the Foo header so it occurs before at least one pseudo-header
           val (before, after) = pseudoHeaders.splitAt(insertPoint)
           val modified = before ++ Vector("Foo" → "bar") ++ after
@@ -119,7 +119,7 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
 
       "parse the ':method' pseudo-header correctly" in {
         val methods = Seq("GET", "POST", "DELETE", "OPTIONS")
-        forAll(methods) { method: String ⇒
+        forAll(methods) { method: String =>
           val request: HttpRequest = parse(
             keyValuePairs = Vector(
               ":method" → method,
@@ -142,7 +142,7 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
         // We're restricted in what we can test because the HttpRequest class
         // can't be constructed with any other schemes.
         val schemes = Seq("http", "https", "ws", "wss")
-        forAll(schemes) { scheme: String ⇒
+        forAll(schemes) { scheme: String =>
           val request: HttpRequest = parse(
             keyValuePairs = Vector(
               ":method" → "POST",
@@ -169,7 +169,7 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
             ("example.com:8042", "example.com", Some(8042))
           )
           forAll(authorities) {
-            case (authority, host, optPort) ⇒
+            case (authority, host, optPort) =>
               val request: HttpRequest = parse(
                 keyValuePairs = Vector(
                   ":method" → "POST",
@@ -185,7 +185,7 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
         "reject an invalid ':authority'" in {
 
           val authorities = Seq("?", " ", "@", ":")
-          forAll(authorities) { authority ⇒
+          forAll(authorities) { authority =>
             val thrown = the[ParsingException] thrownBy (parse(
               keyValuePairs = Vector(
                 ":method" → "POST",
@@ -213,8 +213,8 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
           "cnn.example.com&story=breaking_news@10.0.0.1"
         )
         val schemes = Seq("http", "https")
-        forAll(schemes) { scheme: String ⇒
-          forAll(authorities) { authority: String ⇒
+        forAll(schemes) { scheme: String =>
+          forAll(authorities) { authority: String =>
             val exception = the[Exception] thrownBy (parse(
               keyValuePairs = Vector(
                 ":method" → "POST",
@@ -281,13 +281,13 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
           "/foo/bar" → "/foo/bar", "/foo//bar" → "/foo//bar", "/foo//bar/" → "/foo//bar/",
           "/a=b" → "/a=b", "/%2f" → "/%2F", "/x:0/y:1" → "/x:0/y:1"
         ) ++ pchar.map {
-            case '.' ⇒ "/." → "/"
-            case c   ⇒ ("/" + c) → ("/" + c)
+            case '.' => "/." → "/"
+            case c   => ("/" + c) → ("/" + c)
           }
 
         "parse a ':path' containing a 'path-absolute'" in {
           forAll(absolutePaths) {
-            case (input, output) ⇒
+            case (input, output) =>
               val uri = parsePath(input)
               uri.path.toString should ===(output)
               uri.rawQueryString should ===(None)
@@ -300,7 +300,7 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
             "?", "&", "=", "#", ":", "?", "#", "[", "]", "@", " ",
             "http://localhost/foo"
           )
-          forAll(invalidAbsolutePaths) { absPath: String ⇒
+          forAll(invalidAbsolutePaths) { absPath: String =>
             val exception = the[ParsingException] thrownBy (parsePath(absPath))
             exception.getMessage should include("http2-path-pseudo-header")
           }
@@ -311,7 +311,7 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
             // Illegal for path-absolute in RFC3986 to start with multiple slashes
             "//", "//x"
           )
-          forAll(invalidAbsolutePaths) { absPath: String ⇒
+          forAll(invalidAbsolutePaths) { absPath: String =>
             val exception = the[ParsingException] thrownBy (parsePath(absPath, uriParsingMode = Uri.ParsingMode.Strict))
             exception.getMessage should include("http2-path-pseudo-header")
           }
@@ -330,12 +330,12 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
             "field1=value1&field1=value2&field2=value3" → Some(Uri.Query("field1" → "value1", "field1" → "value2", "field2" → "value3")),
             "first=this+is+a+field&second=was+it+clear+%28already%29%3F" → Some(Uri.Query("first" → "this is a field", "second" → "was it clear (already)?")),
             "e0a72cb2a2c7" → None
-          ) ++ queryChar.map((c: Char) ⇒ (c.toString → None))
+          ) ++ queryChar.map((c: Char) => (c.toString → None))
 
           forAll(absolutePaths.take(3)) {
-            case (inputPath, expectedOutputPath) ⇒
+            case (inputPath, expectedOutputPath) =>
               forAll(queries) {
-                case (rawQueryString, optParsedQuery) ⇒
+                case (rawQueryString, optParsedQuery) =>
                   val uri = parsePath(inputPath + "?" + rawQueryString)
                   uri.path.toString should ===(expectedOutputPath)
                   uri.rawQueryString should ===(Some(rawQueryString))
@@ -343,7 +343,7 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
                   // How form-encoded query strings are parsed is not strictly part of the HTTP/2 and URI RFCs,
                   // but lets do a quick sanity check to ensure that form-encoded query strings are correctly
                   // parsed into values further up the parsing stack.
-                  optParsedQuery.foreach { expectedParsedQuery: Uri.Query ⇒
+                  optParsedQuery.foreach { expectedParsedQuery: Uri.Query =>
                     uri.query() should contain theSameElementsAs (expectedParsedQuery)
                   }
               }
@@ -355,8 +355,8 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
             ":", "/", "?", "#", "[", "]", "@", " "
           )
           forAll(absolutePaths.take(3)) {
-            case (inputPath, _) ⇒
-              forAll(invalidQueries) { query: String ⇒
+            case (inputPath, _) =>
+              forAll(invalidQueries) { query: String =>
                 shouldThrowMalformedRequest(parsePath(inputPath + "?" + query, uriParsingMode = Uri.ParsingMode.Strict))
               }
           }
@@ -382,7 +382,7 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
 
       "reject empty ':path' pseudo-headers for http and https" in pendingUntilFixed {
         val schemes = Seq("http", "https")
-        forAll(schemes) { scheme: String ⇒
+        forAll(schemes) { scheme: String =>
           shouldThrowMalformedRequest(parse(
             keyValuePairs = Vector(
               ":method" → "POST",
@@ -408,7 +408,7 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
 
       "reject requests without a mandatory pseudo-headers" in {
         val mandatoryPseudoHeaders = Seq(":method", ":scheme", ":path")
-        forAll(mandatoryPseudoHeaders) { name: String ⇒
+        forAll(mandatoryPseudoHeaders) { name: String =>
           val thrown = shouldThrowMalformedRequest(parse(
             keyValuePairs = Vector(
               ":scheme" → "https",
@@ -421,7 +421,7 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
 
       "reject requests with more than one pseudo-header" in {
         val pseudoHeaders = Seq(":method", ":scheme", ":path", ":authority")
-        forAll(pseudoHeaders) { name: String ⇒
+        forAll(pseudoHeaders) { name: String =>
           val thrown = shouldThrowMalformedRequest(parse(
             keyValuePairs = Vector(
               ":scheme" → "https",
@@ -449,7 +449,7 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
           Seq("a=b", "c=d; e=f") → "a=b; c=d; e=f"
         )
         forAll(cookieHeaders) {
-          case (inValues, outValue) ⇒
+          case (inValues, outValue) =>
             val httpRequest: HttpRequest = parse(
               Vector(
                 ":method" → "GET",
@@ -459,7 +459,7 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
               ) ++ inValues.map("cookie" → _)
             )
             val receivedCookieValues: Seq[String] = httpRequest.headers.collect {
-              case c @ Cookie(_) ⇒ c.value
+              case c @ Cookie(_) => c.value
             }
             receivedCookieValues should contain theSameElementsAs Vector(outValue)
         }
@@ -516,7 +516,7 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
           Host(Uri.Host("example.org"))
         )
         inside(request.entity) {
-          case entity: HttpEntity.Default ⇒
+          case entity: HttpEntity.Default =>
             entity.contentLength should ===(123.toLong)
             entity.contentType should ===(ContentType(MediaTypes.`image/jpeg`))
         }

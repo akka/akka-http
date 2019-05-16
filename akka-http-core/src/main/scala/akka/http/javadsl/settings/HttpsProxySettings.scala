@@ -13,7 +13,7 @@ import com.typesafe.config.Config
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class HttpsProxySettings private[akka] () { self: HttpsProxySettingsImpl ⇒
+abstract class HttpsProxySettings private[akka] () { self: HttpsProxySettingsImpl =>
   def getHost: String = host
   def getPort: Int = port
 }

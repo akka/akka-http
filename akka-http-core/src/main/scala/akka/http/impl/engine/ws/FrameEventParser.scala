@@ -63,9 +63,9 @@ private[http] object FrameEventParser extends ByteStringParser[FrameEvent] {
 
         val length =
           length7 match {
-            case 126 ⇒ reader.readShortBE().toLong
-            case 127 ⇒ reader.readLongBE()
-            case x   ⇒ x.toLong
+            case 126 => reader.readShortBE().toLong
+            case 127 => reader.readLongBE()
+            case x   => x.toLong
           }
 
         if (length < 0) throw new ProtocolException("Highest bit of 64bit length was set")
@@ -112,8 +112,8 @@ private[http] object FrameEventParser extends ByteStringParser[FrameEvent] {
 
   def mask(bytes: ByteString, _mask: Option[Int]): ByteString =
     _mask match {
-      case Some(m) ⇒ mask(bytes, m)._1
-      case None    ⇒ bytes
+      case Some(m) => mask(bytes, m)._1
+      case None    => bytes
     }
 
   def mask(bytes: ByteString, mask: Int): (ByteString, Int) = {

@@ -44,21 +44,21 @@ class FormFieldDirectivesSpec extends RoutingSpec {
   "The 'formFields' extraction directive" should {
     "properly extract the value of www-urlencoded form fields" in {
       Post("/", urlEncodedForm) ~> {
-        formFields('firstName, "age".as[Int], 'sex.?, "VIP" ? false) { (firstName, age, sex, vip) ⇒
+        formFields('firstName, "age".as[Int], 'sex.?, "VIP" ? false) { (firstName, age, sex, vip) =>
           complete(firstName + age + sex + vip)
         }
       } ~> check { responseAs[String] shouldEqual "Mike42Nonefalse" }
     }
     "properly extract the value of www-urlencoded form fields when an explicit unmarshaller is given" in {
       Post("/", urlEncodedForm) ~> {
-        formFields('firstName, "age".as(HexInt), 'sex.?, "VIP" ? false) { (firstName, age, sex, vip) ⇒
+        formFields('firstName, "age".as(HexInt), 'sex.?, "VIP" ? false) { (firstName, age, sex, vip) =>
           complete(firstName + age + sex + vip)
         }
       } ~> check { responseAs[String] shouldEqual "Mike66Nonefalse" }
     }
     "properly extract the value of multipart form fields" in {
       Post("/", multipartForm) ~> {
-        formFields('firstName, "age", 'sex.?, "VIP" ? nodeSeq) { (firstName, age, sex, vip) ⇒
+        formFields('firstName, "age", 'sex.?, "VIP" ? nodeSeq) { (firstName, age, sex, vip) =>
           complete(firstName + age + sex + vip)
         }
       } ~> check { responseAs[String] shouldEqual "Mike<int>42</int>None<b>yes</b>" }
@@ -66,14 +66,14 @@ class FormFieldDirectivesSpec extends RoutingSpec {
     "extract StrictForm.FileData from a multipart part" in {
       Post("/", multipartFormWithFile) ~> {
         formFields('file.as[StrictForm.FileData]) {
-          case StrictForm.FileData(name, HttpEntity.Strict(ct, data)) ⇒
+          case StrictForm.FileData(name, HttpEntity.Strict(ct, data)) =>
             complete(s"type ${ct.mediaType} length ${data.length} filename ${name.get}")
         }
       } ~> check { responseAs[String] shouldEqual "type text/xml length 13 filename age.xml" }
     }
     "reject the request with a MissingFormFieldRejection if a required form field is missing" in {
       Post("/", urlEncodedForm) ~> {
-        formFields('firstName, "age", 'sex, "VIP" ? false) { (firstName, age, sex, vip) ⇒
+        formFields('firstName, "age", 'sex, "VIP" ? false) { (firstName, age, sex, vip) =>
           complete(firstName + age + sex + vip)
         }
       } ~> check { rejection shouldEqual MissingFormFieldRejection("sex") }
@@ -81,7 +81,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
     "properly extract the value if only a urlencoded deserializer is available for a multipart field that comes without a" +
       "Content-Type (or text/plain)" in {
         Post("/", multipartForm) ~> {
-          formFields('firstName, "age", 'sex.?, "VIPBoolean" ? false) { (firstName, age, sex, vip) ⇒
+          formFields('firstName, "age", 'sex.?, "VIPBoolean" ? false) { (firstName, age, sex, vip) =>
             complete(firstName + age + sex + vip)
           }
         } ~> check {
@@ -90,7 +90,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
       }
     "work even if only a FromStringUnmarshaller is available for a multipart field with custom Content-Type" in {
       Post("/", multipartFormWithTextHtml) ~> {
-        formFields(('firstName, "age", 'super ? false)) { (firstName, age, vip) ⇒
+        formFields(('firstName, "age", 'super ? false)) { (firstName, age, vip) =>
           complete(firstName + age + vip)
         }
       } ~> check {
@@ -99,7 +99,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
     }
     "work even if only a FromEntityUnmarshaller is available for a www-urlencoded field" in {
       Post("/", urlEncodedFormWithVip) ~> {
-        formFields('firstName, "age", 'sex.?, "super" ? nodeSeq) { (firstName, age, sex, vip) ⇒
+        formFields('firstName, "age", 'sex.?, "super" ? nodeSeq) { (firstName, age, sex, vip) =>
           complete(firstName + age + sex + vip)
         }
       } ~> check {
@@ -116,7 +116,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
 
       streamingForm.getContentType shouldEqual ContentTypes.`application/x-www-form-urlencoded`
       Post("/", streamingForm) ~> {
-        formFields('firstName, "age".as[Int], 'sex.?, "VIP" ? false) { (firstName, age, sex, vip) ⇒
+        formFields('firstName, "age".as[Int], 'sex.?, "VIP" ? false) { (firstName, age, sex, vip) =>
           complete(firstName + age + sex + vip)
         }
       } ~> check { responseAs[String] shouldEqual "Mike42Nonefalse" }
@@ -186,7 +186,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
       var res: Map[String, String] = null
 
       Post("/", FormData("age" → "42", "numberA" → "3", "numberB" → "5")) ~> {
-        formFieldMap { map ⇒
+        formFieldMap { map =>
           res = map
           completeOk
         }
@@ -198,12 +198,12 @@ class FormFieldDirectivesSpec extends RoutingSpec {
       val numKeys = 10000
       val value = "null"
 
-      val regularKeys = Iterator.from(1).map(i ⇒ s"key_$i").take(numKeys)
+      val regularKeys = Iterator.from(1).map(i => s"key_$i").take(numKeys)
       val collidingKeys = HashCodeCollider.zeroHashCodeIterator().take(numKeys)
 
       def createFormData(keys: Iterator[String]): FormData = {
         val tuples = keys.map((_, value)).toSeq
-        val query = tuples.foldLeft(Uri.Query.newBuilder)((acc, pair) ⇒ acc += pair)
+        val query = tuples.foldLeft(Uri.Query.newBuilder)((acc, pair) => acc += pair)
         FormData(query.result())
       }
 
@@ -212,12 +212,12 @@ class FormFieldDirectivesSpec extends RoutingSpec {
 
       def regular(): Unit =
         Post("/", regularFormData) ~> {
-          formFieldMap { _ ⇒ complete(StatusCodes.OK) }
+          formFieldMap { _ => complete(StatusCodes.OK) }
         } ~> check {}
 
       def colliding(): Unit =
         Post("/", collidingDormData) ~> {
-          formFieldMap { _ ⇒ complete(StatusCodes.OK) }
+          formFieldMap { _ => complete(StatusCodes.OK) }
         }
 
       BenchUtils.nanoRace(colliding(), regular()) should be < 3.0 // speed must be in same order of magnitude
@@ -242,7 +242,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
       var res: Map[String, List[String]] = null
 
       Post("/", FormData("age" → "42", "number" → "3", "number" → "5")) ~> {
-        formFieldMultiMap { m ⇒
+        formFieldMultiMap { m =>
           res = m
           completeOk
         }
@@ -254,12 +254,12 @@ class FormFieldDirectivesSpec extends RoutingSpec {
       val numKeys = 10000
       val value = "null"
 
-      val regularKeys = Iterator.from(1).map(i ⇒ s"key_$i").take(numKeys)
+      val regularKeys = Iterator.from(1).map(i => s"key_$i").take(numKeys)
       val collidingKeys = HashCodeCollider.zeroHashCodeIterator().take(numKeys)
 
       def createFormData(keys: Iterator[String]): FormData = {
         val tuples = keys.map((_, value)).toSeq
-        val query = tuples.foldLeft(Uri.Query.newBuilder)((acc, pair) ⇒ acc += pair)
+        val query = tuples.foldLeft(Uri.Query.newBuilder)((acc, pair) => acc += pair)
         FormData(query.result())
       }
 
@@ -268,12 +268,12 @@ class FormFieldDirectivesSpec extends RoutingSpec {
 
       def regular(): Unit =
         Post("/", regularFormData) ~> {
-          formFieldMultiMap { _ ⇒ complete(StatusCodes.OK) }
+          formFieldMultiMap { _ => complete(StatusCodes.OK) }
         } ~> check {}
 
       def colliding(): Unit =
         Post("/", collidingDormData) ~> {
-          formFieldMultiMap { _ ⇒ complete(StatusCodes.OK) }
+          formFieldMultiMap { _ => complete(StatusCodes.OK) }
         }
 
       BenchUtils.nanoRace(colliding(), regular()) should be < 3.0 // speed must be in same order of magnitude

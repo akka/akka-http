@@ -28,31 +28,31 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
     }
     "store uncached values" in {
       val cache = lfuCache[String]()
-      Await.result(cache.get(1, () ⇒ "A"), 3.seconds) should be("A")
+      Await.result(cache.get(1, () => "A"), 3.seconds) should be("A")
       cache.size should be(1)
       cache.keys should be(Set(1))
     }
     "load uncached values with a given function" in {
       val cache = lfuCache[Int]()
-      Await.result(cache.getOrLoad(1, key ⇒ Future.successful(key * 2)), 3.seconds) should be(2)
+      Await.result(cache.getOrLoad(1, key => Future.successful(key * 2)), 3.seconds) should be(2)
       cache.size should be(1)
       cache.keys should be(Set(1))
     }
     "return stored values upon cache hit on existing values" in {
       val cache = lfuCache[String]()
-      Await.result(cache.get(1, () ⇒ "A"), 3.seconds) should be("A")
+      Await.result(cache.get(1, () => "A"), 3.seconds) should be("A")
       cache.size should be(1)
     }
     "return Futures on uncached values during evaluation and replace these with the value afterwards" in {
       val cache = lfuCache[String]()
       val latch = new CountDownLatch(1)
-      val future1 = cache(1, (promise: Promise[String]) ⇒
+      val future1 = cache(1, (promise: Promise[String]) =>
         Future {
           latch.await()
           promise.success("A")
         }
       )
-      val future2 = cache.get(1, () ⇒ "")
+      val future2 = cache.get(1, () => "")
 
       latch.countDown()
       Await.result(future1, 3.seconds) should be("A")
@@ -61,38 +61,38 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
     }
     "properly limit capacity" in {
       val cache = lfuCache[String](maxCapacity = 3, initialCapacity = 1)
-      Await.result(cache.get(1, () ⇒ "A"), 3.seconds) should be("A")
-      Await.result(cache(2, () ⇒ Future.successful("B")), 3.seconds) should be("B")
-      Await.result(cache.get(3, () ⇒ "C"), 3.seconds) should be("C")
-      cache.get(4, () ⇒ "D")
+      Await.result(cache.get(1, () => "A"), 3.seconds) should be("A")
+      Await.result(cache(2, () => Future.successful("B")), 3.seconds) should be("B")
+      Await.result(cache.get(3, () => "C"), 3.seconds) should be("C")
+      cache.get(4, () => "D")
       Thread.sleep(50)
       cache.size should be(3)
     }
     "not cache exceptions" in {
       val cache = lfuCache[String]()
       an[RuntimeException] shouldBe thrownBy {
-        Await.result(cache(1, () ⇒ throw new RuntimeException("Naa")), 5.second)
+        Await.result(cache(1, () => throw new RuntimeException("Naa")), 5.second)
       }
-      Await.result(cache.get(1, () ⇒ "A"), 3.seconds) should be("A")
+      Await.result(cache.get(1, () => "A"), 3.seconds) should be("A")
     }
     "refresh an entries expiration time on cache hit" in {
       val cache = lfuCache[String]()
-      Await.result(cache.get(1, () ⇒ "A"), 3.seconds) should be("A")
-      Await.result(cache.get(2, () ⇒ "B"), 3.seconds) should be("B")
-      Await.result(cache.get(3, () ⇒ "C"), 3.seconds) should be("C")
-      Await.result(cache.get(1, () ⇒ ""), 3.seconds) should be("A") // refresh
+      Await.result(cache.get(1, () => "A"), 3.seconds) should be("A")
+      Await.result(cache.get(2, () => "B"), 3.seconds) should be("B")
+      Await.result(cache.get(3, () => "C"), 3.seconds) should be("C")
+      Await.result(cache.get(1, () => ""), 3.seconds) should be("A") // refresh
       cache.store.synchronous.asMap.toString should be("{1=A, 2=B, 3=C}")
     }
     "be thread-safe" in {
       val cache = lfuCache[Int](maxCapacity = 1000)
       // exercise the cache from 10 parallel "tracks" (threads)
-      val views = Await.result(Future.traverse(Seq.tabulate(10)(identity)) { track ⇒
+      val views = Await.result(Future.traverse(Seq.tabulate(10)(identity)) { track =>
         Future {
           val array = Array.fill(1000)(0) // our view of the cache
           val rand = new Random(track)
-          (1 to 10000) foreach { i ⇒
+          (1 to 10000) foreach { i =>
             val ix = rand.nextInt(1000) // for a random index into the cache
-            val value = Await.result(cache.get(ix, () ⇒ { // get (and maybe set) the cache value
+            val value = Await.result(cache.get(ix, () => { // get (and maybe set) the cache value
               Thread.sleep(0)
               rand.nextInt(1000000) + 1
             }), 5.second)
@@ -104,8 +104,8 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
         }
       }, 5.second)
 
-      views.transpose.foreach { ints: Seq[Int] ⇒
-        ints.filter(_ != 0).reduceLeft((a, b) ⇒ if (a == b) a else 0) should not be 0
+      views.transpose.foreach { ints: Seq[Int] =>
+        ints.filter(_ != 0).reduceLeft((a, b) => if (a == b) a else 0) should not be 0
       }
     }
     "be created with the same ttl and tti" in {

@@ -6,7 +6,7 @@ package akka.http
 
 import scala.collection.generic.{ CanBuildFrom, GenericCompanion }
 import scala.collection.{ GenTraversable, mutable }
-import scala.{ collection ⇒ c }
+import scala.{ collection => c }
 
 /**
  * INTERNAL API
@@ -32,14 +32,14 @@ package object ccompat {
  * INTERNAL API
  */
 package ccompat {
-  trait Builder[-Elem, +To] extends mutable.Builder[Elem, To] { self ⇒
+  trait Builder[-Elem, +To] extends mutable.Builder[Elem, To] { self =>
     // This became final in 2.13 so cannot be overridden there anymore
     final override def +=(elem: Elem): this.type = addOne(elem)
     def addOne(elem: Elem): this.type = self.+=(elem)
   }
 
   trait QuerySeqOptimized extends scala.collection.immutable.LinearSeq[(String, String)] with scala.collection.LinearSeqOptimized[(String, String), akka.http.scaladsl.model.Uri.Query] {
-    self: akka.http.scaladsl.model.Uri.Query ⇒
+    self: akka.http.scaladsl.model.Uri.Query =>
     override def newBuilder: mutable.Builder[(String, String), akka.http.scaladsl.model.Uri.Query] = akka.http.scaladsl.model.Uri.Query.newBuilder
   }
 }

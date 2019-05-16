@@ -72,12 +72,12 @@ object LfuCache {
       !timeToLive.isFinite || !timeToIdle.isFinite || timeToLive >= timeToIdle,
       s"timeToLive($timeToLive) must be >= than timeToIdle($timeToIdle)")
 
-    def ttl: Caffeine[K, V] ⇒ Caffeine[K, V] = { builder ⇒
+    def ttl: Caffeine[K, V] => Caffeine[K, V] = { builder =>
       if (timeToLive.isFinite) builder.expireAfterWrite(timeToLive.toMillis, TimeUnit.MILLISECONDS)
       else builder
     }
 
-    def tti: Caffeine[K, V] ⇒ Caffeine[K, V] = { builder ⇒
+    def tti: Caffeine[K, V] => Caffeine[K, V] = { builder =>
       if (timeToIdle.isFinite) builder.expireAfterAccess(timeToIdle.toMillis, TimeUnit.MILLISECONDS)
       else builder
     }
@@ -90,11 +90,11 @@ object LfuCache {
     new LfuCache[K, V](store)
   }
 
-  def toJavaMappingFunction[K, V](genValue: () ⇒ Future[V]): BiFunction[K, Executor, CompletableFuture[V]] =
-    asJavaBiFunction[K, Executor, CompletableFuture[V]]((k, e) ⇒ genValue().toJava.toCompletableFuture)
+  def toJavaMappingFunction[K, V](genValue: () => Future[V]): BiFunction[K, Executor, CompletableFuture[V]] =
+    asJavaBiFunction[K, Executor, CompletableFuture[V]]((k, e) => genValue().toJava.toCompletableFuture)
 
-  def toJavaMappingFunction[K, V](loadValue: K ⇒ Future[V]): BiFunction[K, Executor, CompletableFuture[V]] =
-    asJavaBiFunction[K, Executor, CompletableFuture[V]]((k, e) ⇒ loadValue(k).toJava.toCompletableFuture)
+  def toJavaMappingFunction[K, V](loadValue: K => Future[V]): BiFunction[K, Executor, CompletableFuture[V]] =
+    asJavaBiFunction[K, Executor, CompletableFuture[V]]((k, e) => loadValue(k).toJava.toCompletableFuture)
 }
 
 /** INTERNAL API */
@@ -103,9 +103,9 @@ private[caching] class LfuCache[K, V](val store: AsyncCache[K, V]) extends Cache
 
   def get(key: K): Option[Future[V]] = Option(store.getIfPresent(key)).map(_.toScala)
 
-  def apply(key: K, genValue: () ⇒ Future[V]): Future[V] = store.get(key, toJavaMappingFunction[K, V](genValue)).toScala
+  def apply(key: K, genValue: () => Future[V]): Future[V] = store.get(key, toJavaMappingFunction[K, V](genValue)).toScala
 
-  def getOrLoad(key: K, loadValue: K ⇒ Future[V]) = store.get(key, toJavaMappingFunction[K, V](loadValue)).toScala
+  def getOrLoad(key: K, loadValue: K => Future[V]) = store.get(key, toJavaMappingFunction[K, V](loadValue)).toScala
 
   def remove(key: K): Unit = store.synchronous().invalidate(key)
 

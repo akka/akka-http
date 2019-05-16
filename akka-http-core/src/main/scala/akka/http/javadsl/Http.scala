@@ -22,7 +22,7 @@ import akka.event.LoggingAdapter
 import akka.stream.Materializer
 import akka.stream.javadsl.{ BidiFlow, Flow, Source }
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.scaladsl.{ model ⇒ sm }
+import akka.http.scaladsl.{ model => sm }
 import akka.http.javadsl.model._
 import akka.http._
 import scala.compat.java8.OptionConverters._
@@ -36,7 +36,7 @@ object Http extends ExtensionId[Http] with ExtensionIdProvider {
 }
 
 class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
-  import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext ⇒ ec }
+  import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext => ec }
 
   import language.implicitConversions
   private implicit def completionStageCovariant[T, U >: T](in: CompletionStage[T]): CompletionStage[U] = in.asInstanceOf[CompletionStage[U]]
@@ -453,10 +453,10 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     log:      LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
     adaptTupleFlow {
       to.effectiveHttpsConnectionContext(defaultClientHttpsContext) match {
-        case https: HttpsConnectionContext ⇒
+        case https: HttpsConnectionContext =>
           delegate.newHostConnectionPoolHttps[T](to.host, to.port, https.asScala, settings.asScala, log)(materializer)
             .mapMaterializedValue(_.toJava)
-        case _ ⇒
+        case _ =>
           delegate.newHostConnectionPool[T](to.host, to.port, settings.asScala, log)(materializer)
             .mapMaterializedValue(_.toJava)
       }
@@ -877,7 +877,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   private def adaptWsBidiFlow(wsLayer: scaladsl.Http.WebSocketClientLayer): BidiFlow[Message, SslTlsOutbound, SslTlsInbound, Message, CompletionStage[WebSocketUpgradeResponse]] =
     new BidiFlow(
       JavaMapping.adapterBidiFlow[Message, sm.ws.Message, sm.ws.Message, Message]
-        .atopMat(wsLayer)((_, s) ⇒ adaptWsUpgradeResponse(s)))
+        .atopMat(wsLayer)((_, s) => adaptWsUpgradeResponse(s)))
 
   private def adaptWsFlow(wsLayer: stream.scaladsl.Flow[sm.ws.Message, sm.ws.Message, Future[scaladsl.model.ws.WebSocketUpgradeResponse]]): Flow[Message, Message, CompletionStage[WebSocketUpgradeResponse]] =
     Flow.fromGraph(JavaMapping.adapterBidiFlow[Message, sm.ws.Message, sm.ws.Message, Message].joinMat(wsLayer)(Keep.right).mapMaterializedValue(adaptWsUpgradeResponse _))
@@ -890,7 +890,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   private def adaptWsResultTuple[T](result: (Future[scaladsl.model.ws.WebSocketUpgradeResponse], T)): Pair[CompletionStage[WebSocketUpgradeResponse], T] =
     result match {
-      case (fut, tMat) ⇒ Pair(adaptWsUpgradeResponse(fut), tMat)
+      case (fut, tMat) => Pair(adaptWsUpgradeResponse(fut), tMat)
     }
   private def adaptWsUpgradeResponse(responseFuture: Future[scaladsl.model.ws.WebSocketUpgradeResponse]): CompletionStage[WebSocketUpgradeResponse] =
     responseFuture.map(WebSocketUpgradeResponse.adapt)(system.dispatcher).toJava

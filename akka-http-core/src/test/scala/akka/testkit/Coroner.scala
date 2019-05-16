@@ -64,7 +64,7 @@ object Coroner {
     }
 
     override def result(atMost: Duration)(implicit permit: CanAwait): Boolean =
-      try { Await.result(cancelPromise.future, atMost) } catch { case _: TimeoutException ⇒ false }
+      try { Await.result(cancelPromise.future, atMost) } catch { case _: TimeoutException => false }
 
   }
 
@@ -96,7 +96,7 @@ object Coroner {
           watchedHandle.expired()
           out.println(s"Coroner not cancelled after ${duration.toMillis}ms. Looking for signs of foul play...")
           try printReport(reportTitle, out) catch {
-            case NonFatal(ex) ⇒ {
+            case NonFatal(ex) => {
               out.println("Error displaying Coroner's Report")
               ex.printStackTrace(out)
             }
@@ -207,10 +207,10 @@ object Coroner {
         if (i == 0 && ti.getLockInfo != null) {
           import java.lang.Thread.State._
           ti.getThreadState match {
-            case BLOCKED       ⇒ appendMsg("\t-  blocked on ", ti.getLockInfo)
-            case WAITING       ⇒ appendMsg("\t-  waiting on ", ti.getLockInfo)
-            case TIMED_WAITING ⇒ appendMsg("\t-  waiting on ", ti.getLockInfo)
-            case _             ⇒
+            case BLOCKED       => appendMsg("\t-  blocked on ", ti.getLockInfo)
+            case WAITING       => appendMsg("\t-  waiting on ", ti.getLockInfo)
+            case TIMED_WAITING => appendMsg("\t-  waiting on ", ti.getLockInfo)
+            case _             =>
           }
         }
 
@@ -247,7 +247,7 @@ object Coroner {
  * counts during start and stop.
  */
 trait WatchedByCoroner {
-  self: TestKit ⇒
+  self: TestKit =>
 
   @volatile private var coronerWatch: Coroner.WatchHandle = _
 

@@ -49,8 +49,8 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
   }
 
   "The GenericUnmarshallers" - {
-    implicit val rawInt: FromEntityUnmarshaller[Int] = Unmarshaller(implicit ex ⇒ bs ⇒ bs.toStrict(1.second.dilated).map(_.data.utf8String.toInt))
-    implicit val rawlong: FromEntityUnmarshaller[Long] = Unmarshaller(implicit ex ⇒ bs ⇒ bs.toStrict(1.second.dilated).map(_.data.utf8String.toLong))
+    implicit val rawInt: FromEntityUnmarshaller[Int] = Unmarshaller(implicit ex => bs => bs.toStrict(1.second.dilated).map(_.data.utf8String.toInt))
+    implicit val rawlong: FromEntityUnmarshaller[Long] = Unmarshaller(implicit ex => bs => bs.toStrict(1.second.dilated).map(_.data.utf8String.toLong))
 
     "eitherUnmarshaller should unmarshal its Right value" in {
       // we'll find:

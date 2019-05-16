@@ -15,7 +15,7 @@ import scala.concurrent.duration.Duration
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class LfuCacheSettings private[http] () { self: LfuCachingSettingsImpl ⇒
+abstract class LfuCacheSettings private[http] () { self: LfuCachingSettingsImpl =>
 
   /* JAVA APIs */
   def getMaxCapacity: Int

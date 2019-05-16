@@ -81,10 +81,10 @@ trait WSTestSetupBase extends Matchers {
     val hasMask = (header(1) & Protocol.MASK_MASK) != 0
     val length7 = header(1) & Protocol.LENGTH_MASK
     val length = length7 match {
-      case 126 ⇒
+      case 126 =>
         val length16Bytes = expectNetworkData(2)
         (length16Bytes(0) & 0xff) << 8 | (length16Bytes(1) & 0xff) << 0
-      case 127 ⇒
+      case 127 =>
         val length64Bytes = expectNetworkData(8)
         (length64Bytes(0) & 0xff).toLong << 56 |
           (length64Bytes(1) & 0xff).toLong << 48 |
@@ -94,7 +94,7 @@ trait WSTestSetupBase extends Matchers {
           (length64Bytes(5) & 0xff).toLong << 16 |
           (length64Bytes(6) & 0xff).toLong << 8 |
           (length64Bytes(7) & 0xff).toLong << 0
-      case x ⇒ x
+      case x => x
     }
     val mask =
       if (hasMask) {

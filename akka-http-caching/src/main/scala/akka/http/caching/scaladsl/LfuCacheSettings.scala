@@ -16,7 +16,7 @@ import scala.concurrent.duration.Duration
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class LfuCacheSettings private[http] () extends javadsl.LfuCacheSettings { self: LfuCachingSettingsImpl ⇒
+abstract class LfuCacheSettings private[http] () extends javadsl.LfuCacheSettings { self: LfuCachingSettingsImpl =>
   def maxCapacity: Int
   def initialCapacity: Int
   def timeToLive: Duration

@@ -9,7 +9,7 @@ import akka.http.scaladsl
 import com.typesafe.config.Config
 
 @DoNotInherit
-trait Http2ServerSettings { self: scaladsl.settings.Http2ServerSettings ⇒
+trait Http2ServerSettings { self: scaladsl.settings.Http2ServerSettings =>
   def getRequestEntityChunkSize: Int = requestEntityChunkSize
   def withRequestEntityChunkSize(newRequestEntityChunkSize: Int): Http2ServerSettings
 

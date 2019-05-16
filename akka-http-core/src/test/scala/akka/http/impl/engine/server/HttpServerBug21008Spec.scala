@@ -21,7 +21,7 @@ class HttpServerBug21008Spec extends AkkaSpec(
    akka.loglevel = WARNING
    akka.loggers = ["akka.testkit.TestEventListener", "akka.event.Logging$DefaultLogger"]
    akka.http.server.request-timeout = infinite
-   akka.test.filter-leeway=1s""") with Inside { spec ⇒
+   akka.test.filter-leeway=1s""") with Inside { spec =>
   implicit val materializer = ActorMaterializer()
 
   "The HttpServer" should {
@@ -37,8 +37,8 @@ class HttpServerBug21008Spec extends AkkaSpec(
              |
              |""")
       inside(expectRequest()) {
-        case HttpRequest(POST, _, _, Chunked(ContentType(`application/octet-stream`, None), data), _) ⇒
-          val done = data.runForeach(_ ⇒ throw TE("failed on first chunk"))
+        case HttpRequest(POST, _, _, Chunked(ContentType(`application/octet-stream`, None), data), _) =>
+          val done = data.runForeach(_ => throw TE("failed on first chunk"))
 
           expectResponseWithWipedDate(
             """HTTP/1.1 100 Continue
@@ -66,7 +66,7 @@ class HttpServerBug21008Spec extends AkkaSpec(
             // got such an error, that is bad,
             sawException = true
           } catch {
-            case _: AssertionError ⇒ sawException = false
+            case _: AssertionError => sawException = false
           }
           if (sawException) fail("HttpServerBluePrint.ControllerStage: requirement failed: Cannot pull closed port (requestParsingIn)")
 

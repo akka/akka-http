@@ -12,7 +12,7 @@ import com.typesafe.config.Config
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class RoutingSettings private[akka] () extends akka.http.javadsl.settings.RoutingSettings { self: RoutingSettingsImpl ⇒
+abstract class RoutingSettings private[akka] () extends akka.http.javadsl.settings.RoutingSettings { self: RoutingSettingsImpl =>
   def verboseErrorMessages: Boolean
   def fileGetConditional: Boolean
   def renderVanityFooter: Boolean

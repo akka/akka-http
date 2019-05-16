@@ -25,7 +25,7 @@ class ScalatestRouteTestSpec extends FreeSpec with Matchers with ScalatestRouteT
   "The ScalatestRouteTest should support" - {
 
     "the most simple and direct route test" in {
-      Get() ~> complete(HttpResponse()) ~> { rr ⇒ rr.awaitResult; rr.response } shouldEqual HttpResponse()
+      Get() ~> complete(HttpResponse()) ~> { rr => rr.awaitResult; rr.response } shouldEqual HttpResponse()
     }
 
     "a test using a directive and some checks" in {

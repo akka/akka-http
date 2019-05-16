@@ -10,7 +10,7 @@ import scala.util.control.NoStackTrace
 import akka.http.scaladsl.settings.ParserSettings
 import akka.http.impl.model.parser.CharacterClasses
 import akka.util.ByteString
-import akka.http.scaladsl.model.{ ParsingException ⇒ MParsingException, _ }
+import akka.http.scaladsl.model.{ ParsingException => MParsingException, _ }
 import headers._
 import ParserOutput._
 import akka.annotation.InternalApi
@@ -21,7 +21,7 @@ import akka.stream.scaladsl.Source
  */
 @InternalApi
 private[http] class HttpResponseParser(protected val settings: ParserSettings, protected val headerParser: HttpHeaderParser)
-  extends HttpMessageParser[ResponseOutput] { self ⇒
+  extends HttpMessageParser[ResponseOutput] { self =>
   import HttpResponseParser._
   import HttpMessageParser._
   import settings._
@@ -67,10 +67,10 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
       }
       val code = intValue(0) * 100 + intValue(1) * 10 + intValue(2)
       statusCode = code match {
-        case 200 ⇒ StatusCodes.OK
-        case code ⇒ StatusCodes.getForKey(code) match {
-          case Some(x) ⇒ x
-          case None    ⇒ customStatusCodes(code) getOrElse badStatusCodeSpecific(code)
+        case 200 => StatusCodes.OK
+        case code => StatusCodes.getForKey(code) match {
+          case Some(x) => x
+          case None    => customStatusCodes(code) getOrElse badStatusCodeSpecific(code)
         }
       }
     }
@@ -115,11 +115,11 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
       headers:      List[HttpHeader]                              = headers) = {
       val close =
         contextForCurrentResponse.get.oneHundredContinueTrigger match {
-          case None ⇒ closeAfterResponseCompletion
-          case Some(trigger) if statusCode.isSuccess ⇒
+          case None => closeAfterResponseCompletion
+          case Some(trigger) if statusCode.isSuccess =>
             trigger.trySuccess(())
             closeAfterResponseCompletion
-          case Some(trigger) ⇒
+          case Some(trigger) =>
             trigger.tryFailure(OneHundredContinueError)
             true
         }
@@ -128,7 +128,7 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
 
     def finishEmptyResponse() =
       statusCode match {
-        case _: StatusCodes.Informational if handleInformationalResponses ⇒
+        case _: StatusCodes.Informational if handleInformationalResponses =>
           if (statusCode == StatusCodes.Continue)
             contextForCurrentResponse.get.oneHundredContinueTrigger.foreach(_.trySuccess(()))
 
@@ -137,7 +137,7 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
           // even if the client does not expect one."
           // so we simply drop this interim response and start parsing the next one
           startNewMessage(input, bodyStart)
-        case _ ⇒
+        case _ =>
           emitResponseStart(emptyEntity(cth))
           setCompletionHandling(HttpMessageParser.CompletionOk)
           emit(MessageEnd)
@@ -146,21 +146,21 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
 
     if (statusCode.allowsEntity) {
       contextForCurrentResponse.get.requestMethod match {
-        case HttpMethods.HEAD ⇒ clh match {
-          case Some(`Content-Length`(contentLength)) if contentLength > 0 ⇒
+        case HttpMethods.HEAD => clh match {
+          case Some(`Content-Length`(contentLength)) if contentLength > 0 =>
             emitResponseStart {
               StrictEntityCreator(HttpEntity.Default(contentType(cth), contentLength, Source.empty))
             }
             setCompletionHandling(HttpMessageParser.CompletionOk)
             emit(MessageEnd)
             startNewMessage(input, bodyStart)
-          case _ ⇒ finishEmptyResponse()
+          case _ => finishEmptyResponse()
         }
-        case HttpMethods.CONNECT ⇒
+        case HttpMethods.CONNECT =>
           finishEmptyResponse()
-        case _ ⇒ teh match {
-          case None ⇒ clh match {
-            case Some(`Content-Length`(contentLength)) ⇒
+        case _ => teh match {
+          case None => clh match {
+            case Some(`Content-Length`(contentLength)) =>
               if (contentLength == 0) finishEmptyResponse()
               else if (contentLength <= input.size - bodyStart) {
                 val cl = contentLength.toInt
@@ -172,10 +172,10 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
                 emitResponseStart(defaultEntity(cth, contentLength))
                 parseFixedLengthBody(contentLength, closeAfterResponseCompletion)(input, bodyStart)
               }
-            case None ⇒
+            case None =>
               emitResponseStart {
-                StreamedEntityCreator { entityParts ⇒
-                  val data = entityParts.collect { case EntityPart(bytes) ⇒ bytes }
+                StreamedEntityCreator { entityParts =>
+                  val data = entityParts.collect { case EntityPart(bytes) => bytes }
                   HttpEntity.CloseDelimited(contentType(cth), data)
                 }
               }
@@ -183,7 +183,7 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
               parseToCloseBody(input, bodyStart, totalBytesRead = 0)
           }
 
-          case Some(te) ⇒
+          case Some(te) =>
             val completedHeaders = addTransferEncodingWithChunkedPeeled(headers, te)
             if (te.isChunked) {
               if (clh.isEmpty) {

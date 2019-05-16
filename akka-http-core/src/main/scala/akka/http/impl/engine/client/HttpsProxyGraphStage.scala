@@ -53,7 +53,7 @@ private final class HttpsProxyGraphStage(
   override def shape: BidiShape[ByteString, ByteString, ByteString, ByteString] = BidiShape.apply(sslIn, bytesOut, bytesIn, sslOut)
 
   private val connectMsg = {
-    val renderedProxyAuth = proxyAuthorization.map { httpCredentials ⇒
+    val renderedProxyAuth = proxyAuthorization.map { httpCredentials =>
       ByteString(s"${`Proxy-Authorization`(httpCredentials)}\r\n")
     } getOrElse ByteString.empty
 
@@ -61,7 +61,7 @@ private final class HttpsProxyGraphStage(
     ByteString(
       s"CONNECT $targetHostName:$targetPort HTTP/1.1\r\n" +
       s"Host: $targetHostName\r\n") ++
-      renderedProxyAuth ++ 
+      renderedProxyAuth ++
       ByteString("\r\n")
     // format: ON
   }
@@ -94,11 +94,11 @@ private final class HttpsProxyGraphStage(
     setHandler(sslIn, new InHandler {
       override def onPush() = {
         state match {
-          case Starting ⇒
+          case Starting =>
             throw new IllegalStateException("inlet OutgoingSSL.in unexpectedly pushed in Starting state")
-          case Connecting ⇒
+          case Connecting =>
             throw new IllegalStateException("inlet OutgoingSSL.in unexpectedly pushed in Connecting state")
-          case Connected ⇒
+          case Connected =>
             push(bytesOut, grab(sslIn))
         }
       }
@@ -112,24 +112,24 @@ private final class HttpsProxyGraphStage(
     setHandler(bytesIn, new InHandler {
       override def onPush() = {
         state match {
-          case Starting ⇒
+          case Starting =>
           // that means that proxy had sent us something even before CONNECT to proxy was sent, therefore we just ignore it
-          case Connecting ⇒
+          case Connecting =>
             val proxyResponse = grab(bytesIn)
             parser.parseBytes(proxyResponse) match {
-              case NeedMoreData ⇒
+              case NeedMoreData =>
                 pull(bytesIn)
-              case ResponseStart(_: StatusCodes.Success, _, _, _, _) ⇒
+              case ResponseStart(_: StatusCodes.Success, _, _, _, _) =>
                 var pushed = false
                 val parseResult = parser.onPull()
                 require(parseResult == ParserOutput.MessageEnd, s"parseResult should be MessageEnd but was $parseResult")
                 parser.onPull() match {
                   // NeedMoreData is what we emit in overridden `parseMessage` in case input.size == offset
-                  case NeedMoreData ⇒
-                  case RemainingBytes(bytes) ⇒
+                  case NeedMoreData =>
+                  case RemainingBytes(bytes) =>
                     push(sslOut, bytes) // parser already read more than expected, forward that data directly
                     pushed = true
-                  case other ⇒
+                  case other =>
                     throw new IllegalStateException(s"unexpected element of type ${other.getClass}")
                 }
                 parser.onUpstreamFinish()
@@ -139,13 +139,13 @@ private final class HttpsProxyGraphStage(
                 state = Connected
                 if (isAvailable(bytesOut)) pull(sslIn)
                 if (isAvailable(sslOut)) pull(bytesIn)
-              case ResponseStart(statusCode, _, _, _, _) ⇒
+              case ResponseStart(statusCode, _, _, _, _) =>
                 failStage(new ProxyConnectionFailedException(s"The HTTP(S) proxy rejected to open a connection to $targetHostName:$targetPort with status code: $statusCode"))
-              case other ⇒
+              case other =>
                 throw new IllegalStateException(s"unexpected element of type $other")
             }
 
-          case Connected ⇒
+          case Connected =>
             push(sslOut, grab(bytesIn))
         }
       }
@@ -157,13 +157,13 @@ private final class HttpsProxyGraphStage(
     setHandler(bytesOut, new OutHandler {
       override def onPull() = {
         state match {
-          case Starting ⇒
+          case Starting =>
             log.debug(s"TCP connection to HTTP(S) proxy connection established. Sending CONNECT {}:{} to HTTP(S) proxy", targetHostName, targetPort)
             push(bytesOut, connectMsg)
             state = Connecting
-          case Connecting ⇒
+          case Connecting =>
           // don't need to do anything
-          case Connected ⇒
+          case Connected =>
             pull(sslIn)
         }
       }

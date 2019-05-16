@@ -23,8 +23,8 @@ trait MiscDirectives {
    *
    * @group misc
    */
-  def validate(check: ⇒ Boolean, errorMsg: String): Directive0 =
-    Directive { inner ⇒ if (check) inner(()) else reject(ValidationRejection(errorMsg)) }
+  def validate(check: => Boolean, errorMsg: String): Directive0 =
+    Directive { inner => if (check) inner(()) else reject(ValidationRejection(errorMsg)) }
 
   /**
    * Extracts the client's IP from either the X-Forwarded-For, Remote-Address or X-Real-IP header
@@ -70,7 +70,7 @@ trait MiscDirectives {
    * @group misc
    */
   def selectPreferredLanguage(first: Language, more: Language*): Directive1[Language] =
-    BasicDirectives.extractRequest.map { request ⇒
+    BasicDirectives.extractRequest.map { request =>
       LanguageNegotiator(request.headers).pickLanguage(first :: List(more: _*)) getOrElse first
     }
 
@@ -107,9 +107,9 @@ object MiscDirectives extends MiscDirectives {
   import RouteResult._
 
   private val _extractClientIP: Directive1[RemoteAddress] =
-    headerValuePF { case `X-Forwarded-For`(Seq(address, _*)) ⇒ address } |
-      headerValuePF { case `Remote-Address`(address) ⇒ address } |
-      headerValuePF { case `X-Real-Ip`(address) ⇒ address } |
+    headerValuePF { case `X-Forwarded-For`(Seq(address, _*)) => address } |
+      headerValuePF { case `Remote-Address`(address) => address } |
+      headerValuePF { case `X-Real-Ip`(address) => address } |
       provide(RemoteAddress.Unknown)
 
   private val _requestEntityEmpty: Directive0 =
@@ -120,8 +120,8 @@ object MiscDirectives extends MiscDirectives {
 
   private val _rejectEmptyResponse: Directive0 =
     mapRouteResult {
-      case Complete(response) if response.entity.isKnownEmpty ⇒ Rejected(Nil)
-      case x ⇒ x
+      case Complete(response) if response.entity.isKnownEmpty => Rejected(Nil)
+      case x => x
     }
 
   private val _withoutSizeLimit: Directive0 =

@@ -44,12 +44,12 @@ object TestClient extends App {
     val connection = Http().outgoingConnectionHttps(host)
     val result = Source.single(HttpRequest()).via(connection).runWith(Sink.head)
     result.map(_.header[headers.Server]) onComplete {
-      case Success(res) ⇒
+      case Success(res) =>
         println(s"$host is running ${res mkString ", "}")
         println()
         fetchServerVersion2()
 
-      case Failure(error) ⇒
+      case Failure(error) =>
         println(s"Error: $error")
         println()
         fetchServerVersion2()
@@ -60,11 +60,11 @@ object TestClient extends App {
     println(s"Fetching HTTP server version of host `$host` via the high-level API ...")
     val result = Http().singleRequest(HttpRequest(uri = s"https://$host/"))
     result.map(_.header[headers.Server]) onComplete {
-      case Success(res) ⇒
+      case Success(res) =>
         println(s"$host is running ${res mkString ", "}")
-        Http().shutdownAllConnectionPools().onComplete { _ ⇒ system.log.info("STOPPED"); shutdown() }
+        Http().shutdownAllConnectionPools().onComplete { _ => system.log.info("STOPPED"); shutdown() }
 
-      case Failure(error) ⇒
+      case Failure(error) =>
         println(s"Error: $error")
         shutdown()
     }
@@ -86,8 +86,8 @@ object TestClient extends App {
 
     try {
       val done = Future.traverse(urls.zipWithIndex) {
-        case (url, index) ⇒
-          Http().singleRequest(HttpRequest(uri = url)).map { response ⇒
+        case (url, index) =>
+          Http().singleRequest(HttpRequest(uri = url)).map { response =>
 
             val path = new File(s"/tmp/client-dumps/akka-body-$index.dump").toPath
             val headersPath = new File(s"/tmp/client-dumps/akka-headers-$index.dump").toPath
@@ -95,20 +95,20 @@ object TestClient extends App {
             import scala.sys.process._
             (s"""curl -D /tmp/client-dumps/curl-headers-$index.dump $url""" #> new File(s"/tmp/client-dumps/curl-body-$index.dump")).!
 
-            val headers = Source(response.headers).map(header ⇒ ByteString(header.name + ": " + header.value + "\n"))
+            val headers = Source(response.headers).map(header => ByteString(header.name + ": " + header.value + "\n"))
               .runWith(FileIO.toPath(headersPath))
 
             val body = response.entity.dataBytes
               .runWith(FileIO.toPath(path))
-              .map(res ⇒ (url, path, res)): Future[(String, Path, IOResult)]
+              .map(res => (url, path, res)): Future[(String, Path, IOResult)]
 
-            headers.flatMap(_ ⇒ body)
+            headers.flatMap(_ => body)
           }
       }
 
       println("Fetched urls: " + Await.result(done, 10.minutes))
     } finally {
-      Http().shutdownAllConnectionPools().flatMap(_ ⇒ system.terminate())
+      Http().shutdownAllConnectionPools().flatMap(_ => system.terminate())
     }
   }
 

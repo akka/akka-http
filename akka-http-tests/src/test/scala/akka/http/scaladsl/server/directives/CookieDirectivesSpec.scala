@@ -26,7 +26,7 @@ class CookieDirectivesSpec extends RoutingSpec {
     }
     "properly pass through inner rejections" in {
       Get() ~> addHeader(Cookie("fancy" → "pants")) ~> {
-        cookie("fancy") { c ⇒ reject(ValidationRejection("Dont like " + c.value)) }
+        cookie("fancy") { c => reject(ValidationRejection("Dont like " + c.value)) }
       } ~> check { rejection shouldEqual ValidationRejection("Dont like pants") }
     }
   }
@@ -47,7 +47,7 @@ class CookieDirectivesSpec extends RoutingSpec {
         deleteCookie(HttpCookie("myCookie", "test.com"), HttpCookie("myCookie2", "foobar.com")) { completeOk }
       } ~> check {
         status shouldEqual OK
-        headers.collect { case `Set-Cookie`(x) ⇒ x } shouldEqual List(
+        headers.collect { case `Set-Cookie`(x) => x } shouldEqual List(
           HttpCookie("myCookie", "deleted", expires = deletedTimeStamp),
           HttpCookie("myCookie2", "deleted", expires = deletedTimeStamp))
       }
@@ -65,7 +65,7 @@ class CookieDirectivesSpec extends RoutingSpec {
     }
     "let rejections from its inner route pass through" in {
       Get() ~> {
-        optionalCookie("test-cookie") { _ ⇒
+        optionalCookie("test-cookie") { _ =>
           validate(false, "ouch") { completeOk }
         }
       } ~> check { rejection shouldEqual ValidationRejection("ouch") }
@@ -87,7 +87,7 @@ class CookieDirectivesSpec extends RoutingSpec {
         setCookie(HttpCookie("myCookie", "test.com"), HttpCookie("myCookie2", "foobar.com")) { completeOk }
       } ~> check {
         status shouldEqual OK
-        headers.collect { case `Set-Cookie`(x) ⇒ x } shouldEqual List(
+        headers.collect { case `Set-Cookie`(x) => x } shouldEqual List(
           HttpCookie("myCookie", "test.com"), HttpCookie("myCookie2", "foobar.com"))
       }
     }

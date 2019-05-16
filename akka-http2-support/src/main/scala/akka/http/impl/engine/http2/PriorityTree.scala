@@ -68,7 +68,7 @@ private[http2] object PriorityTree {
             .updateNode(streamDependency)(updateChildren(_ + streamId))
         else
           insertNode(PriorityInfo(streamId, streamDependency, weight, dependencyInfo.childrenIds))
-            .updateNode(streamDependency)(updateChildren(_ ⇒ TreeSet(streamId)))
+            .updateNode(streamDependency)(updateChildren(_ => TreeSet(streamId)))
       } else
         insertNode(PriorityInfo(streamDependency, 0, DefaultWeight, TreeSet.empty)) // try again after creating intermediate
           .insert(streamId, streamDependency, weight, exclusive)
@@ -85,7 +85,7 @@ private[http2] object PriorityTree {
         else if (!dependsTransitivelyOn(newStreamDependency, streamId)) {
           remove(streamId)
             .insert(streamId, newStreamDependency, newWeight, newlyExclusive)
-            .updateNode(streamId)(updateChildren(newChildren ⇒ newChildren ++ oldInfo.childrenIds))
+            .updateNode(streamId)(updateChildren(newChildren => newChildren ++ oldInfo.childrenIds))
         } else {
           this // FIXME: actually implement moving nodes down in a dependency chain
         }
@@ -104,7 +104,7 @@ private[http2] object PriorityTree {
       create(
         (nodes - streamId) +
           (info.streamDependency → dependencyInfo.copy(childrenIds = dependencyInfo.childrenIds - streamId)) ++
-          info.childrenIds.unsorted.map(id ⇒
+          info.childrenIds.unsorted.map(id =>
             id → nodes(id).copy(streamDependency = info.streamDependency)
           )
       )
@@ -121,14 +121,14 @@ private[http2] object PriorityTree {
     private def dependencyOf(streamId: Int): Int = nodes(streamId).streamDependency
 
     // lens-like "mutators"
-    private def updateNodes(updater: TreeMap[Int, PriorityInfo] ⇒ TreeMap[Int, PriorityInfo]): PriorityTreeImpl =
+    private def updateNodes(updater: TreeMap[Int, PriorityInfo] => TreeMap[Int, PriorityInfo]): PriorityTreeImpl =
       create(updater(nodes))
 
-    private def updateNode(streamId: Int)(updater: PriorityInfo ⇒ PriorityInfo): PriorityTreeImpl =
-      updateNodes { nodes ⇒
+    private def updateNode(streamId: Int)(updater: PriorityInfo => PriorityInfo): PriorityTreeImpl =
+      updateNodes { nodes =>
         nodes.updated(streamId, updater(nodes(streamId)))
       }
-    private def updateChildren(updater: immutable.TreeSet[Int] ⇒ immutable.TreeSet[Int]): PriorityInfo ⇒ PriorityInfo = { old ⇒
+    private def updateChildren(updater: immutable.TreeSet[Int] => immutable.TreeSet[Int]): PriorityInfo => PriorityInfo = { old =>
       old.copy(childrenIds = updater(old.childrenIds))
     }
     private def insertNode(newNode: PriorityInfo): PriorityTreeImpl =

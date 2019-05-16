@@ -52,14 +52,14 @@ private[akka] object LogByteStringTools {
 
   def logTlsOutbound(name: String, maxBytes: Int = MaxBytesPrinted): Flow[SslTlsOutbound, SslTlsOutbound, NotUsed] =
     Flow[SslTlsOutbound].log(name, {
-      case SendBytes(bytes)       ⇒ "SendBytes " + printByteString(bytes, maxBytes)
-      case n: NegotiateNewSession ⇒ n.toString
+      case SendBytes(bytes)       => "SendBytes " + printByteString(bytes, maxBytes)
+      case n: NegotiateNewSession => n.toString
     }).addAttributes(LogFailuresOnDebugAttributes)
 
   def logTlsInbound(name: String, maxBytes: Int = MaxBytesPrinted): Flow[SslTlsInbound, SslTlsInbound, NotUsed] =
     Flow[SslTlsInbound].log(name, {
-      case s: SessionTruncated          ⇒ s
-      case SessionBytes(session, bytes) ⇒ "SessionBytes " + printByteString(bytes, maxBytes)
+      case s: SessionTruncated          => s
+      case SessionBytes(session, bytes) => "SessionBytes " + printByteString(bytes, maxBytes)
     }).addAttributes(LogFailuresOnDebugAttributes)
 
   def printByteString(bytes: ByteString, maxBytes: Int = MaxBytesPrinted): String = {

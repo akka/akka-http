@@ -9,11 +9,11 @@ import scala.collection.immutable.TreeMap
 import akka.parboiled2.Parser
 import akka.http.scaladsl.model.headers._
 
-private[parser] trait ContentDispositionHeader { this: Parser with CommonRules with CommonActions ⇒
+private[parser] trait ContentDispositionHeader { this: Parser with CommonRules with CommonActions =>
 
   // http://tools.ietf.org/html/rfc6266#section-4.1
   def `content-disposition` = rule {
-    `disposition-type` ~ zeroOrMore(ws(';') ~ `disposition-parm`) ~ EOI ~> (p ⇒ TreeMap(p: _*)) ~> (`Content-Disposition`(_, _))
+    `disposition-type` ~ zeroOrMore(ws(';') ~ `disposition-parm`) ~ EOI ~> (p => TreeMap(p: _*)) ~> (`Content-Disposition`(_, _))
   }
 
   def `disposition-type` = rule(
@@ -35,7 +35,7 @@ private[parser] trait ContentDispositionHeader { this: Parser with CommonRules w
       | `ext-token` ~ ws('=') ~ `ext-value`)
 
   def `ext-token` = rule { // token which ends with '*'
-    token ~> (s ⇒ test(s endsWith "*") ~ push(s))
+    token ~> (s => test(s endsWith "*") ~ push(s))
   }
 
   def `ext-value` = rule { word } // support full `ext-value` notation from http://tools.ietf.org/html/rfc5987#section-3.2.1

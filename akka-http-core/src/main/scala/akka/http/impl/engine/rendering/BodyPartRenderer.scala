@@ -47,15 +47,15 @@ private[http] object BodyPartRenderer {
 
             def bodyPartChunks(data: Source[ByteString, Any]): Source[ChunkStreamPart, Any] = {
               val entityChunks = data.map[ChunkStreamPart](Chunk(_))
-              (chunkStream(r.get) ++ entityChunks).mapMaterializedValue((_) ⇒ ())
+              (chunkStream(r.get) ++ entityChunks).mapMaterializedValue((_) => ())
             }
 
             def completePartRendering(entity: HttpEntity): Source[ChunkStreamPart, Any] =
               entity match {
-                case x if x.isKnownEmpty       ⇒ chunkStream(r.get)
-                case Strict(_, data)           ⇒ chunkStream((r ~~ data).get)
-                case Default(_, _, data)       ⇒ bodyPartChunks(data)
-                case IndefiniteLength(_, data) ⇒ bodyPartChunks(data)
+                case x if x.isKnownEmpty       => chunkStream(r.get)
+                case Strict(_, data)           => chunkStream((r ~~ data).get)
+                case Default(_, _, data)       => bodyPartChunks(data)
+                case IndefiniteLength(_, data) => bodyPartChunks(data)
               }
 
             renderBoundary(r, boundary, suppressInitialCrLf = !firstBoundaryRendered)
@@ -120,17 +120,17 @@ private[http] object BodyPartRenderer {
     r ~~ CrLf
   }
 
-  private def renderHeader(r: Rendering, log: LoggingAdapter): HttpHeader ⇒ Unit = {
-    case x: `Content-Length` ⇒
+  private def renderHeader(r: Rendering, log: LoggingAdapter): HttpHeader => Unit = {
+    case x: `Content-Length` =>
       suppressionWarning(log, x, "explicit `Content-Length` header is not allowed. Use the appropriate HttpEntity subtype.")
 
-    case x: `Content-Type` ⇒
+    case x: `Content-Type` =>
       suppressionWarning(log, x, "explicit `Content-Type` header is not allowed. Set `HttpRequest.entity.contentType` instead.")
 
-    case x: RawHeader if (x is "content-type") || (x is "content-length") ⇒
+    case x: RawHeader if (x is "content-type") || (x is "content-length") =>
       suppressionWarning(log, x, "illegal RawHeader")
 
-    case x ⇒ r ~~ x ~~ CrLf
+    case x => r ~~ x ~~ CrLf
   }
 
   /**

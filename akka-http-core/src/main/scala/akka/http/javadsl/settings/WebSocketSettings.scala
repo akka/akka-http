@@ -19,7 +19,7 @@ import scala.concurrent.duration.Duration
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-trait WebSocketSettings { self: WebSocketSettingsImpl ⇒
+trait WebSocketSettings { self: WebSocketSettingsImpl =>
   def getRandomFactory: Supplier[Random]
   def periodicKeepAliveMode: String
   def periodicKeepAliveMaxIdle: Duration
@@ -31,13 +31,13 @@ trait WebSocketSettings { self: WebSocketSettingsImpl ⇒
   def getPeriodicKeepAliveData: Supplier[ByteString]
 
   def withRandomFactoryFactory(newValue: Supplier[Random]): WebSocketSettings =
-    copy(randomFactory = () ⇒ newValue.get())
+    copy(randomFactory = () => newValue.get())
   def withPeriodicKeepAliveMode(newValue: String): WebSocketSettings =
     copy(periodicKeepAliveMode = newValue)
   def withPeriodicKeepAliveMaxIdle(newValue: Duration): WebSocketSettings =
     copy(periodicKeepAliveMaxIdle = newValue)
   def withPeriodicKeepAliveData(newValue: Supplier[ByteString]): WebSocketSettings =
-    copy(periodicKeepAliveData = () ⇒ newValue.get())
+    copy(periodicKeepAliveData = () => newValue.get())
 }
 
 object WebSocketSettings {
