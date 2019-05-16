@@ -15,7 +15,7 @@ class CookieDirectivesSpec extends RoutingSpec {
 
   "The 'cookie' directive" should {
     "extract the respectively named cookie" in {
-      Get() ~> addHeader(Cookie("fancy" → "pants")) ~> {
+      Get() ~> addHeader(Cookie("fancy" -> "pants")) ~> {
         cookie("fancy") { echoComplete }
       } ~> check { responseAs[String] shouldEqual "fancy=pants" }
     }
@@ -25,8 +25,8 @@ class CookieDirectivesSpec extends RoutingSpec {
       } ~> check { rejection shouldEqual MissingCookieRejection("fancy") }
     }
     "properly pass through inner rejections" in {
-      Get() ~> addHeader(Cookie("fancy" → "pants")) ~> {
-        cookie("fancy") { c ⇒ reject(ValidationRejection("Dont like " + c.value)) }
+      Get() ~> addHeader(Cookie("fancy" -> "pants")) ~> {
+        cookie("fancy") { c => reject(ValidationRejection("Dont like " + c.value)) }
       } ~> check { rejection shouldEqual ValidationRejection("Dont like pants") }
     }
   }
@@ -47,7 +47,7 @@ class CookieDirectivesSpec extends RoutingSpec {
         deleteCookie(HttpCookie("myCookie", "test.com"), HttpCookie("myCookie2", "foobar.com")) { completeOk }
       } ~> check {
         status shouldEqual OK
-        headers.collect { case `Set-Cookie`(x) ⇒ x } shouldEqual List(
+        headers.collect { case `Set-Cookie`(x) => x } shouldEqual List(
           HttpCookie("myCookie", "deleted", expires = deletedTimeStamp),
           HttpCookie("myCookie2", "deleted", expires = deletedTimeStamp))
       }
@@ -56,7 +56,7 @@ class CookieDirectivesSpec extends RoutingSpec {
 
   "The 'optionalCookie' directive" should {
     "produce a `Some(cookie)` extraction if the cookie is present" in {
-      Get() ~> Cookie("abc" → "123") ~> {
+      Get() ~> Cookie("abc" -> "123") ~> {
         optionalCookie("abc") { echoComplete }
       } ~> check { responseAs[String] shouldEqual "Some(abc=123)" }
     }
@@ -65,7 +65,7 @@ class CookieDirectivesSpec extends RoutingSpec {
     }
     "let rejections from its inner route pass through" in {
       Get() ~> {
-        optionalCookie("test-cookie") { _ ⇒
+        optionalCookie("test-cookie") { _ =>
           validate(false, "ouch") { completeOk }
         }
       } ~> check { rejection shouldEqual ValidationRejection("ouch") }
@@ -87,7 +87,7 @@ class CookieDirectivesSpec extends RoutingSpec {
         setCookie(HttpCookie("myCookie", "test.com"), HttpCookie("myCookie2", "foobar.com")) { completeOk }
       } ~> check {
         status shouldEqual OK
-        headers.collect { case `Set-Cookie`(x) ⇒ x } shouldEqual List(
+        headers.collect { case `Set-Cookie`(x) => x } shouldEqual List(
           HttpCookie("myCookie", "test.com"), HttpCookie("myCookie2", "foobar.com"))
       }
     }

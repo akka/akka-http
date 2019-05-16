@@ -19,16 +19,16 @@ import akka.stream.stage._
  */
 @InternalApi
 private[http] object Masking {
-  def apply(serverSide: Boolean, maskRandom: () ⇒ Random): BidiFlow[ /* net in */ FrameEvent, /* app out */ FrameEventOrError, /* app in */ FrameEvent, /* net out */ FrameEvent, NotUsed] =
+  def apply(serverSide: Boolean, maskRandom: () => Random): BidiFlow[ /* net in */ FrameEvent, /* app out */ FrameEventOrError, /* app in */ FrameEvent, /* net out */ FrameEvent, NotUsed] =
     BidiFlow.fromFlowsMat(unmaskIf(serverSide), maskIf(!serverSide, maskRandom))(Keep.none)
 
-  def maskIf(condition: Boolean, maskRandom: () ⇒ Random): Flow[FrameEvent, FrameEvent, NotUsed] =
+  def maskIf(condition: Boolean, maskRandom: () => Random): Flow[FrameEvent, FrameEvent, NotUsed] =
     if (condition) {
       Flow[FrameEvent]
         .via(new Masking(maskRandom())) // new random per materialization
         .map {
-          case f: FrameEvent  ⇒ f
-          case FrameError(ex) ⇒ throw ex
+          case f: FrameEvent  => f
+          case FrameError(ex) => throw ex
         }
     } else Flow[FrameEvent]
 
@@ -47,8 +47,8 @@ private[http] object Masking {
 
   private object Unmasking extends Masker {
     def extractMask(header: FrameHeader): Int = header.mask match {
-      case Some(mask) ⇒ mask
-      case None       ⇒ throw new ProtocolException("Frame wasn't masked")
+      case Some(mask) => mask
+      case None       => throw new ProtocolException("Frame wasn't masked")
     }
     def setNewMask(header: FrameHeader, mask: Int): FrameHeader = header.copy(mask = None)
     override def toString: String = "Unmasking"
@@ -66,7 +66,7 @@ private[http] object Masking {
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with OutHandler with InHandler {
 
       def onPush(): Unit = grab(in) match {
-        case start @ FrameStart(header, data) ⇒
+        case start @ FrameStart(header, data) =>
           try {
             val mask = extractMask(header)
 
@@ -76,12 +76,12 @@ private[http] object Masking {
             }
             push(out, start.copy(header = setNewMask(header, mask), data = masked))
           } catch {
-            case p: ProtocolException ⇒ {
+            case p: ProtocolException => {
               setHandler(in, doneHandler)
               push(out, FrameError(p))
             }
           }
-        case _: FrameData ⇒ fail(out, new IllegalStateException("unexpected FrameData (need FrameStart first)"))
+        case _: FrameData => fail(out, new IllegalStateException("unexpected FrameData (need FrameStart first)"))
       }
 
       private def doneHandler = new InHandler {

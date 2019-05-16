@@ -6,7 +6,7 @@ package akka.http.scaladsl.common
 
 import akka.NotUsed
 import akka.event.Logging
-import akka.http.javadsl.{ common, model ⇒ jm }
+import akka.http.javadsl.{ common, model => jm }
 import akka.http.scaladsl.model.{ ContentType, ContentTypeRange, ContentTypes }
 import akka.stream.scaladsl.{ Flow, Framing }
 import akka.util.ByteString
@@ -26,7 +26,7 @@ final class CsvEntityStreamingSupport private[akka] (
       maxObjectSize,
       ContentTypeRange(ContentTypes.`text/csv(UTF-8)`),
       ContentTypes.`text/csv(UTF-8)`,
-      { val newline = ByteString("\n"); Flow[ByteString].map(bs ⇒ bs ++ newline) },
+      { val newline = ByteString("\n"); Flow[ByteString].map(bs => bs ++ newline) },
       1, false)
 
   override val framingDecoder: Flow[ByteString, ByteString, NotUsed] =

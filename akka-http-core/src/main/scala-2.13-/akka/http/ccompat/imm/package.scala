@@ -16,6 +16,6 @@ package object imm {
 
   implicit class StreamOps[A](val underlying: immutable.Stream[A]) extends AnyVal {
     // renamed in 2.13
-    def lazyAppendedAll[B >: A](rest: ⇒ TraversableOnce[B]): Stream[B] = underlying.append(rest)
+    def lazyAppendedAll[B >: A](rest: => TraversableOnce[B]): Stream[B] = underlying.append(rest)
   }
 }

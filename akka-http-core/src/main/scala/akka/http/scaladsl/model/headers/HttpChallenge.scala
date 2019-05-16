@@ -5,7 +5,7 @@
 package akka.http.scaladsl.model.headers
 
 import java.util
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 import akka.http.impl.util._
 import akka.http.impl.util.JavaMapping.Implicits._
 
@@ -26,7 +26,7 @@ final case class HttpChallenge(scheme: String, realm: String,
     if (paramsNoToken.nonEmpty) {
       if (realm == null) r ~~ ' ' else r ~~ ','
       r ~~ paramsNoToken.head._1 ~~ '=' ~~# paramsNoToken.head._2
-      paramsNoToken.tail.foreach { case (k, v) ⇒ r ~~ ',' ~~ k ~~ '=' ~~# v }
+      paramsNoToken.tail.foreach { case (k, v) => r ~~ ',' ~~ k ~~ '=' ~~# v }
     }
 
     r
@@ -49,7 +49,7 @@ object HttpChallenge extends scala.runtime.AbstractFunction3[String, String, Map
 
 object HttpChallenges {
 
-  def basic(realm: String): HttpChallenge = HttpChallenge("Basic", realm, Map("charset" → "UTF-8"))
+  def basic(realm: String): HttpChallenge = HttpChallenge("Basic", realm, Map("charset" -> "UTF-8"))
 
   def oAuth2(realm: String): HttpChallenge = HttpChallenge("Bearer", realm)
 }

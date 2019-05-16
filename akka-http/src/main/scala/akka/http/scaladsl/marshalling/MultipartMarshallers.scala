@@ -13,10 +13,10 @@ import akka.http.scaladsl.model._
 
 trait MultipartMarshallers {
   implicit def multipartMarshaller[T <: Multipart](implicit log: LoggingAdapter = DefaultNoLogging): ToEntityMarshaller[T] =
-    Marshaller strict { value ⇒
+    Marshaller strict { value =>
       val boundary = randomBoundary()
       val mediaType = value.mediaType withBoundary boundary
-      Marshalling.WithFixedContentType(mediaType.toContentType, () ⇒ value.toEntity(boundary, log))
+      Marshalling.WithFixedContentType(mediaType.toContentType, () => value.toEntity(boundary, log))
     }
 
   /**

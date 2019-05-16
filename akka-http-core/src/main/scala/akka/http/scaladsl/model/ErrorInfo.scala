@@ -33,14 +33,14 @@ final class ErrorInfo(
   override def canEqual(that: Any): Boolean = that.isInstanceOf[ErrorInfo]
 
   override def equals(that: Any): Boolean = that match {
-    case that: ErrorInfo ⇒ that.canEqual(this) && that.summary == this.summary && that.detail == this.detail && that.errorHeaderName == this.errorHeaderName
-    case _               ⇒ false
+    case that: ErrorInfo => that.canEqual(this) && that.summary == this.summary && that.detail == this.detail && that.errorHeaderName == this.errorHeaderName
+    case _               => false
   }
 
   override def productElement(n: Int): Any = n match {
-    case 0 ⇒ summary
-    case 1 ⇒ detail
-    case 2 ⇒ errorHeaderName
+    case 0 => summary
+    case 1 => detail
+    case 2 => errorHeaderName
   }
 
   override def productArity: Int = 3
@@ -61,8 +61,8 @@ object ErrorInfo {
    * summary/details information but structures its exception messages accordingly.
    */
   def fromCompoundString(message: String): ErrorInfo = message.split(": ", 2) match {
-    case Array(summary, detail) ⇒ apply(summary, detail)
-    case _                      ⇒ ErrorInfo("", message)
+    case Array(summary, detail) => apply(summary, detail)
+    case _                      => ErrorInfo("", message)
   }
 }
 

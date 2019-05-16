@@ -455,7 +455,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         expectNoNetworkData()
       }
 
-      List("ping", "pong") foreach { keepAliveMode ⇒
+      List("ping", "pong") foreach { keepAliveMode =>
         def expectedOpcode = if (keepAliveMode == "ping") Opcode.Ping else Opcode.Pong
 
         s"automatically send keep-alive [$keepAliveMode] frames, with empty data, when configured on the server side" in new ServerTestSetup {
@@ -474,7 +474,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
             super.websocketSettings
               .withPeriodicKeepAliveMode(keepAliveMode)
               .withPeriodicKeepAliveMaxIdle(100.millis)
-              .withPeriodicKeepAliveData(() ⇒ ByteString(s"ping-${counter.incrementAndGet()}"))
+              .withPeriodicKeepAliveData(() => ByteString(s"ping-${counter.incrementAndGet()}"))
 
           expectFrameOnNetwork(expectedOpcode, ByteString("ping-1"), fin = true)
           expectFrameOnNetwork(expectedOpcode, ByteString("ping-2"), fin = true)
@@ -497,7 +497,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
             super.websocketSettings
               .withPeriodicKeepAliveMode(keepAliveMode)
               .withPeriodicKeepAliveMaxIdle(100.millis)
-              .withPeriodicKeepAliveData(() ⇒ ByteString(s"ping-${counter.incrementAndGet()}"))
+              .withPeriodicKeepAliveData(() => ByteString(s"ping-${counter.incrementAndGet()}"))
 
           expectMaskedFrameOnNetwork(expectedOpcode, ByteString("ping-1"), fin = true)
           expectMaskedFrameOnNetwork(expectedOpcode, ByteString("ping-2"), fin = true)
@@ -855,9 +855,9 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
 
         // Kids, always drain your entities
         messageIn.requestNext() match {
-          case b: TextMessage ⇒
+          case b: TextMessage =>
             b.textStream.runWith(Sink.ignore)
-          case _ ⇒
+          case _ =>
         }
 
         expectError(messageIn)
@@ -948,8 +948,8 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         )
 
         future.onComplete {
-          case Failure(ex) ⇒ ex.getClass should be(classOf[TimeoutException])
-          case _           ⇒ fail()
+          case Failure(ex) => ex.getClass should be(classOf[TimeoutException])
+          case _           => fail()
         }
       }
       "convert streamed binary to strict binary if stream is infinite" in {
@@ -960,8 +960,8 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         )
 
         future.onComplete {
-          case Failure(ex) ⇒ ex.getClass should be(classOf[TimeoutException])
-          case _           ⇒ fail()
+          case Failure(ex) => ex.getClass should be(classOf[TimeoutException])
+          case _           => fail()
         }
       }
     }
@@ -1056,10 +1056,10 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
       val hasMask = (header(1) & Protocol.MASK_MASK) != 0
       val length7 = header(1) & Protocol.LENGTH_MASK
       val length = length7 match {
-        case 126 ⇒
+        case 126 =>
           val length16Bytes = expectNetworkData(2)
           (length16Bytes(0) & 0xff) << 8 | (length16Bytes(1) & 0xff) << 0
-        case 127 ⇒
+        case 127 =>
           val length64Bytes = expectNetworkData(8)
           (length64Bytes(0) & 0xff).toLong << 56 |
             (length64Bytes(1) & 0xff).toLong << 48 |
@@ -1069,7 +1069,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
             (length64Bytes(5) & 0xff).toLong << 16 |
             (length64Bytes(6) & 0xff).toLong << 8 |
             (length64Bytes(7) & 0xff).toLong << 0
-        case x ⇒ x
+        case x => x
       }
       val mask =
         if (hasMask) {
@@ -1094,8 +1094,8 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
 
       val rawData = expectNetworkData(length.toInt)
       val data = mask match {
-        case Some(m) ⇒ FrameEventParser.mask(rawData, m)._1
-        case None    ⇒ rawData
+        case Some(m) => FrameEventParser.mask(rawData, m)._1
+        case None    => rawData
       }
 
       val code = ((data(0) & 0xff) << 8) | ((data(1) & 0xff) << 0)

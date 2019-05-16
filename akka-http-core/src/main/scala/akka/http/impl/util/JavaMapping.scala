@@ -7,7 +7,7 @@ package akka.http.impl.util
 import java.net.InetAddress
 import java.util.Optional
 import java.util.concurrent.CompletionStage
-import java.{ lang ⇒ jl, util ⇒ ju }
+import java.{ lang => jl, util => ju }
 
 import akka.japi.Pair
 import akka.stream.{ FlowShape, Graph, javadsl, scaladsl }
@@ -18,9 +18,9 @@ import scala.reflect.ClassTag
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.http.impl.model.{ JavaQuery, JavaUri }
-import akka.http.javadsl.{ ConnectionContext, HttpConnectionContext, HttpsConnectionContext, model ⇒ jm, settings ⇒ js }
-import akka.http.{ javadsl ⇒ jdsl, scaladsl ⇒ sdsl }
-import akka.http.scaladsl.{ model ⇒ sm }
+import akka.http.javadsl.{ ConnectionContext, HttpConnectionContext, HttpsConnectionContext, model => jm, settings => js }
+import akka.http.{ javadsl => jdsl, scaladsl => sdsl }
+import akka.http.scaladsl.{ model => sm }
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
@@ -283,7 +283,7 @@ private[http] object JavaMapping {
   private def cast[T](obj: AnyRef)(implicit classTag: ClassTag[T]): T =
     try classTag.runtimeClass.cast(obj).asInstanceOf[T]
     catch {
-      case exp: ClassCastException ⇒
+      case exp: ClassCastException =>
         throw new IllegalArgumentException(s"Illegal custom subclass of $classTag. " +
           s"Please use only the provided factories in akka.http.javadsl.model.Http")
     }

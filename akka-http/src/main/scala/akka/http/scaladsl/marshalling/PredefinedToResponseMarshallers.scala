@@ -27,7 +27,7 @@ trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImp
     headers: immutable.Seq[HttpHeader] = Nil)(
     implicit
     m: ToEntityMarshaller[T]): ToResponseMarshaller[T] =
-    fromStatusCodeAndHeadersAndValue compose (t ⇒ (status, headers, t))
+    fromStatusCodeAndHeadersAndValue compose (t => (status, headers, t))
 
   implicit val fromResponse: TRM[HttpResponse] = Marshaller.opaque(ConstantFun.scalaIdentityFunction)
 
@@ -37,7 +37,7 @@ trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImp
    * for status codes that don't allow a response.
    */
   implicit val fromStatusCode: TRM[StatusCode] =
-    Marshaller.opaque { status ⇒ statusCodeResponse(status) }
+    Marshaller.opaque { status => statusCodeResponse(status) }
 
   /**
    * Creates a response from status code and headers. Does not support content-type negotiation but will return
@@ -45,18 +45,18 @@ trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImp
    * for status codes that don't allow a response.
    */
   implicit val fromStatusCodeAndHeaders: TRM[(StatusCode, immutable.Seq[HttpHeader])] =
-    Marshaller.opaque { case (status, headers) ⇒ statusCodeResponse(status, headers) }
+    Marshaller.opaque { case (status, headers) => statusCodeResponse(status, headers) }
 
-  implicit def fromStatusCodeAndValue[S, T](implicit sConv: S ⇒ StatusCode, mt: ToEntityMarshaller[T]): TRM[(S, T)] =
-    fromStatusCodeAndHeadersAndValue[T] compose { case (status, value) ⇒ (sConv(status), Nil, value) }
+  implicit def fromStatusCodeAndValue[S, T](implicit sConv: S => StatusCode, mt: ToEntityMarshaller[T]): TRM[(S, T)] =
+    fromStatusCodeAndHeadersAndValue[T] compose { case (status, value) => (sConv(status), Nil, value) }
 
-  implicit def fromStatusCodeConvertibleAndHeadersAndT[S, T](implicit sConv: S ⇒ StatusCode, mt: ToEntityMarshaller[T]): TRM[(S, immutable.Seq[HttpHeader], T)] =
-    fromStatusCodeAndHeadersAndValue[T] compose { case (status, headers, value) ⇒ (sConv(status), headers, value) }
+  implicit def fromStatusCodeConvertibleAndHeadersAndT[S, T](implicit sConv: S => StatusCode, mt: ToEntityMarshaller[T]): TRM[(S, immutable.Seq[HttpHeader], T)] =
+    fromStatusCodeAndHeadersAndValue[T] compose { case (status, headers, value) => (sConv(status), headers, value) }
 
   implicit def fromStatusCodeAndHeadersAndValue[T](implicit mt: ToEntityMarshaller[T]): TRM[(StatusCode, immutable.Seq[HttpHeader], T)] =
-    Marshaller(implicit ec ⇒ {
-      case (status, headers, value) ⇒
-        mt(value).fast map { marshallings ⇒
+    Marshaller(implicit ec => {
+      case (status, headers, value) =>
+        mt(value).fast map { marshallings =>
           val mappedMarshallings = marshallings map (_ map (statusCodeAndEntityResponse(status, headers, _)))
           if (status.isSuccess)
             // for 2xx status codes delegate content-type negotiation to the value marshaller
@@ -74,8 +74,8 @@ trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImp
             // Adding the opaque fallback rendering will give an escape hatch for those situations.
             // See akka/akka#19397, akka/akka#19842, and #1072.
             mappedMarshallings match {
-              case Nil                   ⇒ Nil
-              case firstMarshalling :: _ ⇒ mappedMarshallings :+ firstMarshalling.toOpaque(HttpCharsets.`UTF-8`)
+              case Nil                   => Nil
+              case firstMarshalling :: _ => mappedMarshallings :+ firstMarshalling.toOpaque(HttpCharsets.`UTF-8`)
             }
         }
     })
@@ -100,19 +100,19 @@ trait LowPriorityToResponseMarshallerImplicits {
     fromEntityStreamingSupportAndByteStringSourceMarshaller[T, M](s, m.map(_.dataBytes))
 
   private[marshalling] def fromEntityStreamingSupportAndByteStringSourceMarshaller[T: ClassTag, M](s: EntityStreamingSupport, m: Marshaller[T, Source[ByteString, _]]): ToResponseMarshaller[Source[T, M]] = {
-    Marshaller[Source[T, M], HttpResponse] { implicit ec ⇒ source ⇒
+    Marshaller[Source[T, M], HttpResponse] { implicit ec => source =>
       FastFuture successful {
-        Marshalling.WithFixedContentType(s.contentType, () ⇒ {
-          val availableMarshallingsPerElement = source.mapAsync(1) { t ⇒ m(t)(ec) }
+        Marshalling.WithFixedContentType(s.contentType, () => {
+          val availableMarshallingsPerElement = source.mapAsync(1) { t => m(t)(ec) }
 
-          val bestMarshallingPerElement = availableMarshallingsPerElement map { marshallings ⇒
+          val bestMarshallingPerElement = availableMarshallingsPerElement map { marshallings =>
             // pick the Marshalling that matches our EntityStreamingSupport
             // TODO we could either special case for certain known types,
             // or extend the entity support to be more advanced such that it would negotiate the element content type it
             // is able to render.
             selectMarshallingForContentType(marshallings, s.contentType)
               .orElse {
-                marshallings collectFirst { case Marshalling.Opaque(marshal) ⇒ marshal }
+                marshallings collectFirst { case Marshalling.Opaque(marshal) => marshal }
               }
               .getOrElse(throw new NoStrictlyCompatibleElementMarshallingAvailableException[T](s.contentType, marshallings))
           }

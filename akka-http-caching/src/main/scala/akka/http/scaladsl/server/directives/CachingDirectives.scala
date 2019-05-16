@@ -31,12 +31,12 @@ trait CachingDirectives {
    */
   def cachingProhibited: Directive0 =
     extract(_.request.headers.exists {
-      case x: `Cache-Control` ⇒ x.directives.exists {
-        case `no-cache`   ⇒ true
-        case `max-age`(0) ⇒ true
-        case _            ⇒ false
+      case x: `Cache-Control` => x.directives.exists {
+        case `no-cache`   => true
+        case `max-age`(0) => true
+        case _            => false
       }
-      case _ ⇒ false
+      case _ => false
     }).flatMap(if (_) pass else reject)
 
   /**
@@ -44,10 +44,10 @@ trait CachingDirectives {
    * keyer function. Note that routes producing streaming responses cannot be wrapped with this directive.
    */
   def alwaysCache[K](cache: Cache[K, RouteResult], keyer: PartialFunction[RequestContext, K]): Directive0 = {
-    mapInnerRoute { route ⇒ ctx ⇒
+    mapInnerRoute { route => ctx =>
       keyer.lift(ctx) match {
-        case Some(key) ⇒ cache.apply(key, () ⇒ route(ctx))
-        case None      ⇒ route(ctx)
+        case Some(key) => cache.apply(key, () => route(ctx))
+        case None      => route(ctx)
       }
     }
   }

@@ -106,7 +106,7 @@ object ValidatePullRequest extends AutoPlugin {
     graphsToTest exists { case (ivyScope, deps) =>
       log.debug(s"Analysing [$ivyScope] scoped dependencies...")
 
-      deps.nodes.foreach { m ⇒ log.debug(" -> " + m.id) }
+      deps.nodes.foreach { m => log.debug(" -> " + m.id) }
 
       // if this project depends on a modified module, we must test it
       deps.nodes.exists { m =>
@@ -179,7 +179,7 @@ object ValidatePullRequest extends AutoPlugin {
               l.startsWith("docs") ||
               BuildFilesAndDirectories.exists(l startsWith)
           )
-          .map(l ⇒ l.takeWhile(_ != '/'))
+          .map(l => l.takeWhile(_ != '/'))
           .toSet
 
       val dirtyModuleNames: Set[String] =
@@ -187,7 +187,7 @@ object ValidatePullRequest extends AutoPlugin {
         else {
           val statusOutput = s"git status --short".!!.split("\n")
           val dirtyDirectories = statusOutput
-            .map(l ⇒ l.trim.dropWhile(_ != ' ').drop(1))
+            .map(l => l.trim.dropWhile(_ != ' ').drop(1))
             .map(_.takeWhile(_ != '/'))
             .filter(dir => dir.startsWith("akka-") || dir.startsWith("docs") || BuildFilesAndDirectories.contains(dir))
             .toSet

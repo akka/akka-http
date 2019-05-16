@@ -28,7 +28,7 @@ object PoolImplementation {
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSettingsImpl ⇒
+abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSettingsImpl =>
   def getMaxConnections: Int = maxConnections
   def getMinConnections: Int = minConnections
   def getMaxRetries: Int = maxRetries

@@ -54,7 +54,7 @@ private[http] final class BodyPartParser(
   override def createLogic(attributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler {
       private var output = collection.immutable.Queue.empty[Output] // FIXME this probably is too wasteful
-      private var state: ByteString ⇒ StateResult = tryParseInitialBoundary
+      private var state: ByteString => StateResult = tryParseInitialBoundary
       private var shouldTerminate = false
       // Will be override at the beginning of the parsing (tryParseInitialBoundary and parsePreamble)
       // But initially defined here as norm version to avoid NPE
@@ -65,8 +65,8 @@ private[http] final class BodyPartParser(
           val elem = grab(in)
           try run(elem)
           catch {
-            case e: ParsingException ⇒ fail(e.info)
-            case NotEnoughDataException ⇒
+            case e: ParsingException => fail(e.info)
+            case NotEnoughDataException =>
               // we are missing a try/catch{continue} wrapper somewhere
               throw new IllegalStateException("unexpected NotEnoughDataException", NotEnoughDataException)
           }
@@ -92,8 +92,8 @@ private[http] final class BodyPartParser(
       def run(data: ByteString): Unit = {
         @tailrec def loop(): Unit =
           trampoline match {
-            case null ⇒
-            case f ⇒
+            case null =>
+            case f =>
               trampoline = null
               f()
               loop()
@@ -102,8 +102,8 @@ private[http] final class BodyPartParser(
         state(data)
         loop()
       }
-      private var trampoline: () ⇒ StateResult = null
-      def trampoline(continue: ⇒ StateResult): StateResult = {
+      private var trampoline: () => StateResult = null
+      def trampoline(continue: => StateResult): StateResult = {
         require(trampoline eq null)
         trampoline = continue _
         done()
@@ -123,7 +123,7 @@ private[http] final class BodyPartParser(
             else parsePreamble(input, 0)
           } else parsePreamble(input, 0)
         } catch {
-          case NotEnoughDataException ⇒ continue(input, 0)((newInput, _) ⇒ tryParseInitialBoundary(newInput))
+          case NotEnoughDataException => continue(input, 0)((newInput, _) => tryParseInitialBoundary(newInput))
         }
 
       def parsePreamble(input: ByteString, offset: Int): StateResult =
@@ -137,15 +137,15 @@ private[http] final class BodyPartParser(
           eolConfiguration = eolConfiguration.defineOnce(input)
           rec(offset)
         } catch {
-          case NotEnoughDataException ⇒ continue(input.takeRight(eolConfiguration.needle.length + eolConfiguration.eolLength), 0)(parsePreamble)
+          case NotEnoughDataException => continue(input.takeRight(eolConfiguration.needle.length + eolConfiguration.eolLength), 0)(parsePreamble)
         }
 
       @tailrec def parseHeaderLines(input: ByteString, lineStart: Int, headers: ListBuffer[HttpHeader] = ListBuffer[HttpHeader](),
                                     headerCount: Int = 0, cth: Option[`Content-Type`] = None): StateResult = {
         def contentType =
           cth match {
-            case Some(x) ⇒ x.contentType
-            case None    ⇒ defaultContentType
+            case Some(x) => x.contentType
+            case None    => defaultContentType
           }
 
         var lineEnd = 0
@@ -156,29 +156,29 @@ private[http] final class BodyPartParser(
               headerParser.resultHeader
             } else BoundaryHeader
           } catch {
-            case NotEnoughDataException ⇒ null
+            case NotEnoughDataException => null
           }
         resultHeader match {
-          case null ⇒ continue(input, lineStart)(parseHeaderLinesAux(headers, headerCount, cth))
+          case null => continue(input, lineStart)(parseHeaderLinesAux(headers, headerCount, cth))
 
-          case BoundaryHeader ⇒
-            emit(BodyPartStart(headers.toList, _ ⇒ HttpEntity.empty(contentType)))
+          case BoundaryHeader =>
+            emit(BodyPartStart(headers.toList, _ => HttpEntity.empty(contentType)))
             val ix = lineStart + eolConfiguration.boundaryLength
             if (eolConfiguration.isEndOfLine(input, ix)) parseHeaderLines(input, ix + eolConfiguration.eolLength)
             else if (doubleDash(input, ix)) setShouldTerminate()
             else fail("Illegal multipart boundary in message content")
 
-          case EmptyHeader ⇒ parseEntity(headers.toList, contentType)(input, lineEnd)
+          case EmptyHeader => parseEntity(headers.toList, contentType)(input, lineEnd)
 
-          case h: `Content-Type` ⇒
+          case h: `Content-Type` =>
             if (cth.isEmpty) parseHeaderLines(input, lineEnd, headers, headerCount + 1, Some(h))
             else if (cth.get == h) parseHeaderLines(input, lineEnd, headers, headerCount, cth)
             else fail("multipart part must not contain more than one Content-Type header")
 
-          case h if headerCount < maxHeaderCount ⇒
+          case h if headerCount < maxHeaderCount =>
             parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, cth)
 
-          case _ ⇒ fail(s"multipart part contains more than the configured limit of $maxHeaderCount headers")
+          case _ => fail(s"multipart part contains more than the configured limit of $maxHeaderCount headers")
         }
       }
 
@@ -188,16 +188,16 @@ private[http] final class BodyPartParser(
         parseHeaderLines(input, lineStart, headers, headerCount, cth)
 
       def parseEntity(headers: List[HttpHeader], contentType: ContentType,
-                      emitPartChunk: (List[HttpHeader], ContentType, ByteString) ⇒ Unit = {
-                        (headers, ct, bytes) ⇒
-                          emit(BodyPartStart(headers, entityParts ⇒ HttpEntity.IndefiniteLength(
+                      emitPartChunk: (List[HttpHeader], ContentType, ByteString) => Unit = {
+                        (headers, ct, bytes) =>
+                          emit(BodyPartStart(headers, entityParts => HttpEntity.IndefiniteLength(
                             ct,
-                            entityParts.collect { case EntityPart(data) ⇒ data })))
+                            entityParts.collect { case EntityPart(data) => data })))
                           emit(bytes)
                       },
-                      emitFinalPartChunk: (List[HttpHeader], ContentType, ByteString) ⇒ Unit = {
-                        (headers, ct, bytes) ⇒
-                          emit(BodyPartStart(headers, { rest ⇒
+                      emitFinalPartChunk: (List[HttpHeader], ContentType, ByteString) => Unit = {
+                        (headers, ct, bytes) =>
+                          emit(BodyPartStart(headers, { rest =>
                             StreamUtils.cancelSource(rest)(materializer)
                             HttpEntity.Strict(ct, bytes)
                           }))
@@ -220,12 +220,12 @@ private[http] final class BodyPartParser(
           }
           rec(offset)
         } catch {
-          case NotEnoughDataException ⇒
+          case NotEnoughDataException =>
             // we cannot emit all input bytes since the end of the input might be the start of the next boundary
             val emitEnd = input.length - eolConfiguration.needle.length - eolConfiguration.eolLength
             if (emitEnd > offset) {
               emitPartChunk(headers, contentType, input.slice(offset, emitEnd))
-              val simpleEmit: (List[HttpHeader], ContentType, ByteString) ⇒ Unit = (_, _, bytes) ⇒ emit(bytes)
+              val simpleEmit: (List[HttpHeader], ContentType, ByteString) => Unit = (_, _, bytes) => emit(bytes)
               continue(input drop emitEnd, 0)(parseEntity(null, null, simpleEmit, simpleEmit))
             } else continue(input, offset)(parseEntity(headers, contentType, emitPartChunk, emitFinalPartChunk))
         }
@@ -240,12 +240,12 @@ private[http] final class BodyPartParser(
         head
       }
 
-      def continue(input: ByteString, offset: Int)(next: (ByteString, Int) ⇒ StateResult): StateResult = {
+      def continue(input: ByteString, offset: Int)(next: (ByteString, Int) => StateResult): StateResult = {
         state =
           math.signum(offset - input.length) match {
-            case -1 ⇒ more ⇒ next(input ++ more, offset)
-            case 0 ⇒ next(_, 0)
-            case 1 ⇒ throw new IllegalStateException
+            case -1 => more => next(input ++ more, offset)
+            case 0 => next(_, 0)
+            case 1 => throw new IllegalStateException
           }
         done()
       }
@@ -285,7 +285,7 @@ private[http] object BodyPartParser {
 
   sealed trait Output
   sealed trait PartStart extends Output
-  final case class BodyPartStart(headers: List[HttpHeader], createEntity: Source[Output, NotUsed] ⇒ BodyPartEntity) extends PartStart
+  final case class BodyPartStart(headers: List[HttpHeader], createEntity: Source[Output, NotUsed] => BodyPartEntity) extends PartStart
   final case class EntityPart(data: ByteString) extends Output
   final case class ParseError(info: ErrorInfo) extends PartStart
 

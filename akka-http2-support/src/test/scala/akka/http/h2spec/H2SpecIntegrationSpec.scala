@@ -37,8 +37,8 @@ class H2SpecIntegrationSpec extends AkkaSpec(
 
   override def expectedTestDuration = 5.minutes // because slow jenkins, generally finishes below 1 or 2 minutes
 
-  val echo = (req: HttpRequest) ⇒ {
-    req.entity.toStrict(1.second.dilated).map { entity ⇒
+  val echo = (req: HttpRequest) => {
+    req.entity.toStrict(1.second.dilated).map { entity =>
       HttpResponse().withEntity(HttpEntity(entity.data))
     }
   }
@@ -122,10 +122,10 @@ class H2SpecIntegrationSpec extends AkkaSpec(
     } else*/ {
       val testNamesWithSectionNumbers =
         testCases.zip(testCases.map(_.trim).filterNot(_.isEmpty)
-          .map(l ⇒ l.take(l.lastIndexOf('.'))))
+          .map(l => l.take(l.lastIndexOf('.'))))
 
       testNamesWithSectionNumbers foreach {
-        case (name, sectionNr) ⇒
+        case (name, sectionNr) =>
           if (!disabledTestCases.contains(sectionNr))
             if (pendingTestCases.contains(sectionNr))
               s"pass rule: $name" ignore {
@@ -154,17 +154,17 @@ class H2SpecIntegrationSpec extends AkkaSpec(
         "-p", port.toString,
         "-j", junitOutput.getPath
       ) ++
-        specSectionNumber.toList.flatMap(number ⇒ Seq("-s", number))
+        specSectionNumber.toList.flatMap(number => Seq("-s", number))
 
       println(s"exec: $command")
       val aggregateTckLogs = ProcessLogger(
-        out ⇒ {
+        out => {
           if (out.contains("All tests passed")) ()
           else if (out.contains("tests, ")) ()
           else if (out.contains("===========================================")) keepAccumulating.set(false)
           else if (keepAccumulating.get) stdout.append(out + Console.RESET + "\n  ")
         },
-        err ⇒ stderr.append(err)
+        err => stderr.append(err)
       )
 
       // p.exitValue blocks until the process is terminated

@@ -40,13 +40,13 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
     private object Idle extends InHandler with ProcotolExceptionHandling {
       override def onPush() =
         grab(in) match {
-          case start: FrameStart   ⇒ push(out, start)
-          case DirectAnswer(frame) ⇒ push(out, frame)
-          case PeerClosed(code, reason) if !code.exists(Protocol.CloseCodes.isError) ⇒
+          case start: FrameStart   => push(out, start)
+          case DirectAnswer(frame) => push(out, frame)
+          case PeerClosed(code, reason) if !code.exists(Protocol.CloseCodes.isError) =>
             // let user complete it, FIXME: maybe make configurable? immediately, or timeout
             setHandler(in, new WaitingForUserHandlerClosed(FrameEvent.closeFrame(code.getOrElse(Protocol.CloseCodes.Regular), reason)))
             pull(in)
-          case PeerClosed(code, reason) ⇒
+          case PeerClosed(code, reason) =>
             val closeFrame = FrameEvent.closeFrame(code.getOrElse(Protocol.CloseCodes.Regular), reason)
             if (serverSide) {
               push(out, closeFrame)
@@ -55,18 +55,18 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
               setHandler(in, new WaitingForTransportClose)
               push(out, closeFrame)
             }
-          case ActivelyCloseWithCode(code, reason) ⇒
+          case ActivelyCloseWithCode(code, reason) =>
             val closeFrame = FrameEvent.closeFrame(code.getOrElse(Protocol.CloseCodes.Regular), reason)
             setHandler(in, new WaitingForPeerCloseFrame())
             push(out, closeFrame)
-          case UserHandlerCompleted ⇒
+          case UserHandlerCompleted =>
             setHandler(in, new WaitingForPeerCloseFrame())
             push(out, FrameEvent.closeFrame(Protocol.CloseCodes.Regular))
-          case UserHandlerErredOut(e) ⇒
+          case UserHandlerErredOut(e) =>
             log.error(e, s"Websocket handler failed with ${e.getMessage}")
             setHandler(in, new WaitingForPeerCloseFrame())
             push(out, FrameEvent.closeFrame(Protocol.CloseCodes.UnexpectedCondition, "internal error"))
-          case Tick ⇒ pull(in) // ignore
+          case Tick => pull(in) // ignore
         }
 
       override def onUpstreamFinish(): Unit = {
@@ -81,12 +81,12 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
     private class WaitingForUserHandlerClosed(closeFrame: FrameStart) extends InHandler {
       def onPush() =
         grab(in) match {
-          case UserHandlerCompleted ⇒ sendOutLastFrame()
-          case UserHandlerErredOut(e) ⇒
+          case UserHandlerCompleted => sendOutLastFrame()
+          case UserHandlerErredOut(e) =>
             log.error(e, s"Websocket handler failed while waiting for handler completion with ${e.getMessage}")
             sendOutLastFrame()
-          case start: FrameStart ⇒ push(out, start)
-          case _                 ⇒ pull(in) // ignore
+          case start: FrameStart => push(out, start)
+          case _                 => pull(in) // ignore
         }
 
       private def sendOutLastFrame(): Unit =
@@ -108,16 +108,16 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
     private class WaitingForPeerCloseFrame(timeout: Timestamp = closeTimeout) extends InHandler with ProcotolExceptionHandling {
       override def onPush() =
         grab(in) match {
-          case Tick ⇒
+          case Tick =>
             if (timeout.isPast) completeStage()
             else pull(in)
-          case PeerClosed(code, reason) ⇒
+          case PeerClosed(code, reason) =>
             if (serverSide) completeStage()
             else {
               setHandler(in, new WaitingForTransportClose())
               pull(in)
             }
-          case _ ⇒ pull(in) // ignore
+          case _ => pull(in) // ignore
         }
     }
 
@@ -127,10 +127,10 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
     private class WaitingForTransportClose(timeout: Timestamp = closeTimeout) extends InHandler with ProcotolExceptionHandling {
       override def onPush() = {
         grab(in) match {
-          case Tick ⇒
+          case Tick =>
             if (timeout.isPast) completeStage()
             else pull(in)
-          case _ ⇒ pull(in) // ignore
+          case _ => pull(in) // ignore
         }
       }
     }
@@ -159,11 +159,11 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
     private trait ProcotolExceptionHandling extends InHandler {
       @tailrec override final def onUpstreamFailure(cause: Throwable): Unit =
         cause match {
-          case p: ProtocolException ⇒
+          case p: ProtocolException =>
             becomeSendOutCloseFrameAndComplete(FrameEvent.closeFrame(Protocol.CloseCodes.ProtocolError))
             absorbTermination()
-          case x if x.getCause ne null ⇒ onUpstreamFailure(x.getCause)
-          case _ ⇒
+          case x if x.getCause ne null => onUpstreamFailure(x.getCause)
+          case _ =>
             super.onUpstreamFailure(cause)
         }
     }

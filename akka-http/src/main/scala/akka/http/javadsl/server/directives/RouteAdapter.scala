@@ -32,7 +32,7 @@ final class RouteAdapter(val delegate: akka.http.scaladsl.server.Route) extends 
 
   override def orElse(alternative: Route): Route =
     alternative match {
-      case adapt: RouteAdapter ⇒
+      case adapt: RouteAdapter =>
         RouteAdapter(delegate ~ adapt.delegate)
     }
 

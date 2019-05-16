@@ -39,7 +39,7 @@ object WebSocketUpgradeResponse {
   import akka.http.impl.util.JavaMapping.Implicits._
   def adapt(scalaResponse: scaladsl.model.ws.WebSocketUpgradeResponse): WebSocketUpgradeResponse =
     scalaResponse match {
-      case ValidUpgrade(resp, chosen) ⇒
+      case ValidUpgrade(resp, chosen) =>
         new WebSocketUpgradeResponse {
           def isValid: Boolean = true
           def response: HttpResponse = resp
@@ -47,7 +47,7 @@ object WebSocketUpgradeResponse {
           def invalidationReason: String =
             throw new UnsupportedOperationException("invalidationReason must not be called for valid response")
         }
-      case InvalidUpgradeResponse(resp, cause) ⇒
+      case InvalidUpgradeResponse(resp, cause) =>
         new WebSocketUpgradeResponse {
           def isValid: Boolean = false
           def response: HttpResponse = resp

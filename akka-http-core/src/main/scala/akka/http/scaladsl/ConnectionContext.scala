@@ -9,7 +9,7 @@ import akka.stream.TLSProtocol._
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 
 import scala.collection.JavaConverters._
-import java.util.{ Optional, Collection ⇒ JCollection }
+import java.util.{ Optional, Collection => JCollection }
 
 import akka.http.javadsl
 import akka.http.scaladsl.UseHttp2.Negotiated

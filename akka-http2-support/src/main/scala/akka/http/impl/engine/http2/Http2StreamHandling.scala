@@ -19,7 +19,7 @@ import FrameEvent._
 
 /** INTERNAL API */
 @InternalApi
-private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLogging ⇒
+private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLogging =>
   // required API from demux
   def multiplexer: Http2Multiplexer
   def settings: Http2ServerSettings
@@ -35,19 +35,19 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
 
   private def streamFor(streamId: Int): IncomingStreamState =
     incomingStreams.get(streamId) match {
-      case Some(state) ⇒ state
-      case None ⇒
+      case Some(state) => state
+      case None =>
         if (streamId <= largestIncomingStreamId) Closed // closed streams are never put into the map
         else {
           largestIncomingStreamId = streamId
-          incomingStreams += streamId → Idle
+          incomingStreams += streamId -> Idle
           Idle
         }
     }
   def handleStreamEvent(e: StreamFrameEvent): Unit = {
     val newState = streamFor(e.streamId).handle(e)
     if (newState == Closed) incomingStreams -= e.streamId
-    else incomingStreams += e.streamId → newState
+    else incomingStreams += e.streamId -> newState
   }
   def resetStream(streamId: Int, errorCode: ErrorCode): Unit = {
     // FIXME: put this stream into an extra state where we allow some frames still to be received
@@ -55,7 +55,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
     multiplexer.pushControlFrame(RstStreamFrame(streamId, errorCode))
   }
 
-  sealed abstract class IncomingStreamState { _: Product ⇒
+  sealed abstract class IncomingStreamState { _: Product =>
     def handle(event: StreamFrameEvent): IncomingStreamState
 
     def stateName: String = productPrefix
@@ -66,7 +66,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
   }
   case object Idle extends IncomingStreamState {
     def handle(event: StreamFrameEvent): IncomingStreamState = event match {
-      case frame @ ParsedHeadersFrame(streamId, endStream, headers, prioInfo) ⇒
+      case frame @ ParsedHeadersFrame(streamId, endStream, headers, prioInfo) =>
         val (data: Source[ByteString, NotUsed], nextState) =
           if (endStream) (Source.empty, HalfClosedRemote)
           else {
@@ -79,13 +79,13 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
         dispatchSubstream(ByteHttp2SubStream(frame, data))
         nextState
 
-      case x ⇒ receivedUnexpectedFrame(x)
+      case x => receivedUnexpectedFrame(x)
     }
   }
-  sealed abstract class ReceivingData(afterEndStreamReceived: IncomingStreamState) extends IncomingStreamState { _: Product ⇒
+  sealed abstract class ReceivingData(afterEndStreamReceived: IncomingStreamState) extends IncomingStreamState { _: Product =>
     protected def buffer: IncomingStreamBuffer
     def handle(event: StreamFrameEvent): IncomingStreamState = event match {
-      case d: DataFrame ⇒
+      case d: DataFrame =>
         outstandingConnectionLevelWindow -= d.sizeInWindow
         totalBufferedData += d.payload.size // padding can be seen as instantly discarded
 
@@ -102,12 +102,12 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
           buffer.onDataFrame(d).getOrElse(
             maybeFinishStream(d.endStream))
         }
-      case r: RstStreamFrame ⇒
+      case r: RstStreamFrame =>
         buffer.onRstStreamFrame(r)
         multiplexer.cancelSubStream(r.streamId)
         Closed
 
-      case h: ParsedHeadersFrame ⇒
+      case h: ParsedHeadersFrame =>
         // ignored
         log.debug(s"Ignored intermediate HEADERS frame: $h")
 
@@ -124,19 +124,19 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
   // case class HalfClosedLocal(buffer: Buffer) extends ReceivingData(Closed)
   case object HalfClosedRemote extends IncomingStreamState {
     def handle(event: StreamFrameEvent): IncomingStreamState = event match {
-      case r: RstStreamFrame ⇒
+      case r: RstStreamFrame =>
         multiplexer.cancelSubStream(r.streamId)
         Closed
-      case _ ⇒ receivedUnexpectedFrame(event)
+      case _ => receivedUnexpectedFrame(event)
     }
   }
   case object Closed extends IncomingStreamState {
     def handle(event: StreamFrameEvent): IncomingStreamState = event match {
       // https://http2.github.io/http2-spec/#StreamStates
       // Endpoints MUST ignore WINDOW_UPDATE or RST_STREAM frames received in this state,
-      case _: RstStreamFrame | _: WindowUpdateFrame ⇒
+      case _: RstStreamFrame | _: WindowUpdateFrame =>
         this
-      case _ ⇒
+      case _ =>
         receivedUnexpectedFrame(event)
     }
   }

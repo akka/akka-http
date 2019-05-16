@@ -39,7 +39,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
    * Handle requests using HTTP/2 immediately, without any TLS or negotiation layer.
    */
   private def bindAndHandleWithoutNegotiation(
-    handler:     HttpRequest ⇒ Future[HttpResponse],
+    handler:     HttpRequest => Future[HttpResponse],
     interface:   String,
     port:        Int,
     settings:    ServerSettings,
@@ -64,7 +64,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
     val masterTerminator = new MasterServerTerminator(log)
 
     connections.mapAsyncUnordered(settings.maxConnections) {
-      incoming: Tcp.IncomingConnection ⇒
+      incoming: Tcp.IncomingConnection =>
         try {
           serverLayer.addAttributes(Http.prepareAttributes(settings, incoming)).joinMat(incoming.flow)(Keep.left)
             .run().recover {
@@ -72,24 +72,24 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
               // As far as it is known currently, these errors can only happen if a TCP error bubbles up
               // from the TCP layer through the HTTP layer to the Http.IncomingConnection.flow.
               // See https://github.com/akka/akka/issues/17992
-              case NonFatal(ex) ⇒
+              case NonFatal(ex) =>
                 Done
             }(ExecutionContexts.sameThreadExecutionContext)
         } catch {
-          case NonFatal(e) ⇒
+          case NonFatal(e) =>
             log.error(e, "Could not materialize handling flow for {}", incoming)
             throw e
         }
     }.mapMaterializedValue {
-      _.map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(
-        () ⇒ tcpBinding.unbind(),
-        timeout ⇒ masterTerminator.terminate(timeout)(fm.executionContext)
+      _.map(tcpBinding => ServerBinding(tcpBinding.localAddress)(
+        () => tcpBinding.unbind(),
+        timeout => masterTerminator.terminate(timeout)(fm.executionContext)
       ))(fm.executionContext)
     }.to(Sink.ignore).run()
   }
 
   def bindAndHandleAsync(
-    handler:   HttpRequest ⇒ Future[HttpResponse],
+    handler:   HttpRequest => Future[HttpResponse],
     interface: String, port: Int = DefaultPortForProtocol,
     connectionContext: ConnectionContext,
     settings:          ServerSettings    = ServerSettings(system),
@@ -110,7 +110,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
   }
 
   private def bindAndHandleAsync(
-    handler:   HttpRequest ⇒ Future[HttpResponse],
+    handler:   HttpRequest => Future[HttpResponse],
     interface: String, port: Int,
     httpsContext: HttpsConnectionContext,
     settings:     ServerSettings,
@@ -147,21 +147,21 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
         Http2AlpnSupport.applySessionParameters(engine, httpsContext.firstSession)
         Http2AlpnSupport.enableForServer(engine, setChosenProtocol)
       }
-      val tls = TLS(() ⇒ createEngine, _ ⇒ Success(()), IgnoreComplete)
+      val tls = TLS(() => createEngine, _ => Success(()), IgnoreComplete)
 
       val removeEngineOnTerminate: BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] = {
         implicit val ec = fm.executionContext
         BidiFlow.fromFlows(
           Flow[ByteString],
           Flow[ByteString]
-            .watchTermination()((n, fd) ⇒ {
-              fd.onComplete(_ ⇒ eng.foreach(Http2AlpnSupport.cleanupForServer))
+            .watchTermination()((n, fd) => {
+              fd.onComplete(_ => eng.foreach(Http2AlpnSupport.cleanupForServer))
               n
             })
         )
       }
 
-      AlpnSwitch(() ⇒ getChosenProtocol, http.serverLayer(settings, None, log), http2Layer()) atop
+      AlpnSwitch(() => getChosenProtocol, http.serverLayer(settings, None, log), http2Layer()) atop
         tls atop removeEngineOnTerminate
     }
 
@@ -179,7 +179,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
     val masterTerminator = new MasterServerTerminator(log)
 
     connections.mapAsyncUnordered(settings.maxConnections) {
-      incoming: Tcp.IncomingConnection ⇒
+      incoming: Tcp.IncomingConnection =>
         try {
           fullLayer().addAttributes(Http.prepareAttributes(settings, incoming)).joinMat(incoming.flow)(Keep.left)
             .run().recover {
@@ -187,25 +187,25 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
               // As far as it is known currently, these errors can only happen if a TCP error bubbles up
               // from the TCP layer through the HTTP layer to the Http.IncomingConnection.flow.
               // See https://github.com/akka/akka/issues/17992
-              case NonFatal(ex) ⇒
+              case NonFatal(ex) =>
                 Done
             }(ExecutionContexts.sameThreadExecutionContext)
         } catch {
-          case NonFatal(e) ⇒
+          case NonFatal(e) =>
             log.error(e, "Could not materialize handling flow for {}", incoming)
             throw e
         }
     }.mapMaterializedValue {
-      _.map(tcpBinding ⇒ ServerBinding(tcpBinding.localAddress)(
-        () ⇒ tcpBinding.unbind(),
-        timeout ⇒ masterTerminator.terminate(timeout)(fm.executionContext)
+      _.map(tcpBinding => ServerBinding(tcpBinding.localAddress)(
+        () => tcpBinding.unbind(),
+        timeout => masterTerminator.terminate(timeout)(fm.executionContext)
       ))(fm.executionContext)
     }.to(Sink.ignore).run()
   }
 
   private val unwrapTls: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, ByteString, NotUsed] =
     BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect {
-      case SessionBytes(_, bytes) ⇒ bytes
+      case SessionBytes(_, bytes) => bytes
     })
 
 }

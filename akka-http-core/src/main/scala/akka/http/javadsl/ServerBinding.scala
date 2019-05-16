@@ -93,7 +93,7 @@ class ServerBinding private[http] (delegate: akka.http.scaladsl.Http.ServerBindi
    */
   def whenTerminationSignalIssued: CompletionStage[java.time.Duration] =
     delegate.whenTerminationSignalIssued
-      .map(deadline ⇒ deadline.time.asJava)(ExecutionContexts.sameThreadExecutionContext)
+      .map(deadline => deadline.time.asJava)(ExecutionContexts.sameThreadExecutionContext)
       .toJava
 
   /**

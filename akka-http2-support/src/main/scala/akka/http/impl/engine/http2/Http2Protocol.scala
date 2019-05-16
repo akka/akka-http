@@ -127,7 +127,7 @@ private[http] object Http2Protocol {
         CONTINUATION).toSeq
 
     // make sure that lookup works and `All` ordering isn't broken
-    All.foreach(f ⇒ require(f == byId(f.id), s"FrameType $f with id ${f.id} must be found"))
+    All.foreach(f => require(f == byId(f.id), s"FrameType $f with id ${f.id} must be found"))
 
     def isKnownId(id: Int): Boolean = id < All.size
     def byId(id: Int): FrameType = All(id)
@@ -227,7 +227,7 @@ private[http] object Http2Protocol {
         SETTINGS_MAX_HEADER_LIST_SIZE).toSeq
 
     // make sure that lookup works and `All` ordering isn't broken
-    All.foreach(f ⇒ require(f == byId(f.id) && isKnownId(f.id), s"SettingIdentifier $f with id ${f.id} must be found"))
+    All.foreach(f => require(f == byId(f.id) && isKnownId(f.id), s"SettingIdentifier $f with id ${f.id} must be found"))
 
     def isKnownId(id: Int): Boolean = id > 0 && id <= All.size
     def byId(id: Int): SettingIdentifier = All(id - 1)
@@ -342,7 +342,7 @@ private[http] object Http2Protocol {
       ).toSeq
 
     // make sure that lookup works and `All` ordering isn't broken
-    All.foreach(f ⇒ require(f == byId(f.id), s"ErrorCode $f with id ${f.id} must be found"))
+    All.foreach(f => require(f == byId(f.id), s"ErrorCode $f with id ${f.id} must be found"))
 
     def isKnownId(id: Int): Boolean = id < All.size
     def byId(id: Int): ErrorCode = All(id)
@@ -360,7 +360,7 @@ private[http] object Http2Protocol {
         .grouped(2)
         .map(java.lang.Byte.parseByte(_, 16)).toSeq: _*)
 
-  object Flags { flags ⇒
+  object Flags { flags =>
     val NO_FLAGS = new ByteFlag(0x0)
 
     val ACK = new ByteFlag(0x1)

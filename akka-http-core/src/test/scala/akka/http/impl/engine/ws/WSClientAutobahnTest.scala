@@ -40,30 +40,30 @@ object WSClientAutobahnTest extends App {
     s"ws://localhost:9001/updateReports?agent=$agent"
 
   def runCase(caseIndex: Int, agent: String = Agent): Future[CaseStatus] =
-    runWs(runCaseUri(caseIndex, agent), echo).recover { case _ ⇒ () }.flatMap { _ ⇒
+    runWs(runCaseUri(caseIndex, agent), echo).recover { case _ => () }.flatMap { _ =>
       getCaseStatus(caseIndex, agent)
     }
 
   def richRunCase(caseIndex: Int, agent: String = Agent): Future[CaseResult] = {
     val info = getCaseInfo(caseIndex)
     val startMillis = System.currentTimeMillis()
-    val status = runCase(caseIndex, agent).map { res ⇒
+    val status = runCase(caseIndex, agent).map { res =>
       val lastedMillis = System.currentTimeMillis() - startMillis
       (res, lastedMillis)
     }
     import Console._
-    info.flatMap { i ⇒
+    info.flatMap { i =>
       val prefix = f"$YELLOW${i.caseInfo.id}%-7s$RESET - $RESET${i.caseInfo.description}$RESET ... "
 
       status.onComplete {
-        case Success((CaseStatus(status), millis)) ⇒
+        case Success((CaseStatus(status), millis)) =>
           val color = if (status == "OK") GREEN else RED
           println(f"${color}$status%-15s$RESET$millis%5d ms $prefix")
-        case Failure(e) ⇒
+        case Failure(e) =>
           println(s"$prefix${RED}failed with '${e.getMessage}'$RESET")
       }
 
-      status.map(s ⇒ CaseResult(i.caseInfo, s._1))
+      status.map(s => CaseResult(i.caseInfo, s._1))
     }
   }
 
@@ -77,7 +77,7 @@ object WSClientAutobahnTest extends App {
     runToSingleJsonValue[CaseStatus](getCaseStatusUri(caseId, agent))
 
   def updateReports(agent: String = Agent): Future[Unit] =
-    runToSingleText(updateReportsUri(agent)).map(_ ⇒ ())
+    runToSingleText(updateReportsUri(agent)).map(_ => ())
 
   /**
    * Map from textual case ID (like 1.1.1) to IndexedCaseInfo
@@ -85,11 +85,11 @@ object WSClientAutobahnTest extends App {
    */
   def getCaseMap(): Future[Map[String, IndexedCaseInfo]] = {
     val res =
-      getCaseCount().flatMap { count ⇒
+      getCaseCount().flatMap { count =>
         println(s"Retrieving case info for $count cases...")
-        Future.traverse(1 to count)(getCaseInfo).map(_.map(e ⇒ e.caseInfo.id → e).toMap)
+        Future.traverse(1 to count)(getCaseInfo).map(_.map(e => e.caseInfo.id -> e).toMap)
       }
-    res.foreach { res ⇒
+    res.foreach { res =>
       println(s"Received info for ${res.size} cases")
     }
     res
@@ -102,24 +102,24 @@ object WSClientAutobahnTest extends App {
     // run one
     val testId = args(0)
     println(s"Trying to run test $testId")
-    getCaseMap().flatMap { map ⇒
+    getCaseMap().flatMap { map =>
       val info = map(testId)
       richRunCase(info.index)
     }.onComplete {
-      case Success(res) ⇒
+      case Success(res) =>
         println(s"[OK] Run successfully finished!")
         updateReportsAndShutdown()
-      case Failure(e) ⇒
+      case Failure(e) =>
         println(s"[${RED}FAILED$RESET] Run failed with this exception: ")
         e.printStackTrace()
         updateReportsAndShutdown()
     }
   } else {
     println("Running complete test suite")
-    getCaseCount().flatMap { count ⇒
+    getCaseCount().flatMap { count =>
       println(s"Found $count tests.")
       Source(1 to count).mapAsyncUnordered(Parallelism)(richRunCase(_)).grouped(count).runWith(Sink.head)
-    }.map { results ⇒
+    }.map { results =>
       val grouped =
         results.groupBy(_.status.behavior)
 
@@ -128,12 +128,12 @@ object WSClientAutobahnTest extends App {
       println(s"${GREEN}OK$RESET: ${grouped.getOrElse("OK", Nil).size}")
       val notOk = grouped.filterNot(_._1 == "OK")
       notOk.toSeq.sortBy(_._2.size).foreach {
-        case (status, cases) ⇒ println(s"$RED$status$RESET: ${cases.size}")
+        case (status, cases) => println(s"$RED$status$RESET: ${cases.size}")
       }
       println()
       println("Not OK tests: ")
       println()
-      results.filterNot(_.status.behavior == "OK").foreach { r ⇒
+      results.filterNot(_.status.behavior == "OK").foreach { r =>
         println(f"$RED${r.status.behavior}%-20s$RESET $YELLOW${r.info.id}%-7s$RESET - $RESET${r.info.description}")
       }
 
@@ -142,17 +142,17 @@ object WSClientAutobahnTest extends App {
       .onComplete(completion)
   }
 
-  def completion[T]: Try[T] ⇒ Unit = {
-    case Success(res) ⇒
+  def completion[T]: Try[T] => Unit = {
+    case Success(res) =>
       println(s"Run successfully finished!")
       updateReportsAndShutdown()
-    case Failure(e) ⇒
+    case Failure(e) =>
       println("Run failed with this exception")
       e.printStackTrace()
       updateReportsAndShutdown()
   }
   def updateReportsAndShutdown(): Unit =
-    updateReports().onComplete { res ⇒
+    updateReports().onComplete { res =>
       println("Reports should now be accessible at http://localhost:8080/cwd/reports/clients/index.html")
       system.terminate()
     }
@@ -165,7 +165,7 @@ object WSClientAutobahnTest extends App {
     Http().singleWebSocketRequest(uri, clientFlow)._2
 
   def completionSignal[T]: Flow[T, T, Future[Done]] =
-    Flow[T].watchTermination()((_, res) ⇒ res)
+    Flow[T].watchTermination()((_, res) => res)
 
   /**
    * The autobahn tests define a weird API where every request must be a WebSocket request and
@@ -175,8 +175,8 @@ object WSClientAutobahnTest extends App {
   def runToSingleText(uri: Uri): Future[String] = {
     val sink = Sink.head[Message]
     runWs(uri, Flow.fromSinkAndSourceMat(sink, Source.maybe[Message])(Keep.left)).flatMap {
-      case tm: TextMessage ⇒ tm.textStream.runWith(Sink.fold("")(_ + _))
-      case other ⇒
+      case tm: TextMessage => tm.textStream.runWith(Sink.fold("")(_ + _))
+      case other =>
         throw new IllegalStateException(s"unexpected element of type ${other.getClass}")
     }
   }

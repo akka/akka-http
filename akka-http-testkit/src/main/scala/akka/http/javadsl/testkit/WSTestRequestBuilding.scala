@@ -6,10 +6,10 @@ package akka.http.javadsl.testkit
 
 import akka.http.javadsl.model.ws.Message
 import akka.http.javadsl.model.{ HttpRequest, Uri }
-import akka.http.scaladsl.{ model ⇒ sm }
+import akka.http.scaladsl.{ model => sm }
 import akka.stream.javadsl.Flow
 
-import akka.http.scaladsl.{ testkit ⇒ st }
+import akka.http.scaladsl.{ testkit => st }
 
 import akka.http.impl.util.JavaMapping.Implicits._
 import scala.collection.JavaConverters._

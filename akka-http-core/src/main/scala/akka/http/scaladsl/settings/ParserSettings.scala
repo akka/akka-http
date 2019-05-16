@@ -13,7 +13,7 @@ import akka.http.impl.settings.ParserSettingsImpl
 import akka.http.impl.util._
 import akka.http.javadsl.model
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.{ settings ⇒ js }
+import akka.http.scaladsl.{ settings => js }
 import com.typesafe.config.Config
 
 import scala.collection.JavaConverters._
@@ -23,7 +23,7 @@ import scala.compat.java8.OptionConverters
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class ParserSettings private[akka] () extends akka.http.javadsl.settings.ParserSettings { self: ParserSettingsImpl ⇒
+abstract class ParserSettings private[akka] () extends akka.http.javadsl.settings.ParserSettings { self: ParserSettingsImpl =>
   def maxUriLength: Int
   def maxMethodLength: Int
   def maxResponseReasonLength: Int
@@ -42,8 +42,8 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   def illegalResponseHeaderValueProcessingMode: ParserSettings.IllegalResponseHeaderValueProcessingMode
   def headerValueCacheLimits: Map[String, Int]
   def includeTlsSessionInfoHeader: Boolean
-  def customMethods: String ⇒ Option[HttpMethod]
-  def customStatusCodes: Int ⇒ Option[StatusCode]
+  def customMethods: String => Option[HttpMethod]
+  def customStatusCodes: Int => Option[StatusCode]
   def customMediaTypes: MediaTypes.FindCustom
   def modeledHeaderParsing: Boolean
 
@@ -101,16 +101,16 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   def withErrorLoggingVerbosity(newValue: ParserSettings.ErrorLoggingVerbosity): ParserSettings = self.copy(errorLoggingVerbosity = newValue)
   def withHeaderValueCacheLimits(newValue: Map[String, Int]): ParserSettings = self.copy(headerValueCacheLimits = newValue)
   def withCustomMethods(methods: HttpMethod*): ParserSettings = {
-    val map = methods.map(m ⇒ m.name → m).toMap
+    val map = methods.map(m => m.name -> m).toMap
     self.copy(customMethods = map.get)
   }
   def withCustomStatusCodes(codes: StatusCode*): ParserSettings = {
-    val map = codes.map(c ⇒ c.intValue → c).toMap
+    val map = codes.map(c => c.intValue -> c).toMap
     self.copy(customStatusCodes = map.get)
   }
   def withCustomMediaTypes(types: MediaType*): ParserSettings = {
-    val map = types.map(c ⇒ (c.mainType, c.subType) → c).toMap
-    self.copy(customMediaTypes = (main, sub) ⇒ map.get((main, sub)))
+    val map = types.map(c => (c.mainType, c.subType) -> c).toMap
+    self.copy(customMediaTypes = (main, sub) => map.get((main, sub)))
   }
   def withIllegalResponseHeaderValueProcessingMode(newValue: ParserSettings.IllegalResponseHeaderValueProcessingMode): ParserSettings =
     self.copy(illegalResponseHeaderValueProcessingMode = newValue)
@@ -123,8 +123,8 @@ object ParserSettings extends SettingsCompanion[ParserSettings] {
     case object Raw extends CookieParsingMode
 
     def apply(mode: String): CookieParsingMode = mode.toRootLowerCase match {
-      case "rfc6265" ⇒ RFC6265
-      case "raw"     ⇒ Raw
+      case "rfc6265" => RFC6265
+      case "raw"     => Raw
     }
   }
 
@@ -136,10 +136,10 @@ object ParserSettings extends SettingsCompanion[ParserSettings] {
 
     def apply(string: String): ErrorLoggingVerbosity =
       string.toRootLowerCase match {
-        case "off"    ⇒ Off
-        case "simple" ⇒ Simple
-        case "full"   ⇒ Full
-        case x        ⇒ throw new IllegalArgumentException(s"[$x] is not a legal `error-logging-verbosity` setting")
+        case "off"    => Off
+        case "simple" => Simple
+        case "full"   => Full
+        case x        => throw new IllegalArgumentException(s"[$x] is not a legal `error-logging-verbosity` setting")
       }
   }
 
@@ -151,10 +151,10 @@ object ParserSettings extends SettingsCompanion[ParserSettings] {
 
     def apply(string: String): IllegalResponseHeaderValueProcessingMode =
       string.toRootLowerCase match {
-        case "error"  ⇒ Error
-        case "warn"   ⇒ Warn
-        case "ignore" ⇒ Ignore
-        case x        ⇒ throw new IllegalArgumentException(s"[$x] is not a legal `illegal-response-header-value-processing-mode` setting")
+        case "error"  => Error
+        case "warn"   => Warn
+        case "ignore" => Ignore
+        case x        => throw new IllegalArgumentException(s"[$x] is not a legal `illegal-response-header-value-processing-mode` setting")
       }
   }
 

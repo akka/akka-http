@@ -17,10 +17,10 @@ trait ScalatestUtils extends MarshallingTestUtils {
   import org.scalatest.Matchers._
 
   def evaluateTo[T](value: T): Matcher[Future[T]] =
-    equal(value).matcher[T] compose (x ⇒ Await.result(x, marshallingTimeout))
+    equal(value).matcher[T] compose (x => Await.result(x, marshallingTimeout))
 
   def haveFailedWith(t: Throwable): Matcher[Future[_]] =
-    equal(t).matcher[Throwable] compose (x ⇒ Await.result(x.failed, marshallingTimeout))
+    equal(t).matcher[Throwable] compose (x => Await.result(x.failed, marshallingTimeout))
 
   def unmarshalToValue[T: FromEntityUnmarshaller](value: T)(implicit ec: ExecutionContext, mat: Materializer): Matcher[HttpEntity] =
     equal(value).matcher[T] compose (unmarshalValue(_))
@@ -29,4 +29,4 @@ trait ScalatestUtils extends MarshallingTestUtils {
     equal(value).matcher[Try[T]] compose (unmarshal(_))
 }
 
-trait ScalatestRouteTest extends RouteTest with TestFrameworkInterface.Scalatest with ScalatestUtils { this: Suite ⇒ }
+trait ScalatestRouteTest extends RouteTest with TestFrameworkInterface.Scalatest with ScalatestUtils { this: Suite => }

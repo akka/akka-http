@@ -36,7 +36,7 @@ object TcpLeakApp extends App {
         .toMat(Sink.head)(Keep.right).run())
     .last
     .onComplete {
-      result ⇒
+      result =>
         println(s"Result: $result")
         Thread.sleep(10000)
         println("===================== \n\n" + system.asInstanceOf[ActorSystemImpl].printTree + "\n\n========================")

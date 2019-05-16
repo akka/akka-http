@@ -43,7 +43,7 @@ trait RouteDirectives {
    *
    * @group route
    */
-  def complete(m: ⇒ ToResponseMarshallable): StandardRoute =
+  def complete(m: => ToResponseMarshallable): StandardRoute =
     StandardRoute(_.complete(m))
 
   /**

@@ -63,7 +63,7 @@ One example of a predefined directive relying on `map` is the @github[optionalHe
 The tmap modifier has this signature (somewhat simplified):
 
 ```scala
-def tmap[R](f: L ⇒ R): Directive[Out]
+def tmap[R](f: L => R): Directive[Out]
 ```
 
 It can be used to transform the `Tuple` of extractions into another `Tuple`.
@@ -86,7 +86,7 @@ In order to do the latter you need `flatMap` or `tflatMap`. The `tflatMap`
 modifier has this signature:
 
 ```scala
-def tflatMap[R: Tuple](f: L ⇒ Directive[R]): Directive[R]
+def tflatMap[R: Tuple](f: L => Directive[R]): Directive[R]
 ```
 
 The given function produces a new directive depending on the Tuple of extractions
@@ -119,7 +119,7 @@ All requests, for which the predicate is false are rejected, all others pass unc
 The signature of require is this:
 
 ```scala
-def require(predicate: T ⇒ Boolean, rejections: Rejection*): Directive0
+def require(predicate: T => Boolean, rejections: Rejection*): Directive0
 ```
 
 One example of a predefined directive relying on require is the first overload of the host directive:
@@ -139,7 +139,7 @@ directive and, instead of rejecting, produce an alternative directive with the s
 The signature of recover is this:
 
 ```scala
-def recover[R >: L: Tuple](recovery: Seq[Rejection] ⇒ Directive[R]): Directive[R] =
+def recover[R >: L: Tuple](recovery: Seq[Rejection] => Directive[R]): Directive[R] =
 ```
 
 In many cases the very similar `recoverPF` modifier might be little bit

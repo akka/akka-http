@@ -12,13 +12,13 @@ import akka.japi.Util
 
 import scala.collection.immutable
 import akka.http.scaladsl.model._
-import akka.http.javadsl.{ model, server ⇒ jserver }
+import akka.http.javadsl.{ model, server => jserver }
 import headers._
 import akka.http.impl.util.JavaMapping._
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.pattern.CircuitBreakerOpenException
-import akka.http.javadsl.model.headers.{ HttpOrigin ⇒ JHttpOrigin }
-import akka.http.scaladsl.model.headers.{ HttpOrigin ⇒ SHttpOrigin }
+import akka.http.javadsl.model.headers.{ HttpOrigin => JHttpOrigin }
+import akka.http.scaladsl.model.headers.{ HttpOrigin => SHttpOrigin }
 
 import scala.collection.JavaConverters._
 import scala.compat.java8.OptionConverters
@@ -263,12 +263,12 @@ final case class ValidationRejection(message: String, cause: Option[Throwable] =
  * MethodRejection added by the `get` directive is canceled by the `put` directive (since the HTTP method
  * did indeed match eventually).
  */
-final case class TransformationRejection(transform: immutable.Seq[Rejection] ⇒ immutable.Seq[Rejection])
+final case class TransformationRejection(transform: immutable.Seq[Rejection] => immutable.Seq[Rejection])
   extends jserver.TransformationRejection with Rejection {
   override def getTransform = new Function[Iterable[jserver.Rejection], Iterable[jserver.Rejection]] {
     override def apply(t: Iterable[jserver.Rejection]): Iterable[jserver.Rejection] = {
       // explicit collects assignment is because of unidoc failing compilation on .asScala and .asJava here
-      val transformed: Seq[jserver.Rejection] = transform(Util.immutableSeq(t).collect { case r: Rejection ⇒ r }).collect { case j: jserver.Rejection ⇒ j }
+      val transformed: Seq[jserver.Rejection] = transform(Util.immutableSeq(t).collect { case r: Rejection => r }).collect { case j: jserver.Rejection => j }
       transformed.asJava // TODO "asJavaDeep" and optimise?
     }
   }

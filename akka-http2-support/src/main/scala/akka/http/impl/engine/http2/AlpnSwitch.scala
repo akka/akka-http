@@ -21,7 +21,7 @@ private[http] object AlpnSwitch {
   type HttpServerBidiFlow = BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed]
 
   def apply(
-    chosenProtocolAccessor: () ⇒ String,
+    chosenProtocolAccessor: () => String,
     http1Stack:             HttpServerBidiFlow,
     http2Stack:             HttpServerBidiFlow): HttpServerBidiFlow =
     BidiFlow.fromGraph(
@@ -39,7 +39,7 @@ private[http] object AlpnSwitch {
           BidiShape(responseIn, netOut, netIn, requestOut)
 
         def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-          logic ⇒
+          logic =>
 
           // --- inner ports, bound to actual server in install call ---
           val serverDataIn = new SubSinkInlet[SslTlsOutbound]("ServerImpl.netIn")
@@ -54,13 +54,13 @@ private[http] object AlpnSwitch {
           setHandler(netIn, new InHandler {
             def onPush(): Unit =
               grab(netIn) match {
-                case first @ SessionBytes(session, bytes) ⇒
+                case first @ SessionBytes(session, bytes) =>
                   val chosen = chosenProtocolAccessor()
                   chosen match {
-                    case "h2" ⇒ install(http2Stack.addAttributes(HttpAttributes.tlsSessionInfo(session)), first)
-                    case _    ⇒ install(http1Stack, first)
+                    case "h2" => install(http2Stack.addAttributes(HttpAttributes.tlsSessionInfo(session)), first)
+                    case _    => install(http1Stack, first)
                   }
-                case SessionTruncated ⇒ failStage(new SSLException("TLS session was truncated (probably missing a close_notify packet)."))
+                case SessionTruncated => failStage(new SSLException("TLS session was truncated (probably missing a close_notify packet)."))
               }
           })
 
@@ -97,17 +97,17 @@ private[http] object AlpnSwitch {
 
             val firstHandler =
               initialElement match {
-                case Some(ele) if out.isAvailable ⇒
+                case Some(ele) if out.isAvailable =>
                   out.push(ele)
                   propagatePull
-                case Some(ele) ⇒
+                case Some(ele) =>
                   new OutHandler {
                     override def onPull(): Unit = {
                       out.push(initialElement.get)
                       out.setHandler(propagatePull)
                     }
                   }
-                case None ⇒ propagatePull
+                case None => propagatePull
               }
 
             out.setHandler(firstHandler)

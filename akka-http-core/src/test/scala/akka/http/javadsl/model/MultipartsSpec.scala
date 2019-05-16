@@ -36,7 +36,7 @@ class MultipartsSpec extends WordSpec with Matchers with Inside with BeforeAndAf
       val strict = Await.result(FutureConverters.toScala(strictCS), 1.second.dilated)
 
       strict shouldEqual akka.http.scaladsl.model.Multipart.FormData(
-        Map("foo" → akka.http.scaladsl.model.HttpEntity("FOO"), "bar" → akka.http.scaladsl.model.HttpEntity("BAR")))
+        Map("foo" -> akka.http.scaladsl.model.HttpEntity("FOO"), "bar" -> akka.http.scaladsl.model.HttpEntity("BAR")))
     }
     "create a model from Multiparts.createFormDataFromSourceParts" in {
       val streamed = Multiparts.createFormDataFromSourceParts(Source.from(util.Arrays.asList(
@@ -46,7 +46,7 @@ class MultipartsSpec extends WordSpec with Matchers with Inside with BeforeAndAf
       val strictCS = streamed.toStrict(1000, materializer)
       val strict = Await.result(FutureConverters.toScala(strictCS), 1.second.dilated)
       strict shouldEqual akka.http.scaladsl.model.Multipart.FormData(
-        Map("foo" → akka.http.scaladsl.model.HttpEntity("FOO"), "bar" → akka.http.scaladsl.model.HttpEntity("BAR")))
+        Map("foo" -> akka.http.scaladsl.model.HttpEntity("FOO"), "bar" -> akka.http.scaladsl.model.HttpEntity("BAR")))
     }
   }
 
@@ -59,7 +59,7 @@ class MultipartsSpec extends WordSpec with Matchers with Inside with BeforeAndAf
       val strict = Await.result(FutureConverters.toScala(strictCS), 1.second.dilated)
 
       strict shouldEqual akka.http.scaladsl.model.Multipart.FormData(
-        Map("foo" → akka.http.scaladsl.model.HttpEntity("FOO")))
+        Map("foo" -> akka.http.scaladsl.model.HttpEntity("FOO")))
     }
   }
 
@@ -71,7 +71,7 @@ class MultipartsSpec extends WordSpec with Matchers with Inside with BeforeAndAf
       val strict = streamed
 
       strict shouldEqual akka.http.scaladsl.model.Multipart.FormData(
-        Map("foo" → akka.http.scaladsl.model.HttpEntity("FOO"), "bar" → akka.http.scaladsl.model.HttpEntity("BAR")))
+        Map("foo" -> akka.http.scaladsl.model.HttpEntity("FOO"), "bar" -> akka.http.scaladsl.model.HttpEntity("BAR")))
     }
   }
 }

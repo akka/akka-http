@@ -17,7 +17,7 @@ package object ccompat {
  */
 package ccompat {
   import akka.http.scaladsl.model.Uri.Query
-  trait QuerySeqOptimized extends scala.collection.immutable.LinearSeq[(String, String)] with scala.collection.StrictOptimizedLinearSeqOps[(String, String), scala.collection.immutable.LinearSeq, Query] { self: Query ⇒
+  trait QuerySeqOptimized extends scala.collection.immutable.LinearSeq[(String, String)] with scala.collection.StrictOptimizedLinearSeqOps[(String, String), scala.collection.immutable.LinearSeq, Query] { self: Query =>
     override protected def fromSpecific(coll: IterableOnce[(String, String)]): Query =
       Query(coll.iterator.to(Seq): _*)
 

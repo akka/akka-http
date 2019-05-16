@@ -260,7 +260,7 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
   def source[T](elems: T*) = Source(elems.toList)
 
   def collectBytesTo(bytes: ByteString*): Matcher[HttpEntity] =
-    equal(bytes.toVector).matcher[Seq[ByteString]].compose { entity ⇒
+    equal(bytes.toVector).matcher[Seq[ByteString]].compose { entity =>
       val future = entity.dataBytes.limit(1000).runWith(Sink.seq)
       Await.result(future, awaitAtMost)
     }
@@ -268,16 +268,16 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
   def withReturnType[T](expr: T) = expr
 
   def strictifyTo(strict: Strict): Matcher[HttpEntity] =
-    equal(strict).matcher[Strict].compose(x ⇒ Await.result(x.toStrict(awaitAtMost), awaitAtMost))
+    equal(strict).matcher[Strict].compose(x => Await.result(x.toStrict(awaitAtMost), awaitAtMost))
 
   def transformTo(strict: Strict): Matcher[HttpEntity] =
-    equal(strict).matcher[Strict].compose { x ⇒
+    equal(strict).matcher[Strict].compose { x =>
       val transformed = x.transformDataBytes(duplicateBytesTransformer)
       Await.result(transformed.toStrict(awaitAtMost), awaitAtMost)
     }
 
   def renderStrictDataAs(dataRendering: String): Matcher[Strict] =
-    Matcher { strict: Strict ⇒
+    Matcher { strict: Strict =>
       val expectedRendering = s"${strict.productPrefix}(${strict.contentType},$dataRendering)"
       MatchResult(
         strict.toString == expectedRendering,
@@ -286,9 +286,9 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
     }
 
   def duplicateBytesTransformer(): Flow[ByteString, ByteString, NotUsed] =
-    Flow[ByteString].via(StreamUtils.byteStringTransformer(doubleChars, () ⇒ trailer))
+    Flow[ByteString].via(StreamUtils.byteStringTransformer(doubleChars, () => trailer))
 
   def trailer: ByteString = ByteString("--dup")
-  def doubleChars(bs: ByteString): ByteString = ByteString(bs.flatMap(b ⇒ Seq(b, b)): _*)
+  def doubleChars(bs: ByteString): ByteString = ByteString(bs.flatMap(b => Seq(b, b)): _*)
   def doubleChars(str: String): ByteString = doubleChars(ByteString(str))
 }

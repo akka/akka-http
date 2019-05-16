@@ -22,8 +22,8 @@ class DiscardEntityDefaultExceptionHandlerSpec extends RoutingSpec with ScalaFut
     path("crash") {
       throw new RuntimeException("BOOM!")
     }, path("crashAfterConsuming") {
-      extractRequestEntity { entity ⇒
-        val future: Future[String] = entity.dataBytes.runFold(ByteString.empty)(_ ++ _).map(_ ⇒ throw new RuntimeException("KABOOM!"))
+      extractRequestEntity { entity =>
+        val future: Future[String] = entity.dataBytes.runFold(ByteString.empty)(_ ++ _).map(_ => throw new RuntimeException("KABOOM!"))
         complete(future)
       }
     }

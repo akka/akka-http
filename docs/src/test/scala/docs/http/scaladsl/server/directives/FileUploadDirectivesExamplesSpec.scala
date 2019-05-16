@@ -174,7 +174,7 @@ class FileUploadDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec 
                   .map(_.toInt)
                   .runFold(0) { (acc, n) => acc + n }
 
-                accF.flatMap(acc ⇒ intF.map(acc + _))
+                accF.flatMap(acc => intF.map(acc + _))
             }
 
             onSuccess(sumF) { sum => complete(s"Sum: $sum") }
