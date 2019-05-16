@@ -111,7 +111,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     }
 
     "properly terminate client when server is not running" in Utils.assertAllStagesStopped {
-      for (i ← 1 to 10)
+      for (i <- 1 to 10)
         withClue(s"iterator $i: ") {
           Source.single(HttpRequest(HttpMethods.POST, "/test", List.empty, HttpEntity(MediaTypes.`text/plain`.withCharset(HttpCharsets.`UTF-8`), "buh")))
             .via(Http(actorSystem).outgoingConnection("localhost", 7777))

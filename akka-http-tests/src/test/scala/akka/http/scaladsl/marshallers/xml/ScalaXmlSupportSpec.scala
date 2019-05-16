@@ -63,7 +63,7 @@ class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest
         }
       }
       "gracefully fail when there are too many nested entities" in {
-        val nested = for (x ← 1 to 30) yield "<!ENTITY laugh" + x + " \"&laugh" + (x - 1) + ";&laugh" + (x - 1) + ";\">"
+        val nested = for (x <- 1 to 30) yield "<!ENTITY laugh" + x + " \"&laugh" + (x - 1) + ";&laugh" + (x - 1) + ";\">"
         val xml =
           s"""<?xml version="1.0"?>
            | <!DOCTYPE billion [

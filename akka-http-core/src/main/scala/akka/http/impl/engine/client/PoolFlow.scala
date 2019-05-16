@@ -91,7 +91,7 @@ private[client] object PoolFlow {
       val slotEventMerge = b.add(Merge[PoolSlot.RawSlotEvent](maxConnections))
 
       slotEventMerge.out ~> conductor.slotEventIn
-      for ((slot, ix) ← slots.zipWithIndex) {
+      for ((slot, ix) <- slots.zipWithIndex) {
         conductor.slotOuts(ix) ~> slot.in
         slot.out0 ~> responseMerge.in(ix)
         slot.out1 ~> slotEventMerge.in(ix)

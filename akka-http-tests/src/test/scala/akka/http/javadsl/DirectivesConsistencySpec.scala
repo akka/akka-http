@@ -55,7 +55,7 @@ class DirectivesConsistencySpec extends WordSpec with Matchers {
     val javaToScalaMappings =
       for {
         // using Scala annotations - Java annotations were magically not present in certain places...
-        d ← javaDirectives
+        d <- javaDirectives
         if d.isAnnotationPresent(classOf[CorrespondsTo])
         annot = d.getAnnotation(classOf[CorrespondsTo])
       } yield d.getName → annot.value()
@@ -120,8 +120,8 @@ class DirectivesConsistencySpec extends WordSpec with Matchers {
           case `javaDirectivesClazz` =>
             val all = scalaDirectivesClazz
             (for {
-              i ← all.getInterfaces
-              m ← i.getDeclaredMethods
+              i <- all.getInterfaces
+              m <- i.getDeclaredMethods
               if m.getName == name || m.getName == alternativeName
             } yield i).headOption
               .map(_.getName)
@@ -138,8 +138,8 @@ class DirectivesConsistencySpec extends WordSpec with Matchers {
             }
 
             (for {
-              i ← is
-              m ← i.getDeclaredMethods
+              i <- is
+              m <- i.getDeclaredMethods
               if m.getName == name || m.getName == alternativeName
             } yield i).headOption
               .map(_.getName)
@@ -168,7 +168,7 @@ class DirectivesConsistencySpec extends WordSpec with Matchers {
 
   "Consistency scaladsl -> javadsl" should {
     for {
-      m ← scalaDirectives
+      m <- scalaDirectives
       name = m.getName
       targetName = correspondingJavaMethodName(m) match { case Left(l) => l case Right(r) => r }
       text = if (name == targetName) name else s"$name (alias: $targetName)"
@@ -179,7 +179,7 @@ class DirectivesConsistencySpec extends WordSpec with Matchers {
 
   "Consistency javadsl -> scaladsl" should {
     for {
-      m ← javaDirectives
+      m <- javaDirectives
       name = m.getName
       targetName = correspondingScalaMethodName(m) match { case Left(l) => l case Right(r) => r }
       text = if (name == targetName) name else s"$name (alias for: $targetName)"

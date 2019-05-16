@@ -548,7 +548,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
         .withDefaultHeaders(closeHeader())
     }
 
-    for (pipeliningLimit ← Iterator.from(1).map(math.pow(2, _).toInt).take(4)) {
+    for (pipeliningLimit <- Iterator.from(1).map(math.pow(2, _).toInt).take(4)) {
       val settings = ConnectionPoolSettings(system).withMaxConnections(4).withPipeliningLimit(pipeliningLimit).withMaxOpenRequests(4 * pipeliningLimit)
       val poolFlow = Http().cachedHostConnectionPool[Int](serverHostName, serverPort, settings = settings)
 

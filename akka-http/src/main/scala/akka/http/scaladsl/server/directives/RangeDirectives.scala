@@ -93,7 +93,7 @@ trait RangeDirectives {
               import GraphDSL.Implicits._
               val bcast = b.add(Broadcast[ByteString](n))
               val merge = b.add(Concat[Multipart.ByteRanges.BodyPart](n))
-              for (range ← coalescedRanges) {
+              for (range <- coalescedRanges) {
                 val flow = StreamUtils.sliceBytesTransformer(range.start, range.length)
                 bcast ~> flow.buffer(16, OverflowStrategy.backpressure).prefixAndTail(0).map {
                   case (_, bytes) =>

@@ -160,7 +160,7 @@ object Coroner {
       if (threadInfos.isEmpty) {
         println("None")
       } else {
-        for (ti ← threadInfos.sortBy(_.getThreadName)) { println(threadInfoToString(ti)) }
+        for (ti <- threadInfos.sortBy(_.getThreadName)) { println(threadInfoToString(ti)) }
       }
     }
 
@@ -201,7 +201,7 @@ object Coroner {
       }
 
       val stackTrace = ti.getStackTrace
-      for (i ← 0 until stackTrace.length) {
+      for (i <- 0 until stackTrace.length) {
         val ste = stackTrace(i)
         appendMsg("\tat ", ste)
         if (i == 0 && ti.getLockInfo != null) {
@@ -214,14 +214,14 @@ object Coroner {
           }
         }
 
-        for (mi ← ti.getLockedMonitors if mi.getLockedStackDepth == i)
+        for (mi <- ti.getLockedMonitors if mi.getLockedStackDepth == i)
           appendMsg("\t-  locked ", mi)
       }
 
       val locks = ti.getLockedSynchronizers
       if (locks.length > 0) {
         appendMsg("\n\tNumber of locked synchronizers = ", locks.length)
-        for (li ← locks) appendMsg("\t- ", li)
+        for (li <- locks) appendMsg("\t- ", li)
       }
       sb.append('\n')
       sb.toString

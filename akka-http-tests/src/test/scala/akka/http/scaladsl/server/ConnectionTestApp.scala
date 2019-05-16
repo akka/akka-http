@@ -80,7 +80,7 @@ object ConnectionTestApp {
   }
 
   def main(args: Array[String]): Unit = {
-    for (i ← 1 to 1000) {
+    for (i <- 1 to 1000) {
       val u = s"http://127.0.0.1:6666/test/$i"
       println("u =>" + u)
       sendPoolFlow(Uri(u), i)

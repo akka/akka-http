@@ -110,7 +110,7 @@ object StrictForm {
       entity =>
 
         def tryUnmarshalToQueryForm: Future[StrictForm] =
-          for (formData ← formDataUM(entity).fast) yield {
+          for (formData <- formDataUM(entity).fast) yield {
             new StrictForm {
               val fields = formData.fields.iterator.map { case (name, value) => name → Field.FromString(value) }.to(scala.collection.immutable.IndexedSeq)
             }
@@ -118,8 +118,8 @@ object StrictForm {
 
         def tryUnmarshalToMultipartForm: Future[StrictForm] =
           for {
-            multiPartFD ← multipartUM(entity).fast
-            strictMultiPartFD ← multiPartFD.toStrict(toStrictTimeout).fast
+            multiPartFD <- multipartUM(entity).fast
+            strictMultiPartFD <- multiPartFD.toStrict(toStrictTimeout).fast
           } yield {
             new StrictForm {
               val fields = strictMultiPartFD.strictParts.iterator.map {

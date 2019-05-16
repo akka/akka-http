@@ -409,8 +409,8 @@ object DirectoryListing {
         start(name).append("        ").append(lastModified(file))
         sb.append("                ".substring(size.length)).append(size).append('\n')
       }
-      for ((file, name) ← directoryFilesAndNames) renderDirectory(file, name)
-      for ((file, name) ← fileFilesAndNames) renderFile(file, name)
+      for ((file, name) <- directoryFilesAndNames) renderDirectory(file, name)
+      for ((file, name) <- fileFilesAndNames) renderFile(file, name)
       if (isRoot && files.isEmpty) sb.append("(no files)\n")
       sb.append(html(3))
       if (renderVanityFooter) sb.append(html(4)).append(DateTime.now.toIsoLikeDateTimeString).append(html(5))

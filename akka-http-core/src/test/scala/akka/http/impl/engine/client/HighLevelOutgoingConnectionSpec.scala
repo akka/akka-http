@@ -53,7 +53,7 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpec {
         val bcast = b.add(Broadcast[HttpRequest](C))
         val merge = b.add(Merge[HttpResponse](C))
 
-        for (i ← 0 until C)
+        for (i <- 0 until C)
           bcast.out(i) ~> connFlow ~> merge.in(i)
         FlowShape(bcast.in, merge.out)
       })

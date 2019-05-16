@@ -334,7 +334,7 @@ private[http] object HttpServerBluePrint {
     override def updateHandler(handler: HttpRequest => HttpResponse): Unit = update(null, handler)
     override def update(timeout: Duration, handler: HttpRequest => HttpResponse): Unit = {
       val promise = Promise[TimeoutSetup]()
-      for (old ← getAndSet(promise.future).fast)
+      for (old <- getAndSet(promise.future).fast)
         promise.success {
           if ((old.scheduledTask eq null) || old.scheduledTask.cancel()) {
             val newHandler = if (handler eq null) old.handler else handler

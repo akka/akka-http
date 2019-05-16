@@ -303,7 +303,7 @@ final class HttpRequest(
   /**
    * All cookies provided by the client in one or more `Cookie` headers.
    */
-  def cookies: immutable.Seq[HttpCookiePair] = for (`Cookie`(cookies) ← headers; cookie ← cookies) yield cookie
+  def cookies: immutable.Seq[HttpCookiePair] = for (`Cookie`(cookies) <- headers; cookie <- cookies) yield cookie
 
   /**
    * Determines whether this request can be safely retried, which is the case only of the request method is idempotent.

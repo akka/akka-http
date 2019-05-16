@@ -159,7 +159,7 @@ class ErrorFormatter(
     import error.position._
     val (expandedCol, expandedLine) = expandErrorLineTabs(input getLine line, column)
     sb.append(expandedLine).append('\n')
-    for (i ← 1 until expandedCol) sb.append(' ')
+    for (i <- 1 until expandedCol) sb.append(' ')
     sb.append('^')
   }
 

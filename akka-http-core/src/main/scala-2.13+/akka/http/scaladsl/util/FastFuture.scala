@@ -103,7 +103,7 @@ object FastFuture {
 
   def sequence[T, M[_] <: IterableOnce[_]](in: M[Future[T]])(implicit cbf: BuildFrom[M[Future[T]], T, M[T]], executor: ExecutionContext): Future[M[T]] =
     in.iterator.foldLeft(successful(cbf.newBuilder(in))) {
-      (fr, fa) => for (r ← fr.fast; a ← fa.asInstanceOf[Future[T]].fast) yield r += a
+      (fr, fa) => for (r <- fr.fast; a <- fa.asInstanceOf[Future[T]].fast) yield r += a
     }.fast.map(_.result())
 
   /* FIXME
@@ -119,6 +119,6 @@ object FastFuture {
   def traverse[A, B, M[_] <: IterableOnce[_]](in: M[A])(fn: A => Future[B])(implicit cbf: BuildFrom[M[A], B, M[B]], executor: ExecutionContext): Future[M[B]] =
     in.iterator.foldLeft(successful(cbf.newBuilder(in))) { (fr, a) =>
       val fb = fn(a.asInstanceOf[A])
-      for (r ← fr.fast; b ← fb.fast) yield r += b
+      for (r <- fr.fast; b <- fb.fast) yield r += b
     }.fast.map(_.result())
 }
