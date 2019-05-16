@@ -234,7 +234,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
             xxxxxxxx
             xxxxxxxx
             xxxxxxxx=20000
-         """ should parseTo(SettingsFrame(List(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE → 0x20000)))
+         """ should parseTo(SettingsFrame(List(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE -> 0x20000)))
       }
       "with two settings" in {
         b"""xxxxxxxx
@@ -259,8 +259,8 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
             xxxxxxxx
             xxxxxxxx=123
          """ should parseTo(SettingsFrame(List(
-          Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE → 0x424242,
-          Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS → 0x123
+          Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE -> 0x424242,
+          Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS -> 0x123
         )))
       }
       // 6.5.3: An endpoint that receives a SETTINGS frame with any unknown or unsupported identifier MUST ignore that setting

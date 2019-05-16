@@ -63,7 +63,7 @@ private[akka] class CollectorStage[T] extends GraphStageWithMaterializedValue[Si
 
       val collectNowCallback = getAsyncCallback[Promise[(Seq[T], Boolean)]] { promise =>
         require(state.get().isInstanceOf[Scheduled])
-        promise.complete(Success(collectedElements.result() → false))
+        promise.complete(Success(collectedElements.result() -> false))
         completeStage()
       }
 
@@ -106,7 +106,7 @@ private[akka] class CollectorStage[T] extends GraphStageWithMaterializedValue[Si
         p.future
       }
 
-      override def onUpstreamFinish(): Unit = onCompletion(Success(collectedElements.result() → true))
+      override def onUpstreamFinish(): Unit = onCompletion(Success(collectedElements.result() -> true))
       override def onUpstreamFailure(ex: Throwable): Unit = onCompletion(Failure(ex))
 
       def onCompletion(els: Try[(Seq[T], Boolean)]): Unit =

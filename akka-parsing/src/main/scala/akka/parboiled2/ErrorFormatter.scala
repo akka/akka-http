@@ -178,8 +178,8 @@ class ErrorFormatter(
         }
         rec(inCol + 1, ec)
       } else errorCol + 1
-    if (expandTabs >= 0) rec(0, 0) → sb.toString()
-    else errorColumn → line
+    if (expandTabs >= 0) rec(0, 0) -> sb.toString()
+    else errorColumn -> line
   }
 
   /**

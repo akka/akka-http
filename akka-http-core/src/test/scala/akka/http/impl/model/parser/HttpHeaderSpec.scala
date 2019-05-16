@@ -42,10 +42,10 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Accept: */*, text/*; foo=bar, custom/custom; bar=\"b>az\"" =!=
         Accept(
           `*/*`,
-          MediaRange.custom("text", Map("foo" → "bar")),
-          MediaType.customBinary("custom", "custom", MediaType.Compressible, params = Map("bar" → "b>az")))
+          MediaRange.custom("text", Map("foo" -> "bar")),
+          MediaType.customBinary("custom", "custom", MediaType.Compressible, params = Map("bar" -> "b>az")))
       "Accept: application/*+xml; version=2" =!=
-        Accept(MediaType.customBinary("application", "*+xml", MediaType.Compressible, params = Map("version" → "2")))
+        Accept(MediaType.customBinary("application", "*+xml", MediaType.Compressible, params = Map("version" -> "2")))
     }
 
     "Accept-Charset" in {
@@ -141,16 +141,16 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Authorization: Fancy QWxhZGRpbjpvcGVuIHNlc2FtZQ==" =!=
         Authorization(GenericHttpCredentials("Fancy", "QWxhZGRpbjpvcGVuIHNlc2FtZQ=="))
       """Authorization: Fancy yes="n:o", nonce=42""" =!=
-        Authorization(GenericHttpCredentials("Fancy", Map("nonce" → "42", "yes" → "n:o"))).renderedTo(
+        Authorization(GenericHttpCredentials("Fancy", Map("nonce" -> "42", "yes" -> "n:o"))).renderedTo(
           """Fancy nonce=42,yes="n:o"""")
       """Authorization: Fancy nonce="4\\2",yes=no""" =!=
-        Authorization(GenericHttpCredentials("Fancy", Map("nonce" → """4\2""", "yes" → "no")))
+        Authorization(GenericHttpCredentials("Fancy", Map("nonce" -> """4\2""", "yes" -> "no")))
       """Authorization: Other empty="",yes=no""" =!=
-        Authorization(GenericHttpCredentials("Other", Map("empty" → "", "yes" → "no")))
+        Authorization(GenericHttpCredentials("Other", Map("empty" -> "", "yes" -> "no")))
       "Authorization: Basic Qm9iOg==" =!=
         Authorization(BasicHttpCredentials("Bob", ""))
       """Authorization: Digest name=Bob""" =!=
-        Authorization(GenericHttpCredentials("Digest", Map("name" → "Bob")))
+        Authorization(GenericHttpCredentials("Digest", Map("name" -> "Bob")))
       """Authorization: Bearer mF_9.B5f-4.1JqM/""" =!=
         Authorization(OAuth2BearerToken("mF_9.B5f-4.1JqM/"))
       "Authorization: NoParamScheme" =!=
@@ -192,9 +192,9 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     "Content-Disposition" in {
       "Content-Disposition: form-data" =!= `Content-Disposition`(ContentDispositionTypes.`form-data`)
       "Content-Disposition: attachment; filename=\"file/txt\"; name=\"field1\"" =!=
-        `Content-Disposition`(ContentDispositionTypes.attachment, Map("filename" → "file/txt", "name" → "field1"))
+        `Content-Disposition`(ContentDispositionTypes.attachment, Map("filename" -> "file/txt", "name" -> "field1"))
       "Content-Disposition: attachment; name=\"field1\"; other=\"\"" =!=
-        `Content-Disposition`(ContentDispositionTypes.attachment, Map("name" → "field1", "other" → ""))
+        `Content-Disposition`(ContentDispositionTypes.attachment, Map("name" -> "field1", "other" -> ""))
     }
 
     "Content-Encoding" in {
@@ -218,7 +218,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Content-Type: text/plain" =!=
         `Content-Type`(ContentType.WithMissingCharset(MediaTypes.`text/plain`)).renderedTo("text/plain")
       "Content-Type: text/xml2; version=3; charset=windows-1252" =!=
-        `Content-Type`(MediaType.customWithOpenCharset("text", "xml2", params = Map("version" → "3"))
+        `Content-Type`(MediaType.customWithOpenCharset("text", "xml2", params = Map("version" -> "3"))
           withCharset HttpCharsets.getForKey("windows-1252").get)
       "Content-Type: text/plain; charset=fancy-pants" =!=
         `Content-Type`(`text/plain` withCharset HttpCharset.custom("fancy-pants"))
@@ -241,17 +241,17 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     }
 
     "Cookie (RFC 6265)" in {
-      "Cookie: SID=31d4d96e407aad42" =!= Cookie("SID" → "31d4d96e407aad42")
-      "Cookie: SID=31d4d96e407aad42; lang=en>US" =!= Cookie("SID" → "31d4d96e407aad42", "lang" → "en>US")
-      "Cookie: a=1; b=2" =!= Cookie("a" → "1", "b" → "2")
-      "Cookie: a=1;b=2" =!= Cookie("a" → "1", "b" → "2").renderedTo("a=1; b=2")
-      "Cookie: a=1 ;b=2" =!= Cookie("a" → "1", "b" → "2").renderedTo("a=1; b=2")
+      "Cookie: SID=31d4d96e407aad42" =!= Cookie("SID" -> "31d4d96e407aad42")
+      "Cookie: SID=31d4d96e407aad42; lang=en>US" =!= Cookie("SID" -> "31d4d96e407aad42", "lang" -> "en>US")
+      "Cookie: a=1; b=2" =!= Cookie("a" -> "1", "b" -> "2")
+      "Cookie: a=1;b=2" =!= Cookie("a" -> "1", "b" -> "2").renderedTo("a=1; b=2")
+      "Cookie: a=1 ;b=2" =!= Cookie("a" -> "1", "b" -> "2").renderedTo("a=1; b=2")
 
-      "Cookie: z=0;a=1,b=2" =!= Cookie("z" → "0").renderedTo("z=0")
-      """Cookie: a=1;b="test"""" =!= Cookie("a" → "1", "b" → "test").renderedTo("a=1; b=test")
+      "Cookie: z=0;a=1,b=2" =!= Cookie("z" -> "0").renderedTo("z=0")
+      """Cookie: a=1;b="test"""" =!= Cookie("a" -> "1", "b" -> "test").renderedTo("a=1; b=test")
 
-      "Cookie: a=1; b=f\"d\"c\"; c=xyz" =!= Cookie("a" → "1", "c" → "xyz").renderedTo("a=1; c=xyz")
-      "Cookie: a=1; b=ä; c=d" =!= Cookie("a" → "1", "c" → "d").renderedTo("a=1; c=d")
+      "Cookie: a=1; b=f\"d\"c\"; c=xyz" =!= Cookie("a" -> "1", "c" -> "xyz").renderedTo("a=1; c=xyz")
+      "Cookie: a=1; b=ä; c=d" =!= Cookie("a" -> "1", "c" -> "d").renderedTo("a=1; c=d")
 
       "Cookie: a=1,2" =!=
         ErrorInfo(
@@ -260,16 +260,16 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     }
 
     "Cookie (Raw)" in {
-      "Cookie: SID=31d4d96e407aad42" =!= Cookie("SID" → "31d4d96e407aad42").withCookieParsingMode(CookieParsingMode.Raw)
-      "Cookie: SID=31d4d96e407aad42; lang=en>US" =!= Cookie("SID" → "31d4d96e407aad42", "lang" → "en>US").withCookieParsingMode(CookieParsingMode.Raw)
-      "Cookie: a=1; b=2" =!= Cookie("a" → "1", "b" → "2").withCookieParsingMode(CookieParsingMode.Raw)
-      "Cookie: a=1;b=2" =!= Cookie("a" → "1", "b" → "2").renderedTo("a=1; b=2").withCookieParsingMode(CookieParsingMode.Raw)
-      "Cookie: a=1 ;b=2" =!= Cookie(List(HttpCookiePair.raw("a" → "1 "), HttpCookiePair("b" → "2"))).renderedTo("a=1 ; b=2").withCookieParsingMode(CookieParsingMode.Raw)
+      "Cookie: SID=31d4d96e407aad42" =!= Cookie("SID" -> "31d4d96e407aad42").withCookieParsingMode(CookieParsingMode.Raw)
+      "Cookie: SID=31d4d96e407aad42; lang=en>US" =!= Cookie("SID" -> "31d4d96e407aad42", "lang" -> "en>US").withCookieParsingMode(CookieParsingMode.Raw)
+      "Cookie: a=1; b=2" =!= Cookie("a" -> "1", "b" -> "2").withCookieParsingMode(CookieParsingMode.Raw)
+      "Cookie: a=1;b=2" =!= Cookie("a" -> "1", "b" -> "2").renderedTo("a=1; b=2").withCookieParsingMode(CookieParsingMode.Raw)
+      "Cookie: a=1 ;b=2" =!= Cookie(List(HttpCookiePair.raw("a" -> "1 "), HttpCookiePair("b" -> "2"))).renderedTo("a=1 ; b=2").withCookieParsingMode(CookieParsingMode.Raw)
 
-      "Cookie: z=0; a=1,b=2" =!= Cookie(List(HttpCookiePair("z" → "0"), HttpCookiePair.raw("a" → "1,b=2"))).withCookieParsingMode(CookieParsingMode.Raw)
-      """Cookie: a=1;b="test"""" =!= Cookie(List(HttpCookiePair("a" → "1"), HttpCookiePair.raw("b" → "\"test\""))).renderedTo("a=1; b=\"test\"").withCookieParsingMode(CookieParsingMode.Raw)
-      "Cookie: a=1; b=f\"d\"c\"; c=xyz" =!= Cookie(List(HttpCookiePair("a" → "1"), HttpCookiePair.raw("b" → "f\"d\"c\""), HttpCookiePair("c" → "xyz"))).withCookieParsingMode(CookieParsingMode.Raw)
-      "Cookie: a=1; b=ä; c=d" =!= Cookie(List(HttpCookiePair("a" → "1"), HttpCookiePair.raw("b" → "ä"), HttpCookiePair("c" → "d"))).withCookieParsingMode(CookieParsingMode.Raw)
+      "Cookie: z=0; a=1,b=2" =!= Cookie(List(HttpCookiePair("z" -> "0"), HttpCookiePair.raw("a" -> "1,b=2"))).withCookieParsingMode(CookieParsingMode.Raw)
+      """Cookie: a=1;b="test"""" =!= Cookie(List(HttpCookiePair("a" -> "1"), HttpCookiePair.raw("b" -> "\"test\""))).renderedTo("a=1; b=\"test\"").withCookieParsingMode(CookieParsingMode.Raw)
+      "Cookie: a=1; b=f\"d\"c\"; c=xyz" =!= Cookie(List(HttpCookiePair("a" -> "1"), HttpCookiePair.raw("b" -> "f\"d\"c\""), HttpCookiePair("c" -> "xyz"))).withCookieParsingMode(CookieParsingMode.Raw)
+      "Cookie: a=1; b=ä; c=d" =!= Cookie(List(HttpCookiePair("a" -> "1"), HttpCookiePair.raw("b" -> "ä"), HttpCookiePair("c" -> "d"))).withCookieParsingMode(CookieParsingMode.Raw)
     }
 
     "Date" in {
@@ -401,14 +401,14 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
 
     "Proxy-Authenticate" in {
       "Proxy-Authenticate: Basic realm=\"WallyWorld\",attr=\"val>ue\", Fancy realm=\"yeah\"" =!=
-        `Proxy-Authenticate`(HttpChallenge("Basic", Some("WallyWorld"), Map("attr" → "val>ue")), HttpChallenge("Fancy", Some("yeah")))
+        `Proxy-Authenticate`(HttpChallenge("Basic", Some("WallyWorld"), Map("attr" -> "val>ue")), HttpChallenge("Fancy", Some("yeah")))
       """Proxy-Authenticate: NTLM TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg==""" =!=
-        `Proxy-Authenticate`(HttpChallenge("NTLM", None, Map("" → "TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg==")))
+        `Proxy-Authenticate`(HttpChallenge("NTLM", None, Map("" -> "TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg==")))
     }
 
     "Proxy-Authorization" in {
       """Proxy-Authorization: Fancy nonce="4\\2",yes=no""" =!=
-        `Proxy-Authorization`(GenericHttpCredentials("Fancy", Map("nonce" → """4\2""", "yes" → "no")))
+        `Proxy-Authorization`(GenericHttpCredentials("Fancy", Map("nonce" -> """4\2""", "yes" -> "no")))
       "Proxy-Authorization: Fancy QWxhZGRpbjpvcGVuIHNlc2FtZQ==" =!=
         `Proxy-Authorization`(GenericHttpCredentials("Fancy", "QWxhZGRpbjpvcGVuIHNlc2FtZQ=="))
     }
@@ -457,19 +457,19 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Sec-WebSocket-Extensions: abc, def" =!=
         `Sec-WebSocket-Extensions`(Vector(WebSocketExtension("abc"), WebSocketExtension("def")))
       "Sec-WebSocket-Extensions: abc; param=2; use_y, def" =!=
-        `Sec-WebSocket-Extensions`(Vector(WebSocketExtension("abc", Map("param" → "2", "use_y" → "")), WebSocketExtension("def")))
+        `Sec-WebSocket-Extensions`(Vector(WebSocketExtension("abc", Map("param" -> "2", "use_y" -> "")), WebSocketExtension("def")))
       "Sec-WebSocket-Extensions: abc; param=\",xyz\", def" =!=
-        `Sec-WebSocket-Extensions`(Vector(WebSocketExtension("abc", Map("param" → ",xyz")), WebSocketExtension("def")))
+        `Sec-WebSocket-Extensions`(Vector(WebSocketExtension("abc", Map("param" -> ",xyz")), WebSocketExtension("def")))
 
       // real examples from https://tools.ietf.org/html/draft-ietf-hybi-permessage-compression-19
       "Sec-WebSocket-Extensions: permessage-deflate" =!=
         `Sec-WebSocket-Extensions`(Vector(WebSocketExtension("permessage-deflate")))
       "Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits; server_max_window_bits=10" =!=
-        `Sec-WebSocket-Extensions`(Vector(WebSocketExtension("permessage-deflate", Map("client_max_window_bits" → "", "server_max_window_bits" → "10"))))
+        `Sec-WebSocket-Extensions`(Vector(WebSocketExtension("permessage-deflate", Map("client_max_window_bits" -> "", "server_max_window_bits" -> "10"))))
       "Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits; server_max_window_bits=10, permessage-deflate; client_max_window_bits" =!=
         `Sec-WebSocket-Extensions`(Vector(
-          WebSocketExtension("permessage-deflate", Map("client_max_window_bits" → "", "server_max_window_bits" → "10")),
-          WebSocketExtension("permessage-deflate", Map("client_max_window_bits" → ""))))
+          WebSocketExtension("permessage-deflate", Map("client_max_window_bits" -> "", "server_max_window_bits" -> "10")),
+          WebSocketExtension("permessage-deflate", Map("client_max_window_bits" -> ""))))
     }
     "Sec-WebSocket-Key" in {
       "Sec-WebSocket-Key: c2Zxb3JpbmgyMzA5dGpoMDIzOWdlcm5vZ2luCg==" =!= `Sec-WebSocket-Key`("c2Zxb3JpbmgyMzA5dGpoMDIzOWdlcm5vZ2luCg==")
@@ -594,21 +594,21 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
                            nonce=dcd98b7102dd2f0e8b11d0f600bfb0c093,
                            opaque=5ccc069c403ebaf9f0171e9517f40e41""".stripMarginWithNewline("\r\n") =!=
         `WWW-Authenticate`(HttpChallenge("Digest", "testrealm@host.com", Map(
-          "nonce" → "dcd98b7102dd2f0e8b11d0f600bfb0c093",
-          "opaque" → "5ccc069c403ebaf9f0171e9517f40e41",
-          "qop" → "auth,auth-int"
+          "nonce" -> "dcd98b7102dd2f0e8b11d0f600bfb0c093",
+          "opaque" -> "5ccc069c403ebaf9f0171e9517f40e41",
+          "qop" -> "auth,auth-int"
         ))).renderedTo(
           "Digest realm=\"testrealm@host.com\",nonce=dcd98b7102dd2f0e8b11d0f600bfb0c093,opaque=5ccc069c403ebaf9f0171e9517f40e41,qop=\"auth,auth-int\"")
       "WWW-Authenticate: Basic realm=\"WallyWorld\",attr=\"val>ue\", Fancy realm=\"yeah\"" =!=
-        `WWW-Authenticate`(HttpChallenge("Basic", Some("WallyWorld"), Map("attr" → "val>ue")), HttpChallenge("Fancy", Some("yeah")))
+        `WWW-Authenticate`(HttpChallenge("Basic", Some("WallyWorld"), Map("attr" -> "val>ue")), HttpChallenge("Fancy", Some("yeah")))
       "WWW-Authenticate: Basic another=\"val>ue\",attr=value" =!=
-        `WWW-Authenticate`(HttpChallenge("Basic", None, Map("another" → "val>ue", "attr" → "value")))
+        `WWW-Authenticate`(HttpChallenge("Basic", None, Map("another" -> "val>ue", "attr" -> "value")))
       "WWW-Authenticate: Basic attr=value" =!=
-        `WWW-Authenticate`(HttpChallenge("Basic", None, Map("attr" → "value")))
+        `WWW-Authenticate`(HttpChallenge("Basic", None, Map("attr" -> "value")))
       """WWW-Authenticate: Fancy realm="Secure Area",nonce=42""" =!=
-        `WWW-Authenticate`(HttpChallenge("Fancy", Some("Secure Area"), Map("nonce" → "42")))
+        `WWW-Authenticate`(HttpChallenge("Fancy", Some("Secure Area"), Map("nonce" -> "42")))
       """WWW-Authenticate: NTLM TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg==""" =!=
-        `WWW-Authenticate`(HttpChallenge("NTLM", None, Map("" → "TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg==")))
+        `WWW-Authenticate`(HttpChallenge("NTLM", None, Map("" -> "TlRMTVNTUAABAAAABzIAAAYABgArAAAACwALACAAAABXT1JLU1RBVElPTkRPTUFJTg==")))
     }
 
     "X-Forwarded-For" in {

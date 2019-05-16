@@ -276,7 +276,7 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
               .runFold(0) { (cnt, _) => cnt + 1 }
 
           complete {
-            measurementsSubmitted.map(n => Map("msg" → s"""Total metrics received: $n"""))
+            measurementsSubmitted.map(n => Map("msg" -> s"""Total metrics received: $n"""))
           }
         }
       }

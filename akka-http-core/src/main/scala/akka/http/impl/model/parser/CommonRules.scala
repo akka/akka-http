@@ -177,7 +177,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding =>
     `challenge-or-credentials` ~> { (scheme, tokenAndParams) =>
       tokenAndParams match {
         case ("", Nil)    => HttpChallenge(scheme, None)
-        case (token, Nil) => HttpChallenge(scheme, None, Map("" → token))
+        case (token, Nil) => HttpChallenge(scheme, None, Map("" -> token))
         case (_, params) => {
           val (realms, otherParams) = params.partition(_._1 equalsIgnoreCase "realm")
           HttpChallenge(scheme, realms.headOption.map(_._2), TreeMap(otherParams: _*))
@@ -188,7 +188,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding =>
 
   def `challenge-or-credentials`: Rule2[String, (String, Seq[(String, String)])] = rule {
     `auth-scheme` ~ (
-      oneOrMore(`auth-param` ~> (_ → _)).separatedBy(listSep) ~> (x => ("", x))
+      oneOrMore(`auth-param` ~> (_ -> _)).separatedBy(listSep) ~> (x => ("", x))
       | `token68` ~> (x => (x, Nil))
       | push(("", Nil)))
   }
@@ -408,7 +408,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding =>
     token ~ zeroOrMore(ws(';') ~ `transfer-parameter`) ~> (p => TreeMap(p: _*)) ~> (TransferEncodings.Extension(_, _))
   }
 
-  def `transfer-parameter` = rule { token ~ ws('=') ~ word ~> (_ → _) }
+  def `transfer-parameter` = rule { token ~ ws('=') ~ word ~> (_ -> _) }
 
   // ******************************************************************************************
   //                                    helpers

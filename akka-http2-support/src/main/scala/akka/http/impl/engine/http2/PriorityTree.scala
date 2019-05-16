@@ -42,7 +42,7 @@ private[http2] trait PriorityTree {
 /** INTERNAL API */
 @InternalApi
 private[http2] object PriorityTree {
-  def apply(): PriorityTree = create(TreeMap(0 → RootNode))
+  def apply(): PriorityTree = create(TreeMap(0 -> RootNode))
 
   private final val DefaultWeight = 16
 
@@ -103,9 +103,9 @@ private[http2] object PriorityTree {
 
       create(
         (nodes - streamId) +
-          (info.streamDependency → dependencyInfo.copy(childrenIds = dependencyInfo.childrenIds - streamId)) ++
+          (info.streamDependency -> dependencyInfo.copy(childrenIds = dependencyInfo.childrenIds - streamId)) ++
           info.childrenIds.unsorted.map(id =>
-            id → nodes(id).copy(streamDependency = info.streamDependency)
+            id -> nodes(id).copy(streamDependency = info.streamDependency)
           )
       )
     }
@@ -132,7 +132,7 @@ private[http2] object PriorityTree {
       old.copy(childrenIds = updater(old.childrenIds))
     }
     private def insertNode(newNode: PriorityInfo): PriorityTreeImpl =
-      updateNodes(_ + (newNode.streamId → newNode))
+      updateNodes(_ + (newNode.streamId -> newNode))
 
     def print: String = {
       def printNode(node: PriorityNode): String = s"${node.streamId} [weight: ${node.weight}]"

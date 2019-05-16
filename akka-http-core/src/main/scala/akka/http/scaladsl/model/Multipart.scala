@@ -244,7 +244,7 @@ object Multipart {
       }
 
     def unapply(value: Multipart.General): Option[(MediaType.Multipart, Source[Multipart.General.BodyPart, Any])] =
-      Some(value.mediaType → value.parts)
+      Some(value.mediaType -> value.parts)
 
     /**
      * Strict [[General]] multipart content.
@@ -304,7 +304,7 @@ object Multipart {
           override def toString = s"General.BodyPart($entity, $headers)"
         }
 
-      def unapply(value: BodyPart): Option[(BodyPartEntity, immutable.Seq[HttpHeader])] = Some(value.entity → value.headers)
+      def unapply(value: BodyPart): Option[(BodyPartEntity, immutable.Seq[HttpHeader])] = Some(value.entity -> value.headers)
 
       /**
        * Strict [[General.BodyPart]].
@@ -486,7 +486,7 @@ object Multipart {
        * Creates a BodyPart backed by a file that will be streamed using a FileSource.
        */
       def fromPath(name: String, contentType: ContentType, file: Path, chunkSize: Int = -1): BodyPart =
-        BodyPart(name, HttpEntity.fromPath(contentType, file, chunkSize), Map("filename" → file.getFileName.toString))
+        BodyPart(name, HttpEntity.fromPath(contentType, file, chunkSize), Map("filename" -> file.getFileName.toString))
 
       def unapply(value: BodyPart): Option[(String, BodyPartEntity, Map[String, String], immutable.Seq[HttpHeader])] =
         Some((value.name, value.entity, value.additionalDispositionParams, value.additionalHeaders))

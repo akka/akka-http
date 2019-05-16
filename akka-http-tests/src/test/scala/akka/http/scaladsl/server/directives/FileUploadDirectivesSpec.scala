@@ -32,7 +32,7 @@ class FileUploadDirectivesSpec extends RoutingSpec {
         Multipart.FormData(Multipart.FormData.BodyPart.Strict(
           "fieldName",
           HttpEntity(ContentTypes.`text/xml(UTF-8)`, xml),
-          Map("filename" → "age.xml")))
+          Map("filename" -> "age.xml")))
 
       @volatile var file: Option[File] = None
 
@@ -86,14 +86,14 @@ class FileUploadDirectivesSpec extends RoutingSpec {
       Multipart.FormData(Multipart.FormData.BodyPart.Strict(
         "fieldName",
         HttpEntity(ContentTypes.`text/xml(UTF-8)`, data),
-        Map("filename" → "age.xml"))))
+        Map("filename" -> "age.xml"))))
 
     withUpload(
       "streamed",
       Multipart.FormData(Multipart.FormData.BodyPart(
         "fieldName",
         HttpEntity.IndefiniteLength(ContentTypes.`text/xml(UTF-8)`, inChunks(data)),
-        Map("filename" → "age.xml"))))
+        Map("filename" -> "age.xml"))))
   }
 
   "the storeUploadedFiles directive" should {
@@ -135,11 +135,11 @@ class FileUploadDirectivesSpec extends RoutingSpec {
         Multipart.FormData.BodyPart.Strict(
           "fieldName",
           HttpEntity(ContentTypes.`text/plain(UTF-8)`, txt),
-          Map("filename" → "age.txt")),
+          Map("filename" -> "age.txt")),
         Multipart.FormData.BodyPart.Strict(
           "fieldName",
           HttpEntity(ContentTypes.`text/xml(UTF-8)`, xml),
-          Map("filename" → "age.xml"))))
+          Map("filename" -> "age.xml"))))
 
     withUpload(
       "streamed",
@@ -147,11 +147,11 @@ class FileUploadDirectivesSpec extends RoutingSpec {
         Multipart.FormData.BodyPart(
           "fieldName",
           HttpEntity.IndefiniteLength(ContentTypes.`text/plain(UTF-8)`, inChunks(txt)),
-          Map("filename" → "age.txt")),
+          Map("filename" -> "age.txt")),
         Multipart.FormData.BodyPart(
           "fieldName",
           HttpEntity.IndefiniteLength(ContentTypes.`text/xml(UTF-8)`, inChunks(xml)),
-          Map("filename" → "age.xml"))))
+          Map("filename" -> "age.xml"))))
   }
 
   "the fileUpload directive" should {
@@ -178,7 +178,7 @@ class FileUploadDirectivesSpec extends RoutingSpec {
         Multipart.FormData(Multipart.FormData.BodyPart.Strict(
           "field1",
           HttpEntity(ContentTypes.`text/plain(UTF-8)`, str1),
-          Map("filename" → "data1.txt")))
+          Map("filename" -> "data1.txt")))
 
       Post("/", multipartForm) ~> route ~> check {
         status shouldEqual StatusCodes.OK
@@ -196,11 +196,11 @@ class FileUploadDirectivesSpec extends RoutingSpec {
           Multipart.FormData.BodyPart.Strict(
             "field1",
             HttpEntity(ContentTypes.`text/plain(UTF-8)`, str1),
-            Map("filename" → "data1.txt")),
+            Map("filename" -> "data1.txt")),
           Multipart.FormData.BodyPart.Strict(
             "field1",
             HttpEntity(ContentTypes.`text/plain(UTF-8)`, str2),
-            Map("filename" → "data2.txt")))
+            Map("filename" -> "data2.txt")))
 
       Post("/", multipartForm) ~> route ~> check {
         status shouldEqual StatusCodes.OK
@@ -229,7 +229,7 @@ class FileUploadDirectivesSpec extends RoutingSpec {
         Multipart.FormData(Multipart.FormData.BodyPart.Strict(
           "field1",
           HttpEntity(ContentTypes.`text/plain(UTF-8)`, str1),
-          Map("filename" → "data1.txt")))
+          Map("filename" -> "data1.txt")))
 
       Post("/", multipartForm) ~> route ~> check {
         rejection shouldEqual MissingFormFieldRejection("missing")
@@ -257,7 +257,7 @@ class FileUploadDirectivesSpec extends RoutingSpec {
               Multipart.FormData.BodyPart.Strict(
                 "field1",
                 HttpEntity(str1),
-                Map("filename" → "data1.txt")
+                Map("filename" -> "data1.txt")
               ),
               Multipart.FormData.BodyPart(
                 "field2",
@@ -294,7 +294,7 @@ class FileUploadDirectivesSpec extends RoutingSpec {
               Multipart.FormData.BodyPart.Strict(
                 "field1",
                 HttpEntity(str1),
-                Map("filename" → "data1.txt")
+                Map("filename" -> "data1.txt")
               )
             )
           )
@@ -330,7 +330,7 @@ class FileUploadDirectivesSpec extends RoutingSpec {
         Multipart.FormData(Multipart.FormData.BodyPart.Strict(
           "field1",
           HttpEntity(ContentTypes.`text/plain(UTF-8)`, str1),
-          Map("filename" → "data1.txt")))
+          Map("filename" -> "data1.txt")))
 
       Post("/", multipartForm) ~> route ~> check {
         status shouldEqual StatusCodes.OK
@@ -357,11 +357,11 @@ class FileUploadDirectivesSpec extends RoutingSpec {
         Multipart.FormData.BodyPart.Strict(
           "field1",
           HttpEntity(ContentTypes.`text/plain(UTF-8)`, str1),
-          Map("filename" → "data1.txt")),
+          Map("filename" -> "data1.txt")),
         Multipart.FormData.BodyPart.Strict(
           "field1",
           HttpEntity(ContentTypes.`text/plain(UTF-8)`, str2),
-          Map("filename" → "data2.txt"))))
+          Map("filename" -> "data2.txt"))))
 
     withUpload(
       "streamed",
@@ -369,11 +369,11 @@ class FileUploadDirectivesSpec extends RoutingSpec {
         Multipart.FormData.BodyPart(
           "field1",
           HttpEntity.IndefiniteLength(ContentTypes.`text/plain(UTF-8)`, inChunks(str1)),
-          Map("filename" → "data1.txt")),
+          Map("filename" -> "data1.txt")),
         Multipart.FormData.BodyPart(
           "field1",
           HttpEntity.IndefiniteLength(ContentTypes.`text/plain(UTF-8)`, inChunks(str2)),
-          Map("filename" → "data2.txt"))))
+          Map("filename" -> "data2.txt"))))
 
     "reject the file upload if the field name is missing" in {
       val route =
@@ -395,7 +395,7 @@ class FileUploadDirectivesSpec extends RoutingSpec {
         Multipart.FormData(Multipart.FormData.BodyPart.Strict(
           "field1",
           HttpEntity(ContentTypes.`text/plain(UTF-8)`, str1),
-          Map("filename" → "data1.txt")))
+          Map("filename" -> "data1.txt")))
 
       Post("/", multipartForm) ~> route ~> check {
         rejection shouldEqual MissingFormFieldRejection("missing")

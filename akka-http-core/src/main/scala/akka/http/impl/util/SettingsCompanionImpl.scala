@@ -58,6 +58,6 @@ private[http] object SettingsCompanionImpl {
     val localHostName =
       try new InetSocketAddress(InetAddress.getLocalHost, 80).getHostString
       catch { case NonFatal(_) => "" }
-    ConfigFactory.parseMap(Map("akka.http.hostname" → localHostName).asJava)
+    ConfigFactory.parseMap(Map("akka.http.hostname" -> localHostName).asJava)
   }
 }

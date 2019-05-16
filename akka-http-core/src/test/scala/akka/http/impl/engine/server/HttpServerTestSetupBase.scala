@@ -46,7 +46,7 @@ abstract class HttpServerTestSetupBase {
       ClosedShape
     }).run()
 
-    netIn → netOut
+    netIn -> netOut
   }
 
   def expectResponseWithWipedDate(expected: String): Unit = {

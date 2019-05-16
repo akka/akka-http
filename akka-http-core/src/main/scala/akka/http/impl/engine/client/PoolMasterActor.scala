@@ -52,8 +52,8 @@ private[http] final class PoolMasterActor extends Actor with ActorLogging {
       throw new IllegalStateException(s"pool interface actor for $gateway already exists")
     }
     val ref = context.actorOf(PoolInterfaceActor.props(gateway), PoolInterfaceActor.name.next())
-    poolStatus += gateway → PoolInterfaceRunning(ref)
-    poolInterfaces += ref → gateway
+    poolStatus += gateway -> PoolInterfaceRunning(ref)
+    poolInterfaces += ref -> gateway
     context.watch(ref)
   }
 
@@ -92,7 +92,7 @@ private[http] final class PoolMasterActor extends Actor with ActorLogging {
           // to this actor by the pool actor, they will be retried once the shutdown
           // has completed.
           ref ! PoolInterfaceActor.Shutdown
-          poolStatus += gateway → PoolInterfaceShuttingDown(shutdownCompletedPromise)
+          poolStatus += gateway -> PoolInterfaceShuttingDown(shutdownCompletedPromise)
         case PoolInterfaceShuttingDown(formerPromise) =>
           // Pool is already shutting down, mirror the existing promise.
           shutdownCompletedPromise.tryCompleteWith(formerPromise.future)

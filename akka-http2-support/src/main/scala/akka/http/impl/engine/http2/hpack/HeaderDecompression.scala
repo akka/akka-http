@@ -47,7 +47,7 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
       object Receiver extends HeaderListener {
         def addHeader(name: Array[Byte], value: Array[Byte], sensitive: Boolean): Unit =
           // TODO: optimization: use preallocated strings for well-known names, similar to what happens in HeaderParser
-          headers += new String(name, UTF8) → new String(value, UTF8)
+          headers += new String(name, UTF8) -> new String(value, UTF8)
       }
       try {
         decoder.decode(ByteStringInputStream(payload), Receiver)

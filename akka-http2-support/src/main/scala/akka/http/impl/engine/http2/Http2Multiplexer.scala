@@ -204,7 +204,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
       private def streamFor(streamId: Int): OutStream = outStreams.get(streamId) match {
         case None =>
           val newOne = new OutStream(streamId, None, currentInitialWindow)
-          outStreams += streamId → newOne
+          outStreams += streamId -> newOne
           newOne
         case Some(old) => old
       }

@@ -140,27 +140,27 @@ class ContentNegotiationSpec extends FreeSpec with Matchers {
 
     /** when both acceptable media types are equally specific and have the same qValue, we choose to send the first */
     "Accept: text/html;level=1, text/html;format=flowed" test { accept =>
-      accept(`text/html` withParams Map("level" → "1"), `text/html` withParams Map("format" → "flowed")) should select(`text/html` withParams Map("level" → "1") withCharset `UTF-8`)
+      accept(`text/html` withParams Map("level" -> "1"), `text/html` withParams Map("format" -> "flowed")) should select(`text/html` withParams Map("level" -> "1") withCharset `UTF-8`)
     }
 
     /** when an acceptable media type is more specific, it is matched even when it has a lower qValue */
     "Accept: text/html;format=flowed;q=0.5, text/html;q=1" test { accept =>
-      accept(`text/html` withParams Map("level" → "1"), `text/html` withParams Map("format" → "flowed")) should select(`text/html` withParams Map("level" → "1") withCharset `UTF-8`)
+      accept(`text/html` withParams Map("level" -> "1"), `text/html` withParams Map("format" -> "flowed")) should select(`text/html` withParams Map("level" -> "1") withCharset `UTF-8`)
     }
 
     /** when both acceptable media types are available as separate marshallers and equally specific, we must select the one with the highest qValue */
     "Accept: text/html;level=1;q=0.4, text/html;format=flowed;q=0.7" test { accept =>
-      accept(`text/html` withParams Map("level" → "1"), `text/html` withParams Map("format" → "flowed")) should select(`text/html` withParams Map("format" → "flowed") withCharset `UTF-8`)
+      accept(`text/html` withParams Map("level" -> "1"), `text/html` withParams Map("format" -> "flowed")) should select(`text/html` withParams Map("format" -> "flowed") withCharset `UTF-8`)
     }
 
     /** when both acceptable media types are available as separate marshallers and equally specific, we must select the one with the highest qValue */
     "Accept: text/*;level=1;q=0.4, text/*;format=flowed;q=0.7" test { accept =>
-      accept(`text/html` withParams Map("level" → "1"), `text/html` withParams Map("format" → "flowed")) should select(`text/html` withParams Map("format" → "flowed") withCharset `UTF-8`)
+      accept(`text/html` withParams Map("level" -> "1"), `text/html` withParams Map("format" -> "flowed")) should select(`text/html` withParams Map("format" -> "flowed") withCharset `UTF-8`)
     }
 
     /** when there's 2 equally specific matching media types for the available marshaller, we should choose the one with the highest qValue */
     "Accept: text/html;level=1;q=0.4, text/html;format=flowed;q=1, text/html;q=0.7" test { accept =>
-      accept(`text/html` withParams Map("level" → "1", "format" → "flowed"), `text/html`) should select(`text/html` withParams Map("level" → "1", "format" → "flowed") withCharset `UTF-8`)
+      accept(`text/html` withParams Map("level" -> "1", "format" -> "flowed"), `text/html`) should select(`text/html` withParams Map("level" -> "1", "format" -> "flowed") withCharset `UTF-8`)
     }
 
     // https://tools.ietf.org/html/rfc7231#section-5.3.2
@@ -168,13 +168,13 @@ class ContentNegotiationSpec extends FreeSpec with Matchers {
       val negotiator = new MediaTypeNegotiator(parseHeaders(
         "Accept: text/*;q=0.3, text/html;q=0.7, text/html;level=1, text/html;level=2;q=0.4, */*;q=0.5"
       ))
-      negotiator.qValueFor(`text/html` withParams Map("level" → "1")) should be(1.0f)
+      negotiator.qValueFor(`text/html` withParams Map("level" -> "1")) should be(1.0f)
       negotiator.qValueFor(`text/html`) should be(0.7f)
       negotiator.qValueFor(`text/plain`) should be(0.3f)
 
       negotiator.qValueFor(`image/jpeg`) should be(0.5f)
-      negotiator.qValueFor(`text/html` withParams Map("level" → "2")) should be(0.4f)
-      negotiator.qValueFor(`text/html` withParams Map("level" → "3")) should be(0.7f)
+      negotiator.qValueFor(`text/html` withParams Map("level" -> "2")) should be(0.4f)
+      negotiator.qValueFor(`text/html` withParams Map("level" -> "3")) should be(0.7f)
     }
   }
 

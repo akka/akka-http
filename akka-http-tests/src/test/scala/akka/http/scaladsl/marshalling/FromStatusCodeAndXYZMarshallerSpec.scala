@@ -23,10 +23,10 @@ class FromStatusCodeAndXYZMarshallerSpec extends RoutingSpec {
   }
 
   val routes =
-    path("200-text")(complete(OK → "ok")) ~
-      path("201-text")(complete(Created → "created")) ~
-      path("400-text")(complete(BadRequest → "bad-request")) ~
-      path("400-error-info")(complete(BadRequest → ErrorInfo("This request was really bad. Try again.")))
+    path("200-text")(complete(OK -> "ok")) ~
+      path("201-text")(complete(Created -> "created")) ~
+      path("400-text")(complete(BadRequest -> "bad-request")) ~
+      path("400-error-info")(complete(BadRequest -> ErrorInfo("This request was really bad. Try again.")))
 
   "The fromStatusCodeAndXYZ marshaller" should {
     "for 200 OK response + text" should {

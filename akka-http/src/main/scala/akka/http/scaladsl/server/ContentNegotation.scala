@@ -116,7 +116,7 @@ final class ContentNegotiator(requestHeaders: Seq[HttpHeader]) {
    */
   def pickContentType(alternatives: List[Alternative]): Option[ContentType] =
     alternatives
-      .map(alt => alt → qValueFor(alt))
+      .map(alt => alt -> qValueFor(alt))
       .sortBy(-_._2)
       .collectFirst { case (alt, q) if q > 0f => alt }
       .flatMap {
@@ -201,7 +201,7 @@ final class EncodingNegotiator(requestHeaders: Seq[HttpHeader]) {
    */
   def pickEncoding(alternatives: List[HttpEncoding]): Option[HttpEncoding] =
     alternatives
-      .map(alt => alt → qValueFor(alt))
+      .map(alt => alt -> qValueFor(alt))
       .sortBy(-_._2)
       .collectFirst { case (alt, q) if q > 0f => alt }
 }
@@ -254,7 +254,7 @@ final class LanguageNegotiator(requestHeaders: Seq[HttpHeader]) {
    */
   def pickLanguage(alternatives: List[Language]): Option[Language] =
     alternatives
-      .map(alt => alt → qValueFor(alt))
+      .map(alt => alt -> qValueFor(alt))
       .sortBy(-_._2)
       .collectFirst { case (alt, q) if q > 0f => alt }
 }

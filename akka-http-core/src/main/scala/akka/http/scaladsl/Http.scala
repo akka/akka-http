@@ -475,7 +475,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   private def _outgoingTlsConnectionLayer(host: String, port: Int,
                                           settings: ClientConnectionSettings, connectionContext: ConnectionContext,
                                           log: LoggingAdapter): Flow[SslTlsOutbound, SslTlsInbound, Future[OutgoingConnection]] = {
-    val tlsStage = sslTlsStage(connectionContext, Client, Some(host → port))
+    val tlsStage = sslTlsStage(connectionContext, Client, Some(host -> port))
 
     tlsStage.joinMat(settings.transport.connectTo(host, port, settings))(Keep.right)
   }
@@ -682,7 +682,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
     settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
     log:               LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] =
-    clientFlow[T](settings) { request => request → sharedGateway(request, settings, connectionContext, log) }
+    clientFlow[T](settings) { request => request -> sharedGateway(request, settings, connectionContext, log) }
 
   @deprecated("Deprecated in favor of method without implicit materializer", "10.0.11") // kept as `private[http]` for binary compatibility
   private[http] def superPool[T](
@@ -862,7 +862,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   private def gatewayClientFlow[T](
     hcps:    HostConnectionPoolSetup,
     gateway: PoolGateway): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
-    clientFlow[T](hcps.setup.settings)(_ → gateway)
+    clientFlow[T](hcps.setup.settings)(_ -> gateway)
       .mapMaterializedValue(_ => HostConnectionPool(hcps)(gateway))
 
   private def clientFlow[T](settings: ConnectionPoolSettings)(f: HttpRequest => (HttpRequest, PoolGateway)): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] = {
@@ -872,7 +872,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
       case (request, userContext) =>
         val (effectiveRequest, gateway) = f(request)
         val result = Promise[(Try[HttpResponse], T)]() // TODO: simplify to `transformWith` when on Scala 2.12
-        gateway(effectiveRequest).onComplete(responseTry => result.success(responseTry → userContext))(ExecutionContexts.sameThreadExecutionContext)
+        gateway(effectiveRequest).onComplete(responseTry => result.success(responseTry -> userContext))(ExecutionContexts.sameThreadExecutionContext)
         result.future
     }
   }

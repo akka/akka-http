@@ -68,7 +68,7 @@ private[http] object StreamUtils {
         setHandlers(in, out, this)
       }
     }
-    source.via(transformer) → promise.future
+    source.via(transformer) -> promise.future
   }
 
   def sliceBytesTransformer(start: Long, length: Long): Flow[ByteString, ByteString, NotUsed] = {
@@ -297,19 +297,19 @@ private[http] object StreamUtils {
   @InternalApi
   private[http] def transformEntityStream[T <: HttpEntity, M](entity: T, streamOp: EntityStreamOp[M]): (T, M) =
     entity match {
-      case x: HttpEntity.Strict => x.asInstanceOf[T] → streamOp.strictM
+      case x: HttpEntity.Strict => x.asInstanceOf[T] -> streamOp.strictM
       case x: HttpEntity.Default =>
         val (newData, whenCompleted) = streamOp(x.data)
-        x.copy(data = newData).asInstanceOf[T] → whenCompleted
+        x.copy(data = newData).asInstanceOf[T] -> whenCompleted
       case x: HttpEntity.Chunked =>
         val (newChunks, whenCompleted) = streamOp(x.chunks)
-        x.copy(chunks = newChunks).asInstanceOf[T] → whenCompleted
+        x.copy(chunks = newChunks).asInstanceOf[T] -> whenCompleted
       case x: HttpEntity.CloseDelimited =>
         val (newData, whenCompleted) = streamOp(x.data)
-        x.copy(data = newData).asInstanceOf[T] → whenCompleted
+        x.copy(data = newData).asInstanceOf[T] -> whenCompleted
       case x: HttpEntity.IndefiniteLength =>
         val (newData, whenCompleted) = streamOp(x.data)
-        x.copy(data = newData).asInstanceOf[T] → whenCompleted
+        x.copy(data = newData).asInstanceOf[T] -> whenCompleted
     }
 }
 

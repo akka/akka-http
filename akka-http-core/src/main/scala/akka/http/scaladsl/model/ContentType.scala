@@ -103,7 +103,7 @@ object ContentType {
     }
 
   def unapply(contentType: ContentType): Option[(MediaType, Option[HttpCharset])] =
-    Some(contentType.mediaType → contentType.charsetOption)
+    Some(contentType.mediaType -> contentType.charsetOption)
 
   /**
    * Tries to parse a `ContentType` value from the given String. Returns `Right(contentType)` if successful and

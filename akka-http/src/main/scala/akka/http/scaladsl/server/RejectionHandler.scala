@@ -167,7 +167,7 @@ object RejectionHandler {
         rejectRequestEntityAndComplete((BadRequest, "Uri scheme not allowed, supported schemes: " + schemes))
       }
       .handleAll[MethodRejection] { rejections =>
-        val (methods, names) = rejections.map(r => r.supported → r.supported.name).unzip
+        val (methods, names) = rejections.map(r => r.supported -> r.supported.name).unzip
         rejectRequestEntityAndComplete((MethodNotAllowed, List(Allow(methods)), "HTTP method not allowed, supported methods: " + names.mkString(", ")))
       }
       .handle {

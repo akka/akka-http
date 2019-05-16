@@ -737,7 +737,7 @@ final case class RawHeader(name: String, value: String) extends jm.headers.RawHe
 }
 object RawHeader {
   def unapply[H <: HttpHeader](customHeader: H): Option[(String, String)] =
-    Some(customHeader.name → customHeader.value)
+    Some(customHeader.name -> customHeader.value)
 }
 
 object `Raw-Request-URI` extends ModeledCompanion[`Raw-Request-URI`]

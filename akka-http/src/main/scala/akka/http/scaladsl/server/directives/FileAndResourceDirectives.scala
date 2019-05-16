@@ -384,7 +384,7 @@ object DirectoryListing {
   def directoryMarshaller(renderVanityFooter: Boolean): ToEntityMarshaller[DirectoryListing] =
     Marshaller.StringMarshaller.wrap(MediaTypes.`text/html`) { listing =>
       val DirectoryListing(path, isRoot, files) = listing
-      val filesAndNames = files.map(file => file → file.getName).sortBy(_._2)
+      val filesAndNames = files.map(file => file -> file.getName).sortBy(_._2)
       val deduped = filesAndNames.zipWithIndex.flatMap {
         case (fan @ (file, name), ix) =>
           if (ix == 0 || filesAndNames(ix - 1)._2 != name) Some(fan) else None

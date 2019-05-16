@@ -324,9 +324,9 @@ class Http2ServerSpec extends AkkaSpec("""
         val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, ByteString("abcde")))
         emitResponse(TheStreamId, response)
         val pairs = expectDecodedResponseHEADERSPairs(streamId = TheStreamId, endStream = false).toMap
-        pairs should contain(":status" → "200")
-        pairs should contain("content-length" → "5")
-        pairs should contain("content-type" → "application/octet-stream")
+        pairs should contain(":status" -> "200")
+        pairs should contain("content-length" -> "5")
+        pairs should contain("content-type" -> "application/octet-stream")
       }
 
       "send entity data as data frames" in new WaitingForResponseDataSetup {
@@ -1157,20 +1157,20 @@ class Http2ServerSpec extends AkkaSpec("""
 
     def headerPairsForRequest(request: HttpRequest): Seq[(String, String)] =
       Seq(
-        ":method" → request.method.value,
-        ":scheme" → request.uri.scheme.toString,
-        ":path" → request.uri.path.toString,
-        ":authority" → request.uri.authority.toString.drop(2),
-        "content-type" → request.entity.contentType.render(new StringRendering).get
+        ":method" -> request.method.value,
+        ":scheme" -> request.uri.scheme.toString,
+        ":path" -> request.uri.path.toString,
+        ":authority" -> request.uri.authority.toString.drop(2),
+        "content-type" -> request.entity.contentType.render(new StringRendering).get
       ) ++
         request.entity.contentLengthOption.flatMap {
-          case len if len != 0 => Some("content-length" → len.toString)
+          case len if len != 0 => Some("content-length" -> len.toString)
           case _               => None
         }.toSeq ++
         headerPairsForHeaders(request.headers.filter(_.renderInRequests))
 
     def headerPairsForHeaders(headers: Seq[HttpHeader]): Seq[(String, String)] =
-      headers.map(h => h.lowercaseName → h.value)
+      headers.map(h => h.lowercaseName -> h.value)
 
     def encodeHeaderPairs(headerPairs: Seq[(String, String)]): ByteString = {
       val bos = new ByteArrayOutputStream()
@@ -1190,7 +1190,7 @@ class Http2ServerSpec extends AkkaSpec("""
 
       decoder.decode(bis, new HeaderListener {
         def addHeader(name: Array[Byte], value: Array[Byte], sensitive: Boolean): Unit =
-          hs += new String(name) → new String(value)
+          hs += new String(name) -> new String(value)
       })
       hs.result()
     }

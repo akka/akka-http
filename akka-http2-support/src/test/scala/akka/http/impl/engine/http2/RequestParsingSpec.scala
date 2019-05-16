@@ -67,10 +67,10 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
       "not accept response pseudo-header fields in a request" in {
         val thrown = shouldThrowMalformedRequest(parse(
           keyValuePairs = Vector(
-            ":scheme" → "https",
-            ":method" → "GET",
-            ":path" → "/",
-            ":status" → "200"
+            ":scheme" -> "https",
+            ":method" -> "GET",
+            ":path" -> "/",
+            ":status" -> "200"
           )))
         thrown.getMessage should ===("Malformed request: Pseudo-header ':status' is for responses only; it cannot appear in a request")
       }
@@ -82,14 +82,14 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
 
       "not accept pseudo-header fields after regular headers" in {
         val pseudoHeaders = Vector(
-          ":method" → "GET",
-          ":scheme" → "https",
-          ":path" → "/"
+          ":method" -> "GET",
+          ":scheme" -> "https",
+          ":path" -> "/"
         )
         forAll(0 until pseudoHeaders.length) { insertPoint: Int =>
           // Insert the Foo header so it occurs before at least one pseudo-header
           val (before, after) = pseudoHeaders.splitAt(insertPoint)
-          val modified = before ++ Vector("Foo" → "bar") ++ after
+          val modified = before ++ Vector("Foo" -> "bar") ++ after
           shouldThrowMalformedRequest(parse(modified))
         }
       }
@@ -103,11 +103,11 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
         shouldThrowMalformedRequest {
           // Add Connection header to indicate that Foo is a connection-specific header
           parse(Vector(
-            ":method" → "GET",
-            ":scheme" → "https",
-            ":path" → "/",
-            "Connection" → "foo",
-            "Foo" → "bar"
+            ":method" -> "GET",
+            ":scheme" -> "https",
+            ":path" -> "/",
+            "Connection" -> "foo",
+            "Foo" -> "bar"
           ))
         }
       }
@@ -122,9 +122,9 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
         forAll(methods) { method: String =>
           val request: HttpRequest = parse(
             keyValuePairs = Vector(
-              ":method" → method,
-              ":scheme" → "https",
-              ":path" → "/"
+              ":method" -> method,
+              ":scheme" -> "https",
+              ":path" -> "/"
             ))
           request.method.value should ===(method)
         }
@@ -145,9 +145,9 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
         forAll(schemes) { scheme: String =>
           val request: HttpRequest = parse(
             keyValuePairs = Vector(
-              ":method" → "POST",
-              ":scheme" → scheme,
-              ":path" → "/"
+              ":method" -> "POST",
+              ":scheme" -> scheme,
+              ":path" -> "/"
             ))
           request.uri.scheme should ===(scheme)
         }
@@ -172,10 +172,10 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
             case (authority, host, optPort) =>
               val request: HttpRequest = parse(
                 keyValuePairs = Vector(
-                  ":method" → "POST",
-                  ":scheme" → "https",
-                  ":authority" → authority,
-                  ":path" → "/"
+                  ":method" -> "POST",
+                  ":scheme" -> "https",
+                  ":authority" -> authority,
+                  ":path" -> "/"
                 ))
               request.uri.authority.host.address should ===(host)
               request.uri.authority.port should ===(optPort.getOrElse(0))
@@ -188,10 +188,10 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
           forAll(authorities) { authority =>
             val thrown = the[ParsingException] thrownBy (parse(
               keyValuePairs = Vector(
-                ":method" → "POST",
-                ":scheme" → "https",
-                ":authority" → authority,
-                ":path" → "/"
+                ":method" -> "POST",
+                ":scheme" -> "https",
+                ":authority" -> authority,
+                ":path" -> "/"
               )))
             thrown.getMessage should include("http2-authority-pseudo-header")
           }
@@ -217,10 +217,10 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
           forAll(authorities) { authority: String =>
             val exception = the[Exception] thrownBy (parse(
               keyValuePairs = Vector(
-                ":method" → "POST",
-                ":scheme" → scheme,
-                ":authority" → authority,
-                ":path" → "/"
+                ":method" -> "POST",
+                ":scheme" -> scheme,
+                ":authority" -> authority,
+                ":path" -> "/"
               )))
             exception.getMessage should startWith("Illegal http2-authority-pseudo-header")
           }
@@ -235,7 +235,7 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
       "follow RFC3986 for the ':path' pseudo-header" should {
 
         def parsePath(path: String, uriParsingMode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): Uri = {
-          parse(Seq(":method" → "GET", ":scheme" → "https", ":path" → path), uriParsingMode = uriParsingMode).uri
+          parse(Seq(":method" -> "GET", ":scheme" -> "https", ":path" -> path), uriParsingMode = uriParsingMode).uri
         }
 
         // sub-delims  = "!" / "$" / "&" / "'" / "(" / ")"
@@ -276,13 +276,13 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
         }
 
         val absolutePaths = Seq[(String, String)](
-          "/" → "/",
-          "/foo" → "/foo", "/foo/" → "/foo/", "/foo//" → "/foo//", "/foo///" → "/foo///",
-          "/foo/bar" → "/foo/bar", "/foo//bar" → "/foo//bar", "/foo//bar/" → "/foo//bar/",
-          "/a=b" → "/a=b", "/%2f" → "/%2F", "/x:0/y:1" → "/x:0/y:1"
+          "/" -> "/",
+          "/foo" -> "/foo", "/foo/" -> "/foo/", "/foo//" -> "/foo//", "/foo///" -> "/foo///",
+          "/foo/bar" -> "/foo/bar", "/foo//bar" -> "/foo//bar", "/foo//bar/" -> "/foo//bar/",
+          "/a=b" -> "/a=b", "/%2f" -> "/%2F", "/x:0/y:1" -> "/x:0/y:1"
         ) ++ pchar.map {
-            case '.' => "/." → "/"
-            case c   => ("/" + c) → ("/" + c)
+            case '.' => "/." -> "/"
+            case c   => ("/" + c) -> ("/" + c)
           }
 
         "parse a ':path' containing a 'path-absolute'" in {
@@ -323,14 +323,14 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
           val queryChar: Seq[Char] = pchar ++ Seq('/', '?')
 
           val queries: Seq[(String, Option[Uri.Query])] = Seq(
-            "" → None,
-            "name=ferret" → Some(Uri.Query("name" → "ferret")),
-            "name=ferret&color=purple" → Some(Uri.Query("name" → "ferret", "color" → "purple")),
-            "field1=value1&field2=value2&field3=value3" → Some(Uri.Query("field1" → "value1", "field2" → "value2", "field3" → "value3")),
-            "field1=value1&field1=value2&field2=value3" → Some(Uri.Query("field1" → "value1", "field1" → "value2", "field2" → "value3")),
-            "first=this+is+a+field&second=was+it+clear+%28already%29%3F" → Some(Uri.Query("first" → "this is a field", "second" → "was it clear (already)?")),
-            "e0a72cb2a2c7" → None
-          ) ++ queryChar.map((c: Char) => (c.toString → None))
+            "" -> None,
+            "name=ferret" -> Some(Uri.Query("name" -> "ferret")),
+            "name=ferret&color=purple" -> Some(Uri.Query("name" -> "ferret", "color" -> "purple")),
+            "field1=value1&field2=value2&field3=value3" -> Some(Uri.Query("field1" -> "value1", "field2" -> "value2", "field3" -> "value3")),
+            "field1=value1&field1=value2&field2=value3" -> Some(Uri.Query("field1" -> "value1", "field1" -> "value2", "field2" -> "value3")),
+            "first=this+is+a+field&second=was+it+clear+%28already%29%3F" -> Some(Uri.Query("first" -> "this is a field", "second" -> "was it clear (already)?")),
+            "e0a72cb2a2c7" -> None
+          ) ++ queryChar.map((c: Char) => (c.toString -> None))
 
           forAll(absolutePaths.take(3)) {
             case (inputPath, expectedOutputPath) =>
@@ -370,9 +370,9 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
       "handle a ':path' with an asterisk" in pendingUntilFixed {
         val request: HttpRequest = parse(
           keyValuePairs = Vector(
-            ":method" → "OPTIONS",
-            ":scheme" → "http",
-            ":path" → "*"
+            ":method" -> "OPTIONS",
+            ":scheme" -> "http",
+            ":path" -> "*"
           ))
         request.uri.toString should ===("*") // FIXME: Compare in a better way
       }
@@ -385,9 +385,9 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
         forAll(schemes) { scheme: String =>
           shouldThrowMalformedRequest(parse(
             keyValuePairs = Vector(
-              ":method" → "POST",
-              ":scheme" → scheme,
-              ":path" → ""
+              ":method" -> "POST",
+              ":scheme" -> scheme,
+              ":path" -> ""
             )))
         }
       }
@@ -411,9 +411,9 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
         forAll(mandatoryPseudoHeaders) { name: String =>
           val thrown = shouldThrowMalformedRequest(parse(
             keyValuePairs = Vector(
-              ":scheme" → "https",
-              ":method" → "GET",
-              ":path" → "/"
+              ":scheme" -> "https",
+              ":method" -> "GET",
+              ":path" -> "/"
             ).filter(_._1 != name)))
           thrown.getMessage should ===(s"Malformed request: Mandatory pseudo-header '$name' missing")
         }
@@ -424,11 +424,11 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
         forAll(pseudoHeaders) { name: String =>
           val thrown = shouldThrowMalformedRequest(parse(
             keyValuePairs = Vector(
-              ":scheme" → "https",
-              ":method" → "GET",
-              ":authority" → "akka.io",
-              ":path" → "/"
-            ) :+ (name → "foo")))
+              ":scheme" -> "https",
+              ":method" -> "GET",
+              ":authority" -> "akka.io",
+              ":path" -> "/"
+            ) :+ (name -> "foo")))
           thrown.getMessage should ===(s"Malformed request: Pseudo-header '$name' must not occur more than once")
         }
       }
@@ -442,21 +442,21 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
 
       "compress multiple 'cookie' headers into one modeled header" in {
         val cookieHeaders: Seq[(Seq[String], String)] = Vector(
-          Seq("a=b") → "a=b",
-          Seq("a=b", "c=d") → "a=b; c=d",
-          Seq("a=b", "c=d", "e=f") → "a=b; c=d; e=f",
-          Seq("a=b; c=d", "e=f") → "a=b; c=d; e=f",
-          Seq("a=b", "c=d; e=f") → "a=b; c=d; e=f"
+          Seq("a=b") -> "a=b",
+          Seq("a=b", "c=d") -> "a=b; c=d",
+          Seq("a=b", "c=d", "e=f") -> "a=b; c=d; e=f",
+          Seq("a=b; c=d", "e=f") -> "a=b; c=d; e=f",
+          Seq("a=b", "c=d; e=f") -> "a=b; c=d; e=f"
         )
         forAll(cookieHeaders) {
           case (inValues, outValue) =>
             val httpRequest: HttpRequest = parse(
               Vector(
-                ":method" → "GET",
-                ":scheme" → "https",
-                ":authority" → "localhost:8000",
-                ":path" → "/"
-              ) ++ inValues.map("cookie" → _)
+                ":method" -> "GET",
+                ":scheme" -> "https",
+                ":authority" -> "localhost:8000",
+                ":path" -> "/"
+              ) ++ inValues.map("cookie" -> _)
             )
             val receivedCookieValues: Seq[String] = httpRequest.headers.collect {
               case c @ Cookie(_) => c.value
@@ -470,11 +470,11 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
       "parse GET example" in {
         val request: HttpRequest = parse(
           keyValuePairs = Vector(
-            ":method" → "GET",
-            ":scheme" → "https",
-            ":path" → "/resource",
-            "host" → "example.org",
-            "accept" → "image/jpeg"
+            ":method" -> "GET",
+            ":scheme" -> "https",
+            ":path" -> "/resource",
+            "host" -> "example.org",
+            "accept" -> "image/jpeg"
           ))
 
         request.method should ===(HttpMethods.GET)
@@ -495,12 +495,12 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
       "parse POST example" in {
         val request: HttpRequest = parse(
           keyValuePairs = Vector(
-            ":method" → "POST",
-            ":scheme" → "https",
-            ":path" → "/resource",
-            "content-type" → "image/jpeg",
-            "host" → "example.org",
-            "content-length" → "123"
+            ":method" -> "POST",
+            ":scheme" -> "https",
+            ":path" -> "/resource",
+            "content-type" -> "image/jpeg",
+            "host" -> "example.org",
+            "content-length" -> "123"
           ),
           data = Source(Vector(ByteString(Array.fill(123)(0x00.toByte))))
         )
@@ -530,10 +530,10 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
     "parse GET https://localhost:8000/ correctly" in {
       val request: HttpRequest = parse(
         keyValuePairs = Vector(
-          ":method" → "GET",
-          ":scheme" → "https",
-          ":authority" → "localhost:8000",
-          ":path" → "/"
+          ":method" -> "GET",
+          ":scheme" -> "https",
+          ":authority" -> "localhost:8000",
+          ":path" -> "/"
         ))
 
       request.method should ===(HttpMethods.GET)

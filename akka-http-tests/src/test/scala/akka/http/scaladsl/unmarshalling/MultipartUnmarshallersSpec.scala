@@ -89,7 +89,7 @@ trait MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
                        |-----""".stripMarginWithNewline(lineFeed)))).to[Multipart.General] should haveParts(
           Multipart.General.BodyPart.Strict(
             HttpEntity(ContentTypes.`text/plain(UTF-8)`, "test@there.com"),
-            List(`Content-Disposition`(ContentDispositionTypes.`form-data`, Map("name" → "email")))))
+            List(`Content-Disposition`(ContentDispositionTypes.`form-data`, Map("name" -> "email")))))
       }
       "two different parts" in {
         Unmarshal(HttpEntity(
@@ -122,7 +122,7 @@ trait MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
             HttpEntity(ContentTypes.`text/plain(UTF-8)`, "test@there.com"),
             List(
               RawHeader("date", "unknown"),
-              `Content-Disposition`(ContentDispositionTypes.`form-data`, Map("name" → "email"))))))
+              `Content-Disposition`(ContentDispositionTypes.`form-data`, Map("name" -> "email"))))))
       "a full example (Strict)" in {
         Unmarshal(HttpEntity(
           `multipart/mixed` withBoundary "12345",
@@ -337,7 +337,7 @@ trait MultipartUnmarshallersSpec extends FreeSpec with Matchers with BeforeAndAf
             })
         }.to[Multipart.FormData].flatMap(_.toStrict(1.second.dilated)) should haveParts(
           Multipart.FormData.BodyPart.Strict("email", HttpEntity(`application/octet-stream`, ByteString("test@there.com"))),
-          Multipart.FormData.BodyPart.Strict("userfile", HttpEntity(`application/pdf`, ByteString("filecontent")), Map("filename" → "test€.dat"),
+          Multipart.FormData.BodyPart.Strict("userfile", HttpEntity(`application/pdf`, ByteString("filecontent")), Map("filename" -> "test€.dat"),
             List(
               RawHeader("Content-Transfer-Encoding", "binary"),
               RawHeader("Content-Additional-1", "anything"),

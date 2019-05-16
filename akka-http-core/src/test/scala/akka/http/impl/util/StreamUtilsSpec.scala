@@ -54,7 +54,7 @@ class StreamUtilsSpec extends AkkaSpec with ScalaFutures {
 
       val res =
         Source.single(element)
-          .via(StreamUtils.statefulAttrsMap(attrs => el => attrs → el))
+          .via(StreamUtils.statefulAttrsMap(attrs => el => attrs -> el))
           .addAttributes(nameAttr)
           .runWith(Sink.head)
 

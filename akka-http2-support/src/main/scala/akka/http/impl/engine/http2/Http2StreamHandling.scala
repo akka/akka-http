@@ -40,14 +40,14 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
         if (streamId <= largestIncomingStreamId) Closed // closed streams are never put into the map
         else {
           largestIncomingStreamId = streamId
-          incomingStreams += streamId → Idle
+          incomingStreams += streamId -> Idle
           Idle
         }
     }
   def handleStreamEvent(e: StreamFrameEvent): Unit = {
     val newState = streamFor(e.streamId).handle(e)
     if (newState == Closed) incomingStreams -= e.streamId
-    else incomingStreams += e.streamId → newState
+    else incomingStreams += e.streamId -> newState
   }
   def resetStream(streamId: Int, errorCode: ErrorCode): Unit = {
     // FIXME: put this stream into an extra state where we allow some frames still to be received

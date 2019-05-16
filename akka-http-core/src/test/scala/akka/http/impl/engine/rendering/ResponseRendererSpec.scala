@@ -610,7 +610,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       renderToImpl(expected, checkClose = Some(close))
 
     def renderToImpl(expected: String, checkClose: Option[Boolean]): Matcher[ResponseRenderingContext] =
-      equal(expected.stripMarginWithNewline("\r\n") → checkClose).matcher[(String, Option[Boolean])] compose { ctx =>
+      equal(expected.stripMarginWithNewline("\r\n") -> checkClose).matcher[(String, Option[Boolean])] compose { ctx =>
         val resultFuture =
           // depends on renderer being completed fused and synchronous and finished in less steps than the configured event horizon
           CollectorStage.resultAfterSourceElements(
@@ -623,7 +623,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
           )
 
         Await.result(resultFuture, awaitAtMost) match {
-          case (result, completed) => result.reduceLeft(_ ++ _).utf8String → checkClose.map(_ => completed)
+          case (result, completed) => result.reduceLeft(_ ++ _).utf8String -> checkClose.map(_ => completed)
         }
       }
 

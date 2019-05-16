@@ -213,7 +213,7 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
 
     def handler(req: HttpRequest): Future[HttpResponse] = {
       val p = Promise[HttpResponse]()
-      val entry = req → p
+      val entry = req -> p
       serverQueue.add(entry)
       p.future
     }

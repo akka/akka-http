@@ -314,7 +314,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
             def runRequest(uri: Uri): Future[(Try[HttpResponse], Int)] = {
               val itNeverSends = Chunked.fromData(ContentTypes.`text/plain(UTF-8)`, Source.maybe[ByteString])
-              Source.single(HttpRequest(POST, uri, entity = itNeverSends) → 1)
+              Source.single(HttpRequest(POST, uri, entity = itNeverSends) -> 1)
                 .via(pool)
                 .runWith(Sink.head)
             }
@@ -625,7 +625,7 @@ Host: example.com
         HttpResponse(entity = HttpEntity.CloseDelimited(ContentTypes.`application/octet-stream`, Source.fromPublisher(source)))
 
       val serverSideTls = Http().sslTlsStage(ExampleHttpContexts.exampleServerContext, akka.stream.Server)
-      val clientSideTls = Http().sslTlsStage(ExampleHttpContexts.exampleClientContext, akka.stream.Client, Some("akka.example.org" → 8080))
+      val clientSideTls = Http().sslTlsStage(ExampleHttpContexts.exampleClientContext, akka.stream.Client, Some("akka.example.org" -> 8080))
 
       val server: Flow[ByteString, ByteString, Any] =
         Http().serverLayerImpl()
@@ -786,7 +786,7 @@ Host: example.com
 
       connection.remoteAddress.getHostName shouldEqual hostname
       connection.remoteAddress.getPort shouldEqual port
-      requestPublisherProbe → responseSubscriberProbe
+      requestPublisherProbe -> responseSubscriberProbe
     }
 
     def acceptConnection(): (TestSubscriber.ManualProbe[HttpRequest], TestPublisher.ManualProbe[HttpResponse]) = {
@@ -803,7 +803,7 @@ Host: example.com
 
       pub.subscribe(requestSubscriberProbe)
       responsePublisherProbe.subscribe(sub)
-      requestSubscriberProbe → responsePublisherProbe
+      requestSubscriberProbe -> responsePublisherProbe
     }
 
     def openClientSocket() = new Socket(hostname, port)
@@ -819,7 +819,7 @@ Host: example.com
       val sb = new java.lang.StringBuilder
       val cbuf = new Array[Char](256)
       @tailrec def drain(): (String, BufferedReader) = reader.read(cbuf) match {
-        case -1 => sb.toString → reader
+        case -1 => sb.toString -> reader
         case n  => sb.append(cbuf, 0, n); drain()
       }
       drain()

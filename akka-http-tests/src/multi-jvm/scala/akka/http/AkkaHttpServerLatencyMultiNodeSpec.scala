@@ -221,8 +221,8 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
       }
 
       List(
-        10 → tenXResponseLength,
-        100 → hundredXResponseLength
+        10 -> tenXResponseLength,
+        100 -> hundredXResponseLength
       ) foreach {
           case (n, length) =>
             s"have good Latency (streaming-response($length), keep-alive)" taggedAs LongRunningTest in {

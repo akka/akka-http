@@ -27,7 +27,7 @@ private[http2] object ResponseRendering {
     if (now / 1000 > cachedSeconds) {
       val r = new StringRendering
       DateTime(now).renderRfc1123DateTimeString(r)
-      cachedDateHeader = (now, Date.lowercaseName → r.get)
+      cachedDateHeader = (now, Date.lowercaseName -> r.get)
     }
     cachedDateHeader._2
   }
@@ -38,7 +38,7 @@ private[http2] object ResponseRendering {
       // TODO: optionally a less drastic measure would be only resetting all the active substreams
       throw new RuntimeException("Received response for HTTP/2 request without Http2StreamIdHeader. Failing connection.")
 
-    val serverHeader = settings.serverHeader.map(h => h.lowercaseName → h.value)
+    val serverHeader = settings.serverHeader.map(h => h.lowercaseName -> h.value)
 
     { (response: HttpResponse) =>
       val streamId = response.header[Http2StreamIdHeader].getOrElse(failBecauseOfMissingHeader).streamId
@@ -47,12 +47,12 @@ private[http2] object ResponseRendering {
       // From https://tools.ietf.org/html/rfc7540#section-8.1.2.4:
       //   HTTP/2 does not define a way to carry the version or reason phrase
       //   that is included in an HTTP/1.1 status line.
-      headerPairs += ":status" → response.status.intValue.toString
+      headerPairs += ":status" -> response.status.intValue.toString
 
       if (response.entity.contentType != ContentTypes.NoContentType)
-        headerPairs += "content-type" → response.entity.contentType.toString
+        headerPairs += "content-type" -> response.entity.contentType.toString
 
-      response.entity.contentLengthOption.foreach(headerPairs += "content-length" → _.toString)
+      response.entity.contentLengthOption.foreach(headerPairs += "content-length" -> _.toString)
 
       renderHeaders(response.headers, headerPairs, serverHeader, log)
 
@@ -91,7 +91,7 @@ private[http2] object ResponseRendering {
     var serverSeen, dateSeen = false
     var idx = 0
     def addHeader(h: HttpHeader): Unit = {
-      headerPairs += h.lowercaseName → h.value
+      headerPairs += h.lowercaseName -> h.value
     }
 
     while (idx < headers.length) {

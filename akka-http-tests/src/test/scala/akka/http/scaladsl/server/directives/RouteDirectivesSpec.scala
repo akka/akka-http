@@ -81,7 +81,7 @@ class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
                 case AlreadyRegistered =>
                   import spray.json.DefaultJsonProtocol._
                   import SprayJsonSupport._
-                  StatusCodes.BadRequest → Map("error" → "User already Registered")
+                  StatusCodes.BadRequest -> Map("error" -> "User already Registered")
               }
             }
           }

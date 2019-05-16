@@ -210,5 +210,5 @@ class MiscDirectivesSpec extends RoutingSpec {
 
   private def entityOfSize(size: Int) = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "0" * size)
 
-  private def formDataOfSize(size: Int) = FormData(Map("field" → ("0" * size)))
+  private def formDataOfSize(size: Int) = FormData(Map("field" -> ("0" * size)))
 }

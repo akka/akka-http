@@ -971,7 +971,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         ClosedShape
       }).run()
 
-      netOut → netIn
+      netOut -> netIn
     }
 
     def wipeDate(string: String) =

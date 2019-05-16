@@ -348,6 +348,6 @@ private[http] final class GracefulTerminatorStage(settings: ServerSettings)
       }
     }
 
-    logic → selfTerminator
+    logic -> selfTerminator
   }
 }

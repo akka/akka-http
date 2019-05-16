@@ -70,7 +70,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     "complete a simple request/response cycle" in new TestSetup {
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int]()
 
-      requestIn.sendNext(HttpRequest(uri = "/") → 42)
+      requestIn.sendNext(HttpRequest(uri = "/") -> 42)
 
       responseOutSub.request(1)
       acceptIncomingConnection()
@@ -81,8 +81,8 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     "open a second connection if the first one is loaded" in new TestSetup {
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int]()
 
-      requestIn.sendNext(HttpRequest(uri = "/a") → 42)
-      requestIn.sendNext(HttpRequest(uri = "/b") → 43)
+      requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
+      requestIn.sendNext(HttpRequest(uri = "/b") -> 43)
 
       responseOutSub.request(2)
       acceptIncomingConnection()
@@ -110,7 +110,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
         case x => super.testServerHandler(connNr)(x)
       }
 
-      requestIn.sendNext(HttpRequest(uri = "/a") → 42)
+      requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
       responseOutSub.request(1)
       acceptIncomingConnection()
       val (Success(r1), 42) = responseOut.expectNext()
@@ -120,7 +120,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       responseEntityPub.sendNext(ByteString("YEAH"))
       responseEntityProbe.expectNext(ByteString("YEAH"))
 
-      requestIn.sendNext(HttpRequest(uri = "/b") → 43)
+      requestIn.sendNext(HttpRequest(uri = "/b") -> 43)
       responseOutSub.request(1)
       acceptIncomingConnection()
       val (Success(r2), 43) = responseOut.expectNext()
@@ -136,7 +136,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
         maxConnectionLifetime = 1.seconds)
 
       awaitCond({
-        requestIn.sendNext(HttpRequest(uri = "/uri") → 42)
+        requestIn.sendNext(HttpRequest(uri = "/uri") -> 42)
         responseOutSub.request(1)
         val (Success(response), 42) = responseOut.expectNext()
         connNr(response) == 2
@@ -146,7 +146,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     "not open a second connection if there is an idle one available" in new TestSetup {
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int]()
 
-      requestIn.sendNext(HttpRequest(uri = "/a") → 42)
+      requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
       responseOutSub.request(1)
       acceptIncomingConnection()
       val (Success(response1), 42) = responseOut.expectNext()
@@ -156,7 +156,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       // has actually seen that the response is completely done, especially in the legacy implementation
       Thread.sleep(100)
 
-      requestIn.sendNext(HttpRequest(uri = "/b") → 43)
+      requestIn.sendNext(HttpRequest(uri = "/b") -> 43)
       responseOutSub.request(1)
       val (Success(response2), 43) = responseOut.expectNext()
       connNr(response2) shouldEqual 1
@@ -168,7 +168,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
 
       val N = 500
       val requestIds = Source.fromIterator(() => Iterator.from(1)).take(N)
-      val idSum = requestIds.map(id => HttpRequest(uri = s"/r$id") → id).via(poolFlow).map {
+      val idSum = requestIds.map(id => HttpRequest(uri = s"/r$id") -> id).via(poolFlow).map {
         case (Success(response), id) =>
           requestUri(response) should endWith(s"/r$id")
           id
@@ -186,8 +186,8 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     "surface connection-level errors" in new TestSetup(autoAccept = true) {
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int](maxRetries = 0)
 
-      requestIn.sendNext(HttpRequest(uri = "/a") → 42)
-      requestIn.sendNext(HttpRequest(uri = "/crash") → 43)
+      requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
+      requestIn.sendNext(HttpRequest(uri = "/crash") -> 43)
       responseOutSub.request(2)
 
       override def mapServerSideOutboundRawBytes(bytes: ByteString): ByteString =
@@ -223,7 +223,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
 
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int](maxRetries = 0)
 
-      requestIn.sendNext(HttpRequest(uri = "/a") → 42)
+      requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
       responseOutSub.request(2)
 
       val (Success(response1), _) = responseOut.expectNext()
@@ -234,7 +234,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       probe1.expectBytes(ByteString("abc" * 10))
 
       // send second request
-      requestIn.sendNext(HttpRequest(uri = "/b") → 43)
+      requestIn.sendNext(HttpRequest(uri = "/b") -> 43)
 
       // ensure that server has seen request 2
       val handlerSetter = Await.result(laterHandler.future, 1.second.dilated)
@@ -256,8 +256,8 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     "retry failed requests" in new TestSetup(autoAccept = true) {
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int]()
 
-      requestIn.sendNext(HttpRequest(uri = "/a") → 42)
-      requestIn.sendNext(HttpRequest(uri = "/crash") → 43)
+      requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
+      requestIn.sendNext(HttpRequest(uri = "/crash") -> 43)
       responseOutSub.request(2)
 
       val remainingResponsesToKill = new AtomicInteger(1)
@@ -279,8 +279,8 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
 
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int](maxRetries = 4)
 
-      requestIn.sendNext(HttpRequest(uri = "/a") → 42)
-      requestIn.sendNext(HttpRequest(uri = "/crash") → 43)
+      requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
+      requestIn.sendNext(HttpRequest(uri = "/crash") -> 43)
       responseOutSub.request(2)
 
       val remainingResponsesToKill = new AtomicInteger(5)
@@ -310,7 +310,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       Await.result(gateway.poolStatus(), 1500.millis.dilated).get shouldBe a[PoolInterfaceRunning]
       awaitCond({ Await.result(gateway.poolStatus(), 1500.millis.dilated).isEmpty }, 2000.millis.dilated)
 
-      requestIn.sendNext(HttpRequest(uri = "/") → 42)
+      requestIn.sendNext(HttpRequest(uri = "/") -> 42)
 
       responseOutSub.request(1)
       acceptIncomingConnection()
@@ -327,7 +327,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
 
       (1 to 100).foreach { i =>
         responseOutSub.request(1)
-        requestIn.sendNext(HttpRequest(uri = s"/$i") → i)
+        requestIn.sendNext(HttpRequest(uri = s"/$i") -> i)
         responseOut.expectNext()
         // more than the 1 millisescond idle-timeout but it seemed to trigger the bug quite reliably
         Thread.sleep(2)
@@ -344,7 +344,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       val gatewayConnection = hcpMinConnection.gateway
 
       acceptIncomingConnection()
-      requestIn.sendNext(HttpRequest(uri = "/minimumslots/1", headers = immutable.Seq(close)) → 42)
+      requestIn.sendNext(HttpRequest(uri = "/minimumslots/1", headers = immutable.Seq(close)) -> 42)
       responseOutSub.request(1)
       responseOut.expectNextN(1)
 
@@ -365,7 +365,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
 
       (1 to 30) foreach { _ => // run a few requests
         (0 until minConnections) foreach { i =>
-          requestIn.sendNext(HttpRequest(uri = s"/minimumslots/5/$i", headers = immutable.Seq(close)) → 42)
+          requestIn.sendNext(HttpRequest(uri = s"/minimumslots/5/$i", headers = immutable.Seq(close)) -> 42)
         }
         responseOutSub.request(minConnections)
         responseOut.expectNextN(minConnections)
@@ -497,8 +497,8 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
 
       val (requestIn, responseOut, responseOutSub, _) = superPool[Int]()
 
-      requestIn.sendNext(HttpRequest(uri = s"http://$serverHostName:$serverPort/a") → 42)
-      requestIn.sendNext(HttpRequest(uri = s"http://$serverHostName2:$serverPort2/b") → 43)
+      requestIn.sendNext(HttpRequest(uri = s"http://$serverHostName:$serverPort/a") -> 42)
+      requestIn.sendNext(HttpRequest(uri = s"http://$serverHostName2:$serverPort2/b") -> 43)
 
       responseOutSub.request(2)
       Seq(responseOut.expectNext(), responseOut.expectNext()) foreach {
@@ -524,7 +524,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
 
     val N = 500
     val requestIds = Source.fromIterator(() => Iterator.from(1)).take(N)
-    val idSum = requestIds.map(id => HttpRequest(uri = s"/r$id").withHeaders(Connection("close")) → id).via(poolFlow).map {
+    val idSum = requestIds.map(id => HttpRequest(uri = s"/r$id").withHeaders(Connection("close")) -> id).via(poolFlow).map {
       case (Success(response), id) =>
         requestUri(response) should endWith(s"/r$id")
         id
@@ -556,7 +556,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
         if (util.Random.nextInt(2) == 0) HttpMethods.POST else HttpMethods.GET
 
       def request(i: Int) =
-        HttpRequest(method = method(), headers = closeHeader(), uri = s"/$i") → i
+        HttpRequest(method = method(), headers = closeHeader(), uri = s"/$i") -> i
 
       try {
         val N = 200
