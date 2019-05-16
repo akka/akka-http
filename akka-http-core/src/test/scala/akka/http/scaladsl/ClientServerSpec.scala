@@ -608,12 +608,10 @@ Host: example.com
           .bindAndHandle(routes, hostname, port, connectionContext = serverConnectionContext, settings = serverSettings)
           .futureValue
 
-      EventFilter.warning(pattern = "Hostname verification failed", occurrences = 1) intercept {
-        Http()
-          .singleRequest(request, connectionContext = clientConnectionContext, settings = clientSettings)
-          .futureValue
-          .entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue.utf8String shouldEqual entity
-      }
+      Http()
+        .singleRequest(request, connectionContext = clientConnectionContext, settings = clientSettings)
+        .futureValue
+        .entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue.utf8String shouldEqual entity
 
       serverBinding.unbind()
     }
