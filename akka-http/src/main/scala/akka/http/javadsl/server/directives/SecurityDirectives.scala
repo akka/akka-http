@@ -57,6 +57,7 @@ abstract class SecurityDirectives extends SchemeDirectives {
         case Some(cred) => inner.apply(Optional.of(cred.asJava))
         case None       => inner.apply(Optional.empty())
       }).delegate
+    }
   }
 
   /**

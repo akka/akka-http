@@ -13,7 +13,6 @@ import akka.http.scaladsl
 import akka.http.scaladsl.marshalling
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model.{ FormData, HttpCharset }
-import akka.japi.Util
 import akka.util.ByteString
 
 import scala.concurrent.ExecutionContext
@@ -85,11 +84,11 @@ object Marshaller {
   }
 
   def entityToResponse[A](status: StatusCode, headers: java.lang.Iterable[HttpHeader], m: Marshaller[A, _ <: RequestEntity]): Marshaller[A, HttpResponse] = {
-    fromScala(marshalling.Marshaller.fromToEntityMarshaller[A](status.asScala, Util.immutableSeq(headers).map(_.asScala))(m.asScalaCastOutput)) // TODO can we avoid the map() ?
+    fromScala(marshalling.Marshaller.fromToEntityMarshaller[A](status.asScala, headers.asScala)(m.asScalaCastOutput))
   }
 
   def entityToOKResponse[A](headers: java.lang.Iterable[HttpHeader], m: Marshaller[A, _ <: RequestEntity]): Marshaller[A, HttpResponse] = {
-    fromScala(marshalling.Marshaller.fromToEntityMarshaller[A](headers = Util.immutableSeq(headers).map(_.asScala))(m.asScalaCastOutput)) // TODO avoid the map()
+    fromScala(marshalling.Marshaller.fromToEntityMarshaller[A](headers = headers.asScala)(m.asScalaCastOutput))
   }
 
   // these are methods not varargs to avoid call site warning about unchecked type params
