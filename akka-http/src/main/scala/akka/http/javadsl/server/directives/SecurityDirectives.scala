@@ -52,9 +52,11 @@ abstract class SecurityDirectives extends SchemeDirectives {
    * Extracts the potentially present [[HttpCredentials]] provided with the request's [[akka.http.javadsl.model.headers.Authorization]] header.
    */
   def extractCredentials(inner: JFunction[Optional[HttpCredentials], Route]): Route = RouteAdapter {
-    D.extractCredentials { cred =>
-      inner.apply(cred.map(_.asJava).asJava).delegate // TODO attempt to not need map()
-    }
+    D.extractCredentials { credOpt =>
+      (credOpt match {
+        case Some(cred) => inner.apply(Optional.of(cred.asJava))
+        case None       => inner.apply(Optional.empty())
+      }).delegate
   }
 
   /**
