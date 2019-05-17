@@ -113,8 +113,7 @@ final case class InvalidOriginRejection(allowedOrigins: immutable.Seq[SHttpOrigi
  */
 final case class UnsupportedRequestContentTypeRejection(supported: immutable.Set[ContentTypeRange])
   extends jserver.UnsupportedRequestContentTypeRejection with Rejection {
-  override def getSupported: java.util.Set[model.ContentTypeRange] =
-    scala.collection.mutable.Set(supported.map(_.asJava).toVector: _*).asJava // TODO optimise
+  override def getSupported: java.util.Set[model.ContentTypeRange] = supported.map(_.asJava).asJava
 }
 
 /**
@@ -174,8 +173,7 @@ final case class UnacceptedResponseContentTypeRejection(supported: immutable.Set
  */
 final case class UnacceptedResponseEncodingRejection(supported: immutable.Set[HttpEncoding])
   extends jserver.UnacceptedResponseEncodingRejection with Rejection {
-  override def getSupported: java.util.Set[model.headers.HttpEncoding] =
-    scala.collection.mutable.Set(supported.map(_.asJava).toVector: _*).asJava // TODO optimise
+  override def getSupported: java.util.Set[model.headers.HttpEncoding] = supported.map(_.asJava).asJava
 }
 object UnacceptedResponseEncodingRejection {
   def apply(supported: HttpEncoding): UnacceptedResponseEncodingRejection = UnacceptedResponseEncodingRejection(Set(supported))
