@@ -72,8 +72,8 @@ private[http] class HeaderParser(
   def failure(error: Throwable): HeaderParser.Failure =
     HeaderParser.Failure {
       error match {
-        case IllegalUriException(info) ⇒ info
-        case NonFatal(e)               ⇒ ErrorInfo.fromCompoundString(e.getMessage)
+        case IllegalUriException(info) => info
+        case NonFatal(e)               => ErrorInfo.fromCompoundString(e.getMessage)
       }
     }
   def ruleNotFound(ruleName: String): Result = HeaderParser.RuleNotFound
@@ -82,13 +82,13 @@ private[http] class HeaderParser(
 
   def `cookie-value`: Rule1[String] =
     settings.cookieParsingMode match {
-      case CookieParsingMode.RFC6265 ⇒ rule { `cookie-value-rfc-6265` }
-      case CookieParsingMode.Raw     ⇒ rule { `cookie-value-raw` }
+      case CookieParsingMode.RFC6265 => rule { `cookie-value-rfc-6265` }
+      case CookieParsingMode.Raw     => rule { `cookie-value-raw` }
     }
 
   def createCookiePair(name: String, value: String): HttpCookiePair = settings.cookieParsingMode match {
-    case CookieParsingMode.RFC6265 ⇒ HttpCookiePair(name, value)
-    case CookieParsingMode.Raw     ⇒ HttpCookiePair.raw(name, value)
+    case CookieParsingMode.RFC6265 => HttpCookiePair(name, value)
+    case CookieParsingMode.Raw     => HttpCookiePair.raw(name, value)
   }
 }
 
@@ -104,19 +104,19 @@ private[http] object HeaderParser {
 
   object EmptyCookieException extends SingletonException("Cookie header contained no parsable cookie values.")
 
-  def lookupParser(headerName: String, settings: Settings = DefaultSettings): Option[String ⇒ HeaderParser#Result] =
-    dispatch.lookup(headerName).map { runner ⇒ (value: String) ⇒
+  def lookupParser(headerName: String, settings: Settings = DefaultSettings): Option[String => HeaderParser#Result] =
+    dispatch.lookup(headerName).map { runner => (value: String) =>
       import akka.parboiled2.EOI
       val v = value + EOI // this makes sure the parser isn't broken even if there's no trailing garbage in this value
       val parser = new HeaderParser(v, settings)
       runner(parser) match {
-        case r @ Success(_) if parser.cursor == v.length ⇒ r
-        case r @ Success(_) ⇒
+        case r @ Success(_) if parser.cursor == v.length => r
+        case r @ Success(_) =>
           Failure(ErrorInfo(
             "Header parsing error",
             s"Rule for $headerName accepted trailing garbage. Is the parser missing a trailing EOI?"))
-        case Failure(e)   ⇒ Failure(e.copy(summary = e.summary.filterNot(_ == EOI), detail = e.detail.filterNot(_ == EOI)))
-        case RuleNotFound ⇒ RuleNotFound
+        case Failure(e)   => Failure(e.copy(summary = e.summary.filterNot(_ == EOI), detail = e.detail.filterNot(_ == EOI)))
+        case RuleNotFound => RuleNotFound
       }
     }
 

@@ -43,7 +43,7 @@ private[http2] final case class ChunkedHttp2SubStream(
 /** INTERNAL API */
 @InternalApi
 private[http] object Http2Blueprint {
-  
+
   // format: OFF
   def serverStack(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
     httpLayer(settings, log) atop
@@ -96,7 +96,7 @@ private[http] object Http2Blueprint {
     val masterHttpHeaderParser = HttpHeaderParser(parserSettings, log)
     BidiFlow.fromFlows(
       Flow[HttpResponse].map(ResponseRendering.renderResponse(settings, log)),
-      Flow[Http2SubStream].via(StreamUtils.statefulAttrsMap { attrs ⇒
+      Flow[Http2SubStream].via(StreamUtils.statefulAttrsMap { attrs =>
         val headerParser = masterHttpHeaderParser.createShallowCopy()
         RequestParsing.parseRequest(headerParser, settings, attrs)
       }))
@@ -106,22 +106,22 @@ private[http] object Http2Blueprint {
    * Returns a flow that handles `parallelism` requests in parallel, automatically keeping track of the
    * Http2StreamIdHeader between request and responses.
    */
-  def handleWithStreamIdHeader(parallelism: Int)(handler: HttpRequest ⇒ Future[HttpResponse])(implicit ec: ExecutionContext): Flow[HttpRequest, HttpResponse, NotUsed] =
+  def handleWithStreamIdHeader(parallelism: Int)(handler: HttpRequest => Future[HttpResponse])(implicit ec: ExecutionContext): Flow[HttpRequest, HttpResponse, NotUsed] =
     Flow[HttpRequest]
-      .mapAsyncUnordered(parallelism) { req ⇒
+      .mapAsyncUnordered(parallelism) { req =>
         val response = handler(req)
 
         req.header[Http2StreamIdHeader] match {
-          case Some(streamIdHeader) ⇒ response.map(_.addHeader(streamIdHeader)) // add stream id header when request had it
-          case None                 ⇒ response
+          case Some(streamIdHeader) => response.map(_.addHeader(streamIdHeader)) // add stream id header when request had it
+          case None                 => response
         }
       }
 
   private[http2] def logParsingError(info: ErrorInfo, log: LoggingAdapter,
                                      setting: ParserSettings.ErrorLoggingVerbosity): Unit =
     setting match {
-      case ParserSettings.ErrorLoggingVerbosity.Off    ⇒ // nothing to do
-      case ParserSettings.ErrorLoggingVerbosity.Simple ⇒ log.warning(info.summary)
-      case ParserSettings.ErrorLoggingVerbosity.Full   ⇒ log.warning(info.formatPretty)
+      case ParserSettings.ErrorLoggingVerbosity.Off    => // nothing to do
+      case ParserSettings.ErrorLoggingVerbosity.Simple => log.warning(info.summary)
+      case ParserSettings.ErrorLoggingVerbosity.Full   => log.warning(info.formatPretty)
     }
 }

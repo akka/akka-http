@@ -41,7 +41,7 @@ trait RangeDirectives {
    * @group range
    */
   def withRangeSupport: Directive0 =
-    extractRequestContext.flatMap { ctx ⇒
+    extractRequestContext.flatMap { ctx =>
       val settings = ctx.settings
       implicit val log = ctx.log
       import settings.{ rangeCountLimit, rangeCoalescingThreshold }
@@ -58,14 +58,14 @@ trait RangeDirectives {
 
       def indexRange(entityLength: Long)(range: ByteRange): IndexRange =
         range match {
-          case ByteRange.Slice(start, end)    ⇒ new IndexRange(start, math.min(end + 1, entityLength))
-          case ByteRange.FromOffset(first)    ⇒ new IndexRange(first, entityLength)
-          case ByteRange.Suffix(suffixLength) ⇒ new IndexRange(math.max(0, entityLength - suffixLength), entityLength)
+          case ByteRange.Slice(start, end)    => new IndexRange(start, math.min(end + 1, entityLength))
+          case ByteRange.FromOffset(first)    => new IndexRange(first, entityLength)
+          case ByteRange.Suffix(suffixLength) => new IndexRange(math.max(0, entityLength - suffixLength), entityLength)
         }
 
       // See comment of the `range-coalescing-threshold` setting in `reference.conf` for the rationale of this behavior.
       def coalesceRanges(iRanges: Seq[IndexRange]): Seq[IndexRange] =
-        iRanges.foldLeft(Seq.empty[IndexRange]) { (acc, iRange) ⇒
+        iRanges.foldLeft(Seq.empty[IndexRange]) { (acc, iRange) =>
           val (mergeCandidates, otherCandidates) = acc.partition(_.distance(iRange) <= rangeCoalescingThreshold)
           val merged = mergeCandidates.foldLeft(iRange)(_ mergeWith _)
           otherCandidates :+ merged
@@ -81,22 +81,22 @@ trait RangeDirectives {
         // but cannot be sent out because another range is blocking the queue.
         val coalescedRanges = coalesceRanges(iRanges).sortBy(_.start)
         val source = coalescedRanges.size match {
-          case 0 ⇒ Source.empty
-          case 1 ⇒
+          case 0 => Source.empty
+          case 1 =>
             val range = coalescedRanges.head
             val flow = StreamUtils.sliceBytesTransformer(range.start, range.length)
             val bytes = entity.dataBytes.via(flow)
             val part = Multipart.ByteRanges.BodyPart(range.contentRange(length), HttpEntity(entity.contentType, range.length, bytes))
             Source.single(part)
-          case n ⇒
-            Source fromGraph GraphDSL.create() { implicit b ⇒
+          case n =>
+            Source fromGraph GraphDSL.create() { implicit b =>
               import GraphDSL.Implicits._
               val bcast = b.add(Broadcast[ByteString](n))
               val merge = b.add(Concat[Multipart.ByteRanges.BodyPart](n))
-              for (range ← coalescedRanges) {
+              for (range <- coalescedRanges) {
                 val flow = StreamUtils.sliceBytesTransformer(range.start, range.length)
                 bcast ~> flow.buffer(16, OverflowStrategy.backpressure).prefixAndTail(0).map {
-                  case (_, bytes) ⇒
+                  case (_, bytes) =>
                     Multipart.ByteRanges.BodyPart(range.contentRange(length), HttpEntity(entity.contentType, range.length, bytes))
                 } ~> merge
               }
@@ -114,29 +114,29 @@ trait RangeDirectives {
 
       def satisfiable(entityLength: Long)(range: ByteRange): Boolean =
         range match {
-          case ByteRange.Slice(firstPos, _)   ⇒ firstPos < entityLength
-          case ByteRange.FromOffset(firstPos) ⇒ firstPos < entityLength
-          case ByteRange.Suffix(length)       ⇒ length > 0
+          case ByteRange.Slice(firstPos, _)   => firstPos < entityLength
+          case ByteRange.FromOffset(firstPos) => firstPos < entityLength
+          case ByteRange.Suffix(length)       => length > 0
         }
       def universal(entity: HttpEntity): Option[UniversalEntity] = entity match {
-        case u: UniversalEntity ⇒ Some(u)
-        case _                  ⇒ None
+        case u: UniversalEntity => Some(u)
+        case _                  => None
       }
 
       def applyRanges(ranges: immutable.Seq[ByteRange]): Directive0 =
-        extractRequestContext.flatMap { ctx ⇒
+        extractRequestContext.flatMap { ctx =>
           mapRouteResultWithPF {
-            case Complete(HttpResponse(OK, headers, entity, protocol)) ⇒
+            case Complete(HttpResponse(OK, headers, entity, protocol)) =>
               universal(entity) match {
-                case Some(entity) ⇒
+                case Some(entity) =>
                   val length = entity.contentLength
                   ranges.filter(satisfiable(length)) match {
-                    case Nil                   ⇒ ctx.reject(UnsatisfiableRangeRejection(ranges, length))
-                    case Seq(satisfiableRange) ⇒ ctx.complete(rangeResponse(satisfiableRange, entity, length, headers))
-                    case satisfiableRanges ⇒
+                    case Nil                   => ctx.reject(UnsatisfiableRangeRejection(ranges, length))
+                    case Seq(satisfiableRange) => ctx.complete(rangeResponse(satisfiableRange, entity, length, headers))
+                    case satisfiableRanges =>
                       ctx.complete((PartialContent, headers, multipartRanges(satisfiableRanges, entity)))
                   }
-                case None ⇒
+                case None =>
                   // Ranges not supported for Chunked or CloseDelimited responses
                   ctx.reject(UnsatisfiableRangeRejection(ranges, -1)) // FIXME: provide better error
               }
@@ -147,10 +147,10 @@ trait RangeDirectives {
         if (ctx.request.method == HttpMethods.GET) ctx.request.header[Range] else None
 
       extract(rangeHeaderOfGetRequests).flatMap {
-        case Some(Range(RangeUnits.Bytes, ranges)) ⇒
+        case Some(Range(RangeUnits.Bytes, ranges)) =>
           if (ranges.size <= rangeCountLimit) applyRanges(ranges) & RangeDirectives.respondWithAcceptByteRangesHeader
           else reject(TooManyRangesRejection(rangeCountLimit))
-        case _ ⇒ MethodDirectives.get & RangeDirectives.respondWithAcceptByteRangesHeader | pass
+        case _ => MethodDirectives.get & RangeDirectives.respondWithAcceptByteRangesHeader | pass
       }
     }
 }

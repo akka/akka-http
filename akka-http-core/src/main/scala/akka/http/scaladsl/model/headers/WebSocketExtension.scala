@@ -15,8 +15,8 @@ final case class WebSocketExtension(name: String, params: immutable.Map[String, 
     r ~~ name
     if (params.nonEmpty)
       params.foreach {
-        case (k, "") ⇒ r ~~ "; " ~~ k
-        case (k, v)  ⇒ r ~~ "; " ~~ k ~~ '=' ~~# v
+        case (k, "") => r ~~ "; " ~~ k
+        case (k, v)  => r ~~ "; " ~~ k ~~ '=' ~~# v
       }
     r
   }

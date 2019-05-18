@@ -119,7 +119,7 @@ trait RequestContext {
   /**
    * Returns a copy of this context with the HttpRequest transformed by the given function.
    */
-  def mapRequest(f: HttpRequest ⇒ HttpRequest): RequestContext
+  def mapRequest(f: HttpRequest => HttpRequest): RequestContext
 
   /**
    * Returns a copy of this context with the unmatched path updated to the given one.
@@ -129,7 +129,7 @@ trait RequestContext {
   /**
    * Returns a copy of this context with the unmatchedPath transformed by the given function.
    */
-  def mapUnmatchedPath(f: Uri.Path ⇒ Uri.Path): RequestContext
+  def mapUnmatchedPath(f: Uri.Path => Uri.Path): RequestContext
 
   /**
    * Removes a potentially existing Accept header from the request headers.

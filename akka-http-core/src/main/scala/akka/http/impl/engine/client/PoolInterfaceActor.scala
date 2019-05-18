@@ -102,8 +102,8 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
 
     val poolFlow =
       settings.poolImplementation match {
-        case PoolImplementation.Legacy ⇒ PoolFlow(connectionFlow, settings, log).named("PoolFlow")
-        case PoolImplementation.New    ⇒ NewHostConnectionPool(connectionFlow, settings, log).named("PoolFlow")
+        case PoolImplementation.Legacy => PoolFlow(connectionFlow, settings, log).named("PoolFlow")
+        case PoolImplementation.New    => NewHostConnectionPool(connectionFlow, settings, log).named("PoolFlow")
       }
 
     Source.fromPublisher(ActorPublisher(self)).via(poolFlow).runWith(Sink.fromSubscriber(ActorSubscriber[ResponseContext](self)))
@@ -117,15 +117,15 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
 
     /////////////// COMING UP FROM POOL (SOURCE SIDE) //////////////
 
-    case Request(_) ⇒ dispatchRequests() // the pool is ready to take on more requests
+    case Request(_) => dispatchRequests() // the pool is ready to take on more requests
 
-    case Cancel     ⇒
+    case Cancel     =>
     // somehow the pool shut down, however, we don't do anything here because we'll also see an
     // OnComplete or OnError which we use as the sole trigger for cleaning up
 
     /////////////// COMING DOWN FROM POOL (SINK SIDE) //////////////
 
-    case OnNext(ResponseContext(rc, responseTry)) ⇒
+    case OnNext(ResponseContext(rc, responseTry)) =>
       rc.responsePromise.complete(responseTry)
       activateIdleTimeoutIfNecessary()
 
@@ -134,18 +134,18 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
         onCompleteThenStop()
       }
 
-    case OnComplete ⇒ // the pool shut down
+    case OnComplete => // the pool shut down
       debug("Host connection pool has completed orderly shutdown")
       self ! PoisonPill // give potentially queued requests another chance to be forwarded back to the gateway
 
-    case OnError(e) ⇒ // the pool shut down
+    case OnError(e) => // the pool shut down
       debug(s"Host connection pool has shut down with error ${e.getMessage}")
       self ! PoisonPill // give potentially queued requests another chance to be forwarded back to the gateway
 
     /////////////// FROM CLIENT //////////////
 
-    case x: PoolRequest if !shuttingDown ⇒
-      activeIdleTimeout foreach { timeout ⇒
+    case x: PoolRequest if !shuttingDown =>
+      activeIdleTimeout foreach { timeout =>
         timeout.cancel()
         activeIdleTimeout = None
       }
@@ -160,7 +160,7 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
         }
       } else dispatchRequest(x) // if we can dispatch right now, do it
 
-    case PoolRequest(request, responsePromise) ⇒
+    case PoolRequest(request, responsePromise) =>
       // we have already started shutting down, i.e. this pool is not usable anymore
       // so we forward the request back to the gateway
       //
@@ -168,7 +168,7 @@ private class PoolInterfaceActor(gateway: PoolGateway)(implicit fm: Materializer
       //       more requests to this instance after having sent `Shutdown`?
       responsePromise.completeWith(gateway(request))
 
-    case Shutdown ⇒ // signal coming in from gateway
+    case Shutdown => // signal coming in from gateway
       while (!inputBuffer.isEmpty) {
         val PoolRequest(request, responsePromise) = inputBuffer.dequeue()
         responsePromise.completeWith(gateway(request))

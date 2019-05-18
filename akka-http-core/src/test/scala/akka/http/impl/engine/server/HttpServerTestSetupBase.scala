@@ -37,16 +37,16 @@ abstract class HttpServerTestSetupBase {
     val netIn = TestPublisher.probe[ByteString]()
     val netOut = ByteStringSinkProbe()
 
-    RunnableGraph.fromGraph(GraphDSL.create(modifyServer(HttpServerBluePrint(settings, log = NoLogging, isSecureConnection = false))) { implicit b ⇒ server ⇒
+    RunnableGraph.fromGraph(GraphDSL.create(modifyServer(HttpServerBluePrint(settings, log = NoLogging, isSecureConnection = false))) { implicit b => server =>
       import GraphDSL.Implicits._
       Source.fromPublisher(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> server.in2
-      server.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x }.buffer(1, OverflowStrategy.backpressure) ~> netOut.sink
+      server.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) => x }.buffer(1, OverflowStrategy.backpressure) ~> netOut.sink
       server.out2 ~> Sink.fromSubscriber(requests)
       Source.fromPublisher(responses) ~> server.in1
       ClosedShape
     }).run()
 
-    netIn → netOut
+    netIn -> netOut
   }
 
   def expectResponseWithWipedDate(expected: String): Unit = {
@@ -59,8 +59,8 @@ abstract class HttpServerTestSetupBase {
 
   def wipeDate(string: String) =
     string.fastSplit('\n').map {
-      case s if s.startsWith("Date:") ⇒ "Date: XXXX\r"
-      case s                          ⇒ s
+      case s if s.startsWith("Date:") => "Date: XXXX\r"
+      case s                          => s
     }.mkString("\n")
 
   def expectRequest(): HttpRequest = requests.requestNext()

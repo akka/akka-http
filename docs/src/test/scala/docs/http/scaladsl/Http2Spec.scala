@@ -29,7 +29,7 @@ import akka.actor.ActorSystem
 import akka.stream.Materializer
 
 object Http2Spec {
-  val asyncHandler: HttpRequest ⇒ Future[HttpResponse] = ???
+  val asyncHandler: HttpRequest => Future[HttpResponse] = ???
   val httpsServerContext: HttpsConnectionContext = ???
   implicit val system: ActorSystem = ???
   implicit val materializer: Materializer = ???

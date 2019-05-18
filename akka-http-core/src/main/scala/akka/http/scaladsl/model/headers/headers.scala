@@ -21,7 +21,7 @@ import akka.parboiled2.util.Base64
 import akka.event.Logging
 import akka.http.ccompat.{ pre213, since213 }
 import akka.http.impl.util._
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 import akka.http.scaladsl.model._
 
 sealed abstract class ModeledCompanion[T: ClassTag] extends Renderable {
@@ -36,8 +36,8 @@ sealed abstract class ModeledCompanion[T: ClassTag] extends Renderable {
    */
   def parseFromValueString(value: String): Either[List[ErrorInfo], T] =
     HttpHeader.parse(name, value) match {
-      case HttpHeader.ParsingResult.Ok(header: T, Nil) ⇒ Right(header)
-      case res                                         ⇒ Left(res.errors)
+      case HttpHeader.ParsingResult.Ok(header: T, Nil) => Right(header)
+      case res                                         => Left(res.errors)
     }
 }
 /** INTERNAL API */
@@ -96,14 +96,14 @@ abstract class ModeledCustomHeaderCompanion[H <: ModeledCustomHeader[H]] {
 
   def apply(value: String): H =
     parse(value) match {
-      case Success(parsed) ⇒ parsed
-      case Failure(ex)     ⇒ throw new IllegalArgumentException(s"Unable to construct custom header by parsing: '$value'", ex)
+      case Success(parsed) => parsed
+      case Failure(ex)     => throw new IllegalArgumentException(s"Unable to construct custom header by parsing: '$value'", ex)
     }
 
   def unapply(h: HttpHeader): Option[String] = h match {
-    case _: RawHeader    ⇒ if (h.lowercaseName == lowercaseName) Some(h.value) else None
-    case _: CustomHeader ⇒ if (h.lowercaseName == lowercaseName) Some(h.value) else None
-    case _               ⇒ None
+    case _: RawHeader    => if (h.lowercaseName == lowercaseName) Some(h.value) else None
+    case _: CustomHeader => if (h.lowercaseName == lowercaseName) Some(h.value) else None
+    case _               => None
   }
 
   final implicit val implicitlyLocatableCompanion: ModeledCustomHeaderCompanion[H] = this
@@ -115,7 +115,7 @@ abstract class ModeledCustomHeaderCompanion[H <: ModeledCustomHeader[H]] {
  * methods are provided for this class, such that it can be pattern matched on from [[RawHeader]] and
  * the other way around as well.
  */
-abstract class ModeledCustomHeader[H <: ModeledCustomHeader[H]] extends CustomHeader { this: H ⇒
+abstract class ModeledCustomHeader[H <: ModeledCustomHeader[H]] extends CustomHeader { this: H =>
   def companion: ModeledCustomHeaderCompanion[H]
 
   final override def name = companion.name
@@ -138,7 +138,7 @@ final case class Accept(mediaRanges: immutable.Seq[MediaRange]) extends jm.heade
   import Accept.mediaRangesRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ mediaRanges
   protected def companion = Accept
-  def acceptsAll = mediaRanges.exists(mr ⇒ mr.isWildcard && mr.qValue > 0f)
+  def acceptsAll = mediaRanges.exists(mr => mr.isWildcard && mr.qValue > 0f)
 
   /** Java API */
   def getMediaRanges: Iterable[jm.MediaRange] = mediaRanges.asJava
@@ -447,7 +447,7 @@ final case class `Content-Disposition`(dispositionType: ContentDispositionType, 
   extends jm.headers.ContentDisposition with RequestResponseHeader {
   def renderValue[R <: Rendering](r: R): r.type = {
     r ~~ dispositionType
-    params foreach { case (k, v) ⇒ r ~~ "; " ~~ k ~~ '=' ~~#! v }
+    params foreach { case (k, v) => r ~~ "; " ~~ k ~~ '=' ~~#! v }
     r
   }
   protected def companion = `Content-Disposition`
@@ -615,8 +615,8 @@ object `If-Range` extends ModeledCompanion[`If-Range`] {
 final case class `If-Range`(entityTagOrDateTime: Either[EntityTag, DateTime]) extends RequestHeader {
   def renderValue[R <: Rendering](r: R): r.type =
     entityTagOrDateTime match {
-      case Left(tag)       ⇒ r ~~ tag
-      case Right(dateTime) ⇒ dateTime.renderRfc1123DateTimeString(r)
+      case Left(tag)       => r ~~ tag
+      case Right(dateTime) => dateTime.renderRfc1123DateTimeString(r)
     }
   protected def companion = `If-Range`
 }
@@ -737,7 +737,7 @@ final case class RawHeader(name: String, value: String) extends jm.headers.RawHe
 }
 object RawHeader {
   def unapply[H <: HttpHeader](customHeader: H): Option[(String, String)] =
-    Some(customHeader.name → customHeader.value)
+    Some(customHeader.name -> customHeader.value)
 }
 
 object `Raw-Request-URI` extends ModeledCompanion[`Raw-Request-URI`]
@@ -772,18 +772,18 @@ object `Retry-After` extends ModeledCompanion[`Retry-After`] {
 
 final case class `Retry-After`(delaySecondsOrDateTime: RetryAfterParameter) extends jm.headers.RetryAfter with ResponseHeader {
   def renderValue[R <: Rendering](r: R): r.type = delaySecondsOrDateTime match {
-    case RetryAfterDuration(delay)    ⇒ r ~~ delay
-    case RetryAfterDateTime(dateTime) ⇒ dateTime.renderRfc1123DateTimeString(r)
+    case RetryAfterDuration(delay)    => r ~~ delay
+    case RetryAfterDateTime(dateTime) => dateTime.renderRfc1123DateTimeString(r)
   }
 
   protected def companion = `Retry-After`
 
   /** Java API suppport */
   override protected def delaySeconds(): Option[java.lang.Long] = PartialFunction.condOpt(delaySecondsOrDateTime) {
-    case RetryAfterDuration(delay) ⇒ Long.box(delay)
+    case RetryAfterDuration(delay) => Long.box(delay)
   }
   override protected def dateTime(): Option[DateTime] = PartialFunction.condOpt(delaySecondsOrDateTime) {
-    case RetryAfterDateTime(dateTime) ⇒ dateTime
+    case RetryAfterDateTime(dateTime) => dateTime
   }
 }
 
@@ -900,7 +900,7 @@ private[http] object `Sec-WebSocket-Version` extends ModeledCompanion[`Sec-WebSo
 private[http] final case class `Sec-WebSocket-Version`(versions: immutable.Seq[Int])
   extends RequestResponseHeader {
   require(versions.nonEmpty, "Sec-WebSocket-Version.versions must not be empty")
-  require(versions.forall(v ⇒ v >= 0 && v <= 255), s"Sec-WebSocket-Version.versions must be in the range 0 <= version <= 255 but were $versions")
+  require(versions.forall(v => v >= 0 && v <= 255), s"Sec-WebSocket-Version.versions must be in the range 0 <= version <= 255 but were $versions")
   import `Sec-WebSocket-Version`.versionsRenderer
   protected[http] def renderValue[R <: Rendering](r: R): r.type = r ~~ versions
   def hasVersion(versionNumber: Int): Boolean = versions contains versionNumber
@@ -927,8 +927,8 @@ final case class Server(products: immutable.Seq[ProductVersion]) extends jm.head
 object `Strict-Transport-Security` extends ModeledCompanion[`Strict-Transport-Security`] {
   def apply(maxAge: Long, includeSubDomains: Option[Boolean]) = new `Strict-Transport-Security`(maxAge, includeSubDomains.getOrElse(false))
 
-  private val maxAges: PartialFunction[StrictTransportSecurityDirective, MaxAge] = { case m: MaxAge ⇒ m }
-  private val isIncludeSubDomains: StrictTransportSecurityDirective ⇒ Boolean = { _ eq IncludeSubDomains }
+  private val maxAges: PartialFunction[StrictTransportSecurityDirective, MaxAge] = { case m: MaxAge => m }
+  private val isIncludeSubDomains: StrictTransportSecurityDirective => Boolean = { _ eq IncludeSubDomains }
   def fromDirectives(directives: StrictTransportSecurityDirective*) = {
     val maxAgeDirectives = directives.collect(maxAges)
     if (maxAgeDirectives.size != 1) throw new IllegalArgumentException("exactly one 'max-age' directive required")
@@ -996,8 +996,8 @@ final case class `Transfer-Encoding`(encodings: immutable.Seq[TransferEncoding])
   def withChunkedPeeled: Option[`Transfer-Encoding`] =
     if (isChunked) {
       encodings.init match {
-        case Nil       ⇒ None
-        case remaining ⇒ Some(`Transfer-Encoding`(remaining))
+        case Nil       => None
+        case remaining => Some(`Transfer-Encoding`(remaining))
       }
     } else Some(this)
   def append(encodings: immutable.Seq[TransferEncoding]) = `Transfer-Encoding`(this.encodings ++ encodings)

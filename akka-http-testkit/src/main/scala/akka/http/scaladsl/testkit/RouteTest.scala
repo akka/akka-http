@@ -24,7 +24,7 @@ import scala.reflect.ClassTag
 import scala.util.DynamicVariable
 
 trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTestResultComponent with MarshallingTestUtils {
-  this: TestFrameworkInterface ⇒
+  this: TestFrameworkInterface =>
 
   /** Override to supply a custom ActorSystem */
   protected def createActorSystem(): ActorSystem =
@@ -53,7 +53,7 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
     if (dynRR.value ne null) dynRR.value
     else sys.error("This value is only available inside of a `check` construct!")
 
-  def check[T](body: ⇒ T): RouteTestResult ⇒ T = result ⇒ dynRR.withValue(result.awaitResult)(body)
+  def check[T](body: => T): RouteTestResult => T = result => dynRR.withValue(result.awaitResult)(body)
 
   private def responseSafe = if (dynRR.value ne null) dynRR.value.response else "<not available anymore>"
 
@@ -63,11 +63,11 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
   def chunks: immutable.Seq[HttpEntity.ChunkStreamPart] = result.chunks
   def entityAs[T: FromEntityUnmarshaller: ClassTag](implicit timeout: Duration = 1.second): T = {
     def msg(e: Throwable) = s"Could not unmarshal entity to type '${implicitly[ClassTag[T]]}' for `entityAs` assertion: $e\n\nResponse was: $responseSafe"
-    Await.result(Unmarshal(responseEntity).to[T].fast.recover[T] { case error ⇒ failTest(msg(error)) }, timeout)
+    Await.result(Unmarshal(responseEntity).to[T].fast.recover[T] { case error => failTest(msg(error)) }, timeout)
   }
   def responseAs[T: FromResponseUnmarshaller: ClassTag](implicit timeout: Duration = 1.second): T = {
     def msg(e: Throwable) = s"Could not unmarshal response to type '${implicitly[ClassTag[T]]}' for `responseAs` assertion: $e\n\nResponse was: $responseSafe"
-    Await.result(Unmarshal(response).to[T].fast.recover[T] { case error ⇒ failTest(msg(error)) }, timeout)
+    Await.result(Unmarshal(response).to[T].fast.recover[T] { case error => failTest(msg(error)) }, timeout)
   }
   def contentType: ContentType = responseEntity.contentType
   def mediaType: MediaType = contentType.mediaType
@@ -79,12 +79,12 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
   def status: StatusCode = response.status
 
   def closingExtension: String = chunks.lastOption match {
-    case Some(HttpEntity.LastChunk(extension, _)) ⇒ extension
-    case _                                        ⇒ ""
+    case Some(HttpEntity.LastChunk(extension, _)) => extension
+    case _                                        => ""
   }
   def trailer: immutable.Seq[HttpHeader] = chunks.lastOption match {
-    case Some(HttpEntity.LastChunk(_, trailer)) ⇒ trailer
-    case _                                      ⇒ Nil
+    case Some(HttpEntity.LastChunk(_, trailer)) => trailer
+    case _                                      => Nil
   }
 
   def rejections: immutable.Seq[Rejection] = result.rejections
@@ -100,11 +100,11 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
    * Asserts that the received response is a WebSocket upgrade response and the extracts
    * the chosen subprotocol and passes it to the handler.
    */
-  def expectWebSocketUpgradeWithProtocol(body: String ⇒ Unit): Unit = {
+  def expectWebSocketUpgradeWithProtocol(body: String => Unit): Unit = {
     if (!isWebSocketUpgrade) failTest("Response was no WebSocket Upgrade response")
     header[`Sec-WebSocket-Protocol`] match {
-      case Some(`Sec-WebSocket-Protocol`(Seq(protocol))) ⇒ body(protocol)
-      case _ ⇒ failTest("No WebSocket protocol found in response.")
+      case Some(`Sec-WebSocket-Protocol`(Seq(protocol))) => body(protocol)
+      case _ => failTest("No WebSocket protocol found in response.")
     }
   }
 
@@ -113,7 +113,7 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
    * The result of the pipeline is the result that can later be checked with `check`. See the
    * "separate running route from checking" example from ScalatestRouteTestSpec.scala.
    */
-  def runRoute: RouteTestResult ⇒ RouteTestResult = ConstantFun.scalaIdentityFunction
+  def runRoute: RouteTestResult => RouteTestResult = ConstantFun.scalaIdentityFunction
 
   // there is already an implicit class WithTransformation in scope (inherited from akka.http.scaladsl.testkit.TransformerPipelineSupport)
   // however, this one takes precedence
@@ -121,12 +121,12 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
     /**
      * Apply request to given routes for further inspection in `check { }` block.
      */
-    def ~>[A, B](f: A ⇒ B)(implicit ta: TildeArrow[A, B]): ta.Out = ta(request, f)
+    def ~>[A, B](f: A => B)(implicit ta: TildeArrow[A, B]): ta.Out = ta(request, f)
   }
 
   abstract class TildeArrow[A, B] {
     type Out
-    def apply(request: HttpRequest, f: A ⇒ B): Out
+    def apply(request: HttpRequest, f: A => B): Out
   }
 
   case class DefaultHostInfo(host: Host, securedConnection: Boolean)
@@ -136,7 +136,7 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
   object TildeArrow {
     implicit object InjectIntoRequestTransformer extends TildeArrow[HttpRequest, HttpRequest] {
       type Out = HttpRequest
-      def apply(request: HttpRequest, f: HttpRequest ⇒ HttpRequest) = f(request)
+      def apply(request: HttpRequest, f: HttpRequest => HttpRequest) = f(request)
     }
     implicit def injectIntoRoute(implicit
       timeout: RouteTestTimeout,

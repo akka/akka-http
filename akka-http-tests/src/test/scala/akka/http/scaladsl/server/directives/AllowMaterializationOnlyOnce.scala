@@ -12,7 +12,7 @@ import akka.stream.scaladsl.Flow
 object AllowMaterializationOnlyOnce {
   def apply[T, Mat](): Flow[T, T, NotUsed] = {
     val materialized = new AtomicBoolean(false)
-    Flow[T].mapMaterializedValue { mat ⇒
+    Flow[T].mapMaterializedValue { mat =>
       if (materialized.compareAndSet(false, true)) {
         mat
       } else {

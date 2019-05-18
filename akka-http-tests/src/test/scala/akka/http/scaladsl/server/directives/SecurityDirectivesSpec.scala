@@ -12,10 +12,10 @@ import akka.http.scaladsl.server.AuthenticationFailedRejection.{ CredentialsReje
 import akka.testkit.EventFilter
 
 class SecurityDirectivesSpec extends RoutingSpec {
-  val dontBasicAuth = authenticateBasicAsync[String]("MyRealm", _ ⇒ Future.successful(None))
-  val dontOAuth2Auth = authenticateOAuth2Async[String]("MyRealm", _ ⇒ Future.successful(None))
-  val doBasicAuth = authenticateBasicPF("MyRealm", { case Credentials.Provided(identifier) ⇒ identifier })
-  val doOAuth2Auth = authenticateOAuth2PF("MyRealm", { case Credentials.Provided(identifier) ⇒ identifier })
+  val dontBasicAuth = authenticateBasicAsync[String]("MyRealm", _ => Future.successful(None))
+  val dontOAuth2Auth = authenticateOAuth2Async[String]("MyRealm", _ => Future.successful(None))
+  val doBasicAuth = authenticateBasicPF("MyRealm", { case Credentials.Provided(identifier) => identifier })
+  val doOAuth2Auth = authenticateOAuth2PF("MyRealm", { case Credentials.Provided(identifier) => identifier })
   val authWithAnonymous = doBasicAuth.withAnonymousUser("We are Legion")
 
   val basicChallenge = HttpChallenges.basic("MyRealm")
@@ -68,7 +68,7 @@ class SecurityDirectivesSpec extends RoutingSpec {
       ).intercept {
         Get() ~> Authorization(BasicHttpCredentials("Alice", "")) ~> {
           Route.seal {
-            doBasicAuth { _ ⇒ throw TestException }
+            doBasicAuth { _ => throw TestException }
           }
         } ~> check { status shouldEqual StatusCodes.InternalServerError }
       }
@@ -131,7 +131,7 @@ class SecurityDirectivesSpec extends RoutingSpec {
       ).intercept {
         Get() ~> Authorization(OAuth2BearerToken("myToken")) ~> {
           Route.seal {
-            doOAuth2Auth { _ ⇒ throw TestException }
+            doOAuth2Auth { _ => throw TestException }
           }
         } ~> check { status shouldEqual StatusCodes.InternalServerError }
       }
@@ -140,7 +140,7 @@ class SecurityDirectivesSpec extends RoutingSpec {
   "authentication directives" should {
     "properly stack" in {
       val otherChallenge = HttpChallenge("MyAuth", Some("MyRealm2"))
-      val otherAuth: Directive1[String] = authenticateOrRejectWithChallenge { (cred: Option[HttpCredentials]) ⇒
+      val otherAuth: Directive1[String] = authenticateOrRejectWithChallenge { (cred: Option[HttpCredentials]) =>
         Future.successful(Left(otherChallenge))
       }
       val bothAuth = dontBasicAuth | otherAuth
@@ -148,7 +148,7 @@ class SecurityDirectivesSpec extends RoutingSpec {
       Get() ~> Route.seal(bothAuth { echoComplete }) ~> check {
         status shouldEqual StatusCodes.Unauthorized
         headers.collect {
-          case `WWW-Authenticate`(challenge +: Nil) ⇒ challenge
+          case `WWW-Authenticate`(challenge +: Nil) => challenge
         } shouldEqual Seq(basicChallenge, otherChallenge)
       }
     }
@@ -157,28 +157,28 @@ class SecurityDirectivesSpec extends RoutingSpec {
   "authorization directives" should {
     "authorize" in {
       Get() ~> {
-        authorize(_ ⇒ true) { complete("OK") }
+        authorize(_ => true) { complete("OK") }
       } ~> check { responseAs[String] shouldEqual "OK" }
     }
     "not authorize" in {
       Get() ~> {
-        authorize(_ ⇒ false) { complete("OK") }
+        authorize(_ => false) { complete("OK") }
       } ~> check { rejection shouldEqual AuthorizationFailedRejection }
     }
 
     "authorizeAsync" in {
       Get() ~> {
-        authorizeAsync(_ ⇒ Future.successful(true)) { complete("OK") }
+        authorizeAsync(_ => Future.successful(true)) { complete("OK") }
       } ~> check { responseAs[String] shouldEqual "OK" }
     }
     "not authorizeAsync" in {
       Get() ~> {
-        authorizeAsync(_ ⇒ Future.successful(false)) { complete("OK") }
+        authorizeAsync(_ => Future.successful(false)) { complete("OK") }
       } ~> check { rejection shouldEqual AuthorizationFailedRejection }
     }
     "not authorizeAsync when future fails" in {
       Get() ~> {
-        authorizeAsync(_ ⇒ Future.failed(new Exception("Boom!"))) { complete("OK") }
+        authorizeAsync(_ => Future.failed(new Exception("Boom!"))) { complete("OK") }
       } ~> check { rejection shouldEqual AuthorizationFailedRejection }
     }
   }

@@ -34,7 +34,7 @@ final class RejectionHandler(val asScala: server.RejectionHandler) {
   def seal = new RejectionHandler(asScala.seal)
 
   /** Map any HTTP response which was returned by this RejectionHandler to a different one before rendering it. */
-  def mapRejectionResponse(map: function.UnaryOperator[HttpResponse]): RejectionHandler = new RejectionHandler(asScala.mapRejectionResponse(resp ⇒ {
+  def mapRejectionResponse(map: function.UnaryOperator[HttpResponse]): RejectionHandler = new RejectionHandler(asScala.mapRejectionResponse(resp => {
     JavaMapping.toScala(map.apply(resp))
   }))
 }
@@ -46,7 +46,7 @@ class RejectionHandlerBuilder(asScala: server.RejectionHandler.Builder) {
    * Handles a single [[Rejection]] with the given function.
    */
   def handle[T <: Rejection](t: Class[T], handler: function.Function[T, Route]): RejectionHandlerBuilder = {
-    asScala.handle { case r if t.isInstance(r) ⇒ handler.apply(t.cast(r)).delegate }
+    asScala.handle { case r if t.isInstance(r) => handler.apply(t.cast(r)).delegate }
     this
   }
 
@@ -55,7 +55,7 @@ class RejectionHandlerBuilder(asScala: server.RejectionHandler.Builder) {
    * The list passed to the given function is guaranteed to be non-empty.
    */
   def handleAll[T <: Rejection](t: Class[T], handler: function.Function[java.util.List[T], Route]): RejectionHandlerBuilder = {
-    asScala.handleAll { rejections: collection.immutable.Seq[T] ⇒ handler.apply(rejections.asJava).delegate }(ClassTag(t))
+    asScala.handleAll { rejections: collection.immutable.Seq[T] => handler.apply(rejections.asJava).delegate }(ClassTag(t))
     this
   }
 
@@ -74,7 +74,7 @@ class RejectionHandlerBuilder(asScala: server.RejectionHandler.Builder) {
    * Use to customise the error response being written instead of the default [[akka.http.javadsl.model.StatusCodes.SERVICE_UNAVAILABLE]] response.
    */
   def handleCircuitBreakerOpenRejection(handler: function.Function[CircuitBreakerOpenRejection, Route]): RejectionHandlerBuilder = {
-    asScala.handleCircuitBreakerOpenRejection(t ⇒ handler.apply(t).delegate)
+    asScala.handleCircuitBreakerOpenRejection(t => handler.apply(t).delegate)
     this
   }
 }

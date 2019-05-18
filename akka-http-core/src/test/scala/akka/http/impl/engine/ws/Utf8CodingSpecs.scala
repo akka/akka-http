@@ -34,7 +34,7 @@ class Utf8CodingSpecs extends FreeSpec with Matchers with PropertyChecks with Wi
         }
       }
 
-      forAll(cps) { (cp: Int) ⇒
+      forAll(cps) { (cp: Int) =>
         val utf16 = codePointAsString(cp)
         decodeUtf8(encodeUtf8(utf16)) shouldEqual utf16
       }
@@ -42,7 +42,7 @@ class Utf8CodingSpecs extends FreeSpec with Matchers with PropertyChecks with Wi
   }
 
   def encodeUtf8(str: String): ByteString =
-    Source(str.map(ch ⇒ new String(Array(ch)))) // chunk in smallest chunks possible
+    Source(str.map(ch => new String(Array(ch)))) // chunk in smallest chunks possible
       .via(Utf8Encoder)
       .runFold(ByteString.empty)(_ ++ _).awaitResult(1.second.dilated)
 
@@ -50,8 +50,8 @@ class Utf8CodingSpecs extends FreeSpec with Matchers with PropertyChecks with Wi
     val builder = new StringBuilder
     val decoder = Utf8Decoder.create()
     bytes
-      .map(b ⇒ ByteString(b)) // chunk in smallest chunks possible
-      .foreach { bs ⇒
+      .map(b => ByteString(b)) // chunk in smallest chunks possible
+      .foreach { bs =>
         builder append decoder.decode(bs, endOfInput = false).get
       }
 

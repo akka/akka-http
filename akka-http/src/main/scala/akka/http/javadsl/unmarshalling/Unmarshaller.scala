@@ -40,14 +40,14 @@ object Unmarshaller extends akka.http.javadsl.unmarshalling.Unmarshallers {
    * Creates an unmarshaller from an asynchronous Java function.
    */
   override def async[A, B](f: java.util.function.Function[A, CompletionStage[B]]): Unmarshaller[A, B] =
-    unmarshalling.Unmarshaller[A, B] { ctx ⇒ a ⇒ f(a).toScala
+    unmarshalling.Unmarshaller[A, B] { ctx => a => f(a).toScala
     }
 
   /**
    * Creates an unmarshaller from a Java function.
    */
   override def sync[A, B](f: java.util.function.Function[A, B]): Unmarshaller[A, B] =
-    unmarshalling.Unmarshaller[A, B] { ctx ⇒ a ⇒ scala.concurrent.Future.successful(f.apply(a))
+    unmarshalling.Unmarshaller[A, B] { ctx => a => scala.concurrent.Future.successful(f.apply(a))
     }
 
   // format: OFF
@@ -66,7 +66,7 @@ object Unmarshaller extends akka.http.javadsl.unmarshalling.Unmarshallers {
     unmarshalling.Unmarshaller.strict[HttpRequest, RequestEntity](_.entity)
 
   def forMediaType[B](t: MediaType, um: Unmarshaller[HttpEntity, B]): Unmarshaller[HttpEntity, B] = {
-    unmarshalling.Unmarshaller.withMaterializer[HttpEntity, B] { implicit ex ⇒ implicit mat ⇒ jEntity ⇒ {
+    unmarshalling.Unmarshaller.withMaterializer[HttpEntity, B] { implicit ex => implicit mat => jEntity => {
       val entity = jEntity.asScala
       val mediaType = t.asScala
       if (entity.contentType == ContentTypes.NoContentType || mediaType.matches(entity.contentType.mediaType)) {
@@ -78,7 +78,7 @@ object Unmarshaller extends akka.http.javadsl.unmarshalling.Unmarshallers {
 
   def forMediaTypes[B](types: java.lang.Iterable[MediaType], um: Unmarshaller[HttpEntity, B]): Unmarshaller[HttpEntity, B] = {
     val u: FromEntityUnmarshaller[B] = um.asScala
-    val theTypes: Seq[akka.http.scaladsl.model.ContentTypeRange] = types.asScala.toSeq.map { media ⇒
+    val theTypes: Seq[akka.http.scaladsl.model.ContentTypeRange] = types.asScala.toSeq.map { media =>
       akka.http.scaladsl.model.ContentTypeRange(media.asScala)
     }
     u.forContentTypes(theTypes: _*)
@@ -137,15 +137,15 @@ abstract class Unmarshaller[-A, B] extends UnmarshallerBase[A, B] {
   def thenApply[C](f: java.util.function.Function[B, C]): Unmarshaller[A, C] = asScala.map(f.apply)
 
   def flatMap[C](f: java.util.function.Function[B, CompletionStage[C]]): Unmarshaller[A, C] =
-    asScala.flatMap { ctx ⇒ mat ⇒ b ⇒ f.apply(b).toScala }
+    asScala.flatMap { ctx => mat => b => f.apply(b).toScala }
 
   def flatMap[C](u: Unmarshaller[_ >: B, C]): Unmarshaller[A, C] =
-    asScala.flatMap { ctx ⇒ mat ⇒ b ⇒ u.asScala.apply(b)(ctx, mat) }
+    asScala.flatMap { ctx => mat => b => u.asScala.apply(b)(ctx, mat) }
 
   // TODO not exposed for Java yet
   //  def mapWithInput[C](f: java.util.function.BiFunction[A, B, C]): Unmarshaller[A, C] =
-  //    asScala.mapWithInput { case (a, b) ⇒ f.apply(a, b) }
+  //    asScala.mapWithInput { case (a, b) => f.apply(a, b) }
   //
   //  def flatMapWithInput[C](f: java.util.function.BiFunction[A, B, CompletionStage[C]]): Unmarshaller[A, C] =
-  //    asScala.flatMapWithInput { case (a, b) ⇒ f.apply(a, b).toScala }
+  //    asScala.flatMapWithInput { case (a, b) => f.apply(a, b).toScala }
 }

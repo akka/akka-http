@@ -33,7 +33,7 @@ class HttpServerSpec extends AkkaSpec(
      akka.loglevel = OFF
      akka.http.server.request-timeout = infinite
      akka.scheduler.implementation = "akka.testkit.ExplicitlyTriggeredScheduler"
-  """) with Inside { spec ⇒
+  """) with Inside { spec =>
   implicit val materializer = ActorMaterializer()
 
   "The server implementation" should {
@@ -56,7 +56,7 @@ class HttpServerSpec extends AkkaSpec(
              |""")
 
       inside(expectRequest()) {
-        case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
+        case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) =>
           val dataProbe = TestSubscriber.manualProbe[ByteString]
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
@@ -106,7 +106,7 @@ class HttpServerSpec extends AkkaSpec(
              |""")
 
       inside(expectRequest()) {
-        case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
+        case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) =>
           val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
@@ -162,7 +162,7 @@ class HttpServerSpec extends AkkaSpec(
              |abcdef""")
 
       inside(expectRequest()) {
-        case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
+        case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) =>
           val dataProbe = TestSubscriber.manualProbe[ByteString]
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
@@ -187,7 +187,7 @@ class HttpServerSpec extends AkkaSpec(
              |""")
 
       inside(expectRequest()) {
-        case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
+        case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) =>
           val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
@@ -238,7 +238,7 @@ class HttpServerSpec extends AkkaSpec(
              |abcdef""")
 
       inside(expectRequest()) {
-        case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
+        case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) =>
           val dataProbe = TestSubscriber.manualProbe[ByteString]
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
@@ -260,7 +260,7 @@ class HttpServerSpec extends AkkaSpec(
              |abcde""")
 
       inside(expectRequest()) {
-        case HttpRequest(POST, _, _, HttpEntity.Strict(_, data), _) ⇒
+        case HttpRequest(POST, _, _, HttpEntity.Strict(_, data), _) =>
           data shouldEqual ByteString("abcde")
       }
       shutdownBlueprint()
@@ -276,7 +276,7 @@ class HttpServerSpec extends AkkaSpec(
              |""")
 
       inside(expectRequest()) {
-        case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
+        case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) =>
           val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
@@ -299,7 +299,7 @@ class HttpServerSpec extends AkkaSpec(
              |abcde""")
 
       inside(expectRequest()) {
-        case HttpRequest(POST, _, _, HttpEntity.Strict(_, data), _) ⇒
+        case HttpRequest(POST, _, _, HttpEntity.Strict(_, data), _) =>
           data shouldEqual ByteString("abcde")
       }
       shutdownBlueprint()
@@ -313,7 +313,7 @@ class HttpServerSpec extends AkkaSpec(
              |abcdef""")
 
       inside(expectRequest()) {
-        case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
+        case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) =>
           val dataProbe = TestSubscriber.manualProbe[ByteString]
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
@@ -337,7 +337,7 @@ class HttpServerSpec extends AkkaSpec(
              |""")
 
       inside(expectRequest()) {
-        case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
+        case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) =>
           val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
@@ -367,7 +367,7 @@ class HttpServerSpec extends AkkaSpec(
              |""")
 
       inside(expectRequest()) {
-        case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
+        case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) =>
           val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
           // but only one consumed by server
           data.take(1).to(Sink.fromSubscriber(dataProbe)).run()
@@ -382,7 +382,7 @@ class HttpServerSpec extends AkkaSpec(
     })
 
     "proceed to next request once previous request's entity has been drained" in assertAllStagesStopped(new TestSetup {
-      def twice(action: ⇒ Unit): Unit = { action; action }
+      def twice(action: => Unit): Unit = { action; action }
 
       twice {
         send("""POST / HTTP/1.1
@@ -408,7 +408,7 @@ class HttpServerSpec extends AkkaSpec(
              |
              |abcdef""")
       inside(expectRequest()) {
-        case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
+        case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) =>
           val dataProbe = TestSubscriber.manualProbe[ByteString]
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
@@ -430,7 +430,7 @@ class HttpServerSpec extends AkkaSpec(
              |abcdef
              |""")
       inside(expectRequest()) {
-        case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
+        case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) =>
           val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
@@ -469,7 +469,7 @@ class HttpServerSpec extends AkkaSpec(
              |
              |""")
       inside(expectRequest()) {
-        case HttpRequest(GET, _, _, _, _) ⇒
+        case HttpRequest(GET, _, _, _, _) =>
           responses.sendNext(HttpResponse(entity = HttpEntity.Strict(ContentTypes.`text/plain(UTF-8)`, ByteString("abcd"))))
           expectResponseWithWipedDate(
             """|HTTP/1.1 200 OK
@@ -492,7 +492,7 @@ class HttpServerSpec extends AkkaSpec(
              |""")
       val data = TestPublisher.manualProbe[ByteString]()
       inside(expectRequest()) {
-        case HttpRequest(GET, _, _, _, _) ⇒
+        case HttpRequest(GET, _, _, _, _) =>
           responses.sendNext(HttpResponse(entity = HttpEntity.Default(ContentTypes.`text/plain(UTF-8)`, 4, Source.fromPublisher(data))))
           val dataSub = data.expectSubscription()
           dataSub.expectCancellation()
@@ -517,7 +517,7 @@ class HttpServerSpec extends AkkaSpec(
              |""")
       val data = TestPublisher.manualProbe[ByteString]()
       inside(expectRequest()) {
-        case HttpRequest(GET, _, _, _, _) ⇒
+        case HttpRequest(GET, _, _, _, _) =>
           responses.sendNext(HttpResponse(entity = HttpEntity.CloseDelimited(ContentTypes.`text/plain(UTF-8)`, Source.fromPublisher(data))))
           val dataSub = data.expectSubscription()
           dataSub.expectCancellation()
@@ -543,7 +543,7 @@ class HttpServerSpec extends AkkaSpec(
              |""")
       val data = TestPublisher.manualProbe[ChunkStreamPart]()
       inside(expectRequest()) {
-        case HttpRequest(GET, _, _, _, _) ⇒
+        case HttpRequest(GET, _, _, _, _) =>
           responses.sendNext(HttpResponse(entity = HttpEntity.Chunked(ContentTypes.`text/plain(UTF-8)`, Source.fromPublisher(data))))
           val dataSub = data.expectSubscription()
           dataSub.expectCancellation()
@@ -569,7 +569,7 @@ class HttpServerSpec extends AkkaSpec(
              |""")
       val data = TestPublisher.manualProbe[ByteString]()
       inside(expectRequest()) {
-        case HttpRequest(GET, _, _, _, _) ⇒
+        case HttpRequest(GET, _, _, _, _) =>
           responses.sendNext(HttpResponse(entity = CloseDelimited(ContentTypes.`text/plain(UTF-8)`, Source.fromPublisher(data))))
           val dataSub = data.expectSubscription()
           dataSub.expectCancellation()
@@ -588,7 +588,7 @@ class HttpServerSpec extends AkkaSpec(
              |
              |""")
       inside(expectRequest()) {
-        case HttpRequest(POST, _, _, Default(ContentType(`application/octet-stream`, None), 16, data), _) ⇒
+        case HttpRequest(POST, _, _, Default(ContentType(`application/octet-stream`, None), 16, data), _) =>
           val dataProbe = TestSubscriber.manualProbe[ByteString]
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val dataSub = dataProbe.expectSubscription()
@@ -628,7 +628,7 @@ class HttpServerSpec extends AkkaSpec(
              |
              |""")
       inside(expectRequest()) {
-        case HttpRequest(POST, _, _, Chunked(ContentType(`application/octet-stream`, None), data), _) ⇒
+        case HttpRequest(POST, _, _, Chunked(ContentType(`application/octet-stream`, None), data), _) =>
           val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val dataSub = dataProbe.expectSubscription()
@@ -674,7 +674,7 @@ class HttpServerSpec extends AkkaSpec(
              |
              |""")
       inside(expectRequest()) {
-        case HttpRequest(POST, _, _, Default(ContentType(`application/octet-stream`, None), 16, data), _) ⇒
+        case HttpRequest(POST, _, _, Default(ContentType(`application/octet-stream`, None), 16, data), _) =>
           responses.sendNext(HttpResponse(entity = "Yeah"))
           expectResponseWithWipedDate(
             """HTTP/1.1 200 OK
@@ -1061,7 +1061,7 @@ class HttpServerSpec extends AkkaSpec(
       "have a programmatically set timeout handler" in assertAllStagesStopped(new RequestTimeoutTestSetup(400.millis) {
         send("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
         val timeoutResponse = HttpResponse(StatusCodes.InternalServerError, entity = "OOPS!")
-        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateHandler((_: HttpRequest) ⇒ timeoutResponse))
+        expectRequest().header[`Timeout-Access`].foreach(_.timeoutAccess.updateHandler((_: HttpRequest) => timeoutResponse))
 
         scheduler.timePasses(500.millis)
         expectResponseWithWipedDate(
@@ -1165,13 +1165,13 @@ class HttpServerSpec extends AkkaSpec(
         implicit class XRequest(request: HttpRequest) {
           def expectEntity[T <: HttpEntity: ClassTag](bytes: Int) =
             inside(request) {
-              case HttpRequest(POST, _, _, entity: T, _) ⇒
+              case HttpRequest(POST, _, _, entity: T, _) =>
                 entity.toStrict(100.millis.dilated).awaitResult(100.millis.dilated).data.utf8String shouldEqual entityBase.take(bytes)
             }
 
           def expectDefaultEntityWithSizeError(limit: Int, actualSize: Int) =
             inside(request) {
-              case HttpRequest(POST, _, _, entity @ HttpEntity.Default(_, `actualSize`, _), _) ⇒
+              case HttpRequest(POST, _, _, entity @ HttpEntity.Default(_, `actualSize`, _), _) =>
                 val error = the[Exception]
                   .thrownBy(entity.dataBytes.runFold(ByteString.empty)(_ ++ _).awaitResult(100.millis.dilated))
                   .getCause
@@ -1194,7 +1194,7 @@ class HttpServerSpec extends AkkaSpec(
 
           def expectChunkedEntityWithSizeError(limit: Int) =
             inside(request) {
-              case HttpRequest(POST, _, _, entity: HttpEntity.Chunked, _) ⇒
+              case HttpRequest(POST, _, _, entity: HttpEntity.Chunked, _) =>
                 val error = the[Exception]
                   .thrownBy(entity.dataBytes.runFold(ByteString.empty)(_ ++ _).awaitResult(100.millis.dilated))
                   .getCause
@@ -1296,9 +1296,9 @@ class HttpServerSpec extends AkkaSpec(
       }
 
       "the config setting applied before another attribute (default entity)" in new LengthVerificationTest(maxContentLength = 10) {
-        def nameDataSource(name: String): RequestEntity ⇒ RequestEntity = {
-          case x: HttpEntity.Default ⇒ x.copy(data = x.data named name)
-          case _                     ⇒ ??? // prevent a compile-time warning
+        def nameDataSource(name: String): RequestEntity => RequestEntity = {
+          case x: HttpEntity.Default => x.copy(data = x.data named name)
+          case _                     => ??? // prevent a compile-time warning
         }
         sendDefaultRequestWithLength(10)
         expectRequest().mapEntity(nameDataSource("foo")).expectEntity[HttpEntity.Default](10)

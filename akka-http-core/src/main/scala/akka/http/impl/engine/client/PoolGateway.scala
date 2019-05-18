@@ -77,8 +77,8 @@ private[http] final class PoolGateway(gatewayRef: ActorRef, val hcps: HostConnec
 
   override def equals(that: Any): Boolean =
     that match {
-      case p: PoolGateway ⇒ p.hcps == hcps && p.gatewayId == gatewayId
-      case _              ⇒ false
+      case p: PoolGateway => p.hcps == hcps && p.gatewayId == gatewayId
+      case _              => false
     }
 
   override def hashCode(): Int = hcps.hashCode() ^ gatewayId.hashCode()

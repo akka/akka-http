@@ -6,7 +6,7 @@ package akka.http.impl.model.parser
 
 import akka.parboiled2._
 
-private[parser] trait IpAddressParsing { this: Parser ⇒
+private[parser] trait IpAddressParsing { this: Parser =>
   import CharacterClasses._
 
   def `ip-v4-address` = rule {
@@ -22,7 +22,7 @@ private[parser] trait IpAddressParsing { this: Parser ⇒
   }
 
   def `ip-v6-address`: Rule1[Array[Byte]] = {
-    import CharUtils.{ hexValue ⇒ hv }
+    import CharUtils.{ hexValue => hv }
     var a: Array[Byte] = null
     def zero(ix: Int) = rule { run(a(ix)= 0.toByte) }
     def zero2(ix: Int) = rule { run { a(ix) = 0.toByte; a(ix + 1) = 0.toByte; } }

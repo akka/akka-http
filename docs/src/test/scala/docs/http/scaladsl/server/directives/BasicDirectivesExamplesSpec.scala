@@ -839,15 +839,15 @@ class BasicDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "extractDataBytes-example" in {
     //#extractDataBytes-example
     val route =
-      extractDataBytes { data ⇒
-        val sum = data.runFold(0) { (acc, i) ⇒ acc + i.utf8String.toInt }
-        onSuccess(sum) { s ⇒
+      extractDataBytes { data =>
+        val sum = data.runFold(0) { (acc, i) => acc + i.utf8String.toInt }
+        onSuccess(sum) { s =>
           complete(HttpResponse(entity = HttpEntity(s.toString)))
         }
       }
 
     // tests:
-    val dataBytes = Source.fromIterator(() ⇒ Iterator.range(1, 10).map(x ⇒ ByteString(x.toString)))
+    val dataBytes = Source.fromIterator(() => Iterator.range(1, 10).map(x => ByteString(x.toString)))
     Post("/abc", HttpEntity(ContentTypes.`text/plain(UTF-8)`, data = dataBytes)) ~> route ~> check {
       responseAs[String] shouldEqual "45"
     }
@@ -861,7 +861,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     }
 
     // tests:
-    val dataBytes = Source.fromIterator(() ⇒ Iterator.range(1, 10).map(x ⇒ ByteString(x.toString)))
+    val dataBytes = Source.fromIterator(() => Iterator.range(1, 10).map(x => ByteString(x.toString)))
     Post("/", HttpEntity(ContentTypes.`text/plain(UTF-8)`, data = dataBytes)) ~> route ~> check {
       responseAs[String] shouldEqual "123456789"
     }
@@ -882,7 +882,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     }
 
     // tests:
-    val dataBytes = Source.fromIterator(() ⇒ Iterator.range(1, 10).map(x ⇒ ByteString(x.toString)))
+    val dataBytes = Source.fromIterator(() => Iterator.range(1, 10).map(x => ByteString(x.toString)))
     Post("/", HttpEntity(ContentTypes.`text/plain(UTF-8)`, data = dataBytes)) ~> route ~> check {
       responseAs[String] shouldEqual "Request entity is strict, data=123456789"
     }

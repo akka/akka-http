@@ -30,16 +30,16 @@ private[http] object Protocol {
   }
   object Opcode {
     def forCode(code: Byte): Opcode = code match {
-      case 0x0                  ⇒ Continuation
-      case 0x1                  ⇒ Text
-      case 0x2                  ⇒ Binary
+      case 0x0                  => Continuation
+      case 0x1                  => Text
+      case 0x2                  => Binary
 
-      case 0x8                  ⇒ Close
-      case 0x9                  ⇒ Ping
-      case 0xA                  ⇒ Pong
+      case 0x8                  => Close
+      case 0x9                  => Ping
+      case 0xA                  => Pong
 
-      case b if (b & 0xf0) == 0 ⇒ Other(code)
-      case _                    ⇒ throw new IllegalArgumentException(f"Opcode must be 4bit long but was 0x$code%02X")
+      case b if (b & 0xf0) == 0 => Other(code)
+      case _                    => throw new IllegalArgumentException(f"Opcode must be 4bit long but was 0x$code%02X")
     }
 
     sealed abstract class AbstractOpcode private[Opcode] (val code: Byte) extends Opcode {

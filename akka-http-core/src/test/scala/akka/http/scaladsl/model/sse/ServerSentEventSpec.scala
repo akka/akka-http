@@ -25,7 +25,7 @@ final class ServerSentEventSpec extends WordSpec with Matchers with GeneratorDri
     }
 
     "throw an IllegalArgumentException if retry is not a positive number" in {
-      forAll("retry") { (n: Int) ⇒
+      forAll("retry") { (n: Int) =>
         whenever(n <= 0) {
           an[IllegalArgumentException] should be thrownBy ServerSentEvent("data", n)
         }

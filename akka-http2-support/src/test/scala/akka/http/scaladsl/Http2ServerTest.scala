@@ -42,43 +42,43 @@ object Http2ServerTest extends App {
     .withInputBuffer(128, 128)
   implicit val fm = ActorMaterializer(settings)
 
-  def slowDown[T](millis: Int): T ⇒ Future[T] = { t ⇒
+  def slowDown[T](millis: Int): T => Future[T] = { t =>
     akka.pattern.after(millis.millis, system.scheduler)(Future.successful(t))
   }
 
-  val syncHandler: HttpRequest ⇒ HttpResponse = {
-    case HttpRequest(GET, Uri.Path("/"), _, _, _)           ⇒ index
-    case HttpRequest(GET, Uri.Path("/ping"), _, _, _)       ⇒ HttpResponse(entity = "PONG!")
-    case HttpRequest(GET, Uri.Path("/image-page"), _, _, _) ⇒ imagePage
-    case HttpRequest(GET, Uri(_, _, p, _, _), _, _, _) if p.toString.startsWith("/image1") ⇒
+  val syncHandler: HttpRequest => HttpResponse = {
+    case HttpRequest(GET, Uri.Path("/"), _, _, _)           => index
+    case HttpRequest(GET, Uri.Path("/ping"), _, _, _)       => HttpResponse(entity = "PONG!")
+    case HttpRequest(GET, Uri.Path("/image-page"), _, _, _) => imagePage
+    case HttpRequest(GET, Uri(_, _, p, _, _), _, _, _) if p.toString.startsWith("/image1") =>
       HttpResponse(entity = HttpEntity(MediaTypes.`image/jpeg`, FileIO.fromPath(Paths.get("bigimage.jpg"), 100000).mapAsync(1)(slowDown(1))))
-    case HttpRequest(GET, Uri(_, _, p, _, _), _, _, _) if p.toString.startsWith("/image2") ⇒
+    case HttpRequest(GET, Uri(_, _, p, _, _), _, _, _) if p.toString.startsWith("/image2") =>
       HttpResponse(entity = HttpEntity(MediaTypes.`image/jpeg`, FileIO.fromPath(Paths.get("bigimage2.jpg"), 150000).mapAsync(1)(slowDown(2))))
-    case HttpRequest(GET, Uri.Path("/crash"), _, _, _) ⇒ sys.error("BOOM!")
-    case _: HttpRequest                                ⇒ HttpResponse(404, entity = "Unknown resource!")
+    case HttpRequest(GET, Uri.Path("/crash"), _, _, _) => sys.error("BOOM!")
+    case _: HttpRequest                                => HttpResponse(404, entity = "Unknown resource!")
   }
 
-  val asyncHandler: HttpRequest ⇒ Future[HttpResponse] = {
-    case HttpRequest(POST, Uri.Path("/upload"), _, entity, _) ⇒
+  val asyncHandler: HttpRequest => Future[HttpResponse] = {
+    case HttpRequest(POST, Uri.Path("/upload"), _, entity, _) =>
       Unmarshal(entity).to[Multipart.FormData]
-        .flatMap { formData ⇒
-          formData.parts.runFoldAsync("") { (msg, part) ⇒
+        .flatMap { formData =>
+          formData.parts.runFoldAsync("") { (msg, part) =>
             part.entity.dataBytes.runFold(0)(_ + _.size)
-              .map(dataSize ⇒ msg + s"${part.name} ${part.filename} $dataSize ${part.entity.contentType} ${part.additionalDispositionParams}\n")
+              .map(dataSize => msg + s"${part.name} ${part.filename} $dataSize ${part.entity.contentType} ${part.additionalDispositionParams}\n")
           }
         }
-        .map { msg ⇒
+        .map { msg =>
           HttpResponse(entity = s"Got upload: $msg")
         }
-    case req ⇒ Future.successful(syncHandler(req))
+    case req => Future.successful(syncHandler(req))
   }
 
   try {
     val bindings =
       for {
-        binding1 ← Http().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9000, ExampleHttpContexts.exampleServerContext)
-        binding2 ← Http2().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9001, ExampleHttpContexts.exampleServerContext)
-        binding3 ← Http().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9002, HttpConnectionContext(http2 = Always))
+        binding1 <- Http().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9000, ExampleHttpContexts.exampleServerContext)
+        binding2 <- Http2().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9001, ExampleHttpContexts.exampleServerContext)
+        binding3 <- Http().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9002, HttpConnectionContext(http2 = Always))
       } yield (binding1, binding2, binding3)
 
     Await.result(bindings, 1.second) // throws if binding fails

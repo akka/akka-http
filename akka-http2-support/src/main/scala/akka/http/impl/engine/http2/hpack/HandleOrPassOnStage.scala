@@ -22,7 +22,7 @@ private[http2] abstract class HandleOrPassOnStage[T <: U, U](shape: FlowShape[T,
 
     def onPush(): Unit = {
       val event = grab(in)
-      handleEvent.applyOrElse[T, Unit](event, ev ⇒ push(out, ev))
+      handleEvent.applyOrElse[T, Unit](event, ev => push(out, ev))
     }
     def onPull(): Unit = pull(in)
   }

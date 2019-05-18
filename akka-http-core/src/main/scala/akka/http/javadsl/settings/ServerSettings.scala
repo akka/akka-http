@@ -24,7 +24,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 /**
  * Public API but not intended for subclassing
  */
-@DoNotInherit abstract class ServerSettings { self: ServerSettingsImpl ⇒
+@DoNotInherit abstract class ServerSettings { self: ServerSettingsImpl =>
   def getServerHeader: Optional[Server]
   def getPreviewServerSettings: PreviewServerSettings
   def getTimeouts: ServerSettings.Timeouts

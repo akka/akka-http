@@ -24,10 +24,10 @@ class PrepareRequestsSpec extends AkkaSpec {
       Uri("http://example.com/"),
       HttpProtocols.`HTTP/1.1`,
       List(),
-      StreamedEntityCreator[ParserOutput, RequestEntity] { entityChunks ⇒
+      StreamedEntityCreator[ParserOutput, RequestEntity] { entityChunks =>
         val chunks = entityChunks.collect {
-          case EntityChunk(chunk)      ⇒ chunk
-          case EntityStreamError(info) ⇒ throw EntityStreamException(info)
+          case EntityChunk(chunk)      => chunk
+          case EntityStreamError(info) => throw EntityStreamException(info)
         }
         HttpEntity.Chunked(ContentTypes.`application/octet-stream`, chunks)
       },

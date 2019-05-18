@@ -225,14 +225,14 @@ class PriorityTreeSpec extends WordSpec with Matchers {
   }
 
   def printLike(resultingTree: String): Matcher[PriorityTree] =
-    Matcher { tree ⇒
+    Matcher { tree =>
       val WithPotentialEndOfLineWhiteSpace = """(.*?)\s*""".r
       // The tree printer sometimes inserts blanks.
       def trimLines(str: String): String =
         str
           .split('\n')
           .map {
-            case WithPotentialEndOfLineWhiteSpace(line) ⇒ line
+            case WithPotentialEndOfLineWhiteSpace(line) => line
           }
           .mkString("\n")
           .trim

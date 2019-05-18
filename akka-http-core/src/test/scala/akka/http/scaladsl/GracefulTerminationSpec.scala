@@ -14,7 +14,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Connection
 import akka.http.scaladsl.settings.{ ConnectionPoolSettings, ServerSettings }
 import akka.stream.scaladsl._
-import akka.stream.{ Server ⇒ _, _ }
+import akka.stream.{ Server => _, _ }
 import akka.testkit._
 import com.typesafe.config.{ Config, ConfigFactory }
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
@@ -50,7 +50,7 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
 
     "stop accepting new connections" in new TestSetup {
       val r1 = makeRequest()
-      reply(_ ⇒ HttpResponse(entity = "reply"))
+      reply(_ => HttpResponse(entity = "reply"))
 
       r1.futureValue.entity should ===(HttpResponse(entity = "reply").entity)
 
@@ -97,7 +97,7 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
 
       ensureServerDeliveredRequest() // we want the request to be in the server user's hands before we cause termination
       serverBinding.terminate(hardDeadline = time)
-      reply(_ ⇒ HttpResponse(StatusCodes.OK))
+      reply(_ => HttpResponse(StatusCodes.OK))
 
       r1.futureValue.status should ===(StatusCodes.OK)
 
@@ -110,7 +110,7 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
       ensureServerDeliveredRequest() // we want the request to be in the server user's hands before we cause termination
       serverBinding.terminate(hardDeadline = time)
 
-      reply(_ ⇒ HttpResponse(StatusCodes.OK))
+      reply(_ => HttpResponse(StatusCodes.OK))
       r1.futureValue.status should ===(StatusCodes.OK)
 
       val r2 = makeRequest() // on the same connection
@@ -127,7 +127,7 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
       ensureServerDeliveredRequest() // we want the request to be in the server user's hands before we cause termination
       serverBinding.terminate(hardDeadline = time)
       Thread.sleep(time.toMillis / 2)
-      reply(_ ⇒ HttpResponse(StatusCodes.OK))
+      reply(_ => HttpResponse(StatusCodes.OK))
 
       val response = r1.futureValue
       response.header[Connection] shouldBe Some(Connection("close"))
@@ -158,7 +158,7 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
         serverBinding.terminate(hardDeadline = time)
 
         akka.pattern.after(2.second, system.scheduler) {
-          Future.successful(reply(_ ⇒ HttpResponse(StatusCodes.OK)))
+          Future.successful(reply(_ => HttpResponse(StatusCodes.OK)))
         }
 
         r1.futureValue.status should ===(StatusCodes.ImATeapot)
@@ -176,7 +176,7 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
         serverBinding.terminate(hardDeadline = time)
 
         akka.pattern.after(2.second, system.scheduler) {
-          Future.successful(reply(_ ⇒ HttpResponse(StatusCodes.OK)))
+          Future.successful(reply(_ => HttpResponse(StatusCodes.OK)))
         }
 
         // the user handler will not receive this request and we will emit the 503 automatically
@@ -213,7 +213,7 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
 
     def handler(req: HttpRequest): Future[HttpResponse] = {
       val p = Promise[HttpResponse]()
-      val entry = req → p
+      val entry = req -> p
       serverQueue.add(entry)
       p.future
     }
@@ -223,11 +223,11 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
         // we're trying this until a request sent from client arrives in the "user handler" (in the queue)
         serverQueue.peek()._1
       } catch {
-        case ex: Throwable ⇒ throw new Exception("Unable to ensure request arriving at server within time limit", ex)
+        case ex: Throwable => throw new Exception("Unable to ensure request arriving at server within time limit", ex)
       }
     }
 
-    def reply(fn: HttpRequest ⇒ HttpResponse): Unit = {
+    def reply(fn: HttpRequest => HttpResponse): Unit = {
       val popped = serverQueue.poll(2, TimeUnit.SECONDS)
       val (req, promise) = popped
       val res = fn(req.toStrict(1.second).futureValue)
@@ -237,8 +237,8 @@ class GracefulTerminationSpec extends WordSpec with Matchers with BeforeAndAfter
     def serverSettings = {
       val s = settings.ServerSettings(system)
       overrideResponse match {
-        case Some(response) ⇒ s.withTerminationDeadlineExceededResponse(response)
-        case _              ⇒ s
+        case Some(response) => s.withTerminationDeadlineExceededResponse(response)
+        case _              => s
       }
     }
 

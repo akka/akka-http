@@ -14,7 +14,7 @@
 want to try the @ref[handleRejections](../execution-directives/handleRejections.md) directive which provides a nicer DSL for building rejection handlers.
 
 Transforms rejections from the inner route with 
-@scala[an `immutable.Seq[Rejection] ⇒ RouteResult` function.]
+@scala[an `immutable.Seq[Rejection] => RouteResult` function.]
 @java[a `Function<Iterable<Rejection>, RouteResult>`.]
 A @apidoc[RouteResult] is either a
 @scala[`Complete(HttpResponse(...))`]

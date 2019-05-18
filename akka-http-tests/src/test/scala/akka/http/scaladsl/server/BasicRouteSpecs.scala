@@ -91,28 +91,28 @@ class BasicRouteSpecs extends RoutingSpec {
 
     "work for two elements" in {
       Get("/abc") ~> {
-        dirStringInt { (str, i) ⇒
+        dirStringInt { (str, i) =>
           complete(s"$str ${i + 1}")
         }
       } ~> check { responseAs[String] shouldEqual "The cat 43" }
     }
     "work for 2 + 1" in {
       Get("/abc") ~> {
-        dirStringIntDouble { (str, i, d) ⇒
+        dirStringIntDouble { (str, i, d) =>
           complete(s"$str ${i + 1} ${d + 0.1}")
         }
       } ~> check { responseAs[String] shouldEqual "The cat 43 23.1" }
     }
     "work for 1 + 2" in {
       Get("/abc") ~> {
-        dirDoubleStringInt { (d, str, i) ⇒
+        dirDoubleStringInt { (d, str, i) =>
           complete(s"$str ${i + 1} ${d + 0.1}")
         }
       } ~> check { responseAs[String] shouldEqual "The cat 43 23.1" }
     }
     "work for 2 + 2" in {
       Get("/abc") ~> {
-        dirStringIntStringInt { (str, i, str2, i2) ⇒
+        dirStringIntStringInt { (str, i, str2, i2) =>
           complete(s"$str ${i + i2} $str2")
         }
       } ~> check { responseAs[String] shouldEqual "The cat 84 The cat" }
@@ -195,7 +195,7 @@ class BasicRouteSpecs extends RoutingSpec {
       message = BasicRouteSpecs.defaultExnHandler500Error("Boom")
     ).intercept {
         Get("/abc") ~> Route.seal {
-          get { ctx ⇒
+          get { ctx =>
             throw MyException
           }
         } ~> check {

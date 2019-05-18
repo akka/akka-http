@@ -42,16 +42,16 @@ private[http] class Http2FrameRendering extends GraphStage[FlowShape[FrameEvent,
     override def onPush(): Unit = {
       val frame = grab(frameIn)
       frame match {
-        case d @ DataFrame(_, _, payload) if payload.size > maxOutFrameSize ⇒
+        case d @ DataFrame(_, _, payload) if payload.size > maxOutFrameSize =>
           // payload too large, we must split it into multiple frames:
           val splitDataFrames = splitByPayloadSize(d, maxOutFrameSize).iterator.map(FrameRenderer.render)
           emitMultiple(netOut, splitDataFrames) // TODO optimise if fits in 1 frame
 
-        case ack @ SettingsAckFrame(s) ⇒
+        case ack @ SettingsAckFrame(s) =>
           applySettings(s)
           push(netOut, FrameRenderer.render(ack))
 
-        case _ ⇒
+        case _ =>
           // normal frame, just render it:
           val rendered = FrameRenderer.render(frame)
           // Http2Compliance.requireFrameSizeLessOrEqualThan(rendered.length, settings.maxOutFrameSize, hint = s"Frame type was ${Logging.simpleName(frame)}")
@@ -69,20 +69,20 @@ private[http] class Http2FrameRendering extends GraphStage[FlowShape[FrameEvent,
         if (d.payload.nonEmpty) throw new IllegalStateException("DataFrame marked endStream should have empty payload!") // TODO at least in current impl
 
         // only the last of the split-up frames must close the stream
-        val all = parts.map(p ⇒ d.copy(endStream = false, payload = p)).toVector
+        val all = parts.map(p => d.copy(endStream = false, payload = p)).toVector
         // TODO not optimal impl, optimise later:
         all.dropRight(1) ++ Vector(all.last.copy(endStream = true))
       } else {
-        parts.map(p ⇒ d.copy(payload = p)).toVector
+        parts.map(p => d.copy(payload = p)).toVector
       }
     }
 
     private def applySettings(s: immutable.Seq[Setting]): Unit = {
       s foreach {
-        case Setting(SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) ⇒
+        case Setting(SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) =>
           updateMaxOutFrameSize(value)
           log.debug("Set max outgoing frame size to: {}", value)
-        case _ ⇒ // ignore other settings, not applicable for this stage
+        case _ => // ignore other settings, not applicable for this stage
       }
     }
   }

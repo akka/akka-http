@@ -7,7 +7,7 @@ package akka.http.scaladsl.model
 import java.net.{ InetSocketAddress, UnknownHostException, InetAddress }
 import java.util.Optional
 import akka.http.impl.util._
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 import akka.http.impl.util.JavaMapping.Implicits._
 
 sealed abstract class RemoteAddress extends jm.RemoteAddress with ValueRenderable {
@@ -51,13 +51,13 @@ object RemoteAddress {
 
   def apply(bytes: Array[Byte]): RemoteAddress = {
     require(bytes.length == 4 || bytes.length == 16)
-    try IP(InetAddress.getByAddress(bytes)) catch { case _: UnknownHostException ⇒ Unknown }
+    try IP(InetAddress.getByAddress(bytes)) catch { case _: UnknownHostException => Unknown }
   }
 
   private[akka] val renderWithoutPort = new Renderer[RemoteAddress] {
     def render[R <: Rendering](r: R, address: RemoteAddress): r.type = address match {
-      case IP(ip, _) ⇒ r ~~ ip.getHostAddress
-      case _         ⇒ r ~~ address
+      case IP(ip, _) => r ~~ ip.getHostAddress
+      case _         => r ~~ address
     }
   }
 }

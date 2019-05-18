@@ -48,7 +48,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
 
   override def productPrefix = "ConnectionPoolSettings"
 
-  def withUpdatedConnectionSettings(f: ClientConnectionSettings ⇒ ClientConnectionSettings): ConnectionPoolSettingsImpl =
+  def withUpdatedConnectionSettings(f: ClientConnectionSettings => ClientConnectionSettings): ConnectionPoolSettingsImpl =
     copy(connectionSettings = f(connectionSettings))
 
   private def suggestPowerOfTwo(around: Int): String = {
@@ -77,8 +77,8 @@ private[akka] object ConnectionPoolSettingsImpl extends SettingsCompanionImpl[Co
       c.getPotentiallyInfiniteDuration("idle-timeout"),
       ClientConnectionSettingsImpl.fromSubConfig(root, c.getConfig("client")),
       c.getString("pool-implementation").toLowerCase match {
-        case "legacy" ⇒ PoolImplementation.Legacy
-        case "new"    ⇒ PoolImplementation.New
+        case "legacy" => PoolImplementation.Legacy
+        case "new"    => PoolImplementation.New
       },
       c.getPotentiallyInfiniteDuration("response-entity-subscription-timeout")
     )

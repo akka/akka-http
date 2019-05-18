@@ -37,14 +37,14 @@ private[http2] object HeaderCompression extends GraphStage[FlowShape[FrameEvent,
 
     object Idle extends State {
       val handleEvent: PartialFunction[FrameEvent, Unit] = {
-        case ack @ SettingsAckFrame(s) ⇒
+        case ack @ SettingsAckFrame(s) =>
           applySettings(s)
           push(eventsOut, ack)
 
-        case ParsedHeadersFrame(streamId, endStream, kvs, prioInfo) ⇒
+        case ParsedHeadersFrame(streamId, endStream, kvs, prioInfo) =>
           os.reset()
           kvs.foreach {
-            case (key, value) ⇒
+            case (key, value) =>
               encoder.encodeHeader(os, key.getBytes(HeaderDecompression.UTF8), value.getBytes(HeaderDecompression.UTF8), false)
           }
           val result = ByteString(os.toByteArray)
@@ -71,13 +71,13 @@ private[http2] object HeaderCompression extends GraphStage[FlowShape[FrameEvent,
 
       def applySettings(s: immutable.Seq[Setting]): Unit =
         s foreach {
-          case Setting(SettingIdentifier.SETTINGS_HEADER_TABLE_SIZE, size) ⇒
+          case Setting(SettingIdentifier.SETTINGS_HEADER_TABLE_SIZE, size) =>
             log.debug("Applied SETTINGS_HEADER_TABLE_SIZE({}) in header compression", size)
             // 'size' is strictly spoken unsigned, but the encoder is allowed to
             // pick any size equal to or less than this value (6.5.2)
             if (size >= 0) encoder.setMaxHeaderTableSize(os, size)
             else encoder.setMaxHeaderTableSize(os, Int.MaxValue)
-          case _ ⇒ // ignore, not applicable to this stage
+          case _ => // ignore, not applicable to this stage
         }
     }
   }

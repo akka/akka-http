@@ -20,12 +20,12 @@ object NoCoding extends Coder with StreamDecoder {
   override def encodeData[T](t: T)(implicit mapper: DataMapper[T]): T = t
   override def decodeData[T](t: T)(implicit mapper: DataMapper[T]): T = t
 
-  val messageFilter: HttpMessage ⇒ Boolean = _ ⇒ false
+  val messageFilter: HttpMessage => Boolean = _ => false
 
   def newCompressor = NoCodingCompressor
 
-  def newDecompressorStage(maxBytesPerChunk: Int): () ⇒ GraphStage[FlowShape[ByteString, ByteString]] =
-    () ⇒ StreamUtils.limitByteChunksStage(maxBytesPerChunk)
+  def newDecompressorStage(maxBytesPerChunk: Int): () => GraphStage[FlowShape[ByteString, ByteString]] =
+    () => StreamUtils.limitByteChunksStage(maxBytesPerChunk)
 }
 
 object NoCodingCompressor extends Compressor {

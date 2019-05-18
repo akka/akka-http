@@ -13,7 +13,7 @@ import akka.annotation.{ ApiMayChange, InternalApi }
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.Duration
 import scala.concurrent.Future
-import com.github.benmanes.caffeine.cache.{ AsyncCacheLoader, AsyncLoadingCache, Caffeine }
+import com.github.benmanes.caffeine.cache.{ AsyncCache, Caffeine }
 import akka.http.caching.LfuCache.toJavaMappingFunction
 import akka.http.caching.scaladsl.Cache
 import akka.http.impl.util.JavaMapping.Implicits._
@@ -62,7 +62,7 @@ object LfuCache {
     val store = Caffeine.newBuilder().asInstanceOf[Caffeine[K, V]]
       .initialCapacity(initialCapacity)
       .maximumSize(maxCapacity)
-      .buildAsync[K, V](dummyLoader[K, V])
+      .buildAsync[K, V]
     new LfuCache[K, V](store)
   }
 
@@ -72,12 +72,12 @@ object LfuCache {
       !timeToLive.isFinite || !timeToIdle.isFinite || timeToLive >= timeToIdle,
       s"timeToLive($timeToLive) must be >= than timeToIdle($timeToIdle)")
 
-    def ttl: Caffeine[K, V] ⇒ Caffeine[K, V] = { builder ⇒
+    def ttl: Caffeine[K, V] => Caffeine[K, V] = { builder =>
       if (timeToLive.isFinite) builder.expireAfterWrite(timeToLive.toMillis, TimeUnit.MILLISECONDS)
       else builder
     }
 
-    def tti: Caffeine[K, V] ⇒ Caffeine[K, V] = { builder ⇒
+    def tti: Caffeine[K, V] => Caffeine[K, V] = { builder =>
       if (timeToIdle.isFinite) builder.expireAfterAccess(timeToIdle.toMillis, TimeUnit.MILLISECONDS)
       else builder
     }
@@ -86,32 +86,26 @@ object LfuCache {
       .initialCapacity(initialCapacity)
       .maximumSize(maxCapacity)
 
-    val store = (ttl andThen tti)(builder).buildAsync[K, V](dummyLoader[K, V])
+    val store = (ttl andThen tti)(builder).buildAsync[K, V]
     new LfuCache[K, V](store)
   }
 
-  //LfuCache requires a loader function on creation - this will not be used.
-  private def dummyLoader[K, V] = new AsyncCacheLoader[K, V] {
-    def asyncLoad(k: K, e: Executor) =
-      Future.failed[V](new RuntimeException("Dummy loader should not be used by LfuCache")).toJava.toCompletableFuture
-  }
+  def toJavaMappingFunction[K, V](genValue: () => Future[V]): BiFunction[K, Executor, CompletableFuture[V]] =
+    asJavaBiFunction[K, Executor, CompletableFuture[V]]((k, e) => genValue().toJava.toCompletableFuture)
 
-  def toJavaMappingFunction[K, V](genValue: () ⇒ Future[V]): BiFunction[K, Executor, CompletableFuture[V]] =
-    asJavaBiFunction[K, Executor, CompletableFuture[V]]((k, e) ⇒ genValue().toJava.toCompletableFuture)
-
-  def toJavaMappingFunction[K, V](loadValue: K ⇒ Future[V]): BiFunction[K, Executor, CompletableFuture[V]] =
-    asJavaBiFunction[K, Executor, CompletableFuture[V]]((k, e) ⇒ loadValue(k).toJava.toCompletableFuture)
+  def toJavaMappingFunction[K, V](loadValue: K => Future[V]): BiFunction[K, Executor, CompletableFuture[V]] =
+    asJavaBiFunction[K, Executor, CompletableFuture[V]]((k, e) => loadValue(k).toJava.toCompletableFuture)
 }
 
 /** INTERNAL API */
 @InternalApi
-private[caching] class LfuCache[K, V](val store: AsyncLoadingCache[K, V]) extends Cache[K, V] {
+private[caching] class LfuCache[K, V](val store: AsyncCache[K, V]) extends Cache[K, V] {
 
   def get(key: K): Option[Future[V]] = Option(store.getIfPresent(key)).map(_.toScala)
 
-  def apply(key: K, genValue: () ⇒ Future[V]): Future[V] = store.get(key, toJavaMappingFunction[K, V](genValue)).toScala
+  def apply(key: K, genValue: () => Future[V]): Future[V] = store.get(key, toJavaMappingFunction[K, V](genValue)).toScala
 
-  def getOrLoad(key: K, loadValue: K ⇒ Future[V]) = store.get(key, toJavaMappingFunction[K, V](loadValue)).toScala
+  def getOrLoad(key: K, loadValue: K => Future[V]) = store.get(key, toJavaMappingFunction[K, V](loadValue)).toScala
 
   def remove(key: K): Unit = store.synchronous().invalidate(key)
 
