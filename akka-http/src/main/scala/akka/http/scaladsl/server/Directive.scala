@@ -175,10 +175,14 @@ object Directive {
       underlying.tcollect({ case Tuple1(value) if pf.isDefinedAt(value) => pf(value) }, rejections: _*)
   }
 
-  // previous, non-value class implementation kept around for binary compatibility
-  // TODO: remove with next binary incompatible release bump
-  private[server] def SingleValueModifiers[T](underlying: Directive1[T]): SingleValueModifiers[T] =
-    new SingleValueModifiers(underlying)
+  /**
+   * previous, non-value class implementation kept around for binary compatibility
+   * TODO: remove with next binary incompatible release bump
+   *
+   * INTERNAL API
+   */
+  def SingleValueModifiers[T](underlying: Directive1[T]): Directive.SingleValueModifiers[T] =
+    new Directive.SingleValueModifiers(underlying)
   private[server] class SingleValueModifiers[T](underlying: Directive1[T]) {
     def map[R](f: T => R)(implicit tupler: Tupler[R]): Directive[tupler.Out] =
       underlying.map(f)
