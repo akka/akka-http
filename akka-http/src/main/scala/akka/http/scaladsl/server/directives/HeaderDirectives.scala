@@ -159,7 +159,7 @@ object HeaderDirectives extends HeaderDirectives
 trait HeaderMagnet[T] {
   def classTag: ClassTag[T]
   def runtimeClass: Class[T]
-  def headerName = ModeledCompanion.nameFromClass(runtimeClass)
+  def headerName: String = ModeledCompanion.nameFromClass(runtimeClass)
 
   /**
    * Returns a partial function that checks if the input value is of runtime type
@@ -181,11 +181,12 @@ object HeaderMagnet extends LowPriorityHeaderMagnetImplicits {
 
   implicit def fromClassTagForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]](tag: ClassTag[T], companion: ModeledCustomHeaderCompanion[T]): HeaderMagnet[T] =
     new HeaderMagnet[T] {
-      override def runtimeClass = tag.runtimeClass.asInstanceOf[Class[T]]
-      override def classTag = tag
-      override def extractPF = {
+      override def classTag: ClassTag[T] = tag
+      override def runtimeClass: Class[T] = tag.runtimeClass.asInstanceOf[Class[T]]
+      override def extractPF: PartialFunction[HttpHeader, T] = {
         case h if h.is(companion.lowercaseName) => companion.apply(h.value)
       }
+      override def headerName: String = companion.name
     }
 
 }
@@ -199,7 +200,9 @@ trait LowPriorityHeaderMagnetImplicits {
     new HeaderMagnet[T] {
       override def classTag: ClassTag[T] = ClassTag(clazz)
       override def runtimeClass: Class[T] = clazz
-      override def extractPF: PartialFunction[HttpHeader, T] = { case x if runtimeClass.isAssignableFrom(x.getClass) => x.asInstanceOf[T] }
+      override def extractPF: PartialFunction[HttpHeader, T] = {
+        case x if runtimeClass.isAssignableFrom(x.getClass) => x.asInstanceOf[T]
+      }
     }
 
   implicit def fromUnitNormalHeader[T <: HttpHeader](u: Unit)(implicit tag: ClassTag[T]): HeaderMagnet[T] =
@@ -209,6 +212,8 @@ trait LowPriorityHeaderMagnetImplicits {
     new HeaderMagnet[T] {
       val classTag: ClassTag[T] = tag
       val runtimeClass: Class[T] = tag.runtimeClass.asInstanceOf[Class[T]]
-      val extractPF: PartialFunction[Any, T] = { case x if runtimeClass.isAssignableFrom(x.getClass) => x.asInstanceOf[T] }
+      val extractPF: PartialFunction[Any, T] = {
+        case x if runtimeClass.isAssignableFrom(x.getClass) => x.asInstanceOf[T]
+      }
     }
 }

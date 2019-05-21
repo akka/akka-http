@@ -7,7 +7,11 @@ package akka.http.scaladsl.server.directives
 import akka.http.scaladsl.model._
 import headers._
 import akka.http.scaladsl.server._
+import directives.HeaderDirectivesSpec.XCustomHeader
+
 import org.scalatest.Inside
+import scala.reflect.ClassTag
+import scala.util.Try
 
 class HeaderDirectivesSpec extends RoutingSpec with Inside {
 
@@ -58,6 +62,16 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
       Get("abc") ~> route ~> check {
         inside(rejection) {
           case MissingHeaderRejection("User-Agent") =>
+        }
+      }
+    }
+    "reject a request if no header matches a custom one, and use the custom header's name for the rejection " in {
+      val route = headerValueByType[XCustomHeader]() { customValue ⇒
+        complete(s"Custom-Value: $customValue")
+      }
+      Get("abc") ~> route ~> check {
+        inside(rejection) {
+          case MissingHeaderRejection("X-Custom-Header") ⇒
         }
       }
     }
@@ -201,5 +215,31 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
         responseAs[String] should include(s"${correctOrigin.value}")
       }
     }
+  }
+
+  "The HeaderMagnet" should {
+    "get the header name from the ModeledCustomHeaderCompanion" in {
+      val unitMagnet: HeaderMagnet[XCustomHeader] = {}
+      unitMagnet.headerName shouldEqual "X-Custom-Header"
+
+      val classMagnet = HeaderMagnet.fromClassForModeledCustomHeader(classOf[XCustomHeader], XCustomHeader)
+      classMagnet.headerName shouldEqual "X-Custom-Header"
+
+      val classTagMagnet = HeaderMagnet.fromClassTagForModeledCustomHeader(ClassTag(classOf[XCustomHeader]), XCustomHeader)
+      classTagMagnet.headerName shouldEqual "X-Custom-Header"
+    }
+  }
+}
+
+object HeaderDirectivesSpec {
+  final object XCustomHeader extends ModeledCustomHeaderCompanion[XCustomHeader] {
+    override def name: String = "X-Custom-Header"
+    override def parse(value: String): Try[XCustomHeader] = Try(new XCustomHeader)
+  }
+  final class XCustomHeader extends ModeledCustomHeader[XCustomHeader] {
+    override def companion: ModeledCustomHeaderCompanion[XCustomHeader] = XCustomHeader
+    override def value(): String = "custom-value"
+    override def renderInRequests(): Boolean = true
+    override def renderInResponses(): Boolean = false
   }
 }
