@@ -34,6 +34,7 @@ inThisBuild(Def.settings(
   scalacOptions ++= Seq(
     "-deprecation",
     "-encoding", "UTF-8", // yes, this is 2 args
+    "-target:jvm-1.8",
     "-unchecked",
     "-Xlint",
     // "-Yno-adapted-args", //akka-http heavily depends on adapted args and => Unit implicits break otherwise
@@ -41,7 +42,9 @@ inThisBuild(Def.settings(
     // "-Xfuture" // breaks => Unit implicits
   ),
   javacOptions ++= Seq(
-    "-encoding", "UTF-8"
+    "-encoding", "UTF-8",
+    "-source", "1.8",
+    "-target", "1.8",
   ),
   testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v"),
   Dependencies.Versions,
