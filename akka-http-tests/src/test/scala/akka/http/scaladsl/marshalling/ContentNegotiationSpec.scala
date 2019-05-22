@@ -178,31 +178,24 @@ class ContentNegotiationSpec extends FreeSpec with Matchers {
     }
   }
 
-  abstract class SelectAlternative {
-    def apply(alt: Alternative*): Option[ContentType]
-  }
-
-  def testHeaders[U](headers: HttpHeader*)(body: SelectAlternative ⇒ U): U = {
+  def testHeaders[U](headers: HttpHeader*)(body: VarArgsFunction1[Alternative, Option[ContentType]] => U): U = {
     val request = HttpRequest(headers = headers.toVector)
-    body(new SelectAlternative {
-      override def apply(alternatives: Alternative*) =
-        {
-          import scala.concurrent.ExecutionContext.Implicits.global
+    body { alternatives =>
+      import scala.concurrent.ExecutionContext.Implicits.global
 
-          // creates a pseudo marshaller for X, that applies for all the given content types
-          trait X
-          object X extends X
-          implicit val marshallers: ToEntityMarshaller[X] =
-            Marshaller.oneOf(alternatives map {
-              case Alternative.ContentType(ct) ⇒ Marshaller.withFixedContentType(ct)((s: X) ⇒ HttpEntity(ct, ByteString("The X")))
-              case Alternative.MediaType(mt)   ⇒ Marshaller.withOpenCharset(mt)((s: X, cs) ⇒ HttpEntity(mt withCharset cs, "The X"))
-            }: _*)
+      // creates a pseudo marshaller for X, that applies for all the given content types
+      trait X
+      object X extends X
+      implicit val marshallers: ToEntityMarshaller[X] =
+        Marshaller.oneOf(alternatives map {
+          case Alternative.ContentType(ct) => Marshaller.withFixedContentType(ct)((s: X) => HttpEntity(ct, ByteString("The X")))
+          case Alternative.MediaType(mt)   => Marshaller.withOpenCharset(mt)((s: X, cs) => HttpEntity(mt withCharset cs, "The X"))
+        }: _*)
 
-          Await.result(Marshal(X).toResponseFor(request)
-            .fast.map(response ⇒ Some(response.entity.contentType))
-            .fast.recover { case _: Marshal.UnacceptableResponseContentTypeException ⇒ None }, 1.second)
-        }
-    })
+      Await.result(Marshal(X).toResponseFor(request)
+        .fast.map(response => Some(response.entity.contentType))
+        .fast.recover { case _: Marshal.UnacceptableResponseContentTypeException => None }, 1.second)
+    }
   }
 
   def reject = equal(None)
@@ -223,7 +216,7 @@ class ContentNegotiationSpec extends FreeSpec with Matchers {
           parseHeaders(example)
         } else Nil
 
-      testHeaders(headers: _*)(body)
+      testHeaders(headers: _*)(accept => body(accept))
     }
   }
 }

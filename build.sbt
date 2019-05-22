@@ -37,9 +37,8 @@ inThisBuild(Def.settings(
     "-unchecked",
     "-Xlint",
     // "-Yno-adapted-args", //akka-http heavily depends on adapted args and => Unit implicits break otherwise
-    "-Ywarn-dead-code",
+    "-Ywarn-dead-code"
     // "-Xfuture" // breaks => Unit implicits
-    "-language:postfixOps",
   ),
   javacOptions ++= Seq(
     "-encoding", "UTF-8"
