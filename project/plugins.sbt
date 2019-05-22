@@ -9,7 +9,7 @@ resolvers += Resolver.jcenterRepo
 addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.4.0")
 addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.9.3")
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.3.0")
-addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.8.1")
+addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.8.2")
 addSbtPlugin("com.dwijnand" % "sbt-dynver" % "2.0.0")
 addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.1")
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "2.1.0")
@@ -28,3 +28,8 @@ libraryDependencies += "org.kohsuke" % "github-api" % "1.92"
 
 // used for @unidoc directive
 libraryDependencies += "io.github.lukehutch" % "fast-classpath-scanner" % "2.12.3"
+
+// Until https://github.com/scala-ide/scalariform/pull/280 is merged and released,
+// this is a build of 0.2.8 that includes the `UseUnicodeArrows` feature.
+libraryDependencies += "net.virtual-void" %% "scalariform" % "0.2.8.1"
+excludeDependencies += ExclusionRule(organization = "org.scalariform", name = "scalariform_2.12")
