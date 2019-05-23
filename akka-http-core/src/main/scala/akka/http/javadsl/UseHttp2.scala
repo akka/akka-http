@@ -17,4 +17,5 @@ object UseHttp2 {
   def always: UseHttp2 = Always
   def negotiated: UseHttp2 = Negotiated
   def never: UseHttp2 = Never
+  def priorKnowledge: UseHttp2 = PriorKnowledge
 }

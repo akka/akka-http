@@ -14,4 +14,5 @@ object UseHttp2 {
   object Never extends UseHttp2
   object Negotiated extends UseHttp2
   object Always extends UseHttp2
+  object PriorKnowledge extends UseHttp2
 }
