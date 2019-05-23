@@ -9,7 +9,6 @@ import akka.actor.*;
 import akka.http.javadsl.model.headers.HttpCredentials;
 import akka.http.javadsl.model.headers.SetCookie;
 import akka.util.ByteString;
-import akka.util.ByteString$;
 import scala.concurrent.ExecutionContextExecutor;
 import akka.stream.javadsl.*;
 import akka.http.javadsl.ClientTransport;
@@ -19,6 +18,7 @@ import akka.http.javadsl.Http;
 import akka.http.javadsl.OutgoingConnection;
 
 import static akka.http.javadsl.ConnectHttp.toHost;
+import static akka.util.ByteString.emptyByteString;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletionStage;
@@ -104,7 +104,7 @@ public class HttpClientExampleDocTest {
       strictEntity
         .thenCompose(strict ->
           strict.getDataBytes()
-            .runFold(ByteString$.MODULE$.empty(), (acc, b) -> acc.concat(b), materializer)
+            .runFold(emptyByteString(), (acc, b) -> acc.concat(b), materializer)
             .thenApply(this::parse)
         );
     //#manual-entity-consume-example-2
