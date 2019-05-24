@@ -22,7 +22,7 @@ private[http] object PriorKnowledgeSwitch {
   type HttpServerFlow = Flow[ByteString, ByteString, NotUsed]
   type HttpServerShape = FlowShape[ByteString, ByteString]
 
-  private final val PRIOR_KNOWLEDGE_PREFACE = ByteString("PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n")
+  private final val HTTP2_CONNECTION_PREFACE = ByteString("PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n")
 
   def apply(
     http1Stack: HttpServerFlow,
@@ -52,12 +52,12 @@ private[http] object PriorKnowledgeSwitch {
             private[this] var grabbed = ByteString.empty
             def onPush(): Unit = {
               val data = grabbed ++ grab(netIn)
-              if (data.length >= PRIOR_KNOWLEDGE_PREFACE.length) { // We should know by now
-                if (data.startsWith(PRIOR_KNOWLEDGE_PREFACE, 0))
+              if (data.length >= HTTP2_CONNECTION_PREFACE.length) { // We should know by now
+                if (data.startsWith(HTTP2_CONNECTION_PREFACE, 0))
                   install(http2Stack, data)
                 else
                   install(http1Stack, data)
-              } else if (data.isEmpty || data.startsWith(PRIOR_KNOWLEDGE_PREFACE, 0)) { // Still unknown
+              } else if (data.isEmpty || data.startsWith(HTTP2_CONNECTION_PREFACE, 0)) { // Still unknown
                 grabbed = data
               } else { // Not a Prior Knowledge request
                 install(http1Stack, data)
@@ -65,31 +65,24 @@ private[http] object PriorKnowledgeSwitch {
             }
           })
 
-          private val ignorePull = new OutHandler { def onPull(): Unit = () }
-          private val failPush = new InHandler { def onPush(): Unit = throw new IllegalStateException("Wasn't pulled yet") }
-
-          setHandler(netOut, ignorePull)
+          setHandler(netOut, new OutHandler { def onPull(): Unit = () }) // Ignore pull
 
           def install(serverImplementation: HttpServerFlow, firstElement: ByteString): Unit = {
-            val networkSide = Flow.fromSinkAndSource(serverDataIn.sink, serverDataOut.source)
-
             connect(netIn, serverDataOut, Some(firstElement))
             connect(serverDataIn, netOut)
 
             serverImplementation
               .addAttributes(inheritedAttributes) // propagate attributes to "real" server (such as HttpAttributes)
-              .join(networkSide)
+              .join(Flow.fromSinkAndSource(serverDataIn.sink, serverDataOut.source)) // Network side
               .run()(interpreter.subFusingMaterializer)
           }
 
           // helpers to connect inlets and outlets also binding completion signals of given ports
           def connect[T](in: Inlet[T], out: SubSourceOutlet[T], initialElement: Option[T]): Unit = {
-            val propagatePull =
-              new OutHandler {
-                override def onPull(): Unit = pull(in)
-              }
 
-            val firstHandler =
+            val firstElementHandler = {
+              val propagatePull = new OutHandler { override def onPull(): Unit = pull(in) }
+
               initialElement match {
                 case Some(ele) if out.isAvailable =>
                   out.push(ele)
@@ -97,14 +90,16 @@ private[http] object PriorKnowledgeSwitch {
                 case Some(ele) =>
                   new OutHandler {
                     override def onPull(): Unit = {
-                      out.push(initialElement.get)
+                      out.push(ele)
                       out.setHandler(propagatePull)
                     }
                   }
                 case None => propagatePull
               }
+            }
 
-            out.setHandler(firstHandler)
+            out.setHandler(firstElementHandler)
+
             setHandler(in, new InHandler {
               override def onPush(): Unit = out.push(grab(in))
 
@@ -121,6 +116,7 @@ private[http] object PriorKnowledgeSwitch {
 
             if (out.isAvailable) pull(in) // to account for lost pulls during initialization
           }
+
           def connect[T](in: SubSinkInlet[T], out: Outlet[T]): Unit = {
             val handler = new InHandler {
               override def onPush(): Unit = push(out, in.grab())
@@ -133,6 +129,7 @@ private[http] object PriorKnowledgeSwitch {
                 super.onDownstreamFinish()
               }
             }
+
             in.setHandler(handler)
             setHandler(out, outHandler)
 
