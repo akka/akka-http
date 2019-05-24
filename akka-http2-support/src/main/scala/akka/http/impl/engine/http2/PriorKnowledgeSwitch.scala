@@ -12,34 +12,31 @@ import akka.annotation.InternalApi
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.stream.TLSProtocol.{ SessionBytes, SessionTruncated, SslTlsInbound, SslTlsOutbound }
-import akka.stream.scaladsl.{ BidiFlow, Flow }
+import akka.stream.scaladsl.Flow
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream._
 
 /** INTERNAL API */
 @InternalApi
 private[http] object PriorKnowledgeSwitch {
-  type HttpServerBidiFlow = BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed]
-  type HttpServerBidiShape = BidiShape[HttpResponse, ByteString, ByteString, HttpRequest]
+  type HttpServerFlow = Flow[ByteString, ByteString, NotUsed]
+  type HttpServerShape = FlowShape[ByteString, ByteString]
 
   private final val PRIOR_KNOWLEDGE_PREFACE = ByteString("PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n")
 
   def apply(
-    http1Stack: HttpServerBidiFlow,
-    http2Stack: HttpServerBidiFlow): HttpServerBidiFlow =
-    BidiFlow.fromGraph(
-      new GraphStage[HttpServerBidiShape] {
+    http1Stack: HttpServerFlow,
+    http2Stack: HttpServerFlow): HttpServerFlow =
+    Flow.fromGraph(
+      new GraphStage[HttpServerShape] {
 
         // --- outer ports ---
         val netIn = Inlet[ByteString]("PriorKnowledgeSwitch.netIn")
         val netOut = Outlet[ByteString]("PriorKnowledgeSwitch.netOut")
-
-        val requestOut = Outlet[HttpRequest]("PriorKnowledgeSwitch.requestOut")
-        val responseIn = Inlet[HttpResponse]("PriorKnowledgeSwitch.responseIn")
         // --- end of outer ports ---
 
-        override val shape: HttpServerBidiShape =
-          BidiShape(responseIn, netOut, netIn, requestOut)
+        override val shape: HttpServerShape =
+          FlowShape(netIn, netOut)
 
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
           logic =>
@@ -47,9 +44,6 @@ private[http] object PriorKnowledgeSwitch {
           // --- inner ports, bound to actual server in install call ---
           val serverDataIn = new SubSinkInlet[ByteString]("ServerImpl.netIn")
           val serverDataOut = new SubSourceOutlet[ByteString]("ServerImpl.netOut")
-
-          val serverRequestIn = new SubSinkInlet[HttpRequest]("ServerImpl.serverRequestIn")
-          val serverResponseOut = new SubSourceOutlet[HttpResponse]("ServerImpl.serverResponseOut")
           // --- end of inner ports ---
 
           override def preStart(): Unit = pull(netIn)
@@ -75,23 +69,16 @@ private[http] object PriorKnowledgeSwitch {
           private val failPush = new InHandler { def onPush(): Unit = throw new IllegalStateException("Wasn't pulled yet") }
 
           setHandler(netOut, ignorePull)
-          setHandler(requestOut, ignorePull)
-          setHandler(responseIn, failPush)
 
-          def install(serverImplementation: HttpServerBidiFlow, firstElement: ByteString): Unit = {
+          def install(serverImplementation: HttpServerFlow, firstElement: ByteString): Unit = {
             val networkSide = Flow.fromSinkAndSource(serverDataIn.sink, serverDataOut.source)
-            val userSide = Flow.fromSinkAndSource(serverRequestIn.sink, serverResponseOut.source)
 
             connect(netIn, serverDataOut, Some(firstElement))
-            connect(responseIn, serverResponseOut, None)
-
             connect(serverDataIn, netOut)
-            connect(serverRequestIn, requestOut)
 
             serverImplementation
               .addAttributes(inheritedAttributes) // propagate attributes to "real" server (such as HttpAttributes)
               .join(networkSide)
-              .join(userSide)
               .run()(interpreter.subFusingMaterializer)
           }
 

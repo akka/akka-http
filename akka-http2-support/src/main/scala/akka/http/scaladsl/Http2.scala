@@ -75,13 +75,13 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
 
     val effectivePort = if (port >= 0) port else 80
 
+    val http2 = Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher).joinMat(Http2Blueprint.serverStack(settings, log))(Keep.left)
+    val http1 = Flow[HttpRequest].mapAsync(parallelism)(handler).joinMat(http.serverLayer(settings, None, log) atop TLSPlacebo())(Keep.left)
+
     // FIXME: parallelism should maybe kept in track with SETTINGS_MAX_CONCURRENT_STREAMS so that we don't need
     // to buffer requests that cannot be handled in parallel
     val fullLayer: Flow[ByteString, ByteString, Future[Done]] =
-      Flow[HttpRequest]
-        .watchTermination()(Keep.right)
-        .via(Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher))
-        .joinMat(PriorKnowledgeSwitch(http.serverLayer(settings, None, log) atop TLSPlacebo(), Http2Blueprint.serverStack(settings, log)))(Keep.left)
+      Flow[ByteString].watchTermination()(Keep.right).viaMat(PriorKnowledgeSwitch(http1, http2))(Keep.left)
 
     createServerRunnableGraph(interface, effectivePort, settings, () => fullLayer, log).run()
   }
