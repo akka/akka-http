@@ -127,25 +127,24 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
   val tenXResponseLength = array_10x.length
   val hundredXResponseLength = array_100x.length
 
-  // format: OFF
   val routes: Route = {
     import Directives._
-
-    path("ping") {
-      complete("PONG!")
-    } ~
-    path("long-response-array" / IntNumber) { n =>
-      if (n == 10) complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, array_10x))
-      else if (n == 100) complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, array_10x))
-      else throw new RuntimeException(s"Not implemented for ${n}")
-    } ~
-    path("long-response-stream" / IntNumber) { n =>
-      if (n == 10) complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, source_100x))
-      else if (n == 100) complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, source_100x))
-      else throw new RuntimeException(s"Not implemented for ${n}")
-    }
+    concat(
+      path("ping") {
+        complete("PONG!")
+      },
+      path("long-response-array" / IntNumber) { n =>
+        if (n == 10) complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, array_10x))
+        else if (n == 100) complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, array_10x))
+        else throw new RuntimeException(s"Not implemented for ${n}")
+      },
+      path("long-response-stream" / IntNumber) { n =>
+        if (n == 10) complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, source_100x))
+        else if (n == 100) complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, source_100x))
+        else throw new RuntimeException(s"Not implemented for ${n}")
+      }
+    )
   }
-  // format: ON
 
   val enableSpec = system.settings.config.getBoolean("akka.test.AkkaHttpServerLatencySpec.enable")
   val totalRequestsFactor = system.settings.config.getDouble("akka.test.AkkaHttpServerLatencySpec.totalRequestsFactor")
