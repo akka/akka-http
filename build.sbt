@@ -44,8 +44,8 @@ inThisBuild(Def.settings(
   javacOptions ++= Seq(
     "-encoding", "UTF-8",
     "-source", "1.8",
-    "-target", "1.8",
   ),
+  javacOptions in (Compile, compile) ++= Seq("-target", "1.8"), // sbt #1785, avoids passing to javadoc
   testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v"),
   Dependencies.Versions,
   Formatting.formatSettings,
