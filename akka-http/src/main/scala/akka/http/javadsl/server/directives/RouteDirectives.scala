@@ -120,14 +120,14 @@ abstract class RouteDirectives extends RespondWithDirectives {
    * Completes the request using the given status code and headers, marshalling the given value as response entity.
    */
   def complete[T](status: StatusCode, headers: java.lang.Iterable[HttpHeader], value: T, marshaller: Marshaller[T, RequestEntity]) = RouteAdapter {
-    D.complete(ToResponseMarshallable(value)(fromToEntityMarshaller(status.asScala, convertToScala(headers))(marshaller)))
+    D.complete(ToResponseMarshallable(value)(fromToEntityMarshaller(status.asScala, headers.asScala)(marshaller)))
   }
 
   /**
    * Completes the request using the given status code, headers, and response entity.
    */
   def complete(status: StatusCode, headers: java.lang.Iterable[HttpHeader], entity: ResponseEntity) = RouteAdapter {
-    D.complete(scaladsl.model.HttpResponse(status = status.asScala, entity = entity.asScala, headers = convertToScala(headers)))
+    D.complete(scaladsl.model.HttpResponse(status = status.asScala, entity = entity.asScala, headers = headers.asScala))
   }
 
   /**
@@ -167,14 +167,14 @@ abstract class RouteDirectives extends RespondWithDirectives {
    * Completes the request as HTTP 200 OK, adding the given headers, and marshalling the given value as response entity.
    */
   def complete[T](headers: java.lang.Iterable[HttpHeader], value: T, marshaller: Marshaller[T, RequestEntity]) = RouteAdapter {
-    D.complete(ToResponseMarshallable(value)(fromToEntityMarshaller(headers = convertToScala(headers))(marshaller)))
+    D.complete(ToResponseMarshallable(value)(fromToEntityMarshaller(headers = headers.asScala)(marshaller)))
   }
 
   /**
    * Completes the request as HTTP 200 OK, adding the given headers and response entity.
    */
   def complete(headers: java.lang.Iterable[HttpHeader], entity: ResponseEntity) = RouteAdapter {
-    D.complete(scaladsl.model.HttpResponse(headers = convertToScala(headers), entity = entity.asScala))
+    D.complete(scaladsl.model.HttpResponse(headers = headers.asScala, entity = entity.asScala))
   }
 
   /**
