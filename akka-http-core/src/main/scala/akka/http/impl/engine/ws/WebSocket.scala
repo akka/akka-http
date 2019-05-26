@@ -52,24 +52,24 @@ private[http] object WebSocket {
       .named("ws-framing")
 
   /** The layer that handles masking using the rules defined in the specification */
-  def masking(serverSide: Boolean, maskingRandomFactory: () ⇒ Random): BidiFlow[FrameEvent, FrameEventOrError, FrameEvent, FrameEvent, NotUsed] =
+  def masking(serverSide: Boolean, maskingRandomFactory: () => Random): BidiFlow[FrameEvent, FrameEventOrError, FrameEvent, FrameEvent, NotUsed] =
     Masking(serverSide, maskingRandomFactory)
       .named("ws-masking")
 
   /** The layer that transparently injects (if enabled) keepAlive Ping or Pong messages when connection is idle */
   def periodicKeepAlive(settings: WebSocketSettings): BidiFlow[FrameHandler.Output, FrameHandler.Output, FrameOutHandler.Input, FrameOutHandler.Input, NotUsed] = {
     settings.periodicKeepAliveMaxIdle match {
-      case maxIdle: FiniteDuration ⇒
+      case maxIdle: FiniteDuration =>
 
         val noCustomData = WebSocketSettingsImpl.hasNoCustomPeriodicKeepAliveData(settings)
         val mkFrame = settings.periodicKeepAliveMode match {
-          case "ping" if noCustomData ⇒ mkDirectAnswerPing // sending Ping should result in a Pong back
-          case "ping" ⇒ () ⇒ DirectAnswer(FrameEvent.fullFrame(Opcode.Ping, None, settings.periodicKeepAliveData(), fin = true))
+          case "ping" if noCustomData => mkDirectAnswerPing // sending Ping should result in a Pong back
+          case "ping" => () => DirectAnswer(FrameEvent.fullFrame(Opcode.Ping, None, settings.periodicKeepAliveData(), fin = true))
 
-          case "pong" if noCustomData ⇒ mkDirectAnswerPong // sending Pong means we do not expect a reply
-          case "pong" ⇒ () ⇒ DirectAnswer(FrameEvent.fullFrame(Opcode.Pong, None, settings.periodicKeepAliveData(), fin = true))
+          case "pong" if noCustomData => mkDirectAnswerPong // sending Pong means we do not expect a reply
+          case "pong" => () => DirectAnswer(FrameEvent.fullFrame(Opcode.Pong, None, settings.periodicKeepAliveData(), fin = true))
 
-          case other ⇒ throw new IllegalArgumentException(s"Unsupported periodic-keep-alive-mode. " +
+          case other => throw new IllegalArgumentException(s"Unsupported periodic-keep-alive-mode. " +
             s"Found: [$other] however only [ping] and [pong] are supported")
         }
 
@@ -77,16 +77,16 @@ private[http] object WebSocket {
           Flow[FrameHandler.Output].keepAlive(maxIdle, mkFrame),
           Flow[Input]
         )
-      case _ ⇒
+      case _ =>
         BidiFlow.identity
     }
   }
 
   private[this] final val PingFullFrame: FrameStart = FrameEvent.fullFrame(Opcode.Ping, None, ByteString.empty, fin = true)
-  private[this] final val mkDirectAnswerPing = () ⇒ DirectAnswer(PingFullFrame)
+  private[this] final val mkDirectAnswerPing = () => DirectAnswer(PingFullFrame)
 
   private[this] final val PongFullFrame: FrameStart = FrameEvent.fullFrame(Opcode.Pong, None, ByteString.empty, fin = true)
-  private[this] final val mkDirectAnswerPong = () ⇒ DirectAnswer(PongFullFrame)
+  private[this] final val mkDirectAnswerPong = () => DirectAnswer(PongFullFrame)
 
   /**
    * The layer that implements all low-level frame handling, like handling control frames, collecting messages
@@ -111,17 +111,17 @@ private[http] object WebSocket {
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
       var inMessage = false
       override def onPush(): Unit = grab(in) match {
-        case PeerClosed(code, reason) ⇒
+        case PeerClosed(code, reason) =>
           if (code.exists(Protocol.CloseCodes.isError)) failStage(new PeerClosedConnectionException(code.get, reason))
           else if (inMessage) failStage(new ProtocolException(s"Truncated message, peer closed connection in the middle of message."))
           else completeStage()
-        case ActivelyCloseWithCode(code, reason) ⇒
+        case ActivelyCloseWithCode(code, reason) =>
           if (code.exists(Protocol.CloseCodes.isError)) failStage(new ProtocolException(s"Closing connection with error code $code"))
           else failStage(new IllegalStateException("Regular close from FrameHandler is unexpected"))
-        case x: MessageDataPart ⇒
+        case x: MessageDataPart =>
           inMessage = !x.last
           push(out, x)
-        case x ⇒ push(out, x)
+        case x => push(out, x)
       }
       override def onPull(): Unit = pull(in)
       setHandlers(in, out, this)
@@ -138,38 +138,31 @@ private[http] object WebSocket {
     val collectMessage: Flow[MessageDataPart, Message, NotUsed] =
       Flow[MessageDataPart]
         .prefixAndTail(1)
-        .mapConcat {
-          // happens if we get a MessageEnd first which creates a new substream but which is then
-          // filtered out by collect in `prepareMessages` below
-          case (Nil, _) ⇒ Nil
-          case (first +: Nil, remaining) ⇒ (first match {
-            case TextMessagePart(text, true) ⇒
-              StreamUtils.cancelSource(remaining)(StreamUtils.OnlyRunInGraphInterpreterContext)
-              TextMessage.Strict(text)
-            case first @ TextMessagePart(text, false) ⇒
-              TextMessage(
-                (Source.single(first) ++ remaining)
-                  .collect {
-                    case t: TextMessagePart if t.data.nonEmpty ⇒ t.data
-                  })
-            case BinaryMessagePart(data, true) ⇒
-              StreamUtils.cancelSource(remaining)(StreamUtils.OnlyRunInGraphInterpreterContext)
-              BinaryMessage.Strict(data)
-            case first @ BinaryMessagePart(data, false) ⇒
-              BinaryMessage(
-                (Source.single(first) ++ remaining)
-                  .collect {
-                    case t: BinaryMessagePart if t.data.nonEmpty ⇒ t.data
-                  })
-          }) :: Nil
+        .map {
+          case (TextMessagePart(text, true) +: Nil, remaining) =>
+            StreamUtils.cancelSource(remaining)(StreamUtils.OnlyRunInGraphInterpreterContext)
+            TextMessage.Strict(text)
+          case ((first @ TextMessagePart(_, false)) +: Nil, remaining) =>
+            TextMessage(
+              (Source.single(first) ++ remaining)
+                .collect { case t: TextMessagePart if t.data.nonEmpty => t.data }
+            )
+          case (BinaryMessagePart(data, true) +: Nil, remaining) =>
+            StreamUtils.cancelSource(remaining)(StreamUtils.OnlyRunInGraphInterpreterContext)
+            BinaryMessage.Strict(data)
+          case ((first @ BinaryMessagePart(_, false)) +: Nil, remaining) =>
+            BinaryMessage(
+              (Source.single(first) ++ remaining)
+                .collect { case b: BinaryMessagePart if b.data.nonEmpty => b.data }
+            )
         }
 
     def prepareMessages: Flow[MessagePart, Message, NotUsed] =
       Flow[MessagePart]
         .via(PrepareForUserHandler)
-        .splitWhen(_.isMessageEnd) // FIXME using splitAfter from #16885 would simplify protocol a lot
+        .splitAfter(_.isMessageEnd)
         .collect {
-          case m: MessageDataPart ⇒ m
+          case m: MessageDataPart => m
         }
         .via(collectMessage)
         .concatSubstreams
@@ -179,7 +172,7 @@ private[http] object WebSocket {
       MessageToFrameRenderer.create(serverSide)
         .named("ws-render-messages")
 
-    BidiFlow.fromGraph(GraphDSL.create() { implicit b ⇒
+    BidiFlow.fromGraph(GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
 
       val split = b.add(BypassRouter)
@@ -220,13 +213,13 @@ private[http] object WebSocket {
       setHandler(outputIn, new InHandler {
         override def onPush(): Unit = {
           grab(outputIn) match {
-            case b: BypassEvent with MessagePart ⇒ emit(bypassOut, b, () ⇒ emit(messageOut, b, pullIn))
-            case b: BypassEvent                  ⇒ emit(bypassOut, b, pullIn)
-            case m: MessagePart                  ⇒ emit(messageOut, m, pullIn)
+            case b: BypassEvent with MessagePart => emit(bypassOut, b, () => emit(messageOut, b, pullIn))
+            case b: BypassEvent                  => emit(bypassOut, b, pullIn)
+            case m: MessagePart                  => emit(messageOut, m, pullIn)
           }
         }
       })
-      val pullIn = () ⇒ tryPull(outputIn)
+      val pullIn = () => tryPull(outputIn)
 
       setHandler(bypassOut, eagerTerminateOutput)
       setHandler(messageOut, ignoreTerminateOutput)
@@ -249,7 +242,7 @@ private[http] object WebSocket {
 
     def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
 
-      class PassAlong[T <: AnyRef](from: Inlet[T]) extends InHandler with (() ⇒ Unit) {
+      class PassAlong[T <: AnyRef](from: Inlet[T]) extends InHandler with (() => Unit) {
         override def apply(): Unit = tryPull(from)
         override def onPush(): Unit = emit(messageOut, grab(from), this)
         override def onUpstreamFinish(): Unit =
@@ -283,8 +276,8 @@ private[http] object WebSocket {
       })
       setHandler(in, new InHandler {
         override def onPush(): Unit = push(out, grab(in))
-        override def onUpstreamFinish(): Unit = emit(out, UserHandlerCompleted, () ⇒ completeStage())
-        override def onUpstreamFailure(ex: Throwable): Unit = emit(out, UserHandlerErredOut(ex), () ⇒ completeStage())
+        override def onUpstreamFinish(): Unit = emit(out, UserHandlerCompleted, () => completeStage())
+        override def onUpstreamFailure(ex: Throwable): Unit = emit(out, UserHandlerErredOut(ex), () => completeStage())
       })
     }
   }

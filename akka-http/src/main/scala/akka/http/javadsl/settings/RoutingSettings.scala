@@ -13,7 +13,7 @@ import com.typesafe.config.Config
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class RoutingSettings private[akka] () { self: RoutingSettingsImpl ⇒
+abstract class RoutingSettings private[akka] () { self: RoutingSettingsImpl =>
   def getVerboseErrorMessages: Boolean
   def getFileGetConditional: Boolean
   def getRenderVanityFooter: Boolean

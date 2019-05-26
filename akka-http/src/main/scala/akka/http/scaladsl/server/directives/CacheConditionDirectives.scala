@@ -86,9 +86,9 @@ trait CacheConditionDirectives {
     def complete304(): Route = addResponseHeaders(complete(HttpResponse(NotModified)))
     def complete412(): Route = _.complete(PreconditionFailed)
 
-    extractRequest.flatMap { request ⇒
+    extractRequest.flatMap { request =>
       import request._
-      mapInnerRoute { route ⇒
+      mapInnerRoute { route =>
         def innerRouteWithRangeHeaderFilteredOut: Route =
           (mapRequest(_.mapHeaders(_.filterNot(_.isInstanceOf[Range]))) &
             addResponseHeaders)(route)
@@ -99,37 +99,37 @@ trait CacheConditionDirectives {
 
         def step1(): Route =
           header[`If-Match`] match {
-            case Some(`If-Match`(im)) if eTag.isDefined ⇒
+            case Some(`If-Match`(im)) if eTag.isDefined =>
               if (matchesRange(eTag.get, im, weakComparison = false)) step3() else complete412()
-            case _ ⇒ step2()
+            case _ => step2()
           }
         def step2(): Route =
           header[`If-Unmodified-Since`] match {
-            case Some(`If-Unmodified-Since`(ius)) if lastModified.isDefined && !unmodified(ius) ⇒ complete412()
-            case _ ⇒ step3()
+            case Some(`If-Unmodified-Since`(ius)) if lastModified.isDefined && !unmodified(ius) => complete412()
+            case _ => step3()
           }
         def step3(): Route =
           header[`If-None-Match`] match {
-            case Some(`If-None-Match`(inm)) if eTag.isDefined ⇒
+            case Some(`If-None-Match`(inm)) if eTag.isDefined =>
               if (!matchesRange(eTag.get, inm, weakComparison = true)) step5()
               else if (isGetOrHead) complete304() else complete412()
-            case _ ⇒ step4()
+            case _ => step4()
           }
         def step4(): Route =
           if (isGetOrHead) {
             header[`If-Modified-Since`] match {
-              case Some(`If-Modified-Since`(ims)) if lastModified.isDefined && unmodified(ims) ⇒ complete304()
-              case _ ⇒ step5()
+              case Some(`If-Modified-Since`(ims)) if lastModified.isDefined && unmodified(ims) => complete304()
+              case _ => step5()
             }
           } else step5()
         def step5(): Route =
           if (method == GET && header[Range].isDefined)
             header[`If-Range`] match {
-              case Some(`If-Range`(Left(tag))) if eTag.isDefined && !matches(eTag.get, tag, weakComparison = false) ⇒
+              case Some(`If-Range`(Left(tag))) if eTag.isDefined && !matches(eTag.get, tag, weakComparison = false) =>
                 innerRouteWithRangeHeaderFilteredOut
-              case Some(`If-Range`(Right(ims))) if lastModified.isDefined && !unmodified(ims) ⇒
+              case Some(`If-Range`(Right(ims))) if lastModified.isDefined && !unmodified(ims) =>
                 innerRouteWithRangeHeaderFilteredOut
-              case _ ⇒ step6()
+              case _ => step6()
             }
           else step6()
         def step6(): Route = addResponseHeaders(route)

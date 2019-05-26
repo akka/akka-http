@@ -22,7 +22,7 @@ class Specs2RouteTestSpec extends Specification with Specs2RouteTest {
   "The ScalatestRouteTest should support" should {
 
     "the most simple and direct route test" in {
-      Get() ~> complete(HttpResponse()) ~> { rr ⇒ rr.awaitResult; rr.response } shouldEqual HttpResponse()
+      Get() ~> complete(HttpResponse()) ~> { rr => rr.awaitResult; rr.response } shouldEqual HttpResponse()
     }
 
     "a test using a directive and some checks" in {

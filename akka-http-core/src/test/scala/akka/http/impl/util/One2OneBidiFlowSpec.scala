@@ -31,7 +31,7 @@ class One2OneBidiFlowSpec extends AkkaSpec with Eventually {
     }
 
     "be fully transparent to errors" in {
-      val f = One2OneBidiFlow[Int, Int](-1) join Flow[Int].map(x ⇒ 10 / (x - 2))
+      val f = One2OneBidiFlow[Int, Int](-1) join Flow[Int].map(x => 10 / (x - 2))
       an[ArithmeticException] should be thrownBy Await.result(test(f), 1.second.dilated)
     }
 

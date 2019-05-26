@@ -116,16 +116,16 @@ object WSProbe {
 
       def expectMessage(): Message = subscriber.requestNext()
       def expectMessage(text: String): Unit = expectMessage() match {
-        case t: TextMessage ⇒
+        case t: TextMessage =>
           val collectedMessage = collect(t.textStream)(_ + _)
           assert(collectedMessage == text, s"""Expected TextMessage("$text") but got TextMessage("$collectedMessage")""")
-        case _ ⇒ throw new AssertionError(s"""Expected TextMessage("$text") but got BinaryMessage""")
+        case _ => throw new AssertionError(s"""Expected TextMessage("$text") but got BinaryMessage""")
       }
       def expectMessage(bytes: ByteString): Unit = expectMessage() match {
-        case t: BinaryMessage ⇒
+        case t: BinaryMessage =>
           val collectedMessage = collect(t.dataStream)(_ ++ _)
           assert(collectedMessage == bytes, s"""Expected BinaryMessage("$bytes") but got BinaryMessage("$collectedMessage")""")
-        case _ ⇒ throw new AssertionError(s"""Expected BinaryMessage("$bytes") but got TextMessage""")
+        case _ => throw new AssertionError(s"""Expected BinaryMessage("$bytes") but got TextMessage""")
       }
 
       def expectNoMessage(): Unit = subscriber.expectNoMsg()
@@ -136,7 +136,7 @@ object WSProbe {
       def inProbe: TestSubscriber.Probe[Message] = subscriber
       def outProbe: TestPublisher.Probe[Message] = publisher
 
-      private def collect[T](stream: Source[T, Any])(reduce: (T, T) ⇒ T): T =
+      private def collect[T](stream: Source[T, Any])(reduce: (T, T) => T): T =
         stream.grouped(maxChunks)
           .runWith(Sink.head)
           .awaitResult(maxChunkCollectionMills.millis)

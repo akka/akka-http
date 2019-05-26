@@ -32,7 +32,7 @@ class DateTimeSpec extends WordSpec with Matchers {
         fmt
       }
       def rfc1123Format(dt: DateTime) = Rfc1123Format.format(new java.util.Date(dt.clicks))
-      val matchSimpleDateFormat: Matcher[DateTime] = Matcher { dt: DateTime ⇒
+      val matchSimpleDateFormat: Matcher[DateTime] = Matcher { dt: DateTime =>
         MatchResult(
           dt.toRfc1123DateTimeString == rfc1123Format(dt),
           dt.toRfc1123DateTimeString + " != " + rfc1123Format(dt),
@@ -78,7 +78,7 @@ class DateTimeSpec extends WordSpec with Matchers {
   "The two DateTime implementations" should {
     "allow for transparent round-trip conversions" in {
       def roundTrip(dt: DateTime) = DateTime(dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second)
-      val roundTripOk: Matcher[DateTime] = Matcher { dt: DateTime ⇒
+      val roundTripOk: Matcher[DateTime] = Matcher { dt: DateTime =>
         MatchResult(
           { val rt = roundTrip(dt); dt == rt && dt.weekday == rt.weekday },
           dt.toRfc1123DateTimeString + " != " + roundTrip(dt).toRfc1123DateTimeString,

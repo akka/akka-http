@@ -6,7 +6,7 @@ package akka.http.javadsl.server.directives
 
 import java.util.concurrent.CompletionException
 import java.util.concurrent.CompletionStage
-import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.{ Function => JFunction }
 import java.util.function.Supplier
 
 import akka.http.javadsl.marshalling.Marshaller
@@ -16,7 +16,7 @@ import scala.compat.java8.FutureConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.Try
 import akka.http.javadsl.server.Route
-import akka.http.scaladsl.server.directives.{ CompleteOrRecoverWithMagnet, FutureDirectives ⇒ D }
+import akka.http.scaladsl.server.directives.{ CompleteOrRecoverWithMagnet, FutureDirectives => D }
 import akka.pattern.CircuitBreaker
 
 abstract class FutureDirectives extends FormFieldDirectives {
@@ -28,7 +28,7 @@ abstract class FutureDirectives extends FormFieldDirectives {
    * @group future
    */
   def onComplete[T](f: Supplier[CompletionStage[T]], inner: JFunction[Try[T], Route]) = RouteAdapter {
-    D.onComplete(f.get.toScala.recover(unwrapCompletionException)) { value ⇒
+    D.onComplete(f.get.toScala.recover(unwrapCompletionException)) { value =>
       inner(value).delegate
     }
   }
@@ -40,7 +40,7 @@ abstract class FutureDirectives extends FormFieldDirectives {
    * @group future
    */
   def onComplete[T](cs: CompletionStage[T], inner: JFunction[Try[T], Route]) = RouteAdapter {
-    D.onComplete(cs.toScala.recover(unwrapCompletionException)) { value ⇒
+    D.onComplete(cs.toScala.recover(unwrapCompletionException)) { value =>
       inner(value).delegate
     }
   }
@@ -56,7 +56,7 @@ abstract class FutureDirectives extends FormFieldDirectives {
    * @group future
    */
   def onCompleteWithBreaker[T](breaker: CircuitBreaker, f: Supplier[CompletionStage[T]], inner: JFunction[Try[T], Route]) = RouteAdapter {
-    D.onCompleteWithBreaker(breaker)(f.get.toScala.recover(unwrapCompletionException)) { value ⇒
+    D.onCompleteWithBreaker(breaker)(f.get.toScala.recover(unwrapCompletionException)) { value =>
       inner(value).delegate
     }
   }
@@ -70,7 +70,7 @@ abstract class FutureDirectives extends FormFieldDirectives {
    * @group future
    */
   def onSuccess[T](f: Supplier[CompletionStage[T]], inner: JFunction[T, Route]) = RouteAdapter {
-    D.onSuccess(f.get.toScala.recover(unwrapCompletionException)) { value ⇒
+    D.onSuccess(f.get.toScala.recover(unwrapCompletionException)) { value =>
       inner(value).delegate
     }
   }
@@ -84,7 +84,7 @@ abstract class FutureDirectives extends FormFieldDirectives {
    * @group future
    */
   def onSuccess[T](cs: CompletionStage[T], inner: JFunction[T, Route]) = RouteAdapter {
-    D.onSuccess(cs.toScala.recover(unwrapCompletionException)) { value ⇒
+    D.onSuccess(cs.toScala.recover(unwrapCompletionException)) { value =>
       inner(value).delegate
     }
   }
@@ -100,7 +100,7 @@ abstract class FutureDirectives extends FormFieldDirectives {
    */
   def completeOrRecoverWith[T](f: Supplier[CompletionStage[T]], marshaller: Marshaller[T, RequestEntity], inner: JFunction[Throwable, Route]): Route = RouteAdapter {
     val magnet = CompleteOrRecoverWithMagnet(f.get.toScala)(Marshaller.asScalaEntityMarshaller(marshaller))
-    D.completeOrRecoverWith(magnet) { ex ⇒ inner(ex).delegate }
+    D.completeOrRecoverWith(magnet) { ex => inner(ex).delegate }
   }
 
   // TODO: This might need to be raised as an issue to scala-java8-compat instead.
@@ -108,7 +108,7 @@ abstract class FutureDirectives extends FormFieldDirectives {
   //     CompletableFuture.supplyAsync(() -> { throw new IllegalArgumentException("always failing"); })
   // will in fact fail the future with CompletionException.
   private def unwrapCompletionException[T]: PartialFunction[Throwable, T] = {
-    case x: CompletionException if x.getCause ne null ⇒
+    case x: CompletionException if x.getCause ne null =>
       throw x.getCause
   }
 

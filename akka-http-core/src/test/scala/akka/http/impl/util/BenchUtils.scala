@@ -11,14 +11,14 @@ private[akka] object BenchUtils {
    *
    * Multiple attempts are more resilient against one time disruptions.
    */
-  def nanoRace(f1: ⇒ Unit, f2: ⇒ Unit, attempts: Int = 3): Double = {
+  def nanoRace(f1: => Unit, f2: => Unit, attempts: Int = 3): Double = {
     // warmup to remove some of the JIT-related variance
-    (1 to 10).foreach { _ ⇒
+    (1 to 10).foreach { _ =>
       f1
       f2
     }
 
-    def nanoTime(f: () ⇒ Unit): Long = {
+    def nanoTime(f: () => Unit): Long = {
       val start = System.nanoTime()
       f()
       val end = System.nanoTime()

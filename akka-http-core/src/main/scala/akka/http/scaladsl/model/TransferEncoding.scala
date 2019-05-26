@@ -5,7 +5,7 @@
 package akka.http.scaladsl.model
 
 import akka.http.impl.util.{ Rendering, SingletonValueRenderable, Renderable }
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 import akka.http.impl.util.JavaMapping.Implicits._
 
 sealed abstract class TransferEncoding extends jm.TransferEncoding with Renderable {
@@ -28,7 +28,7 @@ object TransferEncodings {
   final case class Extension(name: String, params: Map[String, String] = Map.empty) extends TransferEncoding {
     def render[R <: Rendering](r: R): r.type = {
       r ~~ name
-      params foreach { case (k, v) ⇒ r ~~ "; " ~~ k ~~ '=' ~~# v }
+      params foreach { case (k, v) => r ~~ "; " ~~ k ~~ '=' ~~# v }
       r
     }
   }

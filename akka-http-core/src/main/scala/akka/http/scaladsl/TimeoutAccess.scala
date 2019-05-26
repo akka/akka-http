@@ -48,7 +48,7 @@ trait TimeoutAccess extends akka.http.javadsl.TimeoutAccess {
    * Due to the inherent raciness it is not guaranteed that the update will be applied before
    * the previously set timeout has expired!
    */
-  def updateHandler(handler: HttpRequest ⇒ HttpResponse): Unit
+  def updateHandler(handler: HttpRequest => HttpResponse): Unit
 
   /**
    * Tries to set a new timeout and handler at the same time.
@@ -56,5 +56,5 @@ trait TimeoutAccess extends akka.http.javadsl.TimeoutAccess {
    * Due to the inherent raciness it is not guaranteed that the update will be applied before
    * the previously set timeout has expired!
    */
-  def update(timeout: Duration, handler: HttpRequest ⇒ HttpResponse): Unit
+  def update(timeout: Duration, handler: HttpRequest => HttpResponse): Unit
 }

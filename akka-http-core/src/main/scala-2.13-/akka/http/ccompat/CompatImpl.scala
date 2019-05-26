@@ -15,7 +15,7 @@ import scala.collection.mutable
  * not promising binary compatibility yet at the time of writing.
  */
 private[ccompat] object CompatImpl {
-  def simpleCBF[A, C](f: ⇒ mutable.Builder[A, C]): CanBuildFrom[Any, A, C] = new CanBuildFrom[Any, A, C] {
+  def simpleCBF[A, C](f: => mutable.Builder[A, C]): CanBuildFrom[Any, A, C] = new CanBuildFrom[Any, A, C] {
     def apply(from: Any): mutable.Builder[A, C] = apply()
     def apply(): mutable.Builder[A, C] = f
   }

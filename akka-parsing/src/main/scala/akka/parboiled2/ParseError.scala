@@ -34,7 +34,7 @@ case class ParseError(
   lazy val effectiveTraces: immutable.Seq[RuleTrace] =
     traces map {
       val commonPrefixLen = RuleTrace.commonNonAtomicPrefixLength(traces)
-      if (commonPrefixLen > 0) t ⇒ t.copy(prefix = t.prefix.drop(commonPrefixLen)).dropUnreportedPrefix
+      if (commonPrefixLen > 0) t => t.copy(prefix = t.prefix.drop(commonPrefixLen)).dropUnreportedPrefix
       else _.dropUnreportedPrefix
     }
 }
@@ -69,11 +69,11 @@ case class RuleTrace(prefix: List[RuleTrace.NonTerminal], terminal: RuleTrace.Te
   def dropUnreportedPrefix: RuleTrace = {
     @tailrec def rec(current: List[NonTerminal], named: List[NonTerminal]): List[NonTerminal] =
       current match {
-        case NonTerminal(Named(_), _) :: tail ⇒ rec(tail, if (named.isEmpty) current else named)
-        case NonTerminal(RuleCall, _) :: tail ⇒ rec(tail, named) // RuleCall elements allow the name to be carried over
-        case NonTerminal(Atomic, _) :: tail   ⇒ if (named.isEmpty) tail else named
-        case x :: tail                        ⇒ if (x.offset >= 0 && named.nonEmpty) named else rec(tail, Nil)
-        case Nil                              ⇒ named
+        case NonTerminal(Named(_), _) :: tail => rec(tail, if (named.isEmpty) current else named)
+        case NonTerminal(RuleCall, _) :: tail => rec(tail, named) // RuleCall elements allow the name to be carried over
+        case NonTerminal(Atomic, _) :: tail   => if (named.isEmpty) tail else named
+        case x :: tail                        => if (x.offset >= 0 && named.nonEmpty) named else rec(tail, Nil)
+        case Nil                              => named
       }
     val newPrefix = rec(prefix, Nil)
     if (newPrefix ne prefix) copy(prefix = newPrefix) else this
@@ -93,21 +93,21 @@ object RuleTrace {
   def commonNonAtomicPrefixLength(traces: Seq[RuleTrace]): Int =
     if (traces.size > 1) {
       val tracesTail = traces.tail
-      def hasElem(ix: Int, elem: NonTerminal): RuleTrace ⇒ Boolean =
+      def hasElem(ix: Int, elem: NonTerminal): RuleTrace => Boolean =
         _.prefix.drop(ix) match {
-          case `elem` :: _ ⇒ true
-          case _           ⇒ false
+          case `elem` :: _ => true
+          case _           => false
         }
       @tailrec def rec(current: List[NonTerminal], namedIx: Int, ix: Int): Int =
         current match {
-          case head :: tail if tracesTail forall hasElem(ix, head) ⇒
+          case head :: tail if tracesTail forall hasElem(ix, head) =>
             head.key match {
-              case Named(_) ⇒ rec(tail, if (namedIx >= 0) namedIx else ix, ix + 1)
-              case RuleCall ⇒ rec(tail, namedIx, ix + 1) // RuleCall elements allow the name to be carried over
-              case Atomic   ⇒ if (namedIx >= 0) namedIx else ix // Atomic elements always terminate a common prefix
-              case _        ⇒ rec(tail, -1, ix + 1) // otherwise the name chain is broken
+              case Named(_) => rec(tail, if (namedIx >= 0) namedIx else ix, ix + 1)
+              case RuleCall => rec(tail, namedIx, ix + 1) // RuleCall elements allow the name to be carried over
+              case Atomic   => if (namedIx >= 0) namedIx else ix // Atomic elements always terminate a common prefix
+              case _        => rec(tail, -1, ix + 1) // otherwise the name chain is broken
             }
-          case _ ⇒ if (namedIx >= 0) namedIx else ix
+          case _ => if (namedIx >= 0) namedIx else ix
         }
       rec(traces.head.prefix, namedIx = -1, ix = 0)
     } else 0

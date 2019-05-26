@@ -24,7 +24,7 @@ trait ScalaXmlSupport {
     nodeSeqUnmarshaller(ScalaXmlSupport.nodeSeqContentTypeRanges: _*)
 
   def nodeSeqUnmarshaller(ranges: ContentTypeRange*): FromEntityUnmarshaller[NodeSeq] =
-    Unmarshaller.byteArrayUnmarshaller.forContentTypes(ranges: _*).mapWithCharset { (bytes, charset) ⇒
+    Unmarshaller.byteArrayUnmarshaller.forContentTypes(ranges: _*).mapWithCharset { (bytes, charset) =>
       if (bytes.length > 0) {
         val reader = new InputStreamReader(new ByteArrayInputStream(bytes), charset.nioCharset)
         XML.withSAXParser(createSAXParser()).load(reader): NodeSeq // blocking call! Ideally we'd have a `loadToFuture`
@@ -55,7 +55,7 @@ object ScalaXmlSupport extends ScalaXmlSupport {
     try {
       parser.setProperty("http://apache.org/xml/properties/locale", java.util.Locale.ROOT)
     } catch {
-      case e: org.xml.sax.SAXNotRecognizedException ⇒ // property is not needed
+      case e: org.xml.sax.SAXNotRecognizedException => // property is not needed
     }
     parser
   }

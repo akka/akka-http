@@ -18,6 +18,7 @@ import akka.http.javadsl.Http;
 import akka.http.javadsl.OutgoingConnection;
 
 import static akka.http.javadsl.ConnectHttp.toHost;
+import static akka.util.ByteString.emptyByteString;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.CompletionStage;
@@ -103,7 +104,7 @@ public class HttpClientExampleDocTest {
       strictEntity
         .thenCompose(strict ->
           strict.getDataBytes()
-            .runFold(ByteString.empty(), (acc, b) -> acc.concat(b), materializer)
+            .runFold(emptyByteString(), (acc, b) -> acc.concat(b), materializer)
             .thenApply(this::parse)
         );
     //#manual-entity-consume-example-2

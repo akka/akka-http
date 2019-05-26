@@ -1,0 +1,3 @@
+# Changes against 10.1.8
+# PredefinedFromStringUnmarshallers is a good candidate for @DoNotInherit anyway. See 10.1.1.backwards.excludes for similar.
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.unmarshalling.PredefinedFromStringUnmarshallers.*")

@@ -5,7 +5,7 @@
 package akka.http.impl.engine.http2
 
 import java.util.function.BiFunction
-import java.{ util ⇒ ju }
+import java.{ util => ju }
 
 import javax.net.ssl.{ SSLEngine, SSLParameters }
 import akka.annotation.InternalApi
@@ -27,7 +27,7 @@ private[http] object Http2AlpnSupport {
   /**
    * Enables server-side Http/2 ALPN support for the given engine.
    */
-  def enableForServer(engine: SSLEngine, setChosenProtocol: String ⇒ Unit): SSLEngine =
+  def enableForServer(engine: SSLEngine, setChosenProtocol: String => Unit): SSLEngine =
     if (isAlpnSupportedByJDK) jdkAlpnSupport(engine, setChosenProtocol)
     else jettyAlpnSupport(engine, setChosenProtocol)
 
@@ -38,7 +38,7 @@ private[http] object Http2AlpnSupport {
   private type JDK9SSLEngine = {
     def setHandshakeApplicationProtocolSelector(selector: BiFunction[SSLEngine, ju.List[String], String]): Unit
   }
-  def jdkAlpnSupport(engine: SSLEngine, setChosenProtocol: String ⇒ Unit): SSLEngine = {
+  def jdkAlpnSupport(engine: SSLEngine, setChosenProtocol: String => Unit): SSLEngine = {
     engine.asInstanceOf[JDK9SSLEngine].setHandshakeApplicationProtocolSelector(new BiFunction[SSLEngine, ju.List[String], String] {
       // explicit style needed here as automatic SAM-support doesn't seem to work out with Scala 2.11
       override def apply(engine: SSLEngine, protocols: ju.List[String]): String = {
@@ -51,7 +51,7 @@ private[http] object Http2AlpnSupport {
     engine
   }
 
-  def jettyAlpnSupport(engine: SSLEngine, setChosenProtocol: String ⇒ Unit): SSLEngine = {
+  def jettyAlpnSupport(engine: SSLEngine, setChosenProtocol: String => Unit): SSLEngine = {
     ALPN.put(engine, new ServerProvider {
       override def select(protocols: ju.List[String]): String =
         choose {
@@ -76,13 +76,13 @@ private[http] object Http2AlpnSupport {
   // copy from akka.stream.impl.io.TlsUtils which is inaccessible because of private[stream]
   // FIXME: replace by direct access as should be provided by akka/akka#22116
   def applySessionParameters(engine: SSLEngine, sessionParameters: NegotiateNewSession): Unit = {
-    sessionParameters.enabledCipherSuites foreach (cs ⇒ engine.setEnabledCipherSuites(cs.toArray))
-    sessionParameters.enabledProtocols foreach (p ⇒ engine.setEnabledProtocols(p.toArray))
+    sessionParameters.enabledCipherSuites foreach (cs => engine.setEnabledCipherSuites(cs.toArray))
+    sessionParameters.enabledProtocols foreach (p => engine.setEnabledProtocols(p.toArray))
     sessionParameters.clientAuth match {
-      case Some(TLSClientAuth.None) ⇒ engine.setNeedClientAuth(false)
-      case Some(TLSClientAuth.Want) ⇒ engine.setWantClientAuth(true)
-      case Some(TLSClientAuth.Need) ⇒ engine.setNeedClientAuth(true)
-      case _                        ⇒ // do nothing
+      case Some(TLSClientAuth.None) => engine.setNeedClientAuth(false)
+      case Some(TLSClientAuth.Want) => engine.setWantClientAuth(true)
+      case Some(TLSClientAuth.Need) => engine.setNeedClientAuth(true)
+      case _                        => // do nothing
     }
 
     sessionParameters.sslParameters.foreach(engine.setSSLParameters)

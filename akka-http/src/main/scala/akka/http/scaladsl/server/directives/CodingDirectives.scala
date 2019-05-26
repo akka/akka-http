@@ -29,7 +29,7 @@ trait CodingDirectives {
    * @group coding
    */
   def responseEncodingAccepted(encoding: HttpEncoding): Directive0 =
-    extractRequest.flatMap { request ⇒
+    extractRequest.flatMap { request =>
       if (EncodingNegotiator(request.headers).isAccepted(encoding)) pass
       else reject(UnacceptedResponseEncodingRejection(Set(encoding)))
     }
@@ -75,7 +75,7 @@ trait CodingDirectives {
     def applyDecoder =
       if (decoder == NoCoding) pass
       else
-        extractSettings flatMap { settings ⇒
+        extractSettings flatMap { settings =>
           val effectiveDecoder = decoder.withMaxBytesPerChunk(settings.decodeMaxBytesPerChunk)
           mapRequest(effectiveDecoder.decodeMessage(_)) & withSizeLimit(settings.decodeMaxSize)
         }
@@ -93,8 +93,8 @@ trait CodingDirectives {
    */
   def requestEncodedWith(encoding: HttpEncoding): Directive0 =
     extract(_.request.encoding).flatMap {
-      case `encoding` ⇒ pass
-      case _          ⇒ reject(UnsupportedRequestEncodingRejection(encoding))
+      case `encoding` => pass
+      case _          => reject(UnsupportedRequestEncodingRejection(encoding))
     }
 
   /**
@@ -125,7 +125,7 @@ trait CodingDirectives {
    * @group coding
    */
   def withPrecompressedMediaTypeSupport: Directive0 =
-    mapResponse { response ⇒
+    mapResponse { response =>
       if (response.entity.contentType.mediaType.comp != MediaType.Gzipped) response
       else response.withDefaultHeaders(headers.`Content-Encoding`(HttpEncodings.gzip))
     }
@@ -142,13 +142,13 @@ object CodingDirectives extends CodingDirectives {
   import RouteDirectives._
 
   private def _encodeResponse(encoders: immutable.Seq[Encoder]): Directive0 =
-    BasicDirectives.extractRequest.flatMap { request ⇒
+    BasicDirectives.extractRequest.flatMap { request =>
       val negotiator = EncodingNegotiator(request.headers)
       val encodings: List[HttpEncoding] = encoders.map(_.encoding).toList
-      val bestEncoder = negotiator.pickEncoding(encodings).flatMap(be ⇒ encoders.find(_.encoding == be))
+      val bestEncoder = negotiator.pickEncoding(encodings).flatMap(be => encoders.find(_.encoding == be))
       bestEncoder match {
-        case Some(encoder) ⇒ mapResponse(encoder.encodeMessage(_))
-        case _ ⇒
+        case Some(encoder) => mapResponse(encoder.encodeMessage(_))
+        case _ =>
           if (encoders.contains(NoCoding) && !negotiator.hasMatchingFor(HttpEncodings.identity)) pass
           else reject(UnacceptedResponseEncodingRejection(encodings.toSet))
       }

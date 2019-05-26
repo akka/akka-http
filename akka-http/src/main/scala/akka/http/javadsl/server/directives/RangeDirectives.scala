@@ -6,7 +6,7 @@ package akka.http.javadsl.server
 package directives
 
 import java.util.function.Supplier
-import akka.http.scaladsl.server.{ Directives ⇒ D }
+import akka.http.scaladsl.server.{ Directives => D }
 
 abstract class RangeDirectives extends PathDirectives {
   /**

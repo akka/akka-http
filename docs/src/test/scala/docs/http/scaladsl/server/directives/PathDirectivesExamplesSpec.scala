@@ -418,7 +418,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
         // Thanks to `ignoreTrailingSlash` it will serve both `/foo` and `/foo/`.
         complete("OK")
       } ~
-        path("bar" /) {
+        path("bar"./) {
           // Thanks to `ignoreTrailingSlash` it will serve both `/bar` and `/bar/`.
           complete("OK")
         }

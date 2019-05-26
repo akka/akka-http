@@ -17,7 +17,7 @@ in the request.
 
 The `def host(hostNames: String*)` overload rejects all requests with a hostname different from the given ones.
 
-The `def host(predicate: String ⇒ Boolean)` overload rejects all requests for which the hostname does
+The `def host(predicate: String => Boolean)` overload rejects all requests for which the hostname does
 not satisfy the given predicate.
 
 @@@

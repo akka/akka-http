@@ -23,8 +23,8 @@ private[akka] object HttpAttributes {
 
   private[akka] def remoteAddress(address: Option[InetSocketAddress]): Attributes =
     address match {
-      case Some(addr) ⇒ remoteAddress(addr)
-      case None       ⇒ empty
+      case Some(addr) => remoteAddress(addr)
+      case None       => empty
     }
 
   private[akka] def remoteAddress(address: InetSocketAddress): Attributes =

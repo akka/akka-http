@@ -6,12 +6,12 @@ package akka.http.impl.model
 
 import java.nio.charset.Charset
 import java.util.Optional
-import java.{ lang ⇒ jl }
+import java.{ lang => jl }
 
 import akka.annotation.InternalApi
 import akka.http.scaladsl.model.Uri.ParsingMode
-import akka.http.javadsl.{ model ⇒ jm }
-import akka.http.scaladsl.{ model ⇒ sm }
+import akka.http.javadsl.{ model => jm }
+import akka.http.scaladsl.{ model => sm }
 import akka.http.impl.util.JavaMapping.Implicits._
 
 /** INTERNAL API */
@@ -38,9 +38,9 @@ private[http] case class JavaUri(uri: sm.Uri) extends jm.Uri {
   def pathSegments(): jl.Iterable[String] = {
     import sm.Uri.Path._
     def gatherSegments(path: sm.Uri.Path): List[String] = path match {
-      case Empty               ⇒ Nil
-      case Segment(head, tail) ⇒ head :: gatherSegments(tail)
-      case Slash(tail)         ⇒ gatherSegments(tail)
+      case Empty               => Nil
+      case Segment(head, tail) => head :: gatherSegments(tail)
+      case Slash(tail)         => gatherSegments(tail)
     }
     import collection.JavaConverters._
     gatherSegments(uri.path).asJava
@@ -55,7 +55,7 @@ private[http] case class JavaUri(uri: sm.Uri) extends jm.Uri {
 
   // Modification methods
 
-  def t(f: sm.Uri ⇒ sm.Uri): jm.Uri = JavaUri(f(uri))
+  def t(f: sm.Uri => sm.Uri): jm.Uri = JavaUri(f(uri))
 
   def scheme(scheme: String): jm.Uri = t(_.withScheme(scheme))
 
@@ -71,7 +71,7 @@ private[http] case class JavaUri(uri: sm.Uri) extends jm.Uri {
   def rawQueryString(rawQuery: String): jm.Uri = t(_.withRawQueryString(rawQuery))
   def query(query: jm.Query): jm.Uri = t(_.withQuery(query.asScala))
 
-  def addPathSegment(segment: String): jm.Uri = t { u ⇒
+  def addPathSegment(segment: String): jm.Uri = t { u =>
     val newPath =
       if (u.path.endsWithSlash) u.path ++ sm.Uri.Path(segment)
       else u.path ++ sm.Uri.Path./(segment)

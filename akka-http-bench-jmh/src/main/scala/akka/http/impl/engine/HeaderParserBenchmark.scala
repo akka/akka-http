@@ -38,7 +38,7 @@ class HeaderParserBenchmark {
 
   @Setup
   def setup(): Unit = {
-    parser = HttpHeaderParser.prime(HttpHeaderParser.unprimed(settings(), system.log, _ ⇒ ()))
+    parser = HttpHeaderParser.prime(HttpHeaderParser.unprimed(settings(), system.log, _ => ()))
   }
 
   private def settings() = {

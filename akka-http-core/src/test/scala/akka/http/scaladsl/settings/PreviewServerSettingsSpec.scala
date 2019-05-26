@@ -8,7 +8,7 @@ import akka.testkit.AkkaSpec
 
 class PreviewServerSettingsSpec extends AkkaSpec {
 
-  def compileOnlySpec(body: ⇒ Unit) = ()
+  def compileOnlySpec(body: => Unit) = ()
 
   "PreviewServerSettings" should {
     "compile when set programatically" in compileOnlySpec {

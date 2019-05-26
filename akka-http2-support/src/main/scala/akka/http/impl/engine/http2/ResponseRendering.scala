@@ -27,41 +27,41 @@ private[http2] object ResponseRendering {
     if (now / 1000 > cachedSeconds) {
       val r = new StringRendering
       DateTime(now).renderRfc1123DateTimeString(r)
-      cachedDateHeader = (now, Date.lowercaseName → r.get)
+      cachedDateHeader = (now, Date.lowercaseName -> r.get)
     }
     cachedDateHeader._2
   }
 
-  def renderResponse(settings: ServerSettings, log: LoggingAdapter): HttpResponse ⇒ Http2SubStream = {
+  def renderResponse(settings: ServerSettings, log: LoggingAdapter): HttpResponse => Http2SubStream = {
     def failBecauseOfMissingHeader: Nothing =
       // header is missing, shutting down because we will most likely otherwise miss a response and leak a substream
       // TODO: optionally a less drastic measure would be only resetting all the active substreams
       throw new RuntimeException("Received response for HTTP/2 request without Http2StreamIdHeader. Failing connection.")
 
-    val serverHeader = settings.serverHeader.map(h ⇒ h.lowercaseName → h.value)
+    val serverHeader = settings.serverHeader.map(h => h.lowercaseName -> h.value)
 
-    { (response: HttpResponse) ⇒
+    { (response: HttpResponse) =>
       val streamId = response.header[Http2StreamIdHeader].getOrElse(failBecauseOfMissingHeader).streamId
       val headerPairs = new VectorBuilder[(String, String)]()
 
       // From https://tools.ietf.org/html/rfc7540#section-8.1.2.4:
       //   HTTP/2 does not define a way to carry the version or reason phrase
       //   that is included in an HTTP/1.1 status line.
-      headerPairs += ":status" → response.status.intValue.toString
+      headerPairs += ":status" -> response.status.intValue.toString
 
       if (response.entity.contentType != ContentTypes.NoContentType)
-        headerPairs += "content-type" → response.entity.contentType.toString
+        headerPairs += "content-type" -> response.entity.contentType.toString
 
-      response.entity.contentLengthOption.foreach(headerPairs += "content-length" → _.toString)
+      response.entity.contentLengthOption.foreach(headerPairs += "content-length" -> _.toString)
 
       renderHeaders(response.headers, headerPairs, serverHeader, log)
 
       val headers = ParsedHeadersFrame(streamId, endStream = response.entity.isKnownEmpty, headerPairs.result(), None)
 
       response.entity match {
-        case HttpEntity.Chunked(_, chunks) ⇒
+        case HttpEntity.Chunked(_, chunks) =>
           ChunkedHttp2SubStream(headers, chunks)
-        case _ ⇒
+        case _ =>
           ByteHttp2SubStream(headers, response.entity.dataBytes)
       }
 
@@ -91,7 +91,7 @@ private[http2] object ResponseRendering {
     var serverSeen, dateSeen = false
     var idx = 0
     def addHeader(h: HttpHeader): Unit = {
-      headerPairs += h.lowercaseName → h.value
+      headerPairs += h.lowercaseName -> h.value
     }
 
     while (idx < headers.length) {
@@ -99,34 +99,34 @@ private[http2] object ResponseRendering {
       val header = headers(idx)
       if (header.renderInResponses) {
         header match {
-          case x: Server ⇒
+          case x: Server =>
             addHeader(x)
             serverSeen = true
 
-          case x: Date ⇒
+          case x: Date =>
             addHeader(x)
             dateSeen = true
 
-          case x: CustomHeader ⇒
+          case x: CustomHeader =>
             addHeader(x)
 
           case x: RawHeader if (x is "content-type") || (x is "content-length") || (x is "transfer-encoding") ||
-            (x is "date") || (x is "server") || (x is "connection") ⇒
+            (x is "date") || (x is "server") || (x is "connection") =>
             suppressionWarning(x, "illegal RawHeader")
 
-          case x: `Content-Length` ⇒
+          case x: `Content-Length` =>
             suppressionWarning(x, "explicit `Content-Length` header is not allowed. Use the appropriate HttpEntity subtype.")
 
-          case x: `Content-Type` ⇒
+          case x: `Content-Type` =>
             suppressionWarning(x, "explicit `Content-Type` header is not allowed. Set `HttpResponse.entity.contentType` instead.")
 
-          case x: `Transfer-Encoding` ⇒
+          case x: `Transfer-Encoding` =>
             suppressionWarning(x, "`Transfer-Encoding` header is not allowed for HTTP/2")
 
-          case x: Connection ⇒
+          case x: Connection =>
             suppressionWarning(x, "`Connection` header is not allowed for HTTP/2")
 
-          case x ⇒
+          case x =>
             addHeader(x)
         }
       }
@@ -139,8 +139,8 @@ private[http2] object ResponseRendering {
 
     if (!serverSeen) {
       serverHeader match {
-        case Some(serverTuple) ⇒ headerPairs += serverTuple
-        case None              ⇒
+        case Some(serverTuple) => headerPairs += serverTuple
+        case None              =>
       }
     }
 

@@ -25,7 +25,7 @@ import scala.concurrent.{ Await, Future }
 class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
   import system.dispatcher
 
-  def withMinimal(testCode: MinimalHttpApp ⇒ Any): Unit = {
+  def withMinimal(testCode: MinimalHttpApp => Any): Unit = {
     val minimal = new MinimalHttpApp()
     try testCode(minimal)
     finally {
@@ -33,7 +33,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
     }
   }
 
-  def withSneaky(testCode: SneakHttpApp ⇒ Any): Unit = {
+  def withSneaky(testCode: SneakHttpApp => Any): Unit = {
     val sneaky = new SneakHttpApp()
     try testCode(sneaky)
     finally {
@@ -43,7 +43,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
   "HttpApp Java" should {
 
-    "start only with host and port" in withMinimal { minimal ⇒
+    "start only with host and port" in withMinimal { minimal =>
 
       val server = Future {
         minimal.startServer("localhost", 0)
@@ -61,7 +61,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
     }
 
-    "start without ActorSystem" in withMinimal { minimal ⇒
+    "start without ActorSystem" in withMinimal { minimal =>
 
       val server = Future {
         minimal.startServer("localhost", 0, ServerSettings.create(ConfigFactory.load))
@@ -80,7 +80,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
     }
 
-    "start providing an ActorSystem" in withMinimal { minimal ⇒
+    "start providing an ActorSystem" in withMinimal { minimal =>
 
       val server = Future {
         minimal.startServer("localhost", 0, system)
@@ -100,7 +100,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
     }
 
-    "start providing an ActorSystem and Settings" in withMinimal { minimal ⇒
+    "start providing an ActorSystem and Settings" in withMinimal { minimal =>
 
       val server = Future {
         minimal.startServer("localhost", 0, ServerSettings.create(system), system)
@@ -120,7 +120,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
     }
 
-    "provide binding if available" in withMinimal { minimal ⇒
+    "provide binding if available" in withMinimal { minimal =>
 
       intercept[IllegalStateException] {
         minimal.binding()
@@ -146,7 +146,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
     "notify" when {
 
-      "shutting down" in withSneaky { sneaky ⇒
+      "shutting down" in withSneaky { sneaky =>
 
         val server = Future {
           sneaky.startServer("localhost", 0, ServerSettings.create(ConfigFactory.load))
@@ -169,7 +169,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
       }
 
-      "after binding is successful" in withSneaky { sneaky ⇒
+      "after binding is successful" in withSneaky { sneaky =>
 
         val server = Future {
           sneaky.startServer("localhost", 0, ServerSettings.create(ConfigFactory.load))
@@ -189,7 +189,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
       }
 
-      "after binding is unsuccessful" in withSneaky { sneaky ⇒
+      "after binding is unsuccessful" in withSneaky { sneaky =>
         val serverSocket = new ServerSocket()
         serverSocket.bind(new InetSocketAddress("127.0.0.1", 0))
         val port = serverSocket.getLocalPort

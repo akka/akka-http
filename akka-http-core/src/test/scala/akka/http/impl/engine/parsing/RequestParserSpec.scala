@@ -587,7 +587,7 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
 
     class StrictEqualHttpRequest(val req: HttpRequest) {
       override def equals(other: scala.Any): Boolean = other match {
-        case other: StrictEqualHttpRequest ⇒
+        case other: StrictEqualHttpRequest =>
           this.req.copy(entity = HttpEntity.Empty) == other.req.copy(entity = HttpEntity.Empty) &&
             this.req.entity.toStrict(awaitAtMost).awaitResult(awaitAtMost) ==
             other.req.entity.toStrict(awaitAtMost).awaitResult(awaitAtMost)
@@ -627,24 +627,24 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
 
     def multiParse(parser: HttpRequestParser)(input: Seq[String]): Seq[Either[RequestOutput, StrictEqualHttpRequest]] =
       Source(input.toList)
-        .map(bytes ⇒ SessionBytes(TLSPlacebo.dummySession, ByteString(bytes)))
+        .map(bytes => SessionBytes(TLSPlacebo.dummySession, ByteString(bytes)))
         .via(parser).named("parser")
-        .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x.isInstanceOf[EntityStreamError])
+        .splitWhen(x => x.isInstanceOf[MessageStart] || x.isInstanceOf[EntityStreamError])
         .prefixAndTail(1)
         .collect {
-          case (Seq(RequestStart(method, uri, protocol, headers, createEntity, _, close)), entityParts) ⇒
+          case (Seq(RequestStart(method, uri, protocol, headers, createEntity, _, close)), entityParts) =>
             closeAfterResponseCompletion :+= close
             Right(HttpRequest(method, uri, headers, createEntity(entityParts), protocol))
-          case (Seq(x @ (MessageStartError(_, _) | EntityStreamError(_))), rest) ⇒
+          case (Seq(x @ (MessageStartError(_, _) | EntityStreamError(_))), rest) =>
             rest.runWith(Sink.cancelled)
             Left(x)
         }
         .concatSubstreams
-        .flatMapConcat { x ⇒
+        .flatMapConcat { x =>
           Source.fromFuture {
             x match {
-              case Right(request) ⇒ compactEntity(request.entity).fast.map(x ⇒ Right(request.withEntity(x)))
-              case Left(error)    ⇒ FastFuture.successful(Left(error))
+              case Right(request) => compactEntity(request.entity).fast.map(x => Right(request.withEntity(x)))
+              case Left(error)    => FastFuture.successful(Left(error))
             }
           }
         }
@@ -657,13 +657,13 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
 
     private def compactEntity(entity: RequestEntity): Future[RequestEntity] =
       entity match {
-        case x: Chunked ⇒ compactEntityChunks(x.chunks).fast.map(compacted ⇒ x.copy(chunks = source(compacted: _*)))
-        case _          ⇒ entity.toStrict(awaitAtMost)
+        case x: Chunked => compactEntityChunks(x.chunks).fast.map(compacted => x.copy(chunks = source(compacted: _*)))
+        case _          => entity.toStrict(awaitAtMost)
       }
 
     private def compactEntityChunks(data: Source[ChunkStreamPart, Any]): Future[Seq[ChunkStreamPart]] =
       data.limit(100000).runWith(Sink.seq)
-        .fast.recover { case _: NoSuchElementException ⇒ Nil }
+        .fast.recover { case _: NoSuchElementException => Nil }
 
     def prep(response: String) = response.stripMarginWithNewline(newLine)
   }

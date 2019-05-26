@@ -6,7 +6,7 @@ package akka.http.scaladsl.model.headers
 
 import language.implicitConversions
 import akka.http.impl.util._
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 import akka.http.scaladsl.model.WithQValue
 import akka.http.impl.util.JavaMapping.Implicits._
 

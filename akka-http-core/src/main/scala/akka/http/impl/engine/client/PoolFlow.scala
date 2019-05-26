@@ -75,7 +75,7 @@ private[client] object PoolFlow {
   def apply(
     connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]],
     settings:       ConnectionPoolSettings, log: LoggingAdapter): Flow[RequestContext, ResponseContext, NotUsed] =
-    Flow.fromGraph(GraphDSL.create[FlowShape[RequestContext, ResponseContext]]() { implicit b ⇒
+    Flow.fromGraph(GraphDSL.create[FlowShape[RequestContext, ResponseContext]]() { implicit b =>
       import settings._
       import GraphDSL.Implicits._
 
@@ -91,7 +91,7 @@ private[client] object PoolFlow {
       val slotEventMerge = b.add(Merge[PoolSlot.RawSlotEvent](maxConnections))
 
       slotEventMerge.out ~> conductor.slotEventIn
-      for ((slot, ix) ← slots.zipWithIndex) {
+      for ((slot, ix) <- slots.zipWithIndex) {
         conductor.slotOuts(ix) ~> slot.in
         slot.out0 ~> responseMerge.in(ix)
         slot.out1 ~> slotEventMerge.in(ix)

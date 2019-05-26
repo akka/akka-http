@@ -5,8 +5,8 @@
 package akka.http.javadsl.server
 package directives
 
-import java.lang.{ Iterable ⇒ JIterable }
-import java.util.function.{ Function ⇒ JFunction }
+import java.lang.{ Iterable => JIterable }
+import java.util.function.{ Function => JFunction }
 import java.util.function.Predicate
 import java.util.function.Supplier
 import java.util.regex.Pattern
@@ -14,14 +14,14 @@ import java.util.regex.Pattern
 import scala.collection.JavaConverters._
 
 import akka.http.javadsl.common.RegexConverters.toScala
-import akka.http.scaladsl.server.{ Directives ⇒ D }
+import akka.http.scaladsl.server.{ Directives => D }
 
 abstract class HostDirectives extends HeaderDirectives {
   /**
    * Extracts the hostname part of the Host request header value.
    */
   def extractHost(inner: JFunction[String, Route]): Route = RouteAdapter {
-    D.extractHost { host ⇒ inner.apply(host).delegate }
+    D.extractHost { host => inner.apply(host).delegate }
   }
 
   /**
@@ -42,7 +42,7 @@ abstract class HostDirectives extends HeaderDirectives {
    * Rejects all requests for whose host name the given predicate function returns false.
    */
   def host(predicate: Predicate[String], inner: Supplier[Route]): Route = RouteAdapter {
-    D.host(s ⇒ predicate.test(s)) { inner.get().delegate }
+    D.host(s => predicate.test(s)) { inner.get().delegate }
   }
 
   /**
@@ -52,7 +52,7 @@ abstract class HostDirectives extends HeaderDirectives {
    * If the regex contains more than one capturing group an IllegalArgumentException is thrown.
    */
   def host(regex: Pattern, inner: JFunction[String, Route]): Route = RouteAdapter {
-    D.host(toScala(regex)) { s ⇒ inner.apply(s).delegate }
+    D.host(toScala(regex)) { s => inner.apply(s).delegate }
   }
 
 }

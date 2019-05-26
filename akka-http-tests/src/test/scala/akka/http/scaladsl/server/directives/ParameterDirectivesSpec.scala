@@ -20,7 +20,7 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
         parameter('amount.as[Int]) { echoComplete }
       } ~> check {
         inside(rejection) {
-          case MalformedQueryParamRejection("amount", "'1x3' is not a valid 32-bit signed integer value", Some(_)) ⇒
+          case MalformedQueryParamRejection("amount", "'1x3' is not a valid 32-bit signed integer value", Some(_)) =>
         }
       }
     }
@@ -45,7 +45,7 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
           parameter("amount".as[Int].?) { echoComplete }
         } ~> check {
           inside(rejection) {
-            case MalformedQueryParamRejection("amount", "'x' is not a valid 32-bit signed integer value", Some(_)) ⇒
+            case MalformedQueryParamRejection("amount", "'x' is not a valid 32-bit signed integer value", Some(_)) =>
           }
         }
       }
@@ -54,7 +54,7 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
           parameter("amount".as[Int].?) { echoComplete }
         } ~> check {
           inside(rejection) {
-            case MalformedRequestContentRejection("The request's query string is invalid.", _) ⇒
+            case MalformedRequestContentRejection("The request's query string is invalid.", _) =>
           }
         }
       }
@@ -63,7 +63,7 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
       case class UserId(id: Int)
       case class AnotherUserId(id: Int)
       val UserIdUnmarshaller = Unmarshaller.strict[Int, UserId](UserId)
-      implicit val AnotherUserIdUnmarshaller = Unmarshaller.strict[UserId, AnotherUserId](userId ⇒ AnotherUserId(userId.id))
+      implicit val AnotherUserIdUnmarshaller = Unmarshaller.strict[UserId, AnotherUserId](userId => AnotherUserId(userId.id))
       Get("/?id=45") ~> {
         parameter('id.as[Int].as(UserIdUnmarshaller)) { echoComplete }
       } ~> check { responseAs[String] shouldEqual "UserId(45)" }
@@ -75,7 +75,7 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
 
   "when used with 'as(CsvSeq[...])' the parameter directive should" - {
     val route =
-      parameter("names".as(CsvSeq[String])) { names ⇒
+      parameter("names".as(CsvSeq[String])) { names =>
         complete(s"The parameters are ${names.mkString(", ")}")
       }
 
@@ -107,7 +107,7 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
         parameter('amount.as(HexInt)) { echoComplete }
       } ~> check {
         inside(rejection) {
-          case MalformedQueryParamRejection("amount", "'1x3' is not a valid 32-bit hexadecimal integer value", Some(_)) ⇒
+          case MalformedQueryParamRejection("amount", "'1x3' is not a valid 32-bit hexadecimal integer value", Some(_)) =>
         }
       }
     }
@@ -132,7 +132,7 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
           parameter("amount".as(HexInt).?) { echoComplete }
         } ~> check {
           inside(rejection) {
-            case MalformedQueryParamRejection("amount", "'x' is not a valid 32-bit hexadecimal integer value", Some(_)) ⇒
+            case MalformedQueryParamRejection("amount", "'x' is not a valid 32-bit hexadecimal integer value", Some(_)) =>
           }
         }
       }
@@ -166,7 +166,7 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
         parameter('really.as[Boolean]) { echoComplete }
       } ~> check {
         inside(rejection) {
-          case MalformedQueryParamRejection("really", "'absolutely' is not a valid Boolean value", None) ⇒
+          case MalformedQueryParamRejection("really", "'absolutely' is not a valid Boolean value", None) =>
         }
       }
     }
@@ -175,7 +175,7 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
   "The 'parameters' extraction directive should" - {
     "extract the value of given parameters" in {
       Get("/?name=Parsons&FirstName=Ellen") ~> {
-        parameters("name", 'FirstName) { (name, firstName) ⇒
+        parameters("name", 'FirstName) { (name, firstName) =>
           complete(firstName + name)
         }
       } ~> check { responseAs[String] shouldEqual "EllenParsons" }
@@ -186,21 +186,21 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
     }
     "ignore additional parameters" in {
       Get("/?name=Parsons&FirstName=Ellen&age=29") ~> {
-        parameters("name", 'FirstName) { (name, firstName) ⇒
+        parameters("name", 'FirstName) { (name, firstName) =>
           complete(firstName + name)
         }
       } ~> check { responseAs[String] shouldEqual "EllenParsons" }
     }
     "reject the request with a MissingQueryParamRejection if a required parameter is missing" in {
       Get("/?name=Parsons&sex=female") ~> {
-        parameters('name, 'FirstName, 'age) { (name, firstName, age) ⇒
+        parameters('name, 'FirstName, 'age) { (name, firstName, age) =>
           completeOk
         }
       } ~> check { rejection shouldEqual MissingQueryParamRejection("FirstName") }
     }
     "supply the default value if an optional parameter is missing" in {
       Get("/?name=Parsons&FirstName=Ellen") ~> {
-        parameters("name".?, 'FirstName, 'age ? "29", 'eyes.?) { (name, firstName, age, eyes) ⇒
+        parameters("name".?, 'FirstName, 'age ? "29", 'eyes.?) { (name, firstName, age, eyes) =>
           complete(firstName + name + age + eyes)
         }
       } ~> check { responseAs[String] shouldEqual "EllenSome(Parsons)29None" }
@@ -259,9 +259,9 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
 
   "The 'parameterSeq' directive should" - {
     val completeAsList =
-      parameterSeq { params ⇒
+      parameterSeq { params =>
         val sorted = params.sorted
-        complete(s"${sorted.size}: [${sorted.map(e ⇒ e._1 + " -> " + e._2).mkString(", ")}]")
+        complete(s"${sorted.size}: [${sorted.map(e => e._1 + " -> " + e._2).mkString(", ")}]")
       }
 
     "extract parameters with different keys" in {

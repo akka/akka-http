@@ -10,7 +10,7 @@ import akka.parboiled2.UTF8
 import akka.http.ccompat
 import akka.http.impl.model.parser.UriParser
 import akka.http.impl.util._
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 import akka.http.scaladsl.model.Uri
 import akka.http.impl.util.JavaMapping.Implicits._
 

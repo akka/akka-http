@@ -47,7 +47,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
   "a normal route" should {
     val route = path("noDirective") {
       post {
-        entity(as[String]) { _ ⇒
+        entity(as[String]) { _ =>
           complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>"))
         }
       }
@@ -70,7 +70,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
     val route = path("noDirective") {
       decodeRequest {
         post {
-          entity(as[String]) { e ⇒
+          entity(as[String]) { e =>
             complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, s"Got request with entity of ${e.length} characters"))
           }
         }
@@ -108,7 +108,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
     val route = path("noDirective") {
       decodeRequestWith(decoder) {
         post {
-          entity(as[String]) { e ⇒
+          entity(as[String]) { e =>
             complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, s"Got request with entity of ${e.length} characters"))
           }
         }
@@ -130,7 +130,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
     val route = path("noDirective") {
       decodeRequestWith(decoder) {
         post {
-          entity(as[String]) { e ⇒
+          entity(as[String]) { e =>
             complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, s"Got request with entity of ${e.length} characters"))
           }
         }
@@ -151,7 +151,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
       decodeRequest {
         withoutSizeLimit {
           post {
-            entity(as[String]) { e ⇒
+            entity(as[String]) { e =>
               complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, s"Got request with entity of ${e.length} characters"))
             }
           }
@@ -205,7 +205,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
     val route = path("withoutSizeLimit") {
       post {
         withoutSizeLimit {
-          entity(as[String]) { _ ⇒
+          entity(as[String]) { _ =>
             complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>"))
           }
         }

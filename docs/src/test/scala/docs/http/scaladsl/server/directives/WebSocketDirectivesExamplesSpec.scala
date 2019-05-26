@@ -114,7 +114,7 @@ class WebSocketDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
     def route =
       path("services") {
-        extractUpgradeToWebSocket { upgrade ⇒
+        extractUpgradeToWebSocket { upgrade =>
           complete(upgrade.handleMessages(echoService, Some("echo")))
         }
       }

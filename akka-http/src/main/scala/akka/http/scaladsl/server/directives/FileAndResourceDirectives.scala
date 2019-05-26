@@ -74,7 +74,7 @@ trait FileAndResourceDirectives {
     }
 
   private def conditionalFor(length: Long, lastModified: Long): Directive0 =
-    extractSettings.flatMap(settings ⇒
+    extractSettings.flatMap(settings =>
       if (settings.fileGetConditional) {
         val tag = java.lang.Long.toHexString(lastModified ^ java.lang.Long.reverse(length))
         val lastModifiedDateTime = DateTime(math.min(lastModified, System.currentTimeMillis))
@@ -100,15 +100,15 @@ trait FileAndResourceDirectives {
     if (!resourceName.endsWith("/"))
       get {
         Option(classLoader.getResource(resourceName)) flatMap ResourceFile.apply match {
-          case Some(ResourceFile(url, length, lastModified)) ⇒
+          case Some(ResourceFile(url, length, lastModified)) =>
             conditionalFor(length, lastModified) {
               if (length > 0) {
                 withRangeSupportAndPrecompressedMediaTypeSupport {
-                  complete(HttpEntity.Default(contentType, length, StreamConverters.fromInputStream(() ⇒ url.openStream())))
+                  complete(HttpEntity.Default(contentType, length, StreamConverters.fromInputStream(() => url.openStream())))
                 }
               } else complete(HttpEntity.Empty)
             }
-          case _ ⇒ reject // not found or directory
+          case _ => reject // not found or directory
         }
       }
     else reject // don't serve the content of resource "directories"
@@ -120,11 +120,11 @@ trait FileAndResourceDirectives {
    * @group fileandresource
    */
   def getFromDirectory(directoryName: String)(implicit resolver: ContentTypeResolver): Route =
-    extractUnmatchedPath { unmatchedPath ⇒
-      extractLog { log ⇒
+    extractUnmatchedPath { unmatchedPath =>
+      extractLog { log =>
         safeDirectoryChildPath(withTrailingSlash(directoryName), unmatchedPath, log) match {
-          case ""       ⇒ reject
-          case fileName ⇒ getFromFile(fileName)
+          case ""       => reject
+          case fileName => getFromFile(fileName)
         }
       }
     }
@@ -137,16 +137,16 @@ trait FileAndResourceDirectives {
    */
   def listDirectoryContents(directories: String*)(implicit renderer: DirectoryRenderer): Route =
     get {
-      extractRequestContext { ctx ⇒
-        extractMatchedPath { matched ⇒
+      extractRequestContext { ctx =>
+        extractMatchedPath { matched =>
           val prefixPath = matched.toString
           val remainingPath = ctx.unmatchedPath
           val pathString = withTrailingSlash(safeJoinPaths("/", remainingPath, ctx.log, '/'))
 
-          val dirs = directories flatMap { dir ⇒
+          val dirs = directories flatMap { dir =>
             safeDirectoryChildPath(withTrailingSlash(dir), remainingPath, ctx.log) match {
-              case "" ⇒ None
-              case fileName ⇒
+              case "" => None
+              case fileName =>
                 val file = new File(fileName)
                 if (file.isDirectory && file.canRead) Some(file) else None
             }
@@ -188,11 +188,11 @@ trait FileAndResourceDirectives {
   def getFromResourceDirectory(directoryName: String, classLoader: ClassLoader = _defaultClassLoader)(implicit resolver: ContentTypeResolver): Route = {
     val base = if (directoryName.isEmpty) "" else withTrailingSlash(directoryName)
 
-    extractUnmatchedPath { path ⇒
-      extractLog { log ⇒
+    extractUnmatchedPath { path =>
+      extractLog { log =>
         safeJoinPaths(base, path, log, separator = '/') match {
-          case ""           ⇒ reject
-          case resourceName ⇒ getFromResource(resourceName, resolver(resourceName), classLoader)
+          case ""           => reject
+          case resourceName => getFromResource(resourceName, resolver(resourceName), classLoader)
         }
       }
     }
@@ -222,17 +222,17 @@ object FileAndResourceDirectives extends FileAndResourceDirectives {
    */
   private def safeDirectoryChildPath(basePath: String, path: Uri.Path, log: LoggingAdapter, separator: Char = File.separatorChar): String =
     safeJoinPaths(basePath, path, log, separator) match {
-      case ""   ⇒ ""
-      case path ⇒ checkIsSafeDescendant(basePath, path, log)
+      case ""   => ""
+      case path => checkIsSafeDescendant(basePath, path, log)
     }
 
   private def safeJoinPaths(base: String, path: Uri.Path, log: LoggingAdapter, separator: Char): String = {
     import java.lang.StringBuilder
     @tailrec def rec(p: Uri.Path, result: StringBuilder = new StringBuilder(base)): String =
       p match {
-        case Uri.Path.Empty       ⇒ result.toString
-        case Uri.Path.Slash(tail) ⇒ rec(tail, result.append(separator))
-        case Uri.Path.Segment(head, tail) ⇒
+        case Uri.Path.Empty       => result.toString
+        case Uri.Path.Slash(tail) => rec(tail, result.append(separator))
+        case Uri.Path.Segment(head, tail) =>
           if (head.indexOf('/') >= 0 || head.indexOf('\\') >= 0 || head == "..") {
             log.warning("File-system path for base [{}] and Uri.Path [{}] contains suspicious path segment [{}], " +
               "GET access was disallowed", base, path, head)
@@ -262,11 +262,11 @@ object FileAndResourceDirectives extends FileAndResourceDirectives {
 
   object ResourceFile {
     def apply(url: URL): Option[ResourceFile] = url.getProtocol match {
-      case "file" ⇒
+      case "file" =>
         val file = new File(url.toURI)
         if (file.isDirectory) None
         else Some(ResourceFile(url, file.length(), file.lastModified()))
-      case "jar" ⇒
+      case "jar" =>
         val path = new URI(url.getPath).getPath // remove "file:" prefix and normalize whitespace
         val bangIndex = path.indexOf('!')
         val filePath = path.substring(0, bangIndex)
@@ -275,12 +275,12 @@ object FileAndResourceDirectives extends FileAndResourceDirectives {
         try {
           val entry = jar.getEntry(resourcePath)
           if (entry.isDirectory) None
-          else Option(jar.getInputStream(entry)) map { is ⇒
+          else Option(jar.getInputStream(entry)) map { is =>
             is.close()
             ResourceFile(url, entry.getSize, entry.getTime)
           }
         } finally jar.close()
-      case _ ⇒
+      case _ =>
         val conn = url.openConnection()
         try {
           conn.setUseCaches(false) // otherwise the JDK will keep the connection open when we close!
@@ -301,7 +301,7 @@ object FileAndResourceDirectives extends FileAndResourceDirectives {
     def marshaller(renderVanityFooter: Boolean): ToEntityMarshaller[DirectoryListing]
 
     final override def directoryMarshaller(renderVanityFooter: Boolean): marshalling.Marshaller[JDL, JRE] = {
-      val combined = Marshaller.combined[JDL, SDL, SRE](x ⇒ JavaMapping.toScala(x)(RoutingJavaMapping.convertDirectoryListing))(marshaller(renderVanityFooter))
+      val combined = Marshaller.combined[JDL, SDL, SRE](x => JavaMapping.toScala(x)(RoutingJavaMapping.convertDirectoryListing))(marshaller(renderVanityFooter))
         .map(_.asJava)
       marshalling.Marshaller.fromScala(combined)
     }
@@ -341,18 +341,18 @@ object ContentTypeResolver {
         val lastDotIx = fileName.lastIndexOf('.')
         val mediaType = if (lastDotIx >= 0) {
           fileName.substring(lastDotIx + 1) match {
-            case "gz" ⇒ fileName.lastIndexOf('.', lastDotIx - 1) match {
-              case -1 ⇒ MediaTypes.`application/octet-stream`
-              case x  ⇒ MediaTypes.forExtension(fileName.substring(x + 1, lastDotIx)).withComp(MediaType.Gzipped)
+            case "gz" => fileName.lastIndexOf('.', lastDotIx - 1) match {
+              case -1 => MediaTypes.`application/octet-stream`
+              case x  => MediaTypes.forExtension(fileName.substring(x + 1, lastDotIx)).withComp(MediaType.Gzipped)
             }
-            case ext ⇒ MediaTypes.forExtension(ext)
+            case ext => MediaTypes.forExtension(ext)
           }
         } else MediaTypes.`application/octet-stream`
-        ContentType(mediaType, () ⇒ charset)
+        ContentType(mediaType, () => charset)
       }
     }
 
-  def apply(f: String ⇒ ContentType): ContentTypeResolver =
+  def apply(f: String => ContentType): ContentTypeResolver =
     new ContentTypeResolver {
       def apply(fileName: String): ContentType = f(fileName)
     }
@@ -382,11 +382,11 @@ object DirectoryListing {
       |""".stripMarginWithNewline("\n") split '$'
 
   def directoryMarshaller(renderVanityFooter: Boolean): ToEntityMarshaller[DirectoryListing] =
-    Marshaller.StringMarshaller.wrap(MediaTypes.`text/html`) { listing ⇒
+    Marshaller.StringMarshaller.wrap(MediaTypes.`text/html`) { listing =>
       val DirectoryListing(path, isRoot, files) = listing
-      val filesAndNames = files.map(file ⇒ file → file.getName).sortBy(_._2)
+      val filesAndNames = files.map(file => file -> file.getName).sortBy(_._2)
       val deduped = filesAndNames.zipWithIndex.flatMap {
-        case (fan @ (file, name), ix) ⇒
+        case (fan @ (file, name), ix) =>
           if (ix == 0 || filesAndNames(ix - 1)._2 != name) Some(fan) else None
       }
       val (directoryFilesAndNames, fileFilesAndNames) = deduped.partition(_._1.isDirectory)
@@ -409,8 +409,8 @@ object DirectoryListing {
         start(name).append("        ").append(lastModified(file))
         sb.append("                ".substring(size.length)).append(size).append('\n')
       }
-      for ((file, name) ← directoryFilesAndNames) renderDirectory(file, name)
-      for ((file, name) ← fileFilesAndNames) renderFile(file, name)
+      for ((file, name) <- directoryFilesAndNames) renderDirectory(file, name)
+      for ((file, name) <- fileFilesAndNames) renderFile(file, name)
       if (isRoot && files.isEmpty) sb.append("(no files)\n")
       sb.append(html(3))
       if (renderVanityFooter) sb.append(html(4)).append(DateTime.now.toIsoLikeDateTimeString).append(html(5))

@@ -9,17 +9,18 @@ import java.util.function.BiFunction
 
 import akka.actor.ActorSystem
 import akka.annotation.{ ApiMayChange, InternalApi }
-import akka.http.caching.CacheJavaMapping.Implicits._
+
+import scala.collection.JavaConverters._
+import scala.concurrent.duration.Duration
+import scala.concurrent.{ ExecutionContext, Future }
+import com.github.benmanes.caffeine.cache.{ AsyncCache, Caffeine }
 import akka.http.caching.LfuCache.toJavaMappingFunction
 import akka.http.caching.scaladsl.Cache
 import akka.http.impl.util.JavaMapping.Implicits._
-import com.github.benmanes.caffeine.cache.{ AsyncCache, Caffeine }
+import akka.http.caching.CacheJavaMapping.Implicits._
 
-import scala.collection.JavaConverters._
-import scala.compat.java8.FunctionConverters._
 import scala.compat.java8.FutureConverters._
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.concurrent.duration.Duration
+import scala.compat.java8.FunctionConverters._
 
 @ApiMayChange
 object LfuCache {
@@ -71,12 +72,12 @@ object LfuCache {
       !timeToLive.isFinite || !timeToIdle.isFinite || timeToLive >= timeToIdle,
       s"timeToLive($timeToLive) must be >= than timeToIdle($timeToIdle)")
 
-    def ttl: Caffeine[K, V] ⇒ Caffeine[K, V] = { builder ⇒
+    def ttl: Caffeine[K, V] => Caffeine[K, V] = { builder =>
       if (timeToLive.isFinite) builder.expireAfterWrite(timeToLive.toMillis, TimeUnit.MILLISECONDS)
       else builder
     }
 
-    def tti: Caffeine[K, V] ⇒ Caffeine[K, V] = { builder ⇒
+    def tti: Caffeine[K, V] => Caffeine[K, V] = { builder =>
       if (timeToIdle.isFinite) builder.expireAfterAccess(timeToIdle.toMillis, TimeUnit.MILLISECONDS)
       else builder
     }
@@ -89,11 +90,11 @@ object LfuCache {
     new LfuCache[K, V](store)
   }
 
-  def toJavaMappingFunction[K, V](genValue: () ⇒ Future[V]): BiFunction[K, Executor, CompletableFuture[V]] =
-    asJavaBiFunction[K, Executor, CompletableFuture[V]]((k, e) ⇒ genValue().toJava.toCompletableFuture)
+  def toJavaMappingFunction[K, V](genValue: () => Future[V]): BiFunction[K, Executor, CompletableFuture[V]] =
+    asJavaBiFunction[K, Executor, CompletableFuture[V]]((k, e) => genValue().toJava.toCompletableFuture)
 
-  def toJavaMappingFunction[K, V](loadValue: K ⇒ Future[V]): BiFunction[K, Executor, CompletableFuture[V]] =
-    asJavaBiFunction[K, Executor, CompletableFuture[V]]((k, e) ⇒ loadValue(k).toJava.toCompletableFuture)
+  def toJavaMappingFunction[K, V](loadValue: K => Future[V]): BiFunction[K, Executor, CompletableFuture[V]] =
+    asJavaBiFunction[K, Executor, CompletableFuture[V]]((k, e) => loadValue(k).toJava.toCompletableFuture)
 }
 
 /** INTERNAL API */
@@ -102,10 +103,7 @@ private[caching] class LfuCache[K, V](val store: AsyncCache[K, V]) extends Cache
 
   def get(key: K): Option[Future[V]] = Option(store.getIfPresent(key)).map(_.toScala)
 
-  def apply(key: K, genValue: () ⇒ Future[V]): Future[V] = store.get(key, toJavaMappingFunction[K, V](genValue)).toScala
-
-  def getOrLoad(key: K, loadValue: K ⇒ Future[V]): Future[V] =
-    store.get(key, toJavaMappingFunction[K, V](loadValue)).toScala
+  def apply(key: K, genValue: () => Future[V]): Future[V] = store.get(key, toJavaMappingFunction[K, V](genValue)).toScala
 
   def put(key: K, mayBeValue: Future[V])(implicit ex: ExecutionContext): Future[V] = {
     val previouslyCacheValue = Option(store.getIfPresent(key))
@@ -120,6 +118,7 @@ private[caching] class LfuCache[K, V](val store: AsyncCache[K, V]) extends Cache
       }
     }
   }
+  def getOrLoad(key: K, loadValue: K => Future[V]): Future[V] = store.get(key, toJavaMappingFunction[K, V](loadValue)).toScala
 
   def remove(key: K): Unit = store.synchronous().invalidate(key)
 

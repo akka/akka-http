@@ -126,7 +126,7 @@ class SprayJsonExampleSpec extends WordSpec with Matchers {
         StdIn.readLine() // let it run until user presses return
         bindingFuture
           .flatMap(_.unbind()) // trigger unbinding from the port
-          .onComplete(_ ⇒ system.terminate()) // and shutdown when done
+          .onComplete(_ => system.terminate()) // and shutdown when done
 
       }
     }

@@ -17,7 +17,7 @@ trait Rejected extends RouteResult {
 }
 
 object RouteResults {
-  import akka.http.scaladsl.{ server ⇒ s }
+  import akka.http.scaladsl.{ server => s }
   import akka.japi.Util
   import akka.http.impl.util.JavaMapping
   import JavaMapping.Implicits._

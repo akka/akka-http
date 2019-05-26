@@ -44,7 +44,7 @@ object ClientTransport {
       // By passing an unresolved InetSocketAddress instead, we ensure that DNS resolution is performed for every new connection.
       Tcp().outgoingConnection(InetSocketAddress.createUnresolved(host, port), settings.localAddress,
         settings.socketOptions, halfClose = true, settings.connectingTimeout, settings.idleTimeout)
-        .mapMaterializedValue(_.map(tcpConn ⇒ OutgoingConnection(tcpConn.localAddress, tcpConn.remoteAddress))(system.dispatcher))
+        .mapMaterializedValue(_.map(tcpConn => OutgoingConnection(tcpConn.localAddress, tcpConn.remoteAddress))(system.dispatcher))
   }
 
   /**

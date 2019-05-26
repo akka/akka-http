@@ -12,7 +12,7 @@ import com.typesafe.config.Config
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class HttpsProxySettings private[akka] extends akka.http.javadsl.settings.HttpsProxySettings() { self: HttpsProxySettingsImpl ⇒
+abstract class HttpsProxySettings private[akka] extends akka.http.javadsl.settings.HttpsProxySettings() { self: HttpsProxySettingsImpl =>
   def host: String
   def port: Int
 }

@@ -26,8 +26,8 @@ class Http2BindingViaConfigSpec extends AkkaSpec("""
   val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
   var binding: Future[Http.ServerBinding] = _ // initialized atStartup
 
-  val helloWorldHandler: HttpRequest ⇒ Future[HttpResponse] =
-    _ ⇒ Future(HttpResponse(entity = "Hello!"))
+  val helloWorldHandler: HttpRequest => Future[HttpResponse] =
+    _ => Future(HttpResponse(entity = "Hello!"))
 
   "akka.http.server.enable-http2" should {
     "bind using plain HTTP when provided ConnectionContext is HTTP (not HTTPS)" in {
@@ -74,8 +74,8 @@ class Http2BindingViaConfigSpec extends AkkaSpec("""
 
   private def fishForDebugMessage(a: TestProbe, messagePrefix: String, max: Duration = 3.seconds) {
     a.fishForMessage(max, hint = "expected debug message part: " + messagePrefix) {
-      case Logging.Debug(_, _, msg: String) if msg contains messagePrefix ⇒ true
-      case _ ⇒ false
+      case Logging.Debug(_, _, msg: String) if msg contains messagePrefix => true
+      case _ => false
     }
   }
 

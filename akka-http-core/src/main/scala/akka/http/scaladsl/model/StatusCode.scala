@@ -7,7 +7,7 @@ package akka.http.scaladsl.model
 import language.implicitConversions
 import akka.annotation.ApiMayChange
 import akka.http.impl.util._
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 
 /** The result status code of an HTTP response. */
 sealed abstract class StatusCode extends jm.StatusCode with LazyValueBytesRenderable {

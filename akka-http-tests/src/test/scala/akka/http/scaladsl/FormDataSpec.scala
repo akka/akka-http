@@ -14,7 +14,7 @@ class FormDataSpec extends AkkaSpec {
   implicit val materializer = ActorMaterializer()
   import system.dispatcher
 
-  val formData = FormData(Map("surname" → "Smith", "age" → "42"))
+  val formData = FormData(Map("surname" -> "Smith", "age" -> "42"))
 
   "The FormData infrastructure" should {
     "properly round-trip the fields of x-www-urlencoded forms" in {
@@ -23,11 +23,11 @@ class FormDataSpec extends AkkaSpec {
     }
 
     "properly marshal x-www-urlencoded forms containing special chars" in {
-      val entity = Marshal(FormData(Map("name" → "Smith&Wesson"))).to[HttpEntity]
+      val entity = Marshal(FormData(Map("name" -> "Smith&Wesson"))).to[HttpEntity]
       entity.flatMap(Unmarshal(_).to[String]).futureValue shouldEqual "name=Smith%26Wesson"
       entity.flatMap(Unmarshal(_).to[HttpEntity]).futureValue.getContentType shouldEqual ContentTypes.`application/x-www-form-urlencoded`
 
-      val entity2 = Marshal(FormData(Map("name" → "Smith+Wesson; hopefully!"))).to[HttpEntity]
+      val entity2 = Marshal(FormData(Map("name" -> "Smith+Wesson; hopefully!"))).to[HttpEntity]
       entity2.flatMap(Unmarshal(_).to[String]).futureValue shouldEqual "name=Smith%2BWesson%3B+hopefully%21"
       entity2.flatMap(Unmarshal(_).to[HttpEntity]).futureValue.getContentType shouldEqual ContentTypes.`application/x-www-form-urlencoded`
     }

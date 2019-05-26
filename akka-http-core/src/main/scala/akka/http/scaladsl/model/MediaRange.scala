@@ -7,7 +7,7 @@ package akka.http.scaladsl.model
 import language.implicitConversions
 import java.util
 import akka.http.impl.util._
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 
 sealed abstract class MediaRange extends jm.MediaRange with Renderable with WithQValue[MediaRange] {
   def value: String
@@ -50,21 +50,21 @@ sealed abstract class MediaRange extends jm.MediaRange with Renderable with With
 object MediaRange {
   private[http] def splitOffQValue(params: Map[String, String], defaultQ: Float = 1.0f): (Map[String, String], Float) =
     params.get("q") match {
-      case Some(x) ⇒ (params - "q") → (try x.toFloat catch { case _: NumberFormatException ⇒ 1.0f })
-      case None    ⇒ params → defaultQ
+      case Some(x) => (params - "q") -> (try x.toFloat catch { case _: NumberFormatException => 1.0f })
+      case None    => params -> defaultQ
     }
 
   private final case class Custom(mainType: String, params: Map[String, String], qValue: Float)
     extends MediaRange with ValueRenderable {
     require(0.0f <= qValue && qValue <= 1.0f, "qValue must be >= 0 and <= 1.0")
     def matches(mediaType: MediaType) = (mainType == "*" || mediaType.mainType == mainType) &&
-      this.params.forall { case (key, value) ⇒ mediaType.params.get(key).contains(value) }
+      this.params.forall { case (key, value) => mediaType.params.get(key).contains(value) }
     def withParams(params: Map[String, String]) = custom(mainType, params, qValue)
     def withQValue(qValue: Float) = if (qValue != this.qValue) custom(mainType, params, qValue) else this
     def render[R <: Rendering](r: R): r.type = {
       r ~~ mainType ~~ '/' ~~ '*'
       if (qValue < 1.0f) r ~~ ";q=" ~~ qValue
-      if (params.nonEmpty) params foreach { case (k, v) ⇒ r ~~ ';' ~~ ' ' ~~ k ~~ '=' ~~# v }
+      if (params.nonEmpty) params foreach { case (k, v) => r ~~ ';' ~~ ' ' ~~ k ~~ '=' ~~# v }
       r
     }
     override def isApplication = mainType == "application"
@@ -98,8 +98,8 @@ object MediaRange {
         this.mediaType.params
         .forall {
           // just ignore charset parameter in `Accept` headers, clients should use `Accept-Charset` instead, see also #1139
-          case ("charset", _) ⇒ true
-          case (key, value)   ⇒ mediaType.params.get(key).contains(value)
+          case ("charset", _) => true
+          case (key, value)   => mediaType.params.get(key).contains(value)
         }
     def withParams(params: Map[String, String]) = copy(mediaType = mediaType.withParams(params))
     def withQValue(qValue: Float) = copy(qValue = qValue)

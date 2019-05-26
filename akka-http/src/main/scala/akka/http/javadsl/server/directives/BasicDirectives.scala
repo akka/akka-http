@@ -4,7 +4,7 @@
 
 package akka.http.javadsl.server.directives
 
-import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.{ Function => JFunction }
 
 import akka.actor.ActorSystem
 import akka.http.impl.util.JavaMapping
@@ -21,17 +21,17 @@ import akka.http.javadsl.model.HttpEntity
 import akka.http.javadsl.model.RequestEntity
 import akka.http.javadsl.model.Uri
 import akka.http.javadsl.server._
-import akka.http.scaladsl.server.{ Directives ⇒ D }
+import akka.http.scaladsl.server.{ Directives => D }
 import akka.http.scaladsl
 import akka.stream.Materializer
 import java.util.function.Supplier
-import java.util.{ List ⇒ JList }
+import java.util.{ List => JList }
 
 import akka.http.javadsl.model.HttpResponse
 import akka.http.javadsl.model.ResponseEntity
 import akka.http.javadsl.model.HttpHeader
 import akka.http.scaladsl.util.FastFuture._
-import java.lang.{ Iterable ⇒ JIterable }
+import java.lang.{ Iterable => JIterable }
 import java.util.concurrent.CompletionStage
 import java.util.function.Predicate
 
@@ -47,61 +47,61 @@ abstract class BasicDirectives {
   import RoutingJavaMapping._
 
   def mapRequest(f: JFunction[HttpRequest, HttpRequest], inner: Supplier[Route]): Route = RouteAdapter {
-    D.mapRequest(rq ⇒ f.apply(rq.asJava).asScala) { inner.get.delegate }
+    D.mapRequest(rq => f.apply(rq.asJava).asScala) { inner.get.delegate }
   }
 
   def mapRequestContext(f: JFunction[RequestContext, RequestContext], inner: Supplier[Route]): Route = RouteAdapter {
-    D.mapRequestContext(rq ⇒ f.apply(RequestContext.toJava(rq)).asScala) { inner.get.delegate }
+    D.mapRequestContext(rq => f.apply(RequestContext.toJava(rq)).asScala) { inner.get.delegate }
   }
 
   def mapRejections(f: JFunction[JList[Rejection], JList[Rejection]], inner: Supplier[Route]): Route = RouteAdapter {
-    D.mapRejections(rejections ⇒ Util.immutableSeq(f.apply(Util.javaArrayList(rejections.map(_.asJava)))).map(_.asScala)) { inner.get.delegate }
+    D.mapRejections(rejections => Util.immutableSeq(f.apply(Util.javaArrayList(rejections.map(_.asJava)))).map(_.asScala)) { inner.get.delegate }
   }
 
   def mapResponse(f: JFunction[HttpResponse, HttpResponse], inner: Supplier[Route]): Route = RouteAdapter {
-    D.mapResponse(resp ⇒ f.apply(resp.asJava).asScala) { inner.get.delegate }
+    D.mapResponse(resp => f.apply(resp.asJava).asScala) { inner.get.delegate }
   }
 
   def mapResponseEntity(f: JFunction[ResponseEntity, ResponseEntity], inner: Supplier[Route]): Route = RouteAdapter {
-    D.mapResponseEntity(e ⇒ f.apply(e.asJava).asScala) { inner.get.delegate }
+    D.mapResponseEntity(e => f.apply(e.asJava).asScala) { inner.get.delegate }
   }
 
   def mapResponseHeaders(f: JFunction[JList[HttpHeader], JList[HttpHeader]], inner: Supplier[Route]): Route = RouteAdapter {
-    D.mapResponseHeaders(l ⇒ Util.immutableSeq(f.apply(Util.javaArrayList(l))).map(_.asScala)) { inner.get.delegate } // TODO try to remove map()
+    D.mapResponseHeaders(l => Util.immutableSeq(f.apply(Util.javaArrayList(l))).map(_.asScala)) { inner.get.delegate } // TODO try to remove map()
   }
 
   def mapInnerRoute(f: JFunction[Route, Route], inner: Supplier[Route]): Route = RouteAdapter {
-    D.mapInnerRoute(route ⇒ f(RouteAdapter(route)).delegate) { inner.get.delegate }
+    D.mapInnerRoute(route => f(RouteAdapter(route)).delegate) { inner.get.delegate }
   }
 
   def mapRouteResult(f: JFunction[RouteResult, RouteResult], inner: Supplier[Route]): Route = RouteAdapter {
-    D.mapRouteResult(route ⇒ f(route.asJava).asScala) { inner.get.delegate }
+    D.mapRouteResult(route => f(route.asJava).asScala) { inner.get.delegate }
   }
 
   def mapRouteResultPF(f: PartialFunction[RouteResult, RouteResult], inner: Supplier[Route]): Route = RouteAdapter {
-    D.mapRouteResult(route ⇒ f(route.asJava).asScala) { inner.get.delegate }
+    D.mapRouteResult(route => f(route.asJava).asScala) { inner.get.delegate }
   }
 
   def mapRouteResultFuture(f: JFunction[CompletionStage[RouteResult], CompletionStage[RouteResult]], inner: Supplier[Route]): Route = RouteAdapter {
-    D.mapRouteResultFuture(stage ⇒
+    D.mapRouteResultFuture(stage =>
       f(toJava(stage.fast.map(_.asJava)(ExecutionContexts.sameThreadExecutionContext))).toScala.fast.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)) {
       inner.get.delegate
     }
   }
 
   def mapRouteResultWith(f: JFunction[RouteResult, CompletionStage[RouteResult]], inner: Supplier[Route]): Route = RouteAdapter {
-    D.mapRouteResultWith(r ⇒ f(r.asJava).toScala.fast.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)) { inner.get.delegate }
+    D.mapRouteResultWith(r => f(r.asJava).toScala.fast.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)) { inner.get.delegate }
   }
 
   def mapRouteResultWithPF(f: PartialFunction[RouteResult, CompletionStage[RouteResult]], inner: Supplier[Route]): Route = RouteAdapter {
-    D.mapRouteResultWith(r ⇒ f(r.asJava).toScala.fast.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)) { inner.get.delegate }
+    D.mapRouteResultWith(r => f(r.asJava).toScala.fast.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)) { inner.get.delegate }
   }
 
   /**
    * Runs the inner route with settings mapped by the given function.
    */
   def mapSettings(f: JFunction[RoutingSettings, RoutingSettings], inner: Supplier[Route]): Route = RouteAdapter {
-    D.mapSettings(rs ⇒ f(rs.asJava).asScala) { inner.get.delegate }
+    D.mapSettings(rs => f(rs.asJava).asScala) { inner.get.delegate }
   }
 
   /**
@@ -116,7 +116,7 @@ abstract class BasicDirectives {
    * Injects the given value into a directive.
    */
   def provide[T](t: T, inner: JFunction[T, Route]): Route = RouteAdapter {
-    D.provide(t) { t ⇒ inner.apply(t).delegate }
+    D.provide(t) { t => inner.apply(t).delegate }
   }
 
   /**
@@ -140,29 +140,29 @@ abstract class BasicDirectives {
    * to the list of rejections potentially coming back from the inner route.
    */
   def cancelRejections(filter: Predicate[Rejection], inner: Supplier[Route]): Route = RouteAdapter {
-    D.cancelRejections(r ⇒ filter.test(r)) { inner.get.delegate }
+    D.cancelRejections(r => filter.test(r)) { inner.get.delegate }
   }
 
   def recoverRejections(f: JFunction[JIterable[Rejection], RouteResult], inner: Supplier[Route]): Route = RouteAdapter {
-    D.recoverRejections(rs ⇒ f.apply(Util.javaArrayList(rs.map(_.asJava))).asScala) { inner.get.delegate }
+    D.recoverRejections(rs => f.apply(Util.javaArrayList(rs.map(_.asJava))).asScala) { inner.get.delegate }
   }
 
   def recoverRejectionsWith(f: JFunction[JIterable[Rejection], CompletionStage[RouteResult]], inner: Supplier[Route]): Route = RouteAdapter {
-    D.recoverRejectionsWith(rs ⇒ f.apply(Util.javaArrayList(rs.map(_.asJava))).toScala.fast.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)) { inner.get.delegate }
+    D.recoverRejectionsWith(rs => f.apply(Util.javaArrayList(rs.map(_.asJava))).toScala.fast.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)) { inner.get.delegate }
   }
 
   /**
    * Transforms the unmatchedPath of the RequestContext using the given function.
    */
   def mapUnmatchedPath(f: JFunction[String, String], inner: Supplier[Route]): Route = RouteAdapter {
-    D.mapUnmatchedPath(path ⇒ scaladsl.model.Uri.Path(f.apply(path.toString))) { inner.get.delegate }
+    D.mapUnmatchedPath(path => scaladsl.model.Uri.Path(f.apply(path.toString))) { inner.get.delegate }
   }
 
   /**
    * Extracts the yet unmatched path from the RequestContext.
    */
   def extractUnmatchedPath(inner: JFunction[String, Route]) = RouteAdapter {
-    D.extractUnmatchedPath { path ⇒
+    D.extractUnmatchedPath { path =>
       inner.apply(path.toString).delegate
     }
   }
@@ -171,7 +171,7 @@ abstract class BasicDirectives {
    * Extracts the already matched path from the RequestContext.
    */
   def extractMatchedPath(inner: JFunction[String, Route]) = RouteAdapter {
-    D.extractMatchedPath { path ⇒
+    D.extractMatchedPath { path =>
       inner.apply(path.toString).delegate
     }
   }
@@ -180,7 +180,7 @@ abstract class BasicDirectives {
    * Extracts the current [[HttpRequest]] instance.
    */
   def extractRequest(inner: JFunction[HttpRequest, Route]) = RouteAdapter {
-    D.extractRequest { rq ⇒
+    D.extractRequest { rq =>
       inner.apply(rq).delegate
     }
   }
@@ -189,7 +189,7 @@ abstract class BasicDirectives {
    * Extracts the complete request URI.
    */
   def extractUri(inner: JFunction[Uri, Route]) = RouteAdapter {
-    D.extractUri { uri ⇒
+    D.extractUri { uri =>
       inner.apply(JavaUri(uri)).delegate
     }
   }
@@ -199,7 +199,7 @@ abstract class BasicDirectives {
    */
   @CorrespondsTo("extract")
   def extractEntity(inner: JFunction[RequestEntity, Route]): Route = RouteAdapter {
-    D.extractRequest { rq ⇒
+    D.extractRequest { rq =>
       inner.apply(rq.entity).delegate
     }
   }
@@ -208,26 +208,26 @@ abstract class BasicDirectives {
    * Extracts the [[Materializer]] from the [[RequestContext]].
    */
   def extractMaterializer(inner: JFunction[Materializer, Route]): Route = RouteAdapter(
-    D.extractMaterializer { m ⇒ inner.apply(m).delegate })
+    D.extractMaterializer { m => inner.apply(m).delegate })
 
   /**
    * Extracts the [[akka.actor.ActorSystem]] if the available Materializer is an [[akka.stream.ActorMaterializer]].
    * Otherwise throws an exception as it won't be able to extract the system from arbitrary materializers.
    */
   def extractActorSystem(inner: JFunction[ActorSystem, Route]): Route = RouteAdapter(
-    D.extractActorSystem { system ⇒ inner.apply(system).delegate })
+    D.extractActorSystem { system => inner.apply(system).delegate })
 
   /**
    * Extracts the [[ExecutionContextExecutor]] from the [[RequestContext]].
    */
   def extractExecutionContext(inner: JFunction[ExecutionContextExecutor, Route]): Route = RouteAdapter(
-    D.extractExecutionContext { c ⇒ inner.apply(c).delegate })
+    D.extractExecutionContext { c => inner.apply(c).delegate })
 
   /**
    * Extracts a single value using the given function.
    */
   def extract[T](extract: JFunction[RequestContext, T], inner: JFunction[T, Route]): Route = RouteAdapter {
-    D.extract(sc ⇒ extract.apply(JavaMapping.toJava(sc)(server.RoutingJavaMapping.RequestContext))) { c ⇒ inner.apply(c).delegate }
+    D.extract(sc => extract.apply(JavaMapping.toJava(sc)(server.RoutingJavaMapping.RequestContext))) { c => inner.apply(c).delegate }
   }
 
   /**
@@ -262,14 +262,14 @@ abstract class BasicDirectives {
    * Extracts the [[LoggingAdapter]]
    */
   def extractLog(inner: JFunction[LoggingAdapter, Route]): Route = RouteAdapter {
-    D.extractLog { log ⇒ inner.apply(log).delegate }
+    D.extractLog { log => inner.apply(log).delegate }
   }
 
   /**
    * Extracts the [[akka.http.javadsl.settings.ParserSettings]] from the [[akka.http.javadsl.server.RequestContext]].
    */
   def extractParserSettings(inner: JFunction[ParserSettings, Route]) = RouteAdapter {
-    D.extractParserSettings { settings ⇒
+    D.extractParserSettings { settings =>
       inner.apply(settings).delegate
     }
   }
@@ -278,7 +278,7 @@ abstract class BasicDirectives {
    * Extracts the [[RoutingSettings]] from the [[akka.http.javadsl.server.RequestContext]].
    */
   def extractSettings(inner: JFunction[RoutingSettings, Route]) = RouteAdapter {
-    D.extractSettings { settings ⇒
+    D.extractSettings { settings =>
       inner.apply(settings).delegate
     }
   }
@@ -287,14 +287,14 @@ abstract class BasicDirectives {
    * Extracts the [[akka.http.javadsl.server.RequestContext]] itself.
    */
   def extractRequestContext(inner: JFunction[RequestContext, Route]) = RouteAdapter {
-    D.extractRequestContext { ctx ⇒ inner.apply(JavaMapping.toJava(ctx)(server.RoutingJavaMapping.RequestContext)).delegate }
+    D.extractRequestContext { ctx => inner.apply(JavaMapping.toJava(ctx)(server.RoutingJavaMapping.RequestContext)).delegate }
   }
 
   /**
    * Extracts the entities `dataBytes` [[akka.stream.javadsl.Source]] from the [[akka.http.javadsl.server.RequestContext]].
    */
   def extractDataBytes(inner: JFunction[Source[ByteString, Any], Route]) = RouteAdapter {
-    D.extractRequest { ctx ⇒ inner.apply(ctx.entity.dataBytes.asJava).delegate }
+    D.extractRequest { ctx => inner.apply(ctx.entity.dataBytes.asJava).delegate }
   }
 
   /**
@@ -315,7 +315,7 @@ abstract class BasicDirectives {
    * @param timeout The directive is failed if the stream isn't completed after the given timeout.
    */
   def extractStrictEntity(timeout: FiniteDuration, inner: JFunction[HttpEntity.Strict, Route]): Route = RouteAdapter {
-    D.extractStrictEntity(timeout) { strict ⇒ inner.apply(strict).delegate }
+    D.extractStrictEntity(timeout) { strict => inner.apply(strict).delegate }
   }
 
   /**
@@ -331,7 +331,7 @@ abstract class BasicDirectives {
    * @param timeout The directive is failed if the stream isn't completed after the given timeout.
    */
   def extractStrictEntity(timeout: FiniteDuration, maxBytes: Long, inner: JFunction[HttpEntity.Strict, Route]): Route = RouteAdapter {
-    D.extractStrictEntity(timeout, maxBytes) { strict ⇒ inner.apply(strict).delegate }
+    D.extractStrictEntity(timeout, maxBytes) { strict => inner.apply(strict).delegate }
   }
 
   /**

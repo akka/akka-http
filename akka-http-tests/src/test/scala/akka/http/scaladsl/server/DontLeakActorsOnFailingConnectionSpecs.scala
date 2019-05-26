@@ -51,11 +51,11 @@ abstract class DontLeakActorsOnFailingConnectionSpecs(poolImplementation: String
         val host = "127.0.0.1"
         val port = 86 // (Micro Focus Cobol) unlikely to be used port in the "system ports" range
         val source = Source(1 to reqsCount)
-          .map(i ⇒ HttpRequest(uri = Uri(s"http://$host:$port/test/$i")) → i)
+          .map(i => HttpRequest(uri = Uri(s"http://$host:$port/test/$i")) -> i)
 
         val countDown = new CountDownLatch(reqsCount)
         val sink = Sink.foreach[(Try[HttpResponse], Int)] {
-          case (resp, id) ⇒
+          case (resp, id) =>
             countDown.countDown()
             handleResponse(resp, id)
         }
@@ -69,11 +69,11 @@ abstract class DontLeakActorsOnFailingConnectionSpecs(poolImplementation: String
 
   private def handleResponse(httpResp: Try[HttpResponse], id: Int): Unit = {
     httpResp match {
-      case Success(httpRes) ⇒
+      case Success(httpRes) =>
         system.log.error(s"$id: OK: (${httpRes.status.intValue}")
         httpRes.entity.dataBytes.runWith(Sink.ignore)
 
-      case Failure(ex) ⇒
+      case Failure(ex) =>
         system.log.debug(s"$id: FAIL $ex") // this is what we expect
     }
   }

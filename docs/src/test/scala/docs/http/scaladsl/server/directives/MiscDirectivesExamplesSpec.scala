@@ -113,7 +113,7 @@ class MiscDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "withSizeLimit-example" in {
     //#withSizeLimit-example
     val route = withSizeLimit(500) {
-      entity(as[String]) { _ ⇒
+      entity(as[String]) { _ =>
         complete(HttpResponse())
       }
     }
@@ -158,7 +158,7 @@ class MiscDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     val route =
       withSizeLimit(500) {
         withSizeLimit(800) {
-          entity(as[String]) { _ ⇒
+          entity(as[String]) { _ =>
             complete(HttpResponse())
           }
         }
@@ -181,7 +181,7 @@ class MiscDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     //#withoutSizeLimit-example
     val route =
       withoutSizeLimit {
-        entity(as[String]) { _ ⇒
+        entity(as[String]) { _ =>
           complete(HttpResponse())
         }
       }

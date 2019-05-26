@@ -19,7 +19,7 @@ private[http] trait Http2InternalServerSettings
 
 @ApiMayChange
 @DoNotInherit
-trait Http2ServerSettings extends javadsl.settings.Http2ServerSettings { self: Http2ServerSettings.Http2ServerSettingsImpl ⇒
+trait Http2ServerSettings extends javadsl.settings.Http2ServerSettings { self: Http2ServerSettings.Http2ServerSettingsImpl =>
   def requestEntityChunkSize: Int
   def withRequestEntityChunkSize(newValue: Int): Http2ServerSettings = copy(requestEntityChunkSize = newValue)
 

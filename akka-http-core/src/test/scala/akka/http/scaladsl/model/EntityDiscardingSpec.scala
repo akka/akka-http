@@ -18,7 +18,7 @@ class EntityDiscardingSpec extends AkkaSpec {
 
   implicit val mat = ActorMaterializer()
 
-  val testData = Vector.tabulate(200)(i ⇒ ByteString(s"row-$i"))
+  val testData = Vector.tabulate(200)(i => ByteString(s"row-$i"))
 
   "HttpRequest" should {
 
@@ -26,8 +26,8 @@ class EntityDiscardingSpec extends AkkaSpec {
 
       val p = Promise[Done]()
       val s = Source
-        .fromIterator[ByteString](() ⇒ testData.iterator)
-        .alsoTo(Sink.onComplete(t ⇒ p.complete(t)))
+        .fromIterator[ByteString](() => testData.iterator)
+        .alsoTo(Sink.onComplete(t => p.complete(t)))
 
       val req = HttpRequest(entity = HttpEntity(ContentTypes.`text/csv(UTF-8)`, s))
       val de = req.discardEntityBytes()
@@ -43,8 +43,8 @@ class EntityDiscardingSpec extends AkkaSpec {
 
       val p = Promise[Done]()
       val s = Source
-        .fromIterator[ByteString](() ⇒ testData.iterator)
-        .alsoTo(Sink.onComplete(t ⇒ p.complete(t)))
+        .fromIterator[ByteString](() => testData.iterator)
+        .alsoTo(Sink.onComplete(t => p.complete(t)))
 
       val resp = HttpResponse(entity = HttpEntity(ContentTypes.`text/csv(UTF-8)`, s))
       val de = resp.discardEntityBytes()
@@ -58,9 +58,9 @@ class EntityDiscardingSpec extends AkkaSpec {
     "should not allow draining a second time" in {
       val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
       val bound = Http().bindAndHandleSync(
-        req ⇒
+        req =>
           HttpResponse(entity = HttpEntity(
-            ContentTypes.`text/csv(UTF-8)`, Source.fromIterator[ByteString](() ⇒ testData.iterator))),
+            ContentTypes.`text/csv(UTF-8)`, Source.fromIterator[ByteString](() => testData.iterator))),
         host, port).futureValue
 
       try {

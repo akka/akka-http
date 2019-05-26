@@ -12,7 +12,7 @@ import akka.parboiled2.Parser
 import akka.http.scaladsl.model.{ ParsingException, IllegalUriException }
 import akka.http.scaladsl.model.headers._
 
-private[parser] trait LinkHeader { this: Parser with CommonRules with CommonActions ⇒
+private[parser] trait LinkHeader { this: Parser with CommonRules with CommonActions =>
   import CharacterClasses._
 
   // http://tools.ietf.org/html/rfc5988#section-5
@@ -56,28 +56,28 @@ private[parser] trait LinkHeader { this: Parser with CommonRules with CommonActi
   }
 
   def URI = rule {
-    capture(oneOrMore(!'"' ~ !';' ~ !',' ~ VCHAR)) ~> { s ⇒
+    capture(oneOrMore(!'"' ~ !';' ~ !',' ~ VCHAR)) ~> { s =>
       try new UriParser(s).parseUriReference()
       catch {
-        case IllegalUriException(info) ⇒ throw ParsingException(info.withSummaryPrepended("Illegal `Link` header relation-type"))
+        case IllegalUriException(info) => throw ParsingException(info.withSummaryPrepended("Illegal `Link` header relation-type"))
       }
       s
     }
   }
 
-  def `link-media-type` = rule { `media-type` ~> ((mt, st, pm) ⇒ getMediaType(mt, st, pm contains "charset", TreeMap(pm: _*))) }
+  def `link-media-type` = rule { `media-type` ~> ((mt, st, pm) => getMediaType(mt, st, pm contains "charset", TreeMap(pm: _*))) }
 
   // filter out subsequent `rel`, `media`, `title`, `type` and `type*` params
   @tailrec private def sanitize(params: Seq[LinkParam], result: immutable.Seq[LinkParam] = Nil, seenRel: Boolean = false,
                                 seenMedia: Boolean = false, seenTitle: Boolean = false, seenTitleS: Boolean = false,
                                 seenType: Boolean = false): immutable.Seq[LinkParam] =
     params match {
-      case Seq((x: LinkParams.rel), tail @ _*)      ⇒ sanitize(tail, if (seenRel) result else result :+ x, seenRel = true, seenMedia, seenTitle, seenTitleS, seenType)
-      case Seq((x: LinkParams.media), tail @ _*)    ⇒ sanitize(tail, if (seenMedia) result else result :+ x, seenRel, seenMedia = true, seenTitle, seenTitleS, seenType)
-      case Seq((x: LinkParams.title), tail @ _*)    ⇒ sanitize(tail, if (seenTitle) result else result :+ x, seenRel, seenMedia, seenTitle = true, seenTitleS, seenType)
-      case Seq((x: LinkParams.`title*`), tail @ _*) ⇒ sanitize(tail, if (seenTitleS) result else result :+ x, seenRel, seenMedia, seenTitle, seenTitleS = true, seenType)
-      case Seq((x: LinkParams.`type`), tail @ _*)   ⇒ sanitize(tail, if (seenType) result else result :+ x, seenRel, seenMedia, seenTitle, seenTitleS, seenType = true)
-      case Seq(head, tail @ _*)                     ⇒ sanitize(tail, result :+ head, seenRel, seenMedia, seenTitle, seenTitleS, seenType)
-      case Nil                                      ⇒ result
+      case Seq((x: LinkParams.rel), tail @ _*)      => sanitize(tail, if (seenRel) result else result :+ x, seenRel = true, seenMedia, seenTitle, seenTitleS, seenType)
+      case Seq((x: LinkParams.media), tail @ _*)    => sanitize(tail, if (seenMedia) result else result :+ x, seenRel, seenMedia = true, seenTitle, seenTitleS, seenType)
+      case Seq((x: LinkParams.title), tail @ _*)    => sanitize(tail, if (seenTitle) result else result :+ x, seenRel, seenMedia, seenTitle = true, seenTitleS, seenType)
+      case Seq((x: LinkParams.`title*`), tail @ _*) => sanitize(tail, if (seenTitleS) result else result :+ x, seenRel, seenMedia, seenTitle, seenTitleS = true, seenType)
+      case Seq((x: LinkParams.`type`), tail @ _*)   => sanitize(tail, if (seenType) result else result :+ x, seenRel, seenMedia, seenTitle, seenTitleS, seenType = true)
+      case Seq(head, tail @ _*)                     => sanitize(tail, result :+ head, seenRel, seenMedia, seenTitle, seenTitleS, seenType)
+      case Nil                                      => result
     }
 }

@@ -6,7 +6,7 @@ package akka.http.scaladsl.settings
 
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
-import akka.http.javadsl.{ settings ⇒ js }
+import akka.http.javadsl.{ settings => js }
 import akka.http.scaladsl.ClientTransport
 import com.typesafe.config.Config
 
@@ -25,7 +25,7 @@ object PoolImplementation {
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: ConnectionPoolSettingsImpl ⇒
+abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: ConnectionPoolSettingsImpl =>
   def maxConnections: Int
   def minConnections: Int
   def maxRetries: Int
@@ -80,7 +80,7 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   def withTransport(newTransport: ClientTransport): ConnectionPoolSettings =
     withUpdatedConnectionSettings(_.withTransport(newTransport))
 
-  def withUpdatedConnectionSettings(f: ClientConnectionSettings ⇒ ClientConnectionSettings): ConnectionPoolSettings
+  def withUpdatedConnectionSettings(f: ClientConnectionSettings => ClientConnectionSettings): ConnectionPoolSettings
 }
 
 object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] {

@@ -13,7 +13,7 @@ import akka.http.impl.engine.server.HttpServerTestSetupBase
 
 import scala.concurrent.duration._
 
-class WebSocketServerSpec extends FreeSpec with Matchers with WithMaterializerSpec { spec ⇒
+class WebSocketServerSpec extends FreeSpec with Matchers with WithMaterializerSpec { spec =>
 
   "The server-side WebSocket integration should" - {
     "establish a websocket connection when the user requests it" - {
@@ -35,7 +35,7 @@ class WebSocketServerSpec extends FreeSpec with Matchers with WithMaterializerSp
           upgrade.isDefined shouldBe true
 
           val source =
-            Source(List(1, 2, 3, 4, 5)).map(num ⇒ TextMessage.Strict(s"Message $num"))
+            Source(List(1, 2, 3, 4, 5)).map(num => TextMessage.Strict(s"Message $num"))
           val handler = Flow.fromSinkAndSourceMat(Sink.ignore, source)(Keep.none)
           val response = upgrade.get.handleMessages(handler)
           responses.sendNext(response)

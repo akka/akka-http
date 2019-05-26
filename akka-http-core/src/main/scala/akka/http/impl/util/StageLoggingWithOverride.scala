@@ -20,7 +20,7 @@ import akka.event.NoLogging
  * INTERNAL API
  */
 @InternalApi
-private[akka] trait StageLoggingWithOverride { self: GraphStageLogic ⇒
+private[akka] trait StageLoggingWithOverride { self: GraphStageLogic =>
   def logOverride: LoggingAdapter = DefaultNoLogging
 
   private var _log: LoggingAdapter = null
@@ -30,17 +30,17 @@ private[akka] trait StageLoggingWithOverride { self: GraphStageLogic ⇒
   def log: LoggingAdapter = {
     // only used in StageLogic, i.e. thread safe
     _log match {
-      case null ⇒
+      case null =>
         _log =
           logOverride match {
-            case DefaultNoLogging ⇒
+            case DefaultNoLogging =>
               materializer match {
-                case a: ActorMaterializer ⇒ akka.event.Logging(a.system, logSource)
-                case _                    ⇒ NoLogging
+                case a: ActorMaterializer => akka.event.Logging(a.system, logSource)
+                case _                    => NoLogging
               }
-            case x ⇒ x
+            case x => x
           }
-      case _ ⇒
+      case _ =>
     }
     _log
   }

@@ -21,7 +21,7 @@ trait Decoder {
   def decodeMessage(message: HttpMessage): message.Self =
     if (message.headers exists Encoder.isContentEncodingHeader)
       message.transformEntityDataBytes(decoderFlow.recover {
-        case NonFatal(e) ⇒
+        case NonFatal(e) =>
           throw IllegalRequestException(
             StatusCodes.BadRequest,
             ErrorInfo("The request's encoding is corrupt", e.getMessage))
@@ -42,8 +42,8 @@ object Decoder {
 }
 
 /** A decoder that is implemented in terms of a [[Stage]] */
-trait StreamDecoder extends Decoder { outer ⇒
-  protected def newDecompressorStage(maxBytesPerChunk: Int): () ⇒ GraphStage[FlowShape[ByteString, ByteString]]
+trait StreamDecoder extends Decoder { outer =>
+  protected def newDecompressorStage(maxBytesPerChunk: Int): () => GraphStage[FlowShape[ByteString, ByteString]]
 
   def maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault
   def withMaxBytesPerChunk(newMaxBytesPerChunk: Int): Decoder =
@@ -51,7 +51,7 @@ trait StreamDecoder extends Decoder { outer ⇒
       def encoding: HttpEncoding = outer.encoding
       override def maxBytesPerChunk: Int = newMaxBytesPerChunk
 
-      def newDecompressorStage(maxBytesPerChunk: Int): () ⇒ GraphStage[FlowShape[ByteString, ByteString]] =
+      def newDecompressorStage(maxBytesPerChunk: Int): () => GraphStage[FlowShape[ByteString, ByteString]] =
         outer.newDecompressorStage(maxBytesPerChunk)
     }
 

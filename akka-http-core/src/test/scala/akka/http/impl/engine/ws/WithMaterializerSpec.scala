@@ -10,7 +10,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
 
-trait WithMaterializerSpec extends BeforeAndAfterAll { _: Suite ⇒
+trait WithMaterializerSpec extends BeforeAndAfterAll { _: Suite =>
   lazy val testConf: Config = ConfigFactory.parseString("""
   akka.event-handlers = ["akka.testkit.TestEventListener"]
   akka.loglevel = WARNING

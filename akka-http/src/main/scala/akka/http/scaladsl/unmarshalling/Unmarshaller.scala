@@ -19,23 +19,23 @@ trait Unmarshaller[-A, B] extends akka.http.javadsl.unmarshalling.Unmarshaller[A
 
   def apply(value: A)(implicit ec: ExecutionContext, materializer: Materializer): Future[B]
 
-  def transform[C](f: ExecutionContext ⇒ Materializer ⇒ Future[B] ⇒ Future[C]): Unmarshaller[A, C] =
-    Unmarshaller.withMaterializer { implicit ec ⇒ implicit mat ⇒ a ⇒ f(ec)(mat)(this(a)) }
+  def transform[C](f: ExecutionContext => Materializer => Future[B] => Future[C]): Unmarshaller[A, C] =
+    Unmarshaller.withMaterializer { implicit ec => implicit mat => a => f(ec)(mat)(this(a)) }
 
-  def map[C](f: B ⇒ C): Unmarshaller[A, C] =
-    transform(implicit ec ⇒ _ ⇒ _.fast map f)
+  def map[C](f: B => C): Unmarshaller[A, C] =
+    transform(implicit ec => _ => _.fast map f)
 
-  def flatMap[C](f: ExecutionContext ⇒ Materializer ⇒ B ⇒ Future[C]): Unmarshaller[A, C] =
-    transform(implicit ec ⇒ mat ⇒ _.fast flatMap f(ec)(mat))
+  def flatMap[C](f: ExecutionContext => Materializer => B => Future[C]): Unmarshaller[A, C] =
+    transform(implicit ec => mat => _.fast flatMap f(ec)(mat))
 
   def andThen[C](other: Unmarshaller[B, C]): Unmarshaller[A, C] =
-    flatMap(ec ⇒ mat ⇒ data ⇒ other(data)(ec, mat))
+    flatMap(ec => mat => data => other(data)(ec, mat))
 
-  def recover[C >: B](pf: ExecutionContext ⇒ Materializer ⇒ PartialFunction[Throwable, C]): Unmarshaller[A, C] =
-    transform(implicit ec ⇒ mat ⇒ _.fast recover pf(ec)(mat))
+  def recover[C >: B](pf: ExecutionContext => Materializer => PartialFunction[Throwable, C]): Unmarshaller[A, C] =
+    transform(implicit ec => mat => _.fast recover pf(ec)(mat))
 
   def withDefaultValue[BB >: B](defaultValue: BB): Unmarshaller[A, BB] =
-    recover(_ ⇒ _ ⇒ { case Unmarshaller.NoContentException ⇒ defaultValue })
+    recover(_ => _ => { case Unmarshaller.NoContentException => defaultValue })
 }
 
 object Unmarshaller
@@ -49,20 +49,20 @@ object Unmarshaller
   /**
    * Creates an `Unmarshaller` from the given function.
    */
-  def apply[A, B](f: ExecutionContext ⇒ A ⇒ Future[B]): Unmarshaller[A, B] =
+  def apply[A, B](f: ExecutionContext => A => Future[B]): Unmarshaller[A, B] =
     withMaterializer(ec => _ => f(ec))
 
-  def withMaterializer[A, B](f: ExecutionContext ⇒ Materializer => A ⇒ Future[B]): Unmarshaller[A, B] =
+  def withMaterializer[A, B](f: ExecutionContext => Materializer => A => Future[B]): Unmarshaller[A, B] =
     new Unmarshaller[A, B] {
       def apply(a: A)(implicit ec: ExecutionContext, materializer: Materializer) =
         try f(ec)(materializer)(a)
-        catch { case NonFatal(e) ⇒ FastFuture.failed(e) }
+        catch { case NonFatal(e) => FastFuture.failed(e) }
     }
 
   /**
    * Helper for creating a synchronous `Unmarshaller` from the given function.
    */
-  def strict[A, B](f: A ⇒ B): Unmarshaller[A, B] = Unmarshaller(_ => a ⇒ FastFuture.successful(f(a)))
+  def strict[A, B](f: A => B): Unmarshaller[A, B] = Unmarshaller(_ => a => FastFuture.successful(f(a)))
 
   /**
    * Helper for creating a "super-unmarshaller" from a sequence of "sub-unmarshallers", which are tried
@@ -71,11 +71,11 @@ object Unmarshaller
    */
   def firstOf[A, B](unmarshallers: Unmarshaller[A, B]*): Unmarshaller[A, B] = //...
   //#unmarshaller-creation
-    Unmarshaller.withMaterializer { implicit ec ⇒ implicit mat => a ⇒
+    Unmarshaller.withMaterializer { implicit ec => implicit mat => a =>
       def rec(ix: Int, supported: Set[ContentTypeRange]): Future[B] =
         if (ix < unmarshallers.size) {
           unmarshallers(ix)(a).fast.recoverWith {
-            case Unmarshaller.UnsupportedContentTypeException(supp) ⇒ rec(ix + 1, supported ++ supp)
+            case Unmarshaller.UnsupportedContentTypeException(supp) => rec(ix + 1, supported ++ supp)
           }
         } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(supported))
       rec(0, Set.empty)
@@ -83,20 +83,20 @@ object Unmarshaller
 
   // format: ON
 
-  implicit def identityUnmarshaller[T]: Unmarshaller[T, T] = Unmarshaller(_ ⇒ FastFuture.successful)
+  implicit def identityUnmarshaller[T]: Unmarshaller[T, T] = Unmarshaller(_ => FastFuture.successful)
 
   // we don't define these methods directly on `Unmarshaller` due to variance constraints
   implicit class EnhancedUnmarshaller[A, B](val um: Unmarshaller[A, B]) extends AnyVal {
-    def mapWithInput[C](f: (A, B) ⇒ C): Unmarshaller[A, C] =
-      Unmarshaller.withMaterializer(implicit ec ⇒ implicit mat ⇒ a ⇒ um(a).fast.map(f(a, _)))
+    def mapWithInput[C](f: (A, B) => C): Unmarshaller[A, C] =
+      Unmarshaller.withMaterializer(implicit ec => implicit mat => a => um(a).fast.map(f(a, _)))
 
-    def flatMapWithInput[C](f: (A, B) ⇒ Future[C]): Unmarshaller[A, C] =
-      Unmarshaller.withMaterializer(implicit ec ⇒ implicit mat ⇒ a ⇒ um(a).fast.flatMap(f(a, _)))
+    def flatMapWithInput[C](f: (A, B) => Future[C]): Unmarshaller[A, C] =
+      Unmarshaller.withMaterializer(implicit ec => implicit mat => a => um(a).fast.flatMap(f(a, _)))
   }
 
   implicit class EnhancedFromEntityUnmarshaller[A](val underlying: FromEntityUnmarshaller[A]) extends AnyVal {
-    def mapWithCharset[B](f: (A, HttpCharset) ⇒ B): FromEntityUnmarshaller[B] =
-      underlying.mapWithInput { (entity, data) ⇒ f(data, Unmarshaller.bestUnmarshallingCharsetFor(entity)) }
+    def mapWithCharset[B](f: (A, HttpCharset) => B): FromEntityUnmarshaller[B] =
+      underlying.mapWithInput { (entity, data) => f(data, Unmarshaller.bestUnmarshallingCharsetFor(entity)) }
 
     /**
      * Modifies the underlying [[Unmarshaller]] to only accept Content-Types matching one of the given ranges.
@@ -107,8 +107,8 @@ object Unmarshaller
      * an IllegalStateException will be thrown!
      */
     def forContentTypes(ranges: ContentTypeRange*): FromEntityUnmarshaller[A] =
-      Unmarshaller.withMaterializer { implicit ec ⇒ implicit mat ⇒
-        entity ⇒
+      Unmarshaller.withMaterializer { implicit ec => implicit mat =>
+        entity =>
           if (entity.contentType == ContentTypes.NoContentType || ranges.exists(_ matches entity.contentType)) {
             underlying(entity).fast.recover[A](barkAtUnsupportedContentTypeException(ranges, entity.contentType))
           } else FastFuture.failed(UnsupportedContentTypeException(ranges: _*))
@@ -117,7 +117,7 @@ object Unmarshaller
     private def barkAtUnsupportedContentTypeException(
       ranges:         Seq[ContentTypeRange],
       newContentType: ContentType): PartialFunction[Throwable, Nothing] = {
-      case UnsupportedContentTypeException(supported) ⇒ throw new IllegalStateException(
+      case UnsupportedContentTypeException(supported) => throw new IllegalStateException(
         s"Illegal use of `unmarshaller.forContentTypes($ranges)`: $newContentType is not supported by underlying marshaller!")
     }
   }
@@ -128,8 +128,8 @@ object Unmarshaller
    */
   def bestUnmarshallingCharsetFor(entity: HttpEntity): HttpCharset =
     entity.contentType match {
-      case x: ContentType.NonBinary ⇒ x.charset
-      case _                        ⇒ HttpCharsets.`UTF-8`
+      case x: ContentType.NonBinary => x.charset
+      case _                        => HttpCharsets.`UTF-8`
     }
 
   /**
