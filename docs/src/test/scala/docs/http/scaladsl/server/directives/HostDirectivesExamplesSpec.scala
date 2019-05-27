@@ -70,12 +70,14 @@ class HostDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "using-regex" in {
     //#using-regex
     val route =
-      host("api|rest".r) { prefix =>
-        complete(s"Extracted prefix: $prefix")
-      } ~
+      concat(
+        host("api|rest".r) { prefix =>
+          complete(s"Extracted prefix: $prefix")
+        },
         host("public.(my|your)company.com".r) { captured =>
           complete(s"You came through $captured company")
         }
+      )
 
     // tests:
     Get() ~> Host("api.company.com") ~> route ~> check {

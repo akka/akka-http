@@ -4,8 +4,6 @@
 
 package docs.http.scaladsl.server
 
-// format: OFF
-
 //#source-quote
 import org.scalatest.{ Matchers, WordSpec }
 import akka.http.scaladsl.model.StatusCodes
@@ -17,14 +15,16 @@ class FullTestKitExampleSpec extends WordSpec with Matchers with ScalatestRouteT
 
   val smallRoute =
     get {
-      pathSingleSlash {
-        complete {
-          "Captain on the bridge!"
+      concat(
+        pathSingleSlash {
+          complete {
+            "Captain on the bridge!"
+          }
+        },
+        path("ping") {
+          complete("PONG!")
         }
-      } ~
-      path("ping") {
-        complete("PONG!")
-      }
+      )
     }
 
   "The service" should {

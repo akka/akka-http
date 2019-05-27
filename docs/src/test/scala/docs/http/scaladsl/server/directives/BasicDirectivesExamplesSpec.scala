@@ -435,16 +435,18 @@ class BasicDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     val route =
       authRejectionsToNothingToSeeHere {
         pathPrefix("auth") {
-          path("never") {
-            authenticateBasic("my-realm", neverAuth) { user =>
-              complete("Welcome to the bat-cave!")
-            }
-          } ~
+          concat(
+            path("never") {
+              authenticateBasic("my-realm", neverAuth) { user =>
+                complete("Welcome to the bat-cave!")
+              }
+            },
             path("always") {
               authenticateBasic("my-realm", alwaysAuth) { user =>
                 complete("Welcome to the secret place!")
               }
             }
+          )
         }
       }
 
