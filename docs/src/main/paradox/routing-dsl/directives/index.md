@@ -332,7 +332,7 @@ Scala code that compiles but does not work as expected. What would be intended a
 
 @@@ div { .group-scala }
 
-Alternatively we can combine directives using `~` operator where we pass each directive as an argument to the combinator function instead of chaining them with `concat` . Let's take a look at the usage of this combinator:
+Alternatively we can combine directives using the `~` operator where we chain them together instead of passing each directive as a separate argument. Let's take a look at the usage of this combinator:
 
 @@snip [DirectiveExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-8 }
 
