@@ -14,12 +14,17 @@ import akka.testkit.AkkaSpec
 import akka.util.ByteString
 
 import scala.concurrent.Future
+import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.{ SinkQueue, Keep }
 
 class WithPriorKnowledgeSpec extends AkkaSpec("""
     akka.loglevel = warning
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.http.server.preview.enable-http2 = on
   """) {
+
+  implicit val ec = system.dispatcher
+
   "An HTTP server with PriorKnowledge" should {
     implicit val mat = ActorMaterializer()
 
@@ -40,19 +45,39 @@ class WithPriorKnowledgeSpec extends AkkaSpec("""
 
     "respond to cleartext HTTP2.0 requests with cleartext HTTP2.0" in {
       val (host, port) = (binding.localAddress.getHostName, binding.localAddress.getPort)
-      val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = s"http://$host:$port"))
 
-      val requestBytes = // Obtained by converting the input request bytes from curl with --http2-prior-knowledge
-        "UFJJICogSFRUUC8yLjANCg0KU00NCg0KAAASBAAAAAAAAAMAAABkAARAAAAAAAIAAAAAAAAECAAAAAAAP/8AAQAAHgEFAAAAAYKEhkGKCJ1cC4Fw3HwAf3qIJbZQw6u20uBTAyovKg=="
-
-      val sink =
-        Source.single(requestBytes)
-          .concat(Source.single("AAAABAEAAAAA"))
+      val (source, sink) =
+        Source.queue[String](1000, OverflowStrategy.fail)
           .map(str => ByteString(Base64.getDecoder.decode(str)))
           .via(Tcp().outgoingConnection(host, port))
-          .runWith(Sink.queue())
-      val response = sink.pull().futureValue.get.map(_.toChar).mkString
-      println(response)
+          .toMat(Sink.queue())(Keep.both)
+          .run()
+
+      // Obtained by converting the input request bytes from curl with --http2-prior-knowledge
+      // This includes port 9009 as 'authority', which our server accepts.
+      source.offer("UFJJICogSFRUUC8yLjANCg0KU00NCg0KAAASBAAAAAAAAAMAAABkAARAAAAAAAIAAAAAAAAECAAAAAAAP/8AAQAAHgEFAAAAAYKEhkGKCJ1cC4Fw3HwAf3qIJbZQw6u20uBTAyovKg==").futureValue
+
+      // read settings frame
+      Http2Protocol.FrameType.byId(sink.pull().futureValue.get(3)) should be(Http2Protocol.FrameType.SETTINGS)
+      // read settings frame
+      Http2Protocol.FrameType.byId(sink.pull().futureValue.get(3)) should be(Http2Protocol.FrameType.SETTINGS)
+      // ack settings
+      source.offer("AAAABAEAAAAA")
+
+      // source.complete()
+      val response = readSink(sink).futureValue
+      val tpe = Http2Protocol.FrameType.byId(response(3))
+      tpe should be(Http2Protocol.FrameType.HEADERS)
+      response.map(_.toChar).mkString should include("418")
+    }
+  }
+
+  private def readSink(sink: SinkQueue[ByteString]): Future[ByteString] = {
+    sink.pull().flatMap {
+      case Some(bytes) if bytes.isEmpty =>
+        readSink(sink)
+      case Some(bytes) =>
+        Future.successful(bytes)
     }
   }
 }
