@@ -182,5 +182,19 @@ class BasicDirectivesSpec extends RoutingSpec {
         }
       } ~> check { responseAs[String] shouldEqual "1" }
     }
+
+    "return 408 Request Timeout status on timeout" in {
+      val neverEndingEntity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, Source.maybe[ByteString])
+      val timeout = 10.milliseconds
+
+      Post("/abc", neverEndingEntity) ~> {
+        extractStrictEntity(timeout) { _ =>
+          complete("content")
+        }
+      } ~> check {
+        entityAs[String] shouldEqual s"Request timed out after $timeout while waiting for entity data"
+        status shouldEqual StatusCodes.RequestTimeout
+      }
+    }
   }
 }
