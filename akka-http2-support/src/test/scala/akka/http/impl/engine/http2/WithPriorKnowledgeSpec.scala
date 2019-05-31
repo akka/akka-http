@@ -64,7 +64,6 @@ class WithPriorKnowledgeSpec extends AkkaSpec("""
       // ack settings
       source.offer("AAAABAEAAAAA")
 
-      // source.complete()
       val response = readSink(sink).futureValue
       val tpe = Http2Protocol.FrameType.byId(response(3))
       tpe should be(Http2Protocol.FrameType.HEADERS)
