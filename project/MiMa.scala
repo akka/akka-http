@@ -58,7 +58,7 @@ object MiMa extends AutoPlugin {
       )
       val post213Versions = Set(
           // To be updated once we have released
-          // for 2.13.0-RC2
+          // for 2.13.0-RC3
       )
 
       val versions =
