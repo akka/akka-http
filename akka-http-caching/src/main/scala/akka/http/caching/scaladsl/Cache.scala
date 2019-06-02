@@ -12,7 +12,7 @@ import akka.japi.{ Creator, Procedure }
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
-import scala.compat.java8.FutureConverters.{ toJava ⇒ futureToJava, toScala ⇒ futureToScala }
+import scala.compat.java8.FutureConverters.{ toJava => futureToJava, toScala => futureToScala }
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 
 /**
@@ -23,7 +23,7 @@ import scala.concurrent.{ ExecutionContext, Future, Promise }
 @ApiMayChange
 @DoNotInherit
 abstract class Cache[K, V] extends akka.http.caching.javadsl.Cache[K, V] {
-  cache ⇒
+  cache =>
 
   /**
    * Returns either the cached Future for the given key or evaluates the given value generating

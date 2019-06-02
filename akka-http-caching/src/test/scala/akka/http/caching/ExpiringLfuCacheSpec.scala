@@ -71,7 +71,7 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
     "replace existing cache when evaluation of new value completes" in {
       val cache = lfuCache[String]()
       val latch = new CountDownLatch(1)
-      val future1 = cache.get(1, () ⇒ "A")
+      val future1 = cache.get(1, () => "A")
 
       cache.get(1) should be(Some(future1))
       Await.result(future1, 3.seconds)
@@ -91,7 +91,7 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
     "not remove existing cache when evaluation of new value fails" in {
       val cache = lfuCache[String]()
       val latch = new CountDownLatch(1)
-      val future1 = cache.get(1, () ⇒ "A")
+      val future1 = cache.get(1, () => "A")
       val future2: Future[String] = Future.failed(new RuntimeException("Failure"))
 
       cache.get(1) should be(Some(future1))

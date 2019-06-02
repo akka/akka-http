@@ -109,15 +109,16 @@ private[caching] class LfuCache[K, V](val store: AsyncCache[K, V]) extends Cache
     val previouslyCacheValue = Option(store.getIfPresent(key))
 
     previouslyCacheValue match {
-      case None ⇒
+      case None =>
         store.put(key, toJava(mayBeValue).toCompletableFuture)
         mayBeValue
-      case _ ⇒ mayBeValue.map { value ⇒
+      case _ => mayBeValue.map { value =>
         store.put(key, toJava(Future.successful(value)).toCompletableFuture)
         value
       }
     }
   }
+
   def getOrLoad(key: K, loadValue: K => Future[V]): Future[V] = store.get(key, toJavaMappingFunction[K, V](loadValue)).toScala
 
   def remove(key: K): Unit = store.synchronous().invalidate(key)
