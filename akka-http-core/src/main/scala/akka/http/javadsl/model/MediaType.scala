@@ -57,9 +57,7 @@ object MediaType {
 }
 
 trait MediaType {
-  /**
-   * We would like to be certain that both mainType and subType are lowercase
-   */
+  //  We would like to be certain that both mainType and subType are lowercase
   require(mainType.toRootLowerCase == mainType, s"mainType must be lower case. Expected `${mainType.toRootLowerCase}` but got `$mainType`")
   require(subType.toRootLowerCase == subType, s"subType must be lower case. Expected `${subType.toRootLowerCase}` but got `$subType`")
 
