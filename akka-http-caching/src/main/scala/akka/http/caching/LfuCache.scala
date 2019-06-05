@@ -105,6 +105,10 @@ private[caching] class LfuCache[K, V](val store: AsyncCache[K, V]) extends Cache
 
   def apply(key: K, genValue: () => Future[V]): Future[V] = store.get(key, toJavaMappingFunction[K, V](genValue)).toScala
 
+  /**
+   * Multiple call to put method for the same key may result in a race condition,
+   * the value yield by the last successful future for that key will replace any previously cached value.
+   */
   def put(key: K, mayBeValue: Future[V])(implicit ex: ExecutionContext): Future[V] = {
     val previouslyCacheValue = Option(store.getIfPresent(key))
 
