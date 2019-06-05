@@ -32,7 +32,7 @@ class WithPriorKnowledgeSpec extends AkkaSpec("""
       _ ⇒ Future.successful(HttpResponse(status = StatusCodes.ImATeapot)),
       "127.0.0.1",
       port = 0,
-      HttpConnectionContext(UseHttp2.PriorKnowledge)
+      HttpConnectionContext(UseHttp2.Negotiated)
     ).futureValue
 
     "respond to cleartext HTTP/1.1 requests with cleartext HTTP/1.1" in {

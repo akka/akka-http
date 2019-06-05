@@ -11,7 +11,7 @@ import akka.http.impl.engine.http2.{ AlpnSwitch, Http2AlpnSupport, Http2Blueprin
 import akka.http.impl.engine.server.MasterServerTerminator
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.scaladsl.Http.ServerBinding
-import akka.http.scaladsl.UseHttp2.{ Negotiated, Never, PriorKnowledge, Always }
+import akka.http.scaladsl.UseHttp2.{ Negotiated, Never, Always }
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.TLSProtocol.{ SendBytes, SessionBytes, SslTlsInbound, SslTlsOutbound }
@@ -99,8 +99,6 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
       case _ if connectionContext.isSecure =>
         bindAndHandleAsync(handler, interface, port, connectionContext.asInstanceOf[HttpsConnectionContext], settings, parallelism, log)
       case Negotiated =>
-        throw new NotImplementedError("h2c not supported") // https://github.com/akka/akka-http/issues/1966
-      case PriorKnowledge =>
         bindAndHandleConsiderPriorKnowledge(handler, interface, port, settings, parallelism, log)
       case Always =>
         bindAndHandleWithoutNegotiation(handler, interface, port, settings, parallelism, log)
