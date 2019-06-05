@@ -27,7 +27,7 @@ import akka.http.scaladsl.UseHttp2.Always
 
 //#bindAndHandleConsiderPriorKnowledge
 import akka.http.scaladsl.HttpConnectionContext
-import akka.http.scaladsl.UseHttp2.PriorKnowledge
+import akka.http.scaladsl.UseHttp2.Negotiated
 
 //#bindAndHandleConsiderPriorKnowledge
 
@@ -61,6 +61,6 @@ object Http2Spec {
     asyncHandler,
     interface = "localhost",
     port = 8080,
-    connectionContext = HttpConnectionContext(http2 = PriorKnowledge))
+    connectionContext = HttpConnectionContext(http2 = Negotiated))
   //#bindAndHandleConsiderPriorKnowledge
 }

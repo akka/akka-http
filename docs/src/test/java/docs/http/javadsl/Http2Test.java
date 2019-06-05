@@ -54,7 +54,7 @@ class Http2Test {
     Http.get(system)
       .bindAndHandleAsync(
         asyncHandler,
-        toHost("127.0.0.1", 8080, UseHttp2.priorKnowledge()),
+        toHost("127.0.0.1", 8080, UseHttp2.negotiated()),
         materializer);
     //#bindAndHandleConsiderPriorKnowledge
   }
