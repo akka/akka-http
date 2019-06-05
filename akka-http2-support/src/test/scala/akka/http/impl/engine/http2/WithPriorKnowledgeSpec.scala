@@ -43,7 +43,7 @@ class WithPriorKnowledgeSpec extends AkkaSpec("""
       response.status should be(StatusCodes.ImATeapot)
     }
 
-    "respond to cleartext HTTP2.0 requests with cleartext HTTP2.0" in {
+    "respond to cleartext HTTP/2 requests with cleartext HTTP/2" in {
       val (host, port) = (binding.localAddress.getHostName, binding.localAddress.getPort)
 
       val (source, sink) =
