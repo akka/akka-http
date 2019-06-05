@@ -11,6 +11,7 @@ import akka.http.impl.engine.http2.framing.{ Http2FrameParsing, Http2FrameRender
 import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompression }
 import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.impl.util.StreamUtils
+import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.http.scaladsl.settings.{ Http2ServerSettings, ParserSettings, ServerSettings }
@@ -20,6 +21,8 @@ import akka.util.ByteString
 import scala.concurrent.{ ExecutionContext, Future }
 
 import FrameEvent._
+import akka.http.scaladsl.Http2
+import akka.stream.TLSProtocol._
 
 /**
  * Represents one direction of an Http2 substream.
@@ -43,6 +46,11 @@ private[http2] final case class ChunkedHttp2SubStream(
 /** INTERNAL API */
 @InternalApi
 private[http] object Http2Blueprint {
+
+  def serverStackTls(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
+    serverStack(settings, log) atop
+      unwrapTls atop
+      logTLSBidiBySetting("server-plain-text", settings.logUnencryptedNetworkBytes)
 
   // format: OFF
   def serverStack(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
@@ -124,4 +132,9 @@ private[http] object Http2Blueprint {
       case ParserSettings.ErrorLoggingVerbosity.Simple => log.warning(info.summary)
       case ParserSettings.ErrorLoggingVerbosity.Full   => log.warning(info.formatPretty)
     }
+
+  private[http2] val unwrapTls: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, ByteString, NotUsed] =
+    BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect {
+      case SessionBytes(_, bytes) => bytes
+    })
 }
