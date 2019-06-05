@@ -38,8 +38,10 @@ class Http2BindingViaConfigSpec extends AkkaSpec("""
       try {
         val p = TestProbe()
         system.eventStream.subscribe(p.ref, classOf[Logging.Debug])
-
-        binding = Http().bindAndHandleAsync(helloWorldHandler, host, port)
+        binding = Http().bindAndHandleAsync(
+          helloWorldHandler,
+          host, port,
+          new HttpConnectionContext(UseHttp2.Never))
         fishForDebugMessage(p, "binding using plain HTTP")
       } finally if (binding ne null) binding.map(_.unbind())
     }

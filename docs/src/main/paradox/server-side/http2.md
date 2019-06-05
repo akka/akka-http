@@ -48,7 +48,7 @@ There are 2 ways to implement un-encrypted HTTP/2 connections: by using the
 [HTTP Upgrade mechanism](https://httpwg.org/specs/rfc7540.html#discover-http) or by starting communication in HTTP/2 directly.
 The latter only makes sense when you can assume the client has [Prior Knowledge](https://httpwg.org/specs/rfc7540.html#known-http) of HTTP/2 support.
 
-We currently only support the approach requiring [Prior Knowledge](https://httpwg.org/specs/rfc7540.html#known-http):
+We currently only support approaches requiring [Prior Knowledge](https://httpwg.org/specs/rfc7540.html#known-http). The first only supports HTTP/2:
 
 Scala
 :   @@snip[Http2Spec.scala]($test$/scala/docs/http/scaladsl/Http2Spec.scala) { #bindAndHandleWithoutNegotiation }
@@ -56,6 +56,13 @@ Scala
 Java
 :   @@snip[Http2Test.java]($test$/java/docs/http/javadsl/Http2Test.java) { #bindAndHandleWithoutNegotiation }
 
+This second approach supports both HTTP1.1 and HTTP/2 if [Prior Knowledge] preamble is sent in the request:
+
+Scala
+:   @@snip[Http2Spec.scala]($test$/scala/docs/http/scaladsl/Http2Spec.scala) { #bindAndHandleConsiderPriorKnowledge }
+
+Java
+:   @@snip[Http2Test.java]($test$/java/docs/http/javadsl/Http2Test.java) { #bindAndHandleConsiderPriorKnowledge }
 
 ## Testing with cURL
 

@@ -49,5 +49,13 @@ class Http2Test {
         toHost("127.0.0.1", 8080, UseHttp2.always()),
         materializer);
     //#bindAndHandleWithoutNegotiation
+
+    //#bindAndHandleConsiderPriorKnowledge
+    Http.get(system)
+      .bindAndHandleAsync(
+        asyncHandler,
+        toHost("127.0.0.1", 8080, UseHttp2.negotiated()),
+        materializer);
+    //#bindAndHandleConsiderPriorKnowledge
   }
 }

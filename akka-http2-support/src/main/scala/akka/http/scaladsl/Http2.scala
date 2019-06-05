@@ -7,15 +7,15 @@ package akka.http.scaladsl
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
-import akka.http.impl.engine.http2.{ AlpnSwitch, Http2AlpnSupport, Http2Blueprint }
+import akka.http.impl.engine.http2.{ AlpnSwitch, Http2AlpnSupport, Http2Blueprint, PriorKnowledgeSwitch }
 import akka.http.impl.engine.server.MasterServerTerminator
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.scaladsl.Http.ServerBinding
-import akka.http.scaladsl.UseHttp2.{ Negotiated, Never }
+import akka.http.scaladsl.UseHttp2.{ Negotiated, Never, Always }
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.TLSProtocol.{ SendBytes, SessionBytes, SslTlsInbound, SslTlsOutbound }
-import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Sink, TLS, Tcp }
+import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Sink, TLS, TLSPlacebo, Tcp, RunnableGraph }
 import akka.stream.{ IgnoreComplete, Materializer }
 import akka.util.ByteString
 import akka.{ Done, NotUsed }
@@ -51,43 +51,42 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
 
     val effectivePort = if (port >= 0) port else 80
 
-    val serverLayer: Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(
+    val serverLayer: Flow[ByteString, ByteString, Future[Done]] =
       Flow[HttpRequest]
         .watchTermination()(Keep.right)
         // FIXME: parallelism should maybe kept in track with SETTINGS_MAX_CONCURRENT_STREAMS so that we don't need
         // to buffer requests that cannot be handled in parallel
         .via(Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher))
-        .joinMat(Http2Blueprint.serverStack(settings, log))(Keep.left))
+        .joinMat(Http2Blueprint.serverStack(settings, log))(Keep.left)
 
-    val connections = Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)
-
-    val masterTerminator = new MasterServerTerminator(log)
-
-    connections.mapAsyncUnordered(settings.maxConnections) {
-      incoming: Tcp.IncomingConnection =>
-        try {
-          serverLayer.addAttributes(Http.prepareAttributes(settings, incoming)).joinMat(incoming.flow)(Keep.left)
-            .run().recover {
-              // Ignore incoming errors from the connection as they will cancel the binding.
-              // As far as it is known currently, these errors can only happen if a TCP error bubbles up
-              // from the TCP layer through the HTTP layer to the Http.IncomingConnection.flow.
-              // See https://github.com/akka/akka/issues/17992
-              case NonFatal(ex) =>
-                Done
-            }(ExecutionContexts.sameThreadExecutionContext)
-        } catch {
-          case NonFatal(e) =>
-            log.error(e, "Could not materialize handling flow for {}", incoming)
-            throw e
-        }
-    }.mapMaterializedValue {
-      _.map(tcpBinding => ServerBinding(tcpBinding.localAddress)(
-        () => tcpBinding.unbind(),
-        timeout => masterTerminator.terminate(timeout)(fm.executionContext)
-      ))(fm.executionContext)
-    }.to(Sink.ignore).run()
+    createServerRunnableGraph(interface, effectivePort, settings, () => serverLayer, log).run()
   }
 
+  private def bindAndHandleConsiderPriorKnowledge(
+    handler:     HttpRequest => Future[HttpResponse],
+    interface:   String,
+    port:        Int,
+    settings:    ServerSettings,
+    parallelism: Int,
+    log:         LoggingAdapter)(implicit fm: Materializer): Future[ServerBinding] = {
+    if (parallelism == 1)
+      log.warning("HTTP/2 `bindAndHandleConsiderPriorKnowledge` was called with default parallelism = 1. This means that request handling " +
+        "concurrency per connection is disabled. This is likely not what you want with HTTP/2.")
+
+    val effectivePort = if (port >= 0) port else 80
+
+    val http2 = Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher).joinMat(Http2Blueprint.serverStack(settings, log))(Keep.left)
+    val http1 = Flow[HttpRequest].mapAsync(parallelism)(handler).joinMat(http.serverLayer(settings, None, log) atop TLSPlacebo())(Keep.left)
+
+    // FIXME: parallelism should maybe kept in track with SETTINGS_MAX_CONCURRENT_STREAMS so that we don't need
+    // to buffer requests that cannot be handled in parallel
+    val fullLayer: Flow[ByteString, ByteString, Future[Done]] =
+      Flow[ByteString].watchTermination()(Keep.right).viaMat(PriorKnowledgeSwitch(http1, http2))(Keep.left)
+
+    createServerRunnableGraph(interface, effectivePort, settings, () => fullLayer, log).run()
+  }
+
+  // TODO: split up similarly to what `Http` does into `serverLayer`, `bindAndHandle`, etc.
   def bindAndHandleAsync(
     handler:   HttpRequest => Future[HttpResponse],
     interface: String, port: Int = DefaultPortForProtocol,
@@ -95,16 +94,13 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
     settings:          ServerSettings    = ServerSettings(system),
     parallelism:       Int               = 1,
     log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
-    // TODO: split up similarly to what `Http` does into `serverLayer`, `bindAndHandle`, etc.
-    require(connectionContext.http2 != Never)
-
-    if (connectionContext.isSecure) {
-      bindAndHandleAsync(handler, interface, port, connectionContext.asInstanceOf[HttpsConnectionContext], settings, parallelism, log)
-    } else {
-      if (connectionContext.http2 == Negotiated)
-        // https://github.com/akka/akka-http/issues/1966
-        throw new NotImplementedError("h2c not supported")
-      else
+    connectionContext.http2 match {
+      case Never => throw new IllegalArgumentException("ConnectionContext HTTP2 support set to Never!")
+      case _ if connectionContext.isSecure =>
+        bindAndHandleAsync(handler, interface, port, connectionContext.asInstanceOf[HttpsConnectionContext], settings, parallelism, log)
+      case Negotiated =>
+        bindAndHandleConsiderPriorKnowledge(handler, interface, port, settings, parallelism, log)
+      case Always =>
         bindAndHandleWithoutNegotiation(handler, interface, port, settings, parallelism, log)
     }
   }
@@ -174,14 +170,23 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
         .via(Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher))
         .joinMat(serverLayer())(Keep.left))
 
-    val connections = Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)
+    createServerRunnableGraph(interface, effectivePort, settings, fullLayer _, log).run()
+  }
+
+  private def createServerRunnableGraph(
+    interface: String, port: Int,
+    settings:    ServerSettings,
+    createLayer: () => Flow[ByteString, ByteString, Future[Done]],
+    log:         LoggingAdapter)(implicit fm: Materializer): RunnableGraph[Future[ServerBinding]] = {
+
+    val connections = Tcp().bind(interface, port, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)
 
     val masterTerminator = new MasterServerTerminator(log)
 
     connections.mapAsyncUnordered(settings.maxConnections) {
       incoming: Tcp.IncomingConnection =>
         try {
-          fullLayer().addAttributes(Http.prepareAttributes(settings, incoming)).joinMat(incoming.flow)(Keep.left)
+          createLayer().addAttributes(Http.prepareAttributes(settings, incoming)).joinMat(incoming.flow)(Keep.left)
             .run().recover {
               // Ignore incoming errors from the connection as they will cancel the binding.
               // As far as it is known currently, these errors can only happen if a TCP error bubbles up
@@ -200,7 +205,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
         () => tcpBinding.unbind(),
         timeout => masterTerminator.terminate(timeout)(fm.executionContext)
       ))(fm.executionContext)
-    }.to(Sink.ignore).run()
+    }.to(Sink.ignore)
   }
 
   private val unwrapTls: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, ByteString, NotUsed] =
