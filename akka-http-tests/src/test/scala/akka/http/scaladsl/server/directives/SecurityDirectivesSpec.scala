@@ -69,6 +69,36 @@ class SecurityDirectivesSpec extends RoutingSpec {
           successfulAuthDirective.withAnonymousUser("We are Legion") { echoComplete }
         } ~> check { responseAs[String] shouldEqual "We are Legion" }
       }
+      "support optional authorization when authentication passes" in {
+        Get() ~> Authorization(createCredentials("Alice")) ~>
+          successfulAuthDirective.optional { echoComplete } ~>
+          check { responseAs[String] shouldEqual "Some(Alice)" }
+      }
+      "support optional authorization when authentication fails" in {
+        Get() ~>
+          failedAuthDirective.optional { echoComplete } ~>
+          check { responseAs[String] shouldEqual "None" }
+      }
+      "support optional authorization when Authentication data is available but authentication fails" in {
+        Get() ~> Authorization(createCredentials("Alice")) ~>
+          failedAuthDirective.optional { echoComplete } ~>
+          check { responseAs[String] shouldEqual "None" }
+      }
+      "pass ifUnauthenticated when authentication data is missing" in {
+        Get() ~>
+          failedAuthDirective.ifUnauthenticated { completeOk } ~>
+          check { status shouldEqual StatusCodes.OK }
+      }
+      "pass ifUnauthenticated when authentication data is available but authentication fails" in {
+        Get() ~> Authorization(createCredentials("Alice")) ~>
+          failedAuthDirective.ifUnauthenticated { completeOk } ~>
+          check { status shouldEqual StatusCodes.OK }
+      }
+      "reject ifUnauthenticated when authentication succeeds" in {
+        Get() ~> Authorization(createCredentials("Alice")) ~>
+          successfulAuthDirective.ifUnauthenticated { completeOk } ~>
+          check { rejection shouldEqual ValidationRejection("Request contained valid authentication data unexpectedly") }
+      }
       "handle exceptions thrown in its inner route" in {
         object TestException extends RuntimeException("Boom")
         EventFilter[TestException.type](

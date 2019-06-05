@@ -333,13 +333,13 @@ trait AuthenticationDirective[T] extends Directive1[T] {
   import RouteDirectives._
 
   /**
-   * Returns a copy of this [[AuthenticationDirective]] that will provide `Some(user)` if credentials
+   * Returns a copy of this [[AuthenticationDirective]] that will provide `Some(user)` if valid credentials
    * were supplied and otherwise `None`.
    */
   def optional: Directive1[Option[T]] =
     this.map(Some(_): Option[T]) recover {
-      case AuthenticationFailedRejection(CredentialsMissing, _) +: _ => provide(None)
-      case rejs => reject(rejs: _*)
+      case AuthenticationFailedRejection(_, _) +: _ => provide(None)
+      case rejs                                     => reject(rejs: _*)
     }
 
   /**
@@ -347,6 +347,15 @@ trait AuthenticationDirective[T] extends Directive1[T] {
    * anonymous user which will be used if no credentials were supplied in the request.
    */
   def withAnonymousUser(anonymous: T): Directive1[T] = optional map (_ getOrElse anonymous)
+
+  /**
+   * Returns a directive that passes a request only to the inner block if the underlying authentication
+   * failed.
+   */
+  def ifUnauthenticated: Directive0 = optional.flatMap {
+    case Some(_) => reject(ValidationRejection("Request contained valid authentication data unexpectedly"))
+    case None    => pass
+  }
 }
 object AuthenticationDirective {
   implicit def apply[T](other: Directive1[T]): AuthenticationDirective[T] =
