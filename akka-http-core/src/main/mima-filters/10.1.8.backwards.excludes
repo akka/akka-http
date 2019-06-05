@@ -1,0 +1,9 @@
+# Constructor of abstract @DoNotInherit class:
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.HttpsConnectionContext.this")
+# Constructor of abstract @DoNotInherit class:
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.HttpConnectionContext.this")
+# Constructor @InternalApi class:
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ConnectHttpImpl.this")
+# Constructor @InternalApi class:
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ConnectHttpsImpl.this")
+
