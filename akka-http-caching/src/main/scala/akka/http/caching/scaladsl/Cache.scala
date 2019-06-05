@@ -59,8 +59,9 @@ abstract class Cache[K, V] extends akka.http.caching.javadsl.Cache[K, V] {
     Optional.ofNullable(get(key).map(f => futureToJava(f)).orNull)
 
   /**
-   * Cache the given future if not cache previously.
-   * Or Replace the old cache on successful completion of given future.
+   * Cache the given future if not cached previously.
+   * Or replace the old cached value on successful completion of given future.
+   * In case the given future fails, the previously cached value for that key (if any) will remain unchanged.
    */
   def put(key: K, mayBeValue: Future[V])(implicit ex: ExecutionContext): Future[V]
 
