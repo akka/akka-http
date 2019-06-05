@@ -35,7 +35,7 @@ class WithPriorKnowledgeSpec extends AkkaSpec("""
       HttpConnectionContext(UseHttp2.PriorKnowledge)
     ).futureValue
 
-    "respond to cleartext HTTP1.1 requests with cleartext HTTP1.1" in {
+    "respond to cleartext HTTP/1.1 requests with cleartext HTTP/1.1" in {
       val (host, port) = (binding.localAddress.getHostName, binding.localAddress.getPort)
       val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = s"http://$host:$port"))
       val response = responseFuture.futureValue
