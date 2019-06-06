@@ -38,7 +38,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
   override def expectedTestDuration = 5.minutes // because slow jenkins, generally finishes below 1 or 2 minutes
 
   val echo = (req: HttpRequest) => {
-    req.entity.toStrict(1.second.dilated).map { entity =>
+    req.entity.toStrict(5.second.dilated).map { entity =>
       HttpResponse().withEntity(HttpEntity(entity.data))
     }
   }
@@ -94,6 +94,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
       "5.1.1",
       "5.5",
       "6.1",
+      "6.3",
       "6.5.2",
       "6.9",
       "6.9.1",
