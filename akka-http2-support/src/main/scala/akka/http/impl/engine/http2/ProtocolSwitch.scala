@@ -6,83 +6,84 @@ package akka.http.impl.engine.http2
 
 import javax.net.ssl.SSLException
 
-import akka.util.ByteString
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.stream.TLSProtocol.{ SessionBytes, SessionTruncated, SslTlsInbound, SslTlsOutbound }
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{ BidiFlow, Flow }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream._
 
 /** INTERNAL API */
 @InternalApi
-private[http] object PriorKnowledgeSwitch {
-  type HttpServerFlow = Flow[ByteString, ByteString, NotUsed]
-  type HttpServerShape = FlowShape[ByteString, ByteString]
-
-  private final val HTTP2_CONNECTION_PREFACE = ByteString("PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n")
+private[http] object ProtocolSwitch {
+  type HttpServerFlow = Flow[SslTlsInbound, SslTlsOutbound, NotUsed]
 
   def apply(
-    http1Stack: HttpServerFlow,
-    http2Stack: HttpServerFlow): HttpServerFlow =
+    chosenProtocolAccessor: SessionBytes => String,
+    http1Stack:             HttpServerFlow,
+    http2Stack:             HttpServerFlow): HttpServerFlow =
     Flow.fromGraph(
-      new GraphStage[HttpServerShape] {
+      new GraphStage[FlowShape[SslTlsInbound, SslTlsOutbound]] {
 
         // --- outer ports ---
-        val netIn = Inlet[ByteString]("PriorKnowledgeSwitch.netIn")
-        val netOut = Outlet[ByteString]("PriorKnowledgeSwitch.netOut")
+        val netIn = Inlet[SslTlsInbound]("AlpnSwitch.netIn")
+        val netOut = Outlet[SslTlsOutbound]("AlpnSwitch.netOut")
         // --- end of outer ports ---
 
-        override val shape: HttpServerShape =
+        val shape: FlowShape[SslTlsInbound, SslTlsOutbound] =
           FlowShape(netIn, netOut)
 
-        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+        def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
           logic =>
 
           // --- inner ports, bound to actual server in install call ---
-          val serverDataIn = new SubSinkInlet[ByteString]("ServerImpl.netIn")
-          val serverDataOut = new SubSourceOutlet[ByteString]("ServerImpl.netOut")
+          val serverDataIn = new SubSinkInlet[SslTlsOutbound]("ServerImpl.netIn")
+          val serverDataOut = new SubSourceOutlet[SslTlsInbound]("ServerImpl.netOut")
           // --- end of inner ports ---
 
           override def preStart(): Unit = pull(netIn)
 
           setHandler(netIn, new InHandler {
-            private[this] var grabbed = ByteString.empty
-            def onPush(): Unit = {
-              val data = grabbed ++ grab(netIn)
-              if (data.length >= HTTP2_CONNECTION_PREFACE.length) { // We should know by now
-                if (data.startsWith(HTTP2_CONNECTION_PREFACE, 0))
-                  install(http2Stack, data)
-                else
-                  install(http1Stack, data)
-              } else if (data.isEmpty || data.startsWith(HTTP2_CONNECTION_PREFACE, 0)) { // Still unknown
-                grabbed = data
-              } else { // Not a Prior Knowledge request
-                install(http1Stack, data)
+            def onPush(): Unit =
+              grab(netIn) match {
+                case first @ SessionBytes(session, bytes) =>
+                  val chosen = chosenProtocolAccessor(first)
+                  chosen match {
+                    case "h2" => install(http2Stack.addAttributes(HttpAttributes.tlsSessionInfo(session)), first)
+                    case _    => install(http1Stack, first)
+                  }
+                case SessionTruncated => failStage(new SSLException("TLS session was truncated (probably missing a close_notify packet)."))
               }
-            }
           })
 
-          setHandler(netOut, new OutHandler { def onPull(): Unit = () }) // Ignore pull
+          private val ignorePull = new OutHandler { def onPull(): Unit = () }
+          private val failPush = new InHandler { def onPush(): Unit = throw new IllegalStateException("Wasn't pulled yet") }
 
-          def install(serverImplementation: HttpServerFlow, firstElement: ByteString): Unit = {
+          setHandler(netOut, ignorePull)
+
+          def install(serverImplementation: HttpServerFlow, firstElement: SslTlsInbound): Unit = {
+            val networkSide = Flow.fromSinkAndSource(serverDataIn.sink, serverDataOut.source)
+
             connect(netIn, serverDataOut, Some(firstElement))
+
             connect(serverDataIn, netOut)
 
             serverImplementation
               .addAttributes(inheritedAttributes) // propagate attributes to "real" server (such as HttpAttributes)
-              .join(Flow.fromSinkAndSource(serverDataIn.sink, serverDataOut.source)) // Network side
+              .join(networkSide)
               .run()(interpreter.subFusingMaterializer)
           }
 
           // helpers to connect inlets and outlets also binding completion signals of given ports
           def connect[T](in: Inlet[T], out: SubSourceOutlet[T], initialElement: Option[T]): Unit = {
+            val propagatePull =
+              new OutHandler {
+                override def onPull(): Unit = pull(in)
+              }
 
-            val firstElementHandler = {
-              val propagatePull = new OutHandler { override def onPull(): Unit = pull(in) }
-
+            val firstHandler =
               initialElement match {
                 case Some(ele) if out.isAvailable =>
                   out.push(ele)
@@ -90,16 +91,14 @@ private[http] object PriorKnowledgeSwitch {
                 case Some(ele) =>
                   new OutHandler {
                     override def onPull(): Unit = {
-                      out.push(ele)
+                      out.push(initialElement.get)
                       out.setHandler(propagatePull)
                     }
                   }
                 case None => propagatePull
               }
-            }
 
-            out.setHandler(firstElementHandler)
-
+            out.setHandler(firstHandler)
             setHandler(in, new InHandler {
               override def onPush(): Unit = out.push(grab(in))
 
@@ -116,7 +115,6 @@ private[http] object PriorKnowledgeSwitch {
 
             if (out.isAvailable) pull(in) // to account for lost pulls during initialization
           }
-
           def connect[T](in: SubSinkInlet[T], out: Outlet[T]): Unit = {
             val handler = new InHandler {
               override def onPush(): Unit = push(out, in.grab())
@@ -129,7 +127,6 @@ private[http] object PriorKnowledgeSwitch {
                 super.onDownstreamFinish()
               }
             }
-
             in.setHandler(handler)
             setHandler(out, outHandler)
 

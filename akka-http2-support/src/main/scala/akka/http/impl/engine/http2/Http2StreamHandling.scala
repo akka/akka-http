@@ -109,9 +109,12 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
 
       case h: ParsedHeadersFrame =>
         // ignored
-        log.debug(s"Ignored intermediate HEADERS frame: $h")
 
-        if (h.endStream) buffer.onDataFrame(DataFrame(h.streamId, endStream = true, ByteString.empty)) // simulate end stream by empty dataframe
+        if (h.endStream) {
+          buffer.onDataFrame(DataFrame(h.streamId, endStream = true, ByteString.empty)) // simulate end stream by empty dataframe
+          log.debug(s"Ignored trailing HEADERS frame: $h")
+        } else pushGOAWAY(Http2Protocol.ErrorCode.PROTOCOL_ERROR, "Got unexpected mid-stream HEADERS frame")
+
         maybeFinishStream(h.endStream)
     }
 
