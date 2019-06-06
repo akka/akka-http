@@ -405,7 +405,7 @@ final class HttpRequest(
     case _ => false
   }
 
-  override def toString = s"""HttpRequest(${_1},${_2},${_3},${_4},${_5})"""
+  override def toString = s"""HttpRequest(${_1},${_2},-,-,${_5})"""
 
   // name-based unapply accessors
   def _1 = method
@@ -570,7 +570,7 @@ final class HttpResponse(
     result
   }
 
-  override def toString = s"""HttpResponse(${_1},${_2},${_3},${_4})"""
+  override def toString = s"""HttpResponse(${_1},-,-,${_4})"""
 
   // name-based unapply accessors
   def _1 = this.status
