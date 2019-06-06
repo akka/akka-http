@@ -42,6 +42,7 @@ class Http2ServerSpec extends AkkaSpec("""
     akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
 
     akka.http.server.remote-address-header = on
+    akka.http.server.http2.log-frames = on
   """)
   with WithInPendingUntilFixed with Eventually with WithLogCapturing {
   implicit val mat = ActorMaterializer()

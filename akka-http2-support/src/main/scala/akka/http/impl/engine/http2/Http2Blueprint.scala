@@ -48,7 +48,7 @@ private[http] object Http2Blueprint {
   def serverStack(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
     httpLayer(settings, log) atop
       demux(settings.http2Settings) atop
-      // FrameLogger.bidi atop // enable for debugging
+      FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
       hpackCoding() atop
       // LogByteStringTools.logToStringBidi("framing") atop // enable for debugging
       framing()

@@ -20,6 +20,10 @@ import FrameEvent._
 private[http2] object FrameLogger {
   final val maxBytes = 16
 
+  def logFramesIfEnabled(shouldLog: Boolean): BidiFlow[FrameEvent, FrameEvent, FrameEvent, FrameEvent, NotUsed] =
+    if (shouldLog) bidi
+    else BidiFlow.identity
+
   def bidi: BidiFlow[FrameEvent, FrameEvent, FrameEvent, FrameEvent, NotUsed] =
     BidiFlow.fromFlows(
       Flow[FrameEvent].log(s"${Console.RED}DOWN${Console.RESET}", FrameLogger.logEvent),
