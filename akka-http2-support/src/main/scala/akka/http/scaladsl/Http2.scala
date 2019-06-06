@@ -87,13 +87,9 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
   type HttpImplementation = Flow[SslTlsInbound, SslTlsOutbound, NotUsed]
   type HttpPlusSwitching = (HttpImplementation, HttpImplementation) => Flow[ByteString, ByteString, NotUsed]
 
-  def priorKnowledge(http1: HttpImplementation, http2: HttpImplementation): Flow[ByteString, ByteString, NotUsed] = {
-    def chooseProtocol(sessionBytes: SessionBytes): String =
-      if (sessionBytes.bytes.startsWith(Http2Protocol.ClientConnectionPreface)) "h2" else "http/1.1"
-
+  def priorKnowledge(http1: HttpImplementation, http2: HttpImplementation): Flow[ByteString, ByteString, NotUsed] =
     TLSPlacebo().reversed join
-      ProtocolSwitch(chooseProtocol, http1, http2)
-  }
+      ProtocolSwitch.byPreface(http1, http2)
 
   def httpsWithAlpn(httpsContext: HttpsConnectionContext, fm: Materializer)(http1: HttpImplementation, http2: HttpImplementation): Flow[ByteString, ByteString, NotUsed] = {
     // Mutable cell to transport the chosen protocol from the SSLEngine to
