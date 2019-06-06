@@ -29,7 +29,7 @@ class WithPriorKnowledgeSpec extends AkkaSpec("""
     implicit val mat = ActorMaterializer()
 
     val binding = Http().bindAndHandleAsync(
-      _ ⇒ Future.successful(HttpResponse(status = StatusCodes.ImATeapot)),
+      _ => Future.successful(HttpResponse(status = StatusCodes.ImATeapot)),
       "127.0.0.1",
       port = 0
     ).futureValue

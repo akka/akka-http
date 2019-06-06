@@ -26,7 +26,7 @@ object Formatting {
   )
 
   def setPreferences(preferences: IFormattingPreferences) = preferences
-    .setPreference(RewriteArrowSymbols, false)
+    .setPreference(RewriteArrowSymbols, true)
     .setPreference(UseUnicodeArrows, false)
     .setPreference(AlignParameters, true)
     .setPreference(AlignSingleLineCaseStatements, true)
