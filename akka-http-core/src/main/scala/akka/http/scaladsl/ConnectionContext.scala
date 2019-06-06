@@ -103,7 +103,7 @@ final class HttpsConnectionContext(
 }
 object HttpsConnectionContext {
   // For binary compatibility, planned to disappear in 10.2.0
-  def `<init>$default$7`(): UseHttp2 = null
+  private[http] def `<init>$default$7`(): UseHttp2 = null
 }
 
 sealed class HttpConnectionContext extends akka.http.javadsl.HttpConnectionContext with ConnectionContext {
