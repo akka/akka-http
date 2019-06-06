@@ -815,12 +815,9 @@ class Http2ServerSpec extends AkkaSpec("""
     "respect the substream state machine" should {
       abstract class SimpleRequestResponseRoundtripSetup extends TestSetup with RequestResponseProbes
 
-      "reject other frame than HEADERS/PUSH_PROMISE in idle state with connection-level PROTOCOL_ERROR (5.1)" inPendingUntilFixed new SimpleRequestResponseRoundtripSetup {
+      "reject other frame than HEADERS/PUSH_PROMISE in idle state with connection-level PROTOCOL_ERROR (5.1)" in new SimpleRequestResponseRoundtripSetup {
         sendDATA(9, endStream = true, HPackSpecExamples.C41FirstRequestWithHuffman)
         expectGOAWAY()
-        // after GOAWAY we expect graceful completion after x amount of time
-        // TODO: completion logic, wait?!
-        expectGracefulCompletion()
       }
       "reject incoming frames on already half-closed substream" in pending
 
@@ -834,21 +831,28 @@ class Http2ServerSpec extends AkkaSpec("""
 
       "reject all other frames while waiting for CONTINUATION frames" in pending
 
-      "reject double sub-streams creation" inPendingUntilFixed new SimpleRequestResponseRoundtripSetup {
+      "ignore mid-stream HEADERS with endStream = true (potential trailers)" in new SimpleRequestResponseRoundtripSetup {
+        sendHEADERS(1, endStream = false, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
+        sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
+        expectNoBytes()
+      }
+
+      "reject HEADERS for already closed streams" in new SimpleRequestResponseRoundtripSetup {
         sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
         sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
         expectGOAWAY()
-        // after GOAWAY we expect graceful completion after x amount of time
-        // TODO: completion logic, wait?!
-        expectGracefulCompletion()
       }
-      "reject substream creation for streams invalidated by skipped substream IDs" inPendingUntilFixed new SimpleRequestResponseRoundtripSetup {
+
+      "reject mid-stream HEADERS with endStream = false" in new SimpleRequestResponseRoundtripSetup {
+        sendHEADERS(1, endStream = false, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
+        sendHEADERS(1, endStream = false, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
+        expectGOAWAY()
+      }
+
+      "reject substream creation for streams invalidated by skipped substream IDs" in new SimpleRequestResponseRoundtripSetup {
         sendHEADERS(9, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
         sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
         expectGOAWAY()
-        // after GOAWAY we expect graceful completion after x amount of time
-        // TODO: completion logic, wait?!
-        expectGracefulCompletion()
       }
     }
 

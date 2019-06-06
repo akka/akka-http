@@ -156,7 +156,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
       ) ++
         specSectionNumber.toList.flatMap(number => Seq("-s", number))
 
-      println(s"exec: $command")
+      log.debug(s"Executing h2spec: $command")
       val aggregateTckLogs = ProcessLogger(
         out => {
           if (out.contains("All tests passed")) ()
