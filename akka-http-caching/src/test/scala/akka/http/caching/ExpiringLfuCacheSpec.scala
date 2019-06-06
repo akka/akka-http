@@ -16,7 +16,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
 
 class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll {
-  implicit val system = ActorSystem()
+  implicit val system: ActorSystem = ActorSystem()
   import system.dispatcher
 
   "An LfuCache" should {
@@ -58,6 +58,50 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
       Await.result(future1, 3.seconds) should be("A")
       Await.result(future2, 3.seconds) should be("A")
       cache.size should be(1)
+    }
+    "put given uncached future value" in {
+      val cache = lfuCache[String]()
+      val futureValue = "A"
+      val done = cache.put(1, Future.successful(futureValue))
+
+      Await.result(done, 3.seconds)
+      Await.result(cache.get(1).get, 3.seconds) should be(futureValue)
+
+    }
+    "replace existing cache when evaluation of new value completes" in {
+      val cache = lfuCache[String]()
+      val latch = new CountDownLatch(1)
+      val future1 = cache.get(1, () => "A")
+
+      cache.get(1) should be(Some(future1))
+      Await.result(future1, 3.seconds)
+      val future2 = Future {
+        latch.await()
+        "B"
+      }
+
+      val putFuture = cache.put(1, future2)
+      cache.get(1) should be(Some(future1))
+      latch.countDown()
+
+      Await.result(putFuture, 3.seconds)
+      Await.result(cache.get(1).get, 3.seconds) should be("B")
+
+    }
+    "not remove existing cache when evaluation of new value fails" in {
+      val cache = lfuCache[String]()
+      val latch = new CountDownLatch(1)
+      val future1 = cache.get(1, () => "A")
+      val future2: Future[String] = Future.failed(new RuntimeException("Failure"))
+
+      cache.get(1) should be(Some(future1))
+      Await.result(future1, 3.seconds)
+      latch.countDown()
+
+      an[RuntimeException] shouldBe thrownBy {
+        Await.result(cache.put(1, future2), 3.seconds)
+      }
+      cache.get(1) should be(Some(future1))
     }
     "properly limit capacity" in {
       val cache = lfuCache[String](maxCapacity = 3, initialCapacity = 1)
@@ -113,7 +157,7 @@ class ExpiringLfuCacheSpec extends WordSpec with Matchers with BeforeAndAfterAll
     }
   }
 
-  override def afterAll() = {
+  override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
   }
 

@@ -8,6 +8,7 @@ ProblemFilters.exclude[MissingClassProblem]("akka.http.caching.scaladsl.LfuCache
 ProblemFilters.exclude[MissingClassProblem]("akka.http.caching.scaladsl.CachingSettingsImpl$")
 ProblemFilters.exclude[MissingClassProblem]("akka.http.caching.scaladsl.LfuCacheSettingsImpl")
 ProblemFilters.exclude[MissingClassProblem]("akka.http.caching.scaladsl.CachingSettingsImpl")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.caching.scaladsl.Cache.put")
 
 # @InternalApi
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.caching.LfuCache.store")
