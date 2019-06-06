@@ -67,6 +67,19 @@ simplify creating requests for common cases. Also, to aid readability, there are
 named after HTTP methods to create a request with a given method and URI directly.
 @@@
 
+@@@ note { title='String representation' }
+
+There are certain environments where it is easy to inadvertently print, write or log entries built out of string representations of @apidoc[HttpRequest] instances. On the other hand, it is not uncommon for HTTP headers and entities to contain _Personal Identifying Information (PII)_ or _Sensitive Personal Information (SPI)_ . 
+
+For all this, if @apidoc[HttpRequest] `toString` method included body and/or headers, it would be easy to accidentally violate privacy laws such as _GDPR_. These fields are, therefore, omitted from the string representation. 
+
+If needed, it is possible to alter this behavior using type classes as shown in the following examples: 
+
+Scala
+:   @@snip [HttpRequestShow.scala]($test$/scala/docs/http/scaladsl/HttpRequestShow.scala) 
+
+@@@
+
 <a id="synthetic-headers"></a>
 ### Synthetic Headers
 
@@ -107,6 +120,19 @@ Java
 In addition to the simple @scala[@apidoc[HttpEntity] constructors]@java[`HttpEntities.create` methods] which create an entity from a fixed `String` or @apidoc[akka.util.ByteString]
 as shown here the Akka HTTP model defines a number of subclasses of @apidoc[HttpEntity] which allow body data to be specified as a
 stream of bytes. @java[All of these types can be created using the method on `HttpEntites`.]
+
+@@@ note { title='String representation' }
+
+There are certain environments where it is easy to inadvertently print, write or log entries built out of string representations of @apidoc[HttpResponse] instances. On the other hand, it is not uncommon for HTTP headers and entities to contain _Personal Identifying Information (PII)_ or _Sensitive Personal Information (SPI)_ . 
+
+For all this, if @apidoc[HttpResponse] `toString` method included body and/or headers, it would be easy to accidentally violate privacy laws such as _GDPR_. These fields are, therefore, omitted from the string representation. 
+
+If needed, it is possible to alter this behavior using type classes as shown in the following examples: 
+
+Scala
+:   @@snip [HttpResponseShow.scala]($test$/scala/docs/http/scaladsl/HttpResponseShow.scala) 
+
+@@@
 
 <a id="httpentity"></a>
 ## HttpEntity

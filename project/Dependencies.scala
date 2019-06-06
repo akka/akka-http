@@ -63,6 +63,8 @@ object Dependencies {
       val gson        = "com.google.code.gson"             % "gson"                    % "2.8.5"             % "test"
       val jacksonXml  = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml"  % jacksonXmlVersion   % "test" // ApacheV2
       val reflections = "org.reflections"                  % "reflections"             % "0.9.11"            % "test" // WTFPL
+      val cats        = "org.typelevel"                    %% "cats-core"              % "1.6.1"             % "test"
+      val scalaz      = "org.scalaz"                       %% "scalaz-core"            % "7.2.27"            % "test"
     }
 
     object Test {
@@ -126,7 +128,7 @@ object Dependencies {
 
   lazy val httpJackson = l ++= Seq(jacksonDatabind)
 
-  lazy val docs = l ++= Seq(Docs.sprayJson, Docs.gson, Docs.jacksonXml, Docs.reflections)
+  lazy val docs = l ++= Seq(Docs.sprayJson, Docs.gson, Docs.jacksonXml, Docs.reflections, Docs.cats, Docs.scalaz)
 }
 
 
