@@ -5,7 +5,7 @@
 package akka.http.impl.engine.http2
 
 import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
-import akka.http.scaladsl.{ Http, HttpConnectionContext, UseHttp2 }
+import akka.http.scaladsl.{ Http, HttpConnectionContext }
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, HttpProtocols }
 import akka.stream.ActorMaterializer
 import java.util.Base64
@@ -31,8 +31,7 @@ class WithPriorKnowledgeSpec extends AkkaSpec("""
     val binding = Http().bindAndHandleAsync(
       _ ⇒ Future.successful(HttpResponse(status = StatusCodes.ImATeapot)),
       "127.0.0.1",
-      port = 0,
-      HttpConnectionContext(UseHttp2.Negotiated)
+      port = 0
     ).futureValue
 
     "respond to cleartext HTTP/1.1 requests with cleartext HTTP/1.1" in {

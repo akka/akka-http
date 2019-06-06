@@ -11,7 +11,6 @@ import akka.http.impl.engine.http2.{ AlpnSwitch, Http2AlpnSupport, Http2Blueprin
 import akka.http.impl.engine.server.MasterServerTerminator
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.scaladsl.Http.ServerBinding
-import akka.http.scaladsl.UseHttp2.{ Negotiated, Never, Always }
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.TLSProtocol.{ SendBytes, SessionBytes, SslTlsInbound, SslTlsOutbound }
@@ -35,34 +34,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
 
   val http = Http(system)
 
-  /**
-   * Handle requests using HTTP/2 immediately, without any TLS or negotiation layer.
-   */
-  private def bindAndHandleWithoutNegotiation(
-    handler:     HttpRequest => Future[HttpResponse],
-    interface:   String,
-    port:        Int,
-    settings:    ServerSettings,
-    parallelism: Int,
-    log:         LoggingAdapter)(implicit fm: Materializer): Future[ServerBinding] = {
-    if (parallelism == 1)
-      log.warning("HTTP/2 `bindAndHandleAsync` was called with default parallelism = 1. This means that request handling " +
-        "concurrency per connection is disabled. This is likely not what you want with HTTP/2.")
-
-    val effectivePort = if (port >= 0) port else 80
-
-    val serverLayer: Flow[ByteString, ByteString, Future[Done]] =
-      Flow[HttpRequest]
-        .watchTermination()(Keep.right)
-        // FIXME: parallelism should maybe kept in track with SETTINGS_MAX_CONCURRENT_STREAMS so that we don't need
-        // to buffer requests that cannot be handled in parallel
-        .via(Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher))
-        .joinMat(Http2Blueprint.serverStack(settings, log))(Keep.left)
-
-    createServerRunnableGraph(interface, effectivePort, settings, () => serverLayer, log).run()
-  }
-
-  private def bindAndHandleConsiderPriorKnowledge(
+  private def bindAndHandleH2c(
     handler:     HttpRequest => Future[HttpResponse],
     interface:   String,
     port:        Int,
@@ -94,15 +66,10 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
     settings:          ServerSettings    = ServerSettings(system),
     parallelism:       Int               = 1,
     log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
-    connectionContext.http2 match {
-      case Never => throw new IllegalArgumentException("ConnectionContext HTTP2 support set to Never!")
-      case _ if connectionContext.isSecure =>
-        bindAndHandleAsync(handler, interface, port, connectionContext.asInstanceOf[HttpsConnectionContext], settings, parallelism, log)
-      case Negotiated =>
-        bindAndHandleConsiderPriorKnowledge(handler, interface, port, settings, parallelism, log)
-      case Always =>
-        bindAndHandleWithoutNegotiation(handler, interface, port, settings, parallelism, log)
-    }
+    if (connectionContext.isSecure)
+      bindAndHandleAsync(handler, interface, port, connectionContext.asInstanceOf[HttpsConnectionContext], settings, parallelism, log)
+    else
+      bindAndHandleH2c(handler, interface, port, settings, parallelism, log)
   }
 
   private def bindAndHandleAsync(

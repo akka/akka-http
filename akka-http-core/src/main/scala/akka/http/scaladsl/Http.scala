@@ -21,7 +21,6 @@ import akka.http.impl.engine.server._
 import akka.http.impl.engine.ws.WebSocketClientBlueprint
 import akka.http.impl.settings.{ ConnectionPoolSetup, HostConnectionPoolSetup }
 import akka.http.impl.util.StreamUtils
-import akka.http.scaladsl.UseHttp2.{ Always, Negotiated, Never }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.ws.{ Message, WebSocketRequest, WebSocketUpgradeResponse }
@@ -318,11 +317,9 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     settings:          ServerSettings    = ServerSettings(system),
     parallelism:       Int               = 0,
     log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
-    val http2Enabled = settings.previewServerSettings.enableHttp2
-    val http2Forced = connectionContext.http2 == Always
-    if (http2Enabled && connectionContext.http2 != Never) {
+    if (settings.previewServerSettings.enableHttp2) {
       // We do not support HTTP/2 negotiation for insecure connections (h2c), https://github.com/akka/akka-http/issues/1966
-      log.debug("Binding server using HTTP/2{}", if (http2Forced && !connectionContext.isSecure) " (forced to be used without TLS)" else "")
+      log.debug("Binding server using HTTP/2")
 
       val definitiveSettings =
         if (parallelism > 0) settings.mapHttp2Settings(_.withMaxConcurrentStreams(parallelism))
@@ -330,10 +327,6 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
         else settings
       Http2Shadow.bindAndHandleAsync(handler, interface, port, connectionContext, definitiveSettings, definitiveSettings.http2Settings.maxConcurrentStreams, log)(fm)
     } else {
-      if (http2Enabled)
-        log.debug("The akka.http.server.preview.enable-http2 flag was set, " +
-          "but a plain HttpConnectionContext (not Https) was given, binding using plain HTTP...")
-
       val definitiveParallelism =
         if (parallelism > 0) parallelism
         else if (parallelism < 0) throw new IllegalArgumentException("Only positive values allowed for `parallelism`.")
@@ -1229,8 +1222,7 @@ trait DefaultSSLContextCreation {
       Some(cipherSuites.toList),
       Some(defaultProtocols.toList),
       clientAuth,
-      Some(defaultParams),
-      UseHttp2.Negotiated)
+      Some(defaultParams))
   }
 
 }
