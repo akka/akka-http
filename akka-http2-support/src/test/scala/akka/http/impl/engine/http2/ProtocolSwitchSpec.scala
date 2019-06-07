@@ -83,10 +83,11 @@ class ProtocolSwitchSpec extends AkkaSpec {
     }
 
     "switch to http2 when the connection preface arrives in two parts" ignore {
+      val payload = ByteString("dfadfasdfa")
       val http1flowMaterialized = Promise[Done]()
       val http2flowMaterialized = Promise[Done]()
 
-      val queue = Source.queue(100, OverflowStrategy.fail)
+      val (in, out) = Source.queue(100, OverflowStrategy.fail)
         .viaMat(ProtocolSwitch.byPreface(
           Flow[SslTlsInbound]
             .collect { case SessionBytes(_, bytes) => SendBytes(bytes) }
@@ -94,16 +95,44 @@ class ProtocolSwitchSpec extends AkkaSpec {
           Flow[SslTlsInbound]
             .collect { case SessionBytes(_, bytes) => SendBytes(bytes) }
             .mapMaterializedValue(_ => { http2flowMaterialized.success(Done); NotUsed })))(Keep.left)
-        .toMat(Sink.ignore)(Keep.left)
+        .toMat(Sink.queue())(Keep.both)
         .run()
 
-      queue.offer(SessionBytes(TLSPlacebo.dummySession, Http2Protocol.ClientConnectionPreface.take(15))).futureValue should be(Enqueued)
-      queue.offer(SessionBytes(TLSPlacebo.dummySession, Http2Protocol.ClientConnectionPreface.drop(15))).futureValue should be(Enqueued)
+      in.offer(SessionBytes(TLSPlacebo.dummySession, Http2Protocol.ClientConnectionPreface.take(15))).futureValue should be(Enqueued)
+      in.offer(SessionBytes(TLSPlacebo.dummySession, Http2Protocol.ClientConnectionPreface.drop(15))).futureValue should be(Enqueued)
+      in.offer(SessionBytes(TLSPlacebo.dummySession, payload)).futureValue should be(Enqueued)
 
       assertThrows[TestFailedException] {
         http1flowMaterialized.future.futureValue
       }
       http2flowMaterialized.future.futureValue should be(Done)
+      out.pull.futureValue should be(Some(SendBytes(Http2Protocol.ClientConnectionPreface)))
+      out.pull.futureValue should be(Some(SendBytes(payload)))
+    }
+
+    "select http1 when receiving a short http1 request" in {
+      val payload = ByteString("GET / HTTP/1.0\n\n")
+      val http1flowMaterialized = Promise[Done]()
+      val http2flowMaterialized = Promise[Done]()
+
+      val (in, out) = Source.queue(100, OverflowStrategy.fail)
+        .viaMat(ProtocolSwitch.byPreface(
+          Flow[SslTlsInbound]
+            .collect { case SessionBytes(_, bytes) => SendBytes(bytes) }
+            .mapMaterializedValue(_ => { http1flowMaterialized.success(Done); NotUsed }),
+          Flow[SslTlsInbound]
+            .collect { case SessionBytes(_, bytes) => SendBytes(bytes) }
+            .mapMaterializedValue(_ => { http2flowMaterialized.success(Done); NotUsed })))(Keep.left)
+        .toMat(Sink.queue())(Keep.both)
+        .run()
+
+      in.offer(SessionBytes(TLSPlacebo.dummySession, payload)).futureValue should be(Enqueued)
+
+      assertThrows[TestFailedException] {
+        http2flowMaterialized.future.futureValue
+      }
+      http1flowMaterialized.future.futureValue should be(Done)
+      out.pull.futureValue should be(Some(SendBytes(payload)))
     }
   }
 }
