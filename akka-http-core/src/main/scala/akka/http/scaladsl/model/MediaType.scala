@@ -197,11 +197,11 @@ object MediaType {
     r.get
   }
 
-  sealed abstract class Binary(val value: String, val _mainType: String, val _subType: String, val comp: Compressibility,
+  sealed abstract class Binary(val value: String, _mainType: String, _subType: String, val comp: Compressibility,
                                val fileExtensions: List[String]) extends MediaType with jm.MediaType.Binary {
+    val mainType: String = _mainType.toRootLowerCase
+    val subType: String = _subType.toRootLowerCase
     def binary = true
-    def mainType: String = _mainType.toRootLowerCase
-    def subType: String = _subType.toRootLowerCase
     def params: Map[String, String] = Map.empty
     def withParams(params: Map[String, String]): Binary with MediaType =
       customBinary(mainType, subType, comp, fileExtensions, params)
@@ -221,11 +221,11 @@ object MediaType {
       customBinary(mainType, subType, comp, fileExtensions, params)
   }
 
-  sealed abstract class WithFixedCharset(val value: String, val _mainType: String, val _subType: String,
+  sealed abstract class WithFixedCharset(val value: String, _mainType: String, _subType: String,
                                          val charset: HttpCharset, val fileExtensions: List[String])
     extends NonBinary with jm.MediaType.WithFixedCharset {
-    def mainType: String = _mainType.toRootLowerCase
-    def subType: String = _subType.toRootLowerCase
+    val mainType: String = _mainType.toRootLowerCase
+    val subType: String = _subType.toRootLowerCase
     def params: Map[String, String] = Map.empty
     def withParams(params: Map[String, String]): WithFixedCharset with MediaType =
       customWithFixedCharset(mainType, subType, charset, fileExtensions, params)
@@ -271,11 +271,11 @@ object MediaType {
     def toContentTypeWithMissingCharset: ContentType.WithMissingCharset = withMissingCharset
   }
 
-  sealed abstract class NonMultipartWithOpenCharset(val value: String, val _mainType: String, val _subType: String,
+  sealed abstract class NonMultipartWithOpenCharset(val value: String, _mainType: String, _subType: String,
                                                     val fileExtensions: List[String]) extends WithOpenCharset {
+    val mainType: String = _mainType.toRootLowerCase
+    val subType: String = _subType.toRootLowerCase
     def params: Map[String, String] = Map.empty
-    def mainType: String = _mainType.toRootLowerCase
-    def subType: String = _subType.toRootLowerCase
   }
 
   final class Multipart(subType: String, _params: Map[String, String])
