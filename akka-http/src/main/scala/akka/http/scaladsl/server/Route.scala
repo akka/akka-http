@@ -34,7 +34,6 @@ object Route {
    */
   def seal(route: Route)(implicit
     routingSettings: RoutingSettings = null,
-                         parserSettings:   ParserSettings   = null,
                          rejectionHandler: RejectionHandler = RejectionHandler.default,
                          exceptionHandler: ExceptionHandler = null): Route = {
     import directives.ExecutionDirectives._

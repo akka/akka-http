@@ -5,17 +5,16 @@
 package akka.http.scaladsl.server
 
 import akka.annotation.InternalApi
-
-import scala.concurrent.{ ExecutionContextExecutor, Future }
-import akka.stream.{ ActorMaterializerHelper, Materializer }
 import akka.event.LoggingAdapter
-import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
 import akka.http.scaladsl.marshalling.{ Marshal, ToResponseMarshallable }
-import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
-import akka.http.ccompat._
+import akka.stream.{ ActorMaterializerHelper, Materializer }
+
+import scala.concurrent.{ ExecutionContextExecutor, Future }
 
 /**
  * INTERNAL API
