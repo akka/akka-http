@@ -13,7 +13,7 @@ import akka.stream.scaladsl.Flow
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor }
 
 /**
  * The result of handling a request.
@@ -37,9 +37,14 @@ object RouteResult {
     parserSettings:   ParserSettings,
     materializer:     Materializer,
     routingLog:       RoutingLog,
-    executionContext: ExecutionContextExecutor = null,
-    rejectionHandler: RejectionHandler         = RejectionHandler.default,
-    exceptionHandler: ExceptionHandler         = null
-  ): Flow[HttpRequest, HttpResponse, NotUsed] =
+    executionContext: ExecutionContext = null,
+    rejectionHandler: RejectionHandler = RejectionHandler.default,
+    exceptionHandler: ExceptionHandler = null
+  ): Flow[HttpRequest, HttpResponse, NotUsed] = {
+    implicit val ec: ExecutionContextExecutor = executionContext match {
+      case e: ExecutionContextExecutor => e
+      case _                           => null
+    }
     Route.handlerFlow(route)
+  }
 }
