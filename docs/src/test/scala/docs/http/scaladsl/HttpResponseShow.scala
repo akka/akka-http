@@ -20,44 +20,6 @@ class HttpResponseShow extends AkkaSpec {
 
   val httpResponseWithHeadersAndBody = HttpResponse(entity = piiBody, headers = immutable.Seq(piiHeader))
 
-  "Include headers in string representation using Typelevel's Cats" in {
-    import cats.Show
-    import cats.syntax.show._
-
-    implicit val showHttpResponseInstance = Show.show { response: HttpResponse =>
-      import response._
-      // This string representation includes headers!
-      s"""HttpResponse(${_1},${_2},${_3},${_4})"""
-    }
-
-    // Our custom string representation includes body and headers string representations...
-    assert(show"$httpResponseWithHeadersAndBody".contains(piiHeader.toString))
-    assert(show"$httpResponseWithHeadersAndBody".contains(piiBody.toString))
-
-    // ... while default `toString` doesn't.
-    assert(!s"$httpResponseWithHeadersAndBody".contains(piiHeader.toString))
-    assert(!s"$httpResponseWithHeadersAndBody".contains(piiBody.toString))
-  }
-
-  "Include headers in string representation using Scalaz" in {
-    import scalaz.Show
-    import scalaz.syntax.show._
-
-    implicit val showHttpResponseInstance = Show.shows { response: HttpResponse =>
-      import response._
-      // This string representation includes headers!
-      s"""HttpResponse(${_1},${_2},${_3},${_4})"""
-    }
-
-    // Our custom string representation includes body and headers string representations...
-    assert(httpResponseWithHeadersAndBody.shows.contains(piiHeader.toString))
-    assert(httpResponseWithHeadersAndBody.shows.contains(piiBody.toString))
-
-    // ... while default `toString` doesn't.
-    assert(!s"$httpResponseWithHeadersAndBody".contains(piiHeader.toString))
-    assert(!s"$httpResponseWithHeadersAndBody".contains(piiBody.toString))
-  }
-
   "Include headers in string representation using custom Show typeclass" in {
     trait Show[T] {
       def show(t: T): String
