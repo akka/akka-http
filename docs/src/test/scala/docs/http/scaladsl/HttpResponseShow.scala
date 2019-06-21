@@ -90,4 +90,20 @@ class HttpResponseShow extends AkkaSpec {
     assert(!s"$httpResponseWithHeadersAndBody".contains(piiBody.toString))
   }
 
+  "Include headers in string representation using an implicit extension class" in {
+
+    implicit class HttpResponseWithShow(response: HttpResponse) {
+      import response._
+      def show: String = s"""HttpResponse(${_1},${_2},${_3},${_4})"""
+    }
+
+    // Our custom string representation includes body and headers string representations...
+    assert(httpResponseWithHeadersAndBody.show.contains(piiHeader.toString))
+    assert(httpResponseWithHeadersAndBody.show.contains(piiBody.toString))
+
+    // ... while default `toString` doesn't.
+    assert(!s"$httpResponseWithHeadersAndBody".contains(piiHeader.toString))
+    assert(!s"$httpResponseWithHeadersAndBody".contains(piiBody.toString))
+  }
+
 }
