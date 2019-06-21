@@ -24,8 +24,8 @@ class HttpRequestShow extends AkkaSpec {
     import cats.Show
     import cats.syntax.show._
 
-    implicit val showHttpRequestInstance = Show.show { response: HttpRequest =>
-      import response._
+    implicit val showHttpRequestInstance = Show.show { request: HttpRequest =>
+      import request._
       // This string representation includes headers and body!
       s"""HttpRequest(${_1},${_2},${_3},${_4},${_5})"""
     }
@@ -43,8 +43,8 @@ class HttpRequestShow extends AkkaSpec {
     import scalaz.Show
     import scalaz.syntax.show._
 
-    implicit val showHttpRequestInstance = Show.shows { response: HttpRequest =>
-      import response._
+    implicit val showHttpRequestInstance = Show.shows { request: HttpRequest =>
+      import request._
       // This string representation includes headers!
       s"""HttpRequest(${_1},${_2},${_3},${_4},${_5})"""
     }
@@ -75,10 +75,26 @@ class HttpRequestShow extends AkkaSpec {
 
     import Show.ShowOps
 
-    implicit val showHttpRequestInstance = Show.show { response: HttpRequest =>
-      import response._
+    implicit val showHttpRequestInstance = Show.show { request: HttpRequest =>
+      import request._
       // This string representation includes headers!
       s"""HttpRequest(${_1},${_2},${_3},${_4},${_5})"""
+    }
+
+    // Our custom string representation includes body and headers string representations...
+    assert(httpRequestWithHeadersAndBody.show.contains(piiHeader.toString))
+    assert(httpRequestWithHeadersAndBody.show.contains(piiBody.toString))
+
+    // ... while default `toString` doesn't.
+    assert(!s"$httpRequestWithHeadersAndBody".contains(piiHeader.toString))
+    assert(!s"$httpRequestWithHeadersAndBody".contains(piiBody.toString))
+  }
+
+  "Include headers in string representation using an implicit extension class" in {
+
+    implicit class HttpRequestWithShow(request: HttpRequest) {
+      import request._
+      def show: String = s"""HttpRequest(${_1},${_2},${_3},${_4},${_5})"""
     }
 
     // Our custom string representation includes body and headers string representations...
