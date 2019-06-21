@@ -71,7 +71,7 @@ named after HTTP methods to create a request with a given method and URI directl
 
 There are certain environments where it is easy to inadvertently print, write or log entries built out of string representations of @apidoc[HttpRequest] instances. On the other hand, it is not uncommon for HTTP headers and entities to contain _Personal Identifying Information (PII)_ or _Sensitive Personal Information (SPI)_ . 
 
-For all this, if @apidoc[HttpRequest] `toString` method included body and/or headers, it would be easy to accidentally violate privacy laws such as _GDPR_. These fields are, therefore, omitted from the string representation. 
+To avoid accidentally leaking such information, these fields are omitted from @apidoc[HttpRequest] `toString` output. 
 
 If needed, it is possible to alter this behavior using type classes as shown in the following examples: 
 
@@ -125,7 +125,7 @@ stream of bytes. @java[All of these types can be created using the method on `Ht
 
 There are certain environments where it is easy to inadvertently print, write or log entries built out of string representations of @apidoc[HttpResponse] instances. On the other hand, it is not uncommon for HTTP headers and entities to contain _Personal Identifying Information (PII)_ or _Sensitive Personal Information (SPI)_ . 
 
-For all this, if @apidoc[HttpResponse] `toString` method included body and/or headers, it would be easy to accidentally violate privacy laws such as _GDPR_. These fields are, therefore, omitted from the string representation. 
+To avoid accidentally leaking such information, these fields are omitted from @apidoc[HttpResponse] `toString` output. 
 
 If needed, it is possible to alter this behavior using type classes as shown in the following examples: 
 
