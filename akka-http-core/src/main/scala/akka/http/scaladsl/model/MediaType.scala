@@ -199,8 +199,8 @@ object MediaType {
 
   sealed abstract class Binary(val value: String, _mainType: String, _subType: String, val comp: Compressibility,
                                val fileExtensions: List[String]) extends MediaType with jm.MediaType.Binary {
-    val mainType: String = _mainType.toRootLowerCase
-    val subType: String = _subType.toRootLowerCase
+    def mainType: String = _mainType.toRootLowerCase
+    def subType: String = _subType.toRootLowerCase
     def binary = true
     def params: Map[String, String] = Map.empty
     def withParams(params: Map[String, String]): Binary with MediaType =
@@ -224,8 +224,8 @@ object MediaType {
   sealed abstract class WithFixedCharset(val value: String, _mainType: String, _subType: String,
                                          val charset: HttpCharset, val fileExtensions: List[String])
     extends NonBinary with jm.MediaType.WithFixedCharset {
-    val mainType: String = _mainType.toRootLowerCase
-    val subType: String = _subType.toRootLowerCase
+    def mainType: String = _mainType.toRootLowerCase
+    def subType: String = _subType.toRootLowerCase
     def params: Map[String, String] = Map.empty
     def withParams(params: Map[String, String]): WithFixedCharset with MediaType =
       customWithFixedCharset(mainType, subType, charset, fileExtensions, params)
@@ -273,8 +273,8 @@ object MediaType {
 
   sealed abstract class NonMultipartWithOpenCharset(val value: String, _mainType: String, _subType: String,
                                                     val fileExtensions: List[String]) extends WithOpenCharset {
-    val mainType: String = _mainType.toRootLowerCase
-    val subType: String = _subType.toRootLowerCase
+    def mainType: String = _mainType.toRootLowerCase
+    def subType: String = _subType.toRootLowerCase
     def params: Map[String, String] = Map.empty
   }
 
