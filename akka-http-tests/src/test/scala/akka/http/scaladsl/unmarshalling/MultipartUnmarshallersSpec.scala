@@ -143,6 +143,24 @@ trait MultipartUnmarshallersSpec extends AnyFreeSpec with Matchers with BeforeAn
           Multipart.General.BodyPart.Strict(HttpEntity(ContentTypes.`text/plain(UTF-8)`, "first part, implicitly typed")),
           Multipart.General.BodyPart.Strict(HttpEntity(`application/octet-stream`, ByteString("second part, explicitly typed"))))
       }
+      "a full example (Strict) containing a CR in the body part" in {
+        Unmarshal(HttpEntity(
+          `multipart/mixed` withBoundary "12345",
+          ByteString("""preamble and
+                       |more preamble
+                       |--12345
+                       |
+                       |first part, impliINSERT_CR_HEREcitly typed
+                       |--12345
+                       |Content-Type: application/octet-stream
+                       |
+                       |second part, explicitly typed
+                       |--12345--
+                       |epilogue and
+                       |more epilogue""".stripMarginWithNewline(lineFeed).replaceAll("INSERT_CR_HERE", "\r")))).to[Multipart.General] should haveParts(
+          Multipart.General.BodyPart.Strict(HttpEntity(ContentTypes.`text/plain(UTF-8)`, "first part, impli\rcitly typed")),
+          Multipart.General.BodyPart.Strict(HttpEntity(`application/octet-stream`, ByteString("second part, explicitly typed"))))
+      }
       "a full example (Default)" in {
         val content = """preamble and
                         |more preamble
@@ -160,6 +178,25 @@ trait MultipartUnmarshallersSpec extends AnyFreeSpec with Matchers with BeforeAn
         Unmarshal(HttpEntity.Default(`multipart/mixed` withBoundary "12345", content.length, Source(byteStrings)))
           .to[Multipart.General] should haveParts(
             Multipart.General.BodyPart.Strict(HttpEntity(ContentTypes.`text/plain(UTF-8)`, "first part, implicitly typed")),
+            Multipart.General.BodyPart.Strict(HttpEntity(`application/octet-stream`, ByteString("second part, explicitly typed"))))
+      }
+      "a full example (Default) containing a CR in the body part" in {
+        val content = """preamble and
+                        |more preamble
+                        |--12345
+                        |
+                        |first paINSERT_CR_HERErt, implicitly typed
+                        |--12345
+                        |Content-Type: application/octet-stream
+                        |
+                        |second part, explicitly typed
+                        |--12345--
+                        |epilogue and
+                        |more epilogue""".stripMarginWithNewline(lineFeed).replaceAll("INSERT_CR_HERE", "\r")
+        val byteStrings = content.map(c => ByteString(c.toString)) // one-char ByteStrings
+        Unmarshal(HttpEntity.Default(`multipart/mixed` withBoundary "12345", content.length, Source(byteStrings)))
+          .to[Multipart.General] should haveParts(
+            Multipart.General.BodyPart.Strict(HttpEntity(ContentTypes.`text/plain(UTF-8)`, "first pa\rrt, implicitly typed")),
             Multipart.General.BodyPart.Strict(HttpEntity(`application/octet-stream`, ByteString("second part, explicitly typed"))))
       }
       "a boundary with spaces" in {
