@@ -4,7 +4,6 @@
 
 package akka.http.impl.engine.http2
 
-import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.scaladsl.model.http2.PeerClosedStreamException
@@ -40,23 +39,29 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
         if (streamId <= largestIncomingStreamId) Closed // closed streams are never put into the map
         else {
           largestIncomingStreamId = streamId
-          incomingStreams += streamId -> Idle
-          Idle
+          val initialState = Idle(outgoingStreamEnded = false)
+          incomingStreams += streamId -> initialState
+          initialState
         }
     }
   def handleStreamEvent(e: StreamFrameEvent): Unit = {
-    val newState = streamFor(e.streamId).handle(e)
-    if (newState == Closed) incomingStreams -= e.streamId
-    else incomingStreams += e.streamId -> newState
+    updateState(e.streamId, streamFor(e.streamId).handle(e))
+  }
+  def handleOutgoingEnded(streamId: Int): Unit = {
+    updateState(streamId, streamFor(streamId).handleOutgoingEnded())
+  }
+  def updateState(streamId: Int, newState: IncomingStreamState): Unit = {
+    if (newState == Closed) incomingStreams -= streamId
+    else incomingStreams += streamId -> newState
   }
   def resetStream(streamId: Int, errorCode: ErrorCode): Unit = {
-    // FIXME: put this stream into an extra state where we allow some frames still to be received
     incomingStreams -= streamId
     multiplexer.pushControlFrame(RstStreamFrame(streamId, errorCode))
   }
 
   sealed abstract class IncomingStreamState { _: Product =>
     def handle(event: StreamFrameEvent): IncomingStreamState
+    def handleOutgoingEnded(): IncomingStreamState
 
     def stateName: String = productPrefix
     def receivedUnexpectedFrame(e: StreamFrameEvent): IncomingStreamState = {
@@ -64,14 +69,23 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
       Closed
     }
   }
-  case object Idle extends IncomingStreamState {
+  case class Idle(outgoingStreamEnded: Boolean) extends IncomingStreamState {
     def handle(event: StreamFrameEvent): IncomingStreamState = event match {
       case frame @ ParsedHeadersFrame(streamId, endStream, headers, prioInfo) =>
-        val (data: Source[ByteString, NotUsed], nextState) =
-          if (endStream) (Source.empty, HalfClosedRemote)
+        val (data, nextState) =
+          if (endStream)
+            (
+              Source.empty,
+              if (outgoingStreamEnded) Closed
+              else HalfClosedRemote
+            )
           else {
             val subSource = new SubSourceOutlet[ByteString](s"substream-out-$streamId")
-            (Source.fromGraph(subSource.source), Open(new IncomingStreamBuffer(streamId, subSource)))
+            (
+              Source.fromGraph(subSource.source),
+              if (outgoingStreamEnded) HalfClosedLocal(new IncomingStreamBuffer(streamId, subSource))
+              else Open(new IncomingStreamBuffer(streamId, subSource))
+            )
           }
 
         // FIXME: after multiplexer PR is merged
@@ -81,6 +95,13 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
 
       case x => receivedUnexpectedFrame(x)
     }
+
+    override def handleOutgoingEnded(): IncomingStreamState = {
+      if (outgoingStreamEnded)
+        log.error("handleOutgoingEnded called twice")
+      Idle(true)
+    }
+
   }
   sealed abstract class ReceivingData(afterEndStreamReceived: IncomingStreamState) extends IncomingStreamState { _: Product =>
     protected def buffer: IncomingStreamBuffer
@@ -121,10 +142,18 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
     protected def maybeFinishStream(endStream: Boolean): IncomingStreamState =
       if (endStream) afterEndStreamReceived else this
   }
+
   // on the incoming side there's (almost) no difference between Open and HalfClosedLocal
-  case class Open(buffer: IncomingStreamBuffer) extends ReceivingData(HalfClosedRemote)
-  // currently unused: we never close a stream before the peer does
-  // case class HalfClosedLocal(buffer: Buffer) extends ReceivingData(Closed)
+  case class Open(buffer: IncomingStreamBuffer) extends ReceivingData(HalfClosedRemote) {
+    override def handleOutgoingEnded(): IncomingStreamState = HalfClosedLocal(buffer)
+  }
+  case class HalfClosedLocal(buffer: IncomingStreamBuffer) extends ReceivingData(Closed) {
+    override def handleOutgoingEnded(): IncomingStreamState = {
+      log.error("handleOutgoingEnded called twice")
+      this
+    }
+  }
+
   case object HalfClosedRemote extends IncomingStreamState {
     def handle(event: StreamFrameEvent): IncomingStreamState = event match {
       case r: RstStreamFrame =>
@@ -132,6 +161,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
         Closed
       case _ => receivedUnexpectedFrame(event)
     }
+    override def handleOutgoingEnded(): IncomingStreamState = Closed
   }
   case object Closed extends IncomingStreamState {
     def handle(event: StreamFrameEvent): IncomingStreamState = event match {
@@ -141,6 +171,10 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
         this
       case _ =>
         receivedUnexpectedFrame(event)
+    }
+    override def handleOutgoingEnded(): IncomingStreamState = {
+      log.error("handleOutgoingEnded called twice")
+      this
     }
   }
 

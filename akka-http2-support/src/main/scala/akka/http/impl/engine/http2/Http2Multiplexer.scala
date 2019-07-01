@@ -42,7 +42,7 @@ private[http2] trait Http2Multiplexer {
  */
 @InternalApi
 private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with StageLogging =>
-  def createMultiplexer(outlet: GenericOutlet[FrameEvent], prioritizer: StreamPrioritizer): Http2Multiplexer =
+  def createMultiplexer(outlet: GenericOutlet[FrameEvent], prioritizer: StreamPrioritizer, http2StreamHandling: Http2StreamHandling): Http2Multiplexer =
     new Http2Multiplexer with OutHandler with StateTimingSupport with LogSupport { self =>
       outlet.setHandler(this)
 
@@ -112,6 +112,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           trailer = None
           maybeInlet.foreach(_.cancel())
           self.closeStream(this)
+          http2StreamHandling.handleOutgoingEnded(streamId)
 
           if (maybeInlet.isDefined) {
             maybeInlet = None
