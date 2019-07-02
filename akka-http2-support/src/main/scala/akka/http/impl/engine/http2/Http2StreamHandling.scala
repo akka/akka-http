@@ -67,6 +67,9 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
     multiplexer.pushControlFrame(RstStreamFrame(streamId, errorCode))
   }
 
+  /**
+   * https://http2.github.io/http2-spec/#StreamStates
+   */
   sealed abstract class IncomingStreamState { _: Product =>
     def handle(event: StreamFrameEvent): IncomingStreamState
     def handleOutgoingEnded(): IncomingStreamState
@@ -97,7 +100,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
     }
 
     override def handleOutgoingEnded(): IncomingStreamState = {
-      log.error("handleOutgoingEnded called prematurely")
+      log.error("handleOutgoingEnded called prematurely. This indicates a bug in Akka HTTP, please report it to the issue tracker.")
       Idle
     }
 
@@ -148,7 +151,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
   }
   case class HalfClosedLocal(buffer: IncomingStreamBuffer) extends ReceivingData(Closed) {
     override def handleOutgoingEnded(): IncomingStreamState = {
-      log.error("handleOutgoingEnded called twice")
+      log.error("handleOutgoingEnded called twice. This indicates a bug in Akka HTTP, please report it to the issue tracker.")
       this
     }
   }
@@ -172,7 +175,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
         receivedUnexpectedFrame(event)
     }
     override def handleOutgoingEnded(): IncomingStreamState = {
-      log.error("handleOutgoingEnded called twice")
+      log.error("handleOutgoingEnded called twice. This indicates a bug in Akka HTTP, please report it to the issue tracker.")
       this
     }
   }
