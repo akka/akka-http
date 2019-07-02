@@ -7,7 +7,6 @@ package directives
 
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
-
 import akka.http.impl.util._
 import akka.http.scaladsl.common._
 import akka.http.scaladsl.model.EntityStreamSizeException
@@ -20,12 +19,14 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.{ Failure, Success }
 import BasicDirectives._
+import akka.http.ccompat.pre213
+import akka.http.ccompat.since213
 
 /**
  * @groupname form Form field directives
  * @groupprio form 90
  */
-trait FormFieldDirectives extends ToNameReceptacleEnhancements with FormFieldDirectivesCompat {
+trait FormFieldDirectives extends ToNameReceptacleEnhancements {
   import FormFieldDirectives._
 
   /**
@@ -55,7 +56,17 @@ trait FormFieldDirectives extends ToNameReceptacleEnhancements with FormFieldDir
    *
    * @group form
    */
-  override def formField(pdm: FieldMagnet): Directive[pdm.U] = formFields(pdm)
+  @pre213
+  def formField(pdm: FieldMagnet): pdm.Out = formFields(pdm)
+
+  /**
+   * Extracts an HTTP form field from the request.
+   * Rejects the request if the defined form field matcher(s) don't match.
+   *
+   * @group form
+   */
+  @since213
+  def formField(pdm: FieldMagnet): Directive[pdm.U] = formFields(pdm)
 
   /**
    * Extracts a number of HTTP form field from the request.
@@ -63,22 +74,19 @@ trait FormFieldDirectives extends ToNameReceptacleEnhancements with FormFieldDir
    *
    * @group form
    */
-  override def formFields(pdm: FieldMagnet): Directive[pdm.U] =
-    toStrictEntity(StrictForm.toStrictTimeout).wrap { pdm() }
-}
+  @pre213
+  def formFields(pdm: FieldMagnet): pdm.Out =
+    pdm.convert(toStrictEntity(StrictForm.toStrictTimeout).wrap { pdm() })
 
-/**
- * Superclass for FormFieldDirectives to provide bridge methods with the old signatures for binary compatibility
- *
- * Internal API
- */
-@InternalApi
-trait FormFieldDirectivesCompat {
-  import FormFieldDirectives.FieldMagnet
-  @deprecated("Bridge method will be removed in the future", "10.1.9")
-  private[akka] def formField(pdm: FieldMagnet): AnyRef
-  @deprecated("Bridge method will be removed in the future", "10.1.9")
-  private[akka] def formFields(pdm: FieldMagnet): AnyRef
+  /**
+   * Extracts a number of HTTP form field from the request.
+   * Rejects the request if the defined form field matcher(s) don't match.
+   *
+   * @group form
+   */
+  @since213
+  def formFields(pdm: FieldMagnet): Directive[pdm.U] =
+    toStrictEntity(StrictForm.toStrictTimeout).wrap { pdm() }
 }
 
 object FormFieldDirectives extends FormFieldDirectives {
@@ -131,13 +139,23 @@ object FormFieldDirectives extends FormFieldDirectives {
   sealed trait FieldMagnet {
     type U
     def apply(): Directive[U]
+
+    // Compatibility helper:
+    // type R = Directive[U]
+    // but we don't put it in here, so the compiler will produce AnyRef instead of `Directive` as the result type
+    // of the `formFields` directives above for compatibility reasons. We also need to provide a type-safe conversion function.
+    type Out
+    def convert(d: Directive[U]): Out
   }
 
   object FieldMagnet {
-    implicit def apply[T](value: T)(implicit fdef: FieldDef[T]): FieldMagnet { type U = fdef.U } =
+    implicit def apply[T](value: T)(implicit fdef: FieldDef[T]): FieldMagnet { type U = fdef.U; type Out = Directive[fdef.U] } =
       new FieldMagnet {
         type U = fdef.U
         def apply(): Directive[U] = fdef(value)
+
+        type Out = Directive[fdef.U]
+        def convert(d: Directive[fdef.U]): Directive[fdef.U] = d
       }
   }
 

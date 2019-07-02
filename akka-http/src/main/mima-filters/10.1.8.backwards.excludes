@@ -4,12 +4,9 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.unmarsh
 
 # Fixing some aspects of form fields wrt to streamed entities
 
-# Added new superclass to FormFieldDirectives. Would only be a problem if FormFieldDirectives was extended by a third party.
-ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.http.scaladsl.server.directives.FormFieldDirectivesCompat.formFields")
-ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.http.scaladsl.server.directives.FormFieldDirectivesCompat.formField")
-
-# FieldMagnet / FieldDef should not be extended or called by third-part code.
+# FieldMagnet / FieldDef should not be extended or called by third-party code.
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives#FieldMagnet.apply")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives#FieldMagnet.apply")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives#FieldDef.apply")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives#FieldDef.apply")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives#FieldMagnet.convert")
