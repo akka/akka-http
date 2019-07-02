@@ -38,11 +38,19 @@ private[http2] trait Http2Multiplexer {
 /**
  * INTERNAL API
  *
- * The current default multiplexer.
+ * Multiplexes the outgoing side of the streams on a HTTP/2 connection.
+ * Accepts the streams from the Akka HTTP side and turns them into `FrameEvent`s
+ * to be passed to the network side.
+ *
+ * Mixed into the Http2ServerDemux graph logic.
  */
 @InternalApi
 private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with StageLogging =>
-  def createMultiplexer(outlet: GenericOutlet[FrameEvent], prioritizer: StreamPrioritizer, http2StreamHandling: Http2StreamHandling): Http2Multiplexer =
+  // Signal an outgoing stream has ended, so when
+  // the incoming side is also finished it can be cleaned up.
+  def handleOutgoingEnded(streamId: Int): Unit
+
+  def createMultiplexer(outlet: GenericOutlet[FrameEvent], prioritizer: StreamPrioritizer): Http2Multiplexer =
     new Http2Multiplexer with OutHandler with StateTimingSupport with LogSupport { self =>
       outlet.setHandler(this)
 
@@ -112,7 +120,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           trailer = None
           maybeInlet.foreach(_.cancel())
           self.closeStream(this)
-          http2StreamHandling.handleOutgoingEnded(streamId)
+          handleOutgoingEnded(streamId)
 
           if (maybeInlet.isDefined) {
             maybeInlet = None

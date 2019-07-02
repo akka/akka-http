@@ -86,7 +86,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings) extend
 
       override protected def logSource: Class[_] = classOf[Http2ServerDemux]
 
-      val multiplexer = createMultiplexer(frameOut, StreamPrioritizer.first(), this)
+      val multiplexer = createMultiplexer(frameOut, StreamPrioritizer.first())
 
       override def preStart(): Unit = {
         pull(frameIn)

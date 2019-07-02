@@ -16,7 +16,15 @@ import scala.collection.immutable
 
 import FrameEvent._
 
-/** INTERNAL API */
+/**
+ * INTERNAL API
+ *
+ * Handles the 'incoming' side of HTTP/2 streams.
+ * Accepts `FrameEvent`s from the network side and emits `ByteHttp2SubStream`s for streams
+ * to be handled by the Akka HTTP layer.
+ *
+ * Mixed into the Http2ServerDemux graph logic.
+ */
 @InternalApi
 private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLogging =>
   // required API from demux
@@ -47,6 +55,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
   def handleStreamEvent(e: StreamFrameEvent): Unit = {
     updateState(e.streamId, streamFor(e.streamId).handle(e))
   }
+  // Called by the outgoing stream multiplexer when that side of the stream is ended.
   def handleOutgoingEnded(streamId: Int): Unit = {
     updateState(streamId, streamFor(streamId).handleOutgoingEnded())
   }
