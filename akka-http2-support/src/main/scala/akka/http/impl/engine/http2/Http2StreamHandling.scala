@@ -47,9 +47,8 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
         if (streamId <= largestIncomingStreamId) Closed // closed streams are never put into the map
         else {
           largestIncomingStreamId = streamId
-          val initialState = Idle(outgoingStreamEnded = false)
-          incomingStreams += streamId -> initialState
-          initialState
+          incomingStreams += streamId -> Idle
+          Idle
         }
     }
   def handleStreamEvent(e: StreamFrameEvent): Unit = {
@@ -78,23 +77,15 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
       Closed
     }
   }
-  case class Idle(outgoingStreamEnded: Boolean) extends IncomingStreamState {
+  case object Idle extends IncomingStreamState {
     def handle(event: StreamFrameEvent): IncomingStreamState = event match {
       case frame @ ParsedHeadersFrame(streamId, endStream, headers, prioInfo) =>
         val (data, nextState) =
           if (endStream)
-            (
-              Source.empty,
-              if (outgoingStreamEnded) Closed
-              else HalfClosedRemote
-            )
+            (Source.empty, HalfClosedRemote)
           else {
             val subSource = new SubSourceOutlet[ByteString](s"substream-out-$streamId")
-            (
-              Source.fromGraph(subSource.source),
-              if (outgoingStreamEnded) HalfClosedLocal(new IncomingStreamBuffer(streamId, subSource))
-              else Open(new IncomingStreamBuffer(streamId, subSource))
-            )
+            (Source.fromGraph(subSource.source), Open(new IncomingStreamBuffer(streamId, subSource)))
           }
 
         // FIXME: after multiplexer PR is merged
@@ -106,9 +97,8 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
     }
 
     override def handleOutgoingEnded(): IncomingStreamState = {
-      if (outgoingStreamEnded)
-        log.error("handleOutgoingEnded called twice")
-      Idle(true)
+      log.error("handleOutgoingEnded called prematurely")
+      Idle
     }
 
   }
