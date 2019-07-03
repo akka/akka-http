@@ -52,15 +52,17 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
         }
     }
   def handleStreamEvent(e: StreamFrameEvent): Unit = {
-    updateState(e.streamId, streamFor(e.streamId).handle(e))
+    updateState(e.streamId, _.handle(e))
   }
   // Called by the outgoing stream multiplexer when that side of the stream is ended.
   def handleOutgoingEnded(streamId: Int): Unit = {
-    updateState(streamId, streamFor(streamId).handleOutgoingEnded())
+    updateState(streamId, _.handleOutgoingEnded())
   }
-  def updateState(streamId: Int, newState: IncomingStreamState): Unit = {
-    if (newState == Closed) incomingStreams -= streamId
-    else incomingStreams += streamId -> newState
+  private def updateState(streamId: Int, handle: IncomingStreamState => IncomingStreamState): Unit = {
+    handle(streamFor(streamId)) match {
+      case Closed   => incomingStreams -= streamId
+      case newState => incomingStreams += streamId -> newState
+    }
   }
   def resetStream(streamId: Int, errorCode: ErrorCode): Unit = {
     incomingStreams -= streamId
