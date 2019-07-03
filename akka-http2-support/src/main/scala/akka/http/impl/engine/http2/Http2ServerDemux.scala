@@ -25,8 +25,6 @@ import FrameEvent._
  *
  * This stage contains all control logic for handling frames and (de)muxing data to/from substreams.
  *
- * (This is not a final documentation, more like a brain-dump of how it could work.)
- *
  * The BidiStage consumes and produces FrameEvents from the network. It will output one Http2SubStream
  * for incoming frames per substream and likewise accepts a single Http2SubStream per substream with
  * outgoing frames.
