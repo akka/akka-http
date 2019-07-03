@@ -125,6 +125,9 @@ trait FileUploadDirectives {
         import ctx.materializer
         import ctx.executionContext
 
+        // We complete the directive through this promise as soon as we encounter the
+        // selected part. This way the inner directive can consume it, after which we will
+        // proceed to consume the rest of the request, discarding any follow-up parts.
         val done = Promise[RouteResult]()
 
         // Streamed multipart data must be processed in a certain way, that is, before you can expect the next part you
