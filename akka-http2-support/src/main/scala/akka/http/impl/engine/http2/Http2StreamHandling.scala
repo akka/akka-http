@@ -72,9 +72,12 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
    */
   sealed abstract class IncomingStreamState { _: Product =>
     def handle(event: StreamFrameEvent): IncomingStreamState
-    def handleOutgoingEnded(): IncomingStreamState
 
     def stateName: String = productPrefix
+    def handleOutgoingEnded(): IncomingStreamState = {
+      log.warning(s"handleOutgoingEnded received unexpectedly in state $stateName. This indicates a bug in Akka HTTP, please report it to the issue tracker.")
+      this
+    }
     def receivedUnexpectedFrame(e: StreamFrameEvent): IncomingStreamState = {
       pushGOAWAY(ErrorCode.PROTOCOL_ERROR, s"Received unexpected frame of type ${e.frameTypeName} for stream ${e.streamId} in state $stateName")
       Closed
@@ -98,12 +101,6 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
 
       case x => receivedUnexpectedFrame(x)
     }
-
-    override def handleOutgoingEnded(): IncomingStreamState = {
-      log.error("handleOutgoingEnded called prematurely. This indicates a bug in Akka HTTP, please report it to the issue tracker.")
-      Idle
-    }
-
   }
   sealed abstract class ReceivingData(afterEndStreamReceived: IncomingStreamState) extends IncomingStreamState { _: Product =>
     protected def buffer: IncomingStreamBuffer
@@ -149,13 +146,14 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
   case class Open(buffer: IncomingStreamBuffer) extends ReceivingData(HalfClosedRemote) {
     override def handleOutgoingEnded(): IncomingStreamState = HalfClosedLocal(buffer)
   }
-  case class HalfClosedLocal(buffer: IncomingStreamBuffer) extends ReceivingData(Closed) {
-    override def handleOutgoingEnded(): IncomingStreamState = {
-      log.error("handleOutgoingEnded called twice. This indicates a bug in Akka HTTP, please report it to the issue tracker.")
-      this
-    }
-  }
+  /**
+   * We have closed the outgoing stream, but the incoming stream is still going.
+   */
+  case class HalfClosedLocal(buffer: IncomingStreamBuffer) extends ReceivingData(Closed)
 
+  /**
+   * They have closed the incoming stream, but the outgoing stream is still going.
+   */
   case object HalfClosedRemote extends IncomingStreamState {
     def handle(event: StreamFrameEvent): IncomingStreamState = event match {
       case r: RstStreamFrame =>
@@ -173,10 +171,6 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
         this
       case _ =>
         receivedUnexpectedFrame(event)
-    }
-    override def handleOutgoingEnded(): IncomingStreamState = {
-      log.error("handleOutgoingEnded called twice. This indicates a bug in Akka HTTP, please report it to the issue tracker.")
-      this
     }
   }
 
