@@ -2,7 +2,7 @@
 # Routes
 
 The "Route" is the central concept of Akka HTTP's Routing DSL. All the structures you build with the DSL, no matter
-whether they consists of a single line or span several hundred lines, are @scala[`type`]@java[`function`] turning a 
+whether they consist of a single line or span several hundred lines, are @scala[`type`]@java[`function`] turning a 
 @unidoc[RequestContext] into a @scala[`Future[RouteResult]`]@java[`CompletionStage<RouteResult>`].
 
 @@@ div { .group-scala }
