@@ -309,6 +309,7 @@ lazy val docs = project("docs")
   .enablePlugins(AkkaParadoxPlugin, NoPublish, DeployRsync)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .addAkkaModuleDependency("akka-stream", "provided")
+  .addAkkaModuleDependency("akka-actor-typed", "provided")
   .dependsOn(
     httpCore, http, httpXml, http2Support, httpMarshallersJava, httpMarshallersScala, httpCaching,
     httpTests % "compile;test->test", httpTestkit % "compile;test->test"
