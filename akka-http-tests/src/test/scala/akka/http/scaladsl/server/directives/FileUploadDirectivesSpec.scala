@@ -232,7 +232,7 @@ class FileUploadDirectivesSpec extends RoutingSpec with Eventually {
             "field3",
             HttpEntity.IndefiniteLength(ContentTypes.`text/plain(UTF-8)`, Source(List.fill(100)(ByteString("field3data")))),
             Map("filename" -> "data3.txt")
-          ),
+          )
         )
 
       Post("/", multipartForm) ~> streamingEcho ~> check {
