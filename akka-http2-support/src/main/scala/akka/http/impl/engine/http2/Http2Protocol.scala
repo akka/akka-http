@@ -353,12 +353,11 @@ private[http] object Http2Protocol {
    *  which in hex notation is:
    *
    *     0x505249202a20485454502f322e300d0a0d0a534d0d0a0d0a
+   *
+   * That is, the connection preface starts with the string "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n".
    */
   val ClientConnectionPreface =
-    ByteString(
-      "505249202a20485454502f322e300d0a0d0a534d0d0a0d0a"
-        .grouped(2)
-        .map(java.lang.Byte.parseByte(_, 16)).toSeq: _*)
+    ByteString("PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n")
 
   object Flags { flags =>
     val NO_FLAGS = new ByteFlag(0x0)

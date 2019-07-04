@@ -132,4 +132,10 @@ private[http] object ProtocolSwitch {
         }
       }
     )
+
+  def byPreface(http1Stack: HttpServerFlow, http2Stack: HttpServerFlow): HttpServerFlow = {
+    def chooseProtocol(sessionBytes: SessionBytes): String =
+      if (sessionBytes.bytes.startsWith(Http2Protocol.ClientConnectionPreface)) "h2" else "http/1.1"
+    ProtocolSwitch(chooseProtocol, http1Stack, http2Stack)
+  }
 }

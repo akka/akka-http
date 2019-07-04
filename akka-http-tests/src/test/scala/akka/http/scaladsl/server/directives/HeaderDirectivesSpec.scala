@@ -66,12 +66,12 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
       }
     }
     "reject a request if no header matches a custom one, and use the custom header's name for the rejection " in {
-      val route = headerValueByType[XCustomHeader]() { customValue ⇒
+      val route = headerValueByType[XCustomHeader]() { customValue =>
         complete(s"Custom-Value: $customValue")
       }
       Get("abc") ~> route ~> check {
         inside(rejection) {
-          case MissingHeaderRejection("X-Custom-Header") ⇒
+          case MissingHeaderRejection("X-Custom-Header") =>
         }
       }
     }
