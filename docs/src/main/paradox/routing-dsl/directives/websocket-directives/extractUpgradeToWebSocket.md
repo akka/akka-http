@@ -10,7 +10,7 @@
 
 ## Description
 
-Extracts the @apidoc[UpgradeToWebSocket] header if existent. Rejects with an @apidoc[ExpectedWebSocketRequestRejection], otherwise.
+Extracts the @apidoc[UpgradeToWebSocket] header if existent. Rejects with an @apidoc[ExpectedWebSocketRequestRejection$], otherwise.
 
 The `extractUpgradeToWebSocket` directive is used as a building block for @ref[Custom Directives](../custom-directives.md) to provide the extracted header to the inner route.
 
