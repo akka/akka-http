@@ -503,6 +503,32 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     adaptTupleFlow(delegate.cachedHostConnectionPoolImpl[T](to.host, to.port).mapMaterializedValue(_.toJava))
 
   /**
+   * Returns a [[akka.stream.javadsl.Flow]] which dispatches incoming HTTP requests to the per-ActorSystem pool of outgoing
+   * HTTP connections to the given target host endpoint. For every ActorSystem, target host and pool
+   * configuration a separate connection pool is maintained.
+   * The HTTP layer transparently manages idle shutdown and restarting of connections pools as configured.
+   * The returned [[akka.stream.javadsl.Flow]] instances therefore remain valid throughout the lifetime of the application.
+   *
+   * The internal caching logic guarantees that there will never be more than a single pool running for the
+   * given target host endpoint and configuration (in this ActorSystem).
+   *
+   * Since the underlying transport usually comprises more than a single connection the produced flow might generate
+   * responses in an order that doesn't directly match the consumed requests.
+   * For example, if two requests A and B enter the flow in that order the response for B might be produced before the
+   * response for A.
+   * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
+   * object of type `T` from the application which is emitted together with the corresponding response.
+   *
+   * To configure additional settings for the pool (and requests made using it),
+   * use the `akka.http.host-connection-pool` config section or pass in a [[ConnectionPoolSettings]] explicitly.
+   */
+  def cachedHostConnectionPool[T](
+    to:       ConnectHttp,
+    settings: ConnectionPoolSettings,
+    log:      LoggingAdapter): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
+    adaptTupleFlow(delegate.cachedHostConnectionPoolImpl[T](to.host, to.port, settings.asScala, log).mapMaterializedValue(_.toJava))
+
+  /**
    * Same as [[cachedHostConnectionPool]] but with HTTPS encryption.
    *
    * When an [[HttpConnectionContext]] is defined in the given [[ConnectHttp]] it will be used, otherwise the default client-side context will be used.
@@ -540,14 +566,14 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     cachedHostConnectionPool(to)
 
   /**
-   * @deprecated in favor of [[cachedHostConnectionPoolHttps]] that doesn't require an Materializer argument.
+   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
    */
   @Deprecated
   def cachedHostConnectionPool[T](
     to:       ConnectHttp,
     settings: ConnectionPoolSettings,
     log:      LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
-    cachedHostConnectionPoolHttps(to, settings, log)
+    cachedHostConnectionPool(to, settings, log)
 
   /**
    * Creates a new "super connection pool flow", which routes incoming requests to a (cached) host connection pool
