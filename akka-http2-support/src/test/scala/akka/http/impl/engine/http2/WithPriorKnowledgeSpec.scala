@@ -4,18 +4,16 @@
 
 package akka.http.impl.engine.http2
 
-import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
-import akka.http.scaladsl.{ Http, HttpConnectionContext }
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, HttpProtocols }
-import akka.stream.ActorMaterializer
 import java.util.Base64
-import akka.stream.scaladsl.{ Sink, Source, Tcp }
+
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.{ HttpProtocols, HttpRequest, HttpResponse, StatusCodes }
+import akka.stream.{ ActorMaterializer, OverflowStrategy }
+import akka.stream.scaladsl.{ Keep, Sink, SinkQueue, Source, Tcp }
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
 
 import scala.concurrent.Future
-import akka.stream.OverflowStrategy
-import akka.stream.scaladsl.{ SinkQueue, Keep }
 
 class WithPriorKnowledgeSpec extends AkkaSpec("""
     akka.loglevel = warning

@@ -34,9 +34,9 @@ object Route {
    */
   def seal(route: Route)(implicit
     routingSettings: RoutingSettings = null,
-                         parserSettings:   ParserSettings   = null,
-                         rejectionHandler: RejectionHandler = RejectionHandler.default,
-                         exceptionHandler: ExceptionHandler = null): Route = {
+                         @deprecated("For binary compatibility. parserSettings is never used", since = "10.1.8") parserSettings:ParserSettings = null,
+                         rejectionHandler:                                                                                    RejectionHandler = RejectionHandler.default,
+                         exceptionHandler:                                                                                    ExceptionHandler = null): Route = {
     import directives.ExecutionDirectives._
     // optimized as this is the root handler for all akka-http applications
     BasicDirectives.extractSettings { theSettings =>

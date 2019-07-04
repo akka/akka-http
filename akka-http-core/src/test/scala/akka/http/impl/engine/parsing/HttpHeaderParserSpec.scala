@@ -284,7 +284,6 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
     ) {
       // This is actually quite rare since it needs upping the max header value length
       val numKeys = 10000
-      val value = "null"
 
       val regularKeys = Iterator.from(1).map(i => s"key_$i").take(numKeys)
       private val zeroHashStrings: Iterator[String] = HashCodeCollider.zeroHashCodeIterator()

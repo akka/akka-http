@@ -7,21 +7,19 @@ package akka.http.scaladsl.model
 import java.util.concurrent.TimeoutException
 
 import akka.NotUsed
-import com.typesafe.config.{ Config, ConfigFactory }
-
-import scala.concurrent.{ Await, Promise }
-import scala.concurrent.duration._
-import org.scalatest.{ BeforeAndAfterAll, FreeSpec, MustMatchers }
-import org.scalatest.matchers.{ MatchResult, Matcher }
-import akka.util.ByteString
 import akka.actor.ActorSystem
-import akka.stream.scaladsl._
-import akka.stream.ActorMaterializer
-import akka.http.scaladsl.model.HttpEntity._
 import akka.http.impl.util.StreamUtils
+import akka.http.scaladsl.model.HttpEntity._
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl._
 import akka.testkit._
-import org.scalatest.concurrent.ScalaFutures
+import akka.util.ByteString
+import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.matchers.{ MatchResult, Matcher }
+import org.scalatest.{ BeforeAndAfterAll, FreeSpec, MustMatchers }
 
+import scala.concurrent.duration._
+import scala.concurrent.{ Await, Promise }
 import scala.util.Random
 
 class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
