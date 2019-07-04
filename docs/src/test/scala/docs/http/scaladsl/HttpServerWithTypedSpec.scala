@@ -4,17 +4,17 @@ import docs.CompileOnlySpec
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
 
-class HttpServerWithTyped extends WordSpec with Matchers with CompileOnlySpec {
+class HttpServerWithTypedSpec extends WordSpec with Matchers with CompileOnlySpec {
 
-  "akka-typed-example" in /*compileOnlySpec*/ {
+  "akka-typed-example" in compileOnlySpec {
     //#akka-typed-behavior
     import akka.actor.typed.{ ActorRef, Behavior }
     import akka.actor.typed.scaladsl.Behaviors
 
     // Definition of the case class representing a build job and its possible status values
     sealed trait Status
-    final object Green extends Status
-    final object Red extends Status
+    final object Successful extends Status
+    final object Failed extends Status
 
     final case class Job(id: Long, projectName: String, status: Status, duration: Long)
     final case class Jobs(jobs: Seq[Job])
@@ -26,7 +26,7 @@ class HttpServerWithTyped extends WordSpec with Matchers with CompileOnlySpec {
       case object OK extends Response
       final case class KO(reason: String) extends Response
 
-      // Trait and its implementations reprenting all possible messages that can be sent to this Behavior
+      // Trait and its implementations representing all possible messages that can be sent to this Behavior
       sealed trait BuildJobProtocol
       final case class AddJob(job: Job, replyTo: ActorRef[Response]) extends BuildJobProtocol
       final case class GetJobById(id: Long, replyTo: ActorRef[Option[Job]]) extends BuildJobProtocol
@@ -43,9 +43,6 @@ class HttpServerWithTyped extends WordSpec with Matchers with CompileOnlySpec {
           BuildJobRepository(jobs.+(job.id -> job))
         case GetJobById(id, replyTo) =>
           replyTo ! jobs.get(id)
-          Behavior.same
-        case GetJobByStatus(status, replyTo) =>
-          replyTo ! jobs.values.filter(_.status == status).toSeq
           Behavior.same
         case ClearJobs(replyTo) =>
           replyTo ! OK
@@ -69,13 +66,13 @@ class HttpServerWithTyped extends WordSpec with Matchers with CompileOnlySpec {
 
       implicit object StatusFormat extends RootJsonFormat[Status] {
         def write(status: Status): JsValue = status match {
-          case Red   => JsString("Red")
-          case Green => JsString("Green")
+          case Failed     => JsString("Failed")
+          case Successful => JsString("Successful")
         }
 
         def read(json: JsValue): Status = json match {
-          case JsString("Failed")     => Red
-          case JsString("Successful") => Green
+          case JsString("Failed")     => Failed
+          case JsString("Successful") => Successful
           case _                      => throw new DeserializationException("Status unexpected")
         }
       }
@@ -133,17 +130,6 @@ class HttpServerWithTyped extends WordSpec with Matchers with CompileOnlySpec {
                   }
                 }
               )
-            },
-            path(Map("failed" -> Red, "successful" -> Green)) { st =>
-
-              val jobQuery: Future[Seq[Job]] = buildJobRepository.ask(replyTo => GetJobByStatus(st, replyTo))
-              onSuccess(jobQuery) { found =>
-                if (found.isEmpty) {
-                  complete(StatusCodes.NoContent)
-                } else {
-                  complete(Jobs(found))
-                }
-              }
             },
             (get & path(LongNumber)) { id =>
               val maybeJob: Future[Option[Job]] = buildJobRepository.ask(replyTo => GetJobById(id, replyTo))

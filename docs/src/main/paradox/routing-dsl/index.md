@@ -83,11 +83,25 @@ First let's start by defining the `Behavior` that will act as a repository for t
 Scala
 :  @@snip [HttpServerWithTypedSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerWithTypedSpec.scala) { #akka-typed-behavior }
 
-Next step is to define the @apidoc[Route] that will communicate with the previously defined behavior
+
+Now, let's define the JSON marshaller and unmarshallers:
+
+Scala
+:  @@snip [HttpServerWithTypedSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerWithTypedSpec.scala) { #akka-typed-json }
+
+
+Next step is to define the @apidoc[Route$] that will communicate with the previously defined behavior
 and handle all its possible responses
 
 Scala
 :  @@snip [HttpServerWithTypedSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerWithTypedSpec.scala) { #akka-typed-route }
+
+
+And finally, we just need to bootstrap our web server and instantiate our `Behavior`:
+
+Scala
+:  @@snip [HttpServerWithTypedSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerWithTypedSpec.scala) { #akka-typed-bootstrap }
+
 
 
 ## Dynamic Routing Example
