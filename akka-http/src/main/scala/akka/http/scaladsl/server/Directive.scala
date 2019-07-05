@@ -5,12 +5,13 @@
 package akka.http.scaladsl.server
 
 import scala.collection.immutable
-import scala.util.{ Failure, Success, Try }
 import akka.http.scaladsl.server.directives.RouteDirectives
 import akka.http.scaladsl.server.util._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
 import akka.http.impl.util._
+
+import scala.concurrent.Future
 
 /**
  * A directive that provides a tuple of values of type `L` to create an inner route.
@@ -46,11 +47,15 @@ abstract class Directive[L](implicit val ev: Tuple[L]) {
     def validatedMap[R](f: L => R)(implicit tupler: Tupler[R]): Directive[tupler.Out] =
       Directive[tupler.Out] { inner =>
         tapply { values => ctx =>
-          Try(f(values)) match {
-            case Success(r) => inner(tupler(r))(ctx)
-            case Failure(e: IllegalArgumentException) =>
-              ctx.reject(ValidationRejection(e.getMessage.nullAsEmpty, Some(e)))
+          def futureRouteResult(): Future[RouteResult] = {
+            val r: R = try f(values)
+            catch {
+              case e: IllegalArgumentException =>
+                return ctx.reject(ValidationRejection(e.getMessage.nullAsEmpty, Some(e)))
+            }
+            inner(tupler(r))(ctx)
           }
+          futureRouteResult()
         }
       }(tupler.OutIsTuple)
 
