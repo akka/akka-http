@@ -5,13 +5,12 @@
 package akka.http.scaladsl.server
 
 import scala.collection.immutable
+import scala.concurrent.Future
 import akka.http.scaladsl.server.directives.RouteDirectives
 import akka.http.scaladsl.server.util._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
 import akka.http.impl.util._
-
-import scala.concurrent.Future
 
 /**
  * A directive that provides a tuple of values of type `L` to create an inner route.
