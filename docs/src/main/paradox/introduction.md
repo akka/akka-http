@@ -84,7 +84,7 @@ project](https://github.com/akka/akka-http-java-seed.g8)].
 ## Routing DSL for HTTP servers
 
 The high-level, routing API of Akka HTTP provides a DSL to describe HTTP "routes" and how they should be handled.
-Each route is composed of one or more level of `Directive` s that narrows down to handling one specific type of
+Each route is composed of one or more level of `Directives` that narrows down to handling one specific type of
 request.
 
 For example one route might start with matching the `path` of the request, only matching if it is "/hello", then
