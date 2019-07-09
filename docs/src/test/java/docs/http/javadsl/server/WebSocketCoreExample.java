@@ -27,6 +27,7 @@ import akka.japi.JavaPartialFunction;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 
 import akka.actor.ActorSystem;
@@ -54,6 +55,26 @@ public class WebSocketCoreExample {
     }
   }
   //#websocket-handling
+
+  //#websocket-sink-source
+  public static HttpResponse handleRequestSinkSource(HttpRequest request, ActorSystem system, Materializer materializer) {
+    System.out.println("Handling request to " + request.getUri());
+
+    String path = request.getUri().path();
+    switch (path) {
+      case "/source":
+        Source<Message, NotUsed> source = Source.single("Hello").map(txt -> TextMessage.create(txt));
+        return WebSocket.handleWebSocketRequestWithSource(request, source, materializer);
+
+      case "/sink":
+        Sink<Message, NotUsed> sink = Sink.actorRef(system.deadLetters(), "COMPLETED");
+        return WebSocket.handleWebSocketRequestWithSink(request, sink);
+
+      default:
+        return HttpResponse.create().withStatus(404);
+    }
+  }
+  //#websocket-sink-source
 
   public static void main(String[] args) throws Exception {
     ActorSystem system = ActorSystem.create();

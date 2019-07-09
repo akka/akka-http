@@ -99,8 +99,7 @@ such a header is found, it is used to generate a response by passing a handler f
 @@@ div { .group-java }
 It uses a helper method `akka.http.javadsl.model.ws.WebSocket.handleWebSocketRequestWith` which can be used if
 only WebSocket requests are expected. The method looks for the @apidoc[UpgradeToWebSocket] header and returns a response
-that will install the passed WebSocket handler if the header is found. If the request is no WebSocket request it will
-return a `400 Bad Request` error response.
+that will install the passed WebSocket handler if the header is found. If the request is no WebSocket request it will return a `400 Bad Request` error response.
 @@@
 
 In the example, the passed handler expects text messages where each message is expected to contain a (person's) name
@@ -117,6 +116,20 @@ Inactive WebSocket connections will be dropped according to the @ref[idle-timeou
 In case you need to keep inactive connections alive, you can either tweak your idle-timeout or inject
 'keep-alive' messages regularly.
 @@@
+
+### Handling WebSockets with independent Source and Sink
+
+Sometimes it is interesting to be able to expose an independent Source and Sink to such WebSocket handler rather than a linear Flow. This can be done by using the `Flow.fromSinkAndSource` or `Flow.fromSinkAndSourceCoupled` methods in Akka 2.5.x (or `CoupledTerminationFlow` in Akka 2.4.x), and passing such composite Flow into the @java[`handleWebSocketRequestWith`]@scala[`handleWebSocketRequestWith`] method. Using these methods you can for example use a `Sink.foreach` to side-efect or print incoming user messages, while providing some kind of data source via a `Source` to the outgoing side of the connection. 
+
+The difference between the "coupled" Flow from Sink and Source and the "normal one", is that the termination of one side of the flow (e.g. the Source completing) will cause the other side to be terminated as well. This is often useful when we want to terminate the connection once the data-source has finished streaming or the user has gone away. If unsure about the semantics you require, the "coupled" flow is usually a safe bet, since it will close the connection regardless of which side of the flow terminates, which very often is the desired semantics.
+
+Convenience versions of the handle methods are also available. Specifically, when ignoring incoming mesages from the client-side it is important to be aware of the [Streaming-first nature of Akka HTTP](../implications-of-streaming-http-entity.md), which means that if incoming messages would be `Streamed`, they have to be *consumed* properly, otherwise leading to stalling of the incoming data stream. Specifically, it is not safe to ignore the incoming messages by simply attaching them to a plain `Sink.ignore` is not always safe for ignoring the incoming data. For that reason the convenience methods use the `WebSocket.ignoreSink` that actively drains incoming streamed messages. One may also use it explicitly:
+
+Scala
+:  @@snip [WebSocketExampleSpec.scala]($test$/scala/docs/http/scaladsl/server/WebSocketExampleSpec.scala) { #websocket-sink-source }
+
+Java
+:  @@snip [WebSocketCoreExample.java]($test$/java/docs/http/javadsl/server/WebSocketCoreExample.java) { #websocket-sink-source }
 
 ## Routing support
 
