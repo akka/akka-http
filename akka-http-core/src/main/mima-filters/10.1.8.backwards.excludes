@@ -6,6 +6,11 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.HttpConnec
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ConnectHttpImpl.this")
 # Constructor @InternalApi class:
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ConnectHttpsImpl.this")
+# Only turns up in 2.13. Indeed seems to be missing,
+# but I can't see how this would ever be triggered.
+# (the method that *would* be triggered is in
+# `HttpsConnectionContext$`)
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpsConnectionContext.<init>$default$7")
 
 # Extension of @DoNotInherit class
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.Http2ServerSettings.logFrames")
