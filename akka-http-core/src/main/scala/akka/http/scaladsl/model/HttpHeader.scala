@@ -4,7 +4,7 @@
 
 package akka.http.scaladsl.model
 
-import akka.annotation.InternalApi
+import akka.annotation.{ DoNotInherit, InternalApi }
 
 import scala.util.{ Failure, Success }
 import akka.parboiled2.ParseError
@@ -33,6 +33,7 @@ trait SensitiveHttpHeader {
  * The model of an HTTP header. In its most basic form headers are simple name-value pairs. Header names
  * are compared in a case-insensitive way.
  */
+@DoNotInherit
 abstract class HttpHeader extends jm.HttpHeader with ToStringRenderable {
   def name: String
   def value: String

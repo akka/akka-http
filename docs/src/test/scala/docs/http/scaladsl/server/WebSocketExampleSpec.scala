@@ -6,14 +6,16 @@ package docs.http.scaladsl.server
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import akka.{ Done, NotUsed }
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.ws.{ BinaryMessage, Message, WebSocketRequest }
+import akka.http.scaladsl.model.ws._
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ServerSettings }
-import akka.stream.scaladsl.{ Flow, Sink }
+import akka.stream.scaladsl.{ CoupledTerminationFlow, Flow, Sink }
 import akka.util.ByteString
 import docs.CompileOnlySpec
 
+import scala.concurrent.Future
 import scala.io.StdIn
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -48,6 +50,28 @@ class WebSocketExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpe
             Nil
         }
     //#websocket-handler
+
+    //#websocket-sink-source
+    val wsHandler: Flow[Message, Message, (Future[Done], NotUsed)] =
+      CoupledTerminationFlow.fromSinkAndSource(
+        WebSocket.ignoreSink,
+        Source.repeat("Hello").map(TextMessage(_))
+      )
+
+    val example: HttpRequest => HttpResponse = {
+      case req @ HttpRequest(GET, Uri.Path("/manual"), _, _, _) =>
+        req.header[UpgradeToWebSocket] match {
+          case Some(upgrade) => upgrade.handleMessages(wsHandler)
+          case _             => HttpResponse(entity = "oh well...")
+        }
+
+      case req @ HttpRequest(GET, Uri.Path("/manual"), _, _, _) =>
+        req.header[UpgradeToWebSocket] match {
+          case Some(upgrade) => upgrade.handleMessagesWithSource(Source.repeat("Hello WebSocket!").map(TextMessage(_)))
+          case _             => HttpResponse(entity = "oh well...")
+        }
+    }
+    //#websocket-sink-source
 
     //#websocket-request-handling
     val requestHandler: HttpRequest => HttpResponse = {
