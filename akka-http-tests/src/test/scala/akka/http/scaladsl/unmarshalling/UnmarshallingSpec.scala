@@ -46,6 +46,9 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
       val uuid = UUID.randomUUID()
       Unmarshal(uuid.toString).to[UUID] should evaluateTo(uuid)
     }
+    "uuidUnmarshaller should unmarshal nil uuid" in {
+      Unmarshal("00000000-0000-0000-0000-000000000000").to[UUID] should evaluateTo(UUID.fromString("00000000-0000-0000-0000-000000000000"))
+    }
   }
 
   "The GenericUnmarshallers" - {
