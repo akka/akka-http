@@ -5,6 +5,7 @@
 package akka.http.scaladsl.server
 
 import scala.collection.immutable
+import akka.annotation.InternalApi
 import akka.http.scaladsl.server.directives.RouteDirectives
 import akka.http.scaladsl.server.util._
 import akka.http.scaladsl.util.FastFuture
@@ -181,6 +182,7 @@ object Directive {
    *
    * INTERNAL API
    */
+  @InternalApi
   def SingleValueModifiers[T](underlying: Directive1[T]): Directive.SingleValueModifiers[T] =
     new Directive.SingleValueModifiers(underlying)
   private[server] class SingleValueModifiers[T](underlying: Directive1[T]) {
