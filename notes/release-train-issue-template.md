@@ -1,3 +1,6 @@
+Release Akka HTTP $VERSION$
+
+<!--
 Release Train Issue Template for Akka HTTP
 
 (Liberally copied and adopted from Scala itself https://github.com/scala/scala-dev/blob/b11cd2e4a4431de7867db6b39362bea8fa6650e7/notes/releases/template.md)
@@ -6,10 +9,11 @@ For every Akka HTTP release, make a copy of this file named after the release, a
 Ideally replacing variables could become a script you can run on your local machine.
 
 Variables to be expanded in this template:
-- AKKA_HTTP_VER=??? (currently not used)
+- VERSION=???
 
 Key links:
   - akka/akka-http milestone: https://github.com/akka/akka-http/milestone/?
+-->
 
 ### ~ 1 week before the release
 - [ ] Check that open PRs and issues assigned to the milestone are reasonable
@@ -56,18 +60,18 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
   - [ ] Log into `gustav.akka.io` as `akkarepo`
     - [ ] update the `10.1` and `current` links on `repo.akka.io` to point to the latest version with (**replace the minor appropriately**)
          ```
-         ln -nsf $AKKA_HTTP_VER$ www/docs/akka-http/10.1
-         ln -nsf $AKKA_HTTP_VER$ www/api/akka-http/10.1
-         ln -nsf $AKKA_HTTP_VER$ www/japi/akka-http/10.1
-         ln -nsf $AKKA_HTTP_VER$ www/docs/akka-http/current
-         ln -nsf $AKKA_HTTP_VER$ www/api/akka-http/current
-         ln -nsf $AKKA_HTTP_VER$ www/jap/akka-http/current
+         ln -nsf $VERSION$ www/docs/akka-http/10.1
+         ln -nsf $VERSION$ www/api/akka-http/10.1
+         ln -nsf $VERSION$ www/japi/akka-http/10.1
+         ln -nsf $VERSION$ www/docs/akka-http/current
+         ln -nsf $VERSION$ www/api/akka-http/current
+         ln -nsf $VERSION$ www/jap/akka-http/current
          ```
     - [ ] check changes and commit the new version to the local git repository
          ```
          cd ~/www
          git add docs/akka-http/ api/akka-http/ japi/akka-http/
-         git commit -m "Akka HTTP $AKKA_HTTP_VER$"
+         git commit -m "Akka HTTP $VERSION$"
          ```
 
 ### Announcements
