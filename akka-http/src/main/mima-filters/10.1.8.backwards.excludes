@@ -10,3 +10,28 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives#FieldDef.apply")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives#FieldDef.apply")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives#FieldMagnet.convert")
+
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives.formFields")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives.formField")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.server.Directives.formFields")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.server.Directives.formField")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.server.HttpApp.formFields")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.server.HttpApp.formField")
+
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives#FieldDef.fieldDef")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives#FieldDef.forTuple")
+
+#### The following are against 10.1.5, but weren't caught by a previous version of MiMa
+
+# scaladsl:
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.server.RouteResult#Rejected.getRejections")
+
+# Used to be public, became protected, which made a forwarder disappear
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.marshalling.Marshaller.randomBoundary")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.marshalling.Marshaller.multipartBoundaryLength")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.marshalling.Marshaller.multipartBoundaryRandom")
+
+#### The following are against 10.1.1, but weren't caught by a previous version of MiMa
+
+# scaladsl:
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.marshalling.Marshaller.fromEntityStreamingSupportAndByteStringMarshaller")
