@@ -41,8 +41,8 @@ sealed abstract class CharPredicate extends (Char => Boolean) {
 
   def ++(char: Char): CharPredicate = this ++ (char :: Nil)
   def --(char: Char): CharPredicate = this -- (char :: Nil)
-  def ++(chars: String): CharPredicate = this ++ chars.toCharArray
-  def --(chars: String): CharPredicate = this -- chars.toCharArray
+  def ++(chars: String): CharPredicate = this ++ chars.toIndexedSeq
+  def --(chars: String): CharPredicate = this -- chars.toIndexedSeq
 
   def intersect(that: CharPredicate): CharPredicate
 
@@ -124,7 +124,7 @@ object CharPredicate {
   object ApplyMagnet {
     implicit def fromPredicate(predicate: Char => Boolean): ApplyMagnet = new ApplyMagnet(from(predicate))
     implicit def fromChar(c: Char): ApplyMagnet = fromChars(c :: Nil)
-    implicit def fromCharArray(array: Array[Char]): ApplyMagnet = fromChars(array)
+    implicit def fromCharArray(array: Array[Char]): ApplyMagnet = fromChars(array.toIndexedSeq)
     implicit def fromString(chars: String): ApplyMagnet = fromChars(chars)
     implicit def fromChars(chars: Seq[Char]): ApplyMagnet =
       chars match {
@@ -244,7 +244,7 @@ object CharPredicate {
 
     def ++(that: CharPredicate): CharPredicate = that match {
       case Empty         => this
-      case x: ArrayBased => this ++ x.chars
+      case x: ArrayBased => this ++ x.chars.toIndexedSeq
       case _             => this or that
     }
 
@@ -254,7 +254,7 @@ object CharPredicate {
 
     def --(that: CharPredicate): CharPredicate = that match {
       case Empty         => this
-      case x: ArrayBased => this -- x.chars
+      case x: ArrayBased => this -- x.chars.toIndexedSeq
       case _             => this andNot that
     }
 

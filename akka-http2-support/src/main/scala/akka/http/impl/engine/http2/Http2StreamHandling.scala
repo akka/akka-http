@@ -138,6 +138,9 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
         } else pushGOAWAY(Http2Protocol.ErrorCode.PROTOCOL_ERROR, "Got unexpected mid-stream HEADERS frame")
 
         maybeFinishStream(h.endStream)
+
+      case _: ContinuationFrame | _: HeadersFrame | _: PriorityFrame | _: PushPromiseFrame | _: UnknownFrameEvent | _: WindowUpdateFrame =>
+        throw new UnsupportedOperationException(event.frameTypeName + " is unsupported.")
     }
 
     protected def maybeFinishStream(endStream: Boolean): IncomingStreamState =

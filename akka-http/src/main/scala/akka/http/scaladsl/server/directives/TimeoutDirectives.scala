@@ -82,7 +82,7 @@ trait TimeoutDirectives {
           }
         case _ => ctx.log.warning("withRequestTimeout was used in route however no request-timeout is set!")
       }
-      inner()(ctx)
+      inner(())(ctx)
     }
 
   /**
@@ -100,7 +100,7 @@ trait TimeoutDirectives {
         case Some(t) => t.timeoutAccess.updateHandler(handler)
         case _       => ctx.log.warning("withRequestTimeoutResponse was used in route however no request-timeout is set!")
       }
-      inner()(ctx)
+      inner(())(ctx)
     }
 
 }
