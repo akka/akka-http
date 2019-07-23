@@ -29,9 +29,9 @@ package object util {
 
   private[http] def actorSystem(implicit refFactory: ActorRefFactory): ExtendedActorSystem =
     refFactory match {
-      case x: ActorContext        ⇒ actorSystem(x.system)
-      case x: ExtendedActorSystem ⇒ x
-      case x                      ⇒ throw new IllegalStateException(s"Unknown factory $x")
+      case x: ActorContext        => actorSystem(x.system)
+      case x: ExtendedActorSystem => x
+      case x                      => throw new IllegalStateException(s"Unknown factory $x")
     }
 
   private[http] implicit def enhanceByteArray(array: Array[Byte]): EnhancedByteArray = new EnhancedByteArray(array)
@@ -59,8 +59,8 @@ package object util {
     def awaitResult(atMost: Duration): T = {
       Await.ready(future, atMost)
       future.value.get match {
-        case Success(t)  ⇒ t
-        case Failure(ex) ⇒ throw new RuntimeException("Trying to await result of failed Future, see the cause for the original problem.", ex)
+        case Success(t)  => t
+        case Failure(ex) => throw new RuntimeException("Trying to await result of failed Future, see the cause for the original problem.", ex)
       }
     }
   }
@@ -81,12 +81,12 @@ package object util {
     def debugString: String = s"${response.status.value} ${entityDebugInfo(response.entity)}"
   }
   private def entityDebugInfo(e: HttpEntity): String = e match {
-    case HttpEntity.Empty                 ⇒ "Empty"
-    case HttpEntity.Strict(_, data)       ⇒ s"Strict(${data.size} bytes)"
-    case HttpEntity.Default(_, length, _) ⇒ s"Default($length bytes)"
-    case _: HttpEntity.CloseDelimited     ⇒ "CloseDelimited"
-    case _: HttpEntity.IndefiniteLength   ⇒ "IndefiniteLength"
-    case _: HttpEntity.Chunked            ⇒ "Chunked"
+    case HttpEntity.Empty                 => "Empty"
+    case HttpEntity.Strict(_, data)       => s"Strict(${data.size} bytes)"
+    case HttpEntity.Default(_, length, _) => s"Default($length bytes)"
+    case _: HttpEntity.CloseDelimited     => "CloseDelimited"
+    case _: HttpEntity.IndefiniteLength   => "IndefiniteLength"
+    case _: HttpEntity.Chunked            => "Chunked"
   }
 }
 
@@ -126,9 +126,9 @@ package util {
         override def onPush(): Unit = {
           bytes ++= grab(byteStringIn)
           maxBytes match {
-            case Some(max) if bytes.length > max ⇒
+            case Some(max) if bytes.length > max =>
               failStage(new EntityStreamException(new ErrorInfo("Request too large", s"Request was longer than the maximum of $max")))
-            case _ ⇒
+            case _ =>
               pull(byteStringIn)
           }
         }
@@ -149,10 +149,10 @@ package util {
   }
 
   private[http] class EventStreamLogger extends Actor with ActorLogging {
-    def receive = { case x ⇒ log.warning(x.toString) }
+    def receive = { case x => log.warning(x.toString) }
   }
 
-  private[http] trait LogMessages extends ActorLogging { this: Actor ⇒
+  private[http] trait LogMessages extends ActorLogging { this: Actor =>
     def logMessages(mark: String = "")(r: Receive): Receive =
       new Receive {
         def isDefinedAt(x: Any): Boolean = r.isDefinedAt(x)

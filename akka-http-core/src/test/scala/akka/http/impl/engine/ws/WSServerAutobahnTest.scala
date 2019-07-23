@@ -29,12 +29,12 @@ object WSServerAutobahnTest extends App {
   try {
     val binding = Http().bindAndHandleSync(
       {
-        case req @ HttpRequest(GET, Uri.Path("/"), _, _, _) if req.header[UpgradeToWebSocket].isDefined ⇒
+        case req @ HttpRequest(GET, Uri.Path("/"), _, _, _) if req.header[UpgradeToWebSocket].isDefined =>
           req.header[UpgradeToWebSocket] match {
-            case Some(upgrade) ⇒ upgrade.handleMessages(echoWebSocketService) // needed for running the autobahn test suite
-            case None          ⇒ HttpResponse(400, entity = "Not a valid websocket request!")
+            case Some(upgrade) => upgrade.handleMessages(echoWebSocketService) // needed for running the autobahn test suite
+            case None          => HttpResponse(400, entity = "Not a valid websocket request!")
           }
-        case _: HttpRequest ⇒ HttpResponse(404, entity = "Unknown resource!")
+        case _: HttpRequest => HttpResponse(404, entity = "Unknown resource!")
       },
       interface = host, // adapt to your docker host IP address if necessary
       port = port)
@@ -42,9 +42,9 @@ object WSServerAutobahnTest extends App {
     Await.result(binding, 3.second) // throws if binding fails
     println(s"Server online at http://$host:$port")
     mode match {
-      case "sleep" ⇒ while (true) Thread.sleep(1.minute.toMillis)
-      case "read"  ⇒ StdIn.readLine("Press RETURN to stop...")
-      case _       ⇒ throw new Exception("akka.ws-mode MUST be sleep or read.")
+      case "sleep" => while (true) Thread.sleep(1.minute.toMillis)
+      case "read"  => StdIn.readLine("Press RETURN to stop...")
+      case _       => throw new Exception("akka.ws-mode MUST be sleep or read.")
     }
   } finally {
     system.terminate()

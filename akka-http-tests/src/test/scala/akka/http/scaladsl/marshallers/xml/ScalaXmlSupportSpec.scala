@@ -37,7 +37,7 @@ class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest
 
     "don't be vulnerable to XXE attacks" - {
       "parse XML bodies without loading in a related schema" in {
-        withTempFile("I shouldn't be there!") { f ⇒
+        withTempFile("I shouldn't be there!") { f =>
           val xml = s"""<?xml version="1.0" encoding="ISO-8859-1"?>
                      | <!DOCTYPE foo [
                      |   <!ELEMENT foo ANY >
@@ -47,11 +47,11 @@ class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest
         }
       }
       "parse XML bodies without loading in a related schema from a parameter" in {
-        withTempFile("I shouldnt be there!") { generalEntityFile ⇒
+        withTempFile("I shouldnt be there!") { generalEntityFile =>
           withTempFile {
             s"""<!ENTITY % xge SYSTEM "${generalEntityFile.toURI}">
              |<!ENTITY % pe "<!ENTITY xxe '%xge;'>">""".stripMargin
-          } { parameterEntityFile ⇒
+          } { parameterEntityFile =>
             val xml = s"""<?xml version="1.0" encoding="ISO-8859-1"?>
                        | <!DOCTYPE foo [
                        |   <!ENTITY % xpe SYSTEM "${parameterEntityFile.toURI}">
@@ -63,7 +63,7 @@ class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest
         }
       }
       "gracefully fail when there are too many nested entities" in {
-        val nested = for (x ← 1 to 30) yield "<!ENTITY laugh" + x + " \"&laugh" + (x - 1) + ";&laugh" + (x - 1) + ";\">"
+        val nested = for (x <- 1 to 30) yield "<!ENTITY laugh" + x + " \"&laugh" + (x - 1) + ";&laugh" + (x - 1) + ";\">"
         val xml =
           s"""<?xml version="1.0"?>
            | <!DOCTYPE billion [
@@ -90,10 +90,10 @@ class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest
 
   def shouldHaveFailedWithSAXParseException(result: Future[NodeSeq]) =
     inside(Await.result(result.failed, 1.second.dilated)) {
-      case _: SAXParseException ⇒
+      case _: SAXParseException =>
     }
 
-  def withTempFile[T](content: String)(f: File ⇒ T): T = {
+  def withTempFile[T](content: String)(f: File => T): T = {
     val file = File.createTempFile("xxe", ".txt")
     try {
       Files.write(file.toPath, content.getBytes("UTF-8"))

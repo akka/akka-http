@@ -4,7 +4,7 @@
 
 package akka.http.impl.engine.parsing
 
-import java.lang.{ StringBuilder ⇒ JStringBuilder }
+import java.lang.{ StringBuilder => JStringBuilder }
 
 import akka.http.scaladsl.settings.ParserSettings
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -38,11 +38,11 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       check {
         """nodes: 0/H, 0/e, 0/l, 0/l, 0/o, 1/Ω
           |branchData:\u0020
-          |values: 'Hello""" → parser.formatRawTrie
+          |values: 'Hello""" -> parser.formatRawTrie
       }
       check {
         """-H-e-l-l-o- 'Hello
-          |""" → parser.formatTrie
+          |""" -> parser.formatTrie
       }
     }
 
@@ -52,12 +52,12 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       check {
         """nodes: 0/H, 1/e, 0/l, 0/l, 0/o, 1/Ω, 0/a, 0/l, 0/l, 0/o, 2/Ω
           |branchData: 6/2/0
-          |values: 'Hello, 'Hallo""" → parser.formatRawTrie
+          |values: 'Hello, 'Hallo""" -> parser.formatRawTrie
       }
       check {
         """   ┌─a-l-l-o- 'Hallo
           |-H-e-l-l-o- 'Hello
-          |""" → parser.formatTrie
+          |""" -> parser.formatTrie
       }
     }
 
@@ -68,13 +68,13 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       check {
         """nodes: 2/H, 1/e, 0/l, 0/l, 0/o, 1/Ω, 0/a, 0/l, 0/l, 0/o, 2/Ω, 0/Y, 0/e, 0/a, 0/h, 3/Ω
           |branchData: 6/2/0, 0/1/11
-          |values: 'Hello, 'Hallo, 'Yeah""" → parser.formatRawTrie
+          |values: 'Hello, 'Hallo, 'Yeah""" -> parser.formatRawTrie
       }
       check {
         """   ┌─a-l-l-o- 'Hallo
           |-H-e-l-l-o- 'Hello
           | └─Y-e-a-h- 'Yeah
-          |""" → parser.formatTrie
+          |""" -> parser.formatTrie
       }
     }
 
@@ -86,14 +86,14 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       check {
         """nodes: 2/H, 1/e, 0/l, 0/l, 0/o, 1/Ω, 0/a, 0/l, 0/l, 0/o, 2/Ω, 0/Y, 0/e, 0/a, 0/h, 3/Ω, 0/o, 0/o, 4/Ω
           |branchData: 6/2/16, 0/1/11
-          |values: 'Hello, 'Hallo, 'Yeah, 'Hoo""" → parser.formatRawTrie
+          |values: 'Hello, 'Hallo, 'Yeah, 'Hoo""" -> parser.formatRawTrie
       }
       check {
         """   ┌─a-l-l-o- 'Hallo
           |-H-e-l-l-o- 'Hello
           | | └─o-o- 'Hoo
           | └─Y-e-a-h- 'Yeah
-          |""" → parser.formatTrie
+          |""" -> parser.formatTrie
       }
     }
 
@@ -108,7 +108,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
           |-H-e-l-l-o- 'Hello
           | | └─o-o- 'Foo
           | └─Y-e-a-h- 'Yeah
-          |""" → parser.formatTrie
+          |""" -> parser.formatTrie
       }
     }
 
@@ -153,7 +153,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       check {
         s""" ┌─f-a-n-c-y---p-a-n-t-s-:-(Fancy-Pants)- -f-o-o-${newLineWithHyphen}- *Fancy-Pants: foo
            |-h-e-l-l-o-:- -b-o-b- 'Hello
-           |""" → parser.formatTrie
+           |""" -> parser.formatTrie
       }
       ixA shouldEqual ixB
       headerA shouldEqual RawHeader("Fancy-Pants", "foo")
@@ -202,11 +202,11 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
     "continue parsing raw headers even if the overall cache value capacity is reached" in new TestSetup() {
       val randomHeaders = Stream.continually {
         val name = nextRandomString(nextRandomAlphaNumChar _, nextRandomInt(4, 16))
-        val value = nextRandomString(() ⇒ nextRandomPrintableChar, nextRandomInt(4, 16))
+        val value = nextRandomString(() => nextRandomPrintableChar, nextRandomInt(4, 16))
         RawHeader(name, value)
       }
       randomHeaders.take(300).foldLeft(0) {
-        case (acc, rawHeader) ⇒ acc + parseAndCache(rawHeader.toString + s"${newLine}x", rawHeader)
+        case (acc, rawHeader) => acc + parseAndCache(rawHeader.toString + s"${newLine}x", rawHeader)
       } should be < 300 // number of cache hits is smaller headers successfully parsed
     }
 
@@ -217,7 +217,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
           port = nextRandomInt(1000, 10000))
       }
       randomHostHeaders.take(300).foldLeft(0) {
-        case (acc, header) ⇒ acc + parseAndCache(header.toString + s"${newLine}x", header)
+        case (acc, header) => acc + parseAndCache(header.toString + s"${newLine}x", header)
       } should be < 300 // number of cache hits is smaller headers successfully parsed
     }
 
@@ -228,17 +228,17 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
           value = nextRandomString(nextRandomAlphaNumChar _, 1000))
       }
       randomHostHeaders.take(100).foldLeft(0) {
-        case (acc, header) ⇒ acc + parseAndCache(header.toString + s"${newLine}x", header)
+        case (acc, header) => acc + parseAndCache(header.toString + s"${newLine}x", header)
       } should be < 300 // number of cache hits is smaller headers successfully parsed
     }
 
     "continue parsing raw headers even if the header-specific cache capacity is reached" in new TestSetup() {
       val randomHeaders = Stream.continually {
-        val value = nextRandomString(() ⇒ nextRandomPrintableChar, nextRandomInt(4, 16))
+        val value = nextRandomString(() => nextRandomPrintableChar, nextRandomInt(4, 16))
         RawHeader("Fancy", value)
       }
       randomHeaders.take(20).foldLeft(0) {
-        case (acc, rawHeader) ⇒ acc + parseAndCache(rawHeader.toString + s"${newLine}x", rawHeader)
+        case (acc, rawHeader) => acc + parseAndCache(rawHeader.toString + s"${newLine}x", rawHeader)
       } shouldEqual 12 // configured default per-header cache limit
     }
 
@@ -247,7 +247,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
         `User-Agent`(nextRandomString(nextRandomAlphaNumChar _, nextRandomInt(4, 16)))
       }
       randomHeaders.take(40).foldLeft(0) {
-        case (acc, header) ⇒ acc + parseAndCache(header.toString + s"${newLine}x", header)
+        case (acc, header) => acc + parseAndCache(header.toString + s"${newLine}x", header)
       } shouldEqual 12 // configured default per-header cache limit
     }
 
@@ -284,9 +284,8 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
     ) {
       // This is actually quite rare since it needs upping the max header value length
       val numKeys = 10000
-      val value = "null"
 
-      val regularKeys = Iterator.from(1).map(i ⇒ s"key_$i").take(numKeys)
+      val regularKeys = Iterator.from(1).map(i => s"key_$i").take(numKeys)
       private val zeroHashStrings: Iterator[String] = HashCodeCollider.zeroHashCodeIterator()
       val collidingKeys = zeroHashStrings
         .filter(_.forall(CharacterClasses.tchar))
@@ -334,18 +333,18 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
   abstract class TestSetup(testSetupMode: TestSetupMode = TestSetupMode.Primed, parserSettings: ParserSettings = createParserSettings(system)) {
 
     val parser = testSetupMode match {
-      case TestSetupMode.Primed   ⇒ HttpHeaderParser.prime(HttpHeaderParser.unprimed(parserSettings, system.log, defaultIllegalHeaderHandler))
-      case TestSetupMode.Unprimed ⇒ HttpHeaderParser.unprimed(parserSettings, system.log, defaultIllegalHeaderHandler)
-      case TestSetupMode.Default  ⇒ HttpHeaderParser(parserSettings, system.log)
+      case TestSetupMode.Primed   => HttpHeaderParser.prime(HttpHeaderParser.unprimed(parserSettings, system.log, defaultIllegalHeaderHandler))
+      case TestSetupMode.Unprimed => HttpHeaderParser.unprimed(parserSettings, system.log, defaultIllegalHeaderHandler)
+      case TestSetupMode.Default  => HttpHeaderParser(parserSettings, system.log)
     }
 
-    private def defaultIllegalHeaderHandler = (info: ErrorInfo) ⇒ system.log.debug(info.formatPretty)
+    private def defaultIllegalHeaderHandler = (info: ErrorInfo) => system.log.debug(info.formatPretty)
 
     def insert(line: String, value: AnyRef): Unit =
       if (parser.isEmpty) HttpHeaderParser.insertRemainingCharsAsNewNodes(parser, ByteString(line), value)
       else HttpHeaderParser.insert(parser, ByteString(line), value)
 
-    def parseLineFromBytes(bytes: ByteString) = parser.parseHeaderLine(bytes)() → { system.log.debug(parser.resultHeader.getClass.getSimpleName); parser.resultHeader }
+    def parseLineFromBytes(bytes: ByteString) = parser.parseHeaderLine(bytes)() -> { system.log.debug(parser.resultHeader.getClass.getSimpleName); parser.resultHeader }
     def parseLine(line: String) = parseLineFromBytes(ByteString(line))
 
     def parseAndCache(lineA: String)(lineB: String = lineA): HttpHeader = {
@@ -372,7 +371,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends WordS
       val c = nextRandomPrintableChar()
       if (CharacterClasses.ALPHANUM(c)) c else nextRandomAlphaNumChar()
     }
-    @tailrec final def nextRandomString(charGen: () ⇒ Char, len: Int, sb: JStringBuilder = new JStringBuilder): String =
+    @tailrec final def nextRandomString(charGen: () => Char, len: Int, sb: JStringBuilder = new JStringBuilder): String =
       if (sb.length < len) nextRandomString(charGen, len, sb.append(charGen())) else sb.toString
   }
 }

@@ -4,7 +4,20 @@ ProblemFilters.exclude[MissingTypesProblem]("akka.http.caching.scaladsl.CachingS
 
 # CachingSettings public/impl classes split
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.caching.scaladsl.CachingSettings.fromSubConfig")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.caching.scaladsl.CachingSettings.apply")
 ProblemFilters.exclude[MissingClassProblem]("akka.http.caching.scaladsl.LfuCacheSettingsImpl$")
 ProblemFilters.exclude[MissingClassProblem]("akka.http.caching.scaladsl.CachingSettingsImpl$")
 ProblemFilters.exclude[MissingClassProblem]("akka.http.caching.scaladsl.LfuCacheSettingsImpl")
 ProblemFilters.exclude[MissingClassProblem]("akka.http.caching.scaladsl.CachingSettingsImpl")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.caching.scaladsl.Cache.put")
+
+# @InternalApi
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.caching.LfuCache.store")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.caching.LfuCache.this")
+
+#### The following are against 10.1.5, but weren't caught by a previous version of MiMa
+
+# Safe, since more specific
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.caching.javadsl.CachingSettings.create")
+
+####

@@ -10,13 +10,13 @@ import scala.reflect.macros.blackbox.Context
 
 object pre213macro {
   def impl(c: Context)(annottees: c.Expr[Any]*): c.Expr[Any] = annottees match {
-    case Seq(method) ⇒
+    case Seq(method) =>
       import c.universe._
       if (scala.util.Properties.versionNumberString.startsWith("2.13"))
         c.Expr[Nothing](EmptyTree)
       else
         method
-    case _ ⇒
+    case _ =>
       throw new IllegalArgumentException("Please annotate single expressions")
   }
 }

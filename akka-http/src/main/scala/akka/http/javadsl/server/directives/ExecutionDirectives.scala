@@ -7,7 +7,7 @@ package akka.http.javadsl.server.directives
 import akka.http.javadsl.server.ExceptionHandler
 import akka.http.javadsl.server.RejectionHandler
 import akka.http.javadsl.server.Route
-import akka.http.scaladsl.server.directives.{ ExecutionDirectives ⇒ D }
+import akka.http.scaladsl.server.directives.{ ExecutionDirectives => D }
 
 abstract class ExecutionDirectives extends DebuggingDirectives {
 

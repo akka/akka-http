@@ -23,12 +23,14 @@ object Dependencies {
   lazy val specs2Version = settingKey[String]("The version of Specs2 to use")
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
 
+  val Scala213 = "2.13.0"
+
   val Versions = Seq(
-    crossScalaVersions := Seq("2.12.8", "2.11.12", "2.13.0-M5"),
+    crossScalaVersions := Seq("2.12.8", "2.11.12", Scala213),
     scalaVersion := crossScalaVersions.value.head,
     scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.14.0"),
-    scalaTestVersion := "3.0.7",
-    specs2Version := "4.3.6"
+    scalaTestVersion := "3.0.8",
+    specs2Version := "4.5.1",
   )
 
   object Provided {
@@ -38,7 +40,7 @@ object Dependencies {
   }
 
   object Compile {
-    val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.1.1" // Scala License
+    val scalaXml      = "org.scala-lang.modules"      %% "scala-xml"                   % "1.2.0" // Scala License
 
     // For akka-http spray-json support
     val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.5"       // ApacheV2
@@ -53,7 +55,7 @@ object Dependencies {
 
     val alpnApi     = "org.eclipse.jetty.alpn"        % "alpn-api"                     % "1.1.3.v20160715" // ApacheV2
 
-    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.6.2"
+    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.7.0"
 
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"

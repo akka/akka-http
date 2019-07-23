@@ -40,7 +40,7 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
       marshal("Ha“llo".toCharArray) shouldEqual HttpEntity("Ha“llo")
     }
     "FormDataMarshaller should marshal FormData instances to application/x-www-form-urlencoded content" in {
-      marshal(FormData(Map("name" → "Bob", "pass" → "hällo", "admin" → ""))) shouldEqual
+      marshal(FormData(Map("name" -> "Bob", "pass" -> "hällo", "admin" -> ""))) shouldEqual
         HttpEntity(`application/x-www-form-urlencoded`, "name=Bob&pass=h%C3%A4llo&admin=")
     }
   }
@@ -63,19 +63,19 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
     }
     val headers: immutable.Seq[HttpHeader] = RawHeader("X-Test", "test") :: Nil
     "fromStatusCodeAndHeaders should properly marshal for a status code that doesn't allow an entity" in {
-      marshalToResponse(StatusCodes.NoContent → headers) shouldEqual
+      marshalToResponse(StatusCodes.NoContent -> headers) shouldEqual
         HttpResponse(StatusCodes.NoContent, headers = headers, entity = HttpEntity.Empty)
 
       // no content-type negotiation for status code marshalling
-      marshalToResponseForRequestAccepting(StatusCodes.NoContent → headers, MediaTypes.`application/json`) shouldEqual
+      marshalToResponseForRequestAccepting(StatusCodes.NoContent -> headers, MediaTypes.`application/json`) shouldEqual
         HttpResponse(StatusCodes.NoContent, headers = headers, entity = HttpEntity.Empty)
     }
     "fromStatusCodeAndHeaders should properly marshal for a status code with a default message" in {
-      marshalToResponse(StatusCodes.EnhanceYourCalm → headers) shouldEqual
+      marshalToResponse(StatusCodes.EnhanceYourCalm -> headers) shouldEqual
         HttpResponse(StatusCodes.EnhanceYourCalm, headers = headers, entity = HttpEntity(StatusCodes.EnhanceYourCalm.defaultMessage))
 
       // no content-type negotiation for status code marshalling
-      marshalToResponseForRequestAccepting(StatusCodes.EnhanceYourCalm → headers, MediaTypes.`application/json`) shouldEqual
+      marshalToResponseForRequestAccepting(StatusCodes.EnhanceYourCalm -> headers, MediaTypes.`application/json`) shouldEqual
         HttpResponse(StatusCodes.EnhanceYourCalm, headers = headers, entity = HttpEntity(StatusCodes.EnhanceYourCalm.defaultMessage))
     }
     "fromStatusCodeAndHeadersAndValue should properly marshal for a status code that doesn't allow an entity" in {
@@ -120,7 +120,7 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
       "one non-empty part" in {
         marshal(Multipart.General(`multipart/alternative`, Multipart.General.BodyPart.Strict(
           entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "test@there.com"),
-          headers = `Content-Disposition`(ContentDispositionTypes.`form-data`, Map("name" → "email")) :: Nil))) shouldEqual
+          headers = `Content-Disposition`(ContentDispositionTypes.`form-data`, Map("name" -> "email")) :: Nil))) shouldEqual
           HttpEntity(
             contentType = (`multipart/alternative` withBoundary randomBoundary).toContentType,
             data = ByteString(s"""--$randomBoundary
@@ -156,8 +156,8 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
     "multipartFormDataMarshaller should correctly marshal 'multipart/form-data' content with" - {
       "two fields" in {
         marshal(Multipart.FormData(ListMap(
-          "surname" → HttpEntity("Mike"),
-          "age" → marshal(<int>42</int>)))) shouldEqual
+          "surname" -> HttpEntity("Mike"),
+          "age" -> marshal(<int>42</int>)))) shouldEqual
           HttpEntity(
             contentType = (`multipart/form-data` withBoundary randomBoundary).toContentType,
             data = ByteString(s"""--$randomBoundary
@@ -176,9 +176,9 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
       "two fields having a custom `Content-Disposition`" in {
         marshal(Multipart.FormData(Source(List(
           Multipart.FormData.BodyPart("attachment[0]", HttpEntity(`text/csv` withCharset `UTF-8`, "name,age\r\n\"John Doe\",20\r\n"),
-            Map("filename" → "attachment.csv")),
+            Map("filename" -> "attachment.csv")),
           Multipart.FormData.BodyPart("attachment[1]", HttpEntity("naice!".getBytes),
-            Map("filename" → "attachment2.csv"), List(RawHeader("Content-Transfer-Encoding", "binary"))))))) shouldEqual
+            Map("filename" -> "attachment2.csv"), List(RawHeader("Content-Transfer-Encoding", "binary"))))))) shouldEqual
           HttpEntity(
             contentType = (`multipart/form-data` withBoundary randomBoundary).toContentType,
             data = ByteString(s"""--$randomBoundary

@@ -22,14 +22,14 @@ trait GenericUnmarshallers extends LowerPriorityGenericUnmarshallers {
 sealed trait LowerPriorityGenericUnmarshallers {
 
   implicit def messageUnmarshallerFromEntityUnmarshaller[T](implicit um: FromEntityUnmarshaller[T]): FromMessageUnmarshaller[T] =
-    Unmarshaller.withMaterializer { implicit ec ⇒ implicit mat ⇒ request ⇒ um(request.entity) }
+    Unmarshaller.withMaterializer { implicit ec => implicit mat => request => um(request.entity) }
 
   implicit def liftToSourceOptionUnmarshaller[A, B](um: Unmarshaller[A, B]): Unmarshaller[Option[A], B] =
     sourceOptionUnmarshaller(um)
   implicit def sourceOptionUnmarshaller[A, B](implicit um: Unmarshaller[A, B]): Unmarshaller[Option[A], B] =
-    Unmarshaller.withMaterializer(implicit ec ⇒ implicit mat ⇒ {
-      case Some(a) ⇒ um(a)
-      case None    ⇒ FastFuture.failed(Unmarshaller.NoContentException)
+    Unmarshaller.withMaterializer(implicit ec => implicit mat => {
+      case Some(a) => um(a)
+      case None    => FastFuture.failed(Unmarshaller.NoContentException)
     })
 
   /**
@@ -42,10 +42,10 @@ sealed trait LowerPriorityGenericUnmarshallers {
   // format: OFF
   implicit def eitherUnmarshaller[L, R](implicit ua: FromEntityUnmarshaller[L], rightTag: ClassTag[R],
                                                  ub: FromEntityUnmarshaller[R], leftTag: ClassTag[L]): FromEntityUnmarshaller[Either[L, R]] =
-    Unmarshaller.withMaterializer { implicit ex ⇒ implicit mat ⇒ value ⇒
+    Unmarshaller.withMaterializer { implicit ex => implicit mat => value =>
       import akka.http.scaladsl.util.FastFuture._
       @inline def right = ub(value).fast.map(Right(_))
-      @inline def fallbackLeft: PartialFunction[Throwable, Future[Either[L, R]]] = { case rightFirstEx ⇒
+      @inline def fallbackLeft: PartialFunction[Throwable, Future[Either[L, R]]] = { case rightFirstEx =>
         val left = ua(value).fast.map(Left(_))
 
         // combine EitherUnmarshallingException by carring both exceptions

@@ -40,9 +40,9 @@ abstract class JUnitRouteTestBase extends RouteTest {
         throw new IllegalStateException("Assertion should have failed")
       }
 
-      def reportDetails[T](block: ⇒ T): T = {
+      def reportDetails[T](block: => T): T = {
         try block catch {
-          case t: Throwable ⇒ throw new AssertionError(t.getMessage + "\n" +
+          case t: Throwable => throw new AssertionError(t.getMessage + "\n" +
             "  Request was:      " + request + "\n" +
             "  Route result was: " + result + "\n", t)
         }

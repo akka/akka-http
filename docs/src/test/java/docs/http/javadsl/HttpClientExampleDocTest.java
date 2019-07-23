@@ -5,6 +5,7 @@
 package docs.http.javadsl;
 
 import akka.Done;
+import akka.NotUsed;
 import akka.actor.*;
 import akka.http.javadsl.model.headers.HttpCredentials;
 import akka.http.javadsl.model.headers.SetCookie;
@@ -18,8 +19,12 @@ import akka.http.javadsl.Http;
 import akka.http.javadsl.OutgoingConnection;
 
 import static akka.http.javadsl.ConnectHttp.toHost;
+import static akka.util.ByteString.emptyByteString;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 //#manual-entity-consume-example-1
@@ -103,10 +108,50 @@ public class HttpClientExampleDocTest {
       strictEntity
         .thenCompose(strict ->
           strict.getDataBytes()
-            .runFold(ByteString.empty(), (acc, b) -> acc.concat(b), materializer)
+            .runFold(emptyByteString(), (acc, b) -> acc.concat(b), materializer)
             .thenApply(this::parse)
         );
     //#manual-entity-consume-example-2
+  }
+
+  private static class ConsumeExample3 {
+    //#manual-entity-consume-example-3
+    final class ExamplePerson {
+      final String name;
+      public ExamplePerson(String name) { this.name = name; }
+    }
+
+    public ExamplePerson parse(ByteString line) {
+      return new ExamplePerson(line.utf8String());
+    }
+
+    final ActorSystem system = ActorSystem.create();
+    final ExecutionContextExecutor dispatcher = system.dispatcher();
+    final ActorMaterializer materializer = ActorMaterializer.create(system);
+
+    // run a single request, consuming it completely in a single stream
+    public CompletionStage<ExamplePerson> runRequest(HttpRequest request) {
+      return Http.get(system)
+        .singleRequest(request)
+        .thenCompose(response ->
+          response.entity().getDataBytes()
+            .runReduce((a, b) -> a.concat(b), materializer)
+            .thenApply(this::parse)
+        );
+    }
+
+    final List<HttpRequest> requests = new ArrayList<>();
+
+    final Flow<ExamplePerson, Integer, NotUsed> exampleProcessingFlow = Flow
+            .fromFunction(person -> person.toString().length());
+
+    final CompletionStage<Done> stream = Source
+            .from(requests)
+            .mapAsync(1, this::runRequest)
+            .via(exampleProcessingFlow)
+            .runWith(Sink.ignore(), materializer);
+
+    //#manual-entity-consume-example-3
   }
 
   void manualEntityDiscardExample1() {

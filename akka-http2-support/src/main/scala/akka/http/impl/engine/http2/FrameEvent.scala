@@ -14,14 +14,14 @@ import scala.collection.immutable
 
 /** INTERNAL API */
 @InternalApi
-private[http2] sealed trait FrameEvent { self: Product ⇒
+private[http2] sealed trait FrameEvent { self: Product =>
   def frameTypeName: String = productPrefix
 }
 /** INTERNAL API */
 @InternalApi
 private[http2] object FrameEvent {
 
-  sealed trait StreamFrameEvent extends FrameEvent { self: Product ⇒
+  sealed trait StreamFrameEvent extends FrameEvent { self: Product =>
     def streamId: Int
   }
 

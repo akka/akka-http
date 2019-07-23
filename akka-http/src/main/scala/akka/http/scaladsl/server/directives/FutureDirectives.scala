@@ -31,10 +31,10 @@ trait FutureDirectives {
    *
    * @group future
    */
-  def onComplete[T](future: ⇒ Future[T]): Directive1[Try[T]] =
-    Directive { inner ⇒ ctx ⇒
+  def onComplete[T](future: => Future[T]): Directive1[Try[T]] =
+    Directive { inner => ctx =>
         import ctx.executionContext
-        future.fast.transformWith(t ⇒ inner(Tuple1(t))(ctx))
+        future.fast.transformWith(t => inner(Tuple1(t))(ctx))
     }
 
   /**
@@ -47,14 +47,14 @@ trait FutureDirectives {
     *
     * @group future
     */
-  def onCompleteWithBreaker[T](breaker: CircuitBreaker)(future: ⇒ Future[T]): Directive1[Try[T]] =
+  def onCompleteWithBreaker[T](breaker: CircuitBreaker)(future: => Future[T]): Directive1[Try[T]] =
     onComplete(breaker.withCircuitBreaker(future)).flatMap {
-      case Failure(ex: CircuitBreakerOpenException) ⇒
-        extractRequestContext.flatMap { ctx ⇒
+      case Failure(ex: CircuitBreakerOpenException) =>
+        extractRequestContext.flatMap { ctx =>
           ctx.request.entity.dataBytes.runWith(Sink.cancelled)(ctx.materializer)
           reject(CircuitBreakerOpenRejection(ex))
         }
-      case x ⇒ provide(x)
+      case x => provide(x)
     }
 
   /**
@@ -89,12 +89,12 @@ trait OnSuccessMagnet {
 }
 
 object OnSuccessMagnet {
-  implicit def apply[T](future: ⇒ Future[T])(implicit tupler: Tupler[T]): OnSuccessMagnet { type Out = tupler.Out } =
+  implicit def apply[T](future: => Future[T])(implicit tupler: Tupler[T]): OnSuccessMagnet { type Out = tupler.Out } =
     new OnSuccessMagnet {
       type Out = tupler.Out
-      val directive = Directive[tupler.Out] { inner ⇒ ctx ⇒
+      val directive = Directive[tupler.Out] { inner => ctx =>
         import ctx.executionContext
-        future.fast.flatMap(t ⇒ inner(tupler(t))(ctx))
+        future.fast.flatMap(t => inner(tupler(t))(ctx))
       }(tupler.OutIsTuple)
     }
 }
@@ -104,13 +104,13 @@ trait CompleteOrRecoverWithMagnet {
 }
 
 object CompleteOrRecoverWithMagnet {
-  implicit def apply[T](future: ⇒ Future[T])(implicit m: ToResponseMarshaller[T]): CompleteOrRecoverWithMagnet =
+  implicit def apply[T](future: => Future[T])(implicit m: ToResponseMarshaller[T]): CompleteOrRecoverWithMagnet =
     new CompleteOrRecoverWithMagnet {
-      val directive = Directive[Tuple1[Throwable]] { inner ⇒ ctx ⇒
+      val directive = Directive[Tuple1[Throwable]] { inner => ctx =>
         import ctx.executionContext
         future.fast.transformWith {
-          case Success(res)   ⇒ ctx.complete(res)
-          case Failure(error) ⇒ inner(Tuple1(error))(ctx)
+          case Success(res)   => ctx.complete(res)
+          case Failure(error) => inner(Tuple1(error))(ctx)
         }
       }
     }

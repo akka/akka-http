@@ -15,7 +15,7 @@ import akka.http.javadsl.server.{ RequestContext, Route, RouteResult }
 @ApiMayChange
 object CachingDirectives {
 
-  import akka.http.scaladsl.server.directives.{ CachingDirectives ⇒ D }
+  import akka.http.scaladsl.server.directives.{ CachingDirectives => D }
 
   private implicit def routeResultCacheMapping[K] =
     CacheJavaMapping.cacheMapping[K, RouteResult, K, akka.http.scaladsl.server.RouteResult]
@@ -34,7 +34,7 @@ object CachingDirectives {
   }
 
   private def toScalaKeyer[K](keyer: PartialFunction[RequestContext, K]): PartialFunction[akka.http.scaladsl.server.RequestContext, K] = {
-    case scalaRequestContext: akka.http.scaladsl.server.RequestContext ⇒ {
+    case scalaRequestContext: akka.http.scaladsl.server.RequestContext => {
       val javaRequestContext = akka.http.javadsl.server.RoutingJavaMapping.RequestContext.toJava(scalaRequestContext)
       keyer(javaRequestContext)
     }

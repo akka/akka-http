@@ -5,16 +5,16 @@
 package akka.http.javadsl.server
 package directives
 
-import java.util.{ List ⇒ JList }
+import java.util.{ List => JList }
 import java.util.Optional
-import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.{ Function => JFunction }
 
 import akka.NotUsed
 import scala.collection.JavaConverters._
-import akka.http.scaladsl.model.{ ws ⇒ s }
+import akka.http.scaladsl.model.{ ws => s }
 import akka.http.javadsl.model.ws.Message
 import akka.http.javadsl.model.ws.UpgradeToWebSocket
-import akka.http.scaladsl.server.{ Directives ⇒ D }
+import akka.http.scaladsl.server.{ Directives => D }
 import akka.stream.javadsl.Flow
 import akka.stream.scaladsl
 
@@ -25,7 +25,7 @@ abstract class WebSocketDirectives extends SecurityDirectives {
    * Extract the [[UpgradeToWebSocket]] header if existent. Rejects with an [[ExpectedWebSocketRequestRejection]], otherwise.
    */
   def extractUpgradeToWebSocket(inner: JFunction[UpgradeToWebSocket, Route]): Route = RouteAdapter {
-    D.extractUpgradeToWebSocket { header ⇒
+    D.extractUpgradeToWebSocket { header =>
       inner.apply(header).delegate
     }
   }
@@ -35,7 +35,7 @@ abstract class WebSocketDirectives extends SecurityDirectives {
    * this is a WebSocket request. Rejects with an [[ExpectedWebSocketRequestRejection]], otherwise.
    */
   def extractOfferedWsProtocols(inner: JFunction[JList[String], Route]): Route = RouteAdapter {
-    D.extractOfferedWsProtocols { list ⇒
+    D.extractOfferedWsProtocols { list =>
       inner.apply(list.asJava).delegate
     }
   }

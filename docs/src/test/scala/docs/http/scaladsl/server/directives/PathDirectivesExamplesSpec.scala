@@ -61,20 +61,24 @@ class PathDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "path-example" in {
     //#path-example
     val route =
-      path("foo") {
-        complete("/foo")
-      } ~
+      concat(
+        path("foo") {
+          complete("/foo")
+        },
         path("foo" / "bar") {
           complete("/foo/bar")
-        } ~
+        },
         pathPrefix("ball") {
-          pathEnd {
-            complete("/ball")
-          } ~
+          concat(
+            pathEnd {
+              complete("/ball")
+            },
             path(IntNumber) { int =>
               complete(if (int % 2 == 0) "even ball" else "odd ball")
             }
+          )
         }
+      )
 
     // tests:
     Get("/") ~> route ~> check {
@@ -99,12 +103,14 @@ class PathDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     //#pathEnd-
     val route =
       pathPrefix("foo") {
-        pathEnd {
-          complete("/foo")
-        } ~
+        concat(
+          pathEnd {
+            complete("/foo")
+          },
           path("bar") {
             complete("/foo/bar")
           }
+        )
       }
 
     // tests:
@@ -126,12 +132,14 @@ class PathDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     //#pathEndOrSingleSlash-
     val route =
       pathPrefix("foo") {
-        pathEndOrSingleSlash {
-          complete("/foo")
-        } ~
+        concat(
+          pathEndOrSingleSlash {
+            complete("/foo")
+          },
           path("bar") {
             complete("/foo/bar")
           }
+        )
       }
 
     // tests:
@@ -153,12 +161,14 @@ class PathDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     //#pathPrefix-
     val route =
       pathPrefix("ball") {
-        pathEnd {
-          complete("/ball")
-        } ~
+        concat(
+          pathEnd {
+            complete("/ball")
+          },
           path(IntNumber) { int =>
             complete(if (int % 2 == 0) "even ball" else "odd ball")
           }
+        )
       }
 
     // tests:
@@ -180,8 +190,10 @@ class PathDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     //#pathPrefixTest-
     val route =
       pathPrefixTest("foo" | "bar") {
-        pathPrefix("foo") { completeWithUnmatchedPath } ~
+        concat(
+          pathPrefix("foo") { completeWithUnmatchedPath },
           pathPrefix("bar") { completeWithUnmatchedPath }
+        )
       }
 
     // tests:
@@ -198,17 +210,21 @@ class PathDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "pathSingleSlash-" in {
     //#pathSingleSlash-
     val route =
-      pathSingleSlash {
-        complete("root")
-      } ~
+      concat(
+        pathSingleSlash {
+          complete("root")
+        },
         pathPrefix("ball") {
-          pathSingleSlash {
-            complete("/ball/")
-          } ~
+          concat(
+            pathSingleSlash {
+              complete("/ball/")
+            },
             path(IntNumber) { int =>
               complete(if (int % 2 == 0) "even ball" else "odd ball")
             }
+          )
         }
+      )
 
     // tests:
     Get("/") ~> route ~> check {
@@ -233,12 +249,14 @@ class PathDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     //#pathSuffix-
     val route =
       pathPrefix("start") {
-        pathSuffix("end") {
-          completeWithUnmatchedPath
-        } ~
+        concat(
+          pathSuffix("end") {
+            completeWithUnmatchedPath
+          },
           pathSuffix("foo" / "bar" ~ "baz") {
             completeWithUnmatchedPath
           }
+        )
       }
 
     // tests:
@@ -255,10 +273,12 @@ class PathDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "pathSuffixTest-" in {
     //#pathSuffixTest-
     val route =
-      pathSuffixTest(Slash) {
-        complete("slashed")
-      } ~
+      concat(
+        pathSuffixTest(Slash) {
+          complete("slashed")
+        },
         complete("unslashed")
+      )
 
     // tests:
     Get("/foo/") ~> route ~> check {
@@ -274,8 +294,10 @@ class PathDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     //#rawPathPrefix-
     val route =
       pathPrefix("foo") {
-        rawPathPrefix("bar") { completeWithUnmatchedPath } ~
+        concat(
+          rawPathPrefix("bar") { completeWithUnmatchedPath },
           rawPathPrefix("doo") { completeWithUnmatchedPath }
+        )
       }
 
     // tests:
@@ -315,22 +337,24 @@ class PathDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
     val route =
       redirectToTrailingSlashIfMissing(StatusCodes.MovedPermanently) {
-        path("foo"./) {
-          // We require the explicit trailing slash in the path
-          complete("OK")
-        } ~
+        concat(
+          path("foo"./) {
+            // We require the explicit trailing slash in the path
+            complete("OK")
+          },
           path("bad-1") {
             // MISTAKE!
             // Missing `/` in path, causes this path to never match,
             // because it is inside a `redirectToTrailingSlashIfMissing`
             ???
-          } ~
+          },
           path("bad-2/") {
             // MISTAKE!
             // / should be explicit as path element separator and not *in* the path element
             // So it should be: "bad-2" /
             ???
           }
+        )
       }
 
     // tests:
@@ -370,10 +394,11 @@ class PathDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
     val route =
       redirectToNoTrailingSlashIfPresent(StatusCodes.MovedPermanently) {
-        path("foo") {
-          // We require to not have a trailing slash in the path
-          complete("OK")
-        } ~
+        concat(
+          path("foo") {
+            // We require to not have a trailing slash in the path
+            complete("OK")
+          },
           path("bad"./) {
             // MISTAKE!
             // Since inside a `redirectToNoTrailingSlashIfPresent` directive
@@ -383,6 +408,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
             // It should be `path("bad")` instead.
             ???
           }
+        )
       }
 
     // tests:
@@ -414,14 +440,16 @@ class PathDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "ignoreTrailingSlash" in {
     //#ignoreTrailingSlash
     val route = ignoreTrailingSlash {
-      path("foo") {
-        // Thanks to `ignoreTrailingSlash` it will serve both `/foo` and `/foo/`.
-        complete("OK")
-      } ~
-        path("bar" /) {
+      concat(
+        path("foo") {
+          // Thanks to `ignoreTrailingSlash` it will serve both `/foo` and `/foo/`.
+          complete("OK")
+        },
+        path("bar"./) {
           // Thanks to `ignoreTrailingSlash` it will serve both `/bar` and `/bar/`.
           complete("OK")
         }
+      )
     }
 
     // tests:

@@ -6,13 +6,13 @@ package akka.http.impl.settings
 
 import java.util.Random
 
-import akka.http.scaladsl.settings.{ SettingsCompanion ⇒ _, _ }
+import akka.http.scaladsl.settings.{ SettingsCompanion => _, _ }
 import com.typesafe.config.Config
 
 import scala.language.implicitConversions
 import scala.collection.immutable
 import scala.concurrent.duration._
-import akka.http.javadsl.{ settings ⇒ js }
+import akka.http.javadsl.{ settings => js }
 import akka.ConfigurationException
 import akka.annotation.InternalApi
 import akka.io.Inet.SocketOption
@@ -50,7 +50,7 @@ private[akka] final case class ServerSettingsImpl(
   require(0 < responseHeaderSizeHint, "response-size-hint must be > 0")
   require(0 < backlog, "backlog must be > 0")
 
-  override def websocketRandomFactory: () ⇒ Random = websocketSettings.randomFactory
+  override def websocketRandomFactory: () => Random = websocketSettings.randomFactory
 
   override def productPrefix = "ServerSettings"
 
@@ -92,8 +92,8 @@ private[http] object ServerSettingsImpl extends SettingsCompanionImpl[ServerSett
     SocketOptionSettings.fromSubConfig(root, c.getConfig("socket-options")),
     defaultHostHeader =
       HttpHeader.parse("Host", c.getString("default-host-header"), ParserSettings(root)) match {
-        case HttpHeader.ParsingResult.Ok(x: Host, Nil) ⇒ x
-        case result ⇒
+        case HttpHeader.ParsingResult.Ok(x: Host, Nil) => x
+        case result =>
           val info = result.errors.head.withSummary("Configured `default-host-header` is illegal")
           throw new ConfigurationException(info.formatPretty)
       },

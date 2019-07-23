@@ -36,13 +36,13 @@ object AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeConfig {
         stream.materializer.debug.fuzzing-mode = off
 
         testconductor.barrier-timeout = 30m
-        
+
         test.AkkaHttpServerLatencySpec {
           enable = off
-          
+
           rate = 10000
           duration = 30s
-          
+
           totalRequestsFactor = 1.0
         }
       }
@@ -52,7 +52,7 @@ object AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeConfig {
   val loadGenerator = role("loadGenerator")
 
   private var _ifWrk2Available: Option[Boolean] = None
-  final def ifWrk2Available(test: ⇒ Unit): Unit =
+  final def ifWrk2Available(test: => Unit): Unit =
     if (isWrk2Available) test else throw new TestPendingException()
   final def isWrk2Available: Boolean =
     _ifWrk2Available getOrElse {
@@ -64,7 +64,7 @@ object AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeConfig {
     }
 
   private var _abAvailable: Option[Boolean] = None
-  final def ifAbAvailable(test: ⇒ Unit): Unit =
+  final def ifAbAvailable(test: => Unit): Unit =
     if (isAbAvailable) test else throw new TestPendingException()
 
   final def isAbAvailable: Boolean =
@@ -82,22 +82,22 @@ object AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeConfig {
   final case class SetServerPort(port: Int)
   class HttpLoadGeneratorActor(serverPort: Promise[Int]) extends Actor {
     override def receive: Receive = {
-      case SetServerPort(port) ⇒
+      case SetServerPort(port) =>
         serverPort.success(port)
         context become ready(port)
-      case other ⇒
+      case other =>
         throw new RuntimeException("No server port known! Initialize with SetServerPort() first! Got: " + other)
     }
 
     import scala.sys.process._
     def ready(port: Int): Receive = {
-      case LoadGenCommand(cmd) if cmd startsWith "wrk" ⇒
+      case LoadGenCommand(cmd) if cmd startsWith "wrk" =>
         val res =
           if (isWrk2Available) cmd.!! // blocking. DON'T DO THIS AT HOME, KIDS!
           else "=== WRK NOT AVAILABLE ==="
         sender() ! LoadGenResults(res)
 
-      case LoadGenCommand(cmd) if cmd startsWith "ab" ⇒
+      case LoadGenCommand(cmd) if cmd startsWith "ab" =>
         val res =
           if (isAbAvailable) cmd.!! // blocking. DON'T DO THIS AT HOME, KIDS!
           else "=== AB NOT AVAILABLE ==="
@@ -126,26 +126,25 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
   val source_100x: Source[ByteString, NotUsed] = Source.repeat(MediumByteString).take(100)
   val tenXResponseLength = array_10x.length
   val hundredXResponseLength = array_100x.length
-  
-  // format: OFF
+
   val routes: Route = {
     import Directives._
-    
-    path("ping") {
-      complete("PONG!")
-    } ~
-    path("long-response-array" / IntNumber) { n =>
-      if (n == 10) complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, array_10x))
-      else if (n == 100) complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, array_10x))
-      else throw new RuntimeException(s"Not implemented for ${n}")
-    } ~
-    path("long-response-stream" / IntNumber) { n =>
-      if (n == 10) complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, source_100x))
-      else if (n == 100) complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, source_100x))
-      else throw new RuntimeException(s"Not implemented for ${n}")
-    }
+    concat(
+      path("ping") {
+        complete("PONG!")
+      },
+      path("long-response-array" / IntNumber) { n =>
+        if (n == 10) complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, array_10x))
+        else if (n == 100) complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, array_10x))
+        else throw new RuntimeException(s"Not implemented for ${n}")
+      },
+      path("long-response-stream" / IntNumber) { n =>
+        if (n == 10) complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, source_100x))
+        else if (n == 100) complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, source_100x))
+        else throw new RuntimeException(s"Not implemented for ${n}")
+      }
+    )
   }
-  // format: ON
 
   val enableSpec = system.settings.config.getBoolean("akka.test.AkkaHttpServerLatencySpec.enable")
   val totalRequestsFactor = system.settings.config.getDouble("akka.test.AkkaHttpServerLatencySpec.totalRequestsFactor")
@@ -221,10 +220,10 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
       }
 
       List(
-        10 → tenXResponseLength,
-        100 → hundredXResponseLength
+        10 -> tenXResponseLength,
+        100 -> hundredXResponseLength
       ) foreach {
-          case (n, length) ⇒
+          case (n, length) =>
             s"have good Latency (streaming-response($length), keep-alive)" taggedAs LongRunningTest in {
               val id = s"Latency_stream($length)_R:${rate}_C:${connections}_p:"
 
@@ -279,8 +278,8 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
   }
 
   private def renderResults(prefix: String, titles: Seq[String], values: Seq[String]): Unit = {
-    println("====:" + titles.reverse.map(it ⇒ "\"" + it + "\"").mkString(",") + "\n")
-    println("====:" + values.reverse.map(it ⇒ "\"" + it + "\"").mkString(",") + "\n")
+    println("====:" + titles.reverse.map(it => "\"" + it + "\"").mkString(",") + "\n")
+    println("====:" + values.reverse.map(it => "\"" + it + "\"").mkString(",") + "\n")
   }
 
   private def durationAsMs(d: String): Long = {
@@ -294,7 +293,7 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
 
     var i = 0
     val linesWithIndex = lines.zipWithIndex
-    val correctedDistributionStartsHere = linesWithIndex.find(p ⇒ p._1 contains "Latency Distribution").map(_._2).get
+    val correctedDistributionStartsHere = linesWithIndex.find(p => p._1 contains "Latency Distribution").map(_._2).get
 
     var titles = List.empty[String]
     var metrics = List.empty[String]
@@ -314,7 +313,7 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
     }
     renderResults(prefix + "_corrected", titles, metrics)
 
-    val uncorrectedDistributionStartsHere = linesWithIndex.find(p ⇒ p._1 contains "Uncorrected Latency").map(_._2).get
+    val uncorrectedDistributionStartsHere = linesWithIndex.find(p => p._1 contains "Uncorrected Latency").map(_._2).get
 
     titles = List.empty
     metrics = List.empty
@@ -336,7 +335,7 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
 
     titles = List.empty
     metrics = List.empty
-    val rpsLineNumber = linesWithIndex.find(p ⇒ p._1 contains "Requests/sec:").map(_._2).get
+    val rpsLineNumber = linesWithIndex.find(p => p._1 contains "Requests/sec:").map(_._2).get
 
     i = rpsLineNumber
     val rps = lines(i).replace("Requests/sec:", "").trim
@@ -352,7 +351,7 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
 
     titles = List.empty
     metrics = List.empty
-    val transferLineNumber = linesWithIndex.find(p ⇒ p._1 contains "Transfer/sec:").map(_._2).get
+    val transferLineNumber = linesWithIndex.find(p => p._1 contains "Transfer/sec:").map(_._2).get
     i = transferLineNumber
 
     val tps = lines(i).replace("Transfer/sec:", "").trim
@@ -368,7 +367,7 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
     val percentilesToPrint = 9
 
     var i = 0
-    val correctedDistributionStartsHere = lines.zipWithIndex.find(p ⇒ p._1 contains "Percentage of the requests").map(_._2).get
+    val correctedDistributionStartsHere = lines.zipWithIndex.find(p => p._1 contains "Percentage of the requests").map(_._2).get
 
     var titles = List.empty[String]
     var metrics = List.empty[String]

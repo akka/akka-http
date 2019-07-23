@@ -50,9 +50,9 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    */
   def rawPathPrefix[L](pm: PathMatcher[L]): Directive[L] = {
     implicit val LIsTuple = pm.ev
-    extract(ctx ⇒ pm(ctx.unmatchedPath)).flatMap {
-      case Matched(rest, values) ⇒ tprovide(values) & mapRequestContext(_ withUnmatchedPath rest)
-      case Unmatched             ⇒ reject
+    extract(ctx => pm(ctx.unmatchedPath)).flatMap {
+      case Matched(rest, values) => tprovide(values) & mapRequestContext(_ withUnmatchedPath rest)
+      case Unmatched             => reject
     }
   }
 
@@ -73,9 +73,9 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    */
   def rawPathPrefixTest[L](pm: PathMatcher[L]): Directive[L] = {
     implicit val LIsTuple = pm.ev
-    extract(ctx ⇒ pm(ctx.unmatchedPath)).flatMap {
-      case Matched(_, values) ⇒ tprovide(values)
-      case Unmatched          ⇒ reject
+    extract(ctx => pm(ctx.unmatchedPath)).flatMap {
+      case Matched(_, values) => tprovide(values)
+      case Unmatched          => reject
     }
   }
 
@@ -89,9 +89,9 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    */
   def pathSuffix[L](pm: PathMatcher[L]): Directive[L] = {
     implicit val LIsTuple = pm.ev
-    extract(ctx ⇒ pm(ctx.unmatchedPath.reverse)).flatMap {
-      case Matched(rest, values) ⇒ tprovide(values) & mapRequestContext(_.withUnmatchedPath(rest.reverse))
-      case Unmatched             ⇒ reject
+    extract(ctx => pm(ctx.unmatchedPath.reverse)).flatMap {
+      case Matched(rest, values) => tprovide(values) & mapRequestContext(_.withUnmatchedPath(rest.reverse))
+      case Unmatched             => reject
     }
   }
 
@@ -106,9 +106,9 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    */
   def pathSuffixTest[L](pm: PathMatcher[L]): Directive[L] = {
     implicit val LIsTuple = pm.ev
-    extract(ctx ⇒ pm(ctx.unmatchedPath.reverse)).flatMap {
-      case Matched(_, values) ⇒ tprovide(values)
-      case Unmatched          ⇒ reject
+    extract(ctx => pm(ctx.unmatchedPath.reverse)).flatMap {
+      case Matched(_, values) => tprovide(values)
+      case Unmatched          => reject
     }
   }
 
@@ -135,12 +135,14 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    *   // redirect '/users/' to '/users', '/users/:userId/' to '/users/:userId'
    *   redirectToNoTrailingSlashIfPresent(Found) {
    *     pathPrefix("users") {
-   *       pathEnd {
-   *         // user list ...
-   *       } ~
-   *       path(UUID) { userId =>
-   *         // user profile ...
-   *       }
+   *       concat(
+   *         pathEnd {
+   *           // user list ...
+   *         },
+   *         path(UUID) { userId =>
+   *           // user profile ...
+   *         }
+   *       )
    *     }
    *   }
    * }
@@ -169,7 +171,7 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    * @group path
    */
   def redirectToTrailingSlashIfMissing(redirectionType: StatusCodes.Redirection): Directive0 =
-    extractUri.flatMap { uri ⇒
+    extractUri.flatMap { uri =>
       if (uri.path.endsWithSlash) pass
       else {
         val newPath = uri.path ++ Path.SingleSlash
@@ -192,7 +194,7 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    * @group path
    */
   def redirectToNoTrailingSlashIfPresent(redirectionType: StatusCodes.Redirection): Directive0 =
-    extractUri.flatMap { uri ⇒
+    extractUri.flatMap { uri =>
       if (uri.path.endsWithSlash && uri.path != Path.SingleSlash) {
         val newPath = uri.path.reverse.tail.reverse
         val newUri = uri.withPath(newPath)
@@ -219,17 +221,17 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
      * Transforms empty rejections to [[akka.http.scaladsl.server.directives.PathDirectives.TrailingRetryRejection]]
      * for the only purpose to break the loop of rejection handling
      */
-    val transformEmptyRejections = recoverRejections(rejections ⇒
+    val transformEmptyRejections = recoverRejections(rejections =>
       if (rejections == Nil) {
         Rejected(List(TrailingRetryRejection))
       } else Rejected(rejections)
     )
 
-    inner ⇒
+    inner =>
       import ExecutionDirectives._
       val totallyMissingHandler = RejectionHandler.newBuilder()
         .handleNotFound {
-          mapRequestContext(req ⇒ req.withUnmatchedPath(flipTrailingSlash(req.unmatchedPath))) {
+          mapRequestContext(req => req.withUnmatchedPath(flipTrailingSlash(req.unmatchedPath))) {
             // transforming the rejection to break the loop.
             transformEmptyRejections {
               inner(())

@@ -29,21 +29,21 @@ class SprayJsonExampleSpec extends WordSpec with Matchers {
     // use it wherever json (un)marshalling is needed
     class MyJsonService extends Directives with JsonSupport {
 
-      // format: OFF
       val route =
-        get {
-          pathSingleSlash {
-            complete(Item("thing", 42)) // will render as JSON
+        concat(
+          get {
+            pathSingleSlash {
+              complete(Item("thing", 42)) // will render as JSON
+            }
+          },
+          post {
+            entity(as[Order]) { order => // will unmarshal JSON to Order
+              val itemsCount = order.items.size
+              val itemNames = order.items.map(_.name).mkString(", ")
+              complete(s"Ordered $itemsCount items: $itemNames")
+            }
           }
-        } ~
-        post {
-          entity(as[Order]) { order => // will unmarshal JSON to Order
-            val itemsCount = order.items.size
-            val itemNames = order.items.map(_.name).mkString(", ")
-            complete(s"Ordered $itemsCount items: $itemNames")
-          }
-        }
-      // format: ON
+        )
     }
     //#minimal-spray-json-example
   }
@@ -99,17 +99,18 @@ class SprayJsonExampleSpec extends WordSpec with Matchers {
       def main(args: Array[String]) {
 
         val route: Route =
-          get {
-            pathPrefix("item" / LongNumber) { id =>
-              // there might be no item for a given id
-              val maybeItem: Future[Option[Item]] = fetchItem(id)
+          concat(
+            get {
+              pathPrefix("item" / LongNumber) { id =>
+                // there might be no item for a given id
+                val maybeItem: Future[Option[Item]] = fetchItem(id)
 
-              onSuccess(maybeItem) {
-                case Some(item) => complete(item)
-                case None       => complete(StatusCodes.NotFound)
+                onSuccess(maybeItem) {
+                  case Some(item) => complete(item)
+                  case None       => complete(StatusCodes.NotFound)
+                }
               }
-            }
-          } ~
+            },
             post {
               path("create-order") {
                 entity(as[Order]) { order =>
@@ -120,13 +121,14 @@ class SprayJsonExampleSpec extends WordSpec with Matchers {
                 }
               }
             }
+          )
 
         val bindingFuture = Http().bindAndHandle(route, "localhost", 8080)
         println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
         StdIn.readLine() // let it run until user presses return
         bindingFuture
           .flatMap(_.unbind()) // trigger unbinding from the port
-          .onComplete(_ ⇒ system.terminate()) // and shutdown when done
+          .onComplete(_ => system.terminate()) // and shutdown when done
 
       }
     }

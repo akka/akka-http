@@ -194,7 +194,7 @@ class SlotStateSpec extends AkkaSpec {
     override def warning(message: String, arg1: AnyRef): Unit =
       log.warning(message, arg1)
 
-    def expectOpenConnection[T](cb: ⇒ T) = {
+    def expectOpenConnection[T](cb: => T) = {
       connectionClosed should be(true)
       connectionOpenRequested should be(false)
 

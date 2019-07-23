@@ -49,7 +49,7 @@ object ServerSentEvent {
   def apply(data: String, retry: Int): ServerSentEvent =
     new ServerSentEvent(data, retry = Some(retry))
 
-  private def noNewLine(s: String) = s.forall(c ⇒ c != '\n' && c != '\r')
+  private def noNewLine(s: String) = s.forall(c => c != '\n' && c != '\r')
 
   // Public domain algorithm: http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2.
   // We want powers of two both because they typically work better with the allocator, and because we want to minimize
@@ -96,7 +96,7 @@ final case class ServerSentEvent(
       val builder =
         new StringBuilder(
           nextPowerOfTwoBiggerThan(
-            8 + data.length + eventType.fold(0)(_.length + 7) + id.fold(0)(_.length + 4) + retry.fold(0)(_ ⇒ 17)
+            8 + data.length + eventType.fold(0)(_.length + 7) + id.fold(0)(_.length + 4) + retry.fold(0)(_ => 17)
           )
         )
       @tailrec def appendData(s: String, index: Int = 0): Unit = {
@@ -110,8 +110,8 @@ final case class ServerSentEvent(
           }
         builder.append("data:")
         addLine(index) match {
-          case -1 ⇒ builder.append('\n')
-          case i  ⇒ appendData(s, i)
+          case -1 => builder.append('\n')
+          case i  => appendData(s, i)
         }
       }
       appendData(data)

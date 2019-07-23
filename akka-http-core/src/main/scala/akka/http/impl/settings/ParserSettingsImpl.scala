@@ -35,8 +35,8 @@ private[akka] final case class ParserSettingsImpl(
   headerValueCacheLimits:                   Map[String, Int],
   includeTlsSessionInfoHeader:              Boolean,
   modeledHeaderParsing:                     Boolean,
-  customMethods:                            String ⇒ Option[HttpMethod],
-  customStatusCodes:                        Int ⇒ Option[StatusCode],
+  customMethods:                            String => Option[HttpMethod],
+  customStatusCodes:                        Int => Option[StatusCode],
   customMediaTypes:                         MediaTypes.FindCustom)
   extends akka.http.scaladsl.settings.ParserSettings {
 
@@ -60,9 +60,9 @@ private[akka] final case class ParserSettingsImpl(
 
 object ParserSettingsImpl extends SettingsCompanionImpl[ParserSettingsImpl]("akka.http.parsing") {
 
-  private[this] val noCustomMethods: String ⇒ Option[HttpMethod] = ConstantFun.scalaAnyToNone
-  private[this] val noCustomStatusCodes: Int ⇒ Option[StatusCode] = ConstantFun.scalaAnyToNone
-  private[ParserSettingsImpl] val noCustomMediaTypes: (String, String) ⇒ Option[MediaType] = ConstantFun.scalaAnyTwoToNone
+  private[this] val noCustomMethods: String => Option[HttpMethod] = ConstantFun.scalaAnyToNone
+  private[this] val noCustomStatusCodes: Int => Option[StatusCode] = ConstantFun.scalaAnyToNone
+  private[ParserSettingsImpl] val noCustomMediaTypes: (String, String) => Option[MediaType] = ConstantFun.scalaAnyTwoToNone
 
   def fromSubConfig(root: Config, inner: Config): ParserSettingsImpl = {
     val c = inner.withFallback(root.getConfig(prefix))
@@ -85,7 +85,7 @@ object ParserSettingsImpl extends SettingsCompanionImpl[ParserSettingsImpl]("akk
       c.getStringList("ignore-illegal-header-for").asScala.map(_.toLowerCase).toSet,
       ErrorLoggingVerbosity(c.getString("error-logging-verbosity")),
       IllegalResponseHeaderValueProcessingMode(c.getString("illegal-response-header-value-processing-mode")),
-      cacheConfig.entrySet.asScala.iterator.map(kvp ⇒ kvp.getKey → cacheConfig.getInt(kvp.getKey)).toMap,
+      cacheConfig.entrySet.asScala.iterator.map(kvp => kvp.getKey -> cacheConfig.getInt(kvp.getKey)).toMap,
       c.getBoolean("tls-session-info-header"),
       c.getBoolean("modeled-header-parsing"),
       noCustomMethods,

@@ -50,10 +50,10 @@ private[http] object FrameHandler {
 
           override def handleRegularFrameStart(start: FrameStart): Unit = {
             (start.header.opcode, start.isFullMessage) match {
-              case (Opcode.Binary, true)  ⇒ publishMessagePart(BinaryMessagePart(start.data, last = true))
-              case (Opcode.Binary, false) ⇒ setAndHandleFrameStartWith(new BinaryMessageHandler, start)
-              case (Opcode.Text, _)       ⇒ setAndHandleFrameStartWith(new TextMessageHandler, start)
-              case x                      ⇒ pushProtocolError()
+              case (Opcode.Binary, true)  => publishMessagePart(BinaryMessagePart(start.data, last = true))
+              case (Opcode.Binary, false) => setAndHandleFrameStartWith(new BinaryMessageHandler, start)
+              case (Opcode.Text, _)       => setAndHandleFrameStartWith(new TextMessageHandler, start)
+              case x                      => pushProtocolError()
             }
           }
         }
@@ -90,7 +90,7 @@ private[http] object FrameHandler {
           def publish(part: FrameEvent): Unit = try {
             publishMessagePart(createMessagePart(part.data, last = finSeen && part.lastPart))
           } catch {
-            case NonFatal(e) ⇒ closeWithCode(Protocol.CloseCodes.InconsistentData)
+            case NonFatal(e) => closeWithCode(Protocol.CloseCodes.InconsistentData)
           }
         }
 
@@ -98,13 +98,13 @@ private[http] object FrameHandler {
           def handleRegularFrameStart(start: FrameStart): Unit
 
           override def handleFrameStart(start: FrameStart): Unit = start.header match {
-            case h: FrameHeader if h.mask.isDefined && !server                                      ⇒ pushProtocolError()
-            case h: FrameHeader if h.rsv1 || h.rsv2 || h.rsv3                                       ⇒ pushProtocolError()
-            case FrameHeader(op, _, length, fin, _, _, _) if op.isControl && (length > 125 || !fin) ⇒ pushProtocolError()
-            case h: FrameHeader if h.opcode.isControl ⇒
+            case h: FrameHeader if h.mask.isDefined && !server                                      => pushProtocolError()
+            case h: FrameHeader if h.rsv1 || h.rsv2 || h.rsv3                                       => pushProtocolError()
+            case FrameHeader(op, _, length, fin, _, _, _) if op.isControl && (length > 125 || !fin) => pushProtocolError()
+            case h: FrameHeader if h.opcode.isControl =>
               if (start.isFullMessage) handleControlFrame(h.opcode, start.data, this)
               else collectControlFrame(start, this)
-            case _ ⇒ handleRegularFrameStart(start)
+            case _ => handleRegularFrameStart(start)
           }
 
           override def handleFrameData(data: FrameData): Unit =
@@ -131,15 +131,15 @@ private[http] object FrameHandler {
           def handleControlFrame(opcode: Opcode, data: ByteString, nextHandler: InHandler): Unit = {
             setHandler(in, nextHandler)
             opcode match {
-              case Opcode.Ping ⇒ publishDirectResponse(FrameEvent.fullFrame(Opcode.Pong, None, data, fin = true))
-              case Opcode.Pong ⇒
+              case Opcode.Ping => publishDirectResponse(FrameEvent.fullFrame(Opcode.Pong, None, data, fin = true))
+              case Opcode.Pong =>
                 // ignore unsolicited Pong frame
                 pull(in)
-              case Opcode.Close ⇒
+              case Opcode.Close =>
                 setHandler(in, WaitForPeerTcpClose)
                 push(out, PeerClosed.parse(data))
-              case Opcode.Other(o) ⇒ closeWithCode(Protocol.CloseCodes.ProtocolError, "Unsupported opcode")
-              case other ⇒ failStage(
+              case Opcode.Other(o) => closeWithCode(Protocol.CloseCodes.ProtocolError, "Unsupported opcode")
+              case other => failStage(
                 new IllegalStateException(s"unexpected message of type [${other.getClass.getName}] when expecting ControlFrame")
               )
             }
@@ -159,24 +159,24 @@ private[http] object FrameHandler {
           }
 
           def publishMessagePart(part: MessageDataPart): Unit =
-            if (part.last) emitMultiple(out, Iterator(part, MessageEnd), () ⇒ setHandler(in, IdleHandler))
+            if (part.last) emitMultiple(out, Iterator(part, MessageEnd), () => setHandler(in, IdleHandler))
             else push(out, part)
 
           def publishDirectResponse(frame: FrameStart): Unit = push(out, DirectAnswer(frame))
 
           override def onPush(): Unit = grab(in) match {
-            case data: FrameData   ⇒ handleFrameData(data)
-            case start: FrameStart ⇒ handleFrameStart(start)
-            case FrameError(ex)    ⇒ failStage(ex)
+            case data: FrameData   => handleFrameData(data)
+            case start: FrameStart => handleFrameStart(start)
+            case FrameError(ex)    => failStage(ex)
           }
         }
 
         private object CloseAfterPeerClosed extends InHandler {
           override def onPush(): Unit = grab(in) match {
-            case FrameStart(FrameHeader(Opcode.Close, _, length, _, _, _, _), data) ⇒
+            case FrameStart(FrameHeader(Opcode.Close, _, length, _, _, _, _), data) =>
               setHandler(in, WaitForPeerTcpClose)
               push(out, PeerClosed.parse(data))
-            case _ ⇒ pull(in) // ignore all other data
+            case _ => pull(in) // ignore all other data
           }
         }
 
@@ -206,8 +206,8 @@ private[http] object FrameHandler {
   object PeerClosed {
     def parse(data: ByteString): PeerClosed =
       FrameEventParser.parseCloseCode(data) match {
-        case Some((code, reason)) ⇒ PeerClosed(Some(code), reason)
-        case None                 ⇒ PeerClosed(None)
+        case Some((code, reason)) => PeerClosed(Some(code), reason)
+        case None                 => PeerClosed(None)
       }
   }
 

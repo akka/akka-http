@@ -9,7 +9,7 @@ import java.util.OptionalLong
 import language.implicitConversions
 import java.io.File
 import java.nio.file.{ Files, Path }
-import java.lang.{ Iterable ⇒ JIterable }
+import java.lang.{ Iterable => JIterable }
 
 import scala.util.control.NonFatal
 import scala.concurrent.Future
@@ -22,7 +22,7 @@ import akka.stream._
 import akka.{ Done, NotUsed, stream }
 import akka.http.scaladsl.model.ContentType.{ Binary, NonBinary, WithMissingCharset }
 import akka.http.scaladsl.util.FastFuture
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 import akka.http.impl.util.{ JavaMapping, StreamUtils }
 import akka.http.impl.util.JavaMapping.Implicits._
 
@@ -86,9 +86,9 @@ sealed trait HttpEntity extends jm.HttpEntity {
    * or with a EntityStreamException when the end of the entity is not reached within the maximum number of bytes.
    */
   def toStrict(timeout: FiniteDuration, maxBytes: Long)(implicit fm: Materializer): Future[HttpEntity.Strict] = contentLengthOption match {
-    case Some(contentLength) if contentLength > maxBytes ⇒
+    case Some(contentLength) if contentLength > maxBytes =>
       FastFuture.failed(new EntityStreamException(new ErrorInfo("Request too large", s"Request of size $contentLength was longer than the maximum of $maxBytes")))
-    case _ ⇒
+    case _ =>
       dataBytes
         .via(new akka.http.impl.util.ToStrict(timeout, Some(maxBytes), contentType))
         .runWith(Sink.head)
@@ -359,11 +359,11 @@ object HttpEntity {
 
     override def toString = {
       val dataAsString = contentType match {
-        case _: Binary ⇒
+        case _: Binary =>
           data.toString()
-        case _: WithMissingCharset ⇒
+        case _: WithMissingCharset =>
           data.toString()
-        case nb: NonBinary ⇒
+        case nb: NonBinary =>
           try {
             val maxBytes = 4096
             if (data.length > maxBytes) {
@@ -372,7 +372,7 @@ object HttpEntity {
             } else
               data.decodeString(nb.charset.value)
           } catch {
-            case NonFatal(e) ⇒
+            case NonFatal(e) =>
               data.toString()
           }
       }
@@ -514,9 +514,9 @@ object HttpEntity {
     override def transformDataBytes(transformer: Flow[ByteString, ByteString, Any]): HttpEntity.Chunked = {
       val newData =
         chunks.map {
-          case Chunk(data, "")    ⇒ data
-          case LastChunk("", Nil) ⇒ ByteString.empty
-          case _ ⇒
+          case Chunk(data, "")    => data
+          case LastChunk("", Nil) => ByteString.empty
+          case _ =>
             throw new IllegalArgumentException("Chunked.transformDataBytes not allowed for chunks with metadata")
         } via transformer
 
@@ -543,7 +543,7 @@ object HttpEntity {
      */
     def fromData(contentType: ContentType, chunks: Source[ByteString, Any]): HttpEntity.Chunked =
       HttpEntity.Chunked(contentType, chunks.collect[ChunkStreamPart] {
-        case b: ByteString if b.nonEmpty ⇒ Chunk(b)
+        case b: ByteString if b.nonEmpty => Chunk(b)
       })
   }
 
@@ -612,7 +612,7 @@ object HttpEntity {
     val Disabled = -1 // any negative value will do
   }
 
-  private final class Limitable[T](sizeOf: T ⇒ Int) extends GraphStage[FlowShape[T, T]] {
+  private final class Limitable[T](sizeOf: T => Int) extends GraphStage[FlowShape[T, T]] {
     val in = Inlet[T]("Limitable.in")
     val out = Outlet[T]("Limitable.out")
     override val shape = FlowShape.of(in, out)
@@ -624,15 +624,15 @@ object HttpEntity {
 
       override def preStart(): Unit = {
         attributes.getFirst[SizeLimit] match {
-          case Some(limit: SizeLimit) if limit.isDisabled ⇒
+          case Some(limit: SizeLimit) if limit.isDisabled =>
           // "no limit"
-          case Some(SizeLimit(bytes, cl @ Some(contentLength))) ⇒
+          case Some(SizeLimit(bytes, cl @ Some(contentLength))) =>
             if (contentLength > bytes) failStage(EntityStreamSizeException(bytes, cl))
           // else we still count but never throw an error
-          case Some(SizeLimit(bytes, None)) ⇒
+          case Some(SizeLimit(bytes, None)) =>
             maxBytes = bytes
             bytesLeft = bytes
-          case None ⇒
+          case None =>
         }
       }
 
@@ -657,7 +657,7 @@ object HttpEntity {
     def applyForChunks[Mat](source: Source[ChunkStreamPart, Mat], limit: SizeLimit): Source[ChunkStreamPart, Mat] =
       applyLimit(source, limit)(_.data.size)
 
-    def applyLimit[T, Mat](source: Source[T, Mat], limit: SizeLimit)(sizeOf: T ⇒ Int): Source[T, Mat] =
+    def applyLimit[T, Mat](source: Source[T, Mat], limit: SizeLimit)(sizeOf: T => Int): Source[T, Mat] =
       if (limit.isDisabled) source withAttributes Attributes(limit) // no need to add stage, it's either there or not needed
       else source.via(new Limitable(sizeOf)) withAttributes Attributes(limit)
 

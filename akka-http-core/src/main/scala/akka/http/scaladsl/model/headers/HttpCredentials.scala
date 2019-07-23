@@ -7,7 +7,7 @@ package akka.http.scaladsl.model.headers
 import akka.parboiled2.util.Base64
 import akka.http.scaladsl.model.HttpCharsets._
 import akka.http.impl.util.{ Rendering, ValueRenderable }
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 import akka.http.impl.util.JavaMapping.Implicits._
 
 abstract class HttpCredentials extends jm.headers.HttpCredentials with ValueRenderable {
@@ -37,8 +37,8 @@ object BasicHttpCredentials {
     val bytes = Base64.rfc2045.decodeFast(credentials)
     val userPass = new String(bytes, `UTF-8`.nioCharset)
     userPass.indexOf(':') match {
-      case -1 ⇒ apply(userPass, "")
-      case ix ⇒ apply(userPass.substring(0, ix), userPass.substring(ix + 1))
+      case -1 => apply(userPass, "")
+      case ix => apply(userPass.substring(0, ix), userPass.substring(ix + 1))
     }
   }
 }
@@ -56,7 +56,7 @@ final case class GenericHttpCredentials(scheme: String, token: String,
     r ~~ scheme
     if (!token.isEmpty) r ~~ ' ' ~~ token
     if (params.nonEmpty)
-      params foreach new (((String, String)) ⇒ Unit) {
+      params foreach new (((String, String)) => Unit) {
         var first = true
         def apply(kvp: (String, String)): Unit = {
           val (k, v) = kvp

@@ -16,10 +16,10 @@ private[http2] object ByteStringInputStream {
 
   def apply(bs: ByteString): InputStream =
     bs match {
-      case cs: ByteString1C ⇒
+      case cs: ByteString1C =>
         // TODO optimise, ByteString needs to expose InputStream (esp if array backed, nice!)
         new ByteArrayInputStream(cs.toArray)
-      case _ ⇒
+      case _ =>
         // NOTE: We actually measured recently, and compact + use array was pretty good usually
         apply(bs.compact)
     }

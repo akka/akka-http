@@ -84,11 +84,11 @@ class ModeledCustomHeaderSpec extends RoutingSpec {
 
       //#matching-in-routes
       def extractFromCustomHeader = headerValuePF {
-        case t @ ApiTokenHeader(token) ⇒ s"extracted> $t"
-        case raw: RawHeader            ⇒ s"raw> $raw"
+        case t @ ApiTokenHeader(token) => s"extracted> $t"
+        case raw: RawHeader            => s"raw> $raw"
       }
 
-      val routes = extractFromCustomHeader { s ⇒
+      val routes = extractFromCustomHeader { s =>
         complete(s)
       }
 
@@ -110,7 +110,7 @@ class ModeledCustomHeaderSpec extends RoutingSpec {
     }
 
     "be able to extract in routing DSL via headerValueByType" in {
-      val routes = headerValueByType[ApiTokenHeader]() { token ⇒
+      val routes = headerValueByType[ApiTokenHeader]() { token =>
         complete(s"extracted> $token")
       }
 
@@ -120,7 +120,7 @@ class ModeledCustomHeaderSpec extends RoutingSpec {
       }
 
       Get().withHeaders(RawHeader("somethingElse", "TheKey")) ~> routes ~> check {
-        rejection should ===(MissingHeaderRejection("ApiTokenHeader"))
+        rejection should ===(MissingHeaderRejection("apiKey"))
       }
 
       Get().withHeaders(ApiTokenHeader("TheKey")) ~> routes ~> check {

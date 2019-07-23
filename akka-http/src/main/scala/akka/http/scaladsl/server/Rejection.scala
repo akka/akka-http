@@ -12,13 +12,13 @@ import akka.japi.Util
 
 import scala.collection.immutable
 import akka.http.scaladsl.model._
-import akka.http.javadsl.{ model, server ⇒ jserver }
+import akka.http.javadsl.{ model, server => jserver }
 import headers._
 import akka.http.impl.util.JavaMapping._
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.pattern.CircuitBreakerOpenException
-import akka.http.javadsl.model.headers.{ HttpOrigin ⇒ JHttpOrigin }
-import akka.http.scaladsl.model.headers.{ HttpOrigin ⇒ SHttpOrigin }
+import akka.http.javadsl.model.headers.{ HttpOrigin => JHttpOrigin }
+import akka.http.scaladsl.model.headers.{ HttpOrigin => SHttpOrigin }
 
 import scala.collection.JavaConverters._
 import scala.compat.java8.OptionConverters
@@ -113,8 +113,7 @@ final case class InvalidOriginRejection(allowedOrigins: immutable.Seq[SHttpOrigi
  */
 final case class UnsupportedRequestContentTypeRejection(supported: immutable.Set[ContentTypeRange])
   extends jserver.UnsupportedRequestContentTypeRejection with Rejection {
-  override def getSupported: java.util.Set[model.ContentTypeRange] =
-    scala.collection.mutable.Set(supported.map(_.asJava).toVector: _*).asJava // TODO optimise
+  override def getSupported: java.util.Set[model.ContentTypeRange] = supported.map(_.asJava).asJava
 }
 
 /**
@@ -174,8 +173,7 @@ final case class UnacceptedResponseContentTypeRejection(supported: immutable.Set
  */
 final case class UnacceptedResponseEncodingRejection(supported: immutable.Set[HttpEncoding])
   extends jserver.UnacceptedResponseEncodingRejection with Rejection {
-  override def getSupported: java.util.Set[model.headers.HttpEncoding] =
-    scala.collection.mutable.Set(supported.map(_.asJava).toVector: _*).asJava // TODO optimise
+  override def getSupported: java.util.Set[model.headers.HttpEncoding] = supported.map(_.asJava).asJava
 }
 object UnacceptedResponseEncodingRejection {
   def apply(supported: HttpEncoding): UnacceptedResponseEncodingRejection = UnacceptedResponseEncodingRejection(Set(supported))
@@ -263,12 +261,12 @@ final case class ValidationRejection(message: String, cause: Option[Throwable] =
  * MethodRejection added by the `get` directive is canceled by the `put` directive (since the HTTP method
  * did indeed match eventually).
  */
-final case class TransformationRejection(transform: immutable.Seq[Rejection] ⇒ immutable.Seq[Rejection])
+final case class TransformationRejection(transform: immutable.Seq[Rejection] => immutable.Seq[Rejection])
   extends jserver.TransformationRejection with Rejection {
   override def getTransform = new Function[Iterable[jserver.Rejection], Iterable[jserver.Rejection]] {
     override def apply(t: Iterable[jserver.Rejection]): Iterable[jserver.Rejection] = {
       // explicit collects assignment is because of unidoc failing compilation on .asScala and .asJava here
-      val transformed: Seq[jserver.Rejection] = transform(Util.immutableSeq(t).collect { case r: Rejection ⇒ r }).collect { case j: jserver.Rejection ⇒ j }
+      val transformed: Seq[jserver.Rejection] = transform(Util.immutableSeq(t).collect { case r: Rejection => r }).collect { case j: jserver.Rejection => j }
       transformed.asJava // TODO "asJavaDeep" and optimise?
     }
   }

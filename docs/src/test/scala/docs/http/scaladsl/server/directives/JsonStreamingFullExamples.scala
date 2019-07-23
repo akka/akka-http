@@ -39,7 +39,7 @@ class JsonStreamingFullExamples extends WordSpec {
     val ct = ContentType.apply(`vnd.example.api.v1+json`)
 
     implicit def userMarshaller: ToEntityMarshaller[User] = Marshaller.oneOf(
-      Marshaller.withFixedContentType(`vnd.example.api.v1+json`) { organisation ⇒
+      Marshaller.withFixedContentType(`vnd.example.api.v1+json`) { organisation =>
         HttpEntity(`vnd.example.api.v1+json`, organisation.toJson.compactPrint)
       })
   }
@@ -56,7 +56,7 @@ class JsonStreamingFullExamples extends WordSpec {
     // (fake) async database query api
     def dummyUser(id: String) = User(s"User $id", id.toString)
 
-    def fetchUsers(): Source[User, NotUsed] = Source.fromIterator(() ⇒ Iterator.fill(10000) {
+    def fetchUsers(): Source[User, NotUsed] = Source.fromIterator(() => Iterator.fill(10000) {
       val id = Random.nextInt()
       dummyUser(id.toString)
     })
@@ -72,7 +72,7 @@ class JsonStreamingFullExamples extends WordSpec {
 
     println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
     StdIn.readLine()
-    bindingFuture.flatMap(_.unbind()).onComplete(_ ⇒ system.terminate())
+    bindingFuture.flatMap(_.unbind()).onComplete(_ => system.terminate())
   }
 
   //#custom-content-type

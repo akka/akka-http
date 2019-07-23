@@ -241,7 +241,7 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec with
     // reject request with missed origin header
     Get("abc") ~> route ~> check {
       inside(rejection) {
-        case MissingHeaderRejection(headerName) ⇒ headerName shouldEqual Origin.name
+        case MissingHeaderRejection(headerName) => headerName shouldEqual Origin.name
       }
     }
 
@@ -250,7 +250,7 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec with
     val invalidOriginHeader = Origin(invalidHttpOrigin)
     Get("abc") ~> invalidOriginHeader ~> route ~> check {
       inside(rejection) {
-        case InvalidOriginRejection(allowedOrigins) ⇒
+        case InvalidOriginRejection(allowedOrigins) =>
           allowedOrigins shouldEqual Seq(correctOrigin)
       }
     }

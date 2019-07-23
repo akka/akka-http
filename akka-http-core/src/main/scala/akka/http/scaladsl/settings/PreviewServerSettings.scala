@@ -17,7 +17,7 @@ import com.typesafe.config.Config
  */
 @ApiMayChange @DoNotInherit
 abstract class PreviewServerSettings private[akka] () extends akka.http.javadsl.settings.PreviewServerSettings {
-  self: PreviewServerSettingsImpl ⇒
+  self: PreviewServerSettingsImpl =>
 
   override def enableHttp2: Boolean
 

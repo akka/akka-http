@@ -12,7 +12,7 @@ import scala.compat.java8.OptionConverters._
 
 import akka.http.javadsl.model.DateTime
 import akka.http.javadsl.model.headers.EntityTag
-import akka.http.scaladsl.server.{ Directives ⇒ D }
+import akka.http.scaladsl.server.{ Directives => D }
 
 abstract class CacheConditionDirectives extends BasicDirectives {
   import akka.http.impl.util.JavaMapping.Implicits._

@@ -54,7 +54,7 @@ class StreamUtilsSpec extends AkkaSpec with ScalaFutures {
 
       val res =
         Source.single(element)
-          .via(StreamUtils.statefulAttrsMap(attrs ⇒ el ⇒ attrs → el))
+          .via(StreamUtils.statefulAttrsMap(attrs => el => attrs -> el))
           .addAttributes(nameAttr)
           .runWith(Sink.head)
 
@@ -73,10 +73,10 @@ class StreamUtilsSpec extends AkkaSpec with ScalaFutures {
 
       val whenCompleted =
         Source(0L to totalElements)
-          .map { _ ⇒ pack }
+          .map { _ => pack }
           .via(StreamUtils.sliceBytesTransformer(start, length))
           .fold(0L) {
-            case (sum, element) ⇒
+            case (sum, element) =>
               sum + element.length
           }
           .runWith(Sink.head)

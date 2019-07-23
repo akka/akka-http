@@ -46,7 +46,7 @@ private[rendering] object RenderSupport {
   val defaultLastChunkBytes: ByteString = renderChunk(HttpEntity.LastChunk)
 
   def CancelSecond[T, Mat](first: Source[T, Mat], second: Source[T, Any]): Source[T, Mat] = {
-    Source.fromGraph(GraphDSL.create(first) { implicit b ⇒ frst ⇒
+    Source.fromGraph(GraphDSL.create(first) { implicit b => frst =>
       import GraphDSL.Implicits._
       second ~> Sink.cancelled
       SourceShape(frst.out)
@@ -66,11 +66,11 @@ private[rendering] object RenderSupport {
       r ~~ headers.`Content-Type` ~~ ct ~~ CrLf
   }
 
-  def renderByteStrings(header: ByteString, entityBytes: ⇒ Source[ByteString, Any],
+  def renderByteStrings(header: ByteString, entityBytes: => Source[ByteString, Any],
                         skipEntity: Boolean = false): Source[ByteString, Any] = {
     val messageStart = Source.single(header)
     val messageBytes =
-      if (!skipEntity) (messageStart ++ entityBytes).mapMaterializedValue(_ ⇒ ())
+      if (!skipEntity) (messageStart ++ entityBytes).mapMaterializedValue(_ => ())
       else CancelSecond(messageStart, entityBytes)
     messageBytes
   }
@@ -154,9 +154,9 @@ private[rendering] object RenderSupport {
     if (extension.nonEmpty) r ~~ ';' ~~ extension
     r ~~ CrLf
     chunk match {
-      case HttpEntity.Chunk(data, _)        ⇒ r ~~ data
-      case HttpEntity.LastChunk(_, Nil)     ⇒ // nothing to do
-      case HttpEntity.LastChunk(_, trailer) ⇒ r ~~ trailer ~~ CrLf
+      case HttpEntity.Chunk(data, _)        => r ~~ data
+      case HttpEntity.LastChunk(_, Nil)     => // nothing to do
+      case HttpEntity.LastChunk(_, trailer) => r ~~ trailer ~~ CrLf
     }
     r ~~ CrLf
     r.get

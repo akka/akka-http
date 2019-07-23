@@ -79,7 +79,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       "a custom status code and no headers and different dates" in new TestSetup() {
         val initial = DateTime(2011, 8, 25, 9, 10, 0).clicks
         var extraMillis = 0L
-        (0 until 10000 by 500) foreach { millis ⇒
+        (0 until 10000 by 500) foreach { millis =>
           extraMillis = millis
           HttpResponse(200) should renderTo {
             s"""HTTP/1.1 200 OK
@@ -577,7 +577,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
         if (requested) CloseRequested.RequestAskedForClosing
         else CloseRequested.Unspecified
 
-      forAll(table)((reqProto, headReq, reqCH, resProto, resCH, resCD, renCH, close) ⇒
+      forAll(table)((reqProto, headReq, reqCH, resProto, resCH, resCD, renCH, close) =>
         ResponseRenderingContext(
           response = HttpResponse(200, headers = resCH.toList,
             entity = if (resCD) HttpEntity.CloseDelimited(
@@ -610,20 +610,20 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       renderToImpl(expected, checkClose = Some(close))
 
     def renderToImpl(expected: String, checkClose: Option[Boolean]): Matcher[ResponseRenderingContext] =
-      equal(expected.stripMarginWithNewline("\r\n") → checkClose).matcher[(String, Option[Boolean])] compose { ctx ⇒
+      equal(expected.stripMarginWithNewline("\r\n") -> checkClose).matcher[(String, Option[Boolean])] compose { ctx =>
         val resultFuture =
           // depends on renderer being completed fused and synchronous and finished in less steps than the configured event horizon
           CollectorStage.resultAfterSourceElements(
             Source.single(ctx),
             renderer.named("renderer")
               .map {
-                case ResponseRenderingOutput.HttpData(bytes)      ⇒ bytes
-                case _: ResponseRenderingOutput.SwitchToWebSocket ⇒ throw new IllegalStateException("Didn't expect websocket response")
+                case ResponseRenderingOutput.HttpData(bytes)      => bytes
+                case _: ResponseRenderingOutput.SwitchToWebSocket => throw new IllegalStateException("Didn't expect websocket response")
               }
           )
 
         Await.result(resultFuture, awaitAtMost) match {
-          case (result, completed) ⇒ result.reduceLeft(_ ++ _).utf8String → checkClose.map(_ ⇒ completed)
+          case (result, completed) => result.reduceLeft(_ ++ _).utf8String -> checkClose.map(_ => completed)
         }
       }
 

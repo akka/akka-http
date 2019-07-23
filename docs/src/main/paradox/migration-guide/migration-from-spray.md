@@ -34,11 +34,11 @@ In the implementation, Akka HTTP makes heavy use of streams as well with the occ
 
 The number of modules has been reduced. Here's an approximate mapping from spray modules to new modules:
 
- * spray-util, spray-http, spray-can ⇒ akka-http-core
- * spray-routing ⇒ akka-http
- * spray-client ⇒ parts of high-level client support is now provided via `Http().singleRequest`, other is not yet
+ * spray-util, spray-http, spray-can => akka-http-core
+ * spray-routing => akka-http
+ * spray-client => parts of high-level client support is now provided via `Http().singleRequest`, other is not yet
    implemented (see also [#113](https://github.com/akka/akka-http/issues/113))
- * spray-caching ⇒ akka-http-caching (since version 10.0.11, more information here: @ref[Documentation](../common/caching.md))
+ * spray-caching => akka-http-caching (since version 10.0.11, more information here: @ref[Documentation](../common/caching.md))
 
 ### Package name changes
 
@@ -72,7 +72,7 @@ All APIs are also available for Java. See everything under the `akka.http.javads
 
 ### Changes in Route type
 
-Route type has changed from `Route = RequestContext ⇒ Unit` to `Route = RequestContext ⇒ Future[RouteResult]`.
+Route type has changed from `Route = RequestContext => Unit` to `Route = RequestContext => Future[RouteResult]`.
 Which means that now we must complete the Request inside the controller and we can't simply pass the request to another Actor and complete it there. This has been done intentionally, because in Spray it was easy to forget to `complete` requests but the code would still compile.
 
 The following article mentions a few ways for us to complete the request based on processing outside the controller:
@@ -207,7 +207,7 @@ val token = Authorization(OAuth2BearerToken(accessToken))
 val pipeline: HttpRequest => Future[HttpResponse] = (addHeader(token) ~> sendReceive)
 val patch: HttpRequest = Patch(uri, object))
 
-pipeline(patch).map { response ⇒
+pipeline(patch).map { response =>
     …
 }
 ```
