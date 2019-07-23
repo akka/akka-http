@@ -65,7 +65,7 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
          ln -nsf $VERSION$ www/japi/akka-http/10.1
          ln -nsf $VERSION$ www/docs/akka-http/current
          ln -nsf $VERSION$ www/api/akka-http/current
-         ln -nsf $VERSION$ www/jap/akka-http/current
+         ln -nsf $VERSION$ www/japi/akka-http/current
          ```
     - [ ] check changes and commit the new version to the local git repository
          ```
