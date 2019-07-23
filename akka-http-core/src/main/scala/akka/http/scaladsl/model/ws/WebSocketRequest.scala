@@ -14,7 +14,7 @@ import akka.http.scaladsl.model.{ HttpHeader, Uri }
  * Represents a WebSocket request.
  * @param uri The target URI to connect to.
  * @param extraHeaders Extra headers to add to the WebSocket request.
- * @param subprotocol A WebSocket subprotocol if required.
+ * @param subprotocol WebSocket subprotocols (comma separated) if required.
  */
 final case class WebSocketRequest(
   uri:          Uri,
@@ -23,4 +23,14 @@ final case class WebSocketRequest(
 object WebSocketRequest {
   implicit def fromTargetUri(uri: Uri): WebSocketRequest = WebSocketRequest(uri)
   implicit def fromTargetUriString(uriString: String): WebSocketRequest = WebSocketRequest(uriString)
+
+  def apply(
+    uri:          Uri,
+    extraHeaders: immutable.Seq[HttpHeader],
+    subprotocols: immutable.Seq[String]): WebSocketRequest =
+    WebSocketRequest(
+      uri,
+      extraHeaders,
+      if (subprotocols.nonEmpty) Some(subprotocols.mkString(",")) else None
+    )
 }
