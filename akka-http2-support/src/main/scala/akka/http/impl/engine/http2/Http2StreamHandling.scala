@@ -140,7 +140,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
         maybeFinishStream(h.endStream)
 
       case _: ContinuationFrame | _: HeadersFrame | _: PriorityFrame | _: PushPromiseFrame | _: UnknownFrameEvent | _: WindowUpdateFrame =>
-        throw new UnsupportedOperationException(event.frameTypeName + " is unsupported.")
+        throw new UnsupportedOperationException(s"${this.getClass.getName} does not support ${event.frameTypeName}.")
     }
 
     protected def maybeFinishStream(endStream: Boolean): IncomingStreamState =

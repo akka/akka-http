@@ -213,7 +213,7 @@ object HttpMessage {
     protocol match {
       case HttpProtocols.`HTTP/1.1` => connectionHeader.isDefined && connectionHeader.get.hasClose
       case HttpProtocols.`HTTP/1.0` => connectionHeader.isEmpty || !connectionHeader.get.hasKeepAlive
-      case _                        => throw new UnsupportedOperationException(protocol.value + " is unsupported.")
+      case _                        => throw new UnsupportedOperationException(s"HttpMessage does not support ${protocol.value}.")
     }
 
   /**
