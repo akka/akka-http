@@ -139,8 +139,7 @@ private[http2] object FrameRenderer {
           streamId,
           renderPriorityInfo(frame)
         )
-      case _: ParsedHeadersFrame | _: UnknownFrameEvent =>
-        throw new UnsupportedOperationException(frame.frameTypeName + "is unsupported")
+      case _ => throw new IllegalStateException(s"Unexpected frame type ${frame.frameTypeName}.")
     }
 
   def renderFrame(tpe: FrameType, flags: ByteFlag, streamId: Int, payload: ByteString): ByteString = {

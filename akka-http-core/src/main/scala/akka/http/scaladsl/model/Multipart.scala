@@ -360,7 +360,7 @@ object Multipart {
     private[akka] def createStrict(fields: Map[String, akka.http.javadsl.model.HttpEntity.Strict]): Multipart.FormData.Strict = Multipart.FormData.Strict {
       fields.iterator.map {
         case (name, entity: akka.http.scaladsl.model.HttpEntity.Strict) => Multipart.FormData.BodyPart.Strict(name, entity)
-        case _ => throw new UnsupportedOperationException("must strict")
+        case _ => throw new IllegalStateException("Entity is expected to be strict.")
       }.to(scala.collection.immutable.IndexedSeq)
     }
     /** INTERNAL API */

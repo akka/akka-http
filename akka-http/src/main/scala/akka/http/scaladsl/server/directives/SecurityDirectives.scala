@@ -315,7 +315,7 @@ object Credentials {
           def verify(secret: String, hasher: String => String): Boolean = secret secure_== hasher(token)
         }
       case Some(c) =>
-        throw new UnsupportedOperationException(s"Credentials does not support $c.")
+        throw new UnsupportedOperationException(s"Credentials does not support scheme '${c.scheme}'.")
       case None => Credentials.Missing
     }
   }
