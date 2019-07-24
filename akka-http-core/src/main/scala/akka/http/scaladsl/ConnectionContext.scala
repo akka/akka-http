@@ -124,8 +124,11 @@ final object HttpConnectionContext extends HttpConnectionContext {
   /** Java API */
   def create() = this
 
-  /** Java API */
-  /** This method is planned to disappear in 10.2.0 */
+  /**
+   * Java API
+   *
+   * This method is planned to disappear in 10.2.0
+   */
   @Deprecated
   @deprecated("This method is planned to disappear in 10.2.0", "10.1.9")
   def create(http2: UseHttp2) = HttpConnectionContext()
