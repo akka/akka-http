@@ -208,6 +208,7 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
     val test = testFor(pathPrefix(JavaUUID) { echoCaptureAndUnmatchedPath })
     "accept [/bdea8652-f26c-40ca-8157-0b96a2a8389d]" inThe test("bdea8652-f26c-40ca-8157-0b96a2a8389d:")
     "accept [/bdea8652-f26c-40ca-8157-0b96a2a8389dyes]" inThe test("bdea8652-f26c-40ca-8157-0b96a2a8389d:yes")
+    "accept [/00000000-0000-0000-0000-000000000000]" inThe test("00000000-0000-0000-0000-000000000000:")
     "reject [/]" inThe test()
     "reject [/abc]" inThe test()
   }
