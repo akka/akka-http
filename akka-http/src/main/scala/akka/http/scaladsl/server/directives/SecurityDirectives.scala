@@ -314,8 +314,8 @@ object Credentials {
         new Credentials.Provided(token) {
           def verify(secret: String, hasher: String => String): Boolean = secret secure_== hasher(token)
         }
-      case Some(GenericHttpCredentials(scheme, token, params)) =>
-        throw new UnsupportedOperationException("cannot verify generic HTTP credentials")
+      case Some(c) =>
+        throw new UnsupportedOperationException(s"Credentials does not support scheme '${c.scheme}'.")
       case None => Credentials.Missing
     }
   }

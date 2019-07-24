@@ -19,7 +19,7 @@ import FrameEvent._
 /** INTERNAL API */
 @InternalApi
 private[http2] object FrameRenderer {
-  implicit val byteOrder = ByteOrder.BIG_ENDIAN
+  implicit val byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN
 
   def render(frame: FrameEvent): ByteString =
     frame match {
@@ -139,6 +139,7 @@ private[http2] object FrameRenderer {
           streamId,
           renderPriorityInfo(frame)
         )
+      case _ => throw new IllegalStateException(s"Unexpected frame type ${frame.frameTypeName}.")
     }
 
   def renderFrame(tpe: FrameType, flags: ByteFlag, streamId: Int, payload: ByteString): ByteString = {

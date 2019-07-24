@@ -34,7 +34,7 @@ abstract class DebuggingDirectives extends CookieDirectives {
    * @param level One of the log levels defined in akka.event.Logging
    */
   def logRequest(marker: String, level: LogLevel, inner: Supplier[Route]): Route = RouteAdapter {
-    D.logRequest(marker, level) { inner.get.delegate }
+    D.logRequest((marker, level)) { inner.get.delegate }
   }
 
   /**
@@ -57,7 +57,7 @@ abstract class DebuggingDirectives extends CookieDirectives {
    * @param level One of the log levels defined in akka.event.Logging
    */
   def logResult(marker: String, level: LogLevel, inner: Supplier[Route]): Route = RouteAdapter {
-    D.logResult(marker, level) { inner.get.delegate }
+    D.logResult((marker, level)) { inner.get.delegate }
   }
 
   /**
