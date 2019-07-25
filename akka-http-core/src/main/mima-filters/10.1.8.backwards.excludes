@@ -1,0 +1,92 @@
+# Constructor of abstract @DoNotInherit class:
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.HttpsConnectionContext.this")
+# Constructor of abstract @DoNotInherit class:
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.HttpConnectionContext.this")
+# Constructor @InternalApi class:
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ConnectHttpImpl.this")
+# Constructor @InternalApi class:
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ConnectHttpsImpl.this")
+# Indeed seems to be missing, but I can't see how this would ever be triggered.
+# (the method that *would* be triggered is in
+# `HttpsConnectionContext$`)
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpsConnectionContext.<init>$default$7")
+
+# Extension of @DoNotInherit class
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.Http2ServerSettings.logFrames")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.Http2ServerSettings.withLogFrames")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.logFrames")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.withLogFrames")
+
+# Internal class changes
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.apply")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.copy$default$5")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.this")
+
+#### The following are against 10.1.7, but weren't caught by a previous version of MiMa
+
+# Actually safe, we now promise to render to a `Seq` rather than any `Iterable`
+# for a bunch of renderers
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.model.headers.*.*Renderer")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.engine.rendering.RenderSupport.trailerRenderer")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.util.Renderer.defaultSeqRenderer")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.util.Renderer.seqRenderer")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.util.Renderer.genericSeqRenderer")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.util.Renderer.defaultSeqRenderer")
+
+# Safe, since more specific (CloseRequested rather than Object)
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.unapply")
+
+# Internal API's:
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.model.parser.*.field-names")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.curried")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.tupled")
+
+#### The following are against 10.1.5, but weren't caught by a previous version of MiMa
+
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.Http.get")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.Http.apply")
+
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.settings.PreviewServerSettings.create")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.unapply")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.settings.ConnectionPoolSettings.create")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.settings.ServerSettings.create")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.settings.HttpsProxySettings.create")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.settings.ParserSettings.create")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.settings.ClientConnectionSettings.create")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.*.register")
+
+#### The following are against 10.1.3, but weren't caught by a previous version of MiMa
+
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.unapply")
+
+#### The following are against 10.1.1, but weren't caught by a previous version of MiMa
+
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.Http#IncomingConnection.copy")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.Http#IncomingConnection.copy$default$3")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.Http#IncomingConnection.this")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.Http#IncomingConnection.unapply")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.Http#IncomingConnection.apply")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.ErrorInfo.apply$default$1")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.ErrorInfo.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.ErrorInfo.apply$default$2")
+
+#### The following are against 10.1.0, but weren't caught by a previous version of MiMa
+
+# Only a change in variance
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.javadsl.model.Multiparts.createFormDataFromSourceParts")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.model.Multipart#FormData.createSource")
+
+#### The following are against 10.0.15, but weren't caught by a previous version of MiMa
+
+# unbind
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.javadsl.ServerBinding.unbind")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.Http#ServerBinding.unbind")
+
+#### The following are against 10.0.9, but weren't caught by a previous version of MiMa
+
+# scaladsl
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.ClientTransport#HttpsProxyTransport.unapply")
+

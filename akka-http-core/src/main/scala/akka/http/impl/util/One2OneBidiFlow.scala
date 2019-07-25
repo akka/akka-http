@@ -37,8 +37,8 @@ private[http] object One2OneBidiFlow {
    */
   def apply[I, O](
     maxPending:                Int,
-    outputTruncationException: Int ⇒ Throwable = OutputTruncationException,
-    unexpectedOutputException: Any ⇒ Throwable = UnexpectedOutputException): BidiFlow[I, I, O, O, NotUsed] =
+    outputTruncationException: Int => Throwable = OutputTruncationException,
+    unexpectedOutputException: Any => Throwable = UnexpectedOutputException): BidiFlow[I, I, O, O, NotUsed] =
     BidiFlow.fromGraph(new One2OneBidi[I, O](maxPending, outputTruncationException, unexpectedOutputException))
 
   /*
@@ -50,8 +50,8 @@ private[http] object One2OneBidiFlow {
    */
   class One2OneBidi[I, O](
     maxPending:                Int,
-    outputTruncationException: Int ⇒ Throwable,
-    unexpectedOutputException: Any ⇒ Throwable) extends GraphStage[BidiShape[I, I, O, O]] {
+    outputTruncationException: Int => Throwable,
+    unexpectedOutputException: Any => Throwable) extends GraphStage[BidiShape[I, I, O, O]] {
     val in = Inlet[I]("One2OneBidi.in")
     val out = Outlet[O]("One2OneBidi.out")
     val toWrapped = Outlet[I]("One2OneBidi.toWrapped")

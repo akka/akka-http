@@ -71,7 +71,7 @@ private object PoolConductor {
 
   */
   def apply(slotSettings: PoolSlotsSetting, pipeliningLimit: Int, log: LoggingAdapter): Graph[Ports, Any] =
-    GraphDSL.create() { implicit b ⇒
+    GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
 
       val retryMerge = b.add(MergePreferred[RequestContext](1, eagerComplete = true))
@@ -79,16 +79,16 @@ private object PoolConductor {
       val route = b.add(new Route(slotSettings.maxSlots))
       val retrySplit = b.add(Broadcast[RawSlotEvent](2))
       val flatten = Flow[RawSlotEvent].mapAsyncUnordered(slotSettings.maxSlots) {
-        case x: SlotEvent.Disconnected                ⇒ FastFuture.successful(x)
-        case SlotEvent.RequestCompletedFuture(future) ⇒ future
-        case x: SlotEvent.ConnectedEagerly            ⇒ FastFuture.successful(x)
-        case x                                        ⇒ throw new IllegalStateException("Unexpected " + x)
+        case x: SlotEvent.Disconnected                => FastFuture.successful(x)
+        case SlotEvent.RequestCompletedFuture(future) => future
+        case x: SlotEvent.ConnectedEagerly            => FastFuture.successful(x)
+        case x                                        => throw new IllegalStateException("Unexpected " + x)
       }
 
       retryMerge.out ~> slotSelector.in0
       slotSelector.out ~> route.in
       retrySplit.out(0).filter(!_.isInstanceOf[SlotEvent.RetryRequest]) ~> flatten ~> slotSelector.in1
-      retrySplit.out(1).collect { case SlotEvent.RetryRequest(r) ⇒ r } ~> retryMerge.preferred
+      retrySplit.out(1).collect { case SlotEvent.RetryRequest(r) => r } ~> retryMerge.preferred
 
       Ports(retryMerge.in(0), retrySplit.in, route.outlets)
     }
@@ -132,7 +132,7 @@ private object PoolConductor {
       val slotStates = Array.fill[SlotState](slotSettings.maxSlots)(Unconnected)
       var nextSlot = 0
 
-      def updateSlotState(idx: Int, f: SlotState ⇒ SlotState): Unit = {
+      def updateSlotState(idx: Int, f: SlotState => SlotState): Unit = {
         val oldState = slotStates(idx)
         val newState = f(oldState)
 
@@ -154,12 +154,12 @@ private object PoolConductor {
       setHandler(slotEventIn, new InHandler {
         override def onPush(): Unit = {
           grab(slotEventIn) match {
-            case SlotEvent.RequestCompleted(slotIx) ⇒
+            case SlotEvent.RequestCompleted(slotIx) =>
               updateSlotState(slotIx, slotStateAfterRequestCompleted)
-            case SlotEvent.Disconnected(slotIx, failed) ⇒
+            case SlotEvent.Disconnected(slotIx, failed) =>
               updateSlotState(slotIx, slotStateAfterDisconnect(_, failed))
               reconnectIfNeeded()
-            case SlotEvent.ConnectedEagerly(slotIx) ⇒
+            case SlotEvent.ConnectedEagerly(slotIx) =>
             // do nothing ...
           }
           pull(slotEventIn)
@@ -172,7 +172,7 @@ private object PoolConductor {
 
       setHandler(slotCommandOut, eagerTerminateOutput)
 
-      val tryPullCtx = () ⇒ if (nextSlot != -1 && !hasBeenPulled(requestContextIn)) pull(requestContextIn)
+      val tryPullCtx = () => if (nextSlot != -1 && !hasBeenPulled(requestContextIn)) pull(requestContextIn)
 
       override def preStart(): Unit = {
         pull(requestContextIn)
@@ -184,7 +184,7 @@ private object PoolConductor {
 
       def connect(slotIx: Int): Unit = {
         emit(slotCommandOut, SwitchSlotCommand(ConnectEagerlyCommand, slotIx))
-        updateSlotState(slotIx, _ ⇒ Idle)
+        updateSlotState(slotIx, _ => Idle)
       }
 
       private def reconnectIfNeeded(): Unit =
@@ -194,28 +194,28 @@ private object PoolConductor {
 
       def slotStateAfterDispatch(slotState: SlotState, method: HttpMethod): SlotState =
         slotState match {
-          case Unconnected | Idle ⇒ if (method.isIdempotent) Loaded(1) else Busy(1)
-          case Loaded(n)          ⇒ if (method.isIdempotent) Loaded(n + 1) else Busy(n + 1)
-          case Busy(_)            ⇒ throw new IllegalStateException("Request scheduled onto busy connection?")
+          case Unconnected | Idle => if (method.isIdempotent) Loaded(1) else Busy(1)
+          case Loaded(n)          => if (method.isIdempotent) Loaded(n + 1) else Busy(n + 1)
+          case Busy(_)            => throw new IllegalStateException("Request scheduled onto busy connection?")
         }
 
       def slotStateAfterRequestCompleted(slotState: SlotState): SlotState =
         slotState match {
-          case Loaded(1) ⇒ Idle
-          case Loaded(n) ⇒ Loaded(n - 1)
-          case Busy(1)   ⇒ Idle
-          case Busy(n)   ⇒ Busy(n - 1)
-          case _         ⇒ throw new IllegalStateException(s"RequestCompleted on $slotState connection?")
+          case Loaded(1) => Idle
+          case Loaded(n) => Loaded(n - 1)
+          case Busy(1)   => Idle
+          case Busy(n)   => Busy(n - 1)
+          case _         => throw new IllegalStateException(s"RequestCompleted on $slotState connection?")
         }
 
       def slotStateAfterDisconnect(slotState: SlotState, failed: Int): SlotState =
         slotState match {
-          case Idle if failed == 0      ⇒ Unconnected
-          case Loaded(n) if n > failed  ⇒ Loaded(n - failed)
-          case Loaded(n) if n == failed ⇒ Unconnected
-          case Busy(n) if n > failed    ⇒ Busy(n - failed)
-          case Busy(n) if n == failed   ⇒ Unconnected
-          case _                        ⇒ throw new IllegalStateException(s"Disconnect(_, $failed) on $slotState connection?")
+          case Idle if failed == 0      => Unconnected
+          case Loaded(n) if n > failed  => Loaded(n - failed)
+          case Loaded(n) if n == failed => Unconnected
+          case Busy(n) if n > failed    => Busy(n - failed)
+          case Busy(n) if n == failed   => Unconnected
+          case _                        => throw new IllegalStateException(s"Disconnect(_, $failed) on $slotState connection?")
         }
 
       /**
@@ -231,12 +231,12 @@ private object PoolConductor {
       @tailrec def bestSlot(ix: Int = 0, bestIx: Int = -1, bestState: SlotState = Busy): Int =
         if (ix < slotStates.length) {
           val pl = pipeliningLimit
-          slotStates(ix) → bestState match {
-            case (Idle, _)                           ⇒ ix
-            case (Unconnected, Loaded(_) | Busy)     ⇒ bestSlot(ix + 1, ix, Unconnected)
-            case (x @ Loaded(a), Loaded(b)) if a < b ⇒ bestSlot(ix + 1, ix, x)
-            case (x @ Loaded(a), Busy) if a < pl     ⇒ bestSlot(ix + 1, ix, x)
-            case _                                   ⇒ bestSlot(ix + 1, bestIx, bestState)
+          slotStates(ix) -> bestState match {
+            case (Idle, _)                           => ix
+            case (Unconnected, Loaded(_) | Busy)     => bestSlot(ix + 1, ix, Unconnected)
+            case (x @ Loaded(a), Loaded(b)) if a < b => bestSlot(ix + 1, ix, x)
+            case (x @ Loaded(a), Busy) if a < pl     => bestSlot(ix + 1, ix, x)
+            case _                                   => bestSlot(ix + 1, bestIx, bestState)
           }
         } else bestIx
     }
@@ -258,7 +258,7 @@ private object PoolConductor {
           emit(shape.outlets(switchCommand.slotIx), switchCommand.cmd, pullIn)
         }
       })
-      val pullIn = () ⇒ pull(in)
+      val pullIn = () => pull(in)
 
       override def preStart(): Unit = pullIn()
     }

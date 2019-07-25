@@ -6,47 +6,46 @@ package docs.http.scaladsl
 
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 
-//#bindAndHandleAsync
+//#bindAndHandleSecure
 import scala.concurrent.Future
 
 import akka.http.scaladsl.{ Http, HttpsConnectionContext }
-//#bindAndHandleAsync
+//#bindAndHandleSecure
 
-//#bindAndHandleAsync
-//#bindAndHandleWithoutNegotiation
+//#bindAndHandleSecure
+//#bindAndHandlePlain
 import akka.http.scaladsl.Http2
-//#bindAndHandleWithoutNegotiation
+//#bindAndHandlePlain
 
-//#bindAndHandleAsync
+//#bindAndHandleSecure
 
-//#bindAndHandleWithoutNegotiation
+//#bindAndHandlePlain
 import akka.http.scaladsl.HttpConnectionContext
-import akka.http.scaladsl.UseHttp2.Always
 
-//#bindAndHandleWithoutNegotiation
+//#bindAndHandlePlain
 
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 
 object Http2Spec {
-  val asyncHandler: HttpRequest ⇒ Future[HttpResponse] = ???
+  val asyncHandler: HttpRequest => Future[HttpResponse] = ???
   val httpsServerContext: HttpsConnectionContext = ???
   implicit val system: ActorSystem = ???
   implicit val materializer: Materializer = ???
 
-  //#bindAndHandleAsync
+  //#bindAndHandleSecure
   Http().bindAndHandleAsync(
     asyncHandler,
     interface = "localhost",
     port = 8443,
     httpsServerContext)
-  //#bindAndHandleAsync
+  //#bindAndHandleSecure
 
-  //#bindAndHandleWithoutNegotiation
+  //#bindAndHandlePlain
   Http2().bindAndHandleAsync(
     asyncHandler,
     interface = "localhost",
     port = 8080,
-    connectionContext = HttpConnectionContext(http2 = Always))
-  //#bindAndHandleWithoutNegotiation
+    connectionContext = HttpConnectionContext())
+  //#bindAndHandlePlain
 }

@@ -9,7 +9,7 @@ import akka.annotation.ApiMayChange
 import scala.annotation.{ tailrec, varargs }
 import scala.collection.immutable
 import akka.http.impl.util._
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 import akka.http.ccompat.{ pre213, since213 }
 
 sealed trait CacheDirective extends Renderable with jm.headers.CacheDirective {
@@ -23,8 +23,8 @@ object CacheDirective {
   final case class CustomCacheDirective(name: String, content: Option[String])
     extends RequestDirective with ResponseDirective with ValueRenderable {
     def render[R <: Rendering](r: R): r.type = content match {
-      case Some(s) ⇒ r ~~ name ~~ '=' ~~# s
-      case None    ⇒ r ~~ name
+      case Some(s) => r ~~ name ~~ '=' ~~# s
+      case None    => r ~~ name
     }
   }
 
@@ -65,8 +65,8 @@ object CacheDirectives {
    */
   final case class `max-stale`(deltaSeconds: Option[Long]) extends RequestDirective with ValueRenderable {
     def render[R <: Rendering](r: R): r.type = deltaSeconds match {
-      case Some(s) ⇒ r ~~ productPrefix ~~ '=' ~~ s
-      case None    ⇒ r ~~ productPrefix
+      case Some(s) => r ~~ productPrefix ~~ '=' ~~ s
+      case None    => r ~~ productPrefix
     }
   }
 

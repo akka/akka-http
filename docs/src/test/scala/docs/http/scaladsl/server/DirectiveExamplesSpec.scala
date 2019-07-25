@@ -9,22 +9,22 @@ import docs.CompileOnlySpec
 
 class DirectiveExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
-  // format: OFF
-
   "example-1" in {
     //#example-1
     val route: Route =
       path("order" / IntNumber) { id =>
-        get {
-          complete {
-            "Received GET request for order " + id
+        concat(
+          get {
+            complete {
+              "Received GET request for order " + id
+            }
+          },
+          put {
+            complete {
+              "Received PUT request for order " + id
+            }
           }
-        } ~
-        put {
-          complete {
-            "Received PUT request for order " + id
-          }
-        }
+        )
       }
     verify(route) // #hide
     //#example-1
@@ -33,16 +33,18 @@ class DirectiveExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "example-2" in {
     //#getOrPut
     def innerRoute(id: Int): Route =
-      get {
-        complete {
-          "Received GET request for order " + id
+      concat(
+        get {
+          complete {
+            "Received GET request for order " + id
+          }
+        },
+        put {
+          complete {
+            "Received PUT request for order " + id
+          }
         }
-      } ~
-      put {
-        complete {
-          "Received PUT request for order " + id
-        }
-      }
+      )
 
     val route: Route = path("order" / IntNumber) { id => innerRoute(id) }
     verify(route) // #hide
@@ -116,16 +118,16 @@ class DirectiveExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "example-8" in {
     //#example-8
     def innerRoute(id: Int): Route =
-      concat(get {
+      get {
         complete {
           "Received GET request for order " + id
         }
-      },
-      put {
-        complete {
-          "Received PUT request for order " + id
+      } ~
+        put {
+          complete {
+            "Received PUT request for order " + id
+          }
         }
-      })
 
     val route: Route = path("order" / IntNumber) { id => innerRoute(id) }
     verify(route) // #hide

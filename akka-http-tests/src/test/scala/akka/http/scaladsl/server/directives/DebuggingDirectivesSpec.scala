@@ -81,9 +81,9 @@ class DebuggingDirectivesSpec extends RoutingSpec {
       }
     }
     "be able to log only rejections" in {
-      val rejectionLogger: HttpRequest ⇒ RouteResult ⇒ Option[LogEntry] = req ⇒ {
-        case Rejected(rejections) ⇒ Some(LogEntry(s"Request: $req\nwas rejected with rejections:\n$rejections", Logging.DebugLevel))
-        case _                    ⇒ None
+      val rejectionLogger: HttpRequest => RouteResult => Option[LogEntry] = req => {
+        case Rejected(rejections) => Some(LogEntry(s"Request: $req\nwas rejected with rejections:\n$rejections", Logging.DebugLevel))
+        case _                    => None
       }
 
       val route =

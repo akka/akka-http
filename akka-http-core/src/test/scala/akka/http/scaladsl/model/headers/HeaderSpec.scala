@@ -161,7 +161,7 @@ class HeaderSpec extends FreeSpec with Matchers {
         `X-Forwarded-Proto`("https"),
         `X-Real-Ip`(RemoteAddress(InetAddress.getByName("192.168.1.1"))))
 
-      requestHeaders.foreach { header ⇒
+      requestHeaders.foreach { header =>
         header shouldBe 'renderInRequests
       }
     }
@@ -204,7 +204,7 @@ class HeaderSpec extends FreeSpec with Matchers {
         `WWW-Authenticate`(HttpChallenge("Basic", Some("example.com"))),
         `Retry-After`(120))
 
-      responseHeaders.foreach { header ⇒
+      responseHeaders.foreach { header =>
         header shouldBe 'renderInResponses
       }
     }

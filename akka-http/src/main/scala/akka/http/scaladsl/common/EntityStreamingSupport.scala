@@ -5,7 +5,7 @@
 package akka.http.scaladsl.common
 
 import akka.NotUsed
-import akka.http.javadsl.{ common, model ⇒ jm }
+import akka.http.javadsl.{ common, model => jm }
 import akka.http.scaladsl.model._
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString

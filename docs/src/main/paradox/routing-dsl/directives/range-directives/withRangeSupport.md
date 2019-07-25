@@ -25,8 +25,8 @@ lie closer together than the specified `rangeCoalescingThreshold` argument.
 
 In order to prevent the server from becoming overloaded with trying to prepare `multipart/byteranges` responses for
 high numbers of potentially very small ranges the directive rejects requests requesting more than `rangeCountLimit`
-ranges with a @unidoc[TooManyRangesRejection].
-Requests with unsatisfiable ranges are rejected with an @unidoc[UnsatisfiableRangeRejection].
+ranges with a @apidoc[TooManyRangesRejection].
+Requests with unsatisfiable ranges are rejected with an @apidoc[UnsatisfiableRangeRejection].
 
 The `withRangeSupport()` form (without parameters) uses the `range-coalescing-threshold` and `range-count-limit`
 settings from the `akka.http.routing` configuration.

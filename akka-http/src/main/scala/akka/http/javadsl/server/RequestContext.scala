@@ -18,7 +18,7 @@ import akka.http.javadsl.model.StatusCode
 import akka.http.javadsl.model.Uri
 import akka.http.javadsl.model.headers.Location
 import java.util.concurrent.CompletionStage
-import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.{ Function => JFunction }
 
 import akka.annotation.InternalApi
 import akka.http.scaladsl
@@ -49,18 +49,18 @@ class RequestContext private (val delegate: scaladsl.server.RequestContext) {
 
   def complete[T](value: T, marshaller: Marshaller[T, HttpResponse]): CompletionStage[RouteResult] = {
     delegate.complete(ToResponseMarshallable(value)(marshaller))
-      .fast.map(r ⇒ r: RouteResult)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext).toJava
+      .fast.map(r => r: RouteResult)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext).toJava
   }
 
   def completeWith(response: HttpResponse): CompletionStage[RouteResult] = {
     delegate.complete(response.asScala)
-      .fast.map(r ⇒ r: RouteResult)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext).toJava
+      .fast.map(r => r: RouteResult)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext).toJava
   }
 
   @varargs def reject(rejections: Rejection*): CompletionStage[RouteResult] = {
     val scalaRejections = rejections.map(_.asScala)
     delegate.reject(scalaRejections: _*)
-      .fast.map(r ⇒ r: RouteResult)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext).toJava
+      .fast.map(r => r: RouteResult)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext).toJava
   }
 
   def redirect(uri: Uri, redirectionType: StatusCode): CompletionStage[RouteResult] = {
@@ -69,7 +69,7 @@ class RequestContext private (val delegate: scaladsl.server.RequestContext) {
 
   def fail(error: Throwable): CompletionStage[RouteResult] =
     delegate.fail(error)
-      .fast.map(r ⇒ r: RouteResult)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext).toJava
+      .fast.map(r => r: RouteResult)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext).toJava
 
   def withRequest(req: HttpRequest): RequestContext = wrap(delegate.withRequest(req.asScala))
   def withExecutionContext(ec: ExecutionContextExecutor): RequestContext = wrap(delegate.withExecutionContext(ec))
@@ -78,9 +78,9 @@ class RequestContext private (val delegate: scaladsl.server.RequestContext) {
   def withRoutingSettings(settings: RoutingSettings): RequestContext = wrap(delegate.withRoutingSettings(settings.asScala))
   def withParserSettings(settings: ParserSettings): RequestContext = wrap(delegate.withParserSettings(settings.asScala))
 
-  def mapRequest(f: JFunction[HttpRequest, HttpRequest]): RequestContext = wrap(delegate.mapRequest(r ⇒ f.apply(r.asJava).asScala))
+  def mapRequest(f: JFunction[HttpRequest, HttpRequest]): RequestContext = wrap(delegate.mapRequest(r => f.apply(r.asJava).asScala))
   def withUnmatchedPath(path: String): RequestContext = wrap(delegate.withUnmatchedPath(Path(path)))
-  def mapUnmatchedPath(f: JFunction[String, String]): RequestContext = wrap(delegate.mapUnmatchedPath(p ⇒ Path(f.apply(p.toString()))))
+  def mapUnmatchedPath(f: JFunction[String, String]): RequestContext = wrap(delegate.mapUnmatchedPath(p => Path(f.apply(p.toString()))))
   def withAcceptAll: RequestContext = wrap(delegate.withAcceptAll)
 }
 

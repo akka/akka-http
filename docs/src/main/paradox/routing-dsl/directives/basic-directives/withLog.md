@@ -10,7 +10,7 @@
 
 ## Description
 
-Allows running an inner route using an alternative @unidoc[LoggingAdapter] in place of the default one.
+Allows running an inner route using an alternative @apidoc[LoggingAdapter] in place of the default one.
 
 The logging adapter can be extracted in an inner route using @ref[extractLog](extractLog.md) directly,
 or used by directives which internally extract the materializer without surfacing this fact in the API.

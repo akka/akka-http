@@ -270,8 +270,8 @@ private[pool] object SlotState {
       ctx.dispatchResponseResult(ongoingRequest, result)
 
       result match {
-        case Success(res)   ⇒ WaitingForResponseEntitySubscription(ongoingRequest, res, ctx.settings.responseEntitySubscriptionTimeout, waitingForEndOfRequestEntity)
-        case Failure(cause) ⇒ Unconnected
+        case Success(res)   => WaitingForResponseEntitySubscription(ongoingRequest, res, ctx.settings.responseEntitySubscriptionTimeout, waitingForEndOfRequestEntity)
+        case Failure(cause) => Unconnected
       }
     }
   }

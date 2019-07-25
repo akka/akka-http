@@ -13,7 +13,7 @@ import akka.annotation.InternalApi
 @InternalApi
 private[http] object Randoms {
   /** A factory that creates SecureRandom instances */
-  private[http] case object SecureRandomInstances extends (() ⇒ Random) {
+  private[http] case object SecureRandomInstances extends (() => Random) {
     override def apply(): Random = new SecureRandom()
   }
 }

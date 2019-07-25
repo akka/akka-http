@@ -11,7 +11,7 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.{ MediaRange, MediaRanges }
 import akka.http.impl.util._
 
-private[parser] trait AcceptHeader { this: Parser with CommonRules with CommonActions ⇒
+private[parser] trait AcceptHeader { this: Parser with CommonRules with CommonActions =>
   import CharacterClasses._
 
   // http://tools.ietf.org/html/rfc7231#section-5.3.2
@@ -20,12 +20,12 @@ private[parser] trait AcceptHeader { this: Parser with CommonRules with CommonAc
   }
 
   def `media-range-decl` = rule {
-    `media-range-def` ~ OWS ~ zeroOrMore(ws(';') ~ parameter) ~> { (main, sub, params) ⇒
+    `media-range-def` ~ OWS ~ zeroOrMore(ws(';') ~ parameter) ~> { (main, sub, params) =>
       if (sub == "*") {
         val mainLower = main.toRootLowerCase
         MediaRanges.getForKey(mainLower) match {
-          case Some(registered) ⇒ if (params.isEmpty) registered else registered.withParams(TreeMap(params: _*))
-          case None             ⇒ MediaRange.custom(mainLower, TreeMap(params: _*))
+          case Some(registered) => if (params.isEmpty) registered else registered.withParams(TreeMap(params: _*))
+          case None             => MediaRange.custom(mainLower, TreeMap(params: _*))
         }
       } else {
         val (p, q) = MediaRange.splitOffQValue(TreeMap(params: _*))

@@ -21,7 +21,7 @@ The signature shown is simplified and written in pseudo-syntax, the real signatu
 Evaluates its parameter of type @scala[`Future[T]`]@java[`CompletionStage<T>`], and once it has been completed successfully,
 extracts its result as a value of type `T` and passes it to the inner route.
 
-If the future fails its failure throwable is bubbled up to the nearest @unidoc[ExceptionHandler].
+If the future fails its failure throwable is bubbled up to the nearest @apidoc[ExceptionHandler].
 
 To handle the `Failure` case manually as well, use @ref[onComplete](onComplete.md), instead.
 

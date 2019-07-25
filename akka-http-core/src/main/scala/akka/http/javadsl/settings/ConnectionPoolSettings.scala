@@ -7,14 +7,11 @@ package akka.http.javadsl.settings
 import akka.actor.ActorSystem
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
-import com.typesafe.config.Config
-
-import scala.concurrent.duration.Duration
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.ClientTransport
-import akka.http.scaladsl.settings.ConnectionPoolSettings
+import com.typesafe.config.Config
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 @ApiMayChange
 trait PoolImplementation
@@ -28,7 +25,7 @@ object PoolImplementation {
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSettingsImpl ⇒
+abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSettingsImpl =>
   def getMaxConnections: Int = maxConnections
   def getMinConnections: Int = minConnections
   def getMaxRetries: Int = maxRetries

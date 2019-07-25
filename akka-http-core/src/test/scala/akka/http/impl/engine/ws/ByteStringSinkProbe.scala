@@ -36,7 +36,7 @@ private[http] trait ByteStringSinkProbe {
   def request(n: Long): Unit
   def cancel(): Unit
 
-  def within[T](max: FiniteDuration)(f: ⇒ T): T
+  def within[T](max: FiniteDuration)(f: => T): T
 }
 
 /** INTERNAL API */
@@ -97,6 +97,6 @@ private[http] object ByteStringSinkProbe {
       def request(n: Long): Unit = probe.request(n)
       def cancel(): Unit = probe.cancel()
 
-      def within[T](max: FiniteDuration)(f: ⇒ T): T = probe.within(max)(f)
+      def within[T](max: FiniteDuration)(f: => T): T = probe.within(max)(f)
     }
 }

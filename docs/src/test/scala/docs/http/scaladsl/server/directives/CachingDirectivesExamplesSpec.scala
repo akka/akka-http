@@ -14,7 +14,6 @@ import akka.http.scaladsl.server.directives.CachingDirectives._
 //#always-cache
 //#cache
 import akka.http.scaladsl.model.HttpMethods.GET
-import scala.concurrent.duration._
 
 class CachingDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
@@ -27,11 +26,11 @@ class CachingDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
     //Example keyer for non-authenticated GET requests
     val simpleKeyer: PartialFunction[RequestContext, Uri] = {
-      val isGet: RequestContext ⇒ Boolean = _.request.method == GET
-      val isAuthorized: RequestContext ⇒ Boolean =
+      val isGet: RequestContext => Boolean = _.request.method == GET
+      val isAuthorized: RequestContext => Boolean =
         _.request.headers.exists(_.is(Authorization.lowercaseName))
       val result: PartialFunction[RequestContext, Uri] = {
-        case r: RequestContext if isGet(r) && !isAuthorized(r) ⇒ r.request.uri
+        case r: RequestContext if isGet(r) && !isAuthorized(r) => r.request.uri
       }
       result
     }
@@ -73,11 +72,11 @@ class CachingDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
     //Example keyer for non-authenticated GET requests
     val simpleKeyer: PartialFunction[RequestContext, Uri] = {
-      val isGet: RequestContext ⇒ Boolean = _.request.method == GET
-      val isAuthorized: RequestContext ⇒ Boolean =
+      val isGet: RequestContext => Boolean = _.request.method == GET
+      val isAuthorized: RequestContext => Boolean =
         _.request.headers.exists(_.is(Authorization.lowercaseName))
       val result: PartialFunction[RequestContext, Uri] = {
-        case r: RequestContext if isGet(r) && !isAuthorized(r) ⇒ r.request.uri
+        case r: RequestContext if isGet(r) && !isAuthorized(r) => r.request.uri
       }
       result
     }
@@ -137,10 +136,11 @@ class CachingDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     import akka.http.scaladsl.server.RouteResult
     import akka.http.scaladsl.model.Uri
     import akka.http.scaladsl.server.directives.CachingDirectives._
+    import scala.concurrent.duration._
 
     // Use the request's URI as the cache's key
     val keyerFunction: PartialFunction[RequestContext, Uri] = {
-      case r: RequestContext ⇒ r.request.uri
+      case r: RequestContext => r.request.uri
     }
     //#keyer-function
 

@@ -29,7 +29,7 @@ trait HeaderDirectives {
    * @group header
    */
   def checkSameOrigin(allowed: HttpOriginRange.Default): Directive0 = {
-    headerValueByType[Origin](()).flatMap { origin ⇒
+    headerValueByType[Origin](()).flatMap { origin =>
       if (origin.origins.exists(allowed.matches)) pass
       else reject(InvalidOriginRejection(allowed.origins))
     }
@@ -42,17 +42,17 @@ trait HeaderDirectives {
    *
    * @group header
    */
-  def headerValue[T](f: HttpHeader ⇒ Option[T]): Directive1[T] = {
-    val protectedF: HttpHeader ⇒ Option[Either[Rejection, T]] = header ⇒
+  def headerValue[T](f: HttpHeader => Option[T]): Directive1[T] = {
+    val protectedF: HttpHeader => Option[Either[Rejection, T]] = header =>
       try f(header).map(Right.apply)
       catch {
-        case NonFatal(e) ⇒ Some(Left(MalformedHeaderRejection(header.name, e.getMessage.nullAsEmpty, Some(e))))
+        case NonFatal(e) => Some(Left(MalformedHeaderRejection(header.name, e.getMessage.nullAsEmpty, Some(e))))
       }
 
     extract(_.request.headers.collectFirst(Function.unlift(protectedF))).flatMap {
-      case Some(Right(a))        ⇒ provide(a)
-      case Some(Left(rejection)) ⇒ reject(rejection)
-      case None                  ⇒ reject
+      case Some(Right(a))        => provide(a)
+      case Some(Left(rejection)) => reject(rejection)
+      case None                  => reject
     }
   }
 
@@ -101,9 +101,9 @@ trait HeaderDirectives {
    * @group header
    */
   //#optionalHeaderValue
-  def optionalHeaderValue[T](f: HttpHeader ⇒ Option[T]): Directive1[Option[T]] =
+  def optionalHeaderValue[T](f: HttpHeader => Option[T]): Directive1[Option[T]] =
     headerValue(f).map(Some(_): Option[T]).recoverPF {
-      case Nil ⇒ provide(None)
+      case Nil => provide(None)
     }
   //#optionalHeaderValue
 
@@ -133,7 +133,7 @@ trait HeaderDirectives {
   def optionalHeaderValueByName(headerName: String): Directive1[Option[String]] = {
     val lowerCaseName = headerName.toLowerCase
     extract(_.request.headers.collectFirst {
-      case HttpHeader(`lowerCaseName`, value) ⇒ value
+      case HttpHeader(`lowerCaseName`, value) => value
     })
   }
 
@@ -148,9 +148,9 @@ trait HeaderDirectives {
   def optionalHeaderValueByType[T <: HttpHeader](magnet: HeaderMagnet[T]): Directive1[Option[T]] =
     optionalHeaderValuePF(magnet.extractPF)
 
-  private def optionalValue(lowerCaseName: String): HttpHeader ⇒ Option[String] = {
-    case HttpHeader(`lowerCaseName`, value) ⇒ Some(value)
-    case _                                  ⇒ None
+  private def optionalValue(lowerCaseName: String): HttpHeader => Option[String] = {
+    case HttpHeader(`lowerCaseName`, value) => Some(value)
+    case _                                  => None
   }
 }
 
@@ -159,7 +159,7 @@ object HeaderDirectives extends HeaderDirectives
 trait HeaderMagnet[T] {
   def classTag: ClassTag[T]
   def runtimeClass: Class[T]
-  def headerName = ModeledCompanion.nameFromClass(runtimeClass)
+  def headerName: String = ModeledCompanion.nameFromClass(runtimeClass)
 
   /**
    * Returns a partial function that checks if the input value is of runtime type
@@ -181,11 +181,12 @@ object HeaderMagnet extends LowPriorityHeaderMagnetImplicits {
 
   implicit def fromClassTagForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]](tag: ClassTag[T], companion: ModeledCustomHeaderCompanion[T]): HeaderMagnet[T] =
     new HeaderMagnet[T] {
-      override def runtimeClass = tag.runtimeClass.asInstanceOf[Class[T]]
-      override def classTag = tag
-      override def extractPF = {
-        case h if h.is(companion.lowercaseName) ⇒ companion.apply(h.value)
+      override def classTag: ClassTag[T] = tag
+      override def runtimeClass: Class[T] = tag.runtimeClass.asInstanceOf[Class[T]]
+      override def extractPF: PartialFunction[HttpHeader, T] = {
+        case h if h.is(companion.lowercaseName) => companion.apply(h.value)
       }
+      override def headerName: String = companion.name
     }
 
 }
@@ -199,7 +200,9 @@ trait LowPriorityHeaderMagnetImplicits {
     new HeaderMagnet[T] {
       override def classTag: ClassTag[T] = ClassTag(clazz)
       override def runtimeClass: Class[T] = clazz
-      override def extractPF: PartialFunction[HttpHeader, T] = { case x if runtimeClass.isAssignableFrom(x.getClass) ⇒ x.asInstanceOf[T] }
+      override def extractPF: PartialFunction[HttpHeader, T] = {
+        case x if runtimeClass.isAssignableFrom(x.getClass) => x.asInstanceOf[T]
+      }
     }
 
   implicit def fromUnitNormalHeader[T <: HttpHeader](u: Unit)(implicit tag: ClassTag[T]): HeaderMagnet[T] =
@@ -209,6 +212,8 @@ trait LowPriorityHeaderMagnetImplicits {
     new HeaderMagnet[T] {
       val classTag: ClassTag[T] = tag
       val runtimeClass: Class[T] = tag.runtimeClass.asInstanceOf[Class[T]]
-      val extractPF: PartialFunction[Any, T] = { case x if runtimeClass.isAssignableFrom(x.getClass) ⇒ x.asInstanceOf[T] }
+      val extractPF: PartialFunction[Any, T] = {
+        case x if runtimeClass.isAssignableFrom(x.getClass) => x.asInstanceOf[T]
+      }
     }
 }

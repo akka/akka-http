@@ -5,6 +5,8 @@
 package akka.http.scaladsl.server
 package directives
 
+import java.util.concurrent.TimeoutException
+
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
@@ -33,43 +35,43 @@ trait BasicDirectives {
   /**
    * @group basic
    */
-  def mapInnerRoute(f: Route ⇒ Route): Directive0 =
-    Directive { inner ⇒ f(inner(())) }
+  def mapInnerRoute(f: Route => Route): Directive0 =
+    Directive { inner => f(inner(())) }
 
   /**
    * @group basic
    */
-  def mapRequestContext(f: RequestContext ⇒ RequestContext): Directive0 =
-    mapInnerRoute { inner ⇒ ctx ⇒ inner(f(ctx)) }
+  def mapRequestContext(f: RequestContext => RequestContext): Directive0 =
+    mapInnerRoute { inner => ctx => inner(f(ctx)) }
 
   /**
    * @group basic
    */
-  def mapRequest(f: HttpRequest ⇒ HttpRequest): Directive0 =
+  def mapRequest(f: HttpRequest => HttpRequest): Directive0 =
     mapRequestContext(_ mapRequest f)
 
   /**
    * @group basic
    */
-  def mapRouteResultFuture(f: Future[RouteResult] ⇒ Future[RouteResult]): Directive0 =
-    Directive { inner ⇒ ctx ⇒
+  def mapRouteResultFuture(f: Future[RouteResult] => Future[RouteResult]): Directive0 =
+    Directive { inner => ctx =>
       // Convert any exceptions that happened in the inner route to failed futures so the handler
       // can handle those as well.
-      val innerResult = try inner(())(ctx) catch { case NonFatal(ex) ⇒ FastFuture.failed(ex) }
+      val innerResult = try inner(())(ctx) catch { case NonFatal(ex) => FastFuture.failed(ex) }
       f(innerResult)
     }
 
   /**
    * @group basic
    */
-  def mapRouteResult(f: RouteResult ⇒ RouteResult): Directive0 =
-    Directive { inner ⇒ ctx ⇒ inner(())(ctx).fast.map(f)(ctx.executionContext) }
+  def mapRouteResult(f: RouteResult => RouteResult): Directive0 =
+    Directive { inner => ctx => inner(())(ctx).fast.map(f)(ctx.executionContext) }
 
   /**
    * @group basic
    */
-  def mapRouteResultWith(f: RouteResult ⇒ Future[RouteResult]): Directive0 =
-    Directive { inner ⇒ ctx ⇒ inner(())(ctx).fast.flatMap(f)(ctx.executionContext) }
+  def mapRouteResultWith(f: RouteResult => Future[RouteResult]): Directive0 =
+    Directive { inner => ctx => inner(())(ctx).fast.flatMap(f)(ctx.executionContext) }
 
   /**
    * @group basic
@@ -86,37 +88,37 @@ trait BasicDirectives {
   /**
    * @group basic
    */
-  def recoverRejections(f: immutable.Seq[Rejection] ⇒ RouteResult): Directive0 =
-    mapRouteResultPF { case RouteResult.Rejected(rejections) ⇒ f(rejections) }
+  def recoverRejections(f: immutable.Seq[Rejection] => RouteResult): Directive0 =
+    mapRouteResultPF { case RouteResult.Rejected(rejections) => f(rejections) }
 
   /**
    * @group basic
    */
-  def recoverRejectionsWith(f: immutable.Seq[Rejection] ⇒ Future[RouteResult]): Directive0 =
-    mapRouteResultWithPF { case RouteResult.Rejected(rejections) ⇒ f(rejections) }
+  def recoverRejectionsWith(f: immutable.Seq[Rejection] => Future[RouteResult]): Directive0 =
+    mapRouteResultWithPF { case RouteResult.Rejected(rejections) => f(rejections) }
 
   /**
    * @group basic
    */
-  def mapRejections(f: immutable.Seq[Rejection] ⇒ immutable.Seq[Rejection]): Directive0 =
-    recoverRejections(rejections ⇒ RouteResult.Rejected(f(rejections)))
+  def mapRejections(f: immutable.Seq[Rejection] => immutable.Seq[Rejection]): Directive0 =
+    recoverRejections(rejections => RouteResult.Rejected(f(rejections)))
 
   /**
    * @group basic
    */
-  def mapResponse(f: HttpResponse ⇒ HttpResponse): Directive0 =
-    mapRouteResultPF { case RouteResult.Complete(response) ⇒ RouteResult.Complete(f(response)) }
+  def mapResponse(f: HttpResponse => HttpResponse): Directive0 =
+    mapRouteResultPF { case RouteResult.Complete(response) => RouteResult.Complete(f(response)) }
 
   /**
    * @group basic
    */
-  def mapResponseEntity(f: ResponseEntity ⇒ ResponseEntity): Directive0 =
+  def mapResponseEntity(f: ResponseEntity => ResponseEntity): Directive0 =
     mapResponse(_ mapEntity f)
 
   /**
    * @group basic
    */
-  def mapResponseHeaders(f: immutable.Seq[HttpHeader] ⇒ immutable.Seq[HttpHeader]): Directive0 =
+  def mapResponseHeaders(f: immutable.Seq[HttpHeader] => immutable.Seq[HttpHeader]): Directive0 =
     mapResponse(_ mapHeaders f)
 
   /**
@@ -147,16 +149,16 @@ trait BasicDirectives {
    *
    * @group basic
    */
-  def extract[T](f: RequestContext ⇒ T): Directive1[T] =
-    textract(ctx ⇒ Tuple1(f(ctx)))
+  def extract[T](f: RequestContext => T): Directive1[T] =
+    textract(ctx => Tuple1(f(ctx)))
 
   /**
    * Extracts a number of values using the given function.
    *
    * @group basic
    */
-  def textract[L: Tuple](f: RequestContext ⇒ L): Directive[L] =
-    Directive { inner ⇒ ctx ⇒ inner(f(ctx))(ctx) }
+  def textract[L: Tuple](f: RequestContext => L): Directive[L] =
+    Directive { inner => ctx => inner(f(ctx))(ctx) }
 
   /**
    * Adds a TransformationRejection cancelling all rejections equal to the given one
@@ -174,7 +176,7 @@ trait BasicDirectives {
    * @group basic
    */
   def cancelRejections(classes: Class[_]*): Directive0 =
-    cancelRejections(r ⇒ classes.exists(_ isInstance r))
+    cancelRejections(r => classes.exists(_ isInstance r))
 
   /**
    * Adds a TransformationRejection cancelling all rejections for which the given filter function returns true
@@ -182,7 +184,7 @@ trait BasicDirectives {
    *
    * @group basic
    */
-  def cancelRejections(cancelFilter: Rejection ⇒ Boolean): Directive0 =
+  def cancelRejections(cancelFilter: Rejection => Boolean): Directive0 =
     mapRejections(_ :+ TransformationRejection(_ filterNot cancelFilter))
 
   /**
@@ -190,7 +192,7 @@ trait BasicDirectives {
    *
    * @group basic
    */
-  def mapUnmatchedPath(f: Uri.Path ⇒ Uri.Path): Directive0 =
+  def mapUnmatchedPath(f: Uri.Path => Uri.Path): Directive0 =
     mapRequestContext(_ mapUnmatchedPath f)
 
   /**
@@ -257,7 +259,7 @@ trait BasicDirectives {
    *
    * @group basic
    */
-  def extractActorSystem: Directive1[ActorSystem] = extract { ctx ⇒
+  def extractActorSystem: Directive1[ActorSystem] = extract { ctx =>
     ActorMaterializerHelper.downcast(ctx.materializer).system
   }
 
@@ -290,8 +292,8 @@ trait BasicDirectives {
    *
    * @group basic
    */
-  def mapSettings(f: RoutingSettings ⇒ RoutingSettings): Directive0 =
-    mapRequestContext(ctx ⇒ ctx.withRoutingSettings(f(ctx.settings)))
+  def mapSettings(f: RoutingSettings => RoutingSettings): Directive0 =
+    mapRequestContext(ctx => ctx.withRoutingSettings(f(ctx.settings)))
 
   /**
    * Extracts the [[RoutingSettings]] from the [[akka.http.scaladsl.server.RequestContext]].
@@ -375,7 +377,7 @@ trait BasicDirectives {
    * @group basic
    */
   def toStrictEntity(timeout: FiniteDuration): Directive0 =
-    extractParserSettings flatMap { settings ⇒
+    extractParserSettings flatMap { settings =>
       toStrictEntity(timeout, settings.maxToStrictBytes)
     }
 
@@ -392,10 +394,15 @@ trait BasicDirectives {
    * @group basic
    */
   def toStrictEntity(timeout: FiniteDuration, maxBytes: Long): Directive0 =
-    Directive { inner ⇒ ctx ⇒
+    Directive { inner => ctx =>
       import ctx.{ executionContext, materializer }
 
-      ctx.request.entity.toStrict(timeout, maxBytes).flatMap { strictEntity ⇒
+      ctx.request.entity.toStrict(timeout, maxBytes).recover {
+        case _: TimeoutException =>
+          throw IllegalRequestException(
+            StatusCodes.RequestTimeout,
+            ErrorInfo(s"Request timed out after $timeout while waiting for entity data", "Consider increasing the timeout for toStrict"))
+      }.flatMap { strictEntity =>
         val newCtx = ctx.mapRequest(_.copy(entity = strictEntity))
         inner(())(newCtx)
       }

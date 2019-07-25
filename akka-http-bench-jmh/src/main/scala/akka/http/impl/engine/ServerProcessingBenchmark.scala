@@ -41,7 +41,7 @@ class ServerProcessingBenchmark {
     Source.repeat(request)
       .take(numRequests)
       .via(httpFlow)
-      .runForeach(_ ⇒ latch.countDown())
+      .runForeach(_ => latch.countDown())
 
     latch.await()
   }
@@ -58,7 +58,7 @@ class ServerProcessingBenchmark {
     ec = system.dispatcher
     mat = ActorMaterializer()
     httpFlow =
-      Flow[HttpRequest].map(_ ⇒ response) join
+      Flow[HttpRequest].map(_ => response) join
         (HttpServerBluePrint(ServerSettings(system), NoLogging, false) atop
           TLSPlacebo())
   }

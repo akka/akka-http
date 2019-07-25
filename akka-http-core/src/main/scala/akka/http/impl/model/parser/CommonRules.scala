@@ -12,7 +12,7 @@ import akka.http.scaladsl.model.headers._
 import akka.parboiled2._
 import akka.shapeless._
 
-private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
+private[parser] trait CommonRules { this: Parser with StringBuilding =>
   import CharacterClasses._
 
   // ******************************************************************************************
@@ -81,7 +81,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
 
   def `IMF-fixdate` = rule { // mixture of the spec-ed `IMF-fixdate` and `rfc850-date`
     (`day-name-l` | `day-name`) ~ ", " ~ (date1 | date2) ~ ' ' ~ `time-of-day` ~ ' ' ~ ("GMT" | "UTC") ~> {
-      (wkday, day, month, year, hour, min, sec) ⇒ createDateTime(year, month, day, hour, min, sec, wkday)
+      (wkday, day, month, year, hour, min, sec) => createDateTime(year, month, day, hour, min, sec, wkday)
     }
   }
 
@@ -96,7 +96,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
     "Jan" ~ push(1) | "Feb" ~ push(2) | "Mar" ~ push(3) | "Apr" ~ push(4) | "May" ~ push(5) | "Jun" ~ push(6) | "Jul" ~ push(7) |
       "Aug" ~ push(8) | "Sep" ~ push(9) | "Oct" ~ push(10) | "Nov" ~ push(11) | "Dec" ~ push(12))
 
-  def year = rule { digit4 | digit2 ~> (y ⇒ if (y <= 69) y + 2000 else y + 1900) }
+  def year = rule { digit4 | digit2 ~> (y => if (y <= 69) y + 2000 else y + 1900) }
 
   def `time-of-day` = rule { hour ~ ':' ~ minute ~ ':' ~ second }
   def hour = rule { digit2 }
@@ -108,7 +108,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   // def `rfc850-date` = rule { `day-name-l` ~ ", " ~ date2 ~ ' ' ~ `time-of-day` ~ " GMT" }
 
   // per #17714, parse two digit year to https://tools.ietf.org/html/rfc6265#section-5.1.1
-  def date2 = rule { day ~ '-' ~ month ~ '-' ~ digit2 ~> (y ⇒ if (y <= 69) y + 2000 else y + 1900) }
+  def date2 = rule { day ~ '-' ~ month ~ '-' ~ (digit2 ~> (y => if (y <= 69) y + 2000 else y + 1900)) }
 
   def `day-name-l` = rule(
     "Sunday" ~ push(0) | "Monday" ~ push(1) | "Tuesday" ~ push(2) | "Wednesday" ~ push(3) | "Thursday" ~ push(4) |
@@ -116,7 +116,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
 
   def `asctime-date` = rule {
     `day-name` ~ ' ' ~ date3 ~ ' ' ~ `time-of-day` ~ ' ' ~ year ~> {
-      (wkday, month, day, hour, min, sec, year) ⇒ createDateTime(year, month, day, hour, min, sec, wkday)
+      (wkday, month, day, hour, min, sec, year) => createDateTime(year, month, day, hour, min, sec, wkday)
     }
   }
 
@@ -174,11 +174,11 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   def `token68` = rule { capture(oneOrMore(`token68-start`) ~ zeroOrMore('=')) ~ OWS }
 
   def challenge = rule {
-    `challenge-or-credentials` ~> { (scheme, tokenAndParams) ⇒
+    `challenge-or-credentials` ~> { (scheme, tokenAndParams) =>
       tokenAndParams match {
-        case ("", Nil)    ⇒ HttpChallenge(scheme, None)
-        case (token, Nil) ⇒ HttpChallenge(scheme, None, Map("" → token))
-        case (_, params) ⇒ {
+        case ("", Nil)    => HttpChallenge(scheme, None)
+        case (token, Nil) => HttpChallenge(scheme, None, Map("" -> token))
+        case (_, params) => {
           val (realms, otherParams) = params.partition(_._1 equalsIgnoreCase "realm")
           HttpChallenge(scheme, realms.headOption.map(_._2), TreeMap(otherParams: _*))
         }
@@ -188,8 +188,8 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
 
   def `challenge-or-credentials`: Rule2[String, (String, Seq[(String, String)])] = rule {
     `auth-scheme` ~ (
-      oneOrMore(`auth-param` ~> (_ → _)).separatedBy(listSep) ~> (x ⇒ ("", x))
-      | `token68` ~> (x ⇒ (x, Nil))
+      oneOrMore(`auth-param` ~> (_ -> _)).separatedBy(listSep) ~> (x => ("", x))
+      | `token68` ~> (x => (x, Nil))
       | push(("", Nil)))
   }
 
@@ -204,7 +204,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   // ******************************************************************************************
 
   def `entity-tag` = rule {
-    ("W/" ~ push(true) | push(false)) ~ `opaque-tag` ~> ((weak, tag) ⇒ EntityTag(tag, weak))
+    ("W/" ~ push(true) | push(false)) ~ `opaque-tag` ~> ((weak, tag) => EntityTag(tag, weak))
   }
 
   def `opaque-tag` = rule { '"' ~ capture(zeroOrMore(`etagc-base` | `obs-text`)) ~ '"' }
@@ -228,7 +228,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   }
 
   def `generic-credentials` = rule {
-    `challenge-or-credentials` ~> ((scheme, tokenAndParams) ⇒ {
+    `challenge-or-credentials` ~> ((scheme, tokenAndParams) => {
       val (token, params) = tokenAndParams
       GenericHttpCredentials(scheme, token, TreeMap(params: _*))
     })
@@ -270,15 +270,15 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   }
 
   def `expires-av` = rule {
-    ignoreCase("expires=") ~ OWS ~ `expires-date` ~> { (c: HttpCookie, dt: DateTime) ⇒ c.copy(expires = Some(dt)) }
+    ignoreCase("expires=") ~ OWS ~ `expires-date` ~> { (c: HttpCookie, dt: DateTime) => c.copy(expires = Some(dt)) }
   }
 
   def `max-age-av` = rule {
-    ignoreCase("max-age=") ~ OWS ~ longNumberCappedAtIntMaxValue ~> { (c: HttpCookie, seconds: Long) ⇒ c.copy(maxAge = Some(seconds)) }
+    ignoreCase("max-age=") ~ OWS ~ longNumberCappedAtIntMaxValue ~> { (c: HttpCookie, seconds: Long) => c.copy(maxAge = Some(seconds)) }
   }
 
   def `domain-av` = rule {
-    ignoreCase("domain=") ~ OWS ~ `domain-value` ~> { (c: HttpCookie, domainName: String) ⇒ c.copy(domain = Some(domainName)) }
+    ignoreCase("domain=") ~ OWS ~ `domain-value` ~> { (c: HttpCookie, domainName: String) => c.copy(domain = Some(domainName)) }
   }
 
   // https://tools.ietf.org/html/rfc1034#section-3.5 relaxed by https://tools.ietf.org/html/rfc1123#section-2
@@ -288,7 +288,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   }
 
   def `path-av` = rule {
-    ignoreCase("path=") ~ OWS ~ `path-value` ~> { (c: HttpCookie, pathValue: String) ⇒ c.copy(path = Some(pathValue)) }
+    ignoreCase("path=") ~ OWS ~ `path-value` ~> { (c: HttpCookie, pathValue: String) => c.copy(path = Some(pathValue)) }
   }
 
   // http://www.rfc-editor.org/errata_search.php?rfc=6265
@@ -297,11 +297,11 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   }
 
   def `secure-av` = rule {
-    ignoreCase("secure") ~ OWS ~> { (cookie: HttpCookie) ⇒ cookie.copy(secure = true) }
+    ignoreCase("secure") ~ OWS ~> { (cookie: HttpCookie) => cookie.copy(secure = true) }
   }
 
   def `httponly-av` = rule {
-    ignoreCase("httponly") ~ OWS ~> { (cookie: HttpCookie) ⇒ cookie.copy(httpOnly = true) }
+    ignoreCase("httponly") ~ OWS ~> { (cookie: HttpCookie) => cookie.copy(httpOnly = true) }
   }
 
   // http://www.rfc-editor.org/errata_search.php?rfc=6265
@@ -312,7 +312,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
       | ignoreCase("path=")
       | ignoreCase("secure")
       | ignoreCase("httponly")) ~
-      capture(zeroOrMore(`av-octet`)) ~ OWS ~> { (c: HttpCookie, s: String) ⇒ c.copy(extension = Some(s)) }
+      capture(zeroOrMore(`av-octet`)) ~ OWS ~> { (c: HttpCookie, s: String) => c.copy(extension = Some(s)) }
   }
 
   // ******************************************************************************************
@@ -405,10 +405,10 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
       | `transfer-extension`)
 
   def `transfer-extension` = rule {
-    token ~ zeroOrMore(ws(';') ~ `transfer-parameter`) ~> (p ⇒ TreeMap(p: _*)) ~> (TransferEncodings.Extension(_, _))
+    token ~ zeroOrMore(ws(';') ~ `transfer-parameter`) ~> (p => TreeMap(p: _*)) ~> (TransferEncodings.Extension(_, _))
   }
 
-  def `transfer-parameter` = rule { token ~ ws('=') ~ word ~> (_ → _) }
+  def `transfer-parameter` = rule { token ~ ws('=') ~ word ~> (_ -> _) }
 
   // ******************************************************************************************
   //                                    helpers
@@ -430,7 +430,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
 
   // parses a potentially long series of digits and extracts its Long value capping at Int.MaxValue in case of overflows
   def longNumberCappedAtIntMaxValue = rule {
-    capture((1 to 11).times(DIGIT)) ~> (s ⇒ math.min(s.toLong, Int.MaxValue)) ~ zeroOrMore(DIGIT) ~ OWS
+    capture((1 to 11).times(DIGIT)) ~> (s => math.min(s.toLong, Int.MaxValue)) ~ zeroOrMore(DIGIT) ~ OWS
   }
 
   // parses a potentially long series of digits and extracts its Long value capping at 999,999,999,999,999,999 in case of overflows
@@ -449,10 +449,10 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   }
 
   def httpMethodDef = rule {
-    token ~> { s ⇒
+    token ~> { s =>
       HttpMethods.getForKey(s) match {
-        case Some(m) ⇒ m
-        case None    ⇒ HttpMethod.custom(s)
+        case Some(m) => m
+        case None    => HttpMethod.custom(s)
       }
     }
   }

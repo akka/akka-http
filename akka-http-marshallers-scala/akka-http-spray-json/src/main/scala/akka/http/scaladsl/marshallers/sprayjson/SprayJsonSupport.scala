@@ -4,7 +4,7 @@
 
 package akka.http.scaladsl.marshallers.sprayjson
 
-import akka.http.javadsl.{ common, model ⇒ jm }
+import akka.http.javadsl.{ common, model => jm }
 import akka.NotUsed
 import akka.event.Logging
 import akka.http.scaladsl.common.EntityStreamingSupport
@@ -34,7 +34,7 @@ trait SprayJsonSupport {
       .andThen(sprayJsValueByteStringUnmarshaller)
 
   implicit def sprayJsValueByteStringUnmarshaller[T]: FromByteStringUnmarshaller[JsValue] =
-    Unmarshaller.withMaterializer[ByteString, JsValue](_ ⇒ _ ⇒ { bs ⇒
+    Unmarshaller.withMaterializer[ByteString, JsValue](_ => _ => { bs =>
       // .compact so addressing into any address is very fast (also for large chunks)
       // TODO we could optimise ByteStrings to better handle linear access like this (or provide ByteStrings.linearAccessOptimised)
       // TODO IF it's worth it.
@@ -46,7 +46,7 @@ trait SprayJsonSupport {
 
   // support for as[Source[T, NotUsed]]
   implicit def sprayJsonSourceReader[T](implicit reader: RootJsonReader[T], support: EntityStreamingSupport): FromEntityUnmarshaller[Source[T, NotUsed]] =
-    Unmarshaller.withMaterializer { implicit ec ⇒ implicit mat ⇒ e ⇒
+    Unmarshaller.withMaterializer { implicit ec => implicit mat => e =>
       if (support.supported.matches(e.contentType)) {
         val frames = e.dataBytes.via(support.framingDecoder)
         val unmarshal = sprayJsonByteStringUnmarshaller(reader)(_)

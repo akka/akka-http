@@ -12,7 +12,7 @@ import akka.stream.javadsl.Flow
 import akka.stream.scaladsl
 import akka.util.ByteString
 
-import akka.http.scaladsl.{ testkit ⇒ st }
+import akka.http.scaladsl.{ testkit => st }
 
 import akka.http.impl.util.JavaMapping.Implicits._
 

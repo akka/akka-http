@@ -30,7 +30,7 @@ abstract class ContentLengthHeaderParserSpec(mode: String, newLine: String) exte
   }
 
   def parse(bigint: String): Long = {
-    val (`Content-Length`(length), _) = ContentLengthParser(null, ByteString(bigint + newLine).compact, 0, _ ⇒ ())
+    val (`Content-Length`(length), _) = ContentLengthParser(null, ByteString(bigint + newLine).compact, 0, _ => ())
     length
   }
 

@@ -19,11 +19,11 @@ import FrameEvent._
 /** INTERNAL API */
 @InternalApi
 private[http2] object FrameRenderer {
-  implicit val byteOrder = ByteOrder.BIG_ENDIAN
+  implicit val byteOrder: ByteOrder = ByteOrder.BIG_ENDIAN
 
   def render(frame: FrameEvent): ByteString =
     frame match {
-      case GoAwayFrame(lastStreamId, errorCode, debug) ⇒
+      case GoAwayFrame(lastStreamId, errorCode, debug) =>
         val bb = new ByteStringBuilder
         bb.putInt(lastStreamId)
         bb.putInt(errorCode.id)
@@ -37,7 +37,7 @@ private[http2] object FrameRenderer {
           bb.result
         )
 
-      case DataFrame(streamId, endStream, payload) ⇒
+      case DataFrame(streamId, endStream, payload) =>
         // TODO: should padding be emitted? In which cases?
 
         renderFrame(
@@ -46,7 +46,7 @@ private[http2] object FrameRenderer {
           streamId,
           payload
         )
-      case HeadersFrame(streamId, endStream, endHeaders, headerBlockFragment, prioInfo) ⇒
+      case HeadersFrame(streamId, endStream, endHeaders, headerBlockFragment, prioInfo) =>
         val renderedPrioInfo = prioInfo.map(renderPriorityInfo).getOrElse(ByteString.empty)
 
         renderFrame(
@@ -58,7 +58,7 @@ private[http2] object FrameRenderer {
           renderedPrioInfo ++ headerBlockFragment
         )
 
-      case WindowUpdateFrame(streamId, windowSizeIncrement) ⇒
+      case WindowUpdateFrame(streamId, windowSizeIncrement) =>
         val bb = new ByteStringBuilder
         bb.putInt(windowSizeIncrement)
 
@@ -69,23 +69,23 @@ private[http2] object FrameRenderer {
           bb.result()
         )
 
-      case ContinuationFrame(streamId, endHeaders, payload) ⇒
+      case ContinuationFrame(streamId, endHeaders, payload) =>
         renderFrame(
           Http2Protocol.FrameType.CONTINUATION,
           Http2Protocol.Flags.END_HEADERS.ifSet(endHeaders),
           streamId,
           payload)
 
-      case SettingsFrame(settings) ⇒
+      case SettingsFrame(settings) =>
         val bb = new ByteStringBuilder
         @tailrec def renderNext(remaining: Seq[Setting]): Unit =
           remaining match {
-            case Setting(id, value) +: remaining ⇒
+            case Setting(id, value) +: remaining =>
               bb.putShort(id.id)
               bb.putInt(value)
 
               renderNext(remaining)
-            case Nil ⇒
+            case Nil =>
           }
 
         renderNext(settings)
@@ -97,7 +97,7 @@ private[http2] object FrameRenderer {
           bb.result()
         )
 
-      case _: SettingsAckFrame ⇒
+      case _: SettingsAckFrame =>
         renderFrame(
           Http2Protocol.FrameType.SETTINGS,
           Http2Protocol.Flags.ACK,
@@ -105,7 +105,7 @@ private[http2] object FrameRenderer {
           ByteString.empty
         )
 
-      case PingFrame(ack, data) ⇒
+      case PingFrame(ack, data) =>
         renderFrame(
           Http2Protocol.FrameType.PING,
           Http2Protocol.Flags.ACK.ifSet(ack),
@@ -113,7 +113,7 @@ private[http2] object FrameRenderer {
           data
         )
 
-      case RstStreamFrame(streamId, errorCode) ⇒
+      case RstStreamFrame(streamId, errorCode) =>
         renderFrame(
           Http2Protocol.FrameType.RST_STREAM,
           Http2Protocol.Flags.NO_FLAGS,
@@ -121,7 +121,7 @@ private[http2] object FrameRenderer {
           new ByteStringBuilder().putInt(errorCode.id).result
         )
 
-      case PushPromiseFrame(streamId, endHeaders, promisedStreamId, headerBlockFragment) ⇒
+      case PushPromiseFrame(streamId, endHeaders, promisedStreamId, headerBlockFragment) =>
         renderFrame(
           Http2Protocol.FrameType.PUSH_PROMISE,
           Http2Protocol.Flags.END_HEADERS.ifSet(endHeaders),
@@ -132,13 +132,14 @@ private[http2] object FrameRenderer {
             .result()
         )
 
-      case frame @ PriorityFrame(streamId, exclusiveFlag, streamDependency, weight) ⇒
+      case frame @ PriorityFrame(streamId, exclusiveFlag, streamDependency, weight) =>
         renderFrame(
           Http2Protocol.FrameType.PRIORITY,
           Http2Protocol.Flags.NO_FLAGS,
           streamId,
           renderPriorityInfo(frame)
         )
+      case _ => throw new IllegalStateException(s"Unexpected frame type ${frame.frameTypeName}.")
     }
 
   def renderFrame(tpe: FrameType, flags: ByteFlag, streamId: Int, payload: ByteString): ByteString = {

@@ -47,7 +47,7 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
       object Receiver extends HeaderListener {
         def addHeader(name: Array[Byte], value: Array[Byte], sensitive: Boolean): Unit =
           // TODO: optimization: use preallocated strings for well-known names, similar to what happens in HeaderParser
-          headers += new String(name, UTF8) → new String(value, UTF8)
+          headers += new String(name, UTF8) -> new String(value, UTF8)
       }
       try {
         decoder.decode(ByteStringInputStream(payload), Receiver)
@@ -55,7 +55,7 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
 
         push(eventsOut, ParsedHeadersFrame(streamId, endStream, headers.result(), prioInfo))
       } catch {
-        case ex: IOException ⇒
+        case ex: IOException =>
           // this is signalled by the decoder when it failed, we want to react to this by rendering a GOAWAY frame
           fail(eventsOut, new Http2Compliance.Http2ProtocolException(ErrorCode.COMPRESSION_ERROR, "Decompression failed."))
       }
@@ -63,13 +63,13 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
 
     object Idle extends State {
       val handleEvent: PartialFunction[FrameEvent, Unit] = {
-        case HeadersFrame(streamId, endStream, endHeaders, fragment, prioInfo) ⇒
+        case HeadersFrame(streamId, endStream, endHeaders, fragment, prioInfo) =>
           if (endHeaders) parseAndEmit(streamId, endStream, fragment, prioInfo)
           else {
             become(new ReceivingHeaders(streamId, endStream, fragment, prioInfo))
             pull(eventsIn)
           }
-        case c: ContinuationFrame ⇒
+        case c: ContinuationFrame =>
           protocolError(s"Received unexpected continuation frame: $c")
 
         // FIXME: handle SETTINGS frames that change decompression parameters
@@ -79,12 +79,12 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
       var receivedData = initiallyReceivedData
 
       val handleEvent: PartialFunction[FrameEvent, Unit] = {
-        case ContinuationFrame(`streamId`, endHeaders, payload) ⇒
+        case ContinuationFrame(`streamId`, endHeaders, payload) =>
           if (endHeaders) {
             parseAndEmit(streamId, endStream, receivedData ++ payload, priorityInfo)
             become(Idle)
           } else receivedData ++= payload
-        case x ⇒ protocolError(s"While waiting for CONTINUATION frame on stream $streamId received unexpected frame $x")
+        case x => protocolError(s"While waiting for CONTINUATION frame on stream $streamId received unexpected frame $x")
       }
     }
 

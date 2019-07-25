@@ -5,7 +5,7 @@
 package akka.http.javadsl.server.directives
 
 import java.util.Optional
-import java.util.{ function ⇒ jf }
+import java.util.{ function => jf }
 
 import akka.actor.ReflectiveDynamicAccess
 
@@ -16,7 +16,7 @@ import akka.http.javadsl.model.headers.{ HttpOriginRange, HttpOriginRanges }
 import akka.http.javadsl.model.HttpHeader
 import akka.http.javadsl.server.Route
 import akka.http.scaladsl.model.headers.{ ModeledCustomHeader, ModeledCustomHeaderCompanion }
-import akka.http.scaladsl.server.directives.{ HeaderMagnet, HeaderDirectives ⇒ D }
+import akka.http.scaladsl.server.directives.{ HeaderMagnet, HeaderDirectives => D }
 
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
@@ -36,8 +36,8 @@ abstract class HeaderDirectives extends FutureDirectives {
   // TODO When breaking binary compatibility this should become HttpOriginRange.Default, see https://github.com/akka/akka/pull/20776/files#r70049845
   def checkSameOrigin(allowed: HttpOriginRange, inner: jf.Supplier[Route]): Route =
     allowed match {
-      case HttpOriginRanges.ALL | akka.http.scaladsl.model.headers.HttpOriginRange.`*` ⇒ pass(inner)
-      case _ ⇒ RouteAdapter {
+      case HttpOriginRanges.ALL | akka.http.scaladsl.model.headers.HttpOriginRange.`*` => pass(inner)
+      case _ => RouteAdapter {
         // safe, we know it's not the `*` header
         val default = allowed.asInstanceOf[akka.http.scaladsl.model.headers.HttpOriginRange.Default]
         D.checkSameOrigin(default) { inner.get().delegate }
@@ -50,7 +50,7 @@ abstract class HeaderDirectives extends FutureDirectives {
    * with a [[akka.http.javadsl.server.MalformedHeaderRejection]].
    */
   def headerValue[T](f: jf.Function[HttpHeader, Optional[T]], inner: jf.Function[T, Route]) = RouteAdapter {
-    D.headerValue(h ⇒ f.apply(h).asScala) { value ⇒
+    D.headerValue(h => f.apply(h).asScala) { value =>
       inner.apply(value).delegate
     }
   }
@@ -60,7 +60,7 @@ abstract class HeaderDirectives extends FutureDirectives {
    * request is rejected with an empty rejection set.
    */
   def headerValuePF[T](pf: PartialFunction[HttpHeader, T], inner: jf.Function[T, Route]) = RouteAdapter {
-    D.headerValuePF(pf) { value ⇒
+    D.headerValuePF(pf) { value =>
       inner.apply(value).delegate
     }
   }
@@ -70,7 +70,7 @@ abstract class HeaderDirectives extends FutureDirectives {
    * If no header with a matching name is found the request is rejected with a [[akka.http.javadsl.server.MissingHeaderRejection]].
    */
   def headerValueByName(headerName: String, inner: jf.Function[String, Route]) = RouteAdapter {
-    D.headerValueByName(headerName) { value ⇒
+    D.headerValueByName(headerName) { value =>
       inner.apply(value).delegate
     }
   }
@@ -85,15 +85,15 @@ abstract class HeaderDirectives extends FutureDirectives {
       // figure out the modeled header companion and use that to parse the header
       val refl = new ReflectiveDynamicAccess(getClass.getClassLoader)
       refl.getObjectFor[ModeledCustomHeaderCompanion[_]](t.getName) match {
-        case Success(companion) ⇒
+        case Success(companion) =>
           new HeaderMagnet[T] {
             override def classTag = ClassTag(t)
             override def runtimeClass = t
             override def extractPF = {
-              case h if h.is(companion.lowercaseName) ⇒ companion.apply(h.toString).asInstanceOf[T]
+              case h if h.is(companion.lowercaseName) => companion.apply(h.toString).asInstanceOf[T]
             }
           }
-        case Failure(ex) ⇒ throw new RuntimeException(s"Failed to find or access the ModeledCustomHeaderCompanion for [${t.getName}]", ex)
+        case Failure(ex) => throw new RuntimeException(s"Failed to find or access the ModeledCustomHeaderCompanion for [${t.getName}]", ex)
       }
     }
 
@@ -101,7 +101,7 @@ abstract class HeaderDirectives extends FutureDirectives {
       if (classOf[ModeledCustomHeader[_]].isAssignableFrom(t)) magnetForModeledCustomHeader(t)
       else HeaderMagnet.fromClassNormalJavaHeader(t)
 
-    D.headerValueByType(magnet) { value ⇒
+    D.headerValueByType(magnet) { value =>
       inner.apply(value).delegate
     }
 
@@ -113,7 +113,7 @@ abstract class HeaderDirectives extends FutureDirectives {
    * with a [[akka.http.javadsl.server.MalformedHeaderRejection]].
    */
   def optionalHeaderValue[T](f: jf.Function[HttpHeader, Optional[T]], inner: jf.Function[Optional[T], Route]) = RouteAdapter {
-    D.optionalHeaderValue(h ⇒ f.apply(h).asScala) { value ⇒
+    D.optionalHeaderValue(h => f.apply(h).asScala) { value =>
       inner.apply(value.asJava).delegate
     }
   }
@@ -124,7 +124,7 @@ abstract class HeaderDirectives extends FutureDirectives {
    * with a [[akka.http.javadsl.server.MalformedHeaderRejection]].
    */
   def optionalHeaderValuePF[T](pf: PartialFunction[HttpHeader, T], inner: jf.Function[Optional[T], Route]) = RouteAdapter {
-    D.optionalHeaderValuePF(pf) { value ⇒
+    D.optionalHeaderValuePF(pf) { value =>
       inner.apply(value.asJava).delegate
     }
   }
@@ -133,7 +133,7 @@ abstract class HeaderDirectives extends FutureDirectives {
    * Extracts the value of the optional HTTP request header with the given name.
    */
   def optionalHeaderValueByName(headerName: String, inner: jf.Function[Optional[String], Route]) = RouteAdapter {
-    D.optionalHeaderValueByName(headerName) { value ⇒
+    D.optionalHeaderValueByName(headerName) { value =>
       inner.apply(value.asJava).delegate
     }
   }
@@ -146,7 +146,7 @@ abstract class HeaderDirectives extends FutureDirectives {
   def optionalHeaderValueByType[T <: HttpHeader](t: Class[T], inner: jf.Function[Optional[T], Route]) = RouteAdapter {
     // TODO custom headers don't work yet
     // TODO needs instance of check if it's a modeled header and then magically locate companion
-    D.optionalHeaderValueByType(HeaderMagnet.fromClassNormalJavaHeader(t).asInstanceOf[ScalaHeaderMagnet]) { value ⇒
+    D.optionalHeaderValueByType(HeaderMagnet.fromClassNormalJavaHeader(t).asInstanceOf[ScalaHeaderMagnet]) { value =>
       val valueT = value.asInstanceOf[Option[T]] // we know this is safe because T <: HttpHeader
       inner.apply(OptionConverters.toJava[T](valueT)).delegate
     }

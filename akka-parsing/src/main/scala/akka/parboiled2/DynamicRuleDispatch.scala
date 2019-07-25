@@ -63,8 +63,8 @@ object DynamicRuleDispatch {
     import c.universe._
     val names = ruleNames.map {
       _.tree match {
-        case Literal(Constant(s: String)) ⇒ s
-        case x                            ⇒ c.abort(x.pos, s"Invalid `String` argument `x`, only `String` literals are supported!")
+        case Literal(Constant(s: String)) => s
+        case x                            => c.abort(x.pos, s"Invalid `String` argument `x`, only `String` literals are supported!")
       }
     }
 

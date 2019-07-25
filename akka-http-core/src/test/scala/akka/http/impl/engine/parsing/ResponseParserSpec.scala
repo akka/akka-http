@@ -278,7 +278,7 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends FreeSpe
 
     class StrictEqualHttpResponse(val resp: HttpResponse) {
       override def equals(other: scala.Any): Boolean = other match {
-        case other: StrictEqualHttpResponse ⇒
+        case other: StrictEqualHttpResponse =>
 
           this.resp.copy(entity = HttpEntity.Empty) == other.resp.copy(entity = HttpEntity.Empty) &&
             Await.result(this.resp.entity.toStrict(awaitAtMost), awaitAtMost) ==
@@ -312,27 +312,27 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends FreeSpe
       generalRawMultiParseTo(GET, expected: _*)
     def generalRawMultiParseTo(requestMethod: HttpMethod, expected: Either[ResponseOutput, HttpResponse]*): Matcher[Seq[String]] =
       equal(expected.map(strictEqualify))
-        .matcher[Seq[Either[ResponseOutput, StrictEqualHttpResponse]]] compose { input: Seq[String] ⇒
+        .matcher[Seq[Either[ResponseOutput, StrictEqualHttpResponse]]] compose { input: Seq[String] =>
           collectBlocking {
             rawParse(requestMethod, input: _*)
               .mapAsync(1) {
-                case Right(response) ⇒ compactEntity(response.entity).fast.map(x ⇒ Right(response.withEntity(x)))
-                case Left(error)     ⇒ FastFuture.successful(Left(error))
+                case Right(response) => compactEntity(response.entity).fast.map(x => Right(response.withEntity(x)))
+                case Left(error)     => FastFuture.successful(Left(error))
               }
           }.map(strictEqualify)
         }
 
     def rawParse(requestMethod: HttpMethod, input: String*): Source[Either[ResponseOutput, HttpResponse], NotUsed] =
       Source(input.toList)
-        .map(bytes ⇒ SessionBytes(TLSPlacebo.dummySession, ByteString(bytes)))
+        .map(bytes => SessionBytes(TLSPlacebo.dummySession, ByteString(bytes)))
         .via(newParserStage(requestMethod)).named("parser")
-        .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x.isInstanceOf[EntityStreamError])
+        .splitWhen(x => x.isInstanceOf[MessageStart] || x.isInstanceOf[EntityStreamError])
         .prefixAndTail(1)
         .collect {
-          case (Seq(ResponseStart(statusCode, protocol, headers, createEntity, close)), entityParts) ⇒
+          case (Seq(ResponseStart(statusCode, protocol, headers, createEntity, close)), entityParts) =>
             closeAfterResponseCompletion :+= close
             Right(HttpResponse(statusCode, headers, createEntity(entityParts), protocol))
-          case (Seq(x @ (MessageStartError(_, _) | EntityStreamError(_))), tail) ⇒
+          case (Seq(x @ (MessageStartError(_, _) | EntityStreamError(_))), tail) =>
             tail.runWith(Sink.ignore)
             Left(x)
         }.concatSubstreams
@@ -363,9 +363,9 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends FreeSpe
 
             private def handleParserOutput(output: ResponseOutput): Unit = {
               output match {
-                case StreamEnd    ⇒ completeStage()
-                case NeedMoreData ⇒ pull(in)
-                case x            ⇒ push(out, x)
+                case StreamEnd    => completeStage()
+                case NeedMoreData => pull(in)
+                case x            => push(out, x)
               }
             }
 
@@ -377,14 +377,14 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends FreeSpe
 
     private def compactEntity(entity: ResponseEntity): Future[ResponseEntity] =
       entity match {
-        case x: HttpEntity.Chunked ⇒ compactEntityChunks(x.chunks).fast.map(compacted ⇒ x.copy(chunks = compacted))
-        case _                     ⇒ entity.toStrict(awaitAtMost)
+        case x: HttpEntity.Chunked => compactEntityChunks(x.chunks).fast.map(compacted => x.copy(chunks = compacted))
+        case _                     => entity.toStrict(awaitAtMost)
       }
 
     private def compactEntityChunks(data: Source[ChunkStreamPart, Any]): Future[Source[ChunkStreamPart, Any]] =
       data.limit(100000).runWith(Sink.seq)
         .fast.map(source(_: _*))
-        .fast.recover { case _: NoSuchElementException ⇒ source() }
+        .fast.recover { case _: NoSuchElementException => source() }
 
     def prep(response: String) = response.stripMarginWithNewline(newLine)
 

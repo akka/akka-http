@@ -82,7 +82,7 @@ private[http] object Utf8Decoder extends StreamingCharsetDecoder {
           currentState = states(currentState + chClass)
 
           currentState match {
-            case Utf8Accept ⇒
+            case Utf8Accept =>
               if (currentCodePoint <= 0xffff)
                 // fits in single UTF-16 char
                 result.append(currentCodePoint.toChar)
@@ -91,8 +91,8 @@ private[http] object Utf8Decoder extends StreamingCharsetDecoder {
                 result.append((0xD7C0 + (currentCodePoint >> 10)).toChar)
                 result.append((0xDC00 + (currentCodePoint & 0x3FF)).toChar)
               }
-            case Utf8Reject ⇒ fail("Invalid UTF-8 input")
-            case _          ⇒ // valid intermediate state, need more input
+            case Utf8Reject => fail("Invalid UTF-8 input")
+            case _          => // valid intermediate state, need more input
           }
         }
 

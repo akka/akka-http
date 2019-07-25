@@ -270,13 +270,11 @@ class HttpServerExampleSpec extends WordSpec with Matchers
     //#low-level-server-example
   }
 
-  // format: OFF
-
   "high-level-server-example" in compileOnlySpec {
     //#high-level-server-example
     import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
-    import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
+    import akka.http.scaladsl.model.{ ContentTypes, HttpEntity }
     import akka.http.scaladsl.server.Directives._
     import akka.stream.ActorMaterializer
     import scala.io.StdIn
@@ -290,15 +288,17 @@ class HttpServerExampleSpec extends WordSpec with Matchers
 
         val route =
           get {
-            pathSingleSlash {
-              complete(HttpEntity(ContentTypes.`text/html(UTF-8)`,"<html><body>Hello world!</body></html>"))
-            } ~
-            path("ping") {
-              complete("PONG!")
-            } ~
-            path("crash") {
-              sys.error("BOOM!")
-            }
+            concat(
+              pathSingleSlash {
+                complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "<html><body>Hello world!</body></html>"))
+              },
+              path("ping") {
+                complete("PONG!")
+              },
+              path("crash") {
+                sys.error("BOOM!")
+              }
+            )
           }
 
         // `route` will be implicitly converted to `Flow` using `RouteResult.route2HandlerFlow`
@@ -351,7 +351,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
 
   "long-routing-example" in compileOnlySpec {
     //#long-routing-example
-    import akka.actor.{ActorRef, ActorSystem}
+    import akka.actor.{ ActorRef, ActorSystem }
     import akka.http.scaladsl.coding.Deflate
     import akka.http.scaladsl.marshalling.ToResponseMarshaller
     import akka.http.scaladsl.model.StatusCodes.MovedPermanently
@@ -384,66 +384,69 @@ class HttpServerExampleSpec extends WordSpec with Matchers
     def myDbActor: ActorRef = ???
     def processOrderRequest(id: Int, complete: Order => Unit): Unit = ???
 
-    val route = {
+    val route = concat(
       path("orders") {
         authenticateBasic(realm = "admin area", myAuthenticator) { user =>
-          get {
-            encodeResponseWith(Deflate) {
-              complete {
-                // marshal custom object with in-scope marshaller
-                retrieveOrdersFromDB
-              }
-            }
-          } ~
-          post {
-            // decompress gzipped or deflated requests if required
-            decodeRequest {
-              // unmarshal with in-scope unmarshaller
-              entity(as[Order]) { order =>
+          concat(
+            get {
+              encodeResponseWith(Deflate) {
                 complete {
-                  // ... write order to DB
-                  "Order received"
+                  // marshal custom object with in-scope marshaller
+                  retrieveOrdersFromDB
                 }
               }
-            }
-          }
+            },
+            post {
+              // decompress gzipped or deflated requests if required
+              decodeRequest {
+                // unmarshal with in-scope unmarshaller
+                entity(as[Order]) { order =>
+                  complete {
+                    // ... write order to DB
+                    "Order received"
+                  }
+                }
+              }
+            })
         }
-      } ~
+      },
       // extract URI path element as Int
       pathPrefix("order" / IntNumber) { orderId =>
-        pathEnd {
-          (put | parameter('method ! "put")) {
-            // form extraction from multipart or www-url-encoded forms
-            formFields(('email, 'total.as[Money])).as(Order) { order =>
-              complete {
-                // complete with serialized Future result
-                (myDbActor ? Update(order)).mapTo[TransactionResult]
-              }
+        concat(
+          pathEnd {
+            concat(
+              (put | parameter('method ! "put")) {
+                // form extraction from multipart or www-url-encoded forms
+                formFields(('email, 'total.as[Money])).as(Order) { order =>
+                  complete {
+                    // complete with serialized Future result
+                    (myDbActor ? Update(order)).mapTo[TransactionResult]
+                  }
+                }
+              },
+              get {
+                // debugging helper
+                logRequest("GET-ORDER") {
+                  // use in-scope marshaller to create completer function
+                  completeWith(instanceOf[Order]) { completer =>
+                    // custom
+                    processOrderRequest(orderId, completer)
+                  }
+                }
+              })
+          },
+          path("items") {
+            get {
+              // parameters to case class extraction
+              parameters(('size.as[Int], 'color ?, 'dangerous ? "no"))
+                .as(OrderItem) { orderItem =>
+                  // ... route using case class instance created from
+                  // required and optional query parameters
+                  complete("") // #hide
+                }
             }
-          } ~
-          get {
-            // debugging helper
-            logRequest("GET-ORDER") {
-              // use in-scope marshaller to create completer function
-              completeWith(instanceOf[Order]) { completer =>
-                // custom
-                processOrderRequest(orderId, completer)
-              }
-            }
-          }
-        } ~
-        path("items") {
-          get {
-            // parameters to case class extraction
-            parameters(('size.as[Int], 'color ?, 'dangerous ? "no"))
-              .as(OrderItem) { orderItem =>
-                // ... route using case class instance created from
-                // required and optional query parameters
-                complete("") // #hide
-              }
-          }
-        }
-      } ~
+          })
+      },
       pathPrefix("documentation") {
         // optionally compresses the response with Gzip or Deflate
         // if the client accepts compressed responses
@@ -451,11 +454,11 @@ class HttpServerExampleSpec extends WordSpec with Matchers
           // serve up static content from a JAR resource
           getFromResourceDirectory("docs")
         }
-      } ~
+      },
       path("oldApi" / Remaining) { pathRest =>
         redirect("http://oldapi.example.com/" + pathRest, MovedPermanently)
       }
-    }
+    )
     //#long-routing-example
   }
 
@@ -465,7 +468,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
     import akka.stream.scaladsl._
     import akka.util.ByteString
     import akka.http.scaladsl.Http
-    import akka.http.scaladsl.model.{HttpEntity, ContentTypes}
+    import akka.http.scaladsl.model.{ HttpEntity, ContentTypes }
     import akka.http.scaladsl.server.Directives._
     import akka.stream.ActorMaterializer
     import scala.util.Random
@@ -511,7 +514,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
 
   "interact with an actor" in compileOnlySpec {
     //#actor-interaction
-    import akka.actor.{Actor, ActorSystem, Props, ActorLogging}
+    import akka.actor.{ Actor, ActorSystem, Props, ActorLogging }
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model.StatusCodes
     import akka.http.scaladsl.server.Directives._
@@ -537,7 +540,7 @@ class HttpServerExampleSpec extends WordSpec with Matchers
             bids = bids :+ bid
             log.info(s"Bid complete: $userId, $offer")
           case GetBids => sender() ! Bids(bids)
-          case _ => log.info("Invalid message")
+          case _       => log.info("Invalid message")
         }
       }
 
@@ -555,20 +558,22 @@ class HttpServerExampleSpec extends WordSpec with Matchers
 
         val route =
           path("auction") {
-            put {
-              parameter("bid".as[Int], "user") { (bid, user) =>
-                // place a bid, fire-and-forget
-                auction ! Bid(user, bid)
-                complete((StatusCodes.Accepted, "bid placed"))
-              }
-            } ~
-            get {
-              implicit val timeout: Timeout = 5.seconds
+            concat(
+              put {
+                parameter("bid".as[Int], "user") { (bid, user) =>
+                  // place a bid, fire-and-forget
+                  auction ! Bid(user, bid)
+                  complete((StatusCodes.Accepted, "bid placed"))
+                }
+              },
+              get {
+                implicit val timeout: Timeout = 5.seconds
 
-              // query the actor for the current auction state
-              val bids: Future[Bids] = (auction ? GetBids).mapTo[Bids]
-              complete(bids)
-            }
+                // query the actor for the current auction state
+                val bids: Future[Bids] = (auction ? GetBids).mapTo[Bids]
+                complete(bids)
+              }
+            )
           }
 
         val bindingFuture = Http().bindAndHandle(route, "localhost", 8080)
@@ -733,14 +738,15 @@ class HttpServerExampleSpec extends WordSpec with Matchers
 
     // dynamic routing based on current state
     val dynamicRoute: Route = ctx => {
-      val routes = state.map { case (segment, responses) =>
-        post {
-          path(segment) {
-            entity(as[JsValue]) { input =>
-              complete(responses.get(input))
+      val routes = state.map {
+        case (segment, responses) =>
+          post {
+            path(segment) {
+              entity(as[JsValue]) { input =>
+                complete(responses.get(input))
+              }
             }
           }
-        }
       }
       concat(routes.toList: _*)(ctx)
     }
@@ -766,17 +772,17 @@ class HttpServerExampleSpec extends WordSpec with Matchers
     }
 
     val binding: Future[Http.ServerBinding] =
-        Http().bindAndHandle(routes, "127.0.0.1", 8080)
+      Http().bindAndHandle(routes, "127.0.0.1", 8080)
 
     // ...
     // once ready to terminate the server, invoke terminate:
     val onceAllConnectionsTerminated: Future[Http.HttpTerminated] =
-    Await.result(binding, 10.seconds)
-      .terminate(hardDeadline = 3.seconds)
+      Await.result(binding, 10.seconds)
+        .terminate(hardDeadline = 3.seconds)
 
     // once all connections are terminated,
     // - you can invoke coordinated shutdown to tear down the rest of the system:
-    onceAllConnectionsTerminated.flatMap { _ ⇒
+    onceAllConnectionsTerminated.flatMap { _ =>
       system.terminate()
     }
 

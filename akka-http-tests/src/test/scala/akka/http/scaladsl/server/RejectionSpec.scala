@@ -11,13 +11,13 @@ class RejectionSpec extends RoutingSpec {
   "The Transformation Rejection" should {
 
     "map to and from Java" in {
-      import akka.http.javadsl.{ server ⇒ jserver }
+      import akka.http.javadsl.{ server => jserver }
       val rejections = List(RequestEntityExpectedRejection)
       val jrejections: java.lang.Iterable[jserver.Rejection] =
         rejections.map(_.asInstanceOf[jserver.Rejection]).asJava
       val jresult = TransformationRejection(identity).getTransform.apply(jrejections)
 
-      val result = jresult.asScala.map(r ⇒ r.asInstanceOf[Rejection])
+      val result = jresult.asScala.map(r => r.asInstanceOf[Rejection])
       result should ===(rejections)
     }
   }
@@ -28,11 +28,11 @@ class RejectionSpec extends RoutingSpec {
     implicit def myRejectionHandler =
       RejectionHandler.default
         .mapRejectionResponse {
-          case res @ HttpResponse(_, _, ent: HttpEntity.Strict, _) ⇒
+          case res @ HttpResponse(_, _, ent: HttpEntity.Strict, _) =>
             val message = ent.data.utf8String.replaceAll("\"", """\"""")
             res.copy(entity = HttpEntity(ContentTypes.`application/json`, s"""{"rejection": "$message"}"""))
 
-          case x ⇒ x // pass through all other types of responses
+          case x => x // pass through all other types of responses
         }
 
     val route =

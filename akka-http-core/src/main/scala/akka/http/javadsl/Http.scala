@@ -22,7 +22,7 @@ import akka.event.LoggingAdapter
 import akka.stream.Materializer
 import akka.stream.javadsl.{ BidiFlow, Flow, Source }
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.scaladsl.{ model ⇒ sm }
+import akka.http.scaladsl.{ model => sm }
 import akka.http.javadsl.model._
 import akka.http._
 import scala.compat.java8.OptionConverters._
@@ -36,7 +36,7 @@ object Http extends ExtensionId[Http] with ExtensionIdProvider {
 }
 
 class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
-  import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext ⇒ ec }
+  import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext => ec }
 
   import language.implicitConversions
   private implicit def completionStageCovariant[T, U >: T](in: CompletionStage[T]): CompletionStage[U] = in.asInstanceOf[CompletionStage[U]]
@@ -453,10 +453,10 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     log:      LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
     adaptTupleFlow {
       to.effectiveHttpsConnectionContext(defaultClientHttpsContext) match {
-        case https: HttpsConnectionContext ⇒
+        case https: HttpsConnectionContext =>
           delegate.newHostConnectionPoolHttps[T](to.host, to.port, https.asScala, settings.asScala, log)(materializer)
             .mapMaterializedValue(_.toJava)
-        case _ ⇒
+        case _ =>
           delegate.newHostConnectionPool[T](to.host, to.port, settings.asScala, log)(materializer)
             .mapMaterializedValue(_.toJava)
       }
@@ -503,6 +503,32 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     adaptTupleFlow(delegate.cachedHostConnectionPoolImpl[T](to.host, to.port).mapMaterializedValue(_.toJava))
 
   /**
+   * Returns a [[akka.stream.javadsl.Flow]] which dispatches incoming HTTP requests to the per-ActorSystem pool of outgoing
+   * HTTP connections to the given target host endpoint. For every ActorSystem, target host and pool
+   * configuration a separate connection pool is maintained.
+   * The HTTP layer transparently manages idle shutdown and restarting of connections pools as configured.
+   * The returned [[akka.stream.javadsl.Flow]] instances therefore remain valid throughout the lifetime of the application.
+   *
+   * The internal caching logic guarantees that there will never be more than a single pool running for the
+   * given target host endpoint and configuration (in this ActorSystem).
+   *
+   * Since the underlying transport usually comprises more than a single connection the produced flow might generate
+   * responses in an order that doesn't directly match the consumed requests.
+   * For example, if two requests A and B enter the flow in that order the response for B might be produced before the
+   * response for A.
+   * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
+   * object of type `T` from the application which is emitted together with the corresponding response.
+   *
+   * To configure additional settings for the pool (and requests made using it),
+   * use the `akka.http.host-connection-pool` config section or pass in a [[ConnectionPoolSettings]] explicitly.
+   */
+  def cachedHostConnectionPool[T](
+    to:       ConnectHttp,
+    settings: ConnectionPoolSettings,
+    log:      LoggingAdapter): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
+    adaptTupleFlow(delegate.cachedHostConnectionPoolImpl[T](to.host, to.port, settings.asScala, log).mapMaterializedValue(_.toJava))
+
+  /**
    * Same as [[cachedHostConnectionPool]] but with HTTPS encryption.
    *
    * When an [[HttpConnectionContext]] is defined in the given [[ConnectHttp]] it will be used, otherwise the default client-side context will be used.
@@ -540,14 +566,14 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     cachedHostConnectionPool(to)
 
   /**
-   * @deprecated in favor of [[cachedHostConnectionPoolHttps]] that doesn't require an Materializer argument.
+   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
    */
   @Deprecated
   def cachedHostConnectionPool[T](
     to:       ConnectHttp,
     settings: ConnectionPoolSettings,
     log:      LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
-    cachedHostConnectionPoolHttps(to, settings, log)
+    cachedHostConnectionPool(to, settings, log)
 
   /**
    * Creates a new "super connection pool flow", which routes incoming requests to a (cached) host connection pool
@@ -877,7 +903,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   private def adaptWsBidiFlow(wsLayer: scaladsl.Http.WebSocketClientLayer): BidiFlow[Message, SslTlsOutbound, SslTlsInbound, Message, CompletionStage[WebSocketUpgradeResponse]] =
     new BidiFlow(
       JavaMapping.adapterBidiFlow[Message, sm.ws.Message, sm.ws.Message, Message]
-        .atopMat(wsLayer)((_, s) ⇒ adaptWsUpgradeResponse(s)))
+        .atopMat(wsLayer)((_, s) => adaptWsUpgradeResponse(s)))
 
   private def adaptWsFlow(wsLayer: stream.scaladsl.Flow[sm.ws.Message, sm.ws.Message, Future[scaladsl.model.ws.WebSocketUpgradeResponse]]): Flow[Message, Message, CompletionStage[WebSocketUpgradeResponse]] =
     Flow.fromGraph(JavaMapping.adapterBidiFlow[Message, sm.ws.Message, sm.ws.Message, Message].joinMat(wsLayer)(Keep.right).mapMaterializedValue(adaptWsUpgradeResponse _))
@@ -890,7 +916,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   private def adaptWsResultTuple[T](result: (Future[scaladsl.model.ws.WebSocketUpgradeResponse], T)): Pair[CompletionStage[WebSocketUpgradeResponse], T] =
     result match {
-      case (fut, tMat) ⇒ Pair(adaptWsUpgradeResponse(fut), tMat)
+      case (fut, tMat) => Pair(adaptWsUpgradeResponse(fut), tMat)
     }
   private def adaptWsUpgradeResponse(responseFuture: Future[scaladsl.model.ws.WebSocketUpgradeResponse]): CompletionStage[WebSocketUpgradeResponse] =
     responseFuture.map(WebSocketUpgradeResponse.adapt)(system.dispatcher).toJava

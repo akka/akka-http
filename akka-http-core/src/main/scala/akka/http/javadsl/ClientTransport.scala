@@ -80,13 +80,13 @@ object ClientTransport {
 
   def fromScala(scalaTransport: scaladsl.ClientTransport): ClientTransport =
     scalaTransport match {
-      case j: JavaWrapper ⇒ j.delegate
-      case x              ⇒ new ScalaWrapper(x)
+      case j: JavaWrapper => j.delegate
+      case x              => new ScalaWrapper(x)
     }
   def toScala(javaTransport: ClientTransport): scaladsl.ClientTransport =
     javaTransport match {
-      case s: ScalaWrapper ⇒ s.delegate
-      case x               ⇒ new JavaWrapper(x)
+      case s: ScalaWrapper => s.delegate
+      case x               => new JavaWrapper(x)
     }
 
   private class ScalaWrapper(val delegate: scaladsl.ClientTransport) extends ClientTransport {

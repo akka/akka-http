@@ -24,13 +24,13 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class ClientConnectionSettings private[akka] () extends akka.http.javadsl.settings.ClientConnectionSettings { self: ClientConnectionSettingsImpl ⇒
+abstract class ClientConnectionSettings private[akka] () extends akka.http.javadsl.settings.ClientConnectionSettings { self: ClientConnectionSettingsImpl =>
   def userAgentHeader: Option[`User-Agent`]
   def connectingTimeout: FiniteDuration
   def idleTimeout: Duration
   def requestHeaderSizeHint: Int
   def websocketSettings: WebSocketSettings
-  def websocketRandomFactory: () ⇒ Random
+  def websocketRandomFactory: () => Random
   def socketOptions: immutable.Seq[SocketOption]
   def parserSettings: ParserSettings
   def logUnencryptedNetworkBytes: Option[Int]
@@ -49,7 +49,7 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
 
   // overloads for idiomatic Scala use
   def withWebsocketSettings(newValue: WebSocketSettings): ClientConnectionSettings = self.copy(websocketSettings = newValue)
-  def withWebsocketRandomFactory(newValue: () ⇒ Random): ClientConnectionSettings = withWebsocketSettings(websocketSettings.withRandomFactoryFactory(new Supplier[Random] {
+  def withWebsocketRandomFactory(newValue: () => Random): ClientConnectionSettings = withWebsocketSettings(websocketSettings.withRandomFactoryFactory(new Supplier[Random] {
     override def get(): Random = newValue()
   }))
   def withUserAgentHeader(newValue: Option[`User-Agent`]): ClientConnectionSettings = self.copy(userAgentHeader = newValue)
@@ -77,8 +77,8 @@ object ClientConnectionSettings extends SettingsCompanion[ClientConnectionSettin
   object LogUnencryptedNetworkBytes {
     def apply(string: String): Option[Int] =
       string.toRootLowerCase match {
-        case "off" ⇒ None
-        case value ⇒ Option(value.toInt)
+        case "off" => None
+        case value => Option(value.toInt)
       }
   }
 }

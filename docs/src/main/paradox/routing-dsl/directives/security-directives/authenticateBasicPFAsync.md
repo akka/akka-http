@@ -11,14 +11,14 @@
 
 ## Description
 
-Wraps the inner route with Http Basic authentication support using a given @scala[`AsyncAuthenticatorPF[T]`]@java[`AsyncAuthenticatorPF<T>`].
+Wraps the inner route with Http Basic authentication support using a given @scala[@scaladoc[AsyncAuthenticatorPF[T]](akka.http.scaladsl.server.Directives#AsyncAuthenticatorPF[T]=PartialFunction[akka.http.scaladsl.server.directives.Credentials,scala.concurrent.Future[T]])]@java[`AsyncAuthenticatorPF<T>` - Partial function from `Optional<ProvidedCredentials>` to `CompletionStage<User>`].
 
 Provides support for handling [HTTP Basic Authentication](https://en.wikipedia.org/wiki/Basic_auth).
 
 Refer to @ref[authenticateBasic](authenticateBasic.md) for a detailed description of this directive.
 
 Its semantics are equivalent to `authenticateBasicPF` 's, where not handling a case in the Partial Function (PF)
-leaves the request to be rejected with a @unidoc[AuthenticationFailedRejection] rejection.
+leaves the request to be rejected with a @apidoc[AuthenticationFailedRejection] rejection.
 
 See @ref[Credentials and password timing attacks](index.md#credentials-and-timing-attacks) for details about verifying the secret.
 
