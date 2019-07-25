@@ -90,7 +90,8 @@ lazy val root = Project(
     httpTests,
     httpMarshallersScala,
     httpMarshallersJava,
-    docs
+    docs,
+    compatibilityTests
   )
 
 /**
@@ -359,5 +360,21 @@ lazy val docs = project("docs")
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka-http/${version.value}")
   )
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
+
+lazy val compatibilityTests = Project("akka-http-compatibility-tests", file("akka-http-compatibility-tests"))
+  .enablePlugins(NoPublish)
+  .disablePlugins(BintrayPlugin, MimaPlugin)
+  .addAkkaModuleDependency("akka-stream", "provided")
+  .settings(
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-http" % "10.1.8" % "provided", // TODO, should we make that latest?
+    ),
+    (dependencyClasspath in Test) := {
+      // HACK: We'd like to use `dependsOn(http % "test->compile")` to upgrade the explicit dependency above to the
+      //       current version but that fails. So, this is a manual `dependsOn` which works as expected.
+      (dependencyClasspath in Test).value.filterNot(_.data.getName contains "akka") ++
+      (fullClasspath in (httpTests, Test)).value
+    }
+  )
 
 def hasCommitsAfterTag(description: Option[GitDescribeOutput]): Boolean = description.get.commitSuffix.distance > 0

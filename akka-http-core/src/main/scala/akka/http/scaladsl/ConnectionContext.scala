@@ -24,27 +24,31 @@ trait ConnectionContext extends akka.http.javadsl.ConnectionContext {
 
 object ConnectionContext {
   // ConnectionContext
-  @deprecated("This method is planned to disappear in 10.2.0", "10.1.9")
+  //#https-context-creation
   def https(
     sslContext:          SSLContext,
     sslConfig:           Option[AkkaSSLConfig]         = None,
     enabledCipherSuites: Option[immutable.Seq[String]] = None,
     enabledProtocols:    Option[immutable.Seq[String]] = None,
     clientAuth:          Option[TLSClientAuth]         = None,
-    sslParameters:       Option[SSLParameters]         = None,
-    http2:               UseHttp2                      = UseHttp2.Negotiated) =
+    sslParameters:       Option[SSLParameters]         = None) =
     new HttpsConnectionContext(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
-
   //#https-context-creation
+
+  @deprecated("This method is planned to disappear in 10.2.0", "10.1.9")
   def https(
     sslContext:          SSLContext,
     sslConfig:           Option[AkkaSSLConfig],
     enabledCipherSuites: Option[immutable.Seq[String]],
     enabledProtocols:    Option[immutable.Seq[String]],
     clientAuth:          Option[TLSClientAuth],
-    sslParameters:       Option[SSLParameters]) =
+    sslParameters:       Option[SSLParameters],
+    http2:               UseHttp2) =
     new HttpsConnectionContext(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
-  //#https-context-creation
+
+  // for bincompat
+  @deprecated("This method is planned to disappear in 10.2.0", "10.1.9")
+  private[scaladsl] def https$default$7(): akka.http.scaladsl.UseHttp2 = UseHttp2.Negotiated
 
   @deprecated("for binary-compatibility", "2.4.7")
   def https(
@@ -124,8 +128,11 @@ final object HttpConnectionContext extends HttpConnectionContext {
   /** Java API */
   def create() = this
 
-  /** Java API */
-  /** This method is planned to disappear in 10.2.0 */
+  /**
+   * Java API
+   *
+   * This method is planned to disappear in 10.2.0
+   */
   @Deprecated
   @deprecated("This method is planned to disappear in 10.2.0", "10.1.9")
   def create(http2: UseHttp2) = HttpConnectionContext()

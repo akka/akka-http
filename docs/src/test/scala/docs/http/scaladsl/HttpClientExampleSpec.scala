@@ -71,6 +71,57 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
     //#manual-entity-consume-example-2
   }
 
+  "manual-entity-consume-example-3" in compileOnlySpec {
+    //#manual-entity-consume-example-3
+    import scala.concurrent.duration._
+    import scala.concurrent.Future
+
+    import akka.NotUsed
+    import akka.actor.ActorSystem
+    import akka.http.scaladsl.Http
+    import akka.http.scaladsl.model._
+    import akka.stream.ActorMaterializer
+    import akka.util.ByteString
+    import akka.stream.scaladsl.{ Flow, Sink, Source }
+
+    implicit val system = ActorSystem()
+    implicit val dispatcher = system.dispatcher
+    implicit val materializer = ActorMaterializer()
+
+    case class ExamplePerson(name: String)
+
+    def parse(line: ByteString): Option[ExamplePerson] =
+      line.utf8String.split(" ").headOption.map(ExamplePerson)
+
+    val requests: Source[HttpRequest, NotUsed] = Source
+      .fromIterator(() =>
+        Range(0, 10).map(i => HttpRequest(uri = Uri(s"https://localhost/people/$i"))).iterator
+      )
+
+    val processorFlow: Flow[Option[ExamplePerson], Int, NotUsed] =
+      Flow[Option[ExamplePerson]].map(_.map(_.name.length).getOrElse(0))
+
+    // Run and completely consume a single akka http request
+    def runRequest(req: HttpRequest): Future[Option[ExamplePerson]] =
+      Http()
+        .singleRequest(req)
+        .flatMap { response =>
+          response.entity.dataBytes
+            .runReduce(_ ++ _)
+            .map(parse)
+        }
+
+    // Run each akka http flow to completion, then continue processing. You'll want to tune the `parallelism`
+    // parameter to mapAsync -- higher values will create more cpu and memory load which may or may not positively
+    // impact performance.
+    requests
+      .mapAsync(2)(runRequest)
+      .via(processorFlow)
+      .runWith(Sink.ignore)
+
+    //#manual-entity-consume-example-3
+  }
+
   "manual-entity-discard-example-1" in compileOnlySpec {
     //#manual-entity-discard-example-1
     import akka.actor.ActorSystem
@@ -184,10 +235,10 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
     val queue =
       Source.queue[(HttpRequest, Promise[HttpResponse])](QueueSize, OverflowStrategy.dropNew)
         .via(poolClientFlow)
-        .toMat(Sink.foreach({
+        .to(Sink.foreach({
           case ((Success(resp), p)) => p.success(resp)
           case ((Failure(e), p))    => p.failure(e)
-        }))(Keep.left)
+        }))
         .run()
 
     def queueRequest(request: HttpRequest): Future[HttpResponse] = {

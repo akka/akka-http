@@ -185,7 +185,7 @@ private object PoolSlot {
 
           currentConnectionInfo = Some(
             Source.fromGraph(connectionFlowSource.source)
-              .viaMat(connectionFlow)(Keep.right).toMat(Sink.fromGraph(connectionFlowSink.sink))(Keep.left).run()(subFusingMaterializer)
+              .viaMat(connectionFlow)(Keep.right).to(Sink.fromGraph(connectionFlowSink.sink)).run()(subFusingMaterializer)
           )
 
           connectionFlowSink.pull()

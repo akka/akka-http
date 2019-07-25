@@ -11,7 +11,7 @@
 
 ## Description
 
-Wraps the inner route with Http Basic authentication support using a given @scala[`Authenticator[T]`]@java[`Authenticator<T>`].
+Wraps the inner route with Http Basic authentication support using a given @scala[@scaladoc[Authenticator[T]](akka.http.scaladsl.server.Directives#Authenticator[T]=akka.http.scaladsl.server.directives.Credentials=%3EOption[T])]@java[`Authenticator<T>` - function from `Optional<ProvidedCredentials>` to `Optional<T>`].
 
 Provides support for handling [HTTP Basic Authentication](https://en.wikipedia.org/wiki/Basic_auth).
 

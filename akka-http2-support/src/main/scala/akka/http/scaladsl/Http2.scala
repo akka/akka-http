@@ -7,12 +7,12 @@ package akka.http.scaladsl
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
-import akka.http.impl.engine.http2.{ ProtocolSwitch, Http2AlpnSupport, Http2Blueprint, Http2Protocol }
+import akka.http.impl.engine.http2.{ ProtocolSwitch, Http2AlpnSupport, Http2Blueprint }
 import akka.http.impl.engine.server.MasterServerTerminator
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.ServerSettings
-import akka.stream.TLSProtocol.{ SessionBytes, SslTlsInbound, SslTlsOutbound }
+import akka.stream.TLSProtocol.{ SslTlsInbound, SslTlsOutbound }
 import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Sink, TLS, TLSPlacebo, Tcp }
 import akka.stream.{ IgnoreComplete, Materializer }
 import akka.util.ByteString
@@ -51,8 +51,8 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
       else if (connectionContext.isSecure) settings.defaultHttpsPort
       else settings.defaultHttpPort
 
-    val http1 = Flow[HttpRequest].mapAsync(parallelism)(handler).joinMat(http.serverLayer(settings, None, log))(Keep.left)
-    val http2 = Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher).joinMat(Http2Blueprint.serverStackTls(settings, log))(Keep.left)
+    val http1 = Flow[HttpRequest].mapAsync(parallelism)(handler).join(http.serverLayer(settings, None, log))
+    val http2 = Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher).join(Http2Blueprint.serverStackTls(settings, log))
 
     val masterTerminator = new MasterServerTerminator(log)
 
@@ -62,7 +62,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
           try {
             httpPlusSwitching(http1, http2).addAttributes(Http.prepareAttributes(settings, incoming))
               .watchTermination()(Keep.right)
-              .joinMat(incoming.flow)(Keep.left)
+              .join(incoming.flow)
               .run().recover {
                 // Ignore incoming errors from the connection as they will cancel the binding.
                 // As far as it is known currently, these errors can only happen if a TCP error bubbles up
