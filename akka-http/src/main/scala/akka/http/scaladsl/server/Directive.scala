@@ -5,6 +5,7 @@
 package akka.http.scaladsl.server
 
 import scala.collection.immutable
+import scala.concurrent.Future
 import akka.annotation.InternalApi
 import akka.http.scaladsl.server.directives.RouteDirectives
 import akka.http.scaladsl.server.util._
@@ -46,10 +47,15 @@ abstract class Directive[L](implicit val ev: Tuple[L]) {
     def validatedMap[R](f: L => R)(implicit tupler: Tupler[R]): Directive[tupler.Out] =
       Directive[tupler.Out] { inner =>
         tapply { values => ctx =>
-          try inner(tupler(f(values)))(ctx)
-          catch {
-            case e: IllegalArgumentException => ctx.reject(ValidationRejection(e.getMessage.nullAsEmpty, Some(e)))
+          def futureRouteResult(): Future[RouteResult] = {
+            val r: R = try f(values)
+            catch {
+              case e: IllegalArgumentException =>
+                return ctx.reject(ValidationRejection(e.getMessage.nullAsEmpty, Some(e)))
+            }
+            inner(tupler(r))(ctx)
           }
+          futureRouteResult()
         }
       }(tupler.OutIsTuple)
 
