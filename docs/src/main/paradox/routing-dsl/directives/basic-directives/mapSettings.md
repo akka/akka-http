@@ -10,7 +10,7 @@
 
 ## Description
 
-Transforms the @apidoc[RoutingSettings] with a @scala[`RoutingSettings ⇒ RoutingSettings` function]@java[`Function<RoutingSettings, RoutingSettings>`].
+Transforms the @apidoc[RoutingSettings] with a @scala[`RoutingSettings => RoutingSettings` function]@java[`Function<RoutingSettings, RoutingSettings>`].
 
 See also @ref[withSettings](withSettings.md) or @ref[extractSettings](extractSettings.md).
 

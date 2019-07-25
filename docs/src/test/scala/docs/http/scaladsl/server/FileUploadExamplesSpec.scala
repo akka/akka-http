@@ -23,7 +23,7 @@ class FileUploadExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   case class Video(file: File, title: String, author: String)
   object db {
-    def create(video: Video): Future[Unit] = Future.successful(Unit)
+    def create(video: Video): Future[Unit] = Future.successful(())
   }
 
   "simple-upload" in {

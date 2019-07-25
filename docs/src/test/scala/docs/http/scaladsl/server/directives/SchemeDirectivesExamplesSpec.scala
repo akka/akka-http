@@ -28,14 +28,16 @@ class SchemeDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     import StatusCodes.MovedPermanently
 
     val route =
-      scheme("http") {
-        extract(_.request.uri) { uri =>
-          redirect(uri.copy(scheme = "https"), MovedPermanently)
-        }
-      } ~
+      concat(
+        scheme("http") {
+          extract(_.request.uri) { uri =>
+            redirect(uri.copy(scheme = "https"), MovedPermanently)
+          }
+        },
         scheme("https") {
           complete(s"Safe and secure!")
         }
+      )
 
     // tests:
     Get("http://www.example.com/hello") ~> route ~> check {

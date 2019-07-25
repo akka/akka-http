@@ -21,7 +21,6 @@ import akka.http.impl.engine.server._
 import akka.http.impl.engine.ws.WebSocketClientBlueprint
 import akka.http.impl.settings.{ ConnectionPoolSetup, HostConnectionPoolSetup }
 import akka.http.impl.util.StreamUtils
-import akka.http.scaladsl.UseHttp2.{ Always, Never }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.ws.{ Message, WebSocketRequest, WebSocketUpgradeResponse }
@@ -103,8 +102,8 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
 
     val serverBidiFlow =
       settings.idleTimeout match {
-        case t: FiniteDuration ⇒ httpLayer atop tlsStage atop HttpConnectionIdleTimeoutBidi(t, None)
-        case _                 ⇒ httpLayer atop tlsStage
+        case t: FiniteDuration => httpLayer atop tlsStage atop HttpConnectionIdleTimeoutBidi(t, None)
+        case _                 => httpLayer atop tlsStage
       }
 
     GracefulTerminatorStage(system, settings) atop serverBidiFlow
@@ -119,11 +118,11 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     Flow.fromGraph(
       Flow[HttpRequest]
         .watchTermination()(Keep.right)
-        .viaMat(handler)(Keep.left)
-        .watchTermination() { (termWatchBefore, termWatchAfter) ⇒
+        .via(handler)
+        .watchTermination() { (termWatchBefore, termWatchAfter) =>
           // flag termination when the user handler has gotten (or has emitted) termination
           // signals in both directions
-          termWatchBefore.flatMap(_ ⇒ termWatchAfter)(ExecutionContexts.sameThreadExecutionContext)
+          termWatchBefore.flatMap(_ => termWatchAfter)(ExecutionContexts.sameThreadExecutionContext)
         }
         .joinMat(baseFlow)(Keep.both)
     )
@@ -184,16 +183,16 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     val masterTerminator = new MasterServerTerminator(log)
 
     tcpBind(interface, choosePort(port, connectionContext, settings), settings)
-      .map(incoming ⇒ {
+      .map(incoming => {
         val preparedLayer: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, ServerTerminator] = fullLayer.addAttributes(prepareAttributes(settings, incoming))
         val serverFlow: Flow[HttpResponse, HttpRequest, ServerTerminator] = preparedLayer join incoming.flow
         IncomingConnection(incoming.localAddress, incoming.remoteAddress, serverFlow)
       })
       .mapMaterializedValue {
-        _.map(tcpBinding ⇒
+        _.map(tcpBinding =>
           ServerBinding(tcpBinding.localAddress)(
-            () ⇒ tcpBinding.unbind(),
-            timeout ⇒ masterTerminator.terminate(timeout)(systemMaterializer.executionContext)
+            () => tcpBinding.unbind(),
+            timeout => masterTerminator.terminate(timeout)(systemMaterializer.executionContext)
           )
         )(systemMaterializer.executionContext)
       }
@@ -229,20 +228,20 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     val masterTerminator = new MasterServerTerminator(log)
 
     tcpBind(interface, choosePort(port, connectionContext, settings), settings)
-      .mapAsyncUnordered(settings.maxConnections) { incoming ⇒
+      .mapAsyncUnordered(settings.maxConnections) { incoming =>
         try {
           fullLayer
             .watchTermination() {
-              case ((done, connectionTerminator), whenTerminates) ⇒
-                whenTerminates.onComplete({ _ ⇒
+              case ((done, connectionTerminator), whenTerminates) =>
+                whenTerminates.onComplete({ _ =>
                   masterTerminator.removeConnection(connectionTerminator)
                 })(fm.executionContext)
                 (done, connectionTerminator)
             }
             .addAttributes(prepareAttributes(settings, incoming))
-            .joinMat(incoming.flow)(Keep.left)
+            .join(incoming.flow)
             .mapMaterializedValue {
-              case (future, connectionTerminator) ⇒
+              case (future, connectionTerminator) =>
                 masterTerminator.registerConnection(connectionTerminator)(fm.executionContext)
                 future // drop the terminator matValue, we already registered is which is all we need to do here
             }
@@ -253,20 +252,20 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
               // As far as it is known currently, these errors can only happen if a TCP error bubbles up
               // from the TCP layer through the HTTP layer to the Http.IncomingConnection.flow.
               // See https://github.com/akka/akka/issues/17992
-              case NonFatal(ex) ⇒ Done
+              case NonFatal(ex) => Done
             }(ExecutionContexts.sameThreadExecutionContext)
         } catch {
-          case NonFatal(e) ⇒
+          case NonFatal(e) =>
             log.error(e, "Could not materialize handling flow for {}", incoming)
             throw e
         }
       }
-      .mapMaterializedValue { m ⇒
-        m.map(tcpBinding ⇒
+      .mapMaterializedValue { m =>
+        m.map(tcpBinding =>
           ServerBinding(
             tcpBinding.localAddress)(
-              () ⇒ tcpBinding.unbind(),
-              timeout ⇒ masterTerminator.terminate(timeout)(fm.executionContext)
+              () => tcpBinding.unbind(),
+              timeout => masterTerminator.terminate(timeout)(fm.executionContext)
             )
         )(fm.executionContext)
       }
@@ -286,7 +285,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    * use the `akka.http.server` config section or pass in a [[akka.http.scaladsl.settings.ServerSettings]] explicitly.
    */
   def bindAndHandleSync(
-    handler:   HttpRequest ⇒ HttpResponse,
+    handler:   HttpRequest => HttpResponse,
     interface: String, port: Int = DefaultPortForProtocol,
     connectionContext: ConnectionContext = defaultServerHttpContext,
     settings:          ServerSettings    = ServerSettings(system),
@@ -312,17 +311,15 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    * Any other value for `parallelism` overrides the setting.
    */
   def bindAndHandleAsync(
-    handler:   HttpRequest ⇒ Future[HttpResponse],
+    handler:   HttpRequest => Future[HttpResponse],
     interface: String, port: Int = DefaultPortForProtocol,
     connectionContext: ConnectionContext = defaultServerHttpContext,
     settings:          ServerSettings    = ServerSettings(system),
     parallelism:       Int               = 0,
     log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
-    val http2Enabled = settings.previewServerSettings.enableHttp2 && connectionContext.http2 != Never
-    val http2Forced = connectionContext.http2 == Always
-    if (http2Enabled && (connectionContext.isSecure || http2Forced)) {
+    if (settings.previewServerSettings.enableHttp2) {
       // We do not support HTTP/2 negotiation for insecure connections (h2c), https://github.com/akka/akka-http/issues/1966
-      log.debug("Binding server using HTTP/2{}", if (http2Forced) " (forced to be used without TLS)" else "")
+      log.debug("Binding server using HTTP/2")
 
       val definitiveSettings =
         if (parallelism > 0) settings.mapHttp2Settings(_.withMaxConcurrentStreams(parallelism))
@@ -330,10 +327,6 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
         else settings
       Http2Shadow.bindAndHandleAsync(handler, interface, port, connectionContext, definitiveSettings, definitiveSettings.http2Settings.maxConcurrentStreams, log)(fm)
     } else {
-      if (http2Enabled)
-        log.debug("The akka.http.server.preview.enable-http2 flag was set, " +
-          "but a plain HttpConnectionContext (not Https) was given, binding using plain HTTP...")
-
       val definitiveParallelism =
         if (parallelism > 0) parallelism
         else if (parallelism < 0) throw new IllegalArgumentException("Only positive values allowed for `parallelism`.")
@@ -475,7 +468,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   private def _outgoingTlsConnectionLayer(host: String, port: Int,
                                           settings: ClientConnectionSettings, connectionContext: ConnectionContext,
                                           log: LoggingAdapter): Flow[SslTlsOutbound, SslTlsInbound, Future[OutgoingConnection]] = {
-    val tlsStage = sslTlsStage(connectionContext, Client, Some(host → port))
+    val tlsStage = sslTlsStage(connectionContext, Client, Some(host -> port))
 
     tlsStage.joinMat(settings.transport.connectTo(host, port, settings))(Keep.right)
   }
@@ -682,7 +675,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
     settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
     log:               LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] =
-    clientFlow[T](settings) { request ⇒ request → sharedGateway(request, settings, connectionContext, log) }
+    clientFlow[T](settings) { request => request -> sharedGateway(request, settings, connectionContext, log) }
 
   @deprecated("Deprecated in favor of method without implicit materializer", "10.0.11") // kept as `private[http]` for binary compatibility
   private[http] def superPool[T](
@@ -720,7 +713,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
       val gateway = sharedGateway(request, settings, connectionContext, log)
       gateway(request)
     } catch {
-      case e: IllegalUriException ⇒ FastFuture.failed(e)
+      case e: IllegalUriException => FastFuture.failed(e)
     }
 
   @deprecated("Deprecated in favor of method without implicit materializer", "10.0.11") // kept as `private[http]` for binary compatibility
@@ -758,10 +751,10 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     require(uri.isAbsolute, s"WebSocket request URI must be absolute but was '$uri'")
 
     val ctx = uri.scheme match {
-      case "ws"                                ⇒ ConnectionContext.noEncryption()
-      case "wss" if connectionContext.isSecure ⇒ connectionContext
-      case "wss"                               ⇒ throw new IllegalArgumentException("Provided connectionContext is not secure, yet request to secure `wss` endpoint detected!")
-      case scheme ⇒
+      case "ws"                                => ConnectionContext.noEncryption()
+      case "wss" if connectionContext.isSecure => connectionContext
+      case "wss"                               => throw new IllegalArgumentException("Provided connectionContext is not secure, yet request to secure `wss` endpoint detected!")
+      case scheme =>
         throw new IllegalArgumentException(s"Illegal URI scheme '$scheme' in '$uri' for WebSocket request. " +
           s"WebSocket requests must use either 'ws' or 'wss'")
     }
@@ -769,7 +762,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     val port = uri.effectivePort
 
     webSocketClientLayer(request, settings, log)
-      .joinMat(_outgoingTlsConnectionLayer(host, port, settings.withLocalAddressOverride(localAddress), ctx, log))(Keep.left)
+      .join(_outgoingTlsConnectionLayer(host, port, settings.withLocalAddressOverride(localAddress), ctx, log))
   }
 
   /**
@@ -797,7 +790,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   def shutdownAllConnectionPools(): Future[Unit] = {
     val shutdownCompletedPromise = Promise[Done]()
     poolMasterActorRef ! ShutdownAll(shutdownCompletedPromise)
-    shutdownCompletedPromise.future.map(_ ⇒ ())(system.dispatcher)
+    shutdownCompletedPromise.future.map(_ => ())(system.dispatcher)
   }
 
   /**
@@ -827,11 +820,11 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   def defaultClientHttpsContext: HttpsConnectionContext =
     synchronized {
       _defaultClientHttpsConnectionContext match {
-        case null ⇒
+        case null =>
           val ctx = createDefaultClientHttpsContext()
           _defaultClientHttpsConnectionContext = ctx
           ctx
-        case ctx ⇒ ctx
+        case ctx => ctx
       }
     }
 
@@ -862,17 +855,17 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   private def gatewayClientFlow[T](
     hcps:    HostConnectionPoolSetup,
     gateway: PoolGateway): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
-    clientFlow[T](hcps.setup.settings)(_ → gateway)
-      .mapMaterializedValue(_ ⇒ HostConnectionPool(hcps)(gateway))
+    clientFlow[T](hcps.setup.settings)(_ -> gateway)
+      .mapMaterializedValue(_ => HostConnectionPool(hcps)(gateway))
 
-  private def clientFlow[T](settings: ConnectionPoolSettings)(f: HttpRequest ⇒ (HttpRequest, PoolGateway)): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] = {
+  private def clientFlow[T](settings: ConnectionPoolSettings)(f: HttpRequest => (HttpRequest, PoolGateway)): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] = {
     // a connection pool can never have more than pipeliningLimit * maxConnections requests in flight at any point
     val parallelism = settings.pipeliningLimit * settings.maxConnections
     Flow[(HttpRequest, T)].mapAsyncUnordered(parallelism) {
-      case (request, userContext) ⇒
+      case (request, userContext) =>
         val (effectiveRequest, gateway) = f(request)
         val result = Promise[(Try[HttpResponse], T)]() // TODO: simplify to `transformWith` when on Scala 2.12
-        gateway(effectiveRequest).onComplete(responseTry ⇒ result.success(responseTry → userContext))(ExecutionContexts.sameThreadExecutionContext)
+        gateway(effectiveRequest).onComplete(responseTry => result.success(responseTry -> userContext))(ExecutionContexts.sameThreadExecutionContext)
         result.future
     }
   }
@@ -880,8 +873,8 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   /** Creates real or placebo SslTls stage based on if ConnectionContext is HTTPS or not. */
   private[http] def sslTlsStage(connectionContext: ConnectionContext, role: TLSRole, hostInfo: Option[(String, Int)] = None) =
     connectionContext match {
-      case hctx: HttpsConnectionContext ⇒ TLS(hctx.sslContext, connectionContext.sslConfig, hctx.firstSession, role, hostInfo = hostInfo, closing = TLSClosing.eagerClose)
-      case other                        ⇒ TLSPlacebo() // if it's not HTTPS, we don't enable SSL/TLS
+      case hctx: HttpsConnectionContext => TLS(hctx.sslContext, connectionContext.sslConfig, hctx.firstSession, role, hostInfo = hostInfo, closing = TLSClosing.eagerClose)
+      case other                        => TLSPlacebo() // if it's not HTTPS, we don't enable SSL/TLS
     }
 
   /**
@@ -952,8 +945,8 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
    *
    */
   final case class ServerBinding(localAddress: InetSocketAddress)(
-    private val unbindAction:    () ⇒ Future[Unit],
-    private val terminateAction: FiniteDuration ⇒ Future[HttpTerminated]
+    private val unbindAction:    () => Future[Unit],
+    private val terminateAction: FiniteDuration => Future[HttpTerminated]
   ) {
 
     private val _whenTerminationSignalIssued = Promise[Deadline]()
@@ -977,7 +970,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
      * The produced [[scala.concurrent.Future]] is fulfilled when the unbinding has been completed.
      */
     def unbind(): Future[Done] =
-      unbindAction().map(_ ⇒ Done)(ExecutionContexts.sameThreadExecutionContext)
+      unbindAction().map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)
 
     /**
      * Triggers "graceful" termination request being handled on this connection.
@@ -1024,7 +1017,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
       require(hardDeadline > Duration.Zero, "deadline must be greater than 0, was: " + hardDeadline)
 
       _whenTerminationSignalIssued.trySuccess(hardDeadline.fromNow)
-      val terminated = unbindAction().flatMap(_ ⇒ terminateAction(hardDeadline))(ExecutionContexts.sameThreadExecutionContext)
+      val terminated = unbindAction().flatMap(_ => terminateAction(hardDeadline))(ExecutionContexts.sameThreadExecutionContext)
       _whenTerminated.completeWith(terminated)
       whenTerminated
     }
@@ -1072,7 +1065,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
     remoteAddress: InetSocketAddress,
     _flow:         Flow[HttpResponse, HttpRequest, ServerTerminator]) {
 
-    def flow: Flow[HttpResponse, HttpRequest, NotUsed] = _flow.mapMaterializedValue(_ ⇒ NotUsed)
+    def flow: Flow[HttpResponse, HttpRequest, NotUsed] = _flow.mapMaterializedValue(_ => NotUsed)
 
     /**
      * Handles the connection with the given flow, which is materialized exactly once
@@ -1084,13 +1077,13 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
     /**
      * Handles the connection with the given handler function.
      */
-    def handleWithSyncHandler(handler: HttpRequest ⇒ HttpResponse)(implicit fm: Materializer): Unit =
+    def handleWithSyncHandler(handler: HttpRequest => HttpResponse)(implicit fm: Materializer): Unit =
       handleWith(Flow[HttpRequest].map(handler))
 
     /**
      * Handles the connection with the given handler function.
      */
-    def handleWithAsyncHandler(handler: HttpRequest ⇒ Future[HttpResponse], parallelism: Int = 1)(implicit fm: Materializer): Unit =
+    def handleWithAsyncHandler(handler: HttpRequest => Future[HttpResponse], parallelism: Int = 1)(implicit fm: Materializer): Unit =
       handleWith(Flow[HttpRequest].mapAsync(parallelism)(handler))
   }
 
@@ -1210,12 +1203,12 @@ trait DefaultSSLContextCreation {
     defaultParams.setCipherSuites(cipherSuites)
 
     // auth!
-    import com.typesafe.sslconfig.ssl.{ ClientAuth ⇒ SslClientAuth }
+    import com.typesafe.sslconfig.ssl.{ ClientAuth => SslClientAuth }
     val clientAuth = config.sslParametersConfig.clientAuth match {
-      case SslClientAuth.Default ⇒ None
-      case SslClientAuth.Want    ⇒ Some(TLSClientAuth.Want)
-      case SslClientAuth.Need    ⇒ Some(TLSClientAuth.Need)
-      case SslClientAuth.None    ⇒ Some(TLSClientAuth.None)
+      case SslClientAuth.Default => None
+      case SslClientAuth.Want    => Some(TLSClientAuth.Want)
+      case SslClientAuth.Need    => Some(TLSClientAuth.Need)
+      case SslClientAuth.None    => Some(TLSClientAuth.None)
     }
 
     // hostname!
@@ -1229,8 +1222,7 @@ trait DefaultSSLContextCreation {
       Some(cipherSuites.toList),
       Some(defaultProtocols.toList),
       clientAuth,
-      Some(defaultParams),
-      UseHttp2.Negotiated)
+      Some(defaultParams))
   }
 
 }

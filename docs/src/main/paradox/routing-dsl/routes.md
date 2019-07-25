@@ -97,7 +97,7 @@ HTTP and which you can also easily create yourself.
 <a id="the-routing-tree"></a>
 ## The Routing Tree
 
-Essentially, when you combine directives and custom routes via nesting and the @scala[`~` operator]@java[alternative], you build a routing
+Essentially, when you combine directives and custom routes via the `concat` method, you build a routing
 structure that forms a tree. When a request comes in it is injected into this tree at the root and flows down through
 all the branches in a depth-first manner until either some node completes it or it is fully rejected.
 
@@ -108,18 +108,22 @@ Consider this schematic example:
 ```scala
 val route =
   a {
-    b {
-      c {
-        ... // route 1
-      } ~
-      d {
-        ... // route 2
-      } ~
-      ... // route 3
-    } ~
-    e {
-      ... // route 4
-    }
+    concat(
+      b {
+        concat(
+          c {
+            ... // route 1
+          },
+          d {
+            ... // route 2
+          },
+          ... // route 3
+        )
+      },
+      e {
+        ... // route 4
+      }
+    )
   }
 ```
 
@@ -131,8 +135,8 @@ val route =
 import static akka.http.javadsl.server.Directives.*;
 
 Route route =
-  directiveA(route(() ->
-    directiveB(route(() ->
+  directiveA(concat(() ->
+    directiveB(concat(() ->
       directiveC(
         ... // route 1
       ),

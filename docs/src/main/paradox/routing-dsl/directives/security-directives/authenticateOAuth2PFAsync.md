@@ -11,7 +11,7 @@
 
 ## Description
 
-Wraps the inner route with OAuth Bearer Token authentication support using a given @scala[`AsyncAuthenticatorPF[T]`]@java[`AsyncAuthenticatorPF<T>`].
+Wraps the inner route with OAuth Bearer Token authentication support using a given @scala[@scaladoc[AsyncAuthenticatorPF[T]](akka.http.scaladsl.server.Directives#AsyncAuthenticatorPF[T]=PartialFunction[akka.http.scaladsl.server.directives.Credentials,scala.concurrent.Future[T]])]@java[`AsyncAuthenticatorPF<T>` - Partial function from `Optional<ProvidedCredentials>` to `CompletionStage<User>`].
 
 Provides support for extracting the so-called "*Bearer Token*" from the @apidoc[Authorization] HTTP Header,
 which is used to initiate an OAuth2 authorization.

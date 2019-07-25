@@ -53,7 +53,7 @@ private object PoolSlot {
    * shutting down completely).
    */
   private class SlotProcessor(slotIx: Int, connectionFlow: ConnectionFlow, val log: LoggingAdapter)
-    extends GraphStage[FanOutShape2[SlotCommand, ResponseContext, RawSlotEvent]] { stage ⇒
+    extends GraphStage[FanOutShape2[SlotCommand, ResponseContext, RawSlotEvent]] { stage =>
 
     val slotCommandIn: Inlet[SlotCommand] = Inlet("SlotProcessor.slotCommandIn")
     val responseOut: Outlet[ResponseContext] = Outlet("SlotProcessor.responseOut")
@@ -80,17 +80,17 @@ private object PoolSlot {
 
           // if there was an error sending the request may have been sent so decrement retriesLeft
           // otherwise the downstream hasn't sent so sent them back without modifying retriesLeft
-          val (retries, failures) = ex.map { fail ⇒
+          val (retries, failures) = ex.map { fail =>
             val (inflightRetry, inflightFail) = inflightRequests.iterator().asScala.partition(_.retriesLeft > 0)
-            val retries = inflightRetry.map(rc ⇒ SlotEvent.RetryRequest(rc.copy(retriesLeft = rc.retriesLeft - 1))).toList
-            val failures = inflightFail.map(rc ⇒ ResponseContext(rc, Failure(fail))).toList
+            val retries = inflightRetry.map(rc => SlotEvent.RetryRequest(rc.copy(retriesLeft = rc.retriesLeft - 1))).toList
+            val failures = inflightFail.map(rc => ResponseContext(rc, Failure(fail))).toList
             (retries, failures)
-          }.getOrElse((inflightRequests.iterator().asScala.map(rc ⇒ SlotEvent.RetryRequest(rc)).toList, Nil))
+          }.getOrElse((inflightRequests.iterator().asScala.map(rc => SlotEvent.RetryRequest(rc)).toList, Nil))
 
           inflightRequests.clear()
 
           emitMultiple(responseOut, failures)
-          emitMultiple(eventOut, SlotEvent.Disconnected(slotIx, retries.size + failures.size) :: retries, () ⇒ if (failures.isEmpty && !hasBeenPulled(slotCommandIn)) pull(slotCommandIn))
+          emitMultiple(eventOut, SlotEvent.Disconnected(slotIx, retries.size + failures.size) :: retries, () => if (failures.isEmpty && !hasBeenPulled(slotCommandIn)) pull(slotCommandIn))
         }
       }
 
@@ -142,12 +142,12 @@ private object PoolSlot {
 
           val completed =
             whenCompleted
-              .map { _ ⇒
+              .map { _ =>
                 debug(s"Finished reading response entity for ${requestContext.request.debugString} -> ${response.debugString}")
                 SlotEvent.RequestCompleted(slotIx)
               }
               .recoverWith {
-                case ex ⇒
+                case ex =>
                   debug(s"Reading response entity for ${requestContext.request.debugString} -> ${response.debugString} failed with ${ex.getMessage}")
                   FastFuture.successful(SlotEvent.RequestCompleted(slotIx))
               }
@@ -185,19 +185,19 @@ private object PoolSlot {
 
           currentConnectionInfo = Some(
             Source.fromGraph(connectionFlowSource.source)
-              .viaMat(connectionFlow)(Keep.right).toMat(Sink.fromGraph(connectionFlowSink.sink))(Keep.left).run()(subFusingMaterializer)
+              .viaMat(connectionFlow)(Keep.right).to(Sink.fromGraph(connectionFlowSink.sink)).run()(subFusingMaterializer)
           )
 
           connectionFlowSink.pull()
         }
 
         grab(slotCommandIn) match {
-          case ConnectEagerlyCommand ⇒
+          case ConnectEagerlyCommand =>
             if (!isConnected) establishConnectionFlow()
 
             emit(eventOut, ConnectedEagerly(slotIx))
 
-          case DispatchCommand(rc: RequestContext) ⇒
+          case DispatchCommand(rc: RequestContext) =>
             if (isConnected) dispatchRequest(rc)
             else {
               firstRequest = rc
@@ -227,14 +227,14 @@ private object PoolSlot {
         def formatAddr(addr: InetSocketAddress): String = addr.toString
         def connectionInfoString: String =
           currentConnectionInfo.flatMap(_.value).flatMap(_.toOption)
-            .fold("unconnected")(c ⇒ s"${formatAddr(c.localAddress)}->${formatAddr(c.remoteAddress)}")
+            .fold("unconnected")(c => s"${formatAddr(c.localAddress)}->${formatAddr(c.remoteAddress)}")
 
         s"[$slotIx] <$connectionInfoString> "
       }
 
       private def inflightRequestsInfo: String =
         if (inflightRequests.isEmpty) "while no requests were in flight"
-        else s"while running ${inflightRequests.asScala.map(rc ⇒ rc.request.debugString).mkString(", ")}"
+        else s"while running ${inflightRequests.asScala.map(rc => rc.request.debugString).mkString(", ")}"
     }
   }
 }

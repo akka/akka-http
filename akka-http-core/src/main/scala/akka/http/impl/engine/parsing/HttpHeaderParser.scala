@@ -6,7 +6,7 @@ package akka.http.impl.engine.parsing
 
 import java.nio.{ ByteBuffer, CharBuffer }
 import java.util.Arrays.copyOf
-import java.lang.{ StringBuilder ⇒ JStringBuilder }
+import java.lang.{ StringBuilder => JStringBuilder }
 
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
@@ -70,7 +70,7 @@ import akka.http.impl.model.parser.CharacterClasses._
 private[engine] final class HttpHeaderParser private (
   val settings:                      HttpHeaderParser.Settings,
   val log:                           LoggingAdapter,
-  onIllegalHeader:                   ErrorInfo ⇒ Unit,
+  onIllegalHeader:                   ErrorInfo => Unit,
   private[this] var nodes:           Array[Char]               = new Array(512), // initial size, can grow as needed
   private[this] var nodeCount:       Int                       = 0,
   private[this] var branchData:      Array[Short]              = new Array(254 * 3),
@@ -118,33 +118,33 @@ private[engine] final class HttpHeaderParser private (
           insertRemainingCharsAsNewNodes(input, header)(cursor, endIx, valueIx)
           values(rootValueIx) = ValueBranch(rootValueIx, valueParser, branchRootNodeIx = nodeIx, valueCount = 1)
         } catch {
-          case OutOfTrieSpaceException ⇒ // if we cannot insert a value then we simply don't
+          case OutOfTrieSpaceException => // if we cannot insert a value then we simply don't
         }
       resultHeader = header
       endIx
     }
     val node = nodes(nodeIx)
     node & 0xFF match {
-      case 0 ⇒ // leaf node (or intermediate ValueBranch pointer)
+      case 0 => // leaf node (or intermediate ValueBranch pointer)
         val valueIx = (node >>> 8) - 1
         values(valueIx) match {
-          case branch: ValueBranch            ⇒ parseHeaderValue(input, cursor, branch)()
-          case valueParser: HeaderValueParser ⇒ startValueBranch(valueIx, valueParser) // no header yet of this type
-          case EmptyHeader                    ⇒ resultHeader = EmptyHeader; cursor
+          case branch: ValueBranch            => parseHeaderValue(input, cursor, branch)()
+          case valueParser: HeaderValueParser => startValueBranch(valueIx, valueParser) // no header yet of this type
+          case EmptyHeader                    => resultHeader = EmptyHeader; cursor
         }
-      case nodeChar ⇒
+      case nodeChar =>
         val char = CharUtils.toLowerCase(byteChar(input, cursor))
         if (char == node) // fast match, advance and descend
           parseHeaderLine(input, lineStart)(cursor + 1, nodeIx + 1)
         else node >>> 8 match {
-          case 0 ⇒ // header doesn't exist yet and has no model (since we have not yet seen a colon)
+          case 0 => // header doesn't exist yet and has no model (since we have not yet seen a colon)
             parseRawHeader(input, lineStart, cursor, nodeIx)
-          case msb ⇒ // branching node
+          case msb => // branching node
             val signum = math.signum(char - nodeChar)
             branchData(rowIx(msb) + 1 + signum) match {
-              case 0 ⇒ // header doesn't exist yet and has no model (otherwise we'd arrive at a value)
+              case 0 => // header doesn't exist yet and has no model (otherwise we'd arrive at a value)
                 parseRawHeader(input, lineStart, cursor, nodeIx)
-              case subNodeIx ⇒ // descend into branch and advance on char matches (otherwise descend but don't advance)
+              case subNodeIx => // descend into branch and advance on char matches (otherwise descend but don't advance)
                 parseHeaderLine(input, lineStart)(cursor + 1 - math.abs(signum), subNodeIx)
             }
         }
@@ -160,7 +160,7 @@ private[engine] final class HttpHeaderParser private (
       insert(input, valueParser)(cursor, colonIx + 1, nodeIx, colonIx)
       parseHeaderLine(input, lineStart)(cursor, nodeIx)
     } catch {
-      case OutOfTrieSpaceException ⇒ // if we cannot insert we drop back to simply creating new header instances
+      case OutOfTrieSpaceException => // if we cannot insert we drop back to simply creating new header instances
         val (headerValue, endIx) = scanHeaderValue(this, input, colonIx + 1, colonIx + maxHeaderValueLength + 3,
           log, settings.illegalResponseHeaderValueProcessingMode)()
         resultHeader = RawHeader(headerName, headerValue.trim)
@@ -176,7 +176,7 @@ private[engine] final class HttpHeaderParser private (
         try {
           insert(input, header)(cursor, endIx, nodeIx, colonIx = 0)
           values(branch.valueIx) = branch.withValueCountIncreased
-        } catch { case OutOfTrieSpaceException ⇒ /* if we cannot insert then we simply don't */ }
+        } catch { case OutOfTrieSpaceException => /* if we cannot insert then we simply don't */ }
       resultHeader = header
       endIx
     }
@@ -185,16 +185,16 @@ private[engine] final class HttpHeaderParser private (
     if (char == node) // fast match, descend
       parseHeaderValue(input, valueStart, branch)(cursor + 1, nodeIx + 1)
     else node >>> 8 match {
-      case 0 ⇒ parseAndInsertHeader()
-      case msb ⇒ node & 0xFF match {
-        case 0 ⇒ // leaf node
+      case 0 => parseAndInsertHeader()
+      case msb => node & 0xFF match {
+        case 0 => // leaf node
           resultHeader = values(msb - 1).asInstanceOf[HttpHeader]
           cursor
-        case nodeChar ⇒ // branching node
+        case nodeChar => // branching node
           val signum = math.signum(char - nodeChar)
           branchData(rowIx(msb) + 1 + signum) match {
-            case 0 ⇒ parseAndInsertHeader() // header doesn't exist yet
-            case subNodeIx ⇒ // descend into branch and advance on char matches (otherwise descend but don't advance)
+            case 0 => parseAndInsertHeader() // header doesn't exist yet
+            case subNodeIx => // descend into branch and advance on char matches (otherwise descend but don't advance)
               parseHeaderValue(input, valueStart, branch)(cursor + 1 - math.abs(signum), subNodeIx)
           }
       }
@@ -220,7 +220,7 @@ private[engine] final class HttpHeaderParser private (
       val nodeChar = node & 0xFF
       val signum = math.signum(char - nodeChar)
       node >>> 8 match {
-        case 0 ⇒ // input doesn't exist yet in the trie, insert
+        case 0 => // input doesn't exist yet in the trie, insert
           val valueIx = newValueIndex // compute early in order to trigger OutOfTrieSpaceExceptions before any change
           val rowIx = newBranchDataRowIndex
           unshareIfRequired()
@@ -229,20 +229,20 @@ private[engine] final class HttpHeaderParser private (
           nodes(nodeIx) = nodeBits(rowIx, nodeChar)
           branchData(rowIx + 1) = (nodeIx + 1).toShort
           branchData(rowIx + 1 + signum) = newNodeIx
-        case msb ⇒
+        case msb =>
           if (nodeChar == 0) { // leaf node
             require(cursor == endIx, "Cannot insert key of which a prefix already has a value")
             values(msb - 1) = value // override existing entry
           } else {
             val branchIndex = rowIx(msb) + 1 + signum
             branchData(branchIndex) match { // branching node
-              case 0 ⇒ // branch doesn't exist yet, create
+              case 0 => // branch doesn't exist yet, create
                 val valueIx = newValueIndex // compute early in order to trigger OutOfTrieSpaceExceptions before any change
                 unshareIfRequired()
                 val newNodeIx = nodeCount.toShort
                 insertRemainingCharsAsNewNodes(input, value)(cursor, endIx, valueIx, colonIx)
                 branchData(branchIndex) = newNodeIx // make the previously implicit "equals" sub node explicit
-              case subNodeIx ⇒ // descend, but advance only on match
+              case subNodeIx => // descend, but advance only on match
                 insert(input, value)(cursor + 1 - math.abs(signum), endIx, subNodeIx, colonIx)
             }
           }
@@ -310,28 +310,28 @@ private[engine] final class HttpHeaderParser private (
       def recurseAndPrefixLines(subNodeIx: Int, p1: String, p2: String, p3: String) = {
         val (lines, mainIx) = recurse(subNodeIx)
         val prefixedLines = lines.zipWithIndex map {
-          case (line, ix) ⇒ (if (ix < mainIx) p1 else if (ix > mainIx) p3 else p2) :: line
+          case (line, ix) => (if (ix < mainIx) p1 else if (ix > mainIx) p3 else p2) :: line
         }
-        prefixedLines → mainIx
+        prefixedLines -> mainIx
       }
       def branchLines(dataIx: Int, p1: String, p2: String, p3: String) = branchData(dataIx) match {
-        case 0         ⇒ Seq.empty
-        case subNodeIx ⇒ recurseAndPrefixLines(subNodeIx, p1, p2, p3)._1
+        case 0         => Seq.empty
+        case subNodeIx => recurseAndPrefixLines(subNodeIx, p1, p2, p3)._1
       }
       val node = nodes(nodeIx)
       val char = escape((node & 0xFF).toChar)
       node >>> 8 match {
-        case 0 ⇒ recurseAndPrefixLines(nodeIx + 1, "  ", char + "-", "  ")
-        case msb ⇒ node & 0xFF match {
-          case 0 ⇒ values(msb - 1) match {
-            case ValueBranch(_, valueParser, branchRootNodeIx, _) ⇒
+        case 0 => recurseAndPrefixLines(nodeIx + 1, "  ", char + "-", "  ")
+        case msb => node & 0xFF match {
+          case 0 => values(msb - 1) match {
+            case ValueBranch(_, valueParser, branchRootNodeIx, _) =>
               val pad = " " * (valueParser.headerName.length + 3)
               recurseAndPrefixLines(branchRootNodeIx, pad, "(" + valueParser.headerName + ")-", pad)
-            case vp: HeaderValueParser ⇒ Seq(" (" :: vp.headerName :: ")" :: Nil) → 0
-            case value: RawHeader      ⇒ Seq(" *" :: value.toString :: Nil) → 0
-            case value                 ⇒ Seq(" " :: value.toString :: Nil) → 0
+            case vp: HeaderValueParser => Seq(" (" :: vp.headerName :: ")" :: Nil) -> 0
+            case value: RawHeader      => Seq(" *" :: value.toString :: Nil) -> 0
+            case value                 => Seq(" " :: value.toString :: Nil) -> 0
           }
-          case nodeChar ⇒
+          case nodeChar =>
             val rix = rowIx(msb)
             val preLines = branchLines(rix, "  ", "┌─", "| ")
             val postLines = branchLines(rix + 2, "| ", "└─", "  ")
@@ -345,9 +345,9 @@ private[engine] final class HttpHeaderParser private (
     val sb = new JStringBuilder()
     val (lines, mainLineIx) = recurse()
     lines.zipWithIndex foreach {
-      case (line, ix) ⇒
+      case (line, ix) =>
         sb.append(if (ix == mainLineIx) '-' else ' ')
-        line foreach (s ⇒ sb.append(s))
+        line foreach (s => sb.append(s))
         sb.append('\n')
     }
     sb.toString
@@ -360,12 +360,12 @@ private[engine] final class HttpHeaderParser private (
     def build(nodeIx: Int = 0): Map[String, Int] = {
       val node = nodes(nodeIx)
       node >>> 8 match {
-        case 0 ⇒ build(nodeIx + 1)
-        case msb if (node & 0xFF) == 0 ⇒ values(msb - 1) match {
-          case ValueBranch(_, parser, _, count) ⇒ Map(parser.headerName → count)
-          case _                                ⇒ Map.empty
+        case 0 => build(nodeIx + 1)
+        case msb if (node & 0xFF) == 0 => values(msb - 1) match {
+          case ValueBranch(_, parser, _, count) => Map(parser.headerName -> count)
+          case _                                => Map.empty
         }
-        case msb ⇒
+        case msb =>
           def branch(ix: Int): Map[String, Int] = if (ix > 0) build(ix) else Map.empty
           val rix = rowIx(msb)
           branch(branchData(rix + 0)) ++ branch(branchData(rix + 1)) ++ branch(branchData(rix + 2))
@@ -380,7 +380,7 @@ private[engine] final class HttpHeaderParser private (
   def formatRawTrie: String = {
     def char(c: Char) = (c >> 8).toString + (if ((c & 0xFF) > 0) "/" + (c & 0xFF).toChar else "/Ω")
     s"nodes: ${nodes take nodeCount map char mkString ", "}\n" +
-      s"branchData: ${branchData take branchDataCount grouped 3 map { case Array(a, b, c) ⇒ s"$a/$b/$c" } mkString ", "}\n" +
+      s"branchData: ${branchData take branchDataCount grouped 3 map { case Array(a, b, c) => s"$a/$b/$c" } mkString ", "}\n" +
       s"values: ${values take valueCount mkString ", "}"
   }
 
@@ -461,24 +461,24 @@ private[http] object HttpHeaderParser {
   def apply(settings: HttpHeaderParser.Settings, log: LoggingAdapter) =
     prime(unprimed(settings, log, defaultIllegalHeaderHandler(settings, log)))
 
-  def defaultIllegalHeaderHandler(settings: HttpHeaderParser.Settings, log: LoggingAdapter): ErrorInfo ⇒ Unit =
+  def defaultIllegalHeaderHandler(settings: HttpHeaderParser.Settings, log: LoggingAdapter): ErrorInfo => Unit =
     if (settings.illegalHeaderWarnings)
-      info ⇒ logParsingError(info withSummaryPrepended "Illegal header", log, settings.errorLoggingVerbosity, settings.ignoreIllegalHeaderFor)
+      info => logParsingError(info withSummaryPrepended "Illegal header", log, settings.errorLoggingVerbosity, settings.ignoreIllegalHeaderFor)
     else
-      (_: ErrorInfo) ⇒ _ // Does exactly what the label says - nothing
+      (_: ErrorInfo) => () // Does exactly what the label says - nothing
 
-  def unprimed(settings: HttpHeaderParser.Settings, log: LoggingAdapter, warnOnIllegalHeader: ErrorInfo ⇒ Unit) =
+  def unprimed(settings: HttpHeaderParser.Settings, log: LoggingAdapter, warnOnIllegalHeader: ErrorInfo => Unit) =
     new HttpHeaderParser(settings, log, warnOnIllegalHeader)
 
   def prime(parser: HttpHeaderParser): HttpHeaderParser = {
-    val headerParserFilter: String ⇒ Boolean =
-      if (parser.settings.modeledHeaderParsing) _ ⇒ true // parse all
+    val headerParserFilter: String => Boolean =
+      if (parser.settings.modeledHeaderParsing) _ => true // parse all
       else alwaysParsedHeaders // only parse essential subset of headers
 
     val valueParsers: Seq[HeaderValueParser] =
       HeaderParser.ruleNames
         .filter(headerParserFilter).iterator
-        .map { name ⇒
+        .map { name =>
           new ModeledHeaderValueParser(name, parser.settings.maxHeaderValueLength, parser.settings.headerValueCacheLimit(name), parser.log, parser.settings)
         }.to(scala.collection.immutable.IndexedSeq)
 
@@ -486,11 +486,11 @@ private[http] object HttpHeaderParser {
       if (endIx - startIx > 0) {
         val pivot = (startIx + endIx) / 2
         items(pivot) match {
-          case valueParser: HeaderValueParser ⇒
+          case valueParser: HeaderValueParser =>
             val insertName = valueParser.headerName.toRootLowerCase + ':'
             if (parser.isEmpty) parser.insertRemainingCharsAsNewNodes(ByteString(insertName), valueParser)()
             else parser.insert(ByteString(insertName), valueParser)()
-          case header: String ⇒
+          case header: String =>
             parser.parseHeaderLine(ByteString(header + "\r\nx"))()
         }
         insertInGoodOrder(items)(startIx, pivot)
@@ -513,7 +513,7 @@ private[http] object HttpHeaderParser {
     parser.insertRemainingCharsAsNewNodes(input, value)()
 
   private[parsing] abstract class HeaderValueParser(val headerName: String, val maxValueCount: Int) {
-    def apply(hhp: HttpHeaderParser, input: ByteString, valueStart: Int, onIllegalHeader: ErrorInfo ⇒ Unit): (HttpHeader, Int)
+    def apply(hhp: HttpHeaderParser, input: ByteString, valueStart: Int, onIllegalHeader: ErrorInfo => Unit): (HttpHeader, Int)
     override def toString: String = s"HeaderValueParser[$headerName]"
     def cachingEnabled = maxValueCount > 0
   }
@@ -524,36 +524,36 @@ private[http] object HttpHeaderParser {
       throw new IllegalStateException(s"Missing parser for modeled [$headerName].")
     )
 
-    def apply(hhp: HttpHeaderParser, input: ByteString, valueStart: Int, onIllegalHeader: ErrorInfo ⇒ Unit): (HttpHeader, Int) = {
+    def apply(hhp: HttpHeaderParser, input: ByteString, valueStart: Int, onIllegalHeader: ErrorInfo => Unit): (HttpHeader, Int) = {
       // TODO: optimize by running the header value parser directly on the input ByteString (rather than an extracted String); seems done?
       val (headerValue, endIx) = scanHeaderValue(hhp, input, valueStart, valueStart + maxHeaderValueLength + 2, log, settings.illegalResponseHeaderValueProcessingMode)()
       val trimmedHeaderValue = headerValue.trim
       val header = parser(trimmedHeaderValue) match {
-        case HeaderParser.Success(h) ⇒ h
-        case HeaderParser.Failure(error) ⇒
+        case HeaderParser.Success(h) => h
+        case HeaderParser.Failure(error) =>
           onIllegalHeader(error.withSummaryPrepended(s"Illegal '$headerName' header").withErrorHeaderName(headerName))
           RawHeader(headerName, trimmedHeaderValue)
-        case HeaderParser.RuleNotFound ⇒
+        case HeaderParser.RuleNotFound =>
           throw new IllegalStateException(s"Unexpected RuleNotFound exception for modeled header [$headerName]")
       }
-      header → endIx
+      header -> endIx
     }
   }
 
   private[parsing] class RawHeaderValueParser(headerName: String, maxHeaderValueLength: Int, maxValueCount: Int,
                                               log: LoggingAdapter, mode: IllegalResponseHeaderValueProcessingMode) extends HeaderValueParser(headerName, maxValueCount) {
-    def apply(hhp: HttpHeaderParser, input: ByteString, valueStart: Int, onIllegalHeader: ErrorInfo ⇒ Unit): (HttpHeader, Int) = {
+    def apply(hhp: HttpHeaderParser, input: ByteString, valueStart: Int, onIllegalHeader: ErrorInfo => Unit): (HttpHeader, Int) = {
       val (headerValue, endIx) = scanHeaderValue(hhp, input, valueStart, valueStart + maxHeaderValueLength + 2, log, mode)()
-      RawHeader(headerName, headerValue.trim) → endIx
+      RawHeader(headerName, headerValue.trim) -> endIx
     }
   }
 
   @tailrec private def scanHeaderNameAndReturnIndexOfColon(input: ByteString, start: Int, limit: Int)(ix: Int): Int =
     if (ix < limit)
       byteChar(input, ix) match {
-        case ':'           ⇒ ix
-        case c if tchar(c) ⇒ scanHeaderNameAndReturnIndexOfColon(input, start, limit)(ix + 1)
-        case c             ⇒ fail(s"Illegal character '${escape(c)}' in header name")
+        case ':'           => ix
+        case c if tchar(c) => scanHeaderNameAndReturnIndexOfColon(input, start, limit)(ix + 1)
+        case c             => fail(s"Illegal character '${escape(c)}' in header name")
       }
     else fail(s"HTTP header name exceeds the configured limit of ${limit - start - 1} characters", StatusCodes.RequestHeaderFieldsTooLarge)
 
@@ -565,14 +565,14 @@ private[http] object HttpHeaderParser {
     def appended2(c: Int) = if ((c >> 16) != 0) appended(c.toChar).append((c >> 16).toChar) else appended(c.toChar)
     if (ix < limit)
       byteChar(input, ix) match {
-        case '\t' ⇒ scanHeaderValue(hhp, input, start, limit, log, mode)(appended(' '), ix + 1)
-        case '\r' if byteChar(input, ix + 1) == '\n' ⇒
+        case '\t' => scanHeaderValue(hhp, input, start, limit, log, mode)(appended(' '), ix + 1)
+        case '\r' if byteChar(input, ix + 1) == '\n' =>
           if (WSP(byteChar(input, ix + 2))) scanHeaderValue(hhp, input, start, limit, log, mode)(appended(' '), ix + 3)
           else (if (sb != null) sb.toString else asciiString(input, start, ix), ix + 2)
-        case '\n' ⇒
+        case '\n' =>
           if (WSP(byteChar(input, ix + 1))) scanHeaderValue(hhp, input, start, limit, log, mode)(appended(' '), ix + 2)
           else (if (sb != null) sb.toString else asciiString(input, start, ix), ix + 1)
-        case c ⇒
+        case c =>
           var nix = ix + 1
           val nsb =
             if (' ' <= c && c <= '\u007F') if (sb != null) sb.append(c) else null // legal 7-Bit ASCII
@@ -581,8 +581,8 @@ private[http] object HttpHeaderParser {
               hhp.byteBuffer.put(byteAt(input, ix + 1))
               nix = ix + 2
               hhp.decodeByteBuffer() match { // if we cannot decode as UTF8 we don't decode but simply copy
-                case -1 ⇒ if (sb != null) sb.append(c).append(byteChar(input, ix + 1)) else null
-                case cc ⇒ appended2(cc)
+                case -1 => if (sb != null) sb.append(c).append(byteChar(input, ix + 1)) else null
+                case cc => appended2(cc)
               }
             } else if ((c & 0xF0) == 0xE0) { // 3-byte UTF-8 sequence?
               hhp.byteBuffer.put(c.toByte)
@@ -590,8 +590,8 @@ private[http] object HttpHeaderParser {
               hhp.byteBuffer.put(byteAt(input, ix + 2))
               nix = ix + 3
               hhp.decodeByteBuffer() match { // if we cannot decode as UTF8 we don't decode but simply copy
-                case -1 ⇒ if (sb != null) sb.append(c).append(byteChar(input, ix + 1)).append(byteChar(input, ix + 2)) else null
-                case cc ⇒ appended2(cc)
+                case -1 => if (sb != null) sb.append(c).append(byteChar(input, ix + 1)).append(byteChar(input, ix + 2)) else null
+                case cc => appended2(cc)
               }
             } else if ((c & 0xF8) == 0xF0) { // 4-byte UTF-8 sequence?
               hhp.byteBuffer.put(c.toByte)
@@ -600,18 +600,18 @@ private[http] object HttpHeaderParser {
               hhp.byteBuffer.put(byteAt(input, ix + 3))
               nix = ix + 4
               hhp.decodeByteBuffer() match { // if we cannot decode as UTF8 we don't decode but simply copy
-                case -1 ⇒ if (sb != null) sb.append(c).append(byteChar(input, ix + 1)).append(byteChar(input, ix + 2)).append(byteChar(input, ix + 3)) else null
-                case cc ⇒ appended2(cc)
+                case -1 => if (sb != null) sb.append(c).append(byteChar(input, ix + 1)).append(byteChar(input, ix + 2)).append(byteChar(input, ix + 3)) else null
+                case cc => appended2(cc)
               }
             } else {
               mode match {
-                case ParserSettings.IllegalResponseHeaderValueProcessingMode.Error ⇒
+                case ParserSettings.IllegalResponseHeaderValueProcessingMode.Error =>
                   fail(s"Illegal character '${escape(c)}' in header value")
-                case ParserSettings.IllegalResponseHeaderValueProcessingMode.Warn ⇒
+                case ParserSettings.IllegalResponseHeaderValueProcessingMode.Warn =>
                   // ignore the illegal character and log a warning message
                   log.warning(s"Illegal character '${escape(c)}' in header value")
                   sb
-                case ParserSettings.IllegalResponseHeaderValueProcessingMode.Ignore ⇒
+                case ParserSettings.IllegalResponseHeaderValueProcessingMode.Ignore =>
                   // just ignore the illegal character
                   sb
               }

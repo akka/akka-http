@@ -129,9 +129,9 @@ class TimeoutDirectivesExamplesSpec extends AkkaSpec(TimeoutDirectivesInfiniteTi
       val route =
         path("timeout") {
           withRequestTimeout(timeout1) {
-            extractRequestTimeout { t1 ⇒
+            extractRequestTimeout { t1 =>
               withRequestTimeout(timeout2) {
-                extractRequestTimeout { t2 ⇒
+                extractRequestTimeout { t2 =>
                   complete(
                     if (t1 == timeout1 && t2 == timeout2) StatusCodes.OK
                     else StatusCodes.InternalServerError

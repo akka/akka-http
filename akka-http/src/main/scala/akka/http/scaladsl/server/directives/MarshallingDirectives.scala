@@ -28,16 +28,16 @@ trait MarshallingDirectives {
    * @group marshalling
    */
   def entity[T](um: FromRequestUnmarshaller[T]): Directive1[T] =
-    extractRequestContext.flatMap[Tuple1[T]] { ctx ⇒
+    extractRequestContext.flatMap[Tuple1[T]] { ctx =>
       import ctx.executionContext
       import ctx.materializer
       onComplete(um(ctx.request)) flatMap {
-        case Success(value) ⇒ provide(value)
-        case Failure(RejectionError(r)) ⇒ reject(r)
-        case Failure(Unmarshaller.NoContentException) ⇒ reject(RequestEntityExpectedRejection)
-        case Failure(Unmarshaller.UnsupportedContentTypeException(x)) ⇒ reject(UnsupportedRequestContentTypeRejection(x))
-        case Failure(x: IllegalArgumentException) ⇒ reject(ValidationRejection(x.getMessage.nullAsEmpty, Some(x)))
-        case Failure(x) ⇒ reject(MalformedRequestContentRejection(x.getMessage.nullAsEmpty, x))
+        case Success(value) => provide(value)
+        case Failure(RejectionError(r)) => reject(r)
+        case Failure(Unmarshaller.NoContentException) => reject(RequestEntityExpectedRejection)
+        case Failure(Unmarshaller.UnsupportedContentTypeException(x)) => reject(UnsupportedRequestContentTypeRejection(x))
+        case Failure(x: IllegalArgumentException) => reject(ValidationRejection(x.getMessage.nullAsEmpty, Some(x)))
+        case Failure(x) => reject(MalformedRequestContentRejection(x.getMessage.nullAsEmpty, x))
       }
     } & cancelRejections(RequestEntityExpectedRejection.getClass, classOf[UnsupportedRequestContentTypeRejection])
 
@@ -54,8 +54,8 @@ trait MarshallingDirectives {
    *
    * @group marshalling
    */
-  def completeWith[T](marshaller: ToResponseMarshaller[T])(inner: (T ⇒ Unit) ⇒ Unit): Route =
-    extractRequestContext { ctx ⇒
+  def completeWith[T](marshaller: ToResponseMarshaller[T])(inner: (T => Unit) => Unit): Route =
+    extractRequestContext { ctx =>
       implicit val m = marshaller
       complete {
         val promise = Promise[T]()
@@ -77,8 +77,8 @@ trait MarshallingDirectives {
    *
    * @group marshalling
    */
-  def handleWith[A, B](f: A ⇒ B)(implicit um: FromRequestUnmarshaller[A], m: ToResponseMarshaller[B]): Route =
-    entity(um) { a ⇒ complete(f(a)) }
+  def handleWith[A, B](f: A => B)(implicit um: FromRequestUnmarshaller[A], m: ToResponseMarshaller[B]): Route =
+    entity(um) { a => complete(f(a)) }
 }
 
 object MarshallingDirectives extends MarshallingDirectives

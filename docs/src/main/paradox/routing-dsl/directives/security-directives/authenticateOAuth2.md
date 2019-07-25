@@ -11,7 +11,7 @@
 
 ## Description
 
-Wraps the inner route with OAuth Bearer Token authentication support using a given @scala[`AuthenticatorPF[T]`]@java[`AuthenticatorPF<T>`].
+Wraps the inner route with OAuth Bearer Token authentication support using a given @scala[@scaladoc[Authenticator[T]](akka.http.scaladsl.server.Directives#Authenticator[T]=akka.http.scaladsl.server.directives.Credentials=%3EOption[T])]@java[`Authenticator<T>` - function from `Optional<ProvidedCredentials>` to `Optional<T>`].
 
 Provides support for extracting the so-called "*Bearer Token*" from the @apidoc[Authorization] HTTP Header,
 which is used to initiate an OAuth2 authorization.

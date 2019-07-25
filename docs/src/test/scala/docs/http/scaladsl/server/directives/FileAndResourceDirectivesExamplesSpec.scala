@@ -47,9 +47,10 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec with CompileOnly
   "listDirectoryContents-examples" in compileOnlySpec {
     //#listDirectoryContents-examples
     val route =
-      path("tmp") {
-        listDirectoryContents("/tmp")
-      } ~
+      concat(
+        path("tmp") {
+          listDirectoryContents("/tmp")
+        },
         path("custom") {
           // implement your custom renderer here
           val renderer = new DirectoryRenderer {
@@ -57,6 +58,7 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec with CompileOnly
           }
           listDirectoryContents("/tmp")(renderer)
         }
+      )
 
     // tests:
     Get("/logs/example") ~> route ~> check {

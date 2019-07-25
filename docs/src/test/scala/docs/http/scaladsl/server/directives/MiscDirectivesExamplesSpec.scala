@@ -52,12 +52,14 @@ class MiscDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "requestEntityEmptyPresent-example" in {
     //#requestEntityEmptyPresent-example
     val route =
-      requestEntityEmpty {
-        complete("request entity empty")
-      } ~
+      concat(
+        requestEntityEmpty {
+          complete("request entity empty")
+        },
         requestEntityPresent {
           complete("request entity present")
         }
+      )
 
     // tests:
     Post("/", "text") ~> Route.seal(route) ~> check {
@@ -113,7 +115,7 @@ class MiscDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "withSizeLimit-example" in {
     //#withSizeLimit-example
     val route = withSizeLimit(500) {
-      entity(as[String]) { _ ⇒
+      entity(as[String]) { _ =>
         complete(HttpResponse())
       }
     }
@@ -158,7 +160,7 @@ class MiscDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     val route =
       withSizeLimit(500) {
         withSizeLimit(800) {
-          entity(as[String]) { _ ⇒
+          entity(as[String]) { _ =>
             complete(HttpResponse())
           }
         }
@@ -181,7 +183,7 @@ class MiscDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     //#withoutSizeLimit-example
     val route =
       withoutSizeLimit {
-        entity(as[String]) { _ ⇒
+        entity(as[String]) { _ =>
           complete(HttpResponse())
         }
       }

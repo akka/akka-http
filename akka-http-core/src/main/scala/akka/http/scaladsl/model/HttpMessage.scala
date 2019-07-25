@@ -8,7 +8,7 @@ import akka.stream.scaladsl.Flow
 import akka.stream.{ FlowShape, Graph }
 import java.io.File
 import java.nio.file.Path
-import java.lang.{ Iterable ⇒ JIterable }
+import java.lang.{ Iterable => JIterable }
 import java.util.Optional
 import java.util.concurrent.{ CompletionStage, Executor }
 
@@ -23,7 +23,7 @@ import akka.stream.Materializer
 import akka.util.{ ByteString, HashCode, OptionVal }
 import akka.http.ccompat.{ pre213, since213 }
 import akka.http.impl.util._
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 import akka.http.scaladsl.util.FastFuture._
 import headers._
 
@@ -93,7 +93,7 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def withDefaultHeaders(defaultHeaders: immutable.Seq[HttpHeader]): Self =
     withHeaders {
       if (headers.isEmpty) defaultHeaders
-      else defaultHeaders.foldLeft(headers) { (acc, h) ⇒ if (headers.exists(_ is h.lowercaseName)) acc else h +: acc }
+      else defaultHeaders.foldLeft(headers) { (acc, h) => if (headers.exists(_ is h.lowercaseName)) acc else h +: acc }
     }
 
   @since213
@@ -115,30 +115,30 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: MessageEntity): Self
 
   /** Returns a copy of this message with the list of headers transformed by the given function */
-  def mapHeaders(f: immutable.Seq[HttpHeader] ⇒ immutable.Seq[HttpHeader]): Self = withHeaders(f(headers))
+  def mapHeaders(f: immutable.Seq[HttpHeader] => immutable.Seq[HttpHeader]): Self = withHeaders(f(headers))
 
   /**
    * The content encoding as specified by the Content-Encoding header. If no Content-Encoding header is present the
    * default value 'identity' is returned.
    */
   def encoding: HttpEncoding = header[`Content-Encoding`] match {
-    case Some(x) ⇒ x.encodings.head
-    case None    ⇒ HttpEncodings.identity
+    case Some(x) => x.encodings.head
+    case None    => HttpEncodings.identity
   }
 
   /** Returns the first header of the given type if there is one */
   def header[T >: Null <: jm.HttpHeader: ClassTag]: Option[T] = {
     val clazz = classTag[T].runtimeClass.asInstanceOf[Class[T]]
     HttpHeader.fastFind[T](clazz, headers) match {
-      case OptionVal.Some(h)                     ⇒ Some(h)
-      case _ if clazz == classOf[`Content-Type`] ⇒ Some(`Content-Type`(entity.contentType)).asInstanceOf[Option[T]]
-      case _                                     ⇒ None
+      case OptionVal.Some(h)                     => Some(h)
+      case _ if clazz == classOf[`Content-Type`] => Some(`Content-Type`(entity.contentType)).asInstanceOf[Option[T]]
+      case _                                     => None
     }
   }
 
   /** Returns all the headers of the given type **/
   def headers[T <: jm.HttpHeader: ClassTag]: immutable.Seq[T] = headers.collect {
-    case h: T ⇒ h
+    case h: T => h
   }
 
   /**
@@ -177,8 +177,8 @@ sealed trait HttpMessage extends jm.HttpMessage {
   /** Java API */
   def getHeader[T <: jm.HttpHeader](headerClass: Class[T]): Optional[T] =
     HttpHeader.fastFind[jm.HttpHeader](headerClass.asInstanceOf[Class[jm.HttpHeader]], headers) match {
-      case OptionVal.Some(h) ⇒ Optional.of(h.asInstanceOf[T])
-      case _                 ⇒ Optional.empty()
+      case OptionVal.Some(h) => Optional.of(h.asInstanceOf[T])
+      case _                 => Optional.empty()
     }
   /** Java API */
   def getHeaders[T <: jm.HttpHeader](headerClass: Class[T]): JIterable[T] = {
@@ -211,8 +211,9 @@ sealed trait HttpMessage extends jm.HttpMessage {
 object HttpMessage {
   private[http] def connectionCloseExpected(protocol: HttpProtocol, connectionHeader: Option[Connection]): Boolean =
     protocol match {
-      case HttpProtocols.`HTTP/1.1` ⇒ connectionHeader.isDefined && connectionHeader.get.hasClose
-      case HttpProtocols.`HTTP/1.0` ⇒ connectionHeader.isEmpty || !connectionHeader.get.hasKeepAlive
+      case HttpProtocols.`HTTP/1.1` => connectionHeader.isDefined && connectionHeader.get.hasClose
+      case HttpProtocols.`HTTP/1.0` => connectionHeader.isEmpty || !connectionHeader.get.hasKeepAlive
+      case _                        => throw new UnsupportedOperationException(s"HttpMessage does not support ${protocol.value}.")
     }
 
   /**
@@ -303,7 +304,7 @@ final class HttpRequest(
   /**
    * All cookies provided by the client in one or more `Cookie` headers.
    */
-  def cookies: immutable.Seq[HttpCookiePair] = for (`Cookie`(cookies) ← headers; cookie ← cookies) yield cookie
+  def cookies: immutable.Seq[HttpCookiePair] = for (`Cookie`(cookies) <- headers; cookie <- cookies) yield cookie
 
   /**
    * Determines whether this request can be safely retried, which is the case only of the request method is idempotent.
@@ -317,7 +318,7 @@ final class HttpRequest(
   override def withEntity(entity: jm.RequestEntity): HttpRequest = copy(entity = entity.asInstanceOf[RequestEntity])
   override def withEntity(entity: MessageEntity): HttpRequest = copy(entity = entity)
 
-  def mapEntity(f: RequestEntity ⇒ RequestEntity): HttpRequest = withEntity(f(entity))
+  def mapEntity(f: RequestEntity => RequestEntity): HttpRequest = withEntity(f(entity))
 
   override def withMethod(method: akka.http.javadsl.model.HttpMethod): HttpRequest = copy(method = method.asInstanceOf[HttpMethod])
   override def withProtocol(protocol: akka.http.javadsl.model.HttpProtocol): HttpRequest = copy(protocol = protocol.asInstanceOf[HttpProtocol])
@@ -352,13 +353,13 @@ final class HttpRequest(
   }
 
   override def equals(obj: scala.Any): Boolean = obj match {
-    case HttpRequest(_method, _uri, _headers, _entity, _protocol) ⇒
+    case HttpRequest(_method, _uri, _headers, _entity, _protocol) =>
       method == _method &&
         uri == _uri &&
         headers == _headers &&
         entity == _entity &&
         protocol == _protocol
-    case _ ⇒ false
+    case _ => false
   }
 
   override def toString = s"""HttpRequest(${_1},${_2},${_3},${_4},${_5})"""
@@ -386,9 +387,9 @@ object HttpRequest {
         (host, wsUpgrade.contains(true))
       else
         it.next() match {
-          case h: Host    ⇒ findHostAndWsUpgrade(it, OptionVal.Some(h), wsUpgrade)
-          case u: Upgrade ⇒ findHostAndWsUpgrade(it, host, Some(u.hasWebSocket))
-          case _          ⇒ findHostAndWsUpgrade(it, host, wsUpgrade)
+          case h: Host    => findHostAndWsUpgrade(it, OptionVal.Some(h), wsUpgrade)
+          case u: Upgrade => findHostAndWsUpgrade(it, host, Some(u.hasWebSocket))
+          case _          => findHostAndWsUpgrade(it, host, wsUpgrade)
         }
     val (hostHeader, isWebsocket) = findHostAndWsUpgrade(headers.iterator)
     if (uri.isRelative) {
@@ -397,9 +398,9 @@ object HttpRequest {
           s"Cannot establish effective URI of request to `$uri`, request has a relative URI and $detail",
           "consider setting `akka.http.server.default-host-header`")
       val Host(hostHeaderHost, hostHeaderPort) = hostHeader match {
-        case OptionVal.None                 ⇒ if (defaultHostHeader.isEmpty) fail("is missing a `Host` header") else defaultHostHeader
-        case OptionVal.Some(x) if x.isEmpty ⇒ if (defaultHostHeader.isEmpty) fail("an empty `Host` header") else defaultHostHeader
-        case OptionVal.Some(x)              ⇒ x
+        case OptionVal.None                 => if (defaultHostHeader.isEmpty) fail("is missing a `Host` header") else defaultHostHeader
+        case OptionVal.Some(x) if x.isEmpty => if (defaultHostHeader.isEmpty) fail("an empty `Host` header") else defaultHostHeader
+        case OptionVal.Some(x)              => x
       }
       val defaultScheme =
         if (isWebsocket) Uri.websocketScheme(securedConnection)
@@ -422,12 +423,12 @@ object HttpRequest {
     else {
       def c(i: Int) = CharUtils.toLowerCase(uri.scheme charAt i)
       uri.scheme.length match {
-        case 0 ⇒ // ok
-        case 4 if c(0) == 'h' && c(1) == 't' && c(2) == 't' && c(3) == 'p' ⇒ // ok
-        case 5 if c(0) == 'h' && c(1) == 't' && c(2) == 't' && c(3) == 'p' && c(4) == 's' ⇒ // ok
-        case 2 if c(0) == 'w' && c(1) == 's' ⇒ // ok
-        case 3 if c(0) == 'w' && c(1) == 's' && c(2) == 's' ⇒ // ok
-        case _ ⇒ throw IllegalUriException("""`uri` must have scheme "http", "https", "ws", "wss" or no scheme""")
+        case 0 => // ok
+        case 4 if c(0) == 'h' && c(1) == 't' && c(2) == 't' && c(3) == 'p' => // ok
+        case 5 if c(0) == 'h' && c(1) == 't' && c(2) == 't' && c(3) == 'p' && c(4) == 's' => // ok
+        case 2 if c(0) == 'w' && c(1) == 's' => // ok
+        case 3 if c(0) == 'w' && c(1) == 's' && c(2) == 's' => // ok
+        case _ => throw IllegalUriException("""`uri` must have scheme "http", "https", "ws", "wss" or no scheme""")
       }
     }
 
@@ -478,7 +479,7 @@ final class HttpResponse(
   override def withEntity(entity: MessageEntity): HttpResponse = copy(entity = entity)
   override def withEntity(entity: jm.RequestEntity): HttpResponse = withEntity(entity: jm.ResponseEntity)
 
-  def mapEntity(f: ResponseEntity ⇒ ResponseEntity): HttpResponse = withEntity(f(entity))
+  def mapEntity(f: ResponseEntity => ResponseEntity): HttpResponse = withEntity(f(entity))
 
   def transformEntityDataBytes[T](transformer: Graph[FlowShape[ByteString, ByteString], T]): HttpResponse = copy(entity = entity.transformDataBytes(Flow.fromGraph(transformer)))
 
@@ -491,12 +492,12 @@ final class HttpResponse(
     protocol: HttpProtocol              = protocol) = new HttpResponse(status, headers, entity, protocol)
 
   override def equals(obj: scala.Any): Boolean = obj match {
-    case HttpResponse(_status, _headers, _entity, _protocol) ⇒
+    case HttpResponse(_status, _headers, _entity, _protocol) =>
       status == _status &&
         headers == _headers &&
         entity == _entity &&
         protocol == _protocol
-    case _ ⇒ false
+    case _ => false
   }
 
   override def hashCode: Int = {

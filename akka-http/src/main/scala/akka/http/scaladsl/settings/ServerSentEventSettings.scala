@@ -17,7 +17,7 @@ import com.typesafe.config.Config
  */
 @ApiMayChange @DoNotInherit
 abstract class ServerSentEventSettings private[akka] () extends akka.http.javadsl.settings.ServerSentEventSettings {
-  self: ServerSentEventSettingsImpl ⇒
+  self: ServerSentEventSettingsImpl =>
 
   override def maxEventSize: Int
   override def maxLineSize: Int

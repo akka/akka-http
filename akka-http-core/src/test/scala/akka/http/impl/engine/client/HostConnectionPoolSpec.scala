@@ -59,7 +59,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
       .withMaxConnections(1)
 
   trait PoolImplementation {
-    def get: (Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]], ConnectionPoolSettings, LoggingAdapter) ⇒ Flow[RequestContext, ResponseContext, Any]
+    def get: (Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]], ConnectionPoolSettings, LoggingAdapter) => Flow[RequestContext, ResponseContext, Any]
   }
   trait ClientServerImplementation {
     /** Returns a client / server implementation that include the kill switch flow in the middle */
@@ -480,7 +480,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
 
         def expectResponse(): HttpResponse =
           responseOut.requestNext().response.recover {
-            case ex ⇒ throw new AssertionError("Expected successful response but got exception", ex)
+            case ex => throw new AssertionError("Expected successful response but got exception", ex)
           }.get
 
         def expectResponseEntityAsString(): String =
@@ -501,7 +501,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
           responseOut.requestNext().response.failed.get
       }
 
-      class SetupWithServerProbes(changeSettings: ConnectionPoolSettings ⇒ ConnectionPoolSettings = identity) extends TestSetup {
+      class SetupWithServerProbes(changeSettings: ConnectionPoolSettings => ConnectionPoolSettings = identity) extends TestSetup {
         override protected def settings = changeSettings(defaultSettings)
 
         class ServerConnection(requestPublisher: Publisher[HttpRequest], responseSubscriber: Subscriber[HttpResponse]) {
@@ -564,8 +564,8 @@ class HostConnectionPoolSpec extends AkkaSpec(
 
           def expectErrorOrCompleteOnRequestSide(): Unit =
             serverRequests.expectEventPF {
-              case _: TestSubscriber.OnError ⇒
-              case TestSubscriber.OnComplete ⇒
+              case _: TestSubscriber.OnError =>
+              case TestSubscriber.OnComplete =>
             }
 
           lazy val (outgoingConnection: Future[Http.OutgoingConnection], terminationWatch: Future[Done]) =
@@ -618,7 +618,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
               .toMat(Sink.asPublisher[HttpRequest](false))(Keep.right),
             Source.asSubscriber[HttpResponse])(Keep.both)
             .mapMaterializedValue {
-              case (requestPublisher, responseSubscriber) ⇒
+              case (requestPublisher, responseSubscriber) =>
                 onNewConnection(requestPublisher, responseSubscriber)
             }
       }
@@ -637,7 +637,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
     override def get(connectionKillSwitch: SharedKillSwitch): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, Future[Http.OutgoingConnection]] =
       BidiFlow.fromGraph(PassThroughTransport)
         .atop(BidiFlow.fromFlows(connectionKillSwitch.flow[HttpResponse], connectionKillSwitch.flow[HttpRequest]))
-        .mapMaterializedValue(_ ⇒ Future.successful(newOutgoingConnection()))
+        .mapMaterializedValue(_ => Future.successful(newOutgoingConnection()))
 
     object PassThroughTransport extends GraphStage[BidiShape[HttpResponse, HttpResponse, HttpRequest, HttpRequest]] {
       val reqIn = Inlet[HttpRequest]("reqIn")
@@ -648,7 +648,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
       val shape = BidiShape(resIn, resOut, reqIn, reqOut)
 
       def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-        val failureCallback = getAsyncCallback[Throwable](cause ⇒ failStage(cause))
+        val failureCallback = getAsyncCallback[Throwable](cause => failStage(cause))
         val killSwitch = KillSwitches.shared("entity")
 
         object AddKillSwitch extends StreamUtils.EntityStreamOp[Unit] {
@@ -669,8 +669,8 @@ class HostConnectionPoolSpec extends AkkaSpec(
                 .asInstanceOf[MessageEntity]).asInstanceOf[T] // FIXME: that cast is probably unsafe for CloseLimited
 
             res.onComplete { // if entity fails we report back to fail the stage
-              case Failure(cause) ⇒ failureCallback.invoke(cause)
-              case _              ⇒
+              case Failure(cause) => failureCallback.invoke(cause)
+              case _              =>
             }(materializer.executionContext)
 
             push(out, finalMsg)
@@ -698,7 +698,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
         TLSPlacebo() atop
         BidiFlow.fromFlows(connectionKillSwitch.flow[ByteString], connectionKillSwitch.flow[ByteString]) atop
         TLSPlacebo().reversed atop
-        Http().clientLayer(Host("example.org")).reversed mapMaterializedValue (_ ⇒ Future.successful(newOutgoingConnection()))
+        Http().clientLayer(Host("example.org")).reversed mapMaterializedValue (_ => Future.successful(newOutgoingConnection()))
   }
 
   class KillSwitchedClientTransport(connectionKillSwitch: SharedKillSwitch) extends ClientTransport {
@@ -706,7 +706,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
       Flow[ByteString]
         .via(connectionKillSwitch.flow[ByteString])
         .viaMat(ClientTransport.TCP.connectTo(host, port, settings))(Keep.right)
-        .viaMat(connectionKillSwitch.flow[ByteString])(Keep.left)
+        .via(connectionKillSwitch.flow[ByteString])
   }
 
   /** Transport that uses actual top-level Http APIs to establish a plaintext HTTP connection */
@@ -741,7 +741,7 @@ class HostConnectionPoolSpec extends AkkaSpec(
       system.log.debug("Binding server for test ...")
       val serverBinding: ServerBinding =
         bindServerSource
-          .to(Sink.foreach { serverConnection ⇒
+          .to(Sink.foreach { serverConnection =>
             connectionProbe.ref ! serverConnection
           })
           .run().awaitResult(3.seconds)
@@ -752,12 +752,12 @@ class HostConnectionPoolSpec extends AkkaSpec(
       //   2. when client connection was established, grab server connection as well and attach to proxies
       //      (cannot be implemented with just mapMaterializedValue because there's no transposing constructor for BidiFlow)
       BidiFlow.fromGraph(
-        GraphDSL.create(Sink.asPublisher[HttpResponse](fanout = false), Source.asSubscriber[HttpRequest], clientConnectionFlow(serverBinding, connectionKillSwitch))((_, _, _)) { implicit builder ⇒ (resIn, reqOut, client) ⇒
+        GraphDSL.create(Sink.asPublisher[HttpResponse](fanout = false), Source.asSubscriber[HttpRequest], clientConnectionFlow(serverBinding, connectionKillSwitch))((_, _, _)) { implicit builder => (resIn, reqOut, client) =>
           import GraphDSL.Implicits._
 
           builder.materializedValue ~> Sink.foreach[(Publisher[HttpResponse], Subscriber[HttpRequest], Future[Http.OutgoingConnection])] {
-            case (resOut, reqIn, clientConn) ⇒
-              clientConn.foreach { _ ⇒
+            case (resOut, reqIn, clientConn) =>
+              clientConn.foreach { _ =>
                 val serverConn = connectionProbe.expectMsgType[Http.IncomingConnection]
                 Flow.fromSinkAndSource(
                   Sink.fromSubscriber(reqIn),
@@ -772,10 +772,10 @@ class HostConnectionPoolSpec extends AkkaSpec(
   }
 
   /** Generates a new unique outgoingConnection */
-  protected val newOutgoingConnection: () ⇒ Http.OutgoingConnection = {
+  protected val newOutgoingConnection: () => Http.OutgoingConnection = {
     val portCounter = new AtomicInteger(1)
 
-    () ⇒ {
+    () => {
       val connId = portCounter.getAndIncrement()
       Http.OutgoingConnection(
         InetSocketAddress.createUnresolved(s"local-$connId", connId % 65536),

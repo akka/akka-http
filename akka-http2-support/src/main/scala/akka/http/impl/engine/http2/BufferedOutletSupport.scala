@@ -66,7 +66,7 @@ private[http2] class BufferedOutlet[T](outlet: GenericOutlet[T]) extends OutHand
  */
 @InternalApi
 private[http2] class BufferedOutletExtended[T](outlet: GenericOutlet[T]) extends OutHandler {
-  case class ElementAndTrigger(element: T, trigger: () ⇒ Unit)
+  case class ElementAndTrigger(element: T, trigger: () => Unit)
   final val buffer: java.util.ArrayDeque[ElementAndTrigger] = new java.util.ArrayDeque[ElementAndTrigger]
 
   /**
@@ -83,8 +83,8 @@ private[http2] class BufferedOutletExtended[T](outlet: GenericOutlet[T]) extends
 
   outlet.setHandler(this)
 
-  final def push(element: T): Unit = pushWithTrigger(element, () ⇒ ())
-  final def pushWithTrigger(elem: T, trigger: () ⇒ Unit): Unit =
+  final def push(element: T): Unit = pushWithTrigger(element, () => ())
+  final def pushWithTrigger(elem: T, trigger: () => Unit): Unit =
     if (outlet.canBePushed && buffer.isEmpty) doPush(ElementAndTrigger(elem, trigger))
     else buffer.addLast(ElementAndTrigger(elem, trigger))
 
@@ -97,7 +97,7 @@ private[http2] class BufferedOutletExtended[T](outlet: GenericOutlet[T]) extends
  * INTERNAL API
  */
 @InternalApi
-private[http2] trait GenericOutletSupport { logic: GraphStageLogic ⇒
+private[http2] trait GenericOutletSupport { logic: GraphStageLogic =>
   implicit def fromSubSourceOutlet[T](subSourceOutlet: SubSourceOutlet[T]): GenericOutlet[T] =
     new GenericOutlet[T] {
       def setHandler(handler: OutHandler): Unit = subSourceOutlet.setHandler(handler)

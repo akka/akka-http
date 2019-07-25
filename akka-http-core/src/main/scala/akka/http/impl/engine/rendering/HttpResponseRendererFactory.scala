@@ -32,12 +32,12 @@ private[http] class HttpResponseRendererFactory(
   responseHeaderSizeHint: Int,
   log:                    LoggingAdapter) {
 
-  private val renderDefaultServerHeader: Rendering ⇒ Unit =
+  private val renderDefaultServerHeader: Rendering => Unit =
     serverHeader match {
-      case Some(h) ⇒
+      case Some(h) =>
         val bytes = (new ByteArrayRendering(32) ~~ h ~~ CrLf).get
         _ ~~ bytes
-      case None ⇒ _ ⇒ ()
+      case None => _ => ()
     }
 
   // as an optimization we cache the Date header of the last second here
@@ -51,7 +51,7 @@ private[http] class HttpResponseRendererFactory(
       val r = new ByteArrayRendering(48)
       DateTime(now).renderRfc1123DateTimeString(r ~~ headers.Date) ~~ CrLf
       cachedBytes = r.get
-      cachedDateHeader = cachedSeconds → cachedBytes
+      cachedDateHeader = cachedSeconds -> cachedBytes
     }
     cachedBytes
   }
@@ -76,10 +76,10 @@ private[http] class HttpResponseRendererFactory(
         setHandler(in, new InHandler {
           override def onPush(): Unit =
             render(grab(in)) match {
-              case Strict(outElement) ⇒
+              case Strict(outElement) =>
                 push(out, outElement)
                 if (close) completeStage()
-              case Streamed(outStream) ⇒ transfer(outStream)
+              case Streamed(outStream) => transfer(outStream)
             }
 
           override def onUpstreamFinish(): Unit =
@@ -122,9 +122,9 @@ private[http] class HttpResponseRendererFactory(
 
           def renderStatusLine(): Unit =
             protocol match {
-              case `HTTP/1.1` ⇒ if (status eq StatusCodes.OK) r ~~ DefaultStatusLineBytes else r ~~ StatusLineStartBytes ~~ status ~~ CrLf
-              case `HTTP/1.0` ⇒ r ~~ protocol ~~ ' ' ~~ status ~~ CrLf
-              case other      ⇒ throw new IllegalStateException(s"Unexpected protocol '$other'")
+              case `HTTP/1.1` => if (status eq StatusCodes.OK) r ~~ DefaultStatusLineBytes else r ~~ StatusLineStartBytes ~~ status ~~ CrLf
+              case `HTTP/1.0` => r ~~ protocol ~~ ' ' ~~ status ~~ CrLf
+              case other      => throw new IllegalStateException(s"Unexpected protocol '$other'")
             }
 
           def render(h: HttpHeader) = r ~~ h ~~ CrLf
@@ -141,41 +141,41 @@ private[http] class HttpResponseRendererFactory(
             val it = headers.iterator
             while (it.hasNext)
               it.next() match {
-                case x: Server ⇒
+                case x: Server =>
                   render(x)
                   serverSeen = true
 
-                case x: Date ⇒
+                case x: Date =>
                   render(x)
                   dateSeen = true
 
-                case x: `Content-Length` ⇒
+                case x: `Content-Length` =>
                   suppressionWarning(log, x, "explicit `Content-Length` header is not allowed. Use the appropriate HttpEntity subtype.")
 
-                case x: `Content-Type` ⇒
+                case x: `Content-Type` =>
                   suppressionWarning(log, x, "explicit `Content-Type` header is not allowed. Set `HttpResponse.entity.contentType` instead.")
 
-                case x: `Transfer-Encoding` ⇒
+                case x: `Transfer-Encoding` =>
                   x.withChunkedPeeled match {
-                    case None ⇒
+                    case None =>
                       suppressionWarning(log, x)
-                    case Some(te) ⇒
+                    case Some(te) =>
                       // if the user applied some custom transfer-encoding we need to keep the header
                       render(if (mustRenderTransferEncodingChunkedHeader) te.withChunked else te)
                       transferEncodingSeen = true
                   }
 
-                case x: Connection ⇒
+                case x: Connection =>
                   connHeader = if (connHeader eq null) x else Connection(x.tokens ++ connHeader.tokens)
 
-                case x: CustomHeader ⇒
+                case x: CustomHeader =>
                   if (x.renderInResponses) render(x)
 
                 case x: RawHeader if (x is "content-type") || (x is "content-length") || (x is "transfer-encoding") ||
-                  (x is "date") || (x is "server") || (x is "connection") ⇒
+                  (x is "date") || (x is "server") || (x is "connection") =>
                   suppressionWarning(log, x, "illegal RawHeader")
 
-                case x ⇒
+                case x =>
                   if (x.renderInResponses) render(x)
                   else log.warning("HTTP header '{}' is not allowed in responses", x)
               }
@@ -193,9 +193,9 @@ private[http] class HttpResponseRendererFactory(
                 (ctx.closeRequested.shouldClose && ((connHeader eq null) || !connHeader.hasKeepAlive)) ||
                 // if the application wants to close explicitly
                 (protocol match {
-                  case `HTTP/1.1` ⇒ (connHeader ne null) && connHeader.hasClose
-                  case `HTTP/1.0` ⇒ if (connHeader eq null) ctx.requestProtocol == `HTTP/1.1` else !connHeader.hasKeepAlive
-                  case other      ⇒ throw new IllegalStateException(s"Unexpected protocol '$other'")
+                  case `HTTP/1.1` => (connHeader ne null) && connHeader.hasClose
+                  case `HTTP/1.0` => if (connHeader eq null) ctx.requestProtocol == `HTTP/1.1` else !connHeader.hasKeepAlive
+                  case other      => throw new IllegalStateException(s"Unexpected protocol '$other'")
                 })
             }
 
@@ -210,8 +210,8 @@ private[http] class HttpResponseRendererFactory(
             else if (connHeader != null && connHeader.hasUpgrade) {
               r ~~ connHeader ~~ CrLf
               HttpHeader.fastFind(classOf[UpgradeToWebSocketResponseHeader], headers) match {
-                case OptionVal.Some(header) ⇒ closeMode = SwitchToWebSocket(header.handler)
-                case _                      ⇒ // nothing to do here...
+                case OptionVal.Some(header) => closeMode = SwitchToWebSocket(header.handler)
+                case _                      => // nothing to do here...
               }
             }
             if (mustRenderTransferEncodingChunkedHeader && !transferEncodingSeen)
@@ -221,12 +221,12 @@ private[http] class HttpResponseRendererFactory(
           def renderContentLengthHeader(contentLength: Long) =
             if (status.allowsEntity) r ~~ `Content-Length` ~~ contentLength ~~ CrLf else r
 
-          def byteStrings(entityBytes: ⇒ Source[ByteString, Any]): Source[ResponseRenderingOutput, Any] =
+          def byteStrings(entityBytes: => Source[ByteString, Any]): Source[ResponseRenderingOutput, Any] =
             renderByteStrings(r.asByteString, entityBytes, skipEntity = noEntity).map(ResponseRenderingOutput.HttpData(_))
 
           @tailrec def completeResponseRendering(entity: ResponseEntity): StrictOrStreamed =
             entity match {
-              case HttpEntity.Strict(_, data) ⇒
+              case HttpEntity.Strict(_, data) =>
                 renderHeaders(headers)
                 renderEntityContentType(r, entity)
                 renderContentLengthHeader(data.length) ~~ CrLf
@@ -241,23 +241,23 @@ private[http] class HttpResponseRendererFactory(
 
                 Strict {
                   closeMode match {
-                    case SwitchToWebSocket(handler) ⇒ ResponseRenderingOutput.SwitchToWebSocket(finalBytes, handler)
-                    case _                          ⇒ ResponseRenderingOutput.HttpData(finalBytes)
+                    case SwitchToWebSocket(handler) => ResponseRenderingOutput.SwitchToWebSocket(finalBytes, handler)
+                    case _                          => ResponseRenderingOutput.HttpData(finalBytes)
                   }
                 }
 
-              case HttpEntity.Default(_, contentLength, data) ⇒
+              case HttpEntity.Default(_, contentLength, data) =>
                 renderHeaders(headers)
                 renderEntityContentType(r, entity)
                 renderContentLengthHeader(contentLength) ~~ CrLf
                 Streamed(byteStrings(data.via(CheckContentLengthTransformer.flow(contentLength))))
 
-              case HttpEntity.CloseDelimited(_, data) ⇒
+              case HttpEntity.CloseDelimited(_, data) =>
                 renderHeaders(headers, alwaysClose = ctx.requestMethod != HttpMethods.HEAD)
                 renderEntityContentType(r, entity) ~~ CrLf
                 Streamed(byteStrings(data))
 
-              case HttpEntity.Chunked(contentType, chunks) ⇒
+              case HttpEntity.Chunked(contentType, chunks) =>
                 if (ctx.requestProtocol == `HTTP/1.0`)
                   completeResponseRendering(HttpEntity.CloseDelimited(contentType, chunks.map(_.data)))
                 else {

@@ -15,7 +15,7 @@ import org.scalatest.{ Outcome, SuiteMixin, TestSuite }
 /**
  * Mixin this trait to a test to make log lines appear only when the test failed.
  */
-trait WithLogCapturing extends SuiteMixin { this: TestSuite ⇒
+trait WithLogCapturing extends SuiteMixin { this: TestSuite =>
   implicit def system: ActorSystem
 
   abstract override def withFixture(test: NoArgTest): Outcome = {
@@ -49,7 +49,7 @@ trait WithLogCapturing extends SuiteMixin { this: TestSuite ⇒
   }
 
   /** Adds a prefix to every line printed out during execution of the thunk. */
-  private def withPrefixedOut[T](prefix: String)(thunk: ⇒ T): T = {
+  private def withPrefixedOut[T](prefix: String)(thunk: => T): T = {
     val oldOut = Console.out
     val prefixingOut =
       new PrintStream(new OutputStream {
@@ -72,8 +72,8 @@ trait WithLogCapturing extends SuiteMixin { this: TestSuite ⇒
  */
 class DebugLogSilencingTestEventListener extends TestEventListener {
   override def print(event: Any): Unit = event match {
-    case d: Debug ⇒ // ignore
-    case _        ⇒ super.print(event)
+    case d: Debug => // ignore
+    case _        => super.print(event)
   }
 }
 

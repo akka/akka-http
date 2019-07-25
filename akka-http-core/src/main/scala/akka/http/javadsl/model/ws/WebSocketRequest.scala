@@ -5,7 +5,7 @@
 package akka.http.javadsl.model.ws
 
 import akka.http.javadsl.model.{ Uri, HttpHeader }
-import akka.http.scaladsl.model.ws.{ WebSocketRequest ⇒ ScalaWebSocketRequest }
+import akka.http.scaladsl.model.ws.{ WebSocketRequest => ScalaWebSocketRequest }
 
 /**
  * Represents a WebSocket request. Use `WebSocketRequest.create` to create a request
@@ -49,13 +49,13 @@ object WebSocketRequest {
   def wrap(scalaRequest: ScalaWebSocketRequest): WebSocketRequest =
     new WebSocketRequest {
       def addHeader(header: HttpHeader): WebSocketRequest =
-        transform(s ⇒ s.copy(extraHeaders = s.extraHeaders :+ header.asScala))
+        transform(s => s.copy(extraHeaders = s.extraHeaders :+ header.asScala))
       def requestSubprotocol(subprotocol: String): WebSocketRequest =
         transform(_.copy(subprotocol = Some(subprotocol)))
 
       def asScala: ScalaWebSocketRequest = scalaRequest
 
-      def transform(f: ScalaWebSocketRequest ⇒ ScalaWebSocketRequest): WebSocketRequest =
+      def transform(f: ScalaWebSocketRequest => ScalaWebSocketRequest): WebSocketRequest =
         wrap(f(asScala))
     }
 }

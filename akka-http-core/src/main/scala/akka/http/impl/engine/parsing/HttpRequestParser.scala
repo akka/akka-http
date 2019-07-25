@@ -4,14 +4,14 @@
 
 package akka.http.impl.engine.parsing
 
-import java.lang.{ StringBuilder ⇒ JStringBuilder }
+import java.lang.{ StringBuilder => JStringBuilder }
 
 import scala.annotation.{ switch, tailrec }
 import akka.http.scaladsl.settings.ParserSettings
 import akka.util.{ ByteString, OptionVal }
 import akka.http.impl.engine.ws.Handshake
 import akka.http.impl.model.parser.CharacterClasses
-import akka.http.scaladsl.model.{ ParsingException ⇒ _, _ }
+import akka.http.scaladsl.model.{ ParsingException => _, _ }
 import headers._
 import StatusCodes._
 import ParserOutput._
@@ -29,7 +29,7 @@ private[http] final class HttpRequestParser(
   settings:            ParserSettings,
   rawRequestUriHeader: Boolean,
   headerParser:        HttpHeaderParser)
-  extends GraphStage[FlowShape[SessionBytes, RequestOutput]] { self ⇒
+  extends GraphStage[FlowShape[SessionBytes, RequestOutput]] { self =>
 
   import settings._
 
@@ -62,9 +62,9 @@ private[http] final class HttpRequestParser(
 
     private def handleParserOutput(output: RequestOutput): Unit = {
       output match {
-        case StreamEnd    ⇒ completeStage()
-        case NeedMoreData ⇒ pull(in)
-        case x            ⇒ push(out, x)
+        case StreamEnd    => completeStage()
+        case NeedMoreData => pull(in)
+        case x            => push(out, x)
       }
     }
 
@@ -88,14 +88,14 @@ private[http] final class HttpRequestParser(
       @tailrec def parseCustomMethod(ix: Int = 0, sb: JStringBuilder = new JStringBuilder(16)): Int =
         if (ix < maxMethodLength) {
           byteChar(input, cursor + ix) match {
-            case ' ' ⇒
+            case ' ' =>
               customMethods(sb.toString) match {
-                case Some(m) ⇒
+                case Some(m) =>
                   method = m
                   cursor + ix + 1
-                case None ⇒ throw new ParsingException(NotImplemented, ErrorInfo("Unsupported HTTP method", sb.toString))
+                case None => throw new ParsingException(NotImplemented, ErrorInfo("Unsupported HTTP method", sb.toString))
               }
-            case c ⇒ parseCustomMethod(ix + 1, sb.append(c))
+            case c => parseCustomMethod(ix + 1, sb.append(c))
           }
         } else
           throw new ParsingException(
@@ -114,24 +114,24 @@ private[http] final class HttpRequestParser(
 
       import HttpMethods._
       (byteChar(input, cursor): @switch) match {
-        case 'G' ⇒ parseMethod(GET)
-        case 'P' ⇒ byteChar(input, cursor + 1) match {
-          case 'O' ⇒ parseMethod(POST, 2)
-          case 'U' ⇒ parseMethod(PUT, 2)
-          case 'A' ⇒ parseMethod(PATCH, 2)
-          case _   ⇒ parseCustomMethod()
+        case 'G' => parseMethod(GET)
+        case 'P' => byteChar(input, cursor + 1) match {
+          case 'O' => parseMethod(POST, 2)
+          case 'U' => parseMethod(PUT, 2)
+          case 'A' => parseMethod(PATCH, 2)
+          case _   => parseCustomMethod()
         }
-        case 'D' ⇒ parseMethod(DELETE)
-        case 'H' ⇒ parseMethod(HEAD)
-        case 'O' ⇒ parseMethod(OPTIONS)
-        case 'T' ⇒ parseMethod(TRACE)
-        case 'C' ⇒ parseMethod(CONNECT)
-        case 0x16 ⇒
+        case 'D' => parseMethod(DELETE)
+        case 'H' => parseMethod(HEAD)
+        case 'O' => parseMethod(OPTIONS)
+        case 'T' => parseMethod(TRACE)
+        case 'C' => parseMethod(CONNECT)
+        case 0x16 =>
           throw new ParsingException(
             BadRequest,
             ErrorInfo("Unsupported HTTP method", s"The HTTP method started with 0x16 rather than any known HTTP method. " +
               "Perhaps this was an HTTPS request sent to an HTTP endpoint?"))
-        case _ ⇒ parseCustomMethod()
+        case _ => parseCustomMethod()
       }
     }
 
@@ -152,7 +152,7 @@ private[http] final class HttpRequestParser(
         uriBytes = input.slice(uriStart, uriEnd)
         uri = Uri.parseHttpRequestTarget(new ByteStringParserInput(uriBytes), mode = uriParsingMode)
       } catch {
-        case IllegalUriException(info) ⇒ throw new ParsingException(BadRequest, info)
+        case IllegalUriException(info) => throw new ParsingException(BadRequest, info)
       }
       uriEnd + 1
     }
@@ -174,8 +174,8 @@ private[http] final class HttpRequestParser(
           val allHeaders =
             if (method == HttpMethods.GET) {
               Handshake.Server.websocketUpgrade(headers, hostHeaderPresent) match {
-                case OptionVal.Some(upgrade) ⇒ upgrade :: allHeaders0
-                case OptionVal.None          ⇒ allHeaders0
+                case OptionVal.Some(upgrade) => upgrade :: allHeaders0
+                case OptionVal.None          => allHeaders0
               }
             } else allHeaders0
 
@@ -183,10 +183,10 @@ private[http] final class HttpRequestParser(
         }
 
         teh match {
-          case None ⇒
+          case None =>
             val contentLength = clh match {
-              case Some(`Content-Length`(len)) ⇒ len
-              case None                        ⇒ 0
+              case Some(`Content-Length`(len)) => len
+              case None                        => 0
             }
             if (contentLength == 0) {
               emitRequestStart(emptyEntity(cth))
@@ -204,10 +204,10 @@ private[http] final class HttpRequestParser(
               parseFixedLengthBody(contentLength, closeAfterResponseCompletion)(input, bodyStart)
             }
 
-          case Some(_) if !method.isEntityAccepted ⇒
+          case Some(_) if !method.isEntityAccepted =>
             failMessageStart(UnprocessableEntity, s"${method.name} requests must not have an entity")
 
-          case Some(te) ⇒
+          case Some(te) =>
             val completedHeaders = addTransferEncodingWithChunkedPeeled(headers, te)
             if (te.isChunked) {
               if (clh.isEmpty) {

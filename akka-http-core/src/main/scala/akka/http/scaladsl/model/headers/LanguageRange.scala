@@ -8,7 +8,7 @@ import scala.language.implicitConversions
 import scala.collection.immutable
 import akka.http.impl.util._
 import akka.http.scaladsl.model.WithQValue
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.ccompat.{ pre213, since213 }
 
@@ -44,7 +44,7 @@ object LanguageRange {
     def matches(l: Language) =
       (language.primaryTag equalsIgnoreCase l.primaryTag) &&
         language.subTags.size <= l.subTags.size &&
-        (language.subTags zip l.subTags).forall(t ⇒ t._1 equalsIgnoreCase t._2)
+        (language.subTags zip l.subTags).forall(t => t._1 equalsIgnoreCase t._2)
     def primaryTag = language.primaryTag
     def subTags = language.subTags
     def withQValue(qValue: Float) = One(language, qValue)

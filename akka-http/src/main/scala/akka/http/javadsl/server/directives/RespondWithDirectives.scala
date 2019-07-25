@@ -4,12 +4,12 @@
 
 package akka.http.javadsl.server.directives
 
-import java.lang.{ Iterable ⇒ JIterable }
+import java.lang.{ Iterable => JIterable }
 import java.util.function.Supplier
 
 import akka.http.javadsl.model.HttpHeader
 import akka.http.javadsl.server.Route
-import akka.http.scaladsl.server.{ Directives ⇒ D }
+import akka.http.scaladsl.server.{ Directives => D }
 
 abstract class RespondWithDirectives extends RangeDirectives {
   import akka.http.impl.util.JavaMapping.Implicits._

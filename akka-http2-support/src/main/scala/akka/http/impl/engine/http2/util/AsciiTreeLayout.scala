@@ -14,9 +14,9 @@ private[http2] object AsciiTreeLayout {
   // [info]   +-quux
   def toAscii[A](
     top:       A,
-    children:  A ⇒ Seq[A],
-    display:   A ⇒ String,
-    maxColumn: Int        = 80): String = {
+    children:  A => Seq[A],
+    display:   A => String,
+    maxColumn: Int         = 80): String = {
     val twoSpaces = " " + " " // prevent accidentally being converted into a tab
     def limitLine(s: String): String =
       if (s.length > maxColumn) s.slice(0, maxColumn - 2) + ".."
@@ -25,8 +25,8 @@ private[http2] object AsciiTreeLayout {
       if (at < s.length)
         s.slice(0, at) +
           (s(at).toString match {
-            case " " ⇒ "|"
-            case x   ⇒ x
+            case " " => "|"
+            case x   => x
           }) +
           s.slice(at + 1, s.length)
       else s
@@ -40,10 +40,10 @@ private[http2] object AsciiTreeLayout {
           toAsciiLines(_, level + 1, parents + node)
         }
         val withBar = childLines.zipWithIndex flatMap {
-          case (lines, pos) if pos < (cs.size - 1) ⇒ lines map {
+          case (lines, pos) if pos < (cs.size - 1) => lines map {
             insertBar(_, 2 * (level + 1))
           }
-          case (lines, pos) ⇒
+          case (lines, pos) =>
             if (lines.last.trim != "") lines ++ Vector(twoSpaces * (level + 1))
             else lines
         }

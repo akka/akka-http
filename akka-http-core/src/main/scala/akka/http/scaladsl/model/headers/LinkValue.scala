@@ -8,7 +8,7 @@ import scala.collection.immutable
 import akka.parboiled2.CharPredicate
 import akka.http.impl.util._
 import akka.http.scaladsl.model._
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 import akka.http.impl.util.JavaMapping.Implicits._
 import UriRendering.UriRenderer
 import akka.http.ccompat.{ pre213, since213 }

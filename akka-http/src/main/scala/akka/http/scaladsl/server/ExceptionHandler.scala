@@ -46,22 +46,22 @@ object ExceptionHandler {
    */
   def default(settings: RoutingSettings): ExceptionHandler =
     apply(knownToBeSealed = true) {
-      case IllegalRequestException(info, status) ⇒ ctx ⇒ {
+      case IllegalRequestException(info, status) => ctx => {
         ctx.log.warning("Illegal request: '{}'. Completing with {} response.", info.summary, status)
         ctx.request.discardEntityBytes(ctx.materializer)
         ctx.complete((status, info.format(settings.verboseErrorMessages)))
       }
-      case e: EntityStreamSizeException ⇒ ctx ⇒ {
+      case e: EntityStreamSizeException => ctx => {
         ctx.log.error(e, ErrorMessageTemplate, e, RequestEntityTooLarge)
         ctx.request.discardEntityBytes(ctx.materializer)
         ctx.complete((RequestEntityTooLarge, e.getMessage))
       }
-      case e: ExceptionWithErrorInfo ⇒ ctx ⇒ {
+      case e: ExceptionWithErrorInfo => ctx => {
         ctx.log.error(e, ErrorMessageTemplate, e.info.formatPretty, InternalServerError)
         ctx.request.discardEntityBytes(ctx.materializer)
         ctx.complete((InternalServerError, e.info.format(settings.verboseErrorMessages)))
       }
-      case NonFatal(e) ⇒ ctx ⇒ {
+      case NonFatal(e) => ctx => {
         val message = Option(e.getMessage).getOrElse(s"${e.getClass.getName} (No error message supplied)")
         ctx.log.error(e, ErrorMessageTemplate, message, InternalServerError)
         ctx.request.discardEntityBytes(ctx.materializer)

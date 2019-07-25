@@ -22,43 +22,43 @@ class FormFieldDirectivesSpec extends RoutingSpec {
     ScalaXmlSupport.nodeSeqUnmarshaller(`text/xml`, `text/html`, `text/plain`)
 
   val nodeSeq: xml.NodeSeq = <b>yes</b>
-  val urlEncodedForm = FormData(Map("firstName" → "Mike", "age" → "42"))
-  val urlEncodedFormWithVip = FormData(Map("firstName" → "Mike", "age" → "42", "VIP" → "true", "super" → "<b>no</b>"))
+  val urlEncodedForm = FormData(Map("firstName" -> "Mike", "age" -> "42"))
+  val urlEncodedFormWithVip = FormData(Map("firstName" -> "Mike", "age" -> "42", "VIP" -> "true", "super" -> "<b>no</b>"))
   val multipartForm = Multipart.FormData {
     Map(
-      "firstName" → HttpEntity("Mike"),
-      "age" → HttpEntity(ContentTypes.`text/xml(UTF-8)`, "<int>42</int>"),
-      "VIPBoolean" → HttpEntity("true"))
+      "firstName" -> HttpEntity("Mike"),
+      "age" -> HttpEntity(ContentTypes.`text/xml(UTF-8)`, "<int>42</int>"),
+      "VIPBoolean" -> HttpEntity("true"))
   }
   val multipartFormWithTextHtml = Multipart.FormData {
     Map(
-      "firstName" → HttpEntity("Mike"),
-      "age" → HttpEntity(ContentTypes.`text/xml(UTF-8)`, "<int>42</int>"),
-      "VIP" → HttpEntity(ContentTypes.`text/html(UTF-8)`, "<b>yes</b>"),
-      "super" → HttpEntity("no"))
+      "firstName" -> HttpEntity("Mike"),
+      "age" -> HttpEntity(ContentTypes.`text/xml(UTF-8)`, "<int>42</int>"),
+      "VIP" -> HttpEntity(ContentTypes.`text/html(UTF-8)`, "<b>yes</b>"),
+      "super" -> HttpEntity("no"))
   }
   val multipartFormWithFile = Multipart.FormData(
     Multipart.FormData.BodyPart.Strict("file", HttpEntity(ContentTypes.`text/xml(UTF-8)`, "<int>42</int>"),
-      Map("filename" → "age.xml")))
+      Map("filename" -> "age.xml")))
 
   "The 'formFields' extraction directive" should {
     "properly extract the value of www-urlencoded form fields" in {
       Post("/", urlEncodedForm) ~> {
-        formFields('firstName, "age".as[Int], 'sex.?, "VIP" ? false) { (firstName, age, sex, vip) ⇒
+        formFields('firstName, "age".as[Int], 'sex.?, "VIP" ? false) { (firstName, age, sex, vip) =>
           complete(firstName + age + sex + vip)
         }
       } ~> check { responseAs[String] shouldEqual "Mike42Nonefalse" }
     }
     "properly extract the value of www-urlencoded form fields when an explicit unmarshaller is given" in {
       Post("/", urlEncodedForm) ~> {
-        formFields('firstName, "age".as(HexInt), 'sex.?, "VIP" ? false) { (firstName, age, sex, vip) ⇒
+        formFields('firstName, "age".as(HexInt), 'sex.?, "VIP" ? false) { (firstName, age, sex, vip) =>
           complete(firstName + age + sex + vip)
         }
       } ~> check { responseAs[String] shouldEqual "Mike66Nonefalse" }
     }
     "properly extract the value of multipart form fields" in {
       Post("/", multipartForm) ~> {
-        formFields('firstName, "age", 'sex.?, "VIP" ? nodeSeq) { (firstName, age, sex, vip) ⇒
+        formFields('firstName, "age", 'sex.?, "VIP" ? nodeSeq) { (firstName, age, sex, vip) =>
           complete(firstName + age + sex + vip)
         }
       } ~> check { responseAs[String] shouldEqual "Mike<int>42</int>None<b>yes</b>" }
@@ -66,14 +66,14 @@ class FormFieldDirectivesSpec extends RoutingSpec {
     "extract StrictForm.FileData from a multipart part" in {
       Post("/", multipartFormWithFile) ~> {
         formFields('file.as[StrictForm.FileData]) {
-          case StrictForm.FileData(name, HttpEntity.Strict(ct, data)) ⇒
+          case StrictForm.FileData(name, HttpEntity.Strict(ct, data)) =>
             complete(s"type ${ct.mediaType} length ${data.length} filename ${name.get}")
         }
       } ~> check { responseAs[String] shouldEqual "type text/xml length 13 filename age.xml" }
     }
     "reject the request with a MissingFormFieldRejection if a required form field is missing" in {
       Post("/", urlEncodedForm) ~> {
-        formFields('firstName, "age", 'sex, "VIP" ? false) { (firstName, age, sex, vip) ⇒
+        formFields('firstName, "age", 'sex, "VIP" ? false) { (firstName, age, sex, vip) =>
           complete(firstName + age + sex + vip)
         }
       } ~> check { rejection shouldEqual MissingFormFieldRejection("sex") }
@@ -81,7 +81,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
     "properly extract the value if only a urlencoded deserializer is available for a multipart field that comes without a" +
       "Content-Type (or text/plain)" in {
         Post("/", multipartForm) ~> {
-          formFields('firstName, "age", 'sex.?, "VIPBoolean" ? false) { (firstName, age, sex, vip) ⇒
+          formFields('firstName, "age", 'sex.?, "VIPBoolean" ? false) { (firstName, age, sex, vip) =>
             complete(firstName + age + sex + vip)
           }
         } ~> check {
@@ -90,7 +90,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
       }
     "work even if only a FromStringUnmarshaller is available for a multipart field with custom Content-Type" in {
       Post("/", multipartFormWithTextHtml) ~> {
-        formFields(('firstName, "age", 'super ? false)) { (firstName, age, vip) ⇒
+        formFields(('firstName, "age", 'super ? false)) { (firstName, age, vip) =>
           complete(firstName + age + vip)
         }
       } ~> check {
@@ -99,26 +99,72 @@ class FormFieldDirectivesSpec extends RoutingSpec {
     }
     "work even if only a FromEntityUnmarshaller is available for a www-urlencoded field" in {
       Post("/", urlEncodedFormWithVip) ~> {
-        formFields('firstName, "age", 'sex.?, "super" ? nodeSeq) { (firstName, age, sex, vip) ⇒
+        formFields('firstName, "age", 'sex.?, "super" ? nodeSeq) { (firstName, age, sex, vip) =>
           complete(firstName + age + sex + vip)
         }
       } ~> check {
         responseAs[String] shouldEqual "Mike42None<b>no</b>"
       }
     }
-    "work even when the entity is streaming rather than strict" in {
-      val charset = HttpCharsets.`UTF-8`
-      val render: StringRendering = UriRendering.renderQuery(new StringRendering, urlEncodedForm.fields, charset.nioCharset, CharacterClasses.unreserved)
-      val streamingForm: RequestEntity = HttpEntity.Chunked(
-        `application/x-www-form-urlencoded`,
-        Source.single(ChunkStreamPart(render.get)).via(AllowMaterializationOnlyOnce())
-      )
+    "work even when the entity is not strict" in {
+      val request: HttpRequest =
+        Post("/", urlEncodedForm)
+          // transformEntityDataBytes will convert the entity to chunked
+          .transformEntityDataBytes(AllowMaterializationOnlyOnce())
 
-      streamingForm.getContentType shouldEqual ContentTypes.`application/x-www-form-urlencoded`
-      Post("/", streamingForm) ~> {
-        formFields('firstName, "age".as[Int], 'sex.?, "VIP" ? false) { (firstName, age, sex, vip) ⇒
+      request.entity.contentType shouldEqual ContentTypes.`application/x-www-form-urlencoded`
+      request.entity shouldNot be('strict)
+
+      request ~> {
+        formFields('firstName, "age".as[Int], 'sex.?, "VIP" ? false) { (firstName, age, sex, vip) =>
           complete(firstName + age + sex + vip)
         }
+      } ~> check { responseAs[String] shouldEqual "Mike42Nonefalse" }
+    }
+
+    "work even with nested directives when the entity is not strict" in {
+      val request: HttpRequest =
+        Post("/", urlEncodedForm)
+          // transformEntityDataBytes will convert the entity to chunked
+          .transformEntityDataBytes(AllowMaterializationOnlyOnce())
+
+      request.entity.contentType shouldEqual ContentTypes.`application/x-www-form-urlencoded`
+      request.entity shouldNot be('strict)
+
+      request ~> {
+        formFields('firstName) { firstName =>
+          formFields("age".as[Int], 'sex.?) { (age, sex) =>
+            formFields("VIP" ? false) { vip =>
+              complete(firstName + age + sex + vip)
+            }
+          }
+        }
+      } ~> check { responseAs[String] shouldEqual "Mike42Nonefalse" }
+    }
+
+    "work even for alternatives when the entity is not strict" in pendingUntilFixed {
+      val request: HttpRequest =
+        Post("/", urlEncodedForm)
+          // transformEntityDataBytes will convert the entity to chunked
+          .transformEntityDataBytes(AllowMaterializationOnlyOnce())
+
+      request.entity.contentType shouldEqual ContentTypes.`application/x-www-form-urlencoded`
+      request.entity shouldNot be('strict)
+
+      request ~> {
+        concat(
+          formFields('firstName, "age".as[Int]) { (firstName, age) =>
+            println("firstName", age)
+            reject
+          },
+          formFields('firstName, "age".as[Int]) { (firstName, age) =>
+            formFields('sex.?) { sex =>
+              formFields("VIP" ? false) { vip =>
+                complete(firstName + age + sex + vip)
+              }
+            }
+          }
+        )
       } ~> check { responseAs[String] shouldEqual "Mike42Nonefalse" }
     }
   }
@@ -160,22 +206,22 @@ class FormFieldDirectivesSpec extends RoutingSpec {
 
   "The 'formField' repeated directive" should {
     "extract an empty Iterable when the parameter is absent" in {
-      Post("/", FormData("age" → "42")) ~> {
+      Post("/", FormData("age" -> "42")) ~> {
         formField('hobby.*) { echoComplete }
       } ~> check { responseAs[String] shouldEqual "Vector()" }
     }
     "extract all occurrences into an Iterable when parameter is present" in {
-      Post("/", FormData("age" → "42", "hobby" → "cooking", "hobby" → "reading")) ~> {
+      Post("/", FormData("age" -> "42", "hobby" -> "cooking", "hobby" -> "reading")) ~> {
         formField('hobby.*) { echoComplete }
       } ~> check { responseAs[String] shouldEqual "Vector(cooking, reading)" }
     }
     "extract as Iterable[Int]" in {
-      Post("/", FormData("age" → "42", "number" → "3", "number" → "5")) ~> {
+      Post("/", FormData("age" -> "42", "number" -> "3", "number" -> "5")) ~> {
         formField('number.as[Int].*) { echoComplete }
       } ~> check { responseAs[String] shouldEqual "Vector(3, 5)" }
     }
     "extract as Iterable[Int] with an explicit deserializer" in {
-      Post("/", FormData("age" → "42", "number" → "3", "number" → "A")) ~> {
+      Post("/", FormData("age" -> "42", "number" -> "3", "number" -> "A")) ~> {
         formField('number.as(HexInt).*) { echoComplete }
       } ~> check { responseAs[String] shouldEqual "Vector(3, 10)" }
     }
@@ -185,8 +231,8 @@ class FormFieldDirectivesSpec extends RoutingSpec {
     "extract fields with different keys" in {
       var res: Map[String, String] = null
 
-      Post("/", FormData("age" → "42", "numberA" → "3", "numberB" → "5")) ~> {
-        formFieldMap { map ⇒
+      Post("/", FormData("age" -> "42", "numberA" -> "3", "numberB" -> "5")) ~> {
+        formFieldMap { map =>
           res = map
           completeOk
         }
@@ -198,12 +244,12 @@ class FormFieldDirectivesSpec extends RoutingSpec {
       val numKeys = 10000
       val value = "null"
 
-      val regularKeys = Iterator.from(1).map(i ⇒ s"key_$i").take(numKeys)
+      val regularKeys = Iterator.from(1).map(i => s"key_$i").take(numKeys)
       val collidingKeys = HashCodeCollider.zeroHashCodeIterator().take(numKeys)
 
       def createFormData(keys: Iterator[String]): FormData = {
         val tuples = keys.map((_, value)).toSeq
-        val query = tuples.foldLeft(Uri.Query.newBuilder)((acc, pair) ⇒ acc += pair)
+        val query = tuples.foldLeft(Uri.Query.newBuilder)((acc, pair) => acc += pair)
         FormData(query.result())
       }
 
@@ -212,12 +258,12 @@ class FormFieldDirectivesSpec extends RoutingSpec {
 
       def regular(): Unit =
         Post("/", regularFormData) ~> {
-          formFieldMap { _ ⇒ complete(StatusCodes.OK) }
+          formFieldMap { _ => complete(StatusCodes.OK) }
         } ~> check {}
 
       def colliding(): Unit =
         Post("/", collidingDormData) ~> {
-          formFieldMap { _ ⇒ complete(StatusCodes.OK) }
+          formFieldMap { _ => complete(StatusCodes.OK) }
         }
 
       BenchUtils.nanoRace(colliding(), regular()) should be < 3.0 // speed must be in same order of magnitude
@@ -226,7 +272,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
 
   "The 'formFieldSeq' directive" should {
     "extract all fields" in {
-      Post("/", FormData("age" → "42", "number" → "3", "number" → "5")) ~> {
+      Post("/", FormData("age" -> "42", "number" -> "3", "number" -> "5")) ~> {
         formFieldSeq { echoComplete }
       } ~> check { responseAs[String] shouldEqual "Vector((age,42), (number,3), (number,5))" }
     }
@@ -241,8 +287,8 @@ class FormFieldDirectivesSpec extends RoutingSpec {
     "extract fields with different keys (with duplicates)" in {
       var res: Map[String, List[String]] = null
 
-      Post("/", FormData("age" → "42", "number" → "3", "number" → "5")) ~> {
-        formFieldMultiMap { m ⇒
+      Post("/", FormData("age" -> "42", "number" -> "3", "number" -> "5")) ~> {
+        formFieldMultiMap { m =>
           res = m
           completeOk
         }
@@ -254,12 +300,12 @@ class FormFieldDirectivesSpec extends RoutingSpec {
       val numKeys = 10000
       val value = "null"
 
-      val regularKeys = Iterator.from(1).map(i ⇒ s"key_$i").take(numKeys)
+      val regularKeys = Iterator.from(1).map(i => s"key_$i").take(numKeys)
       val collidingKeys = HashCodeCollider.zeroHashCodeIterator().take(numKeys)
 
       def createFormData(keys: Iterator[String]): FormData = {
         val tuples = keys.map((_, value)).toSeq
-        val query = tuples.foldLeft(Uri.Query.newBuilder)((acc, pair) ⇒ acc += pair)
+        val query = tuples.foldLeft(Uri.Query.newBuilder)((acc, pair) => acc += pair)
         FormData(query.result())
       }
 
@@ -268,12 +314,12 @@ class FormFieldDirectivesSpec extends RoutingSpec {
 
       def regular(): Unit =
         Post("/", regularFormData) ~> {
-          formFieldMultiMap { _ ⇒ complete(StatusCodes.OK) }
+          formFieldMultiMap { _ => complete(StatusCodes.OK) }
         } ~> check {}
 
       def colliding(): Unit =
         Post("/", collidingDormData) ~> {
-          formFieldMultiMap { _ ⇒ complete(StatusCodes.OK) }
+          formFieldMultiMap { _ => complete(StatusCodes.OK) }
         }
 
       BenchUtils.nanoRace(colliding(), regular()) should be < 3.0 // speed must be in same order of magnitude

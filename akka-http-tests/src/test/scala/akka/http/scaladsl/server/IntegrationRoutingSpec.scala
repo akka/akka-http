@@ -30,7 +30,7 @@ private[akka] trait IntegrationRoutingSpec extends WordSpecLike with Matchers wi
   }
 
   implicit class Checking(p: Prepped) {
-    def ~!>(checking: HttpResponse ⇒ Unit) = {
+    def ~!>(checking: HttpResponse => Unit) = {
       val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
       val binding = Http().bindAndHandle(p.route, host, port)
 

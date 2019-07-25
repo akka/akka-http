@@ -30,15 +30,15 @@ class HttpClientDecodingExampleSpec extends AkkaSpec with CompileOnlySpec with S
       "https://httpbin.org/gzip", // Content-Encoding: gzip in response
       "https://httpbin.org/deflate", // Content-Encoding: deflate in response
       "https://httpbin.org/get" // no Content-Encoding in response
-    ).map(uri ⇒ HttpRequest(uri = uri))
+    ).map(uri => HttpRequest(uri = uri))
 
     def decodeResponse(response: HttpResponse): HttpResponse = {
       val decoder = response.encoding match {
-        case HttpEncodings.gzip ⇒
+        case HttpEncodings.gzip =>
           Gzip
-        case HttpEncodings.deflate ⇒
+        case HttpEncodings.deflate =>
           Deflate
-        case HttpEncodings.identity ⇒
+        case HttpEncodings.identity =>
           NoCoding
       }
 

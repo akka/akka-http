@@ -5,7 +5,7 @@
 package akka.http.scaladsl.model
 
 import akka.http.impl.util._
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 import akka.http.impl.util.JavaMapping.Implicits._
 
 /**
@@ -52,8 +52,8 @@ sealed abstract class MediaType extends jm.MediaType with LazyValueBytesRenderab
 
   override def equals(that: Any): Boolean =
     that match {
-      case x: MediaType ⇒ value equalsIgnoreCase x.value
-      case _            ⇒ false
+      case x: MediaType => value equalsIgnoreCase x.value
+      case _            => false
     }
 
   override def hashCode(): Int = value.toLowerCase.hashCode
@@ -193,7 +193,7 @@ object MediaType {
 
   private def renderValue(mainType: String, subType: String, params: Map[String, String]): String = {
     val r = new StringRendering ~~ mainType ~~ '/' ~~ subType
-    if (params.nonEmpty) params foreach { case (k, v) ⇒ r ~~ ';' ~~ ' ' ~~ k ~~ '=' ~~# v }
+    if (params.nonEmpty) params foreach { case (k, v) => r ~~ ';' ~~ ' ' ~~ k ~~ '=' ~~# v }
     r.get
   }
 
@@ -291,7 +291,7 @@ object MediaType {
 object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
 
   /** Function used to find a custom media type. Called before the predefined media types. Strings will be lowercase. */
-  type FindCustom = (String, String) ⇒ Option[MediaType]
+  type FindCustom = (String, String) => Option[MediaType]
 
   private[this] var extensionMap = Map.empty[String, MediaType]
 
@@ -299,7 +299,7 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   def forExtension(ext: String): MediaType = extensionMap.getOrElse(ext.toLowerCase, `application/octet-stream`)
 
   private def registerFileExtensions[T <: MediaType](mediaType: T): T = {
-    mediaType.fileExtensions.foreach { ext ⇒
+    mediaType.fileExtensions.foreach { ext =>
       val lcExt = ext.toLowerCase
       require(!extensionMap.contains(lcExt), s"Extension '$ext' clash: media-types '${extensionMap(lcExt)}' and '$mediaType'")
       extensionMap = extensionMap.updated(lcExt, mediaType)
@@ -309,7 +309,7 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
 
   private def register[T <: MediaType](mediaType: T): T = {
     registerFileExtensions(mediaType)
-    register(mediaType.mainType.toRootLowerCase → mediaType.subType.toRootLowerCase, mediaType)
+    register(mediaType.mainType.toRootLowerCase -> mediaType.subType.toRootLowerCase, mediaType)
   }
 
   import MediaType._

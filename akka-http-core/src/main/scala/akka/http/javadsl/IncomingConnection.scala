@@ -10,7 +10,7 @@ import akka.japi.function.Function
 import akka.stream.Materializer
 import akka.stream.javadsl.Flow
 import akka.http.javadsl.model._
-import akka.http.scaladsl.{ model ⇒ sm }
+import akka.http.scaladsl.{ model => sm }
 import java.util.concurrent.CompletionStage
 import scala.concurrent.Future
 import scala.compat.java8.FutureConverters._

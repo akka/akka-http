@@ -48,14 +48,7 @@ object Scaladoc extends AutoPlugin {
       if ((validateDiagrams in Compile).value)
         scaladocVerifier(docs)
       docs
-    }) ++ Seq(
-      // -Ymacro-annotations is not enabled for scaladoc in 2.13.0-M5 which fails the scaladoc build
-      // Therefore, we disable publishing of docs for the 2.13.0-M5 build for now.
-      // This is already fixed on 2.13.x and will be released with 2.13.0-M6/RC, so it
-      // can be removed once we move to 2.13.0-M6.
-      // See https://github.com/scala/bug/issues/11045 for more info on the underlying issue.
-      publishArtifact in (Compile, packageDoc) := scalaVersion.value != "2.13.0-M5"
-    )
+    })
 
   def scaladocOptions(ver: String, base: File, plugins: Seq[File]): List[String] = {
     val urlString = GitHub.url(ver) + "/€{FILE_PATH}.scala"
@@ -172,7 +165,7 @@ object BootstrapGenjavadoc extends AutoPlugin {
       javacOptions in test += "-Xdoclint:none",
       javacOptions in doc += "-Xdoclint:none",
       scalacOptions in Compile += "-P:genjavadoc:fabricateParams=true",
-      unidocGenjavadocVersion in Global := "0.11"
+      unidocGenjavadocVersion in Global := "0.13"
     )
   ).getOrElse(Seq.empty)
 }

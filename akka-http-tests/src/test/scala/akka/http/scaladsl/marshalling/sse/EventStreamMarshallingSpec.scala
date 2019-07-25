@@ -23,7 +23,7 @@ final class EventStreamMarshallingSpec extends WordSpec with Matchers with Route
 
   "A source of ServerSentEvents" should {
     "be marshallable to a HTTP response" in {
-      val events = 1.to(666).map(n ⇒ ServerSentEvent(n.toString))
+      val events = 1.to(666).map(n => ServerSentEvent(n.toString))
       val route = complete(Source(events))
       Get() ~> route ~> check {
         mediaType shouldBe `text/event-stream`

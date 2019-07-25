@@ -55,7 +55,7 @@ class MultipartSpec extends WordSpec with Matchers with Inside with BeforeAndAft
           Multipart.FormData.BodyPart("bar", defaultEntity("BAR")) :: Nil))
       val strict = Await.result(streamed.toStrict(1.second.dilated), 1.second.dilated)
 
-      strict shouldEqual Multipart.FormData(Map("foo" → HttpEntity("FOO"), "bar" → HttpEntity("BAR")))
+      strict shouldEqual Multipart.FormData(Map("foo" -> HttpEntity("FOO"), "bar" -> HttpEntity("BAR")))
     }
   }
 

@@ -17,7 +17,7 @@ import akka.http.javadsl.server.Directives
 import akka.http.javadsl.server.Route
 import akka.http.javadsl.server.RouteResult
 import akka.http.scaladsl.server
-import akka.http.scaladsl.server.{ ExceptionHandler, Route ⇒ ScalaRoute }
+import akka.http.scaladsl.server.{ ExceptionHandler, Route => ScalaRoute }
 import akka.http.scaladsl.settings.RoutingSettings
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer

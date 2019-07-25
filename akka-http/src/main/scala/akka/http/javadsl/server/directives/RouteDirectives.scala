@@ -8,10 +8,8 @@ import java.util.concurrent.{ CompletionException, CompletionStage }
 
 import akka.dispatch.ExecutionContexts
 import akka.http.javadsl.marshalling.Marshaller
-import akka.japi.Util
 
 import scala.annotation.varargs
-import scala.collection.JavaConverters._
 import akka.http.impl.model.JavaUri
 import akka.http.javadsl.model.HttpHeader
 import akka.http.javadsl.model.HttpResponse
@@ -25,7 +23,7 @@ import akka.http.scaladsl.marshalling.Marshaller._
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.model.StatusCodes.Redirection
 import akka.http.javadsl.server.RoutingJavaMapping._
-import akka.http.scaladsl.server.directives.{ RouteDirectives ⇒ D }
+import akka.http.scaladsl.server.directives.{ RouteDirectives => D }
 import akka.http.scaladsl.util.FastFuture._
 
 abstract class RouteDirectives extends RespondWithDirectives {
@@ -82,8 +80,8 @@ abstract class RouteDirectives extends RespondWithDirectives {
    */
   def redirect(uri: Uri, redirectionType: StatusCode): Route = RouteAdapter {
     redirectionType match {
-      case r: Redirection ⇒ D.redirect(uri.asInstanceOf[JavaUri].uri, r)
-      case _              ⇒ throw new IllegalArgumentException("Not a valid redirection status code: " + redirectionType)
+      case r: Redirection => D.redirect(uri.asInstanceOf[JavaUri].uri, r)
+      case _              => throw new IllegalArgumentException("Not a valid redirection status code: " + redirectionType)
     }
   }
 
@@ -122,14 +120,14 @@ abstract class RouteDirectives extends RespondWithDirectives {
    * Completes the request using the given status code and headers, marshalling the given value as response entity.
    */
   def complete[T](status: StatusCode, headers: java.lang.Iterable[HttpHeader], value: T, marshaller: Marshaller[T, RequestEntity]) = RouteAdapter {
-    D.complete(ToResponseMarshallable(value)(fromToEntityMarshaller(status.asScala, Util.immutableSeq(headers).map(_.asScala))(marshaller))) // TODO avoid the map()
+    D.complete(ToResponseMarshallable(value)(fromToEntityMarshaller(status.asScala, headers.asScala)(marshaller)))
   }
 
   /**
    * Completes the request using the given status code, headers, and response entity.
    */
   def complete(status: StatusCode, headers: java.lang.Iterable[HttpHeader], entity: ResponseEntity) = RouteAdapter {
-    D.complete(scaladsl.model.HttpResponse(status = status.asScala, entity = entity.asScala, headers = Util.immutableSeq(headers).map(_.asScala))) // TODO avoid the map()
+    D.complete(scaladsl.model.HttpResponse(status = status.asScala, entity = entity.asScala, headers = headers.asScala))
   }
 
   /**
@@ -169,14 +167,14 @@ abstract class RouteDirectives extends RespondWithDirectives {
    * Completes the request as HTTP 200 OK, adding the given headers, and marshalling the given value as response entity.
    */
   def complete[T](headers: java.lang.Iterable[HttpHeader], value: T, marshaller: Marshaller[T, RequestEntity]) = RouteAdapter {
-    D.complete(ToResponseMarshallable(value)(fromToEntityMarshaller(headers = Util.immutableSeq(headers).map(_.asScala))(marshaller))) // TODO can we avoid the map() ?
+    D.complete(ToResponseMarshallable(value)(fromToEntityMarshaller(headers = headers.asScala)(marshaller)))
   }
 
   /**
    * Completes the request as HTTP 200 OK, adding the given headers and response entity.
    */
   def complete(headers: java.lang.Iterable[HttpHeader], entity: ResponseEntity) = RouteAdapter {
-    D.complete(scaladsl.model.HttpResponse(headers = headers.asScala.toVector.map(_.asScala), entity = entity.asScala)) // TODO can we avoid the map() ?
+    D.complete(scaladsl.model.HttpResponse(headers = headers.asScala, entity = entity.asScala))
   }
 
   /**
@@ -236,7 +234,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
    */
   @CorrespondsTo("complete")
   def completeOKWithFuture[T](value: scala.concurrent.Future[T], marshaller: Marshaller[T, RequestEntity]) = RouteAdapter {
-    D.complete(value.fast.map(v ⇒ ToResponseMarshallable(v)(fromToEntityMarshaller()(marshaller))))
+    D.complete(value.fast.map(v => ToResponseMarshallable(v)(fromToEntityMarshaller()(marshaller))))
   }
 
   /**
@@ -244,7 +242,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
    */
   @CorrespondsTo("complete")
   def completeWithFuture[T](value: scala.concurrent.Future[T], marshaller: Marshaller[T, HttpResponse]) = RouteAdapter {
-    D.complete(value.fast.map(v ⇒ ToResponseMarshallable(v)(marshaller)))
+    D.complete(value.fast.map(v => ToResponseMarshallable(v)(marshaller)))
   }
 
   // --- manual "magnet" for CompletionStage ---
@@ -286,7 +284,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
    */
   @CorrespondsTo("complete")
   def completeOKWithFuture[T](value: CompletionStage[T], marshaller: Marshaller[T, RequestEntity]) = RouteAdapter {
-    D.complete(value.asScala.fast.map(v ⇒ ToResponseMarshallable(v)(fromToEntityMarshaller()(marshaller))).recover(unwrapCompletionException))
+    D.complete(value.asScala.fast.map(v => ToResponseMarshallable(v)(fromToEntityMarshaller()(marshaller))).recover(unwrapCompletionException))
   }
 
   /**
@@ -294,7 +292,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
    */
   @CorrespondsTo("complete")
   def completeWithFuture[T](value: CompletionStage[T], marshaller: Marshaller[T, HttpResponse]) = RouteAdapter {
-    D.complete(value.asScala.fast.map(v ⇒ ToResponseMarshallable(v)(marshaller)).recover(unwrapCompletionException))
+    D.complete(value.asScala.fast.map(v => ToResponseMarshallable(v)(marshaller)).recover(unwrapCompletionException))
   }
 
   // TODO: This might need to be raised as an issue to scala-java8-compat instead.
@@ -302,7 +300,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
   //     CompletableFuture.supplyAsync(() -> { throw new IllegalArgumentException("always failing"); })
   // will in fact fail the future with CompletionException.
   private def unwrapCompletionException[T]: PartialFunction[Throwable, T] = {
-    case x: CompletionException if x.getCause ne null ⇒
+    case x: CompletionException if x.getCause ne null =>
       throw x.getCause
   }
 

@@ -6,7 +6,7 @@ package akka.http.scaladsl.model.headers
 
 import scala.collection.immutable
 import akka.http.impl.util.{ Renderer, Rendering, ValueRenderable }
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 
 final case class EntityTag(tag: String, weak: Boolean = false) extends jm.headers.EntityTag with ValueRenderable {
   def render[R <: Rendering](r: R): r.type = if (weak) r ~~ "W/" ~~#! tag else r ~~#! tag
@@ -15,8 +15,8 @@ final case class EntityTag(tag: String, weak: Boolean = false) extends jm.header
 object EntityTag {
   def matchesRange(eTag: EntityTag, entityTagRange: EntityTagRange, weakComparison: Boolean) =
     entityTagRange match {
-      case EntityTagRange.`*`           ⇒ weakComparison || !eTag.weak
-      case EntityTagRange.Default(tags) ⇒ tags.exists(matches(eTag, _, weakComparison))
+      case EntityTagRange.`*`           => weakComparison || !eTag.weak
+      case EntityTagRange.Default(tags) => tags.exists(matches(eTag, _, weakComparison))
     }
   def matches(eTag: EntityTag, other: EntityTag, weakComparison: Boolean) =
     other.tag == eTag.tag && (weakComparison || !other.weak && !eTag.weak)

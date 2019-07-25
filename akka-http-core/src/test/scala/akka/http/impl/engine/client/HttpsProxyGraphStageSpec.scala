@@ -20,7 +20,7 @@ class HttpsProxyGraphStageSpec extends AkkaSpec {
 
   "A ProxyGraphStage" should {
     "send CONNECT message and then forward incoming messages" in new Context {
-      testCase() { (source, flowInProbe, flowOutProbe, sink) ⇒
+      testCase() { (source, flowInProbe, flowOutProbe, sink) =>
         source.sendNext(ByteString("anything"))
         sink.request(1)
 
@@ -47,7 +47,7 @@ class HttpsProxyGraphStageSpec extends AkkaSpec {
     }
 
     "send CONNECT message with ProxyAuth header and then forward incoming messages" in new Context {
-      testCase(Some(basicProxyAuth)) { (source, flowInProbe, flowOutProbe, sink) ⇒
+      testCase(Some(basicProxyAuth)) { (source, flowInProbe, flowOutProbe, sink) =>
         source.sendNext(ByteString("anything"))
         sink.request(1)
 
@@ -79,7 +79,7 @@ class HttpsProxyGraphStageSpec extends AkkaSpec {
     }
 
     "treat any 2xx response for CONNECT message as successful" in new Context {
-      testCase() { (source, flowInProbe, flowOutProbe, sink) ⇒
+      testCase() { (source, flowInProbe, flowOutProbe, sink) =>
         source.sendNext(ByteString("anything"))
         sink.request(1)
 
@@ -94,7 +94,7 @@ class HttpsProxyGraphStageSpec extends AkkaSpec {
     }
 
     "treat fragmented 200 response for CONNECT message as successful" in new Context {
-      testCase() { (source, flowInProbe, flowOutProbe, sink) ⇒
+      testCase() { (source, flowInProbe, flowOutProbe, sink) =>
         source.sendNext(ByteString("anything"))
         sink.request(100)
 
@@ -117,7 +117,7 @@ class HttpsProxyGraphStageSpec extends AkkaSpec {
     }
 
     "fail in case of non-2xx Proxy response for CONNECT message" in new Context {
-      testCase() { (source, flowInProbe, flowOutProbe, sink) ⇒
+      testCase() { (source, flowInProbe, flowOutProbe, sink) =>
         source.sendNext(ByteString("anything"))
         sink.request(100)
 
@@ -126,15 +126,15 @@ class HttpsProxyGraphStageSpec extends AkkaSpec {
         flowOutProbe.sendNext(ByteString("HTTP/1.0 501 Some Error\r\n\r\n"))
 
         sink.expectError match {
-          case _: ProxyConnectionFailedException ⇒
-          case e ⇒
+          case _: ProxyConnectionFailedException =>
+          case e =>
             fail(s"should be ProxyConnectionFailedException, caught ${e.getClass.getName} instead")
         }
       }
     }
 
     "fail in case of unexpected Proxy response for CONNECT message" in new Context {
-      testCase() { (source, flowInProbe, flowOutProbe, sink) ⇒
+      testCase() { (source, flowInProbe, flowOutProbe, sink) =>
         source.sendNext(ByteString("anything"))
         sink.request(100)
 
@@ -148,7 +148,7 @@ class HttpsProxyGraphStageSpec extends AkkaSpec {
     }
 
     "forward additional data sent by Proxy" in new Context {
-      testCase() { (source, flowInProbe, flowOutProbe, sink) ⇒
+      testCase() { (source, flowInProbe, flowOutProbe, sink) =>
         source.sendNext(ByteString("anything"))
         sink.request(100)
 
@@ -185,7 +185,7 @@ class HttpsProxyGraphStageSpec extends AkkaSpec {
     type SubscriberProbe = TestSubscriber.Probe[ByteString]
     type ProxyAuth = BasicHttpCredentials
 
-    def testCase(proxyAuth: Option[HttpCredentials] = None)(fn: (PublisherProbe, SubscriberProbe, PublisherProbe, SubscriberProbe) ⇒ Unit): Unit = {
+    def testCase(proxyAuth: Option[HttpCredentials] = None)(fn: (PublisherProbe, SubscriberProbe, PublisherProbe, SubscriberProbe) => Unit): Unit = {
       Utils.assertAllStagesStopped {
         val proxyGraphStage = HttpsProxyGraphStage(targetHostName, targetPort, clientSettings, proxyAuth)
 

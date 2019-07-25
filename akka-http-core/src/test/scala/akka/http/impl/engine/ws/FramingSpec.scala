@@ -298,7 +298,7 @@ class FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec {
 
   private def parseMultipleTo(events: FrameEvent*): Matcher[Seq[ByteString]] =
     equal(events).matcher[Seq[FrameEvent]].compose {
-      (chunks: Seq[ByteString]) ⇒
+      (chunks: Seq[ByteString]) =>
         val result = parseToEvents(chunks)
         result shouldEqual events
         val rendered = renderToByteString(result)

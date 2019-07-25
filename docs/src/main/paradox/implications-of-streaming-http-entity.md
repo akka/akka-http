@@ -45,6 +45,29 @@ Scala
 Java
 :   @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #manual-entity-consume-example-2 }
 
+### Integrating with Akka Streams
+In some cases, it is necessary to process the results of a series of Akka HTTP calls as Akka Streams. In order
+to ensure that the HTTP Response Entity is consumed in a timely manner, the Akka HTTP stream for each request must
+be executed and completely consumed, then sent along for further processing.
+
+Failing to account for this behavior can result in seemingly non-deterministic failures due to complex interactions
+between http and stream buffering. This manifests as errors such as the following:
+
+```
+Response entity was not subscribed after 1 second. Make sure to read the response entity body or call `discardBytes()` on it.
+```
+
+This error indicates that the http response has been available for too long without being consumed. It can be 
+partially worked around by increasing the subscription timeout, but you will still run the risk of running into network 
+level timeouts and could still exceed the timeout under load so it's best to resolve the issue properly such as in 
+the examples below: 
+
+Scala
+:   @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #manual-entity-consume-example-3 }
+
+Java
+:   @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #manual-entity-consume-example-3 }
+
 ### Discarding the HTTP Response Entity (Client)
 
 Sometimes when calling HTTP services we do not care about their response payload (e.g. all we care about is the response code),

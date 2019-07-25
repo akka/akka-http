@@ -36,44 +36,44 @@ private[http] final class UriParser(
 
   def parseAbsoluteUri(): Uri =
     rule(`absolute-URI` ~ EOI).run() match {
-      case Right(_)    ⇒ create(_scheme, _userinfo, _host, _port, collapseDotSegments(_path), _rawQueryString, _fragment)
-      case Left(error) ⇒ fail(error, "absolute URI")
+      case Right(_)    => create(_scheme, _userinfo, _host, _port, collapseDotSegments(_path), _rawQueryString, _fragment)
+      case Left(error) => fail(error, "absolute URI")
     }
 
   def parseUriReference(): Uri =
     rule(`URI-reference` ~ EOI).run() match {
-      case Right(_)    ⇒ createUriReference()
-      case Left(error) ⇒ fail(error, "URI reference")
+      case Right(_)    => createUriReference()
+      case Left(error) => fail(error, "URI reference")
     }
 
   def parseAndResolveUriReference(base: Uri): Uri =
     rule(`URI-reference` ~ EOI).run() match {
-      case Right(_)    ⇒ resolve(_scheme, _userinfo, _host, _port, _path, _rawQueryString, _fragment, base)
-      case Left(error) ⇒ fail(error, "URI reference")
+      case Right(_)    => resolve(_scheme, _userinfo, _host, _port, _path, _rawQueryString, _fragment, base)
+      case Left(error) => fail(error, "URI reference")
     }
 
   def parseOrigin(): HttpOrigin =
     rule(origin ~ EOI).run() match {
-      case Right(_)    ⇒ HttpOrigin(_scheme, akka.http.scaladsl.model.headers.Host(_host.address, _port))
-      case Left(error) ⇒ fail(error, "origin")
+      case Right(_)    => HttpOrigin(_scheme, akka.http.scaladsl.model.headers.Host(_host.address, _port))
+      case Left(error) => fail(error, "origin")
     }
 
   def parseHost(): Host =
     rule(relaxedHost ~ EOI).run() match {
-      case Right(_)    ⇒ _host
-      case Left(error) ⇒ fail(error, "URI host")
+      case Right(_)    => _host
+      case Left(error) => fail(error, "URI host")
     }
 
   def parseQuery(): Query =
     rule(query ~ EOI).run() match {
-      case Right(query) ⇒ query
-      case Left(error)  ⇒ fail(error, "query")
+      case Right(query) => query
+      case Left(error)  => fail(error, "query")
     }
 
   def parseAuthority(): Authority =
     rule(authority ~ EOI).run() match {
-      case Right(_)    ⇒ Authority(_host, _port, _userinfo)
-      case Left(error) ⇒ fail(error, "authority")
+      case Right(_)    => Authority(_host, _port, _userinfo)
+      case Left(error) => fail(error, "authority")
     }
 
   def fail(error: ParseError, target: String): Nothing = {
@@ -82,20 +82,20 @@ private[http] final class UriParser(
   }
 
   private[this] val `path-segment-char` = uriParsingMode match {
-    case Uri.ParsingMode.Strict ⇒ `pchar-base`
-    case _                      ⇒ `relaxed-path-segment-char`
+    case Uri.ParsingMode.Strict => `pchar-base`
+    case _                      => `relaxed-path-segment-char`
   }
   private[this] val `query-key-char` = uriParsingMode match {
-    case Uri.ParsingMode.Strict  ⇒ `strict-query-key-char`
-    case Uri.ParsingMode.Relaxed ⇒ `relaxed-query-key-char`
+    case Uri.ParsingMode.Strict  => `strict-query-key-char`
+    case Uri.ParsingMode.Relaxed => `relaxed-query-key-char`
   }
   private[this] val `query-value-char` = uriParsingMode match {
-    case Uri.ParsingMode.Strict  ⇒ `strict-query-value-char`
-    case Uri.ParsingMode.Relaxed ⇒ `relaxed-query-value-char`
+    case Uri.ParsingMode.Strict  => `strict-query-value-char`
+    case Uri.ParsingMode.Relaxed => `relaxed-query-value-char`
   }
   private[this] val `fragment-char` = uriParsingMode match {
-    case Uri.ParsingMode.Strict ⇒ `query-fragment-char`
-    case _                      ⇒ `relaxed-fragment-char`
+    case Uri.ParsingMode.Strict => `query-fragment-char`
+    case _                      => `relaxed-fragment-char`
   }
 
   private[this] var _scheme = ""
@@ -171,8 +171,8 @@ private[http] final class UriParser(
 
   def `IP-literal` = rule { '[' ~ ipv6Host ~ ']' } // IPvFuture not currently recognized
 
-  def ipv4Host = rule { capture(`ip-v4-address`) ~ &(colonSlashEOI) ~> ((b, a) ⇒ _host = IPv4Host(b, a)) }
-  def ipv6Host = rule { capture(`ip-v6-address`) ~> ((b, a) ⇒ setHost(IPv6Host(b, a))) }
+  def ipv4Host = rule { capture(`ip-v4-address`) ~ &(colonSlashEOI) ~> ((b, a) => _host = IPv4Host(b, a)) }
+  def ipv6Host = rule { capture(`ip-v6-address`) ~> ((b, a) => setHost(IPv6Host(b, a))) }
 
   def `reg-name` = rule(
     clearSBForDecoding() ~ oneOrMore(`lower-reg-name-char` ~ appendSB() | UPPER_ALPHA ~ appendLowered() | `pct-encoded`) ~
@@ -210,8 +210,8 @@ private[http] final class UriParser(
 
     // has a max value-stack depth of 3
     def keyValuePairsWithLimitedStackUse: Rule1[Query] = rule {
-      keyValuePair ~> { (key, value) ⇒ Query.Cons(key, value, Query.Empty) } ~ {
-        zeroOrMore('&' ~ keyValuePair ~> { (prefix: Query, key, value) ⇒ Query.Cons(key, value, prefix) }) ~>
+      keyValuePair ~> { (key, value) => Query.Cons(key, value, Query.Empty) } ~ {
+        zeroOrMore('&' ~ keyValuePair ~> { (prefix: Query, key, value) => Query.Cons(key, value, prefix) }) ~>
           (_.reverse)
       }
     }
@@ -220,7 +220,7 @@ private[http] final class UriParser(
     // without having to reverse it at the end.
     // Adds 2 values to the value stack for the first pair, then parses the remaining pairs.
     def keyValuePairsWithReversalAvoidance: Rule1[Query] = rule {
-      keyValuePair ~ ('&' ~ keyValuePairs | push(Query.Empty)) ~> { (key, value, tail) ⇒
+      keyValuePair ~ ('&' ~ keyValuePairs | push(Query.Empty)) ~> { (key, value, tail) =>
         Query.Cons(key, value, tail)
       }
     }
@@ -260,10 +260,10 @@ private[http] final class UriParser(
 
   def parseHttpRequestTarget(): Uri =
     rule(`request-target` ~ EOI).run() match {
-      case Right(_) ⇒
+      case Right(_) =>
         val path = if (_scheme.isEmpty) _path else collapseDotSegments(_path)
         create(_scheme, _userinfo, _host, _port, path, _rawQueryString, _fragment)
-      case Left(error) ⇒ fail(error, "request-target")
+      case Left(error) => fail(error, "request-target")
     }
 
   /////////////////////////// ADDITIONAL HTTP/2-SPECIFIC RULES /////////////////////////
@@ -274,8 +274,8 @@ private[http] final class UriParser(
 
   def parseHttp2AuthorityPseudoHeader(): Uri.Authority =
     rule(`http2-authority-pseudo-header` ~ EOI).run() match {
-      case Right(_)    ⇒ Authority(_host, _port)
-      case Left(error) ⇒ fail(error, "http2-authority-pseudo-header")
+      case Right(_)    => Authority(_host, _port)
+      case Left(error) => fail(error, "http2-authority-pseudo-header")
     }
 
   // https://tools.ietf.org/html/rfc7540#section-8.1.2.3
@@ -285,10 +285,10 @@ private[http] final class UriParser(
 
   def parseHttp2PathPseudoHeader(): (Uri.Path, Option[String]) =
     rule(`http2-path-pseudo-header` ~ EOI).run() match {
-      case Right(_) ⇒
+      case Right(_) =>
         val path = collapseDotSegments(_path)
         (path, _rawQueryString)
-      case Left(error) ⇒ fail(error, "http2-path-pseudo-header")
+      case Left(error) => fail(error, "http2-path-pseudo-header")
     }
 
   ///////////// helpers /////////////

@@ -36,20 +36,20 @@ object TestServer extends App {
   implicit val fm = ActorMaterializer(settings)
   try {
     val binding = Http().bindAndHandleSync({
-      case req @ HttpRequest(GET, Uri.Path("/"), _, _, _) if req.header[UpgradeToWebSocket].isDefined ⇒
+      case req @ HttpRequest(GET, Uri.Path("/"), _, _, _) if req.header[UpgradeToWebSocket].isDefined =>
         req.header[UpgradeToWebSocket] match {
-          case Some(upgrade) ⇒ upgrade.handleMessages(echoWebSocketService) // needed for running the autobahn test suite
-          case None          ⇒ HttpResponse(400, entity = "Not a valid websocket request!")
+          case Some(upgrade) => upgrade.handleMessages(echoWebSocketService) // needed for running the autobahn test suite
+          case None          => HttpResponse(400, entity = "Not a valid websocket request!")
         }
-      case HttpRequest(GET, Uri.Path("/"), _, _, _)      ⇒ index
-      case HttpRequest(GET, Uri.Path("/ping"), _, _, _)  ⇒ HttpResponse(entity = "PONG!")
-      case HttpRequest(GET, Uri.Path("/crash"), _, _, _) ⇒ sys.error("BOOM!")
-      case req @ HttpRequest(GET, Uri.Path("/ws-greeter"), _, _, _) ⇒
+      case HttpRequest(GET, Uri.Path("/"), _, _, _)      => index
+      case HttpRequest(GET, Uri.Path("/ping"), _, _, _)  => HttpResponse(entity = "PONG!")
+      case HttpRequest(GET, Uri.Path("/crash"), _, _, _) => sys.error("BOOM!")
+      case req @ HttpRequest(GET, Uri.Path("/ws-greeter"), _, _, _) =>
         req.header[UpgradeToWebSocket] match {
-          case Some(upgrade) ⇒ upgrade.handleMessages(greeterWebSocketService)
-          case None          ⇒ HttpResponse(400, entity = "Not a valid websocket request!")
+          case Some(upgrade) => upgrade.handleMessages(greeterWebSocketService)
+          case None          => HttpResponse(400, entity = "Not a valid websocket request!")
         }
-      case _: HttpRequest ⇒ HttpResponse(404, entity = "Unknown resource!")
+      case _: HttpRequest => HttpResponse(404, entity = "Unknown resource!")
     }, interface = "localhost", port = 9001)
 
     Await.result(binding, 1.second) // throws if binding fails
@@ -82,8 +82,8 @@ object TestServer extends App {
   def greeterWebSocketService: Flow[Message, Message, NotUsed] =
     Flow[Message]
       .collect {
-        case TextMessage.Strict(name) ⇒ TextMessage(s"Hello '$name'")
-        case tm: TextMessage          ⇒ TextMessage(Source.single("Hello ") ++ tm.textStream)
+        case TextMessage.Strict(name) => TextMessage(s"Hello '$name'")
+        case tm: TextMessage          => TextMessage(Source.single("Hello ") ++ tm.textStream)
         // ignore binary messages
       }
 }

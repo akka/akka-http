@@ -30,9 +30,9 @@ trait RouteTestResultComponent {
 
     def rejections: immutable.Seq[Rejection] = synchronized {
       result match {
-        case Some(Left(rejections)) ⇒ rejections
-        case Some(Right(response))  ⇒ failTest("Request was not rejected, response was " + response)
-        case None                   ⇒ failNeitherCompletedNorRejected()
+        case Some(Left(rejections)) => rejections
+        case Some(Right(response))  => failTest("Request was not rejected, response was " + response)
+        case None                   => failNeitherCompletedNorRejected()
       }
     }
 
@@ -43,19 +43,19 @@ trait RouteTestResultComponent {
 
     def chunks: immutable.Seq[ChunkStreamPart] =
       entity match {
-        case HttpEntity.Chunked(_, chunks) ⇒ awaitAllElements[ChunkStreamPart](chunks)
-        case _                             ⇒ Nil
+        case HttpEntity.Chunked(_, chunks) => awaitAllElements[ChunkStreamPart](chunks)
+        case _                             => Nil
       }
 
-    def ~>[T](f: RouteTestResult ⇒ T): T = f(this)
+    def ~>[T](f: RouteTestResult => T): T = f(this)
 
     private def rawResponse: HttpResponse = synchronized {
       result match {
-        case Some(Right(response))        ⇒ response
-        case Some(Left(Nil))              ⇒ failTest("Request was rejected")
-        case Some(Left(rejection :: Nil)) ⇒ failTest("Request was rejected with rejection " + rejection)
-        case Some(Left(rejections))       ⇒ failTest("Request was rejected with rejections " + rejections)
-        case None                         ⇒ failNeitherCompletedNorRejected()
+        case Some(Right(response))        => response
+        case Some(Left(Nil))              => failTest("Request was rejected")
+        case Some(Left(rejection :: Nil)) => failTest("Request was rejected with rejection " + rejection)
+        case Some(Left(rejections))       => failTest("Request was rejected with rejections " + rejections)
+        case None                         => failNeitherCompletedNorRejected()
       }
     }
 
@@ -63,30 +63,30 @@ trait RouteTestResultComponent {
       synchronized {
         if (result.isEmpty) {
           result = rr match {
-            case RouteResult.Complete(response)   ⇒ Some(Right(response))
-            case RouteResult.Rejected(rejections) ⇒ Some(Left(RejectionHandler.applyTransformations(rejections)))
+            case RouteResult.Complete(response)   => Some(Right(response))
+            case RouteResult.Rejected(rejections) => Some(Left(RejectionHandler.applyTransformations(rejections)))
           }
           latch.countDown()
         } else failTest("Route completed/rejected more than once")
       }
 
-    private[testkit] def awaitResult: this.type = {
+    private[testkit] def awaitResult: this.type = scala.concurrent.blocking {
       latch.await(timeout.toMillis, MILLISECONDS)
       this
     }
 
-    private[this] lazy val entityRecreator: () ⇒ ResponseEntity =
+    private[this] lazy val entityRecreator: () => ResponseEntity =
       rawResponse.entity match {
-        case s: HttpEntity.Strict ⇒ () ⇒ s
+        case s: HttpEntity.Strict => () => s
 
-        case HttpEntity.Default(contentType, contentLength, data) ⇒
-          val dataChunks = awaitAllElements(data); { () ⇒ HttpEntity.Default(contentType, contentLength, Source(dataChunks)) }
+        case HttpEntity.Default(contentType, contentLength, data) =>
+          val dataChunks = awaitAllElements(data); { () => HttpEntity.Default(contentType, contentLength, Source(dataChunks)) }
 
-        case HttpEntity.CloseDelimited(contentType, data) ⇒
-          val dataChunks = awaitAllElements(data); { () ⇒ HttpEntity.CloseDelimited(contentType, Source(dataChunks)) }
+        case HttpEntity.CloseDelimited(contentType, data) =>
+          val dataChunks = awaitAllElements(data); { () => HttpEntity.CloseDelimited(contentType, Source(dataChunks)) }
 
-        case HttpEntity.Chunked(contentType, data) ⇒
-          val dataChunks = awaitAllElements(data); { () ⇒ HttpEntity.Chunked(contentType, Source(dataChunks)) }
+        case HttpEntity.Chunked(contentType, data) =>
+          val dataChunks = awaitAllElements(data); { () => HttpEntity.Chunked(contentType, Source(dataChunks)) }
       }
 
     private def failNeitherCompletedNorRejected(): Nothing =

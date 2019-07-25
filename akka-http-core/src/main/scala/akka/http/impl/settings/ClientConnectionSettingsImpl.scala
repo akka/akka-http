@@ -39,7 +39,7 @@ private[akka] final case class ClientConnectionSettingsImpl(
 
   override def productPrefix = "ClientConnectionSettings"
 
-  override def websocketRandomFactory: () ⇒ Random = websocketSettings.randomFactory
+  override def websocketRandomFactory: () => Random = websocketSettings.randomFactory
 }
 
 /** INTERNAL API */

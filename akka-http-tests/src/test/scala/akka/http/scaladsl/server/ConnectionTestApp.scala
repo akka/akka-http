@@ -37,7 +37,7 @@ object ConnectionTestApp {
     // Our superPool expects (HttpRequest, Int) as input
     val source = Source.actorRef[(HttpRequest, Int)](10000, OverflowStrategy.dropNew).buffer(20000, OverflowStrategy.fail)
     val sink = Sink.foreach[(Try[HttpResponse], Int)] {
-      case (resp, id) ⇒ handleResponse(resp, id)
+      case (resp, id) => handleResponse(resp, id)
     }
 
     source.via(clientFlow).to(sink).run()
@@ -51,7 +51,7 @@ object ConnectionTestApp {
     val responseFuture: Future[HttpResponse] =
       Http().singleRequest(buildRequest(uri))
 
-    responseFuture.onComplete(r ⇒ handleResponse(r, id))
+    responseFuture.onComplete(r => handleResponse(r, id))
   }
 
   def sendSingle(uri: Uri, id: Int): Unit = {
@@ -62,7 +62,7 @@ object ConnectionTestApp {
         .via(connectionFlow)
         .runWith(Sink.head)
 
-    responseFuture.onComplete(r ⇒ handleResponse(r, id))
+    responseFuture.onComplete(r => handleResponse(r, id))
   }
 
   private def buildRequest(uri: Uri): HttpRequest =
@@ -70,17 +70,17 @@ object ConnectionTestApp {
 
   private def handleResponse(httpResp: Try[HttpResponse], id: Int): Unit = {
     httpResp match {
-      case Success(httpRes) ⇒
+      case Success(httpRes) =>
         println(s"$id: OK (${httpRes.status.intValue})")
         httpRes.entity.dataBytes.runWith(Sink.ignore)
 
-      case Failure(ex) ⇒
+      case Failure(ex) =>
         println(s"$id: $ex")
     }
   }
 
   def main(args: Array[String]): Unit = {
-    for (i ← 1 to 1000) {
+    for (i <- 1 to 1000) {
       val u = s"http://127.0.0.1:6666/test/$i"
       println("u =>" + u)
       sendPoolFlow(Uri(u), i)
