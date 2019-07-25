@@ -364,9 +364,9 @@ lazy val docs = project("docs")
 lazy val compatibilityTests = Project("akka-http-compatibility-tests", file("akka-http-compatibility-tests"))
   .enablePlugins(NoPublish)
   .disablePlugins(BintrayPlugin, MimaPlugin)
+  .addAkkaModuleDependency("akka-stream", "provided")
   .settings(
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-stream" % AkkaDependency.akkaVersion,
       "com.typesafe.akka" %% "akka-http" % "10.1.8" % "provided", // TODO, should we make that latest?
     ),
     (dependencyClasspath in Test) := {
