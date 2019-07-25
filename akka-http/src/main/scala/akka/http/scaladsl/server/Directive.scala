@@ -47,14 +47,15 @@ abstract class Directive[L](implicit val ev: Tuple[L]) {
     def validatedMap[R](f: L => R)(implicit tupler: Tupler[R]): Directive[tupler.Out] =
       Directive[tupler.Out] { inner =>
         tapply { values => ctx =>
-          val r: R =
-            try f(values)
+          def futureRouteResult(): Future[RouteResult] = {
+            val r: R = try f(values)
             catch {
               case e: IllegalArgumentException =>
                 return ctx.reject(ValidationRejection(e.getMessage.nullAsEmpty, Some(e)))
             }
-
-          inner(tupler(r))(ctx)
+            inner(tupler(r))(ctx)
+          }
+          futureRouteResult()
         }
       }(tupler.OutIsTuple)
 
