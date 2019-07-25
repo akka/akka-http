@@ -17,7 +17,7 @@ import akka.http.scaladsl.settings.ServerSettings
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{ Await, ExecutionContext, Future, Promise, blocking }
+import scala.concurrent.{ Await, ExecutionContext, ExecutionContextExecutor, Future, Promise, blocking }
 import scala.io.StdIn
 import scala.util.{ Failure, Success, Try }
 
@@ -87,7 +87,7 @@ abstract class HttpApp extends Directives {
     implicit val theSystem = system.getOrElse(ActorSystem(Logging.simpleName(this).replaceAll("\\$", "")))
     systemReference.set(theSystem)
     implicit val materializer = ActorMaterializer()
-    implicit val executionContext = theSystem.dispatcher
+    implicit val executionContext: ExecutionContextExecutor = theSystem.dispatcher
 
     val bindingFuture = Http().bindAndHandle(
       handler = routes,

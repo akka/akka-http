@@ -79,7 +79,7 @@ object Route {
     val effectiveEC = if (executionContext ne null) executionContext else materializer.executionContext
 
     {
-      implicit val executionContext = effectiveEC // overrides parameter
+      implicit val executionContext: ExecutionContextExecutor = effectiveEC // overrides parameter
       val effectiveParserSettings = if (parserSettings ne null) parserSettings else ParserSettings(ActorMaterializerHelper.downcast(materializer).system)
       val sealedRoute = seal(route)
       request =>
