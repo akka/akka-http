@@ -51,8 +51,8 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
       else if (connectionContext.isSecure) settings.defaultHttpsPort
       else settings.defaultHttpPort
 
-    val http1 = Flow[HttpRequest].mapAsync(parallelism)(handler).joinMat(http.serverLayer(settings, None, log))(Keep.left)
-    val http2 = Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher).joinMat(Http2Blueprint.serverStackTls(settings, log))(Keep.left)
+    val http1 = Flow[HttpRequest].mapAsync(parallelism)(handler).join(http.serverLayer(settings, None, log))
+    val http2 = Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher).join(Http2Blueprint.serverStackTls(settings, log))
 
     val masterTerminator = new MasterServerTerminator(log)
 
@@ -62,7 +62,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
           try {
             httpPlusSwitching(http1, http2).addAttributes(Http.prepareAttributes(settings, incoming))
               .watchTermination()(Keep.right)
-              .joinMat(incoming.flow)(Keep.left)
+              .join(incoming.flow)
               .run().recover {
                 // Ignore incoming errors from the connection as they will cancel the binding.
                 // As far as it is known currently, these errors can only happen if a TCP error bubbles up

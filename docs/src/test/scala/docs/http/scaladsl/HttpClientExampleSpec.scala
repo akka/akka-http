@@ -235,10 +235,10 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
     val queue =
       Source.queue[(HttpRequest, Promise[HttpResponse])](QueueSize, OverflowStrategy.dropNew)
         .via(poolClientFlow)
-        .toMat(Sink.foreach({
+        .to(Sink.foreach({
           case ((Success(resp), p)) => p.success(resp)
           case ((Failure(e), p))    => p.failure(e)
-        }))(Keep.left)
+        }))
         .run()
 
     def queueRequest(request: HttpRequest): Future[HttpResponse] = {
