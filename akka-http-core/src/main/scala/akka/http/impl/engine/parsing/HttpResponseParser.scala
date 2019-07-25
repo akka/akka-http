@@ -60,7 +60,8 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
   private def parseStatus(input: ByteString, cursor: Int): Int = {
     def badStatusCode() = throw new ParsingException("Illegal response status code")
     def badStatusCodeSpecific(code: Int) = throw new ParsingException("Illegal response status code: " + code)
-    def parseStatusCode() = {
+
+    def parseStatusCode(reasonStartIdx: Int = -1, reasonEndIdx: Int = -1): Unit = {
       def intValue(offset: Int): Int = {
         val c = byteChar(input, cursor + offset)
         if (CharacterClasses.DIGIT(c)) c - '0' else badStatusCode()
@@ -70,7 +71,17 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
         case 200 => StatusCodes.OK
         case code => StatusCodes.getForKey(code) match {
           case Some(x) => x
-          case None    => customStatusCodes(code) getOrElse badStatusCodeSpecific(code)
+          case None => customStatusCodes(code) getOrElse {
+            // A client must understand the class of any status code, as indicated by the first digit, and
+            // treat an unrecognized status code as being equivalent to the x00 status code of that class
+            // https://tools.ietf.org/html/rfc7231#section-6
+            try {
+              val reason = asciiString(input, reasonStartIdx, reasonEndIdx)
+              StatusCodes.custom(code, reason)
+            } catch {
+              case _: Exception => badStatusCodeSpecific(code)
+            }
+          }
         }
       }
     }
@@ -86,15 +97,16 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
     }
 
     if (byteChar(input, cursor + 3) == ' ') {
-      parseStatusCode()
       val startIdx = cursor + 4
-      @tailrec def skipReason(idx: Int): Int =
+      @tailrec def scanNewLineIdx(idx: Int): Int =
         if (idx - startIdx <= maxResponseReasonLength)
-          if (isNewLine(idx)) skipNewLine(idx)
-          else skipReason(idx + 1)
+          if (isNewLine(idx)) idx
+          else scanNewLineIdx(idx + 1)
         else throw new ParsingException("Response reason phrase exceeds the configured limit of " +
           maxResponseReasonLength + " characters")
-      skipReason(startIdx)
+      val newLineIdx = scanNewLineIdx(startIdx)
+      parseStatusCode(startIdx, newLineIdx)
+      skipNewLine(newLineIdx)
     } else if (isNewLine(cursor + 3)) {
       parseStatusCode()
       // Status format with no reason phrase and no trailing space accepted, diverging from the spec
