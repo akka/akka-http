@@ -490,10 +490,10 @@ object Uri {
     final def endsWith(suffix: String, ignoreTrailingSlash: Boolean = false): Boolean = {
       @tailrec def rec(path: Path, lastSegment: String = ""): Boolean =
         path match {
-          case Path.Empty               ⇒ lastSegment.endsWith(suffix)
-          case Path.Slash(Path.Empty)   ⇒ ignoreTrailingSlash && lastSegment.endsWith(suffix)
-          case Path.Slash(tail)         ⇒ rec(tail)
-          case Path.Segment(head, tail) ⇒ rec(tail, head)
+          case Path.Empty               => lastSegment.endsWith(suffix)
+          case Path.Slash(Path.Empty)   => ignoreTrailingSlash && lastSegment.endsWith(suffix)
+          case Path.Slash(tail)         => rec(tail)
+          case Path.Segment(head, tail) => rec(tail, head)
         }
       rec(this)
     }
