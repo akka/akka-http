@@ -53,7 +53,7 @@ abstract class Directive[L](implicit val ev: Tuple[L]) {
               case e: IllegalArgumentException =>
                 return ctx.reject(ValidationRejection(e.getMessage.nullAsEmpty, Some(e)))
             }
-          
+
           inner(tupler(r))(ctx)
         }
       }(tupler.OutIsTuple)
