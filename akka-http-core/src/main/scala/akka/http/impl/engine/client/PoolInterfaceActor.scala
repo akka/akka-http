@@ -13,9 +13,9 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.settings.PoolImplementation
 import akka.macros.LogHelper
-import akka.stream.actor.ActorPublisherMessage._
-import akka.stream.actor.ActorSubscriberMessage._
-import akka.stream.actor.{ ActorPublisher, ActorSubscriber, ZeroRequestStrategy }
+import akka.http.impl.util.ActorPublisherMessage._
+import akka.http.impl.util.ActorSubscriberMessage._
+import akka.http.impl.util.{ ActorPublisher, ActorSubscriber, ZeroRequestStrategy }
 import akka.stream.impl.{ Buffer, SeqActorName }
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.{ BufferOverflowException, Materializer }
