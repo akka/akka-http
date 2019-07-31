@@ -116,6 +116,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def mapParserSettings(f: ParserSettings => ParserSettings): ServerSettings = withParserSettings(f(parserSettings))
   def mapPreviewServerSettings(f: PreviewServerSettings => PreviewServerSettings): ServerSettings = withPreviewServerSettings(f(previewServerSettings))
   def mapWebsocketSettings(f: WebSocketSettings => WebSocketSettings): ServerSettings = withWebsocketSettings(f(websocketSettings))
+  def mapTimeouts(f: ServerSettings.Timeouts => ServerSettings.Timeouts): ServerSettings = withTimeouts(f(timeouts))
 }
 
 object ServerSettings extends SettingsCompanion[ServerSettings] {

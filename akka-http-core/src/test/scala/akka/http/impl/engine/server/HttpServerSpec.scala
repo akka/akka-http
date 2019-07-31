@@ -29,11 +29,12 @@ import scala.reflect.ClassTag
 import scala.util.Random
 
 class HttpServerSpec extends AkkaSpec(
-  """akka.loggers = []
-     akka.loglevel = OFF
+  """akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
+     akka.loglevel = DEBUG
+     akka.http.server.log-unencrypted-network-bytes = 100
      akka.http.server.request-timeout = infinite
      akka.scheduler.implementation = "akka.testkit.ExplicitlyTriggeredScheduler"
-  """) with Inside { spec =>
+  """) with Inside with WithLogCapturing { spec =>
   implicit val materializer = ActorMaterializer()
 
   "The server implementation" should {
@@ -353,6 +354,8 @@ class HttpServerSpec extends AkkaSpec(
     })
 
     "close the connection if request entity stream has been cancelled" in assertAllStagesStopped(new TestSetup {
+      override def settings: ServerSettings = super.settings.mapTimeouts(_.withLingerTimeout(10.millis))
+
       // two chunks sent by client
       send("""POST / HTTP/1.1
              |Host: example.com
@@ -376,6 +379,7 @@ class HttpServerSpec extends AkkaSpec(
           dataProbe.expectNext(Chunk(ByteString("abcdef")))
           dataProbe.expectComplete()
           // connection closes once requested elements are consumed
+          scheduler.timePasses(100.millis) // > lingerTimeout to trigger delay cancellation
           netIn.expectCancellation()
       }
       shutdownBlueprint()
@@ -801,6 +805,39 @@ class HttpServerSpec extends AkkaSpec(
 
       netIn.sendComplete()
       netOut.expectComplete()
+    })
+    "log error and reset connection when the response stream fails" in assertAllStagesStopped(new TestSetup {
+      override def settings: ServerSettings = super.settings.mapTimeouts(_.withLingerTimeout(10.millis))
+
+      send("""POST /inject-meteor HTTP/1.1
+             |Host: example.com
+             |
+             |""".stripMarginWithNewline("\r\n"))
+
+      expectRequest()
+
+      val dataOutProbe = TestPublisher.probe[ByteString]()
+      val outEntity = HttpEntity.Chunked.fromData(ContentTypes.`application/octet-stream`, Source.fromPublisher(dataOutProbe))
+
+      responses.sendNext(HttpResponse(entity = outEntity))
+      expectResponseWithWipedDate(
+        """HTTP/1.1 200 OK
+          |Server: akka-http/test
+          |Date: XXXX
+          |Transfer-Encoding: chunked
+          |Content-Type: application/octet-stream
+          |
+          |""")
+      dataOutProbe.sendNext(ByteString("Hello"))
+      netOut.expectUtf8EncodedString("5\r\nHello\r\n")
+
+      EventFilter.error("Response stream for [POST /inject-meteor] failed with 'Meteor wiped data center'. Aborting connection.", occurrences = 1).intercept {
+        dataOutProbe.sendError(new RuntimeException("Meteor wiped data center"))
+      }
+
+      netOut.expectError()
+      scheduler.timePasses(100.millis) // > lingerTimeout to trigger delay cancellation
+      netIn.expectCancellation()
     })
 
     "correctly consume and render large requests and responses" in assertAllStagesStopped(new TestSetup {
