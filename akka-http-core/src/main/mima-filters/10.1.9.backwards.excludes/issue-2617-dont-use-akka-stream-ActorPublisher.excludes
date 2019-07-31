@@ -1,0 +1,3 @@
+# Changes to internal classes
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.engine.client.PoolInterfaceActor")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.client.PoolInterfaceActor.requestStrategy")
