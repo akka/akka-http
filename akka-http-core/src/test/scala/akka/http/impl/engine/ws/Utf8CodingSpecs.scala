@@ -7,15 +7,14 @@ package akka.http.impl.engine.ws
 import org.scalacheck.Gen
 
 import scala.concurrent.duration._
-
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import akka.http.impl.util._
 import akka.testkit._
-import org.scalatest.prop.PropertyChecks
 import org.scalatest.{ FreeSpec, Matchers }
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class Utf8CodingSpecs extends FreeSpec with Matchers with PropertyChecks with WithMaterializerSpec {
+class Utf8CodingSpecs extends FreeSpec with Matchers with ScalaCheckPropertyChecks with WithMaterializerSpec {
   "Utf8 decoding/encoding" - {
     "work for all codepoints" in {
       def isSurrogate(cp: Int): Boolean =
