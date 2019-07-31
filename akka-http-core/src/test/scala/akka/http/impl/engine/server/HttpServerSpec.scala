@@ -19,6 +19,11 @@ import akka.stream.scaladsl._
 import akka.stream.testkit.Utils.assertAllStagesStopped
 import akka.stream.testkit._
 import akka.stream.ActorMaterializer
+import akka.stream.Attributes
+import akka.stream.Outlet
+import akka.stream.SourceShape
+import akka.stream.stage.GraphStage
+import akka.stream.stage.GraphStageLogic
 import akka.testkit._
 import akka.util.ByteString
 import org.scalatest.Inside
@@ -838,6 +843,43 @@ class HttpServerSpec extends AkkaSpec(
       netOut.expectError()
       scheduler.timePasses(100.millis) // > lingerTimeout to trigger delay cancellation
       netIn.expectCancellation()
+    })
+    "log error and reset connection when the response stream materialization fails" in assertAllStagesStopped(new TestSetup {
+      override def settings: ServerSettings = super.settings.mapTimeouts(_.withLingerTimeout(10.millis))
+
+      send("""POST /recharge-banana HTTP/1.1
+             |Host: example.com
+             |
+             |""".stripMarginWithNewline("\r\n"))
+
+      expectRequest()
+
+      object FailingSource extends GraphStage[SourceShape[Nothing]] {
+        val out = Outlet[Nothing]("nonono")
+        override def shape: SourceShape[Nothing] = SourceShape(out)
+        override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+          throw new RuntimeException("Banana recharging not (yet) supported")
+      }
+      val bananaCharger = Source.fromGraph(FailingSource)
+
+      val outEntity = HttpEntity.Chunked.fromData(ContentTypes.`application/octet-stream`, bananaCharger)
+
+      EventFilter.error("Rendering of response failed because response entity stream materialization failed with 'Banana recharging not (yet) supported'. Sending out 500 response instead.", occurrences = 1).intercept {
+        responses.sendNext(HttpResponse(entity = outEntity))
+      }
+
+      expectResponseWithWipedDate(
+        """HTTP/1.1 500 Internal Server Error
+          |Server: akka-http/test
+          |Date: XXXX
+          |Content-Type: text/plain; charset=UTF-8
+          |Content-Length: 35
+          |
+          |There was an internal server error.""")
+
+      scheduler.timePasses(100.millis) // > lingerTimeout to trigger delay cancellation
+      netIn.sendComplete()
+      netOut.expectComplete()
     })
 
     "correctly consume and render large requests and responses" in assertAllStagesStopped(new TestSetup {
