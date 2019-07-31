@@ -578,6 +578,7 @@ Host: example.com
         Try(Await.result(result, 2.seconds).utf8String) match {
           case scala.util.Success(body)                => fail(body)
           case scala.util.Failure(_: TimeoutException) => // Expected
+          case scala.util.Failure(other)               => fail(other)
         }
       } finally {
         responsePromise.failure(new TimeoutException())
@@ -739,7 +740,7 @@ Host: example.com
     }
 
     "produce a useful error message when connecting to a HTTP endpoint over HTTPS" in Utils.assertAllStagesStopped {
-      val dummyFlow = Flow.fromFunction((_: HttpRequest) => ???)
+      val dummyFlow = Flow[HttpRequest].map(_ => ???)
 
       val binding = Http().bindAndHandle(dummyFlow, "127.0.0.1", port = 0).futureValue
       val uri = "https://" + binding.localAddress.getHostString + ":" + binding.localAddress.getPort

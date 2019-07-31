@@ -10,8 +10,8 @@ import scala.util.control.NoStackTrace
 import akka.http.scaladsl.settings.ParserSettings
 import akka.http.impl.model.parser.CharacterClasses
 import akka.util.ByteString
-import akka.http.scaladsl.model.{ ParsingException => MParsingException, _ }
-import headers._
+import akka.http.scaladsl.model.{ ParsingException => _, _ }
+import akka.http.scaladsl.model.headers._
 import ParserOutput._
 import akka.annotation.InternalApi
 import akka.stream.scaladsl.Source
