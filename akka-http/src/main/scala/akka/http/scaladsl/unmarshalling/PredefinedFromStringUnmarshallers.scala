@@ -47,7 +47,7 @@ trait PredefinedFromStringUnmarshallers {
 
   implicit val uuidFromStringUnmarshaller: Unmarshaller[String, UUID] = {
     val validUuidPattern =
-      "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000".r.pattern
+      """[\da-fA-F]{8}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{12}""".r.pattern
 
     Unmarshaller.strict[String, UUID] { string =>
       if (validUuidPattern.matcher(string).matches)
