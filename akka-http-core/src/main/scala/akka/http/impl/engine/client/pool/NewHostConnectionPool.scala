@@ -25,6 +25,7 @@ import akka.util.OptionVal
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Random, Success, Try }
 
@@ -194,7 +195,7 @@ private[client] object NewHostConnectionPool {
           def isConnected: Boolean = state.isConnected
           def shutdown(): Unit = {
             // TODO: should we offer errors to the connection?
-            closeConnection()
+            closeConnection(force = true)
 
             state.onShutdown(this)
           }
@@ -269,7 +270,7 @@ private[client] object NewHostConnectionPool {
 
                 if (!state.isConnected && connection != null) {
                   debug(s"State change from [${previousState.name}] to [Unconnected]. Closing the existing connection.")
-                  closeConnection()
+                  closeConnection(force = false)
                 }
 
                 if (!previousState.isIdle && state.isIdle && !(state == Unconnected && currentEmbargo != Duration.Zero)) {
@@ -315,7 +316,7 @@ private[client] object NewHostConnectionPool {
 
                   try {
                     cancelCurrentTimeout()
-                    closeConnection()
+                    closeConnection(force = true)
                     state.onShutdown(this)
                     logic.slotsWaitingForDispatch.remove(this)
                     OptionVal.None
@@ -387,9 +388,9 @@ private[client] object NewHostConnectionPool {
             }
           }
 
-          def closeConnection(): Unit =
+          def closeConnection(force: Boolean): Unit =
             if (connection ne null) {
-              connection.close()
+              connection.close(force)
               connection = null
             }
           def isCurrentConnection(conn: SlotConnection): Boolean = connection eq conn
@@ -439,8 +440,10 @@ private[client] object NewHostConnectionPool {
 
             emitRequest(newRequest)
           }
-          def close(): Unit = {
-            requestOut.complete()
+          def close(force: Boolean): Unit = {
+            if (force) requestOut.fail(new IllegalStateException("pool slot shutdown") with NoStackTrace)
+            else requestOut.complete()
+
             responseIn.cancel()
 
             // FIXME: or should we use discardEntity which does Sink.ignore?
@@ -560,8 +563,8 @@ private[client] object NewHostConnectionPool {
           super.onDownstreamFinish()
         }
         override def postStop(): Unit = {
-          log.debug("Pool stopped")
           slots.foreach(_.shutdown())
+          log.warning(s"Pool stopped")
         }
 
         private def willClose(response: HttpResponse): Boolean =
