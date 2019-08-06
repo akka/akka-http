@@ -128,6 +128,13 @@ sealed trait HttpEntity extends jm.HttpEntity {
   def transformDataBytes(transformer: Flow[ByteString, ByteString, Any]): HttpEntity
 
   /**
+   * Transforms this' entities data bytes with a transformer that will produce exactly the number of bytes given as
+   * `newContentLength`.
+   */
+  def transformDataBytes(newContentLength: Long, transformer: Flow[ByteString, ByteString, Any]): UniversalEntity =
+    HttpEntity.Default(contentType, newContentLength, dataBytes via transformer)
+
+  /**
    * Creates a copy of this HttpEntity with the `contentType` overridden with the given one.
    */
   def withContentType(contentType: ContentType): HttpEntity
@@ -264,12 +271,6 @@ sealed trait UniversalEntity extends jm.UniversalEntity with MessageEntity with 
 
   def contentLength: Long
   def contentLengthOption: Option[Long] = Some(contentLength)
-
-  /**
-   * Transforms this' entities data bytes with a transformer that will produce exactly the number of bytes given as
-   * `newContentLength`.
-   */
-  def transformDataBytes(newContentLength: Long, transformer: Flow[ByteString, ByteString, Any]): UniversalEntity
 }
 
 object HttpEntity {
@@ -334,16 +335,13 @@ object HttpEntity {
     override def isKnownEmpty: Boolean = data.isEmpty
     override def isStrict: Boolean = true
 
-    override def dataBytes: Source[ByteString, NotUsed] = Source(data :: Nil)
+    override def dataBytes: Source[ByteString, NotUsed] = Source.single(data)
 
     override def toStrict(timeout: FiniteDuration)(implicit fm: Materializer) =
       FastFuture.successful(this)
 
     override def transformDataBytes(transformer: Flow[ByteString, ByteString, Any]): MessageEntity =
       HttpEntity.Chunked.fromData(contentType, Source.single(data).via(transformer))
-
-    override def transformDataBytes(newContentLength: Long, transformer: Flow[ByteString, ByteString, Any]): UniversalEntity =
-      HttpEntity.Default(contentType, newContentLength, Source.single(data) via transformer)
 
     override def withContentType(contentType: ContentType): HttpEntity.Strict =
       if (contentType == this.contentType) this else copy(contentType = contentType)
@@ -400,9 +398,6 @@ object HttpEntity {
 
     override def transformDataBytes(transformer: Flow[ByteString, ByteString, Any]): HttpEntity.Chunked =
       HttpEntity.Chunked.fromData(contentType, data via transformer)
-
-    override def transformDataBytes(newContentLength: Long, transformer: Flow[ByteString, ByteString, Any]): UniversalEntity =
-      HttpEntity.Default(contentType, newContentLength, data via transformer)
 
     def withContentType(contentType: ContentType): HttpEntity.Default =
       if (contentType == this.contentType) this else copy(contentType = contentType)
