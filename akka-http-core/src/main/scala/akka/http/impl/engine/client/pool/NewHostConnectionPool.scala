@@ -277,6 +277,11 @@ private[client] object NewHostConnectionPool {
                 }
                 if (state.isInstanceOf[ConnectingState] && connection == null) openConnection()
 
+                if (connection == null && state.isConnected) {
+                  debug(s"Slot connection is gone but slot is still connected? [${state.name}]")
+                  state = Unconnected
+                }
+
                 if (!previousState.isIdle && state.isIdle && !(state == Unconnected && currentEmbargo != Duration.Zero)) {
                   debug("Slot became idle... Trying to pull")
                   pullIfNeeded()
