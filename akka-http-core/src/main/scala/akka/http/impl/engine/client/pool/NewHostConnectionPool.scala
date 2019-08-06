@@ -273,6 +273,7 @@ private[client] object NewHostConnectionPool {
                   closeConnection(state.asInstanceOf[ShouldCloseConnectionState].closeRegularly)
                   state = Unconnected
                 }
+                if (state.isInstanceOf[ConnectingState] && connection == null) openConnection()
 
                 if (!previousState.isIdle && state.isIdle && !(state == Unconnected && currentEmbargo != Duration.Zero)) {
                   debug("Slot became idle... Trying to pull")

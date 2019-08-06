@@ -163,11 +163,6 @@ class SlotStateSpec extends AkkaSpec {
     var pushedRequest: Option[HttpRequest] = None
     var dispatchedResponse: Option[Try[HttpResponse]] = None
 
-    override def openConnection(): Unit = {
-      connectionOpenRequested should be(false)
-      connectionOpenRequested = true
-    }
-
     override def isConnectionClosed: Boolean = connectionClosed
 
     override def dispatchResponseResult(req: PoolFlow.RequestContext, result: Try[HttpResponse]): Unit =

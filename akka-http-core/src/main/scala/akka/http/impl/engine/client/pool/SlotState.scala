@@ -25,7 +25,6 @@ import scala.util.{ Failure, Success, Try }
  */
 @InternalApi
 private[pool] abstract class SlotContext {
-  def openConnection(): Unit
   def isConnectionClosed: Boolean
 
   def dispatchResponseResult(req: RequestContext, result: Try[HttpResponse]): Unit
@@ -170,18 +169,11 @@ private[pool] object SlotState {
     override def onNewConnectionEmbargo(ctx: SlotContext, embargoDuration: FiniteDuration): SlotState =
       Embargoed(embargoDuration)
   }
-  trait UnconnectedState extends SlotState with IdleState {
+  sealed trait UnconnectedState extends SlotState with IdleState {
     def isConnected: Boolean = false
 
-    override def onPreConnect(ctx: SlotContext): SlotState = {
-      ctx.openConnection()
-      PreConnecting
-    }
-
-    override def onNewRequest(ctx: SlotContext, requestContext: RequestContext): SlotState = {
-      ctx.openConnection()
-      Connecting(requestContext)
-    }
+    override def onPreConnect(ctx: SlotContext): SlotState = PreConnecting
+    override def onNewRequest(ctx: SlotContext, requestContext: RequestContext): SlotState = Connecting(requestContext)
 
     override def onNewConnectionEmbargo(ctx: SlotContext, embargoDuration: FiniteDuration): SlotState =
       Embargoed(embargoDuration)
@@ -191,7 +183,7 @@ private[pool] object SlotState {
   case object OutOfEmbargo extends UnconnectedState
   case object Unconnected extends UnconnectedState
 
-  abstract class ShouldCloseConnectionState(val closeRegularly: Boolean) extends SlotState {
+  sealed abstract class ShouldCloseConnectionState(val closeRegularly: Boolean) extends SlotState {
     override def isIdle: Boolean = false
     override def isConnected: Boolean = false
   }
@@ -205,8 +197,10 @@ private[pool] object SlotState {
     override def onConnectionCompleted(ctx: SlotContext): SlotState = ToBeClosed
     override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = ToBeClosed
   }
-  final case class Connecting(ongoingRequest: RequestContext) extends ConnectedState with BusyState {
-    val waitingForEndOfRequestEntity = false
+  sealed abstract class ConnectingState extends ConnectedState
+
+  final case class Connecting(ongoingRequest: RequestContext) extends ConnectingState with BusyState {
+    def waitingForEndOfRequestEntity = false
 
     override def onConnectionAttemptSucceeded(ctx: SlotContext, outgoingConnection: Http.OutgoingConnection): SlotState = {
       ctx.debug("Slot connection was established")
@@ -215,7 +209,7 @@ private[pool] object SlotState {
     // connection failures are handled by BusyState implementations
   }
 
-  case object PreConnecting extends ConnectedState with IdleState {
+  case object PreConnecting extends ConnectingState with IdleState {
     override def onConnectionAttemptSucceeded(ctx: SlotContext, outgoingConnection: Http.OutgoingConnection): SlotState = {
       ctx.debug("Slot connection was (pre-)established")
       Idle
