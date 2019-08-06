@@ -10,6 +10,7 @@ import java.nio.channels.{ ServerSocketChannel, SocketChannel }
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorSystem
+import akka.event.Logging
 import akka.http.impl.engine.client.PoolMasterActor.PoolInterfaceRunning
 import akka.http.impl.engine.server.ServerTerminator
 import akka.http.impl.engine.ws.ByteStringSinkProbe
@@ -20,6 +21,7 @@ import akka.http.scaladsl.model.{ HttpEntity, _ }
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, PoolImplementation, ServerSettings }
 import akka.http.scaladsl.{ ClientTransport, ConnectionContext, Http }
+import akka.stream.Attributes
 import akka.stream.{ ActorMaterializer, OverflowStrategy, QueueOfferResult }
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
@@ -199,14 +201,15 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       responses mustContainLike { case (Failure(x), 43) => x.getMessage should include(ConnectionResetByPeerMessage) }
     }
 
-    // akka-http/#416
     "surface connection-level and stream-level errors while receiving response entity" in new TestSetup(autoAccept = true) {
+
       val errorOnConnection1 = Promise[ByteString]()
 
       val crashingEntity =
         Source.fromIterator(() => Iterator.fill(10)(ByteString("abc")))
           .concat(Source.fromFuture(errorOnConnection1.future))
-          .log("test")
+          .log("response-entity-stream")
+          .addAttributes(Attributes.logLevels(Logging.InfoLevel, Logging.InfoLevel, Logging.InfoLevel))
 
       val laterHandler = Promise[(HttpRequest => Future[HttpResponse]) => Unit]()
 
@@ -239,10 +242,13 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       // ensure that server has seen request 2
       val handlerSetter = Await.result(laterHandler.future, 1.second.dilated)
 
-      // now fail the first one
-      EventFilter[RuntimeException](occurrences = 1) intercept {
-        errorOnConnection1.failure(new RuntimeException)
+      // now fail the first one, expecting the server-side error message
+      EventFilter[RuntimeException](message = "Response stream for [GET /a] failed with 'Woops, slipped on a slippery slope.'. Aborting connection.", occurrences = 1) intercept {
+        errorOnConnection1.failure(new RuntimeException("Woops, slipped on a slippery slope."))
       }
+
+      // expect "reset by peer" on the client side
+      probe1.expectError()
 
       // waiting for error to trigger connection pool failure
       Thread.sleep(2000)

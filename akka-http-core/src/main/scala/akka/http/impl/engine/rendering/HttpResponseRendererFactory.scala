@@ -23,6 +23,8 @@ import akka.annotation.InternalApi
 import ResponseRenderingContext.CloseRequested
 import headers._
 
+import scala.util.control.NonFatal
+
 /**
  * INTERNAL API
  */
@@ -79,7 +81,14 @@ private[http] class HttpResponseRendererFactory(
               case Strict(outElement) =>
                 push(out, outElement)
                 if (close) completeStage()
-              case Streamed(outStream) => transfer(outStream)
+              case Streamed(outStream) =>
+                try transfer(outStream)
+                catch {
+                  case NonFatal(e) =>
+                    transferring = false
+                    log.error(e, s"Rendering of response failed because response entity stream materialization failed with '${e.getMessage}'. Sending out 500 response instead.")
+                    push(out, render(ResponseRenderingContext(HttpResponse(500, entity = StatusCodes.InternalServerError.defaultMessage))).asInstanceOf[Strict].bytes)
+                }
             }
 
           override def onUpstreamFinish(): Unit =
@@ -87,21 +96,24 @@ private[http] class HttpResponseRendererFactory(
             else completeStage()
         })
         val waitForDemandHandler = new OutHandler {
-          def onPull(): Unit = pull(in)
+          def onPull(): Unit = if (!hasBeenPulled(in)) tryPull(in)
         }
         setHandler(out, waitForDemandHandler)
         def transfer(outStream: Source[ResponseRenderingOutput, Any]): Unit = {
           transferring = true
           val sinkIn = new SubSinkInlet[ResponseRenderingOutput]("RenderingSink")
+          def stopTransfer(): Unit = {
+            transferring = false
+            setHandler(out, waitForDemandHandler)
+            if (isAvailable(out)) pull(in)
+            sinkIn.cancel()
+          }
+
           sinkIn.setHandler(new InHandler {
             override def onPush(): Unit = push(out, sinkIn.grab())
             override def onUpstreamFinish(): Unit =
               if (close) completeStage()
-              else {
-                transferring = false
-                setHandler(out, waitForDemandHandler)
-                if (isAvailable(out)) pull(in)
-              }
+              else stopTransfer()
           })
           setHandler(out, new OutHandler {
             override def onPull(): Unit = sinkIn.pull()
@@ -110,8 +122,15 @@ private[http] class HttpResponseRendererFactory(
               sinkIn.cancel()
             }
           })
-          sinkIn.pull()
-          outStream.runWith(sinkIn.sink)(interpreter.subFusingMaterializer)
+
+          try {
+            outStream.runWith(sinkIn.sink)(interpreter.subFusingMaterializer)
+            sinkIn.pull()
+          } catch {
+            case NonFatal(e) =>
+              stopTransfer()
+              throw e
+          }
         }
 
         def render(ctx: ResponseRenderingContext): StrictOrStreamed = {
