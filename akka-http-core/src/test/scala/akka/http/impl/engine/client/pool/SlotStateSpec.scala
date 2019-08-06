@@ -7,7 +7,6 @@ package akka.http.impl.engine.client.pool
 import java.net.InetSocketAddress
 
 import akka.event.LoggingAdapter
-import akka.http.impl.engine.client.PoolFlow
 import akka.http.impl.engine.client.PoolFlow.RequestContext
 import akka.http.impl.engine.client.pool.SlotState._
 import akka.http.scaladsl.Http
@@ -50,7 +49,7 @@ class SlotStateSpec extends AkkaSpec {
 
       state = state.onRequestEntityCompleted(context)
       state = state.onResponseReceived(context, HttpResponse())
-      state = state.onResponseDispatchable(context)
+      state = state.onResponseDispatched(context)
       state = state.onResponseEntitySubscribed(context)
       state = state.onResponseEntityCompleted(context)
       state should be(Idle)
@@ -76,7 +75,7 @@ class SlotStateSpec extends AkkaSpec {
 
       state = state.onRequestEntityCompleted(context)
 
-      state = state.onResponseDispatchable(context)
+      state = state.onResponseDispatched(context)
       state = state.onResponseEntitySubscribed(context)
       state = state.onResponseEntityCompleted(context)
       state should be(Idle)
@@ -96,7 +95,7 @@ class SlotStateSpec extends AkkaSpec {
       state = state.onRequestDispatched(context)
 
       state = state.onResponseReceived(context, HttpResponse())
-      state = state.onResponseDispatchable(context)
+      state = state.onResponseDispatched(context)
 
       state = state.onRequestEntityCompleted(context)
 
@@ -119,7 +118,7 @@ class SlotStateSpec extends AkkaSpec {
       state = state.onRequestDispatched(context)
 
       state = state.onResponseReceived(context, HttpResponse())
-      state = state.onResponseDispatchable(context)
+      state = state.onResponseDispatched(context)
       state = state.onResponseEntitySubscribed(context)
 
       state = state.onRequestEntityCompleted(context)
@@ -142,7 +141,7 @@ class SlotStateSpec extends AkkaSpec {
       state = state.onRequestDispatched(context)
 
       state = state.onResponseReceived(context, HttpResponse())
-      state = state.onResponseDispatchable(context)
+      state = state.onResponseDispatched(context)
       state = state.onResponseEntitySubscribed(context)
       state = state.onResponseEntityCompleted(context)
       // We don't want this slot to become idle yet, because consuming the request might still take
@@ -157,17 +156,6 @@ class SlotStateSpec extends AkkaSpec {
   }
 
   class MockSlotContext(log: LoggingAdapter, val settings: ConnectionPoolSettings = ConnectionPoolSettings("")) extends SlotContext {
-
-    var connectionClosed = true
-    var connectionOpenRequested = false
-    var pushedRequest: Option[HttpRequest] = None
-    var dispatchedResponse: Option[Try[HttpResponse]] = None
-
-    override def isConnectionClosed: Boolean = connectionClosed
-
-    override def dispatchResponseResult(req: PoolFlow.RequestContext, result: Try[HttpResponse]): Unit =
-      dispatchedResponse = Some(result)
-
     override def willCloseAfter(response: HttpResponse): Boolean =
       response.header[headers.Connection].exists(_.hasClose)
 
@@ -189,16 +177,9 @@ class SlotStateSpec extends AkkaSpec {
     override def warning(message: String, arg1: AnyRef): Unit =
       log.warning(message, arg1)
 
-    def expectOpenConnection[T](cb: => T) = {
-      connectionClosed should be(true)
-      connectionOpenRequested should be(false)
-
-      val res = cb
-      connectionOpenRequested should be(true)
-
-      connectionOpenRequested = false
-      connectionClosed = false
-      res
+    def expectOpenConnection(cb: => SlotState): SlotState = {
+      cb shouldBe a[ConnectingState]
+      cb
     }
   }
 }

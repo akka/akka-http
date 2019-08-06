@@ -317,9 +317,10 @@ class HostConnectionPoolSpec extends AkkaSpec(
         val req = conn1.expectRequest()
         conn1.pushResponse(HttpResponse(entity = req.uri.path.toString))
         expectResponseEntityAsString() shouldEqual "/simple"
-        conn1.failConnection(new RuntimeException("broken connection"))
 
+        conn1.failConnection(new RuntimeException("broken connection"))
         pushRequest(HttpRequest(uri = "/next"))
+
         val conn2 = expectNextConnection()
         conn2.expectRequestToPath("/next")
         conn2.pushResponse(HttpResponse(entity = "response"))

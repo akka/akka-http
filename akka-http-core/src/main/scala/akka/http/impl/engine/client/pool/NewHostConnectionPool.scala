@@ -158,7 +158,7 @@ private[client] object NewHostConnectionPool {
           val onRequestEntityFailed = event[Throwable]("onRequestEntityFailed", _.onRequestEntityFailed(_, _))
 
           val onResponseReceived = event[HttpResponse]("onResponseReceived", _.onResponseReceived(_, _))
-          val onResponseDispatchable = event0("onResponseDispatchable", _.onResponseDispatchable(_))
+          val onResponseDispatched = event0("onResponseDispatched", _.onResponseDispatched(_))
           val onResponseEntitySubscribed = event0("onResponseEntitySubscribed", _.onResponseEntitySubscribed(_))
           val onResponseEntityCompleted = event0("onResponseEntityCompleted", _.onResponseEntityCompleted(_))
           val onResponseEntityFailed = event[Throwable]("onResponseEntityFailed", _.onResponseEntityFailed(_, _))
@@ -226,7 +226,9 @@ private[client] object NewHostConnectionPool {
 
           def onResponseDispatchable(): Unit = {
             isEnqueuedForResponseDispatch = false
-            updateState(Event.onResponseDispatchable)
+            val WaitingForResponseDispatch(request, result, _) = state
+            tryDispatchOrRetryRequest(request, result)
+            updateState(Event.onResponseDispatched)
           }
 
           def onResponseEntitySubscribed(): Unit =
@@ -285,15 +287,7 @@ private[client] object NewHostConnectionPool {
                     connection.pushRequest(ctx.request)
                     OptionVal.Some(Event.onRequestDispatched)
 
-                  case _: WaitingForResponseDispatch =>
-                    if (isAvailable(responsesOut)) OptionVal.Some(Event.onResponseDispatchable)
-                    else {
-                      if (!isEnqueuedForResponseDispatch) {
-                        isEnqueuedForResponseDispatch = true
-                        logic.slotsWaitingForDispatch.addLast(this)
-                      }
-                      OptionVal.None
-                    }
+                  case WaitingForResponseDispatch(request, result, _) => tryDispatchOrRetryRequest(request, result)
 
                   case WaitingForResponseEntitySubscription(_, HttpResponse(_, _, _: HttpEntity.Strict, _), _, _) =>
                     // the connection cannot drive these for a strict entity so we have to loop ourselves
@@ -345,6 +339,32 @@ private[client] object NewHostConnectionPool {
 
             loop(event, arg, 10)
           }
+
+          def tryDispatchOrRetryRequest(request: RequestContext, result: Try[HttpResponse]): OptionVal[Event[Unit]] =
+            result match {
+              case Success(_) =>
+                if (isAvailable(responsesOut)) {
+                  isEnqueuedForResponseDispatch = false
+                  // TODO: do we need to remove from slotsWaitingForDispatch?
+                  dispatchResponseResult(request, result)
+                  OptionVal.Some(Event.onResponseDispatched)
+                } else if (!isEnqueuedForResponseDispatch) {
+                  isEnqueuedForResponseDispatch = true
+                  logic.slotsWaitingForDispatch.addLast(this)
+                  OptionVal.None
+                } else OptionVal.None
+              case Failure(ex) =>
+                if (request.canBeRetried || isAvailable(responsesOut)) {
+                  isEnqueuedForResponseDispatch = false
+                  // TODO: do we need to remove from slotsWaitingForDispatch?
+                  dispatchResponseResult(request, result)
+                  OptionVal.Some(Event.onResponseDispatched)
+                } else if (!isEnqueuedForResponseDispatch) {
+                  isEnqueuedForResponseDispatch = true
+                  logic.slotsWaitingForDispatch.addLast(this)
+                  OptionVal.None
+                } else OptionVal.None
+            }
 
           def debug(msg: String): Unit =
             if (log.isDebugEnabled)
