@@ -195,7 +195,7 @@ private[client] object NewHostConnectionPool {
           def isConnected: Boolean = state.isConnected
           def shutdown(): Unit = {
             // TODO: should we offer errors to the connection?
-            closeConnection(force = true)
+            closeConnection(regular = false)
 
             state.onShutdown(this)
           }
@@ -268,9 +268,10 @@ private[client] object NewHostConnectionPool {
                   case _ => // no timeout set, nothing to do
                 }
 
-                if (!state.isConnected && connection != null) {
-                  debug(s"State change from [${previousState.name}] to [Unconnected]. Closing the existing connection.")
-                  closeConnection(force = false)
+                if (connection != null && state.isInstanceOf[ShouldCloseConnectionState]) {
+                  debug(s"State change from [${previousState.name}] to [$state]. Closing the existing connection.")
+                  closeConnection(state.asInstanceOf[ShouldCloseConnectionState].closeRegularly)
+                  state = Unconnected
                 }
 
                 if (!previousState.isIdle && state.isIdle && !(state == Unconnected && currentEmbargo != Duration.Zero)) {
@@ -316,7 +317,7 @@ private[client] object NewHostConnectionPool {
 
                   try {
                     cancelCurrentTimeout()
-                    closeConnection(force = true)
+                    closeConnection(regular = false)
                     state.onShutdown(this)
                     logic.slotsWaitingForDispatch.remove(this)
                     OptionVal.None
@@ -388,9 +389,9 @@ private[client] object NewHostConnectionPool {
             }
           }
 
-          def closeConnection(force: Boolean): Unit =
+          def closeConnection(regular: Boolean): Unit =
             if (connection ne null) {
-              connection.close(force)
+              connection.close(regular)
               connection = null
             }
           def isCurrentConnection(conn: SlotConnection): Boolean = connection eq conn
@@ -440,9 +441,16 @@ private[client] object NewHostConnectionPool {
 
             emitRequest(newRequest)
           }
-          def close(force: Boolean): Unit = {
-            if (force) requestOut.fail(new IllegalStateException("pool slot shutdown") with NoStackTrace)
-            else requestOut.complete()
+
+          /**
+           * If regular is true connection is closed, otherwise, it is aborted.
+           *
+           * A connection should be closed regularly after a request/response with `Connection: close` has been completed.
+           * A connection should be aborted after failures.
+           */
+          def close(regular: Boolean): Unit = {
+            if (regular) requestOut.complete()
+            else requestOut.fail(new IllegalStateException("pool slot shutdown") with NoStackTrace)
 
             responseIn.cancel()
 

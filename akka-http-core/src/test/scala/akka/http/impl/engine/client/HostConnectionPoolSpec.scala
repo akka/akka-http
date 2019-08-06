@@ -49,6 +49,7 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
        default-dispatcher.throughput = 100
      }
      akka.http.client.log-unencrypted-network-bytes = 200
+     akka.http.server.log-unencrypted-network-bytes = 200
   """
 ) with Eventually {
   lazy val singleElementBufferMaterializer = materializer
@@ -193,6 +194,7 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
         val streamResult = chunks.runWith(Sink.ignore)
         Await.ready(streamResult, 3.seconds)
         streamResult.value.get.failed.get.getMessage shouldEqual "Substream Source cannot be materialized more than once"
+        conn1.expectError()
       }
       "time out when a connection was unused for a long time" in pending
       "time out and reconnect when a request is not handled in time" in pending
@@ -207,14 +209,10 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
 
         reqBytesOut.sendError(new RuntimeException("oops, could not finish sending request"))
 
-        // expectRequestStreamError(reqBytesIn)
+        expectResponseError()
 
-        // FIXME: this is currently part of the implementation that is not tested (request entity error will fail the connection)
+        // FIXME: it seems on TCP cancellation might overtake the error on the server-side so we get a cancellation / regular completion here
         // conn1.serverRequests.expectError()
-        responseOut.expectSubscription()
-        // FIXME: currently the API is weird in that it contains a promise which is completed with a failure instead
-        //        of properly threading through the context field from request to response
-        // responseOut.expectError() // actually, only the response should be failed
       }
       "fail a request if the connection stream fails while waiting for request entity bytes" inWithShutdown new SetupWithServerProbes {
         val reqBytesOut = pushChunkedRequest(HttpRequest(method = HttpMethods.POST), numRetries = 0)
