@@ -56,7 +56,7 @@ class SlotStateSpec extends AkkaSpec {
       state should be(Idle)
 
       state = state.onConnectionCompleted(context)
-      state should be(Unconnected)
+      state should be(ToBeClosed)
     }
 
     "allow postponing completing the request until just after the response was received" in {
