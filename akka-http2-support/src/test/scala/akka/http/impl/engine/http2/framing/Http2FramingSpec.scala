@@ -6,25 +6,24 @@ package akka.http.impl.engine.http2
 package framing
 
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
-import akka.http.impl.engine.ws.{ BitBuilder, WithMaterializerSpec }
+import akka.http.impl.engine.ws.BitBuilder
 import akka.http.impl.util._
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
 import akka.testkit._
 import org.scalatest.matchers.Matcher
-import org.scalatest.{ FreeSpec, Matchers }
 
 import scala.collection.immutable
 import scala.concurrent.duration._
 
 import FrameEvent._
 
-class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec {
+class Http2FramingSpec extends AkkaSpecWithMaterializer {
   import BitBuilder._
   import akka.http.impl.engine.http2._
 
-  "The HTTP/2 parser/renderer round-trip should work for" - {
-    "DATA frames" - {
+  "The HTTP/2 parser/renderer round-trip should work for" should {
+    "DATA frames" should {
       "without padding" in {
         b"""xxxxxxxx
             xxxxxxxx
@@ -67,7 +66,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
          """ should parseTo(DataFrame(0x234223ab, endStream = false, ByteString("bcdefg")), checkRendering = false)
       }
     }
-    "HEADER frames" - {
+    "HEADER frames" should {
       "without padding + priority settings" in {
         b"""xxxxxxxx
             xxxxxxxx
@@ -129,7 +128,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
             xxxxxxxx=66
          """ should parseTo(HeadersFrame(0x3546, endStream = false, endHeaders = false, ByteString("cdef"), Some(PriorityFrame(0x3546, false, 0xabdef0, 0xbd))))
       }
-      "PUSH_PROMISE frame" - {
+      "PUSH_PROMISE frame" should {
         "without padding" in {
           b"""xxxxxxxx
               xxxxxxxx
@@ -205,7 +204,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
          """ should parseTo(HeadersFrame(0x348, endStream = false, endHeaders = false, ByteString("cdef"), Some(PriorityFrame(0x348, false, 0xabd, 0xef))), checkRendering = false)
       }
     }
-    "SETTINGS frame" - {
+    "SETTINGS frame" should {
       "empty" in {
         b"""xxxxxxxx
             xxxxxxxx
@@ -296,7 +295,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
          """ should parseTo(SettingsAckFrame(Nil))
       }
     }
-    "PING frame" - {
+    "PING frame" should {
       "without ack" in {
         b"""xxxxxxxx
             xxxxxxxx
@@ -406,7 +405,7 @@ class Http2FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec 
           xxxxxxxx=12345 # windowSizeIncrement
          """ should parseTo(WindowUpdateFrame(0x42, 0x12345))
     }
-    "GOAWAY frame" - {
+    "GOAWAY frame" should {
       "without debug data" in {
         b"""xxxxxxxx
             xxxxxxxx

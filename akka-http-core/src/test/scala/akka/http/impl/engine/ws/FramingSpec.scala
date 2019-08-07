@@ -7,20 +7,18 @@ package akka.http.impl.engine.ws
 import scala.collection.immutable
 import scala.concurrent.duration._
 import org.scalatest.matchers.Matcher
-import org.scalatest.{ FreeSpec, Matchers }
 import akka.util.ByteString
 import akka.stream.scaladsl.Source
 import akka.http.impl.util._
 import akka.testkit._
-
 import Protocol.Opcode
 
-class FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec {
+class FramingSpec extends AkkaSpecWithMaterializer {
   import BitBuilder._
 
-  "The WebSocket parser/renderer round-trip should work for" - {
-    "the frame header" - {
-      "interpret flags correctly" - {
+  "The WebSocket parser/renderer round-trip should work for" should {
+    "the frame header" should {
+      "interpret flags correctly" should {
         "FIN" in {
           b"""1000     # flags
                   0000 # opcode
@@ -50,7 +48,7 @@ class FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec {
           """ should parseTo(FrameHeader(Opcode.Continuation, None, 0, fin = false, rsv3 = true))
         }
       }
-      "interpret opcode correctly" - {
+      "interpret opcode correctly" should {
         "Continuation" in {
           b"""0000       # flags
                   xxxx=0 # opcode
@@ -114,7 +112,7 @@ class FramingSpec extends FreeSpec with Matchers with WithMaterializerSpec {
             xxxxxxxx=a1b2c3d4
           """ should parseTo(FrameHeader(Opcode.Continuation, Some(0xa1b2c3d4), 0, fin = false))
       }
-      "read length" - {
+      "read length" should {
         "< 126" in {
           b"""0000       # flags
                   xxxx=0 # opcode

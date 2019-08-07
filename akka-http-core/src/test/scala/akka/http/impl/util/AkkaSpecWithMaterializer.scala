@@ -9,6 +9,9 @@ abstract class AkkaSpecWithMaterializer(s: String)
     """
        akka.loglevel = DEBUG
        akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]""") with WithLogCapturing {
+
+  def this() = this("")
+
   implicit val materializer = ActorMaterializer()
 
   override protected def beforeTermination(): Unit =
