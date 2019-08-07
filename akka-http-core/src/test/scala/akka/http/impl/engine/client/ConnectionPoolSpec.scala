@@ -22,7 +22,7 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, PoolImplementation, ServerSettings }
 import akka.http.scaladsl.{ ClientTransport, ConnectionContext, Http }
 import akka.stream.Attributes
-import akka.stream.{ ActorMaterializer, OverflowStrategy, QueueOfferResult }
+import akka.stream.{ OverflowStrategy, QueueOfferResult }
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
 import akka.stream.testkit.Utils.TE
@@ -36,16 +36,14 @@ import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
-abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extends AkkaSpec("""
-    akka.loglevel = DEBUG
-    akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
+abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
+  extends AkkaSpecWithMaterializer("""
     akka.io.tcp.windows-connection-abort-workaround-enabled = auto
     akka.io.tcp.trace-logging = off
     akka.test.single-expect-default = 5000 # timeout for checks, adjust as necessary, set here to 5s
     akka.scheduler.tick-duration = 1ms     # to make race conditions in Pool idle-timeout more likely
     akka.http.client.log-unencrypted-network-bytes = 200
-                                          """) with WithLogCapturing { testSuite =>
-  implicit val materializer = ActorMaterializer()
+                                          """) { testSuite =>
 
   // FIXME: Extract into proper util class to be reusable
   lazy val ConnectionResetByPeerMessage: String = {
