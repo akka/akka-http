@@ -40,6 +40,15 @@ Java
 
 It starts an HTTP Server on localhost and replies to GET requests to `/hello` with a simple response.
 
+@@@ div { .group-scala }
+
+If you are getting a compiler error that this method requires a @apidoc[Flow]
+but you are providing a @apidoc[Route], it is likely the `route2HandlerFlow`
+implicit conversion is not available because you don't have a
+@apidoc[Materializer] implicitly in scope.
+
+@@@
+
 @@@ warning { title="API may change" }
 The following example uses an experimental feature and its API is subjected to change in future releases of Akka HTTP.
 For further information about this marker, see @extref:[The @DoNotInherit and @ApiMayChange markers](akka-docs:common/binary-compatibility-rules.html#the-donotinherit-and-apimaychange-markers)

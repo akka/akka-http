@@ -215,6 +215,10 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    *
    * To configure additional settings for a server started using this method,
    * use the `akka.http.server` config section or pass in a [[akka.http.scaladsl.settings.ServerSettings]] explicitly.
+   *
+   * You can pass a [[akka.http.scaladsl.server.Route]] into this function if you
+   * make sure there is a [[akka.stream.Materializer]] available as an implicit
+   * value.
    */
   def bindAndHandle(
     handler:   Flow[HttpRequest, HttpResponse, Any],
