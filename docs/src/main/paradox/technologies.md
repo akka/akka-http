@@ -36,7 +36,7 @@ file uploads and provides a typed model to access details of such a payload.
 ## Server-sent Events (SSE)
 
 Server-sent Events (SSE) are supported through marshalling that will provide or consume an (Akka Stream based) stream of
-events. See @ref[SSE Support](sse-support.md) for more information.
+events. See @ref[SSE Support](common/sse-support.md) for more information.
 
 ## JSON
 
