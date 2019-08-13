@@ -66,7 +66,7 @@ import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport._
 @@@
 
 The very short example shown here is certainly not the best for illustrating the savings in "ceremony" and improvements
-in conciseness and readability that the Routing DSL promises. The @ref[Long Example](index.md#long-example) might do a better job in this
+in conciseness and readability that the Routing DSL promises. The @ref[Long Example](index.md#longer-example) might do a better job in this
 regard.
 
 For learning how to work with the Routing DSL you should first understand the concept of @ref[Routes](routes.md).

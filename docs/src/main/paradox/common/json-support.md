@@ -7,7 +7,6 @@ See [the list of current community extensions for Akka HTTP](https://akka.io/com
 
 @@@ div { .group-java }
 
-<a id="json-jackson-support-java"></a>
 ## Jackson Support
 
 To make use of the support module for (un)marshalling from and to JSON with [Jackson], add a library dependency onto:
