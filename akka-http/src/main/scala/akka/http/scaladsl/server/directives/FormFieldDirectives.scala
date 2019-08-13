@@ -9,7 +9,6 @@ import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.http.impl.util._
 import akka.http.scaladsl.common._
-import akka.http.scaladsl.model.EntityStreamSizeException
 import akka.http.scaladsl.server.directives.RouteDirectives._
 import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
 import akka.http.scaladsl.util.FastFuture._
@@ -108,8 +107,7 @@ object FormFieldDirectives extends FormFieldDirectives {
       onComplete(sequenceF).flatMap {
         case Success(x)                                  => provide(x)
         case Failure(x: UnsupportedContentTypeException) => reject(UnsupportedRequestContentTypeRejection(x.supported))
-        case Failure(x: EntityStreamSizeException)       => reject(MalformedRequestContentRejection(x.getMessage.nullAsEmpty, x))
-        case Failure(_)                                  => reject // TODO Use correct rejections
+        case Failure(x)                                  => reject(MalformedRequestContentRejection(x.getMessage.nullAsEmpty, x))
       }
     }
   }

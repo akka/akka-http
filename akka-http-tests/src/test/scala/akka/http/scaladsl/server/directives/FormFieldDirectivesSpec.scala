@@ -11,11 +11,8 @@ import akka.http.scaladsl.common.StrictForm
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.unmarshalling.Unmarshaller.HexInt
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model.MediaTypes._
-import akka.http.impl.model.parser.CharacterClasses
 import akka.http.impl.util.BenchUtils
-import akka.http.impl.util.StringRendering
 
 class FormFieldDirectivesSpec extends RoutingSpec {
   implicit val nodeSeqUnmarshaller =
@@ -280,6 +277,14 @@ class FormFieldDirectivesSpec extends RoutingSpec {
       Post("/", FormData.Empty) ~> {
         formFieldSeq { echoComplete }
       } ~> check { responseAs[String] shouldEqual "Vector()" }
+    }
+    "reject with MalformedRequestContentRejection if request entity fails" in {
+      val failedSource = Source.failed(new IllegalStateException("Form was stapled wrongly"))
+      Post("/", HttpEntity(`application/x-www-form-urlencoded`, failedSource)) ~>
+        formFieldSeq { echoComplete } ~>
+        check {
+          rejection shouldBe a[MalformedRequestContentRejection]
+        }
     }
   }
 
