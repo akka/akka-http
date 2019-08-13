@@ -40,10 +40,8 @@ import scala.util.Failure
  * against plain network bytes instead to show interaction on the HTTP protocol level instead of against the server
  * API level.
  */
-class HostConnectionPoolSpec extends AkkaSpec(
+class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
   """
-     akka.loglevel = DEBUG
-     akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
      akka.actor {
        serialize-creators = off
        serialize-messages = off
@@ -51,9 +49,8 @@ class HostConnectionPoolSpec extends AkkaSpec(
      }
      akka.http.client.log-unencrypted-network-bytes = 200
   """
-) with Eventually with WithLogCapturing {
-  implicit val materializer = ActorMaterializer()
-  val singleElementBufferMaterializer = materializer // ActorMaterializer(ActorMaterializerSettings(system).withInputBuffer(1, 1))
+) with Eventually {
+  lazy val singleElementBufferMaterializer = materializer
   val defaultSettings =
     ConnectionPoolSettings(system)
       .withMaxConnections(1)

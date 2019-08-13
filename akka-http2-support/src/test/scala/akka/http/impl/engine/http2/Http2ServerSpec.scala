@@ -7,13 +7,14 @@ package akka.http.impl.engine.http2
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
 import java.net.InetSocketAddress
 import java.nio.ByteOrder
+
 import javax.net.ssl.SSLContext
 import akka.NotUsed
 import akka.http.impl.engine.http2.Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
 import akka.http.impl.engine.http2.framing.FrameRenderer
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.engine.ws.ByteStringSinkProbe
-import akka.http.impl.util.{ StringRendering, WithLogCapturing }
+import akka.http.impl.util.StringRendering
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ CacheDirectives, RawHeader }
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
@@ -22,7 +23,7 @@ import akka.stream.impl.io.ByteStringParser.ByteReader
 import akka.stream.scaladsl.{ BidiFlow, Flow, Sink, Source, SourceQueueWithComplete }
 import akka.stream.testkit.TestPublisher.ManualProbe
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
-import akka.stream.{ ActorMaterializer, Materializer, OverflowStrategy }
+import akka.stream.OverflowStrategy
 import akka.testkit._
 import akka.util.{ ByteString, ByteStringBuilder }
 import com.twitter.hpack.{ Decoder, Encoder, HeaderListener }
@@ -36,17 +37,13 @@ import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import FrameEvent._
+import akka.http.impl.util.AkkaSpecWithMaterializer
 
-class Http2ServerSpec extends AkkaSpec("""
-    akka.loglevel = debug
-    akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
-
+class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     akka.http.server.remote-address-header = on
     akka.http.server.http2.log-frames = on
   """)
-  with WithInPendingUntilFixed with Eventually with WithLogCapturing {
-  implicit val mat = ActorMaterializer()
-
+  with WithInPendingUntilFixed with Eventually {
   "The Http/2 server implementation" should {
     "support simple round-trips" should {
       abstract class SimpleRequestResponseRoundtripSetup extends TestSetup with RequestResponseProbes {
@@ -1132,7 +1129,7 @@ class Http2ServerSpec extends AkkaSpec("""
     def sendHEADERS(streamId: Int, endStream: Boolean, headers: Seq[HttpHeader]): Unit =
       sendHEADERS(streamId, endStream = endStream, endHeaders = true, encodeHeaders(headers))
 
-    def sendRequest(streamId: Int, request: HttpRequest)(implicit mat: Materializer): Unit = {
+    def sendRequest(streamId: Int, request: HttpRequest): Unit = {
       val isEmpty = request.entity.isKnownEmpty
       sendHEADERS(streamId, endStream = isEmpty, endHeaders = true, encodeRequestHeaders(request))
 
