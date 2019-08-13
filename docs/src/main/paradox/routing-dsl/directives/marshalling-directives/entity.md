@@ -32,7 +32,7 @@ are mapped to rejections:
 
 ## Examples
 
-The following example uses @scala[`spray-json`]@java[@ref[Json Support via Jackson](../../../common/json-support.md#json-jackson-support)] to unmarshall a json request into a simple `Person` 
+The following example uses @scala[`spray-json`]@java[@ref[Json Support via Jackson](../../../common/json-support.md#jackson-support)] to unmarshall a json request into a simple `Person` 
 class. @scala[It utilizes `SprayJsonSupport` via the `PersonJsonSupport` object as the in-scope unmarshaller.]
 
 Scala
