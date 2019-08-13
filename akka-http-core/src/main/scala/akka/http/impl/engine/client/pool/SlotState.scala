@@ -191,12 +191,12 @@ private[pool] object SlotState {
   private[pool] case object OutOfEmbargo extends UnconnectedState
   private[pool] case object Unconnected extends UnconnectedState
 
-  private[pool] abstract class ShouldCloseConnectionState(val closeRegularly: Boolean) extends SlotState {
+  private[pool] abstract class ShouldCloseConnectionState(val failure: Option[Throwable]) extends SlotState {
     override def isIdle: Boolean = false
     override def isConnected: Boolean = false
   }
-  private[pool] case object ToBeClosed extends ShouldCloseConnectionState(closeRegularly = true)
-  private[pool] case class Failed(cause: Throwable) extends ShouldCloseConnectionState(closeRegularly = false)
+  private[pool] case object ToBeClosed extends ShouldCloseConnectionState(None)
+  private[pool] case class Failed(cause: Throwable) extends ShouldCloseConnectionState(Some(cause))
 
   private[pool] case object Idle extends ConnectedState with IdleState {
     override def onNewRequest(ctx: SlotContext, requestContext: RequestContext): SlotState =

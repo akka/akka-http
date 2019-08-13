@@ -194,8 +194,7 @@ private[client] object NewHostConnectionPool {
           def isIdle: Boolean = state.isIdle
           def isConnected: Boolean = state.isConnected
           def shutdown(): Unit = {
-            // TODO: should we offer errors to the connection?
-            closeConnection(regular = false)
+            closeConnection(Some(new IllegalStateException("Pool slot was shut down") with NoStackTrace))
 
             state.onShutdown(this)
           }
@@ -270,7 +269,7 @@ private[client] object NewHostConnectionPool {
 
                 if (connection != null && state.isInstanceOf[ShouldCloseConnectionState]) {
                   debug(s"State change from [${previousState.name}] to [$state]. Closing the existing connection.")
-                  closeConnection(state.asInstanceOf[ShouldCloseConnectionState].closeRegularly)
+                  closeConnection(state.asInstanceOf[ShouldCloseConnectionState].failure)
                   state = Unconnected
                 }
 
@@ -317,7 +316,7 @@ private[client] object NewHostConnectionPool {
 
                   try {
                     cancelCurrentTimeout()
-                    closeConnection(regular = false)
+                    closeConnection(Some(ex))
                     state.onShutdown(this)
                     logic.slotsWaitingForDispatch.remove(this)
                     OptionVal.None
@@ -389,9 +388,9 @@ private[client] object NewHostConnectionPool {
             }
           }
 
-          def closeConnection(regular: Boolean): Unit =
+          def closeConnection(failure: Option[Throwable]): Unit =
             if (connection ne null) {
-              connection.close(regular)
+              connection.close(failure)
               connection = null
             }
           def isCurrentConnection(conn: SlotConnection): Boolean = connection eq conn
@@ -448,9 +447,11 @@ private[client] object NewHostConnectionPool {
            * A connection should be closed regularly after a request/response with `Connection: close` has been completed.
            * A connection should be aborted after failures.
            */
-          def close(regular: Boolean): Unit = {
-            if (regular) requestOut.complete()
-            else requestOut.fail(new IllegalStateException("pool slot shutdown") with NoStackTrace)
+          def close(failure: Option[Throwable]): Unit = {
+            failure match {
+              case None          => requestOut.complete()
+              case Some(failure) => requestOut.fail(failure)
+            }
 
             responseIn.cancel()
 
