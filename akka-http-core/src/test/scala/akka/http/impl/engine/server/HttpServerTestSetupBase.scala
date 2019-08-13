@@ -10,7 +10,6 @@ import akka.stream.TLSProtocol._
 
 import scala.concurrent.duration.FiniteDuration
 import akka.actor.ActorSystem
-import akka.event.NoLogging
 import akka.util.ByteString
 import akka.stream._
 import akka.stream.scaladsl._
@@ -37,7 +36,7 @@ abstract class HttpServerTestSetupBase {
     val netIn = TestPublisher.probe[ByteString]()
     val netOut = ByteStringSinkProbe()
 
-    RunnableGraph.fromGraph(GraphDSL.create(modifyServer(HttpServerBluePrint(settings, log = NoLogging, isSecureConnection = false))) { implicit b => server =>
+    RunnableGraph.fromGraph(GraphDSL.create(modifyServer(Http().serverLayer(settings))) { implicit b => server =>
       import GraphDSL.Implicits._
       Source.fromPublisher(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> server.in2
       server.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) => x }.buffer(1, OverflowStrategy.backpressure) ~> netOut.sink

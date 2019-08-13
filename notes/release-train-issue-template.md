@@ -82,5 +82,5 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 
 ### Afterwards
 - [ ] Add the released version to `project/MiMa.scala` to the `mimaPreviousArtifacts` key *of all current compatible branches*.
-- [ ] Update Akka HTTP reference in [reactive-platform-docs](https://github.com/typesafehub/reactive-platform-docs/edit/master/build.sbt#L29)
+- [ ] Update Akka HTTP reference in [lightbend-platform-docs](https://github.com/lightbend/lightbend-platform-docs/blob/master/docs/modules/getting-help/examples/build.sbt#L149)
 - Close this issue

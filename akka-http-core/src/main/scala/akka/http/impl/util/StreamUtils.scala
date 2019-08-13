@@ -179,9 +179,11 @@ private[http] object StreamUtils {
       override def onDownstreamFinish(): Unit = {
         cancelAfter match {
           case finite: FiniteDuration =>
+            log.debug(s"Delaying cancellation for $finite")
             timeout = OptionVal.Some {
               scheduleOnce(finite) {
                 log.debug(s"Stage was canceled after delay of $cancelAfter")
+                timeout = OptionVal.None
                 completeStage()
               }
             }
