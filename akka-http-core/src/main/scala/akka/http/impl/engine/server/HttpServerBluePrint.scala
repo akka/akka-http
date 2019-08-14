@@ -418,13 +418,15 @@ private[http] object HttpServerBluePrint {
           openRequests = openRequests.tail
 
           val response0 = grab(httpResponseIn)
-          val response = response0.mapEntity { e =>
-            val (newEntity, fut) = HttpEntity.captureTermination(e)
-            fut.failed.foreach { ex =>
-              log.error(ex, s"Response stream for [${requestStart.debugString}] failed with '${ex.getMessage}'. Aborting connection.")
-            }(materializer.executionContext)
-            newEntity
-          }
+          val response =
+            if (response0.entity.isStrict) response0 // response stream cannot fail
+            else response0.mapEntity { e =>
+              val (newEntity, fut) = HttpEntity.captureTermination(e)
+              fut.failed.foreach { ex =>
+                log.error(ex, s"Response stream for [${requestStart.debugString}] failed with '${ex.getMessage}'. Aborting connection.")
+              }(materializer.executionContext)
+              newEntity
+            }
 
           val isEarlyResponse = messageEndPending && openRequests.isEmpty
           if (isEarlyResponse && response.status.isSuccess)
