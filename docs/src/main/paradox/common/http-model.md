@@ -73,10 +73,13 @@ There are certain environments where it is easy to inadvertently print, write or
 
 To avoid accidentally leaking such information, these fields are omitted from @apidoc[HttpRequest] `toString` output. 
 
-If needed, it is possible to alter this behavior using type classes as shown in the following examples: 
+If needed, it is possible to define a custom string representation including all fields as shown in the following example:
 
 Scala
-:   @@snip [HttpRequestShow.scala]($test$/scala/docs/http/scaladsl/HttpRequestShow.scala) 
+:   @@snip [HttpRequestDetailedStringExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpRequestDetailedStringExampleSpec.scala) 
+
+Java
+:   @@snip [HttpRequestDetailedStringExampleTest.java]($test$/java/docs/http/javadsl/HttpRequestDetailedStringExampleTest.java) 
 
 @@@
 
@@ -127,10 +130,13 @@ There are certain environments where it is easy to inadvertently print, write or
 
 To avoid accidentally leaking such information, these fields are omitted from @apidoc[HttpResponse] `toString` output. 
 
-If needed, it is possible to alter this behavior using type classes as shown in the following examples: 
+If needed, it is possible to define a custom string representation including all fields as shown in the following example:
 
 Scala
-:   @@snip [HttpResponseShow.scala]($test$/scala/docs/http/scaladsl/HttpResponseShow.scala) 
+:   @@snip [HttpResponseDetailedStringExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpResponseDetailedStringExampleSpec.scala) 
+
+Java
+:   @@snip [HttpResponseDetailedStringExampleTest.java]($test$/java/docs/http/javadsl/HttpResponseDetailedStringExampleTest.java) 
 
 @@@
 
