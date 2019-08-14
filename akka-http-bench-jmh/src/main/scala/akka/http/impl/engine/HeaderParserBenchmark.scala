@@ -5,7 +5,6 @@ import java.util.concurrent.TimeUnit
 import akka.actor.ActorSystem
 import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.impl.settings.ParserSettingsImpl
-import akka.http.impl.util.JavaMapping.MediaTypeFixedCharset
 import akka.http.scaladsl.model.MediaType
 import akka.util.ByteString
 import com.typesafe.config.ConfigFactory
