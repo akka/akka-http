@@ -111,11 +111,11 @@ final case class InvalidOriginRejection(allowedOrigins: immutable.Seq[SHttpOrigi
  * Rejection created by unmarshallers.
  * Signals that the request was rejected because the requests content-type is unsupported.
  */
-final case class UnsupportedRequestContentTypeRejection(
-  supported:   Set[ContentTypeRange],
-  contentType: Option[ContentType]   = None)
+final class UnsupportedRequestContentTypeRejection(
+  val supported:   Set[ContentTypeRange],
+  val contentType: Option[ContentType]   = None)
   extends jserver.UnsupportedRequestContentTypeRejection
-  with Rejection {
+  with Rejection with Product with Serializable {
 
   override def getSupported: java.util.Set[model.ContentTypeRange] =
     scala.collection.mutable.Set(supported.map(_.asJava).toVector: _*).asJava // TODO optimise
@@ -136,14 +136,30 @@ final case class UnsupportedRequestContentTypeRejection(
     supported:   Set[ContentTypeRange] = this.supported,
     contentType: Option[ContentType]   = this.contentType) =
     UnsupportedRequestContentTypeRejection(supported, contentType)
+
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[UnsupportedRequestContentTypeRejection]
+
+  override def equals(that: Any): Boolean = that match {
+    case that: UnsupportedRequestContentTypeRejection => that.canEqual(this) && that.supported == this.supported && that.contentType == this.contentType
+    case _ => false
+  }
+
+  override def productArity: Int = 1
+  override def productElement(n: Int): Any = supported
 }
 
 object UnsupportedRequestContentTypeRejection
   extends AbstractFunction1[Set[ContentTypeRange], UnsupportedRequestContentTypeRejection] {
 
+  def apply(supported: Set[ContentTypeRange], contentType: Option[ContentType]): UnsupportedRequestContentTypeRejection =
+    new UnsupportedRequestContentTypeRejection(supported, contentType)
+
   @deprecated("for binary compatibility", since = "10.1.9")
   def apply(supported: Set[ContentTypeRange]): UnsupportedRequestContentTypeRejection =
     new UnsupportedRequestContentTypeRejection(supported, None)
+
+  def unapply(rejection: UnsupportedRequestContentTypeRejection): Option[Set[ContentTypeRange]] =
+    Some(rejection.supported)
 }
 
 /**

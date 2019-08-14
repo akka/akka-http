@@ -75,8 +75,8 @@ object Unmarshaller
       def rec(ix: Int, supported: Set[ContentTypeRange], contentType: Option[ContentType]): Future[B] =
         if (ix < unmarshallers.size) {
           unmarshallers(ix)(a).fast.recoverWith {
-            case UnsupportedContentTypeException(supp, actualType) =>
-              rec(ix + 1, supported ++ supp, contentType.orElse(actualType))
+            case e: UnsupportedContentTypeException =>
+              rec(ix + 1, supported ++ e.supported, contentType.orElse(e.actualContentType))
           }
         } else FastFuture.failed(UnsupportedContentTypeException(supported, contentType))
 
@@ -119,7 +119,7 @@ object Unmarshaller
     private def barkAtUnsupportedContentTypeException(
       ranges:         Seq[ContentTypeRange],
       newContentType: ContentType): PartialFunction[Throwable, Nothing] = {
-      case UnsupportedContentTypeException(supported, _) => throw new IllegalStateException(
+      case UnsupportedContentTypeException(supported) => throw new IllegalStateException(
         s"Illegal use of `unmarshaller.forContentTypes($ranges)`: Content-Type [$newContentType] is not supported by underlying marshaller!")
     }
   }
@@ -153,11 +153,11 @@ object Unmarshaller
    * This error cannot be thrown by custom code, you need to use the `forContentTypes` modifier on a base
    * [[akka.http.scaladsl.unmarshalling.Unmarshaller]] instead.
    */
-  final case class UnsupportedContentTypeException(
-    supported:         Set[ContentTypeRange],
-    actualContentType: Option[ContentType])
+  final class UnsupportedContentTypeException(
+    val supported:         Set[ContentTypeRange],
+    val actualContentType: Option[ContentType])
     extends RuntimeException(supported.mkString(
-      s"Unsupported Content-Type [$actualContentType], supported: ", ", ", "")) {
+      s"Unsupported Content-Type [$actualContentType], supported: ", ", ", "")) with Product with Serializable {
 
     @deprecated("for binary compatibility", since = "10.1.9")
     def this(supported: Set[ContentTypeRange]) = this(supported, None)
@@ -175,9 +175,20 @@ object Unmarshaller
       supported:   Set[ContentTypeRange] = this.supported,
       contentType: Option[ContentType]   = this.actualContentType): UnsupportedContentTypeException =
       new UnsupportedContentTypeException(supported, contentType)
+
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[UnsupportedContentTypeException]
+
+    override def equals(that: Any): Boolean = that match {
+      case that: UnsupportedContentTypeException => that.canEqual(this) && that.supported == this.supported && that.actualContentType == this.actualContentType
+      case _                                     => false
+    }
+    override def productArity: Int = 1
+    override def productElement(n: Int): Any = supported
   }
 
   object UnsupportedContentTypeException {
+    def apply(supported: Set[ContentTypeRange], actualContentType: Option[ContentType]) =
+      new UnsupportedContentTypeException(supported, actualContentType)
 
     def apply(supported: ContentTypeRange*): UnsupportedContentTypeException =
       new UnsupportedContentTypeException(supported.toSet, None)
@@ -187,6 +198,9 @@ object Unmarshaller
 
     def apply(contentType: Option[ContentType], supported: ContentTypeRange*): UnsupportedContentTypeException =
       UnsupportedContentTypeException(supported.toSet, contentType)
+
+    def unapply(e: UnsupportedContentTypeException): Option[Set[ContentTypeRange]] =
+      Some(e.supported)
   }
 
 }

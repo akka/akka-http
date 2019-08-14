@@ -130,10 +130,10 @@ object StrictForm {
           }
 
         tryUnmarshalToQueryForm.fast.recoverWith {
-          case UnsupportedContentTypeException(supported1, _) =>
+          case UnsupportedContentTypeException(supported) =>
             tryUnmarshalToMultipartForm.fast.recoverWith {
-              case UnsupportedContentTypeException(supported2, contentType) =>
-                FastFuture.failed(UnsupportedContentTypeException(supported1 ++ supported2, contentType))
+              case e: UnsupportedContentTypeException =>
+                FastFuture.failed(UnsupportedContentTypeException(supported ++ e.supported, e.actualContentType))
             }
         }
     }
