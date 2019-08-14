@@ -70,7 +70,7 @@ private[rendering] object RenderSupport {
                         skipEntity: Boolean = false): Source[ByteString, Any] = {
     val messageStart = Source.single(header)
     val messageBytes =
-      if (!skipEntity) (messageStart ++ entityBytes).mapMaterializedValue(_ => ())
+      if (!skipEntity) messageStart ++ entityBytes
       else CancelSecond(messageStart, entityBytes)
     messageBytes
   }
