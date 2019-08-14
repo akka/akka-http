@@ -32,11 +32,10 @@ class GracefulTerminationSpec
     akka.http.server.log-unencrypted-network-bytes = 200
     akka.http.client.log-unencrypted-network-bytes = 200
                                                    """)
-  with Matchers with BeforeAndAfterAll with ScalaFutures
   with Tolerance with Eventually {
   implicit lazy val dispatcher = system.dispatcher
 
-  implicit override val patience = PatienceConfig(5.seconds.dilated, 200.millis)
+  implicit override val patience = PatienceConfig(5.seconds.dilated(system), 200.millis)
 
   "Graceful termination" should {
 
