@@ -25,6 +25,7 @@ import akka.util.OptionVal
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Random, Success, Try }
 
@@ -193,8 +194,7 @@ private[client] object NewHostConnectionPool {
           def isIdle: Boolean = state.isIdle
           def isConnected: Boolean = state.isConnected
           def shutdown(): Unit = {
-            // TODO: should we offer errors to the connection?
-            closeConnection()
+            closeConnection(Some(new IllegalStateException("Pool slot was shut down") with NoStackTrace))
 
             state.onShutdown(this)
           }
@@ -267,9 +267,10 @@ private[client] object NewHostConnectionPool {
                   case _ => // no timeout set, nothing to do
                 }
 
-                if (!state.isConnected && connection != null) {
-                  debug(s"State change from [${previousState.name}] to [Unconnected]. Closing the existing connection.")
-                  closeConnection()
+                if (connection != null && state.isInstanceOf[ShouldCloseConnectionState]) {
+                  debug(s"State change from [${previousState.name}] to [$state]. Closing the existing connection.")
+                  closeConnection(state.asInstanceOf[ShouldCloseConnectionState].failure)
+                  state = Unconnected
                 }
 
                 if (!previousState.isIdle && state.isIdle && !(state == Unconnected && currentEmbargo != Duration.Zero)) {
@@ -315,7 +316,7 @@ private[client] object NewHostConnectionPool {
 
                   try {
                     cancelCurrentTimeout()
-                    closeConnection()
+                    closeConnection(Some(ex))
                     state.onShutdown(this)
                     logic.slotsWaitingForDispatch.remove(this)
                     OptionVal.None
@@ -387,9 +388,9 @@ private[client] object NewHostConnectionPool {
             }
           }
 
-          def closeConnection(): Unit =
+          def closeConnection(failure: Option[Throwable]): Unit =
             if (connection ne null) {
-              connection.close()
+              connection.close(failure)
               connection = null
             }
           def isCurrentConnection(conn: SlotConnection): Boolean = connection eq conn
@@ -439,8 +440,19 @@ private[client] object NewHostConnectionPool {
 
             emitRequest(newRequest)
           }
-          def close(): Unit = {
-            requestOut.complete()
+
+          /**
+           * If regular is true connection is closed, otherwise, it is aborted.
+           *
+           * A connection should be closed regularly after a request/response with `Connection: close` has been completed.
+           * A connection should be aborted after failures.
+           */
+          def close(failure: Option[Throwable]): Unit = {
+            failure match {
+              case None          => requestOut.complete()
+              case Some(failure) => requestOut.fail(failure)
+            }
+
             responseIn.cancel()
 
             // FIXME: or should we use discardEntity which does Sink.ignore?
@@ -560,8 +572,8 @@ private[client] object NewHostConnectionPool {
           super.onDownstreamFinish()
         }
         override def postStop(): Unit = {
-          log.debug("Pool stopped")
           slots.foreach(_.shutdown())
+          log.debug(s"Pool stopped")
         }
 
         private def willClose(response: HttpResponse): Boolean =
