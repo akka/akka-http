@@ -24,6 +24,7 @@ import akka.http.impl.engine.parsing.ParserOutput.{ MessageStartError, NeedMoreD
 import akka.http.impl.engine.parsing.{ HttpHeaderParser, HttpResponseParser, ParserOutput }
 import akka.http.impl.engine.rendering.{ HttpRequestRendererFactory, RequestRenderingContext }
 import akka.http.impl.engine.ws.Handshake.Client.NegotiatedWebSocketSettings
+import akka.http.impl.util.LogByteStringTools
 import akka.http.impl.util.{ SingletonException, StreamUtils }
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 
@@ -39,9 +40,12 @@ private[http] object WebSocketClientBlueprint {
     request:  WebSocketRequest,
     settings: ClientConnectionSettings,
     log:      LoggingAdapter): Http.WebSocketClientLayer =
-    (simpleTls.atopMat(handshake(request, settings, log))(Keep.right) atop
-      WebSocket.framing atop
-      WebSocket.stack(serverSide = false, settings.websocketSettings, log = log)).reversed
+    LogByteStringTools.logTLSBidiBySetting("client-plain-text", settings.logUnencryptedNetworkBytes).reversed
+      .atop(simpleTls)
+      .atopMat(handshake(request, settings, log))(Keep.right)
+      .atop(WebSocket.framing)
+      .atop(WebSocket.stack(serverSide = false, settings.websocketSettings, log = log))
+      .reversed
 
   /**
    * A bidi flow that injects and inspects the WS handshake and then goes out of the way. This BidiFlow
