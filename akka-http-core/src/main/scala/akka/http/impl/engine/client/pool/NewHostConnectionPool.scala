@@ -419,6 +419,7 @@ private[client] object NewHostConnectionPool {
           responseIn: SubSinkInlet[HttpResponse]
         ) extends InHandler with OutHandler { connection =>
           var ongoingResponseEntity: Option[HttpEntity] = None
+          var ongoingResponseEntityKillSwitch: Future[Option[KillSwitch]] = Future.successful(None)
           var connectionEstablished: Boolean = false
 
           /** Will only be executed if this connection is still the current connection for its slot */
@@ -457,6 +458,7 @@ private[client] object NewHostConnectionPool {
 
             // FIXME: or should we use discardEntity which does Sink.ignore?
             ongoingResponseEntity.foreach(_.dataBytes.runWith(Sink.cancelled)(subFusingMaterializer))
+            ongoingResponseEntityKillSwitch.foreach(_.foreach(_.abort(new IllegalStateException("Connection was closed while response was still in-flight"))))(ExecutionContexts.sameThreadExecutionContext)
           }
           def isClosed: Boolean = requestOut.isClosed || responseIn.isClosed
 
@@ -468,19 +470,26 @@ private[client] object NewHostConnectionPool {
             response.entity match {
               case _: HttpEntity.Strict => withSlot(_.onResponseReceived(response))
               case e =>
-                ongoingResponseEntity = Some(e)
-
-                val (newEntity, (entitySubscribed, entityComplete)) =
+                val (newEntity, (entitySubscribed, entityComplete, entityKillSwitch)) =
                   StreamUtils.transformEntityStream(response.entity, StreamUtils.CaptureMaterializationAndTerminationOp)
+
+                ongoingResponseEntity = Some(e)
+                ongoingResponseEntityKillSwitch = entityKillSwitch
 
                 entitySubscribed.onComplete(safely {
                   case Success(()) =>
                     withSlot(_.onResponseEntitySubscribed())
 
-                    entityComplete.onComplete(safely {
-                      case Success(_)     => withSlot(_.onResponseEntityCompleted())
-                      case Failure(cause) => withSlot(_.onResponseEntityFailed(cause))
-                    })(ExecutionContexts.sameThreadExecutionContext)
+                    entityComplete.onComplete {
+                      safely { res =>
+                        res match {
+                          case Success(_)     => withSlot(_.onResponseEntityCompleted())
+                          case Failure(cause) => withSlot(_.onResponseEntityFailed(cause))
+                        }
+                        ongoingResponseEntity = None
+                        ongoingResponseEntityKillSwitch = Future.successful(None)
+                      }
+                    }(ExecutionContexts.sameThreadExecutionContext)
                   case Failure(_) => throw new IllegalStateException("Should never fail")
                 })(ExecutionContexts.sameThreadExecutionContext)
 
@@ -561,7 +570,7 @@ private[client] object NewHostConnectionPool {
 
         override def onUpstreamFinish(): Unit = {
           log.debug("Pool upstream was completed")
-          super.onDownstreamFinish()
+          super.onUpstreamFinish()
         }
         override def onUpstreamFailure(ex: Throwable): Unit = {
           log.debug("Pool upstream failed with {}", ex)
