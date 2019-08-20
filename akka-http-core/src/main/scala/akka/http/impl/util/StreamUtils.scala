@@ -7,6 +7,7 @@ package akka.http.impl.util
 import akka.NotUsed
 import akka.actor.Cancellable
 import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.model.HttpEntity
 import akka.stream._
 import akka.stream.impl.fusing.GraphInterpreter
@@ -17,6 +18,9 @@ import akka.util.{ ByteString, OptionVal }
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.concurrent.{ ExecutionContext, Future, Promise }
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 /**
  * INTERNAL API
@@ -49,26 +53,52 @@ private[http] object StreamUtils {
   }
 
   def captureTermination[T, Mat](source: Source[T, Mat]): (Source[T, Mat], Future[Unit]) = {
-    val promise = Promise[Unit]()
+    val (newSource, termination, _, _) = captureMaterializationTerminationAndKillSwitch(source)
+    (newSource, termination)
+  }
+  def captureMaterializationTerminationAndKillSwitch[T, Mat](source: Source[T, Mat]): (Source[T, Mat], Future[Unit], Future[Unit], KillSwitch) = {
+    val terminationPromise = Promise[Unit]()
+    val materializationPromise = Promise[Unit]()
+    val killResult = Promise[Unit]()
+    val killSwitch = new KillSwitch {
+      override def shutdown(): Unit = killResult.trySuccess(())
+      override def abort(ex: Throwable): Unit = killResult.tryFailure(ex)
+    }
     val transformer = new SimpleLinearGraphStage[T] {
       override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+        override def preStart(): Unit = {
+          materializationPromise.trySuccess(())
+          killResult.future.value match {
+            case Some(res) => handleKill(res)
+            case None      => killResult.future.onComplete(killCallback.invoke)(ExecutionContexts.sameThreadExecutionContext)
+          }
+        }
+
         override def onPush(): Unit = push(out, grab(in))
 
         override def onPull(): Unit = pull(in)
 
         override def onUpstreamFailure(ex: Throwable): Unit = {
-          promise.tryFailure(ex)
+          terminationPromise.tryFailure(ex)
           failStage(ex)
         }
 
         override def postStop(): Unit = {
-          promise.trySuccess(())
+          terminationPromise.trySuccess(())
         }
 
         setHandlers(in, out, this)
+
+        // KillSwitch implementation
+        private[this] val killCallback = getAsyncCallback[Try[Unit]](handleKill)
+
+        def handleKill(result: Try[Unit]): Unit = result match {
+          case Success(_)  => completeStage()
+          case Failure(ex) => failStage(ex)
+        }
       }
     }
-    source.via(transformer) -> promise.future
+    (source.via(transformer), terminationPromise.future, materializationPromise.future, killSwitch)
   }
 
   def sliceBytesTransformer(start: Long, length: Long): Flow[ByteString, ByteString, NotUsed] = {
@@ -262,20 +292,19 @@ private[http] object StreamUtils {
    * INTERNAL API
    */
   @InternalApi
-  object CaptureMaterializationAndTerminationOp extends EntityStreamOp[(Future[Unit], Future[Unit], Future[Option[UniqueKillSwitch]])] {
-    def strictM: (Future[Unit], Future[Unit], Future[Option[UniqueKillSwitch]]) = (Future.successful(()), Future.successful(()), Future.successful(None))
-    def apply[T, Mat](source: Source[T, Mat]): (Source[T, Mat], (Future[Unit], Future[Unit], Future[Option[UniqueKillSwitch]])) = {
-      val materializationPromise = Promise[Unit]()
-      val killSwitchPromise = Promise[Option[UniqueKillSwitch]]()
-      val newSource0 =
-        source.via(Flow.fromGraph(KillSwitches.single[T]).mapMaterializedValue(ks => killSwitchPromise.trySuccess(Some(ks))))
-      val (newSource, completion) =
-        StreamUtils.captureTermination(newSource0.mapMaterializedValue { mat =>
-          materializationPromise.trySuccess(())
-          mat
-        })
+  object CaptureMaterializationAndTerminationOp extends EntityStreamOp[(Future[Any], Future[Unit], Option[KillSwitch])] {
+    def strictM: (Future[Any], Future[Unit], Option[KillSwitch]) = (Future.successful(()), Future.successful(()), None)
+    def apply[T, Mat](source: Source[T, Mat]): (Source[T, Mat], (Future[Any], Future[Unit], Option[KillSwitch])) = {
+      val (newSource, completion, materialization, killSwitch) =
+        StreamUtils.captureMaterializationTerminationAndKillSwitch(source)
 
-      (newSource, (materializationPromise.future, completion, killSwitchPromise.future))
+      (newSource,
+        (
+          materialization,
+          completion,
+          Some(killSwitch)
+        )
+      )
     }
   }
 
