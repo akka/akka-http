@@ -1,0 +1,4 @@
+# Changes to implementation internals
+ProblemFilters.exclude[Problem]("akka.http.impl.engine.client.*")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.util.StreamUtils#CaptureMaterializationAndTerminationOp.strictM")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.util.StreamUtils#CaptureMaterializationAndTerminationOp.apply")

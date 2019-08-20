@@ -306,6 +306,41 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
       Await.result(gateway.poolStatus(), 1500.millis.dilated).get shouldBe a[PoolInterfaceRunning]
       awaitCond({ Await.result(gateway.poolStatus(), 1500.millis.dilated).isEmpty }, 2000.millis.dilated)
     }
+    "automatically shutdown after configured timeout periods but only after streaming response is finished" in new TestSetup() {
+      val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int](idleTimeout = 200.millis)
+      val gateway = hcp.gateway
+
+      val responseEntityPub = TestPublisher.probe[ByteString]()
+
+      override def testServerHandler(connNr: Int): HttpRequest => HttpResponse = {
+        case request @ HttpRequest(_, Uri.Path("/a"), _, _, _) =>
+          val entity = HttpEntity.Chunked.fromData(ContentTypes.`text/plain(UTF-8)`, Source.fromPublisher(responseEntityPub))
+          super.testServerHandler(connNr)(request) withEntity entity
+        case x => super.testServerHandler(connNr)(x)
+      }
+      requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
+      responseOutSub.request(1)
+      acceptIncomingConnection()
+      val (Success(r1), 42) = responseOut.expectNext()
+      val responseEntityProbe = ByteStringSinkProbe()
+      r1.entity.dataBytes.runWith(responseEntityProbe.sink)
+      responseEntityPub.sendNext(ByteString("Hello"))
+      responseEntityProbe.expectUtf8EncodedString("Hello")
+
+      Await.result(gateway.poolStatus(), 1500.millis.dilated).get shouldBe a[PoolInterfaceRunning]
+      Thread.sleep(500)
+
+      // afterwards it should still be running because a response is still being delivered
+      responseEntityPub.sendNext(ByteString("World"))
+      responseEntityProbe.expectUtf8EncodedString("World")
+      Await.result(gateway.poolStatus(), 1500.millis.dilated).get shouldBe a[PoolInterfaceRunning]
+
+      // now finish response
+      responseEntityPub.sendComplete()
+      responseEntityProbe.request(1)
+      responseEntityProbe.expectComplete()
+      awaitCond(Await.result(gateway.poolStatus(), 1500.millis.dilated).isEmpty, 2000.millis.dilated)
+    }
 
     "transparently restart after idle shutdown" in new TestSetup() {
       val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int](idleTimeout = 1.second)

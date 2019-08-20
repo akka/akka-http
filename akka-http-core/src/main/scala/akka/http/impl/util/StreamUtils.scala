@@ -262,16 +262,20 @@ private[http] object StreamUtils {
    * INTERNAL API
    */
   @InternalApi
-  object CaptureMaterializationAndTerminationOp extends EntityStreamOp[(Future[Unit], Future[Unit])] {
-    def strictM: (Future[Unit], Future[Unit]) = (Future.successful(()), Future.successful(()))
-    def apply[T, Mat](source: Source[T, Mat]): (Source[T, Mat], (Future[Unit], Future[Unit])) = {
+  object CaptureMaterializationAndTerminationOp extends EntityStreamOp[(Future[Unit], Future[Unit], Future[Option[UniqueKillSwitch]])] {
+    def strictM: (Future[Unit], Future[Unit], Future[Option[UniqueKillSwitch]]) = (Future.successful(()), Future.successful(()), Future.successful(None))
+    def apply[T, Mat](source: Source[T, Mat]): (Source[T, Mat], (Future[Unit], Future[Unit], Future[Option[UniqueKillSwitch]])) = {
       val materializationPromise = Promise[Unit]()
+      val killSwitchPromise = Promise[Option[UniqueKillSwitch]]()
+      val newSource0 =
+        source.via(Flow.fromGraph(KillSwitches.single[T]).mapMaterializedValue(ks => killSwitchPromise.trySuccess(Some(ks))))
       val (newSource, completion) =
-        StreamUtils.captureTermination(source.mapMaterializedValue { mat =>
+        StreamUtils.captureTermination(newSource0.mapMaterializedValue { mat =>
           materializationPromise.trySuccess(())
           mat
         })
-      (newSource, (materializationPromise.future, completion))
+
+      (newSource, (materializationPromise.future, completion, killSwitchPromise.future))
     }
   }
 
