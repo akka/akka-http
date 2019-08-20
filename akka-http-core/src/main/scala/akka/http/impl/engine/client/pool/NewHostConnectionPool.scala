@@ -456,9 +456,9 @@ private[client] object NewHostConnectionPool {
 
             responseIn.cancel()
 
-            // FIXME: or should we use discardEntity which does Sink.ignore?
+            val exception = failure.getOrElse(new IllegalStateException("Connection was closed while response was still in-flight"))
             ongoingResponseEntity.foreach(_.dataBytes.runWith(Sink.cancelled)(subFusingMaterializer))
-            ongoingResponseEntityKillSwitch.foreach(_.abort(new IllegalStateException("Connection was closed while response was still in-flight")))
+            ongoingResponseEntityKillSwitch.foreach(_.abort(exception))
           }
           def isClosed: Boolean = requestOut.isClosed || responseIn.isClosed
 
