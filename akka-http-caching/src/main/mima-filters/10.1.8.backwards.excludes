@@ -17,7 +17,6 @@ ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.caching.LfuCache.
 
 #### The following are against 10.1.5, but weren't caught by a previous version of MiMa
 
-# Safe, since more specific
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.caching.javadsl.CachingSettings.create")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.caching.javadsl.CachingSettings.create")
 
 ####
