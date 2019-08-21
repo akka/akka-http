@@ -26,7 +26,7 @@ object Dependencies {
   val Scala213 = "2.13.0"
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.12.8", "2.11.12", Scala213),
+    crossScalaVersions := Seq("2.12.9", "2.11.12", Scala213),
     scalaVersion := crossScalaVersions.value.head,
     scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.14.0"),
     scalaTestVersion := "3.0.8",
