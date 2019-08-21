@@ -470,7 +470,7 @@ private[client] object NewHostConnectionPool {
             response.entity match {
               case _: HttpEntity.Strict => withSlot(_.onResponseReceived(response))
               case e =>
-                val (newEntity, (entitySubscribed, entityComplete, entityKillSwitch)) =
+                val (newEntity, StreamUtils.StreamControl(entitySubscribed, entityComplete, entityKillSwitch)) =
                   StreamUtils.transformEntityStream(response.entity, StreamUtils.CaptureMaterializationAndTerminationOp)
 
                 ongoingResponseEntity = Some(e)

@@ -25,6 +25,7 @@ import scala.util.Try
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] object StreamUtils {
 
   /**
@@ -83,9 +84,7 @@ private[http] object StreamUtils {
           failStage(ex)
         }
 
-        override def postStop(): Unit = {
-          terminationPromise.trySuccess(())
-        }
+        override def postStop(): Unit = terminationPromise.trySuccess(())
 
         setHandlers(in, out, this)
 
@@ -288,49 +287,32 @@ private[http] object StreamUtils {
       x.runWith(Sink.ignore)(mat)
   }
 
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  object CaptureMaterializationAndTerminationOp extends EntityStreamOp[(Future[Any], Future[Unit], Option[KillSwitch])] {
-    def strictM: (Future[Any], Future[Unit], Option[KillSwitch]) = (Future.successful(()), Future.successful(()), None)
-    def apply[T, Mat](source: Source[T, Mat]): (Source[T, Mat], (Future[Any], Future[Unit], Option[KillSwitch])) = {
+  case class StreamControl(
+    whenMaterialized: Future[Unit],
+    whenTerminated:   Future[Unit],
+    killSwitch:       Option[KillSwitch]
+  )
+  private val successfulDone = Future.successful(())
+  object CaptureMaterializationAndTerminationOp extends EntityStreamOp[StreamControl] {
+    val strictM: StreamControl = StreamControl(successfulDone, successfulDone, None)
+    def apply[T, Mat](source: Source[T, Mat]): (Source[T, Mat], StreamControl) = {
       val (newSource, completion, materialization, killSwitch) =
         StreamUtils.captureMaterializationTerminationAndKillSwitch(source)
 
-      (newSource,
-        (
-          materialization,
-          completion,
-          Some(killSwitch)
-        )
-      )
+      (newSource, StreamControl(materialization, completion, Some(killSwitch)))
     }
   }
-
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
   object CaptureTerminationOp extends EntityStreamOp[Future[Unit]] {
-    val strictM: Future[Unit] = Future.successful(())
+    val strictM: Future[Unit] = successfulDone
     def apply[T, Mat](source: Source[T, Mat]): (Source[T, Mat], Future[Unit]) = StreamUtils.captureTermination(source)
   }
 
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  private[http] trait EntityStreamOp[M] {
+  trait EntityStreamOp[M] {
     def strictM: M
     def apply[T, Mat](source: Source[T, Mat]): (Source[T, Mat], M)
   }
 
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  private[http] def transformEntityStream[T <: HttpEntity, M](entity: T, streamOp: EntityStreamOp[M]): (T, M) =
+  def transformEntityStream[T <: HttpEntity, M](entity: T, streamOp: EntityStreamOp[M]): (T, M) =
     entity match {
       case x: HttpEntity.Strict => x.asInstanceOf[T] -> streamOp.strictM
       case x: HttpEntity.Default =>
@@ -351,6 +333,7 @@ private[http] object StreamUtils {
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] class EnhancedByteStringSource[Mat](val byteStringStream: Source[ByteString, Mat]) extends AnyVal {
   def join(implicit materializer: Materializer): Future[ByteString] =
     byteStringStream.runFold(ByteString.empty)(_ ++ _)
