@@ -354,6 +354,11 @@ lazy val docs = project("docs")
       "signature.akka-http.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath
     ),
     apidocRootPackage := "akka",
+    paradoxRoots := List(
+      "index.html",
+      "routing-dsl/directives/timeout-directives/extractRequestTimeout.html",
+      "sse-support.html",
+    ),
     Formatting.docFormatSettings,
     additionalTasks in ValidatePR += paradox in Compile,
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka-http/${version.value}")
