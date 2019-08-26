@@ -36,10 +36,10 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
       .replace('_', '-')
       .filter(_ != '$')
 
-  def testConfigSource: String = ""
+  def testConfigSource: Option[String] = None
   def testConfig: Config = {
     val source = testConfigSource
-    val config = if (source.isEmpty) ConfigFactory.empty() else ConfigFactory.parseString(source)
+    val config = source.fold(ConfigFactory.empty())(ConfigFactory.parseString(_))
     config.withFallback(ConfigFactory.load())
   }
   implicit val system = createActorSystem()
