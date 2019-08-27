@@ -51,7 +51,7 @@ object Scaladoc extends AutoPlugin {
     })
 
   def scaladocOptions(ver: String, base: File, plugins: Seq[File]): List[String] = {
-    val urlString = GitHub.url(ver) + "/€{FILE_PATH}.scala"
+    val urlString = GitHub.url(ver) + "/€{FILE_PATH_EXT}#L€{FILE_LINE}"
     val opts = List(
       "-implicits",
       "-groups",
@@ -59,6 +59,7 @@ object Scaladoc extends AutoPlugin {
       "-sourcepath", base.getAbsolutePath,
       "-doc-title", "Akka HTTP",
       "-doc-version", ver,
+      "-doc-canonical-base-url", "https://doc.akka.io/api/akka-http/current/",
       // Workaround https://issues.scala-lang.org/browse/SI-10028
       "-skip-packages", "akka.pattern:org.specs2",
     ) ++
