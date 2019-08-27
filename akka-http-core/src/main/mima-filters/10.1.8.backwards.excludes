@@ -44,16 +44,16 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.render
 
 #### The following are against 10.1.5, but weren't caught by a previous version of MiMa
 
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.Http.get")
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.Http.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.Http.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.Http.apply")
 
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.settings.PreviewServerSettings.create")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.settings.PreviewServerSettings.create")
 ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.unapply")
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.settings.ConnectionPoolSettings.create")
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.settings.ServerSettings.create")
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.settings.HttpsProxySettings.create")
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.settings.ParserSettings.create")
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.settings.ClientConnectionSettings.create")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.settings.ConnectionPoolSettings.create")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.settings.ServerSettings.create")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.settings.HttpsProxySettings.create")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.settings.ParserSettings.create")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.create")
 
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.*.register")
 
