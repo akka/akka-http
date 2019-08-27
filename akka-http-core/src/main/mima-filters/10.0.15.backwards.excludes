@@ -1,0 +1,4 @@
+# Not caught my the version of mima in use at the time:
+# unbind
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.javadsl.ServerBinding.unbind")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.Http#ServerBinding.unbind")

@@ -14,9 +14,3 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.caching.scaladsl
 # @InternalApi
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.caching.LfuCache.store")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.caching.LfuCache.this")
-
-#### The following are against 10.1.5, but weren't caught by a previous version of MiMa
-
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.caching.javadsl.CachingSettings.create")
-
-####
