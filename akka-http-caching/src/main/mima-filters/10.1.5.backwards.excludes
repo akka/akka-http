@@ -1,0 +1,2 @@
+# The following was not caught by the version of mima in use at the time:
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.caching.javadsl.CachingSettings.create")
