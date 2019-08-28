@@ -52,7 +52,10 @@ object Scaladoc extends AutoPlugin {
     })
 
   def scaladocOptions(scalaBinaryVersion: String, ver: String, base: File, plugins: Seq[File]): List[String] = {
-    val urlString = GitHub.url(ver) + "/€{FILE_PATH_EXT}#L€{FILE_LINE}"
+    val urlString = GitHub.url(ver) +
+                    // supported from Scala 2.12.9
+                    (if (scalaBinaryVersion != "2.11") "€{FILE_PATH_EXT}#L€{FILE_LINE}" else "€{FILE_PATH}.scala")
+
     val opts = List(
       "-implicits",
       "-groups",
