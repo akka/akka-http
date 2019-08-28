@@ -33,6 +33,7 @@ object Scaladoc extends AutoPlugin {
     inTask(doc)(Seq(
       scalacOptions in Compile ++=
         scaladocOptions(
+          scalaBinaryVersion.value,
           version.value,
           (baseDirectory in ThisBuild).value,
           libraryDependencies.value
@@ -50,8 +51,11 @@ object Scaladoc extends AutoPlugin {
       docs
     })
 
-  def scaladocOptions(ver: String, base: File, plugins: Seq[File]): List[String] = {
-    val urlString = GitHub.url(ver) + "/€{FILE_PATH_EXT}#L€{FILE_LINE}"
+  def scaladocOptions(scalaBinaryVersion: String, ver: String, base: File, plugins: Seq[File]): List[String] = {
+    val urlString = GitHub.url(ver) +
+                    // supported from Scala 2.12.9
+                    (if (scalaBinaryVersion != "2.11") "€{FILE_PATH_EXT}#L€{FILE_LINE}" else "€{FILE_PATH}.scala")
+
     val opts = List(
       "-implicits",
       "-groups",
@@ -59,10 +63,10 @@ object Scaladoc extends AutoPlugin {
       "-sourcepath", base.getAbsolutePath,
       "-doc-title", "Akka HTTP",
       "-doc-version", ver,
-      "-doc-canonical-base-url", "https://doc.akka.io/api/akka-http/current/",
       // Workaround https://issues.scala-lang.org/browse/SI-10028
       "-skip-packages", "akka.pattern:org.specs2",
     ) ++
+      (if (scalaBinaryVersion != "2.11") List("-doc-canonical-base-url", "https://doc.akka.io/api/akka-http/current/") else Nil) ++
       plugins.map(plugin => "-Xplugin:" + plugin)
     CliOptions.scaladocDiagramsEnabled.ifTrue("-diagrams").toList ::: opts
   }
