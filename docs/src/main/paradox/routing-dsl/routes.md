@@ -59,7 +59,7 @@ modified copies.
 <a id="routeresult"></a>
 ## RouteResult
 
-@apidoc[RouteResult] is a simple abstract data type (ADT) that models the possible non-error results of a @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@apidoc[Route]].
+@apidoc[RouteResult] is a simple algebraic data type (ADT) that models the possible non-error results of a @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@apidoc[Route]].
 It is defined as such:
 
 @@@ div { .group-scala }
