@@ -43,22 +43,29 @@ object AkkaDependency {
 
   implicit class RichProject(project: Project) {
     /** Adds either a source or a binary dependency, depending on whether the above settings are set */
-    def addAkkaModuleDependency(module: String, config: String = ""): Project =
-      if (shouldUseSourceDependency) {
-        val moduleRef = ProjectRef(akkaRepository, module)
-        val withConfig: ClasspathDependency =
-          if (config == "") moduleRef
-          else moduleRef % config
+    def addAkkaModuleDependency(module: String,
+                                config: String = "",
+                                shouldUseSourceDependency: Boolean = AkkaDependency.shouldUseSourceDependency,
+                                akkaRepository: URI = AkkaDependency.akkaRepository,
+                                onlyIf: Boolean = true): Project =
+      if (onlyIf) {
+        if (shouldUseSourceDependency) {
+          val moduleRef = ProjectRef(akkaRepository, module)
+          val withConfig: ClasspathDependency =
+            if (config == "") moduleRef
+            else moduleRef % config
 
-        project.dependsOn(withConfig)
-      } else {
-        project.settings(libraryDependencies += {
-          val dep = "com.typesafe.akka" %% module % akkaVersion
-          val withConfig =
-            if (config == "") dep
-            else dep % config
-          withConfig
-        })
+          project.dependsOn(withConfig)
+        } else {
+          project.settings(libraryDependencies += {
+            val dep = "com.typesafe.akka" %% module % akkaVersion
+            val withConfig =
+              if (config == "") dep
+              else dep % config
+            withConfig
+          })
+        }
       }
+      else project // return unchanged
   }
 }
