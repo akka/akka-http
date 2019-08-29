@@ -18,6 +18,7 @@ import akka.http.impl.model.parser.UriParser
 import akka.http.impl.model.parser.CharacterClasses._
 import akka.http.impl.util._
 import Uri._
+import akka.http.scaladsl.model.Uri.EncodingMode.Default
 
 /**
  * An immutable model of an internet URI as defined by http://tools.ietf.org/html/rfc3986.
@@ -41,7 +42,7 @@ sealed abstract case class Uri(scheme: String, authority: Authority, path: Path,
   /**
    * Returns the query part of the Uri in its decoded form.
    */
-  def queryString(charset: Charset = UTF8): Option[String] = rawQueryString.map(s => decode(s, charset))
+  def queryString(charset: Charset = UTF8): Option[String] = rawQueryString.map(s => decode(s, charset, EncodingMode.Default))
 
   /**
    * The effective port of this Uri given the currently set authority and scheme values.
@@ -514,20 +515,21 @@ object Uri {
     def dropChars(count: Int): Path
     override def toString = UriRendering.PathRenderer.render(new StringRendering, this).get
   }
+
   object Path {
     val SingleSlash = Slash(Empty)
     def / : Path = SingleSlash
     def /(path: Path): Path = Slash(path)
     def /(segment: String): Path = Slash(segment :: Empty)
-    def apply(string: String, charset: Charset = UTF8): Path = {
+    def apply(string: String, charset: Charset = UTF8, encodingMode: EncodingMode = Default): Path = {
       @tailrec def build(path: Path = Empty, ix: Int = string.length - 1, segmentEnd: Int = 0): Path =
         if (ix >= 0)
           if (string.charAt(ix) == '/')
             if (segmentEnd == 0) build(Slash(path), ix - 1)
-            else build(Slash(decode(string.substring(ix + 1, segmentEnd), charset) :: path), ix - 1)
+            else build(Slash(decode(string.substring(ix + 1, segmentEnd), charset, encodingMode) :: path), ix - 1)
           else if (segmentEnd == 0) build(path, ix - 1, ix + 1)
           else build(path, ix - 1, segmentEnd)
-        else if (segmentEnd == 0) path else decode(string.substring(0, segmentEnd), charset) :: path
+        else if (segmentEnd == 0) path else decode(string.substring(0, segmentEnd), charset, encodingMode) :: path
       build()
     }
     def unapply(path: Path): Option[String] = Some(path.toString)
@@ -696,6 +698,13 @@ object Uri {
       }
   }
 
+  sealed trait EncodingMode
+  object EncodingMode {
+    case object Encoded extends EncodingMode
+    case object NonEncoded extends EncodingMode
+    case object Default extends EncodingMode
+  }
+
   // http://tools.ietf.org/html/rfc3986#section-5.2.2
   private[http] def resolve(scheme: String, userinfo: String, host: Host, port: Int, path: Path, query: Option[String],
                             fragment: Option[String], base: Uri): Uri = {
@@ -725,9 +734,11 @@ object Uri {
     else create(scheme, userinfo, host, port, collapseDotSegments(path), query, fragment)
   }
 
-  private[http] def decode(string: String, charset: Charset): String = {
-    val ix = string.indexOf('%')
-    if (ix >= 0) decode(string, charset, ix)() else string
+  private[http] def decode(string: String, charset: Charset, encodingMode: EncodingMode): String = encodingMode match {
+    case EncodingMode.NonEncoded => string
+    case EncodingMode.Default | EncodingMode.Encoded =>
+      val ix = string.indexOf('%')
+      if (ix >= 0) decode(string, charset, ix)() else string
   }
 
   @tailrec

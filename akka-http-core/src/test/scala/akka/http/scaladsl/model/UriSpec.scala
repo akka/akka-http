@@ -4,13 +4,13 @@
 
 package akka.http.scaladsl.model
 
-import java.nio.charset.Charset
-import java.net.InetAddress
 import akka.http.impl.util.StringRendering
+import akka.http.scaladsl.model.Uri._
+import akka.parboiled2.UTF8
 import org.scalatest.matchers.{ MatchResult, Matcher }
 import org.scalatest.{ Matchers, WordSpec }
-import akka.parboiled2.UTF8
-import Uri._
+import java.net.InetAddress
+import java.nio.charset.Charset
 
 class UriSpec extends WordSpec with Matchers {
 
@@ -224,6 +224,9 @@ class UriSpec extends WordSpec with Matchers {
       "/%C3%89g%20get%20eti%C3%B0%20gler%20%C3%A1n%20%C3%BEess%20a%C3%B0%20mei%C3%B0a%20mig" should
         roundTripTo(Path / "Ég get etið gler án þess að meiða mig")
       "/%00%E4%00%F6%00%FC" should roundTripTo(Path / "äöü", Charset.forName("UTF-16BE"))
+
+      Path("/example/%12%", encodingMode = EncodingMode.NonEncoded).toString shouldBe "/example/%2512%25"
+      Path("/example/ a", encodingMode = EncodingMode.NonEncoded).toString shouldBe "/example/%20a"
     }
     "support the `startsWith` predicate" in {
       Empty startsWith Empty shouldBe true
@@ -303,6 +306,8 @@ class UriSpec extends WordSpec with Matchers {
       the[IllegalUriException] thrownBy Path("/example/%12%")
       the[IllegalUriException] thrownBy Path("/example/%12%1")
       the[IllegalUriException] thrownBy Path("/example/%12%1V")
+      the[IllegalUriException] thrownBy Path("/example/%12%1V", encodingMode = EncodingMode.Encoded)
+      the[IllegalUriException] thrownBy Path("/example/%12%1V", encodingMode = EncodingMode.Default)
     }
   }
 
