@@ -142,20 +142,17 @@ private[http] object PoolInterface {
         response0 match {
           case Success(r @ HttpResponse(_, _, entity, _)) if !entity.isStrict =>
             val (newEntity, termination) = StreamUtils.transformEntityStream(entity, StreamUtils.CaptureTerminationOp)
-            termination.onComplete(_ => {
-              responseCompletedCallback.invoke(Done)
-              onResponseComplete(ctx)
-            })
+            termination.onComplete(_ => responseCompletedCallback.invoke(Done))
             Success(r.withEntity(newEntity))
           case Success(response) =>
             remainingRequested -= 1
-            onResponseComplete(ctx)
             Success(response)
           case Failure(_) =>
             remainingRequested -= 1
             response0
         }
       rc.responsePromise.complete(response1)
+      onResponseComplete(ctx)
       pull(responseIn)
 
       afterRequestFinished()
