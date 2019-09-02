@@ -108,10 +108,10 @@ def add213CrossDirs(config: Configuration): Seq[Setting[_]] = Seq(
   }
 )
 
-// TODO: remove once 2.11 is dropped
+// TODO: remove once 2.11 is dropped, https://github.com/akka/akka-http/issues/2589
 /**
- * Adds a `src/.../scala-2.13+` source directory for Scala 2.13 and newer
- * and a `src/.../scala-2.13-` source directory for Scala version older than 2.13
+ * Adds a `src/.../scala-2.12+` source directory for Scala 2.12 and newer
+ * and a `src/.../scala-2.12-` source directory for Scala version older than 2.12
  */
 def add212CrossDirs(config: Configuration): Seq[Setting[_]] = Seq(
   unmanagedSourceDirectories in config += {
