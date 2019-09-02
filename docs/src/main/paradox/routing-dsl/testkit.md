@@ -9,7 +9,7 @@ route logic easy and convenient. This "route test DSL" is made available with th
 To use Akka HTTP TestKit, add the module to your project:
 
 @@dependency [sbt,Gradle,Maven] {
-  group="com.typesafe.akka" artifact="akka-stream-testkit_$scala.binary.version$" version="2.5.19"
+  group="com.typesafe.akka" artifact="akka-stream-testkit_$scala.binary.version$" version="$akka.version$"
   group2="com.typesafe.akka" artifact2="akka-http-testkit_$scala.binary.version$" version2="$project.version$"
 }
 
