@@ -505,11 +505,14 @@ private[client] object NewHostConnectionPool {
               slot.onConnectionCompleted()
             }
           override def onUpstreamFailure(ex: Throwable): Unit =
-            if (connectionEstablished)
-              withSlot { slot =>
+            withSlot { slot =>
+              if (connectionEstablished) {
                 slot.debug("Connection failed")
                 slot.onConnectionFailed(ex)
               }
+              // otherwise, rely on connection.onComplete to fail below
+              // (connection error is sent through matValue future and through the stream)
+            }
 
           def onPull(): Unit = () // emitRequests makes sure not to push too early
 
@@ -539,10 +542,13 @@ private[client] object NewHostConnectionPool {
           responseIn.pull()
 
           slot.debug("Establishing connection")
+          import Attributes.CancellationStrategy
+          import CancellationStrategy._
           val connection =
             Source.fromGraph(requestOut.source)
               .viaMat(connectionFlow)(Keep.right)
               .to(responseIn.sink)
+              .addAttributes(Attributes(CancellationStrategy(AfterDelay(1.second, FailStage))))
               .run()(subFusingMaterializer)
 
           val slotCon = new SlotConnection(slot, requestOut, responseIn)

@@ -7,14 +7,17 @@ package akka.http.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ ArrayBlockingQueue, TimeUnit }
 
+import akka.actor.ActorSystem
 import akka.http.impl.util._
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Connection
+import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.settings.{ ConnectionPoolSettings, ServerSettings }
 import akka.stream.scaladsl._
 import akka.stream.{ Server => _, _ }
 import akka.testkit._
+import akka.util.ByteString
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import com.typesafe.sslconfig.ssl.{ SSLConfigSettings, SSLLooseConfig }
 import org.scalactic.Tolerance
@@ -23,6 +26,7 @@ import org.scalatest.Assertion
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
+import scala.util.Failure
 import scala.util.Success
 
 class GracefulTerminationSpec
@@ -112,6 +116,22 @@ class GracefulTerminationSpec
     }
 
     "in-flight request responses should include Connection: close and connection should be closed" in new TestSetup {
+      override val basePoolSettings: ConnectionPoolSettings = super.basePoolSettings.withTransport(new ClientTransport {
+        override def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[Http.OutgoingConnection]] = {
+          ClientTransport.TCP.connectTo(host, port, settings)
+            .mapMaterializedValue { conn =>
+              val result = Promise[Http.OutgoingConnection]()
+              conn.onComplete {
+                case Success(s) => result.trySuccess(s)
+                case Failure(ex) =>
+                  log.debug(s"Delaying failure ${ex.getMessage}")
+                  system.scheduler.scheduleOnce(100.millis)(result.tryFailure(ex))
+              }
+              result.future
+            }
+        }
+      })
+
       val r1 = makeRequest() // establish connection
       val time: FiniteDuration = 3.seconds
 
@@ -232,7 +252,7 @@ class GracefulTerminationSpec
         .bindAndHandle(routes, hostname, port, connectionContext = serverConnectionContext, settings = serverSettings)
         .futureValue
 
-    val basePoolSettings = ConnectionPoolSettings(system).withBaseConnectionBackoff(Duration.Zero)
+    def basePoolSettings = ConnectionPoolSettings(system).withBaseConnectionBackoff(Duration.Zero)
 
     def makeRequest(ensureNewConnection: Boolean = false): Future[HttpResponse] = {
       if (ensureNewConnection) {
