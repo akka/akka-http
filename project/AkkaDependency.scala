@@ -47,7 +47,8 @@ object AkkaDependency {
                                 config: String = "",
                                 shouldUseSourceDependency: Boolean = AkkaDependency.shouldUseSourceDependency,
                                 akkaRepository: URI = AkkaDependency.akkaRepository,
-                                onlyIf: Boolean = true): Project =
+                                onlyIf: Boolean = true,
+                                includeIfScalaVersionMatches: String => Boolean = _ => true): Project =
       if (onlyIf) {
         if (shouldUseSourceDependency) {
           val moduleRef = ProjectRef(akkaRepository, module)
@@ -57,13 +58,16 @@ object AkkaDependency {
 
           project.dependsOn(withConfig)
         } else {
-          project.settings(libraryDependencies += {
-            val dep = "com.typesafe.akka" %% module % akkaVersion
-            val withConfig =
-              if (config == "") dep
-              else dep % config
-            withConfig
-          })
+          project.settings(
+            libraryDependencies ++=
+              (if (includeIfScalaVersionMatches(scalaBinaryVersion.value)) {
+                val dep = "com.typesafe.akka" %% module % akkaVersion
+                val withConfig =
+                  if (config == "") dep
+                  else dep % config
+                withConfig :: Nil
+              } else Nil)
+          )
         }
       }
       else project // return unchanged

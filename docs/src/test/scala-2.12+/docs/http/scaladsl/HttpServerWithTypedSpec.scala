@@ -41,13 +41,13 @@ class HttpServerWithTypedSpec extends WordSpec with Matchers with CompileOnlySpe
       def apply(jobs: Map[Long, Job] = Map.empty): Behavior[BuildJobProtocol] = Behaviors.receiveMessage {
         case AddJob(job, replyTo) if jobs.contains(job.id) =>
           replyTo ! KO("Job already exists")
-          Behavior.same
+          Behaviors.same
         case AddJob(job, replyTo) =>
           replyTo ! OK
           BuildJobRepository(jobs.+(job.id -> job))
         case GetJobById(id, replyTo) =>
           replyTo ! jobs.get(id)
-          Behavior.same
+          Behaviors.same
         case ClearJobs(replyTo) =>
           replyTo ! OK
           BuildJobRepository(Map.empty)
