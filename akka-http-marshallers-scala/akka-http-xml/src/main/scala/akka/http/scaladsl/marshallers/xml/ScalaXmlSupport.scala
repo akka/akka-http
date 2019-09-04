@@ -44,12 +44,19 @@ object ScalaXmlSupport extends ScalaXmlSupport {
   /** Creates a safer SAXParser. */
   def createSaferSAXParser(): SAXParser = {
     val factory = SAXParserFactory.newInstance()
-    import com.sun.org.apache.xerces.internal.impl.Constants
     import javax.xml.XMLConstants
 
-    factory.setFeature(Constants.SAX_FEATURE_PREFIX + Constants.EXTERNAL_GENERAL_ENTITIES_FEATURE, false)
-    factory.setFeature(Constants.SAX_FEATURE_PREFIX + Constants.EXTERNAL_PARAMETER_ENTITIES_FEATURE, false)
-    factory.setFeature(Constants.XERCES_FEATURE_PREFIX + Constants.DISALLOW_DOCTYPE_DECL_FEATURE, true)
+    // Constants manually imported from com.sun.org.apache.xerces.internal.impl.Constants
+    // which isn't accessible any more when scalac option `-release 8` is used.
+    val SAX_FEATURE_PREFIX = "http://xml.org/sax/features/"
+    val EXTERNAL_GENERAL_ENTITIES_FEATURE = "external-general-entities"
+    val EXTERNAL_PARAMETER_ENTITIES_FEATURE = "external-parameter-entities"
+    val XERCES_FEATURE_PREFIX = "http://apache.org/xml/features/"
+    val DISALLOW_DOCTYPE_DECL_FEATURE = "disallow-doctype-decl"
+
+    factory.setFeature(SAX_FEATURE_PREFIX + EXTERNAL_GENERAL_ENTITIES_FEATURE, false)
+    factory.setFeature(SAX_FEATURE_PREFIX + EXTERNAL_PARAMETER_ENTITIES_FEATURE, false)
+    factory.setFeature(XERCES_FEATURE_PREFIX + DISALLOW_DOCTYPE_DECL_FEATURE, true)
     factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true)
     val parser = factory.newSAXParser()
     try {
