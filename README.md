@@ -37,7 +37,7 @@ You can join these groups and chats to discuss and ask Akka related questions:
 - Issue tracker: [![github: akka/akka-http][github-issues-badge]][github-issues] (Please use the issue
   tracker for bugs and reasonable feature requests. Please ask usage questions on the other channels.)
 
-All of our forums, chat rooms, and issue trackers are governed by our [Code Of Conduct](CODE_OF_CONDUCT.md).
+All of our forums, chat rooms, and issue trackers are governed by our [Code Of Conduct](https://www.lightbend.com/conduct).
 
 In addition to that, you may enjoy following:
 

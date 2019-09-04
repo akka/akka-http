@@ -59,7 +59,7 @@ These guidelines are meant to be a living document that should be changed and ad
 We encourage changes that make it easier to achieve our goals in an efficient way.
 
 Please also note that we have a *Code of Conduct* in place which aims keep our community a nice and helpful one.
-You can read its full text here: [Akka Code of Conduct](CODE_OF_CONDUCT.md).
+You can read its full text here: [Lightbend Community Code of Conduct](https://www.lightbend.com/conduct).
 
 ## General Workflow
 
