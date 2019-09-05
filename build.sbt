@@ -6,19 +6,17 @@ import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 import java.nio.file.Files
 import java.nio.file.attribute.{ PosixFileAttributeView, PosixFilePermission }
-import sbtdynver.GitDescribeOutput
 import spray.boilerplate.BoilerplatePlugin
 import com.lightbend.paradox.apidoc.ApidocPlugin.autoImport.apidocRootPackage
 
 inThisBuild(Def.settings(
+  version := "10.1.9",
   organization := "com.typesafe.akka",
   organizationName := "Lightbend",
   organizationHomepage := Some(url("https://www.lightbend.com")),
   homepage := Some(url("https://akka.io")),
-  // https://github.com/dwijnand/sbt-dynver/issues/23
-  isSnapshot :=  { isSnapshot.value || hasCommitsAfterTag(dynverGitDescribeOutput.value) },
   apiURL := {
-    val apiVersion = if (isSnapshot.value) "current" else version.value
+    val apiVersion = version.value
     Some(url(s"https://doc.akka.io/api/akka-http/$apiVersion/"))
   },
   scmInfo := Some(
@@ -364,5 +362,3 @@ lazy val docs = project("docs")
     deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka-http/${version.value}")
   )
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
-
-def hasCommitsAfterTag(description: Option[GitDescribeOutput]): Boolean = description.get.commitSuffix.distance > 0
