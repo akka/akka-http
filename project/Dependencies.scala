@@ -11,7 +11,7 @@ import scala.language.implicitConversions
 object Dependencies {
   import DependencyHelpers._
 
-  val jacksonVersion = "2.9.8"
+  val jacksonVersion = "2.9.9"
   val junitVersion = "4.12"
   val h2specVersion = "1.5.0"
   val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
@@ -30,7 +30,7 @@ object Dependencies {
     scalaVersion := crossScalaVersions.value.head,
     scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.14.0"),
     scalaTestVersion := "3.0.8",
-    specs2Version := "4.5.1",
+    specs2Version := "4.7.0",
   )
 
   object Provided {
@@ -55,7 +55,7 @@ object Dependencies {
 
     val alpnApi     = "org.eclipse.jetty.alpn"        % "alpn-api"                     % "1.1.3.v20160715" // ApacheV2
 
-    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.7.0"
+    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.8.0"
 
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
