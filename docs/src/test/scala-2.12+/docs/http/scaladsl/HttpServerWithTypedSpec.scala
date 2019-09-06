@@ -146,7 +146,6 @@ class HttpServerWithTypedSpec extends WordSpec with Matchers with CompileOnlySpe
     }
     //#akka-typed-route
 
-
     /* FIXME currently not compiled because toUntyped in Akka 2.5 was renamed to toClassic in Akka 2.6
     //#akka-typed-bootstrap
     import akka.{ actor, Done }
