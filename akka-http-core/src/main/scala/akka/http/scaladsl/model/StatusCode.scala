@@ -113,7 +113,7 @@ object StatusCodes extends ObjectRegistry[Int, StatusCode] {
   val Accepted                    = reg(s(202)("Accepted", "The request has been accepted for processing, but the processing has not been completed."))
   val NonAuthoritativeInformation = reg(s(203)("Non-Authoritative Information", "The server successfully processed the request, but is returning information that may be from another source."))
   val NoContent                   = reg(s(204)("No Content", "The server successfully processed the request and is not returning any content.", allowsEntity = false))
-  val ResetContent                = reg(s(205)("Reset Content", "The server successfully processed the request, but is not returning any content."))
+  val ResetContent                = reg(s(205)("Reset Content", "The server successfully processed the request, but is not returning any content.", allowsEntity = false))
   val PartialContent              = reg(s(206)("Partial Content", "The server is delivering only part of the resource due to a range header sent by the client."))
   val MultiStatus                 = reg(s(207)("Multi-Status", "The message body that follows is an XML message and can contain a number of separate response codes, depending on how many sub-requests were made."))
   val AlreadyReported             = reg(s(208)("Already Reported", "The members of a DAV binding have already been enumerated in a previous reply to this request, and are not being included again."))
