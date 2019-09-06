@@ -103,6 +103,8 @@ Scala
 :  @@snip [HttpServerWithTypedSpec.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSpec.scala) { #akka-typed-bootstrap }
 
 
+Note that the `akka.actor.typed.ActorSystem` is converted with `toClassic`, which comes from
+`import akka.actor.typed.scaladsl.adapter._`. If you are using Akka 2.5.x this conversion method is named `toUntyped`.
 
 ## Dynamic Routing Example
 

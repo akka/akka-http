@@ -146,6 +146,8 @@ class HttpServerWithTypedSpec extends WordSpec with Matchers with CompileOnlySpe
     }
     //#akka-typed-route
 
+
+    /* FIXME currently not compiled because toUntyped in Akka 2.5 was renamed to toClassic in Akka 2.6
     //#akka-typed-bootstrap
     import akka.{ actor, Done }
     import akka.actor.typed.scaladsl.adapter._
@@ -159,7 +161,7 @@ class HttpServerWithTypedSpec extends WordSpec with Matchers with CompileOnlySpe
     val system = ActorSystem[Done](Behaviors.setup[Done] { ctx =>
       // http doesn't know about akka typed so create untyped system/materializer
       implicit val untypedSystem: actor.ActorSystem = ctx.system.toUntyped
-      implicit val materializer: ActorMaterializer = ActorMaterializer()(ctx.system.toUntyped)
+      implicit val materializer: ActorMaterializer = ActorMaterializer()(ctx.system.toClassic)
       implicit val ec: ExecutionContextExecutor = ctx.system.executionContext
 
       val buildJobRepository = ctx.spawn(BuildJobRepository(), "BuildJobRepositoryActor")
@@ -183,5 +185,6 @@ class HttpServerWithTypedSpec extends WordSpec with Matchers with CompileOnlySpe
     }, "BuildJobsServer")
 
     //#akka-typed-bootstrap
+    */
   }
 }
