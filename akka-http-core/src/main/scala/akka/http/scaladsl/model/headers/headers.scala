@@ -436,6 +436,19 @@ final case class `Content-Length` private[http] (length: Long) extends jm.header
   protected def companion = `Content-Length`
 }
 
+// https://tools.ietf.org/html/rfc7231#section-3.1.4.2
+object `Content-Location` extends ModeledCompanion[`Content-Location`]
+final case class `Content-Location`(uri: Uri) extends jm.headers.ContentLocation with ResponseHeader {
+  require(uri.fragment.isEmpty, "Content-Location header URI must not contain a fragment")
+  require(uri.authority.userinfo.isEmpty, "Content-Location header URI must not contain a userinfo component")
+
+  def renderValue[R <: Rendering](r: R): r.type = { import UriRendering.UriRenderer; r ~~ uri }
+  protected def companion = `Content-Location`
+
+  /** Java API */
+  def getUri: akka.http.javadsl.model.Uri = uri.asJava
+}
+
 /**
  * Document http://tools.ietf.org/html/rfc6266 updates document https://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html. Between these
  * two there is slight but important difference regarding how parameter values are formatted. In RFC6266 parameters values are without quotes and

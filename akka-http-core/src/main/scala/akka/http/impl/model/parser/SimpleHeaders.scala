@@ -91,6 +91,13 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
     longNumberCapped ~> (`Content-Length`(_)) ~ EOI
   }
 
+  // https://tools.ietf.org/html/rfc7231#section-3.1.4.2
+  def `content-location` = rule {
+    // we are bit more relaxed than the spec here by also parsing a potential fragment
+    // but catch it in the `Content-Location` instance validation (with a `require` in the constructor)
+    uriReference ~ EOI ~> (`Content-Location`(_))
+  }
+
   // http://tools.ietf.org/html/rfc7233#section-4.2
   def `content-range` = rule {
     (`byte-content-range` | `other-content-range`) ~ EOI ~> (`Content-Range`(_, _))
