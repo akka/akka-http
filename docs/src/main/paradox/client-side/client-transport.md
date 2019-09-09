@@ -58,6 +58,7 @@ akka.http.client.proxy {
 
 If host is left as `""` and you attempt to setup a httpsProxy transport, an exception will be thrown.
 
+<a id="use-https-proxy-with-http-singlerequest"></a>
 ### Use HTTP(S) proxy with @scala[`Http().singleRequest`]@java[`Http.get(...).singleRequest`]
 
 To make use of an HTTP proxy when using the `singleRequest` API you simply need to configure the proxy and pass

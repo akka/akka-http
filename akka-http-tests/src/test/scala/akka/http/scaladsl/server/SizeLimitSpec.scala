@@ -5,24 +5,24 @@
 package akka.http.scaladsl.server
 
 import akka.NotUsed
-
-import scala.collection.immutable
 import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.coding.{ Decoder, Gzip }
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpEntity.Chunk
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ HttpEncoding, HttpEncodings, `Content-Encoding` }
+import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Source }
-import akka.testkit.{ EventFilter, TestKit }
+import akka.testkit.TestKit
 import akka.util.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{ Millis, Seconds, Span }
+import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
+
+import scala.collection.immutable
 
 class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with BeforeAndAfterAll with ScalaFutures {
 

@@ -465,7 +465,7 @@ private[http] object HttpHeaderParser {
     if (settings.illegalHeaderWarnings)
       info => logParsingError(info withSummaryPrepended "Illegal header", log, settings.errorLoggingVerbosity, settings.ignoreIllegalHeaderFor)
     else
-      (_: ErrorInfo) => _ // Does exactly what the label says - nothing
+      (_: ErrorInfo) => () // Does exactly what the label says - nothing
 
   def unprimed(settings: HttpHeaderParser.Settings, log: LoggingAdapter, warnOnIllegalHeader: ErrorInfo => Unit) =
     new HttpHeaderParser(settings, log, warnOnIllegalHeader)

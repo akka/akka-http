@@ -11,11 +11,8 @@ import akka.http.scaladsl.common.StrictForm
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
 import akka.http.scaladsl.unmarshalling.Unmarshaller.HexInt
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
 import akka.http.scaladsl.model.MediaTypes._
-import akka.http.impl.model.parser.CharacterClasses
 import akka.http.impl.util.BenchUtils
-import akka.http.impl.util.StringRendering
 
 class FormFieldDirectivesSpec extends RoutingSpec {
   implicit val nodeSeqUnmarshaller =
@@ -106,19 +103,65 @@ class FormFieldDirectivesSpec extends RoutingSpec {
         responseAs[String] shouldEqual "Mike42None<b>no</b>"
       }
     }
-    "work even when the entity is streaming rather than strict" in {
-      val charset = HttpCharsets.`UTF-8`
-      val render: StringRendering = UriRendering.renderQuery(new StringRendering, urlEncodedForm.fields, charset.nioCharset, CharacterClasses.unreserved)
-      val streamingForm: RequestEntity = HttpEntity.Chunked(
-        `application/x-www-form-urlencoded`,
-        Source.single(ChunkStreamPart(render.get)).via(AllowMaterializationOnlyOnce())
-      )
+    "work even when the entity is not strict" in {
+      val request: HttpRequest =
+        Post("/", urlEncodedForm)
+          // transformEntityDataBytes will convert the entity to chunked
+          .transformEntityDataBytes(AllowMaterializationOnlyOnce())
 
-      streamingForm.getContentType shouldEqual ContentTypes.`application/x-www-form-urlencoded`
-      Post("/", streamingForm) ~> {
+      request.entity.contentType shouldEqual ContentTypes.`application/x-www-form-urlencoded`
+      request.entity shouldNot be('strict)
+
+      request ~> {
         formFields('firstName, "age".as[Int], 'sex.?, "VIP" ? false) { (firstName, age, sex, vip) =>
           complete(firstName + age + sex + vip)
         }
+      } ~> check { responseAs[String] shouldEqual "Mike42Nonefalse" }
+    }
+
+    "work even with nested directives when the entity is not strict" in {
+      val request: HttpRequest =
+        Post("/", urlEncodedForm)
+          // transformEntityDataBytes will convert the entity to chunked
+          .transformEntityDataBytes(AllowMaterializationOnlyOnce())
+
+      request.entity.contentType shouldEqual ContentTypes.`application/x-www-form-urlencoded`
+      request.entity shouldNot be('strict)
+
+      request ~> {
+        formFields('firstName) { firstName =>
+          formFields("age".as[Int], 'sex.?) { (age, sex) =>
+            formFields("VIP" ? false) { vip =>
+              complete(firstName + age + sex + vip)
+            }
+          }
+        }
+      } ~> check { responseAs[String] shouldEqual "Mike42Nonefalse" }
+    }
+
+    "work even for alternatives when the entity is not strict" in pendingUntilFixed {
+      val request: HttpRequest =
+        Post("/", urlEncodedForm)
+          // transformEntityDataBytes will convert the entity to chunked
+          .transformEntityDataBytes(AllowMaterializationOnlyOnce())
+
+      request.entity.contentType shouldEqual ContentTypes.`application/x-www-form-urlencoded`
+      request.entity shouldNot be('strict)
+
+      request ~> {
+        concat(
+          formFields('firstName, "age".as[Int]) { (firstName, age) =>
+            println("firstName", age)
+            reject
+          },
+          formFields('firstName, "age".as[Int]) { (firstName, age) =>
+            formFields('sex.?) { sex =>
+              formFields("VIP" ? false) { vip =>
+                complete(firstName + age + sex + vip)
+              }
+            }
+          }
+        )
       } ~> check { responseAs[String] shouldEqual "Mike42Nonefalse" }
     }
   }
@@ -234,6 +277,14 @@ class FormFieldDirectivesSpec extends RoutingSpec {
       Post("/", FormData.Empty) ~> {
         formFieldSeq { echoComplete }
       } ~> check { responseAs[String] shouldEqual "Vector()" }
+    }
+    "reject with MalformedRequestContentRejection if request entity fails" in {
+      val failedSource = Source.failed(new IllegalStateException("Form was stapled wrongly"))
+      Post("/", HttpEntity(`application/x-www-form-urlencoded`, failedSource)) ~>
+        formFieldSeq { echoComplete } ~>
+        check {
+          rejection shouldBe a[MalformedRequestContentRejection]
+        }
     }
   }
 

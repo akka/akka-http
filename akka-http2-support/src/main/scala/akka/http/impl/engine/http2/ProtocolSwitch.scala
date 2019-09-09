@@ -4,39 +4,34 @@
 
 package akka.http.impl.engine.http2
 
-import javax.net.ssl.SSLException
-
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.http.impl.engine.server.HttpAttributes
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.stream.TLSProtocol.{ SessionBytes, SessionTruncated, SslTlsInbound, SslTlsOutbound }
-import akka.stream.scaladsl.{ BidiFlow, Flow }
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.stream._
+import akka.stream.scaladsl.Flow
+import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+import javax.net.ssl.SSLException
 
 /** INTERNAL API */
 @InternalApi
-private[http] object AlpnSwitch {
-  type HttpServerBidiFlow = BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed]
+private[http] object ProtocolSwitch {
+  type HttpServerFlow = Flow[SslTlsInbound, SslTlsOutbound, NotUsed]
 
   def apply(
-    chosenProtocolAccessor: () => String,
-    http1Stack:             HttpServerBidiFlow,
-    http2Stack:             HttpServerBidiFlow): HttpServerBidiFlow =
-    BidiFlow.fromGraph(
-      new GraphStage[BidiShape[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest]] {
+    chosenProtocolAccessor: SessionBytes => String,
+    http1Stack:             HttpServerFlow,
+    http2Stack:             HttpServerFlow): HttpServerFlow =
+    Flow.fromGraph(
+      new GraphStage[FlowShape[SslTlsInbound, SslTlsOutbound]] {
 
         // --- outer ports ---
         val netIn = Inlet[SslTlsInbound]("AlpnSwitch.netIn")
         val netOut = Outlet[SslTlsOutbound]("AlpnSwitch.netOut")
-
-        val requestOut = Outlet[HttpRequest]("AlpnSwitch.requestOut")
-        val responseIn = Inlet[HttpResponse]("AlpnSwitch.responseIn")
         // --- end of outer ports ---
 
-        val shape: BidiShape[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest] =
-          BidiShape(responseIn, netOut, netIn, requestOut)
+        val shape: FlowShape[SslTlsInbound, SslTlsOutbound] =
+          FlowShape(netIn, netOut)
 
         def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
           logic =>
@@ -44,9 +39,6 @@ private[http] object AlpnSwitch {
           // --- inner ports, bound to actual server in install call ---
           val serverDataIn = new SubSinkInlet[SslTlsOutbound]("ServerImpl.netIn")
           val serverDataOut = new SubSourceOutlet[SslTlsInbound]("ServerImpl.netOut")
-
-          val serverRequestIn = new SubSinkInlet[HttpRequest]("ServerImpl.serverRequestIn")
-          val serverResponseOut = new SubSourceOutlet[HttpResponse]("ServerImpl.serverResponseOut")
           // --- end of inner ports ---
 
           override def preStart(): Unit = pull(netIn)
@@ -55,7 +47,7 @@ private[http] object AlpnSwitch {
             def onPush(): Unit =
               grab(netIn) match {
                 case first @ SessionBytes(session, bytes) =>
-                  val chosen = chosenProtocolAccessor()
+                  val chosen = chosenProtocolAccessor(first)
                   chosen match {
                     case "h2" => install(http2Stack.addAttributes(HttpAttributes.tlsSessionInfo(session)), first)
                     case _    => install(http1Stack, first)
@@ -65,26 +57,19 @@ private[http] object AlpnSwitch {
           })
 
           private val ignorePull = new OutHandler { def onPull(): Unit = () }
-          private val failPush = new InHandler { def onPush(): Unit = throw new IllegalStateException("Wasn't pulled yet") }
 
           setHandler(netOut, ignorePull)
-          setHandler(requestOut, ignorePull)
-          setHandler(responseIn, failPush)
 
-          def install(serverImplementation: HttpServerBidiFlow, firstElement: SslTlsInbound): Unit = {
+          def install(serverImplementation: HttpServerFlow, firstElement: SslTlsInbound): Unit = {
             val networkSide = Flow.fromSinkAndSource(serverDataIn.sink, serverDataOut.source)
-            val userSide = Flow.fromSinkAndSource(serverRequestIn.sink, serverResponseOut.source)
 
             connect(netIn, serverDataOut, Some(firstElement))
-            connect(responseIn, serverResponseOut, None)
 
             connect(serverDataIn, netOut)
-            connect(serverRequestIn, requestOut)
 
             serverImplementation
               .addAttributes(inheritedAttributes) // propagate attributes to "real" server (such as HttpAttributes)
               .join(networkSide)
-              .join(userSide)
               .run()(interpreter.subFusingMaterializer)
           }
 
@@ -147,4 +132,10 @@ private[http] object AlpnSwitch {
         }
       }
     )
+
+  def byPreface(http1Stack: HttpServerFlow, http2Stack: HttpServerFlow): HttpServerFlow = {
+    def chooseProtocol(sessionBytes: SessionBytes): String =
+      if (sessionBytes.bytes.startsWith(Http2Protocol.ClientConnectionPreface)) "h2" else "http/1.1"
+    ProtocolSwitch(chooseProtocol, http1Stack, http2Stack)
+  }
 }

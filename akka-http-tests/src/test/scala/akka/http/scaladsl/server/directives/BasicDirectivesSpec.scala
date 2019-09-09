@@ -5,7 +5,7 @@
 package akka.http.scaladsl.server
 package directives
 
-import java.util.concurrent.ThreadLocalRandom
+import java.util.concurrent.{ ThreadLocalRandom, TimeoutException }
 
 import akka.http.scaladsl.model._
 import akka.stream.scaladsl.Source
@@ -181,6 +181,30 @@ class BasicDirectivesSpec extends RoutingSpec {
           }
         }
       } ~> check { responseAs[String] shouldEqual "1" }
+    }
+
+    "return 408 Request Timeout status on timeout" in {
+      val neverEndingEntity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, Source.maybe[ByteString])
+      val timeout = 10.milliseconds
+
+      Post("/abc", neverEndingEntity) ~> {
+        extractStrictEntity(timeout) { _ =>
+          complete("content")
+        }
+      } ~> check {
+        entityAs[String] shouldEqual s"Request timed out after $timeout while waiting for entity data"
+        status shouldEqual StatusCodes.RequestTimeout
+      }
+    }
+
+    "return 500 InternalServerError status if response generation timed out" in {
+      Get("/abc") ~> {
+        extractStrictEntity(1.second) { _ =>
+          throw new TimeoutException()
+        }
+      } ~> check {
+        status shouldEqual StatusCodes.InternalServerError
+      }
     }
   }
 }

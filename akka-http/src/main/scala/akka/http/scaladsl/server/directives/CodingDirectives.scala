@@ -9,6 +9,10 @@ import scala.collection.immutable
 import akka.http.scaladsl.model.headers.{ HttpEncoding, HttpEncodings }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.coding._
+import akka.stream.scaladsl.Flow
+import akka.util.ByteString
+
+import scala.util.control.NonFatal
 
 /**
  * @groupname coding Coding directives
@@ -72,12 +76,20 @@ trait CodingDirectives {
    * @group coding
    */
   def decodeRequestWith(decoder: Decoder): Directive0 = {
-    def applyDecoder =
+    def applyDecoder: Directive0 =
       if (decoder == NoCoding) pass
       else
         extractSettings flatMap { settings =>
           val effectiveDecoder = decoder.withMaxBytesPerChunk(settings.decodeMaxBytesPerChunk)
-          mapRequest(effectiveDecoder.decodeMessage(_)) & withSizeLimit(settings.decodeMaxSize)
+          mapRequest { msg =>
+            effectiveDecoder.decodeMessage(msg)
+              .transformEntityDataBytes(Flow[ByteString].mapError {
+                case NonFatal(e) =>
+                  IllegalRequestException(
+                    StatusCodes.BadRequest,
+                    ErrorInfo("The request's encoding is corrupt", e.getMessage))
+              })
+          } & withSizeLimit(settings.decodeMaxSize)
         }
 
     requestEntityEmpty | (

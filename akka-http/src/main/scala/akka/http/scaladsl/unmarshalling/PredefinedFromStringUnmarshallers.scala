@@ -45,14 +45,17 @@ trait PredefinedFromStringUnmarshallers {
       }
     }
 
-  implicit val uuidFromStringUnmarshaller: Unmarshaller[String, UUID] =
-    Unmarshaller.strict { string =>
-      try UUID.fromString(string)
-      catch {
-        case e: IllegalArgumentException =>
-          throw new IllegalArgumentException(s"'$string' is not a valid UUID value", e)
-      }
+  implicit val uuidFromStringUnmarshaller: Unmarshaller[String, UUID] = {
+    val validUuidPattern =
+      """[\da-fA-F]{8}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{12}""".r.pattern
+
+    Unmarshaller.strict[String, UUID] { string =>
+      if (validUuidPattern.matcher(string).matches)
+        UUID.fromString(string)
+      else
+        throw new IllegalArgumentException(s"'$string' is not a valid UUID value")
     }
+  }
 
   implicit def CsvSeq[T](implicit unmarshaller: Unmarshaller[String, T]): Unmarshaller[String, immutable.Seq[T]] =
     Unmarshaller.strict[String, immutable.Seq[String]] { string =>

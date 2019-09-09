@@ -62,7 +62,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     "properly bind a server" in {
       val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
       val probe = TestSubscriber.manualProbe[Http.IncomingConnection]()
-      val binding = Http().bind(hostname, port).toMat(Sink.fromSubscriber(probe))(Keep.left).run()
+      val binding = Http().bind(hostname, port).to(Sink.fromSubscriber(probe)).run()
       val sub = probe.expectSubscription() // if we get it we are bound
       Await.result(binding, 1.second.dilated)
       sub.cancel()
@@ -72,7 +72,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
       val probe = TestSubscriber.manualProbe[Http.IncomingConnection]()
       val settings = ServerSettings(system).withDefaultHttpPort(port)
-      val binding = Http().bind(hostname, settings = settings).toMat(Sink.fromSubscriber(probe))(Keep.left).run()
+      val binding = Http().bind(hostname, settings = settings).to(Sink.fromSubscriber(probe)).run()
       val sub = probe.expectSubscription() // if we get it we are bound
       val address = Await.result(binding, 1.second.dilated).localAddress
       address.getPort shouldEqual port
@@ -578,6 +578,7 @@ Host: example.com
         Try(Await.result(result, 2.seconds).utf8String) match {
           case scala.util.Success(body)                => fail(body)
           case scala.util.Failure(_: TimeoutException) => // Expected
+          case scala.util.Failure(other)               => fail(other)
         }
       } finally {
         responsePromise.failure(new TimeoutException())
@@ -739,7 +740,7 @@ Host: example.com
     }
 
     "produce a useful error message when connecting to a HTTP endpoint over HTTPS" in Utils.assertAllStagesStopped {
-      val dummyFlow = Flow.fromFunction((_: HttpRequest) => ???)
+      val dummyFlow = Flow[HttpRequest].map(_ => ???)
 
       val binding = Http().bindAndHandle(dummyFlow, "127.0.0.1", port = 0).futureValue
       val uri = "https://" + binding.localAddress.getHostString + ":" + binding.localAddress.getPort
@@ -767,7 +768,7 @@ Host: example.com
       val settings = configOverrides.toOption.fold(ServerSettings(system))(ServerSettings(_))
       val connections = Http().bind(hostname, port, settings = settings)
       val probe = TestSubscriber.manualProbe[Http.IncomingConnection]
-      val binding = connections.toMat(Sink.fromSubscriber(probe))(Keep.left).run()
+      val binding = connections.to(Sink.fromSubscriber(probe)).run()
       (probe, binding)
     }
     val connSourceSub = connSource.expectSubscription()

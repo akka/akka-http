@@ -115,8 +115,8 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
       } ~> check { responseAs[String] shouldEqual "Hello" }
     }
     "reject the request content if it has encoding 'gzip' but is corrupt" in {
-      // FIXME this causes both an error and a warning for the same request
-      EventFilter[IllegalRequestException](occurrences = 1).intercept {
+      // make sure there are no extra error logs
+      EventFilter[IllegalRequestException](occurrences = 0).intercept {
         EventFilter.warning(start = "Illegal request", occurrences = 1).intercept {
           Post("/", fromHexDump("000102")) ~> `Content-Encoding`(gzip) ~> {
             decodeRequestWith(Gzip) {
@@ -130,8 +130,8 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
       }
     }
     "reject truncated gzip request content" in {
-      // FIXME this causes both an error and a warning for the same request
-      EventFilter[IllegalRequestException](occurrences = 1).intercept {
+      // make sure there are no extra error logs
+      EventFilter[IllegalRequestException](occurrences = 0).intercept {
         EventFilter.warning(start = "Illegal request", occurrences = 1).intercept {
           Post("/", helloGzipped.dropRight(2)) ~> `Content-Encoding`(gzip) ~> {
             decodeRequestWith(Gzip) {
@@ -467,8 +467,8 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
       Post("/", "yes") ~> decodeRequest { echoRequestContent } ~> check { responseAs[String] shouldEqual "yes" }
     }
     "reject the request if it has a `Content-Encoding: deflate` header but the request is encoded with Gzip" in {
-      // FIXME this causes both an error and a warning for the same request
-      EventFilter[IllegalRequestException](occurrences = 1).intercept {
+      // make sure there are no extra error logs
+      EventFilter[IllegalRequestException](occurrences = 0).intercept {
         EventFilter.warning(start = "Illegal request", occurrences = 1).intercept {
           Post("/", helloGzipped) ~> `Content-Encoding`(deflate) ~>
             decodeRequest {

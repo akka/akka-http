@@ -24,6 +24,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
        loglevel = DEBUG
        loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
        http.server.log-unencrypted-network-bytes = off
+       http.server.http2.log-frames = on
 
        actor.serialize-creators = off
        actor.serialize-messages = off
@@ -38,7 +39,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
   override def expectedTestDuration = 5.minutes // because slow jenkins, generally finishes below 1 or 2 minutes
 
   val echo = (req: HttpRequest) => {
-    req.entity.toStrict(1.second.dilated).map { entity =>
+    req.entity.toStrict(5.second.dilated).map { entity =>
       HttpResponse().withEntity(HttpEntity(entity.data))
     }
   }
@@ -94,6 +95,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
       "5.1.1",
       "5.5",
       "6.1",
+      "6.3",
       "6.5.2",
       "6.9",
       "6.9.1",
@@ -156,7 +158,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
       ) ++
         specSectionNumber.toList.flatMap(number => Seq("-s", number))
 
-      println(s"exec: $command")
+      log.debug(s"Executing h2spec: $command")
       val aggregateTckLogs = ProcessLogger(
         out => {
           if (out.contains("All tests passed")) ()

@@ -15,17 +15,16 @@ import akka.http.javadsl.model.HttpResponse;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 
-//#bindAndHandleAsync
+//#bindAndHandleSecure
 import akka.http.javadsl.Http;
 import static akka.http.javadsl.ConnectHttp.toHostHttps;
 
-//#bindAndHandleAsync
+//#bindAndHandleSecure
 
-//#bindAndHandleWithoutNegotiation
-import akka.http.javadsl.UseHttp2;
+//#bindAndHandlePlain
 import static akka.http.javadsl.ConnectHttp.toHost;
 
-//#bindAndHandleWithoutNegotiation
+//#bindAndHandlePlain
 
 class Http2Test {
   void testBindAndHandleAsync() {
@@ -34,20 +33,20 @@ class Http2Test {
     Materializer materializer = ActorMaterializer.create(system);
     HttpsConnectionContext httpsConnectionContext = null;
 
-    //#bindAndHandleAsync
+    //#bindAndHandleSecure
     Http.get(system)
       .bindAndHandleAsync(
         asyncHandler,
         toHostHttps("127.0.0.1", 8443).withCustomHttpsContext(httpsConnectionContext),
         materializer);
-    //#bindAndHandleAsync
+    //#bindAndHandleSecure
 
-    //#bindAndHandleWithoutNegotiation
+    //#bindAndHandlePlain
     Http.get(system)
       .bindAndHandleAsync(
         asyncHandler,
-        toHost("127.0.0.1", 8080, UseHttp2.always()),
+        toHost("127.0.0.1", 8080),
         materializer);
-    //#bindAndHandleWithoutNegotiation
+    //#bindAndHandlePlain
   }
 }

@@ -18,6 +18,7 @@ import scala.util.{ Failure, Success }
 import scala.util.matching.Regex
 import akka.util.ByteString
 import akka.actor._
+import akka.http.impl.engine.parsing.ParserOutput.RequestStart
 import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse }
 
 package object util {
@@ -76,6 +77,9 @@ package object util {
 
   private[http] implicit class RichHttpRequest(val request: HttpRequest) extends AnyVal {
     def debugString: String = s"${request.method.value} ${request.uri.path} ${entityDebugInfo(request.entity)}"
+  }
+  private[http] implicit class RichRequestStart(val request: RequestStart) extends AnyVal {
+    def debugString: String = s"${request.method.value} ${request.uri.path}"
   }
   private[http] implicit class RichHttpResponse(val response: HttpResponse) extends AnyVal {
     def debugString: String = s"${response.status.value} ${entityDebugInfo(response.entity)}"

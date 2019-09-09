@@ -12,14 +12,14 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.marshalli
 # Removal of deprecated methods 10.0.x before 10.0.11
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.marshalling.Marshaller.fromDataToEntity")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.coding.Gzip.encode")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.coding.Gzip.decode")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.coding.Gzip.decode")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.coding.Deflate.encode")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.coding.Deflate.decode")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.coding.Deflate.decode")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.coding.NoCoding.encode")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.coding.NoCoding.decode")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.coding.NoCoding.decode")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.coding.Encoder.encode")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.coding.Decoder.decode")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.coding.Decoder.decode")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.coding.Decoder.decode")
 
 # Commonized code in PredefinedToResponseMarshallers #1877
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers.fromEntityStreamingSupportAndByteStringMarshaller")

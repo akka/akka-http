@@ -486,10 +486,8 @@ trait PathMatchers {
    * @group pathmatcher
    */
   val JavaUUID: PathMatcher1[UUID] =
-    PathMatcher("""[\da-fA-F]{8}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{12}""".r) flatMap { string =>
-      try Some(UUID.fromString(string))
-      catch { case _: IllegalArgumentException => None }
-    }
+    PathMatcher("""[\da-fA-F]{8}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{12}""".r)
+      .map(UUID.fromString)
 
   /**
    * A PathMatcher that always matches, doesn't consume anything and extracts nothing.

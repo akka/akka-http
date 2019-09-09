@@ -5,6 +5,8 @@
 package akka.http.scaladsl.server
 package directives
 
+import java.util.concurrent.TimeoutException
+
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
@@ -395,7 +397,12 @@ trait BasicDirectives {
     Directive { inner => ctx =>
       import ctx.{ executionContext, materializer }
 
-      ctx.request.entity.toStrict(timeout, maxBytes).flatMap { strictEntity =>
+      ctx.request.entity.toStrict(timeout, maxBytes).recover {
+        case _: TimeoutException =>
+          throw IllegalRequestException(
+            StatusCodes.RequestTimeout,
+            ErrorInfo(s"Request timed out after $timeout while waiting for entity data", "Consider increasing the timeout for toStrict"))
+      }.flatMap { strictEntity =>
         val newCtx = ctx.mapRequest(_.copy(entity = strictEntity))
         inner(())(newCtx)
       }

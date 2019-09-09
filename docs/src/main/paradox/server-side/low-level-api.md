@@ -89,7 +89,7 @@ if HTTP pipelining is enabled where processing of multiple incoming requests may
 `handleWithSyncHandler` or `handleWithAsyncHandler`, or the `map` or `mapAsync` stream operators, this
 requirement will be automatically fulfilled.
 
-See @ref[Routing DSL Overview](../routing-dsl/overview.md#http-routing) for a more convenient high-level DSL to create request handlers.
+See @ref[Routing DSL Overview](../routing-dsl/overview.md) for a more convenient high-level DSL to create request handlers.
 
 ### Streaming Request/Response Entities
 

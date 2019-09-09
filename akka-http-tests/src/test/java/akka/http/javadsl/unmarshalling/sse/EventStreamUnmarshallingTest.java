@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 import static scala.compat.java8.FutureConverters.toJava;
 
 public class EventStreamUnmarshallingTest extends JUnitSuite {

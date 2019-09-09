@@ -84,14 +84,17 @@ project](https://github.com/akka/akka-http-java-seed.g8)].
 ## Routing DSL for HTTP servers
 
 The high-level, routing API of Akka HTTP provides a DSL to describe HTTP "routes" and how they should be handled.
-Each route is composed of one or more level of `Directive` s that narrows down to handling one specific type of
+Each route is composed of one or more level of @apidoc[Directives] that narrows down to handling one specific type of
 request.
 
 For example one route might start with matching the `path` of the request, only matching if it is "/hello", then
 narrowing it down to only handle HTTP `get` requests and then `complete` those with a string literal, which
 will be sent back as a HTTP OK with the string as response body.
 
-The @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@apidoc[Route]] created using the Route DSL is then "bound" to a port to start serving HTTP requests:
+The
+@scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]
+@java[@javadoc[Route](akka.http.scaladsl.server.Route)]
+created using the Route DSL is then "bound" to a port to start serving HTTP requests:
 
 Scala
 :   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #minimal-routing-example }
@@ -122,7 +125,7 @@ for details):
 
 @@@
 @@@ div { .group-java }
-JSON support is possible in `akka-http` by the use of Jackson, an external artifact (see @ref[JSON Support](common/json-support.md#json-jackson-support-java)
+JSON support is possible in `akka-http` by the use of Jackson, an external artifact (see @ref[JSON Support](common/json-support.md#jackson-support)
 for details):
 
 @@dependency [sbt,Gradle,Maven] {
@@ -148,7 +151,7 @@ When you run this server, you can update the inventory via `curl -H "Content-Typ
 via `curl http://localhost:8080/item/42`.
 
 The logic for the marshalling and unmarshalling JSON in this example is provided by the @scala["spray-json"]@java["Jackson"] library
-(details on how to use that here: @scala[@ref[JSON Support](common/json-support.md))]@java[@ref[JSON Support](common/json-support.md#json-jackson-support-java))].
+(details on how to use that here: @scala[@ref[JSON Support](common/json-support.md))]@java[@ref[JSON Support](common/json-support.md#jackson-support))].
 
 ## Streaming
 

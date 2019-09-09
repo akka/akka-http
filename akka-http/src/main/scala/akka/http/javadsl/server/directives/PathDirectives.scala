@@ -54,12 +54,14 @@ abstract class PathDirectives extends ParameterDirectives {
    *   // redirect '/users/' to '/users', '/users/:userId/' to '/users/:userId'
    *   redirectToNoTrailingSlashIfPresent(Found) {
    *     pathPrefix("users") {
-   *       pathEnd {
-   *         // user list ...
-   *       } ~
-   *       path(UUID) { userId =>
-   *         // user profile ...
-   *       }
+   *       concat(
+   *         pathEnd {
+   *           // user list ...
+   *         },
+   *         path(UUID) { userId =>
+   *           // user profile ...
+   *         }
+   *       )
    *     }
    *   }
    * }

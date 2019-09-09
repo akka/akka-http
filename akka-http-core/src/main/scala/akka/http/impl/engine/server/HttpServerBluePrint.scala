@@ -373,7 +373,7 @@ private[http] object HttpServerBluePrint {
     val shape = new BidiShape(requestParsingIn, requestPrepOut, httpResponseIn, responseCtxOut)
 
     def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
-      val pullHttpResponseIn = () => pull(httpResponseIn)
+      val pullHttpResponseIn = () => tryPull(httpResponseIn)
       var openRequests = immutable.Queue[RequestStart]()
       var oneHundredContinueResponsePending = false
       var pullSuppressed = false
@@ -414,9 +414,20 @@ private[http] object HttpServerBluePrint {
 
       setHandler(httpResponseIn, new InHandler {
         def onPush(): Unit = {
-          val response = grab(httpResponseIn)
           val requestStart = openRequests.head
           openRequests = openRequests.tail
+
+          val response0 = grab(httpResponseIn)
+          val response =
+            if (response0.entity.isStrict) response0 // response stream cannot fail
+            else response0.mapEntity { e =>
+              val (newEntity, fut) = HttpEntity.captureTermination(e)
+              fut.failed.foreach { ex =>
+                log.error(ex, s"Response stream for [${requestStart.debugString}] failed with '${ex.getMessage}'. Aborting connection.")
+              }(materializer.executionContext)
+              newEntity
+            }
+
           val isEarlyResponse = messageEndPending && openRequests.isEmpty
           if (isEarlyResponse && response.status.isSuccess)
             log.warning(

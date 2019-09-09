@@ -33,29 +33,28 @@ See the @ref[HTTPS section](server-https-support.md) for how to set up HTTPS.
 You can use @scala[@scaladoc[Http().bindAndHandleAsync](akka.http.scaladsl.HttpExt)]@java[@javadoc[Http().get(system).bindAndHandleAsync()](akka.http.javadsl.HttpExt)] as long as you followed the above steps:
 
 Scala
-:   @@snip[Http2Spec.scala]($test$/scala/docs/http/scaladsl/Http2Spec.scala) { #bindAndHandleAsync }
+:   @@snip[Http2Spec.scala]($test$/scala/docs/http/scaladsl/Http2Spec.scala) { #bindAndHandleSecure }
 
 Java
-:   @@snip[Http2Test.java]($test$/java/docs/http/javadsl/Http2Test.java) { #bindAndHandleAsync }
+:   @@snip[Http2Test.java]($test$/java/docs/http/javadsl/Http2Test.java) { #bindAndHandleSecure }
 
 Note that `bindAndHandle` currently does not support HTTP/2, you must use `bindAndHandleAsync`.
 
 ### HTTP/2 without HTTPS
 
-While un-encrypted connections are allowed by HTTP/2, this is [generally discouraged](https://http2.github.io/faq/#does-http2-require-encryption).
+While un-encrypted connections are allowed by HTTP/2, this is [sometimes discouraged](https://http2.github.io/faq/#does-http2-require-encryption).
 
 There are 2 ways to implement un-encrypted HTTP/2 connections: by using the
 [HTTP Upgrade mechanism](https://httpwg.org/specs/rfc7540.html#discover-http) or by starting communication in HTTP/2 directly.
 The latter only makes sense when you can assume the client has [Prior Knowledge](https://httpwg.org/specs/rfc7540.html#known-http) of HTTP/2 support.
 
-We currently only support the approach requiring [Prior Knowledge](https://httpwg.org/specs/rfc7540.html#known-http):
+We currently only support the approach requiring [Prior Knowledge](https://httpwg.org/specs/rfc7540.html#known-http). It is automatically enabled when HTTP/2 is enabled, on the same port:
 
 Scala
-:   @@snip[Http2Spec.scala]($test$/scala/docs/http/scaladsl/Http2Spec.scala) { #bindAndHandleWithoutNegotiation }
+:   @@snip[Http2Spec.scala]($test$/scala/docs/http/scaladsl/Http2Spec.scala) { #bindAndHandlePlain }
 
 Java
-:   @@snip[Http2Test.java]($test$/java/docs/http/javadsl/Http2Test.java) { #bindAndHandleWithoutNegotiation }
-
+:   @@snip[Http2Test.java]($test$/java/docs/http/javadsl/Http2Test.java) { #bindAndHandlePlain }
 
 ## Testing with cURL
 

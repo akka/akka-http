@@ -8,3 +8,9 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.Ur
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ServerSettings.getWebsocketSettings")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ClientConnectionSettings.websocketSettings")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ServerSettings.websocketSettings")
+
+# Not caught my the version of mima in use at the time:
+
+# Only a change in variance
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.javadsl.model.Multiparts.createFormDataFromSourceParts")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.model.Multipart#FormData.createSource")

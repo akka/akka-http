@@ -7,19 +7,20 @@ package akka.http.impl.engine.http2
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
+import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.framing.{ Http2FrameParsing, Http2FrameRendering }
 import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompression }
 import akka.http.impl.engine.parsing.HttpHeaderParser
+import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.http.scaladsl.settings.{ Http2ServerSettings, ParserSettings, ServerSettings }
+import akka.stream.TLSProtocol._
 import akka.stream.scaladsl.{ BidiFlow, Flow, Source }
 import akka.util.ByteString
 
 import scala.concurrent.{ ExecutionContext, Future }
-
-import FrameEvent._
 
 /**
  * Represents one direction of an Http2 substream.
@@ -44,11 +45,16 @@ private[http2] final case class ChunkedHttp2SubStream(
 @InternalApi
 private[http] object Http2Blueprint {
 
+  def serverStackTls(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
+    serverStack(settings, log) atop
+      unwrapTls atop
+      logTLSBidiBySetting("server-plain-text", settings.logUnencryptedNetworkBytes)
+
   // format: OFF
   def serverStack(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
     httpLayer(settings, log) atop
       demux(settings.http2Settings) atop
-      // FrameLogger.bidi atop // enable for debugging
+      FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
       hpackCoding() atop
       // LogByteStringTools.logToStringBidi("framing") atop // enable for debugging
       framing()
@@ -124,4 +130,9 @@ private[http] object Http2Blueprint {
       case ParserSettings.ErrorLoggingVerbosity.Simple => log.warning(info.summary)
       case ParserSettings.ErrorLoggingVerbosity.Full   => log.warning(info.formatPretty)
     }
+
+  private[http2] val unwrapTls: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, ByteString, NotUsed] =
+    BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect {
+      case SessionBytes(_, bytes) => bytes
+    })
 }

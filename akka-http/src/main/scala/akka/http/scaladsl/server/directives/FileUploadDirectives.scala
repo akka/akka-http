@@ -6,16 +6,19 @@ package akka.http.scaladsl.server.directives
 
 import java.io.File
 
+import akka.Done
 import akka.annotation.ApiMayChange
 import akka.http.scaladsl.server.{ Directive, Directive1, MissingFormFieldRejection }
 import akka.http.scaladsl.model.{ ContentType, Multipart }
 import akka.util.ByteString
 
 import scala.collection.immutable
-import scala.concurrent.Future
+import scala.concurrent.{ Future, Promise }
 import akka.stream.scaladsl._
 import akka.http.javadsl
 import akka.http.scaladsl.server.RouteResult
+
+import scala.util.{ Failure, Success }
 
 /**
  * @groupname fileupload File upload directives
@@ -122,23 +125,40 @@ trait FileUploadDirectives {
         import ctx.materializer
         import ctx.executionContext
 
+        // We complete the directive through this promise as soon as we encounter the
+        // selected part. This way the inner directive can consume it, after which we will
+        // proceed to consume the rest of the request, discarding any follow-up parts.
+        val done = Promise[RouteResult]()
+
         // Streamed multipart data must be processed in a certain way, that is, before you can expect the next part you
         // must have fully read the entity of the current part.
         // That means, we cannot just do `formData.parts.runWith(Sink.seq)` and then look for the part we are interested in
         // but instead, we must actively process all the parts, regardless of whether we are interested in the data or not.
-        // Fortunately, continuation passing style of routing allows adding pre- and post-processing quite naturally.
         formData.parts
-          .runFoldAsync(Option.empty[RouteResult]) {
-            case (None, part) if part.filename.isDefined && part.name == fieldName =>
-
+          .mapAsync(parallelism = 1) {
+            case part if !done.isCompleted && part.filename.isDefined && part.name == fieldName =>
               val data = (FileInfo(part.name, part.filename.get, part.entity.contentType), part.entity.dataBytes)
-              inner(Tuple1(data))(ctx).map(Some(_))
-
-            case (res, part) =>
-              part.entity.discardBytes()
-              Future.successful(res)
+              inner(Tuple1(data))(ctx).map { result =>
+                done.success(result)
+              }
+            case part =>
+              part.entity.discardBytes().future
           }
-          .map(_.getOrElse(RouteResult.Rejected(MissingFormFieldRejection(fieldName) :: Nil)))
+          .runWith(Sink.ignore)
+          .onComplete {
+            case Success(Done) =>
+              if (done.isCompleted)
+                () // OK
+              else
+                done.success(RouteResult.Rejected(MissingFormFieldRejection(fieldName) :: Nil))
+            case Failure(cause) =>
+              if (done.isCompleted)
+                () // consuming the other parts failed though we already started processing the selected part.
+              else
+                done.failure(cause)
+          }
+
+        done.future
       }
     }
 

@@ -5,6 +5,8 @@
 package akka.http.scaladsl.server
 
 import scala.collection.immutable
+import scala.concurrent.Future
+import akka.annotation.InternalApi
 import akka.http.scaladsl.server.directives.RouteDirectives
 import akka.http.scaladsl.server.util._
 import akka.http.scaladsl.util.FastFuture
@@ -45,10 +47,15 @@ abstract class Directive[L](implicit val ev: Tuple[L]) {
     def validatedMap[R](f: L => R)(implicit tupler: Tupler[R]): Directive[tupler.Out] =
       Directive[tupler.Out] { inner =>
         tapply { values => ctx =>
-          try inner(tupler(f(values)))(ctx)
-          catch {
-            case e: IllegalArgumentException => ctx.reject(ValidationRejection(e.getMessage.nullAsEmpty, Some(e)))
+          def futureRouteResult(): Future[RouteResult] = {
+            val r: R = try f(values)
+            catch {
+              case e: IllegalArgumentException =>
+                return ctx.reject(ValidationRejection(e.getMessage.nullAsEmpty, Some(e)))
+            }
+            inner(tupler(r))(ctx)
           }
+          futureRouteResult()
         }
       }(tupler.OutIsTuple)
 
@@ -144,6 +151,16 @@ object Directive {
     r => directive.tapply(_ => r)
 
   /**
+   * Adds helper functions to `Directive0`
+   */
+  implicit class Directive0Support(val underlying: Directive0) extends AnyVal {
+    def wrap[R](f: => Directive[R]): Directive[R] =
+      underlying.tflatMap { _ =>
+        f
+      }(Tuple.yes[R]) // we will create a Directive[R], so we know it will be tupled correctly
+  }
+
+  /**
    * "Standard" transformers for [[Directive1]].
    * Easier to use than `tmap`, `tflatMap`, etc. defined on [[Directive]] itself,
    * because they provide transparent conversion from [[Tuple1]].
@@ -165,10 +182,15 @@ object Directive {
       underlying.tcollect({ case Tuple1(value) if pf.isDefinedAt(value) => pf(value) }, rejections: _*)
   }
 
-  // previous, non-value class implementation kept around for binary compatibility
-  // TODO: remove with next binary incompatible release bump
-  private[server] def SingleValueModifiers[T](underlying: Directive1[T]): SingleValueModifiers[T] =
-    new SingleValueModifiers(underlying)
+  /**
+   * previous, non-value class implementation kept around for binary compatibility
+   * TODO: remove with next binary incompatible release bump
+   *
+   * INTERNAL API
+   */
+  @InternalApi
+  def SingleValueModifiers[T](underlying: Directive1[T]): Directive.SingleValueModifiers[T] =
+    new Directive.SingleValueModifiers(underlying)
   private[server] class SingleValueModifiers[T](underlying: Directive1[T]) {
     def map[R](f: T => R)(implicit tupler: Tupler[R]): Directive[tupler.Out] =
       underlying.map(f)

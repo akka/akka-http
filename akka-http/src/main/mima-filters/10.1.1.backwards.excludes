@@ -2,3 +2,8 @@
 # Both traits are de-facto @DoNotInherit
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.marshalling.PredefinedToResponseMarshallers.fromEntityStreamingSupportAndByteStringMarshaller")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.marshalling.LowPriorityToResponseMarshallerImplicits.fromEntityStreamingSupportAndByteStringSourceMarshaller")
+
+# The following was not caught by the version of mima in use at the time:
+
+# scaladsl:
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.marshalling.Marshaller.fromEntityStreamingSupportAndByteStringMarshaller")

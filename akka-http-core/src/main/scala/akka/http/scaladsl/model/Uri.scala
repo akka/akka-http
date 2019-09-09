@@ -479,14 +479,23 @@ object Uri {
     def startsWithSlash: Boolean
     def startsWithSegment: Boolean
     def endsWithSlash: Boolean = {
-      import Path.{ Empty => PEmpty, _ }
-      @tailrec def check(path: Path): Boolean = path match {
-        case PEmpty           => false
-        case Slash(PEmpty)    => true
-        case Slash(tail)      => check(tail)
-        case Segment(_, tail) => check(tail)
+      @tailrec def rec(path: Path): Boolean = path match {
+        case Path.Empty             => false
+        case Path.Slash(Path.Empty) => true
+        case Path.Slash(tail)       => rec(tail)
+        case Path.Segment(_, tail)  => rec(tail)
       }
-      check(this)
+      rec(this)
+    }
+    final def endsWith(suffix: String, ignoreTrailingSlash: Boolean = false): Boolean = {
+      @tailrec def rec(path: Path, lastSegment: String = ""): Boolean =
+        path match {
+          case Path.Empty               => lastSegment.endsWith(suffix)
+          case Path.Slash(Path.Empty)   => ignoreTrailingSlash && lastSegment.endsWith(suffix)
+          case Path.Slash(tail)         => rec(tail)
+          case Path.Segment(head, tail) => rec(tail, head)
+        }
+      rec(this)
     }
     def head: Head
     def tail: Path

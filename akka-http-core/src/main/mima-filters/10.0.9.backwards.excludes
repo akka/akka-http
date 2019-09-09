@@ -13,3 +13,8 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.setting
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ServerSettingsImpl.copy")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ServerSettingsImpl.this")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ServerSettingsImpl.apply")
+
+# Not caught by the version of mima in use at the time:
+
+# scaladsl
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.ClientTransport#HttpsProxyTransport.unapply")

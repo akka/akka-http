@@ -8,10 +8,8 @@ import java.util.concurrent.{ CompletionException, CompletionStage }
 
 import akka.dispatch.ExecutionContexts
 import akka.http.javadsl.marshalling.Marshaller
-import akka.japi.Util
 
 import scala.annotation.varargs
-import scala.collection.JavaConverters._
 import akka.http.impl.model.JavaUri
 import akka.http.javadsl.model.HttpHeader
 import akka.http.javadsl.model.HttpResponse
@@ -122,14 +120,14 @@ abstract class RouteDirectives extends RespondWithDirectives {
    * Completes the request using the given status code and headers, marshalling the given value as response entity.
    */
   def complete[T](status: StatusCode, headers: java.lang.Iterable[HttpHeader], value: T, marshaller: Marshaller[T, RequestEntity]) = RouteAdapter {
-    D.complete(ToResponseMarshallable(value)(fromToEntityMarshaller(status.asScala, Util.immutableSeq(headers).map(_.asScala))(marshaller))) // TODO avoid the map()
+    D.complete(ToResponseMarshallable(value)(fromToEntityMarshaller(status.asScala, headers.asScala)(marshaller)))
   }
 
   /**
    * Completes the request using the given status code, headers, and response entity.
    */
   def complete(status: StatusCode, headers: java.lang.Iterable[HttpHeader], entity: ResponseEntity) = RouteAdapter {
-    D.complete(scaladsl.model.HttpResponse(status = status.asScala, entity = entity.asScala, headers = Util.immutableSeq(headers).map(_.asScala))) // TODO avoid the map()
+    D.complete(scaladsl.model.HttpResponse(status = status.asScala, entity = entity.asScala, headers = headers.asScala))
   }
 
   /**
@@ -169,14 +167,14 @@ abstract class RouteDirectives extends RespondWithDirectives {
    * Completes the request as HTTP 200 OK, adding the given headers, and marshalling the given value as response entity.
    */
   def complete[T](headers: java.lang.Iterable[HttpHeader], value: T, marshaller: Marshaller[T, RequestEntity]) = RouteAdapter {
-    D.complete(ToResponseMarshallable(value)(fromToEntityMarshaller(headers = Util.immutableSeq(headers).map(_.asScala))(marshaller))) // TODO can we avoid the map() ?
+    D.complete(ToResponseMarshallable(value)(fromToEntityMarshaller(headers = headers.asScala)(marshaller)))
   }
 
   /**
    * Completes the request as HTTP 200 OK, adding the given headers and response entity.
    */
   def complete(headers: java.lang.Iterable[HttpHeader], entity: ResponseEntity) = RouteAdapter {
-    D.complete(scaladsl.model.HttpResponse(headers = headers.asScala.toVector.map(_.asScala), entity = entity.asScala)) // TODO can we avoid the map() ?
+    D.complete(scaladsl.model.HttpResponse(headers = headers.asScala, entity = entity.asScala))
   }
 
   /**

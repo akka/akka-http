@@ -32,6 +32,9 @@ trait Http2ServerSettings extends javadsl.settings.Http2ServerSettings { self: H
   def maxConcurrentStreams: Int
   override def withMaxConcurrentStreams(newValue: Int): Http2ServerSettings = copy(maxConcurrentStreams = newValue)
 
+  def logFrames: Boolean
+  override def withLogFrames(shouldLog: Boolean): Http2ServerSettings = copy(logFrames = shouldLog)
+
   @InternalApi
   private[http] def internalSettings: Option[Http2InternalServerSettings]
   @InternalApi
@@ -49,6 +52,7 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
     requestEntityChunkSize:            Int,
     incomingConnectionLevelBufferSize: Int,
     incomingStreamLevelBufferSize:     Int,
+    logFrames:                         Boolean,
     internalSettings:                  Option[Http2InternalServerSettings])
     extends Http2ServerSettings {
     require(requestEntityChunkSize > 0, "request-entity-chunk-size must be > 0")
@@ -62,6 +66,7 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
       requestEntityChunkSize = c.getIntBytes("request-entity-chunk-size"),
       incomingConnectionLevelBufferSize = c.getIntBytes("incoming-connection-level-buffer-size"),
       incomingStreamLevelBufferSize = c.getIntBytes("incoming-stream-level-buffer-size"),
+      logFrames = c.getBoolean("log-frames"),
       None // no possibility to configure internal settings with config
     )
   }

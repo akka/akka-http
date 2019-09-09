@@ -34,9 +34,9 @@ object Route {
    */
   def seal(route: Route)(implicit
     routingSettings: RoutingSettings = null,
-                         parserSettings:   ParserSettings   = null,
-                         rejectionHandler: RejectionHandler = RejectionHandler.default,
-                         exceptionHandler: ExceptionHandler = null): Route = {
+                         @deprecated("For binary compatibility. parserSettings is never used", since = "10.1.8") parserSettings:ParserSettings = null,
+                         rejectionHandler:                                                                                    RejectionHandler = RejectionHandler.default,
+                         exceptionHandler:                                                                                    ExceptionHandler = null): Route = {
     import directives.ExecutionDirectives._
     // optimized as this is the root handler for all akka-http applications
     BasicDirectives.extractSettings { theSettings =>
@@ -79,7 +79,7 @@ object Route {
     val effectiveEC = if (executionContext ne null) executionContext else materializer.executionContext
 
     {
-      implicit val executionContext = effectiveEC // overrides parameter
+      implicit val executionContext: ExecutionContextExecutor = effectiveEC // overrides parameter
       val effectiveParserSettings = if (parserSettings ne null) parserSettings else ParserSettings(ActorMaterializerHelper.downcast(materializer).system)
       val sealedRoute = seal(route)
       request =>

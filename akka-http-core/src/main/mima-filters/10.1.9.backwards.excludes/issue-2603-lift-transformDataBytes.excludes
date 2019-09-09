@@ -1,0 +1,4 @@
+# Scala 2.11 only problem
+# HttpEntity is sealed, so a compatibility problem would only occur if a Java user would have implemented
+# scaladsl.model.HttpEntity
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity.transformDataBytes")

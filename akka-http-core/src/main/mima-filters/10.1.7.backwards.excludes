@@ -35,3 +35,22 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.Conn
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.copy$default$*")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.copy")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.this")
+
+# Not caught by the mima version in use at the time:
+
+# Actually safe, we now promise to render to a `Seq` rather than any `Iterable`
+# for a bunch of renderers
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.model.headers.*.*Renderer")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.engine.rendering.RenderSupport.trailerRenderer")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.util.Renderer.defaultSeqRenderer")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.util.Renderer.seqRenderer")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.util.Renderer.genericSeqRenderer")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.util.Renderer.defaultSeqRenderer")
+
+# Safe, since more specific (CloseRequested rather than Object)
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.unapply")
+
+# Internal API's:
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.model.parser.*.field-names")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.curried")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.tupled")

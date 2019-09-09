@@ -13,11 +13,12 @@ import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import akka.testkit._
+import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class FileUploadDirectivesSpec extends RoutingSpec {
+class FileUploadDirectivesSpec extends RoutingSpec with Eventually {
 
   // tests touches filesystem, so reqs may take longer than the default of 1.second to complete
   implicit val routeTimeout = RouteTestTimeout(3.seconds.dilated)
@@ -170,7 +171,13 @@ class FileUploadDirectivesSpec extends RoutingSpec {
         }
       }
 
-    "stream the file upload" in {
+    def streamingEcho =
+      fileUpload("field2") {
+        case (_, bytes) =>
+          complete(HttpEntity.Chunked.fromData(ContentTypes.`application/octet-stream`, bytes))
+      }
+
+    "echo a strict file upload" in {
       val route = echoAsAService
 
       val str1 = "some data"
@@ -186,7 +193,55 @@ class FileUploadDirectivesSpec extends RoutingSpec {
       }
     }
 
-    "stream the first file upload if multiple with the same name are posted" in {
+    "echo a streaming file upload" in {
+      val snip = "Asdfasdfasdfasdf"
+      val payload = Source(List.fill(100)(ByteString(snip)))
+
+      val multipartForm =
+        Multipart.FormData(
+          Multipart.FormData.BodyPart(
+            "field2",
+            HttpEntity.IndefiniteLength(ContentTypes.`text/plain(UTF-8)`, payload),
+            Map("filename" -> "data2.txt")
+          )
+        )
+
+      Post("/", multipartForm) ~> streamingEcho ~> check {
+        status shouldEqual StatusCodes.OK
+        responseAs[String] shouldEqual (snip * 100)
+      }
+    }
+
+    "echo a streaming file upload when there are other parts before and after it" in {
+      val snip = "Asdfasdfasdfasdf"
+      val payload = Source(List.fill(100)(ByteString(snip)))
+
+      val multipartForm =
+        Multipart.FormData(
+          Multipart.FormData.BodyPart(
+            "field1",
+            HttpEntity.IndefiniteLength(ContentTypes.`text/plain(UTF-8)`, Source(List.fill(100)(ByteString("field1data")))),
+            Map("filename" -> "data1.txt")
+          ),
+          Multipart.FormData.BodyPart(
+            "field2",
+            HttpEntity.IndefiniteLength(ContentTypes.`text/plain(UTF-8)`, payload),
+            Map("filename" -> "data2.txt")
+          ),
+          Multipart.FormData.BodyPart(
+            "field3",
+            HttpEntity.IndefiniteLength(ContentTypes.`text/plain(UTF-8)`, Source(List.fill(100)(ByteString("field3data")))),
+            Map("filename" -> "data3.txt")
+          )
+        )
+
+      Post("/", multipartForm) ~> streamingEcho ~> check {
+        status shouldEqual StatusCodes.OK
+        responseAs[String] shouldEqual (snip * 100)
+      }
+    }
+
+    "echo the first file upload if multiple with the same name are posted" in {
       val route = echoAsAService
 
       val str1 = "some data"
@@ -270,7 +325,9 @@ class FileUploadDirectivesSpec extends RoutingSpec {
       Post("/", multipartForm) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[String] shouldEqual str1
-        secondWasFullyRead shouldEqual true
+        eventually {
+          secondWasFullyRead shouldEqual true
+        }
       }
     }
 
