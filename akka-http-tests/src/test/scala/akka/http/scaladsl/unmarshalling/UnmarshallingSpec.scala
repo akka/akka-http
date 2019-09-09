@@ -10,6 +10,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshaller.EitherUnmarshallingExceptio
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import akka.http.scaladsl.testkit.ScalatestUtils
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.MediaType.WithFixedCharset
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model._
 import akka.testkit._
@@ -99,6 +100,16 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
     "should handle media ranges of types with missing charset by assuming UTF-8 charset when matching" in {
       val um = Unmarshaller.stringUnmarshaller.forContentTypes(MediaTypes.`text/plain`)
       Await.result(um(HttpEntity(MediaTypes.`text/plain`.withMissingCharset, "Hêllö".getBytes("utf-8"))), 1.second.dilated) should ===("Hêllö")
+    }
+
+    "should handle custom media types case insensitively when matching" in {
+      val `application/CuStOm`: WithFixedCharset =
+        MediaType.customWithFixedCharset("application", "CuStOm", HttpCharsets.`UTF-8`)
+      val `application/custom`: WithFixedCharset =
+        MediaType.customWithFixedCharset("application", "custom", HttpCharsets.`UTF-8`)
+
+      val um = Unmarshaller.stringUnmarshaller.forContentTypes(`application/CuStOm`)
+      Await.result(um(HttpEntity(`application/custom`, "customValue")), 1.second.dilated) should ===("customValue")
     }
   }
 

@@ -4,6 +4,7 @@
 
 package akka.http.scaladsl.model
 
+import akka.annotation.DoNotInherit
 import akka.http.impl.util._
 import akka.http.javadsl.{ model => jm }
 import akka.http.impl.util.JavaMapping.Implicits._
@@ -30,9 +31,15 @@ import akka.http.impl.util.JavaMapping.Implicits._
  *    similarly to binary MediaTypes, do not require the addition of an [[HttpCharset]] instances to form a
  *    [[ContentType]]. The most prominent example is probably `application/json` which must always be UTF-8 encoded.
  *    Like binary MediaTypes `WithFixedCharset` types can be implicitly converted to a [[ContentType]].
+ *
+ * Not for user extension.
  */
-sealed abstract class MediaType extends jm.MediaType with LazyValueBytesRenderable with WithQValue[MediaRange] {
+@DoNotInherit
+sealed abstract class MediaType(_mainType: String, _subType: String) extends jm.MediaType with LazyValueBytesRenderable with WithQValue[MediaRange] {
   import MediaType.Compressibility
+
+  val mainType: String = _mainType.toRootLowerCase
+  val subType: String = _subType.toRootLowerCase
 
   def fileExtensions: List[String]
   def params: Map[String, String]
@@ -197,8 +204,9 @@ object MediaType {
     r.get
   }
 
-  sealed abstract class Binary(val value: String, val mainType: String, val subType: String, val comp: Compressibility,
-                               val fileExtensions: List[String]) extends MediaType with jm.MediaType.Binary {
+  @DoNotInherit
+  sealed abstract class Binary(val value: String, _mainType: String, _subType: String, val comp: Compressibility,
+                               val fileExtensions: List[String]) extends MediaType(_mainType, _subType) with jm.MediaType.Binary {
     def binary = true
     def params: Map[String, String] = Map.empty
     def withParams(params: Map[String, String]): Binary with MediaType =
@@ -212,16 +220,19 @@ object MediaType {
     def toContentType: ContentType.Binary = ContentType(this)
   }
 
-  sealed abstract class NonBinary extends MediaType with jm.MediaType.NonBinary {
+  @DoNotInherit
+  sealed abstract class NonBinary(_mainType: String, _subType: String) extends MediaType(_mainType, _subType) with jm.MediaType.NonBinary {
     def binary = false
     def comp = Compressible
     def withComp(comp: Compressibility): Binary with MediaType =
       customBinary(mainType, subType, comp, fileExtensions, params)
   }
 
-  sealed abstract class WithFixedCharset(val value: String, val mainType: String, val subType: String,
+  @DoNotInherit
+  sealed abstract class WithFixedCharset(val value: String, _mainType: String, _subType: String,
                                          val charset: HttpCharset, val fileExtensions: List[String])
-    extends NonBinary with jm.MediaType.WithFixedCharset {
+    extends NonBinary(_mainType, _subType) with jm.MediaType.WithFixedCharset {
+
     def params: Map[String, String] = Map.empty
     def withParams(params: Map[String, String]): WithFixedCharset with MediaType =
       customWithFixedCharset(mainType, subType, charset, fileExtensions, params)
@@ -234,7 +245,8 @@ object MediaType {
     def toContentType: ContentType.WithFixedCharset = ContentType(this)
   }
 
-  sealed abstract class WithOpenCharset extends NonBinary with jm.MediaType.WithOpenCharset {
+  @DoNotInherit
+  sealed abstract class WithOpenCharset(_mainType: String, _subType: String) extends NonBinary(_mainType, _subType) with jm.MediaType.WithOpenCharset {
     /**
      * Turns the media type into a content type without specifying a charset.
      *
@@ -267,8 +279,9 @@ object MediaType {
     def toContentTypeWithMissingCharset: ContentType.WithMissingCharset = withMissingCharset
   }
 
-  sealed abstract class NonMultipartWithOpenCharset(val value: String, val mainType: String, val subType: String,
-                                                    val fileExtensions: List[String]) extends WithOpenCharset {
+  @DoNotInherit
+  sealed abstract class NonMultipartWithOpenCharset(val value: String, _mainType: String, _subType: String,
+                                                    val fileExtensions: List[String]) extends WithOpenCharset(_mainType, _subType) {
     def params: Map[String, String] = Map.empty
   }
 
