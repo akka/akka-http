@@ -4,8 +4,6 @@
 
 package akka.http.javadsl.model
 
-import akka.http.impl.util._
-
 /**
  * Represents an Http media-type. A media-type consists of a main-type and a sub-type.
  *
