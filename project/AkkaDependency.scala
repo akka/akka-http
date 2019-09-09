@@ -15,7 +15,7 @@ object AkkaDependency {
   // else if akka.version is anything else, then the given version will be used
 
   // Updated only when needed, https://github.com/akka/akka/issues/26985
-  val defaultAkkaVersion = "2.5.23"
+  val defaultAkkaVersion = "2.5.25"
   val akkaVersion =
     System.getProperty("akka.build.version", defaultAkkaVersion) match {
       case "default" => defaultAkkaVersion
