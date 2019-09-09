@@ -376,8 +376,18 @@ object Rejections {
   def malformedHeader(headerName: String, errorMsg: String, cause: Optional[Throwable]): s.MalformedHeaderRejection =
     s.MalformedHeaderRejection(headerName, errorMsg, cause.asScala)
 
+  def unsupportedRequestContentType(
+    supported:   java.lang.Iterable[MediaType],
+    contentType: Optional[ContentType]): UnsupportedRequestContentTypeRejection =
+    s.UnsupportedRequestContentTypeRejection(
+      supported = supported.asScala.map(m => scaladsl.model.ContentTypeRange(m.asScala)).toSet,
+      contentType = contentType.asScala.map(_.asScala))
+
+  // for backwards compatibility
   def unsupportedRequestContentType(supported: java.lang.Iterable[MediaType]): UnsupportedRequestContentTypeRejection =
-    s.UnsupportedRequestContentTypeRejection(supported.asScala.map(m => scaladsl.model.ContentTypeRange(m.asScala)).toSet)
+    s.UnsupportedRequestContentTypeRejection(
+      supported = supported.asScala.map(m => scaladsl.model.ContentTypeRange(m.asScala)).toSet,
+      contentType = None)
 
   def unsupportedRequestEncoding(supported: HttpEncoding): UnsupportedRequestEncodingRejection =
     s.UnsupportedRequestEncodingRejection(supported.asScala)

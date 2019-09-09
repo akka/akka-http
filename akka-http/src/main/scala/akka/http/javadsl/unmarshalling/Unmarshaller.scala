@@ -71,7 +71,7 @@ object Unmarshaller extends akka.http.javadsl.unmarshalling.Unmarshallers {
       val mediaType = t.asScala
       if (entity.contentType == ContentTypes.NoContentType || mediaType.matches(entity.contentType.mediaType)) {
         um.asScala(entity)
-      } else FastFuture.failed(UnsupportedContentTypeException(ContentTypeRange(t.toRange.asScala)))
+      } else FastFuture.failed(UnsupportedContentTypeException(Some(entity.contentType), ContentTypeRange(t.toRange.asScala)))
     }
     }
   }

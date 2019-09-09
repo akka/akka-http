@@ -8,8 +8,9 @@ package directives
 import scala.concurrent.Promise
 import scala.util.{ Failure, Success }
 import akka.http.scaladsl.marshalling.ToResponseMarshaller
-import akka.http.scaladsl.unmarshalling.{ Unmarshaller, FromRequestUnmarshaller }
+import akka.http.scaladsl.unmarshalling.{ FromRequestUnmarshaller, Unmarshaller }
 import akka.http.impl.util._
+import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
 
 /**
  * @groupname marshalling Marshalling directives
@@ -32,12 +33,12 @@ trait MarshallingDirectives {
       import ctx.executionContext
       import ctx.materializer
       onComplete(um(ctx.request)) flatMap {
-        case Success(value) => provide(value)
-        case Failure(RejectionError(r)) => reject(r)
-        case Failure(Unmarshaller.NoContentException) => reject(RequestEntityExpectedRejection)
-        case Failure(Unmarshaller.UnsupportedContentTypeException(x)) => reject(UnsupportedRequestContentTypeRejection(x))
-        case Failure(x: IllegalArgumentException) => reject(ValidationRejection(x.getMessage.nullAsEmpty, Some(x)))
-        case Failure(x) => reject(MalformedRequestContentRejection(x.getMessage.nullAsEmpty, x))
+        case Success(value)                              => provide(value)
+        case Failure(RejectionError(r))                  => reject(r)
+        case Failure(Unmarshaller.NoContentException)    => reject(RequestEntityExpectedRejection)
+        case Failure(x: UnsupportedContentTypeException) => reject(UnsupportedRequestContentTypeRejection(x.supported, x.actualContentType))
+        case Failure(x: IllegalArgumentException)        => reject(ValidationRejection(x.getMessage.nullAsEmpty, Some(x)))
+        case Failure(x)                                  => reject(MalformedRequestContentRejection(x.getMessage.nullAsEmpty, x))
       }
     } & cancelRejections(RequestEntityExpectedRejection.getClass, classOf[UnsupportedRequestContentTypeRejection])
 
@@ -59,7 +60,7 @@ trait MarshallingDirectives {
       implicit val m = marshaller
       complete {
         val promise = Promise[T]()
-        inner(promise.success(_))
+        inner(promise.success)
         promise.future
       }
     }

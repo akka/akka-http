@@ -7,6 +7,7 @@ package akka.http.scaladsl.server.directives
 import akka.NotUsed
 import akka.http.scaladsl.common.EntityStreamingSupport
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
 import akka.http.scaladsl.unmarshalling.{ Unmarshaller, _ }
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.scaladsl.{ Flow, Keep, Source }
@@ -72,7 +73,7 @@ trait FramedEntityStreamingDirectives extends MarshallingDirectives {
         val elements = frames.viaMat(marshalling)(Keep.right)
         FastFuture.successful(elements)
 
-      } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(support.supported))
+      } else FastFuture.failed(UnsupportedContentTypeException(Some(entity.contentType), support.supported))
     }
   // format: ON
 
