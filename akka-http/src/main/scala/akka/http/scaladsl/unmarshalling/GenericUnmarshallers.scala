@@ -4,9 +4,9 @@
 
 package akka.http.scaladsl.unmarshalling
 
+import akka.annotation.InternalApi
 import akka.http.scaladsl.unmarshalling.Unmarshaller.EitherUnmarshallingException
 import akka.http.scaladsl.util.FastFuture
-import akka.util.ConstantFun
 
 import scala.concurrent.Future
 import scala.reflect.ClassTag
@@ -37,28 +37,47 @@ sealed trait LowerPriorityGenericUnmarshallers {
    * Attempt unmarshalling the entity as as `R` first (yielding `R`),
    * and if it fails attempt unmarshalling as `L` (yielding `Left`).
    *
+   * The either unmarshaller only works with strict entities, so make sure to wrap routes that want to use it with
+   * `toStrictEntity`. Otherwise, if a non-strict entity is provided, it will fail with an `IllegalArgumentException`.
+   *
    * Note that the Either's "R" type will be attempted first (as Left is often considered as the "failed case" in Either).
    */
-  // format: OFF
   implicit def eitherUnmarshaller[L, R](implicit ua: FromEntityUnmarshaller[L], rightTag: ClassTag[R],
-                                                 ub: FromEntityUnmarshaller[R], leftTag: ClassTag[L]): FromEntityUnmarshaller[Either[L, R]] =
-    Unmarshaller.withMaterializer { implicit ex => implicit mat => value =>
-      import akka.http.scaladsl.util.FastFuture._
-      @inline def right = ub(value).fast.map(Right(_))
-      @inline def fallbackLeft: PartialFunction[Throwable, Future[Either[L, R]]] = { case rightFirstEx =>
-        val left = ua(value).fast.map(Left(_))
+                                        ub: FromEntityUnmarshaller[R], leftTag: ClassTag[L]): FromEntityUnmarshaller[Either[L, R]] =
+    Unmarshaller.withMaterializer { implicit ex => implicit mat => entity =>
+      if (!entity.isStrict) LowerPriorityGenericUnmarshallers.needsStrictEntityFailure
+      else {
 
-        // combine EitherUnmarshallingException by carring both exceptions
-        left.transform(
-          s = ConstantFun.scalaIdentityFunction,
-          f = leftSecondEx => new EitherUnmarshallingException(
-            rightClass = rightTag.runtimeClass, right = rightFirstEx,
-            leftClass = leftTag.runtimeClass, left = leftSecondEx)
-          )
+        import akka.http.scaladsl.util.FastFuture._
+        @inline def right = ub(entity).fast.map(Right(_))
+
+        @inline def fallbackLeft: PartialFunction[Throwable, Future[Either[L, R]]] = {
+          case rightFirstEx =>
+            val left = ua(entity).fast.map(Left(_))
+
+            // combine EitherUnmarshallingException by carrying both exceptions
+            left.recoverWith {
+              case leftSecondEx =>
+                Future.failed(
+                  new EitherUnmarshallingException(
+                    rightClass = rightTag.runtimeClass, right = rightFirstEx,
+                    leftClass = leftTag.runtimeClass, left = leftSecondEx
+                  )
+                )
+            }
+        }
+
+        right.recoverWith(fallbackLeft)
       }
-
-      right.recoverWith(fallbackLeft)
     }
-  // format: ON
+}
 
+/**
+ * Internal API
+ */
+@InternalApi
+private[unmarshalling] object LowerPriorityGenericUnmarshallers {
+  val needsStrictEntityFailure = Future.failed(new IllegalArgumentException(
+    "eitherUnmarshaller only works with strict entities, so make sure to wrap routes that want to use it with `toStrictEntity`"
+  ))
 }
