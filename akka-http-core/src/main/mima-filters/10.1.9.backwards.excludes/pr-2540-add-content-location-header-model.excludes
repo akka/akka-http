@@ -1,0 +1,2 @@
+# change to internal class, only needed for Scala 2.11
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.model.parser.SimpleHeaders.content-location")
