@@ -57,9 +57,6 @@ object MediaType {
 }
 
 trait MediaType {
-  require(mainType.toRootLowerCase == mainType, s"mainType must be lower case. Expected '${mainType.toRootLowerCase}' but got '$mainType'")
-  require(subType.toRootLowerCase == subType, s"subType must be lower case. Expected '${subType.toRootLowerCase}' but got '$subType'")
-
   /**
    * The main-type of this media-type.
    */
