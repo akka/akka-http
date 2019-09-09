@@ -38,7 +38,7 @@ sealed trait LowerPriorityGenericUnmarshallers {
    * and if it fails attempt unmarshalling as `L` (yielding `Left`).
    *
    * The either unmarshaller only works with strict entities, so make sure to wrap routes that want to use it with
-   * `toStrictEntity`.
+   * `toStrictEntity`. Otherwise, if a non-strict entity is provided, it will fail with an `IllegalArgumentException`.
    *
    * Note that the Either's "R" type will be attempted first (as Left is often considered as the "failed case" in Either).
    */
