@@ -339,7 +339,7 @@ lazy val docs = project("docs")
         case akka.Doc.BinVer(_) => ""
         case _                  => "cross CrossVersion.full"
       }),
-      "jackson.version" -> Dependencies.jacksonVersion,
+      "jackson.version" -> Dependencies.jacksonXmlVersion,
       "extref.akka-docs.base_url" -> s"https://doc.akka.io/docs/akka/${AkkaDependency.akkaVersion}/%s",
       "extref.akka25-docs.base_url" -> s"https://doc.akka.io/docs/akka/2.5/%s",
       "javadoc.akka.http.base_url" -> {
