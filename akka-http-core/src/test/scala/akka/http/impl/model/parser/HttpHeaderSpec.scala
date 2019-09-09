@@ -208,6 +208,14 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         .renderedTo("999999999999999999")
     }
 
+    "Content-Location" in {
+      "Content-Location: https://spray.io/secure" =!= `Content-Location`(Uri("https://spray.io/secure"))
+      "Content-Location: /en-us/default.aspx?foo=bar" =!= `Content-Location`(Uri("/en-us/default.aspx?foo=bar"))
+      "Content-Location: https://akka.io/#sec" =!= ErrorInfo(
+        "Illegal HTTP header 'Content-Location': requirement failed",
+        "Content-Location header URI must not contain a fragment")
+    }
+
     "Content-Type" in {
       "Content-Type: application/pdf" =!=
         `Content-Type`(`application/pdf`)

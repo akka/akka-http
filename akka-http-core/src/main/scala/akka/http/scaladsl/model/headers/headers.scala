@@ -436,11 +436,14 @@ final case class `Content-Length` private[http] (length: Long) extends jm.header
   protected def companion = `Content-Length`
 }
 
-// https://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html
+// https://tools.ietf.org/html/rfc7231#section-3.1.4.2
 object `Content-Location` extends ModeledCompanion[`Content-Location`]
 final case class `Content-Location`(uri: Uri) extends jm.headers.ContentLocation with ResponseHeader {
+  require(uri.fragment.isEmpty, "Content-Location header URI must not contain a fragment")
+  require(uri.authority.userinfo.isEmpty, "Content-Location header URI must not contain a userinfo component")
+
   def renderValue[R <: Rendering](r: R): r.type = { import UriRendering.UriRenderer; r ~~ uri }
-  protected def companion = Location
+  protected def companion = `Content-Location`
 
   /** Java API */
   def getUri: akka.http.javadsl.model.Uri = uri.asJava
