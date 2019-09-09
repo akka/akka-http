@@ -8,7 +8,7 @@ XML or even binary encodings.
 
 Akka HTTP does not currently provide a Java API for XML support. If you need to
 produce and consume XML, you can write a @ref[custom marshaller](marshalling.md#custom-marshallers)
-using [Jackson], which is also the library used for providing @ref[JSON support](json-support.md#json-jackson-support-java).
+using [Jackson], which is also the library used for providing @ref[JSON support](json-support.md#jackson-support).
 
 @@ snip [#jackson-xml-support] ($root$/src/test/java/docs/http/javadsl/JacksonXmlSupport.java) { #jackson-xml-support }
 

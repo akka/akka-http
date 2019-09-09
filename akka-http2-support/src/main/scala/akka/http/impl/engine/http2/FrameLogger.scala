@@ -20,6 +20,10 @@ import FrameEvent._
 private[http2] object FrameLogger {
   final val maxBytes = 16
 
+  def logFramesIfEnabled(shouldLog: Boolean): BidiFlow[FrameEvent, FrameEvent, FrameEvent, FrameEvent, NotUsed] =
+    if (shouldLog) bidi
+    else BidiFlow.identity
+
   def bidi: BidiFlow[FrameEvent, FrameEvent, FrameEvent, FrameEvent, NotUsed] =
     BidiFlow.fromFlows(
       Flow[FrameEvent].log(s"${Console.RED}DOWN${Console.RESET}", FrameLogger.logEvent),
@@ -49,49 +53,49 @@ private[http2] object FrameLogger {
 
     def entryForFrame(frameEvent: FrameEvent): LogEntry =
       frameEvent match {
-        case PingFrame(false, data) ⇒ LogEntry(0, "PING", hex(data))
-        case PingFrame(true, data)  ⇒ LogEntry(0, "PONG", hex(data))
-        case HeadersFrame(streamId, endStream, endHeaders, payload, prio) ⇒
+        case PingFrame(false, data) => LogEntry(0, "PING", hex(data))
+        case PingFrame(true, data)  => LogEntry(0, "PONG", hex(data))
+        case HeadersFrame(streamId, endStream, endHeaders, payload, prio) =>
           val prioInfo = if (prio.isDefined) display(entryForFrame(prio.get)) + " " else ""
 
           LogEntry(streamId, "HEAD", prioInfo + hex(payload), flag(endStream, "ES"), flag(endHeaders, "EH"))
-        case ContinuationFrame(streamId, endHeaders, payload) ⇒
+        case ContinuationFrame(streamId, endHeaders, payload) =>
           LogEntry(streamId, "CONT", hex(payload), flag(endHeaders, "EH"))
-        case DataFrame(streamId, endStream, payload) ⇒
+        case DataFrame(streamId, endStream, payload) =>
           LogEntry(streamId, "DATA", hex(payload), flag(endStream, "ES"))
 
-        case GoAwayFrame(lastStreamId, errorCode, debug) ⇒
+        case GoAwayFrame(lastStreamId, errorCode, debug) =>
           LogEntry(0, "GOAY", s"lastStreamId = $lastStreamId, errorCode = $errorCode, debug = ${debug.utf8String}")
 
-        case ParsedHeadersFrame(streamId, endStream, kvPairs, prio) ⇒
+        case ParsedHeadersFrame(streamId, endStream, kvPairs, prio) =>
           val prioInfo = if (prio.isDefined) display(entryForFrame(prio.get)) + " " else ""
           val kvInfo = kvPairs.map {
-            case (key, value) ⇒ s"$key -> $value"
+            case (key, value) => s"$key -> $value"
           }.mkString(", ")
           LogEntry(streamId, "HEAD", prioInfo + kvInfo, flag(endStream, "ES"))
 
-        case PriorityFrame(streamId, exclusive, streamDependency, weight) ⇒
+        case PriorityFrame(streamId, exclusive, streamDependency, weight) =>
           LogEntry(streamId, "PRIO", s"streamDependency = $streamDependency, weight: $weight", flag(exclusive, "EX"))
 
-        case RstStreamFrame(streamId, errorCode) ⇒
+        case RstStreamFrame(streamId, errorCode) =>
           LogEntry(streamId, "RSET", errorCode.toString)
 
-        case SettingsFrame(settings) ⇒
+        case SettingsFrame(settings) =>
           val settingsInfo = settings.map {
-            case Setting(id, value) ⇒ s"$id -> $value"
+            case Setting(id, value) => s"$id -> $value"
           }.mkString(", ")
           LogEntry(0, "SETT", settingsInfo)
 
-        case SettingsAckFrame(s) ⇒
+        case SettingsAckFrame(s) =>
           val acksInfo = formatSettings(s)
           LogEntry(0, "SETA", acksInfo)
 
-        case WindowUpdateFrame(streamId, windowSizeIncrement) ⇒
+        case WindowUpdateFrame(streamId, windowSizeIncrement) =>
           LogEntry(streamId, "WIND", s"+ $windowSizeIncrement")
 
-        case other: StreamFrameEvent ⇒
+        case other: StreamFrameEvent =>
           LogEntry(other.streamId, "UNKN", other.toString)
-        case other ⇒
+        case other =>
           LogEntry(0, "UNKN", other.toString)
       }
 
@@ -99,14 +103,14 @@ private[http2] object FrameLogger {
       import entry._
 
       import Console._
-      f"$GREEN$streamId%4d $YELLOW$shortFrameType%s $RED${flags.flatMap(x ⇒ x).mkString(" ")} $RESET$extraInfo"
+      f"$GREEN$streamId%4d $YELLOW$shortFrameType%s $RED${flags.flatMap(x => x).mkString(" ")} $RESET$extraInfo"
     }
     display(entryForFrame(frameEvent))
   }
 
   private def formatSettings(s: Seq[Setting]) =
     s.map {
-      case Setting(id, value) ⇒ s"$id -> $value"
+      case Setting(id, value) => s"$id -> $value"
     }.mkString(", ")
 
 }

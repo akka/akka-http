@@ -25,6 +25,7 @@ import akka.util.OptionVal
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Random, Success, Try }
 
@@ -61,7 +62,7 @@ private[client] object NewHostConnectionPool {
 
     override val shape = FlowShape(requestsIn, responsesOut)
     def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-      new GraphStageLogic(shape) with StageLoggingWithOverride with InHandler with OutHandler { logic ⇒
+      new GraphStageLogic(shape) with StageLoggingWithOverride with InHandler with OutHandler { logic =>
         override def logOverride: LoggingAdapter = _log
 
         setHandlers(requestsIn, responsesOut, this)
@@ -126,9 +127,9 @@ private[client] object NewHostConnectionPool {
         def onConnectionAttemptFailed(atPreviousEmbargoLevel: FiniteDuration): Unit = {
           val oldValue = _connectionEmbargo
           _connectionEmbargo match {
-            case Duration.Zero            ⇒ _connectionEmbargo = baseEmbargo
-            case `atPreviousEmbargoLevel` ⇒ _connectionEmbargo = (_connectionEmbargo * 2) min maxBaseEmbargo
-            case _                        ⇒
+            case Duration.Zero            => _connectionEmbargo = baseEmbargo
+            case `atPreviousEmbargoLevel` => _connectionEmbargo = (_connectionEmbargo * 2) min maxBaseEmbargo
+            case _                        =>
             // don't increase if the embargo level has already changed since the start of the connection attempt
           }
           if (_connectionEmbargo != oldValue) {
@@ -139,8 +140,8 @@ private[client] object NewHostConnectionPool {
         def onConnectionAttemptSucceeded(): Unit = _connectionEmbargo = Duration.Zero
         def currentEmbargo: FiniteDuration = _connectionEmbargo
 
-        final case class Event[T](name: String, transition: (SlotState, Slot, T) ⇒ SlotState) {
-          def preApply(t: T): Event[Unit] = Event(name, (state, slot, _) ⇒ transition(state, slot, t))
+        final case class Event[T](name: String, transition: (SlotState, Slot, T) => SlotState) {
+          def preApply(t: T): Event[Unit] = Event(name, (state, slot, _) => transition(state, slot, t))
           override def toString: String = s"Event($name)"
         }
         object Event {
@@ -167,8 +168,8 @@ private[client] object NewHostConnectionPool {
 
           val onTimeout = event0("onTimeout", _.onTimeout(_))
 
-          private def event0(name: String, transition: (SlotState, Slot) ⇒ SlotState): Event[Unit] = new Event(name, (state, slot, _) ⇒ transition(state, slot))
-          private def event[T](name: String, transition: (SlotState, Slot, T) ⇒ SlotState): Event[T] = new Event[T](name, transition)
+          private def event0(name: String, transition: (SlotState, Slot) => SlotState): Event[Unit] = new Event(name, (state, slot, _) => transition(state, slot))
+          private def event[T](name: String, transition: (SlotState, Slot, T) => SlotState): Event[T] = new Event[T](name, transition)
         }
 
         protected trait StateHandling {
@@ -193,8 +194,7 @@ private[client] object NewHostConnectionPool {
           def isIdle: Boolean = state.isIdle
           def isConnected: Boolean = state.isConnected
           def shutdown(): Unit = {
-            // TODO: should we offer errors to the connection?
-            closeConnection()
+            closeConnection(Some(new IllegalStateException("Pool slot was shut down") with NoStackTrace))
 
             state.onShutdown(this)
           }
@@ -254,7 +254,7 @@ private[client] object NewHostConnectionPool {
                 debug(s"After event [${event.name}] State change [${previousState.name}] -> [${state.name}]")
 
                 state.stateTimeout match {
-                  case d: FiniteDuration ⇒
+                  case d: FiniteDuration =>
                     val myTimeoutId = createNewTimeoutId()
                     currentTimeoutId = myTimeoutId
                     currentTimeout =
@@ -264,12 +264,13 @@ private[client] object NewHostConnectionPool {
                           updateState(Event.onTimeout)
                         }
                       })
-                  case _ ⇒ // no timeout set, nothing to do
+                  case _ => // no timeout set, nothing to do
                 }
 
-                if (!state.isConnected && connection != null) {
-                  debug(s"State change from [${previousState.name}] to [Unconnected]. Closing the existing connection.")
-                  closeConnection()
+                if (connection != null && state.isInstanceOf[ShouldCloseConnectionState]) {
+                  debug(s"State change from [${previousState.name}] to [$state]. Closing the existing connection.")
+                  closeConnection(state.asInstanceOf[ShouldCloseConnectionState].failure)
+                  state = Unconnected
                 }
 
                 if (!previousState.isIdle && state.isIdle && !(state == Unconnected && currentEmbargo != Duration.Zero)) {
@@ -278,11 +279,11 @@ private[client] object NewHostConnectionPool {
                 }
 
                 state match {
-                  case PushingRequestToConnection(ctx) ⇒
+                  case PushingRequestToConnection(ctx) =>
                     connection.pushRequest(ctx.request)
                     OptionVal.Some(Event.onRequestDispatched)
 
-                  case _: WaitingForResponseDispatch ⇒
+                  case _: WaitingForResponseDispatch =>
                     if (isAvailable(responsesOut)) OptionVal.Some(Event.onResponseDispatchable)
                     else {
                       if (!isEnqueuedForResponseDispatch) {
@@ -292,35 +293,35 @@ private[client] object NewHostConnectionPool {
                       OptionVal.None
                     }
 
-                  case WaitingForResponseEntitySubscription(_, HttpResponse(_, _, _: HttpEntity.Strict, _), _, _) ⇒
+                  case WaitingForResponseEntitySubscription(_, HttpResponse(_, _, _: HttpEntity.Strict, _), _, _) =>
                     // the connection cannot drive these for a strict entity so we have to loop ourselves
                     OptionVal.Some(Event.onResponseEntitySubscribed)
-                  case WaitingForEndOfResponseEntity(_, HttpResponse(_, _, _: HttpEntity.Strict, _), _) ⇒
+                  case WaitingForEndOfResponseEntity(_, HttpResponse(_, _, _: HttpEntity.Strict, _), _) =>
                     // the connection cannot drive these for a strict entity so we have to loop ourselves
                     OptionVal.Some(Event.onResponseEntityCompleted)
-                  case Unconnected if currentEmbargo != Duration.Zero ⇒
+                  case Unconnected if currentEmbargo != Duration.Zero =>
                     OptionVal.Some(Event.onNewConnectionEmbargo.preApply(currentEmbargo))
-                  case s if !s.isConnected && s.isIdle && numConnectedSlots < settings.minConnections ⇒
+                  case s if !s.isConnected && s.isIdle && numConnectedSlots < settings.minConnections =>
                     debug(s"Preconnecting because number of connected slots fell down to $numConnectedSlots")
                     OptionVal.Some(Event.onPreConnect)
-                  case _ ⇒ OptionVal.None
+                  case _ => OptionVal.None
                 }
 
                 // put additional bookkeeping here (like keeping track of idle connections)
               } catch {
-                case NonFatal(ex) ⇒
+                case NonFatal(ex) =>
                   error(
                     ex,
                     "Slot execution failed. That's probably a bug. Please file a bug at https://github.com/akka/akka-http/issues. Slot is restarted.")
 
                   try {
                     cancelCurrentTimeout()
-                    closeConnection()
+                    closeConnection(Some(ex))
                     state.onShutdown(this)
                     logic.slotsWaitingForDispatch.remove(this)
                     OptionVal.None
                   } catch {
-                    case NonFatal(ex) ⇒
+                    case NonFatal(ex) =>
                       error(ex, "Shutting down slot after error failed.")
                   }
                   state = Unconnected
@@ -332,8 +333,8 @@ private[client] object NewHostConnectionPool {
             def loop[U](event: Event[U], arg: U, remainingIterations: Int): Unit =
               if (remainingIterations > 0)
                 runOneTransition(event, arg) match {
-                  case OptionVal.None       ⇒ // no more changes
-                  case OptionVal.Some(next) ⇒ loop(next, (), remainingIterations - 1)
+                  case OptionVal.None       => // no more changes
+                  case OptionVal.Some(next) => loop(next, (), remainingIterations - 1)
                 }
               else
                 throw new IllegalStateException(
@@ -373,10 +374,10 @@ private[client] object NewHostConnectionPool {
 
           def settings: ConnectionPoolSettings = _settings
 
-          private lazy val keepAliveDurationFuzziness: () ⇒ Long = {
+          private lazy val keepAliveDurationFuzziness: () => Long = {
             val random = new Random()
             val max = math.max(settings.maxConnectionLifetime.toMillis / 10, 2)
-            () ⇒ random.nextLong() % max
+            () => random.nextLong() % max
           }
           def openConnection(): Unit = {
             if (connection ne null) throw new IllegalStateException("Cannot open connection when slot still has an open connection")
@@ -387,9 +388,9 @@ private[client] object NewHostConnectionPool {
             }
           }
 
-          def closeConnection(): Unit =
+          def closeConnection(failure: Option[Throwable]): Unit =
             if (connection ne null) {
-              connection.close()
+              connection.close(failure)
               connection = null
             }
           def isCurrentConnection(conn: SlotConnection): Boolean = connection eq conn
@@ -416,35 +417,48 @@ private[client] object NewHostConnectionPool {
           _slot:      Slot,
           requestOut: SubSourceOutlet[HttpRequest],
           responseIn: SubSinkInlet[HttpResponse]
-        ) extends InHandler with OutHandler { connection ⇒
+        ) extends InHandler with OutHandler { connection =>
           var ongoingResponseEntity: Option[HttpEntity] = None
+          var ongoingResponseEntityKillSwitch: Option[KillSwitch] = None
           var connectionEstablished: Boolean = false
 
           /** Will only be executed if this connection is still the current connection for its slot */
-          def withSlot(f: Slot ⇒ Unit): Unit =
+          def withSlot(f: Slot => Unit): Unit =
             if (_slot.isCurrentConnection(this)) f(_slot)
 
           def pushRequest(request: HttpRequest): Unit = {
             val newRequest =
               request.entity match {
-                case _: HttpEntity.Strict ⇒ request
-                case e ⇒
+                case _: HttpEntity.Strict => request
+                case e =>
                   val (newEntity, entityComplete) = HttpEntity.captureTermination(request.entity)
                   entityComplete.onComplete(safely {
-                    case Success(_)     ⇒ withSlot(_.onRequestEntityCompleted())
-                    case Failure(cause) ⇒ withSlot(_.onRequestEntityFailed(cause))
+                    case Success(_)     => withSlot(_.onRequestEntityCompleted())
+                    case Failure(cause) => withSlot(_.onRequestEntityFailed(cause))
                   })(ExecutionContexts.sameThreadExecutionContext)
                   request.withEntity(newEntity)
               }
 
             emitRequest(newRequest)
           }
-          def close(): Unit = {
-            requestOut.complete()
+
+          /**
+           * If regular is true connection is closed, otherwise, it is aborted.
+           *
+           * A connection should be closed regularly after a request/response with `Connection: close` has been completed.
+           * A connection should be aborted after failures.
+           */
+          def close(failure: Option[Throwable]): Unit = {
+            failure match {
+              case None          => requestOut.complete()
+              case Some(failure) => requestOut.fail(failure)
+            }
+
             responseIn.cancel()
 
-            // FIXME: or should we use discardEntity which does Sink.ignore?
+            val exception = failure.getOrElse(new IllegalStateException("Connection was closed while response was still in-flight"))
             ongoingResponseEntity.foreach(_.dataBytes.runWith(Sink.cancelled)(subFusingMaterializer))
+            ongoingResponseEntityKillSwitch.foreach(_.abort(exception))
           }
           def isClosed: Boolean = requestOut.isClosed || responseIn.isClosed
 
@@ -454,22 +468,29 @@ private[client] object NewHostConnectionPool {
             withSlot(_.debug("Received response")) // FIXME: add abbreviated info
 
             response.entity match {
-              case _: HttpEntity.Strict ⇒ withSlot(_.onResponseReceived(response))
-              case e ⇒
-                ongoingResponseEntity = Some(e)
-
-                val (newEntity, (entitySubscribed, entityComplete)) =
+              case _: HttpEntity.Strict => withSlot(_.onResponseReceived(response))
+              case e =>
+                val (newEntity, StreamUtils.StreamControl(entitySubscribed, entityComplete, entityKillSwitch)) =
                   StreamUtils.transformEntityStream(response.entity, StreamUtils.CaptureMaterializationAndTerminationOp)
 
+                ongoingResponseEntity = Some(e)
+                ongoingResponseEntityKillSwitch = entityKillSwitch
+
                 entitySubscribed.onComplete(safely {
-                  case Success(()) ⇒
+                  case Success(_) =>
                     withSlot(_.onResponseEntitySubscribed())
 
-                    entityComplete.onComplete(safely {
-                      case Success(_)     ⇒ withSlot(_.onResponseEntityCompleted())
-                      case Failure(cause) ⇒ withSlot(_.onResponseEntityFailed(cause))
-                    })(ExecutionContexts.sameThreadExecutionContext)
-                  case Failure(_) ⇒ throw new IllegalStateException("Should never fail")
+                    entityComplete.onComplete {
+                      safely { res =>
+                        res match {
+                          case Success(_)     => withSlot(_.onResponseEntityCompleted())
+                          case Failure(cause) => withSlot(_.onResponseEntityFailed(cause))
+                        }
+                        ongoingResponseEntity = None
+                        ongoingResponseEntityKillSwitch = None
+                      }
+                    }(ExecutionContexts.sameThreadExecutionContext)
+                  case Failure(_) => throw new IllegalStateException("Should never fail")
                 })(ExecutionContexts.sameThreadExecutionContext)
 
                 withSlot(_.onResponseReceived(response.withEntity(newEntity)))
@@ -479,13 +500,13 @@ private[client] object NewHostConnectionPool {
           }
 
           override def onUpstreamFinish(): Unit =
-            withSlot { slot ⇒
+            withSlot { slot =>
               slot.debug("Connection completed")
               slot.onConnectionCompleted()
             }
           override def onUpstreamFailure(ex: Throwable): Unit =
             if (connectionEstablished)
-              withSlot { slot ⇒
+              withSlot { slot =>
                 slot.debug("Connection failed")
                 slot.onConnectionFailed(ex)
               }
@@ -521,7 +542,7 @@ private[client] object NewHostConnectionPool {
           val connection =
             Source.fromGraph(requestOut.source)
               .viaMat(connectionFlow)(Keep.right)
-              .toMat(responseIn.sink)(Keep.left)
+              .to(responseIn.sink)
               .run()(subFusingMaterializer)
 
           val slotCon = new SlotConnection(slot, requestOut, responseIn)
@@ -529,15 +550,15 @@ private[client] object NewHostConnectionPool {
           responseIn.setHandler(slotCon)
 
           connection.onComplete(safely {
-            case Success(outgoingConnection) ⇒
-              slotCon.withSlot { sl ⇒
+            case Success(outgoingConnection) =>
+              slotCon.withSlot { sl =>
                 slotCon.connectionEstablished = true
                 slot.debug("Connection attempt succeeded")
                 onConnectionAttemptSucceeded()
                 sl.onConnectionAttemptSucceeded(outgoingConnection)
               }
-            case Failure(cause) ⇒
-              slotCon.withSlot { sl ⇒
+            case Failure(cause) =>
+              slotCon.withSlot { sl =>
                 slot.debug("Connection attempt failed with {}", cause.getMessage)
                 onConnectionAttemptFailed(currentEmbargoLevel)
                 sl.onConnectionAttemptFailed(cause)
@@ -549,7 +570,7 @@ private[client] object NewHostConnectionPool {
 
         override def onUpstreamFinish(): Unit = {
           log.debug("Pool upstream was completed")
-          super.onDownstreamFinish()
+          super.onUpstreamFinish()
         }
         override def onUpstreamFailure(ex: Throwable): Unit = {
           log.debug("Pool upstream failed with {}", ex)
@@ -560,18 +581,18 @@ private[client] object NewHostConnectionPool {
           super.onDownstreamFinish()
         }
         override def postStop(): Unit = {
-          log.debug("Pool stopped")
           slots.foreach(_.shutdown())
+          log.debug(s"Pool stopped")
         }
 
         private def willClose(response: HttpResponse): Boolean =
           response.header[headers.Connection].exists(_.hasClose)
 
-        private val safeCallback = getAsyncCallback[() ⇒ Unit](f ⇒ f())
-        private def safely[T, U](f: T ⇒ Unit): T ⇒ Unit = t ⇒ safeCallback.invoke(() ⇒ f(t))
-        private def safeRunnable(body: ⇒ Unit): Runnable =
+        private val safeCallback = getAsyncCallback[() => Unit](f => f())
+        private def safely[T, U](f: T => Unit): T => Unit = t => safeCallback.invoke(() => f(t))
+        private def safeRunnable(body: => Unit): Runnable =
           new Runnable {
-            def run(): Unit = safeCallback.invoke(() ⇒ body)
+            def run(): Unit = safeCallback.invoke(() => body)
           }
         private def createNewTimeoutId(): Long = {
           lastTimeoutId += 1

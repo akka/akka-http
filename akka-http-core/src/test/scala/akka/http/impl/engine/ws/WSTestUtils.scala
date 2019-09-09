@@ -37,8 +37,8 @@ object WSTestUtils {
 
     val maskMask = if (mask.isDefined) Protocol.MASK_MASK else 0
     val maskBytes = mask match {
-      case Some(mask) ⇒ intBE(mask)
-      case None       ⇒ ByteString.empty
+      case Some(mask) => intBE(mask)
+      case None       => ByteString.empty
     }
     val lengthByte = lengthByteComponent | maskMask
     ByteString(opcodeByte.toByte, lengthByte.toByte) ++ lengthBytes ++ maskBytes

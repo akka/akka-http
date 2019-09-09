@@ -37,7 +37,7 @@ class ResponseParsingMergeSpec extends AkkaSpec {
       }
 
       RunnableGraph.fromGraph(
-        GraphDSL.create() { implicit b ⇒
+        GraphDSL.create() { implicit b =>
           import GraphDSL.Implicits._
           val parsingMerge = b.add(responseParsingMerge)
 

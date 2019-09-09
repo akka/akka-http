@@ -127,7 +127,7 @@ class WebSocketExampleSpec extends WordSpec with Matchers with CompileOnlySpec {
     val pingCounter = new AtomicInteger()
     val customWebsocketSettings =
       defaultSettings.websocketSettings
-        .withPeriodicKeepAliveData(() ⇒ ByteString(s"debug-${pingCounter.incrementAndGet()}"))
+        .withPeriodicKeepAliveData(() => ByteString(s"debug-${pingCounter.incrementAndGet()}"))
 
     val customServerSettings =
       defaultSettings.withWebsocketSettings(customWebsocketSettings)
@@ -145,7 +145,7 @@ class WebSocketExampleSpec extends WordSpec with Matchers with CompileOnlySpec {
     val pingCounter = new AtomicInteger()
     val customWebsocketSettings =
       defaultSettings.websocketSettings
-        .withPeriodicKeepAliveData(() ⇒ ByteString(s"debug-${pingCounter.incrementAndGet()}"))
+        .withPeriodicKeepAliveData(() => ByteString(s"debug-${pingCounter.incrementAndGet()}"))
 
     val customSettings =
       defaultSettings.withWebsocketSettings(customWebsocketSettings)

@@ -107,12 +107,14 @@ class MethodDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "extractMethod-example" in {
     //#extractMethod-example
     val route =
-      get {
-        complete("This is a GET request.")
-      } ~
+      concat(
+        get {
+          complete("This is a GET request.")
+        },
         extractMethod { method =>
           complete(s"This ${method.name} request, clearly is not a GET!")
         }
+      )
 
     // tests:
     Get("/") ~> route ~> check {
@@ -132,12 +134,14 @@ class MethodDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     //#overrideMethodWithParameter-0
     val route =
       overrideMethodWithParameter("method") {
-        get {
-          complete("This looks like a GET request.")
-        } ~
+        concat(
+          get {
+            complete("This looks like a GET request.")
+          },
           post {
             complete("This looks like a POST request.")
           }
+        )
       }
 
     // tests:

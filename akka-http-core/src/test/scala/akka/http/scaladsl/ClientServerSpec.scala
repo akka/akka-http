@@ -62,7 +62,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     "properly bind a server" in {
       val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
       val probe = TestSubscriber.manualProbe[Http.IncomingConnection]()
-      val binding = Http().bind(hostname, port).toMat(Sink.fromSubscriber(probe))(Keep.left).run()
+      val binding = Http().bind(hostname, port).to(Sink.fromSubscriber(probe)).run()
       val sub = probe.expectSubscription() // if we get it we are bound
       Await.result(binding, 1.second.dilated)
       sub.cancel()
@@ -72,7 +72,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
       val probe = TestSubscriber.manualProbe[Http.IncomingConnection]()
       val settings = ServerSettings(system).withDefaultHttpPort(port)
-      val binding = Http().bind(hostname, settings = settings).toMat(Sink.fromSubscriber(probe))(Keep.left).run()
+      val binding = Http().bind(hostname, settings = settings).to(Sink.fromSubscriber(probe)).run()
       val sub = probe.expectSubscription() // if we get it we are bound
       val address = Await.result(binding, 1.second.dilated).localAddress
       address.getPort shouldEqual port
@@ -111,7 +111,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     }
 
     "properly terminate client when server is not running" in Utils.assertAllStagesStopped {
-      for (i ← 1 to 10)
+      for (i <- 1 to 10)
         withClue(s"iterator $i: ") {
           Source.single(HttpRequest(HttpMethods.POST, "/test", List.empty, HttpEntity(MediaTypes.`text/plain`.withCharset(HttpCharsets.`UTF-8`), "buh")))
             .via(Http(actorSystem).outgoingConnection("localhost", 7777))
@@ -123,7 +123,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
     "run with bindAndHandleSync" in {
       val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-      val binding = Http().bindAndHandleSync(_ ⇒ HttpResponse(), hostname, port)
+      val binding = Http().bindAndHandleSync(_ => HttpResponse(), hostname, port)
       val b1 = Await.result(binding, 3.seconds.dilated)
 
       val (_, f) = Http().outgoingConnection(hostname, port)
@@ -142,10 +142,10 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
       def handle(req: HttpRequest): Future[HttpResponse] = {
         req.uri.path.toString match {
-          case "/slow" ⇒
+          case "/slow" =>
             receivedSlow.complete(Success(System.nanoTime()))
             akka.pattern.after(1.seconds.dilated, system.scheduler)(Future.successful(HttpResponse()))
-          case "/fast" ⇒
+          case "/fast" =>
             receivedFast.complete(Success(System.nanoTime()))
             Future.successful(HttpResponse())
         }
@@ -314,7 +314,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
 
             def runRequest(uri: Uri): Future[(Try[HttpResponse], Int)] = {
               val itNeverSends = Chunked.fromData(ContentTypes.`text/plain(UTF-8)`, Source.maybe[ByteString])
-              Source.single(HttpRequest(POST, uri, entity = itNeverSends) → 1)
+              Source.single(HttpRequest(POST, uri, entity = itNeverSends) -> 1)
                 .via(pool)
                 .runWith(Sink.head)
             }
@@ -372,7 +372,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         // FIXME racy feature, needs https://github.com/akka/akka/issues/17849 to be fixed
         pending
         val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-        val flow = Flow[HttpRequest].map(_ ⇒ HttpResponse()).mapMaterializedValue(_ ⇒ sys.error("BOOM"))
+        val flow = Flow[HttpRequest].map(_ => HttpResponse()).mapMaterializedValue(_ => sys.error("BOOM"))
         val binding = Http(system2).bindAndHandle(flow, hostname, port)(materializer2)
         val b1 = Await.result(binding, 1.seconds.dilated)
 
@@ -381,7 +381,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
             Http(system2).outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.head)(materializer2)
           try Await.result(responseFuture, 5.seconds.dilated).status should ===(StatusCodes.InternalServerError)
           catch {
-            case _: StreamTcpException ⇒
+            case _: StreamTcpException =>
             // Also fine, depends on the race between abort and 500, caused by materialization panic which
             // tries to tear down everything, but the order is nondeterministic
           }
@@ -546,7 +546,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val server = Http().bindAndHandleSync(response, hostname, port, settings = serverSettings)
       def runOnce(i: Int) =
         Http().singleRequest(request(i), settings = clientSettings).futureValue
-          .entity.dataBytes.runFold(ByteString.empty) { (prev, cur) ⇒
+          .entity.dataBytes.runFold(ByteString.empty) { (prev, cur) =>
             val res = prev ++ cur
             system.log.debug(s"Received ${res.size} of [${res.take(1).utf8String}]")
             res
@@ -565,7 +565,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       // settings adapting network buffer sizes
       val serverSettings = ServerSettings(system)
 
-      val server = Http().bindAndHandleAsync(_ ⇒ responsePromise.future, hostname, port, settings = serverSettings).futureValue
+      val server = Http().bindAndHandleAsync(_ => responsePromise.future, hostname, port, settings = serverSettings).futureValue
 
       try {
         val result = Source.single(ByteString(
@@ -576,8 +576,9 @@ Host: example.com
           .via(Tcp().outgoingConnection(hostname, port))
           .runWith(Sink.reduce[ByteString](_ ++ _))
         Try(Await.result(result, 2.seconds).utf8String) match {
-          case scala.util.Success(body)                ⇒ fail(body)
-          case scala.util.Failure(_: TimeoutException) ⇒ // Expected
+          case scala.util.Success(body)                => fail(body)
+          case scala.util.Failure(_: TimeoutException) => // Expected
+          case scala.util.Failure(other)               => fail(other)
         }
       } finally {
         responsePromise.failure(new TimeoutException())
@@ -602,18 +603,16 @@ Host: example.com
       val clientConnectionContext = ConnectionContext.https(ExampleHttpContexts.exampleClientContext.sslContext, Some(sslConfig))
 
       val entity = Array.fill[Char](999999)('0').mkString + "x"
-      val routes: Flow[HttpRequest, HttpResponse, Any] = Flow[HttpRequest].map { _ ⇒ HttpResponse(entity = entity) }
+      val routes: Flow[HttpRequest, HttpResponse, Any] = Flow[HttpRequest].map { _ => HttpResponse(entity = entity) }
       val serverBinding =
         Http()
           .bindAndHandle(routes, hostname, port, connectionContext = serverConnectionContext, settings = serverSettings)
           .futureValue
 
-      EventFilter.warning(pattern = "Hostname verification failed", occurrences = 1) intercept {
-        Http()
-          .singleRequest(request, connectionContext = clientConnectionContext, settings = clientSettings)
-          .futureValue
-          .entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue.utf8String shouldEqual entity
-      }
+      Http()
+        .singleRequest(request, connectionContext = clientConnectionContext, settings = clientSettings)
+        .futureValue
+        .entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue.utf8String shouldEqual entity
 
       serverBinding.unbind()
     }
@@ -625,7 +624,7 @@ Host: example.com
         HttpResponse(entity = HttpEntity.CloseDelimited(ContentTypes.`application/octet-stream`, Source.fromPublisher(source)))
 
       val serverSideTls = Http().sslTlsStage(ExampleHttpContexts.exampleServerContext, akka.stream.Server)
-      val clientSideTls = Http().sslTlsStage(ExampleHttpContexts.exampleClientContext, akka.stream.Client, Some("akka.example.org" → 8080))
+      val clientSideTls = Http().sslTlsStage(ExampleHttpContexts.exampleClientContext, akka.stream.Client, Some("akka.example.org" -> 8080))
 
       val server: Flow[ByteString, ByteString, Any] =
         Http().serverLayerImpl()
@@ -741,7 +740,7 @@ Host: example.com
     }
 
     "produce a useful error message when connecting to a HTTP endpoint over HTTPS" in Utils.assertAllStagesStopped {
-      val dummyFlow = Flow.fromFunction((_: HttpRequest) ⇒ ???)
+      val dummyFlow = Flow[HttpRequest].map(_ => ???)
 
       val binding = Http().bindAndHandle(dummyFlow, "127.0.0.1", port = 0).futureValue
       val uri = "https://" + binding.localAddress.getHostString + ":" + binding.localAddress.getPort
@@ -769,7 +768,7 @@ Host: example.com
       val settings = configOverrides.toOption.fold(ServerSettings(system))(ServerSettings(_))
       val connections = Http().bind(hostname, port, settings = settings)
       val probe = TestSubscriber.manualProbe[Http.IncomingConnection]
-      val binding = connections.toMat(Sink.fromSubscriber(probe))(Keep.left).run()
+      val binding = connections.to(Sink.fromSubscriber(probe)).run()
       (probe, binding)
     }
     val connSourceSub = connSource.expectSubscription()
@@ -786,7 +785,7 @@ Host: example.com
 
       connection.remoteAddress.getHostName shouldEqual hostname
       connection.remoteAddress.getPort shouldEqual port
-      requestPublisherProbe → responseSubscriberProbe
+      requestPublisherProbe -> responseSubscriberProbe
     }
 
     def acceptConnection(): (TestSubscriber.ManualProbe[HttpRequest], TestPublisher.ManualProbe[HttpResponse]) = {
@@ -803,7 +802,7 @@ Host: example.com
 
       pub.subscribe(requestSubscriberProbe)
       responsePublisherProbe.subscribe(sub)
-      requestSubscriberProbe → responsePublisherProbe
+      requestSubscriberProbe -> responsePublisherProbe
     }
 
     def openClientSocket() = new Socket(hostname, port)
@@ -819,8 +818,8 @@ Host: example.com
       val sb = new java.lang.StringBuilder
       val cbuf = new Array[Char](256)
       @tailrec def drain(): (String, BufferedReader) = reader.read(cbuf) match {
-        case -1 ⇒ sb.toString → reader
-        case n  ⇒ sb.append(cbuf, 0, n); drain()
+        case -1 => sb.toString -> reader
+        case n  => sb.append(cbuf, 0, n); drain()
       }
       drain()
     }

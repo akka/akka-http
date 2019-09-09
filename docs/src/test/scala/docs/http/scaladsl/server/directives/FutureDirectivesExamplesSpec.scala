@@ -17,9 +17,7 @@ import akka.http.scaladsl.server.RoutingSpec
 import akka.pattern.CircuitBreaker
 import docs.CompileOnlySpec
 
-// format: OFF
-
-class FutureDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec{
+class FutureDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   object TestException extends Throwable
 
   implicit val myExceptionHandler =
@@ -63,7 +61,8 @@ class FutureDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec{
     }
 
     val resetTimeout = 1.second
-    val breaker = new CircuitBreaker(system.scheduler,
+    val breaker = new CircuitBreaker(
+      system.scheduler,
       maxFailures = 1,
       callTimeout = 5.seconds,
       resetTimeout
@@ -102,16 +101,18 @@ class FutureDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec{
   "onSuccess" in {
     //#onSuccess
     val route =
-      path("success") {
-        onSuccess(Future { "Ok" }) { extraction =>
-          complete(extraction)
+      concat(
+        path("success") {
+          onSuccess(Future { "Ok" }) { extraction =>
+            complete(extraction)
+          }
+        },
+        path("failure") {
+          onSuccess(Future.failed[String](TestException)) { extraction =>
+            complete(extraction)
+          }
         }
-      } ~
-      path("failure") {
-        onSuccess(Future.failed[String](TestException)) { extraction =>
-          complete(extraction)
-        }
-      }
+      )
 
     // tests:
     Get("/success") ~> route ~> check {
@@ -128,16 +129,18 @@ class FutureDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec{
   "completeOrRecoverWith" in {
     //#completeOrRecoverWith
     val route =
-      path("success") {
-        completeOrRecoverWith(Future { "Ok" }) { extraction =>
-          failWith(extraction) // not executed.
+      concat(
+        path("success") {
+          completeOrRecoverWith(Future { "Ok" }) { extraction =>
+            failWith(extraction) // not executed.
+          }
+        },
+        path("failure") {
+          completeOrRecoverWith(Future.failed[String](TestException)) { extraction =>
+            failWith(extraction)
+          }
         }
-      } ~
-      path("failure") {
-        completeOrRecoverWith(Future.failed[String](TestException)) { extraction =>
-          failWith(extraction)
-        }
-      }
+      )
 
     // tests:
     Get("/success") ~> route ~> check {

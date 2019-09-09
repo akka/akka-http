@@ -21,8 +21,8 @@ object ParadoxSupport {
     paradoxDirectives ++= Def.taskDyn {
       val log = streams.value.log
       Def.task { Seq(
-        { context: Writer.Context ⇒
-            new SignatureDirective(context.location.tree.label, context.properties, msg ⇒ log.warn(msg))
+        { context: Writer.Context =>
+            new SignatureDirective(context.location.tree.label, context.properties, msg => log.warn(msg))
         },
       )}
     }.value

@@ -9,7 +9,7 @@ import java.util.Optional
 import akka.actor.ActorSystem
 import akka.http.impl.engine.parsing.BodyPartParser
 import akka.http.impl.settings.ParserSettingsImpl
-import java.{ util ⇒ ju }
+import java.{ util => ju }
 
 import akka.annotation.DoNotInherit
 import akka.http.impl.util.JavaMapping.Implicits._
@@ -23,7 +23,7 @@ import com.typesafe.config.Config
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class ParserSettings private[akka] () extends BodyPartParser.Settings { self: ParserSettingsImpl ⇒
+abstract class ParserSettings private[akka] () extends BodyPartParser.Settings { self: ParserSettingsImpl =>
   def getMaxUriLength: Int
   def getMaxMethodLength: Int
   def getMaxResponseReasonLength: Int
@@ -73,18 +73,18 @@ abstract class ParserSettings private[akka] () extends BodyPartParser.Settings {
 
   @varargs
   def withCustomMethods(methods: HttpMethod*): ParserSettings = {
-    val map = methods.map(m ⇒ m.name → m.asScala).toMap
+    val map = methods.map(m => m.name -> m.asScala).toMap
     self.copy(customMethods = map.get)
   }
   @varargs
   def withCustomStatusCodes(codes: StatusCode*): ParserSettings = {
-    val map = codes.map(c ⇒ c.intValue → c.asScala).toMap
+    val map = codes.map(c => c.intValue -> c.asScala).toMap
     self.copy(customStatusCodes = map.get)
   }
   @varargs
   def withCustomMediaTypes(mediaTypes: MediaType*): ParserSettings = {
-    val map = mediaTypes.map(c ⇒ (c.mainType, c.subType) → c.asScala).toMap
-    self.copy(customMediaTypes = (main, sub) ⇒ map.get(main → sub))
+    val map = mediaTypes.map(c => (c.mainType, c.subType) -> c.asScala).toMap
+    self.copy(customMediaTypes = (main, sub) => map.get(main -> sub))
   }
 
 }

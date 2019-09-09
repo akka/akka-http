@@ -11,7 +11,7 @@
 
 ## Description
 
-Wraps the inner route with Http Basic authentication support using a given @scala[`AuthenticatorPF[T]`]@java[`AuthenticatorPF<T>`].
+Wraps the inner route with Http Basic authentication support using a given @scala[@scaladoc[AuthenticatorPF[T]](akka.http.scaladsl.server.Directives#AuthenticatorPF[T]=PartialFunction[akka.http.scaladsl.server.directives.Credentials,T])]@java[`AuthenticatorPF<T>` - Partial function from `Optional<ProvidedCredentials>` to `String`].
 
 Provides support for handling [HTTP Basic Authentication](https://en.wikipedia.org/wiki/Basic_auth).
 

@@ -11,9 +11,9 @@ import akka.http.impl.util.JavaMapping._
 import akka.http.impl.util._
 import akka.http.javadsl.common.EntityStreamingSupport
 import akka.http.{ javadsl, scaladsl }
-import akka.http.scaladsl.server.{ directives ⇒ sdirectives }
-import akka.http.scaladsl.{ common ⇒ scommon }
-import akka.http.javadsl.server.{ directives ⇒ jdirectives }
+import akka.http.scaladsl.server.{ directives => sdirectives }
+import akka.http.scaladsl.{ common => scommon }
+import akka.http.javadsl.server.{ directives => jdirectives }
 
 import scala.collection.immutable
 

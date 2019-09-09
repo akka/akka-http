@@ -4,6 +4,8 @@
 
 package akka.http.scaladsl.unmarshalling
 
+import java.util.UUID
+
 import akka.http.scaladsl.unmarshalling.Unmarshaller.EitherUnmarshallingException
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import akka.http.scaladsl.testkit.ScalatestUtils
@@ -41,11 +43,26 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
       Unmarshal("1").to[Boolean] should evaluateTo(true)
       Unmarshal("0").to[Boolean] should evaluateTo(false)
     }
+    "uuidUnmarshaller should unmarshal valid uuid" in {
+      val uuid = UUID.randomUUID()
+      Unmarshal(uuid.toString).to[UUID] should evaluateTo(uuid)
+    }
+    "uuidUnmarshaller should unmarshal variant 0 uuid" in {
+      val uuid = UUID.fromString("733a018b-5f16-4699-0e1a-1d3f6f0d0315")
+      Unmarshal(uuid.toString).to[UUID] should evaluateTo(uuid)
+    }
+    "uuidUnmarshaller should unmarshal future variant uuid" in {
+      val uuid = UUID.fromString("733a018b-5f16-4699-fe1a-1d3f6f0d0315")
+      Unmarshal(uuid.toString).to[UUID] should evaluateTo(uuid)
+    }
+    "uuidUnmarshaller should unmarshal nil uuid" in {
+      Unmarshal("00000000-0000-0000-0000-000000000000").to[UUID] should evaluateTo(UUID.fromString("00000000-0000-0000-0000-000000000000"))
+    }
   }
 
   "The GenericUnmarshallers" - {
-    implicit val rawInt: FromEntityUnmarshaller[Int] = Unmarshaller(implicit ex ⇒ bs ⇒ bs.toStrict(1.second.dilated).map(_.data.utf8String.toInt))
-    implicit val rawlong: FromEntityUnmarshaller[Long] = Unmarshaller(implicit ex ⇒ bs ⇒ bs.toStrict(1.second.dilated).map(_.data.utf8String.toLong))
+    implicit val rawInt: FromEntityUnmarshaller[Int] = Unmarshaller(implicit ex => bs => bs.toStrict(1.second.dilated).map(_.data.utf8String.toInt))
+    implicit val rawlong: FromEntityUnmarshaller[Long] = Unmarshaller(implicit ex => bs => bs.toStrict(1.second.dilated).map(_.data.utf8String.toLong))
 
     "eitherUnmarshaller should unmarshal its Right value" in {
       // we'll find:

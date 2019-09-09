@@ -16,7 +16,7 @@ import akka.stream.scaladsl.Flow
 trait Encoder {
   def encoding: HttpEncoding
 
-  def messageFilter: HttpMessage ⇒ Boolean
+  def messageFilter: HttpMessage => Boolean
 
   def encodeMessage(message: HttpMessage): message.Self =
     if (messageFilter(message) && !message.headers.exists(Encoder.isContentEncodingHeader))
@@ -38,19 +38,19 @@ trait Encoder {
     def encodeChunk(bytes: ByteString): ByteString = compressor.compressAndFlush(bytes)
     def finish(): ByteString = compressor.finish()
 
-    StreamUtils.byteStringTransformer(encodeChunk, () ⇒ finish)
+    StreamUtils.byteStringTransformer(encodeChunk, () => finish)
   }
 }
 
 object Encoder {
-  val DefaultFilter: HttpMessage ⇒ Boolean = {
-    case req: HttpRequest                    ⇒ isCompressible(req)
-    case res @ HttpResponse(status, _, _, _) ⇒ isCompressible(res) && status.allowsEntity
+  val DefaultFilter: HttpMessage => Boolean = {
+    case req: HttpRequest                    => isCompressible(req)
+    case res @ HttpResponse(status, _, _, _) => isCompressible(res) && status.allowsEntity
   }
   private[coding] def isCompressible(msg: HttpMessage): Boolean =
     msg.entity.contentType.mediaType.isCompressible
 
-  private[coding] val isContentEncodingHeader: HttpHeader ⇒ Boolean = _.isInstanceOf[`Content-Encoding`]
+  private[coding] val isContentEncodingHeader: HttpHeader => Boolean = _.isInstanceOf[`Content-Encoding`]
 }
 
 /** A stateful object representing ongoing compression. */

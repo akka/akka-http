@@ -11,7 +11,7 @@ import akka.annotation.DoNotInherit
 import akka.http.impl.settings.ServerSettingsImpl
 import akka.http.impl.util._
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.javadsl.{ settings ⇒ js }
+import akka.http.javadsl.{ settings => js }
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.headers.Server
@@ -28,7 +28,7 @@ import scala.language.implicitConversions
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class ServerSettings private[akka] () extends akka.http.javadsl.settings.ServerSettings { self: ServerSettingsImpl ⇒
+abstract class ServerSettings private[akka] () extends akka.http.javadsl.settings.ServerSettings { self: ServerSettingsImpl =>
   def serverHeader: Option[Server]
   def previewServerSettings: PreviewServerSettings
   def timeouts: ServerSettings.Timeouts
@@ -43,7 +43,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def socketOptions: immutable.Seq[SocketOption]
   def defaultHostHeader: Host
   @Deprecated @deprecated("Kept for binary compatibility; Use websocketSettings.randomFactory instead", since = "10.1.1")
-  def websocketRandomFactory: () ⇒ Random
+  def websocketRandomFactory: () => Random
   def websocketSettings: WebSocketSettings
   def parserSettings: ParserSettings
   def logUnencryptedNetworkBytes: Option[Int]
@@ -104,7 +104,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def withLogUnencryptedNetworkBytes(newValue: Option[Int]): ServerSettings = self.copy(logUnencryptedNetworkBytes = newValue)
   def withDefaultHostHeader(newValue: Host): ServerSettings = self.copy(defaultHostHeader = newValue)
   def withParserSettings(newValue: ParserSettings): ServerSettings = self.copy(parserSettings = newValue)
-  def withWebsocketRandomFactory(newValue: () ⇒ Random): ServerSettings = self.copy(websocketSettings = websocketSettings.withRandomFactoryFactory(new Supplier[Random] {
+  def withWebsocketRandomFactory(newValue: () => Random): ServerSettings = self.copy(websocketSettings = websocketSettings.withRandomFactoryFactory(new Supplier[Random] {
     override def get(): Random = newValue()
   }))
   def withWebsocketSettings(newValue: WebSocketSettings): ServerSettings = self.copy(websocketSettings = newValue)
@@ -112,10 +112,11 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def withHttp2Settings(newValue: Http2ServerSettings): ServerSettings = copy(http2Settings = newValue)
 
   // Scala-only lenses
-  def mapHttp2Settings(f: Http2ServerSettings ⇒ Http2ServerSettings): ServerSettings = withHttp2Settings(f(http2Settings))
-  def mapParserSettings(f: ParserSettings ⇒ ParserSettings): ServerSettings = withParserSettings(f(parserSettings))
-  def mapPreviewServerSettings(f: PreviewServerSettings ⇒ PreviewServerSettings): ServerSettings = withPreviewServerSettings(f(previewServerSettings))
-  def mapWebsocketSettings(f: WebSocketSettings ⇒ WebSocketSettings): ServerSettings = withWebsocketSettings(f(websocketSettings))
+  def mapHttp2Settings(f: Http2ServerSettings => Http2ServerSettings): ServerSettings = withHttp2Settings(f(http2Settings))
+  def mapParserSettings(f: ParserSettings => ParserSettings): ServerSettings = withParserSettings(f(parserSettings))
+  def mapPreviewServerSettings(f: PreviewServerSettings => PreviewServerSettings): ServerSettings = withPreviewServerSettings(f(previewServerSettings))
+  def mapWebsocketSettings(f: WebSocketSettings => WebSocketSettings): ServerSettings = withWebsocketSettings(f(websocketSettings))
+  def mapTimeouts(f: ServerSettings.Timeouts => ServerSettings.Timeouts): ServerSettings = withTimeouts(f(timeouts))
 }
 
 object ServerSettings extends SettingsCompanion[ServerSettings] {
@@ -136,8 +137,8 @@ object ServerSettings extends SettingsCompanion[ServerSettings] {
   object LogUnencryptedNetworkBytes {
     def apply(string: String): Option[Int] =
       string.toRootLowerCase match {
-        case "off" ⇒ None
-        case value ⇒ Option(value.toInt)
+        case "off" => None
+        case value => Option(value.toInt)
       }
   }
 }

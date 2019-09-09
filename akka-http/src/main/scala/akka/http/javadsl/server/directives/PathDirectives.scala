@@ -5,7 +5,7 @@
 package akka.http.javadsl.server.directives
 
 import java.util.function.BiFunction
-import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.{ Function => JFunction }
 import java.util.function.Supplier
 
 import akka.http.javadsl.unmarshalling.Unmarshaller
@@ -19,7 +19,7 @@ import akka.http.javadsl.server.PathMatcher1
 import akka.http.javadsl.server.PathMatcher2
 import akka.http.javadsl.server.Route
 import akka.http.scaladsl.model.StatusCodes.Redirection
-import akka.http.scaladsl.server.{ Directives ⇒ D }
+import akka.http.scaladsl.server.{ Directives => D }
 
 import akka.http.scaladsl.server.PathMatchers
 
@@ -54,12 +54,14 @@ abstract class PathDirectives extends ParameterDirectives {
    *   // redirect '/users/' to '/users', '/users/:userId/' to '/users/:userId'
    *   redirectToNoTrailingSlashIfPresent(Found) {
    *     pathPrefix("users") {
-   *       pathEnd {
-   *         // user list ...
-   *       } ~
-   *       path(UUID) { userId =>
-   *         // user profile ...
-   *       }
+   *       concat(
+   *         pathEnd {
+   *           // user list ...
+   *         },
+   *         path(UUID) { userId =>
+   *           // user profile ...
+   *         }
+   *       )
    *     }
    *   }
    * }
@@ -88,7 +90,7 @@ abstract class PathDirectives extends ParameterDirectives {
     D.path(segment) { inner.get.delegate }
   }
   def path(inner: JFunction[String, Route]): Route = RouteAdapter {
-    D.path(PathMatchers.Segment) { element ⇒ inner.apply(element).delegate }
+    D.path(PathMatchers.Segment) { element => inner.apply(element).delegate }
   }
 
   /**
@@ -100,10 +102,10 @@ abstract class PathDirectives extends ParameterDirectives {
     D.path(p.toScala) { inner.get.delegate }
   }
   def path[T](p: PathMatcher1[T], inner: JFunction[T, Route]): Route = RouteAdapter {
-    D.path(p.toScala) { t1 ⇒ inner.apply(t1).delegate }
+    D.path(p.toScala) { t1 => inner.apply(t1).delegate }
   }
   def path[T1, T2](p: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = RouteAdapter {
-    D.path(p.toScala) { (t1, t2) ⇒ inner.apply(t1, t2).delegate }
+    D.path(p.toScala) { (t1, t2) => inner.apply(t1, t2).delegate }
   }
 
   /**
@@ -115,7 +117,7 @@ abstract class PathDirectives extends ParameterDirectives {
     D.pathPrefix(segment) { inner.get.delegate }
   }
   def pathPrefix(inner: JFunction[String, Route]): Route = RouteAdapter {
-    D.pathPrefix(PathMatchers.Segment) { element ⇒ inner.apply(element).delegate }
+    D.pathPrefix(PathMatchers.Segment) { element => inner.apply(element).delegate }
   }
 
   /**
@@ -127,10 +129,10 @@ abstract class PathDirectives extends ParameterDirectives {
     D.pathPrefix(p.toScala) { inner.get.delegate }
   }
   def pathPrefix[T](p: PathMatcher1[T], inner: JFunction[T, Route]): Route = RouteAdapter {
-    D.pathPrefix(p.toScala) { t1 ⇒ inner.apply(t1).delegate }
+    D.pathPrefix(p.toScala) { t1 => inner.apply(t1).delegate }
   }
   def pathPrefix[T1, T2](p: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = RouteAdapter {
-    D.pathPrefix(p.toScala) { (t1, t2) ⇒ inner.apply(t1, t2).delegate }
+    D.pathPrefix(p.toScala) { (t1, t2) => inner.apply(t1, t2).delegate }
   }
 
   /**
@@ -146,10 +148,10 @@ abstract class PathDirectives extends ParameterDirectives {
     D.rawPathPrefix(pm.toScala) { inner.get().delegate }
   }
   def rawPathPrefix[T1](pm: PathMatcher1[T1], inner: JFunction[T1, Route]): Route = RouteAdapter {
-    D.rawPathPrefix(pm.toScala) { t1 ⇒ inner.apply(t1).delegate }
+    D.rawPathPrefix(pm.toScala) { t1 => inner.apply(t1).delegate }
   }
   def rawPathPrefix[T1, T2](pm: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = RouteAdapter {
-    D.rawPathPrefix(pm.toScala) { case (t1, t2) ⇒ inner.apply(t1, t2).delegate }
+    D.rawPathPrefix(pm.toScala) { case (t1, t2) => inner.apply(t1, t2).delegate }
   }
 
   /**
@@ -163,10 +165,10 @@ abstract class PathDirectives extends ParameterDirectives {
     D.pathPrefixTest(pm.toScala) { inner.get().delegate }
   }
   def pathPrefixTest[T1](pm: PathMatcher1[T1], inner: JFunction[T1, Route]): Route = RouteAdapter {
-    D.pathPrefixTest(pm.toScala) { t1 ⇒ inner.apply(t1).delegate }
+    D.pathPrefixTest(pm.toScala) { t1 => inner.apply(t1).delegate }
   }
   def pathPrefixTest[T1, T2](pm: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = RouteAdapter {
-    D.pathPrefixTest(pm.toScala) { case (t1, t2) ⇒ inner.apply(t1, t2).delegate }
+    D.pathPrefixTest(pm.toScala) { case (t1, t2) => inner.apply(t1, t2).delegate }
   }
 
   /**
@@ -181,10 +183,10 @@ abstract class PathDirectives extends ParameterDirectives {
     D.rawPathPrefixTest(pm.toScala) { inner.get().delegate }
   }
   def rawPathPrefixTest[T1](pm: PathMatcher1[T1], inner: JFunction[T1, Route]): Route = RouteAdapter {
-    D.rawPathPrefixTest(pm.toScala) { t1 ⇒ inner.apply(t1).delegate }
+    D.rawPathPrefixTest(pm.toScala) { t1 => inner.apply(t1).delegate }
   }
   def rawPathPrefixTest[T1, T2](pm: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = RouteAdapter {
-    D.rawPathPrefixTest(pm.toScala) { case (t1, t2) ⇒ inner.apply(t1, t2).delegate }
+    D.rawPathPrefixTest(pm.toScala) { case (t1, t2) => inner.apply(t1, t2).delegate }
   }
 
   /**
@@ -200,10 +202,10 @@ abstract class PathDirectives extends ParameterDirectives {
     D.pathSuffix(pm.toScala) { inner.get().delegate }
   }
   def pathSuffix[T1](pm: PathMatcher1[T1], inner: JFunction[T1, Route]): Route = RouteAdapter {
-    D.pathSuffix(pm.toScala) { t1 ⇒ inner.apply(t1).delegate }
+    D.pathSuffix(pm.toScala) { t1 => inner.apply(t1).delegate }
   }
   def pathSuffix[T1, T2](pm: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = RouteAdapter {
-    D.pathSuffix(pm.toScala) { case (t1, t2) ⇒ inner.apply(t1, t2).delegate }
+    D.pathSuffix(pm.toScala) { case (t1, t2) => inner.apply(t1, t2).delegate }
   }
 
   /**
@@ -220,10 +222,10 @@ abstract class PathDirectives extends ParameterDirectives {
     D.pathSuffixTest(pm.toScala) { inner.get().delegate }
   }
   def pathSuffixTest[T1](pm: PathMatcher1[T1], inner: JFunction[T1, Route]): Route = RouteAdapter {
-    D.pathSuffixTest(pm.toScala) { t1 ⇒ inner.apply(t1).delegate }
+    D.pathSuffixTest(pm.toScala) { t1 => inner.apply(t1).delegate }
   }
   def pathSuffixTest[T1, T2](pm: PathMatcher2[T1, T2], inner: BiFunction[T1, T2, Route]): Route = RouteAdapter {
-    D.pathSuffixTest(pm.toScala) { case (t1, t2) ⇒ inner.apply(t1, t2).delegate }
+    D.pathSuffixTest(pm.toScala) { case (t1, t2) => inner.apply(t1, t2).delegate }
   }
 
   /**
@@ -235,8 +237,8 @@ abstract class PathDirectives extends ParameterDirectives {
    */
   def redirectToTrailingSlashIfMissing(redirectionType: StatusCode, inner: Supplier[Route]): Route = RouteAdapter {
     redirectionType match {
-      case r: Redirection ⇒ D.redirectToTrailingSlashIfMissing(r) { inner.get().delegate }
-      case _              ⇒ throw new IllegalArgumentException("Not a valid redirection status code: " + redirectionType)
+      case r: Redirection => D.redirectToTrailingSlashIfMissing(r) { inner.get().delegate }
+      case _              => throw new IllegalArgumentException("Not a valid redirection status code: " + redirectionType)
     }
   }
 
@@ -249,8 +251,8 @@ abstract class PathDirectives extends ParameterDirectives {
    */
   def redirectToNoTrailingSlashIfPresent(redirectionType: StatusCode, inner: Supplier[Route]): Route = RouteAdapter {
     redirectionType match {
-      case r: Redirection ⇒ D.redirectToNoTrailingSlashIfPresent(r) { inner.get().delegate }
-      case _              ⇒ throw new IllegalArgumentException("Not a valid redirection status code: " + redirectionType)
+      case r: Redirection => D.redirectToNoTrailingSlashIfPresent(r) { inner.get().delegate }
+      case _              => throw new IllegalArgumentException("Not a valid redirection status code: " + redirectionType)
     }
   }
 
@@ -280,17 +282,17 @@ abstract class PathDirectives extends ParameterDirectives {
     D.ignoreTrailingSlash { inner.get.delegate }
   }
 
-  private def unmarshal[T](t: Unmarshaller[String, T], inner: JFunction[T, Route]) = { element: String ⇒
-    D.extractRequestContext { ctx ⇒
+  private def unmarshal[T](t: Unmarshaller[String, T], inner: JFunction[T, Route]) = { element: String =>
+    D.extractRequestContext { ctx =>
       import ctx.executionContext
       import ctx.materializer
 
       D.onComplete(t.asScala.apply(element)) {
-        case Success(value) ⇒
+        case Success(value) =>
           inner.apply(value).delegate
-        case Failure(x: IllegalArgumentException) ⇒
+        case Failure(x: IllegalArgumentException) =>
           D.reject()
-        case Failure(x) ⇒
+        case Failure(x) =>
           D.failWith(x)
       }
     }

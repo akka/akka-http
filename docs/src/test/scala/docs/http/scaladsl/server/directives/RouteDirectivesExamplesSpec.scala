@@ -34,28 +34,30 @@ class RouteDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "complete-examples" in {
     //#complete-examples
     val route =
-      path("a") {
-        complete(HttpResponse(entity = "foo"))
-      } ~
+      concat(
+        path("a") {
+          complete(HttpResponse(entity = "foo"))
+        },
         path("b") {
           complete(StatusCodes.OK)
-        } ~
+        },
         path("c") {
           complete(StatusCodes.Created -> "bar")
-        } ~
+        },
         path("d") {
           complete(201 -> "bar")
-        } ~
+        },
         path("e") {
           complete(StatusCodes.Created, List(`Content-Type`(`text/plain(UTF-8)`)), "bar")
-        } ~
+        },
         path("f") {
           complete(201, List(`Content-Type`(`text/plain(UTF-8)`)), "bar")
-        } ~
+        },
         path("g") {
           complete(Future { StatusCodes.Created -> "bar" })
-        } ~
+        },
         (path("h") & complete("baz")) // `&` also works with `complete` as the 2nd argument
+      )
 
     // tests:
     Get("/a") ~> route ~> check {
@@ -105,17 +107,19 @@ class RouteDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "reject-examples" in {
     //#reject-examples
     val route =
-      path("a") {
-        reject // don't handle here, continue on
-      } ~
+      concat(
+        path("a") {
+          reject // don't handle here, continue on
+        },
         path("a") {
           complete("foo")
-        } ~
+        },
         path("b") {
           // trigger a ValidationRejection explicitly
           // rather than through the `validate` directive
           reject(ValidationRejection("Restricted!"))
         }
+      )
 
     // tests:
     Get("/a") ~> route ~> check {
@@ -132,12 +136,14 @@ class RouteDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     //#redirect-examples
     val route =
       pathPrefix("foo") {
-        pathSingleSlash {
-          complete("yes")
-        } ~
+        concat(
+          pathSingleSlash {
+            complete("yes")
+          },
           pathEnd {
             redirect("/foo/", StatusCodes.PermanentRedirect)
           }
+        )
       }
 
     // tests:

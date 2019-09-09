@@ -7,6 +7,7 @@ package akka.http.impl.util
 import akka.NotUsed
 import akka.actor.Cancellable
 import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.model.HttpEntity
 import akka.stream._
 import akka.stream.impl.fusing.GraphInterpreter
@@ -17,10 +18,14 @@ import akka.util.{ ByteString, OptionVal }
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.concurrent.{ ExecutionContext, Future, Promise }
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] object StreamUtils {
 
   /**
@@ -28,7 +33,7 @@ private[http] object StreamUtils {
    * input has been read it will call `finish` once to determine the final ByteString to post to the output.
    * Empty ByteStrings are discarded.
    */
-  def byteStringTransformer(f: ByteString ⇒ ByteString, finish: () ⇒ ByteString): GraphStage[FlowShape[ByteString, ByteString]] = new SimpleLinearGraphStage[ByteString] {
+  def byteStringTransformer(f: ByteString => ByteString, finish: () => ByteString): GraphStage[FlowShape[ByteString, ByteString]] = new SimpleLinearGraphStage[ByteString] {
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
       override def onPush(): Unit = {
         val data = f(grab(in))
@@ -49,26 +54,50 @@ private[http] object StreamUtils {
   }
 
   def captureTermination[T, Mat](source: Source[T, Mat]): (Source[T, Mat], Future[Unit]) = {
-    val promise = Promise[Unit]()
+    val (newSource, termination, _, _) = captureMaterializationTerminationAndKillSwitch(source)
+    (newSource, termination)
+  }
+  def captureMaterializationTerminationAndKillSwitch[T, Mat](source: Source[T, Mat]): (Source[T, Mat], Future[Unit], Future[Unit], KillSwitch) = {
+    val terminationPromise = Promise[Unit]()
+    val materializationPromise = Promise[Unit]()
+    val killResult = Promise[Unit]()
+    val killSwitch = new KillSwitch {
+      override def shutdown(): Unit = killResult.trySuccess(())
+      override def abort(ex: Throwable): Unit = killResult.tryFailure(ex)
+    }
     val transformer = new SimpleLinearGraphStage[T] {
       override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
+        override def preStart(): Unit = {
+          materializationPromise.trySuccess(())
+          killResult.future.value match {
+            case Some(res) => handleKill(res)
+            case None      => killResult.future.onComplete(killCallback.invoke)(ExecutionContexts.sameThreadExecutionContext)
+          }
+        }
+
         override def onPush(): Unit = push(out, grab(in))
 
         override def onPull(): Unit = pull(in)
 
         override def onUpstreamFailure(ex: Throwable): Unit = {
-          promise.tryFailure(ex)
+          terminationPromise.tryFailure(ex)
           failStage(ex)
         }
 
-        override def postStop(): Unit = {
-          promise.trySuccess(())
-        }
+        override def postStop(): Unit = terminationPromise.trySuccess(())
 
         setHandlers(in, out, this)
+
+        // KillSwitch implementation
+        private[this] val killCallback = getAsyncCallback[Try[Unit]](handleKill)
+
+        def handleKill(result: Try[Unit]): Unit = result match {
+          case Success(_)  => completeStage()
+          case Failure(ex) => failStage(ex)
+        }
       }
     }
-    source.via(transformer) → promise.future
+    (source.via(transformer), terminationPromise.future, materializationPromise.future, killSwitch)
   }
 
   def sliceBytesTransformer(start: Long, length: Long): Flow[ByteString, ByteString, NotUsed] = {
@@ -178,14 +207,16 @@ private[http] object StreamUtils {
 
       override def onDownstreamFinish(): Unit = {
         cancelAfter match {
-          case finite: FiniteDuration ⇒
+          case finite: FiniteDuration =>
+            log.debug(s"Delaying cancellation for $finite")
             timeout = OptionVal.Some {
               scheduleOnce(finite) {
                 log.debug(s"Stage was canceled after delay of $cancelAfter")
+                timeout = OptionVal.None
                 completeStage()
               }
             }
-          case _ ⇒ // do nothing
+          case _ => // do nothing
         }
 
         // don't pass cancellation to upstream but keep pulling until we get completion or failure
@@ -203,8 +234,8 @@ private[http] object StreamUtils {
       }
 
       override def postStop(): Unit = timeout match {
-        case OptionVal.Some(x) ⇒ x.cancel()
-        case OptionVal.None    ⇒ // do nothing
+        case OptionVal.Some(x) => x.cancel()
+        case OptionVal.None    => // do nothing
       }
     }
   }
@@ -212,10 +243,10 @@ private[http] object StreamUtils {
   /**
    * Similar idea than [[FlowOps.statefulMapConcat]] but for a simple map.
    */
-  def statefulMap[T, U](functionConstructor: () ⇒ T ⇒ U): Flow[T, U, NotUsed] =
-    Flow[T].statefulMapConcat { () ⇒
+  def statefulMap[T, U](functionConstructor: () => T => U): Flow[T, U, NotUsed] =
+    Flow[T].statefulMapConcat { () =>
       val f = functionConstructor()
-      i ⇒ f(i) :: Nil
+      i => f(i) :: Nil
     }
 
   /**
@@ -224,17 +255,17 @@ private[http] object StreamUtils {
    *
    * The result of `Attributes => (T => U)` is cached, and only the `T => U` function will be invoked afterwards for each element.
    */
-  def statefulAttrsMap[T, U](functionConstructor: Attributes ⇒ T ⇒ U): Flow[T, U, NotUsed] =
+  def statefulAttrsMap[T, U](functionConstructor: Attributes => T => U): Flow[T, U, NotUsed] =
     Flow[T].via(ExposeAttributes[T, U](functionConstructor))
 
-  trait ScheduleSupport { self: GraphStageLogic ⇒
+  trait ScheduleSupport { self: GraphStageLogic =>
     /**
      * Schedule a block to be run once after the given duration in the context of this graph stage.
      */
-    def scheduleOnce(delay: FiniteDuration)(block: ⇒ Unit): Cancellable =
+    def scheduleOnce(delay: FiniteDuration)(block: => Unit): Cancellable =
       materializer.scheduleOnce(delay, new Runnable { def run() = runInContext(block) })
 
-    def runInContext(block: ⇒ Unit): Unit = getAsyncCallback[AnyRef](_ ⇒ block).invoke(null)
+    def runInContext(block: => Unit): Unit = getAsyncCallback[AnyRef](_ => block).invoke(null)
   }
 
   private val EmptySource = Source.empty
@@ -245,77 +276,64 @@ private[http] object StreamUtils {
    * Tries to guess whether a source needs to cancelled and how. In the best case no materialization should be needed.
    */
   def cancelSource(source: Source[_, _])(implicit materializer: Materializer): Unit = source match {
-    case EmptySource ⇒ // nothing to do with empty source
-    case x ⇒
+    case EmptySource => // nothing to do with empty source
+    case x =>
       val mat =
         GraphInterpreter.currentInterpreterOrNull match {
-          case null if materializer ne null ⇒ materializer
-          case null                         ⇒ throw new IllegalStateException("Need to pass materializer to cancelSource if not run from GraphInterpreter context.")
-          case x                            ⇒ x.subFusingMaterializer // try to use fuse if already running in interpreter context
+          case null if materializer ne null => materializer
+          case null                         => throw new IllegalStateException("Need to pass materializer to cancelSource if not run from GraphInterpreter context.")
+          case x                            => x.subFusingMaterializer // try to use fuse if already running in interpreter context
         }
       x.runWith(Sink.ignore)(mat)
   }
 
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  object CaptureMaterializationAndTerminationOp extends EntityStreamOp[(Future[Unit], Future[Unit])] {
-    def strictM: (Future[Unit], Future[Unit]) = (Future.successful(()), Future.successful(()))
-    def apply[T, Mat](source: Source[T, Mat]): (Source[T, Mat], (Future[Unit], Future[Unit])) = {
-      val materializationPromise = Promise[Unit]()
-      val (newSource, completion) =
-        StreamUtils.captureTermination(source.mapMaterializedValue { mat ⇒
-          materializationPromise.trySuccess(())
-          mat
-        })
-      (newSource, (materializationPromise.future, completion))
+  case class StreamControl(
+    whenMaterialized: Future[Unit],
+    whenTerminated:   Future[Unit],
+    killSwitch:       Option[KillSwitch]
+  )
+  private val successfulDone = Future.successful(())
+  object CaptureMaterializationAndTerminationOp extends EntityStreamOp[StreamControl] {
+    val strictM: StreamControl = StreamControl(successfulDone, successfulDone, None)
+    def apply[T, Mat](source: Source[T, Mat]): (Source[T, Mat], StreamControl) = {
+      val (newSource, completion, materialization, killSwitch) =
+        StreamUtils.captureMaterializationTerminationAndKillSwitch(source)
+
+      (newSource, StreamControl(materialization, completion, Some(killSwitch)))
     }
   }
-
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
   object CaptureTerminationOp extends EntityStreamOp[Future[Unit]] {
-    val strictM: Future[Unit] = Future.successful(())
+    val strictM: Future[Unit] = successfulDone
     def apply[T, Mat](source: Source[T, Mat]): (Source[T, Mat], Future[Unit]) = StreamUtils.captureTermination(source)
   }
 
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  private[http] trait EntityStreamOp[M] {
+  trait EntityStreamOp[M] {
     def strictM: M
     def apply[T, Mat](source: Source[T, Mat]): (Source[T, Mat], M)
   }
 
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  private[http] def transformEntityStream[T <: HttpEntity, M](entity: T, streamOp: EntityStreamOp[M]): (T, M) =
+  def transformEntityStream[T <: HttpEntity, M](entity: T, streamOp: EntityStreamOp[M]): (T, M) =
     entity match {
-      case x: HttpEntity.Strict ⇒ x.asInstanceOf[T] → streamOp.strictM
-      case x: HttpEntity.Default ⇒
+      case x: HttpEntity.Strict => x.asInstanceOf[T] -> streamOp.strictM
+      case x: HttpEntity.Default =>
         val (newData, whenCompleted) = streamOp(x.data)
-        x.copy(data = newData).asInstanceOf[T] → whenCompleted
-      case x: HttpEntity.Chunked ⇒
+        x.copy(data = newData).asInstanceOf[T] -> whenCompleted
+      case x: HttpEntity.Chunked =>
         val (newChunks, whenCompleted) = streamOp(x.chunks)
-        x.copy(chunks = newChunks).asInstanceOf[T] → whenCompleted
-      case x: HttpEntity.CloseDelimited ⇒
+        x.copy(chunks = newChunks).asInstanceOf[T] -> whenCompleted
+      case x: HttpEntity.CloseDelimited =>
         val (newData, whenCompleted) = streamOp(x.data)
-        x.copy(data = newData).asInstanceOf[T] → whenCompleted
-      case x: HttpEntity.IndefiniteLength ⇒
+        x.copy(data = newData).asInstanceOf[T] -> whenCompleted
+      case x: HttpEntity.IndefiniteLength =>
         val (newData, whenCompleted) = streamOp(x.data)
-        x.copy(data = newData).asInstanceOf[T] → whenCompleted
+        x.copy(data = newData).asInstanceOf[T] -> whenCompleted
     }
 }
 
 /**
  * INTERNAL API
  */
+@InternalApi
 private[http] class EnhancedByteStringSource[Mat](val byteStringStream: Source[ByteString, Mat]) extends AnyVal {
   def join(implicit materializer: Materializer): Future[ByteString] =
     byteStringStream.runFold(ByteString.empty)(_ ++ _)
@@ -324,7 +342,7 @@ private[http] class EnhancedByteStringSource[Mat](val byteStringStream: Source[B
 }
 
 /** INTERNAL API */
-@InternalApi private[http] case class ExposeAttributes[T, U](functionConstructor: Attributes ⇒ T ⇒ U)
+@InternalApi private[http] case class ExposeAttributes[T, U](functionConstructor: Attributes => T => U)
   extends GraphStage[FlowShape[T, U]] {
 
   val in = Inlet[T]("ExposeAttributes.in")

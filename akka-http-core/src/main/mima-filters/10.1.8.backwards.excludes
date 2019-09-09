@@ -1,0 +1,26 @@
+# Constructor of abstract @DoNotInherit class:
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.HttpsConnectionContext.this")
+# Constructor of abstract @DoNotInherit class:
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.HttpConnectionContext.this")
+# Constructor @InternalApi class:
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ConnectHttpImpl.this")
+# Constructor @InternalApi class:
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ConnectHttpsImpl.this")
+# Indeed seems to be missing, but I can't see how this would ever be triggered.
+# (the method that *would* be triggered is in
+# `HttpsConnectionContext$`)
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpsConnectionContext.<init>$default$7")
+
+# Extension of @DoNotInherit class
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.Http2ServerSettings.logFrames")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.Http2ServerSettings.withLogFrames")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.logFrames")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.withLogFrames")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.unapply")
+
+# Internal class changes
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.apply")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.copy$default$5")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.this")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.unapply")

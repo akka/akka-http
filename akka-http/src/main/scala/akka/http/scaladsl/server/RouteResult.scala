@@ -4,15 +4,16 @@
 
 package akka.http.scaladsl.server
 
-import scala.collection.immutable
-import scala.concurrent.ExecutionContext
 import akka.NotUsed
-import akka.http.scaladsl.settings.{ RoutingSettings, ParserSettings }
+import akka.http.javadsl
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
+import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
 import akka.stream.Materializer
 import akka.stream.scaladsl.Flow
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
-import akka.http.javadsl
+
 import scala.collection.JavaConverters._
+import scala.collection.immutable
+import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor }
 
 /**
  * The result of handling a request.
@@ -27,7 +28,7 @@ object RouteResult {
     override def getResponse = response
   }
   final case class Rejected(rejections: immutable.Seq[Rejection]) extends javadsl.server.Rejected with RouteResult {
-    override def getRejections = rejections.map(r ⇒ r: javadsl.server.Rejection).asJava
+    override def getRejections = rejections.map(r => r: javadsl.server.Rejection).asJava
   }
 
   implicit def route2HandlerFlow(route: Route)(
@@ -39,6 +40,11 @@ object RouteResult {
     executionContext: ExecutionContext = null,
     rejectionHandler: RejectionHandler = RejectionHandler.default,
     exceptionHandler: ExceptionHandler = null
-  ): Flow[HttpRequest, HttpResponse, NotUsed] =
+  ): Flow[HttpRequest, HttpResponse, NotUsed] = {
+    implicit val ec: ExecutionContextExecutor = executionContext match {
+      case e: ExecutionContextExecutor => e
+      case _                           => null
+    }
     Route.handlerFlow(route)
+  }
 }

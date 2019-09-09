@@ -14,7 +14,7 @@ The objective of @apidoc[HttpApp] is to help you start an HTTP server with just 
 This is accomplished just by extending @apidoc[HttpApp] and implementing the `routes()` method.
 If desired, @apidoc[HttpApp] provides different hook methods that can be overridden to change its default behavior.
 
-Please note that @apidoc[HttpApp] is not the canonical way of starting an akka-http server. It is a tool to get up and running fast. For integrating into already existing Akka applications that already bring their @apidoc[ActorSystem] using `Http.bindAndHandle` (which is also just a single line of code) is recommended over using @apidoc[HttpApp].
+Please note that @apidoc[HttpApp] is not the canonical way of starting an akka-http server. It is a tool to get up and running fast. For integrating into already existing Akka applications that already bring their @apidoc[akka.actor.ActorSystem] using `Http.bindAndHandle` (which is also just a single line of code) is recommended over using @apidoc[HttpApp].
 
 ## Minimal Example
 
@@ -58,8 +58,8 @@ Java
 
 ## Providing your own Actor System
 
-@apidoc[HttpApp] creates its own @apidoc[ActorSystem] instance when one is not provided.
-In case you already created an @apidoc[ActorSystem] in your application you can
+@apidoc[HttpApp] creates its own @apidoc[akka.actor.ActorSystem] instance when one is not provided.
+In case you already created an @apidoc[akka.actor.ActorSystem] in your application you can
 pass it to `startServer` as illustrated in the following example:
 
 Scala
@@ -68,14 +68,14 @@ Scala
 Java
 :   @@snip [HttpAppExampleTest.java]($test$/java/docs/http/javadsl/server/HttpAppExampleTest.java) { #minimal-imports #ownActorSystem }
 
-When you provide your own @apidoc[ActorSystem] you are responsible for terminating it. For more fine-grained control over the shutdown of various parts of the application, take a look at @scala[@extref[Coordinated Shutdown](akka25-docs:scala/actors.html#coordinated-shutdown)]@java[@extref[Coordinated Shutdown](akka25-docs:java/actors.html#coordinated-shutdown)] extension which is available since Akka 2.5.0.
+When you provide your own @apidoc[akka.actor.ActorSystem] you are responsible for terminating it. For more fine-grained control over the shutdown of various parts of the application, take a look at @scala[@extref[Coordinated Shutdown](akka25-docs:scala/actors.html#coordinated-shutdown)]@java[@extref[Coordinated Shutdown](akka25-docs:java/actors.html#coordinated-shutdown)] extension which is available since Akka 2.5.0.
 
 
 
 ## Providing your own Actor System and Settings
 
 @apidoc[HttpApp] offers another overloaded `startServer` method where you can pass, on top of the `host` and `port`,
-your previously created @apidoc[ActorSystem] and your custom @apidoc[ServerSettings].
+your previously created @apidoc[akka.actor.ActorSystem] and your custom @apidoc[ServerSettings].
 You can see an example in the following code snippet:
 
 Scala

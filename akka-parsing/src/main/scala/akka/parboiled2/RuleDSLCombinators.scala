@@ -84,7 +84,7 @@ trait RuleDSLCombinators {
    * will continue where the sub-parser stopped.
    */
   @compileTimeOnly("Calls to `runSubParser` must be inside `rule` macro")
-  def runSubParser[I <: HList, O <: HList](f: ParserInput ⇒ Rule[I, O]): Rule[I, O] = `n/a`
+  def runSubParser[I <: HList, O <: HList](f: ParserInput => Rule[I, O]): Rule[I, O] = `n/a`
 
   @compileTimeOnly("Calls to `int2NTimes` must be inside `rule` macro")
   implicit def int2NTimes(i: Int): NTimes = `n/a`

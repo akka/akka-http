@@ -113,10 +113,12 @@ Using the @ref[get](method-directives/get.md) and @ref[complete](route-directive
 
 ```scala
 val route =
-  get {
-    complete("Received GET")
-  } ~
-  complete("Received something else")
+  concat(
+    get {
+      complete("Received GET")
+    },
+    complete("Received something else")
+  )
 ```
 
 Again, the produced routes will behave identically in all cases.
@@ -125,10 +127,12 @@ Note that, if you wish, you can also mix the two styles of route creation:
 
 ```scala
 val route =
-  get { ctx =>
-    ctx.complete("Received GET")
-  } ~
-  complete("Received something else")
+  concat(
+    get { ctx =>
+      ctx.complete("Received GET")
+    },
+    complete("Received something else")
+  )
 ```
 
 Here, the inner route of the @ref[get](method-directives/get.md) directive is written as an explicit function literal.
@@ -210,11 +214,6 @@ transformations, both (or either) on the request and on the response side.
 
 ## Composing Directives
 
-@@@ note { .group-scala }
-Gotcha: forgetting the `~` (tilde) character in between directives can result in perfectly valid
-Scala code that compiles but does not work as expected. What would be intended as a single expression would actually be multiple expressions, and only the final one would be used as the result of the parent directive. Alternatively, you might choose to use the `concat` combinator. `concat(a, b, c)` is the same as `a ~ b ~ c`.
-@@@
-
 As you have seen from the examples presented so far the "normal" way of composing directives is nesting.
 Let's take a look at this concrete example:
 
@@ -224,7 +223,7 @@ Scala
 Java
 :  @@snip [DirectiveExamplesTest.java]($test$/java/docs/http/javadsl/server/DirectiveExamplesTest.java) { #example1 }
 
-Here the `get` and `put` directives are chained together @scala[with the `~` operator]@java[using the `orElse` method] to form a higher-level route that
+Here the `get` and `put` directives are chained together @scala[with the `concat` combinator]@java[using the `orElse` method] to form a higher-level route that
 serves as the inner route of the `path` directive. Let's rewrite it in the following way:
 
 Scala
@@ -322,9 +321,18 @@ use their power to define your web service behavior at the level of abstraction 
 
 @@@ div { .group-scala }
 
-### Composing Directives with `concat` Combinator
+### Composing Directives with `~` Operator
 
-Alternatively we can combine directives using `concat` combinator where we pass each directive as an argument to the combinator function instead of chaining them with `~` . Let's take a look at the usage of this combinator:
+@@@ 
+
+@@@ note { .group-scala }
+Gotcha: forgetting the `~` (tilde) character in between directives can result in perfectly valid
+Scala code that compiles but does not work as expected. What would be intended as a single expression would actually be multiple expressions, and only the final one would be used as the result of the parent directive. Because of this, the recommended way to compose routes is with the the `concat` combinator.
+@@@
+
+@@@ div { .group-scala }
+
+Alternatively we can combine directives using the `~` operator where we chain them together instead of passing each directive as a separate argument. Let's take a look at the usage of this combinator:
 
 @@snip [DirectiveExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-8 }
 

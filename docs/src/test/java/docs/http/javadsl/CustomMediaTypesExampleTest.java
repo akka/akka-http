@@ -27,6 +27,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
+import static akka.util.ByteString.emptyByteString;
 
 //#application-custom-java
 import static akka.http.javadsl.server.Directives.complete;
@@ -83,7 +84,7 @@ public class CustomMediaTypesExampleTest extends JUnitRouteTest {
 
     assertEquals(StatusCodes.OK, response.status());
     final String body = response.entity().toStrict(1000, materializer).toCompletableFuture().get()
-      .getDataBytes().runFold(ByteString.empty(), (a, b) -> a.$plus$plus(b), materializer)
+      .getDataBytes().runFold(emptyByteString(), (a, b) -> a.$plus$plus(b), materializer)
       .toCompletableFuture().get().utf8String();
     assertEquals("application/custom = class akka.http.scaladsl.model.ContentType$WithFixedCharset", body); // it's the Scala DSL package because it's the only instance of the Java DSL
   }

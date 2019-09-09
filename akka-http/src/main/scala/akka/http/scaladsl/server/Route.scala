@@ -34,18 +34,18 @@ object Route {
    */
   def seal(route: Route)(implicit
     routingSettings: RoutingSettings = null,
-                         parserSettings:   ParserSettings   = null,
-                         rejectionHandler: RejectionHandler = RejectionHandler.default,
-                         exceptionHandler: ExceptionHandler = null): Route = {
+                         @deprecated("For binary compatibility. parserSettings is never used", since = "10.1.8") parserSettings:ParserSettings = null,
+                         rejectionHandler:                                                                                    RejectionHandler = RejectionHandler.default,
+                         exceptionHandler:                                                                                    ExceptionHandler = null): Route = {
     import directives.ExecutionDirectives._
     // optimized as this is the root handler for all akka-http applications
-    BasicDirectives.extractSettings { theSettings ⇒
+    BasicDirectives.extractSettings { theSettings =>
       val effectiveRoutingSettings = if (routingSettings eq null) theSettings else routingSettings
 
       {
         implicit val routingSettings: RoutingSettings = effectiveRoutingSettings
         (handleExceptions(ExceptionHandler.seal(exceptionHandler)) & handleRejections(rejectionHandler.seal))
-          .tapply(_ ⇒ route) // execute above directives eagerly, avoiding useless laziness of Directive.addByNameNullaryApply
+          .tapply(_ => route) // execute above directives eagerly, avoiding useless laziness of Directive.addByNameNullaryApply
       }
     }
   }
@@ -75,18 +75,18 @@ object Route {
                                  routingLog:       RoutingLog,
                                  executionContext: ExecutionContextExecutor = null,
                                  rejectionHandler: RejectionHandler         = RejectionHandler.default,
-                                 exceptionHandler: ExceptionHandler         = null): HttpRequest ⇒ Future[HttpResponse] = {
+                                 exceptionHandler: ExceptionHandler         = null): HttpRequest => Future[HttpResponse] = {
     val effectiveEC = if (executionContext ne null) executionContext else materializer.executionContext
 
     {
-      implicit val executionContext = effectiveEC // overrides parameter
+      implicit val executionContext: ExecutionContextExecutor = effectiveEC // overrides parameter
       val effectiveParserSettings = if (parserSettings ne null) parserSettings else ParserSettings(ActorMaterializerHelper.downcast(materializer).system)
       val sealedRoute = seal(route)
-      request ⇒
+      request =>
         sealedRoute(new RequestContextImpl(request, routingLog.requestLog(request), routingSettings, effectiveParserSettings)).fast
           .map {
-            case RouteResult.Complete(response) ⇒ response
-            case RouteResult.Rejected(rejected) ⇒ throw new IllegalStateException(s"Unhandled rejections '$rejected', unsealed RejectionHandler?!")
+            case RouteResult.Complete(response) => response
+            case RouteResult.Rejected(rejected) => throw new IllegalStateException(s"Unhandled rejections '$rejected', unsealed RejectionHandler?!")
           }
     }
   }

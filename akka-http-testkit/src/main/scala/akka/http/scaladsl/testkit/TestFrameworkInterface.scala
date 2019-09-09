@@ -19,7 +19,7 @@ trait TestFrameworkInterface {
 object TestFrameworkInterface {
 
   trait Scalatest extends TestFrameworkInterface with BeforeAndAfterAll {
-    this: Suite ⇒
+    this: Suite =>
 
     def failTest(msg: String) = throw new TestFailedException(msg, 11)
 

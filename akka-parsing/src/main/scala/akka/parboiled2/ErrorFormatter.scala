@@ -16,7 +16,7 @@
 
 package akka.parboiled2
 
-import java.lang.{ StringBuilder ⇒ JStringBuilder }
+import java.lang.{ StringBuilder => JStringBuilder }
 import scala.annotation.tailrec
 
 /**
@@ -88,12 +88,12 @@ class ErrorFormatter(
     // to advancing the principal error location (PEL). Therefore it might be that their succeeding inner match
     // reaches further than the PEL. In these cases we want to show the complete inner match as "mismatched",
     // not just the piece up to the PEL. This is what this method corrects for.
-    error.effectiveTraces.foldLeft(error.principalPosition.index - error.position.index + 1) { (len, trace) ⇒
+    error.effectiveTraces.foldLeft(error.principalPosition.index - error.position.index + 1) { (len, trace) =>
       import RuleTrace._
       trace.terminal match {
-        case NotPredicate(_, x) ⇒
-          math.max(trace.prefix.collectFirst { case NonTerminal(Atomic, off) ⇒ off + x } getOrElse x, len)
-        case _ ⇒ len
+        case NotPredicate(_, x) =>
+          math.max(trace.prefix.collectFirst { case NonTerminal(Atomic, off) => off + x } getOrElse x, len)
+        case _ => len
       }
     }
 
@@ -121,10 +121,10 @@ class ErrorFormatter(
   def formatExpectedAsString(sb: JStringBuilder, error: ParseError): JStringBuilder = {
     @tailrec def rec(remaining: List[String]): JStringBuilder =
       remaining match {
-        case Nil                 ⇒ sb.append("???")
-        case head :: Nil         ⇒ sb.append(head)
-        case head :: last :: Nil ⇒ sb.append(head).append(" or ").append(last)
-        case head :: tail        ⇒ sb.append(head).append(", "); rec(tail)
+        case Nil                 => sb.append("???")
+        case head :: Nil         => sb.append(head)
+        case head :: last :: Nil => sb.append(head).append(" or ").append(last)
+        case head :: tail        => sb.append(head).append(", "); rec(tail)
       }
     rec(formatExpectedAsList(error))
   }
@@ -159,7 +159,7 @@ class ErrorFormatter(
     import error.position._
     val (expandedCol, expandedLine) = expandErrorLineTabs(input getLine line, column)
     sb.append(expandedLine).append('\n')
-    for (i ← 1 until expandedCol) sb.append(' ')
+    for (i <- 1 until expandedCol) sb.append(' ')
     sb.append('^')
   }
 
@@ -173,13 +173,13 @@ class ErrorFormatter(
       if (inCol < line.length) {
         val ec = if (inCol == errorColumn - 1) sb.length else errorCol
         line.charAt(inCol) match {
-          case '\t' ⇒ sb.append(new String(Array.fill[Char](expandTabs - (sb.length % expandTabs))(' ')))
-          case c    ⇒ sb.append(c)
+          case '\t' => sb.append(new String(Array.fill[Char](expandTabs - (sb.length % expandTabs))(' ')))
+          case c    => sb.append(c)
         }
         rec(inCol + 1, ec)
       } else errorCol + 1
-    if (expandTabs >= 0) rec(0, 0) → sb.toString()
-    else errorColumn → line
+    if (expandTabs >= 0) rec(0, 0) -> sb.toString()
+    else errorColumn -> line
   }
 
   /**
@@ -187,7 +187,7 @@ class ErrorFormatter(
    */
   def formatTraces(error: ParseError): String = {
     import error._
-    traces.map(formatTrace(_, position.index)).mkString(traces.size + " rule" + (if (traces.size != 1) "s" else "") +
+    traces.map(formatTrace(_, position.index)).mkString(s"${traces.size} rule" + (if (traces.size != 1) "s" else "") +
       " mismatched at error location:\n  ", "\n  ", "\n")
   }
 
@@ -197,26 +197,26 @@ class ErrorFormatter(
   def formatTrace(trace: RuleTrace, errorIndex: Int): String = {
     import RuleTrace._
     val sb = new JStringBuilder
-    val doSep: String ⇒ JStringBuilder = sb.append
-    val dontSep: String ⇒ JStringBuilder = _ ⇒ sb
+    val doSep: String => JStringBuilder = sb.append
+    val dontSep: String => JStringBuilder = _ => sb
     def render(names: List[String], sep: String = "") = if (names.nonEmpty) names.reverse.mkString("", ":", sep) else ""
     @tailrec def rec(remainingPrefix: List[RuleTrace.NonTerminal], names: List[String],
-                     sep: String ⇒ JStringBuilder): JStringBuilder =
+                     sep: String => JStringBuilder): JStringBuilder =
       remainingPrefix match {
-        case NonTerminal(Named(name), _) :: tail ⇒
+        case NonTerminal(Named(name), _) :: tail =>
           rec(tail, name :: names, sep)
-        case NonTerminal(RuleCall, _) :: tail ⇒
+        case NonTerminal(RuleCall, _) :: tail =>
           sep(" ").append('/').append(render(names)).append("/ ")
           rec(tail, Nil, dontSep)
-        case NonTerminal(Sequence, _) :: tail if names.isEmpty ⇒
+        case NonTerminal(Sequence, _) :: tail if names.isEmpty =>
           rec(tail, Nil, sep)
-        case NonTerminal(Sequence, _) :: tail ⇒
+        case NonTerminal(Sequence, _) :: tail =>
           sep(" / ").append(render(names))
           rec(tail, Nil, doSep)
-        case x :: tail ⇒
+        case x :: tail =>
           sep(" / ").append(render(names, ":")).append(formatNonTerminal(x))
           rec(tail, Nil, doSep)
-        case Nil ⇒
+        case Nil =>
           sep(" / ").append(render(names, ":")).append(formatTerminal(trace.terminal))
       }
     rec(trace.prefix, Nil, dontSep)
@@ -232,25 +232,25 @@ class ErrorFormatter(
     import RuleTrace._
     import CharUtils.escape
     val keyString = nonTerminal.key match {
-      case Action              ⇒ "<action>"
-      case Atomic              ⇒ "atomic"
-      case AndPredicate        ⇒ "&"
-      case Capture             ⇒ "capture"
-      case Cut                 ⇒ "cut"
-      case FirstOf             ⇒ "|"
-      case x: IgnoreCaseString ⇒ '"' + escape(x.string) + '"'
-      case x: MapMatch         ⇒ x.map.toString()
-      case x: Named            ⇒ x.name
-      case OneOrMore           ⇒ "+"
-      case Optional            ⇒ "?"
-      case Quiet               ⇒ "quiet"
-      case RuleCall            ⇒ "call"
-      case Run                 ⇒ "<run>"
-      case RunSubParser        ⇒ "runSubParser"
-      case Sequence            ⇒ "~"
-      case x: StringMatch      ⇒ '"' + escape(x.string) + '"'
-      case x: Times            ⇒ "times"
-      case ZeroOrMore          ⇒ "*"
+      case Action              => "<action>"
+      case Atomic              => "atomic"
+      case AndPredicate        => "&"
+      case Capture             => "capture"
+      case Cut                 => "cut"
+      case FirstOf             => "|"
+      case x: IgnoreCaseString => s""""${escape(x.string)}""""
+      case x: MapMatch         => x.map.toString()
+      case x: Named            => x.name
+      case OneOrMore           => "+"
+      case Optional            => "?"
+      case Quiet               => "quiet"
+      case RuleCall            => "call"
+      case Run                 => "<run>"
+      case RunSubParser        => "runSubParser"
+      case Sequence            => "~"
+      case x: StringMatch      => s""""${escape(x.string)}""""
+      case x: Times            => "times"
+      case ZeroOrMore          => "*"
     }
     if (nonTerminal.offset != 0 && showFrameStartOffset) keyString + ':' + nonTerminal.offset else keyString
   }
@@ -259,19 +259,19 @@ class ErrorFormatter(
     import RuleTrace._
     import CharUtils.escape
     terminal match {
-      case ANY                                       ⇒ "ANY"
-      case AnyOf(s)                                  ⇒ '[' + escape(s) + ']'
-      case CharMatch(c)                              ⇒ "'" + escape(c) + '\''
-      case CharPredicateMatch(_)                     ⇒ "<CharPredicate>"
-      case CharRange(from, to)                       ⇒ s"'${escape(from)}'-'${escape(to)}'"
-      case Fail(expected)                            ⇒ expected
-      case IgnoreCaseChar(c)                         ⇒ "'" + escape(c) + '\''
-      case NoneOf(s)                                 ⇒ s"[^${escape(s)}]"
-      case NotPredicate(NotPredicate.Terminal(t), _) ⇒ "!" + formatTerminal(t)
-      case NotPredicate(NotPredicate.RuleCall(t), _) ⇒ "!" + t
-      case NotPredicate(NotPredicate.Named(n), _)    ⇒ "!" + n
-      case NotPredicate(NotPredicate.Anonymous, _)   ⇒ "!<anon>"
-      case SemanticPredicate                         ⇒ "test"
+      case ANY                                       => "ANY"
+      case AnyOf(s)                                  => s"[${escape(s)}]"
+      case CharMatch(c)                              => "'" + escape(c) + '\''
+      case CharPredicateMatch(_)                     => "<CharPredicate>"
+      case CharRange(from, to)                       => s"'${escape(from)}'-'${escape(to)}'"
+      case Fail(expected)                            => expected
+      case IgnoreCaseChar(c)                         => "'" + escape(c) + '\''
+      case NoneOf(s)                                 => s"[^${escape(s)}]"
+      case NotPredicate(NotPredicate.Terminal(t), _) => "!" + formatTerminal(t)
+      case NotPredicate(NotPredicate.RuleCall(t), _) => "!" + t
+      case NotPredicate(NotPredicate.Named(n), _)    => "!" + n
+      case NotPredicate(NotPredicate.Anonymous, _)   => "!<anon>"
+      case SemanticPredicate                         => "test"
     }
   }
 }

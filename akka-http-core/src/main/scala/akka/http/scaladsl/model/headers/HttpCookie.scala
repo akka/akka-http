@@ -10,7 +10,7 @@ import akka.parboiled2.CharPredicate
 import java.util.{ Optional, OptionalLong }
 import akka.http.scaladsl.model.DateTime
 import akka.http.impl.util._
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 import akka.http.impl.util.JavaMapping.Implicits._
 import scala.compat.java8.OptionConverters._
 

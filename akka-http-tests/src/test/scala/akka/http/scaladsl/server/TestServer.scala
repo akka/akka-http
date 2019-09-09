@@ -40,14 +40,14 @@ object TestServer extends App {
   import Directives._
 
   def auth: AuthenticatorPF[String] = {
-    case p @ Credentials.Provided(name) if p.verify(name + "-password") ⇒ name
+    case p @ Credentials.Provided(name) if p.verify(name + "-password") => name
   }
 
   // format: OFF
   val routes = {
     get {
       path("") {
-        withRequestTimeout(1.milli, _ ⇒ HttpResponse(
+        withRequestTimeout(1.milli, _ => HttpResponse(
           StatusCodes.EnhanceYourCalm,
           entity = "Unable to serve response within time limit, please enhance your calm.")) {
           Thread.sleep(1000)
@@ -55,7 +55,7 @@ object TestServer extends App {
         }
       } ~
       path("secure") {
-        authenticateBasicPF("My very secure site", auth) { user ⇒
+        authenticateBasicPF("My very secure site", auth) { user =>
           complete(<html> <body> Hello <b>{user}</b>. Access has been granted! </body> </html>)
         }
       } ~
@@ -68,28 +68,28 @@ object TestServer extends App {
       path("tweet") {
         complete(Tweet("Hello, world!"))
       } ~
-      (path("tweets") & parameter('n.as[Int])) { n => 
+      (path("tweets") & parameter('n.as[Int])) { n =>
         get {
           val tweets = Source.repeat(Tweet("Hello, world!")).take(n)
           complete(tweets)
         } ~
         post {
-          entity(asSourceOf[Tweet]) { tweets ⇒
-            onComplete(tweets.runFold(0)({ case (acc, t) => acc + 1 })) { count => 
+          entity(asSourceOf[Tweet]) { tweets =>
+            onComplete(tweets.runFold(0)({ case (acc, t) => acc + 1 })) { count =>
               complete(s"Total tweets received: " + count)
             }
           }
         } ~
         put {
           // checking the alternative syntax also works:
-          entity(as[Source[Tweet, NotUsed]]) { tweets ⇒
-            onComplete(tweets.runFold(0)({ case (acc, t) => acc + 1 })) { count => 
+          entity(as[Source[Tweet, NotUsed]]) { tweets =>
+            onComplete(tweets.runFold(0)({ case (acc, t) => acc + 1 })) { count =>
               complete(s"Total tweets received: " + count)
             }
           }
         }
       }
-    } ~ 
+    } ~
     pathPrefix("inner")(getFromResourceDirectory("someDir"))
   }
   // format: ON
@@ -99,7 +99,7 @@ object TestServer extends App {
   println(s"Server online at http://0.0.0.0:8080/\nPress RETURN to stop...")
   StdIn.readLine()
 
-  bindingFuture.flatMap(_.unbind()).onComplete(_ ⇒ system.terminate())
+  bindingFuture.flatMap(_.unbind()).onComplete(_ => system.terminate())
 
   lazy val index =
     <html>

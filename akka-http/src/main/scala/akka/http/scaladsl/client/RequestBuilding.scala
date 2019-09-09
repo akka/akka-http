@@ -16,7 +16,7 @@ import headers.HttpCredentials
 import HttpMethods._
 
 trait RequestBuilding extends TransformerPipelineSupport {
-  type RequestTransformer = HttpRequest ⇒ HttpRequest
+  type RequestTransformer = HttpRequest => HttpRequest
 
   class RequestBuilder(val method: HttpMethod) {
     def apply(): HttpRequest =
@@ -42,8 +42,8 @@ trait RequestBuilding extends TransformerPipelineSupport {
 
     def apply[T](uri: Uri, content: Option[T])(implicit m: ToEntityMarshaller[T], timeout: Timeout = Timeout(1.second), ec: ExecutionContext): HttpRequest =
       content match {
-        case None ⇒ apply(uri, HttpEntity.Empty)
-        case Some(value) ⇒
+        case None => apply(uri, HttpEntity.Empty)
+        case Some(value) =>
           val entity = Await.result(Marshal(value).to[RequestEntity], timeout.duration)
           apply(uri, entity)
       }
@@ -67,13 +67,13 @@ trait RequestBuilding extends TransformerPipelineSupport {
 
   def addHeader(headerName: String, headerValue: String): RequestTransformer =
     HttpHeader.parse(headerName, headerValue) match {
-      case HttpHeader.ParsingResult.Ok(h, Nil) ⇒ addHeader(h)
-      case result                              ⇒ throw new IllegalArgumentException(result.errors.head.formatPretty)
+      case HttpHeader.ParsingResult.Ok(h, Nil) => addHeader(h)
+      case result                              => throw new IllegalArgumentException(result.errors.head.formatPretty)
     }
 
   def addHeaders(first: HttpHeader, more: HttpHeader*): RequestTransformer = _.mapHeaders(_ ++ (first +: more))
 
-  def mapHeaders(f: immutable.Seq[HttpHeader] ⇒ immutable.Seq[HttpHeader]): RequestTransformer = _.mapHeaders(f)
+  def mapHeaders(f: immutable.Seq[HttpHeader] => immutable.Seq[HttpHeader]): RequestTransformer = _.mapHeaders(f)
 
   def removeHeader(headerName: String): RequestTransformer =
     _ mapHeaders (_ filterNot (_.name equalsIgnoreCase headerName))
@@ -85,13 +85,13 @@ trait RequestBuilding extends TransformerPipelineSupport {
     _ mapHeaders (_ filterNot clazz.isInstance)
 
   def removeHeaders(names: String*): RequestTransformer =
-    _ mapHeaders (_ filterNot (header ⇒ names exists (_ equalsIgnoreCase header.name)))
+    _ mapHeaders (_ filterNot (header => names exists (_ equalsIgnoreCase header.name)))
 
   def addCredentials(credentials: HttpCredentials) = addHeader(headers.Authorization(credentials))
 
   def logRequest(log: LoggingAdapter, level: Logging.LogLevel = Logging.DebugLevel) = logValue[HttpRequest](log, level)
 
-  def logRequest(logFun: HttpRequest ⇒ Unit) = logValue[HttpRequest](logFun)
+  def logRequest(logFun: HttpRequest => Unit) = logValue[HttpRequest](logFun)
 
   implicit def header2AddHeader(header: HttpHeader): RequestTransformer = addHeader(header)
 }

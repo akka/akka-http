@@ -10,6 +10,7 @@ ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.settin
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.apply")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.copy")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.this")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.unapply")
 
 # #2149: additions to @DoNotInherit classes
 

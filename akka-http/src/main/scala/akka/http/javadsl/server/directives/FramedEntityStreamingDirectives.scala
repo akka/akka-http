@@ -11,7 +11,7 @@ import akka.http.javadsl.model.{ HttpEntity, _ }
 import akka.http.javadsl.server.Route
 import akka.http.javadsl.unmarshalling.Unmarshaller
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
-import akka.http.scaladsl.server.{ Directives ⇒ D }
+import akka.http.scaladsl.server.{ Directives => D }
 import akka.stream.javadsl.Source
 import akka.util.ByteString
 
@@ -25,7 +25,7 @@ abstract class FramedEntityStreamingDirectives extends TimeoutDirectives {
   def entityAsSourceOf[T](um: Unmarshaller[ByteString, T], support: EntityStreamingSupport,
                           inner: java.util.function.Function[Source[T, NotUsed], Route]): Route = RouteAdapter {
     val umm = D.asSourceOf(um.asScala, support.asScala)
-    D.entity(umm) { s: akka.stream.scaladsl.Source[T, NotUsed] ⇒
+    D.entity(umm) { s: akka.stream.scaladsl.Source[T, NotUsed] =>
       inner(s.asJava).delegate
     }
   }

@@ -27,7 +27,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class ClientConnectionSettings private[akka] () { self: ClientConnectionSettingsImpl ⇒
+abstract class ClientConnectionSettings private[akka] () { self: ClientConnectionSettingsImpl =>
 
   /* JAVA APIs */
   final def getConnectingTimeout: FiniteDuration = connectingTimeout

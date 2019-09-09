@@ -4,12 +4,12 @@
 
 package akka.http.scaladsl.model
 
-import java.lang.{ Iterable ⇒ JIterable }
+import java.lang.{ Iterable => JIterable }
 import language.implicitConversions
 import scala.collection.immutable
 import scala.util.Try
 import java.nio.charset.Charset
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 import akka.http.impl.util._
 
 /**
@@ -80,7 +80,7 @@ object HttpCharset {
 // see http://www.iana.org/assignments/character-sets
 object HttpCharsets extends ObjectRegistry[String, HttpCharset] {
   private def register(charset: HttpCharset): HttpCharset = {
-    charset.aliases.foreach(alias ⇒ register(alias.toRootLowerCase, charset))
+    charset.aliases.foreach(alias => register(alias.toRootLowerCase, charset))
     register(charset.value.toRootLowerCase, charset)
   }
 
@@ -92,7 +92,7 @@ object HttpCharsets extends ObjectRegistry[String, HttpCharset] {
   private def tryRegister(value: String)(aliases: String*): Unit =
     try register(value)(aliases: _*)
     catch {
-      case e: java.nio.charset.UnsupportedCharsetException ⇒ // ignore
+      case e: java.nio.charset.UnsupportedCharsetException => // ignore
     }
 
   // format: OFF

@@ -16,7 +16,7 @@
 
 package akka.parboiled2
 
-import java.lang.{ StringBuilder ⇒ JStringBuilder }
+import java.lang.{ StringBuilder => JStringBuilder }
 import scala.annotation.tailrec
 
 object CharUtils {
@@ -179,12 +179,12 @@ object CharUtils {
   def toUpperCase(c: Char): Char = if (c >= 'a' && c <= 'z') (c - 0x20 /* - 'a' + 'A' */ ).toChar else c
 
   def escape(c: Char): String = c match {
-    case '\t'                           ⇒ "\\t"
-    case '\r'                           ⇒ "\\r"
-    case '\n'                           ⇒ "\\n"
-    case EOI                            ⇒ "EOI"
-    case x if Character.isISOControl(x) ⇒ "\\u%04x" format c.toInt
-    case x                              ⇒ x.toString
+    case '\t'                           => "\\t"
+    case '\r'                           => "\\r"
+    case '\n'                           => "\\n"
+    case EOI                            => "EOI"
+    case x if Character.isISOControl(x) => "\\u%04x" format c.toInt
+    case x                              => x.toString
   }
 
   val escapedChars = CharPredicate("\t\r\n", EOI, Character.isISOControl _)

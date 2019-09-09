@@ -8,7 +8,7 @@ import akka.parboiled2.Parser
 import akka.http.scaladsl.model.headers._
 import CacheDirectives._
 
-private[parser] trait CacheControlHeader { this: Parser with CommonRules with CommonActions with StringBuilding ⇒
+private[parser] trait CacheControlHeader { this: Parser with CommonRules with CommonActions with StringBuilding =>
 
   // http://tools.ietf.org/html/rfc7234#section-5.2
   def `cache-control` = rule {

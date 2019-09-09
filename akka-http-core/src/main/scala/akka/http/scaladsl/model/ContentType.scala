@@ -7,20 +7,20 @@ package akka.http.scaladsl.model
 import language.implicitConversions
 import akka.http.impl.util._
 import java.util.Optional
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 import akka.http.impl.util.JavaMapping.Implicits._
 
 final case class ContentTypeRange(mediaRange: MediaRange, charsetRange: HttpCharsetRange) extends jm.ContentTypeRange with ValueRenderable {
   def matches(contentType: jm.ContentType) =
     convertToScala(contentType) match {
-      case ContentType.Binary(mt)             ⇒ mediaRange.matches(mt)
-      case ContentType.WithMissingCharset(mt) ⇒ mediaRange.matches(mt)
-      case x: ContentType.NonBinary           ⇒ mediaRange.matches(x.mediaType) && charsetRange.matches(x.charset)
+      case ContentType.Binary(mt)             => mediaRange.matches(mt)
+      case ContentType.WithMissingCharset(mt) => mediaRange.matches(mt)
+      case x: ContentType.NonBinary           => mediaRange.matches(x.mediaType) && charsetRange.matches(x.charset)
     }
 
   def render[R <: Rendering](r: R): r.type = charsetRange match {
-    case HttpCharsetRange.`*` ⇒ r ~~ mediaRange
-    case x                    ⇒ r ~~ mediaRange ~~ ContentType.`; charset=` ~~ x
+    case HttpCharsetRange.`*` => r ~~ mediaRange
+    case x                    => r ~~ mediaRange ~~ ContentType.`; charset=` ~~ x
   }
 }
 
@@ -31,10 +31,10 @@ object ContentTypeRange {
   implicit def apply(mediaRange: MediaRange): ContentTypeRange = apply(mediaRange, HttpCharsetRange.`*`)
   implicit def apply(contentType: ContentType): ContentTypeRange =
     contentType match {
-      case ContentType.Binary(mt)             ⇒ ContentTypeRange(mt)
-      case ContentType.WithFixedCharset(mt)   ⇒ ContentTypeRange(mt)
-      case ContentType.WithCharset(mt, cs)    ⇒ ContentTypeRange(mt, cs)
-      case ContentType.WithMissingCharset(mt) ⇒ ContentTypeRange(mt)
+      case ContentType.Binary(mt)             => ContentTypeRange(mt)
+      case ContentType.WithFixedCharset(mt)   => ContentTypeRange(mt)
+      case ContentType.WithCharset(mt, cs)    => ContentTypeRange(mt, cs)
+      case ContentType.WithMissingCharset(mt) => ContentTypeRange(mt)
     }
 }
 
@@ -95,15 +95,15 @@ object ContentType {
   implicit def apply(mediaType: MediaType.Binary): Binary = Binary(mediaType)
   implicit def apply(mediaType: MediaType.WithFixedCharset): WithFixedCharset = WithFixedCharset(mediaType)
   def apply(mediaType: MediaType.WithOpenCharset, charset: HttpCharset): WithCharset = WithCharset(mediaType, charset)
-  def apply(mediaType: MediaType, charset: () ⇒ HttpCharset): ContentType =
+  def apply(mediaType: MediaType, charset: () => HttpCharset): ContentType =
     mediaType match {
-      case x: MediaType.Binary           ⇒ ContentType(x)
-      case x: MediaType.WithFixedCharset ⇒ ContentType(x)
-      case x: MediaType.WithOpenCharset  ⇒ ContentType(x, charset())
+      case x: MediaType.Binary           => ContentType(x)
+      case x: MediaType.WithFixedCharset => ContentType(x)
+      case x: MediaType.WithOpenCharset  => ContentType(x, charset())
     }
 
   def unapply(contentType: ContentType): Option[(MediaType, Option[HttpCharset])] =
-    Some(contentType.mediaType → contentType.charsetOption)
+    Some(contentType.mediaType -> contentType.charsetOption)
 
   /**
    * Tries to parse a `ContentType` value from the given String. Returns `Right(contentType)` if successful and

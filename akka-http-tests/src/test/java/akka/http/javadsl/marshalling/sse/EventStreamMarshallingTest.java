@@ -29,6 +29,7 @@ import org.junit.Test;
 import static akka.http.javadsl.model.HttpRequest.GET;
 import static akka.http.javadsl.model.MediaTypes.TEXT_EVENT_STREAM;
 import static akka.http.javadsl.server.Directives.completeOK;
+import static akka.util.ByteString.emptyByteString;
 
 public class EventStreamMarshallingTest extends JUnitRouteTest {
 
@@ -44,7 +45,7 @@ public class EventStreamMarshallingTest extends JUnitRouteTest {
         final ByteString expectedEntity = events
                 .stream()
                 .map(e -> ((akka.http.scaladsl.model.sse.ServerSentEvent) e).encode())
-                .reduce(ByteString.empty(), ByteString::concat);
+                .reduce(emptyByteString(), ByteString::concat);
         final TestRouteResult routeResult = testRoute(route).run(GET("/"));
         routeResult.assertMediaType(TEXT_EVENT_STREAM);
         routeResult.assertEquals(expectedEntity, routeResult.entityBytes(), "Entity should carry events!");

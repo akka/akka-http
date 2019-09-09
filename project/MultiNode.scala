@@ -77,9 +77,9 @@ object MultiNode extends AutoPlugin {
 
   implicit class TestResultOps(val self: TestResult) extends AnyVal {
     def id: Int = self match {
-      case TestResult.Passed ⇒ 0
-      case TestResult.Failed ⇒ 1
-      case TestResult.Error  ⇒ 2
+      case TestResult.Passed => 0
+      case TestResult.Failed => 1
+      case TestResult.Error  => 2
     }
   }
 }

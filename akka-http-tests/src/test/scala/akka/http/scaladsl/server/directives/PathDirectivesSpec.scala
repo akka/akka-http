@@ -13,8 +13,8 @@ import org.scalatest.Inside
 
 class PathDirectivesSpec extends RoutingSpec with Inside {
   val echoUnmatchedPath = extractUnmatchedPath { echoComplete }
-  def echoCaptureAndUnmatchedPath[T]: T ⇒ Route =
-    capture ⇒ ctx ⇒ ctx.complete(capture.toString + ":" + ctx.unmatchedPath)
+  def echoCaptureAndUnmatchedPath[T]: T => Route =
+    capture => ctx => ctx.complete(capture.toString + ":" + ctx.unmatchedPath)
 
   """path("foo")""" should {
     val test = testFor(path("foo") { echoUnmatchedPath })
@@ -53,8 +53,8 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
     "accept [/foo] and clear the unmatchedPath=" inThe test("")
   }
 
-  """path("foo" /)""" should {
-    val test = testFor(path("foo" /) { echoUnmatchedPath })
+  """path("foo"./)""" should {
+    val test = testFor(path("foo"./) { echoUnmatchedPath })
     "reject [/foo]" inThe test()
     "accept [/foo/] and clear the unmatchedPath" inThe test("")
   }
@@ -65,15 +65,15 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
     "accept [/] and clear the unmatchedPath" in test("")
   }
 
-  """path(Map("a" → 1, "aa" → 2))""" should {
-    val test = testFor(path(Map("a" → 1, "aa" → 2)) { echoCaptureAndUnmatchedPath })
+  """path(Map("a" -> 1, "aa" -> 2))""" should {
+    val test = testFor(path(Map("a" -> 1, "aa" -> 2)) { echoCaptureAndUnmatchedPath })
     "accept [/a]" inThe test("1:")
     "accept [/aa]" inThe test("2:")
     "reject [/aaa]" inThe test()
   }
 
-  """path(Map("sv_SE" → 3, "sv" → 1, "sv_FI" → 2))""" should {
-    val test = testFor(path(Map("sv_SE" → 3, "sv" → 1, "sv_FI" → 2)) { echoCaptureAndUnmatchedPath })
+  """path(Map("sv_SE" -> 3, "sv" -> 1, "sv_FI" -> 2))""" should {
+    val test = testFor(path(Map("sv_SE" -> 3, "sv" -> 1, "sv_FI" -> 2)) { echoCaptureAndUnmatchedPath })
     "accept [/sv]" inThe test("1:")
     "accept [/sv_FI]" inThe test("2:")
     "accept [/sv_SE]" inThe test("3:")
@@ -81,7 +81,7 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
   }
 
   """path(Map("a" -> 1, "ab" -> 2, "ba" -> 3, "b" -> 4, "c" -> 5, "d" -> 6, "da" -> 7))""" should {
-    val test = testFor(path(Map("a" → 1, "ab" → 2, "ba" → 3, "b" → 4, "c" → 5, "d" → 6, "da" → 7)) { echoCaptureAndUnmatchedPath })
+    val test = testFor(path(Map("a" -> 1, "ab" -> 2, "ba" -> 3, "b" -> 4, "c" -> 5, "d" -> 6, "da" -> 7)) { echoCaptureAndUnmatchedPath })
     "accept [/a]" inThe test("1:")
     "accept [/ab]" inThe test("2:") // FAIL
     "accept [/ba]" inThe test("3:")
@@ -94,7 +94,7 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
   }
 
   """path(ListMap("a" -> 1, "ab" -> 2, "ba" -> 3, "b" -> 4, "c" -> 5, "d" -> 6, "da" -> 7))""" should {
-    val test = testFor(path(ListMap("a" → 1, "ab" → 2, "ba" → 3, "b" → 4, "c" → 5, "d" → 6, "da" → 7)) { echoCaptureAndUnmatchedPath })
+    val test = testFor(path(ListMap("a" -> 1, "ab" -> 2, "ba" -> 3, "b" -> 4, "c" -> 5, "d" -> 6, "da" -> 7)) { echoCaptureAndUnmatchedPath })
     "accept [/a]" inThe test("1:")
     "accept [/ab]" inThe test("2:")
     "accept [/ba]" inThe test("3:")
@@ -107,7 +107,7 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
   }
 
   """path(ListMap("a" -> 1, "aa" -> 2, "bb" -> 3, "b" -> 4, "c" -> 5, "d" -> 6, "dd" -> 7))""" should {
-    val test = testFor(path(ListMap("a" → 1, "aa" → 2, "bb" → 3, "b" → 4, "c" → 5, "d" → 6, "dd" → 7)) { echoCaptureAndUnmatchedPath })
+    val test = testFor(path(ListMap("a" -> 1, "aa" -> 2, "bb" -> 3, "b" -> 4, "c" -> 5, "d" -> 6, "dd" -> 7)) { echoCaptureAndUnmatchedPath })
     "accept [/a]" inThe test("1:")
     "accept [/aa]" inThe test("2:")
     "accept [/bb]" inThe test("3:")
@@ -120,7 +120,7 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
   }
 
   """path(Map("a" -> 1, "aa" -> 2, "bb" -> 3, "b" -> 4, "c" -> 5, "d" -> 6, "dd" -> 7))""" should {
-    val test = testFor(path(Map("a" → 1, "aa" → 2, "bb" → 3, "b" → 4, "c" → 5, "d" → 6, "dd" → 7)) { echoCaptureAndUnmatchedPath })
+    val test = testFor(path(Map("a" -> 1, "aa" -> 2, "bb" -> 3, "b" -> 4, "c" -> 5, "d" -> 6, "dd" -> 7)) { echoCaptureAndUnmatchedPath })
     "accept [/a]" inThe test("1:")
     "accept [/aa]" inThe test("2:")
     "accept [/bb]" inThe test("3:")
@@ -208,12 +208,15 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
     val test = testFor(pathPrefix(JavaUUID) { echoCaptureAndUnmatchedPath })
     "accept [/bdea8652-f26c-40ca-8157-0b96a2a8389d]" inThe test("bdea8652-f26c-40ca-8157-0b96a2a8389d:")
     "accept [/bdea8652-f26c-40ca-8157-0b96a2a8389dyes]" inThe test("bdea8652-f26c-40ca-8157-0b96a2a8389d:yes")
+    "accept [/00000000-0000-0000-0000-000000000000]" inThe test("00000000-0000-0000-0000-000000000000:") // nil uuid
+    "accept [/733a018b-5f16-4699-0e1a-1d3f6f0d0315]" inThe test("733a018b-5f16-4699-0e1a-1d3f6f0d0315:") // variant 0
+    "accept [/733a018b-5f16-4699-fe1a-1d3f6f0d0315]" inThe test("733a018b-5f16-4699-fe1a-1d3f6f0d0315:") // future variant
     "reject [/]" inThe test()
     "reject [/abc]" inThe test()
   }
 
   "pathPrefix(Map(\"red\" -> 1, \"green\" -> 2, \"blue\" -> 3))" should {
-    val test = testFor(pathPrefix(Map("red" → 1, "green" → 2, "blue" → 3)) { echoCaptureAndUnmatchedPath })
+    val test = testFor(pathPrefix(Map("red" -> 1, "green" -> 2, "blue" -> 3)) { echoCaptureAndUnmatchedPath })
     "accept [/green]" inThe test("2:")
     "accept [/redsea]" inThe test("1:sea")
     "reject [/black]" inThe test()
@@ -301,15 +304,15 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
     "reject [/foo]" inThe test()
   }
 
-  "pathPrefix(IntNumber?)" should {
-    val test = testFor(pathPrefix(IntNumber?) { echoCaptureAndUnmatchedPath })
+  "pathPrefix(IntNumber.?)" should {
+    val test = testFor(pathPrefix(IntNumber.?) { echoCaptureAndUnmatchedPath })
     "accept [/12]" inThe test("Some(12):")
     "accept [/12a]" inThe test("Some(12):a")
     "accept [/foo]" inThe test("None:foo")
   }
 
-  """pathPrefix("foo"?)""" should {
-    val test = testFor(pathPrefix("foo"?) { echoUnmatchedPath })
+  """pathPrefix("foo".?)""" should {
+    val test = testFor(pathPrefix("foo".?) { echoUnmatchedPath })
     "accept [/foo]" inThe test("")
     "accept [/fool]" inThe test("l")
     "accept [/bar]" inThe test("bar")
@@ -410,7 +413,7 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
 
   "PathMatchers" should {
     {
-      val test = testFor(path(Remaining.tmap { case Tuple1(s) ⇒ Tuple1(s.split('-').toList) }) { echoComplete })
+      val test = testFor(path(Remaining.tmap { case Tuple1(s) => Tuple1(s.split('-').toList) }) { echoComplete })
       "support the hmap modifier in accept [/yes-no]" inThe test("List(yes, no)")
     }
     {
@@ -418,39 +421,39 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
       "support the map modifier in accept [/yes-no]" inThe test("List(yes, no)")
     }
     {
-      val test = testFor(path(Remaining.tflatMap { case Tuple1(s) ⇒ Some(s).filter("yes" ==).map(x ⇒ Tuple1(x)) }) { echoComplete })
+      val test = testFor(path(Remaining.tflatMap { case Tuple1(s) => Some(s).filter("yes".==).map(x => Tuple1(x)) }) { echoComplete })
       "support the hflatMap modifier in accept [/yes]" inThe test("yes")
       "support the hflatMap modifier in reject [/blub]" inThe test()
     }
     {
-      val test = testFor(path(Remaining.flatMap(s ⇒ Some(s).filter("yes" ==))) { echoComplete })
+      val test = testFor(path(Remaining.flatMap(s => Some(s).filter("yes".==))) { echoComplete })
       "support the flatMap modifier in accept [/yes]" inThe test("yes")
       "support the flatMap modifier reject [/blub]" inThe test()
     }
   }
 
   implicit class WithIn(str: String) {
-    def inThe(f: String ⇒ Unit) = convertToWordSpecStringWrapper(str) in f(str)
-    def inThe(body: ⇒ Unit) = convertToWordSpecStringWrapper(str) in body
+    def inThe(f: String => Unit) = convertToWordSpecStringWrapper(str) in f(str)
+    def inThe(body: => Unit) = convertToWordSpecStringWrapper(str) in body
   }
 
   case class testFor(route: Route) {
-    def apply(expectedResponse: String = null): String ⇒ Unit = exampleString ⇒
+    def apply(expectedResponse: String = null): String => Unit = exampleString =>
       """(accept|reject)\s+\[([^\]]+)\]""".r.findFirstMatchIn(exampleString) match {
-        case Some(uri) ⇒
+        case Some(uri) =>
           uri.group(1) match {
-            case "accept" if expectedResponse eq null ⇒
+            case "accept" if expectedResponse eq null =>
               failTest("Example '" + exampleString + "' was missing an expectedResponse")
-            case "reject" if expectedResponse ne null ⇒
+            case "reject" if expectedResponse ne null =>
               failTest("Example '" + exampleString + "' had an expectedResponse")
-            case _ ⇒
+            case _ =>
           }
 
           Get(uri.group(2)) ~> route ~> check {
             if (expectedResponse eq null) handled shouldEqual false
             else responseAs[String] shouldEqual expectedResponse
           }
-        case None ⇒ failTest("Example '" + exampleString + "' doesn't contain a test uri")
+        case None => failTest("Example '" + exampleString + "' doesn't contain a test uri")
       }
   }
 
@@ -528,7 +531,7 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
         (pathPrefix("bar") & pathEndOrSingleSlash) {
           complete(s"${counter.get()}")
         } ~
-        path("baz" /) {
+        path("baz"./) {
           complete(s"${counter.get()}")
         }
     }
@@ -583,7 +586,7 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
     check {
       status shouldBe a[Redirection]
       inside(header[Location]) {
-        case Some(Location(uri)) ⇒
+        case Some(Location(uri)) =>
           (if (expectedUri.isAbsolute) uri else uri.toRelative) shouldEqual expectedUri
       }
     }

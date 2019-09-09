@@ -6,7 +6,6 @@ package akka
 
 import sbt._
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
-import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
 object Formatting {
@@ -20,14 +19,15 @@ object Formatting {
   )
 
   lazy val docFormatSettings = Seq(
-    ScalariformKeys.preferences := setPreferences(ScalariformKeys.preferences.value, rewriteArrowSymbols = false),
-    ScalariformKeys.preferences in Compile := setPreferences(ScalariformKeys.preferences.value, rewriteArrowSymbols = false),
-    ScalariformKeys.preferences in Test := setPreferences(ScalariformKeys.preferences.value, rewriteArrowSymbols = false),
-    ScalariformKeys.preferences in MultiJvm := setPreferences(ScalariformKeys.preferences.value, rewriteArrowSymbols = false)
+    ScalariformKeys.preferences := setPreferences(ScalariformKeys.preferences.value),
+    ScalariformKeys.preferences in Compile := setPreferences(ScalariformKeys.preferences.value),
+    ScalariformKeys.preferences in Test := setPreferences(ScalariformKeys.preferences.value),
+    ScalariformKeys.preferences in MultiJvm := setPreferences(ScalariformKeys.preferences.value)
   )
 
-  def setPreferences(preferences: IFormattingPreferences, rewriteArrowSymbols: Boolean = true) = preferences
-    .setPreference(RewriteArrowSymbols, rewriteArrowSymbols)
+  def setPreferences(preferences: IFormattingPreferences) = preferences
+    .setPreference(RewriteArrowSymbols, true)
+    .setPreference(UseUnicodeArrows, false)
     .setPreference(AlignParameters, true)
     .setPreference(AlignSingleLineCaseStatements, true)
     .setPreference(DoubleIndentConstructorArguments, false)

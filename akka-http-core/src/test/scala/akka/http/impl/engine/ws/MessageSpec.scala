@@ -11,13 +11,13 @@ import akka.NotUsed
 
 import scala.concurrent.duration._
 import scala.util.{ Failure, Random }
-import org.scalatest.{ FreeSpec, Matchers }
 import akka.stream.scaladsl._
 import akka.stream.testkit._
 import akka.util.ByteString
 import akka.http.scaladsl.model.ws._
 import Protocol.Opcode
 import akka.http.impl.settings.WebSocketSettingsImpl
+import akka.http.impl.util.AkkaSpecWithMaterializer
 import akka.http.scaladsl.settings.WebSocketSettings
 import akka.testkit._
 import akka.stream.OverflowStrategy
@@ -25,7 +25,7 @@ import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.Await
 
-class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with Eventually {
+class MessageSpec extends AkkaSpecWithMaterializer with Eventually {
 
   import WSTestUtils._
 
@@ -34,9 +34,9 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
     0 // but don't finish it
   )
 
-  "The WebSocket implementation should" - {
-    "collect messages from frames" - {
-      "for binary messages" - {
+  "The WebSocket implementation should" should {
+    "collect messages from frames" should {
+      "for binary messages" should {
         "for an empty message" in new ClientTestSetup {
           val input = frameHeader(Opcode.Binary, 0, fin = true)
 
@@ -163,7 +163,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
           expectBinaryMessage(BinaryMessage.Strict(ByteString.empty))
         }
       }
-      "for text messages" - {
+      "for text messages" should {
         "empty message" in new ClientTestSetup {
           val input = frameHeader(Opcode.Text, 0, fin = true)
 
@@ -256,8 +256,8 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         }
       }
     }
-    "render frames from messages" - {
-      "for binary messages" - {
+    "render frames from messages" should {
+      "for binary messages" should {
         "for a short strict message" in new ServerTestSetup {
           val data = ByteString("abcdef", "ASCII")
           val msg = BinaryMessage.Strict(data)
@@ -310,7 +310,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
           expectMaskedFrameOnNetwork(Opcode.Binary, ByteString.empty, fin = true)
         }
       }
-      "for text messages" - {
+      "for text messages" should {
         "for a short strict message" in new ServerTestSetup {
           val text = "äbcdef"
           val msg = TextMessage.Strict(text)
@@ -388,7 +388,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         }
       }
     }
-    "supply automatic low-level websocket behavior" - {
+    "supply automatic low-level websocket behavior" should {
       "respond to ping frames unmasking them on the server side" in new ServerTestSetup {
         val mask = Random.nextInt()
         val input = frameHeader(Opcode.Ping, 6, fin = true, mask = Some(mask)) ++ maskedASCII("abcdef", mask)._1
@@ -455,7 +455,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         expectNoNetworkData()
       }
 
-      List("ping", "pong") foreach { keepAliveMode ⇒
+      List("ping", "pong") foreach { keepAliveMode =>
         def expectedOpcode = if (keepAliveMode == "ping") Opcode.Ping else Opcode.Pong
 
         s"automatically send keep-alive [$keepAliveMode] frames, with empty data, when configured on the server side" in new ServerTestSetup {
@@ -474,7 +474,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
             super.websocketSettings
               .withPeriodicKeepAliveMode(keepAliveMode)
               .withPeriodicKeepAliveMaxIdle(100.millis)
-              .withPeriodicKeepAliveData(() ⇒ ByteString(s"ping-${counter.incrementAndGet()}"))
+              .withPeriodicKeepAliveData(() => ByteString(s"ping-${counter.incrementAndGet()}"))
 
           expectFrameOnNetwork(expectedOpcode, ByteString("ping-1"), fin = true)
           expectFrameOnNetwork(expectedOpcode, ByteString("ping-2"), fin = true)
@@ -497,7 +497,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
             super.websocketSettings
               .withPeriodicKeepAliveMode(keepAliveMode)
               .withPeriodicKeepAliveMaxIdle(100.millis)
-              .withPeriodicKeepAliveData(() ⇒ ByteString(s"ping-${counter.incrementAndGet()}"))
+              .withPeriodicKeepAliveData(() => ByteString(s"ping-${counter.incrementAndGet()}"))
 
           expectMaskedFrameOnNetwork(expectedOpcode, ByteString("ping-1"), fin = true)
           expectMaskedFrameOnNetwork(expectedOpcode, ByteString("ping-2"), fin = true)
@@ -505,7 +505,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         }
       }
     }
-    "provide close behavior" - {
+    "provide close behavior" should {
       "after receiving regular close frame when idle (user closes immediately)" in new ServerTestSetup {
         pushInput(closeFrame(Protocol.CloseCodes.Regular, mask = true))
         expectComplete(messageIn)
@@ -692,7 +692,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
             netIn.expectCancellation()
           }
       }
-      "if peer closes with invalid close frame" - {
+      "if peer closes with invalid close frame" should {
         "close code outside of the valid range" in new ServerTestSetup {
           pushInput(closeFrame(5700, mask = true))
 
@@ -759,8 +759,8 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         netIn.expectCancellation()
       }
     }
-    "reject unexpected frames" - {
-      "reserved bits set" - {
+    "reject unexpected frames" should {
+      "reserved bits set" should {
         "rsv1" in new ServerTestSetup {
           pushInput(frameHeader(Opcode.Binary, 0, fin = true, rsv1 = true))
           expectProtocolErrorOnNetwork()
@@ -855,9 +855,9 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
 
         // Kids, always drain your entities
         messageIn.requestNext() match {
-          case b: TextMessage ⇒
+          case b: TextMessage =>
             b.textStream.runWith(Sink.ignore)
-          case _ ⇒
+          case _ =>
         }
 
         expectError(messageIn)
@@ -892,7 +892,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         expectProtocolErrorOnNetwork()
       }
     }
-    "convert any message to strict message" - {
+    "convert any message to strict message" should {
       import scala.concurrent.ExecutionContext.Implicits.global
 
       val msg = "JKS*s';@"
@@ -948,8 +948,8 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         )
 
         future.onComplete {
-          case Failure(ex) ⇒ ex.getClass should be(classOf[TimeoutException])
-          case _           ⇒ fail()
+          case Failure(ex) => ex.getClass should be(classOf[TimeoutException])
+          case _           => fail()
         }
       }
       "convert streamed binary to strict binary if stream is infinite" in {
@@ -960,8 +960,8 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
         )
 
         future.onComplete {
-          case Failure(ex) ⇒ ex.getClass should be(classOf[TimeoutException])
-          case _           ⇒ fail()
+          case Failure(ex) => ex.getClass should be(classOf[TimeoutException])
+          case _           => fail()
         }
       }
     }
@@ -1056,10 +1056,10 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
       val hasMask = (header(1) & Protocol.MASK_MASK) != 0
       val length7 = header(1) & Protocol.LENGTH_MASK
       val length = length7 match {
-        case 126 ⇒
+        case 126 =>
           val length16Bytes = expectNetworkData(2)
           (length16Bytes(0) & 0xff) << 8 | (length16Bytes(1) & 0xff) << 0
-        case 127 ⇒
+        case 127 =>
           val length64Bytes = expectNetworkData(8)
           (length64Bytes(0) & 0xff).toLong << 56 |
             (length64Bytes(1) & 0xff).toLong << 48 |
@@ -1069,7 +1069,7 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
             (length64Bytes(5) & 0xff).toLong << 16 |
             (length64Bytes(6) & 0xff).toLong << 8 |
             (length64Bytes(7) & 0xff).toLong << 0
-        case x ⇒ x
+        case x => x
       }
       val mask =
         if (hasMask) {
@@ -1094,8 +1094,8 @@ class MessageSpec extends FreeSpec with Matchers with WithMaterializerSpec with 
 
       val rawData = expectNetworkData(length.toInt)
       val data = mask match {
-        case Some(m) ⇒ FrameEventParser.mask(rawData, m)._1
-        case None    ⇒ rawData
+        case Some(m) => FrameEventParser.mask(rawData, m)._1
+        case None    => rawData
       }
 
       val code = ((data(0) & 0xff) << 8) | ((data(1) & 0xff) << 0)

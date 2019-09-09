@@ -17,7 +17,7 @@ import akka.http.scaladsl.settings.ServerSettings
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{ Await, ExecutionContext, Future, Promise, blocking }
+import scala.concurrent.{ Await, ExecutionContext, ExecutionContextExecutor, Future, Promise, blocking }
 import scala.io.StdIn
 import scala.util.{ Failure, Success, Try }
 
@@ -87,7 +87,7 @@ abstract class HttpApp extends Directives {
     implicit val theSystem = system.getOrElse(ActorSystem(Logging.simpleName(this).replaceAll("\\$", "")))
     systemReference.set(theSystem)
     implicit val materializer = ActorMaterializer()
-    implicit val executionContext = theSystem.dispatcher
+    implicit val executionContext: ExecutionContextExecutor = theSystem.dispatcher
 
     val bindingFuture = Http().bindAndHandle(
       handler = routes,
@@ -96,21 +96,21 @@ abstract class HttpApp extends Directives {
       settings = settings)
 
     bindingFuture.onComplete {
-      case Success(binding) ⇒
+      case Success(binding) =>
         //setting the server binding for possible future uses in the client
         serverBinding.set(binding)
         postHttpBinding(binding)
-      case Failure(cause) ⇒
+      case Failure(cause) =>
         postHttpBindingFailure(cause)
     }
 
     Await.ready(
-      bindingFuture.flatMap(_ ⇒ waitForShutdownSignal(theSystem)), // chaining both futures to fail fast
+      bindingFuture.flatMap(_ => waitForShutdownSignal(theSystem)), // chaining both futures to fail fast
       Duration.Inf) // It's waiting forever because maybe there is never a shutdown signal
 
     bindingFuture
       .flatMap(_.unbind())
-      .onComplete(attempt ⇒ {
+      .onComplete(attempt => {
         postServerShutdown(attempt, theSystem)
         // we created the system. we should cleanup!
         if (system.isEmpty) theSystem.terminate()

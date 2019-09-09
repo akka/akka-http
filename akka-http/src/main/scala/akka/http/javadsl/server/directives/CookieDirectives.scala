@@ -4,9 +4,9 @@
 
 package akka.http.javadsl.server.directives
 
-import java.lang.{ Iterable ⇒ JIterable }
+import java.lang.{ Iterable => JIterable }
 import java.util.Optional
-import java.util.function.{ Function ⇒ JFunction }
+import java.util.function.{ Function => JFunction }
 import java.util.function.Supplier
 
 import scala.collection.JavaConverters._
@@ -15,7 +15,7 @@ import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.model.headers.HttpCookie
 import akka.http.javadsl.model.headers.HttpCookiePair
 import akka.http.javadsl.server.Route
-import akka.http.scaladsl.server.{ Directives ⇒ D }
+import akka.http.scaladsl.server.{ Directives => D }
 
 abstract class CookieDirectives extends CodingDirectives {
   /**
@@ -23,7 +23,7 @@ abstract class CookieDirectives extends CodingDirectives {
    * request is rejected with a respective [[akka.http.javadsl.server.MissingCookieRejection]].
    */
   def cookie(name: String, inner: JFunction[HttpCookiePair, Route]): Route = RouteAdapter {
-    D.cookie(name) { c ⇒ inner.apply(c).delegate }
+    D.cookie(name) { c => inner.apply(c).delegate }
   }
 
   /**
@@ -31,7 +31,7 @@ abstract class CookieDirectives extends CodingDirectives {
    * If the cookie is not present a value of `None` is extracted.
    */
   def optionalCookie(name: String, inner: JFunction[Optional[HttpCookiePair], Route]): Route = RouteAdapter {
-    D.optionalCookie(name) { c ⇒ inner.apply(c.asJava).delegate }
+    D.optionalCookie(name) { c => inner.apply(c.asJava).delegate }
   }
 
   /**
@@ -46,11 +46,11 @@ abstract class CookieDirectives extends CodingDirectives {
    */
   def setCookie(cookies: JIterable[HttpCookie], inner: Supplier[Route]): Route = RouteAdapter {
     cookies.asScala.toList match {
-      case head :: tail ⇒
+      case head :: tail =>
         D.setCookie(head.asScala, tail.map(_.asScala).toVector: _*) {
           inner.get.delegate
         }
-      case _ ⇒
+      case _ =>
         inner.get.delegate
     }
   }
@@ -67,11 +67,11 @@ abstract class CookieDirectives extends CodingDirectives {
    */
   def deleteCookie(cookies: JIterable[HttpCookie], inner: Supplier[Route]): Route = RouteAdapter {
     cookies.asScala.toList match {
-      case head :: tail ⇒
+      case head :: tail =>
         D.deleteCookie(head.asScala, tail.map(_.asScala): _*) {
           inner.get.delegate
         }
-      case _ ⇒
+      case _ =>
         inner.get.delegate
     }
   }

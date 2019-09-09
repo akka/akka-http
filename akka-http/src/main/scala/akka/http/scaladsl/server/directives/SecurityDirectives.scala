@@ -46,13 +46,13 @@ trait SecurityDirectives {
   /**
    * @group security
    */
-  type Authenticator[T] = Credentials ⇒ Option[T]
+  type Authenticator[T] = Credentials => Option[T]
   //#authenticator
   //#async-authenticator
   /**
    * @group security
    */
-  type AsyncAuthenticator[T] = Credentials ⇒ Future[Option[T]]
+  type AsyncAuthenticator[T] = Credentials => Future[Option[T]]
   //#async-authenticator
   //#authenticator-pf
   /**
@@ -83,7 +83,7 @@ trait SecurityDirectives {
    * @group security
    */
   def authenticateBasic[T](realm: String, authenticator: Authenticator[T]): AuthenticationDirective[T] =
-    authenticateBasicAsync(realm, cred ⇒ FastFuture.successful(authenticator(cred)))
+    authenticateBasicAsync(realm, cred => FastFuture.successful(authenticator(cred)))
 
   /**
    * Wraps the inner route with Http Basic authentication support.
@@ -93,11 +93,11 @@ trait SecurityDirectives {
    * @group security
    */
   def authenticateBasicAsync[T](realm: String, authenticator: AsyncAuthenticator[T]): AuthenticationDirective[T] =
-    extractExecutionContext.flatMap { implicit ec ⇒
-      authenticateOrRejectWithChallenge[BasicHttpCredentials, T] { cred ⇒
+    extractExecutionContext.flatMap { implicit ec =>
+      authenticateOrRejectWithChallenge[BasicHttpCredentials, T] { cred =>
         authenticator(Credentials(cred)).fast.map {
-          case Some(t) ⇒ AuthenticationResult.success(t)
-          case None    ⇒ AuthenticationResult.failWithChallenge(HttpChallenges.basic(realm))
+          case Some(t) => AuthenticationResult.success(t)
+          case None    => AuthenticationResult.failWithChallenge(HttpChallenges.basic(realm))
         }
       }
     }
@@ -120,8 +120,8 @@ trait SecurityDirectives {
    * @group security
    */
   def authenticateBasicPFAsync[T](realm: String, authenticator: AsyncAuthenticatorPF[T]): AuthenticationDirective[T] =
-    extractExecutionContext.flatMap { implicit ec ⇒
-      authenticateBasicAsync(realm, credentials ⇒
+    extractExecutionContext.flatMap { implicit ec =>
+      authenticateBasicAsync(realm, credentials =>
         if (authenticator isDefinedAt credentials) authenticator(credentials).fast.map(Some(_))
         else FastFuture.successful(None))
     }
@@ -134,7 +134,7 @@ trait SecurityDirectives {
    * @group security
    */
   def authenticateOAuth2[T](realm: String, authenticator: Authenticator[T]): AuthenticationDirective[T] =
-    authenticateOAuth2Async(realm, cred ⇒ FastFuture.successful(authenticator(cred)))
+    authenticateOAuth2Async(realm, cred => FastFuture.successful(authenticator(cred)))
 
   /**
    * A directive that wraps the inner route with OAuth2 Bearer Token authentication support.
@@ -144,21 +144,21 @@ trait SecurityDirectives {
    * @group security
    */
   def authenticateOAuth2Async[T](realm: String, authenticator: AsyncAuthenticator[T]): AuthenticationDirective[T] =
-    extractExecutionContext.flatMap { implicit ec ⇒
+    extractExecutionContext.flatMap { implicit ec =>
       def extractAccessTokenParameterAsBearerToken = {
         import akka.http.scaladsl.server.Directives._
         parameter('access_token.?).map(_.map(OAuth2BearerToken))
       }
       val extractCreds: Directive1[Option[OAuth2BearerToken]] =
         extractCredentials.flatMap {
-          case Some(c: OAuth2BearerToken) ⇒ provide(Some(c))
-          case _                          ⇒ extractAccessTokenParameterAsBearerToken
+          case Some(c: OAuth2BearerToken) => provide(Some(c))
+          case _                          => extractAccessTokenParameterAsBearerToken
         }
 
-      extractCredentialsAndAuthenticateOrRejectWithChallenge[OAuth2BearerToken, T](extractCreds, { cred ⇒
+      extractCredentialsAndAuthenticateOrRejectWithChallenge[OAuth2BearerToken, T](extractCreds, { cred =>
         authenticator(Credentials(cred)).fast.map {
-          case Some(t) ⇒ AuthenticationResult.success(t)
-          case None    ⇒ AuthenticationResult.failWithChallenge(HttpChallenges.oAuth2(realm))
+          case Some(t) => AuthenticationResult.success(t)
+          case None    => AuthenticationResult.failWithChallenge(HttpChallenges.oAuth2(realm))
         }
       })
     }
@@ -181,8 +181,8 @@ trait SecurityDirectives {
    * @group security
    */
   def authenticateOAuth2PFAsync[T](realm: String, authenticator: AsyncAuthenticatorPF[T]): AuthenticationDirective[T] =
-    extractExecutionContext.flatMap { implicit ec ⇒
-      authenticateOAuth2Async(realm, credentials ⇒
+    extractExecutionContext.flatMap { implicit ec =>
+      authenticateOAuth2Async(realm, credentials =>
         if (authenticator isDefinedAt credentials) authenticator(credentials).fast.map(Some(_))
         else FastFuture.successful(None))
     }
@@ -199,11 +199,11 @@ trait SecurityDirectives {
    */
   private def extractCredentialsAndAuthenticateOrRejectWithChallenge[C <: HttpCredentials, T](
     extractCredentials: Directive1[Option[C]],
-    authenticator:      Option[C] ⇒ Future[AuthenticationResult[T]]): AuthenticationDirective[T] =
-    extractCredentials.flatMap { cred ⇒
+    authenticator:      Option[C] => Future[AuthenticationResult[T]]): AuthenticationDirective[T] =
+    extractCredentials.flatMap { cred =>
       onSuccess(authenticator(cred)).flatMap {
-        case Right(user) ⇒ provide(user)
-        case Left(challenge) ⇒
+        case Right(user) => provide(user)
+        case Left(challenge) =>
           val cause = if (cred.isEmpty) CredentialsMissing else CredentialsRejected
           reject(AuthenticationFailedRejection(cause, challenge)): Directive1[T]
       }
@@ -217,7 +217,7 @@ trait SecurityDirectives {
    *
    * @group security
    */
-  def authenticateOrRejectWithChallenge[T](authenticator: Option[HttpCredentials] ⇒ Future[AuthenticationResult[T]]): AuthenticationDirective[T] =
+  def authenticateOrRejectWithChallenge[T](authenticator: Option[HttpCredentials] => Future[AuthenticationResult[T]]): AuthenticationDirective[T] =
     extractCredentialsAndAuthenticateOrRejectWithChallenge(extractCredentials, authenticator)
 
   /**
@@ -227,8 +227,8 @@ trait SecurityDirectives {
    * @group security
    */
   def authenticateOrRejectWithChallenge[C <: HttpCredentials: ClassTag, T](
-    authenticator: Option[C] ⇒ Future[AuthenticationResult[T]]): AuthenticationDirective[T] =
-    extractCredentialsAndAuthenticateOrRejectWithChallenge(extractCredentials.map(_ collect { case c: C ⇒ c }), authenticator)
+    authenticator: Option[C] => Future[AuthenticationResult[T]]): AuthenticationDirective[T] =
+    extractCredentialsAndAuthenticateOrRejectWithChallenge(extractCredentials.map(_ collect { case c: C => c }), authenticator)
 
   /**
    * Applies the given authorization check to the request.
@@ -236,7 +236,7 @@ trait SecurityDirectives {
    *
    * @group security
    */
-  def authorize(check: ⇒ Boolean): Directive0 = authorize(_ ⇒ check)
+  def authorize(check: => Boolean): Directive0 = authorize(_ => check)
 
   /**
    * Applies the given authorization check to the request.
@@ -244,8 +244,8 @@ trait SecurityDirectives {
    *
    * @group security
    */
-  def authorize(check: RequestContext ⇒ Boolean): Directive0 =
-    authorizeAsync(ctx ⇒ Future.successful(check(ctx)))
+  def authorize(check: RequestContext => Boolean): Directive0 =
+    authorizeAsync(ctx => Future.successful(check(ctx)))
 
   /**
    * Asynchronous version of [[authorize]].
@@ -254,8 +254,8 @@ trait SecurityDirectives {
    *
    * @group security
    */
-  def authorizeAsync(check: ⇒ Future[Boolean]): Directive0 =
-    authorizeAsync(ctx ⇒ check)
+  def authorizeAsync(check: => Future[Boolean]): Directive0 =
+    authorizeAsync(ctx => check)
 
   /**
    * Asynchronous version of [[authorize]].
@@ -264,11 +264,11 @@ trait SecurityDirectives {
    *
    * @group security
    */
-  def authorizeAsync(check: RequestContext ⇒ Future[Boolean]): Directive0 =
-    extract(check).flatMap[Unit] { fa ⇒
+  def authorizeAsync(check: RequestContext => Future[Boolean]): Directive0 =
+    extract(check).flatMap[Unit] { fa =>
       onComplete(fa).flatMap {
-        case Success(true) ⇒ pass
-        case _             ⇒ reject(AuthorizationFailedRejection)
+        case Success(true) => pass
+        case _             => reject(AuthorizationFailedRejection)
       }
     }
 }
@@ -293,7 +293,7 @@ object Credentials {
      *
      * See also [[EnhancedString#secure_==]], for more information.
      */
-    def verify(secret: String, hasher: String ⇒ String): Boolean
+    def verify(secret: String, hasher: String => String): Boolean
 
     /**
      * Safely compares the passed in `secret` with the received secret part of the Credentials.
@@ -301,22 +301,22 @@ object Credentials {
      *
      * See also [[EnhancedString#secure_==]], for more information.
      */
-    def verify(secret: String): Boolean = verify(secret, x ⇒ x)
+    def verify(secret: String): Boolean = verify(secret, x => x)
   }
 
   def apply(cred: Option[HttpCredentials]): Credentials = {
     cred match {
-      case Some(BasicHttpCredentials(username, receivedSecret)) ⇒
+      case Some(BasicHttpCredentials(username, receivedSecret)) =>
         new Credentials.Provided(username) {
-          def verify(secret: String, hasher: String ⇒ String): Boolean = secret secure_== hasher(receivedSecret)
+          def verify(secret: String, hasher: String => String): Boolean = secret secure_== hasher(receivedSecret)
         }
-      case Some(OAuth2BearerToken(token)) ⇒
+      case Some(OAuth2BearerToken(token)) =>
         new Credentials.Provided(token) {
-          def verify(secret: String, hasher: String ⇒ String): Boolean = secret secure_== hasher(token)
+          def verify(secret: String, hasher: String => String): Boolean = secret secure_== hasher(token)
         }
-      case Some(GenericHttpCredentials(scheme, token, params)) ⇒
-        throw new UnsupportedOperationException("cannot verify generic HTTP credentials")
-      case None ⇒ Credentials.Missing
+      case Some(c) =>
+        throw new UnsupportedOperationException(s"Credentials does not support scheme '${c.scheme}'.")
+      case None => Credentials.Missing
     }
   }
 }
@@ -338,8 +338,8 @@ trait AuthenticationDirective[T] extends Directive1[T] {
    */
   def optional: Directive1[Option[T]] =
     this.map(Some(_): Option[T]) recover {
-      case AuthenticationFailedRejection(CredentialsMissing, _) +: _ ⇒ provide(None)
-      case rejs ⇒ reject(rejs: _*)
+      case AuthenticationFailedRejection(CredentialsMissing, _) +: _ => provide(None)
+      case rejs => reject(rejs: _*)
     }
 
   /**
@@ -350,5 +350,5 @@ trait AuthenticationDirective[T] extends Directive1[T] {
 }
 object AuthenticationDirective {
   implicit def apply[T](other: Directive1[T]): AuthenticationDirective[T] =
-    new AuthenticationDirective[T] { def tapply(inner: Tuple1[T] ⇒ Route) = other.tapply(inner) }
+    new AuthenticationDirective[T] { def tapply(inner: Tuple1[T] => Route) = other.tapply(inner) }
 }

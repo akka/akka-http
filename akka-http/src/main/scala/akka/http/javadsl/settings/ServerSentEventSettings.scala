@@ -15,7 +15,7 @@ import akka.http.impl.settings.ServerSentEventSettingsImpl
  * without early notice (e.g. by moving them into a stable supported place).
  */
 @ApiMayChange @DoNotInherit
-abstract class ServerSentEventSettings private[akka] () { self: ServerSentEventSettingsImpl ⇒
+abstract class ServerSentEventSettings private[akka] () { self: ServerSentEventSettingsImpl =>
 
   /**
    * The maximum size for parsing server-sent events

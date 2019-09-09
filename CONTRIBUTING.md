@@ -59,7 +59,7 @@ These guidelines are meant to be a living document that should be changed and ad
 We encourage changes that make it easier to achieve our goals in an efficient way.
 
 Please also note that we have a *Code of Conduct* in place which aims keep our community a nice and helpful one.
-You can read its full text here: [Akka Code of Conduct](CODE_OF_CONDUCT.md).
+You can read its full text here: [Lightbend Community Code of Conduct](https://www.lightbend.com/conduct).
 
 ## General Workflow
 
@@ -153,7 +153,7 @@ Situations when it may be fine to ignore a MiMa issued warning include:
 - if it is touching any class marked with the `@InternalApi`, `@DoNotInherit`, and `@ApiMayChange`. See [API stability annotations and comments](https://doc.akka.io/docs/akka/current/common/binary-compatibility-rules.html#api-stability-annotations-and-comments)
 - other tricky situations
 
-If it turns out that the change can be safely ignored, please add the filter to the submodule's `src/main/mima-filters/<last-released-version>.backwards.excludes` file using (or creating) the file corresponding to the latest released version.
+If it turns out that the change can be safely ignored, please add the filter to a file with the issue number in the filename, placed in the submodule's `src/main/mima-filters/<last-released-version>.backwards.excludes` directory.
 
 You can run `mimaReportBinaryIssues` on the sbt console to check if you introduced a binary incompatibility or whether an
 incompatibility has been successfully ignored after adding it to the filter file.

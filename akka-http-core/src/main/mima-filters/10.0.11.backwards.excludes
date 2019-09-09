@@ -27,7 +27,7 @@ ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.javadsl.model.Htt
 
 # Renamed to fromFile to match the fromPath version
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity.apply$default$3")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.model.HttpEntity.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity.apply")
 
 # Removal of deprecated methods in 10.0.x
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.model.Multipart.toEntity")

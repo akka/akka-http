@@ -76,7 +76,7 @@ class RangeDirectivesSpec extends RoutingSpec with Inspectors with Inside {
     "be transparent to non-200 responses" in {
       Get() ~> addHeader(Range(ByteRange(1, 2))) ~> Route.seal(wrs(reject())) ~> check {
         status == NotFound
-        headers.exists { case `Content-Range`(_, _) ⇒ true; case _ ⇒ false } shouldEqual false
+        headers.exists { case `Content-Range`(_, _) => true; case _ => false } shouldEqual false
       }
     }
 
@@ -106,13 +106,13 @@ class RangeDirectivesSpec extends RoutingSpec with Inspectors with Inside {
         val parts = Await.result(responseAs[Multipart.ByteRanges].parts.limit(1000).runWith(Sink.seq), 1.second.dilated)
         parts.size shouldEqual 2
         inside(parts(0)) {
-          case Multipart.ByteRanges.BodyPart(range, entity, unit, headers) ⇒
+          case Multipart.ByteRanges.BodyPart(range, entity, unit, headers) =>
             range shouldEqual ContentRange.Default(0, 2, Some(39))
             unit shouldEqual RangeUnits.Bytes
             Await.result(entity.dataBytes.utf8String, 100.millis.dilated) shouldEqual "Som"
         }
         inside(parts(1)) {
-          case Multipart.ByteRanges.BodyPart(range, entity, unit, headers) ⇒
+          case Multipart.ByteRanges.BodyPart(range, entity, unit, headers) =>
             range shouldEqual ContentRange.Default(5, 10, Some(39))
             unit shouldEqual RangeUnits.Bytes
             Await.result(entity.dataBytes.utf8String, 100.millis.dilated) shouldEqual "random"
@@ -124,7 +124,7 @@ class RangeDirectivesSpec extends RoutingSpec with Inspectors with Inside {
       val content = "Some random and not super short entity."
 
       val usages = new AtomicInteger(0)
-      def entityData() = Source.single(ByteString(content)).mapMaterializedValue { _ ⇒
+      def entityData() = Source.single(ByteString(content)).mapMaterializedValue { _ =>
         if (usages.incrementAndGet() > 1) throw new IllegalStateException("Source must only be used once.")
 
         ()
@@ -140,7 +140,7 @@ class RangeDirectivesSpec extends RoutingSpec with Inspectors with Inside {
     }
 
     "reject a request with too many requested ranges" in {
-      val ranges = (1 to 20).map(a ⇒ ByteRange.fromOffset(a))
+      val ranges = (1 to 20).map(a => ByteRange.fromOffset(a))
       Get() ~> addHeader(Range(ranges)) ~> completeWithRangedBytes(100) ~> check {
         rejection shouldEqual TooManyRangesRejection(10)
       }

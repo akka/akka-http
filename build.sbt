@@ -31,18 +31,6 @@ inThisBuild(Def.settings(
   //  test in assembly := {},
   licenses := Seq("Apache-2.0" -> url("https://opensource.org/licenses/Apache-2.0")),
   description := "Akka Http: Modern, fast, asynchronous, streaming-first HTTP server and client.",
-  scalacOptions ++= Seq(
-    "-deprecation",
-    "-encoding", "UTF-8", // yes, this is 2 args
-    "-unchecked",
-    "-Xlint",
-    // "-Yno-adapted-args", //akka-http heavily depends on adapted args and => Unit implicits break otherwise
-    "-Ywarn-dead-code"
-    // "-Xfuture" // breaks => Unit implicits
-  ),
-  javacOptions ++= Seq(
-    "-encoding", "UTF-8"
-  ),
   testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v"),
   Dependencies.Versions,
   Formatting.formatSettings,
@@ -87,20 +75,42 @@ lazy val root = Project(
     httpTests,
     httpMarshallersScala,
     httpMarshallersJava,
-    docs
+    docs,
+    compatibilityTests
   )
 
-val commonSettings = Seq(
-  // Adds a `src/main/scala-2.13+` source directory for Scala 2.13 and newer
-  // and a `src/main/scala-2.13-` source directory for Scala version older than 2.13
-  unmanagedSourceDirectories in Compile += {
-    val sourceDir = (sourceDirectory in Compile).value
+/**
+ * Adds a `src/.../scala-2.13+` source directory for Scala 2.13 and newer
+ * and a `src/.../scala-2.13-` source directory for Scala version older than 2.13
+ */
+def add213CrossDirs(config: Configuration): Seq[Setting[_]] = Seq(
+  unmanagedSourceDirectories in config += {
+    val sourceDir = (sourceDirectory in config).value
     CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, n)) if n >= 13 => sourceDir / "scala-2.13+"
       case _                       => sourceDir / "scala-2.13-"
     }
-  },
+  }
 )
+
+// TODO: remove once 2.11 is dropped, https://github.com/akka/akka-http/issues/2589
+/**
+ * Adds a `src/.../scala-2.12+` source directory for Scala 2.12 and newer
+ * and a `src/.../scala-2.12-` source directory for Scala version older than 2.12
+ */
+def add212CrossDirs(config: Configuration): Seq[Setting[_]] = Seq(
+  unmanagedSourceDirectories in config += {
+    val sourceDir = (sourceDirectory in config).value
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, n)) if n >= 12 => sourceDir / "scala-2.12+"
+      case _                       => sourceDir / "scala-2.12-"
+    }
+  }
+)
+
+val commonSettings =
+  add213CrossDirs(Compile) ++
+  add213CrossDirs(Test)
 
 val scalaMacroSupport = Seq(
   scalacOptions ++= {
@@ -124,7 +134,7 @@ lazy val parsing = project("akka-parsing")
   .addAkkaModuleDependency("akka-actor", "provided")
   .settings(Dependencies.parsing)
   .settings(
-    scalacOptions := scalacOptions.value.filterNot(Set("-Xfatal-warnings", "-Xlint", "-Ywarn-dead-code").contains), // disable warnings for parboiled code
+    scalacOptions --= Seq("-Xfatal-warnings", "-Xlint", "-Ywarn-dead-code"), // disable warnings for parboiled code
     scalacOptions += "-language:_",
     unmanagedSourceDirectories in ScalariformKeys.format in Test := (unmanagedSourceDirectories in Test).value
   )
@@ -138,6 +148,13 @@ lazy val httpCore = project("akka-http-core")
   .dependsOn(parsing)
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
+  .addAkkaModuleDependency(
+    "akka-stream",
+    "test",
+    shouldUseSourceDependency = true,
+    uri("git://github.com/akka/akka.git#master"),
+    onlyIf = System.getProperty("akka.http.test-against-akka-master", "false") == "true"
+  )
   .settings(Dependencies.httpCore)
   .settings(VersionGenerator.versionSettings)
   .settings(scalaMacroSupport)
@@ -300,6 +317,7 @@ lazy val docs = project("docs")
   .enablePlugins(AkkaParadoxPlugin, NoPublish, DeployRsync)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .addAkkaModuleDependency("akka-stream", "provided")
+  .addAkkaModuleDependency("akka-actor-typed", "provided", includeIfScalaVersionMatches = _ != "2.11") // no akka-actor-typed in 2.11 any more
   .dependsOn(
     httpCore, http, httpXml, http2Support, httpMarshallersJava, httpMarshallersScala, httpCaching,
     httpTests % "compile;test->test", httpTestkit % "compile;test->test"
@@ -347,8 +365,25 @@ lazy val docs = project("docs")
     apidocRootPackage := "akka",
     Formatting.docFormatSettings,
     additionalTasks in ValidatePR += paradox in Compile,
-    deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka-http/${version.value}")
+    deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka-http/${version.value}"),
+    add212CrossDirs(Test)
   )
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
+
+lazy val compatibilityTests = Project("akka-http-compatibility-tests", file("akka-http-compatibility-tests"))
+  .enablePlugins(NoPublish)
+  .disablePlugins(BintrayPlugin, MimaPlugin)
+  .addAkkaModuleDependency("akka-stream", "provided")
+  .settings(
+    libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-http" % "10.1.8" % "provided", // TODO, should we make that latest?
+    ),
+    (dependencyClasspath in Test) := {
+      // HACK: We'd like to use `dependsOn(http % "test->compile")` to upgrade the explicit dependency above to the
+      //       current version but that fails. So, this is a manual `dependsOn` which works as expected.
+      (dependencyClasspath in Test).value.filterNot(_.data.getName contains "akka") ++
+      (fullClasspath in (httpTests, Test)).value
+    }
+  )
 
 def hasCommitsAfterTag(description: Option[GitDescribeOutput]): Boolean = description.get.commitSuffix.distance > 0

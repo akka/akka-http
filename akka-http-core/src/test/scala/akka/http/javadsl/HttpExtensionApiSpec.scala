@@ -118,12 +118,14 @@ class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll
       val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
 
       val flow: Flow[HttpRequest, HttpResponse, NotUsed] = akka.stream.scaladsl.Flow[HttpRequest]
-        .map(req ⇒ HttpResponse.create())
+        .map(req => HttpResponse.create())
         .asJava
       val binding = waitFor(bind())
 
-      val (_, completion) = http.outgoingConnection(toHost(host, port))
-        .runWith(Source.single(HttpRequest.create("/abc")), Sink.head(), materializer).toScala
+      val completion =
+        Source.single(HttpRequest.create("/abc"))
+          .via(http.outgoingConnection(toHost(host, port)))
+          .runWith(Sink.head[HttpResponse](), materializer)
 
       waitFor(completion)
       waitFor(binding.unbind())

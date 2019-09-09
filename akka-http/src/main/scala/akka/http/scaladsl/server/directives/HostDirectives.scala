@@ -36,7 +36,7 @@ trait HostDirectives {
    *
    * @group host
    */
-  def host(predicate: String ⇒ Boolean): Directive0 = extractHost.require(predicate)
+  def host(predicate: String => Boolean): Directive0 = extractHost.require(predicate)
   //#require-host
 
   /**
@@ -48,19 +48,19 @@ trait HostDirectives {
    * @group host
    */
   def host(regex: Regex): Directive1[String] = {
-    def forFunc(regexMatch: String ⇒ Option[String]): Directive1[String] = {
-      extractHost.flatMap { name ⇒
+    def forFunc(regexMatch: String => Option[String]): Directive1[String] = {
+      extractHost.flatMap { name =>
         regexMatch(name) match {
-          case Some(matched) ⇒ provide(matched)
-          case None          ⇒ reject
+          case Some(matched) => provide(matched)
+          case None          => reject
         }
       }
     }
 
     regex.groupCount match {
-      case 0 ⇒ forFunc(regex.findPrefixOf(_))
-      case 1 ⇒ forFunc(regex.findPrefixMatchOf(_).map(_.group(1)))
-      case _ ⇒ throw new IllegalArgumentException("Path regex '" + regex.pattern.pattern +
+      case 0 => forFunc(regex.findPrefixOf(_))
+      case 1 => forFunc(regex.findPrefixMatchOf(_).map(_.group(1)))
+      case _ => throw new IllegalArgumentException("Path regex '" + regex.pattern.pattern +
         "' must not contain more than one capturing group")
     }
   }

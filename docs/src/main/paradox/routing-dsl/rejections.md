@@ -104,7 +104,7 @@ you can attach handling logic for certain types of rejections through three help
 run when the rejection is "caught". This makes the full power of the Routing DSL available for defining rejection
 handlers and even allows for recursing back into the main route structure if required.
 
-@scala[handleAll[T <: Rejection: ClassTag](f: immutable.Seq[T] ⇒ Route)]@java[handleAll<T extends Rejection>(Class<T>, Function<List<T>, Route>)]
+@scala[handleAll[T <: Rejection: ClassTag](f: immutable.Seq[T] => Route)]@java[handleAll<T extends Rejection>(Class<T>, Function<List<T>, Route>)]
 : Handles all rejections of a certain type at the same time. This is useful for cases where your need access to more
 than the first rejection of a certain type, e.g. for producing the error message to an unsupported request method.
 

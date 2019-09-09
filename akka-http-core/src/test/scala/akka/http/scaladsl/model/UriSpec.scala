@@ -198,7 +198,7 @@ class UriSpec extends WordSpec with Matchers {
     import Path.Empty
     "be parsed and rendered correctly" in {
       def roundTripTo(p: Path, cs: Charset = UTF8) =
-        Matcher[String] { s ⇒
+        Matcher[String] { s =>
           val rendering = UriRendering.renderPath(new StringRendering, p, cs).get
           if (rendering != s) MatchResult(matches = false, s"The path rendered to '$rendering' rather than '$s'", "<?>")
           else if (Path(s, cs) != p) MatchResult(matches = false, s"The string parsed to '${Path(s, cs)}' rather than '$p'", "<?>")
@@ -255,6 +255,30 @@ class UriSpec extends WordSpec with Matchers {
       Path("/abc").endsWithSlash shouldBe false
       Path("/abc/def").endsWithSlash shouldBe false
       Path("/abc/def/").endsWithSlash shouldBe true
+    }
+    "support the `endsWith` predicate" in {
+      Empty.endsWith("foo") shouldBe false
+      Empty.endsWith("foo", ignoreTrailingSlash = true) shouldBe false
+      Path./.endsWith("foo") shouldBe false
+      Path./.endsWith("foo", ignoreTrailingSlash = true) shouldBe false
+      Path("foo").endsWith("foo") shouldBe true
+      Path("foo").endsWith("foo", ignoreTrailingSlash = true) shouldBe true
+      Path("foo/").endsWith("foo") shouldBe false
+      Path("foo/").endsWith("foo", ignoreTrailingSlash = true) shouldBe true
+      Path("/foo").endsWith("foo") shouldBe true
+      Path("/foo").endsWith("foo", ignoreTrailingSlash = true) shouldBe true
+      Path("/foo/").endsWith("foo") shouldBe false
+      Path("/foo/").endsWith("foo", ignoreTrailingSlash = true) shouldBe true
+      Path("/abc/foo").endsWith("foo") shouldBe true
+      Path("/abc/foo").endsWith("foo", ignoreTrailingSlash = true) shouldBe true
+      Path("/abc/foo/").endsWith("foo") shouldBe false
+      Path("/abc/foo/").endsWith("foo", ignoreTrailingSlash = true) shouldBe true
+      Path("/abc").endsWith("foo") shouldBe false
+      Path("/abc").endsWith("foo", ignoreTrailingSlash = true) shouldBe false
+      Path("/abc/def").endsWith("foo") shouldBe false
+      Path("/abc/def").endsWith("foo", ignoreTrailingSlash = true) shouldBe false
+      Path("/abc/def/").endsWith("foo") shouldBe false
+      Path("/abc/def/").endsWith("foo", ignoreTrailingSlash = true) shouldBe false
     }
     "support the `?/` operator" in {
       Path("abc") ?/ "def" shouldEqual Path("abc/def")
@@ -414,33 +438,33 @@ class UriSpec extends WordSpec with Matchers {
       query.getOrElse("d", "x") shouldEqual "x"
       query.getAll("b") shouldEqual List("", "4", "2")
       query.getAll("d") shouldEqual Nil
-      query.toMap shouldEqual Map("a" → "1", "b" → "", "c" → "3")
-      query.toMultiMap shouldEqual Map("a" → List("1"), "b" → List("2", "4", ""), "c" → List("3"))
-      query.toList shouldEqual List("a" → "1", "b" → "2", "c" → "3", "b" → "4", "b" → "")
-      query.toSeq shouldEqual Seq("a" → "1", "b" → "2", "c" → "3", "b" → "4", "b" → "")
+      query.toMap shouldEqual Map("a" -> "1", "b" -> "", "c" -> "3")
+      query.toMultiMap shouldEqual Map("a" -> List("1"), "b" -> List("2", "4", ""), "c" -> List("3"))
+      query.toList shouldEqual List("a" -> "1", "b" -> "2", "c" -> "3", "b" -> "4", "b" -> "")
+      query.toSeq shouldEqual Seq("a" -> "1", "b" -> "2", "c" -> "3", "b" -> "4", "b" -> "")
     }
     "preserve the order of repeated parameters when retrieving as a multimap" in {
       val query = Query("a=1&b=1&b=2&b=3&b=4&c=1")
-      query.toMultiMap shouldEqual Map("a" → List("1"), "b" → List("1", "2", "3", "4"), "c" → List("1"))
+      query.toMultiMap shouldEqual Map("a" -> List("1"), "b" -> List("1", "2", "3", "4"), "c" -> List("1"))
     }
     "support conversion from list of name/value pairs" in {
       import Query._
-      val pairs = List("key1" → "value1", "key2" → "value2", "key3" → "value3")
+      val pairs = List("key1" -> "value1", "key2" -> "value2", "key3" -> "value3")
       Query(pairs: _*).toList.diff(pairs) shouldEqual Nil
       Query() shouldEqual Empty
-      Query("k" → "v") shouldEqual ("k" → "v") +: Empty
+      Query("k" -> "v") shouldEqual ("k" -> "v") +: Empty
     }
     "encode special separators in query parameter names" in {
-      Query("a=b" → "c").toString() shouldEqual "a%3Db=c"
-      Query("a&b" → "c").toString() shouldEqual "a%26b=c"
-      Query("a+b" → "c").toString() shouldEqual "a%2Bb=c"
-      Query("a;b" → "c").toString() shouldEqual "a%3Bb=c"
+      Query("a=b" -> "c").toString() shouldEqual "a%3Db=c"
+      Query("a&b" -> "c").toString() shouldEqual "a%26b=c"
+      Query("a+b" -> "c").toString() shouldEqual "a%2Bb=c"
+      Query("a;b" -> "c").toString() shouldEqual "a%3Bb=c"
     }
     "encode special separators in query parameter values" in {
-      Query("a" → "b=c").toString() shouldEqual "a=b%3Dc"
-      Query("a" → "b&c").toString() shouldEqual "a=b%26c"
-      Query("a" → "b+c").toString() shouldEqual "a=b%2Bc"
-      Query("a" → "b;c").toString() shouldEqual "a=b%3Bc"
+      Query("a" -> "b=c").toString() shouldEqual "a=b%3Dc"
+      Query("a" -> "b&c").toString() shouldEqual "a=b%26c"
+      Query("a" -> "b+c").toString() shouldEqual "a=b%2Bc"
+      Query("a" -> "b;c").toString() shouldEqual "a=b%3Bc"
     }
   }
 
@@ -577,7 +601,7 @@ class UriSpec extends WordSpec with Matchers {
 
     "support tunneling a URI through a query param" in {
       val uri = Uri("http://aHost/aPath?aParam=aValue#aFragment")
-      val q = Query("uri" → uri.toString)
+      val q = Query("uri" -> uri.toString)
       val uri2 = Uri(path = Path./, fragment = Some("aFragment")).withQuery(q).toString
       uri2 shouldEqual "/?uri=http://ahost/aPath?aParam%3DaValue%23aFragment#aFragment"
       Uri(uri2).query() shouldEqual q
@@ -725,8 +749,8 @@ class UriSpec extends WordSpec with Matchers {
       uri.withUserInfo("someInfo") shouldEqual Uri("http://someInfo@host/path?query#fragment")
       explicitDefault.withUserInfo("someInfo") shouldEqual Uri("http://someInfo@host:80/path?query#fragment")
 
-      uri.withQuery(Query("param1" → "value1")) shouldEqual Uri("http://host/path?param1=value1#fragment")
-      uri.withQuery(Query(Map("param1" → "value1"))) shouldEqual Uri("http://host/path?param1=value1#fragment")
+      uri.withQuery(Query("param1" -> "value1")) shouldEqual Uri("http://host/path?param1=value1#fragment")
+      uri.withQuery(Query(Map("param1" -> "value1"))) shouldEqual Uri("http://host/path?param1=value1#fragment")
       uri.withRawQueryString("param1=value1") shouldEqual Uri("http://host/path?param1=value1#fragment")
 
       uri.withFragment("otherFragment") shouldEqual Uri("http://host/path?query#otherFragment")

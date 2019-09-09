@@ -5,15 +5,15 @@
 package akka.http.javadsl.server.directives
 
 import java.io.File
-import java.util.{ Map ⇒ JMap, List ⇒ JList }
+import java.util.{ Map => JMap, List => JList }
 import java.util.AbstractMap.SimpleImmutableEntry
-import java.util.function.{ BiFunction, Function ⇒ JFunction }
+import java.util.function.{ BiFunction, Function => JFunction }
 
 import akka.annotation.ApiMayChange
 
 import akka.http.javadsl.model.ContentType
 import akka.http.javadsl.server.Route
-import akka.http.scaladsl.server.{ Directives ⇒ D }
+import akka.http.scaladsl.server.{ Directives => D }
 import akka.japi.Util
 import akka.stream.javadsl.Source
 import akka.util.ByteString
@@ -29,7 +29,7 @@ abstract class FileUploadDirectives extends FileAndResourceDirectives {
    */
   @Deprecated
   def uploadedFile(fieldName: String, inner: BiFunction[FileInfo, File, Route]): Route = RouteAdapter {
-    D.uploadedFile(fieldName) { case (info, file) ⇒ inner.apply(info, file).delegate }
+    D.uploadedFile(fieldName) { case (info, file) => inner.apply(info, file).delegate }
   }
 
   /**
@@ -40,7 +40,7 @@ abstract class FileUploadDirectives extends FileAndResourceDirectives {
    */
   @ApiMayChange
   def storeUploadedFile(fieldName: String, destFn: JFunction[FileInfo, File], inner: BiFunction[FileInfo, File, Route]): Route = RouteAdapter {
-    D.storeUploadedFile(fieldName, destFn.apply) { case (info, file) ⇒ inner.apply(info, file).delegate }
+    D.storeUploadedFile(fieldName, destFn.apply) { case (info, file) => inner.apply(info, file).delegate }
   }
 
   /**
@@ -50,8 +50,8 @@ abstract class FileUploadDirectives extends FileAndResourceDirectives {
    */
   @ApiMayChange
   def storeUploadedFiles(fieldName: String, destFn: JFunction[FileInfo, File], inner: JFunction[JList[JMap.Entry[FileInfo, File]], Route]): Route = RouteAdapter {
-    D.storeUploadedFiles(fieldName, destFn.apply) { files ⇒
-      val entries = files.map { case (info, src) ⇒ new SimpleImmutableEntry(fileInfoToJava(info), src) }
+    D.storeUploadedFiles(fieldName, destFn.apply) { files =>
+      val entries = files.map { case (info, src) => new SimpleImmutableEntry(fileInfoToJava(info), src) }
       inner.apply(Util.javaArrayList(entries)).delegate
     }
   }
@@ -63,7 +63,7 @@ abstract class FileUploadDirectives extends FileAndResourceDirectives {
    * ones ignored.
    */
   def fileUpload(fieldName: String, inner: BiFunction[FileInfo, Source[ByteString, Any], Route]): Route = RouteAdapter {
-    D.fileUpload(fieldName) { case (info, src) ⇒ inner.apply(info, src.asJava).delegate }
+    D.fileUpload(fieldName) { case (info, src) => inner.apply(info, src.asJava).delegate }
   }
 
   /**
@@ -74,8 +74,8 @@ abstract class FileUploadDirectives extends FileAndResourceDirectives {
    */
   @ApiMayChange
   def fileUploadAll(fieldName: String, inner: JFunction[JList[JMap.Entry[FileInfo, Source[ByteString, Any]]], Route]): Route = RouteAdapter {
-    D.fileUploadAll(fieldName) { files ⇒
-      val entries = files.map { case (info, src) ⇒ new SimpleImmutableEntry(fileInfoToJava(info), src.asJava) }
+    D.fileUploadAll(fieldName) { files =>
+      val entries = files.map { case (info, src) => new SimpleImmutableEntry(fileInfoToJava(info), src.asJava) }
       inner.apply(Util.javaArrayList(entries)).delegate
     }
   }

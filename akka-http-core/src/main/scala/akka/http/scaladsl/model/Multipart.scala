@@ -17,13 +17,13 @@ import scala.util.{ Failure, Success, Try }
 import akka.event.LoggingAdapter
 import akka.util.ConstantFun
 import akka.stream.Materializer
-import akka.stream.javadsl.{ Source ⇒ JSource }
+import akka.stream.javadsl.{ Source => JSource }
 import akka.stream.scaladsl._
 import akka.http.ccompat._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.engine.rendering.BodyPartRenderer
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 import FastFuture._
 import akka.http.impl.util.JavaMapping.Implicits._
 
@@ -153,7 +153,7 @@ object Multipart {
      * The potentially present [[`Content-Disposition`]] header.
      */
     def contentDispositionHeader: Option[`Content-Disposition`] =
-      headers.collectFirst { case x: `Content-Disposition` ⇒ x }
+      headers.collectFirst { case x: `Content-Disposition` => x }
 
     /**
      * The parameters of the potentially present [[`Content-Disposition`]] header.
@@ -161,8 +161,8 @@ object Multipart {
      */
     def dispositionParams: Map[String, String] =
       contentDispositionHeader match {
-        case Some(`Content-Disposition`(_, params)) ⇒ params
-        case None                                   ⇒ Map.empty
+        case Some(`Content-Disposition`(_, params)) => params
+        case None                                   => Map.empty
       }
 
     /**
@@ -207,7 +207,7 @@ object Multipart {
     }
   }
 
-  private def strictify[BP <: Multipart.BodyPart, BPS <: Multipart.BodyPart.Strict](parts: Source[BP, Any])(f: BP ⇒ Future[BPS])(implicit fm: Materializer): Future[Vector[BPS]] = {
+  private def strictify[BP <: Multipart.BodyPart, BPS <: Multipart.BodyPart.Strict](parts: Source[BP, Any])(f: BP => Future[BPS])(implicit fm: Materializer): Future[Vector[BPS]] = {
     import fm.executionContext
     parts.mapAsync(Int.MaxValue)(f).runWith(Sink.seq).fast.map(_.toVector)
   }
@@ -244,7 +244,7 @@ object Multipart {
       }
 
     def unapply(value: Multipart.General): Option[(MediaType.Multipart, Source[Multipart.General.BodyPart, Any])] =
-      Some(value.mediaType → value.parts)
+      Some(value.mediaType -> value.parts)
 
     /**
      * Strict [[General]] multipart content.
@@ -279,17 +279,17 @@ object Multipart {
       override def toStrict(timeoutMillis: Long, materializer: Materializer): CompletionStage[jm.Multipart.General.BodyPart.Strict] =
         super.toStrict(timeoutMillis, materializer).toScala.asInstanceOf[Future[jm.Multipart.General.BodyPart.Strict]].toJava
 
-      private[BodyPart] def tryCreateFormDataBodyPart[T](f: (String, Map[String, String], immutable.Seq[HttpHeader]) ⇒ T): Try[T] = {
+      private[BodyPart] def tryCreateFormDataBodyPart[T](f: (String, Map[String, String], immutable.Seq[HttpHeader]) => T): Try[T] = {
         val params = dispositionParams
         params.get("name") match {
-          case Some(name) ⇒ Success(f(name, params - "name", headers.filterNot(_ is "content-disposition")))
-          case None       ⇒ Failure(IllegalHeaderException("multipart/form-data part must contain `Content-Disposition` header with `name` parameter"))
+          case Some(name) => Success(f(name, params - "name", headers.filterNot(_ is "content-disposition")))
+          case None       => Failure(IllegalHeaderException("multipart/form-data part must contain `Content-Disposition` header with `name` parameter"))
         }
       }
-      private[BodyPart] def tryCreateByteRangesBodyPart[T](f: (ContentRange, RangeUnit, immutable.Seq[HttpHeader]) ⇒ T): Try[T] =
-        headers.collectFirst { case x: `Content-Range` ⇒ x } match {
-          case Some(`Content-Range`(unit, range)) ⇒ Success(f(range, unit, headers.filterNot(_ is "content-range")))
-          case None                               ⇒ Failure(IllegalHeaderException("multipart/byteranges part must contain `Content-Range` header"))
+      private[BodyPart] def tryCreateByteRangesBodyPart[T](f: (ContentRange, RangeUnit, immutable.Seq[HttpHeader]) => T): Try[T] =
+        headers.collectFirst { case x: `Content-Range` => x } match {
+          case Some(`Content-Range`(unit, range)) => Success(f(range, unit, headers.filterNot(_ is "content-range")))
+          case None                               => Failure(IllegalHeaderException("multipart/byteranges part must contain `Content-Range` header"))
         }
     }
     object BodyPart {
@@ -304,7 +304,7 @@ object Multipart {
           override def toString = s"General.BodyPart($entity, $headers)"
         }
 
-      def unapply(value: BodyPart): Option[(BodyPartEntity, immutable.Seq[HttpHeader])] = Some(value.entity → value.headers)
+      def unapply(value: BodyPart): Option[(BodyPartEntity, immutable.Seq[HttpHeader])] = Some(value.entity -> value.headers)
 
       /**
        * Strict [[General.BodyPart]].
@@ -358,7 +358,10 @@ object Multipart {
     /** INTERNAL API */
     @InternalApi
     private[akka] def createStrict(fields: Map[String, akka.http.javadsl.model.HttpEntity.Strict]): Multipart.FormData.Strict = Multipart.FormData.Strict {
-      fields.iterator.map { case (name, entity: akka.http.scaladsl.model.HttpEntity.Strict) ⇒ Multipart.FormData.BodyPart.Strict(name, entity) }.to(scala.collection.immutable.IndexedSeq)
+      fields.iterator.map {
+        case (name, entity: akka.http.scaladsl.model.HttpEntity.Strict) => Multipart.FormData.BodyPart.Strict(name, entity)
+        case _ => throw new IllegalStateException("Entity is expected to be strict.")
+      }.to(scala.collection.immutable.IndexedSeq)
     }
     /** INTERNAL API */
     @InternalApi
@@ -367,7 +370,7 @@ object Multipart {
     }
 
     def apply(fields: Map[String, HttpEntity.Strict]): Multipart.FormData.Strict = Multipart.FormData.Strict {
-      fields.iterator.map { case (name, entity) ⇒ Multipart.FormData.BodyPart.Strict(name, entity) }.to(scala.collection.immutable.IndexedSeq)
+      fields.iterator.map { case (name, entity) => Multipart.FormData.BodyPart.Strict(name, entity) }.to(scala.collection.immutable.IndexedSeq)
     }
 
     def apply(_parts: Source[Multipart.FormData.BodyPart, Any]): Multipart.FormData =
@@ -486,7 +489,7 @@ object Multipart {
        * Creates a BodyPart backed by a file that will be streamed using a FileSource.
        */
       def fromPath(name: String, contentType: ContentType, file: Path, chunkSize: Int = -1): BodyPart =
-        BodyPart(name, HttpEntity.fromPath(contentType, file, chunkSize), Map("filename" → file.getFileName.toString))
+        BodyPart(name, HttpEntity.fromPath(contentType, file, chunkSize), Map("filename" -> file.getFileName.toString))
 
       def unapply(value: BodyPart): Option[(String, BodyPartEntity, Map[String, String], immutable.Seq[HttpHeader])] =
         Some((value.name, value.entity, value.additionalDispositionParams, value.additionalHeaders))
@@ -509,7 +512,7 @@ object Multipart {
         def create(_name: String, _entity: BodyPartEntity,
                    _additionalDispositionParams: Map[String, String],
                    _additionalHeaders:           Iterable[akka.http.javadsl.model.HttpHeader]): Multipart.FormData.BodyPart = {
-          val _headers = _additionalHeaders.to(immutable.Seq) map { case h: akka.http.scaladsl.model.HttpHeader ⇒ h }
+          val _headers = _additionalHeaders.to(immutable.Seq) map { case h: akka.http.scaladsl.model.HttpHeader => h }
           apply(_name, _entity, _additionalDispositionParams, _headers)
         }
       }
@@ -520,7 +523,7 @@ object Multipart {
         def createStrict(_name: String, _entity: HttpEntity.Strict,
                          _additionalDispositionParams: Map[String, String],
                          _additionalHeaders:           Iterable[akka.http.javadsl.model.HttpHeader]): Multipart.FormData.BodyPart.Strict = {
-          val _headers = _additionalHeaders.to(immutable.Seq) map { case h: akka.http.scaladsl.model.HttpHeader ⇒ h }
+          val _headers = _additionalHeaders.to(immutable.Seq) map { case h: akka.http.scaladsl.model.HttpHeader => h }
           Strict(_name, _entity, _additionalDispositionParams, _headers)
         }
       }

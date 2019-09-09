@@ -12,8 +12,8 @@ import akka.japi.{ Creator, Procedure }
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
-import scala.compat.java8.FutureConverters.{ toJava ⇒ futureToJava, toScala ⇒ futureToScala }
-import scala.concurrent.{ Future, Promise }
+import scala.compat.java8.FutureConverters.{ toJava => futureToJava, toScala => futureToScala }
+import scala.concurrent.{ ExecutionContext, Future, Promise }
 
 /**
  * API MAY CHANGE
@@ -23,32 +23,32 @@ import scala.concurrent.{ Future, Promise }
 @ApiMayChange
 @DoNotInherit
 abstract class Cache[K, V] extends akka.http.caching.javadsl.Cache[K, V] {
-  cache ⇒
+  cache =>
 
   /**
    * Returns either the cached Future for the given key or evaluates the given value generating
    * function producing a `Future[V]`.
    */
-  def apply(key: K, genValue: () ⇒ Future[V]): Future[V]
+  def apply(key: K, genValue: () => Future[V]): Future[V]
 
   /**
    * Returns either the cached Future for the key or evaluates the given function which
    * should lead to eventual completion of the promise.
    */
-  def apply(key: K, f: Promise[V] ⇒ Unit): Future[V] =
-    apply(key, () ⇒ { val p = Promise[V](); f(p); p.future })
+  def apply(key: K, f: Promise[V] => Unit): Future[V] =
+    apply(key, () => { val p = Promise[V](); f(p); p.future })
 
   /**
    * Returns either the cached Future for the given key, or applies the given value loading
    * function on the key, producing a `Future[V]`.
    */
-  def getOrLoad(key: K, loadValue: K ⇒ Future[V]): Future[V]
+  def getOrLoad(key: K, loadValue: K => Future[V]): Future[V]
 
   /**
    * Returns either the cached Future for the given key or the given value as a Future
    */
-  def get(key: K, block: () ⇒ V): Future[V] =
-    cache.apply(key, () ⇒ Future.successful(block()))
+  def get(key: K, block: () => V): Future[V] =
+    cache.apply(key, () => Future.successful(block()))
 
   /**
    * Retrieves the future instance that is currently in the cache for the given key.
@@ -56,7 +56,14 @@ abstract class Cache[K, V] extends akka.http.caching.javadsl.Cache[K, V] {
    */
   def get(key: K): Option[Future[V]]
   override def getOptional(key: K): Optional[CompletionStage[V]] =
-    Optional.ofNullable(get(key).map(f ⇒ futureToJava(f)).orNull)
+    Optional.ofNullable(get(key).map(f => futureToJava(f)).orNull)
+
+  /**
+   * Cache the given future if not cached previously.
+   * Or replace the old cached value on successful completion of given future.
+   * In case the given future fails, the previously cached value for that key (if any) will remain unchanged.
+   */
+  def put(key: K, mayBeValue: Future[V])(implicit ex: ExecutionContext): Future[V]
 
   /**
    * Removes the cache item for the given key.
@@ -79,10 +86,10 @@ abstract class Cache[K, V] extends akka.http.caching.javadsl.Cache[K, V] {
   override def getKeys: java.util.Set[K] = keys.asJava
 
   final override def getFuture(key: K, genValue: Creator[CompletionStage[V]]): CompletionStage[V] =
-    futureToJava(apply(key, () ⇒ futureToScala(genValue.create())))
+    futureToJava(apply(key, () => futureToScala(genValue.create())))
 
   final override def getOrFulfil(key: K, f: Procedure[CompletableFuture[V]]): CompletionStage[V] =
-    futureToJava(apply(key, promise ⇒ {
+    futureToJava(apply(key, promise => {
       val completableFuture = new CompletableFuture[V]
       f(completableFuture)
       promise.completeWith(futureToScala(completableFuture))
@@ -92,7 +99,7 @@ abstract class Cache[K, V] extends akka.http.caching.javadsl.Cache[K, V] {
    * Returns either the cached CompletionStage for the given key or the given value as a CompletionStage
    */
   override def getOrCreateStrict(key: K, block: Creator[V]): CompletionStage[V] =
-    futureToJava(get(key, () ⇒ block.create))
+    futureToJava(get(key, () => block.create))
 
   /**
    * Returns the upper bound for the number of currently cached entries.

@@ -46,7 +46,7 @@ class ResponseRenderingSpec extends WordSpec with Matchers {
       val builder = new VectorBuilder[(String, String)]
       ResponseRendering.renderHeaders(Seq.empty, builder, None, NoLogging)
       val date = builder.result().collectFirst {
-        case ("date", str) ⇒ str
+        case ("date", str) => str
       }
 
       date.isDefined shouldBe true
@@ -60,7 +60,7 @@ class ResponseRenderingSpec extends WordSpec with Matchers {
       val originalDateTime = DateTime(1981, 3, 6, 20, 30, 24)
       ResponseRendering.renderHeaders(Seq(Date(originalDateTime)), builder, None, NoLogging)
       val date = builder.result().collectFirst {
-        case ("date", str) ⇒ str
+        case ("date", str) => str
       }
 
       date shouldEqual Some(originalDateTime.toRfc1123DateTimeString)
@@ -107,7 +107,7 @@ class ResponseRenderingSpec extends WordSpec with Matchers {
       val builder = new VectorBuilder[(String, String)]
       val invalidRawHeaders = Seq(
         "connection", "content-length", "content-type", "transfer-encoding", "date", "server"
-      ).map(name ⇒ RawHeader(name, "whatever"))
+      ).map(name => RawHeader(name, "whatever"))
       ResponseRendering.renderHeaders(invalidRawHeaders, builder, None, NoLogging)
       builder.result().exists(_._1 != "date") shouldBe false
     }

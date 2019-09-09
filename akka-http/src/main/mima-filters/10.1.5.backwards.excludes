@@ -1,0 +1,9 @@
+# The following were not caught by the version of mima in use at the time:
+
+# scaladsl:
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.server.RouteResult#Rejected.getRejections")
+
+# Used to be public, became protected, which made a forwarder disappear
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.marshalling.Marshaller.randomBoundary")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.marshalling.Marshaller.multipartBoundaryLength")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.marshalling.Marshaller.multipartBoundaryRandom")
