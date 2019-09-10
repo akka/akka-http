@@ -24,11 +24,6 @@ import akka.http.scaladsl.HttpConnectionContext
 
 //#bindAndHandlePlain
 
-//#bindAndHandleNegotiateUpgrade
-import akka.http.scaladsl.UseHttp2.Negotiated
-
-//#bindAndHandleNegotiateUpgrade
-
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 

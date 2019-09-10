@@ -115,7 +115,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
             val serverLayer: Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(
               Flow[HttpRequest]
                 .watchTermination()(Keep.right)
-                .merge(injectedRequest)
+                .prepend(injectedRequest)
                 .via(Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher))
                 // the settings from the header are injected into the blueprint as initial demuxer settings
                 .joinMat(Http2Blueprint.serverStack(settings, log, settingsFromHeader, true))(Keep.left))
