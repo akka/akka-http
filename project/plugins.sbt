@@ -21,7 +21,7 @@ addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.5")
 addSbtPlugin("com.lightbend.paradox" % "sbt-paradox" % "0.6.4")
 addSbtPlugin("com.lightbend.paradox" % "sbt-paradox-apidoc" % "0.2")
 addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.23")
-addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.16")
+addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.17")
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.2.0")
 
 // used in ValidatePullRequest to check github PR comments whether to build all subprojects
