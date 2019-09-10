@@ -55,9 +55,10 @@ private[http] object Http2Blueprint {
   def serverStack(
       settings: ServerSettings,
       log: LoggingAdapter,
-      initialDemuxerSettings: immutable.Seq[Setting] = Nil): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
+      initialDemuxerSettings: immutable.Seq[Setting] = Nil,
+      upgraded: Boolean = false): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
     httpLayer(settings, log) atop
-      demux(settings.http2Settings, initialDemuxerSettings) atop
+      demux(settings.http2Settings, initialDemuxerSettings, upgraded) atop
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
       hpackCoding() atop
       // LogByteStringTools.logToStringBidi("framing") atop // enable for debugging
@@ -87,8 +88,8 @@ private[http] object Http2Blueprint {
    * Creates substreams for every stream and manages stream state machines
    * and handles priorization (TODO: later)
    */
-  def demux(settings: Http2ServerSettings, initialDemuxerSettings: immutable.Seq[Setting]): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
-    BidiFlow.fromGraph(new Http2ServerDemux(settings, initialDemuxerSettings))
+  def demux(settings: Http2ServerSettings, initialDemuxerSettings: immutable.Seq[Setting], upgraded: Boolean): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
+    BidiFlow.fromGraph(new Http2ServerDemux(settings, initialDemuxerSettings, upgraded))
 
   /**
    * Translation between substream frames and Http messages (both directions)

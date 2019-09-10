@@ -12,7 +12,6 @@ import akka.http.impl.engine.http2.{ ProtocolSwitch, Http2AlpnSupport, Http2Blue
 import akka.http.impl.engine.server.MasterServerTerminator
 import akka.http.impl.engine.server.UpgradeToOtherProtocolResponseHeader
 import akka.http.scaladsl.Http.ServerBinding
-import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.TLSProtocol.{ SslTlsInbound, SslTlsOutbound }
@@ -56,7 +55,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
       else if (connectionContext.isSecure) settings.defaultHttpsPort
       else settings.defaultHttpPort
 
-    val http1 = Flow[HttpRequest].mapAsync(parallelism)(handleUpgradeRequests(handler, settings, parallelism, log)).join(http.serverLayer(settings, None, log))
+    val http1 = Flow[HttpRequest].mapAsync(parallelism)(handleUpgradeRequests(handler, settings, parallelism, log)).join(http.serverLayer(settings, log = log))
     val http2 = Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher).join(Http2Blueprint.serverStackTls(settings, log))
 
     val masterTerminator = new MasterServerTerminator(log)
@@ -94,7 +93,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
     settings:    ServerSettings,
     parallelism: Int,
     log:         LoggingAdapter
-  )(implicit mat: Materializer): HttpRequest => Future[HttpResponse] = { req =>
+  ): HttpRequest => Future[HttpResponse] = { req =>
     req.header[Upgrade] match {
       case Some(upgrade) if upgrade.protocols.exists(_.name equalsIgnoreCase "h2c") =>
 
@@ -119,7 +118,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
                 .merge(injectedRequest)
                 .via(Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher))
                 // the settings from the header are injected into the blueprint as initial demuxer settings
-                .joinMat(Http2Blueprint.serverStack(settings, log, settingsFromHeader))(Keep.left))
+                .joinMat(Http2Blueprint.serverStack(settings, log, settingsFromHeader, true))(Keep.left))
 
             Future.successful(
               HttpResponse(

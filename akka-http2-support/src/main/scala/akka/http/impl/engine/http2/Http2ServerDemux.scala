@@ -69,7 +69,7 @@ import FrameEvent._
  * only available in this stage.
  */
 @InternalApi
-private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings, initialDemuxerSettings: immutable.Seq[Setting]) extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] {
+private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings, initialDemuxerSettings: immutable.Seq[Setting], upgraded: Boolean) extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] {
   val frameIn = Inlet[FrameEvent]("Demux.frameIn")
   val frameOut = Outlet[FrameEvent]("Demux.frameOut")
 
@@ -83,7 +83,8 @@ private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings, initia
     new GraphStageLogic(shape) with Http2MultiplexerSupport with Http2StreamHandling with GenericOutletSupport with StageLogging {
       logic =>
 
-      def settings: Http2ServerSettings = http2Settings
+      override def settings: Http2ServerSettings = http2Settings
+      override def isUpgraded: Boolean = upgraded
 
       override protected def logSource: Class[_] = classOf[Http2ServerDemux]
 

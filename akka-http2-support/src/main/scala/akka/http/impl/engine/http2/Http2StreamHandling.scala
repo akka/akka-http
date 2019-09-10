@@ -32,6 +32,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
   def settings: Http2ServerSettings
   def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit
   def dispatchSubstream(sub: Http2SubStream): Unit
+  def isUpgraded: Boolean
 
   def flowController: IncomingFlowController = IncomingFlowController.default(settings)
 
@@ -45,7 +46,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
       case Some(state) => state
       case None =>
         if (streamId <= largestIncomingStreamId) Closed // closed streams are never put into the map
-        else if (streamId == 1) {
+        else if (isUpgraded && streamId == 1) {
           // Stream 1 is implicitly "half-closed" from the client toward the server (see Section 5.1), since the request is completed as an HTTP/1.1 request
           // https://http2.github.io/http2-spec/#discover-http
           largestIncomingStreamId = streamId

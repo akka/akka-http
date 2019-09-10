@@ -24,8 +24,3 @@ ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.settin
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.copy")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.this")
 ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.unapply")
-
-# #427 h2c via 'Upgrade'
-ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.engine.*")
-ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.engine.*")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.*")

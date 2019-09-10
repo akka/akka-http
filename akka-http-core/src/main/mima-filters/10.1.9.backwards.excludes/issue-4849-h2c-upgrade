@@ -1,0 +1,4 @@
+# #427 h2c via 'Upgrade'
+ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.engine.*")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.engine.*")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.*")
