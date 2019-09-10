@@ -82,9 +82,8 @@ private[http] class HttpResponseRendererFactory(
                 push(out, outElement)
                 if (close) completeStage()
               case HeadersAndStreamedEntity(headerData, outStream) =>
-                try {
-                  transfer(headerData, outStream)
-                } catch {
+                try transfer(headerData, outStream)
+                catch {
                   case NonFatal(e) =>
                     transferring = false
                     log.error(e, s"Rendering of response failed because response entity stream materialization failed with '${e.getMessage}'. Sending out 500 response instead.")
