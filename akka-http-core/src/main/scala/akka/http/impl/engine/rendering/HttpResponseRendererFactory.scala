@@ -83,8 +83,7 @@ private[http] class HttpResponseRendererFactory(
                 if (close) completeStage()
               case HeadersAndStreamedEntity(headerData, outStream) =>
                 try {
-                  push(out, ResponseRenderingOutput.HttpData(headerData))
-                  transfer(outStream)
+                  transfer(headerData, outStream)
                 } catch {
                   case NonFatal(e) =>
                     transferring = false
@@ -101,7 +100,7 @@ private[http] class HttpResponseRendererFactory(
           def onPull(): Unit = if (!hasBeenPulled(in)) tryPull(in)
         }
         setHandler(out, waitForDemandHandler)
-        def transfer(outStream: Source[ByteString, Any]): Unit = {
+        def transfer(headerData: ByteString, outStream: Source[ByteString, Any]): Unit = {
           transferring = true
           val sinkIn = new SubSinkInlet[ByteString]("RenderingSink")
           def stopTransfer(): Unit = {
@@ -117,8 +116,16 @@ private[http] class HttpResponseRendererFactory(
               if (close) completeStage()
               else stopTransfer()
           })
+
+          var headersSent = false
+          def sendHeaders(): Unit = {
+            push(out, ResponseRenderingOutput.HttpData(headerData))
+            headersSent = true
+          }
           setHandler(out, new OutHandler {
-            override def onPull(): Unit = sinkIn.pull()
+            override def onPull(): Unit =
+              if (!headersSent) sendHeaders()
+              else sinkIn.pull()
             override def onDownstreamFinish(): Unit = {
               completeStage()
               sinkIn.cancel()
@@ -127,7 +134,7 @@ private[http] class HttpResponseRendererFactory(
 
           try {
             outStream.runWith(sinkIn.sink)(interpreter.subFusingMaterializer)
-            if (isAvailable(out)) sinkIn.pull()
+            if (isAvailable(out)) sendHeaders()
           } catch {
             case NonFatal(e) =>
               stopTransfer()
