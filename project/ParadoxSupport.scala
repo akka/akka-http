@@ -19,16 +19,15 @@ import scala.io.{Codec, Source}
 object ParadoxSupport {
   val paradoxWithCustomDirectives = Seq(
     paradoxDirectives ++= Def.taskDyn {
-      val log = streams.value.log
       Def.task { Seq(
         { context: Writer.Context =>
-            new SignatureDirective(context.location.tree.label, context.properties, msg => log.warn(msg))
+            new SignatureDirective(context.location.tree.label, context.properties, context)
         },
       )}
     }.value
   )
 
-  class SignatureDirective(page: Page, variables: Map[String, String], logWarn: String => Unit) extends LeafBlockDirective("signature") {
+  class SignatureDirective(page: Page, variables: Map[String, String], ctx: Writer.Context) extends LeafBlockDirective("signature") {
     def render(node: DirectiveNode, visitor: Visitor, printer: Printer): Unit =
       try {
         val labels = node.attributes.values("identifier").asScala.map(_.toLowerCase())
@@ -55,7 +54,7 @@ object ParadoxSupport {
           }.mkString("\n")
 
         if (text.trim.isEmpty) {
-          logWarn(
+          ctx.logger.warn(
             s"Did not find any signatures with one of those names [${labels.mkString(", ")}] in ${node.source} " +
             s"(was referenced from [${page.path}])")
 
@@ -66,7 +65,7 @@ object ParadoxSupport {
         }
       } catch {
         case e: FileNotFoundException =>
-          throw new SnipDirective.LinkException(s"Unknown snippet [${e.getMessage}] referenced from [${page.path}]")
+          ctx.error(s"Unknown snippet [${e.getMessage}]", node)
       }
   }
 }
