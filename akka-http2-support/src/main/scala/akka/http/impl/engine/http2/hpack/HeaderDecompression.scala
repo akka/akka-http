@@ -83,7 +83,10 @@ private[http2] object HeaderDecompression extends GraphStage[FlowShape[FrameEven
           if (endHeaders) {
             parseAndEmit(streamId, endStream, receivedData ++ payload, priorityInfo)
             become(Idle)
-          } else receivedData ++= payload
+          } else {
+            receivedData ++= payload
+            pull(eventsIn)
+          }
         case x => protocolError(s"While waiting for CONTINUATION frame on stream $streamId received unexpected frame $x")
       }
     }
