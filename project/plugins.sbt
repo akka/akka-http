@@ -18,7 +18,7 @@ addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.9.2") // for advan
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.1")
 addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.5")
 addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.5")
-addSbtPlugin("com.lightbend.paradox" % "sbt-paradox" % "0.6.4")
+addSbtPlugin("com.lightbend.paradox" % "sbt-paradox" % "0.6.5")
 addSbtPlugin("com.lightbend.paradox" % "sbt-paradox-apidoc" % "0.2")
 addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.23")
 addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.16")
