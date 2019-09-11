@@ -259,7 +259,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
 
       private[http2] case object Idle extends MultiplexerState {
         def onPull(): Unit = become(WaitingForData)
-        def pushControlFrame(frame: FrameEvent): Unit = become(WaitingForNetworkToSendControlFrames(frame :: Nil, immutable.TreeSet.empty))
+        def pushControlFrame(frame: FrameEvent): Unit = become(WaitingForNetworkToSendControlFrames(Vector(frame), immutable.TreeSet.empty))
         def connectionWindowAvailable(): Unit = ()
         def enqueueOutStream(outStream: OutStream): Unit = become(WaitingForNetworkToSendData(immutable.TreeSet(outStream.streamId)))
         def closeStream(outStream: OutStream): Unit = ()
@@ -288,7 +288,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
       }
 
       /** Not yet pulled but data waiting to be sent */
-      private[http2] case class WaitingForNetworkToSendControlFrames(controlFrameBuffer: immutable.Seq[FrameEvent], sendableOutstreams: immutable.Set[Int]) extends MultiplexerState {
+      private[http2] case class WaitingForNetworkToSendControlFrames(controlFrameBuffer: immutable.Vector[FrameEvent], sendableOutstreams: immutable.Set[Int]) extends MultiplexerState {
         require(controlFrameBuffer.nonEmpty)
         def onPull(): Unit = controlFrameBuffer match {
           case first +: remaining =>
@@ -346,7 +346,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
           else // do nothing and wait for window first
             become(WaitingForConnectionWindow(sendableOutstreams))
 
-        def pushControlFrame(frame: FrameEvent): Unit = become(WaitingForNetworkToSendControlFrames(frame :: Nil, sendableOutstreams))
+        def pushControlFrame(frame: FrameEvent): Unit = become(WaitingForNetworkToSendControlFrames(Vector(frame), sendableOutstreams))
         def connectionWindowAvailable(): Unit = ()
         def enqueueOutStream(outStream: OutStream): Unit =
           if (!sendableOutstreams.contains(outStream.streamId))
@@ -379,7 +379,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
 
       def nextStateAfterPushingDataFrame(outStream: OutStream, sendableOutstreams: Set[Int]): MultiplexerState = {
         outStream.endStreamIfPossible()
-          .map(finalFrame => WaitingForNetworkToSendControlFrames(immutable.Seq(finalFrame), sendableOutstreams - outStream.streamId))
+          .map(finalFrame => WaitingForNetworkToSendControlFrames(Vector(finalFrame), sendableOutstreams - outStream.streamId))
           .getOrElse {
             val newSendableOutStreams =
               if (outStream.canSend) sendableOutstreams + outStream.streamId
