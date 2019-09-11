@@ -32,6 +32,9 @@ trait Http2ServerSettings extends javadsl.settings.Http2ServerSettings { self: H
   def maxConcurrentStreams: Int
   override def withMaxConcurrentStreams(newValue: Int): Http2ServerSettings = copy(maxConcurrentStreams = newValue)
 
+  def outgoingControlFrameBufferSize: Int
+  override def withOutgoingControlFrameBufferSize(newValue: Int): Http2ServerSettings = copy(outgoingControlFrameBufferSize = newValue)
+
   def logFrames: Boolean
   override def withLogFrames(shouldLog: Boolean): Http2ServerSettings = copy(logFrames = shouldLog)
 
@@ -52,12 +55,14 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
     requestEntityChunkSize:            Int,
     incomingConnectionLevelBufferSize: Int,
     incomingStreamLevelBufferSize:     Int,
+    outgoingControlFrameBufferSize:    Int,
     logFrames:                         Boolean,
     internalSettings:                  Option[Http2InternalServerSettings])
     extends Http2ServerSettings {
     require(requestEntityChunkSize > 0, "request-entity-chunk-size must be > 0")
     require(incomingConnectionLevelBufferSize > 0, "incoming-connection-level-buffer-size must be > 0")
     require(incomingStreamLevelBufferSize > 0, "incoming-stream-level-buffer-size must be > 0")
+    require(outgoingControlFrameBufferSize > 0, "outgoing-control-frame-buffer-size must be > 0")
   }
 
   private[http] object Http2ServerSettingsImpl extends akka.http.impl.util.SettingsCompanionImpl[Http2ServerSettingsImpl]("akka.http.server.http2") {
@@ -66,6 +71,7 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
       requestEntityChunkSize = c.getIntBytes("request-entity-chunk-size"),
       incomingConnectionLevelBufferSize = c.getIntBytes("incoming-connection-level-buffer-size"),
       incomingStreamLevelBufferSize = c.getIntBytes("incoming-stream-level-buffer-size"),
+      outgoingControlFrameBufferSize = c.getIntBytes("outgoing-control-frame-buffer-size"),
       logFrames = c.getBoolean("log-frames"),
       None // no possibility to configure internal settings with config
     )

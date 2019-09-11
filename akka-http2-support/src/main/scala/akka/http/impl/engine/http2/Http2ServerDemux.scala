@@ -89,7 +89,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings) extend
       val multiplexer = createMultiplexer(frameOut, StreamPrioritizer.first())
 
       override def preStart(): Unit = {
-        pull(frameIn)
+        pullFrameIn()
         pull(substreamIn)
 
         multiplexer.pushControlFrame(SettingsFrame(Nil)) // server side connection preface
@@ -111,6 +111,17 @@ private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings) extend
         multiplexer.pushControlFrame(frame)
         // FIXME: handle the connection closing according to the specification
       }
+      private[this] var allowReadingIncomingFrames: Boolean = true
+      override def allowReadingIncomingFrames(allow: Boolean): Unit = {
+        if (allow != allowReadingIncomingFrames)
+          if (allow) {
+            log.debug("Resume reading incoming frames")
+            if (!hasBeenPulled(frameIn)) pull(frameIn)
+          } else log.debug("Suspended reading incoming frames") // can't retract pending pull but that's ok
+
+        allowReadingIncomingFrames = allow
+      }
+      def pullFrameIn(): Unit = if (allowReadingIncomingFrames && !hasBeenPulled(frameIn)) pull(frameIn)
 
       setHandler(frameIn, new InHandler {
 
@@ -156,7 +167,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings) extend
               log.debug("Got unhandled event {}", e)
             // ignore unknown frames
           }
-          pull(frameIn)
+          pullFrameIn()
         }
 
         override def onUpstreamFailure(ex: Throwable): Unit = {
