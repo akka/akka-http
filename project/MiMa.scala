@@ -4,15 +4,28 @@
 
 package akka
 
+import java.io.FileOutputStream
+import java.nio.charset.Charset
+
+import com.typesafe.tools.mima.core
 import sbt._
 import sbt.Keys._
 import com.typesafe.tools.mima.core.ProblemFilter
+import com.typesafe.tools.mima.plugin.MimaKeys.mimaBackwardIssueFilters
+import com.typesafe.tools.mima.plugin.MimaKeys.mimaBinaryIssueFilters
+import com.typesafe.tools.mima.plugin.MimaKeys.mimaCheckDirection
+import com.typesafe.tools.mima.plugin.MimaKeys.mimaCurrentClassfiles
+import com.typesafe.tools.mima.plugin.MimaKeys.mimaForwardIssueFilters
+import com.typesafe.tools.mima.plugin.MimaKeys.mimaPreviousClassfiles
 import com.typesafe.tools.mima.plugin.MimaPlugin
 import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
+import com.typesafe.tools.mima.plugin.SbtLogger
+import com.typesafe.tools.mima.plugin.SbtMima
 
 import scala.util.Try
 
 object MiMa extends AutoPlugin {
+  val mimaCreateExclusionTemplate = taskKey[Seq[File]]("Creates templates for missing exclusions")
 
   override def requires = MimaPlugin
   override def trigger = allRequirements
@@ -86,6 +99,57 @@ object MiMa extends AutoPlugin {
 
       forks.flatMap(forkFilter).toMap ++
       filters.filterKeys(_ startsWith currentFork)
+    },
+    mimaCreateExclusionTemplate := {
+      val log = streams.value.log
+      val highestVersion = mimaPreviousArtifacts.value.toSeq.maxBy(_.revision)(versionOrdering).revision
+      val prefix = sys.props.getOrElse("akka.http.mima.exclusion-template-prefix", "_generated")
+
+      val allExcludes =
+        mimaPreviousClassfiles.value.toSeq.flatMap {
+        case (module, file) =>
+          val (backward, forward) = SbtMima.runMima(
+            file,
+            mimaCurrentClassfiles.value,
+            (fullClasspath in mimaFindBinaryIssues).value,
+            mimaCheckDirection.value,
+            new SbtLogger(streams.value)
+          )
+
+          val filters = mimaBinaryIssueFilters.value
+          val backwardFilters = mimaBackwardIssueFilters.value
+          val forwardFilters = mimaForwardIssueFilters.value
+
+          def isReported(module: ModuleID, verionedFilters: Map[String, Seq[core.ProblemFilter]])(problem: core.Problem) = (verionedFilters.collect {
+            // get all filters that apply to given module version or any version after it
+            case f @ (version, filters) if versionOrdering.gteq(version, module.revision) => filters
+          }.flatten ++ filters).forall { f => f(problem) }
+
+          val backErrors = backward filter isReported(module, backwardFilters)
+          val forwErrors = forward filter isReported(module, forwardFilters)
+
+          val filteredCount = backward.size + forward.size - backErrors.size - forwErrors.size
+          val filteredNote = if (filteredCount > 0) " (filtered " + filteredCount + ")" else ""
+
+          if (backErrors.size + forwErrors.size > 0) backErrors.flatMap(p => p.howToFilter.map((_, module.revision)))
+          else Nil
+      }
+
+      if (allExcludes.nonEmpty) {
+        val lines: List[String] =
+          allExcludes.groupBy(_._1).mapValues(_.map(_._2).toSet).groupBy(_._2).flatMap {
+            case (versionsAffected, exclusions) =>
+              val versions = versionsAffected.toSeq.sorted(versionOrdering)
+              s"# Incompatibilities against ${versions.mkString(", ")}" +: exclusions.keys.toVector.sorted :+ ""
+          }.toList
+
+        val targetFile = new File(mimaFiltersDirectory.value, s"$highestVersion.backwards.excludes/$prefix.excludes")
+        targetFile.getParentFile.mkdirs()
+        IO.writeLines(targetFile, lines, utf8, false)
+        log.info(s"Created ${targetFile.getPath} as a template to ignore pending mima issues. Remove `.template` suffix to activate.")
+        targetFile :: Nil
+      } else
+        Nil
     }
   )
 
@@ -102,4 +166,6 @@ object MiMa extends AutoPlugin {
     val toNumeric = (revision: String) => Try(revision.replace("x", Short.MaxValue.toString).filter(_.isDigit).toInt).getOrElse(0)
     (toNumeric(epoch), toNumeric(major), toNumeric(minor))
   }
+
+  private val utf8 = Charset.forName("utf-8")
 }
