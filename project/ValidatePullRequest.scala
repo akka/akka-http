@@ -364,7 +364,7 @@ object AggregatePRValidation extends AutoPlugin {
 
       log.info("")
       write("")
-      write("# Pull request validation report")
+      write("<details>\n<summary>Pull request validation report</summary>")
       write("")
 
       def showKey(key: ScopedKey[_]): String = Project.showContextKey2(extracted.session).show(key)
@@ -454,7 +454,7 @@ object AggregatePRValidation extends AutoPlugin {
         write("")
       }*/
 
-      write("")
+      write("</details>")
 
       fw.close()
       log.info(s"Wrote PR validation report to ${outputFile.getAbsolutePath}")
