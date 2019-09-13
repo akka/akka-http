@@ -22,6 +22,9 @@ import scala.concurrent.duration._
 import scala.io.StdIn
 import scala.util.Random
 
+/**
+ * App to manually test an HTTP2 server
+ */
 object Http2ServerTest extends App {
   val testConf: Config = ConfigFactory.parseString("""
     akka.loglevel = INFO

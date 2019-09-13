@@ -318,7 +318,6 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     parallelism:       Int               = 0,
     log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
     if (settings.previewServerSettings.enableHttp2) {
-      // We do not support HTTP/2 negotiation for insecure connections (h2c), https://github.com/akka/akka-http/issues/1966
       log.debug("Binding server using HTTP/2")
 
       val definitiveSettings =

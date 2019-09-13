@@ -7,7 +7,7 @@ package akka.http.impl.engine.parsing
 import java.lang.{ StringBuilder => JStringBuilder }
 
 import scala.annotation.{ switch, tailrec }
-import akka.http.scaladsl.settings.ParserSettings
+import akka.http.scaladsl.settings.{ ParserSettings, WebSocketSettings }
 import akka.util.{ ByteString, OptionVal }
 import akka.http.impl.engine.ws.Handshake
 import akka.http.impl.model.parser.CharacterClasses
@@ -16,6 +16,7 @@ import headers._
 import StatusCodes._
 import ParserOutput._
 import akka.annotation.InternalApi
+import akka.event.LoggingAdapter
 import akka.http.impl.util.ByteStringParserInput
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.stream.TLSProtocol.SessionBytes
@@ -27,6 +28,7 @@ import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 @InternalApi
 private[http] final class HttpRequestParser(
   settings:            ParserSettings,
+  websocketSettings:   WebSocketSettings,
   rawRequestUriHeader: Boolean,
   headerParser:        HttpHeaderParser)
   extends GraphStage[FlowShape[SessionBytes, RequestOutput]] { self =>
@@ -173,7 +175,7 @@ private[http] final class HttpRequestParser(
 
           val allHeaders =
             if (method == HttpMethods.GET) {
-              Handshake.Server.websocketUpgrade(headers, hostHeaderPresent) match {
+              Handshake.Server.websocketUpgrade(headers, hostHeaderPresent, websocketSettings, headerParser.log) match {
                 case OptionVal.Some(upgrade) => upgrade :: allHeaders0
                 case OptionVal.None          => allHeaders0
               }

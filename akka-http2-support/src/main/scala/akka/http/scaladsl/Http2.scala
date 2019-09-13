@@ -4,24 +4,28 @@
 
 package akka.http.scaladsl
 
+import akka.{ Done, NotUsed }
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.{ ProtocolSwitch, Http2AlpnSupport, Http2Blueprint }
 import akka.http.impl.engine.server.MasterServerTerminator
+import akka.http.impl.engine.server.UpgradeToOtherProtocolResponseHeader
 import akka.http.scaladsl.Http.ServerBinding
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.TLSProtocol.{ SslTlsInbound, SslTlsOutbound }
-import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Sink, TLS, TLSPlacebo, Tcp }
+import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Source, Sink, TLS, TLSPlacebo, Tcp }
+import akka.http.scaladsl.model.headers.{ Connection, RawHeader, Upgrade, UpgradeProtocol }
+import akka.http.scaladsl.model.http2.{ Http2SettingsHeader, Http2StreamIdHeader }
 import akka.stream.{ IgnoreComplete, Materializer }
 import akka.util.ByteString
-import akka.{ Done, NotUsed }
 import com.typesafe.config.Config
 import javax.net.ssl.SSLEngine
 
 import scala.concurrent.Future
-import scala.util.Success
+import scala.collection.immutable
+import scala.util.{ Failure, Success }
 import scala.util.control.NonFatal
 
 /** Entry point for Http/2 server */
@@ -51,7 +55,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
       else if (connectionContext.isSecure) settings.defaultHttpsPort
       else settings.defaultHttpPort
 
-    val http1 = Flow[HttpRequest].mapAsync(parallelism)(handler).join(http.serverLayer(settings, None, log))
+    val http1 = Flow[HttpRequest].mapAsync(parallelism)(handleUpgradeRequests(handler, settings, parallelism, log)).join(http.serverLayer(settings, log = log))
     val http2 = Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher).join(Http2Blueprint.serverStackTls(settings, log))
 
     val masterTerminator = new MasterServerTerminator(log)
@@ -83,6 +87,65 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
         ))(fm.executionContext)
       }.to(Sink.ignore).run()
   }
+
+  private def handleUpgradeRequests(
+    handler:     HttpRequest => Future[HttpResponse],
+    settings:    ServerSettings,
+    parallelism: Int,
+    log:         LoggingAdapter
+  ): HttpRequest => Future[HttpResponse] = { req =>
+    req.header[Upgrade] match {
+      case Some(upgrade) if upgrade.protocols.exists(_.name equalsIgnoreCase "h2c") =>
+
+        log.debug("Got h2c upgrade request from HTTP/1.1 to HTTP2")
+
+        // https://http2.github.io/http2-spec/#Http2SettingsHeader 3.2.1 HTTP2-Settings Header Field
+        val upgradeSettings = req.headers.collect {
+          case raw: RawHeader if raw.lowercaseName == Http2SettingsHeader.name =>
+            Http2SettingsHeader.parse(raw.value)
+        }
+
+        upgradeSettings match {
+          // Must be exactly one
+          case immutable.Seq(Success(settingsFromHeader)) =>
+            // inject the actual upgrade request with a stream identifier of 1
+            // https://http2.github.io/http2-spec/#rfc.section.3.2
+            val injectedRequest = Source.single(req.addHeader(Http2StreamIdHeader(1)))
+
+            val serverLayer: Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(
+              Flow[HttpRequest]
+                .watchTermination()(Keep.right)
+                .prepend(injectedRequest)
+                .via(Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher))
+                // the settings from the header are injected into the blueprint as initial demuxer settings
+                .joinMat(Http2Blueprint.serverStack(settings, log, settingsFromHeader, true))(Keep.left))
+
+            Future.successful(
+              HttpResponse(
+                StatusCodes.SwitchingProtocols,
+                immutable.Seq[HttpHeader](
+                  ConnectionUpgradeHeader,
+                  UpgradeHeader,
+                  UpgradeToOtherProtocolResponseHeader(serverLayer)
+                )
+              )
+            )
+          case immutable.Seq(Failure(e)) =>
+            log.warning("Failed to parse http2-settings header in upgrade [{}], continuing with HTTP/1.1", e.getMessage)
+            handler(req)
+          // A server MUST NOT upgrade the connection to HTTP/2 if this header field
+          // is not present or if more than one is present
+          case _ =>
+            log.debug("Invalid upgrade request (http2-settings header missing or repeated)")
+            handler(req)
+        }
+
+      case _ =>
+        handler(req)
+    }
+  }
+  val ConnectionUpgradeHeader = Connection(List("upgrade"))
+  val UpgradeHeader = Upgrade(List(UpgradeProtocol("h2c")))
 
   type HttpImplementation = Flow[SslTlsInbound, SslTlsOutbound, NotUsed]
   type HttpPlusSwitching = (HttpImplementation, HttpImplementation) => Flow[ByteString, ByteString, NotUsed]

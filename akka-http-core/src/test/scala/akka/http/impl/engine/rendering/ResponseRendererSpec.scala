@@ -617,8 +617,8 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
             Source.single(ctx),
             renderer.named("renderer")
               .map {
-                case ResponseRenderingOutput.HttpData(bytes)      => bytes
-                case _: ResponseRenderingOutput.SwitchToWebSocket => throw new IllegalStateException("Didn't expect websocket response")
+                case ResponseRenderingOutput.HttpData(bytes)          => bytes
+                case _: ResponseRenderingOutput.SwitchToOtherProtocol => throw new IllegalStateException("Didn't expect protocol switch response")
               }
           )
 

@@ -21,6 +21,7 @@ import akka.stream.scaladsl.{ BidiFlow, Flow, Source }
 import akka.util.ByteString
 
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.collection.immutable
 
 /**
  * Represents one direction of an Http2 substream.
@@ -51,9 +52,13 @@ private[http] object Http2Blueprint {
       logTLSBidiBySetting("server-plain-text", settings.logUnencryptedNetworkBytes)
 
   // format: OFF
-  def serverStack(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
+  def serverStack(
+      settings: ServerSettings,
+      log: LoggingAdapter,
+      initialDemuxerSettings: immutable.Seq[Setting] = Nil,
+      upgraded: Boolean = false): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
     httpLayer(settings, log) atop
-      demux(settings.http2Settings) atop
+      demux(settings.http2Settings, initialDemuxerSettings, upgraded) atop
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
       hpackCoding() atop
       // LogByteStringTools.logToStringBidi("framing") atop // enable for debugging
@@ -83,8 +88,8 @@ private[http] object Http2Blueprint {
    * Creates substreams for every stream and manages stream state machines
    * and handles priorization (TODO: later)
    */
-  def demux(settings: Http2ServerSettings): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
-    BidiFlow.fromGraph(new Http2ServerDemux(settings))
+  def demux(settings: Http2ServerSettings, initialDemuxerSettings: immutable.Seq[Setting], upgraded: Boolean): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
+    BidiFlow.fromGraph(new Http2ServerDemux(settings, initialDemuxerSettings, upgraded))
 
   /**
    * Translation between substream frames and Http messages (both directions)

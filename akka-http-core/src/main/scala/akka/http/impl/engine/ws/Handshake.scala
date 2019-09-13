@@ -10,10 +10,13 @@ import akka.annotation.InternalApi
 
 import scala.collection.immutable
 import scala.collection.immutable.Seq
+import akka.event.LoggingAdapter
 import akka.http.impl.util._
+import akka.http.impl.engine.server.UpgradeToOtherProtocolResponseHeader
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.ws.{ Message, UpgradeToWebSocket }
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.settings.WebSocketSettings
 import akka.stream.{ FlowShape, Graph }
 import akka.util.OptionVal
 
@@ -66,7 +69,7 @@ private[http] object Handshake {
      *        to speak.  The interpretation of this header field is discussed
      *        in Section 9.1.
      */
-    def websocketUpgrade(headers: List[HttpHeader], hostHeaderPresent: Boolean): OptionVal[UpgradeToWebSocket] = {
+    def websocketUpgrade(headers: List[HttpHeader], hostHeaderPresent: Boolean, settings: WebSocketSettings, log: LoggingAdapter): OptionVal[UpgradeToWebSocket] = {
 
       // notes on Headers that re REQUIRE to be present here:
       // - Host header is validated in general HTTP logic
@@ -111,7 +114,7 @@ private[http] object Handshake {
               require(
                 subprotocol.forall(chosen => clientSupportedSubprotocols.contains(chosen)),
                 s"Tried to choose invalid subprotocol '$subprotocol' which wasn't offered by the client: [${requestedProtocols.mkString(", ")}]")
-              buildResponse(key.get, handler, subprotocol)
+              buildResponse(key.get, handler, subprotocol, settings, log)
             }
 
             def handleFrames(handlerFlow: Graph[FlowShape[FrameEvent, FrameEvent], Any], subprotocol: Option[String]): HttpResponse =
@@ -144,7 +147,13 @@ private[http] object Handshake {
           concatenated value to obtain a 20-byte value and base64-
           encoding (see Section 4 of [RFC4648]) this 20-byte hash.
     */
-    def buildResponse(key: `Sec-WebSocket-Key`, handler: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]], subprotocol: Option[String]): HttpResponse =
+    def buildResponse(key: `Sec-WebSocket-Key`, handler: Either[Graph[FlowShape[FrameEvent, FrameEvent], Any], Graph[FlowShape[Message, Message], Any]], subprotocol: Option[String], settings: WebSocketSettings, log: LoggingAdapter): HttpResponse = {
+      val frameHandler = handler match {
+        case Left(frameHandler) => frameHandler
+        case Right(messageHandler) =>
+          WebSocket.stack(serverSide = true, settings, log = log).join(messageHandler)
+      }
+
       HttpResponse(
         StatusCodes.SwitchingProtocols,
         subprotocol.map(p => `Sec-WebSocket-Protocol`(Seq(p))).toList :::
@@ -152,7 +161,8 @@ private[http] object Handshake {
             UpgradeHeader,
             ConnectionUpgradeHeader,
             `Sec-WebSocket-Accept`.forKey(key),
-            UpgradeToWebSocketResponseHeader(handler)))
+            UpgradeToOtherProtocolResponseHeader(WebSocket.framing.join(frameHandler))))
+    }
   }
 
   object Client {
