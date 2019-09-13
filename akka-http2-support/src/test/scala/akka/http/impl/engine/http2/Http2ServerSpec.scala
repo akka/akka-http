@@ -38,6 +38,7 @@ import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import FrameEvent._
 import akka.http.impl.util.AkkaSpecWithMaterializer
+import akka.stream.Attributes
 
 class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     akka.http.server.remote-address-header = on
@@ -711,6 +712,18 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         expectRST_STREAM(1, ErrorCode.PROTOCOL_ERROR)
       }
 
+      "backpressure incoming frames when outgoing control frame buffer fills" in new TestSetup with HandlerFunctionSupport {
+        override def settings: ServerSettings = super.settings.mapHttp2Settings(_.withOutgoingControlFrameBufferSize(1))
+
+        sendFrame(PingFrame(false, ByteString("abcdefgh")))
+        // now one PING ack buffered
+        // this one fills the input buffer between the probe and the server
+        sendFrame(PingFrame(false, ByteString("abcdefgh")))
+
+        // now there should be no new demand
+        fromNet.pending shouldEqual 0
+        fromNet.expectNoMessage(100.millis)
+      }
     }
 
     "respect settings" should {
@@ -916,7 +929,9 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
     handlerFlow
       .join(theServer)
-      .runWith(Source.fromPublisher(fromNet), toNet.sink)
+      .join(Flow.fromSinkAndSource(toNet.sink, Source.fromPublisher(fromNet)))
+      .withAttributes(Attributes.inputBuffer(1, 1))
+      .run()
 
     def sendBytes(bytes: ByteString): Unit = fromNet.sendNext(bytes)
     def expectBytes(bytes: ByteString): Unit = toNet.expectBytes(bytes)
