@@ -43,8 +43,8 @@ private[http] object WebSocketClientBlueprint {
     LogByteStringTools.logTLSBidiBySetting("client-plain-text", settings.logUnencryptedNetworkBytes).reversed
       .atop(simpleTls)
       .atopMat(handshake(request, settings, log))(Keep.right)
-      .atop(WebSocket.framing)
-      .atop(WebSocket.stack(serverSide = false, settings.websocketSettings, log = log))
+      .atop(akka.http.impl.engine.ws.WebSocket.framing)
+      .atop(akka.http.impl.engine.ws.WebSocket.stack(serverSide = false, settings.websocketSettings, log = log))
       .reversed
 
   /**
