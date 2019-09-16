@@ -19,7 +19,7 @@ This brings all of the most relevant types in scope, mainly:
 
  * @apidoc[HttpRequest] and @apidoc[HttpResponse], the central message model
  * `headers`, the package containing all the predefined HTTP header models and supporting types
- * Supporting types like @apidoc[Uri], @apidoc[HttpMethods], @apidoc[MediaTypes], @apidoc[StatusCodes], etc.
+ * Supporting types like @apidoc[Uri], @apidoc[HttpMethods$], @apidoc[MediaTypes$], @apidoc[StatusCodes$], etc.
 
 A common pattern is that the model of a certain entity is represented by an immutable type (class or trait),
 while the actual instances of the entity defined by the HTTP spec live in an accompanying object carrying the name of
@@ -27,7 +27,7 @@ the type plus a trailing plural 's'.
 
 For example:
 
- * Defined @apidoc[HttpMethod] instances @scala[live in]@java[are defined as static fields of] the @scala[@apidoc[HttpMethods$]]@java[@apidoc[HttpMethods]] @scala[object]@java[class].
+ * Defined @apidoc[HttpMethod] instances @scala[live in]@java[are defined as static fields of] the @apidoc[HttpMethods$] @scala[object]@java[class].
  * Defined @apidoc[HttpCharset] instances @scala[live in]@java[are defined as static fields of] the @apidoc[HttpCharsets$] @scala[object]@java[class].
  * Defined @apidoc[HttpEncoding] instances @scala[live in]@java[are defined as static fields of] the @apidoc[HttpEncodings$] @scala[object]@java[class].
  * Defined @apidoc[HttpProtocol] instances @scala[live in]@java[are defined as static fields of] the @apidoc[HttpProtocols$] @scala[object]@java[class].
