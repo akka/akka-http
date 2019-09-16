@@ -134,6 +134,26 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
           expectedResponseHeaderBlock = HPackSpecExamples.C63ThirdResponseWithHuffman
         )
       }
+      "GET request in one HEADERS and one CONTINUATION frame" in new TestSetup with RequestResponseProbes {
+        val headerBlock = HPackSpecExamples.C41FirstRequestWithHuffman
+        val fragment1 = headerBlock.take(8) // must be grouped by octets
+        val fragment2 = headerBlock.drop(8)
+
+        sendHEADERS(1, endStream = true, endHeaders = false, fragment1)
+        requestIn.ensureSubscription()
+        requestIn.expectNoMessage(remainingOrDefault)
+        sendCONTINUATION(1, endHeaders = true, fragment2)
+
+        val request = expectRequestRaw()
+
+        request.method shouldBe HttpMethods.GET
+        request.uri shouldBe Uri("http://www.example.com/")
+
+        val streamIdHeader = request.header[Http2StreamIdHeader].getOrElse(Http2Compliance.missingHttpIdHeaderException)
+        responseOut.sendNext(HPackSpecExamples.FirstResponse.addHeader(streamIdHeader))
+        val headerPayload = expectHeaderBlock(1)
+        headerPayload shouldBe HPackSpecExamples.C61FirstResponseWithHuffman
+      }
       "GET request in one HEADERS and two CONTINUATION frames" in new TestSetup with RequestResponseProbes {
         val headerBlock = HPackSpecExamples.C41FirstRequestWithHuffman
         val fragment1 = headerBlock.take(8) // must be grouped by octets
