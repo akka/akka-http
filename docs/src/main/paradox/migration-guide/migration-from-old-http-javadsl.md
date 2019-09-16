@@ -12,10 +12,10 @@ The most major changes include:
 
 ## HttpApp is gone
 
-@apidoc[HttpApp] (a helper class containing a `main()` implementation) is gone, as we would like to encourage understanding
+We removed @apidoc[HttpApp], which was a helper class containing a `main()` implementation, as we would like to encourage understanding
 how the various elements of the API fit together.
 
-Instead developers should start applications "manually", by converting a @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@apidoc[Route]] to a @apidoc[Flow[HttpRequest, HttpResponse, ?]]
+Instead developers should start applications "manually", by converting a @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@javadoc[Route](akka.http.javadsl.server.Route)] to a @apidoc[Flow[HttpRequest, HttpResponse, ?]]
 using the `Route.flow` method. For examples of full apps refer to @ref[Route Testkit](../routing-dsl/testkit.md).
 
 ## `RequestVal` is gone
