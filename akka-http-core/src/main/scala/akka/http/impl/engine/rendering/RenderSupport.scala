@@ -66,15 +66,6 @@ private[rendering] object RenderSupport {
       r ~~ headers.`Content-Type` ~~ ct ~~ CrLf
   }
 
-  def renderByteStrings(header: ByteString, entityBytes: => Source[ByteString, Any],
-                        skipEntity: Boolean = false): Source[ByteString, Any] = {
-    val messageStart = Source.single(header)
-    val messageBytes =
-      if (!skipEntity) (messageStart ++ entityBytes).mapMaterializedValue(_ => ())
-      else CancelSecond(messageStart, entityBytes)
-    messageBytes
-  }
-
   object ChunkTransformer {
     val flow = Flow.fromGraph(new ChunkTransformer).named("renderChunks")
   }

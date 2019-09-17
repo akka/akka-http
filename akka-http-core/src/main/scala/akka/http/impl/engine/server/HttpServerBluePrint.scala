@@ -13,6 +13,7 @@ import scala.util.control.NonFatal
 import akka.NotUsed
 import akka.actor.Cancellable
 import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts
 import akka.japi.Function
 import akka.event.LoggingAdapter
 import akka.util.ByteString
@@ -34,6 +35,8 @@ import akka.http.javadsl.model
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws.Message
 import akka.http.impl.util.LogByteStringTools._
+
+import scala.util.Failure
 
 /**
  * INTERNAL API
@@ -422,9 +425,11 @@ private[http] object HttpServerBluePrint {
             if (response0.entity.isStrict) response0 // response stream cannot fail
             else response0.mapEntity { e =>
               val (newEntity, fut) = HttpEntity.captureTermination(e)
-              fut.failed.foreach { ex =>
-                log.error(ex, s"Response stream for [${requestStart.debugString}] failed with '${ex.getMessage}'. Aborting connection.")
-              }(materializer.executionContext)
+              fut.onComplete {
+                case Failure(ex) =>
+                  log.error(ex, s"Response stream for [${requestStart.debugString}] failed with '${ex.getMessage}'. Aborting connection.")
+                case _ => // ignore
+              }(ExecutionContexts.sameThreadExecutionContext)
               newEntity
             }
 
