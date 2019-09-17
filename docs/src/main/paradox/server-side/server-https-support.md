@@ -11,7 +11,7 @@ Scala
 Java
 :  @@snip [ConnectionContext.scala]($akka-http$/akka-http-core/src/main/scala/akka/http/javadsl/ConnectionContext.scala) { #https-context-creation }
 
-On the server-side the `bind`, and `bindAndHandleXXX` methods of the @scala[@scaladoc[akka.http.scaladsl.Http](akka.http.scaladsl.Http$)]@java[@javadoc[akka.http.javadsl.Http](akka.http.javadsl.Http)] extension define an
+On the server-side the `bind`, and `bindAndHandleXXX` methods of the @scala[@scaladoc[Http](akka.http.scaladsl.Http$)]@java[@javadoc[Http](akka.http.javadsl.Http)] extension define an
 optional `httpsContext` parameter, which can receive the HTTPS configuration in the form of an `HttpsContext`
 instance.
 If defined encryption is enabled on all accepted connections. Otherwise it is disabled (which is the default).
@@ -34,7 +34,7 @@ titled [Generating X.509 Certificates](https://lightbend.github.io/ssl-config/Ce
 ## Using HTTPS
 
 Once you have obtained the server certificate, using it is as simple as preparing an @apidoc[HttpsConnectionContext]
-and either setting it as the default one to be used by all servers started by the given @scala[@apidoc[Http$]]@java[@apidoc[Http]] extension
+and either setting it as the default one to be used by all servers started by the given @scala[@scaladoc[Http](akka.http.scaladsl.Http$)]@java[@javadoc[Http](akka.http.javadsl.Http)] extension
 or passing it in explicitly when binding the server.
 
 The below example shows how setting up HTTPS works.
