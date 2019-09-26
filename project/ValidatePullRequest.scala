@@ -366,7 +366,7 @@ object AggregatePRValidation extends AutoPlugin {
       log.info("")
       if (failed.nonEmpty || mimaFailures.nonEmpty || failedTasks.nonEmpty) {
         write("")
-        write("<details>\n<summary>Pull request validation report</summary>")
+        write("## Pull request validation report")
         write("")
 
         def showKey(key: ScopedKey[_]): String = Project.showContextKey2(extracted.session).show(key)
@@ -402,14 +402,14 @@ object AggregatePRValidation extends AutoPlugin {
         val passed = passed0.filter(t => hasTests(t.value))
 
         if (failed.nonEmpty) {
-          write("## Failed Test Suites")
+          write("<details><summary>Failed Test Suites</summary>")
           write("")
           failed.foreach(printTestResults)
-          write("")
+          write("</details>")
         }
 
         if (mimaFailures.nonEmpty) {
-          write("## Mima Failures")
+          write("<details><summary>Mima Failures</summary>")
           write("")
           write("```")
           mimaFailures.foreach {
@@ -419,11 +419,11 @@ object AggregatePRValidation extends AutoPlugin {
             case KeyValue(_, NoErrors) =>
           }
           write("```")
-          write("")
+          write("</details>")
         }
 
         if (failedTasks.nonEmpty) {
-          write("## Other Failed tasks")
+          write("<details><summary>Other Failed Tasks</summary>")
           write("")
           failedTasks foreach { case KeyValue(key, Inc(inc: Incomplete)) =>
             def parseIncomplete(inc: Incomplete): String =
@@ -446,24 +446,13 @@ object AggregatePRValidation extends AutoPlugin {
             val problem = inc.directCause.map(_.toString).getOrElse(parseIncomplete(inc))
 
             write(s"${showKey(key)} failed because of $problem")
-            write("")
+            write("</details>")
           }
         }
-
-        /*if (passed.nonEmpty) {
-        write("+ Successful Test Suites")
-        write("")
-
-        passed.foreach(printTestResults)
-        write("")
-      }*/
-
-        write("</details>")
       }
 
       fw.close()
       log.info(s"Wrote PR validation report to ${outputFile.getAbsolutePath}")
-      //write(s"Overall result was: $result")
 
       if (failed.nonEmpty) throw new RuntimeException(s"Pull request validation failed! Tests failed: $failed")
       else if (mimaFailures.nonEmpty) throw new RuntimeException(s"Pull request validation failed! Mima failures: $mimaFailures")
