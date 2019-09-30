@@ -342,6 +342,7 @@ object AggregatePRValidation extends AutoPlugin {
       val onlyTestResults: Seq[KeyValue[Tests.Output]] = allResults collect {
         case KeyValue(key, Value(o: Tests.Output)) => KeyValue(key, o)
       }
+      val (passed0, failed) = onlyTestResults.partition(_.value.overall == TestResult.Passed)
 
       val failedTasks: Seq[KeyValue[Inc]] = allResults collect {
         case KeyValue(key, i: Inc) => KeyValue(key, i)
@@ -363,102 +364,95 @@ object AggregatePRValidation extends AutoPlugin {
       LogExchange.bindLoggerAppenders("testLogger", appender -> Level.Info :: Nil)
 
       log.info("")
-      write("")
-      write("# Pull request validation report")
-      write("")
-
-      def showKey(key: ScopedKey[_]): String = Project.showContextKey2(extracted.session).show(key)
-
-      def totalCount(suiteResult: SuiteResult): Int = {
-        import suiteResult._
-        passedCount + failureCount + errorCount + skippedCount + ignoredCount + canceledCount + pendingCount
-      }
-      def hasExecutedTests(suiteResult: SuiteResult): Boolean = totalCount(suiteResult) > 0
-      def hasTests(result: Tests.Output): Boolean = result.events.exists(e => hasExecutedTests(e._2))
-      def printTestResults(result: KeyValue[Tests.Output]): Unit = {
-        write(s"Test result for '${showKey(result.key)}'")
+      if (failed.nonEmpty || mimaFailures.nonEmpty || failedTasks.nonEmpty) {
         write("")
-        write("```")
-
-        def safeLogTestResults(logger: Logger): Unit =
-          Try(TestResultLogger.Default.run(logger, result.value, showKey(result.key)))
-
-        // HACK: there is no logger which would both log to our file and the console, so we log twice
-        safeLogTestResults(log)
-        safeLogTestResults(testLogger)
-
-        // there seems to be some async logging going on, so let's wait for a while to be sure the appender has flushed
-        Thread.sleep(100)
-
-        write("```")
+        write("## Pull request validation report")
         write("")
-      }
 
-      val (passed0, failed) = onlyTestResults.partition(_.value.overall == TestResult.Passed)
-      val passed = passed0.filter(t => hasTests(t.value))
+        def showKey(key: ScopedKey[_]): String = Project.showContextKey2(extracted.session).show(key)
 
-      if (failed.nonEmpty) {
-        write("## Failed Test Suites")
-        write("")
-        failed.foreach(printTestResults)
-        write("")
-      }
-
-      if (mimaFailures.nonEmpty) {
-        write("## Mima Failures")
-        write("")
-        write("```")
-        mimaFailures.foreach {
-          case KeyValue(key, Problems(desc)) =>
-            write(s"Problems for ${key.scope.project.toOption.get.asInstanceOf[ProjectRef].project}:\n$desc")
-            write("")
-          case KeyValue(_, NoErrors) =>
+        def totalCount(suiteResult: SuiteResult): Int = {
+          import suiteResult._
+          passedCount + failureCount + errorCount + skippedCount + ignoredCount + canceledCount + pendingCount
         }
-        write("```")
-        write("")
-      }
 
-      if (failedTasks.nonEmpty) {
-        write("## Other Failed tasks")
-        write("")
-        failedTasks foreach { case KeyValue(key, Inc(inc: Incomplete)) =>
-          def parseIncomplete(inc: Incomplete): String =
-            "an underlying problem during task execution:\n" +
-            Incomplete.linearize(inc).filter(x => x.message.isDefined || x.directCause.isDefined)
-              .map { case i @ Incomplete(node, tpe, message, causes, directCause) =>
-                def nodeName: String = node match {
-                  case Some(key: ScopedKey[_]) => showKey(key)
-                  case Some(t: Task[_]) =>
-                    t.info.name
-                      .orElse(t.info.attributes.get(taskDefinitionKey).map(showKey))
-                      .getOrElse(t.info.toString)
-                  case Some(x) => s"<$x>"
-                  case None => "<unknown>"
-                }
+        def hasExecutedTests(suiteResult: SuiteResult): Boolean = totalCount(suiteResult) > 0
 
-                s"  $nodeName: ${message.orElse(directCause.map(_.toString)).getOrElse(s"<unknown: ($i)>")}"
-              }.mkString("\n")
+        def hasTests(result: Tests.Output): Boolean = result.events.exists(e => hasExecutedTests(e._2))
 
-          val problem = inc.directCause.map(_.toString).getOrElse(parseIncomplete(inc))
+        def printTestResults(result: KeyValue[Tests.Output]): Unit = {
+          write(s"Test result for '${showKey(result.key)}'")
+          write("")
+          write("```")
 
-          write(s"${showKey(key)} failed because of $problem")
+          def safeLogTestResults(logger: Logger): Unit =
+            Try(TestResultLogger.Default.run(logger, result.value, showKey(result.key)))
+
+          // HACK: there is no logger which would both log to our file and the console, so we log twice
+          safeLogTestResults(log)
+          safeLogTestResults(testLogger)
+
+          // there seems to be some async logging going on, so let's wait for a while to be sure the appender has flushed
+          Thread.sleep(100)
+
+          write("```")
           write("")
         }
+
+        val passed = passed0.filter(t => hasTests(t.value))
+
+        if (failed.nonEmpty) {
+          write("<details><summary>Failed Test Suites</summary>")
+          write("")
+          failed.foreach(printTestResults)
+          write("</details>")
+        }
+
+        if (mimaFailures.nonEmpty) {
+          write("<details><summary>Mima Failures</summary>")
+          write("")
+          write("```")
+          mimaFailures.foreach {
+            case KeyValue(key, Problems(desc)) =>
+              write(s"Problems for ${key.scope.project.toOption.get.asInstanceOf[ProjectRef].project}:\n$desc")
+              write("")
+            case KeyValue(_, NoErrors) =>
+          }
+          write("```")
+          write("</details>")
+        }
+
+        if (failedTasks.nonEmpty) {
+          write("<details><summary>Other Failed Tasks</summary>")
+          write("")
+          failedTasks foreach { case KeyValue(key, Inc(inc: Incomplete)) =>
+            def parseIncomplete(inc: Incomplete): String =
+              "an underlying problem during task execution:\n" +
+              Incomplete.linearize(inc).filter(x => x.message.isDefined || x.directCause.isDefined)
+                .map { case i @ Incomplete(node, tpe, message, causes, directCause) =>
+                  def nodeName: String = node match {
+                    case Some(key: ScopedKey[_]) => showKey(key)
+                    case Some(t: Task[_]) =>
+                      t.info.name
+                        .orElse(t.info.attributes.get(taskDefinitionKey).map(showKey))
+                        .getOrElse(t.info.toString)
+                    case Some(x) => s"<$x>"
+                    case None => "<unknown>"
+                  }
+
+                  s"  $nodeName: ${message.orElse(directCause.map(_.toString)).getOrElse(s"<unknown: ($i)>")}"
+                }.mkString("\n")
+
+            val problem = inc.directCause.map(_.toString).getOrElse(parseIncomplete(inc))
+
+            write(s"${showKey(key)} failed because of $problem")
+            write("</details>")
+          }
+        }
       }
-
-      /*if (passed.nonEmpty) {
-        write("+ Successful Test Suites")
-        write("")
-
-        passed.foreach(printTestResults)
-        write("")
-      }*/
-
-      write("")
 
       fw.close()
       log.info(s"Wrote PR validation report to ${outputFile.getAbsolutePath}")
-      //write(s"Overall result was: $result")
 
       if (failed.nonEmpty) throw new RuntimeException(s"Pull request validation failed! Tests failed: $failed")
       else if (mimaFailures.nonEmpty) throw new RuntimeException(s"Pull request validation failed! Mima failures: $mimaFailures")

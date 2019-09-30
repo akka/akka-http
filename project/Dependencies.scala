@@ -12,7 +12,7 @@ object Dependencies {
   import DependencyHelpers._
 
   val jacksonDatabindVersion = "2.9.10"
-  val jacksonXmlVersion = "2.9.9"
+  val jacksonXmlVersion = "2.9.10"
   val junitVersion = "4.12"
   val h2specVersion = "1.5.0"
   val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
@@ -29,7 +29,7 @@ object Dependencies {
   val Versions = Seq(
     crossScalaVersions := Seq("2.12.9", "2.11.12", Scala213),
     scalaVersion := crossScalaVersions.value.head,
-    scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.14.0"),
+    scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.14.2"),
     scalaTestVersion := "3.0.8",
     specs2Version := "4.7.0",
   )
