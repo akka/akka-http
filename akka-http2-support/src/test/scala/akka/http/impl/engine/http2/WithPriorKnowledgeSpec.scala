@@ -55,9 +55,17 @@ class WithPriorKnowledgeSpec extends AkkaSpec("""
       source.offer("UFJJICogSFRUUC8yLjANCg0KU00NCg0KAAASBAAAAAAAAAMAAABkAARAAAAAAAIAAAAAAAAECAAAAAAAP/8AAQAAHgEFAAAAAYKEhkGKCJ1cC4Fw3HwAf3qIJbZQw6u20uBTAyovKg==").futureValue
 
       // read settings frame
-      Http2Protocol.FrameType.byId(sink.pull().futureValue.get(3)) should be(Http2Protocol.FrameType.SETTINGS)
-      // read settings frame
-      Http2Protocol.FrameType.byId(sink.pull().futureValue.get(3)) should be(Http2Protocol.FrameType.SETTINGS)
+      val responseSettings = sink.pull().futureValue
+      Http2Protocol.FrameType.byId(responseSettings.get(3)) should be(Http2Protocol.FrameType.SETTINGS)
+      val isAck = responseSettings.get(4) == 1
+
+      if (!isAck) {
+        // read settings 'ack' frame
+        val ackResponseSettings = sink.pull().futureValue
+        Http2Protocol.FrameType.byId(ackResponseSettings.get(3)) should be(Http2Protocol.FrameType.SETTINGS)
+        ackResponseSettings.get(4) should be(1)
+      }
+
       // ack settings
       source.offer("AAAABAEAAAAA")
 
