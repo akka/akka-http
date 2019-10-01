@@ -31,8 +31,8 @@ class JavaInitializationSpec extends WordSpec with Matchers {
 
   "HttpEntity" should {
     "initializes the right field" in {
-      akka.http.scaladsl.model.HttpEntity.Empty =!= "HttpEntity.Strict(none/none,ByteString())"
-      akka.http.javadsl.model.HttpEntities.EMPTY =!= "HttpEntity.Strict(none/none,ByteString())"
+      akka.http.scaladsl.model.HttpEntity.Empty =!= "HttpEntity.Strict(none/none,0 bytes total)"
+      akka.http.javadsl.model.HttpEntities.EMPTY =!= "HttpEntity.Strict(none/none,0 bytes total)"
     }
   }
 
