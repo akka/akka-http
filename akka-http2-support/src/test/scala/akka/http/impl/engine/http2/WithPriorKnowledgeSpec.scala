@@ -6,6 +6,7 @@ package akka.http.impl.engine.http2
 
 import java.util.Base64
 
+import akka.http.impl.util.WithLogCapturing
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpProtocols, HttpRequest, HttpResponse, StatusCodes }
 import akka.stream.{ ActorMaterializer, OverflowStrategy }
@@ -16,10 +17,11 @@ import akka.util.ByteString
 import scala.concurrent.Future
 
 class WithPriorKnowledgeSpec extends AkkaSpec("""
-    akka.loglevel = warning
+    akka.loglevel = debug
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.http.server.preview.enable-http2 = on
-  """) {
+    akka.http.server.http2.log-frames = on
+  """) with WithLogCapturing {
 
   implicit val ec = system.dispatcher
 
