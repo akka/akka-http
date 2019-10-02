@@ -26,6 +26,7 @@ abstract class HttpHeader extends jm.HttpHeader with ToStringRenderable {
   def lowercaseName: String
   def is(nameInLowerCase: String): Boolean = lowercaseName == nameInLowerCase
   def isNot(nameInLowerCase: String): Boolean = lowercaseName != nameInLowerCase
+  def safeToString: String = name
 }
 
 object HttpHeader {

@@ -65,6 +65,9 @@ sealed trait ModeledHeader extends HttpHeader with Serializable {
   final def render[R <: Rendering](r: R): r.type = renderValue(companion.render(r))
   protected[http] def renderValue[R <: Rendering](r: R): r.type
   protected def companion: ModeledCompanion[_]
+
+  /* All modeled headers are represented un-redacted by default. */
+  override def safeToString: String = toString
 }
 
 private[headers] sealed trait RequestHeader extends ModeledHeader { override def renderInRequests = true }
@@ -381,6 +384,9 @@ object Authorization extends ModeledCompanion[Authorization]
 final case class Authorization(credentials: HttpCredentials) extends jm.headers.Authorization with RequestHeader {
   def renderValue[R <: Rendering](r: R): r.type = r ~~ credentials
   protected def companion = Authorization
+
+  // This header is tagged as potentially containing personal sensitive information
+  override def safeToString: String = name
 }
 
 // http://tools.ietf.org/html/rfc7234#section-5.2
@@ -525,6 +531,9 @@ final case class Cookie(cookies: immutable.Seq[HttpCookiePair]) extends jm.heade
 
   /** Java API */
   def getCookies: Iterable[jm.headers.HttpCookiePair] = cookies.asJava
+
+  // This header is tagged as potentially containing personal sensitive information
+  override def safeToString: String = name
 }
 
 // http://tools.ietf.org/html/rfc7231#section-7.1.1.2
@@ -589,6 +598,9 @@ final case class Host(host: Uri.Host, port: Int = 0) extends jm.headers.Host wit
   def renderValue[R <: Rendering](r: R): r.type = if (port > 0) r ~~ host ~~ ':' ~~ port else r ~~ host
   protected def companion = Host
   def equalsIgnoreCase(other: Host): Boolean = host.equalsIgnoreCase(other.host) && port == other.port
+
+  // This header is tagged as potentially containing personal sensitive information
+  override def safeToString: String = name
 }
 
 // http://tools.ietf.org/html/rfc7232#section-3.1
@@ -697,6 +709,9 @@ final case class Origin(origins: immutable.Seq[HttpOrigin]) extends jm.headers.O
 
   /** Java API */
   def getOrigins: Iterable[jm.headers.HttpOrigin] = origins.asJava
+
+  // This header is tagged as potentially containing personal sensitive information
+  override def safeToString: String = name
 }
 
 // http://tools.ietf.org/html/rfc7235#section-4.3
@@ -721,6 +736,9 @@ final case class `Proxy-Authorization`(credentials: HttpCredentials) extends jm.
   with RequestHeader {
   def renderValue[R <: Rendering](r: R): r.type = r ~~ credentials
   protected def companion = `Proxy-Authorization`
+
+  // This header is tagged as potentially containing personal sensitive information
+  override def safeToString: String = name
 }
 
 // http://tools.ietf.org/html/rfc7233#section-3.1
@@ -765,6 +783,9 @@ object `Remote-Address` extends ModeledCompanion[`Remote-Address`]
 final case class `Remote-Address`(address: RemoteAddress) extends jm.headers.RemoteAddress with SyntheticHeader {
   def renderValue[R <: Rendering](r: R): r.type = r ~~ address
   protected def companion = `Remote-Address`
+
+  // This header is tagged as potentially containing personal sensitive information
+  override def safeToString: String = name
 }
 
 // http://tools.ietf.org/html/rfc7231#section-5.5.2
@@ -778,6 +799,9 @@ final case class Referer(uri: Uri) extends jm.headers.Referer with RequestHeader
 
   /** Java API */
   def getUri: akka.http.javadsl.model.Uri = uri.asJava
+
+  // This header is tagged as potentially containing personal sensitive information
+  override def safeToString: String = name
 }
 
 object `Retry-After` extends ModeledCompanion[`Retry-After`] {
@@ -1085,6 +1109,9 @@ final case class `X-Forwarded-For`(addresses: immutable.Seq[RemoteAddress]) exte
 
   /** Java API */
   def getAddresses: Iterable[jm.RemoteAddress] = addresses.asJava
+
+  // This header is tagged as potentially containing personal sensitive information
+  override def safeToString: String = name
 }
 
 object `X-Forwarded-Host` extends ModeledCompanion[`X-Forwarded-Host`] {
@@ -1103,6 +1130,9 @@ final case class `X-Forwarded-Host`(host: Uri.Host) extends jm.headers.XForwarde
 
   /** Java API */
   def getHost: jm.Host = host.asJava
+
+  // This header is tagged as potentially containing personal sensitive information
+  override def safeToString: String = name
 }
 
 object `X-Forwarded-Proto` extends ModeledCompanion[`X-Forwarded-Proto`]
@@ -1129,4 +1159,7 @@ final case class `X-Real-Ip`(address: RemoteAddress) extends jm.headers.XRealIp
   import `X-Real-Ip`.addressRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ address
   protected def companion = `X-Real-Ip`
+
+  // This header is tagged as potentially containing personal sensitive information
+  override def safeToString: String = name
 }
