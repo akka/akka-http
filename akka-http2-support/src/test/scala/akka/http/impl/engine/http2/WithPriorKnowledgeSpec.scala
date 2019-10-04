@@ -18,7 +18,7 @@ import scala.concurrent.Future
 
 class WithPriorKnowledgeSpec extends AkkaSpec("""
     akka.loglevel = debug
-    akka.loggers = ["akka.testkit.TestEventListener"]
+    akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
     akka.http.server.preview.enable-http2 = on
     akka.http.server.http2.log-frames = on
   """) with WithLogCapturing {
@@ -75,6 +75,8 @@ class WithPriorKnowledgeSpec extends AkkaSpec("""
       val tpe = Http2Protocol.FrameType.byId(response(3))
       tpe should be(Http2Protocol.FrameType.HEADERS)
       response.map(_.toChar).mkString should include("418")
+
+      source.complete()
     }
   }
 
