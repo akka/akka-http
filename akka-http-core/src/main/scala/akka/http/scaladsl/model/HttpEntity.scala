@@ -507,15 +507,32 @@ object HttpEntity {
       withSizeLimit(SizeLimit.Disabled)
 
     override def transformDataBytes(transformer: Flow[ByteString, ByteString, Any]): HttpEntity.Chunked = {
-      val newData =
-        chunks.map {
-          case Chunk(data, "")    => data
-          case LastChunk("", Nil) => ByteString.empty
-          case _ =>
-            throw new IllegalArgumentException("Chunked.transformDataBytes not allowed for chunks with metadata")
+      import akka.stream.scaladsl.GraphDSL.Implicits._
+
+      val transformChunks: Flow[ChunkStreamPart, ChunkStreamPart, NotUsed] = Flow.fromGraph(GraphDSL.create() { implicit builder: GraphDSL.Builder[NotUsed] =>
+
+        val bcast = builder.add(Broadcast[ChunkStreamPart](2))
+        val concat = builder.add(Concat[ChunkStreamPart](2))
+
+        val newDataF: Flow[ChunkStreamPart, ByteString, Any] = Flow[ChunkStreamPart].map {
+          case Chunk(data, "")  => data
+          case LastChunk("", _) => ByteString.empty
         } via transformer
 
-      HttpEntity.Chunked.fromData(contentType, newData)
+        val toChunksF: Flow[ByteString, ChunkStreamPart, Any] = Flow[ByteString].collect {
+          case b: ByteString if b.nonEmpty => Chunk(b)
+        }
+
+        val trailHeaderF: Flow[ChunkStreamPart, ChunkStreamPart, Any] = Flow[ChunkStreamPart].collect {
+          case lc @ LastChunk(_, s) if s.nonEmpty => lc
+        }
+
+        bcast ~> newDataF ~> toChunksF ~> concat
+        bcast ~> trailHeaderF ~> concat
+        FlowShape(bcast.in, concat.out)
+      })
+
+      HttpEntity.Chunked(contentType, chunks.via(transformChunks))
     }
 
     def withContentType(contentType: ContentType): HttpEntity.Chunked =

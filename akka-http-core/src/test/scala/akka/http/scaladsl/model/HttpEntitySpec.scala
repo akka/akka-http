@@ -10,6 +10,7 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.model.HttpEntity._
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.testkit._
@@ -160,6 +161,17 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
       "Chunked with extra LastChunk" in {
         Chunked(tpe, source(Chunk(abc), Chunk(fgh), Chunk(ijk), LastChunk, LastChunk)) must
           transformTo(Strict(tpe, doubleChars("abcfghijk") ++ trailer))
+      }
+      "Chunked with LastChunk with trailer header" in {
+        Chunked(tpe, source(Chunk(abc), Chunk(fgh), Chunk(ijk), LastChunk("", RawHeader("Foo", "pip apo") :: Nil))) must
+          transformTo(Strict(tpe, doubleChars("abcfghijk") ++ trailer))
+      }
+      "Chunked with LastChunk with trailer header keep header chunk" in {
+        val chunkStreamPart = Await.result(Chunked(tpe, source(Chunk(abc), Chunk(fgh), Chunk(ijk), LastChunk("", RawHeader("Foo", "pip apo") :: Nil)))
+          .transformDataBytes(duplicateBytesTransformer()).chunks.runWith(Sink.last), awaitAtMost)
+        chunkStreamPart.isLastChunk mustBe(true)
+        chunkStreamPart mustBe a [LastChunk]
+        chunkStreamPart.asInstanceOf[LastChunk].trailer mustEqual(RawHeader("Foo", "pip apo") :: Nil)
       }
     }
     "support toString" - {
