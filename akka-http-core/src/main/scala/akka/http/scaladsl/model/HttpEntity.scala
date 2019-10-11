@@ -509,6 +509,8 @@ object HttpEntity {
     override def transformDataBytes(transformer: Flow[ByteString, ByteString, Any]): HttpEntity.Chunked = {
       import akka.stream.scaladsl.GraphDSL.Implicits._
 
+      val buf = scala.collection.mutable.ArrayBuffer.empty[Throwable]
+
       val transformChunks: Flow[ChunkStreamPart, ChunkStreamPart, NotUsed] = Flow.fromGraph(GraphDSL.create() { implicit builder: GraphDSL.Builder[NotUsed] =>
 
         val bcast = builder.add(Broadcast[ChunkStreamPart](2))
@@ -517,7 +519,12 @@ object HttpEntity {
         val newDataF: Flow[ChunkStreamPart, ByteString, Any] = Flow[ChunkStreamPart].map {
           case Chunk(data, "")  => data
           case LastChunk("", _) => ByteString.empty
-        } via transformer
+        }
+          .via(transformer).recover {
+            case t: Throwable =>
+              buf += t
+              ByteString.empty
+          }
 
         val toChunksF: Flow[ByteString, ChunkStreamPart, Any] = Flow[ByteString].collect {
           case b: ByteString if b.nonEmpty => Chunk(b)
@@ -525,6 +532,10 @@ object HttpEntity {
 
         val trailHeaderF: Flow[ChunkStreamPart, ChunkStreamPart, Any] = Flow[ChunkStreamPart].collect {
           case lc @ LastChunk(_, s) if s.nonEmpty => lc
+        }.recover {
+          case _: Throwable =>
+            // just needs to complete
+            LastChunk
         }
 
         bcast ~> newDataF ~> toChunksF ~> concat
@@ -532,7 +543,7 @@ object HttpEntity {
         FlowShape(bcast.in, concat.out)
       })
 
-      HttpEntity.Chunked(contentType, chunks.via(transformChunks))
+      HttpEntity.Chunked(contentType, chunks.via(transformChunks).map(c => if (buf.nonEmpty) throw buf.head else c))
     }
 
     def withContentType(contentType: ContentType): HttpEntity.Chunked =
