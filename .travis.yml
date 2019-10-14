@@ -1,7 +1,7 @@
 language: scala
 
 scala:
-  - "2.12.8"
+  - "2.12.10" # not used for anything but still needed to have sbt available
 
 sudo: false
 
@@ -47,13 +47,13 @@ stages:
   - name: whitesource
     if: repo=akka/akka-http AND ( ( branch = master AND type = push ) OR tag =~ ^v )
 
-  - name: publish 
+  - name: publish
     if: repo=akka/akka-http AND ( ( branch = master AND type = push ) OR tag =~ ^v )
 
 env:
   global:
     # encrypt with: travis encrypt WHITESOURCE_PASSWORD=...
-    - secure: "O3bUB/B1CusDUGTcGaMndQK2nPw+XK5GMrecQ9awLCtnX6bkqSdX18pK9l2XP8r7yR+DYyFoyknf1rJ6JiybsBrc3udNpSBBTTG+4EMAMK12kxiQmy82JEepZrD/BkGtmMhzD6X41s+J2tY0XDa6p/Xqbr2Hb+oTQ7+WXdhfwyfdrszUcEL/t1IrdI2jgh37NJlBMuoHUWOXanpVv6KR7Kfjahd34k79bbfEK/8sX4kv7YU7uZWe/UxJse1b767sbijAqInFm+3n3lxv8eqnbbaAcdTuZBYkwkf5uZcXmV/Px1xupPBt1C6k49vfogT148KxJ7CzYawAC3oZq10m8I/6NREPUpoLN6ie+K9g3P+FcvCbKju8sxaoYmxNW+V+r6B/I+mXrbpD5YHT7WpvfF9gZt3HJk3V6/+Cu9vvgrnTGkUYymTWymEGRRq5TB2Q+/IDR7Qq8XTwkzA7UwcQ3WBotVY7TQKMEp9LvILTBnP0GZiUfeq+OXzLUN7sjsaEevD1dV0ZkIeILAFDwEmzPXKlmV70+IIM+Km8uCZ4XJ6GOklnEar+zltwBdFPrcvC6Pcb77O02DeMz773Uu9PxXgdUcjsW06v0wUO+5KXB9Y+6+9SJtW0gs5BtaiUnY7d38YPoXWq9Gm+sNUnJe5NH/nBdjF/O8xqAhUgs0OPApE=" 
+    - secure: "O3bUB/B1CusDUGTcGaMndQK2nPw+XK5GMrecQ9awLCtnX6bkqSdX18pK9l2XP8r7yR+DYyFoyknf1rJ6JiybsBrc3udNpSBBTTG+4EMAMK12kxiQmy82JEepZrD/BkGtmMhzD6X41s+J2tY0XDa6p/Xqbr2Hb+oTQ7+WXdhfwyfdrszUcEL/t1IrdI2jgh37NJlBMuoHUWOXanpVv6KR7Kfjahd34k79bbfEK/8sX4kv7YU7uZWe/UxJse1b767sbijAqInFm+3n3lxv8eqnbbaAcdTuZBYkwkf5uZcXmV/Px1xupPBt1C6k49vfogT148KxJ7CzYawAC3oZq10m8I/6NREPUpoLN6ie+K9g3P+FcvCbKju8sxaoYmxNW+V+r6B/I+mXrbpD5YHT7WpvfF9gZt3HJk3V6/+Cu9vvgrnTGkUYymTWymEGRRq5TB2Q+/IDR7Qq8XTwkzA7UwcQ3WBotVY7TQKMEp9LvILTBnP0GZiUfeq+OXzLUN7sjsaEevD1dV0ZkIeILAFDwEmzPXKlmV70+IIM+Km8uCZ4XJ6GOklnEar+zltwBdFPrcvC6Pcb77O02DeMz773Uu9PxXgdUcjsW06v0wUO+5KXB9Y+6+9SJtW0gs5BtaiUnY7d38YPoXWq9Gm+sNUnJe5NH/nBdjF/O8xqAhUgs0OPApE="
     # encrypt with: travis encrypt BINTRAY_USER=...
     - secure: "cF1u1wF3Jhn5sfMATA6PltwUdfohX4TMtqluqWtZ5ZhKknIphMa9qmwpyVjaymO9dbEoBTejhGJdvxtwezkHE9K2rYGGP5o5BnOBNrbwY6+Z3FP+woHLUJrLKCL5cQvW+ReVmms7NyE4kH/2ngqXYb9MPHbs8RMXvdjclrZVWaIdyEE1TMb9TBI4F/oEpBY2Gee1eN3n6V7C01prCmrBdA0PHzqDyWIr/Axy+6ok6Fmou1bysSGjYl1aTRZFng/nNBO/smm6HoC9Pxj+uesZjaF0SaS/oce5ke9xefyW93lr024A300sJzVAEpexLgBBGMTupd3hLBRygPbY0B9yH4jPIElM0gRNt65BiV12PNhvRTyFm+OUwDPFiCjD8ttsZWAix5/81nIODMqu1HqViqdY5XQhmJmVjfjXSZHi+IDia2LDWxtq+bJ17YHnCtoGCGHTYbaYuwaESx23HZ90GvSwCtG5p8e7HSB0BUkgDj9BcjI1WQZRoIh8/KFBR04G1hHWt8cLKvefAiN//d+8RaoEza1THkZZqfYYr91QEDJ1xxtUnjKIc24i8FTSvDUJUkCF5xviKiaDzhdaBIIhJDuFJDgzDfQa7ttktkAFuY553fFxHYQVSK2l/FA2WojfEOzlbegKEXe5INfL9AgWLddnVdXtWulAf3hCb7v/WJo="
     # encrypt with: travis encrypt BINTRAY_PASS=...
