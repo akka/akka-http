@@ -28,7 +28,7 @@ object AkkaDependency {
       akkaVersion match {
         case "master" => "git://github.com/akka/akka.git#master"
         case "release-2.5" => "git://github.com/akka/akka.git#release-2.5"
-        case x => ""
+        case _ => ""
       }
 
     System.getProperty("akka.sources", fallback)
@@ -57,7 +57,10 @@ object AkkaDependency {
             if (config == "") moduleRef
             else moduleRef % config
 
-          project.dependsOn(withConfig)
+          // classpath dependency gets evicted by the released akka version
+          val dependencyOverride = "com.typesafe.akka" %% module % "default"
+          val dependencyOverrideWithConfig = if (config == "") dependencyOverride else dependencyOverride % config
+          project.settings(Test / dependencyOverrides += dependencyOverrideWithConfig).dependsOn(withConfig)
         } else {
           project.settings(
             libraryDependencies ++=
