@@ -1,5 +1,7 @@
 # 1. Introduction
 
+@@project-info{ projectId="akka-http" }
+
 The Akka HTTP modules implement a full server- and client-side HTTP stack on top of *akka-actor* and *akka-stream*. It's
 not a web-framework but rather a more general toolkit for providing and consuming HTTP-based services. While interaction
 with a browser is of course also in scope it is not the primary focus of Akka HTTP.
