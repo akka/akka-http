@@ -202,7 +202,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   private[http] def bind(interface: String, port: Int,
                          connectionContext: ConnectionContext,
                          settings:          ServerSettings,
-                         log:               LoggingAdapter)(implicit fm: Materializer): Source[Http.IncomingConnection, Future[ServerBinding]] =
+                         log:               LoggingAdapter, fm: Materializer): Source[Http.IncomingConnection, Future[ServerBinding]] =
     bindImpl(interface, port, connectionContext, settings, log)
 
   /**
@@ -364,7 +364,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   }
 
   @deprecated("Binary compatibility method. Use the new `serverLayer` method without the implicit materializer instead.", "10.0.11")
-  private[http] def serverLayer()(implicit mat: Materializer): ServerLayer =
+  private[http] def serverLayer(mat: Materializer): ServerLayer =
     serverLayerImpl()
 
   @deprecated("Binary compatibility method. Use the new `serverLayer` method without the implicit materializer instead.", "10.0.11")
@@ -372,7 +372,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     settings:           ServerSettings,
     remoteAddress:      Option[InetSocketAddress],
     log:                LoggingAdapter,
-    isSecureConnection: Boolean)(implicit mat: Materializer): ServerLayer =
+    isSecureConnection: Boolean, mat: Materializer): ServerLayer =
     serverLayerImpl(settings, remoteAddress, log, isSecureConnection)
 
   // for binary-compatibility, since 10.0.0
@@ -380,7 +380,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   private[http] def serverLayer(
     settings:      ServerSettings,
     remoteAddress: Option[InetSocketAddress],
-    log:           LoggingAdapter)(implicit mat: Materializer): ServerLayer =
+    log:           LoggingAdapter, mat: Materializer): ServerLayer =
     serverLayerImpl(settings, remoteAddress, log)
 
   // ** CLIENT ** //
@@ -593,7 +593,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   @deprecated("Deprecated in favor of method without implicit materializer", "10.0.11")
   private[http] def cachedHostConnectionPool[T](host: String, port: Int,
                                                 settings: ConnectionPoolSettings,
-                                                log:      LoggingAdapter)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+                                                log:      LoggingAdapter, fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
     cachedHostConnectionPoolImpl(host, port, settings, log)
 
   /**
@@ -623,7 +623,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   private[http] def cachedHostConnectionPoolHttps[T](host: String, port: Int,
                                                      connectionContext: HttpsConnectionContext,
                                                      settings:          ConnectionPoolSettings,
-                                                     log:               LoggingAdapter)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
+                                                     log:               LoggingAdapter, fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
     cachedHostConnectionPoolHttpsImpl(host, port, connectionContext, settings, log)
 
   /**
@@ -680,7 +680,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   private[http] def superPool[T](
     connectionContext: HttpsConnectionContext,
     settings:          ConnectionPoolSettings,
-    log:               LoggingAdapter)(implicit fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] =
+    log:               LoggingAdapter, fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] =
     superPoolImpl(connectionContext, settings, log)
 
   /**
@@ -720,7 +720,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     request:           HttpRequest,
     connectionContext: HttpsConnectionContext,
     settings:          ConnectionPoolSettings,
-    log:               LoggingAdapter)(implicit fm: Materializer): Future[HttpResponse] =
+    log:               LoggingAdapter, fm: Materializer): Future[HttpResponse] =
     singleRequestImpl(request, connectionContext, settings, log)
 
   /**
