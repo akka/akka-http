@@ -4,19 +4,18 @@
 
 package akka.http.impl.engine.client
 
+import akka.http.impl.util.AkkaSpecWithMaterializer
 import akka.http.impl.util.EnhancedString
 import akka.http.scaladsl.model.headers.{ BasicHttpCredentials, HttpCredentials }
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber, Utils }
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
-import akka.testkit.AkkaSpec
 import akka.util.ByteString
+
 import scala.concurrent.duration._
 
-class HttpsProxyGraphStageSpec extends AkkaSpec {
-  implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withFuzzing(true))
+class HttpsProxyGraphStageSpec extends AkkaSpecWithMaterializer {
 
   "A ProxyGraphStage" should {
     "send CONNECT message and then forward incoming messages" in new Context {
