@@ -6,9 +6,8 @@ package akka.http.impl.engine.client
 
 import akka.NotUsed
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
-import akka.stream.{ Server, Client, ActorMaterializer }
+import akka.stream.{ Server, Client }
 import akka.stream.scaladsl._
-import akka.testkit.AkkaSpec
 import akka.http.impl.util._
 import akka.http.scaladsl.{ ConnectionContext, Http }
 import akka.http.scaladsl.model.{ StatusCodes, HttpResponse, HttpRequest }
@@ -16,13 +15,9 @@ import akka.http.scaladsl.model.headers.{ Host, `Tls-Session-Info` }
 import org.scalatest.time.{ Span, Seconds }
 import scala.concurrent.Future
 
-class TlsEndpointVerificationSpec extends AkkaSpec("""
-    akka.loglevel = INFO
-    akka.io.tcp.trace-logging = off
+class TlsEndpointVerificationSpec extends AkkaSpecWithMaterializer("""
     akka.http.parsing.tls-session-info-header = on
   """) {
-  implicit val materializer = ActorMaterializer()
-
   /*
    * Useful when debugging against "what if we hit a real website"
    */
