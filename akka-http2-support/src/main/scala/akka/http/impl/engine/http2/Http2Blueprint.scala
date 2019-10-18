@@ -7,6 +7,7 @@ package akka.http.impl.engine.http2
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
+import akka.http.impl.engine.HttpConnectionIdleTimeoutBidi
 import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.framing.{ Http2FrameParsing, Http2FrameRendering }
 import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompression }
@@ -19,6 +20,8 @@ import akka.http.scaladsl.settings.{ Http2ServerSettings, ParserSettings, Server
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl.{ BidiFlow, Flow, Source }
 import akka.util.ByteString
+
+import scala.concurrent.duration.{ FiniteDuration }
 
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.collection.immutable
@@ -60,9 +63,13 @@ private[http] object Http2Blueprint {
     httpLayer(settings, log) atop
       demux(settings.http2Settings, initialDemuxerSettings, upgraded) atop
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
-      hpackCoding() atop
-      // LogByteStringTools.logToStringBidi("framing") atop // enable for debugging
-      framing()
+      hpackCoding() atop {
+        settings.idleTimeout match {
+          case f: FiniteDuration => framing() atop HttpConnectionIdleTimeoutBidi(f, None)
+          case _ => framing()
+        }
+      }
+  // LogByteStringTools.logToStringBidi("framing") atop // enable for debugging
   // format: ON
 
   def framing(): BidiFlow[FrameEvent, ByteString, ByteString, FrameEvent, NotUsed] =
