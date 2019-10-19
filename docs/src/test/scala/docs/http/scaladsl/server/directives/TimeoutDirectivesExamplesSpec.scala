@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
@@ -129,9 +129,9 @@ class TimeoutDirectivesExamplesSpec extends AkkaSpec(TimeoutDirectivesInfiniteTi
       val route =
         path("timeout") {
           withRequestTimeout(timeout1) {
-            extractRequestTimeout { t1 ⇒
+            extractRequestTimeout { t1 =>
               withRequestTimeout(timeout2) {
-                extractRequestTimeout { t2 ⇒
+                extractRequestTimeout { t2 =>
                   complete(
                     if (t1 == timeout1 && t2 == timeout2) StatusCodes.OK
                     else StatusCodes.InternalServerError

@@ -1,12 +1,14 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl
 
 import akka.http.scaladsl.server.Directives
+import akka.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
-class SprayJsonPrettyMarshalSpec extends server.RoutingSpec {
+class SprayJsonPrettyMarshalSpec extends RoutingSpec with CompileOnlySpec {
 
   "spray-json example" in {
     //#example
@@ -44,8 +46,8 @@ class SprayJsonPrettyMarshalSpec extends server.RoutingSpec {
     Get("/") ~> service.route ~> check {
       responseAs[String] shouldEqual
         """{""" + "\n" +
-        """  "name": "akka",""" + "\n" +
-        """  "id": 42""" + "\n" +
+        """  "id": 42,""" + "\n" +
+        """  "name": "akka"""" + "\n" +
         """}"""
     }
     //#example

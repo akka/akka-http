@@ -1,38 +1,32 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
 
+import akka.http.impl.util.AkkaSpecWithMaterializer
 import javax.net.ssl.SSLContext
-
-import akka.http.impl.util.WithLogCapturing
 import akka.http.scaladsl.{ ConnectionContext, Http }
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber, Utils }
 import akka.http.scaladsl.model.headers
-import akka.testkit.{ AkkaSpec, SocketUtil }
+import akka.testkit.SocketUtil
 
-class ClientCancellationSpec extends AkkaSpec("""
-    akka.loglevel = DEBUG
-    akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
-    akka.io.tcp.trace-logging = off""") with WithLogCapturing {
-
-  implicit val materializer = ActorMaterializer()
+class ClientCancellationSpec extends AkkaSpecWithMaterializer {
   val noncheckedMaterializer = ActorMaterializer()
 
   "Http client connections" must {
     val address = SocketUtil.temporaryServerAddress()
     Http().bindAndHandleSync(
-      { req ⇒ HttpResponse(headers = headers.Connection("close") :: Nil) },
+      { req => HttpResponse(headers = headers.Connection("close") :: Nil) },
       address.getHostName,
       address.getPort)(noncheckedMaterializer)
 
     val addressTls = SocketUtil.temporaryServerAddress()
     Http().bindAndHandleSync(
-      { req ⇒ HttpResponse() }, // TLS client does full-close, no need for the connection:close header
+      { req => HttpResponse() }, // TLS client does full-close, no need for the connection:close header
       addressTls.getHostName,
       addressTls.getPort,
       connectionContext = ConnectionContext.https(SSLContext.getDefault))(noncheckedMaterializer)

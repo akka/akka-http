@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.rendering
@@ -14,6 +14,7 @@ import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
+import akka.http.scaladsl.model.ContentTypes._
 import akka.stream.stage.GraphStage
 import akka.stream._
 import akka.stream.scaladsl.{ Flow, Sink, Source }
@@ -29,19 +30,14 @@ private[rendering] object RenderSupport {
   val KeepAliveBytes = "Keep-Alive".asciiBytes
   val CloseBytes = "close".asciiBytes
 
-  private[this] final val PreRenderedContentTypes = {
-    val m = new java.util.HashMap[ContentType, Array[Byte]](16)
-    def preRenderContentType(ct: ContentType) =
-      m.put(ct, (new ByteArrayRendering(32) ~~ headers.`Content-Type` ~~ ct ~~ CrLf).get)
+  private def preRenderContentType(ct: ContentType): Array[Byte] =
+    (new ByteArrayRendering(32) ~~ headers.`Content-Type` ~~ ct ~~ CrLf).get
 
-    import ContentTypes._
-    preRenderContentType(`application/json`)
-    preRenderContentType(`text/plain(UTF-8)`)
-    preRenderContentType(`text/xml(UTF-8)`)
-    preRenderContentType(`text/html(UTF-8)`)
-    preRenderContentType(`text/csv(UTF-8)`)
-    m
-  }
+  private val ApplicationJsonContentType = preRenderContentType(`application/json`)
+  private val TextPlainContentType = preRenderContentType(`text/plain(UTF-8)`)
+  private val TextXmlContentType = preRenderContentType(`text/xml(UTF-8)`)
+  private val TextHtmlContentType = preRenderContentType(`text/html(UTF-8)`)
+  private val TextCsvContentType = preRenderContentType(`text/csv(UTF-8)`)
 
   def CrLf = Rendering.CrLf
 
@@ -50,29 +46,24 @@ private[rendering] object RenderSupport {
   val defaultLastChunkBytes: ByteString = renderChunk(HttpEntity.LastChunk)
 
   def CancelSecond[T, Mat](first: Source[T, Mat], second: Source[T, Any]): Source[T, Mat] = {
-    Source.fromGraph(GraphDSL.create(first) { implicit b ⇒ frst ⇒
+    Source.fromGraph(GraphDSL.create(first) { implicit b => frst =>
       import GraphDSL.Implicits._
       second ~> Sink.cancelled
       SourceShape(frst.out)
     })
   }
 
-  def renderEntityContentType(r: Rendering, entity: HttpEntity) = {
+  def renderEntityContentType(r: Rendering, entity: HttpEntity): r.type = {
     val ct = entity.contentType
-    if (ct != ContentTypes.NoContentType) {
-      val preRendered = PreRenderedContentTypes.get(ct)
-      if (preRendered ne null) r ~~ preRendered // re-use pre-rendered
-      else r ~~ headers.`Content-Type` ~~ ct ~~ CrLf // render ad-hoc
-    } else r // don't render
-  }
 
-  def renderByteStrings(header: ByteString, entityBytes: ⇒ Source[ByteString, Any],
-                        skipEntity: Boolean = false): Source[ByteString, Any] = {
-    val messageStart = Source.single(header)
-    val messageBytes =
-      if (!skipEntity) (messageStart ++ entityBytes).mapMaterializedValue(_ ⇒ ())
-      else CancelSecond(messageStart, entityBytes)
-    messageBytes
+    if (ct eq NoContentType) r
+    else if (ct eq `application/json`) r ~~ ApplicationJsonContentType
+    else if (ct eq `text/plain(UTF-8)`) r ~~ TextPlainContentType
+    else if (ct eq `text/xml(UTF-8)`) r ~~ TextXmlContentType
+    else if (ct eq `text/html(UTF-8)`) r ~~ TextHtmlContentType
+    else if (ct eq `text/csv(UTF-8)`) r ~~ TextCsvContentType
+    else
+      r ~~ headers.`Content-Type` ~~ ct ~~ CrLf
   }
 
   object ChunkTransformer {
@@ -154,9 +145,9 @@ private[rendering] object RenderSupport {
     if (extension.nonEmpty) r ~~ ';' ~~ extension
     r ~~ CrLf
     chunk match {
-      case HttpEntity.Chunk(data, _)        ⇒ r ~~ data
-      case HttpEntity.LastChunk(_, Nil)     ⇒ // nothing to do
-      case HttpEntity.LastChunk(_, trailer) ⇒ r ~~ trailer ~~ CrLf
+      case HttpEntity.Chunk(data, _)        => r ~~ data
+      case HttpEntity.LastChunk(_, Nil)     => // nothing to do
+      case HttpEntity.LastChunk(_, trailer) => r ~~ trailer ~~ CrLf
     }
     r ~~ CrLf
     r.get

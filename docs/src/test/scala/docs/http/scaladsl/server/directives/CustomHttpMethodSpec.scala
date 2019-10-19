@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
@@ -38,7 +38,7 @@ class CustomHttpMethodSpec extends AkkaSpec with ScalaFutures
       val parserSettings = ParserSettings(system).withCustomMethods(BOLT)
       val serverSettings = ServerSettings(system).withParserSettings(parserSettings)
 
-      val routes = extractMethod { method ⇒
+      val routes = extractMethod { method =>
         complete(s"This is a ${method.name} method request.")
       }
       val binding = Http().bindAndHandle(routes, host, port, settings = serverSettings)

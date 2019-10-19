@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.settings
@@ -24,7 +24,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 /**
  * Public API but not intended for subclassing
  */
-@DoNotInherit abstract class ServerSettings { self: ServerSettingsImpl ⇒
+@DoNotInherit abstract class ServerSettings { self: ServerSettingsImpl =>
   def getServerHeader: Optional[Server]
   def getPreviewServerSettings: PreviewServerSettings
   def getTimeouts: ServerSettings.Timeouts

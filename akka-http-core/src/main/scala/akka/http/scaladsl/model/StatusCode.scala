@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -7,7 +7,7 @@ package akka.http.scaladsl.model
 import language.implicitConversions
 import akka.annotation.ApiMayChange
 import akka.http.impl.util._
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 
 /** The result status code of an HTTP response. */
 sealed abstract class StatusCode extends jm.StatusCode with LazyValueBytesRenderable {
@@ -113,7 +113,7 @@ object StatusCodes extends ObjectRegistry[Int, StatusCode] {
   val Accepted                    = reg(s(202)("Accepted", "The request has been accepted for processing, but the processing has not been completed."))
   val NonAuthoritativeInformation = reg(s(203)("Non-Authoritative Information", "The server successfully processed the request, but is returning information that may be from another source."))
   val NoContent                   = reg(s(204)("No Content", "The server successfully processed the request and is not returning any content.", allowsEntity = false))
-  val ResetContent                = reg(s(205)("Reset Content", "The server successfully processed the request, but is not returning any content."))
+  val ResetContent                = reg(s(205)("Reset Content", "The server successfully processed the request, but is not returning any content.", allowsEntity = false))
   val PartialContent              = reg(s(206)("Partial Content", "The server is delivering only part of the resource due to a range header sent by the client."))
   val MultiStatus                 = reg(s(207)("Multi-Status", "The message body that follows is an XML message and can contain a number of separate response codes, depending on how many sub-requests were made."))
   val AlreadyReported             = reg(s(208)("Already Reported", "The members of a DAV binding have already been enumerated in a previous reply to this request, and are not being included again."))
@@ -152,7 +152,11 @@ object StatusCodes extends ObjectRegistry[Int, StatusCode] {
   val UnprocessableEntity          = reg(c(422)("Unprocessable Entity", "The request was well-formed but was unable to be followed due to semantic errors."))
   val Locked                       = reg(c(423)("Locked", "The resource that is being accessed is locked."))
   val FailedDependency             = reg(c(424)("Failed Dependency", "The request failed due to failure of a previous request."))
-  val UnorderedCollection          = reg(c(425)("Unordered Collection", "The collection is unordered."))
+
+
+  val TooEarly                     = reg(c(425)("Too Early", "The server is unwilling to risk processing a request that might be replayed.")) // RFC 8470
+  @deprecated("Non-standard Unordered Collection should not be used, deprecated in favor of Too Early", "10.1.6")
+  val UnorderedCollection          = TooEarly
   val UpgradeRequired              = reg(c(426)("Upgrade Required", "The client should switch to a different protocol."))
   val PreconditionRequired         = reg(c(428)("Precondition Required", "The server requires the request to be conditional."))
   val TooManyRequests              = reg(c(429)("Too Many Requests", "The user has sent too many requests in a given amount of time."))

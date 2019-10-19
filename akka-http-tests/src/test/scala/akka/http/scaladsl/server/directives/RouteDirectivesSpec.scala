@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server.directives
@@ -68,20 +68,20 @@ class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
 
       val route =
         get {
-          path("register" / Segment) { name ⇒
+          path("register" / Segment) { name =>
             def registerUser(name: String): Future[RegistrationStatus] = Future.successful {
               name match {
-                case "otto" ⇒ AlreadyRegistered
-                case _      ⇒ Registered(name)
+                case "otto" => AlreadyRegistered
+                case _      => Registered(name)
               }
             }
             complete {
               registerUser(name).map[ToResponseMarshallable] {
-                case Registered(_) ⇒ HttpEntity.Empty
-                case AlreadyRegistered ⇒
+                case Registered(_) => HttpEntity.Empty
+                case AlreadyRegistered =>
                   import spray.json.DefaultJsonProtocol._
                   import SprayJsonSupport._
-                  StatusCodes.BadRequest → Map("error" → "User already Registered")
+                  StatusCodes.BadRequest -> Map("error" -> "User already Registered")
               }
             }
           }
@@ -101,7 +101,7 @@ class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
       import akka.http.scaladsl.model.headers.Accept
       Get().withHeaders(Accept(MediaTypes.`application/json`)) ~> route ~> check {
         responseAs[String] shouldEqual
-          """{"name":"Ida","age":83}"""
+          """{"age":83,"name":"Ida"}"""
       }
       Get().withHeaders(Accept(MediaTypes.`text/xml`)) ~> route ~> check {
         responseAs[xml.NodeSeq] shouldEqual <data><name>Ida</name><age>83</age></data>
@@ -116,12 +116,12 @@ class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
       implicit val superMarshaller = {
         val jsonMarshaller =
           Marshaller.stringMarshaller(MediaTypes.`application/json`)
-            .compose[MyClass] { mc ⇒
+            .compose[MyClass] { mc =>
               println(s"jsonMarshaller marshall $mc")
               mc.value
             }
         val textMarshaller = Marshaller.stringMarshaller(MediaTypes.`text/html`)
-          .compose[MyClass] { mc ⇒
+          .compose[MyClass] { mc =>
             println(s"textMarshaller marshall $mc")
             throw new IllegalArgumentException(s"Unexpected value $mc")
           }
@@ -165,7 +165,7 @@ class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
 
     val jsonMarshaller: ToEntityMarshaller[Data] = jsonFormat2(Data.apply)
 
-    val xmlMarshaller: ToEntityMarshaller[Data] = Marshaller.combined { (data: Data) ⇒
+    val xmlMarshaller: ToEntityMarshaller[Data] = Marshaller.combined { (data: Data) =>
       <data><name>{ data.name }</name><age>{ data.age }</age></data>
     }
 

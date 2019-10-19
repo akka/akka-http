@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -24,8 +24,11 @@ import akka.http.impl.engine.parsing.ParserOutput.{ MessageStartError, NeedMoreD
 import akka.http.impl.engine.parsing.{ HttpHeaderParser, HttpResponseParser, ParserOutput }
 import akka.http.impl.engine.rendering.{ HttpRequestRendererFactory, RequestRenderingContext }
 import akka.http.impl.engine.ws.Handshake.Client.NegotiatedWebSocketSettings
+import akka.http.impl.util.LogByteStringTools
 import akka.http.impl.util.{ SingletonException, StreamUtils }
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
+
+import scala.collection.immutable
 
 /** INTERNAL API */
 @InternalApi
@@ -37,9 +40,12 @@ private[http] object WebSocketClientBlueprint {
     request:  WebSocketRequest,
     settings: ClientConnectionSettings,
     log:      LoggingAdapter): Http.WebSocketClientLayer =
-    (simpleTls.atopMat(handshake(request, settings, log))(Keep.right) atop
-      WebSocket.framing atop
-      WebSocket.stack(serverSide = false, settings.websocketSettings, log = log)).reversed
+    LogByteStringTools.logTLSBidiBySetting("client-plain-text", settings.logUnencryptedNetworkBytes).reversed
+      .atop(simpleTls)
+      .atopMat(handshake(request, settings, log))(Keep.right)
+      .atop(WebSocket.framing)
+      .atop(WebSocket.stack(serverSide = false, settings.websocketSettings, log = log))
+      .reversed
 
   /**
    * A bidi flow that injects and inspects the WS handshake and then goes out of the way. This BidiFlow
@@ -54,7 +60,8 @@ private[http] object WebSocketClientBlueprint {
 
     val valve = StreamUtils.OneTimeValve()
 
-    val (initialRequest, key) = Handshake.Client.buildRequest(uri, extraHeaders, subprotocol.toList, settings.websocketRandomFactory())
+    val subprotocols: immutable.Seq[String] = subprotocol.toList.flatMap(_.split(",")).map(_.trim)
+    val (initialRequest, key) = Handshake.Client.buildRequest(uri, extraHeaders, subprotocols, settings.websocketRandomFactory())
     val hostHeader = Host(uri.authority.normalizedFor(uri.scheme))
     val renderedInitialRequest =
       HttpRequestRendererFactory.renderStrict(RequestRenderingContext(initialRequest, hostHeader), settings, log)
@@ -76,7 +83,7 @@ private[http] object WebSocketClientBlueprint {
                   super.parseMessage(input, offset)
                 } catch {
                   // Specifically NotEnoughDataException, but that's not visible here
-                  case t: SingletonException ⇒ {
+                  case t: SingletonException => {
                     // If parsing the first message fails, retry and treat it like the first message again.
                     first = true
                     throw t
@@ -92,11 +99,11 @@ private[http] object WebSocketClientBlueprint {
 
           override def onPush(): Unit = {
             parser.parseBytes(grab(in)) match {
-              case NeedMoreData ⇒ pull(in)
-              case ResponseStart(status, protocol, headers, entity, close) ⇒
+              case NeedMoreData => pull(in)
+              case ResponseStart(status, protocol, headers, entity, close) =>
                 val response = HttpResponse(status, headers, protocol = protocol)
-                Handshake.Client.validateResponse(response, subprotocol.toList, key) match {
-                  case Right(NegotiatedWebSocketSettings(protocol)) ⇒
+                Handshake.Client.validateResponse(response, subprotocols, key) match {
+                  case Right(NegotiatedWebSocketSettings(protocol)) =>
                     result.success(ValidUpgrade(response, protocol))
 
                     setHandler(in, new InHandler {
@@ -107,18 +114,18 @@ private[http] object WebSocketClientBlueprint {
                     val parseResult = parser.onPull()
                     require(parseResult == ParserOutput.MessageEnd, s"parseResult should be MessageEnd but was $parseResult")
                     parser.onPull() match {
-                      case NeedMoreData          ⇒ pull(in)
-                      case RemainingBytes(bytes) ⇒ push(out, bytes)
-                      case other ⇒
+                      case NeedMoreData          => pull(in)
+                      case RemainingBytes(bytes) => push(out, bytes)
+                      case other =>
                         throw new IllegalStateException(s"unexpected element of type ${other.getClass}")
                     }
-                  case Left(problem) ⇒
+                  case Left(problem) =>
                     result.success(InvalidUpgradeResponse(response, s"WebSocket server at $uri returned $problem"))
                     failStage(new IllegalArgumentException(s"WebSocket upgrade did not finish because of '$problem'"))
                 }
-              case MessageStartError(statusCode, errorInfo) ⇒
+              case MessageStartError(statusCode, errorInfo) =>
                 throw new IllegalStateException(s"Message failed with status code $statusCode; Error info: $errorInfo")
-              case other ⇒
+              case other =>
                 throw new IllegalStateException(s"unexpected element of type ${other.getClass}")
             }
           }
@@ -136,7 +143,7 @@ private[http] object WebSocketClientBlueprint {
       override def toString = "UpgradeStage"
     }
 
-    BidiFlow.fromGraph(GraphDSL.create() { implicit b ⇒
+    BidiFlow.fromGraph(GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
 
       val networkIn = b.add(Flow[ByteString].via(new UpgradeStage))
@@ -153,11 +160,11 @@ private[http] object WebSocketClientBlueprint {
         networkIn.out,
         wsIn.in,
         httpRequestBytesAndThenWSBytes.out)
-    }) mapMaterializedValue (_ ⇒ result.future)
+    }) mapMaterializedValue (_ => result.future)
   }
 
   def simpleTls: BidiFlow[SslTlsInbound, ByteString, ByteString, SendBytes, NotUsed] =
     BidiFlow.fromFlowsMat(
-      Flow[SslTlsInbound].collect { case SessionBytes(_, bytes) ⇒ bytes },
+      Flow[SslTlsInbound].collect { case SessionBytes(_, bytes) => bytes },
       Flow[ByteString].map(SendBytes))(Keep.none)
 }

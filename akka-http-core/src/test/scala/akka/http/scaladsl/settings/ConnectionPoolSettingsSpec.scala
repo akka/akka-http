@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.settings
@@ -40,8 +40,8 @@ class ConnectionPoolSettingsSpec extends AkkaSpec {
       expectError("akka.http.host-connection-pool.max-open-requests = 1000") should include("Perhaps try 512 or 1024")
     }
     def expectError(configString: String): String = Try(config(configString)) match {
-      case Failure(cause) ⇒ cause.getMessage
-      case Success(_)     ⇒ fail("Expected a failure when max-open-requests is not a power of 2")
+      case Failure(cause) => cause.getMessage
+      case Success(_)     => fail("Expected a failure when max-open-requests is not a power of 2")
     }
   }
 

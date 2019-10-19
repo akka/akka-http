@@ -1,0 +1,8 @@
+# Addition to @DoNotInherit classes
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.Http2ServerSettings.getOutgoingControlFrameBufferSize")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.Http2ServerSettings.withOutgoingControlFrameBufferSize")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.outgoingControlFrameBufferSize")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.withOutgoingControlFrameBufferSize")
+
+# changes to internal classes
+ProblemFilters.exclude[Problem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.*")

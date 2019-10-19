@@ -32,23 +32,17 @@ For the client side connection pool, the idle period is counted only when the po
 <a id="request-timeout"></a>
 ### Request timeout
 
-Request timeouts are a mechanism that limits the maximum time it may take to produce an @unidoc[HttpResponse] from a route.
+Request timeouts are a mechanism that limits the maximum time it may take to produce an @apidoc[HttpResponse] from a route.
 If that deadline is not met the server will automatically inject a Service Unavailable HTTP response and close the connection
 to prevent it from leaking and staying around indefinitely (for example if by programming error a Future would never complete,
 never sending the real response otherwise).
 
-The default @unidoc[HttpResponse] that is written when a request timeout is exceeded looks like this:
+The default @apidoc[HttpResponse] that is written when a request timeout is exceeded looks like this:
 
 @@snip [HttpServerBluePrint.scala]($akka-http$/akka-http-core/src/main/scala/akka/http/impl/engine/server/HttpServerBluePrint.scala) { #default-request-timeout-httpresponse }
 
 A default request timeout is applied globally to all routes and can be configured using the
 `akka.http.server.request-timeout` setting (which defaults to 20 seconds).
-
-@@@ note
-Please note that if multiple requests (`R1,R2,R3,...`) were sent by a client (see "HTTP pipelining")
-using the same connection and the `n-th` request triggers a request timeout the server will reply with an Http Response
-and close the connection, leaving the `(n+1)-th` (and subsequent requests on the same connection) unhandled.
-@@@
 
 The request timeout can be configured at run-time for a given route using the any of the @ref[TimeoutDirectives](../routing-dsl/directives/timeout-directives/index.md).
 
@@ -80,3 +74,10 @@ Tweaking it should rarely be required, but it allows erroring out the connection
 is unable to be established for a given amount of time.
 
 it can be configured using the `akka.http.client.connecting-timeout` setting.
+
+### Connection Lifetime timeout
+
+This timeout configures a maximum amount of time, while the connection can be kept open. This is useful, when you reach
+the server through a load balancer and client reconnecting helps the process of rebalancing between service instances.
+
+It can be configured using the `akka.http.host-connection-pool.max-connection-lifetime` setting.

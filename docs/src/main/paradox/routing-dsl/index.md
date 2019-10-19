@@ -46,8 +46,8 @@ For further information about this marker, see @extref:[The @DoNotInherit and @A
 in the Akka documentation.
 @@@
 
-To help start a server Akka HTTP provides an experimental helper class called @unidoc[HttpApp].
-This is the same example as before rewritten using @unidoc[HttpApp]:
+To help start a server Akka HTTP provides an experimental helper class called @apidoc[HttpApp].
+This is the same example as before rewritten using @apidoc[HttpApp]:
 
 Scala
 :  @@snip [HttpAppExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #minimal-routing-example }
@@ -68,6 +68,43 @@ the Routing DSL will look like:
 @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #long-routing-example }
 
 @@@
+
+## Interaction with Akka Typed
+
+Since Akka version `2.5.22`, Akka typed became ready for production, Akka HTTP, however, is still using the
+untyped `ActorSystem`. This following example will demonstrate how to use Akka HTTP and Akka Typed together
+within the same application.
+
+We will create a small web server responsible to record build jobs with its state and duration, query jobs by
+id and status, and clear the job history.
+
+First let's start by defining the `Behavior` that will act as a repository for the build job information:
+
+Scala
+:  @@snip [HttpServerWithTypedSpec.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSpec.scala) { #akka-typed-behavior }
+
+
+Now, let's define the JSON marshaller and unmarshallers:
+
+Scala
+:  @@snip [HttpServerWithTypedSpec.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSpec.scala) { #akka-typed-json }
+
+
+Next step is to define the @apidoc[Route$] that will communicate with the previously defined behavior
+and handle all its possible responses
+
+Scala
+:  @@snip [HttpServerWithTypedSpec.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSpec.scala) { #akka-typed-route }
+
+
+And finally, we just need to bootstrap our web server and instantiate our `Behavior`:
+
+Scala
+:  @@snip [HttpServerWithTypedSpec.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSpec.scala) { #akka-typed-bootstrap }
+
+
+Note that the `akka.actor.typed.ActorSystem` is converted with `toClassic`, which comes from
+`import akka.actor.typed.scaladsl.adapter._`. If you are using Akka 2.5.x this conversion method is named `toUntyped`.
 
 ## Dynamic Routing Example
 
@@ -127,9 +164,9 @@ refer to the @ref[Handling HTTP Server failures in the Low-Level API](../server-
 
 ### Failures and exceptions inside the Routing DSL
 
-Exception handling within the Routing DSL is done by providing @unidoc[ExceptionHandler] s which are documented in-depth
+Exception handling within the Routing DSL is done by providing @apidoc[ExceptionHandler] s which are documented in-depth
 in the @ref[Exception Handling](exception-handling.md) section of the documentation. You can use them to transform exceptions into
-@unidoc[HttpResponse] s with appropriate error codes and human-readable failure descriptions.
+@apidoc[HttpResponse] s with appropriate error codes and human-readable failure descriptions.
 
 ## File uploads
 

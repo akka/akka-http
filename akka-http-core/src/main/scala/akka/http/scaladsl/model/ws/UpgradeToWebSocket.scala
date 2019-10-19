@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model.ws
@@ -9,7 +9,7 @@ import scala.collection.immutable
 import akka.NotUsed
 import akka.stream._
 import akka.http.impl.util.JavaMapping
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 import akka.http.scaladsl.model.HttpResponse
 
 /**

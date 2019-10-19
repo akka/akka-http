@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -30,7 +30,7 @@ abstract class ContentLengthHeaderParserSpec(mode: String, newLine: String) exte
   }
 
   def parse(bigint: String): Long = {
-    val (`Content-Length`(length), _) = ContentLengthParser(null, ByteString(bigint + newLine).compact, 0, _ ⇒ ())
+    val (`Content-Length`(length), _) = ContentLengthParser(null, ByteString(bigint + newLine).compact, 0, _ => ())
     length
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -32,7 +32,7 @@ class ClientSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
     "reuse connection pool" in {
       val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-      val bindingFuture = Http().bindAndHandleSync(_ ⇒ HttpResponse(), hostname, port)
+      val bindingFuture = Http().bindAndHandleSync(_ => HttpResponse(), hostname, port)
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
 
       val respFuture = Http().singleRequest(HttpRequest(POST, s"http://$hostname:$port/"))

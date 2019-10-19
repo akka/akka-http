@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server.directives
@@ -17,14 +17,14 @@ import scala.concurrent.duration._
 class IllegalHeadersIntegrationSpec extends IntegrationRoutingSpec {
 
   "Illegal content type in request" should {
-    val route = extractRequest { req ⇒
+    val route = extractRequest { req =>
       complete(s"Accept:${req.header[Accept]}, byName:${req.headers.find(_.is("accept"))}")
     }
 
     // see: https://github.com/akka/akka-http/issues/1072
     "not StackOverflow but be rejected properly" in {
       val theIllegalHeader = RawHeader("Accept", "*/xml")
-      Get().addHeader(theIllegalHeader) ~!> route ~!> { response ⇒
+      Get().addHeader(theIllegalHeader) ~!> route ~!> { response =>
         import response._
 
         status should ===(StatusCodes.OK)

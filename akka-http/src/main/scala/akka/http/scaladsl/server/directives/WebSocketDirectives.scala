@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -26,8 +26,8 @@ trait WebSocketDirectives {
    */
   def extractUpgradeToWebSocket: Directive1[UpgradeToWebSocket] =
     optionalHeaderValueByType[UpgradeToWebSocket](()).flatMap {
-      case Some(upgrade) ⇒ provide(upgrade)
-      case None          ⇒ reject(ExpectedWebSocketRequestRejection)
+      case Some(upgrade) => provide(upgrade)
+      case None          => reject(ExpectedWebSocketRequestRejection)
     }
 
   /**
@@ -70,8 +70,8 @@ trait WebSocketDirectives {
    * @group websocket
    */
   def handleWebSocketMessagesForOptionalProtocol(handler: Flow[Message, Message, Any], subprotocol: Option[String]): Route =
-    extractUpgradeToWebSocket { upgrade ⇒
-      if (subprotocol.forall(sub ⇒ upgrade.requestedProtocols.exists(_ equalsIgnoreCase sub)))
+    extractUpgradeToWebSocket { upgrade =>
+      if (subprotocol.forall(sub => upgrade.requestedProtocols.exists(_ equalsIgnoreCase sub)))
         complete(upgrade.handleMessages(handler, subprotocol))
       else
         reject(UnsupportedWebSocketSubprotocolRejection(subprotocol.get)) // None.forall == true

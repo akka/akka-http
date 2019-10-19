@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server.util
@@ -7,6 +7,6 @@ package akka.http.scaladsl.server.util
 /**
  * Constructor for instances of type `R` which can be created from a tuple of type `T`.
  */
-trait ConstructFromTuple[T, R] extends (T ⇒ R)
+trait ConstructFromTuple[T, R] extends (T => R)
 
 object ConstructFromTuple extends ConstructFromTupleInstances

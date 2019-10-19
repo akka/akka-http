@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -29,9 +29,18 @@ object Scaladoc extends AutoPlugin {
 
   val validateDiagrams = settingKey[Boolean]("Validate generated scaladoc diagrams")
 
-  override lazy val projectSettings = {
+  override lazy val projectSettings =
     inTask(doc)(Seq(
-      scalacOptions in Compile ++= scaladocOptions(version.value, (baseDirectory in ThisBuild).value),
+      scalacOptions in Compile ++=
+        scaladocOptions(
+          scalaBinaryVersion.value,
+          version.value,
+          (baseDirectory in ThisBuild).value,
+          libraryDependencies.value
+            .filter(_.configurations.contains("plugin->default(compile)"))
+            // Can we get the from the classpath somehow?
+            .map(module => file(s"~/.ivy2/cache/${module.organization}/${module.name}_${scalaVersion.value}/jars/${module.name}_${scalaVersion.value}-${module.revision}.jar"))
+        ),
       autoAPIMappings := CliOptions.scaladocAutoAPI.get
     )) ++
     Seq(validateDiagrams in Compile := true) ++
@@ -41,18 +50,24 @@ object Scaladoc extends AutoPlugin {
         scaladocVerifier(docs)
       docs
     })
-  }
 
-  def scaladocOptions(ver: String, base: File): List[String] = {
-    val urlString = GitHub.url(ver) + "/€{FILE_PATH}.scala"
+  def scaladocOptions(scalaBinaryVersion: String, ver: String, base: File, plugins: Seq[File]): List[String] = {
+    val urlString = GitHub.url(ver) +
+                    // supported from Scala 2.12.9
+                    (if (scalaBinaryVersion != "2.11") "€{FILE_PATH_EXT}#L€{FILE_LINE}" else "€{FILE_PATH}.scala")
+
     val opts = List(
       "-implicits",
       "-groups",
       "-doc-source-url", urlString,
       "-sourcepath", base.getAbsolutePath,
+      "-doc-title", "Akka HTTP",
+      "-doc-version", ver,
       // Workaround https://issues.scala-lang.org/browse/SI-10028
-      "-skip-packages", "akka.pattern:org.specs2"
-    )
+      "-skip-packages", "akka.pattern:org.specs2",
+    ) ++
+      (if (scalaBinaryVersion != "2.11") List("-doc-canonical-base-url", "https://doc.akka.io/api/akka-http/current/") else Nil) ++
+      plugins.map(plugin => "-Xplugin:" + plugin)
     CliOptions.scaladocDiagramsEnabled.ifTrue("-diagrams").toList ::: opts
   }
 
@@ -69,7 +84,10 @@ object Scaladoc extends AutoPlugin {
           if (name.endsWith(".html") && !name.startsWith("index-") &&
               !name.equals("index.html") && !name.equals("package.html")) {
             val source = scala.io.Source.fromFile(f)(scala.io.Codec.UTF8)
-            val hd = try source.getLines().exists(_.contains("<div class=\"toggleContainer block diagram-container\" id=\"inheritance-diagram-container\">"))
+            val hd = try source.getLines().exists(lines =>
+              lines.contains("<div class=\"toggleContainer block diagram-container\" id=\"inheritance-diagram-container\">") ||
+              lines.contains("<svg id=\"graph")
+            )
             catch {
               case e: Exception => throw new IllegalStateException("Scaladoc verification failed for file '"+f+"'", e)
             } finally source.close()
@@ -152,7 +170,7 @@ object BootstrapGenjavadoc extends AutoPlugin {
       javacOptions in test += "-Xdoclint:none",
       javacOptions in doc += "-Xdoclint:none",
       scalacOptions in Compile += "-P:genjavadoc:fabricateParams=true",
-      unidocGenjavadocVersion in Global := "0.11"
+      unidocGenjavadocVersion in Global := "0.13"
     )
   ).getOrElse(Seq.empty)
 }

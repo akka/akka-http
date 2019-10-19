@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.common
@@ -9,10 +9,12 @@ import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
 import akka.stream.Materializer
+import akka.http.ccompat._
 import akka.http.scaladsl.unmarshalling._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture
 import FastFuture._
+import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
 
 /**
  * Read-only abstraction on top of `application/x-www-form-urlencoded` and multipart form data,
@@ -36,10 +38,13 @@ import FastFuture._
  */
 sealed abstract class StrictForm {
   def fields: immutable.Seq[(String, StrictForm.Field)]
-  def field(name: String): Option[StrictForm.Field] = fields collectFirst { case (`name`, field) ⇒ field }
+  def field(name: String): Option[StrictForm.Field] = fields collectFirst { case (`name`, field) => field }
 }
 
 object StrictForm {
+  // TODO: make timeout configurable
+  val toStrictTimeout = 10.seconds
+
   sealed trait Field
   object Field {
     private[http] def fromString(value: String): Field = FromString(value)
@@ -48,22 +53,22 @@ object StrictForm {
     private[StrictForm] final case class FromPart(value: Multipart.FormData.BodyPart.Strict) extends Field
 
     implicit def unmarshaller[T](implicit um: FieldUnmarshaller[T]): FromStrictFormFieldUnmarshaller[T] =
-      Unmarshaller.withMaterializer(implicit ec ⇒ implicit mat ⇒ {
-        case FromString(value) ⇒ um.unmarshalString(value)
-        case FromPart(value)   ⇒ um.unmarshalPart(value)
+      Unmarshaller.withMaterializer(implicit ec => implicit mat => {
+        case FromString(value) => um.unmarshalString(value)
+        case FromPart(value)   => um.unmarshalPart(value)
       })
 
     def unmarshallerFromFSU[T](fsu: FromStringUnmarshaller[T]): FromStrictFormFieldUnmarshaller[T] =
-      Unmarshaller.withMaterializer(implicit ec ⇒ implicit mat ⇒ {
-        case FromString(value) ⇒ fsu(value)
-        case FromPart(value) ⇒
+      Unmarshaller.withMaterializer(implicit ec => implicit mat => {
+        case FromString(value) => fsu(value)
+        case FromPart(value) =>
           val charsetName = value.entity.contentType.asInstanceOf[ContentType.NonBinary].charset.nioCharset.name
           fsu(value.entity.data.decodeString(charsetName))
       })
 
-    @implicitNotFound(msg =
-      s"In order to unmarshal a `StrictForm.Field` to type `$${T}` you need to supply a " +
-        s"`FromStringUnmarshaller[$${T}]` and/or a `FromEntityUnmarshaller[$${T}]`")
+    @implicitNotFound(
+      "In order to unmarshal a `StrictForm.Field` to type `${T}` you need to supply a " +
+        "`FromStringUnmarshaller[${T}]` and/or a `FromEntityUnmarshaller[${T}]`")
     sealed trait FieldUnmarshaller[T] {
       def unmarshalString(value: String)(implicit ec: ExecutionContext, mat: Materializer): Future[T]
       def unmarshalPart(value: Multipart.FormData.BodyPart.Strict)(implicit ec: ExecutionContext, mat: Materializer): Future[T]
@@ -102,33 +107,33 @@ object StrictForm {
   implicit def unmarshaller(implicit
     formDataUM: FromEntityUnmarshaller[FormData],
                             multipartUM: FromEntityUnmarshaller[Multipart.FormData]): FromEntityUnmarshaller[StrictForm] =
-    Unmarshaller.withMaterializer { implicit ec ⇒ implicit fm ⇒
-      entity ⇒
+    Unmarshaller.withMaterializer { implicit ec => implicit fm =>
+      entity =>
 
         def tryUnmarshalToQueryForm: Future[StrictForm] =
-          for (formData ← formDataUM(entity).fast) yield {
+          for (formData <- formDataUM(entity).fast) yield {
             new StrictForm {
-              val fields = formData.fields.map { case (name, value) ⇒ name → Field.FromString(value) }(collection.breakOut)
+              val fields = formData.fields.iterator.map { case (name, value) => name -> Field.FromString(value) }.to(scala.collection.immutable.IndexedSeq)
             }
           }
 
         def tryUnmarshalToMultipartForm: Future[StrictForm] =
           for {
-            multiPartFD ← multipartUM(entity).fast
-            strictMultiPartFD ← multiPartFD.toStrict(10.seconds).fast // TODO: make timeout configurable
+            multiPartFD <- multipartUM(entity).fast
+            strictMultiPartFD <- multiPartFD.toStrict(toStrictTimeout).fast
           } yield {
             new StrictForm {
-              val fields = strictMultiPartFD.strictParts.map {
-                case x: Multipart.FormData.BodyPart.Strict ⇒ x.name → Field.FromPart(x)
-              }(collection.breakOut)
+              val fields = strictMultiPartFD.strictParts.iterator.map {
+                case x: Multipart.FormData.BodyPart.Strict => x.name -> Field.FromPart(x)
+              }.to(scala.collection.immutable.IndexedSeq)
             }
           }
 
         tryUnmarshalToQueryForm.fast.recoverWith {
-          case Unmarshaller.UnsupportedContentTypeException(supported1) ⇒
+          case UnsupportedContentTypeException(supported) =>
             tryUnmarshalToMultipartForm.fast.recoverWith {
-              case Unmarshaller.UnsupportedContentTypeException(supported2) ⇒
-                FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(supported1 ++ supported2))
+              case e: UnsupportedContentTypeException =>
+                FastFuture.failed(UnsupportedContentTypeException(supported ++ e.supported, e.actualContentType))
             }
         }
     }
@@ -141,8 +146,8 @@ object StrictForm {
   object FileData {
     implicit val unmarshaller: FromStrictFormFieldUnmarshaller[FileData] =
       Unmarshaller strict {
-        case Field.FromString(_)  ⇒ throw Unmarshaller.UnsupportedContentTypeException(MediaTypes.`application/x-www-form-urlencoded`)
-        case Field.FromPart(part) ⇒ FileData(part.filename, part.entity)
+        case Field.FromString(_)  => throw UnsupportedContentTypeException(None, MediaTypes.`application/x-www-form-urlencoded`)
+        case Field.FromPart(part) => FileData(part.filename, part.entity)
       }
   }
 }

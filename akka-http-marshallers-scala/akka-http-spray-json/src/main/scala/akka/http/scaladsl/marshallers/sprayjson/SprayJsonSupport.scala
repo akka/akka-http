@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.marshallers.sprayjson
 
-import akka.http.javadsl.{ common, model ⇒ jm }
+import akka.http.javadsl.{ common, model => jm }
 import akka.NotUsed
 import akka.event.Logging
 import akka.http.scaladsl.common.EntityStreamingSupport
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model.MediaTypes.`application/json`
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
 import akka.http.scaladsl.unmarshalling.{ FromByteStringUnmarshaller, FromEntityUnmarshaller, Unmarshaller }
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.scaladsl.{ Flow, Keep, Source }
@@ -34,7 +35,7 @@ trait SprayJsonSupport {
       .andThen(sprayJsValueByteStringUnmarshaller)
 
   implicit def sprayJsValueByteStringUnmarshaller[T]: FromByteStringUnmarshaller[JsValue] =
-    Unmarshaller.withMaterializer[ByteString, JsValue](_ ⇒ implicit mat ⇒ { bs ⇒
+    Unmarshaller.withMaterializer[ByteString, JsValue](_ => _ => { bs =>
       // .compact so addressing into any address is very fast (also for large chunks)
       // TODO we could optimise ByteStrings to better handle linear access like this (or provide ByteStrings.linearAccessOptimised)
       // TODO IF it's worth it.
@@ -46,7 +47,7 @@ trait SprayJsonSupport {
 
   // support for as[Source[T, NotUsed]]
   implicit def sprayJsonSourceReader[T](implicit reader: RootJsonReader[T], support: EntityStreamingSupport): FromEntityUnmarshaller[Source[T, NotUsed]] =
-    Unmarshaller.withMaterializer { implicit ec ⇒ implicit mat ⇒ e ⇒
+    Unmarshaller.withMaterializer { implicit ec => implicit mat => e =>
       if (support.supported.matches(e.contentType)) {
         val frames = e.dataBytes.via(support.framingDecoder)
         val unmarshal = sprayJsonByteStringUnmarshaller(reader)(_)
@@ -55,7 +56,7 @@ trait SprayJsonSupport {
           else Flow[ByteString].mapAsync(support.parallelism)(unmarshal)
         val elements = frames.viaMat(unmarshallingFlow)(Keep.right)
         FastFuture.successful(elements)
-      } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(support.supported))
+      } else FastFuture.failed(UnsupportedContentTypeException(Some(e.contentType), support.supported))
     }
 
   //#sprayJsonMarshallerConverter

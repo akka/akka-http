@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model.headers
@@ -15,8 +15,8 @@ final case class WebSocketExtension(name: String, params: immutable.Map[String, 
     r ~~ name
     if (params.nonEmpty)
       params.foreach {
-        case (k, "") ⇒ r ~~ "; " ~~ k
-        case (k, v)  ⇒ r ~~ "; " ~~ k ~~ '=' ~~# v
+        case (k, "") => r ~~ "; " ~~ k
+        case (k, v)  => r ~~ "; " ~~ k ~~ '=' ~~# v
       }
     r
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
@@ -7,11 +7,12 @@ package docs.http.scaladsl.server.directives
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.server.RoutingSpec
 import akka.http.scaladsl.server.{ InvalidOriginRejection, MissingHeaderRejection, Route }
-import docs.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 import org.scalatest.Inside
 
-class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
+class HeaderDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec with Inside {
   "headerValueByName-0" in {
     //#headerValueByName-0
     val route =
@@ -240,7 +241,7 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
     // reject request with missed origin header
     Get("abc") ~> route ~> check {
       inside(rejection) {
-        case MissingHeaderRejection(headerName) ⇒ headerName shouldEqual Origin.name
+        case MissingHeaderRejection(headerName) => headerName shouldEqual Origin.name
       }
     }
 
@@ -249,7 +250,7 @@ class HeaderDirectivesExamplesSpec extends RoutingSpec with Inside {
     val invalidOriginHeader = Origin(invalidHttpOrigin)
     Get("abc") ~> invalidOriginHeader ~> route ~> check {
       inside(rejection) {
-        case InvalidOriginRejection(allowedOrigins) ⇒
+        case InvalidOriginRejection(allowedOrigins) =>
           allowedOrigins shouldEqual Seq(correctOrigin)
       }
     }

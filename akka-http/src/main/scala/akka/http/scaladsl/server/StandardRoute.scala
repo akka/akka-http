@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -15,8 +15,8 @@ abstract class StandardRoute extends Route {
 
 object StandardRoute {
   def apply(route: Route): StandardRoute = route match {
-    case x: StandardRoute ⇒ x
-    case x                ⇒ new StandardRoute { def apply(ctx: RequestContext) = x(ctx) }
+    case x: StandardRoute => x
+    case x                => new StandardRoute { def apply(ctx: RequestContext) = x(ctx) }
   }
 
   /**
@@ -24,5 +24,5 @@ object StandardRoute {
    * (and always returns its underlying route).
    */
   implicit def toDirective[L: Tuple](route: StandardRoute): Directive[L] =
-    Directive[L] { _ ⇒ route }
+    Directive[L] { _ => route }
 }

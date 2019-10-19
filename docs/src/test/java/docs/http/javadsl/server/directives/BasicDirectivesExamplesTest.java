@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server.directives;
@@ -426,27 +426,18 @@ public class BasicDirectivesExamplesTest extends JUnitRouteTest {
     final RoutingSettings special =
       RoutingSettings
         .create(system().settings().config())
-        .withFileIODispatcher("special-io-dispatcher");
+        .withFileGetConditional(false);
 
-    final Route sample = path("sample", () -> {
-      // internally uses the configured fileIODispatcher:
-      // ContentTypes.APPLICATION_JSON, source
-      final Source<ByteString, Object> source =
-        FileIO.fromPath(Paths.get("example.json"))
-          .mapMaterializedValue(completionStage -> (Object) completionStage);
-      return complete(
-        HttpResponse.create()
-          .withEntity(HttpEntities.create(ContentTypes.APPLICATION_JSON, source))
-      );
-    });
+    // internally uses fileGetConditional setting
+    final Route sample = path("sample", () -> getFromFile("example.json"));
 
     final Route route = get(() ->
       Directives.concat(
         pathPrefix("special", () ->
-          // `special` file-io-dispatcher will be used to read the file
+          // ETag/`If-Modified-Since` disabled
           withSettings(special, () -> sample)
         ),
-        sample // default file-io-dispatcher will be used to read the file
+        sample // ETag/`If-Modified-Since` enabled
       )
     );
 

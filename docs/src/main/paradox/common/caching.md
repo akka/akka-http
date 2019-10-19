@@ -7,7 +7,7 @@ expensive operation with a caching layer that, based on a certain key of type
 all future accesses for the same key (as long as the respective entry has not
 expired).
 
-Akka HTTP comes with one implementations of the @unidoc[Cache] API built on [Caffeine]
+Akka HTTP comes with one implementations of the @apidoc[Cache] API built on [Caffeine]
 featuring frequency-biased cache eviction semantics with support for
 time-based entry expiration.
 
@@ -39,7 +39,7 @@ cache which all later requests then "hook into". As soon as the first request
 completes all other ones complete as well. This minimizes processing time and
 server load for all requests.
 
-All Akka HTTP cache implementations adheres to the @unidoc[Cache]
+All Akka HTTP cache implementations adheres to the @apidoc[Cache]
 @java[interface]@scala[class], which allows you to interact with the
 cache.
 
@@ -50,7 +50,7 @@ caching in your routes.
 ## Frequency-biased LFU cache
 
 The frequency-biased LFU cache implementation has a defined maximum number of entries it can
-store. After the maximum capacity is reached the cache will evicts entries that are
+store. After the maximum capacity is reached the cache will evict entries that are
 less likely to be used again. For example, the cache may evict an entry
 because it hasn't been used recently or very often.
 
@@ -72,11 +72,11 @@ for longer than expected.
 For simple cases, configure the capacity and expiration settings in your
 `application.conf` file via the settings under `akka.http.caching` and use
 @java[`LfuCache.create()`]@scala[`LfuCache.apply()`] to create the cache.
-For more advanced usage you can create an @unidoc[LfuCache$] with settings
+For more advanced usage you can create an @apidoc[LfuCache$] with settings
 specialized for your use case:
 
 Java
-:  @@snip [CachingDirectivesExamplesTest.java]($root$/src/test/java/docs/http/javadsl/server/directives/CachingDirectivesExamplesTest.java) { #create-cache-imports #caching-directives-import #keyer-function #create-cache }
+:  @@snip [CachingDirectivesExamplesTest.java]($root$/src/test/java/docs/http/javadsl/server/directives/CachingDirectivesExamplesTest.java) { #create-cache-imports #caching-directives-import #time-unit-import #keyer-function #create-cache }
 
 Scala
 :  @@snip [CachingDirectivesExamplesSpec.java]($root$/src/test/scala/docs/http/scaladsl/server/directives/CachingDirectivesExamplesSpec.scala) { #keyer-function #create-cache }

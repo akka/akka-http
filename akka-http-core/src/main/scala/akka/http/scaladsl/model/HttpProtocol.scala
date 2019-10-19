@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
 
 import akka.http.impl.util.{ SingletonValueRenderable, ObjectRegistry }
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 
 /** The protocol of an HTTP message */
 final case class HttpProtocol private[http] (override val value: String) extends jm.HttpProtocol with SingletonValueRenderable

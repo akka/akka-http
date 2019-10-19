@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server
@@ -127,7 +127,7 @@ class WebSocketExampleSpec extends WordSpec with Matchers with CompileOnlySpec {
     val pingCounter = new AtomicInteger()
     val customWebsocketSettings =
       defaultSettings.websocketSettings
-        .withPeriodicKeepAliveData(() ⇒ ByteString(s"debug-${pingCounter.incrementAndGet()}"))
+        .withPeriodicKeepAliveData(() => ByteString(s"debug-${pingCounter.incrementAndGet()}"))
 
     val customServerSettings =
       defaultSettings.withWebsocketSettings(customWebsocketSettings)
@@ -145,7 +145,7 @@ class WebSocketExampleSpec extends WordSpec with Matchers with CompileOnlySpec {
     val pingCounter = new AtomicInteger()
     val customWebsocketSettings =
       defaultSettings.websocketSettings
-        .withPeriodicKeepAliveData(() ⇒ ByteString(s"debug-${pingCounter.incrementAndGet()}"))
+        .withPeriodicKeepAliveData(() => ByteString(s"debug-${pingCounter.incrementAndGet()}"))
 
     val customSettings =
       defaultSettings.withWebsocketSettings(customWebsocketSettings)

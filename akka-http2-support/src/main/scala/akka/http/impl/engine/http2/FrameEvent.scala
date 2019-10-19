@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -14,14 +14,14 @@ import scala.collection.immutable
 
 /** INTERNAL API */
 @InternalApi
-private[http2] sealed trait FrameEvent { self: Product ⇒
+private[http2] sealed trait FrameEvent { self: Product =>
   def frameTypeName: String = productPrefix
 }
 /** INTERNAL API */
 @InternalApi
-private[http2] object FrameEvent {
+private[http] object FrameEvent {
 
-  sealed trait StreamFrameEvent extends FrameEvent { self: Product ⇒
+  sealed trait StreamFrameEvent extends FrameEvent { self: Product =>
     def streamId: Int
   }
 

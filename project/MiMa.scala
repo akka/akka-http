@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -27,10 +27,11 @@ object MiMa extends AutoPlugin {
   val currentFork = "10.1."
 
   override val projectSettings = Seq(
-    mimaPreviousArtifacts :=
+    mimaPreviousArtifacts := {
       // manually maintained list of previous versions to make sure all incompatibilities are found
       // even if so far no files have been been created in this project's mima-filters directory
-      Set("10.0.0",
+      val pre213Versions = Set(
+          "10.0.0",
           "10.0.1",
           "10.0.2",
           "10.0.3",
@@ -45,34 +46,48 @@ object MiMa extends AutoPlugin {
           "10.0.12",
           "10.0.13",
           "10.0.14",
+          "10.0.15",
           "10.1.0",
           "10.1.1",
           "10.1.2",
           "10.1.3",
           "10.1.4",
           "10.1.5",
+          "10.1.6",
+          "10.1.7",
       )
-        .collect { case version if !ignoredModules.get(name.value).exists(_.contains(version)) =>
-          organization.value %% name.value % version
-        },
-      mimaBackwardIssueFilters := {
-        val filters = mimaBackwardIssueFilters.value
-        val allVersions = (mimaPreviousArtifacts.value.map(_.revision) ++ filters.keys).toSeq
+      val post213Versions = Set(
+          "10.1.8",
+          "10.1.9",
+          "10.1.10",
+      )
 
-        /**
-         * Collect filters for all versions of a fork and add them as filters for the latest version of the fork.
-         * Otherwise, new versions in the fork that are listed above will reintroduce issues that were already filtered
-         * out before. We basically rebase this release line on top of the fork from the view of Mima.
-         */
-        def forkFilter(fork: String): Option[(String, Seq[ProblemFilter])] = {
-          val forkVersions = filters.keys.filter(_.startsWith(fork)).toSeq
-          val collectedFilterOption = forkVersions.map(filters).reduceOption(_ ++ _)
-          collectedFilterOption.map(latestForkVersion(fork, allVersions) -> _)
-        }
+      val versions =
+        if (scalaVersion.value == Dependencies.Scala213) post213Versions
+        else pre213Versions ++ post213Versions
 
-        forks.flatMap(forkFilter).toMap ++
-        filters.filterKeys(_ startsWith currentFork)
+      versions.collect { case version if !ignoredModules.get(name.value).exists(_.contains(version)) =>
+        organization.value %% name.value % version
       }
+    },
+    mimaBackwardIssueFilters := {
+      val filters = mimaBackwardIssueFilters.value
+      val allVersions = (mimaPreviousArtifacts.value.map(_.revision) ++ filters.keys).toSeq
+
+      /**
+       * Collect filters for all versions of a fork and add them as filters for the latest version of the fork.
+       * Otherwise, new versions in the fork that are listed above will reintroduce issues that were already filtered
+       * out before. We basically rebase this release line on top of the fork from the view of Mima.
+       */
+      def forkFilter(fork: String): Option[(String, Seq[ProblemFilter])] = {
+        val forkVersions = filters.keys.filter(_.startsWith(fork)).toSeq
+        val collectedFilterOption = forkVersions.map(filters).reduceOption(_ ++ _)
+        collectedFilterOption.map(latestForkVersion(fork, allVersions) -> _)
+      }
+
+      forks.flatMap(forkFilter).toMap ++
+      filters.filterKeys(_ startsWith currentFork)
+    }
   )
 
   def latestForkVersion(fork: String, allVersions: Seq[String]): String =

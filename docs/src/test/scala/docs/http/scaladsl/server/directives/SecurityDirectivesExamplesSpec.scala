@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
@@ -7,12 +7,13 @@ package docs.http.scaladsl.server.directives
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.RoutingSpec
 import akka.http.scaladsl.server.directives.Credentials
+import docs.CompileOnlySpec
 
 import scala.concurrent.Future
-import docs.http.scaladsl.server.RoutingSpec
 
-class SecurityDirectivesExamplesSpec extends RoutingSpec {
+class SecurityDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   "authenticateBasic-0" in {
     //#authenticateBasic-0
@@ -35,7 +36,7 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
     Get("/secured") ~> route ~> check {
       status shouldEqual StatusCodes.Unauthorized
       responseAs[String] shouldEqual "The resource requires authentication, which was not supplied with the request"
-      header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", Some("secure site"), Map("charset" → "UTF-8"))
+      header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", Some("secure site"), Map("charset" -> "UTF-8"))
     }
 
     val validCredentials = BasicHttpCredentials("John", "p4ssw0rd")
@@ -50,7 +51,7 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
       route ~> check {
         status shouldEqual StatusCodes.Unauthorized
         responseAs[String] shouldEqual "The supplied authentication is invalid"
-        header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", Some("secure site"), Map("charset" → "UTF-8"))
+        header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", Some("secure site"), Map("charset" -> "UTF-8"))
       }
     //#authenticateBasic-0
   }
@@ -74,7 +75,7 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
     Get("/secured") ~> route ~> check {
       status shouldEqual StatusCodes.Unauthorized
       responseAs[String] shouldEqual "The resource requires authentication, which was not supplied with the request"
-      header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", Some("secure site"), Map("charset" → "UTF-8"))
+      header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", Some("secure site"), Map("charset" -> "UTF-8"))
     }
 
     val validCredentials = BasicHttpCredentials("John", "p4ssw0rd")
@@ -95,7 +96,7 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
       route ~> check {
         status shouldEqual StatusCodes.Unauthorized
         responseAs[String] shouldEqual "The supplied authentication is invalid"
-        header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", Some("secure site"), Map("charset" → "UTF-8"))
+        header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", Some("secure site"), Map("charset" -> "UTF-8"))
       }
     //#authenticateBasicPF-0
   }
@@ -125,7 +126,7 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
     Get("/secured") ~> route ~> check {
       status shouldEqual StatusCodes.Unauthorized
       responseAs[String] shouldEqual "The resource requires authentication, which was not supplied with the request"
-      header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", Some("secure site"), Map("charset" → "UTF-8"))
+      header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", Some("secure site"), Map("charset" -> "UTF-8"))
     }
 
     val validCredentials = BasicHttpCredentials("John", "p4ssw0rd")
@@ -140,7 +141,7 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
       route ~> check {
         status shouldEqual StatusCodes.Unauthorized
         responseAs[String] shouldEqual "The supplied authentication is invalid"
-        header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", Some("secure site"), Map("charset" → "UTF-8"))
+        header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", Some("secure site"), Map("charset" -> "UTF-8"))
       }
     //#authenticateBasicPFAsync-0
   }
@@ -170,7 +171,7 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
     Get("/secured") ~> route ~> check {
       status shouldEqual StatusCodes.Unauthorized
       responseAs[String] shouldEqual "The resource requires authentication, which was not supplied with the request"
-      header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", Some("secure site"), Map("charset" → "UTF-8"))
+      header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", Some("secure site"), Map("charset" -> "UTF-8"))
     }
 
     val validCredentials = BasicHttpCredentials("John", "p4ssw0rd")
@@ -185,7 +186,7 @@ class SecurityDirectivesExamplesSpec extends RoutingSpec {
       route ~> check {
         status shouldEqual StatusCodes.Unauthorized
         responseAs[String] shouldEqual "The supplied authentication is invalid"
-        header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", Some("secure site"), Map("charset" → "UTF-8"))
+        header[`WWW-Authenticate`].get.challenges.head shouldEqual HttpChallenge("Basic", Some("secure site"), Map("charset" -> "UTF-8"))
       }
     //#authenticateBasicAsync-0
   }

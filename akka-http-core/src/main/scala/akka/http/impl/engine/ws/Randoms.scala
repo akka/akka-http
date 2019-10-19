@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -13,7 +13,7 @@ import akka.annotation.InternalApi
 @InternalApi
 private[http] object Randoms {
   /** A factory that creates SecureRandom instances */
-  private[http] case object SecureRandomInstances extends (() ⇒ Random) {
+  private[http] case object SecureRandomInstances extends (() => Random) {
     override def apply(): Random = new SecureRandom()
   }
 }

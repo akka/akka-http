@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.testkit
@@ -33,13 +33,13 @@ import scala.annotation.varargs
 abstract class TestRouteResult(_result: Future[RouteResult], awaitAtMost: FiniteDuration)(implicit ec: ExecutionContext, materializer: Materializer) {
 
   private def _response = _result.awaitResult(awaitAtMost) match {
-    case scaladsl.server.RouteResult.Complete(r)          ⇒ r
-    case scaladsl.server.RouteResult.Rejected(rejections) ⇒ doFail("Expected route to complete, but was instead rejected with " + rejections)
+    case scaladsl.server.RouteResult.Complete(r)          => r
+    case scaladsl.server.RouteResult.Rejected(rejections) => doFail("Expected route to complete, but was instead rejected with " + rejections)
   }
 
   private def _rejections = _result.awaitResult(awaitAtMost) match {
-    case scaladsl.server.RouteResult.Complete(r)  ⇒ doFail("Request was not rejected, response was " + r)
-    case scaladsl.server.RouteResult.Rejected(ex) ⇒ ex
+    case scaladsl.server.RouteResult.Complete(r)  => doFail("Request was not rejected, response was " + r)
+    case scaladsl.server.RouteResult.Rejected(ex) => ex
   }
 
   /**

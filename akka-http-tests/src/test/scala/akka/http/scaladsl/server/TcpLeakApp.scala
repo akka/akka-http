@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -36,7 +36,7 @@ object TcpLeakApp extends App {
         .toMat(Sink.head)(Keep.right).run())
     .last
     .onComplete {
-      result ⇒
+      result =>
         println(s"Result: $result")
         Thread.sleep(10000)
         println("===================== \n\n" + system.asInstanceOf[ActorSystemImpl].printTree + "\n\n========================")

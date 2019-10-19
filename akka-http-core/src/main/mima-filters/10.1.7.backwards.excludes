@@ -1,0 +1,56 @@
+# 2.13.0-M5 support / internals
+
+ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.SettingsCompanion")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.SettingsCompanion$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.settings.HttpsProxySettingsImpl$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.settings.ParserSettingsImpl$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.settings.ServerSettingsImpl$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.settings.PreviewServerSettingsImpl$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.settings.ClientConnectionSettingsImpl$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.scaladsl.settings.Http2ServerSettings$Http2ServerSettingsImpl$")
+
+# Changes to internals
+
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.closeRequested")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.copy")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.copy$default$4")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.this")
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext$")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.apply$default$4")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.apply")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.<init>$default$4")
+
+# FormData uses WithFixedCharset with UTF-8 instead of WithOpenCharset https://github.com/akka/akka-http/pull/2402
+# This change is binary incompatible but there's no other way to fix it.
+ProblemFilters.exclude[IncompatibleFieldTypeProblem]("akka.http.javadsl.model.MediaTypes.APPLICATION_X_WWW_FORM_URLENCODED")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.model.MediaTypes.application/x-www-form-urlencoded")
+
+# Changes to implementation internals
+ProblemFilters.exclude[Problem]("akka.http.impl.engine.parsing.*")
+
+# #2016 add new option to close connections after a period of time
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.maxConnectionLifetime")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.apply")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.copy$default$*")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.this")
+
+# Not caught by the mima version in use at the time:
+
+# Actually safe, we now promise to render to a `Seq` rather than any `Iterable`
+# for a bunch of renderers
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.model.headers.*.*Renderer")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.engine.rendering.RenderSupport.trailerRenderer")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.util.Renderer.defaultSeqRenderer")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.util.Renderer.seqRenderer")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.util.Renderer.genericSeqRenderer")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.util.Renderer.defaultSeqRenderer")
+
+# Safe, since more specific (CloseRequested rather than Object)
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.unapply")
+
+# Internal API's:
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.model.parser.*.field-names")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.curried")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.rendering.ResponseRenderingContext.tupled")

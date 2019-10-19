@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -23,10 +23,10 @@ class PrepareResponseSpec extends AkkaSpec {
     StatusCodes.OK,
     HttpProtocols.`HTTP/1.1`,
     List(),
-    StreamedEntityCreator[ParserOutput, ResponseEntity] { entityChunks ⇒
+    StreamedEntityCreator[ParserOutput, ResponseEntity] { entityChunks =>
       val chunks = entityChunks.collect {
-        case EntityChunk(chunk)      ⇒ chunk
-        case EntityStreamError(info) ⇒ throw EntityStreamException(info)
+        case EntityChunk(chunk)      => chunk
+        case EntityStreamError(info) => throw EntityStreamException(info)
       }
       HttpEntity.Chunked(ContentTypes.`application/octet-stream`, chunks)
     },

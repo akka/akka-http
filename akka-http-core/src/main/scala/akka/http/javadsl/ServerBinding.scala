@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl
@@ -93,7 +93,7 @@ class ServerBinding private[http] (delegate: akka.http.scaladsl.Http.ServerBindi
    */
   def whenTerminationSignalIssued: CompletionStage[java.time.Duration] =
     delegate.whenTerminationSignalIssued
-      .map(deadline ⇒ deadline.time.asJava)(ExecutionContexts.sameThreadExecutionContext)
+      .map(deadline => deadline.time.asJava)(ExecutionContexts.sameThreadExecutionContext)
       .toJava
 
   /**

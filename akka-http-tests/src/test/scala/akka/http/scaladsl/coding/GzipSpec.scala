@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.coding
@@ -12,7 +12,7 @@ import java.util.zip.{ ZipException, GZIPInputStream, GZIPOutputStream }
 import akka.util.ByteString
 
 class GzipSpec extends CoderSpec {
-  protected def Coder: Coder with StreamDecoder = Gzip
+  protected def Coder: Coder with StreamDecoder = Gzip.withLevel(9)
 
   protected def newDecodedInputStream(underlying: InputStream): InputStream =
     new GZIPInputStream(underlying)

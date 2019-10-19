@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server
@@ -17,7 +17,7 @@ trait Rejected extends RouteResult {
 }
 
 object RouteResults {
-  import akka.http.scaladsl.{ server ⇒ s }
+  import akka.http.scaladsl.{ server => s }
   import akka.japi.Util
   import akka.http.impl.util.JavaMapping
   import JavaMapping.Implicits._

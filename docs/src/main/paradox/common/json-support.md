@@ -7,7 +7,6 @@ See [the list of current community extensions for Akka HTTP](https://akka.io/com
 
 @@@ div { .group-java }
 
-<a id="json-jackson-support-java"></a>
 ## Jackson Support
 
 To make use of the support module for (un)marshalling from and to JSON with [Jackson], add a library dependency onto:
@@ -18,12 +17,12 @@ To make use of the support module for (un)marshalling from and to JSON with [Jac
   version="$project.version$"
 }
 
-Use `akka.http.javadsl.marshallers.jackson.Jackson.unmarshaller(T.class)` to create an @unidoc[Unmarshaller[HttpEntity,T]] which expects the request
+Use `akka.http.javadsl.marshallers.jackson.Jackson.unmarshaller(T.class)` to create an @apidoc[Unmarshaller[HttpEntity,T]] which expects the request
 body (HttpEntity) to be of type `application/json` and converts it to `T` using Jackson.
 
 @@snip [PetStoreExample.java]($akka-http$/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/petstore/PetStoreExample.java) { #imports #unmarshall }
 
-Use `akka.http.javadsl.marshallers.jackson.Jackson.marshaller(T.class)` to create a @unidoc[Marshaller[T,RequestEntity]] which can be used with
+Use `akka.http.javadsl.marshallers.jackson.Jackson.marshaller(T.class)` to create a @apidoc[Marshaller[T,RequestEntity]] which can be used with
 `RequestContext.complete` or `RouteDirectives.complete` to convert a POJO to an HttpResponse.
 
 @@snip [PetStoreExample.java]($akka-http$/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/petstore/PetStoreExample.java) { #imports #marshall }

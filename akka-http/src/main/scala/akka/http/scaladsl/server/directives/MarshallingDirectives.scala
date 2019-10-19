@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -8,8 +8,9 @@ package directives
 import scala.concurrent.Promise
 import scala.util.{ Failure, Success }
 import akka.http.scaladsl.marshalling.ToResponseMarshaller
-import akka.http.scaladsl.unmarshalling.{ Unmarshaller, FromRequestUnmarshaller }
+import akka.http.scaladsl.unmarshalling.{ FromRequestUnmarshaller, Unmarshaller }
 import akka.http.impl.util._
+import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
 
 /**
  * @groupname marshalling Marshalling directives
@@ -28,16 +29,16 @@ trait MarshallingDirectives {
    * @group marshalling
    */
   def entity[T](um: FromRequestUnmarshaller[T]): Directive1[T] =
-    extractRequestContext.flatMap[Tuple1[T]] { ctx ⇒
+    extractRequestContext.flatMap[Tuple1[T]] { ctx =>
       import ctx.executionContext
       import ctx.materializer
       onComplete(um(ctx.request)) flatMap {
-        case Success(value) ⇒ provide(value)
-        case Failure(RejectionError(r)) ⇒ reject(r)
-        case Failure(Unmarshaller.NoContentException) ⇒ reject(RequestEntityExpectedRejection)
-        case Failure(Unmarshaller.UnsupportedContentTypeException(x)) ⇒ reject(UnsupportedRequestContentTypeRejection(x))
-        case Failure(x: IllegalArgumentException) ⇒ reject(ValidationRejection(x.getMessage.nullAsEmpty, Some(x)))
-        case Failure(x) ⇒ reject(MalformedRequestContentRejection(x.getMessage.nullAsEmpty, x))
+        case Success(value)                              => provide(value)
+        case Failure(RejectionError(r))                  => reject(r)
+        case Failure(Unmarshaller.NoContentException)    => reject(RequestEntityExpectedRejection)
+        case Failure(x: UnsupportedContentTypeException) => reject(UnsupportedRequestContentTypeRejection(x.supported, x.actualContentType))
+        case Failure(x: IllegalArgumentException)        => reject(ValidationRejection(x.getMessage.nullAsEmpty, Some(x)))
+        case Failure(x)                                  => reject(MalformedRequestContentRejection(x.getMessage.nullAsEmpty, x))
       }
     } & cancelRejections(RequestEntityExpectedRejection.getClass, classOf[UnsupportedRequestContentTypeRejection])
 
@@ -54,12 +55,12 @@ trait MarshallingDirectives {
    *
    * @group marshalling
    */
-  def completeWith[T](marshaller: ToResponseMarshaller[T])(inner: (T ⇒ Unit) ⇒ Unit): Route =
-    extractRequestContext { ctx ⇒
+  def completeWith[T](marshaller: ToResponseMarshaller[T])(inner: (T => Unit) => Unit): Route =
+    extractRequestContext { ctx =>
       implicit val m = marshaller
       complete {
         val promise = Promise[T]()
-        inner(promise.success(_))
+        inner(promise.success)
         promise.future
       }
     }
@@ -77,8 +78,8 @@ trait MarshallingDirectives {
    *
    * @group marshalling
    */
-  def handleWith[A, B](f: A ⇒ B)(implicit um: FromRequestUnmarshaller[A], m: ToResponseMarshaller[B]): Route =
-    entity(um) { a ⇒ complete(f(a)) }
+  def handleWith[A, B](f: A => B)(implicit um: FromRequestUnmarshaller[A], m: ToResponseMarshaller[B]): Route =
+    entity(um) { a => complete(f(a)) }
 }
 
 object MarshallingDirectives extends MarshallingDirectives

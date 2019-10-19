@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -163,7 +163,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
             }
           }
         } catch {
-          case err: AssertionError ⇒ throw new AssertionError(s"Failure for prefix $prefix", err)
+          case err: AssertionError => throw new AssertionError(s"Failure for prefix $prefix", err)
         }
 
       shouldReject("../")
@@ -245,9 +245,9 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       def runCheck() =
         Get() ~> route ~> check {
           mediaType shouldEqual `text/html`
-          forAtLeast(1, headers) { h ⇒
+          forAtLeast(1, headers) { h =>
             inside(h) {
-              case `Last-Modified`(dt) ⇒
+              case `Last-Modified`(dt) =>
                 DateTime(2011, 7, 1) should be < dt
                 dt.clicks should be < System.currentTimeMillis()
             }
@@ -508,7 +508,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
             }
           }
         } catch {
-          case err: AssertionError ⇒ throw new AssertionError(s"Failure for prefix $prefix", err)
+          case err: AssertionError => throw new AssertionError(s"Failure for prefix $prefix", err)
         }
 
       shouldReject("../") // resolved

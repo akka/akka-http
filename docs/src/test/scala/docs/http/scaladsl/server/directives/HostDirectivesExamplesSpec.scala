@@ -1,15 +1,16 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model._
-import docs.http.scaladsl.server.RoutingSpec
 import headers._
 import StatusCodes._
+import akka.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
-class HostDirectivesExamplesSpec extends RoutingSpec {
+class HostDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   "extractHost" in {
     //#extractHost
@@ -69,12 +70,14 @@ class HostDirectivesExamplesSpec extends RoutingSpec {
   "using-regex" in {
     //#using-regex
     val route =
-      host("api|rest".r) { prefix =>
-        complete(s"Extracted prefix: $prefix")
-      } ~
+      concat(
+        host("api|rest".r) { prefix =>
+          complete(s"Extracted prefix: $prefix")
+        },
         host("public.(my|your)company.com".r) { captured =>
           complete(s"You came through $captured company")
         }
+      )
 
     // tests:
     Get() ~> Host("api.company.com") ~> route ~> check {

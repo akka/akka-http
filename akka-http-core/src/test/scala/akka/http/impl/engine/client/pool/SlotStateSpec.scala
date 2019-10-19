@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client.pool
@@ -56,7 +56,7 @@ class SlotStateSpec extends AkkaSpec {
       state should be(Idle)
 
       state = state.onConnectionCompleted(context)
-      state should be(Unconnected)
+      state should be(ToBeClosed)
     }
 
     "allow postponing completing the request until just after the response was received" in {
@@ -194,7 +194,7 @@ class SlotStateSpec extends AkkaSpec {
     override def warning(message: String, arg1: AnyRef): Unit =
       log.warning(message, arg1)
 
-    def expectOpenConnection[T](cb: ⇒ T) = {
+    def expectOpenConnection[T](cb: => T) = {
       connectionClosed should be(true)
       connectionOpenRequested should be(false)
 

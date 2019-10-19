@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.testkit
@@ -26,7 +26,7 @@ trait MarshallingTestUtils {
     Await.result(Marshal(value).to[HttpEntity].flatMap(_.toStrict(marshallingTimeout)), 2 * marshallingTimeout)
 
   def marshalToResponseForRequestAccepting[T: ToResponseMarshaller](value: T, mediaRanges: MediaRange*)(implicit ec: ExecutionContext): HttpResponse =
-    marshalToResponse(value, HttpRequest(headers = Accept(mediaRanges: _*) :: Nil))
+    marshalToResponse(value, HttpRequest(headers = Accept(mediaRanges.toList) :: Nil))
 
   def marshalToResponse[T: ToResponseMarshaller](value: T, request: HttpRequest = HttpRequest())(implicit ec: ExecutionContext): HttpResponse =
     Await.result(Marshal(value).toResponseFor(request), marshallingTimeout)

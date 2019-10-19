@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model
@@ -63,7 +63,7 @@ class SerializabilitySpec extends WordSpec with Matchers {
     }
   }
 
-  def beSerializable: Matcher[AnyRef] = Matcher[AnyRef] { value ⇒
+  def beSerializable: Matcher[AnyRef] = Matcher[AnyRef] { value =>
     val result = Try(tryToSerialize(value))
     MatchResult(
       result.isSuccess,

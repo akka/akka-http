@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model.headers
 
 import akka.http.impl.util.{ Rendering, ValueRenderable }
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 
 sealed abstract class RangeUnit extends jm.headers.RangeUnit with ValueRenderable {
   def name: String

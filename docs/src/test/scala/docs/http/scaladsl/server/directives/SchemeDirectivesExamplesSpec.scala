@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
-import docs.http.scaladsl.server.RoutingSpec
+import akka.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
-class SchemeDirectivesExamplesSpec extends RoutingSpec {
+class SchemeDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "example-1" in {
     //#example-1
     val route =
@@ -27,14 +28,16 @@ class SchemeDirectivesExamplesSpec extends RoutingSpec {
     import StatusCodes.MovedPermanently
 
     val route =
-      scheme("http") {
-        extract(_.request.uri) { uri =>
-          redirect(uri.copy(scheme = "https"), MovedPermanently)
-        }
-      } ~
+      concat(
+        scheme("http") {
+          extract(_.request.uri) { uri =>
+            redirect(uri.copy(scheme = "https"), MovedPermanently)
+          }
+        },
         scheme("https") {
           complete(s"Safe and secure!")
         }
+      )
 
     // tests:
     Get("http://www.example.com/hello") ~> route ~> check {

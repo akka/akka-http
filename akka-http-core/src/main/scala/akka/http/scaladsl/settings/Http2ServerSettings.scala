@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.settings
@@ -19,7 +19,7 @@ private[http] trait Http2InternalServerSettings
 
 @ApiMayChange
 @DoNotInherit
-trait Http2ServerSettings extends javadsl.settings.Http2ServerSettings { self: Http2ServerSettings.Http2ServerSettingsImpl ⇒
+trait Http2ServerSettings extends javadsl.settings.Http2ServerSettings { self: Http2ServerSettings.Http2ServerSettingsImpl =>
   def requestEntityChunkSize: Int
   def withRequestEntityChunkSize(newValue: Int): Http2ServerSettings = copy(requestEntityChunkSize = newValue)
 
@@ -31,6 +31,12 @@ trait Http2ServerSettings extends javadsl.settings.Http2ServerSettings { self: H
 
   def maxConcurrentStreams: Int
   override def withMaxConcurrentStreams(newValue: Int): Http2ServerSettings = copy(maxConcurrentStreams = newValue)
+
+  def outgoingControlFrameBufferSize: Int
+  override def withOutgoingControlFrameBufferSize(newValue: Int): Http2ServerSettings = copy(outgoingControlFrameBufferSize = newValue)
+
+  def logFrames: Boolean
+  override def withLogFrames(shouldLog: Boolean): Http2ServerSettings = copy(logFrames = shouldLog)
 
   @InternalApi
   private[http] def internalSettings: Option[Http2InternalServerSettings]
@@ -49,19 +55,24 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
     requestEntityChunkSize:            Int,
     incomingConnectionLevelBufferSize: Int,
     incomingStreamLevelBufferSize:     Int,
+    outgoingControlFrameBufferSize:    Int,
+    logFrames:                         Boolean,
     internalSettings:                  Option[Http2InternalServerSettings])
     extends Http2ServerSettings {
     require(requestEntityChunkSize > 0, "request-entity-chunk-size must be > 0")
     require(incomingConnectionLevelBufferSize > 0, "incoming-connection-level-buffer-size must be > 0")
     require(incomingStreamLevelBufferSize > 0, "incoming-stream-level-buffer-size must be > 0")
+    require(outgoingControlFrameBufferSize > 0, "outgoing-control-frame-buffer-size must be > 0")
   }
 
-  private[http] object Http2ServerSettingsImpl extends akka.http.impl.util.SettingsCompanion[Http2ServerSettingsImpl]("akka.http.server.http2") {
+  private[http] object Http2ServerSettingsImpl extends akka.http.impl.util.SettingsCompanionImpl[Http2ServerSettingsImpl]("akka.http.server.http2") {
     def fromSubConfig(root: Config, c: Config): Http2ServerSettingsImpl = Http2ServerSettingsImpl(
-      maxConcurrentStreams = c getInt "max-concurrent-streams",
-      requestEntityChunkSize = c getIntBytes "request-entity-chunk-size",
-      incomingConnectionLevelBufferSize = c getIntBytes "incoming-connection-level-buffer-size",
-      incomingStreamLevelBufferSize = c getIntBytes "incoming-stream-level-buffer-size",
+      maxConcurrentStreams = c.getInt("max-concurrent-streams"),
+      requestEntityChunkSize = c.getIntBytes("request-entity-chunk-size"),
+      incomingConnectionLevelBufferSize = c.getIntBytes("incoming-connection-level-buffer-size"),
+      incomingStreamLevelBufferSize = c.getIntBytes("incoming-stream-level-buffer-size"),
+      outgoingControlFrameBufferSize = c.getIntBytes("outgoing-control-frame-buffer-size"),
+      logFrames = c.getBoolean("log-frames"),
       None // no possibility to configure internal settings with config
     )
   }

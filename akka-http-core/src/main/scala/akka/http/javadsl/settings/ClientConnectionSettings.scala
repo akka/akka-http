@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.settings
@@ -27,7 +27,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class ClientConnectionSettings private[akka] () { self: ClientConnectionSettingsImpl ⇒
+abstract class ClientConnectionSettings private[akka] () { self: ClientConnectionSettingsImpl =>
 
   /* JAVA APIs */
   final def getConnectingTimeout: FiniteDuration = connectingTimeout

@@ -1,6 +1,6 @@
 # Encoding / Decoding
 
-The [HTTP spec](http://tools.ietf.org/html/rfc7231#section-3.1.2.1) defines a `Content-Encoding` header, which signifies whether the entity body of an HTTP message is
+The [HTTP spec](https://tools.ietf.org/html/rfc7231#section-3.1.2.1) defines a `Content-Encoding` header, which signifies whether the entity body of an HTTP message is
 "encoded" and, if so, by which algorithm. The only commonly used content encodings are compression algorithms.
 
 Currently, Akka HTTP supports the compression and decompression of HTTP requests and responses with the `gzip` or

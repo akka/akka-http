@@ -12,7 +12,7 @@ from a background with non-"streaming first" HTTP Clients.
 
 ## Opening HTTP Connections
 
-With the connection-level API you open a new HTTP connection to a target endpoint by materializing a @unidoc[Flow]
+With the connection-level API you open a new HTTP connection to a target endpoint by materializing a @apidoc[Flow]
 returned by the @scala[`Http().outgoingConnection(...)`]@java[`Http.get(system).outgoingConnection(...)`] method.
 Here is an example:
 
@@ -32,7 +32,7 @@ respective exception.
 
 ## Request-Response Cycle
 
-Once the connection flow has been materialized it is ready to consume @unidoc[HttpRequest] instances from the source it is
+Once the connection flow has been materialized it is ready to consume @apidoc[HttpRequest] instances from the source it is
 attached to. Each request is sent across the connection and incoming responses dispatched to the downstream pipeline.
 Of course and as always, back-pressure is adequately maintained across all parts of the
 connection. This means that, if the downstream pipeline consuming the HTTP responses is slow, the request source will
@@ -40,11 +40,6 @@ eventually be slowed down in sending requests.
 
 Any errors occurring on the underlying connection are surfaced as exceptions terminating the response stream (and
 canceling the request source).
-
-Note that, if the source produces subsequent requests before the prior responses have arrived, these requests will be
-[pipelined](http://en.wikipedia.org/wiki/HTTP_pipelining) across the connection, which is something that is not supported by all HTTP servers.
-Also, if the server closes the connection before responses to all requests have been received this will result in the
-response stream being terminated with a truncation error.
 
 ## Closing Connections
 

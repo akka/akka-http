@@ -37,7 +37,7 @@ You can join these groups and chats to discuss and ask Akka related questions:
 - Issue tracker: [![github: akka/akka-http][github-issues-badge]][github-issues] (Please use the issue
   tracker for bugs and reasonable feature requests. Please ask usage questions on the other channels.)
 
-All of our forums, chat rooms, and issue trackers are governed by our [Code Of Conduct](CODE_OF_CONDUCT.md).
+All of our forums, chat rooms, and issue trackers are governed by our [Code Of Conduct](https://www.lightbend.com/conduct).
 
 In addition to that, you may enjoy following:
 
@@ -51,7 +51,7 @@ In addition to that, you may enjoy following:
 [gitter-user-badge]:   https://img.shields.io/badge/gitter%3A-akka%2Fakka-blue.svg?style=flat-square
 [gitter-user]:         https://gitter.im/akka/akka
 [stackoverflow-badge]: https://img.shields.io/badge/stackoverflow%3A-akka--http-blue.svg?style=flat-square
-[stackoverflow]:       http://stackoverflow.com/questions/tagged/akka-http
+[stackoverflow]:       https://stackoverflow.com/questions/tagged/akka-http
 [github-issues-badge]: https://img.shields.io/badge/github%3A-issues-blue.svg?style=flat-square
 [github-issues]:       https://github.com/akka/akka-http/issues
 [scaladex-badge]:      https://index.scala-lang.org/count.svg?q=dependencies:akka/akka-http*&subject=scaladex:&color=blue&style=flat-square

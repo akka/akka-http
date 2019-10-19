@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.testkit
 
 import akka.http.javadsl.model.ws.Message
 import akka.http.javadsl.model.{ HttpRequest, Uri }
-import akka.http.scaladsl.{ model ⇒ sm }
+import akka.http.scaladsl.{ model => sm }
 import akka.stream.javadsl.Flow
 
-import akka.http.scaladsl.{ testkit ⇒ st }
+import akka.http.scaladsl.{ testkit => st }
 
 import akka.http.impl.util.JavaMapping.Implicits._
 import scala.collection.JavaConverters._
@@ -28,7 +28,7 @@ trait WSTestRequestBuilding {
     subprotocols:      java.util.List[String]): HttpRequest = {
 
     val handler = scaladsl.Flow[sm.ws.Message].map(_.asJava).via(clientSideHandler).map(_.asScala)
-    st.WSTestRequestBuilding.WS(uri.asScala, handler, subprotocols.asScala)(materializer)
+    st.WSTestRequestBuilding.WS(uri.asScala, handler, subprotocols.asScala.toSeq)(materializer)
   }
 
 }

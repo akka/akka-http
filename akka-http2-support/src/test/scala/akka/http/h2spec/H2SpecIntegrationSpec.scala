@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.h2spec
@@ -24,10 +24,11 @@ class H2SpecIntegrationSpec extends AkkaSpec(
        loglevel = DEBUG
        loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
        http.server.log-unencrypted-network-bytes = off
-        
+       http.server.http2.log-frames = on
+
        actor.serialize-creators = off
        actor.serialize-messages = off
-       
+
        stream.materializer.debug.fuzzing-mode = off
      }
   """) with Directives with ScalaFutures with WithLogCapturing {
@@ -37,16 +38,14 @@ class H2SpecIntegrationSpec extends AkkaSpec(
 
   override def expectedTestDuration = 5.minutes // because slow jenkins, generally finishes below 1 or 2 minutes
 
-  val echo = (req: HttpRequest) ⇒ {
-    req.entity.toStrict(1.second.dilated).map { entity ⇒
+  val echo = (req: HttpRequest) => {
+    req.entity.toStrict(5.second.dilated).map { entity =>
       HttpResponse().withEntity(HttpEntity(entity.data))
     }
   }
-  val port = SocketUtil.temporaryServerAddress().getPort
 
-  val binding = {
-    Http2().bindAndHandleAsync(echo, "127.0.0.1", port, ExampleHttpContexts.exampleServerContext).futureValue
-  }
+  val binding = Http2().bindAndHandleAsync(echo, "127.0.0.1", 0, ExampleHttpContexts.exampleServerContext).futureValue
+  val port = binding.localAddress.getPort
 
   "H2Spec" must {
 
@@ -94,6 +93,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
       "5.1.1",
       "5.5",
       "6.1",
+      "6.3",
       "6.5.2",
       "6.9",
       "6.9.1",
@@ -122,10 +122,10 @@ class H2SpecIntegrationSpec extends AkkaSpec(
     } else*/ {
       val testNamesWithSectionNumbers =
         testCases.zip(testCases.map(_.trim).filterNot(_.isEmpty)
-          .map(l ⇒ l.take(l.lastIndexOf('.'))))
+          .map(l => l.take(l.lastIndexOf('.'))))
 
       testNamesWithSectionNumbers foreach {
-        case (name, sectionNr) ⇒
+        case (name, sectionNr) =>
           if (!disabledTestCases.contains(sectionNr))
             if (pendingTestCases.contains(sectionNr))
               s"pass rule: $name" ignore {
@@ -148,16 +148,23 @@ class H2SpecIntegrationSpec extends AkkaSpec(
       val stdout = new StringBuffer()
       val stderr = new StringBuffer()
 
-      val command = s"$executable -k -t -p $port -j $junitOutput" + specSectionNumber.map(" -s " + _).getOrElse("")
-      println(s"exec: $command")
+      val command = Seq( // need to use Seq[String] form for command because executable path may contain spaces
+        executable,
+        "-k", "-t",
+        "-p", port.toString,
+        "-j", junitOutput.getPath
+      ) ++
+        specSectionNumber.toList.flatMap(number => Seq("-s", number))
+
+      log.debug(s"Executing h2spec: $command")
       val aggregateTckLogs = ProcessLogger(
-        out ⇒ {
+        out => {
           if (out.contains("All tests passed")) ()
           else if (out.contains("tests, ")) ()
           else if (out.contains("===========================================")) keepAccumulating.set(false)
           else if (keepAccumulating.get) stdout.append(out + Console.RESET + "\n  ")
         },
-        err ⇒ stderr.append(err)
+        err => stderr.append(err)
       )
 
       // p.exitValue blocks until the process is terminated

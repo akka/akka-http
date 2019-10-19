@@ -1,20 +1,20 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
 
 import akka.annotation.InternalApi
-
-import scala.concurrent.{ ExecutionContextExecutor, Future }
-import akka.stream.{ ActorMaterializerHelper, Materializer }
 import akka.event.LoggingAdapter
-import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
 import akka.http.scaladsl.marshalling.{ Marshal, ToResponseMarshallable }
-import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
+import akka.stream.{ ActorMaterializerHelper, Materializer }
+
+import scala.concurrent.{ ExecutionContextExecutor, Future }
 
 /**
  * INTERNAL API
@@ -40,11 +40,11 @@ private[http] class RequestContextImpl(
 
   override def complete(trm: ToResponseMarshallable): Future[RouteResult] =
     trm(request)(executionContext)
-      .fast.map(res ⇒ RouteResult.Complete(res))(executionContext)
+      .fast.map(res => RouteResult.Complete(res))(executionContext)
       .fast.recover {
-        case Marshal.UnacceptableResponseContentTypeException(supported) ⇒
+        case Marshal.UnacceptableResponseContentTypeException(supported) =>
           RouteResult.Rejected(UnacceptedResponseContentTypeRejection(supported) :: Nil)
-        case RejectionError(rej) ⇒
+        case RejectionError(rej) =>
           RouteResult.Rejected(rej :: Nil)
       }(executionContext)
 
@@ -57,8 +57,8 @@ private[http] class RequestContextImpl(
       status = redirectionType,
       headers = headers.Location(uri) :: Nil,
       entity = redirectionType.htmlTemplate match {
-        case ""       ⇒ HttpEntity.Empty
-        case template ⇒ HttpEntity(ContentTypes.`text/html(UTF-8)`, template format uri)
+        case ""       => HttpEntity.Empty
+        case template => HttpEntity(ContentTypes.`text/html(UTF-8)`, template format uri)
       }))
     //#red-impl
   }
@@ -84,26 +84,26 @@ private[http] class RequestContextImpl(
   override def withParserSettings(parserSettings: ParserSettings): RequestContext =
     if (parserSettings != this.parserSettings) copy(parserSettings = parserSettings) else this
 
-  override def mapRequest(f: HttpRequest ⇒ HttpRequest): RequestContext =
+  override def mapRequest(f: HttpRequest => HttpRequest): RequestContext =
     copy(request = f(request))
 
   override def withUnmatchedPath(path: Uri.Path): RequestContext =
     if (path != unmatchedPath) copy(unmatchedPath = path) else this
 
-  override def mapUnmatchedPath(f: Uri.Path ⇒ Uri.Path): RequestContext =
+  override def mapUnmatchedPath(f: Uri.Path => Uri.Path): RequestContext =
     copy(unmatchedPath = f(unmatchedPath))
 
   override def withAcceptAll: RequestContext = request.header[headers.Accept] match {
-    case Some(accept @ headers.Accept(ranges)) if !accept.acceptsAll ⇒
+    case Some(accept @ headers.Accept(ranges)) if !accept.acceptsAll =>
       mapRequest(_.mapHeaders(_.map {
-        case `accept` ⇒
+        case `accept` =>
           val acceptAll =
-            if (ranges.exists(_.isWildcard)) ranges.map(r ⇒ if (r.isWildcard) MediaRanges.`*/*;q=MIN` else r)
+            if (ranges.exists(_.isWildcard)) ranges.map(r => if (r.isWildcard) MediaRanges.`*/*;q=MIN` else r)
             else ranges :+ MediaRanges.`*/*;q=MIN`
           accept.copy(mediaRanges = acceptAll)
-        case x ⇒ x
+        case x => x
       }))
-    case _ ⇒ this
+    case _ => this
   }
 
   private def copy(

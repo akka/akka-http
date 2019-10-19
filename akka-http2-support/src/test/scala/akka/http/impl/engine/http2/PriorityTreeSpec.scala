@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -225,14 +225,14 @@ class PriorityTreeSpec extends WordSpec with Matchers {
   }
 
   def printLike(resultingTree: String): Matcher[PriorityTree] =
-    Matcher { tree ⇒
+    Matcher { tree =>
       val WithPotentialEndOfLineWhiteSpace = """(.*?)\s*""".r
       // The tree printer sometimes inserts blanks.
       def trimLines(str: String): String =
         str
           .split('\n')
           .map {
-            case WithPotentialEndOfLineWhiteSpace(line) ⇒ line
+            case WithPotentialEndOfLineWhiteSpace(line) => line
           }
           .mkString("\n")
           .trim

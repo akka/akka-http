@@ -63,7 +63,7 @@ One example of a predefined directive relying on `map` is the @github[optionalHe
 The tmap modifier has this signature (somewhat simplified):
 
 ```scala
-def tmap[R](f: L ⇒ R): Directive[Out]
+def tmap[R](f: L => R): Directive[Out]
 ```
 
 It can be used to transform the `Tuple` of extractions into another `Tuple`.
@@ -86,7 +86,7 @@ In order to do the latter you need `flatMap` or `tflatMap`. The `tflatMap`
 modifier has this signature:
 
 ```scala
-def tflatMap[R: Tuple](f: L ⇒ Directive[R]): Directive[R]
+def tflatMap[R: Tuple](f: L => Directive[R]): Directive[R]
 ```
 
 The given function produces a new directive depending on the Tuple of extractions
@@ -119,7 +119,7 @@ All requests, for which the predicate is false are rejected, all others pass unc
 The signature of require is this:
 
 ```scala
-def require(predicate: T ⇒ Boolean, rejections: Rejection*): Directive0
+def require(predicate: T => Boolean, rejections: Rejection*): Directive0
 ```
 
 One example of a predefined directive relying on require is the first overload of the host directive:
@@ -139,7 +139,7 @@ directive and, instead of rejecting, produce an alternative directive with the s
 The signature of recover is this:
 
 ```scala
-def recover[R >: L: Tuple](recovery: Seq[Rejection] ⇒ Directive[R]): Directive[R] =
+def recover[R >: L: Tuple](recovery: Seq[Rejection] => Directive[R]): Directive[R] =
 ```
 
 In many cases the very similar `recoverPF` modifier might be little bit
@@ -153,6 +153,18 @@ def recoverPF[R >: L: Tuple](
 One example of a predefined directive relying `recoverPF` is the `optionalHeaderValue` directive:
 
 @@signature [HeaderDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/HeaderDirectives.scala) { #optionalHeaderValue }
+
+### collect and tcollect
+
+With collect and tcollect you can filter and map in one go, it mimics the collect known from the regular Scala collections.
+
+Here is an example, first via map and filter and finally using collect:
+
+```
+parameter("a".as[Int]).filter(x => x != 0, MissingQueryParamRejection("a")).map(x => 42 / x)
+
+parameter("a".as[Int]).collect({ case x if x != 0 => 42 / x }, MissingQueryParamRejection("a"))
+```
 
 ## Directives from Scratch
 
@@ -182,7 +194,7 @@ type Directive1[T] = Directive[Tuple1[T]]
 ```
 
 A `Directive[(String, Int)]` extracts a `String` value and an `Int` value
-(like a `parameters('a.as[String], 'b.as[Int])` directive). Such a directive can be defined to extract the 
+(like a `parameters('a.as[String], 'b.as[Int])` directive). Such a directive can be defined to extract the
 hostname and port of a request:
 
 @@snip [CustomDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/CustomDirectivesExamplesSpec.scala) { #scratch-1 }

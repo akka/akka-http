@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server.directives
@@ -7,6 +7,7 @@ package akka.http.scaladsl.server.directives
 import akka.NotUsed
 import akka.http.scaladsl.common.EntityStreamingSupport
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
 import akka.http.scaladsl.unmarshalling.{ Unmarshaller, _ }
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.scaladsl.{ Flow, Keep, Source }
@@ -60,19 +61,19 @@ trait FramedEntityStreamingDirectives extends MarshallingDirectives {
 
   // format: OFF
   private final def asSourceOfInternal[T](um: Unmarshaller[ByteString, T], support: EntityStreamingSupport): RequestToSourceUnmarshaller[T] =
-    Unmarshaller.withMaterializer[HttpRequest, Source[T, NotUsed]] { implicit ec ⇒ implicit mat ⇒ req ⇒
+    Unmarshaller.withMaterializer[HttpRequest, Source[T, NotUsed]] { implicit ec => implicit mat => req =>
       val entity = req.entity
       if (support.supported.matches(entity.contentType)) {
         val bytes = entity.dataBytes
         val frames = bytes.via(support.framingDecoder)
-        val marshalling = 
+        val marshalling =
           if (support.unordered) Flow[ByteString].mapAsyncUnordered(support.parallelism)(bs => um(bs)(ec, mat))
           else Flow[ByteString].mapAsync(support.parallelism)(bs => um(bs)(ec, mat))
-        
+
         val elements = frames.viaMat(marshalling)(Keep.right)
         FastFuture.successful(elements)
 
-      } else FastFuture.failed(Unmarshaller.UnsupportedContentTypeException(support.supported))
+      } else FastFuture.failed(UnsupportedContentTypeException(Some(entity.contentType), support.supported))
     }
   // format: ON
 

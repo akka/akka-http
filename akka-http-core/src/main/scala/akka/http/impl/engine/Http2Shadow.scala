@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine
@@ -22,7 +22,7 @@ private[akka] object Http2Shadow {
   type ShadowHttp2 = AnyRef
   type ShadowHttp2Ext = {
     def bindAndHandleAsync(
-      handler:   HttpRequest ⇒ Future[HttpResponse],
+      handler:   HttpRequest => Future[HttpResponse],
       interface: String, port: Int,
       httpContext: ConnectionContext,
       settings:    ServerSettings,
@@ -31,7 +31,7 @@ private[akka] object Http2Shadow {
   }
 
   def bindAndHandleAsync(
-    handler:   HttpRequest ⇒ Future[HttpResponse],
+    handler:   HttpRequest => Future[HttpResponse],
     interface: String, port: Int,
     httpContext: ConnectionContext,
     settings:    ServerSettings,
@@ -56,7 +56,7 @@ private[akka] object Http2Shadow {
         parallelism,
         log)(fm)
     } catch {
-      case ex: Throwable ⇒ throw Http2SupportNotPresentException(ex)
+      case ex: Throwable => throw Http2SupportNotPresentException(ex)
     }
   }
 

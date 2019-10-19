@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server.util
@@ -12,7 +12,7 @@ import akka.http.scaladsl.server._
  */
 abstract class ApplyConverter[L] {
   type In
-  def apply(f: In): L ⇒ Route
+  def apply(f: In): L => Route
 }
 
 object ApplyConverter extends ApplyConverterInstances

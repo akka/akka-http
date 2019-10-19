@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -36,7 +36,7 @@ private[http] trait ByteStringSinkProbe {
   def request(n: Long): Unit
   def cancel(): Unit
 
-  def within[T](max: FiniteDuration)(f: ⇒ T): T
+  def within[T](max: FiniteDuration)(f: => T): T
 }
 
 /** INTERNAL API */
@@ -97,6 +97,6 @@ private[http] object ByteStringSinkProbe {
       def request(n: Long): Unit = probe.request(n)
       def cancel(): Unit = probe.cancel()
 
-      def within[T](max: FiniteDuration)(f: ⇒ T): T = probe.within(max)(f)
+      def within[T](max: FiniteDuration)(f: => T): T = probe.within(max)(f)
     }
 }

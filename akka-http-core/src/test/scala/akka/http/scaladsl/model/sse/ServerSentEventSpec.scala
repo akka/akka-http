@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http
@@ -8,10 +8,10 @@ package model
 package sse
 
 import akka.util.ByteString
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{ Matchers, WordSpec }
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
-final class ServerSentEventSpec extends WordSpec with Matchers with GeneratorDrivenPropertyChecks {
+final class ServerSentEventSpec extends WordSpec with Matchers with ScalaCheckDrivenPropertyChecks {
 
   "Creating a ServerSentEvent" should {
     "throw an IllegalArgumentException if type contains a \n or \r character" in {
@@ -25,7 +25,7 @@ final class ServerSentEventSpec extends WordSpec with Matchers with GeneratorDri
     }
 
     "throw an IllegalArgumentException if retry is not a positive number" in {
-      forAll("retry") { (n: Int) ⇒
+      forAll("retry") { (n: Int) =>
         whenever(n <= 0) {
           an[IllegalArgumentException] should be thrownBy ServerSentEvent("data", n)
         }

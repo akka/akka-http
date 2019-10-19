@@ -1,8 +1,11 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
+
+import akka.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
 import scala.concurrent.Future
 
@@ -24,36 +27,37 @@ import akka.http.scaladsl.server.ValidationRejection
 //#reject-examples
 
 import akka.http.scaladsl.server.Route
-import docs.http.scaladsl.server.RoutingSpec
 import akka.testkit.EventFilter
 
-class RouteDirectivesExamplesSpec extends RoutingSpec {
+class RouteDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   "complete-examples" in {
     //#complete-examples
     val route =
-      path("a") {
-        complete(HttpResponse(entity = "foo"))
-      } ~
+      concat(
+        path("a") {
+          complete(HttpResponse(entity = "foo"))
+        },
         path("b") {
           complete(StatusCodes.OK)
-        } ~
+        },
         path("c") {
           complete(StatusCodes.Created -> "bar")
-        } ~
+        },
         path("d") {
           complete(201 -> "bar")
-        } ~
+        },
         path("e") {
           complete(StatusCodes.Created, List(`Content-Type`(`text/plain(UTF-8)`)), "bar")
-        } ~
+        },
         path("f") {
           complete(201, List(`Content-Type`(`text/plain(UTF-8)`)), "bar")
-        } ~
+        },
         path("g") {
           complete(Future { StatusCodes.Created -> "bar" })
-        } ~
+        },
         (path("h") & complete("baz")) // `&` also works with `complete` as the 2nd argument
+      )
 
     // tests:
     Get("/a") ~> route ~> check {
@@ -103,17 +107,19 @@ class RouteDirectivesExamplesSpec extends RoutingSpec {
   "reject-examples" in {
     //#reject-examples
     val route =
-      path("a") {
-        reject // don't handle here, continue on
-      } ~
+      concat(
+        path("a") {
+          reject // don't handle here, continue on
+        },
         path("a") {
           complete("foo")
-        } ~
+        },
         path("b") {
           // trigger a ValidationRejection explicitly
           // rather than through the `validate` directive
           reject(ValidationRejection("Restricted!"))
         }
+      )
 
     // tests:
     Get("/a") ~> route ~> check {
@@ -130,12 +136,14 @@ class RouteDirectivesExamplesSpec extends RoutingSpec {
     //#redirect-examples
     val route =
       pathPrefix("foo") {
-        pathSingleSlash {
-          complete("yes")
-        } ~
+        concat(
+          pathSingleSlash {
+            complete("yes")
+          },
           pathEnd {
             redirect("/foo/", StatusCodes.PermanentRedirect)
           }
+        )
       }
 
     // tests:

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.marshallers.xml
@@ -8,16 +8,18 @@ import java.io.File
 import java.nio.file.Files
 
 import org.xml.sax.SAXParseException
+
 import scala.xml.NodeSeq
-import scala.concurrent.{ Future, Await }
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
-import org.scalatest.{ Inside, FreeSpec, Matchers }
+import org.scalatest.{ FreeSpec, Inside, Matchers }
 import akka.util.ByteString
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import akka.http.scaladsl.unmarshalling.{ Unmarshaller, Unmarshal }
+import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.model._
 import akka.testkit._
 import MediaTypes._
+import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
 
 class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest with Inside {
   import ScalaXmlSupport._
@@ -32,12 +34,12 @@ class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest
     }
     "reject `application/octet-stream`" in {
       Unmarshal(HttpEntity(`application/octet-stream`, ByteString("<int>Hällö</int>"))).to[NodeSeq].map(_.text) should
-        haveFailedWith(Unmarshaller.UnsupportedContentTypeException(nodeSeqContentTypeRanges: _*))
+        haveFailedWith(UnsupportedContentTypeException(Some(ContentTypes.`application/octet-stream`), nodeSeqContentTypeRanges: _*))
     }
 
     "don't be vulnerable to XXE attacks" - {
       "parse XML bodies without loading in a related schema" in {
-        withTempFile("I shouldn't be there!") { f ⇒
+        withTempFile("I shouldn't be there!") { f =>
           val xml = s"""<?xml version="1.0" encoding="ISO-8859-1"?>
                      | <!DOCTYPE foo [
                      |   <!ELEMENT foo ANY >
@@ -47,11 +49,11 @@ class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest
         }
       }
       "parse XML bodies without loading in a related schema from a parameter" in {
-        withTempFile("I shouldnt be there!") { generalEntityFile ⇒
+        withTempFile("I shouldnt be there!") { generalEntityFile =>
           withTempFile {
             s"""<!ENTITY % xge SYSTEM "${generalEntityFile.toURI}">
              |<!ENTITY % pe "<!ENTITY xxe '%xge;'>">""".stripMargin
-          } { parameterEntityFile ⇒
+          } { parameterEntityFile =>
             val xml = s"""<?xml version="1.0" encoding="ISO-8859-1"?>
                        | <!DOCTYPE foo [
                        |   <!ENTITY % xpe SYSTEM "${parameterEntityFile.toURI}">
@@ -63,7 +65,7 @@ class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest
         }
       }
       "gracefully fail when there are too many nested entities" in {
-        val nested = for (x ← 1 to 30) yield "<!ENTITY laugh" + x + " \"&laugh" + (x - 1) + ";&laugh" + (x - 1) + ";\">"
+        val nested = for (x <- 1 to 30) yield "<!ENTITY laugh" + x + " \"&laugh" + (x - 1) + ";&laugh" + (x - 1) + ";\">"
         val xml =
           s"""<?xml version="1.0"?>
            | <!DOCTYPE billion [
@@ -90,10 +92,10 @@ class ScalaXmlSupportSpec extends FreeSpec with Matchers with ScalatestRouteTest
 
   def shouldHaveFailedWithSAXParseException(result: Future[NodeSeq]) =
     inside(Await.result(result.failed, 1.second.dilated)) {
-      case _: SAXParseException ⇒
+      case _: SAXParseException =>
     }
 
-  def withTempFile[T](content: String)(f: File ⇒ T): T = {
+  def withTempFile[T](content: String)(f: File => T): T = {
     val file = File.createTempFile("xxe", ".txt")
     try {
       Files.write(file.toPath, content.getBytes("UTF-8"))

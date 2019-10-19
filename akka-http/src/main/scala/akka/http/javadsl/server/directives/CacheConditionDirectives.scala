@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server
@@ -12,7 +12,7 @@ import scala.compat.java8.OptionConverters._
 
 import akka.http.javadsl.model.DateTime
 import akka.http.javadsl.model.headers.EntityTag
-import akka.http.scaladsl.server.{ Directives ⇒ D }
+import akka.http.scaladsl.server.{ Directives => D }
 
 abstract class CacheConditionDirectives extends BasicDirectives {
   import akka.http.impl.util.JavaMapping.Implicits._

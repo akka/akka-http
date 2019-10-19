@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.marshalling
 
 import scala.concurrent.{ ExecutionContext, Future }
+import akka.http.ccompat._
 import akka.http.scaladsl.server.ContentNegotiator
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.util.FastFuture._
@@ -17,14 +18,14 @@ object Marshal {
   final case class UnacceptableResponseContentTypeException(supported: Set[ContentNegotiator.Alternative])
     extends RuntimeException with NoStackTrace
 
-  private[marshalling] def selectMarshallingForContentType[T](marshallings: Seq[Marshalling[T]], contentType: ContentType): Option[() ⇒ T] = {
+  private[marshalling] def selectMarshallingForContentType[T](marshallings: Seq[Marshalling[T]], contentType: ContentType): Option[() => T] = {
     contentType match {
-      case _: ContentType.Binary | _: ContentType.WithFixedCharset | _: ContentType.WithMissingCharset ⇒
-        marshallings collectFirst { case Marshalling.WithFixedContentType(`contentType`, marshal) ⇒ marshal }
-      case ContentType.WithCharset(mediaType, charset) ⇒
+      case _: ContentType.Binary | _: ContentType.WithFixedCharset | _: ContentType.WithMissingCharset =>
+        marshallings collectFirst { case Marshalling.WithFixedContentType(`contentType`, marshal) => marshal }
+      case ContentType.WithCharset(mediaType, charset) =>
         marshallings collectFirst {
-          case Marshalling.WithFixedContentType(`contentType`, marshal) ⇒ marshal
-          case Marshalling.WithOpenCharset(`mediaType`, marshal)        ⇒ () ⇒ marshal(charset)
+          case Marshalling.WithFixedContentType(`contentType`, marshal) => marshal
+          case Marshalling.WithOpenCharset(`mediaType`, marshal)        => () => marshal(charset)
         }
     }
   }
@@ -38,9 +39,9 @@ class Marshal[A](val value: A) {
   def to[B](implicit m: Marshaller[A, B], ec: ExecutionContext): Future[B] =
     m(value).fast.map {
       _.head match {
-        case Marshalling.WithFixedContentType(_, marshal) ⇒ marshal()
-        case Marshalling.WithOpenCharset(_, marshal)      ⇒ marshal(HttpCharsets.`UTF-8`)
-        case Marshalling.Opaque(marshal)                  ⇒ marshal()
+        case Marshalling.WithFixedContentType(_, marshal) => marshal()
+        case Marshalling.WithOpenCharset(_, marshal)      => marshal(HttpCharsets.`UTF-8`)
+        case Marshalling.Opaque(marshal)                  => marshal()
       }
     }
 
@@ -51,19 +52,19 @@ class Marshal[A](val value: A) {
     import akka.http.scaladsl.marshalling.Marshal._
     val ctn = ContentNegotiator(request.headers)
 
-    m(value).fast.map { marshallings ⇒
+    m(value).fast.map { marshallings =>
       val supportedAlternatives: List[ContentNegotiator.Alternative] =
-        marshallings.collect {
-          case Marshalling.WithFixedContentType(ct, _) ⇒ ContentNegotiator.Alternative(ct)
-          case Marshalling.WithOpenCharset(mt, _)      ⇒ ContentNegotiator.Alternative(mt)
-        }(collection.breakOut)
+        marshallings.iterator.collect {
+          case Marshalling.WithFixedContentType(ct, _) => ContentNegotiator.Alternative(ct)
+          case Marshalling.WithOpenCharset(mt, _)      => ContentNegotiator.Alternative(mt)
+        }.to(scala.collection.immutable.List)
       val bestMarshal = {
         if (supportedAlternatives.nonEmpty) {
           ctn.pickContentType(supportedAlternatives)
             .flatMap(selectMarshallingForContentType(marshallings, _))
         } else None
       } orElse {
-        marshallings collectFirst { case Marshalling.Opaque(marshal) ⇒ marshal }
+        marshallings collectFirst { case Marshalling.Opaque(marshal) => marshal }
       } getOrElse {
         throw UnacceptableResponseContentTypeException(supportedAlternatives.toSet)
       }

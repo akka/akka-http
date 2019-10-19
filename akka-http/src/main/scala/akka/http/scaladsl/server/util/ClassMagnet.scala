@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server.util
@@ -26,7 +26,7 @@ object ClassMagnet {
       val classTag: ClassTag[T] = tag
       val runtimeClass: Class[T] = tag.runtimeClass.asInstanceOf[Class[T]]
       val extractPF: PartialFunction[Any, T] = {
-        case x: T ⇒ x
+        case x: T => x
       }
     }
 }

@@ -1,9 +1,11 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
 
+import java.net.InetSocketAddress
+import java.net.ServerSocket
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.net.SocketException
@@ -15,7 +17,6 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.{ HttpRequest, StatusCodes }
 import akka.http.scaladsl.settings.ServerSettings
-import akka.stream.ActorMaterializer
 import akka.testkit.{ AkkaSpec, EventFilter }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
@@ -65,7 +66,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
     override protected def postServerShutdown(attempt: Try[Done], system: ActorSystem): Unit = postShutdownCalled.set(true)
   }
 
-  def withMinimal(testCode: MinimalApp ⇒ Any): Unit = {
+  def withMinimal(testCode: MinimalApp => Any): Unit = {
     val minimal = new MinimalApp()
     try testCode(minimal)
     finally {
@@ -73,7 +74,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
     }
   }
 
-  def withSneaky(testCode: SneakyServer ⇒ Any): Unit = {
+  def withSneaky(testCode: SneakyServer => Any): Unit = {
     val sneaky = new SneakyServer()
     try testCode(sneaky)
     finally {
@@ -83,7 +84,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
   "HttpApp" should {
 
-    "start only with host and port" in withMinimal { minimal ⇒
+    "start only with host and port" in withMinimal { minimal =>
       val server = Future {
         minimal.startServer("localhost", 0)
       }
@@ -99,7 +100,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
       server.isCompleted should ===(true)
     }
 
-    "start without ActorSystem" in withMinimal { minimal ⇒
+    "start without ActorSystem" in withMinimal { minimal =>
 
       val server = Future {
         minimal.startServer("localhost", 0, ServerSettings(ConfigFactory.load))
@@ -117,7 +118,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
     }
 
-    "start providing an ActorSystem" in withMinimal { minimal ⇒
+    "start providing an ActorSystem" in withMinimal { minimal =>
 
       val server = Future {
         minimal.startServer("localhost", 0, system)
@@ -136,7 +137,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
     }
 
-    "start providing an ActorSystem and Settings" in withMinimal { minimal ⇒
+    "start providing an ActorSystem and Settings" in withMinimal { minimal =>
 
       val server = Future {
         minimal.startServer("localhost", 0, ServerSettings(system), system)
@@ -155,7 +156,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
     }
 
-    "provide binding if available" in withMinimal { minimal ⇒
+    "provide binding if available" in withMinimal { minimal =>
 
       minimal.binding().isFailure should ===(true)
 
@@ -180,7 +181,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
     "notify" when {
 
-      "shutting down" in withSneaky { sneaky ⇒
+      "shutting down" in withSneaky { sneaky =>
 
         val server = Future {
           sneaky.startServer("localhost", 0, ServerSettings(ConfigFactory.load))
@@ -203,7 +204,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
       }
 
-      "after binding is successful" in withSneaky { sneaky ⇒
+      "after binding is successful" in withSneaky { sneaky =>
 
         val server = Future {
           sneaky.startServer("localhost", 0, ServerSettings(ConfigFactory.load))
@@ -223,15 +224,20 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
 
       }
 
-      "after binding is unsuccessful" in withSneaky { sneaky ⇒
-        EventFilter[SocketException](message = "Permission denied", occurrences = 1) intercept {
-          sneaky.startServer("localhost", 1, system)
-        }
+      "after binding is unsuccessful" in withSneaky { sneaky =>
+        val serverSocket = new ServerSocket()
+        serverSocket.bind(new InetSocketAddress("127.0.0.1", 0))
+        val port = serverSocket.getLocalPort
 
-        eventually {
-          sneaky.postBindingFailureCalled.get() should ===(true)
-        }
+        try {
+          EventFilter[SocketException](message = "Address already in use", occurrences = 1) intercept {
+            sneaky.startServer("localhost", port, system)
+          }
 
+          eventually {
+            sneaky.postBindingFailureCalled.get() should ===(true)
+          }
+        } finally serverSocket.close()
       }
 
     }

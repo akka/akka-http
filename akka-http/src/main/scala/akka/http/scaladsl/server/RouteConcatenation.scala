@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -39,14 +39,14 @@ object RouteConcatenation extends RouteConcatenation {
      * Returns a Route that chains two Routes. If the first Route rejects the request the second route is given a
      * chance to act upon the request.
      */
-    def ~(other: Route): Route = { ctx ⇒
+    def ~(other: Route): Route = { ctx =>
       import ctx.executionContext
       route(ctx).fast.flatMap {
-        case x: RouteResult.Complete ⇒ FastFuture.successful(x)
-        case RouteResult.Rejected(outerRejections) ⇒
+        case x: RouteResult.Complete => FastFuture.successful(x)
+        case RouteResult.Rejected(outerRejections) =>
           other(ctx).fast.map {
-            case x: RouteResult.Complete               ⇒ x
-            case RouteResult.Rejected(innerRejections) ⇒ RouteResult.Rejected(outerRejections ++ innerRejections)
+            case x: RouteResult.Complete               => x
+            case RouteResult.Rejected(innerRejections) => RouteResult.Rejected(outerRejections ++ innerRejections)
           }
       }
     }

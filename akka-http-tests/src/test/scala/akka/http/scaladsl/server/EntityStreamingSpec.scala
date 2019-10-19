@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -56,9 +56,9 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
     Get("/tweets").withHeaders(AcceptJson) ~> route ~> check {
       responseAs[String] shouldEqual
         """[""" +
-        """{"uid":1,"txt":"#Akka rocks!"},""" +
-        """{"uid":2,"txt":"Streaming is so hot right now!"},""" +
-        """{"uid":3,"txt":"You cannot enter the same river twice."}""" +
+        """{"txt":"#Akka rocks!","uid":1},""" +
+        """{"txt":"Streaming is so hot right now!","uid":2},""" +
+        """{"txt":"You cannot enter the same river twice.","uid":3}""" +
         """]"""
     }
 
@@ -75,7 +75,7 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
     val newline = ByteString("\n")
 
     implicit val jsonStreamingSupport = EntityStreamingSupport.json()
-      .withFramingRenderer(Flow[ByteString].map(sb ⇒ sb ++ newline))
+      .withFramingRenderer(Flow[ByteString].map(sb => sb ++ newline))
 
     val route =
       path("tweets") {
@@ -88,9 +88,9 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
 
     Get("/tweets").withHeaders(AcceptJson) ~> route ~> check {
       responseAs[String] shouldEqual
-        """{"uid":1,"txt":"#Akka rocks!"}""" + "\n" +
-        """{"uid":2,"txt":"Streaming is so hot right now!"}""" + "\n" +
-        """{"uid":3,"txt":"You cannot enter the same river twice."}""" + "\n"
+        """{"txt":"#Akka rocks!","uid":1}""" + "\n" +
+        """{"txt":"Streaming is so hot right now!","uid":2}""" + "\n" +
+        """{"txt":"You cannot enter the same river twice.","uid":3}""" + "\n"
     }
   }
 
@@ -148,7 +148,7 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
     val value: Source[Tweet, Any] =
       response.entity.dataBytes
         .via(jsonStreamingSupport.framingDecoder) // pick your Framing (could be "\n" etc)
-        .mapAsync(1)(bytes ⇒ Unmarshal(bytes).to[Tweet]) // unmarshal one by one
+        .mapAsync(1)(bytes => Unmarshal(bytes).to[Tweet]) // unmarshal one by one
 
     //#json-streaming-client-example-raw
 
@@ -164,8 +164,8 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
   }
 
   "csv-example" in {
-    implicit val tweetAsCsv = Marshaller.strict[Tweet, ByteString] { t ⇒
-      Marshalling.WithFixedContentType(ContentTypes.`text/csv(UTF-8)`, () ⇒ {
+    implicit val tweetAsCsv = Marshaller.strict[Tweet, ByteString] { t =>
+      Marshalling.WithFixedContentType(ContentTypes.`text/csv(UTF-8)`, () => {
         val txt = t.txt.replaceAll(",", ".")
         val uid = t.uid
         ByteString(List(uid, txt).mkString(","))
@@ -191,7 +191,7 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
   }
 
   "opaque-marshaller-example" in {
-    implicit val tweetAsOpaqueByteString = Marshaller.opaque[Tweet, ByteString] { t ⇒
+    implicit val tweetAsOpaqueByteString = Marshaller.opaque[Tweet, ByteString] { t =>
       ByteString(s"""${t.uid},"Text: ${t.txt}"""")
     }
 
@@ -225,12 +225,12 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
   "opaque-and-non-opaque-marshaller-example" in {
     // If both an opaque marshaller and a non-opaque marshaller with the right content type are present,
     // prefer the non-opaque marshaller (even if the opaque one comes first in the sequence).
-    val tweetAsOpaqueByteString = Marshaller.opaque[Tweet, ByteString] { t ⇒
+    val tweetAsOpaqueByteString = Marshaller.opaque[Tweet, ByteString] { t =>
       ByteString(s"""${t.uid},"Text: ${t.txt}"""")
     }
 
-    val tweetAsCsv = Marshaller.strict[Tweet, ByteString] { t ⇒
-      Marshalling.WithFixedContentType(ContentTypes.`text/csv(UTF-8)`, () ⇒ {
+    val tweetAsCsv = Marshaller.strict[Tweet, ByteString] { t =>
+      Marshalling.WithFixedContentType(ContentTypes.`text/csv(UTF-8)`, () => {
         val txt = t.txt.replaceAll(",", ".")
         val uid = t.uid
         ByteString(List(uid, txt).mkString(","))
@@ -267,16 +267,16 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
     val route =
       path("metrics") {
         // [3] extract Source[Measurement, _]
-        entity(asSourceOf[Measurement]) { measurements ⇒
+        entity(asSourceOf[Measurement]) { measurements =>
           // alternative syntax:
           // entity(as[Source[Measurement, NotUsed]]) { measurements =>
           val measurementsSubmitted: Future[Int] =
             measurements
               .via(persistMetrics)
-              .runFold(0) { (cnt, _) ⇒ cnt + 1 }
+              .runFold(0) { (cnt, _) => cnt + 1 }
 
           complete {
-            measurementsSubmitted.map(n ⇒ Map("msg" → s"""Total metrics received: $n"""))
+            measurementsSubmitted.map(n => Map("msg" -> s"""Total metrics received: $n"""))
           }
         }
       }
@@ -304,7 +304,10 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
 
     Post("/metrics", entity = xmlData) ~> route ~> check {
       handled should ===(false)
-      rejection should ===(UnsupportedRequestContentTypeRejection(Set(ContentTypes.`application/json`)))
+      rejection should ===(
+        UnsupportedRequestContentTypeRejection(
+          Set(ContentTypes.`application/json`),
+          Some(ContentTypes.`text/xml(UTF-8)`)))
     }
     //#spray-json-request-streaming
   }
@@ -327,7 +330,7 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
         }
       }
     } catch {
-      case ex: java.lang.RuntimeException if ex.getCause != null ⇒
+      case ex: java.lang.RuntimeException if ex.getCause != null =>
         val cause = ex.getCause
         cause.getClass should ===(classOf[akka.http.scaladsl.marshalling.NoStrictlyCompatibleElementMarshallingAvailableException[_]])
         cause.getMessage should include("Please provide an implicit `Marshaller[java.lang.String, HttpEntity]")
@@ -336,9 +339,9 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
   }
 
   "render a JSON Source of raw Strings if String => JsValue is provided" in {
-    implicit val stringFormat = Marshaller[String, ByteString] { ec ⇒ s ⇒
+    implicit val stringFormat = Marshaller[String, ByteString] { ec => s =>
       Future.successful {
-        List(Marshalling.WithFixedContentType(ContentTypes.`application/json`, () ⇒
+        List(Marshalling.WithFixedContentType(ContentTypes.`application/json`, () =>
           ByteString("\"" + s + "\"")) // "raw string" to be rendered as json element in our stream must be enclosed by ""
         )
       }
@@ -387,7 +390,7 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
         }
       }
     } catch {
-      case ex: java.lang.RuntimeException if ex.getCause != null ⇒
+      case ex: java.lang.RuntimeException if ex.getCause != null =>
         val cause = ex.getCause
         cause.getClass should ===(classOf[akka.http.scaladsl.marshalling.NoStrictlyCompatibleElementMarshallingAvailableException[_]])
         cause.getMessage should include("Please provide an implicit `Marshaller[T, HttpEntity]")

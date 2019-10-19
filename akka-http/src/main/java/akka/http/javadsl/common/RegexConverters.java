@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.common;
 
 import java.util.regex.Pattern;
 
-import scala.collection.Seq;
+import scala.collection.immutable.Seq;
 import scala.collection.immutable.VectorBuilder;
 import scala.util.matching.Regex;
 

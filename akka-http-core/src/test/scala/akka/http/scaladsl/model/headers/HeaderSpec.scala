@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model.headers
@@ -161,7 +161,7 @@ class HeaderSpec extends FreeSpec with Matchers {
         `X-Forwarded-Proto`("https"),
         `X-Real-Ip`(RemoteAddress(InetAddress.getByName("192.168.1.1"))))
 
-      requestHeaders.foreach { header ⇒
+      requestHeaders.foreach { header =>
         header shouldBe 'renderInRequests
       }
     }
@@ -204,8 +204,19 @@ class HeaderSpec extends FreeSpec with Matchers {
         `WWW-Authenticate`(HttpChallenge("Basic", Some("example.com"))),
         `Retry-After`(120))
 
-      responseHeaders.foreach { header ⇒
+      responseHeaders.foreach { header =>
         header shouldBe 'renderInResponses
+      }
+    }
+  }
+  "RawHeader should" - {
+    "check for valid arguments" - {
+      "successful parse run" in {
+        RawHeader("foo", "bar").toString shouldEqual "foo: bar"
+      }
+      "failing parse run" in {
+        an[IllegalArgumentException] should be thrownBy RawHeader(null, "bar")
+        an[IllegalArgumentException] should be thrownBy RawHeader("foo", null)
       }
     }
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -17,27 +17,27 @@ class ExecutionDirectivesSpec extends RoutingSpec {
   object MyException extends RuntimeException("Boom")
   val handler =
     ExceptionHandler {
-      case MyException ⇒ complete((500, "Pling! Plong! Something went wrong!!!"))
+      case MyException => complete((500, "Pling! Plong! Something went wrong!!!"))
     }
 
   "The `handleExceptions` directive" should {
     "handle an exception strictly thrown in the inner route with the supplied exception handler" in {
       exceptionShouldBeHandled {
-        handleExceptions(handler) { ctx ⇒
+        handleExceptions(handler) { ctx =>
           throw MyException
         }
       }
     }
     "handle an Future.failed RouteResult with the supplied exception handler" in {
       exceptionShouldBeHandled {
-        handleExceptions(handler) { ctx ⇒
+        handleExceptions(handler) { ctx =>
           Future.failed(MyException)
         }
       }
     }
     "handle an eventually failed Future[RouteResult] with the supplied exception handler" in {
       exceptionShouldBeHandled {
-        handleExceptions(handler) { ctx ⇒
+        handleExceptions(handler) { ctx =>
           Future {
             Thread.sleep(100)
             throw MyException
@@ -60,7 +60,7 @@ class ExecutionDirectivesSpec extends RoutingSpec {
     ).intercept {
         Get("/abc") ~>
           get {
-            handleExceptions(handler)(reject) ~ { ctx ⇒
+            handleExceptions(handler)(reject) ~ { ctx =>
               throw MyException
             }
           } ~> check {

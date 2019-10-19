@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.testkit
@@ -19,7 +19,7 @@ trait TestFrameworkInterface {
 object TestFrameworkInterface {
 
   trait Scalatest extends TestFrameworkInterface with BeforeAndAfterAll {
-    this: Suite ⇒
+    this: Suite =>
 
     def failTest(msg: String) = throw new TestFailedException(msg, 11)
 

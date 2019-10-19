@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.coding
@@ -38,8 +38,8 @@ class DecoderSpec extends WordSpec with CodecSpecSupport {
   case object DummyDecoder extends StreamDecoder {
     val encoding = HttpEncodings.compress
 
-    override def newDecompressorStage(maxBytesPerChunk: Int): () ⇒ GraphStage[FlowShape[ByteString, ByteString]] =
-      () ⇒ new SimpleLinearGraphStage[ByteString] {
+    override def newDecompressorStage(maxBytesPerChunk: Int): () => GraphStage[FlowShape[ByteString, ByteString]] =
+      () => new SimpleLinearGraphStage[ByteString] {
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
           setHandler(in, new InHandler {
             override def onPush(): Unit = push(out, grab(in) ++ ByteString("compressed"))

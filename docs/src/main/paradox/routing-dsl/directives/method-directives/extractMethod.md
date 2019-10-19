@@ -10,7 +10,7 @@
 
 ## Description
 
-Extracts the @unidoc[HttpMethod] from the request context and provides it for use for other directives explicitly.
+Extracts the @apidoc[HttpMethod] from the request context and provides it for use for other directives explicitly.
 
 ## Example
 

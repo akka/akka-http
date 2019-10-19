@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package org.scalatest.extra
@@ -14,7 +14,7 @@ class QuietReporter(inColor: Boolean, withDurations: Boolean = false)
   def this() = this(!getBoolean("akka.test.nocolor"), !getBoolean("akka.test.nodurations"))
 
   override def apply(event: Event): Unit = event match {
-    case _: RunStarting ⇒ ()
-    case _              ⇒ super.apply(event)
+    case _: RunStarting => ()
+    case _              => super.apply(event)
   }
 }

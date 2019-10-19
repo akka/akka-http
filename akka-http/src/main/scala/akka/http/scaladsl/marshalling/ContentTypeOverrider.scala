@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.marshalling
@@ -21,7 +21,7 @@ object ContentTypeOverrider {
   implicit def forHeadersAndEntity[T <: HttpEntity]: ContentTypeOverrider[(immutable.Seq[HttpHeader], T)] =
     new ContentTypeOverrider[(immutable.Seq[HttpHeader], T)] {
       def apply(value: (immutable.Seq[HttpHeader], T), newContentType: ContentType) =
-        value._1 → value._2.withContentType(newContentType).asInstanceOf[T]
+        value._1 -> value._2.withContentType(newContentType).asInstanceOf[T]
     }
 
   implicit val forResponse: ContentTypeOverrider[HttpResponse] =

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.model.parser
@@ -7,7 +7,7 @@ package akka.http.impl.model.parser
 import akka.parboiled2.Parser
 import akka.http.scaladsl.model.headers._
 
-private[parser] trait AcceptLanguageHeader { this: Parser with CommonRules with CommonActions ⇒
+private[parser] trait AcceptLanguageHeader { this: Parser with CommonRules with CommonActions =>
 
   // http://tools.ietf.org/html/rfc7231#section-5.3.5
   def `accept-language` = rule {
@@ -15,10 +15,10 @@ private[parser] trait AcceptLanguageHeader { this: Parser with CommonRules with 
   }
 
   def `language-range-decl` = rule {
-    `language-range` ~ optional(weight) ~> { (range, optQ) ⇒
+    `language-range` ~ optional(weight) ~> { (range, optQ) =>
       optQ match {
-        case None    ⇒ range
-        case Some(q) ⇒ range withQValue q
+        case None    => range
+        case Some(q) => range withQValue q
       }
     }
   }

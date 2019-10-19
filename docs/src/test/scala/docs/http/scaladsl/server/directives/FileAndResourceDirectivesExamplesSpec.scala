@@ -1,17 +1,17 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.server.RoutingSpec
 import akka.http.scaladsl.server.directives.DirectoryListing
 import akka.http.scaladsl.server.directives.FileAndResourceDirectives.DirectoryRenderer
-import docs.http.scaladsl.server.RoutingSpec
-import docs.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
-class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
+class FileAndResourceDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "getFromFile-examples" in compileOnlySpec {
     //#getFromFile-examples
     import akka.http.scaladsl.server.directives._
@@ -47,9 +47,10 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
   "listDirectoryContents-examples" in compileOnlySpec {
     //#listDirectoryContents-examples
     val route =
-      path("tmp") {
-        listDirectoryContents("/tmp")
-      } ~
+      concat(
+        path("tmp") {
+          listDirectoryContents("/tmp")
+        },
         path("custom") {
           // implement your custom renderer here
           val renderer = new DirectoryRenderer {
@@ -57,6 +58,7 @@ class FileAndResourceDirectivesExamplesSpec extends RoutingSpec {
           }
           listDirectoryContents("/tmp")(renderer)
         }
+      )
 
     // tests:
     Get("/logs/example") ~> route ~> check {

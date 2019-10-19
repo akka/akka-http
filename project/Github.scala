@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -12,6 +12,6 @@ object GitHub {
 
   def url(v: String): String = {
     val branch = if (v.endsWith("SNAPSHOT")) "master" else "v" + v
-    "http://github.com/akka/akka-http/tree/" + branch
+    "https://github.com/akka/akka-http/tree/" + branch
   }
 }

@@ -1,8 +1,8 @@
 # Implications of the streaming nature of Request/Response Entities
 
 Akka HTTP is streaming *all the way through*, which means that the back-pressure mechanisms enabled by Akka Streams
-are exposed through all layers–from the TCP layer, through the HTTP server, all the way up to the user-facing @unidoc[HttpRequest]
-and @unidoc[HttpResponse] and their @unidoc[HttpEntity] APIs.
+are exposed through all layers–from the TCP layer, through the HTTP server, all the way up to the user-facing @apidoc[HttpRequest]
+and @apidoc[HttpResponse] and their @apidoc[HttpEntity] APIs.
 
 This has surprising implications if you are used to non-streaming / not-reactive HTTP clients.
 Specifically it means that: "*lack of consumption of the HTTP Entity, is signaled as back-pressure to the other
@@ -14,7 +14,7 @@ from overwhelming our application, possibly causing un-necessary buffering of th
 Consuming (or discarding) the Entity of a request is mandatory!
 If *accidentally* left neither consumed or discarded Akka HTTP will
 assume the incoming data should remain back-pressured, and will stall the incoming data via TCP back-pressure mechanisms.
-A client should consume the Entity regardless of the status of the @unidoc[HttpResponse].
+A client should consume the Entity regardless of the status of the @apidoc[HttpResponse].
 
 @@@
 
@@ -44,6 +44,29 @@ Scala
 
 Java
 :   @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #manual-entity-consume-example-2 }
+
+### Integrating with Akka Streams
+In some cases, it is necessary to process the results of a series of Akka HTTP calls as Akka Streams. In order
+to ensure that the HTTP Response Entity is consumed in a timely manner, the Akka HTTP stream for each request must
+be executed and completely consumed, then sent along for further processing.
+
+Failing to account for this behavior can result in seemingly non-deterministic failures due to complex interactions
+between http and stream buffering. This manifests as errors such as the following:
+
+```
+Response entity was not subscribed after 1 second. Make sure to read the response entity body or call `discardBytes()` on it.
+```
+
+This error indicates that the http response has been available for too long without being consumed. It can be 
+partially worked around by increasing the subscription timeout, but you will still run the risk of running into network 
+level timeouts and could still exceed the timeout under load so it's best to resolve the issue properly such as in 
+the examples below: 
+
+Scala
+:   @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #manual-entity-consume-example-3 }
+
+Java
+:   @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #manual-entity-consume-example-3 }
 
 ### Discarding the HTTP Response Entity (Client)
 

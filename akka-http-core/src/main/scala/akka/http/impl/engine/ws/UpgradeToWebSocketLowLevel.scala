@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
 
 import akka.annotation.InternalApi
+import akka.http.impl.engine.server.InternalCustomHeader
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.ws.UpgradeToWebSocket
 import akka.stream.{ FlowShape, Graph }

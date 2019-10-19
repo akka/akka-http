@@ -1,14 +1,13 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
 
 import akka.NotUsed
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
-import akka.stream.{ Server, Client, ActorMaterializer }
+import akka.stream.{ Server, Client }
 import akka.stream.scaladsl._
-import akka.testkit.AkkaSpec
 import akka.http.impl.util._
 import akka.http.scaladsl.{ ConnectionContext, Http }
 import akka.http.scaladsl.model.{ StatusCodes, HttpResponse, HttpRequest }
@@ -16,13 +15,9 @@ import akka.http.scaladsl.model.headers.{ Host, `Tls-Session-Info` }
 import org.scalatest.time.{ Span, Seconds }
 import scala.concurrent.Future
 
-class TlsEndpointVerificationSpec extends AkkaSpec("""
-    akka.loglevel = INFO
-    akka.io.tcp.trace-logging = off
+class TlsEndpointVerificationSpec extends AkkaSpecWithMaterializer("""
     akka.http.parsing.tls-session-info-header = on
   """) {
-  implicit val materializer = ActorMaterializer()
-
   /*
    * Useful when debugging against "what if we hit a real website"
    */
@@ -34,14 +29,14 @@ class TlsEndpointVerificationSpec extends AkkaSpec("""
     "not accept certificates signed by unknown CA" in {
       val pipe = pipeline(Http().defaultClientHttpsContext, hostname = "akka.example.org") // default context doesn't include custom CA
 
-      whenReady(pipe(HttpRequest(uri = "https://akka.example.org/")).failed, timeout) { e ⇒
+      whenReady(pipe(HttpRequest(uri = "https://akka.example.org/")).failed, timeout) { e =>
         e shouldBe an[Exception]
       }
     }
     "accept certificates signed by known CA" in {
       val pipe = pipeline(ExampleHttpContexts.exampleClientContext, hostname = "akka.example.org") // example context does include custom CA
 
-      whenReady(pipe(HttpRequest(uri = "https://akka.example.org:8080/")), timeout) { response ⇒
+      whenReady(pipe(HttpRequest(uri = "https://akka.example.org:8080/")), timeout) { response =>
         response.status shouldEqual StatusCodes.OK
         val tlsInfo = response.header[`Tls-Session-Info`].get
         tlsInfo.peerPrincipal.get.getName shouldEqual "CN=akka.example.org,O=Internet Widgits Pty Ltd,ST=Some-State,C=AU"
@@ -50,7 +45,7 @@ class TlsEndpointVerificationSpec extends AkkaSpec("""
     "not accept certificates for foreign hosts" in {
       val pipe = pipeline(ExampleHttpContexts.exampleClientContext, hostname = "hijack.de") // example context does include custom CA
 
-      whenReady(pipe(HttpRequest(uri = "https://hijack.de/")).failed, timeout) { e ⇒
+      whenReady(pipe(HttpRequest(uri = "https://hijack.de/")).failed, timeout) { e =>
         e shouldBe an[Exception]
       }
     }
@@ -85,11 +80,11 @@ class TlsEndpointVerificationSpec extends AkkaSpec("""
     }
   }
 
-  def pipeline(clientContext: ConnectionContext, hostname: String): HttpRequest ⇒ Future[HttpResponse] = req ⇒
+  def pipeline(clientContext: ConnectionContext, hostname: String): HttpRequest => Future[HttpResponse] = req =>
     Source.single(req).via(pipelineFlow(clientContext, hostname)).runWith(Sink.head)
 
   def pipelineFlow(clientContext: ConnectionContext, hostname: String): Flow[HttpRequest, HttpResponse, NotUsed] = {
-    val handler: HttpRequest ⇒ HttpResponse = { req ⇒
+    val handler: HttpRequest => HttpResponse = { req =>
       // verify Tls-Session-Info header information
       val name = req.header[`Tls-Session-Info`].flatMap(_.localPrincipal).map(_.getName)
       if (name.exists(_ == "CN=akka.example.org,O=Internet Widgits Pty Ltd,ST=Some-State,C=AU")) HttpResponse()
@@ -97,7 +92,7 @@ class TlsEndpointVerificationSpec extends AkkaSpec("""
     }
 
     val serverSideTls = Http().sslTlsStage(ExampleHttpContexts.exampleServerContext, Server)
-    val clientSideTls = Http().sslTlsStage(clientContext, Client, Some(hostname → 8080))
+    val clientSideTls = Http().sslTlsStage(clientContext, Client, Some(hostname -> 8080))
 
     val server =
       Http().serverLayer()

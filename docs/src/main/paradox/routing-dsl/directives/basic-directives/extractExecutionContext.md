@@ -10,7 +10,7 @@
 
 ## Description
 
-Extracts the `ExecutionContext` from the @unidoc[RequestContext].
+Extracts the `ExecutionContext` from the @apidoc[RequestContext].
 
 See @ref[withExecutionContext](withExecutionContext.md) to see how to customise the execution context provided for an inner route.
 

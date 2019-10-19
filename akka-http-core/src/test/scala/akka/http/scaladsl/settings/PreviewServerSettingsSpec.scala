@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.settings
@@ -8,7 +8,7 @@ import akka.testkit.AkkaSpec
 
 class PreviewServerSettingsSpec extends AkkaSpec {
 
-  def compileOnlySpec(body: ⇒ Unit) = ()
+  def compileOnlySpec(body: => Unit) = ()
 
   "PreviewServerSettings" should {
     "compile when set programatically" in compileOnlySpec {

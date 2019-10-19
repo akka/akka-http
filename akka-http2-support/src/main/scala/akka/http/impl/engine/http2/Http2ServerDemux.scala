@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2
@@ -16,6 +16,7 @@ import akka.stream.impl.io.ByteStringParser.ParsingException
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, StageLogging }
 import akka.util.ByteString
 
+import scala.collection.immutable
 import scala.util.control.NonFatal
 
 import FrameEvent._
@@ -24,8 +25,6 @@ import FrameEvent._
  * INTERNAL API
  *
  * This stage contains all control logic for handling frames and (de)muxing data to/from substreams.
- *
- * (This is not a final documentation, more like a brain-dump of how it could work.)
  *
  * The BidiStage consumes and produces FrameEvents from the network. It will output one Http2SubStream
  * for incoming frames per substream and likewise accepts a single Http2SubStream per substream with
@@ -70,7 +69,7 @@ import FrameEvent._
  * only available in this stage.
  */
 @InternalApi
-private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings) extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] {
+private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings, initialDemuxerSettings: immutable.Seq[Setting], upgraded: Boolean) extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] {
   val frameIn = Inlet[FrameEvent]("Demux.frameIn")
   val frameOut = Outlet[FrameEvent]("Demux.frameOut")
 
@@ -82,16 +81,22 @@ private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings) extend
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with Http2MultiplexerSupport with Http2StreamHandling with GenericOutletSupport with StageLogging {
-      logic ⇒
+      logic =>
 
-      def settings: Http2ServerSettings = http2Settings
+      override def settings: Http2ServerSettings = http2Settings
+      override def isUpgraded: Boolean = upgraded
 
       override protected def logSource: Class[_] = classOf[Http2ServerDemux]
 
       val multiplexer = createMultiplexer(frameOut, StreamPrioritizer.first())
 
       override def preStart(): Unit = {
-        pull(frameIn)
+        if (initialDemuxerSettings.nonEmpty) {
+          log.debug("Applying {} initial settings!", initialDemuxerSettings.length)
+          applySettings(initialDemuxerSettings)
+        }
+
+        pullFrameIn()
         pull(substreamIn)
 
         multiplexer.pushControlFrame(SettingsFrame(Nil)) // server side connection preface
@@ -113,23 +118,34 @@ private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings) extend
         multiplexer.pushControlFrame(frame)
         // FIXME: handle the connection closing according to the specification
       }
+      private[this] var allowReadingIncomingFrames: Boolean = true
+      override def allowReadingIncomingFrames(allow: Boolean): Unit = {
+        if (allow != allowReadingIncomingFrames)
+          if (allow) {
+            log.debug("Resume reading incoming frames")
+            if (!hasBeenPulled(frameIn)) pull(frameIn)
+          } else log.debug("Suspended reading incoming frames") // can't retract pending pull but that's ok
+
+        allowReadingIncomingFrames = allow
+      }
+      def pullFrameIn(): Unit = if (allowReadingIncomingFrames && !hasBeenPulled(frameIn)) pull(frameIn)
 
       setHandler(frameIn, new InHandler {
 
         def onPush(): Unit = {
           val in = grab(frameIn)
           in match {
-            case WindowUpdateFrame(streamId, increment) ⇒ multiplexer.updateWindow(streamId, increment) // handled specially
-            case p: PriorityFrame                       ⇒ multiplexer.updatePriority(p)
-            case s: StreamFrameEvent                    ⇒ handleStreamEvent(s)
+            case WindowUpdateFrame(streamId, increment) => multiplexer.updateWindow(streamId, increment) // handled specially
+            case p: PriorityFrame                       => multiplexer.updatePriority(p)
+            case s: StreamFrameEvent                    => handleStreamEvent(s)
 
-            case SettingsFrame(settings) ⇒
+            case SettingsFrame(settings) =>
               if (settings.nonEmpty) log.debug("Got {} settings!", settings.length)
 
               var settingsAppliedOk = true
 
               settings.foreach {
-                case Setting(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE, value) ⇒
+                case Setting(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE, value) =>
                   if (value >= 0) {
                     log.debug("Setting initial window to {}", value)
                     multiplexer.updateDefaultWindow(value)
@@ -137,11 +153,11 @@ private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings) extend
                     pushGOAWAY(FLOW_CONTROL_ERROR, s"Invalid value for SETTINGS_INITIAL_WINDOW_SIZE: $value")
                     settingsAppliedOk = false
                   }
-                case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) ⇒
+                case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) =>
                   multiplexer.updateMaxFrameSize(value)
-                case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) ⇒
+                case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) =>
                   log.debug("Setting max concurrent streams to {} (not enforced)", value)
-                case Setting(id, value) ⇒
+                case Setting(id, value) =>
                   log.debug("Ignoring setting {} -> {} (in Demux)", id, value)
               }
 
@@ -149,38 +165,38 @@ private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings) extend
                 multiplexer.pushControlFrame(SettingsAckFrame(settings))
               }
 
-            case PingFrame(true, _) ⇒
+            case PingFrame(true, _) =>
             // ignore for now (we don't send any pings)
-            case PingFrame(false, data) ⇒
+            case PingFrame(false, data) =>
               multiplexer.pushControlFrame(PingFrame(ack = true, data))
 
-            case e ⇒
+            case e =>
               log.debug("Got unhandled event {}", e)
             // ignore unknown frames
           }
-          pull(frameIn)
+          pullFrameIn()
         }
 
         override def onUpstreamFailure(ex: Throwable): Unit = {
           ex match {
             // every IllegalHttp2StreamIdException will be a GOAWAY with PROTOCOL_ERROR
-            case e: Http2Compliance.IllegalHttp2StreamIdException ⇒
+            case e: Http2Compliance.IllegalHttp2StreamIdException =>
               pushGOAWAY(ErrorCode.PROTOCOL_ERROR, e.getMessage)
 
-            case e: Http2Compliance.Http2ProtocolException ⇒
+            case e: Http2Compliance.Http2ProtocolException =>
               pushGOAWAY(e.errorCode, e.getMessage)
 
-            case e: Http2Compliance.Http2ProtocolStreamException ⇒
+            case e: Http2Compliance.Http2ProtocolStreamException =>
               resetStream(e.streamId, e.errorCode)
 
-            case e: ParsingException ⇒
+            case e: ParsingException =>
               e.getCause match {
-                case null  ⇒ super.onUpstreamFailure(e) // fail with the raw parsing exception
-                case cause ⇒ onUpstreamFailure(cause) // unwrap the cause, which should carry ComplianceException and recurse
+                case null  => super.onUpstreamFailure(e) // fail with the raw parsing exception
+                case cause => onUpstreamFailure(cause) // unwrap the cause, which should carry ComplianceException and recurse
               }
 
             // handle every unhandled exception
-            case NonFatal(e) ⇒
+            case NonFatal(e) =>
               super.onUpstreamFailure(e)
           }
         }
@@ -200,6 +216,29 @@ private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings) extend
           multiplexer.registerSubStream(sub)
         }
       })
+
+      private def applySettings(settings: immutable.Seq[Setting]): Boolean = {
+        var settingsAppliedOk = true
+
+        settings.foreach {
+          case Setting(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE, value) =>
+            if (value >= 0) {
+              log.debug("Setting initial window to {}", value)
+              multiplexer.updateDefaultWindow(value)
+            } else {
+              pushGOAWAY(FLOW_CONTROL_ERROR, s"Invalid value for SETTINGS_INITIAL_WINDOW_SIZE: $value")
+              settingsAppliedOk = false
+            }
+          case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) =>
+            multiplexer.updateMaxFrameSize(value)
+          case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) =>
+            log.debug("Setting max concurrent streams to {} (not enforced)", value)
+          case Setting(id, value) =>
+            log.debug("Ignoring setting {} -> {} (in Demux)", id, value)
+        }
+        settingsAppliedOk
+      }
+
     }
 
 }

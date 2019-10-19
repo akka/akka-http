@@ -1,0 +1,5 @@
+# Changes against 10.1.7
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.unmarshalling.sse.EventStreamUnmarshalling.fromEventsStream")
+
+# Scala 2.13.0-M5
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.impl.settings.RoutingSettingsImpl$")

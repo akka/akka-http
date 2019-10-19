@@ -11,10 +11,10 @@
 
 ## Description
 
-Wraps the inner route with OAuth Bearer Token authentication support using a given @scala[`AuthenticatorPF[T]`]@java[`AuthenticatorPF<T>`].
+Wraps the inner route with OAuth Bearer Token authentication support using a given @scala[@scaladoc[Authenticator[T]](akka.http.scaladsl.server.Directives#Authenticator[T]=akka.http.scaladsl.server.directives.Credentials=%3EOption[T])]@java[`Authenticator<T>` - function from `Optional<ProvidedCredentials>` to `Optional<T>`].
 
-Provides support for extracting the so-called "*Bearer Token*" from the @unidoc[Authorization] HTTP Header,
-which is used to initiate an OAuth2 authorization.
+Provides support for extracting the so-called "*Bearer Token*" from the @apidoc[Authorization] HTTP Header,
+which is used to initiate an OAuth2 authorization. The directive also supports extracting the Bearer Token from URI query parameter `access_token`, as described in [RFC 6750](https://tools.ietf.org/html/rfc6750).
 
 @@@ warning
 This directive does not implement the complete OAuth2 protocol, but instead enables implementing it,
@@ -22,7 +22,7 @@ by extracting the needed token from the HTTP headers.
 @@@
 
 Given a function returning @scala[`Some[T]`]@java[a non empty`Optional<T>`] upon successful authentication and @scala[`None`]@java[an empty `Optional<T>`] otherwise,
-respectively applies the inner route or rejects the request with a @unidoc[AuthenticationFailedRejection] rejection,
+respectively applies the inner route or rejects the request with a @apidoc[AuthenticationFailedRejection] rejection,
 which by default is mapped to an `401 Unauthorized` response.
 
 Longer-running authentication tasks (like looking up credentials in a database) should use the @ref[authenticateOAuth2Async](authenticateOAuth2Async.md)

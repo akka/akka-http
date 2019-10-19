@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives
@@ -32,7 +32,7 @@ final class RouteAdapter(val delegate: akka.http.scaladsl.server.Route) extends 
 
   override def orElse(alternative: Route): Route =
     alternative match {
-      case adapt: RouteAdapter ⇒
+      case adapt: RouteAdapter =>
         RouteAdapter(delegate ~ adapt.delegate)
     }
 

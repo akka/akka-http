@@ -12,3 +12,16 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.ConnectH
 
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ConnectHttpImpl.this")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ConnectHttpsImpl.this")
+
+# Not caught my the version of mima in use at the time:
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.Http#IncomingConnection.copy")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.Http#IncomingConnection.copy$default$3")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.Http#IncomingConnection.this")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.Http#IncomingConnection.unapply")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.Http#IncomingConnection.apply")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.ErrorInfo.apply$default$1")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.ErrorInfo.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.ErrorInfo.apply$default$2")
+
+

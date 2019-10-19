@@ -1,0 +1,4 @@
+# Change of constructors of @DoNotInherit sealed class hierarchy.
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.MediaType#WithOpenCharset.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.MediaType.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.MediaType#NonBinary.this")

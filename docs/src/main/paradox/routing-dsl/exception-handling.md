@@ -4,7 +4,7 @@ Exceptions thrown during route execution bubble up through the route structure t
 @ref[handleExceptions](directives/execution-directives/handleExceptions.md) directive or the top of your route structure.
 
 Similarly to the way that @ref[Rejections](rejections.md) are handled the @ref[handleExceptions](directives/execution-directives/handleExceptions.md) directive delegates the actual job
-of converting an exception to its argument, an @unidoc[ExceptionHandler]@scala[, which is defined like this:]@java[.]
+of converting an exception to its argument, an @apidoc[ExceptionHandler]@scala[, which is defined like this:]@java[.]
 
 @@@ div { .group-scala }
 ```scala
@@ -12,7 +12,7 @@ trait ExceptionHandler extends PartialFunction[Throwable, Route]
 ```
 @@@
 
-Since an @unidoc[ExceptionHandler] is a partial function, it can choose which exceptions it would like to handle and
+Since an @apidoc[ExceptionHandler] is a partial function, it can choose which exceptions it would like to handle and
 which not. Unhandled exceptions will simply continue to bubble up in the route structure.
 At the root of the route tree any still unhandled exception will be dealt with by the top-level handler which always
 handles *all* exceptions.
@@ -20,15 +20,23 @@ handles *all* exceptions.
 `Route.seal` internally wraps its argument route with the @ref[handleExceptions](directives/execution-directives/handleExceptions.md) directive in order to "catch" and
 handle any exception.
 
-So, if you'd like to customize the way certain exceptions are handled you need to write a custom @unidoc[ExceptionHandler].
-Once you have defined your custom @unidoc[ExceptionHandler] you have two options for "activating" it:
+So, if you'd like to customize the way certain exceptions are handled you need to write a custom @apidoc[ExceptionHandler].
+Once you have defined your custom @apidoc[ExceptionHandler] you have two options for "activating" it:
 
- 1. @scala[Bring it into implicit scope at the top-level.]@java[Pass it to the `seal()` method of the @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@unidoc[Route]] class.]
+ 1. @scala[Bring it into implicit scope at the top-level.]@java[Pass it to the `seal()` method of the @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@apidoc[Route]] class.]
  2. Supply it as argument to the @ref[handleExceptions](directives/execution-directives/handleExceptions.md) directive.
 
 In the first case your handler will be "sealed" (which means that it will receive the default handler as a fallback for
 all cases your handler doesn't handle itself) and used for all exceptions that are not handled within the route
 structure itself.
+Here you can see an example of it:
+
+Scala
+:   @@snip [ExceptionHandlerExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala) { #seal-handler-example }
+
+Java
+:   @@snip [ExceptionHandlerExamplesTest.java]($test$/java/docs/http/javadsl/ExceptionHandlerInSealExample.java) { #seal-handler-example }
+
 
 The second case allows you to restrict the applicability of your handler to certain branches of your route structure.
 
@@ -48,7 +56,7 @@ And this is how to do it implicitly:
 
 ## Default Exception Handler
 
-A default @unidoc[ExceptionHandler] is used if no custom instance is provided.
+A default @apidoc[ExceptionHandler] is used if no custom instance is provided.
 
 It will handle every `NonFatal` throwable, write its stack trace and complete the request
 with `InternalServerError` `(500)` status code.
@@ -63,9 +71,9 @@ normally contain enough information to provide a useful error message.
 
 @@@ note
 
-Users are strongly encouraged not to rely on using the @unidoc[ExceptionHandler] as a means of handling errors. By errors, we mean things that are an expected part of normal operations: for example, issues discovered during input validation. The @unidoc[ExceptionHandler] is meant to be a means of handling failures. See [Failure vs Error](https://www.reactivemanifesto.org/glossary#Failure) in the glossary of the [Reactive Manifesto](https://www.reactivemanifesto.org).
+Users are strongly encouraged not to rely on using the @apidoc[ExceptionHandler] as a means of handling errors. By errors, we mean things that are an expected part of normal operations: for example, issues discovered during input validation. The @apidoc[ExceptionHandler] is meant to be a means of handling failures. See [Failure vs Error](https://www.reactivemanifesto.org/glossary#Failure) in the glossary of the [Reactive Manifesto](https://www.reactivemanifesto.org).
 
-Distinguishing between errors and failures (i.e. thrown `Exceptions` handled via the @unidoc[ExceptionHandler]) provides a much better mental model but also leads to performance improvements.
+Distinguishing between errors and failures (i.e. thrown `Exceptions` handled via the @apidoc[ExceptionHandler]) provides a much better mental model but also leads to performance improvements.
 
 This is because exceptions are known to have a negative performance impact for cases
 when the depth of the call stack is significant (stack trace construction cost)
@@ -85,6 +93,19 @@ Please note that since version `10.1.6`, the default `ExceptionHandler` will als
 please refer to @ref[the section above](exception-handling.md#exception-handling); however, might cause connections to stall
 if the entity is not properly rejected or cancelled on the client side.
 @@@
+
+## Including sensitive data in exceptions
+
+To prevent certain types of attack, it is not recommended to include arbitrary invalid user input in the response.
+However, sometimes it can be useful to include it in the exception and logging for diagnostic reasons.
+In such cases, you can use exceptions that extend `ExceptionWithErrorInfo`, such as `IllegalHeaderException`:
+
+Scala
+:   @@snip [ExceptionHandlerExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/ExceptionHandlerExamplesSpec.scala) { #no-exception-details-in-response }
+
+Java
+:   @@snip [ExceptionHandlerExamplesTest.java]($test$/java/docs/http/javadsl/RespondWithHeaderHandlerExampleTest.java) { #no-exception-details-in-response  }
+
 
 ## Respond with headers and Exception Handler
 

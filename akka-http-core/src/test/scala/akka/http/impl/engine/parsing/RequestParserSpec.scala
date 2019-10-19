@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.parsing
@@ -16,8 +16,9 @@ import akka.stream.scaladsl._
 import akka.stream.TLSProtocol._
 import org.scalatest.matchers.Matcher
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
-import akka.http.scaladsl.settings.ParserSettings
+import akka.http.scaladsl.settings.{ ParserSettings, WebSocketSettings }
 import akka.http.impl.engine.parsing.ParserOutput._
+import akka.http.impl.settings.WebSocketSettingsImpl
 import akka.http.impl.util._
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model.HttpMethods._
@@ -311,7 +312,7 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
 
     "support `rawRequestUriHeader` setting" in new Test {
       override protected def newParser: HttpRequestParser =
-        new HttpRequestParser(parserSettings, rawRequestUriHeader = true, headerParser = HttpHeaderParser(parserSettings, system.log))
+        new HttpRequestParser(parserSettings, websocketSettings, rawRequestUriHeader = true, headerParser = HttpHeaderParser(parserSettings, system.log))
 
       """GET /f%6f%6fbar?q=b%61z HTTP/1.1
         |Host: ping
@@ -331,8 +332,11 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
       val `application/custom`: WithFixedCharset =
         MediaType.customWithFixedCharset("application", "custom", HttpCharsets.`UTF-8`)
 
+      val `APPLICATION/CuStOm+JsOn`: WithFixedCharset =
+        MediaType.customWithFixedCharset("APPLICATION", "CuStOm+JsOn", HttpCharsets.`UTF-8`)
+
       override protected def parserSettings: ParserSettings =
-        super.parserSettings.withCustomMediaTypes(`application/custom`)
+        super.parserSettings.withCustomMediaTypes(`application/custom`, `APPLICATION/CuStOm+JsOn`)
 
       """POST / HTTP/1.1
         |Host: ping
@@ -345,6 +349,30 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
           "/",
           List(Host("ping")),
           HttpEntity.empty(`application/custom`)))
+
+      """POST / HTTP/1.1
+        |Host: ping
+        |Content-Type: application/custom+json
+        |Content-Length: 0
+        |
+        |""" should parseTo(
+        HttpRequest(
+          POST,
+          "/",
+          List(Host("ping")),
+          HttpEntity.empty(`APPLICATION/CuStOm+JsOn`)))
+
+      """POST / HTTP/1.1
+        |Host: ping
+        |Content-Type: APPLICATION/CUSTOM+JSON
+        |Content-Length: 0
+        |
+        |""" should parseTo(
+        HttpRequest(
+          POST,
+          "/",
+          List(Host("ping")),
+          HttpEntity.empty(`APPLICATION/CuStOm+JsOn`)))
 
       """POST / HTTP/1.1
         |Host: ping
@@ -587,7 +615,7 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
 
     class StrictEqualHttpRequest(val req: HttpRequest) {
       override def equals(other: scala.Any): Boolean = other match {
-        case other: StrictEqualHttpRequest ⇒
+        case other: StrictEqualHttpRequest =>
           this.req.copy(entity = HttpEntity.Empty) == other.req.copy(entity = HttpEntity.Empty) &&
             this.req.entity.toStrict(awaitAtMost).awaitResult(awaitAtMost) ==
             other.req.entity.toStrict(awaitAtMost).awaitResult(awaitAtMost)
@@ -627,24 +655,24 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
 
     def multiParse(parser: HttpRequestParser)(input: Seq[String]): Seq[Either[RequestOutput, StrictEqualHttpRequest]] =
       Source(input.toList)
-        .map(bytes ⇒ SessionBytes(TLSPlacebo.dummySession, ByteString(bytes)))
+        .map(bytes => SessionBytes(TLSPlacebo.dummySession, ByteString(bytes)))
         .via(parser).named("parser")
-        .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x.isInstanceOf[EntityStreamError])
+        .splitWhen(x => x.isInstanceOf[MessageStart] || x.isInstanceOf[EntityStreamError])
         .prefixAndTail(1)
         .collect {
-          case (Seq(RequestStart(method, uri, protocol, headers, createEntity, _, close)), entityParts) ⇒
+          case (Seq(RequestStart(method, uri, protocol, headers, createEntity, _, close)), entityParts) =>
             closeAfterResponseCompletion :+= close
             Right(HttpRequest(method, uri, headers, createEntity(entityParts), protocol))
-          case (Seq(x @ (MessageStartError(_, _) | EntityStreamError(_))), rest) ⇒
+          case (Seq(x @ (MessageStartError(_, _) | EntityStreamError(_))), rest) =>
             rest.runWith(Sink.cancelled)
             Left(x)
         }
         .concatSubstreams
-        .flatMapConcat { x ⇒
+        .flatMapConcat { x =>
           Source.fromFuture {
             x match {
-              case Right(request) ⇒ compactEntity(request.entity).fast.map(x ⇒ Right(request.withEntity(x)))
-              case Left(error)    ⇒ FastFuture.successful(Left(error))
+              case Right(request) => compactEntity(request.entity).fast.map(x => Right(request.withEntity(x)))
+              case Left(error)    => FastFuture.successful(Left(error))
             }
           }
         }
@@ -653,17 +681,18 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
         .awaitResult(awaitAtMost)
 
     protected def parserSettings: ParserSettings = ParserSettings(system)
-    protected def newParser = new HttpRequestParser(parserSettings, false, HttpHeaderParser(parserSettings, system.log))
+    protected def websocketSettings: WebSocketSettings = WebSocketSettingsImpl.serverFromRoot(system.settings.config)
+    protected def newParser = new HttpRequestParser(parserSettings, websocketSettings, false, HttpHeaderParser(parserSettings, system.log))
 
     private def compactEntity(entity: RequestEntity): Future[RequestEntity] =
       entity match {
-        case x: Chunked ⇒ compactEntityChunks(x.chunks).fast.map(compacted ⇒ x.copy(chunks = source(compacted: _*)))
-        case _          ⇒ entity.toStrict(awaitAtMost)
+        case x: Chunked => compactEntityChunks(x.chunks).fast.map(compacted => x.copy(chunks = source(compacted: _*)))
+        case _          => entity.toStrict(awaitAtMost)
       }
 
     private def compactEntityChunks(data: Source[ChunkStreamPart, Any]): Future[Seq[ChunkStreamPart]] =
       data.limit(100000).runWith(Sink.seq)
-        .fast.recover { case _: NoSuchElementException ⇒ Nil }
+        .fast.recover { case _: NoSuchElementException => Nil }
 
     def prep(response: String) = response.stripMarginWithNewline(newLine)
   }

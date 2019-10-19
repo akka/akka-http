@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model.headers
@@ -9,7 +9,8 @@ import akka.annotation.ApiMayChange
 import scala.annotation.{ tailrec, varargs }
 import scala.collection.immutable
 import akka.http.impl.util._
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
+import akka.http.ccompat.{ pre213, since213 }
 
 sealed trait CacheDirective extends Renderable with jm.headers.CacheDirective {
   def value: String
@@ -22,8 +23,8 @@ object CacheDirective {
   final case class CustomCacheDirective(name: String, content: Option[String])
     extends RequestDirective with ResponseDirective with ValueRenderable {
     def render[R <: Rendering](r: R): r.type = content match {
-      case Some(s) ⇒ r ~~ name ~~ '=' ~~# s
-      case None    ⇒ r ~~ name
+      case Some(s) => r ~~ name ~~ '=' ~~# s
+      case None    => r ~~ name
     }
   }
 
@@ -64,8 +65,8 @@ object CacheDirectives {
    */
   final case class `max-stale`(deltaSeconds: Option[Long]) extends RequestDirective with ValueRenderable {
     def render[R <: Rendering](r: R): r.type = deltaSeconds match {
-      case Some(s) ⇒ r ~~ productPrefix ~~ '=' ~~ s
-      case None    ⇒ r ~~ productPrefix
+      case Some(s) => r ~~ productPrefix ~~ '=' ~~ s
+      case None    => r ~~ productPrefix
     }
   }
 
@@ -82,7 +83,12 @@ object CacheDirectives {
    * http://tools.ietf.org/html/rfc7234#section-5.2.1.4
    */
   case object `no-cache` extends SingletonValueRenderable with RequestDirective with ResponseDirective {
-    def apply(fieldNames: String*): `no-cache` = new `no-cache`(immutable.Seq(fieldNames: _*))
+    @pre213
+    def apply(fieldNames: String*): `no-cache` =
+      new `no-cache`(immutable.Seq(fieldNames: _*))
+    @since213
+    def apply(firstFieldName: String, otherFieldNames: String*): `no-cache` =
+      new `no-cache`(firstFieldName +: otherFieldNames.toList)
   }
 
   /**
@@ -132,7 +138,12 @@ object CacheDirectives {
    */
   final case class `private`(fieldNames: immutable.Seq[String]) extends FieldNamesDirective with ResponseDirective
   object `private` {
+    @pre213
     def apply(fieldNames: String*): `private` = new `private`(immutable.Seq(fieldNames: _*))
+    @since213
+    def apply(): `private` = new `private`(immutable.Seq.empty)
+    @since213
+    def apply(firstFieldName: String, otherFieldNames: String*): `private` = new `private`(firstFieldName +: otherFieldNames)
   }
 
   /** Java API */

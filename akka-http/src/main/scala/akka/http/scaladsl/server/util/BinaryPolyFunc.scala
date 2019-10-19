@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server.util
@@ -13,7 +13,7 @@ package akka.http.scaladsl.server.util
 trait BinaryPolyFunc {
   def at[A, B] = new CaseBuilder[A, B]
   class CaseBuilder[A, B] {
-    def apply[R](f: (A, B) ⇒ R) = new BinaryPolyFunc.Case[A, B, BinaryPolyFunc.this.type] {
+    def apply[R](f: (A, B) => R) = new BinaryPolyFunc.Case[A, B, BinaryPolyFunc.this.type] {
       type Out = R
       def apply(a: A, b: B) = f(a, b)
     }

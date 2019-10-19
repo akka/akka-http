@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2.hpack
@@ -16,10 +16,10 @@ private[http2] object ByteStringInputStream {
 
   def apply(bs: ByteString): InputStream =
     bs match {
-      case cs: ByteString1C ⇒
+      case cs: ByteString1C =>
         // TODO optimise, ByteString needs to expose InputStream (esp if array backed, nice!)
         new ByteArrayInputStream(cs.toArray)
-      case _ ⇒
+      case _ =>
         // NOTE: We actually measured recently, and compact + use array was pretty good usually
         apply(bs.compact)
     }

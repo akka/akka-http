@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -38,7 +38,7 @@ object MultiNode extends AutoPlugin {
     // -DMultiJvm.akka.cluster.Stress.nrOfNodes=15
     val MultinodeJvmArgs = "multinode\\.(D|X)(.*)".r
     val knownPrefix = Set("multnode.", "akka.", "MultiJvm.")
-    val akkaProperties = System.getProperties.propertyNames.asScala.toList.collect {
+    val akkaProperties = System.getProperties.propertyNames.asInstanceOf[java.util.Enumeration[String]].asScala.toList.collect {
       case MultinodeJvmArgs(a, b) =>
         val value = System.getProperty("multinode." + a + b)
         "-" + a + b + (if (value == "") "" else "=" + value)
@@ -77,9 +77,9 @@ object MultiNode extends AutoPlugin {
 
   implicit class TestResultOps(val self: TestResult) extends AnyVal {
     def id: Int = self match {
-      case TestResult.Passed ⇒ 0
-      case TestResult.Failed ⇒ 1
-      case TestResult.Error  ⇒ 2
+      case TestResult.Passed => 0
+      case TestResult.Failed => 1
+      case TestResult.Error  => 2
     }
   }
 }

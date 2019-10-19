@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -21,7 +21,7 @@ class RouteJavaScalaDslConversionSpec extends WordSpec {
         })
 
       // Remember that Route in Scala is just a type alias:
-      //   type Route = RequestContext ⇒ Future[RouteResult]
+      //   type Route = RequestContext => Future[RouteResult]
       val scalaRoute: akka.http.scaladsl.server.Route = javaRoute.asScala
       //#java-to-scala
     }

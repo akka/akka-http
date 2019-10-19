@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
-import docs.http.scaladsl.server.RoutingSpec
+import akka.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
-class MethodDirectivesExamplesSpec extends RoutingSpec {
+class MethodDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   "delete-method" in {
     //#delete-method
@@ -106,12 +107,14 @@ class MethodDirectivesExamplesSpec extends RoutingSpec {
   "extractMethod-example" in {
     //#extractMethod-example
     val route =
-      get {
-        complete("This is a GET request.")
-      } ~
+      concat(
+        get {
+          complete("This is a GET request.")
+        },
         extractMethod { method =>
           complete(s"This ${method.name} request, clearly is not a GET!")
         }
+      )
 
     // tests:
     Get("/") ~> route ~> check {
@@ -131,12 +134,14 @@ class MethodDirectivesExamplesSpec extends RoutingSpec {
     //#overrideMethodWithParameter-0
     val route =
       overrideMethodWithParameter("method") {
-        get {
-          complete("This looks like a GET request.")
-        } ~
+        concat(
+          get {
+            complete("This looks like a GET request.")
+          },
           post {
             complete("This looks like a POST request.")
           }
+        )
       }
 
     // tests:

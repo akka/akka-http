@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.settings
@@ -13,7 +13,7 @@ import com.typesafe.config.Config
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class HttpsProxySettings private[akka] () { self: HttpsProxySettingsImpl ⇒
+abstract class HttpsProxySettings private[akka] () { self: HttpsProxySettingsImpl =>
   def getHost: String = host
   def getPort: Int = port
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -25,10 +25,10 @@ private[http] object MessageToFrameRenderer {
       Source.single(FrameEvent.fullFrame(opcode, None, data, fin = true))
 
     def streamedFrames[M](opcode: Opcode, data: Source[ByteString, M]): Source[FrameStart, Any] =
-      data.via(StreamUtils.statefulMap(() ⇒ {
+      data.via(StreamUtils.statefulMap(() => {
         var isFirst = true
 
-        { data ⇒
+        { data =>
           val frameOpcode =
             if (isFirst) {
               isFirst = false
@@ -42,10 +42,10 @@ private[http] object MessageToFrameRenderer {
 
     Flow[Message]
       .flatMapConcat {
-        case BinaryMessage.Strict(data) ⇒ strictFrames(Opcode.Binary, data)
-        case bm: BinaryMessage          ⇒ streamedFrames(Opcode.Binary, bm.dataStream)
-        case TextMessage.Strict(text)   ⇒ strictFrames(Opcode.Text, ByteString(text, "UTF-8"))
-        case tm: TextMessage            ⇒ streamedFrames(Opcode.Text, tm.textStream.via(Utf8Encoder))
+        case BinaryMessage.Strict(data) => strictFrames(Opcode.Binary, data)
+        case bm: BinaryMessage          => streamedFrames(Opcode.Binary, bm.dataStream)
+        case TextMessage.Strict(text)   => strictFrames(Opcode.Text, ByteString(text, "UTF-8"))
+        case tm: TextMessage            => streamedFrames(Opcode.Text, tm.textStream.via(Utf8Encoder))
       }
   }
 }

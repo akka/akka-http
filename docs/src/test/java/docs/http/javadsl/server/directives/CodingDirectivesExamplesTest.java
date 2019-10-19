@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.javadsl.server.directives;
@@ -127,6 +127,14 @@ public class CodingDirectivesExamplesTest extends JUnitRouteTest {
       HttpRequest.GET("/")
         .addHeader(AcceptEncoding.create(HttpEncodings.IDENTITY))
     ).assertRejections(Rejections.unacceptedResponseEncoding(HttpEncodings.GZIP));
+
+    final Route routeWithLevel9 = encodeResponseWith(
+            Collections.singletonList(Coder.GzipLevel9),
+            () -> complete("content")
+    );
+
+    testRoute(routeWithLevel9).run(HttpRequest.GET("/"))
+      .assertHeaderExists(ContentEncoding.create(HttpEncodings.GZIP));
     //#encodeResponseWith
   }
 

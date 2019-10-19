@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -10,6 +10,7 @@ import java.nio.channels.{ ServerSocketChannel, SocketChannel }
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorSystem
+import akka.event.Logging
 import akka.http.impl.engine.client.PoolMasterActor.PoolInterfaceRunning
 import akka.http.impl.engine.server.ServerTerminator
 import akka.http.impl.engine.ws.ByteStringSinkProbe
@@ -20,7 +21,8 @@ import akka.http.scaladsl.model.{ HttpEntity, _ }
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, PoolImplementation, ServerSettings }
 import akka.http.scaladsl.{ ClientTransport, ConnectionContext, Http }
-import akka.stream.{ ActorMaterializer, OverflowStrategy, QueueOfferResult }
+import akka.stream.Attributes
+import akka.stream.{ OverflowStrategy, QueueOfferResult }
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
 import akka.stream.testkit.Utils.TE
@@ -34,16 +36,14 @@ import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
-abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extends AkkaSpec("""
-    akka.loglevel = DEBUG
-    akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
+abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
+  extends AkkaSpecWithMaterializer("""
     akka.io.tcp.windows-connection-abort-workaround-enabled = auto
     akka.io.tcp.trace-logging = off
     akka.test.single-expect-default = 5000 # timeout for checks, adjust as necessary, set here to 5s
     akka.scheduler.tick-duration = 1ms     # to make race conditions in Pool idle-timeout more likely
     akka.http.client.log-unencrypted-network-bytes = 200
-                                          """) with WithLogCapturing {
-  implicit val materializer = ActorMaterializer()
+                                          """) { testSuite =>
 
   // FIXME: Extract into proper util class to be reusable
   lazy val ConnectionResetByPeerMessage: String = {
@@ -61,7 +61,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       clientSocket.read(ByteBuffer.allocate(1))
       null
     } catch {
-      case NonFatal(e) ⇒ e.getMessage
+      case NonFatal(e) => e.getMessage
     }
   }
 
@@ -70,7 +70,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     "complete a simple request/response cycle" in new TestSetup {
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int]()
 
-      requestIn.sendNext(HttpRequest(uri = "/") → 42)
+      requestIn.sendNext(HttpRequest(uri = "/") -> 42)
 
       responseOutSub.request(1)
       acceptIncomingConnection()
@@ -81,8 +81,8 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     "open a second connection if the first one is loaded" in new TestSetup {
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int]()
 
-      requestIn.sendNext(HttpRequest(uri = "/a") → 42)
-      requestIn.sendNext(HttpRequest(uri = "/b") → 43)
+      requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
+      requestIn.sendNext(HttpRequest(uri = "/b") -> 43)
 
       responseOutSub.request(2)
       acceptIncomingConnection()
@@ -91,11 +91,11 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       val r2 = responseOut.expectNext()
 
       Seq(r1, r2) foreach {
-        case (Success(x), 42) ⇒ requestUri(x) should endWith("/a")
-        case (Success(x), 43) ⇒ requestUri(x) should endWith("/b")
-        case x                ⇒ fail(x.toString)
+        case (Success(x), 42) => requestUri(x) should endWith("/a")
+        case (Success(x), 43) => requestUri(x) should endWith("/b")
+        case x                => fail(x.toString)
       }
-      Seq(r1, r2).map(t ⇒ connNr(t._1.get)) should contain allOf (1, 2)
+      Seq(r1, r2).map(t => connNr(t._1.get)) should contain allOf (1, 2)
     }
 
     "open a second connection if the request on the first one is dispatch but not yet completed" in new TestSetup {
@@ -103,14 +103,14 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
 
       val responseEntityPub = TestPublisher.probe[ByteString]()
 
-      override def testServerHandler(connNr: Int): HttpRequest ⇒ HttpResponse = {
-        case request @ HttpRequest(_, Uri.Path("/a"), _, _, _) ⇒
+      override def testServerHandler(connNr: Int): HttpRequest => HttpResponse = {
+        case request @ HttpRequest(_, Uri.Path("/a"), _, _, _) =>
           val entity = HttpEntity.Chunked.fromData(ContentTypes.`text/plain(UTF-8)`, Source.fromPublisher(responseEntityPub))
           super.testServerHandler(connNr)(request) withEntity entity
-        case x ⇒ super.testServerHandler(connNr)(x)
+        case x => super.testServerHandler(connNr)(x)
       }
 
-      requestIn.sendNext(HttpRequest(uri = "/a") → 42)
+      requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
       responseOutSub.request(1)
       acceptIncomingConnection()
       val (Success(r1), 42) = responseOut.expectNext()
@@ -120,17 +120,33 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       responseEntityPub.sendNext(ByteString("YEAH"))
       responseEntityProbe.expectNext(ByteString("YEAH"))
 
-      requestIn.sendNext(HttpRequest(uri = "/b") → 43)
+      requestIn.sendNext(HttpRequest(uri = "/b") -> 43)
       responseOutSub.request(1)
       acceptIncomingConnection()
       val (Success(r2), 43) = responseOut.expectNext()
       connNr(r2) shouldEqual 2
     }
 
+    "automatically open a new connection after configured max-connection-lifetime elapsed" in new TestSetup(autoAccept = true) {
+      if (poolImplementation == PoolImplementation.Legacy) { testSuite.cancel("Not implemented for legacy pool") }
+      val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int](
+        maxConnections = 1,
+        minConnections = 1,
+        idleTimeout = 10.minutes,
+        maxConnectionLifetime = 1.seconds)
+
+      awaitCond({
+        requestIn.sendNext(HttpRequest(uri = "/uri") -> 42)
+        responseOutSub.request(1)
+        val (Success(response), 42) = responseOut.expectNext()
+        connNr(response) == 2
+      }, max = 2.seconds)
+    }
+
     "not open a second connection if there is an idle one available" in new TestSetup {
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int]()
 
-      requestIn.sendNext(HttpRequest(uri = "/a") → 42)
+      requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
       responseOutSub.request(1)
       acceptIncomingConnection()
       val (Success(response1), 42) = responseOut.expectNext()
@@ -140,23 +156,23 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       // has actually seen that the response is completely done, especially in the legacy implementation
       Thread.sleep(100)
 
-      requestIn.sendNext(HttpRequest(uri = "/b") → 43)
+      requestIn.sendNext(HttpRequest(uri = "/b") -> 43)
       responseOutSub.request(1)
       val (Success(response2), 43) = responseOut.expectNext()
       connNr(response2) shouldEqual 1
     }
 
-    "be able to handle 500 pipelined requests against the test server" in new TestSetup {
+    "be able to handle 500 requests against the test server" in new TestSetup {
       val settings = ConnectionPoolSettings(system).withMaxConnections(4).withPipeliningLimit(2)
       val poolFlow = Http().cachedHostConnectionPool[Int](serverHostName, serverPort, settings = settings)
 
       val N = 500
-      val requestIds = Source.fromIterator(() ⇒ Iterator.from(1)).take(N)
-      val idSum = requestIds.map(id ⇒ HttpRequest(uri = s"/r$id") → id).via(poolFlow).map {
-        case (Success(response), id) ⇒
+      val requestIds = Source.fromIterator(() => Iterator.from(1)).take(N)
+      val idSum = requestIds.map(id => HttpRequest(uri = s"/r$id") -> id).via(poolFlow).map {
+        case (Success(response), id) =>
           requestUri(response) should endWith(s"/r$id")
           id
-        case x ⇒ fail(x.toString)
+        case x => fail(x.toString)
       }.runFold(0)(_ + _)
 
       acceptIncomingConnection()
@@ -170,8 +186,8 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     "surface connection-level errors" in new TestSetup(autoAccept = true) {
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int](maxRetries = 0)
 
-      requestIn.sendNext(HttpRequest(uri = "/a") → 42)
-      requestIn.sendNext(HttpRequest(uri = "/crash") → 43)
+      requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
+      requestIn.sendNext(HttpRequest(uri = "/crash") -> 43)
       responseOutSub.request(2)
 
       override def mapServerSideOutboundRawBytes(bytes: ByteString): ByteString =
@@ -179,35 +195,36 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
 
       val responses = Seq(responseOut.expectNext(), responseOut.expectNext())
 
-      responses mustContainLike { case (Success(x), 42) ⇒ requestUri(x) should endWith("/a") }
-      responses mustContainLike { case (Failure(x), 43) ⇒ x.getMessage should include(ConnectionResetByPeerMessage) }
+      responses mustContainLike { case (Success(x), 42) => requestUri(x) should endWith("/a") }
+      responses mustContainLike { case (Failure(x), 43) => x.getMessage should include(ConnectionResetByPeerMessage) }
     }
 
-    // akka-http/#416
     "surface connection-level and stream-level errors while receiving response entity" in new TestSetup(autoAccept = true) {
+
       val errorOnConnection1 = Promise[ByteString]()
 
       val crashingEntity =
-        Source.fromIterator(() ⇒ Iterator.fill(10)(ByteString("abc")))
+        Source.fromIterator(() => Iterator.fill(10)(ByteString("abc")))
           .concat(Source.fromFuture(errorOnConnection1.future))
-          .log("test")
+          .log("response-entity-stream")
+          .addAttributes(Attributes.logLevels(Logging.InfoLevel, Logging.InfoLevel, Logging.InfoLevel))
 
-      val laterHandler = Promise[(HttpRequest ⇒ Future[HttpResponse]) ⇒ Unit]()
+      val laterHandler = Promise[(HttpRequest => Future[HttpResponse]) => Unit]()
 
-      override def asyncTestServerHandler(connNr: Int): HttpRequest ⇒ Future[HttpResponse] = { req ⇒
+      override def asyncTestServerHandler(connNr: Int): HttpRequest => Future[HttpResponse] = { req =>
         req.discardEntityBytes()
         if (req.uri.path.toString contains "a")
           Future.successful(HttpResponse(200, entity = HttpEntity.CloseDelimited(ContentTypes.`application/octet-stream`, crashingEntity)))
         else {
           val response = Promise[HttpResponse]()
-          laterHandler.success(handler ⇒ response.completeWith(handler(req)))
+          laterHandler.success(handler => response.completeWith(handler(req)))
           response.future
         }
       }
 
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int](maxRetries = 0)
 
-      requestIn.sendNext(HttpRequest(uri = "/a") → 42)
+      requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
       responseOutSub.request(2)
 
       val (Success(response1), _) = responseOut.expectNext()
@@ -218,21 +235,24 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       probe1.expectBytes(ByteString("abc" * 10))
 
       // send second request
-      requestIn.sendNext(HttpRequest(uri = "/b") → 43)
+      requestIn.sendNext(HttpRequest(uri = "/b") -> 43)
 
       // ensure that server has seen request 2
       val handlerSetter = Await.result(laterHandler.future, 1.second.dilated)
 
-      // now fail the first one
-      EventFilter[RuntimeException](occurrences = 1) intercept {
-        errorOnConnection1.failure(new RuntimeException)
+      // now fail the first one, expecting the server-side error message
+      EventFilter[RuntimeException](message = "Response stream for [GET /a] failed with 'Woops, slipped on a slippery slope.'. Aborting connection.", occurrences = 1) intercept {
+        errorOnConnection1.failure(new RuntimeException("Woops, slipped on a slippery slope."))
       }
+
+      // expect "reset by peer" on the client side
+      probe1.expectError()
 
       // waiting for error to trigger connection pool failure
       Thread.sleep(2000)
 
       // now respond to request 2
-      handlerSetter(req ⇒ Future.successful(HttpResponse()))
+      handlerSetter(req => Future.successful(HttpResponse()))
 
       val (Success(_), _) = responseOut.expectNext()
     }
@@ -240,8 +260,8 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     "retry failed requests" in new TestSetup(autoAccept = true) {
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int]()
 
-      requestIn.sendNext(HttpRequest(uri = "/a") → 42)
-      requestIn.sendNext(HttpRequest(uri = "/crash") → 43)
+      requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
+      requestIn.sendNext(HttpRequest(uri = "/crash") -> 43)
       responseOutSub.request(2)
 
       val remainingResponsesToKill = new AtomicInteger(1)
@@ -252,8 +272,8 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
 
       val responses = Seq(responseOut.expectNext(), responseOut.expectNext())
 
-      responses mustContainLike { case (Success(x), 42) ⇒ requestUri(x) should endWith("/a") }
-      responses mustContainLike { case (Success(x), 43) ⇒ requestUri(x) should endWith("/crash") }
+      responses mustContainLike { case (Success(x), 42) => requestUri(x) should endWith("/a") }
+      responses mustContainLike { case (Success(x), 43) => requestUri(x) should endWith("/crash") }
     }
 
     "respect the configured `maxRetries` value" in new TestSetup(autoAccept = true) {
@@ -263,8 +283,8 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
 
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int](maxRetries = 4)
 
-      requestIn.sendNext(HttpRequest(uri = "/a") → 42)
-      requestIn.sendNext(HttpRequest(uri = "/crash") → 43)
+      requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
+      requestIn.sendNext(HttpRequest(uri = "/crash") -> 43)
       responseOutSub.request(2)
 
       val remainingResponsesToKill = new AtomicInteger(5)
@@ -275,8 +295,8 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
 
       val responses = Seq(responseOut.expectNext(), responseOut.expectNext())
 
-      responses mustContainLike { case (Success(x), 42) ⇒ requestUri(x) should endWith("/a") }
-      responses mustContainLike { case (Failure(x), 43) ⇒ x.getMessage should include(ConnectionResetByPeerMessage) }
+      responses mustContainLike { case (Success(x), 42) => requestUri(x) should endWith("/a") }
+      responses mustContainLike { case (Failure(x), 43) => x.getMessage should include(ConnectionResetByPeerMessage) }
       remainingResponsesToKill.get() shouldEqual 0
     }
 
@@ -286,6 +306,41 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       Await.result(gateway.poolStatus(), 1500.millis.dilated).get shouldBe a[PoolInterfaceRunning]
       awaitCond({ Await.result(gateway.poolStatus(), 1500.millis.dilated).isEmpty }, 2000.millis.dilated)
     }
+    "automatically shutdown after configured timeout periods but only after streaming response is finished" in new TestSetup() {
+      val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int](idleTimeout = 200.millis)
+      val gateway = hcp.gateway
+
+      val responseEntityPub = TestPublisher.probe[ByteString]()
+
+      override def testServerHandler(connNr: Int): HttpRequest => HttpResponse = {
+        case request @ HttpRequest(_, Uri.Path("/a"), _, _, _) =>
+          val entity = HttpEntity.Chunked.fromData(ContentTypes.`text/plain(UTF-8)`, Source.fromPublisher(responseEntityPub))
+          super.testServerHandler(connNr)(request) withEntity entity
+        case x => super.testServerHandler(connNr)(x)
+      }
+      requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
+      responseOutSub.request(1)
+      acceptIncomingConnection()
+      val (Success(r1), 42) = responseOut.expectNext()
+      val responseEntityProbe = ByteStringSinkProbe()
+      r1.entity.dataBytes.runWith(responseEntityProbe.sink)
+      responseEntityPub.sendNext(ByteString("Hello"))
+      responseEntityProbe.expectUtf8EncodedString("Hello")
+
+      Await.result(gateway.poolStatus(), 1500.millis.dilated).get shouldBe a[PoolInterfaceRunning]
+      Thread.sleep(500)
+
+      // afterwards it should still be running because a response is still being delivered
+      responseEntityPub.sendNext(ByteString("World"))
+      responseEntityProbe.expectUtf8EncodedString("World")
+      Await.result(gateway.poolStatus(), 1500.millis.dilated).get shouldBe a[PoolInterfaceRunning]
+
+      // now finish response
+      responseEntityPub.sendComplete()
+      responseEntityProbe.request(1)
+      responseEntityProbe.expectComplete()
+      awaitCond(Await.result(gateway.poolStatus(), 1500.millis.dilated).isEmpty, 2000.millis.dilated)
+    }
 
     "transparently restart after idle shutdown" in new TestSetup() {
       val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int](idleTimeout = 1.second)
@@ -294,7 +349,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       Await.result(gateway.poolStatus(), 1500.millis.dilated).get shouldBe a[PoolInterfaceRunning]
       awaitCond({ Await.result(gateway.poolStatus(), 1500.millis.dilated).isEmpty }, 2000.millis.dilated)
 
-      requestIn.sendNext(HttpRequest(uri = "/") → 42)
+      requestIn.sendNext(HttpRequest(uri = "/") -> 42)
 
       responseOutSub.request(1)
       acceptIncomingConnection()
@@ -309,9 +364,9 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
           pipeliningLimit = 1,
           minConnections = 0)
 
-      (1 to 100).foreach { i ⇒
+      (1 to 100).foreach { i =>
         responseOutSub.request(1)
-        requestIn.sendNext(HttpRequest(uri = s"/$i") → i)
+        requestIn.sendNext(HttpRequest(uri = s"/$i") -> i)
         responseOut.expectNext()
         // more than the 1 millisescond idle-timeout but it seemed to trigger the bug quite reliably
         Thread.sleep(2)
@@ -328,11 +383,11 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       val gatewayConnection = hcpMinConnection.gateway
 
       acceptIncomingConnection()
-      requestIn.sendNext(HttpRequest(uri = "/minimumslots/1", headers = immutable.Seq(close)) → 42)
+      requestIn.sendNext(HttpRequest(uri = "/minimumslots/1", headers = immutable.Seq(close)) -> 42)
       responseOutSub.request(1)
       responseOut.expectNextN(1)
 
-      condHolds(500.millis.dilated) { () ⇒
+      condHolds(500.millis.dilated) { () =>
         Await.result(gatewayConnection.poolStatus(), 100.millis.dilated).get shouldBe a[PoolInterfaceRunning]
       }
     }
@@ -347,16 +402,16 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
         minConnections = minConnections,
         maxConnections = minConnections + 10)
 
-      (1 to 30) foreach { _ ⇒ // run a few requests
-        (0 until minConnections) foreach { i ⇒
-          requestIn.sendNext(HttpRequest(uri = s"/minimumslots/5/$i", headers = immutable.Seq(close)) → 42)
+      (1 to 30) foreach { _ => // run a few requests
+        (0 until minConnections) foreach { i =>
+          requestIn.sendNext(HttpRequest(uri = s"/minimumslots/5/$i", headers = immutable.Seq(close)) -> 42)
         }
         responseOutSub.request(minConnections)
         responseOut.expectNextN(minConnections)
       }
 
       val gatewayConnections = hcpMinConnection.gateway
-      condHolds(1000.millis.dilated) { () ⇒
+      condHolds(1000.millis.dilated) { () =>
         val status = gatewayConnections.poolStatus()
         Await.result(status, 100.millis.dilated).get shouldBe a[PoolInterfaceRunning]
       }
@@ -445,8 +500,8 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
 
       val responseSourceQueuePromise = Promise[SourceQueueWithComplete[ChunkStreamPart]]()
 
-      override def testServerHandler(connNr: Int): HttpRequest ⇒ HttpResponse = {
-        r ⇒
+      override def testServerHandler(connNr: Int): HttpRequest => HttpResponse = {
+        r =>
           HttpResponse(
             headers = responseHeaders(r, connNr),
             entity = HttpEntity.Chunked(ContentTypes.`application/octet-stream`, Source.queue(8, OverflowStrategy.fail).mapMaterializedValue(responseSourceQueuePromise.success)))
@@ -481,14 +536,14 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
 
       val (requestIn, responseOut, responseOutSub, _) = superPool[Int]()
 
-      requestIn.sendNext(HttpRequest(uri = s"http://$serverHostName:$serverPort/a") → 42)
-      requestIn.sendNext(HttpRequest(uri = s"http://$serverHostName2:$serverPort2/b") → 43)
+      requestIn.sendNext(HttpRequest(uri = s"http://$serverHostName:$serverPort/a") -> 42)
+      requestIn.sendNext(HttpRequest(uri = s"http://$serverHostName2:$serverPort2/b") -> 43)
 
       responseOutSub.request(2)
       Seq(responseOut.expectNext(), responseOut.expectNext()) foreach {
-        case (Success(x), 42) ⇒ requestUri(x) shouldEqual s"http://$serverHostName:$serverPort/a"
-        case (Success(x), 43) ⇒ requestUri(x) shouldEqual s"http://$serverHostName2:$serverPort2/b"
-        case x                ⇒ fail(x.toString)
+        case (Success(x), 42) => requestUri(x) shouldEqual s"http://$serverHostName:$serverPort/a"
+        case (Success(x), 43) => requestUri(x) shouldEqual s"http://$serverHostName2:$serverPort2/b"
+        case x                => fail(x.toString)
       }
     }
 
@@ -507,32 +562,32 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     val poolFlow = Http().cachedHostConnectionPool[Int](serverHostName, serverPort, settings = settings)
 
     val N = 500
-    val requestIds = Source.fromIterator(() ⇒ Iterator.from(1)).take(N)
-    val idSum = requestIds.map(id ⇒ HttpRequest(uri = s"/r$id").withHeaders(Connection("close")) → id).via(poolFlow).map {
-      case (Success(response), id) ⇒
+    val requestIds = Source.fromIterator(() => Iterator.from(1)).take(N)
+    val idSum = requestIds.map(id => HttpRequest(uri = s"/r$id").withHeaders(Connection("close")) -> id).via(poolFlow).map {
+      case (Success(response), id) =>
         requestUri(response) should endWith(s"/r$id")
         id
-      case x ⇒ fail(x.toString)
+      case x => fail(x.toString)
     }.runFold(0)(_ + _)
 
-    (1 to N).foreach(_ ⇒ acceptIncomingConnection())
+    (1 to N).foreach(_ => acceptIncomingConnection())
 
     Await.result(idSum, 10.seconds.dilated) shouldEqual N * (N + 1) / 2
   }
 
-  "be able to handle 500 pipelined requests with connection termination" in new TestSetup(autoAccept = true) {
+  "be able to handle 500 requests with connection termination" in new TestSetup(autoAccept = true) {
     def closeHeader(): List[Connection] =
       if (util.Random.nextInt(8) == 0) Connection("close") :: Nil
       else Nil
 
-    override def testServerHandler(connNr: Int): HttpRequest ⇒ HttpResponse = { r ⇒
+    override def testServerHandler(connNr: Int): HttpRequest => HttpResponse = { r =>
       val idx = r.uri.path.tail.head.toString
       HttpResponse()
         .withHeaders(RawHeader("Req-Idx", idx) +: responseHeaders(r, connNr))
         .withDefaultHeaders(closeHeader())
     }
 
-    for (pipeliningLimit ← Iterator.from(1).map(math.pow(2, _).toInt).take(4)) {
+    for (pipeliningLimit <- Iterator.from(1).map(math.pow(2, _).toInt).take(4)) {
       val settings = ConnectionPoolSettings(system).withMaxConnections(4).withPipeliningLimit(pipeliningLimit).withMaxOpenRequests(4 * pipeliningLimit)
       val poolFlow = Http().cachedHostConnectionPool[Int](serverHostName, serverPort, settings = settings)
 
@@ -540,24 +595,24 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
         if (util.Random.nextInt(2) == 0) HttpMethods.POST else HttpMethods.GET
 
       def request(i: Int) =
-        HttpRequest(method = method(), headers = closeHeader(), uri = s"/$i") → i
+        HttpRequest(method = method(), headers = closeHeader(), uri = s"/$i") -> i
 
       try {
         val N = 200
         val (_, idSum) =
-          Source.fromIterator(() ⇒ Iterator.from(1)).take(N)
+          Source.fromIterator(() => Iterator.from(1)).take(N)
             .map(request)
             .viaMat(poolFlow)(Keep.right)
             .map {
-              case (Success(response), id) ⇒
+              case (Success(response), id) =>
                 requestUri(response) should endWith(s"/$id")
                 id
-              case x ⇒ fail(x.toString)
+              case x => fail(x.toString)
             }.toMat(Sink.fold(0)(_ + _))(Keep.both).run()
 
         Await.result(idSum, 35.seconds.dilated) shouldEqual N * (N + 1) / 2
       } catch {
-        case thr: Throwable ⇒
+        case thr: Throwable =>
           throw new RuntimeException(s"Failed at pipeliningLimit=$pipeliningLimit, poolFlow=$poolFlow", thr)
       }
     }
@@ -568,17 +623,17 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     autoAccept:     Boolean        = false) {
     val (serverHostName, serverPort) = SocketUtil.temporaryServerHostnameAndPort()
 
-    def asyncTestServerHandler(connNr: Int): HttpRequest ⇒ Future[HttpResponse] = {
+    def asyncTestServerHandler(connNr: Int): HttpRequest => Future[HttpResponse] = {
       val handler = testServerHandler(connNr)
-      req ⇒ Future.successful(handler(req))
+      req => Future.successful(handler(req))
     }
 
-    def testServerHandler(connNr: Int): HttpRequest ⇒ HttpResponse = {
-      r ⇒ HttpResponse(headers = responseHeaders(r, connNr), entity = r.entity)
+    def testServerHandler(connNr: Int): HttpRequest => HttpResponse = {
+      r => HttpResponse(headers = responseHeaders(r, connNr), entity = r.entity)
     }
 
     def responseHeaders(r: HttpRequest, connNr: Int) =
-      ConnNrHeader(connNr) +: RawHeader("Req-Uri", r.uri.toString) +: r.headers.map(h ⇒ RawHeader("Req-" + h.name, h.value))
+      ConnNrHeader(connNr) +: RawHeader("Req-Uri", r.uri.toString) +: r.headers.map(h => RawHeader("Req-" + h.name, h.value))
 
     def mapServerSideOutboundRawBytes(bytes: ByteString): ByteString = bytes
 
@@ -586,15 +641,15 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
     val incomingConnections = TestSubscriber.manualProbe[Http.IncomingConnection]
     val incomingConnectionsSub = {
       val rawBytesInjection = BidiFlow.fromFlows(
-        Flow[SslTlsOutbound].collect[ByteString] { case SendBytes(x) ⇒ mapServerSideOutboundRawBytes(x) }
-          .recover({ case NoErrorComplete ⇒ ByteString.empty }),
+        Flow[SslTlsOutbound].collect[ByteString] { case SendBytes(x) => mapServerSideOutboundRawBytes(x) }
+          .recover({ case NoErrorComplete => ByteString.empty }),
         Flow[ByteString].map(SessionBytes(null, _)))
       val sink = if (autoAccept) Sink.foreach[Http.IncomingConnection](handleConnection) else Sink.fromSubscriber(incomingConnections)
       Tcp().bind(serverHostName, serverPort, idleTimeout = serverSettings.timeouts.idleTimeout)
-        .map { c ⇒
+        .map { c =>
           val layer = Http().serverLayer(serverSettings, log = log)
           val flow = (layer atop rawBytesInjection join c.flow)
-            .mapMaterializedValue(_ ⇒
+            .mapMaterializedValue(_ =>
               new ServerTerminator {
                 // this is simply a mock, since we do not use termination in these tests anyway
                 def terminate(deadline: FiniteDuration)(implicit ec: ExecutionContext): Future[HttpTerminated] =
@@ -615,13 +670,14 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       c.handleWithAsyncHandler(asyncTestServerHandler(incomingConnectionCounter.incrementAndGet()))
 
     def cachedHostConnectionPool[T](
-      maxConnections:  Int                      = 2,
-      minConnections:  Int                      = 0,
-      maxRetries:      Int                      = 2,
-      maxOpenRequests: Int                      = 8,
-      pipeliningLimit: Int                      = 1,
-      idleTimeout:     FiniteDuration           = 5.seconds,
-      ccSettings:      ClientConnectionSettings = ClientConnectionSettings(system)) = {
+      maxConnections:        Int                      = 2,
+      minConnections:        Int                      = 0,
+      maxRetries:            Int                      = 2,
+      maxOpenRequests:       Int                      = 8,
+      pipeliningLimit:       Int                      = 1,
+      idleTimeout:           FiniteDuration           = 5.seconds,
+      maxConnectionLifetime: Duration                 = Duration.Inf,
+      ccSettings:            ClientConnectionSettings = ClientConnectionSettings(system)) = {
 
       val settings =
         ConnectionPoolSettings(system)
@@ -631,6 +687,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
           .withMaxOpenRequests(maxOpenRequests)
           .withPipeliningLimit(pipeliningLimit)
           .withIdleTimeout(idleTimeout.dilated)
+          .withMaxConnectionLifetime(maxConnectionLifetime)
           .withConnectionSettings(ccSettings)
           .withPoolImplementation(poolImplementation)
 
@@ -676,7 +733,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
      * The given condition function should throw if not met.
      * Note: Execution of "condHolds" will take at least "in" time, so for big "in" it might drain the ime budget for tests.
      */
-    def condHolds[T](in: FiniteDuration)(f: () ⇒ T): T = {
+    def condHolds[T](in: FiniteDuration)(f: () => T): T = {
       val end = System.nanoTime.nanos + in
 
       var lastR = f()
@@ -713,7 +770,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation) extend
       def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
         promise.success((host, port, settings))
         Flow.fromSinkAndSource(in.sink, Source.fromPublisher(out))
-          .mapMaterializedValue(_ ⇒ Future.successful(Http.OutgoingConnection(InetSocketAddress.createUnresolved("local", 12345), InetSocketAddress.createUnresolved(host, port))))
+          .mapMaterializedValue(_ => Future.successful(Http.OutgoingConnection(InetSocketAddress.createUnresolved("local", 12345), InetSocketAddress.createUnresolved(host, port))))
       }
     }
 

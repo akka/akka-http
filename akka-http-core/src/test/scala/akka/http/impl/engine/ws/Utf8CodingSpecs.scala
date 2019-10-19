@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -7,16 +7,14 @@ package akka.http.impl.engine.ws
 import org.scalacheck.Gen
 
 import scala.concurrent.duration._
-
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import akka.http.impl.util._
 import akka.testkit._
-import org.scalatest.prop.PropertyChecks
-import org.scalatest.{ FreeSpec, Matchers }
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class Utf8CodingSpecs extends FreeSpec with Matchers with PropertyChecks with WithMaterializerSpec {
-  "Utf8 decoding/encoding" - {
+class Utf8CodingSpecs extends AkkaSpecWithMaterializer with ScalaCheckPropertyChecks {
+  "Utf8 decoding/encoding" should {
     "work for all codepoints" in {
       def isSurrogate(cp: Int): Boolean =
         cp >= Utf8Encoder.SurrogateHighMask && cp <= 0xdfff
@@ -34,7 +32,7 @@ class Utf8CodingSpecs extends FreeSpec with Matchers with PropertyChecks with Wi
         }
       }
 
-      forAll(cps) { (cp: Int) ⇒
+      forAll(cps) { (cp: Int) =>
         val utf16 = codePointAsString(cp)
         decodeUtf8(encodeUtf8(utf16)) shouldEqual utf16
       }
@@ -42,7 +40,7 @@ class Utf8CodingSpecs extends FreeSpec with Matchers with PropertyChecks with Wi
   }
 
   def encodeUtf8(str: String): ByteString =
-    Source(str.map(ch ⇒ new String(Array(ch)))) // chunk in smallest chunks possible
+    Source(str.map(ch => new String(Array(ch)))) // chunk in smallest chunks possible
       .via(Utf8Encoder)
       .runFold(ByteString.empty)(_ ++ _).awaitResult(1.second.dilated)
 
@@ -50,8 +48,8 @@ class Utf8CodingSpecs extends FreeSpec with Matchers with PropertyChecks with Wi
     val builder = new StringBuilder
     val decoder = Utf8Decoder.create()
     bytes
-      .map(b ⇒ ByteString(b)) // chunk in smallest chunks possible
-      .foreach { bs ⇒
+      .map(b => ByteString(b)) // chunk in smallest chunks possible
+      .foreach { bs =>
         builder append decoder.decode(bs, endOfInput = false).get
       }
 

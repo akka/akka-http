@@ -5,3 +5,27 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.H
 
 # Internal API
 ProblemFilters.exclude[Problem]("akka.http.impl.*")
+
+# New setting in @DoNotInherit class
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.baseConnectionBackoff")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.maxConnectionBackoff")
+
+# moved to akka-http
+ProblemFilters.exclude[MissingClassProblem]("akka.http.javadsl.settings.RoutingSettings")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.javadsl.settings.RoutingSettings$")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.settings.RoutingSettings")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.settings.RoutingSettings$")
+
+#### Not caught by the version of MiMa in use at the time:
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.Http.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.Http.apply")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.settings.PreviewServerSettings.create")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.settings.ConnectionPoolSettings.create")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.settings.ServerSettings.create")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.settings.HttpsProxySettings.create")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.settings.ParserSettings.create")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.create")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.*.register")

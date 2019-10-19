@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.settings
@@ -7,11 +7,11 @@ package akka.http.javadsl.settings
 import akka.actor.ActorSystem
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
-import com.typesafe.config.Config
-
-import scala.concurrent.duration.Duration
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.ClientTransport
+import com.typesafe.config.Config
+
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 @ApiMayChange
 trait PoolImplementation
@@ -25,12 +25,14 @@ object PoolImplementation {
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSettingsImpl ⇒
+abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSettingsImpl =>
   def getMaxConnections: Int = maxConnections
   def getMinConnections: Int = minConnections
   def getMaxRetries: Int = maxRetries
   def getMaxOpenRequests: Int = maxOpenRequests
   def getPipeliningLimit: Int = pipeliningLimit
+  def getBaseConnectionBackoff: FiniteDuration = baseConnectionBackoff
+  def getMaxConnectionBackoff: FiniteDuration = maxConnectionBackoff
   def getIdleTimeout: Duration = idleTimeout
   def getConnectionSettings: ClientConnectionSettings = connectionSettings
 
@@ -53,8 +55,12 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   def withMinConnections(n: Int): ConnectionPoolSettings = self.copy(minConnections = n)
   def withMaxRetries(n: Int): ConnectionPoolSettings = self.copy(maxRetries = n)
   def withMaxOpenRequests(newValue: Int): ConnectionPoolSettings = self.copy(maxOpenRequests = newValue)
+  /** Client-side pipelining is not currently supported, see https://github.com/akka/akka-http/issues/32 */
   def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copy(pipeliningLimit = newValue)
+  def withBaseConnectionBackoff(newValue: FiniteDuration): ConnectionPoolSettings = self.copy(baseConnectionBackoff = newValue)
+  def withMaxConnectionBackoff(newValue: FiniteDuration): ConnectionPoolSettings = self.copy(maxConnectionBackoff = newValue)
   def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue)
+  def withMaxConnectionLifetime(newValue: Duration): ConnectionPoolSettings = self.copy(maxConnectionLifetime = newValue)
   def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue.asScala)
 
   @ApiMayChange

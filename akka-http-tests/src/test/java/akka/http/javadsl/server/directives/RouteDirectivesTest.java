@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives;
@@ -88,8 +88,10 @@ public class RouteDirectivesTest extends JUnitRouteTest {
 
     route
       .run(HttpRequest.create("/limit-5").withEntity("1234567890"))
-      .assertStatusCode(StatusCodes.INTERNAL_SERVER_ERROR)
-      .assertEntity("There was an internal server error.");
+      .assertStatusCode(StatusCodes.REQUEST_ENTITY_TOO_LARGE)
+      .assertEntity("EntityStreamSizeException: actual entity size (Some(10)) exceeded content length limit (5 bytes)! " +
+              "You can configure this by setting `akka.http.[server|client].parsing.max-content-length` " +
+              "or calling `HttpEntity.withSizeLimit` before materializing the dataBytes stream.");
   }
 
   @Test(expected = IllegalArgumentException.class)

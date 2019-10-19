@@ -19,10 +19,9 @@ package akka.http.javadsl.model.sse;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-import akka.http.javadsl.model.sse.ServerSentEvent;
 import org.junit.Assert;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 public class ServerSentEventTest extends JUnitSuite {
 

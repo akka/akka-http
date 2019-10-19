@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server
@@ -57,6 +57,6 @@ class TestKitTimeoutSpec extends WordSpec with ScalatestRouteTest {
   import akka.http.scaladsl.testkit.RouteTestTimeout
   import akka.testkit.TestDuration
 
-  implicit val timeout = RouteTestTimeout(5.seconds dilated)
+  implicit val timeout = RouteTestTimeout(5.seconds.dilated)
   //#timeout-setting
 }

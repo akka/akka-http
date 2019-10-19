@@ -1,10 +1,8 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server
-
-// format: OFF
 
 //#source-quote
 import org.scalatest.{ Matchers, WordSpec }
@@ -17,14 +15,16 @@ class FullTestKitExampleSpec extends WordSpec with Matchers with ScalatestRouteT
 
   val smallRoute =
     get {
-      pathSingleSlash {
-        complete {
-          "Captain on the bridge!"
+      concat(
+        pathSingleSlash {
+          complete {
+            "Captain on the bridge!"
+          }
+        },
+        path("ping") {
+          complete("PONG!")
         }
-      } ~
-      path("ping") {
-        complete("PONG!")
-      }
+      )
     }
 
   "The service" should {

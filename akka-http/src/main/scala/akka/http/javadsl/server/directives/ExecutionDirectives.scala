@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives
@@ -7,7 +7,7 @@ package akka.http.javadsl.server.directives
 import akka.http.javadsl.server.ExceptionHandler
 import akka.http.javadsl.server.RejectionHandler
 import akka.http.javadsl.server.Route
-import akka.http.scaladsl.server.directives.{ ExecutionDirectives ⇒ D }
+import akka.http.scaladsl.server.directives.{ ExecutionDirectives => D }
 
 abstract class ExecutionDirectives extends DebuggingDirectives {
 

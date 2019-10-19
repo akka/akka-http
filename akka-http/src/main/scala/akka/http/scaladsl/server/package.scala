@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -8,9 +8,9 @@ import scala.concurrent.Future
 
 package object server {
 
-  type Route = RequestContext ⇒ Future[RouteResult]
+  type Route = RequestContext => Future[RouteResult]
 
-  type RouteGenerator[T] = T ⇒ Route
+  type RouteGenerator[T] = T => Route
   type Directive0 = Directive[Unit]
   type Directive1[T] = Directive[Tuple1[T]]
   type PathMatcher0 = PathMatcher[Unit]

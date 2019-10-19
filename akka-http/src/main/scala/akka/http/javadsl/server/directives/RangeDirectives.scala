@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server
 package directives
 
 import java.util.function.Supplier
-import akka.http.scaladsl.server.{ Directives ⇒ D }
+import akka.http.scaladsl.server.{ Directives => D }
 
 abstract class RangeDirectives extends PathDirectives {
   /**

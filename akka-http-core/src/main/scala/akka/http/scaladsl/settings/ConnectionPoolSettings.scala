@@ -1,16 +1,17 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.settings
 
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
-import akka.http.javadsl.{ settings ⇒ js }
+import akka.http.javadsl.{ settings => js }
 import akka.http.scaladsl.ClientTransport
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.Duration
+import scala.concurrent.duration.FiniteDuration
 
 @ApiMayChange
 sealed trait PoolImplementation extends js.PoolImplementation
@@ -24,14 +25,17 @@ object PoolImplementation {
  * Public API but not intended for subclassing
  */
 @DoNotInherit
-abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: ConnectionPoolSettingsImpl ⇒
+abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: ConnectionPoolSettingsImpl =>
   def maxConnections: Int
   def minConnections: Int
   def maxRetries: Int
   def maxOpenRequests: Int
   def pipeliningLimit: Int
+  def baseConnectionBackoff: FiniteDuration
+  def maxConnectionBackoff: FiniteDuration
   def idleTimeout: Duration
   def connectionSettings: ClientConnectionSettings
+  def maxConnectionLifetime: Duration
 
   /**
    * The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used.
@@ -54,7 +58,11 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   override def withMaxRetries(n: Int): ConnectionPoolSettings = self.copy(maxRetries = n)
   override def withMaxOpenRequests(newValue: Int): ConnectionPoolSettings = self.copy(maxOpenRequests = newValue)
   override def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copy(pipeliningLimit = newValue)
+  override def withBaseConnectionBackoff(newValue: FiniteDuration): ConnectionPoolSettings = self.copy(baseConnectionBackoff = newValue)
+  override def withMaxConnectionBackoff(newValue: FiniteDuration): ConnectionPoolSettings = self.copy(maxConnectionBackoff = newValue)
+
   override def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue)
+  override def withMaxConnectionLifetime(newValue: Duration): ConnectionPoolSettings = self.copy(maxConnectionLifetime = newValue)
 
   // overloads for idiomatic Scala use
   def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue)
@@ -72,7 +80,7 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   def withTransport(newTransport: ClientTransport): ConnectionPoolSettings =
     withUpdatedConnectionSettings(_.withTransport(newTransport))
 
-  def withUpdatedConnectionSettings(f: ClientConnectionSettings ⇒ ClientConnectionSettings): ConnectionPoolSettings
+  def withUpdatedConnectionSettings(f: ClientConnectionSettings => ClientConnectionSettings): ConnectionPoolSettings
 }
 
 object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] {

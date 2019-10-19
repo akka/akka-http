@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http
@@ -13,7 +13,7 @@ import org.scalatest.{ BeforeAndAfterAll, Suite }
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 
-trait BaseUnmarshallingSpec extends BeforeAndAfterAll { this: Suite ⇒
+trait BaseUnmarshallingSpec extends BeforeAndAfterAll { this: Suite =>
 
   protected implicit val system: ActorSystem =
     ActorSystem()

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model.headers
@@ -7,7 +7,7 @@ package akka.http.scaladsl.model.headers
 import java.util.OptionalLong
 
 import akka.http.impl.util.{ Rendering, ValueRenderable }
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 
 sealed abstract class ByteRange extends jm.headers.ByteRange with ValueRenderable {
   /** Java API */

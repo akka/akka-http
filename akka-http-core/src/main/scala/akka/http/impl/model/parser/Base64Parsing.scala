@@ -26,7 +26,7 @@ import akka.parboiled2._
  * Rules for parsing Base-64 encoded strings.
  */
 @InternalApi
-private[parser] trait Base64Parsing { this: Parser ⇒
+private[parser] trait Base64Parsing { this: Parser =>
   import Base64Parsing._
 
   /**
@@ -59,8 +59,8 @@ private[parser] trait Base64Parsing { this: Parser ⇒
     rule {
       oneOrMore(alphabet) ~ run {
         decoder(input.sliceCharArray(start, cursor)) match {
-          case null  ⇒ MISMATCH
-          case bytes ⇒ push(bytes)
+          case null  => MISMATCH
+          case bytes => push(bytes)
         }
       }
     }
@@ -70,7 +70,7 @@ private[parser] trait Base64Parsing { this: Parser ⇒
 /** INTERNAL API */
 @InternalApi
 private[http] object Base64Parsing {
-  type Decoder = Array[Char] ⇒ Array[Byte]
+  type Decoder = Array[Char] => Array[Byte]
 
   val rfc2045Alphabet = CharPredicate(Base64.rfc2045().getAlphabet).asMaskBased
   val customAlphabet = CharPredicate(Base64.custom().getAlphabet).asMaskBased
@@ -80,6 +80,10 @@ private[http] object Base64Parsing {
 
   val rfc2045BlockDecoder: Decoder = decodeBlock(Base64.rfc2045())
   val customBlockDecoder: Decoder = decodeBlock(Base64.custom())
+
+  private val base64url = new Base64("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_=")
+  /** as described in RFC4648 5. - https://tools.ietf.org/html/rfc4648#section-5 */
+  val base64UrlStringDecoder: Decoder = decodeString(base64url)
 
   def decodeString(codec: Base64)(chars: Array[Char]): Array[Byte] = codec.decodeFast(chars)
   def decodeBlock(codec: Base64)(chars: Array[Char]): Array[Byte] = codec.decode(chars)

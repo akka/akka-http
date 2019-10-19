@@ -13,10 +13,10 @@ from a background with non-"streaming first" HTTP Clients.
 ## Requesting a Host Connection Pool
 
 The best way to get a hold of a connection pool to a given target endpoint is the @scala[`Http().cachedHostConnectionPool(...)`]@java[`Http.get(system).cachedHostConnectionPool(...)`]
-method, which returns a @unidoc[Flow] that can be "baked" into an application-level stream setup. This flow is also called
+method, which returns a @apidoc[Flow] that can be "baked" into an application-level stream setup. This flow is also called
 a "pool client flow".
 
-The connection pool underlying a pool client flow is cached. For every @unidoc[ActorSystem], target endpoint and pool
+The connection pool underlying a pool client flow is cached. For every @apidoc[akka.actor.ActorSystem], target endpoint and pool
 configuration there will never be more than a single pool live at any time.
 
 Also, the HTTP layer transparently manages idle shutdown and restarting of connection pools as configured.
@@ -46,9 +46,7 @@ back `3` different client flow instances for the same pool. If each of these cli
 (concurrently) the application will have 12 concurrently running client flow materializations.
 All of these share the resources of the single pool.
 
-This means that, if the pool's `pipelining-limit` is left at `1` (effectively disabling pipelining), no more than 12 requests can be open at any time.
-With a `pipelining-limit` of `8` and 12 concurrent client flow materializations the theoretical open requests
-maximum is `96`.
+This means that no more than 12 requests can be open at any time.
 
 The `max-open-requests` config setting allows for applying a hard limit which serves mainly as a protection against
 erroneous connection pool use, e.g. because the application is materializing too many client flows that all compete for
@@ -70,7 +68,7 @@ Flow<Pair<HttpRequest, T>, Pair<Try<HttpResponse>, T>, HostConnectionPool>
 ```
 @@@
 
-This means it consumes pairs of type @scala[`(HttpRequest, T)`]@java[@unidoc[Pair[HttpRequest, T]]] and produces pairs of type @scala[`(Try[HttpResponse], T)`]@java[`Pair<Try<HttpResponse>, T>`]
+This means it consumes pairs of type @scala[`(HttpRequest, T)`]@java[@apidoc[Pair[HttpRequest, T]]] and produces pairs of type @scala[`(Try[HttpResponse], T)`]@java[`Pair<Try<HttpResponse>, T>`]
 which might appear more complicated than necessary on first sight.
 The reason why the pool API includes objects of custom type `T` on both ends lies in the fact that the underlying
 transport usually comprises more than a single connection and as such the pool client flow often generates responses in
@@ -101,12 +99,8 @@ This is how Akka HTTP allocates incoming requests to the available connection "s
  1. If there is a connection alive and currently idle then schedule the request across this connection.
  2. If no connection is idle and there is still an unconnected slot then establish a new connection.
  3. If all connections are already established and "loaded" with other requests then pick the connection with the least
-open requests (< the configured `pipelining-limit`) that only has requests with idempotent methods scheduled to it,
-if there is one.
+open requests that only has requests with idempotent methods scheduled to it, if there is one.
  4. Otherwise apply back-pressure to the request source, i.e. stop accepting new requests.
-
-For more information about scheduling more than one request at a time across a single connection see
-[this Wikipedia entry on HTTP pipelining](http://en.wikipedia.org/wiki/HTTP_pipelining).
 
 ## Retrying a Request
 
@@ -127,6 +121,11 @@ Since the host connector cannot know which one of these possible reasons caused 
 In these cases, as well as when all retries have not yielded a proper response, the pool produces a failed `Try`
 (i.e. a `scala.util.Failure`) together with the custom request context.
 
+If a request fails during connecting to the server, for example, because the DNS name cannot be resolved or the server
+is currently unavailable, retries are attempted with exponential backoff delay. See the documentation of the
+`akka.http.host-connection-pool.base-connection-backoff` setting in the @ref[configuration](../configuration.md).
+
+
 ## Pool Shutdown
 
 Completing a pool client flow will simply detach the flow from the pool. The connection pool itself will continue to run
@@ -141,12 +140,12 @@ shutdown of a specific pool by calling `shutdown()` on the `HostConnectionPool` 
 flow materializes into. This `shutdown()` call produces a @scala[`Future[Unit]`]@java[`CompletionStage<Done>`] which is fulfilled when the pool
 termination has been completed.
 
-It's also possible to trigger the immediate termination of *all* connection pools in the @unidoc[ActorSystem] at the same
+It's also possible to trigger the immediate termination of *all* connection pools in the @apidoc[akka.actor.ActorSystem] at the same
 time by calling @scala[`Http().shutdownAllConnectionPools()`]@java[`Http.get(system).shutdownAllConnectionPools()`].
 This call too produces a @scala[`Future[Unit]`]@java[`CompletionStage<Done>`] which is fulfilled when all pools have terminated.
 
 @@@ note
-When encountering unexpected `akka.stream.AbruptTerminationException` exceptions during @unidoc[ActorSystem] **shutdown**
+When encountering unexpected `akka.stream.AbruptTerminationException` exceptions during @apidoc[akka.actor.ActorSystem] **shutdown**
 please make sure that active connections are shut down before shutting down the entire system, this can be done by
 calling the @scala[`Http().shutdownAllConnectionPools()`]@java[`Http.get(system).shutdownAllConnectionPools()`] method,
 and only once its @scala[`Future`]@java[`CompletionStage`] completes, shutting down the actor system.
@@ -170,11 +169,11 @@ with the host-level API, here's how to do it.
 
 As explained above, Akka HTTP prevents to build up an unbounded buffer of requests and an unlimited number of connections.
 Therefore, it guards itself a) by applying backpressure to all request streams connected to the cached pool and b)
-by failing requests with a @unidoc[BufferOverflowException] when the internal buffer overflows when too many materializations
+by failing requests with a @apidoc[BufferOverflowException] when the internal buffer overflows when too many materializations
 exist or too many requests have been issued to the pool.
 
 To mimic the request-level API we can put an explicit queue in front of the pool and decide ourselves what to do when
-this explicit queue overflows. This example shows how to do this. (Thanks go to [kazuhiro's blog for the initial idea](http://kazuhiro.github.io/scala/akka/akka-http/akka-streams/2016/01/31/connection-pooling-with-akka-http-and-source-queue.html).)
+this explicit queue overflows. This example shows how to do this. (Thanks go to [kazuhiro's blog for the initial idea](https://kazuhiro.github.io/scala/akka/akka-http/akka-streams/2016/01/31/connection-pooling-with-akka-http-and-source-queue.html).)
 
 You can tweak the `QueueSize` setting according to your memory constraints. In any case, you need to think about a strategy
 about what to do when requests fail because the queue overflowed (e.g. try again later or just fail).
@@ -184,7 +183,7 @@ about what to do when requests fail because the queue overflowed (e.g. try again
 ### Using the host-level API in a streaming fashion
 
 Even better is it to use the streaming API directly. This will mostly prevent intermediate buffers as data can be
-generated "on-the-fly" while streaming the requests. You supply the requests as a stream, i.e. as a @unidoc[Source[(HttpRequest, ...)]], and
+generated "on-the-fly" while streaming the requests. You supply the requests as a stream, i.e. as a @apidoc[Source[(HttpRequest, ...)]], and
 the pool will "pull out" single requests when capacity is available on one of the connections to the host.
 
 @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #host-level-streamed-example }

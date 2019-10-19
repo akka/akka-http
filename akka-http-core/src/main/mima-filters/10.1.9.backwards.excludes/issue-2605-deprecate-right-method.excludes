@@ -1,0 +1,4 @@
+# https://github.com/akka/akka-http/issues/2605
+# This is the static forwarder on the interface, we are manually
+# adding the method on the object which is still used.
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.ConnectionContext.https$default$7")

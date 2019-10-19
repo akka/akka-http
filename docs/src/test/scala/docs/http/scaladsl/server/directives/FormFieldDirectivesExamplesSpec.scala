@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.model._
-import docs.http.scaladsl.server.RoutingSpec
+import akka.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
-class FormFieldDirectivesExamplesSpec extends RoutingSpec {
+class FormFieldDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "formFields" in {
     //#formFields
     val route =
@@ -30,12 +31,14 @@ class FormFieldDirectivesExamplesSpec extends RoutingSpec {
   "formField" in {
     //#formField
     val route =
-      formField('color) { color =>
-        complete(s"The color is '$color'")
-      } ~
+      concat(
+        formField('color) { color =>
+          complete(s"The color is '$color'")
+        },
         formField('id.as[Int]) { id =>
           complete(s"The id is '$id'")
         }
+      )
 
     // tests:
     Post("/", FormData("color" -> "blue")) ~> route ~> check {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -77,8 +77,8 @@ private[http] final class PoolGateway(gatewayRef: ActorRef, val hcps: HostConnec
 
   override def equals(that: Any): Boolean =
     that match {
-      case p: PoolGateway ⇒ p.hcps == hcps && p.gatewayId == gatewayId
-      case _              ⇒ false
+      case p: PoolGateway => p.hcps == hcps && p.gatewayId == gatewayId
+      case _              => false
     }
 
   override def hashCode(): Int = hcps.hashCode() ^ gatewayId.hashCode()

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server.directives
@@ -17,7 +17,7 @@ import org.scalatest.{ Matchers, WordSpec }
 class CachingDirectivesSpec extends WordSpec with Matchers with ScalatestRouteTest with CachingDirectives {
 
   val simpleKeyer: PartialFunction[RequestContext, Uri] = {
-    case r: RequestContext if r.request.method == GET ⇒ r.request.uri
+    case r: RequestContext if r.request.method == GET => r.request.uri
   }
 
   val countingService = {
@@ -62,11 +62,11 @@ class CachingDirectivesSpec extends WordSpec with Matchers with ScalatestRouteTe
     "be transparent to exceptions thrown from its inner route" in {
       case object MyException extends SingletonException
       implicit val myExceptionHandler = ExceptionHandler {
-        case MyException ⇒ complete("Good")
+        case MyException => complete("Good")
       }
 
       Get() ~> cache(routeCache, simpleKeyer) {
-        _ ⇒ throw MyException // thrown directly
+        _ => throw MyException // thrown directly
       } ~> check { responseAs[String] shouldEqual "Good" }
 
       Get() ~> cache(routeCache, simpleKeyer) {

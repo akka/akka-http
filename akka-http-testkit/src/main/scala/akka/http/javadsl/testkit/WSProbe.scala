@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.testkit
@@ -12,7 +12,7 @@ import akka.stream.javadsl.Flow
 import akka.stream.scaladsl
 import akka.util.ByteString
 
-import akka.http.scaladsl.{ testkit ⇒ st }
+import akka.http.scaladsl.{ testkit => st }
 
 import akka.http.impl.util.JavaMapping.Implicits._
 

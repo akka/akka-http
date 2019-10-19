@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.common
 
 import akka.NotUsed
 import akka.event.Logging
-import akka.http.javadsl.{ common, model ⇒ jm }
+import akka.http.javadsl.{ common, model => jm }
 import akka.http.scaladsl.model.{ ContentType, ContentTypeRange, ContentTypes }
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString

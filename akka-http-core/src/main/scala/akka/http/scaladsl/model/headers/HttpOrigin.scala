@@ -1,17 +1,18 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model.headers
 
-import language.implicitConversions
-import scala.collection.immutable
-import akka.parboiled2.UTF8
 import akka.http.impl.model.parser.UriParser
-import akka.http.impl.util._
-import akka.http.javadsl.{ model ⇒ jm }
-import akka.http.scaladsl.model.Uri
 import akka.http.impl.util.JavaMapping.Implicits._
+import akka.http.impl.util._
+import akka.http.javadsl.{ model => jm }
+import akka.http.scaladsl.model.Uri
+import akka.parboiled2.UTF8
+
+import scala.collection.immutable
+import scala.language.implicitConversions
 
 abstract class HttpOriginRange extends jm.headers.HttpOriginRange with ValueRenderable {
   def matches(origin: HttpOrigin): Boolean

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.settings
@@ -17,10 +17,10 @@ import scala.concurrent.duration.Duration
 /** INTERNAL API */
 @InternalApi
 private[akka] final case class WebSocketSettingsImpl(
-  randomFactory:            () ⇒ Random,
+  randomFactory:            () => Random,
   periodicKeepAliveMode:    String,
   periodicKeepAliveMaxIdle: Duration,
-  periodicKeepAliveData:    () ⇒ ByteString)
+  periodicKeepAliveData:    () => ByteString)
   extends akka.http.scaladsl.settings.WebSocketSettings {
 
   require(
@@ -38,7 +38,7 @@ private[akka] object WebSocketSettingsImpl { // on purpose not extending Setting
   private val KeepAliveModes = Seq("ping", "pong")
 
   // constant value used to identity check and avoid invoking the generation function if no data payload needed
-  private val NoPeriodicKeepAliveData = () ⇒ ByteString.empty
+  private val NoPeriodicKeepAliveData = () => ByteString.empty
   def hasNoCustomPeriodicKeepAliveData(settings: akka.http.javadsl.settings.WebSocketSettings): Boolean =
     settings.asInstanceOf[WebSocketSettingsImpl].periodicKeepAliveData eq NoPeriodicKeepAliveData
 

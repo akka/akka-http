@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -37,8 +37,8 @@ object WSTestUtils {
 
     val maskMask = if (mask.isDefined) Protocol.MASK_MASK else 0
     val maskBytes = mask match {
-      case Some(mask) ⇒ intBE(mask)
-      case None       ⇒ ByteString.empty
+      case Some(mask) => intBE(mask)
+      case None       => ByteString.empty
     }
     val lengthByte = lengthByteComponent | maskMask
     ByteString(opcodeByte.toByte, lengthByte.toByte) ++ lengthBytes ++ maskBytes

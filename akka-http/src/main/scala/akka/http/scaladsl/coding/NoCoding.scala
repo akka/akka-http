@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.coding
@@ -20,12 +20,12 @@ object NoCoding extends Coder with StreamDecoder {
   override def encodeData[T](t: T)(implicit mapper: DataMapper[T]): T = t
   override def decodeData[T](t: T)(implicit mapper: DataMapper[T]): T = t
 
-  val messageFilter: HttpMessage ⇒ Boolean = _ ⇒ false
+  val messageFilter: HttpMessage => Boolean = _ => false
 
   def newCompressor = NoCodingCompressor
 
-  def newDecompressorStage(maxBytesPerChunk: Int): () ⇒ GraphStage[FlowShape[ByteString, ByteString]] =
-    () ⇒ StreamUtils.limitByteChunksStage(maxBytesPerChunk)
+  def newDecompressorStage(maxBytesPerChunk: Int): () => GraphStage[FlowShape[ByteString, ByteString]] =
+    () => StreamUtils.limitByteChunksStage(maxBytesPerChunk)
 }
 
 object NoCodingCompressor extends Compressor {

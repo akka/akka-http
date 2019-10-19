@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.server
@@ -23,8 +23,8 @@ private[akka] object HttpAttributes {
 
   private[akka] def remoteAddress(address: Option[InetSocketAddress]): Attributes =
     address match {
-      case Some(addr) ⇒ remoteAddress(addr)
-      case None       ⇒ empty
+      case Some(addr) => remoteAddress(addr)
+      case None       => empty
     }
 
   private[akka] def remoteAddress(address: InetSocketAddress): Attributes =

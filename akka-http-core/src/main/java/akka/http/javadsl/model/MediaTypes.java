@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.model;
@@ -16,7 +16,18 @@ public final class MediaTypes {
 
     public static final MediaType.WithOpenCharset APPLICATION_ATOM_XML = akka.http.scaladsl.model.MediaTypes.application$divatom$plusxml();
     public static final MediaType.WithOpenCharset APPLICATION_BASE64 = akka.http.scaladsl.model.MediaTypes.application$divbase64();
+    public static final MediaType.Binary APPLICATION_CBOR = akka.http.scaladsl.model.MediaTypes.application$divcbor();
+    /**
+     * @deprecated This format is unofficial and should not be used.
+     *              Use {@link{#APPLICATION_VND_MS_EXCEL} instead.
+     */
+    @Deprecated
     public static final MediaType.Binary APPLICATION_EXCEL = akka.http.scaladsl.model.MediaTypes.application$divexcel();
+    /**
+     * @deprecated This format is unofficial and should not be used.
+     *              Use {@link{#FONT_WOFF} instead.
+     */
+    @Deprecated
     public static final MediaType.Binary APPLICATION_FONT_WOFF = akka.http.scaladsl.model.MediaTypes.application$divfont$minuswoff();
     public static final MediaType.Binary APPLICATION_GNUTAR = akka.http.scaladsl.model.MediaTypes.application$divgnutar();
     public static final MediaType.Binary APPLICATION_JAVA_ARCHIVE = akka.http.scaladsl.model.MediaTypes.application$divjava$minusarchive();
@@ -26,6 +37,11 @@ public final class MediaTypes {
     public static final MediaType.WithFixedCharset APPLICATION_MERGE_PATCH_JSON = akka.http.scaladsl.model.MediaTypes.application$divmerge$minuspatch$plusjson();
     public static final MediaType.Binary APPLICATION_LHA = akka.http.scaladsl.model.MediaTypes.application$divlha();
     public static final MediaType.Binary APPLICATION_LZX = akka.http.scaladsl.model.MediaTypes.application$divlzx();
+    /**
+     * @deprecated This format is unofficial and should not be used.
+     *              Use {@link{#APPLICATION_VND_MS_POWERPOINT} instead.
+     */
+    @Deprecated
     public static final MediaType.Binary APPLICATION_MSPOWERPOINT = akka.http.scaladsl.model.MediaTypes.application$divmspowerpoint();
     public static final MediaType.Binary APPLICATION_MSWORD = akka.http.scaladsl.model.MediaTypes.application$divmsword();
     public static final MediaType.Binary APPLICATION_OCTET_STREAM = akka.http.scaladsl.model.MediaTypes.application$divoctet$minusstream();
@@ -37,7 +53,18 @@ public final class MediaTypes {
     public static final MediaType.WithFixedCharset APPLICATION_VND_API_JSON = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Eapi$plusjson();
     public static final MediaType.WithOpenCharset APPLICATION_VND_GOOGLE_EARTH_KML_XML = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Egoogle$minusearth$u002Ekml$plusxml();
     public static final MediaType.Binary APPLICATION_VND_GOOGLE_EARTH_KMZ = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Egoogle$minusearth$u002Ekmz();
+    public static final MediaType.Binary APPLICATION_VND_MS_EXCEL = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Ems$minusexcel();
+    public static final MediaType.Binary APPLICATION_VND_MS_EXCEL_ADDIN_MACROENABLED_12 = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Ems$minusexcel$u002Eaddin$u002EmacroEnabled$u002E12();
+    public static final MediaType.Binary APPLICATION_VND_MS_EXCEL_SHEET_BINARY_MACROENABLED_12 = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Ems$minusexcel$u002Esheet$u002Ebinary$u002EmacroEnabled$u002E12();
+    public static final MediaType.Binary APPLICATION_VND_MS_EXCEL_SHEET_MACROENABLED_12 = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Ems$minusexcel$u002Esheet$u002EmacroEnabled$u002E12();
+    public static final MediaType.Binary APPLICATION_VND_MS_EXCEL_TEMPLATE_MACROENABLED_12 = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Ems$minusexcel$u002Etemplate$u002EmacroEnabled$u002E12();
     public static final MediaType.Binary APPLICATION_VND_MS_FONTOBJECT = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Ems$minusfontobject();
+    public static final MediaType.Binary APPLICATION_VND_MS_POWERPOINT = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Ems$minuspowerpoint();
+    public static final MediaType.Binary APPLICATION_VND_MS_POWERPOINT_ADDIN_MACROENABLED_12 = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Ems$minuspowerpoint$u002Eaddin$u002EmacroEnabled$u002E12();
+    public static final MediaType.Binary APPLICATION_VND_MS_POWERPOINT_PRESENTATION_MACROENABLED_12 = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Ems$minuspowerpoint$u002Epresentation$u002EmacroEnabled$u002E12();
+    public static final MediaType.Binary APPLICATION_VND_MS_POWERPOINT_SLIDESHOW_MACROENABLED_12 = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Ems$minuspowerpoint$u002Eslideshow$u002EmacroEnabled$u002E12();
+    public static final MediaType.Binary APPLICATION_VND_MS_WORD_DOCUMENT_MACROENABLED_12 = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Ems$minusword$u002Edocument$u002EmacroEnabled$u002E12();
+    public static final MediaType.Binary APPLICATION_VND_MS_WORD_TEMPLATE_MACROENABLED_12 = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Ems$minusword$u002Etemplate$u002EmacroEnabled$u002E12();
     public static final MediaType.Binary APPLICATION_VND_OASIS_OPENDOCUMENT_CHART = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Eoasis$u002Eopendocument$u002Echart();
     public static final MediaType.Binary APPLICATION_VND_OASIS_OPENDOCUMENT_DATABASE = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Eoasis$u002Eopendocument$u002Edatabase();
     public static final MediaType.Binary APPLICATION_VND_OASIS_OPENDOCUMENT_FORMULA = akka.http.scaladsl.model.MediaTypes.application$divvnd$u002Eoasis$u002Eopendocument$u002Eformula();
@@ -79,7 +106,7 @@ public final class MediaTypes {
     public static final MediaType.Binary APPLICATION_X_TEX = akka.http.scaladsl.model.MediaTypes.application$divx$minustex();
     public static final MediaType.Binary APPLICATION_X_TEXINFO = akka.http.scaladsl.model.MediaTypes.application$divx$minustexinfo();
     public static final MediaType.WithOpenCharset APPLICATION_X_VRML = akka.http.scaladsl.model.MediaTypes.application$divx$minusvrml();
-    public static final MediaType.WithOpenCharset APPLICATION_X_WWW_FORM_URLENCODED = akka.http.scaladsl.model.MediaTypes.application$divx$minuswww$minusform$minusurlencoded();
+    public static final MediaType.WithFixedCharset APPLICATION_X_WWW_FORM_URLENCODED = akka.http.scaladsl.model.MediaTypes.application$divx$minuswww$minusform$minusurlencoded();
     public static final MediaType.Binary APPLICATION_X_X509_CA_CERT = akka.http.scaladsl.model.MediaTypes.application$divx$minusx509$minusca$minuscert();
     public static final MediaType.Binary APPLICATION_X_XPINSTALL = akka.http.scaladsl.model.MediaTypes.application$divx$minusxpinstall();
     public static final MediaType.WithOpenCharset APPLICATION_XHTML_XML = akka.http.scaladsl.model.MediaTypes.application$divxhtml$plusxml();
@@ -101,6 +128,9 @@ public final class MediaTypes {
     public static final MediaType.Binary AUDIO_X_PSID = akka.http.scaladsl.model.MediaTypes.audio$divx$minuspsid();
     public static final MediaType.Binary AUDIO_XM = akka.http.scaladsl.model.MediaTypes.audio$divxm();
     public static final MediaType.Binary AUDIO_WEBM = akka.http.scaladsl.model.MediaTypes.audio$divwebm();
+
+    public static final MediaType.Binary FONT_WOFF = akka.http.scaladsl.model.MediaTypes.font$divwoff();
+    public static final MediaType.Binary FONT_WOFF_2 = akka.http.scaladsl.model.MediaTypes.font$divwoff2();
 
     public static final MediaType.Binary IMAGE_GIF = akka.http.scaladsl.model.MediaTypes.image$divgif();
     public static final MediaType.Binary IMAGE_JPEG = akka.http.scaladsl.model.MediaTypes.image$divjpeg();

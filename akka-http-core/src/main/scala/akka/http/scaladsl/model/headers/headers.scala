@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.model.headers
@@ -8,8 +8,8 @@ import java.lang.Iterable
 import java.net.InetSocketAddress
 import java.security.MessageDigest
 import java.util
-import javax.net.ssl.SSLSession
 
+import javax.net.ssl.SSLSession
 import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.stream.scaladsl.ScalaSessionAPI
 
@@ -19,8 +19,9 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.parboiled2.util.Base64
 import akka.event.Logging
+import akka.http.ccompat.{ pre213, since213 }
 import akka.http.impl.util._
-import akka.http.javadsl.{ model ⇒ jm }
+import akka.http.javadsl.{ model => jm }
 import akka.http.scaladsl.model._
 
 sealed abstract class ModeledCompanion[T: ClassTag] extends Renderable {
@@ -35,8 +36,8 @@ sealed abstract class ModeledCompanion[T: ClassTag] extends Renderable {
    */
   def parseFromValueString(value: String): Either[List[ErrorInfo], T] =
     HttpHeader.parse(name, value) match {
-      case HttpHeader.ParsingResult.Ok(header: T, Nil) ⇒ Right(header)
-      case res                                         ⇒ Left(res.errors)
+      case HttpHeader.ParsingResult.Ok(header: T, Nil) => Right(header)
+      case res                                         => Left(res.errors)
     }
 }
 /** INTERNAL API */
@@ -95,14 +96,14 @@ abstract class ModeledCustomHeaderCompanion[H <: ModeledCustomHeader[H]] {
 
   def apply(value: String): H =
     parse(value) match {
-      case Success(parsed) ⇒ parsed
-      case Failure(ex)     ⇒ throw new IllegalArgumentException(s"Unable to construct custom header by parsing: '$value'", ex)
+      case Success(parsed) => parsed
+      case Failure(ex)     => throw new IllegalArgumentException(s"Unable to construct custom header by parsing: '$value'", ex)
     }
 
   def unapply(h: HttpHeader): Option[String] = h match {
-    case _: RawHeader    ⇒ if (h.lowercaseName == lowercaseName) Some(h.value) else None
-    case _: CustomHeader ⇒ if (h.lowercaseName == lowercaseName) Some(h.value) else None
-    case _               ⇒ None
+    case _: RawHeader    => if (h.lowercaseName == lowercaseName) Some(h.value) else None
+    case _: CustomHeader => if (h.lowercaseName == lowercaseName) Some(h.value) else None
+    case _               => None
   }
 
   final implicit val implicitlyLocatableCompanion: ModeledCustomHeaderCompanion[H] = this
@@ -114,7 +115,7 @@ abstract class ModeledCustomHeaderCompanion[H <: ModeledCustomHeader[H]] {
  * methods are provided for this class, such that it can be pattern matched on from [[RawHeader]] and
  * the other way around as well.
  */
-abstract class ModeledCustomHeader[H <: ModeledCustomHeader[H]] extends CustomHeader { this: H ⇒
+abstract class ModeledCustomHeader[H <: ModeledCustomHeader[H]] extends CustomHeader { this: H =>
   def companion: ModeledCustomHeaderCompanion[H]
 
   final override def name = companion.name
@@ -125,14 +126,19 @@ import akka.http.impl.util.JavaMapping.Implicits._
 
 // http://tools.ietf.org/html/rfc7231#section-5.3.2
 object Accept extends ModeledCompanion[Accept] {
-  def apply(mediaRanges: MediaRange*): Accept = apply(immutable.Seq(mediaRanges: _*))
+  @pre213
+  def apply(mediaRanges: MediaRange*): Accept =
+    apply(immutable.Seq(mediaRanges: _*))
+  @since213
+  def apply(firstMediaRange: MediaRange, otherMediaRanges: MediaRange*): Accept =
+    apply(firstMediaRange +: otherMediaRanges)
   implicit val mediaRangesRenderer = Renderer.defaultSeqRenderer[MediaRange] // cache
 }
 final case class Accept(mediaRanges: immutable.Seq[MediaRange]) extends jm.headers.Accept with RequestHeader {
   import Accept.mediaRangesRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ mediaRanges
   protected def companion = Accept
-  def acceptsAll = mediaRanges.exists(mr ⇒ mr.isWildcard && mr.qValue > 0f)
+  def acceptsAll = mediaRanges.exists(mr => mr.isWildcard && mr.qValue > 0f)
 
   /** Java API */
   def getMediaRanges: Iterable[jm.MediaRange] = mediaRanges.asJava
@@ -156,7 +162,15 @@ final case class `Accept-Charset`(charsetRanges: immutable.Seq[HttpCharsetRange]
 
 // http://tools.ietf.org/html/rfc7231#section-5.3.4
 object `Accept-Encoding` extends ModeledCompanion[`Accept-Encoding`] {
-  def apply(encodings: HttpEncodingRange*): `Accept-Encoding` = apply(immutable.Seq(encodings: _*))
+  @pre213
+  def apply(encodings: HttpEncodingRange*): `Accept-Encoding` =
+    apply(immutable.Seq(encodings: _*))
+  @since213
+  def apply(): `Accept-Encoding` =
+    apply(immutable.Seq.empty)
+  @since213
+  def apply(firstEncoding: HttpEncodingRange, otherEncodings: HttpEncodingRange*): `Accept-Encoding` =
+    apply(firstEncoding +: otherEncodings)
   implicit val encodingsRenderer = Renderer.defaultSeqRenderer[HttpEncodingRange] // cache
 }
 final case class `Accept-Encoding`(encodings: immutable.Seq[HttpEncodingRange]) extends jm.headers.AcceptEncoding
@@ -187,7 +201,15 @@ final case class `Accept-Language`(languages: immutable.Seq[LanguageRange]) exte
 
 // http://tools.ietf.org/html/rfc7233#section-2.3
 object `Accept-Ranges` extends ModeledCompanion[`Accept-Ranges`] {
-  def apply(rangeUnits: RangeUnit*): `Accept-Ranges` = apply(immutable.Seq(rangeUnits: _*))
+  @pre213
+  def apply(rangeUnits: RangeUnit*): `Accept-Ranges` =
+    apply(immutable.Seq(rangeUnits: _*))
+  @since213
+  def apply(): `Accept-Ranges` =
+    apply(immutable.Seq.empty)
+  @since213
+  def apply(firstRangeUnit: RangeUnit, otherRangeUnits: RangeUnit*): `Accept-Ranges` =
+    apply(firstRangeUnit +: otherRangeUnits)
   implicit val rangeUnitsRenderer = Renderer.defaultSeqRenderer[RangeUnit] // cache
 }
 final case class `Accept-Ranges`(rangeUnits: immutable.Seq[RangeUnit]) extends jm.headers.AcceptRanges
@@ -210,7 +232,12 @@ final case class `Access-Control-Allow-Credentials`(allow: Boolean)
 
 // http://www.w3.org/TR/cors/#access-control-allow-headers-response-header
 object `Access-Control-Allow-Headers` extends ModeledCompanion[`Access-Control-Allow-Headers`] {
-  def apply(headers: String*): `Access-Control-Allow-Headers` = apply(immutable.Seq(headers: _*))
+  @pre213
+  def apply(headers: String*): `Access-Control-Allow-Headers` =
+    apply(immutable.Seq(headers: _*))
+  @since213
+  def apply(firstHeader: String, otherHeaders: String*): `Access-Control-Allow-Headers` =
+    apply(firstHeader +: otherHeaders)
   implicit val headersRenderer = Renderer.defaultSeqRenderer[String] // cache
 }
 final case class `Access-Control-Allow-Headers`(headers: immutable.Seq[String])
@@ -225,7 +252,12 @@ final case class `Access-Control-Allow-Headers`(headers: immutable.Seq[String])
 
 // http://www.w3.org/TR/cors/#access-control-allow-methods-response-header
 object `Access-Control-Allow-Methods` extends ModeledCompanion[`Access-Control-Allow-Methods`] {
-  def apply(methods: HttpMethod*): `Access-Control-Allow-Methods` = apply(immutable.Seq(methods: _*))
+  @pre213
+  def apply(methods: HttpMethod*): `Access-Control-Allow-Methods` =
+    apply(immutable.Seq(methods: _*))
+  @since213
+  def apply(firstMethod: HttpMethod, otherMethods: HttpMethod*): `Access-Control-Allow-Methods` =
+    apply(firstMethod +: otherMethods)
   implicit val methodsRenderer = Renderer.defaultSeqRenderer[HttpMethod] // cache
 }
 final case class `Access-Control-Allow-Methods`(methods: immutable.Seq[HttpMethod])
@@ -261,7 +293,12 @@ final case class `Access-Control-Allow-Origin` private (range: HttpOriginRange)
 
 // http://www.w3.org/TR/cors/#access-control-expose-headers-response-header
 object `Access-Control-Expose-Headers` extends ModeledCompanion[`Access-Control-Expose-Headers`] {
-  def apply(headers: String*): `Access-Control-Expose-Headers` = apply(immutable.Seq(headers: _*))
+  @pre213
+  def apply(headers: String*): `Access-Control-Expose-Headers` =
+    apply(immutable.Seq(headers: _*))
+  @since213
+  def apply(firstHeader: String, otherHeaders: String*): `Access-Control-Expose-Headers` =
+    apply(firstHeader +: otherHeaders)
   implicit val headersRenderer = Renderer.defaultSeqRenderer[String] // cache
 }
 final case class `Access-Control-Expose-Headers`(headers: immutable.Seq[String])
@@ -284,7 +321,12 @@ final case class `Access-Control-Max-Age`(deltaSeconds: Long) extends jm.headers
 
 // http://www.w3.org/TR/cors/#access-control-request-headers-request-header
 object `Access-Control-Request-Headers` extends ModeledCompanion[`Access-Control-Request-Headers`] {
-  def apply(headers: String*): `Access-Control-Request-Headers` = apply(immutable.Seq(headers: _*))
+  @pre213
+  def apply(headers: String*): `Access-Control-Request-Headers` =
+    apply(immutable.Seq(headers: _*))
+  @since213
+  def apply(firstHeader: String, otherHeaders: String*): `Access-Control-Request-Headers` =
+    apply(firstHeader +: otherHeaders)
   implicit val headersRenderer = Renderer.defaultSeqRenderer[String] // cache
 }
 final case class `Access-Control-Request-Headers`(headers: immutable.Seq[String])
@@ -314,7 +356,15 @@ final case class Age(deltaSeconds: Long) extends jm.headers.Age with ResponseHea
 
 // http://tools.ietf.org/html/rfc7231#section-7.4.1
 object Allow extends ModeledCompanion[Allow] {
-  def apply(methods: HttpMethod*): Allow = apply(immutable.Seq(methods: _*))
+  @pre213
+  def apply(methods: HttpMethod*): Allow =
+    apply(immutable.Seq(methods: _*))
+  @since213
+  def apply(): `Allow` =
+    apply(immutable.Seq.empty)
+  @since213
+  def apply(firstMethod: HttpMethod, otherMethods: HttpMethod*): Allow =
+    apply(firstMethod +: otherMethods)
   implicit val methodsRenderer = Renderer.defaultSeqRenderer[HttpMethod] // cache
 }
 final case class Allow(methods: immutable.Seq[HttpMethod]) extends jm.headers.Allow with ResponseHeader {
@@ -386,6 +436,19 @@ final case class `Content-Length` private[http] (length: Long) extends jm.header
   protected def companion = `Content-Length`
 }
 
+// https://tools.ietf.org/html/rfc7231#section-3.1.4.2
+object `Content-Location` extends ModeledCompanion[`Content-Location`]
+final case class `Content-Location`(uri: Uri) extends jm.headers.ContentLocation with ResponseHeader {
+  require(uri.fragment.isEmpty, "Content-Location header URI must not contain a fragment")
+  require(uri.authority.userinfo.isEmpty, "Content-Location header URI must not contain a userinfo component")
+
+  def renderValue[R <: Rendering](r: R): r.type = { import UriRendering.UriRenderer; r ~~ uri }
+  protected def companion = `Content-Location`
+
+  /** Java API */
+  def getUri: akka.http.javadsl.model.Uri = uri.asJava
+}
+
 /**
  * Document http://tools.ietf.org/html/rfc6266 updates document https://www.w3.org/Protocols/rfc2616/rfc2616-sec19.html. Between these
  * two there is slight but important difference regarding how parameter values are formatted. In RFC6266 parameters values are without quotes and
@@ -397,7 +460,7 @@ final case class `Content-Disposition`(dispositionType: ContentDispositionType, 
   extends jm.headers.ContentDisposition with RequestResponseHeader {
   def renderValue[R <: Rendering](r: R): r.type = {
     r ~~ dispositionType
-    params foreach { case (k, v) ⇒ r ~~ "; " ~~ k ~~ '=' ~~#! v }
+    params foreach { case (k, v) => r ~~ "; " ~~ k ~~ '=' ~~#! v }
     r
   }
   protected def companion = `Content-Disposition`
@@ -448,7 +511,10 @@ final case class `Content-Type` private[http] (contentType: ContentType) extends
 object Cookie extends ModeledCompanion[Cookie] {
   def apply(first: HttpCookiePair, more: HttpCookiePair*): Cookie = apply(immutable.Seq(first +: more: _*))
   def apply(name: String, value: String): Cookie = apply(HttpCookiePair(name, value))
+  @pre213
   def apply(values: (String, String)*): Cookie = apply(values.map(HttpCookiePair(_)).toList)
+  @since213
+  def apply(first: (String, String), more: (String, String)*): Cookie = apply((first +: more).map(HttpCookiePair(_)))
   implicit val cookiePairsRenderer = Renderer.seqRenderer[HttpCookiePair](separator = "; ") // cache
 }
 final case class Cookie(cookies: immutable.Seq[HttpCookiePair]) extends jm.headers.Cookie with RequestHeader {
@@ -562,8 +628,8 @@ object `If-Range` extends ModeledCompanion[`If-Range`] {
 final case class `If-Range`(entityTagOrDateTime: Either[EntityTag, DateTime]) extends RequestHeader {
   def renderValue[R <: Rendering](r: R): r.type =
     entityTagOrDateTime match {
-      case Left(tag)       ⇒ r ~~ tag
-      case Right(dateTime) ⇒ dateTime.renderRfc1123DateTimeString(r)
+      case Left(tag)       => r ~~ tag
+      case Right(dateTime) => dateTime.renderRfc1123DateTimeString(r)
     }
   protected def companion = `If-Range`
 }
@@ -591,8 +657,12 @@ final case class `Last-Modified`(date: DateTime) extends jm.headers.LastModified
 
 // http://tools.ietf.org/html/rfc5988#section-5
 object Link extends ModeledCompanion[Link] {
-  def apply(uri: Uri, first: LinkParam, more: LinkParam*): Link = apply(immutable.Seq(LinkValue(uri, first +: more: _*)))
+  def apply(uri: Uri, first: LinkParam, more: LinkParam*): Link = apply(immutable.Seq(LinkValue(uri, first +: more.toList)))
+  @pre213
   def apply(values: LinkValue*): Link = apply(immutable.Seq(values: _*))
+  @since213
+  def apply(firstValue: LinkValue, otherValues: LinkValue*): Link = apply(firstValue +: otherValues)
+
   implicit val valuesRenderer = Renderer.defaultSeqRenderer[LinkValue] // cache
 }
 final case class Link(values: immutable.Seq[LinkValue]) extends jm.headers.Link with RequestResponseHeader {
@@ -616,7 +686,10 @@ final case class Location(uri: Uri) extends jm.headers.Location with ResponseHea
 
 // http://tools.ietf.org/html/rfc6454#section-7
 object Origin extends ModeledCompanion[Origin] {
+  @pre213
   def apply(origins: HttpOrigin*): Origin = apply(immutable.Seq(origins: _*))
+  @since213
+  def apply(firstOrigin: HttpOrigin, otherOrigins: HttpOrigin*): Origin = apply(firstOrigin +: otherOrigins)
 }
 final case class Origin(origins: immutable.Seq[HttpOrigin]) extends jm.headers.Origin with RequestHeader {
   def renderValue[R <: Rendering](r: R): r.type = if (origins.isEmpty) r ~~ "null" else r ~~ origins
@@ -668,6 +741,8 @@ final case class Range(rangeUnit: RangeUnit, ranges: immutable.Seq[ByteRange]) e
 }
 
 final case class RawHeader(name: String, value: String) extends jm.headers.RawHeader {
+  if (name == null) throw new IllegalArgumentException("name must not be null")
+  if (value == null) throw new IllegalArgumentException("value must not be null")
   def renderInRequests = true
   def renderInResponses = true
   val lowercaseName = name.toRootLowerCase
@@ -675,7 +750,7 @@ final case class RawHeader(name: String, value: String) extends jm.headers.RawHe
 }
 object RawHeader {
   def unapply[H <: HttpHeader](customHeader: H): Option[(String, String)] =
-    Some(customHeader.name → customHeader.value)
+    Some(customHeader.name -> customHeader.value)
 }
 
 object `Raw-Request-URI` extends ModeledCompanion[`Raw-Request-URI`]
@@ -710,18 +785,18 @@ object `Retry-After` extends ModeledCompanion[`Retry-After`] {
 
 final case class `Retry-After`(delaySecondsOrDateTime: RetryAfterParameter) extends jm.headers.RetryAfter with ResponseHeader {
   def renderValue[R <: Rendering](r: R): r.type = delaySecondsOrDateTime match {
-    case RetryAfterDuration(delay)    ⇒ r ~~ delay
-    case RetryAfterDateTime(dateTime) ⇒ dateTime.renderRfc1123DateTimeString(r)
+    case RetryAfterDuration(delay)    => r ~~ delay
+    case RetryAfterDateTime(dateTime) => dateTime.renderRfc1123DateTimeString(r)
   }
 
   protected def companion = `Retry-After`
 
   /** Java API suppport */
   override protected def delaySeconds(): Option[java.lang.Long] = PartialFunction.condOpt(delaySecondsOrDateTime) {
-    case RetryAfterDuration(delay) ⇒ Long.box(delay)
+    case RetryAfterDuration(delay) => Long.box(delay)
   }
   override protected def dateTime(): Option[DateTime] = PartialFunction.condOpt(delaySecondsOrDateTime) {
-    case RetryAfterDateTime(dateTime) ⇒ dateTime
+    case RetryAfterDateTime(dateTime) => dateTime
   }
 }
 
@@ -838,7 +913,7 @@ private[http] object `Sec-WebSocket-Version` extends ModeledCompanion[`Sec-WebSo
 private[http] final case class `Sec-WebSocket-Version`(versions: immutable.Seq[Int])
   extends RequestResponseHeader {
   require(versions.nonEmpty, "Sec-WebSocket-Version.versions must not be empty")
-  require(versions.forall(v ⇒ v >= 0 && v <= 255), s"Sec-WebSocket-Version.versions must be in the range 0 <= version <= 255 but were $versions")
+  require(versions.forall(v => v >= 0 && v <= 255), s"Sec-WebSocket-Version.versions must be in the range 0 <= version <= 255 but were $versions")
   import `Sec-WebSocket-Version`.versionsRenderer
   protected[http] def renderValue[R <: Rendering](r: R): r.type = r ~~ versions
   def hasVersion(versionNumber: Int): Boolean = versions contains versionNumber
@@ -865,8 +940,8 @@ final case class Server(products: immutable.Seq[ProductVersion]) extends jm.head
 object `Strict-Transport-Security` extends ModeledCompanion[`Strict-Transport-Security`] {
   def apply(maxAge: Long, includeSubDomains: Option[Boolean]) = new `Strict-Transport-Security`(maxAge, includeSubDomains.getOrElse(false))
 
-  private val maxAges: PartialFunction[StrictTransportSecurityDirective, MaxAge] = { case m: MaxAge ⇒ m }
-  private val isIncludeSubDomains: StrictTransportSecurityDirective ⇒ Boolean = { _ eq IncludeSubDomains }
+  private val maxAges: PartialFunction[StrictTransportSecurityDirective, MaxAge] = { case m: MaxAge => m }
+  private val isIncludeSubDomains: StrictTransportSecurityDirective => Boolean = { _ eq IncludeSubDomains }
   def fromDirectives(directives: StrictTransportSecurityDirective*) = {
     val maxAgeDirectives = directives.collect(maxAges)
     if (maxAgeDirectives.size != 1) throw new IllegalArgumentException("exactly one 'max-age' directive required")
@@ -934,8 +1009,8 @@ final case class `Transfer-Encoding`(encodings: immutable.Seq[TransferEncoding])
   def withChunkedPeeled: Option[`Transfer-Encoding`] =
     if (isChunked) {
       encodings.init match {
-        case Nil       ⇒ None
-        case remaining ⇒ Some(`Transfer-Encoding`(remaining))
+        case Nil       => None
+        case remaining => Some(`Transfer-Encoding`(remaining))
       }
     } else Some(this)
   def append(encodings: immutable.Seq[TransferEncoding]) = `Transfer-Encoding`(this.encodings ++ encodings)

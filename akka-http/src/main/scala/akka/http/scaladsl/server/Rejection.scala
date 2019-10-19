@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -9,19 +9,19 @@ import java.util.Optional
 import java.util.function.Function
 
 import akka.japi.Util
-
-import scala.collection.immutable
 import akka.http.scaladsl.model._
-import akka.http.javadsl.{ model, server ⇒ jserver }
-import headers._
+import akka.http.scaladsl.model.headers.{ ByteRange, HttpChallenge, HttpEncoding }
+import akka.http.javadsl.{ model, server => jserver }
 import akka.http.impl.util.JavaMapping._
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.pattern.CircuitBreakerOpenException
-import akka.http.javadsl.model.headers.{ HttpOrigin ⇒ JHttpOrigin }
-import akka.http.scaladsl.model.headers.{ HttpOrigin ⇒ SHttpOrigin }
+import akka.http.javadsl.model.headers.{ HttpOrigin => JHttpOrigin }
+import akka.http.scaladsl.model.headers.{ HttpOrigin => SHttpOrigin }
 
 import scala.collection.JavaConverters._
+import scala.collection.immutable
 import scala.compat.java8.OptionConverters
+import scala.runtime.AbstractFunction1
 
 /**
  * A rejection encapsulates a specific reason why a Route was not able to handle a request. Rejections are gathered
@@ -111,10 +111,55 @@ final case class InvalidOriginRejection(allowedOrigins: immutable.Seq[SHttpOrigi
  * Rejection created by unmarshallers.
  * Signals that the request was rejected because the requests content-type is unsupported.
  */
-final case class UnsupportedRequestContentTypeRejection(supported: immutable.Set[ContentTypeRange])
-  extends jserver.UnsupportedRequestContentTypeRejection with Rejection {
+final class UnsupportedRequestContentTypeRejection(
+  val supported:   Set[ContentTypeRange],
+  val contentType: Option[ContentType]   = None)
+  extends jserver.UnsupportedRequestContentTypeRejection
+  with Rejection with Product with Serializable {
+
   override def getSupported: java.util.Set[model.ContentTypeRange] =
     scala.collection.mutable.Set(supported.map(_.asJava).toVector: _*).asJava // TODO optimise
+
+  @deprecated("for binary compatibility", since = "10.1.9")
+  def this(supported: Set[ContentTypeRange]) = this(supported, None)
+
+  @deprecated("for binary compatibility", since = "10.1.9")
+  def copy(supported: Set[ContentTypeRange]) =
+    new UnsupportedRequestContentTypeRejection(supported, this.contentType)
+
+  @deprecated("for binary compatibility", since = "10.1.9")
+  def copy$default$1(supported: Set[ContentTypeRange]) =
+    new UnsupportedRequestContentTypeRejection(supported, this.contentType)
+
+  @deprecated("for binary compatibility", since = "10.1.9")
+  def copy(
+    supported:   Set[ContentTypeRange] = this.supported,
+    contentType: Option[ContentType]   = this.contentType) =
+    UnsupportedRequestContentTypeRejection(supported, contentType)
+
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[UnsupportedRequestContentTypeRejection]
+
+  override def equals(that: Any): Boolean = that match {
+    case that: UnsupportedRequestContentTypeRejection => that.canEqual(this) && that.supported == this.supported && that.contentType == this.contentType
+    case _ => false
+  }
+
+  override def productArity: Int = 1
+  override def productElement(n: Int): Any = supported
+}
+
+object UnsupportedRequestContentTypeRejection
+  extends AbstractFunction1[Set[ContentTypeRange], UnsupportedRequestContentTypeRejection] {
+
+  def apply(supported: Set[ContentTypeRange], contentType: Option[ContentType]): UnsupportedRequestContentTypeRejection =
+    new UnsupportedRequestContentTypeRejection(supported, contentType)
+
+  @deprecated("for binary compatibility", since = "10.1.9")
+  def apply(supported: Set[ContentTypeRange]): UnsupportedRequestContentTypeRejection =
+    new UnsupportedRequestContentTypeRejection(supported, None)
+
+  def unapply(rejection: UnsupportedRequestContentTypeRejection): Option[Set[ContentTypeRange]] =
+    Some(rejection.supported)
 }
 
 /**
@@ -164,7 +209,7 @@ case object RequestEntityExpectedRejection
  * Signals that the request was rejected because the service is not capable of producing a response entity whose
  * content type is accepted by the client
  */
-final case class UnacceptedResponseContentTypeRejection(supported: immutable.Set[ContentNegotiator.Alternative])
+final case class UnacceptedResponseContentTypeRejection(supported: Set[ContentNegotiator.Alternative])
   extends jserver.UnacceptedResponseContentTypeRejection with Rejection
 
 /**
@@ -172,10 +217,9 @@ final case class UnacceptedResponseContentTypeRejection(supported: immutable.Set
  * Signals that the request was rejected because the service is not capable of producing a response entity whose
  * content encoding is accepted by the client
  */
-final case class UnacceptedResponseEncodingRejection(supported: immutable.Set[HttpEncoding])
+final case class UnacceptedResponseEncodingRejection(supported: Set[HttpEncoding])
   extends jserver.UnacceptedResponseEncodingRejection with Rejection {
-  override def getSupported: java.util.Set[model.headers.HttpEncoding] =
-    scala.collection.mutable.Set(supported.map(_.asJava).toVector: _*).asJava // TODO optimise
+  override def getSupported: java.util.Set[model.headers.HttpEncoding] = supported.map(_.asJava).asJava
 }
 object UnacceptedResponseEncodingRejection {
   def apply(supported: HttpEncoding): UnacceptedResponseEncodingRejection = UnacceptedResponseEncodingRejection(Set(supported))
@@ -263,12 +307,14 @@ final case class ValidationRejection(message: String, cause: Option[Throwable] =
  * MethodRejection added by the `get` directive is canceled by the `put` directive (since the HTTP method
  * did indeed match eventually).
  */
-final case class TransformationRejection(transform: immutable.Seq[Rejection] ⇒ immutable.Seq[Rejection])
+final case class TransformationRejection(transform: immutable.Seq[Rejection] => immutable.Seq[Rejection])
   extends jserver.TransformationRejection with Rejection {
   override def getTransform = new Function[Iterable[jserver.Rejection], Iterable[jserver.Rejection]] {
-    override def apply(t: Iterable[jserver.Rejection]): Iterable[jserver.Rejection] =
-      // explicit collects instead of implicits is because of unidoc failing compilation on .asScala and .asJava here
-      transform(Util.immutableSeq(t).collect { case r: Rejection ⇒ r }).collect[jserver.Rejection, Seq[jserver.Rejection]] { case j: jserver.Rejection ⇒ j }.asJava // TODO "asJavaDeep" and optimise?
+    override def apply(t: Iterable[jserver.Rejection]): Iterable[jserver.Rejection] = {
+      // explicit collects assignment is because of unidoc failing compilation on .asScala and .asJava here
+      val transformed: Seq[jserver.Rejection] = transform(Util.immutableSeq(t).collect { case r: Rejection => r }).collect { case j: jserver.Rejection => j }
+      transformed.asJava // TODO "asJavaDeep" and optimise?
+    }
   }
 }
 
@@ -285,4 +331,4 @@ final case class CircuitBreakerOpenRejection(cause: CircuitBreakerOpenException)
  * rejection rather than an Exception that is handled by the nearest ExceptionHandler.
  * (Custom marshallers can of course use it as well.)
  */
-final case class RejectionError(rejection: Rejection) extends RuntimeException
+final case class RejectionError(rejection: Rejection) extends RuntimeException(rejection.toString)

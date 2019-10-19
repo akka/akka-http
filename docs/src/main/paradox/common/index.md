@@ -17,6 +17,7 @@ which are specific to one side only.
 * [encoding](encoding.md)
 * [json-support](json-support.md)
 * [xml-support](xml-support.md)
+* [xml-support](sse-support.md)
 * [timeouts](timeouts.md)
 * [caching](caching.md)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.client
@@ -12,7 +12,7 @@ import org.scalatest.Inside
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.util.ByteString
 import akka.event.NoLogging
-import akka.stream.{ ClosedShape, ActorMaterializer }
+import akka.stream.ClosedShape
 import akka.stream.TLSProtocol._
 import akka.stream.testkit._
 import akka.stream.scaladsl._
@@ -23,8 +23,7 @@ import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
 import akka.testkit._
 
-class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF") with Inside {
-  implicit val materializer = ActorMaterializer()
+class LowLevelOutgoingConnectionSpec extends AkkaSpecWithMaterializer with Inside {
   implicit val dispatcher = system.dispatcher
 
   "The connection-level client implementation" should {
@@ -179,6 +178,54 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         netOut.expectComplete()
       }
 
+      "has a request with a overridden User-Agent RawHeader" in new TestSetup {
+        val request = HttpRequest().addHeader(RawHeader("User-Agent", "akka-http/test-overridden"))
+        requestsSub.sendNext(request)
+        expectWireData(
+          """GET / HTTP/1.1
+            |User-Agent: akka-http/test-overridden
+            |Host: example.com
+            |
+            |""")
+
+        sendWireData(
+          """HTTP/1.1 200 OK
+            |Content-Length: 0
+            |
+            |""")
+
+        expectResponse() shouldEqual HttpResponse()
+
+        requestsSub.sendComplete()
+        netOut.expectComplete()
+        netInSub.sendComplete()
+        responses.expectComplete()
+      }
+
+      "has a request with a overridden Host RawHeader" in new TestSetup {
+        val request = HttpRequest().addHeader(RawHeader("Host", "testhost.com"))
+        requestsSub.sendNext(request)
+        expectWireData(
+          """GET / HTTP/1.1
+            |Host: testhost.com
+            |User-Agent: akka-http/test
+            |
+            |""")
+
+        sendWireData(
+          """HTTP/1.1 200 OK
+            |Content-Length: 0
+            |
+            |""")
+
+        expectResponse() shouldEqual HttpResponse()
+
+        requestsSub.sendComplete()
+        netOut.expectComplete()
+        netInSub.sendComplete()
+        responses.expectComplete()
+      }
+
       "exhibits eager request stream completion" in new TestSetup {
         requestsSub.sendNext(HttpRequest())
         requestsSub.sendComplete()
@@ -231,7 +278,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
           |""")
 
       inside(expectResponse()) {
-        case HttpResponse(StatusCodes.OK, _, HttpEntity.Chunked(_, data), _) ⇒
+        case HttpResponse(StatusCodes.OK, _, HttpEntity.Chunked(_, data), _) =>
           val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
           // but only one consumed by server
           data.take(1).to(Sink.fromSubscriber(dataProbe)).run()
@@ -245,7 +292,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
     }
 
     "proceed to next response once previous response's entity has been drained" in new TestSetup {
-      def twice(action: ⇒ Unit): Unit = { action; action }
+      def twice(action: => Unit): Unit = { action; action }
 
       twice {
         requestsSub.sendNext(HttpRequest())
@@ -365,7 +412,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
               |""")
 
         val HttpResponse(_, headers, _, _) = expectResponse()
-        val headerStr = headers.map(h ⇒ s"${h.name}: ${h.value}").mkString(",")
+        val headerStr = headers.map(h => s"${h.name}: ${h.value}").mkString(",")
         headerStr shouldEqual "Some-Header: value1,Other-Header: value2"
       }
 
@@ -383,7 +430,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
               |""")
 
         val HttpResponse(_, headers, _, _) = expectResponse()
-        val headerStr = headers.map(h ⇒ s"${h.name}: ${h.value}").mkString(",")
+        val headerStr = headers.map(h => s"${h.name}: ${h.value}").mkString(",")
         headerStr shouldEqual "Some-Header: value1,Other-Header: value2"
       }
     }
@@ -413,7 +460,10 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         info.summary shouldEqual "HTTP message had declared Content-Length 8 but entity data stream amounts to 2 bytes less"
         netInSub.sendComplete()
         responsesSub.request(1)
-        responses.expectError().getMessage shouldBe "The http server closed the connection unexpectedly before delivering responses for 1 outstanding requests"
+        responses.expectError().getMessage should (
+          equal("HTTP message had declared Content-Length 8 but entity data stream amounts to 2 bytes less") or // with Akka 2.6
+          equal("The http server closed the connection unexpectedly before delivering responses for 1 outstanding requests") // with Akka 2.5
+        )
       }
 
       "catch the request entity stream being longer than the Content-Length" in new TestSetup {
@@ -439,7 +489,10 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         info.summary shouldEqual "HTTP message had declared Content-Length 8 but entity data stream amounts to more bytes"
         netInSub.sendComplete()
         responsesSub.request(1)
-        responses.expectError().getMessage shouldBe "The http server closed the connection unexpectedly before delivering responses for 1 outstanding requests"
+        responses.expectError().getMessage should (
+          equal("HTTP message had declared Content-Length 8 but entity data stream amounts to more bytes") or // with Akka 2.6
+          equal("The http server closed the connection unexpectedly before delivering responses for 1 outstanding requests") // with Akka 2.5
+        )
       }
 
       "catch illegal response starts" in new TestSetup {
@@ -556,13 +609,13 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
 
           def expectEntity[T <: HttpEntity: ClassTag](bytes: Int) =
             inside(response) {
-              case HttpResponse(_, _, entity: T, _) ⇒
+              case HttpResponse(_, _, entity: T, _) =>
                 entity.toStrict(100.millis.dilated).awaitResult(timeout).data.utf8String shouldEqual entityBase.take(bytes)
             }
 
           def expectSizeErrorInEntityOfType[T <: HttpEntity: ClassTag](limit: Int, actualSize: Option[Long] = None) =
             inside(response) {
-              case HttpResponse(_, _, entity: T, _) ⇒
+              case HttpResponse(_, _, entity: T, _) =>
                 def gatherBytes = entity.dataBytes.runFold(ByteString.empty)(_ ++ _).awaitResult(timeout)
                 (the[RuntimeException] thrownBy gatherBytes).getCause shouldEqual EntityStreamSizeException(limit, actualSize)
             }
@@ -914,22 +967,22 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
       val netOut = TestSubscriber.manualProbe[ByteString]()
       val netIn = TestPublisher.manualProbe[ByteString]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(OutgoingConnectionBlueprint(Host("example.com"), settings, NoLogging)) { implicit b ⇒ client ⇒
+      RunnableGraph.fromGraph(GraphDSL.create(OutgoingConnectionBlueprint(Host("example.com"), settings, NoLogging)) { implicit b => client =>
         import GraphDSL.Implicits._
         Source.fromPublisher(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> client.in2
-        client.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x } ~> Sink.fromSubscriber(netOut)
+        client.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) => x } ~> Sink.fromSubscriber(netOut)
         Source.fromPublisher(requests) ~> client.in1
         client.out2 ~> Sink.fromSubscriber(responses)
         ClosedShape
       }).run()
 
-      netOut → netIn
+      netOut -> netIn
     }
 
     def wipeDate(string: String) =
       string.fastSplit('\n').map {
-        case s if s.startsWith("Date:") ⇒ "Date: XXXX\r"
-        case s                          ⇒ s
+        case s if s.startsWith("Date:") => "Date: XXXX\r"
+        case s                          => s
       }.mkString("\n")
 
     val netInSub = netIn.expectSubscription()

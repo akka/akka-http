@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.http2.hpack
@@ -22,7 +22,7 @@ private[http2] abstract class HandleOrPassOnStage[T <: U, U](shape: FlowShape[T,
 
     def onPush(): Unit = {
       val event = grab(in)
-      handleEvent.applyOrElse[T, Unit](event, ev ⇒ push(out, ev))
+      handleEvent.applyOrElse[T, Unit](event, ev => push(out, ev))
     }
     def onPull(): Unit = pull(in)
   }

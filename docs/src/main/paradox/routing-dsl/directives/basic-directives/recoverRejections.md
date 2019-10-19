@@ -14,11 +14,11 @@
 want to try the @ref[handleRejections](../execution-directives/handleRejections.md) directive which provides a nicer DSL for building rejection handlers.
 
 Transforms rejections from the inner route with 
-@scala[an `immutable.Seq[Rejection] ⇒ RouteResult` function.]
+@scala[an `immutable.Seq[Rejection] => RouteResult` function.]
 @java[a `Function<Iterable<Rejection>, RouteResult>`.]
-A @unidoc[RouteResult] is either a
+A @apidoc[RouteResult] is either a
 @scala[`Complete(HttpResponse(...))`]
-@java[`Complete` containing the @unidoc[HttpResponse]]
+@java[`Complete` containing the @apidoc[HttpResponse]]
 or a
 @scala[`Rejected(rejections)`.]
 @java[`Rejected` containing the rejections.]

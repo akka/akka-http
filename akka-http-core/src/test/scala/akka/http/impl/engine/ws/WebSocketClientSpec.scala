@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.impl.engine.ws
@@ -12,22 +12,19 @@ import akka.stream.ClosedShape
 import akka.stream.TLSProtocol._
 
 import scala.concurrent.duration._
-
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.{ ProductVersion, `User-Agent` }
 import akka.http.scaladsl.model.ws._
 import akka.http.scaladsl.model.Uri
 import akka.stream.scaladsl._
-import akka.stream.testkit.{ TestSubscriber, TestPublisher }
+import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.util.ByteString
 import akka.testkit._
-import org.scalatest.{ Matchers, FreeSpec }
-
 import akka.http.impl.util._
 
-class WebSocketClientSpec extends FreeSpec with Matchers with WithMaterializerSpec {
-  "The client-side WebSocket implementation should" - {
+class WebSocketClientSpec extends AkkaSpecWithMaterializer {
+  "The client-side WebSocket implementation should" should {
     "establish a websocket connection when the user requests it" in new EstablishedConnectionSetup with ClientEchoes
 
     "establish connection with case insensitive header values" in new TestSetup with ClientEchoes {
@@ -61,7 +58,7 @@ class WebSocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
       expectMaskedFrameOnNetwork(Protocol.Opcode.Text, ByteString("Message 1"), fin = true)
     }
 
-    "reject invalid handshakes" - {
+    "reject invalid handshakes" should {
       "other status code" in new TestSetup with ClientEchoes {
         expectWireData(UpgradeRequestBytes)
 
@@ -190,7 +187,7 @@ class WebSocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
       closeNetworkInput()
       expectNetworkClose()
     }
-    "support subprotocols" - {
+    "support subprotocols" should {
       "accept if server supports subprotocol" in new TestSetup with ClientEchoes {
         override protected def requestedSubProtocol: Option[String] = Some("v2")
 
@@ -219,7 +216,37 @@ class WebSocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
         sendWSFrame(Protocol.Opcode.Text, ByteString("Message 1"), fin = true)
         expectMaskedFrameOnNetwork(Protocol.Opcode.Text, ByteString("Message 1"), fin = true)
       }
-      "send error on user flow if server doesn't support subprotocol" - {
+      "multiple subprotocols" should {
+        "accept if server supports subprotocol" in new TestSetup with ClientEchoes {
+          override protected def requestedSubProtocol: Option[String] = Some("v2, v3")
+
+          expectWireData(
+            """GET /ws HTTP/1.1
+              |Upgrade: websocket
+              |Connection: upgrade
+              |Sec-WebSocket-Key: YLQguzhR2dR6y5M9vnA5mw==
+              |Sec-WebSocket-Version: 13
+              |Sec-WebSocket-Protocol: v2, v3
+              |Host: example.org
+              |User-Agent: akka-http/test
+              |
+              |""")
+          sendWireData(
+            """HTTP/1.1 101 Switching Protocols
+              |Upgrade: websocket
+              |Sec-WebSocket-Accept: ujmZX4KXZqjwy6vi1aQFH5p4Ygk=
+              |Sec-WebSocket-Version: 13
+              |Server: akka-http/test
+              |Connection: upgrade
+              |Sec-WebSocket-Protocol: v3
+              |
+              |""")
+
+          sendWSFrame(Protocol.Opcode.Text, ByteString("Message 1"), fin = true)
+          expectMaskedFrameOnNetwork(Protocol.Opcode.Text, ByteString("Message 1"), fin = true)
+        }
+      }
+      "send error on user flow if server doesn't support subprotocol" should {
         "if no protocol was selected" in new TestSetup with ClientProbes {
           override protected def requestedSubProtocol: Option[String] = Some("v2")
 
@@ -317,7 +344,7 @@ class WebSocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
     val random = new Random(0)
     def settings = ClientConnectionSettings(system)
       .withUserAgentHeader(Some(`User-Agent`(List(ProductVersion("akka-http", "test")))))
-      .withWebsocketRandomFactory(() ⇒ random)
+      .withWebsocketRandomFactory(() => random)
 
     def targetUri: Uri = "ws://example.org/ws"
 
@@ -331,10 +358,10 @@ class WebSocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
       val netIn = TestPublisher.probe[ByteString]()
 
       val graph =
-        RunnableGraph.fromGraph(GraphDSL.create(clientLayer) { implicit b ⇒ client ⇒
+        RunnableGraph.fromGraph(GraphDSL.create(clientLayer) { implicit b => client =>
           import GraphDSL.Implicits._
           Source.fromPublisher(netIn) ~> Flow[ByteString].map(SessionBytes(null, _)) ~> client.in2
-          client.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) ⇒ x } ~> netOut.sink
+          client.out1 ~> Flow[SslTlsOutbound].collect { case SendBytes(x) => x } ~> netOut.sink
           client.out2 ~> clientImplementation ~> client.in1
           ClosedShape
         })
@@ -348,8 +375,8 @@ class WebSocketClientSpec extends FreeSpec with Matchers with WithMaterializerSp
 
     def wipeDate(string: String) =
       string.fastSplit('\n').map {
-        case s if s.startsWith("Date:") ⇒ "Date: XXXX\r"
-        case s                          ⇒ s
+        case s if s.startsWith("Date:") => "Date: XXXX\r"
+        case s                          => s
       }.mkString("\n")
 
     def sendWireData(data: String): Unit = sendWireData(ByteString(data.stripMarginWithNewline("\r\n"), "ASCII"))

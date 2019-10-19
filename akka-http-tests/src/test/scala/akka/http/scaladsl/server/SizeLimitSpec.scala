@@ -1,28 +1,28 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
 
 import akka.NotUsed
-
-import scala.collection.immutable
 import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.coding.{ Decoder, Gzip }
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpEntity.Chunk
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ HttpEncoding, HttpEncodings, `Content-Encoding` }
+import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Source }
-import akka.testkit.{ EventFilter, TestKit }
+import akka.testkit.TestKit
 import akka.util.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{ Millis, Seconds, Span }
+import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
+
+import scala.collection.immutable
 
 class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with BeforeAndAfterAll with ScalaFutures {
 
@@ -47,7 +47,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
   "a normal route" should {
     val route = path("noDirective") {
       post {
-        entity(as[String]) { _ ⇒
+        entity(as[String]) { _ =>
           complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>"))
         }
       }
@@ -62,7 +62,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
 
     "not accept entities bigger than configured with akka.http.parsing.max-content-length" in {
       Http().singleRequest(Post(s"http:/${binding.localAddress}/noDirective", entityOfSize(maxContentLength + 1)))
-        .futureValue.status shouldEqual StatusCodes.BadRequest
+        .futureValue.status shouldEqual StatusCodes.RequestEntityTooLarge
     }
   }
 
@@ -70,7 +70,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
     val route = path("noDirective") {
       decodeRequest {
         post {
-          entity(as[String]) { e ⇒
+          entity(as[String]) { e =>
             complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, s"Got request with entity of ${e.length} characters"))
           }
         }
@@ -98,7 +98,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
       data.size should be > decodeMaxSize
 
       Http().singleRequest(request)
-        .futureValue.status shouldEqual StatusCodes.BadRequest
+        .futureValue.status shouldEqual StatusCodes.RequestEntityTooLarge
     }
   }
 
@@ -108,7 +108,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
     val route = path("noDirective") {
       decodeRequestWith(decoder) {
         post {
-          entity(as[String]) { e ⇒
+          entity(as[String]) { e =>
             complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, s"Got request with entity of ${e.length} characters"))
           }
         }
@@ -120,7 +120,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
     "reject a small request that decodes into a large chunked entity" in {
       val request = Post(s"http:/${binding.localAddress}/noDirective", "x").withHeaders(`Content-Encoding`(HttpEncoding("custom")))
       val response = Http().singleRequest(request).futureValue
-      response.status shouldEqual StatusCodes.BadRequest
+      response.status shouldEqual StatusCodes.RequestEntityTooLarge
     }
   }
 
@@ -130,7 +130,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
     val route = path("noDirective") {
       decodeRequestWith(decoder) {
         post {
-          entity(as[String]) { e ⇒
+          entity(as[String]) { e =>
             complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, s"Got request with entity of ${e.length} characters"))
           }
         }
@@ -142,7 +142,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
     "reject a small request that decodes into a large non-chunked streaming entity" in {
       val request = Post(s"http:/${binding.localAddress}/noDirective", "x").withHeaders(`Content-Encoding`(HttpEncoding("custom")))
       val response = Http().singleRequest(request).futureValue
-      response.status shouldEqual StatusCodes.BadRequest
+      response.status shouldEqual StatusCodes.RequestEntityTooLarge
     }
   }
 
@@ -151,7 +151,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
       decodeRequest {
         withoutSizeLimit {
           post {
-            entity(as[String]) { e ⇒
+            entity(as[String]) { e =>
               complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, s"Got request with entity of ${e.length} characters"))
             }
           }
@@ -205,7 +205,7 @@ class SizeLimitSpec extends WordSpec with Matchers with RequestBuilding with Bef
     val route = path("withoutSizeLimit") {
       post {
         withoutSizeLimit {
-          entity(as[String]) { _ ⇒
+          entity(as[String]) { _ =>
             complete(HttpEntity(ContentTypes.`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>"))
           }
         }

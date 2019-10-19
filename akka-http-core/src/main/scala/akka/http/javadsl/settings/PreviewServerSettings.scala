@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.settings
@@ -17,7 +17,7 @@ import com.typesafe.config.Config
  * without early notice (e.g. by moving them into a stable supported place).
  */
 @ApiMayChange @DoNotInherit
-abstract class PreviewServerSettings private[akka] () { self: PreviewServerSettingsImpl ⇒
+abstract class PreviewServerSettings private[akka] () { self: PreviewServerSettingsImpl =>
   /**
    * Configures the Http extension to bind using HTTP/2 if given an
    * [[akka.http.scaladsl.HttpsConnectionContext]]. Otherwise binds as plain HTTP.

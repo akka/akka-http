@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.javadsl.server.directives
@@ -9,7 +9,7 @@ import java.util.function
 import akka.http.javadsl.model.HttpMethod
 import akka.http.javadsl.server.Route
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.scaladsl.server.directives.{ MethodDirectives ⇒ D }
+import akka.http.scaladsl.server.directives.{ MethodDirectives => D }
 
 abstract class MethodDirectives extends MarshallingDirectives {
   def delete(inner: function.Supplier[Route]): Route = RouteAdapter {
@@ -38,7 +38,7 @@ abstract class MethodDirectives extends MarshallingDirectives {
   }
 
   def extractMethod(inner: function.Function[HttpMethod, Route]) = RouteAdapter {
-    D.extractMethod { m ⇒
+    D.extractMethod { m =>
       inner.apply(m).delegate
     }
   }

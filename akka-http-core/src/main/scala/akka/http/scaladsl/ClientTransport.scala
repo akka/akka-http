@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl
@@ -44,7 +44,7 @@ object ClientTransport {
       // By passing an unresolved InetSocketAddress instead, we ensure that DNS resolution is performed for every new connection.
       Tcp().outgoingConnection(InetSocketAddress.createUnresolved(host, port), settings.localAddress,
         settings.socketOptions, halfClose = true, settings.connectingTimeout, settings.idleTimeout)
-        .mapMaterializedValue(_.map(tcpConn ⇒ OutgoingConnection(tcpConn.localAddress, tcpConn.remoteAddress))(system.dispatcher))
+        .mapMaterializedValue(_.map(tcpConn => OutgoingConnection(tcpConn.localAddress, tcpConn.remoteAddress))(system.dispatcher))
   }
 
   /**

@@ -1,29 +1,30 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server
 
 import akka.http.scaladsl.server._
+import docs.CompileOnlySpec
 
-class DirectiveExamplesSpec extends RoutingSpec {
-
-  // format: OFF
+class DirectiveExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   "example-1" in {
     //#example-1
     val route: Route =
       path("order" / IntNumber) { id =>
-        get {
-          complete {
-            "Received GET request for order " + id
+        concat(
+          get {
+            complete {
+              "Received GET request for order " + id
+            }
+          },
+          put {
+            complete {
+              "Received PUT request for order " + id
+            }
           }
-        } ~
-        put {
-          complete {
-            "Received PUT request for order " + id
-          }
-        }
+        )
       }
     verify(route) // #hide
     //#example-1
@@ -32,16 +33,18 @@ class DirectiveExamplesSpec extends RoutingSpec {
   "example-2" in {
     //#getOrPut
     def innerRoute(id: Int): Route =
-      get {
-        complete {
-          "Received GET request for order " + id
+      concat(
+        get {
+          complete {
+            "Received GET request for order " + id
+          }
+        },
+        put {
+          complete {
+            "Received PUT request for order " + id
+          }
         }
-      } ~
-      put {
-        complete {
-          "Received PUT request for order " + id
-        }
-      }
+      )
 
     val route: Route = path("order" / IntNumber) { id => innerRoute(id) }
     verify(route) // #hide
@@ -115,16 +118,16 @@ class DirectiveExamplesSpec extends RoutingSpec {
   "example-8" in {
     //#example-8
     def innerRoute(id: Int): Route =
-      concat(get {
+      get {
         complete {
           "Received GET request for order " + id
         }
-      },
-      put {
-        complete {
-          "Received PUT request for order " + id
+      } ~
+        put {
+          complete {
+            "Received PUT request for order " + id
+          }
         }
-      })
 
     val route: Route = path("order" / IntNumber) { id => innerRoute(id) }
     verify(route) // #hide

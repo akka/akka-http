@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server
@@ -30,7 +30,7 @@ private[akka] trait IntegrationRoutingSpec extends WordSpecLike with Matchers wi
   }
 
   implicit class Checking(p: Prepped) {
-    def ~!>(checking: HttpResponse ⇒ Unit) = {
+    def ~!>(checking: HttpResponse => Unit) = {
       val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
       val binding = Http().bindAndHandle(p.route, host, port)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.http.scaladsl.server.directives
@@ -40,7 +40,7 @@ class MethodDirectivesSpec extends RoutingSpec {
       Head() ~> headRoute ~> check {
         status shouldEqual StatusCodes.OK
 
-        val lengthF = response._3.dataBytes.runFold(0)((c, _) ⇒ c + 1)
+        val lengthF = response._3.dataBytes.runFold(0)((c, _) => c + 1)
         val length = Await.result(lengthF, Duration(100, "millis"))
         length shouldEqual 0
       }

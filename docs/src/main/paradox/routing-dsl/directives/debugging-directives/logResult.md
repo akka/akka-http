@@ -20,7 +20,7 @@ The signature shown is simplified, the real signature uses magnets. <a id="^1" h
 
 ## Description
 
-Logs the response using the @unidoc[LoggingAdapter] of the @unidoc[RequestContext].
+Logs the response using the @apidoc[LoggingAdapter] of the @apidoc[RequestContext].
 
 See @ref[logRequest](logRequest.md) for the general description how these directives work. @scala[This directive is different
 as it requires a `LoggingMagnet[RouteResult => Unit]`. Instead of just logging `HttpResponses`, `logResult` is able to

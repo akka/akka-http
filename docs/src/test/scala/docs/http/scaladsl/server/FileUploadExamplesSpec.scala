@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server
@@ -12,16 +12,18 @@ import akka.http.scaladsl.model.Multipart.FormData.BodyPart
 import akka.stream.scaladsl.Framing
 import akka.stream.scaladsl._
 import akka.http.scaladsl.model.Multipart
+import akka.http.scaladsl.server.RoutingSpec
 import akka.util.ByteString
+import docs.CompileOnlySpec
 
 import scala.concurrent.duration._
 import scala.concurrent.Future
 
-class FileUploadExamplesSpec extends RoutingSpec {
+class FileUploadExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   case class Video(file: File, title: String, author: String)
   object db {
-    def create(video: Video): Future[Unit] = Future.successful(Unit)
+    def create(video: Video): Future[Unit] = Future.successful(())
   }
 
   "simple-upload" in {

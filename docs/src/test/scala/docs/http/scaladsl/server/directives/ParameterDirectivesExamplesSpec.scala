@@ -1,15 +1,16 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.RoutingSpec
 import akka.http.scaladsl.unmarshalling.PredefinedFromStringUnmarshallers
-import docs.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
-class ParameterDirectivesExamplesSpec extends RoutingSpec with PredefinedFromStringUnmarshallers {
+class ParameterDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec with PredefinedFromStringUnmarshallers {
   "example-1" in {
     //#example-1
     val route =

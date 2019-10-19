@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -14,20 +14,24 @@ object AkkaDependency {
   // else if akka version is "default", then the hard coded default will be used (jenkins doesn't allow empty values for config axis)
   // else if akka.version is anything else, then the given version will be used
 
-  val defaultAkkaVersion = "2.5.12"
-  val akkaVersion = {
-    val res = System.getProperty("akka.build.version", defaultAkkaVersion)
-    if (res == "default") defaultAkkaVersion
-    else res
-  }
+  // Updated only when needed, https://github.com/akka/akka/issues/26985
+  val defaultAkkaVersion = "2.5.23"
+  val akkaVersion =
+    System.getProperty("akka.http.build.akka.version", defaultAkkaVersion) match {
+      case "default" => defaultAkkaVersion
+      case x => x
+    }
 
   // Needs to be a URI like git://github.com/akka/akka.git#master or file:///xyz/akka
   val akkaSourceDependencyUri = {
     val fallback =
-      if (akkaVersion == "master") "git://github.com/akka/akka.git#master"
-      else ""
+      akkaVersion match {
+        case "master" => "git://github.com/akka/akka.git#master"
+        case "release-2.5" => "git://github.com/akka/akka.git#release-2.5"
+        case x => ""
+      }
 
-    System.getProperty("akka.sources",fallback)
+    System.getProperty("akka.sources", fallback)
   }
   val shouldUseSourceDependency = akkaSourceDependencyUri != ""
 
@@ -40,22 +44,33 @@ object AkkaDependency {
 
   implicit class RichProject(project: Project) {
     /** Adds either a source or a binary dependency, depending on whether the above settings are set */
-    def addAkkaModuleDependency(module: String, config: String = ""): Project =
-      if (shouldUseSourceDependency) {
-        val moduleRef = ProjectRef(akkaRepository, module)
-        val withConfig: ClasspathDependency =
-          if (config == "") moduleRef
-          else moduleRef % config
+    def addAkkaModuleDependency(module: String,
+                                config: String = "",
+                                shouldUseSourceDependency: Boolean = AkkaDependency.shouldUseSourceDependency,
+                                akkaRepository: URI = AkkaDependency.akkaRepository,
+                                onlyIf: Boolean = true,
+                                includeIfScalaVersionMatches: String => Boolean = _ => true): Project =
+      if (onlyIf) {
+        if (shouldUseSourceDependency) {
+          val moduleRef = ProjectRef(akkaRepository, module)
+          val withConfig: ClasspathDependency =
+            if (config == "") moduleRef
+            else moduleRef % config
 
-        project.dependsOn(withConfig)
-      } else {
-        project.settings(libraryDependencies += {
-          val dep = "com.typesafe.akka" %% module % akkaVersion
-          val withConfig =
-            if (config == "") dep
-            else dep % config
-          withConfig
-        })
+          project.dependsOn(withConfig)
+        } else {
+          project.settings(
+            libraryDependencies ++=
+              (if (includeIfScalaVersionMatches(scalaBinaryVersion.value)) {
+                val dep = "com.typesafe.akka" %% module % akkaVersion
+                val withConfig =
+                  if (config == "") dep
+                  else dep % config
+                withConfig :: Nil
+              } else Nil)
+          )
+        }
       }
+      else project // return unchanged
   }
 }

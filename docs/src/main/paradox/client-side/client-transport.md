@@ -1,6 +1,6 @@
 # Pluggable Client Transports / HTTP(S) proxy Support
 
-The client side infrastructure has (unstable) support to plug different transport mechanisms underneath. A client side
+The client side infrastructure has support to plug different transport mechanisms underneath (the API may still change in the future). A client side
 transport is represented by an instance of
 @scala[@scaladoc[akka.http.scaladsl.ClientTransport](akka.http.scaladsl.ClientTransport)]@java[@javadoc[akka.http.javadsl.ClientTransport](akka.http.javadsl.ClientTransport)]:
 
@@ -21,10 +21,10 @@ transport layer itself.
 
 ## Configuring Client Transports
 
-A @unidoc[ClientTransport] can be configured in the @unidoc[ClientConnectionSettings]. Right now, this is not possible
+A @apidoc[ClientTransport] can be configured in the @apidoc[ClientConnectionSettings]. Right now, this is not possible
 through config files but only by code. First, use `ClientConnectionSettings.withTransport` to configure a transport,
-then use `ConnectionPoolSettings.withConnectionSettings`. @unidoc[ClientConnectionSettings] can be passed to all
-client-side entry points in @scala[@unidoc[Http$]]@java[@unidoc[Http]].
+then use `ConnectionPoolSettings.withConnectionSettings`. @apidoc[ClientConnectionSettings] can be passed to all
+client-side entry points in @scala[@apidoc[Http$]]@java[@apidoc[Http]].
 
 ## Predefined Transports
 
@@ -58,6 +58,7 @@ akka.http.client.proxy {
 
 If host is left as `""` and you attempt to setup a httpsProxy transport, an exception will be thrown.
 
+<a id="use-https-proxy-with-http-singlerequest"></a>
 ### Use HTTP(S) proxy with @scala[`Http().singleRequest`]@java[`Http.get(...).singleRequest`]
 
 To make use of an HTTP proxy when using the `singleRequest` API you simply need to configure the proxy and pass
@@ -71,7 +72,7 @@ Java
 
 ### Use HTTP(S) proxy that requires authentication
 
-In order to use a HTTP(S) proxy that requires authentication, you need to provide @unidoc[HttpCredentials] that will be used
+In order to use a HTTP(S) proxy that requires authentication, you need to provide @apidoc[HttpCredentials] that will be used
 when making the CONNECT request to the proxy:
 
 

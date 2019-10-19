@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.http.scaladsl.server.directives
@@ -9,14 +9,15 @@ import akka.http.scaladsl.common.{ EntityStreamingSupport, JsonEntityStreamingSu
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Accept
+import akka.http.scaladsl.server.RoutingSpec
 import akka.http.scaladsl.server.{ UnacceptedResponseContentTypeRejection, UnsupportedRequestContentTypeRejection }
 import akka.stream.scaladsl.{ Flow, Source }
 import akka.util.ByteString
-import docs.http.scaladsl.server.RoutingSpec
+import docs.CompileOnlySpec
 
 import scala.concurrent.Future
 
-class JsonStreamingExamplesSpec extends RoutingSpec {
+class JsonStreamingExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
   //#tweet-model
   case class Tweet(uid: Int, txt: String)
@@ -60,9 +61,9 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
     Get("/tweets").withHeaders(AcceptJson) ~> route ~> check {
       responseAs[String] shouldEqual
         """[""" +
-        """{"uid":1,"txt":"#Akka rocks!"},""" +
-        """{"uid":2,"txt":"Streaming is so hot right now!"},""" +
-        """{"uid":3,"txt":"You cannot enter the same river twice."}""" +
+        """{"txt":"#Akka rocks!","uid":1},""" +
+        """{"txt":"Streaming is so hot right now!","uid":2},""" +
+        """{"txt":"You cannot enter the same river twice.","uid":3}""" +
         """]"""
     }
 
@@ -100,9 +101,9 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
 
     Get("/tweets").withHeaders(AcceptJson) ~> route ~> check {
       responseAs[String] shouldEqual
-        """{"uid":1,"txt":"#Akka rocks!"}""" + "\n" +
-        """{"uid":2,"txt":"Streaming is so hot right now!"}""" + "\n" +
-        """{"uid":3,"txt":"You cannot enter the same river twice."}""" + "\n"
+        """{"txt":"#Akka rocks!","uid":1}""" + "\n" +
+        """{"txt":"Streaming is so hot right now!","uid":2}""" + "\n" +
+        """{"txt":"You cannot enter the same river twice.","uid":3}""" + "\n"
     }
     //#line-by-line-json-response-streaming
   }
@@ -234,7 +235,10 @@ class JsonStreamingExamplesSpec extends RoutingSpec {
 
     Post("/metrics", entity = xmlData) ~> route ~> check {
       handled should ===(false)
-      rejection should ===(UnsupportedRequestContentTypeRejection(Set(ContentTypes.`application/json`)))
+      rejection should ===(
+        UnsupportedRequestContentTypeRejection(
+          Set(ContentTypes.`application/json`),
+          Some(ContentTypes.`text/xml(UTF-8)`)))
     }
     //#spray-json-request-streaming
   }
