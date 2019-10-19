@@ -175,7 +175,7 @@ Connecting to this service with a slow HTTP client would backpressure so that th
 demand with constant memory usage on the server. This can be seen using curl and limiting the rate
 `curl --limit-rate 50b 127.0.0.1:8080/random`
 
-Akka HTTP routes easily interacts with actors. In this example one route allows for placing bids in a fire-and-forget
+Akka HTTP routes easily interact with actors. In this example one route allows for placing bids in a fire-and-forget
 style while the second route contains a request-response interaction with an actor. The resulting response is rendered
 as json and returned when the response arrives from the actor.
 
