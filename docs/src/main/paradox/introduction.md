@@ -69,19 +69,19 @@ configured using the [Giter8](http://www.foundweekends.org/giter8/) template:
 
 @@@ div { .group-scala }
 ```sh
-sbt -Dsbt.version=0.13.15 new https://github.com/akka/akka-http-scala-seed.g8
+sbt -Dsbt.version=0.13.15 new https://github.com/akka/akka-http-quickstart-scala.g8
 ```
 @@@
 @@@ div { .group-java }
 ```sh
-sbt -Dsbt.version=0.13.15 new https://github.com/akka/akka-http-java-seed.g8
+sbt -Dsbt.version=0.13.15 new https://github.com/akka/akka-http-quickstart-java.g8
 ```
 From there on the prepared project can be built using Gradle or Maven.
 @@@
 
 More instructions can be found on the @scala[[template
-project](https://github.com/akka/akka-http-scala-seed.g8)]@java[[template
-project](https://github.com/akka/akka-http-java-seed.g8)].
+project](https://github.com/akka/akka-http-quickstart-scala.g8)]@java[[template
+project](https://github.com/akka/akka-http-quickstart-java.g8)].
 
 ## Routing DSL for HTTP servers
 
