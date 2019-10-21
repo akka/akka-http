@@ -149,7 +149,7 @@ lazy val httpCore = project("akka-http-core")
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
   .addAkkaModuleDependency(
-    "akka-stream",
+    "akka-stream-testkit",
     "test",
     shouldUseSourceDependency = true,
     uri("git://github.com/akka/akka.git#master"),

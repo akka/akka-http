@@ -16,7 +16,6 @@ import headers._
 import StatusCodes._
 import ParserOutput._
 import akka.annotation.InternalApi
-import akka.event.LoggingAdapter
 import akka.http.impl.util.ByteStringParserInput
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.stream.TLSProtocol.SessionBytes

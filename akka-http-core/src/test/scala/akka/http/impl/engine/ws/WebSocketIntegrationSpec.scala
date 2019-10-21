@@ -109,7 +109,7 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
       response.futureValue.response.status.isSuccess should ===(true)
       sink
         .request(10)
-        .expectNoMsg(1500.millis)
+        .expectNoMessage(1500.millis)
 
       breaker.trySuccess(Done)
 

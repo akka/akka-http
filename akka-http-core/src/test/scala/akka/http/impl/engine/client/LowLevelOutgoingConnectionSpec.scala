@@ -12,7 +12,7 @@ import org.scalatest.Inside
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.util.ByteString
 import akka.event.NoLogging
-import akka.stream.{ ClosedShape, ActorMaterializer }
+import akka.stream.ClosedShape
 import akka.stream.TLSProtocol._
 import akka.stream.testkit._
 import akka.stream.scaladsl._
@@ -23,8 +23,7 @@ import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
 import akka.testkit._
 
-class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF") with Inside {
-  implicit val materializer = ActorMaterializer()
+class LowLevelOutgoingConnectionSpec extends AkkaSpecWithMaterializer with Inside {
   implicit val dispatcher = system.dispatcher
 
   "The connection-level client implementation" should {
@@ -461,7 +460,10 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         info.summary shouldEqual "HTTP message had declared Content-Length 8 but entity data stream amounts to 2 bytes less"
         netInSub.sendComplete()
         responsesSub.request(1)
-        responses.expectError().getMessage shouldBe "The http server closed the connection unexpectedly before delivering responses for 1 outstanding requests"
+        responses.expectError().getMessage should (
+          equal("HTTP message had declared Content-Length 8 but entity data stream amounts to 2 bytes less") or // with Akka 2.6
+          equal("The http server closed the connection unexpectedly before delivering responses for 1 outstanding requests") // with Akka 2.5
+        )
       }
 
       "catch the request entity stream being longer than the Content-Length" in new TestSetup {
@@ -487,7 +489,10 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.
         info.summary shouldEqual "HTTP message had declared Content-Length 8 but entity data stream amounts to more bytes"
         netInSub.sendComplete()
         responsesSub.request(1)
-        responses.expectError().getMessage shouldBe "The http server closed the connection unexpectedly before delivering responses for 1 outstanding requests"
+        responses.expectError().getMessage should (
+          equal("HTTP message had declared Content-Length 8 but entity data stream amounts to more bytes") or // with Akka 2.6
+          equal("The http server closed the connection unexpectedly before delivering responses for 1 outstanding requests") // with Akka 2.5
+        )
       }
 
       "catch illegal response starts" in new TestSetup {

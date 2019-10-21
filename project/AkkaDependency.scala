@@ -17,7 +17,7 @@ object AkkaDependency {
   // Updated only when needed, https://github.com/akka/akka/issues/26985
   val defaultAkkaVersion = "2.5.23"
   val akkaVersion =
-    System.getProperty("akka.build.version", defaultAkkaVersion) match {
+    System.getProperty("akka.http.build.akka.version", defaultAkkaVersion) match {
       case "default" => defaultAkkaVersion
       case x => x
     }

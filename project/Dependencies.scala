@@ -11,7 +11,7 @@ import scala.language.implicitConversions
 object Dependencies {
   import DependencyHelpers._
 
-  val jacksonDatabindVersion = "2.9.9.3"
+  val jacksonDatabindVersion = "2.9.10.1"
   val jacksonXmlVersion = "2.9.10"
   val junitVersion = "4.12"
   val h2specVersion = "1.5.0"
@@ -31,7 +31,7 @@ object Dependencies {
     scalaVersion := crossScalaVersions.value.head,
     scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.14.2"),
     scalaTestVersion := "3.0.8",
-    specs2Version := "4.7.1",
+    specs2Version := "4.8.0",
   )
 
   object Provided {
@@ -60,7 +60,7 @@ object Dependencies {
 
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
-      val gson        = "com.google.code.gson"             % "gson"                    % "2.8.5"             % "test"
+      val gson        = "com.google.code.gson"             % "gson"                    % "2.8.6"             % "test"
       val jacksonXml  = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml"  % jacksonXmlVersion   % "test" // ApacheV2
       val reflections = "org.reflections"                  % "reflections"             % "0.9.11"            % "test" // WTFPL
     }
