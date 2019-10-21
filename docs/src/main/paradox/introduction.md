@@ -1,5 +1,7 @@
 # 1. Introduction
 
+@@project-info{ projectId="akka-http" }
+
 The Akka HTTP modules implement a full server- and client-side HTTP stack on top of *akka-actor* and *akka-stream*. It's
 not a web-framework but rather a more general toolkit for providing and consuming HTTP-based services. While interaction
 with a browser is of course also in scope it is not the primary focus of Akka HTTP.
@@ -67,19 +69,19 @@ configured using the [Giter8](http://www.foundweekends.org/giter8/) template:
 
 @@@ div { .group-scala }
 ```sh
-sbt -Dsbt.version=0.13.15 new https://github.com/akka/akka-http-scala-seed.g8
+sbt -Dsbt.version=0.13.15 new https://github.com/akka/akka-http-quickstart-scala.g8
 ```
 @@@
 @@@ div { .group-java }
 ```sh
-sbt -Dsbt.version=0.13.15 new https://github.com/akka/akka-http-java-seed.g8
+sbt -Dsbt.version=0.13.15 new https://github.com/akka/akka-http-quickstart-java.g8
 ```
 From there on the prepared project can be built using Gradle or Maven.
 @@@
 
 More instructions can be found on the @scala[[template
-project](https://github.com/akka/akka-http-scala-seed.g8)]@java[[template
-project](https://github.com/akka/akka-http-java-seed.g8)].
+project](https://github.com/akka/akka-http-quickstart-scala.g8)]@java[[template
+project](https://github.com/akka/akka-http-quickstart-java.g8)].
 
 ## Routing DSL for HTTP servers
 
@@ -173,7 +175,7 @@ Connecting to this service with a slow HTTP client would backpressure so that th
 demand with constant memory usage on the server. This can be seen using curl and limiting the rate
 `curl --limit-rate 50b 127.0.0.1:8080/random`
 
-Akka HTTP routes easily interacts with actors. In this example one route allows for placing bids in a fire-and-forget
+Akka HTTP routes easily interact with actors. In this example one route allows for placing bids in a fire-and-forget
 style while the second route contains a request-response interaction with an actor. The resulting response is rendered
 as json and returned when the response arrives from the actor.
 

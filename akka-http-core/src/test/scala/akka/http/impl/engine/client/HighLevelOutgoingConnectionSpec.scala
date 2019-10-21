@@ -4,8 +4,10 @@
 
 package akka.http.impl.engine.client
 
+import akka.http.impl.util.AkkaSpecWithMaterializer
+
 import scala.concurrent.duration._
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, FlowShape }
+import akka.stream.FlowShape
 import akka.stream.scaladsl._
 import akka.testkit._
 import akka.http.scaladsl.Http
@@ -13,9 +15,7 @@ import akka.http.scaladsl.model._
 import akka.stream.testkit.Utils
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
-class HighLevelOutgoingConnectionSpec extends AkkaSpec {
-  implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withFuzzing(true))
-
+class HighLevelOutgoingConnectionSpec extends AkkaSpecWithMaterializer {
   "The connection-level client implementation" should {
 
     "be able to handle 100 requests across one connection" in Utils.assertAllStagesStopped {

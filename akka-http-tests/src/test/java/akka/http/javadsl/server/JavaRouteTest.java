@@ -145,6 +145,13 @@ public class JavaRouteTest extends JUnitRouteTest {
   }
 
   @Test
+  public void pathCanMatchRegex() {
+    runRoute(route, HttpRequest.GET("/regex_thegroup"))
+        .assertEntity("regex: thegroup");
+  }
+
+
+  @Test
   public void paramIsExtracted() {
     runRoute(route, HttpRequest.GET("/cookies?amount=5"))
       .assertEntity("cookies 5");
@@ -268,6 +275,7 @@ public class JavaRouteTest extends JUnitRouteTest {
     });
   }
 
+  private static Pattern regex = Pattern.compile("regex_(.+)");
 
   public Route getRoute() {
     return concat(
@@ -281,6 +289,9 @@ public class JavaRouteTest extends JUnitRouteTest {
         path(uuidSegment(), id ->
           complete("document " + id)
         )
+      ),
+      path(segment(regex), (group) ->
+          complete("regex: " + group)
       ),
       pathPrefix("people", () ->
         path(name ->

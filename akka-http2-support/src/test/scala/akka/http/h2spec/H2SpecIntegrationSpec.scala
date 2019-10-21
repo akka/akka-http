@@ -43,11 +43,9 @@ class H2SpecIntegrationSpec extends AkkaSpec(
       HttpResponse().withEntity(HttpEntity(entity.data))
     }
   }
-  val port = SocketUtil.temporaryServerAddress().getPort
 
-  val binding = {
-    Http2().bindAndHandleAsync(echo, "127.0.0.1", port, ExampleHttpContexts.exampleServerContext).futureValue
-  }
+  val binding = Http2().bindAndHandleAsync(echo, "127.0.0.1", 0, ExampleHttpContexts.exampleServerContext).futureValue
+  val port = binding.localAddress.getPort
 
   "H2Spec" must {
 
