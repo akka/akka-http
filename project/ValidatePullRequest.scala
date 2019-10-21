@@ -446,8 +446,8 @@ object AggregatePRValidation extends AutoPlugin {
             val problem = inc.directCause.map(_.toString).getOrElse(parseIncomplete(inc))
 
             write(s"${showKey(key)} failed because of $problem")
-            write("</details>")
           }
+          write("</details>")
         }
       }
 
