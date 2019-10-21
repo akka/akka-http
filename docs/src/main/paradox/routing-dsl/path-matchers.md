@@ -158,7 +158,7 @@ PathMatchers.segment(String)
 Note that strings are interpreted as the decoded representation of the path, so if they include a '/' character
 this character will match "%2F" in the encoded raw URI!
 
-PathMatchers.regex
+PathMatchers.segment(java.util.regex.Pattern)
 : You can use a regular expression instance as a path matcher, which matches whatever the regex matches and extracts
 one `String` value. A `PathMatcher` created from a regular expression extracts either the complete match (if the
 regex doesn't contain a capture group) or the capture group (if the regex contains exactly one capture group).
