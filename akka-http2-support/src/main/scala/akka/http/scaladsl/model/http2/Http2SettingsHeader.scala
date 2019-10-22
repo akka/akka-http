@@ -5,12 +5,10 @@
 package akka.http.scaladsl.model.http2
 
 import akka.annotation.InternalApi
-import akka.http.scaladsl.model.headers.{ CustomHeader, ModeledCustomHeader, ModeledCustomHeaderCompanion, RequestHeader }
 import akka.http.impl.engine.http2.framing.Http2FrameParsing
 import akka.http.impl.engine.http2.FrameEvent.Setting
 import akka.http.impl.model.parser.Base64Parsing
 import akka.stream.impl.io
-import akka.stream.impl.io.ByteStringParser
 import akka.util.ByteString
 
 import scala.collection.immutable
