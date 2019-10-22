@@ -39,6 +39,7 @@ import scala.util.control.NoStackTrace
 import FrameEvent._
 import akka.http.impl.util.AkkaSpecWithMaterializer
 import akka.stream.Attributes
+import akka.stream.testkit.scaladsl.StreamTestKit
 
 class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     akka.http.server.remote-address-header = on
@@ -710,6 +711,38 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         // also complete stream 1
         sendDataAndExpectOnNet(entity1DataOut, 1, "", endStream = true)
       }
+      "close substreams when connection is shutting down" in StreamTestKit.assertAllStagesStopped(new TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
+        val requestEntity = HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`)
+        val request = HttpRequest(entity = requestEntity)
+
+        sendRequestHEADERS(1, request, false)
+        val req = expectRequest()
+        val reqProbe = ByteStringSinkProbe()
+        req.entity.dataBytes.runWith(reqProbe.sink)
+
+        val responseEntityProbe = TestPublisher.probe[ByteString]()
+        val responseEntity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(responseEntityProbe))
+        val response = HttpResponse(200, entity = responseEntity)
+
+        emitResponse(1, response)
+        expectDecodedResponseHEADERS(1, false)
+
+        // check data flow for request entity
+        sendDATA(1, false, ByteString("ping"))
+        reqProbe.expectUtf8EncodedString("ping")
+
+        pollForWindowUpdates(10.millis)
+
+        // check data flow for response entity
+        responseEntityProbe.sendNext(ByteString("pong"))
+        expectDATA(1, false, ByteString("pong"))
+
+        fromNet.sendError(new RuntimeException("Connection broke"))
+
+        // now all stream stages should be closed
+        reqProbe.expectError().getMessage shouldBe "The HTTP/2 connection was shut down while the request was still ongoing"
+        responseEntityProbe.expectCancellation()
+      })
     }
 
     "respect flow-control" should {
