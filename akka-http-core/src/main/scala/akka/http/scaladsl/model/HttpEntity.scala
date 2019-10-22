@@ -510,20 +510,20 @@ object HttpEntity {
       val transformChunks = GraphDSL.create() { implicit builder: GraphDSL.Builder[NotUsed] =>
         import akka.stream.scaladsl.GraphDSL.Implicits._
 
-        val partition = builder.add(Partition[ChunkStreamPart](2, {
+        val partition = builder.add(Partition[HttpEntity.ChunkStreamPart](2, {
           case c: Chunk     => 0
           case c: LastChunk => 1
         }))
-        val concat = builder.add(Concat[ChunkStreamPart](2))
+        val concat = builder.add(Concat[HttpEntity.ChunkStreamPart](2))
 
-        val chunkTransformer: Flow[ChunkStreamPart, ChunkStreamPart, Any] =
-          Flow[ChunkStreamPart]
+        val chunkTransformer: Flow[HttpEntity.ChunkStreamPart, HttpEntity.ChunkStreamPart, Any] =
+          Flow[HttpEntity.ChunkStreamPart]
             .map(_.data)
             .via(transformer)
             .map(b => Chunk(b))
 
-        val trailerBypass: Flow[ChunkStreamPart, ChunkStreamPart, Any] =
-          Flow[ChunkStreamPart]
+        val trailerBypass: Flow[HttpEntity.ChunkStreamPart, HttpEntity.ChunkStreamPart, Any] =
+          Flow[HttpEntity.ChunkStreamPart]
             // make sure to filter out any errors here, otherwise they don't go through the user transformer
             .recover { case NonFatal(ex) => Chunk(ByteString(0), "") }
             .collect { case lc @ LastChunk(_, s) if s.nonEmpty => lc }
