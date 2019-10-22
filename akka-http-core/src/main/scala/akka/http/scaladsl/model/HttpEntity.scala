@@ -507,43 +507,33 @@ object HttpEntity {
       withSizeLimit(SizeLimit.Disabled)
 
     override def transformDataBytes(transformer: Flow[ByteString, ByteString, Any]): HttpEntity.Chunked = {
-      import akka.stream.scaladsl.GraphDSL.Implicits._
+      val transformChunks = GraphDSL.create() { implicit builder: GraphDSL.Builder[NotUsed] =>
+        import akka.stream.scaladsl.GraphDSL.Implicits._
 
-      val buf = scala.collection.mutable.ArrayBuffer.empty[Throwable]
-
-      val transformChunks: Flow[ChunkStreamPart, ChunkStreamPart, NotUsed] = Flow.fromGraph(GraphDSL.create() { implicit builder: GraphDSL.Builder[NotUsed] =>
-
-        val bcast = builder.add(Broadcast[ChunkStreamPart](2))
+        val partition = builder.add(Partition[ChunkStreamPart](2, {
+          case c: Chunk     => 0
+          case c: LastChunk => 1
+        }))
         val concat = builder.add(Concat[ChunkStreamPart](2))
 
-        val newDataF: Flow[ChunkStreamPart, ByteString, Any] = Flow[ChunkStreamPart].map {
-          case Chunk(data, "")  => data
-          case LastChunk("", _) => ByteString.empty
-        }
-          .via(transformer).recover {
-            case t: Throwable =>
-              buf += t
-              ByteString.empty
-          }
+        val chunkTransformer: Flow[ChunkStreamPart, ChunkStreamPart, Any] =
+          Flow[ChunkStreamPart]
+            .map(_.data)
+            .via(transformer)
+            .map(b => Chunk(b))
 
-        val toChunksF: Flow[ByteString, ChunkStreamPart, Any] = Flow[ByteString].collect {
-          case b: ByteString if b.nonEmpty => Chunk(b)
-        }
+        val trailerBypass: Flow[ChunkStreamPart, ChunkStreamPart, Any] =
+          Flow[ChunkStreamPart]
+            // make sure to filter out any errors here, otherwise they don't go through the user transformer
+            .recover { case NonFatal(ex) => Chunk(ByteString(0), "") }
+            .collect { case lc @ LastChunk(_, s) if s.nonEmpty => lc }
 
-        val trailHeaderF: Flow[ChunkStreamPart, ChunkStreamPart, Any] = Flow[ChunkStreamPart].collect {
-          case lc @ LastChunk(_, s) if s.nonEmpty => lc
-        }.recover {
-          case _: Throwable =>
-            // just needs to complete
-            LastChunk
-        }
+        partition ~> chunkTransformer ~> concat
+        partition ~> trailerBypass ~> concat
+        FlowShape(partition.in, concat.out)
+      }
 
-        bcast ~> newDataF ~> toChunksF ~> concat
-        bcast ~> trailHeaderF ~> concat
-        FlowShape(bcast.in, concat.out)
-      })
-
-      HttpEntity.Chunked(contentType, chunks.via(transformChunks).map(c => if (buf.nonEmpty) throw buf.head else c))
+      HttpEntity.Chunked(contentType, chunks.via(transformChunks))
     }
 
     def withContentType(contentType: ContentType): HttpEntity.Chunked =
