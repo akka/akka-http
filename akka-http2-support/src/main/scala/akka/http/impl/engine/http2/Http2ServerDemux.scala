@@ -239,6 +239,9 @@ private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings, initia
         settingsAppliedOk
       }
 
+      override def postStop(): Unit = {
+        multiplexer.shutdown()
+        shutdownStreamHandling()
+      }
     }
-
 }

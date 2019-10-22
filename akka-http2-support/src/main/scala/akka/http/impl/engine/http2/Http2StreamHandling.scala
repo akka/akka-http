@@ -13,8 +13,9 @@ import akka.stream.stage.{ GraphStageLogic, OutHandler, StageLogging }
 import akka.util.ByteString
 
 import scala.collection.immutable
-
 import FrameEvent._
+
+import scala.util.control.NoStackTrace
 
 /**
  * INTERNAL API
@@ -71,6 +72,8 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
       case newState => incomingStreams += streamId -> newState
     }
   }
+  /** Called to cleanup any state when the connection is torn down */
+  def shutdownStreamHandling(): Unit = incomingStreams.keys.foreach(id => updateState(id, _.shutdown()))
   def resetStream(streamId: Int, errorCode: ErrorCode): Unit = {
     incomingStreams -= streamId
     multiplexer.pushControlFrame(RstStreamFrame(streamId, errorCode))
@@ -91,6 +94,9 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
       pushGOAWAY(ErrorCode.PROTOCOL_ERROR, s"Received unexpected frame of type ${e.frameTypeName} for stream ${e.streamId} in state $stateName")
       Closed
     }
+
+    /** Called to cleanup any state when the connection is torn down */
+    def shutdown(): IncomingStreamState
   }
   case object Idle extends IncomingStreamState {
     def handle(event: StreamFrameEvent): IncomingStreamState = event match {
@@ -110,6 +116,8 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
 
       case x => receivedUnexpectedFrame(x)
     }
+
+    override def shutdown(): IncomingStreamState = Closed
   }
   sealed abstract class ReceivingData(afterEndStreamReceived: IncomingStreamState) extends IncomingStreamState { _: Product =>
     protected def buffer: IncomingStreamBuffer
@@ -151,6 +159,11 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
 
     protected def maybeFinishStream(endStream: Boolean): IncomingStreamState =
       if (endStream) afterEndStreamReceived else this
+
+    override def shutdown(): IncomingStreamState = {
+      buffer.shutdown()
+      Closed
+    }
   }
 
   // on the incoming side there's (almost) no difference between Open and HalfClosedLocal
@@ -173,6 +186,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
       case _ => receivedUnexpectedFrame(event)
     }
     override def handleOutgoingEnded(): IncomingStreamState = Closed
+    override def shutdown(): IncomingStreamState = Closed
   }
   case object Closed extends IncomingStreamState {
     def handle(event: StreamFrameEvent): IncomingStreamState = event match {
@@ -183,6 +197,8 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
       case _ =>
         receivedUnexpectedFrame(event)
     }
+
+    override def shutdown(): IncomingStreamState = this
   }
 
   class IncomingStreamBuffer(streamId: Int, outlet: SubSourceOutlet[ByteString]) extends OutHandler {
@@ -252,9 +268,14 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
           s"remaining window space now $outstandingStreamWindow, buffered: ${buffer.size}, " +
           s"remaining connection window space now $outstandingConnectionLevelWindow, total buffered: $totalBufferedData")
     }
+
+    def shutdown(): Unit = outlet.fail(Http2StreamHandling.ConnectionWasAbortedException)
   }
 
   // needed once PUSH_PROMISE support was added
   //case object ReservedLocal extends IncomingStreamState
   //case object ReservedRemote extends IncomingStreamState
+}
+private[http2] object Http2StreamHandling {
+  val ConnectionWasAbortedException = new IllegalStateException("The HTTP/2 connection was shut down while the request was still ongoing") with NoStackTrace
 }

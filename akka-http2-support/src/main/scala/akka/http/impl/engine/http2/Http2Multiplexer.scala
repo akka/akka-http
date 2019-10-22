@@ -33,6 +33,9 @@ private[http2] trait Http2Multiplexer {
   def updatePriority(priorityFrame: PriorityFrame): Unit
 
   def reportTimings(): Unit
+
+  /** Called to cleanup any state when the connection is torn down */
+  def shutdown(): Unit
 }
 
 /**
@@ -235,10 +238,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
       def enqueueOutStream(outStream: OutStream): Unit = state.enqueueOutStream(outStream)
       def closeStream(outStream: OutStream): Unit = state.closeStream(outStream)
 
-      override def onDownstreamFinish(): Unit = {
-        outStreams.values.foreach(_.cancelStream())
-        completeStage()
-      }
+      override def shutdown(): Unit = outStreams.values.foreach(_.cancelStream())
 
       var state: MultiplexerState = Idle
       def onPull(): Unit = state.onPull()
