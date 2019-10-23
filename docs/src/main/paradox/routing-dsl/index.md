@@ -81,26 +81,26 @@ id and status, and clear the job history.
 First let's start by defining the `Behavior` that will act as a repository for the build job information:
 
 Scala
-:  @@snip [HttpServerWithTypedSpec.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSpec.scala) { #akka-typed-behavior }
+:  @@snip [HttpServerWithTypedSample.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSample.scala) { #akka-typed-behavior }
 
 
 Now, let's define the JSON marshaller and unmarshallers:
 
 Scala
-:  @@snip [HttpServerWithTypedSpec.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSpec.scala) { #akka-typed-json }
+:  @@snip [HttpServerWithTypedSample.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSample.scala) { #akka-typed-json }
 
 
 Next step is to define the @apidoc[Route$] that will communicate with the previously defined behavior
 and handle all its possible responses
 
 Scala
-:  @@snip [HttpServerWithTypedSpec.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSpec.scala) { #akka-typed-route }
+:  @@snip [HttpServerWithTypedSample.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSample.scala) { #akka-typed-route }
 
 
 And finally, we just need to bootstrap our web server and instantiate our `Behavior`:
 
 Scala
-:  @@snip [HttpServerWithTypedSpec.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSpec.scala) { #akka-typed-bootstrap }
+:  @@snip [HttpServerWithTypedSample.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSample.scala) { #akka-typed-bootstrap }
 
 
 Note that the `akka.actor.typed.ActorSystem` is converted with `toClassic`, which comes from
