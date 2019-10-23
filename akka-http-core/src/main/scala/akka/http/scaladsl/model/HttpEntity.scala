@@ -507,6 +507,10 @@ object HttpEntity {
       withSizeLimit(SizeLimit.Disabled)
 
     override def transformDataBytes(transformer: Flow[ByteString, ByteString, Any]): HttpEntity.Chunked = {
+      // This construction allows to keep trailing headers. For that the stream is split into two
+      // tracks. One for the regular chunks and one for the LastChunk. Only the regular chunks are
+      // run through the user-supplied transformer, the LastChunk is just passed on. The tracks are
+      // then concatenated to produce the final stream.
       val transformChunks = GraphDSL.create() { implicit builder: GraphDSL.Builder[NotUsed] =>
         import akka.stream.scaladsl.GraphDSL.Implicits._
 
@@ -526,6 +530,7 @@ object HttpEntity {
           Flow[HttpEntity.ChunkStreamPart]
             // make sure to filter out any errors here, otherwise they don't go through the user transformer
             .recover { case NonFatal(ex) => Chunk(ByteString(0), "") }
+            // only needed to filter the out the result from recover in the line above
             .collect { case lc @ LastChunk(_, s) if s.nonEmpty => lc }
 
         partition ~> chunkTransformer ~> concat
