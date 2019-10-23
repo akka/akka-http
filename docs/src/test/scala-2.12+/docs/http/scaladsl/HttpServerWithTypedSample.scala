@@ -145,6 +145,10 @@ object HttpServerWithTypedSample {
   }
   //#akka-typed-route
 
+  /* there are still differences making this impossible to compile both for 2.5 and 2.6 at the same time
+     without passing implicits explicitly and making the sample somewhat weird. This is however verified
+     against 2.6.0-RC1 with those implicits noted removed.
+
   //#akka-typed-bootstrap
   import akka.actor.typed.scaladsl.adapter._
   import akka.stream.ActorMaterializer
@@ -223,4 +227,5 @@ object HttpServerWithTypedSample {
   }
   //#akka-typed-bootstrap
 
+   */
 }
