@@ -8,7 +8,7 @@ import java.util.concurrent.TimeoutException
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.http.impl.util.StreamUtils
+import akka.http.impl.util._
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.ActorMaterializer
