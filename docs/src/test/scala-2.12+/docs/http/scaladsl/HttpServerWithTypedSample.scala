@@ -4,23 +4,21 @@
 
 package docs.http.scaladsl
 
-import akka.actor.typed.PostStop
-
 object HttpServerWithTypedSample {
 
   //#akka-typed-behavior
   import akka.actor.typed.{ ActorRef, Behavior }
   import akka.actor.typed.scaladsl.Behaviors
 
-  // Definition of the case class representing a build job and its possible status values
-  sealed trait Status
-  object Successful extends Status
-  object Failed extends Status
+  object JobRepository {
 
-  final case class Job(id: Long, projectName: String, status: Status, duration: Long)
-  final case class Jobs(jobs: Seq[Job])
+    // Definition of the a build job and its possible status values
+    sealed trait Status
+    object Successful extends Status
+    object Failed extends Status
 
-  object BuildJobRepository {
+    final case class Job(id: Long, projectName: String, status: Status, duration: Long)
+    final case class Jobs(jobs: Seq[Job])
 
     // Trait defining successful and failure responses
     sealed trait Response
@@ -41,13 +39,13 @@ object HttpServerWithTypedSample {
         Behaviors.same
       case AddJob(job, replyTo) =>
         replyTo ! OK
-        BuildJobRepository(jobs.+(job.id -> job))
+        JobRepository(jobs.+(job.id -> job))
       case GetJobById(id, replyTo) =>
         replyTo ! jobs.get(id)
         Behaviors.same
       case ClearJobs(replyTo) =>
         replyTo ! OK
-        BuildJobRepository(Map.empty)
+        JobRepository(Map.empty)
     }
 
   }
@@ -64,6 +62,7 @@ object HttpServerWithTypedSample {
   trait JsonSupport extends SprayJsonSupport {
     // import the default encoders for primitive types (Int, String, Lists etc)
     import DefaultJsonProtocol._
+    import JobRepository._
 
     implicit object StatusFormat extends RootJsonFormat[Status] {
       def write(status: Status): JsValue = status match {
@@ -91,16 +90,11 @@ object HttpServerWithTypedSample {
   import akka.http.scaladsl.server.Directives._
   import akka.http.scaladsl.model.StatusCodes
   import akka.http.scaladsl.server.Route
-  import akka.http.scaladsl.server.directives.MethodDirectives.delete
-  import akka.http.scaladsl.server.directives.MethodDirectives.post
-  import akka.http.scaladsl.server.directives.RouteDirectives.complete
-  import akka.http.scaladsl.server.directives.PathDirectives.path
 
   import scala.concurrent.duration._
   import scala.concurrent.Future
-  import BuildJobRepository._
 
-  class JobRoutes(buildJobRepository: ActorRef[Command])(implicit system: ActorSystem[_]) extends JsonSupport {
+  class JobRoutes(buildJobRepository: ActorRef[JobRepository.Command])(implicit system: ActorSystem[_]) extends JsonSupport {
 
     import akka.actor.typed.scaladsl.AskPattern._
 
@@ -117,25 +111,28 @@ object HttpServerWithTypedSample {
           pathEnd {
             concat(
               post {
-                entity(as[Job]) { job =>
-                  val operationPerformed: Future[Response] = buildJobRepository.ask(replyTo => AddJob(job, replyTo))
+                entity(as[JobRepository.Job]) { job =>
+                  val operationPerformed: Future[JobRepository.Response] =
+                    buildJobRepository.ask(JobRepository.AddJob(job, _))
                   onSuccess(operationPerformed) {
-                    case OK         => complete("Job added")
-                    case KO(reason) => complete(StatusCodes.InternalServerError -> reason)
+                    case JobRepository.OK         => complete("Job added")
+                    case JobRepository.KO(reason) => complete(StatusCodes.InternalServerError -> reason)
                   }
                 }
               },
               delete {
-                val operationPerformed: Future[Response] = buildJobRepository.ask(replyTo => ClearJobs(replyTo))
+                val operationPerformed: Future[JobRepository.Response] =
+                  buildJobRepository.ask(JobRepository.ClearJobs(_))
                 onSuccess(operationPerformed) {
-                  case OK         => complete("Jobs cleared")
-                  case KO(reason) => complete(StatusCodes.InternalServerError -> reason)
+                  case JobRepository.OK         => complete("Jobs cleared")
+                  case JobRepository.KO(reason) => complete(StatusCodes.InternalServerError -> reason)
                 }
               }
             )
           },
           (get & path(LongNumber)) { id =>
-            val maybeJob: Future[Option[Job]] = buildJobRepository.ask(replyTo => GetJobById(id, replyTo))
+            val maybeJob: Future[Option[JobRepository.Job]] =
+              buildJobRepository.ask(JobRepository.GetJobById(id, _))
             rejectEmptyResponse {
               complete(maybeJob)
             }
@@ -150,10 +147,10 @@ object HttpServerWithTypedSample {
      against 2.6.0-RC1 with those implicits noted removed.
 
   //#akka-typed-bootstrap
+  import akka.actor.typed.PostStop
   import akka.actor.typed.scaladsl.adapter._
   import akka.stream.ActorMaterializer
   import akka.http.scaladsl.Http.ServerBinding
-
   import akka.http.scaladsl.Http
 
   import scala.concurrent.ExecutionContextExecutor
@@ -176,7 +173,7 @@ object HttpServerWithTypedSample {
       implicit val materializer: ActorMaterializer = ActorMaterializer()(ctx.system.toClassic)
       implicit val ec: ExecutionContextExecutor = ctx.system.executionContext
 
-      val buildJobRepository = ctx.spawn(BuildJobRepository(), "BuildJobRepositoryActor")
+      val buildJobRepository = ctx.spawn(JobRepository(), "JobRepository")
       val routes = new JobRoutes(buildJobRepository)
 
       val serverBinding: Future[Http.ServerBinding] =
@@ -227,5 +224,5 @@ object HttpServerWithTypedSample {
   }
   //#akka-typed-bootstrap
 
-   */
+  */
 }
