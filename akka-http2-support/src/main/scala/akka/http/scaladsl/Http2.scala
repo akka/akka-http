@@ -120,7 +120,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
                 .via(Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher))
                 // the settings from the header are injected into the blueprint as initial demuxer settings
                 .joinMat(Http2Blueprint.serverStack(settings, log, settingsFromHeader, true))(Keep.left))
-                .addAttributes(cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
+              .addAttributes(cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
 
             Future.successful(
               HttpResponse(
