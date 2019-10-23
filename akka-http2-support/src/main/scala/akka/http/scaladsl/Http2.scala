@@ -67,7 +67,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
             httpPlusSwitching(http1, http2).addAttributes(Http.prepareAttributes(settings, incoming))
               .watchTermination()(Keep.right)
               .join(incoming.flow)
-              .addAttributes(cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
+              .addAttributes(Http.cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
               .run().recover {
                 // Ignore incoming errors from the connection as they will cancel the binding.
                 // As far as it is known currently, these errors can only happen if a TCP error bubbles up
@@ -120,7 +120,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
                 .via(Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher))
                 // the settings from the header are injected into the blueprint as initial demuxer settings
                 .joinMat(Http2Blueprint.serverStack(settings, log, settingsFromHeader, true))(Keep.left))
-              .addAttributes(cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
+              .addAttributes(Http.cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
 
             Future.successful(
               HttpResponse(
