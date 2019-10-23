@@ -721,7 +721,9 @@ private[http] object HttpServerBluePrint {
             override def onDownstreamFinish(): Unit = cancel(fromNet)
           })
 
-          newFlow.runWith(sourceOut.source, sinkIn.sink)(subFusingMaterializer)
+          newFlow
+            .addAttributes(Http.cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
+            .runWith(sourceOut.source, sinkIn.sink)(subFusingMaterializer)
         }
       }
     }

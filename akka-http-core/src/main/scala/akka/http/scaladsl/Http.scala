@@ -480,14 +480,6 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     tlsStage.joinMat(settings.transport.connectTo(host, port, settings))(Keep.right)
   }
 
-  private def cancellationStrategyAttributeForDelay(delay: FiniteDuration): Attributes =
-    Attributes(CancellationStrategy {
-      delay match {
-        case Duration.Zero => FailStage
-        case d             => AfterDelay(d, FailStage)
-      }
-    })
-
   type ClientLayer = Http.ClientLayer
 
   /**
@@ -751,6 +743,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     settings: ClientConnectionSettings = ClientConnectionSettings(system),
     log:      LoggingAdapter           = system.log): Http.WebSocketClientLayer =
     WebSocketClientBlueprint(request, settings, log)
+      .addAttributes(cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
 
   /**
    * Constructs a flow that once materialized establishes a WebSocket connection to the given Uri.
@@ -779,6 +772,8 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
 
     webSocketClientLayer(request, settings, log)
       .join(_outgoingTlsConnectionLayer(host, port, settings.withLocalAddressOverride(localAddress), ctx, log))
+      // also added webSocketClientLayer but we want to make sure it covers the whole stack
+      .addAttributes(cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
   }
 
   /**
@@ -1144,6 +1139,14 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
     if (settings.remoteAddressHeader) HttpAttributes.remoteAddress(incoming.remoteAddress)
     else HttpAttributes.empty
 
+  @InternalApi
+  private[http] def cancellationStrategyAttributeForDelay(delay: FiniteDuration): Attributes =
+    Attributes(CancellationStrategy {
+      delay match {
+        case Duration.Zero => FailStage
+        case d             => AfterDelay(d, FailStage)
+      }
+    })
 }
 
 /**
