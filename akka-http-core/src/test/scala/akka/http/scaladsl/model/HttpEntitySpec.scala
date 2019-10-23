@@ -167,11 +167,16 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
           transformTo(Strict(tpe, doubleChars("abcfghijk") ++ trailer))
       }
       "Chunked with LastChunk with trailer header keep header chunk" in {
-        val chunkStreamPart = Await.result(Chunked(tpe, source(Chunk(abc), Chunk(fgh), Chunk(ijk), LastChunk("", RawHeader("Foo", "pip apo") :: Nil)))
-          .transformDataBytes(duplicateBytesTransformer()).chunks.runWith(Sink.last), awaitAtMost)
-        chunkStreamPart.isLastChunk mustBe (true)
-        chunkStreamPart mustBe a[LastChunk]
-        chunkStreamPart.asInstanceOf[LastChunk].trailer mustEqual (RawHeader("Foo", "pip apo") :: Nil)
+        val entity = Chunked(tpe, source(Chunk(abc), Chunk(fgh), Chunk(ijk), LastChunk("", RawHeader("Foo", "pip apo") :: Nil)))
+        val transformed = entity.transformDataBytes(duplicateBytesTransformer())
+        val parts = transformed.chunks.runWith(Sink.seq).awaitResult(100.millis)
+
+        parts.map(_.data).reduce(_ ++ _) mustEqual doubleChars("abcfghijk") ++ trailer
+
+        val lastPart = parts.last
+        lastPart.isLastChunk mustBe (true)
+        lastPart mustBe a[LastChunk]
+        lastPart.asInstanceOf[LastChunk].trailer mustEqual (RawHeader("Foo", "pip apo") :: Nil)
       }
     }
     "support toString" - {
