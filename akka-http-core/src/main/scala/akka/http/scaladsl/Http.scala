@@ -248,7 +248,8 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
                 masterTerminator.registerConnection(connectionTerminator)(fm.executionContext)
                 future // drop the terminator matValue, we already registered is which is all we need to do here
             }
-
+            // attribute is also added to serverLayer but we also want it to cover the full stack
+            .addAttributes(cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
             .run()
             .recover {
               // Ignore incoming errors from the connection as they will cancel the binding.
@@ -363,7 +364,9 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     val server = HttpServerBluePrint(settings, log, isSecureConnection)
       .addAttributes(HttpAttributes.remoteAddress(remoteAddress))
 
-    server atop delayCancellationStage(settings)
+    server
+      .atop(delayCancellationStage(settings)) // TODO: figure out if we still need that at all
+      .addAttributes(cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
   }
 
   @deprecated("Binary compatibility method. Use the new `serverLayer` method without the implicit materializer instead.", "10.0.11")
@@ -465,6 +468,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     val hostHeader = if (port == connectionContext.defaultPort) Host(host) else Host(host, port)
     val layer = clientLayer(hostHeader, settings, log)
     layer.joinMat(_outgoingTlsConnectionLayer(host, port, settings, connectionContext, log))(Keep.right)
+      // already added in clientLayer but needed here again to also include transport layer
       .addAttributes(cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
   }
 
@@ -501,6 +505,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     settings:   ClientConnectionSettings,
     log:        LoggingAdapter           = system.log): ClientLayer =
     OutgoingConnectionBlueprint(hostHeader, settings, log)
+      .addAttributes(cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
 
   // ** CONNECTION POOL ** //
 

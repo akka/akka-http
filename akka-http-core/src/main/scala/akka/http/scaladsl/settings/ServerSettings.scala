@@ -51,6 +51,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def defaultHttpPort: Int
   def defaultHttpsPort: Int
   def terminationDeadlineExceededResponse: HttpResponse
+  def streamCancellationDelay: FiniteDuration
 
   /* Java APIs */
 
@@ -97,6 +98,8 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   override def withDefaultHttpsPort(newValue: Int): ServerSettings = self.copy(defaultHttpsPort = newValue)
   override def withTerminationDeadlineExceededResponse(response: akka.http.javadsl.model.HttpResponse): ServerSettings =
     self.copy(terminationDeadlineExceededResponse = response.asScala)
+  override def withStreamCancellationDelay(newValue: FiniteDuration): ServerSettings =
+    self.copy(streamCancellationDelay = newValue)
 
   // overloads for Scala idiomatic use
   def withTimeouts(newValue: ServerSettings.Timeouts): ServerSettings = self.copy(timeouts = newValue)

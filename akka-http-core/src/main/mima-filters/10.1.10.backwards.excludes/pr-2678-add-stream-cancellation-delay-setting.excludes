@@ -2,6 +2,9 @@
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.withStreamCancellationDelay")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ClientConnectionSettings.streamCancellationDelay")
 
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ServerSettings.withStreamCancellationDelay")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ServerSettings.streamCancellationDelay")
+
 # some cleanup in @DoNotInherit class
 ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.withConnectingTimeout")
 ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.withIdleTimeout")
@@ -10,5 +13,6 @@ ProblemFilters.exclude[ReversedAbstractMethodProblem]("akka.http.javadsl.setting
 ProblemFilters.exclude[ReversedAbstractMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.withIdleTimeout")
 ProblemFilters.exclude[ReversedAbstractMethodProblem]("akka.http.javadsl.settings.ClientConnectionSettings.withRequestHeaderSizeHint")
 
-# changes to internal class
+# changes to internal classes
 ProblemFilters.exclude[Problem]("akka.http.impl.settings.ClientConnectionSettingsImpl.*")
+ProblemFilters.exclude[Problem]("akka.http.impl.settings.ServerSettingsImpl.*")
