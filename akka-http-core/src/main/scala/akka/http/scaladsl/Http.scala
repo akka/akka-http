@@ -26,6 +26,9 @@ import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.ws.{ Message, WebSocketRequest, WebSocketUpgradeResponse }
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
 import akka.http.scaladsl.util.FastFuture
+import akka.stream.Attributes.CancellationStrategy
+import akka.stream.Attributes.CancellationStrategy.AfterDelay
+import akka.stream.Attributes.CancellationStrategy.FailStage
 import akka.{ Done, NotUsed }
 import akka.stream._
 import akka.stream.TLSProtocol._
@@ -462,6 +465,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     val hostHeader = if (port == connectionContext.defaultPort) Host(host) else Host(host, port)
     val layer = clientLayer(hostHeader, settings, log)
     layer.joinMat(_outgoingTlsConnectionLayer(host, port, settings, connectionContext, log))(Keep.right)
+      .addAttributes(cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
   }
 
   private def _outgoingTlsConnectionLayer(host: String, port: Int,
@@ -471,6 +475,14 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
 
     tlsStage.joinMat(settings.transport.connectTo(host, port, settings))(Keep.right)
   }
+
+  private def cancellationStrategyAttributeForDelay(delay: FiniteDuration): Attributes =
+    Attributes(CancellationStrategy {
+      delay match {
+        case Duration.Zero => FailStage
+        case d             => AfterDelay(d, FailStage)
+      }
+    })
 
   type ClientLayer = Http.ClientLayer
 

@@ -19,7 +19,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse, headers }
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream._
-import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
+import akka.stream.scaladsl.{ Flow, Sink }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.util.OptionVal
 
@@ -542,13 +542,9 @@ private[client] object NewHostConnectionPool {
           responseIn.pull()
 
           slot.debug("Establishing connection")
-          import Attributes.CancellationStrategy
-          import CancellationStrategy._
           val connection =
-            Source.fromGraph(requestOut.source)
-              .viaMat(connectionFlow)(Keep.right)
-              .to(responseIn.sink)
-              .addAttributes(Attributes(CancellationStrategy(AfterDelay(1.second, FailStage))))
+            connectionFlow
+              .join(Flow.fromSinkAndSource(responseIn.sink, requestOut.source))
               .run()(subFusingMaterializer)
 
           val slotCon = new SlotConnection(slot, requestOut, responseIn)
