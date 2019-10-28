@@ -965,10 +965,12 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     "must not swallow errors / warnings" in pending
   }
 
-  protected /* To make ByteFlag warnings go away */ abstract class TestSetupWithoutHandshake {
+  protected /* To make ByteFlag warnings go away */ abstract class TestSetupWithoutHandshake extends Http2FrameProbeDelegator {
     implicit def ec = system.dispatcher
 
-    val toNet = ByteStringSinkProbe()
+    val framesOut: Http2FrameProbe = Http2FrameProbe()
+    override def frameProbeDelegate: Http2FrameProbe = framesOut
+    val toNet = framesOut.plainDataProbe
     val fromNet = TestPublisher.probe[ByteString]()
 
     def handlerFlow: Flow[HttpRequest, HttpResponse, NotUsed]
@@ -989,107 +991,6 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
       .run()
 
     def sendBytes(bytes: ByteString): Unit = fromNet.sendNext(bytes)
-    def expectBytes(bytes: ByteString): Unit = toNet.expectBytes(bytes)
-    def expectBytes(num: Int): ByteString = toNet.expectBytes(num)
-    def expectNoBytes(): Unit = toNet.expectNoBytes()
-
-    def expectDATAFrame(streamId: Int): (Boolean, ByteString) = {
-      val (flags, payload) = expectFrameFlagsAndPayload(FrameType.DATA, streamId)
-      updateFromServerWindowForConnection(_ - payload.size)
-      updateFromServerWindows(streamId, _ - payload.size)
-      (Flags.END_STREAM.isSet(flags), payload)
-    }
-
-    def expectDATA(streamId: Int, endStream: Boolean, numBytes: Int): ByteString = {
-      @tailrec def collectMore(collected: ByteString, remainingBytes: Int): ByteString = {
-        val (completed, data) = expectDATAFrame(streamId)
-        data.size should be <= remainingBytes // cannot have more data pending
-        if (data.size < remainingBytes) {
-          completed shouldBe false
-          collectMore(collected ++ data, remainingBytes - data.size)
-        } else {
-          // data.size == remainingBytes, i.e. collection finished
-          if (endStream && !completed) // wait for final empty data frame
-            expectFramePayload(FrameType.DATA, Flags.END_STREAM, streamId) shouldBe ByteString.empty
-          collected ++ data
-        }
-      }
-      collectMore(ByteString.empty, numBytes)
-    }
-
-    def expectDATA(streamId: Int, endStream: Boolean, data: ByteString): Unit =
-      expectDATA(streamId, endStream, data.length) shouldBe data
-
-    def expectRST_STREAM(streamId: Int, errorCode: ErrorCode): Unit =
-      expectRST_STREAM(streamId) shouldBe errorCode
-
-    def expectRST_STREAM(streamId: Int): ErrorCode = {
-      val payload = expectFramePayload(FrameType.RST_STREAM, ByteFlag.Zero, streamId)
-      ErrorCode.byId(new ByteReader(payload).readIntBE())
-    }
-
-    def autoFrameHandler: PartialFunction[FrameHeader, Unit] = {
-      case FrameHeader(FrameType.WINDOW_UPDATE, _, streamId, payloadLength) =>
-        val data = expectBytes(payloadLength)
-        val windowSizeIncrement = new ByteReader(data).readIntBE()
-
-        if (streamId == 0) updateToServerWindowForConnection(_ + windowSizeIncrement)
-        else updateToServerWindows(streamId, _ + windowSizeIncrement)
-    }
-
-    /**
-     * If the lastStreamId should not be asserted keep it as a negative value (which is never a real stream id)
-     * @return pair of `lastStreamId` and the [[ErrorCode]]
-     */
-    def expectGOAWAY(lastStreamId: Int = -1): (Int, ErrorCode) = {
-      // GOAWAY is always written to stream zero:
-      //   The GOAWAY frame applies to the connection, not a specific stream.
-      //   An endpoint MUST treat a GOAWAY frame with a stream identifier other than 0x0
-      //   as a connection error (Section 5.4.1) of type PROTOCOL_ERROR.
-      val payload = expectFramePayload(FrameType.GOAWAY, ByteFlag.Zero, streamId = 0)
-      val reader = new ByteReader(payload)
-      val incomingLastStreamId = reader.readIntBE()
-      if (lastStreamId > 0) incomingLastStreamId should ===(lastStreamId)
-      (lastStreamId, ErrorCode.byId(reader.readIntBE()))
-    }
-
-    def expectSettingsAck() = expectFrame(FrameType.SETTINGS, Flags.ACK, 0, ByteString.empty)
-
-    def expectFrame(frameType: FrameType, expectedFlags: ByteFlag, streamId: Int, payload: ByteString) =
-      expectFramePayload(frameType, expectedFlags, streamId) should ===(payload)
-
-    def expectFramePayload(frameType: FrameType, expectedFlags: ByteFlag, streamId: Int): ByteString = {
-      val (flags, data) = expectFrameFlagsAndPayload(frameType, streamId)
-      expectedFlags shouldBe flags
-      data
-    }
-    final def expectFrameFlagsAndPayload(frameType: FrameType, streamId: Int): (ByteFlag, ByteString) = {
-      val (flags, gotStreamId, data) = expectFrameFlagsStreamIdAndPayload(frameType)
-      gotStreamId shouldBe streamId
-      (flags, data)
-    }
-    final def expectFrameFlagsStreamIdAndPayload(frameType: FrameType): (ByteFlag, Int, ByteString) = {
-      val header = expectFrameHeader()
-      header.frameType shouldBe frameType
-      (header.flags, header.streamId, expectBytes(header.payloadLength))
-    }
-
-    def expectFrameHeader(): FrameHeader = {
-      val headerBytes = expectBytes(9)
-
-      val reader = new ByteReader(headerBytes)
-      val length = reader.readShortBE() << 8 | reader.readByte()
-      val tpe = Http2Protocol.FrameType.byId(reader.readByte())
-      val flags = new ByteFlag(reader.readByte())
-      val streamId = reader.readIntBE()
-
-      FrameHeader(tpe, flags, streamId, length)
-    }
-
-    /** Collect a header block maybe spanning several frames */
-    def expectHeaderBlock(streamId: Int, endStream: Boolean = true): ByteString =
-      // FIXME: also collect CONTINUATION frames as long as END_HEADERS is not set
-      expectFramePayload(FrameType.HEADERS, Flags.END_STREAM.ifSet(endStream) | Flags.END_HEADERS, streamId)
 
     def sendFrame(frame: FrameEvent): Unit =
       sendBytes(FrameRenderer.render(frame))
@@ -1116,7 +1017,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
       sendBytes(FrameRenderer.render(PriorityFrame(streamId, exclusiveFlag, streamDependency, weight)))
 
     def sendRST_STREAM(streamId: Int, errorCode: ErrorCode): Unit = {
-      implicit val bigEndian = ByteOrder.BIG_ENDIAN
+      implicit val bigEndian: ByteOrder = ByteOrder.BIG_ENDIAN
       val bb = new ByteStringBuilder
       bb.putInt(errorCode.id)
       sendFrame(FrameType.RST_STREAM, ByteFlag.Zero, streamId, bb.result())
@@ -1129,7 +1030,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     }
 
     def expectWindowUpdate(): Unit =
-      expectFrameFlagsStreamIdAndPayload(FrameType.WINDOW_UPDATE) match {
+      framesOut.expectFrameFlagsStreamIdAndPayload(FrameType.WINDOW_UPDATE) match {
         case (flags, streamId, payload) =>
           // TODO: DRY up with autoFrameHandler
           val windowSizeIncrement = new ByteReader(payload).readIntBE()
@@ -1157,12 +1058,6 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     def remainingToServerWindowForConnection: Int = toServerWindowForConnection
     def remainingToServerWindowFor(streamId: Int): Int = toServerWindows(streamId) min remainingToServerWindowForConnection
 
-    private var fromServerWindows: Map[Int, Int] = Map.empty.withDefaultValue(Http2Protocol.InitialWindowSize)
-    private var fromServerWindowForConnection = Http2Protocol.InitialWindowSize
-    // keep counters that are updated for incoming DATA frames and outgoing WINDOW_UPDATE frames
-    def remainingFromServerWindowForConnection: Int = fromServerWindowForConnection
-    def remainingFromServerWindowFor(streamId: Int): Int = fromServerWindows(streamId) min remainingFromServerWindowForConnection
-
     def updateWindowMap(streamId: Int, update: Int => Int): Map[Int, Int] => Map[Int, Int] =
       map => map.updated(streamId, update(map(streamId)))
 
@@ -1176,13 +1071,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
       toServerWindows = updateWindowMap(streamId, safeUpdate(update))(toServerWindows)
     def updateToServerWindowForConnection(update: Int => Int): Unit =
       toServerWindowForConnection = safeUpdate(update)(toServerWindowForConnection)
-
-    def updateFromServerWindows(streamId: Int, update: Int => Int): Unit =
-      fromServerWindows = updateWindowMap(streamId, safeUpdate(update))(fromServerWindows)
-    def updateFromServerWindowForConnection(update: Int => Int): Unit =
-      fromServerWindowForConnection = safeUpdate(update)(fromServerWindowForConnection)
   }
-  case class FrameHeader(frameType: FrameType, flags: ByteFlag, streamId: Int, payloadLength: Int)
 
   /** Basic TestSetup that has already passed the exchange of the connection preface */
   abstract class TestSetup extends TestSetupWithoutHandshake {
