@@ -425,7 +425,7 @@ class HttpServerSpec extends AkkaSpec(
           dataProbe.expectNext(ByteString("abcdef"))
           dataProbe.expectNoMessage(50.millis)
           closeNetworkInput()
-          dataProbe.expectError().getMessage shouldEqual "Entity stream truncation"
+          dataProbe.expectError().getMessage shouldEqual "Entity stream truncation. The HTTP parser was receiving an entity when the underlying connection was closed unexpectedly."
       }
       shutdownBlueprint()
     })
@@ -447,7 +447,7 @@ class HttpServerSpec extends AkkaSpec(
           dataProbe.expectNext(Chunk(ByteString("abcdef")))
           dataProbe.expectNoMessage(50.millis)
           closeNetworkInput()
-          dataProbe.expectError().getMessage shouldEqual "Entity stream truncation"
+          dataProbe.expectError().getMessage shouldEqual "Entity stream truncation. The HTTP parser was receiving an entity when the underlying connection was closed unexpectedly."
       }
       shutdownBlueprint()
     })
