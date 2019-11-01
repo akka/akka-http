@@ -1,7 +1,8 @@
 # The PathMatcher DSL
 
-For being able to work with the @ref[PathDirectives](directives/path-directives/index.md) effectively you should have some understanding of the
-`PathMatcher` mini-DSL that Akka HTTP provides for elegantly defining URI matching behavior.
+The `PathMatcher` mini-DSL is used to match incoming URL's and extract values from them. It is used in the @ref[`path` directive](directives/path-directives/path.md).
+
+Some simple examples of the DSL in action can be found [below](#examples).
 
 ## Overview
 

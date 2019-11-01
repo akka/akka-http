@@ -13,6 +13,11 @@ class PathDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   //#path-matcher
   val matcher: PathMatcher1[Option[Int]] =
     "foo" / "bar" / "X" ~ IntNumber.? / ("edit" | "create")
+
+  val route: Route =
+    path(matcher) { i: Option[Int] =>
+      complete(s"Matched X${i.getOrElse("")}")
+    }
   //#path-matcher
 
   //#path-dsl
