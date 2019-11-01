@@ -151,7 +151,7 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
           segment("edit").orElse(segment("create"))
         );
 
-    Route route = path(matcher, i =>
+    Route route = path(matcher, i ->
       complete("Matched X" + i)
     );
     //#path-matcher
