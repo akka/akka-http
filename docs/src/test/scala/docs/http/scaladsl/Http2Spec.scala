@@ -4,12 +4,14 @@
 
 package docs.http.scaladsl
 
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
+import akka.http.impl.util.ExampleHttpContexts
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, StatusCodes }
+import akka.stream.ActorMaterializer
 
 //#bindAndHandleSecure
 import scala.concurrent.Future
 
-import akka.http.scaladsl.{ Http, HttpsConnectionContext }
+import akka.http.scaladsl.HttpsConnectionContext
 //#bindAndHandleSecure
 
 //#bindAndHandleSecure
@@ -28,13 +30,13 @@ import akka.actor.ActorSystem
 import akka.stream.Materializer
 
 object Http2Spec {
-  val asyncHandler: HttpRequest => Future[HttpResponse] = ???
-  val httpsServerContext: HttpsConnectionContext = ???
-  implicit val system: ActorSystem = ???
-  implicit val materializer: Materializer = ???
+  val asyncHandler: HttpRequest => Future[HttpResponse] = _ => Future.successful(HttpResponse(status = StatusCodes.ImATeapot))
+  val httpsServerContext: HttpsConnectionContext = ExampleHttpContexts.exampleServerContext
+  implicit val system: ActorSystem = ActorSystem()
+  implicit val materializer: Materializer = ActorMaterializer()
 
   //#bindAndHandleSecure
-  Http().bindAndHandleAsync(
+  Http2().bindAndHandleAsync(
     asyncHandler,
     interface = "localhost",
     port = 8443,
