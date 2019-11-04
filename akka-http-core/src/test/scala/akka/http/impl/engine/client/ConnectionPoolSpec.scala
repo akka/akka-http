@@ -281,13 +281,14 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
       if (poolImplementation == PoolImplementation.Legacy)
         pending
 
+      val remainingResponsesToKill = new AtomicInteger(5)
+
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int](maxRetries = 4)
 
       requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
       requestIn.sendNext(HttpRequest(uri = "/crash") -> 43)
       responseOutSub.request(2)
 
-      val remainingResponsesToKill = new AtomicInteger(5)
       override def mapServerSideOutboundRawBytes(bytes: ByteString): ByteString =
         if (bytes.utf8String.contains("/crash") && remainingResponsesToKill.decrementAndGet() >= 0)
           sys.error("CRASH BOOM BANG")
