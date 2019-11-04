@@ -140,7 +140,7 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testPathMatcher() {
     //#path-matcher
-    PathMatcher1<Integer> m =
+    PathMatcher1<Integer> matcher =
       PathMatchers
         .segment("foo")
         .slash("bar")
@@ -150,7 +150,11 @@ public class PathDirectivesExamplesTest extends JUnitRouteTest {
         .slash(
           segment("edit").orElse(segment("create"))
         );
-      //#path-matcher
+
+    Route route = path(matcher, i ->
+      complete("Matched X" + i)
+    );
+    //#path-matcher
   }
 
   @Test
