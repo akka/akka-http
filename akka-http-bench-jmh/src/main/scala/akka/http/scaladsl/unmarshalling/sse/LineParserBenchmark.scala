@@ -51,7 +51,7 @@ class LineParserBenchmark {
     val makeSampleFile = Source.single(line)
       .runWith(FileIO.toPath(tempFile))
 
-    Await.result(makeSampleFile, 5 seconds)
+    Await.result(makeSampleFile, 5.seconds)
 
     parserGraph = FileIO
       .fromPath(tempFile, chunkSize)
