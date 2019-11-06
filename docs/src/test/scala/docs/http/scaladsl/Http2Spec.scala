@@ -16,7 +16,7 @@ import akka.http.scaladsl.HttpsConnectionContext
 
 //#bindAndHandleSecure
 //#bindAndHandlePlain
-import akka.http.scaladsl.Http2
+import akka.http.scaladsl.Http
 //#bindAndHandlePlain
 
 //#bindAndHandleSecure
