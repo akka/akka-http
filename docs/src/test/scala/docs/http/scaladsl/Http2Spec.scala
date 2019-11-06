@@ -36,7 +36,7 @@ object Http2Spec {
   implicit val materializer: Materializer = ActorMaterializer()
 
   //#bindAndHandleSecure
-  Http2().bindAndHandleAsync(
+  Http().bindAndHandleAsync(
     asyncHandler,
     interface = "localhost",
     port = 8443,
@@ -44,7 +44,7 @@ object Http2Spec {
   //#bindAndHandleSecure
 
   //#bindAndHandlePlain
-  Http2().bindAndHandleAsync(
+  Http().bindAndHandleAsync(
     asyncHandler,
     interface = "localhost",
     port = 8080,
