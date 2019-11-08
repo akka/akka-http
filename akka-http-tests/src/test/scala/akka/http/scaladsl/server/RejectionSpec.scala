@@ -22,10 +22,10 @@ class RejectionSpec extends RoutingSpec {
     }
   }
 
-  "RejectionHandler" should {
+  "RejectionHandler.default" which {
     import akka.http.scaladsl.model._
 
-    implicit def myRejectionHandler =
+    implicit def myRejectionHandler: RejectionHandler =
       RejectionHandler.default
         .mapRejectionResponse {
           case res @ HttpResponse(_, _, ent: HttpEntity.Strict, _) =>
@@ -39,23 +39,73 @@ class RejectionSpec extends RoutingSpec {
       Route.seal(
         path("hello") {
           complete("Hello there")
-        }
+        } ~
+          path("unsupported-content-type") {
+            parameters(("provide-content-type".as[Boolean], "provide-supported".as[Boolean])) {
+              (provideContentType, provideSupported) =>
+
+                val supported =
+                  if (provideSupported) Set[ContentTypeRange](MediaTypes.`image/jpeg`, MediaTypes.`image/png`)
+                  else Set.empty[ContentTypeRange]
+
+                val contentType =
+                  if (provideContentType) Some[ContentType](MediaTypes.`image/gif`)
+                  else None
+
+                reject(UnsupportedRequestContentTypeRejection(supported, contentType))
+            }
+          }
       )
 
-    "mapRejectionResponse must not affect normal responses" in {
-      Get("/hello") ~> route ~> check {
-        status should ===(StatusCodes.OK)
-        contentType should ===(ContentTypes.`text/plain(UTF-8)`)
-        responseAs[String] should ===("""Hello there""")
+    "mapRejectionResponse" should {
+      "not affect normal responses" in {
+        Get("/hello") ~> route ~> check {
+          status should ===(StatusCodes.OK)
+          contentType should ===(ContentTypes.`text/plain(UTF-8)`)
+          responseAs[String] should ===("""Hello there""")
+        }
+      }
+      "alter rejection response" in {
+        Get("/nope") ~> route ~> check {
+          status should ===(StatusCodes.NotFound)
+          contentType should ===(ContentTypes.`application/json`)
+          responseAs[String] should ===("""{"rejection": "The requested resource could not be found."}""")
+        }
       }
     }
-    "mapRejectionResponse should alter rejection response" in {
-      Get("/nope") ~> route ~> check {
-        status should ===(StatusCodes.NotFound)
-        contentType should ===(ContentTypes.`application/json`)
-        responseAs[String] should ===("""{"rejection": "The requested resource could not be found."}""")
+    "UnsupportedRequestContentTypeRejection" should {
+      "format error message without contentType and supported ranges" in {
+        Get("/unsupported-content-type?provide-content-type=false&provide-supported=false") ~> route ~> check {
+          status should ===(StatusCodes.UnsupportedMediaType)
+          contentType should ===(ContentTypes.`application/json`)
+          responseAs[String] should ===("""{"rejection": "The request's Content-Type is not supported."}""")
+        }
+      }
+      "format error message with contentType and without supported ranges" in {
+        Get("/unsupported-content-type?provide-content-type=true&provide-supported=false") ~> route ~> check {
+          status should ===(StatusCodes.UnsupportedMediaType)
+          contentType should ===(ContentTypes.`application/json`)
+          responseAs[String] should ===("""{"rejection": "The request's Content-Type [image/gif] is not supported."}""")
+        }
+      }
+      "format error message without contentType and with supported ranges" in {
+        Get("/unsupported-content-type?provide-content-type=false&provide-supported=true") ~> route ~> check {
+          status should ===(StatusCodes.UnsupportedMediaType)
+          contentType should ===(ContentTypes.`application/json`)
+          responseAs[String] should ===(
+            """|{"rejection": "The request's Content-Type is not supported. Expected:
+               |image/jpeg or image/png"}""".stripMargin)
+        }
+      }
+      "format error message with contentType and with supported ranges" in {
+        Get("/unsupported-content-type?provide-content-type=true&provide-supported=true") ~> route ~> check {
+          status should ===(StatusCodes.UnsupportedMediaType)
+          contentType should ===(ContentTypes.`application/json`)
+          responseAs[String] should ===(
+            """|{"rejection": "The request's Content-Type [image/gif] is not supported. Expected:
+               |image/jpeg or image/png"}""".stripMargin)
+        }
       }
     }
   }
-
 }
