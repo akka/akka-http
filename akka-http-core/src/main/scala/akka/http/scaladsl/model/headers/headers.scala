@@ -1050,6 +1050,20 @@ final case class `User-Agent`(products: immutable.Seq[ProductVersion]) extends j
   def getProducts: Iterable[jm.headers.ProductVersion] = products.asJava
 }
 
+// https://tools.ietf.org/html/rfc7230#section-5.7.1
+object Via extends ModeledCompanion[Via]
+final case class Via(intermediaries: immutable.Seq[ViaIntermediary]) extends RequestResponseHeader {
+  def renderValue[R <: Rendering](r: R): r.type = intermediaries match {
+    case Seq() => r
+    case i +: is =>
+      r ~~ i
+      is.foreach(r ~~ ", " ~~ _)
+      r
+  }
+
+  protected def companion = Via
+}
+
 // http://tools.ietf.org/html/rfc7235#section-4.1
 object `WWW-Authenticate` extends ModeledCompanion[`WWW-Authenticate`] {
   def apply(first: HttpChallenge, more: HttpChallenge*): `WWW-Authenticate` = apply(immutable.Seq(first +: more: _*))
