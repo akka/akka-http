@@ -190,7 +190,7 @@ object RejectionHandler {
         case MalformedRequestContentRejection(msg, throwable) => {
           val rejectionMessage = "The request content was malformed:\n" + msg
           throwable match {
-            case _: EntityStreamSizeException => rejectRequestEntityAndComplete((RequestEntityTooLarge, rejectionMessage))
+            case _: EntityStreamSizeException => rejectRequestEntityAndComplete((PayloadTooLarge, rejectionMessage))
             case _                            => rejectRequestEntityAndComplete((BadRequest, rejectionMessage))
           }
         }
@@ -225,7 +225,7 @@ object RejectionHandler {
       }
       .handle {
         case TooManyRangesRejection(_) =>
-          rejectRequestEntityAndComplete((RequestedRangeNotSatisfiable, "Request contains too many ranges"))
+          rejectRequestEntityAndComplete((RangeNotSatisfiable, "Request contains too many ranges"))
       }
       .handle {
         case CircuitBreakerOpenRejection(_) =>
@@ -233,7 +233,7 @@ object RejectionHandler {
       }
       .handle {
         case UnsatisfiableRangeRejection(unsatisfiableRanges, actualEntityLength) =>
-          rejectRequestEntityAndComplete((RequestedRangeNotSatisfiable, List(`Content-Range`(ContentRange.Unsatisfiable(actualEntityLength))),
+          rejectRequestEntityAndComplete((RangeNotSatisfiable, List(`Content-Range`(ContentRange.Unsatisfiable(actualEntityLength))),
             unsatisfiableRanges.mkString("None of the following requested Ranges were satisfiable:\n", "\n", "")))
       }
       .handleAll[AuthenticationFailedRejection] { rejections =>

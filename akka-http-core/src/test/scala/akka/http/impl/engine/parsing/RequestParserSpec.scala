@@ -538,7 +538,7 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
 
       "a too-long URI" in new Test {
         "GET /2345678901234567890123456789012345678901 HTTP/1.1" should parseToError(
-          RequestUriTooLong,
+          UriTooLong,
           ErrorInfo("URI length exceeds the configured limit of 40 characters"))
       }
 

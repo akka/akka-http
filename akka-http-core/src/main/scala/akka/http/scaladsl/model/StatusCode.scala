@@ -141,10 +141,16 @@ object StatusCodes extends ObjectRegistry[Int, StatusCode] {
   val Gone                         = reg(c(410)("Gone", "The resource requested is no longer available and will not be available again."))
   val LengthRequired               = reg(c(411)("Length Required", "The request did not specify the length of its content, which is required by the requested resource."))
   val PreconditionFailed           = reg(c(412)("Precondition Failed", "The server does not meet one of the preconditions that the requester put on the request."))
-  val RequestEntityTooLarge        = reg(c(413)("Request Entity Too Large", "The request is larger than the server is willing or able to process."))
-  val RequestUriTooLong            = reg(c(414)("Request-URI Too Long", "The URI provided was too long for the server to process."))
+  val PayloadTooLarge              = reg(c(413)("Payload Too Large", "The request payload is larger than the server is willing or able to process."))
+  @deprecated("deprecated in favor of Payload Too Large", "10.1.11")
+  val RequestEntityTooLarge        = PayloadTooLarge
+  val UriTooLong                   = reg(c(414)("URI Too Long", "The URI provided was too long for the server to process."))
+  @deprecated("deprecated in favor of Uri Too Long", "10.1.11")
+  val RequestUriTooLong            = UriTooLong
   val UnsupportedMediaType         = reg(c(415)("Unsupported Media Type", "The request entity has a media type which the server or resource does not support."))
-  val RequestedRangeNotSatisfiable = reg(c(416)("Requested Range Not Satisfiable", "The client has asked for a portion of the file, but the server cannot supply that portion."))
+  val RangeNotSatisfiable          = reg(c(416)("Range Not Satisfiable", "The client has asked for a portion of the file, but the server cannot supply that portion."))
+  @deprecated("deprecated in favor of Range Not Satisfiable", "10.1.11")
+  val RequestedRangeNotSatisfiable = RangeNotSatisfiable
   val ExpectationFailed            = reg(c(417)("Expectation Failed", "The server cannot meet the requirements of the Expect request-header field."))
   val ImATeapot                    = reg(c(418)("I'm a teapot", "The resulting entity body MAY be short and stout."))
   val EnhanceYourCalm              = reg(c(420)("Enhance Your Calm", "You are being rate-limited.")) // Twitter only
@@ -152,8 +158,6 @@ object StatusCodes extends ObjectRegistry[Int, StatusCode] {
   val UnprocessableEntity          = reg(c(422)("Unprocessable Entity", "The request was well-formed but was unable to be followed due to semantic errors."))
   val Locked                       = reg(c(423)("Locked", "The resource that is being accessed is locked."))
   val FailedDependency             = reg(c(424)("Failed Dependency", "The request failed due to failure of a previous request."))
-
-
   val TooEarly                     = reg(c(425)("Too Early", "The server is unwilling to risk processing a request that might be replayed.")) // RFC 8470
   @deprecated("Non-standard Unordered Collection should not be used, deprecated in favor of Too Early", "10.1.6")
   val UnorderedCollection          = TooEarly

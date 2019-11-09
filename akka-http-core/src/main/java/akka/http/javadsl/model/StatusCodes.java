@@ -57,9 +57,27 @@ public final class StatusCodes {
     public static final StatusCode GONE = akka.http.scaladsl.model.StatusCodes.Gone();
     public static final StatusCode LENGTH_REQUIRED = akka.http.scaladsl.model.StatusCodes.LengthRequired();
     public static final StatusCode PRECONDITION_FAILED = akka.http.scaladsl.model.StatusCodes.PreconditionFailed();
+    public static final StatusCode PAYLOAD_TOO_LARGE = akka.http.scaladsl.model.StatusCodes.PayloadTooLarge();
+
+    /**
+     * @deprecated deprecated in favor of Payload Too Large
+     */
+    @Deprecated
     public static final StatusCode REQUEST_ENTITY_TOO_LARGE = akka.http.scaladsl.model.StatusCodes.RequestEntityTooLarge();
+    public static final StatusCode URI_TOO_LONG = akka.http.scaladsl.model.StatusCodes.UriTooLong();
+
+    /**
+     * @deprecated deprecated in favor of Uri Too Long
+     */
+    @Deprecated
     public static final StatusCode REQUEST_URI_TOO_LONG = akka.http.scaladsl.model.StatusCodes.RequestUriTooLong();
     public static final StatusCode UNSUPPORTED_MEDIA_TYPE = akka.http.scaladsl.model.StatusCodes.UnsupportedMediaType();
+    public static final StatusCode RANGE_NOT_SATISFIABLE = akka.http.scaladsl.model.StatusCodes.RangeNotSatisfiable();
+
+    /**
+     * @deprecated deprecated in favor of Range Not Satisfiable
+     */
+    @Deprecated
     public static final StatusCode REQUESTED_RANGE_NOT_SATISFIABLE = akka.http.scaladsl.model.StatusCodes.RequestedRangeNotSatisfiable();
     public static final StatusCode EXPECTATION_FAILED = akka.http.scaladsl.model.StatusCodes.ExpectationFailed();
     public static final StatusCode IM_A_TEAPOT = akka.http.scaladsl.model.StatusCodes.ImATeapot();
