@@ -174,7 +174,9 @@ object StatusCodes extends ObjectRegistry[Int, StatusCode] {
   val BadGateway                    = reg(e(502)("Bad Gateway", "The server was acting as a gateway or proxy and received an invalid response from the upstream server."))
   val ServiceUnavailable            = reg(e(503)("Service Unavailable", "The server is currently unavailable (because it is overloaded or down for maintenance)."))
   val GatewayTimeout                = reg(e(504)("Gateway Timeout", "The server was acting as a gateway or proxy and did not receive a timely response from the upstream server."))
-  val HTTPVersionNotSupported       = reg(e(505)("HTTP Version Not Supported", "The server does not support the HTTP protocol version used in the request."))
+  val HttpVersionNotSupported       = reg(e(505)("HTTP Version Not Supported", "The server does not support the HTTP protocol version used in the request."))
+  @deprecated("deprecated in favor of Http Version Not Supported", "10.1.11")
+  val HTTPVersionNotSupported       = HttpVersionNotSupported
   val VariantAlsoNegotiates         = reg(e(506)("Variant Also Negotiates", "Transparent content negotiation for the request, results in a circular reference."))
   val InsufficientStorage           = reg(e(507)("Insufficient Storage", "Insufficient storage to complete the request."))
   val LoopDetected                  = reg(e(508)("Loop Detected", "The server detected an infinite loop while processing the request."))

@@ -107,7 +107,7 @@ public final class StatusCodes {
     public static final StatusCode BAD_GATEWAY = akka.http.scaladsl.model.StatusCodes.BadGateway();
     public static final StatusCode SERVICE_UNAVAILABLE = akka.http.scaladsl.model.StatusCodes.ServiceUnavailable();
     public static final StatusCode GATEWAY_TIMEOUT = akka.http.scaladsl.model.StatusCodes.GatewayTimeout();
-    public static final StatusCode HTTPVERSION_NOT_SUPPORTED = akka.http.scaladsl.model.StatusCodes.HTTPVersionNotSupported();
+    public static final StatusCode HTTPVERSION_NOT_SUPPORTED = akka.http.scaladsl.model.StatusCodes.HttpVersionNotSupported();
     public static final StatusCode VARIANT_ALSO_NEGOTIATES = akka.http.scaladsl.model.StatusCodes.VariantAlsoNegotiates();
     public static final StatusCode INSUFFICIENT_STORAGE = akka.http.scaladsl.model.StatusCodes.InsufficientStorage();
     public static final StatusCode LOOP_DETECTED = akka.http.scaladsl.model.StatusCodes.LoopDetected();
