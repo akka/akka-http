@@ -7,17 +7,19 @@ package akka.http.scaladsl.server.directives
 import scala.concurrent.Future
 import scala.util.Success
 import akka.actor.ActorSystem
+import akka.annotation.ApiMayChange
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.Authority
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.server.directives.ReverseProxyDirectives.{ ReverseProxyTargetConfig, ReverseProxyTargetMagnet }
+import akka.http.scaladsl.server.directives.ReverseProxyDirectives.{ReverseProxyTargetConfig, ReverseProxyTargetMagnet}
 import akka.util.ByteString
 
 trait ReverseProxyDirectives {
 
+  @ApiMayChange
   def reverseProxy(target: ReverseProxyTargetMagnet): Route =
     extractExecutionContext { implicit ec =>
       extractMaterializer { implicit mat =>
