@@ -194,7 +194,13 @@ private[client] object NewHostConnectionPool {
           def isIdle: Boolean = state.isIdle
           def isConnected: Boolean = state.isConnected
           def shutdown(): Unit = {
-            closeConnection(Some(new IllegalStateException("Pool slot was shut down") with NoStackTrace))
+            // if the connection is idle, we just complete it regularly, otherwise, we forcibly tear it down
+            // with an error (which will be logged in OutgoingConnectionBlueprint, see `mapError` there).
+            val reason =
+              if (isIdle) None
+              else Some(new IllegalStateException("Pool slot was shut down") with NoStackTrace)
+
+            closeConnection(reason)
 
             state.onShutdown(this)
           }
