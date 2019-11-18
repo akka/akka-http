@@ -78,33 +78,34 @@ within the same application.
 We will create a small web server responsible to record build jobs with its state and duration, query jobs by
 id and status, and clear the job history.
 
-First let's start by defining the `Behavior` that will act as a repository for the build job information:
+First let's start by defining the `Behavior` that will act as a repository for the build job information, this isn't 
+strictly needed for our sample but just to have an actual actor to interact with:
 
 Scala
-:  @@snip [HttpServerWithTypedSpec.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSpec.scala) { #akka-typed-behavior }
+:  @@snip [HttpServerWithTypedSample.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSample.scala) { #akka-typed-behavior }
 
 
-Now, let's define the JSON marshaller and unmarshallers:
+Then, let's define the JSON marshaller and unmarshallers for the HTTP routes:
 
 Scala
-:  @@snip [HttpServerWithTypedSpec.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSpec.scala) { #akka-typed-json }
+:  @@snip [HttpServerWithTypedSample.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSample.scala) { #akka-typed-json }
 
 
 Next step is to define the @apidoc[Route$] that will communicate with the previously defined behavior
-and handle all its possible responses
+and handle all its possible responses:
 
 Scala
-:  @@snip [HttpServerWithTypedSpec.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSpec.scala) { #akka-typed-route }
+:  @@snip [HttpServerWithTypedSample.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSample.scala) { #akka-typed-route }
 
 
-And finally, we just need to bootstrap our web server and instantiate our `Behavior`:
+Finally, we create a `Behavior` that bootstraps the web server and use it as the root behavior of our actor system:
 
 Scala
-:  @@snip [HttpServerWithTypedSpec.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSpec.scala) { #akka-typed-bootstrap }
+:  @@snip [HttpServerWithTypedSample.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSample.scala) { #akka-typed-bootstrap }
 
 
 Note that the `akka.actor.typed.ActorSystem` is converted with `toClassic`, which comes from
-`import akka.actor.typed.scaladsl.adapter._`. If you are using Akka 2.5.x this conversion method is named `toUntyped`.
+`import akka.actor.typed.scaladsl.adapter._`. If you are using an earlier version than Akka 2.5.26 this conversion method is named `toUntyped`.
 
 ## Dynamic Routing Example
 
