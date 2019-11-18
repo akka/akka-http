@@ -60,14 +60,14 @@ public final class StatusCodes {
     public static final StatusCode PAYLOAD_TOO_LARGE = akka.http.scaladsl.model.StatusCodes.PayloadTooLarge();
 
     /**
-     * @deprecated deprecated in favor of Payload Too Large
+     * @deprecated deprecated in favor of PAYLOAD_TOO_LARGE
      */
     @Deprecated
     public static final StatusCode REQUEST_ENTITY_TOO_LARGE = akka.http.scaladsl.model.StatusCodes.RequestEntityTooLarge();
     public static final StatusCode URI_TOO_LONG = akka.http.scaladsl.model.StatusCodes.UriTooLong();
 
     /**
-     * @deprecated deprecated in favor of Uri Too Long
+     * @deprecated deprecated in favor of URI_TOO_LONG
      */
     @Deprecated
     public static final StatusCode REQUEST_URI_TOO_LONG = akka.http.scaladsl.model.StatusCodes.RequestUriTooLong();
@@ -75,7 +75,7 @@ public final class StatusCodes {
     public static final StatusCode RANGE_NOT_SATISFIABLE = akka.http.scaladsl.model.StatusCodes.RangeNotSatisfiable();
 
     /**
-     * @deprecated deprecated in favor of Range Not Satisfiable
+     * @deprecated deprecated in favor of RANGE_NOT_SATISFIABLE
      */
     @Deprecated
     public static final StatusCode REQUESTED_RANGE_NOT_SATISFIABLE = akka.http.scaladsl.model.StatusCodes.RequestedRangeNotSatisfiable();
@@ -88,7 +88,7 @@ public final class StatusCodes {
     public static final StatusCode FAILED_DEPENDENCY = akka.http.scaladsl.model.StatusCodes.FailedDependency();
 
     /**
-     * @deprecated Non-standard Unordered Collection should not be used, deprecated in favor of Too Early
+     * @deprecated Non-standard Unordered Collection should not be used, deprecated in favor of TOO_EARLY
      */
     @Deprecated
     public static final StatusCode UNORDERED_COLLECTION = akka.http.scaladsl.model.StatusCodes.UnorderedCollection();
