@@ -101,7 +101,7 @@ class MiscDirectivesSpec extends RoutingSpec {
       }
 
       Post("/abc", entityOfSize(501)) ~> Route.seal(route) ~> check {
-        status shouldEqual StatusCodes.RequestEntityTooLarge
+        status shouldEqual StatusCodes.PayloadTooLarge
         entityAs[String] should include("exceeded content length limit")
       }
     }
@@ -119,7 +119,7 @@ class MiscDirectivesSpec extends RoutingSpec {
       }
 
       Post("/abc", formDataOfSize(128)) ~> Route.seal(route) ~> check {
-        status shouldEqual StatusCodes.RequestEntityTooLarge
+        status shouldEqual StatusCodes.PayloadTooLarge
         responseAs[String] shouldEqual "The request content was malformed:\n" +
           "EntityStreamSizeException: actual entity size (Some(134)) " +
           "exceeded content length limit (64 bytes)! " +
@@ -143,7 +143,7 @@ class MiscDirectivesSpec extends RoutingSpec {
       }
 
       Post("/abc", entityOfSize(801)) ~> Route.seal(route) ~> check {
-        status shouldEqual StatusCodes.RequestEntityTooLarge
+        status shouldEqual StatusCodes.PayloadTooLarge
         entityAs[String] should include("exceeded content length limit")
       }
 
@@ -161,7 +161,7 @@ class MiscDirectivesSpec extends RoutingSpec {
       }
 
       Post("/abc", entityOfSize(401)) ~> Route.seal(route2) ~> check {
-        status shouldEqual StatusCodes.RequestEntityTooLarge
+        status shouldEqual StatusCodes.PayloadTooLarge
         entityAs[String] should include("exceeded content length limit")
       }
     }

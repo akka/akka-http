@@ -466,7 +466,7 @@ private[http] object HttpServerBluePrint {
                 case None     => s"Aggregated data length of request entity exceeds the configured limit of $limit bytes"
               }
               val info = ErrorInfo(summary, "Consider increasing the value of akka.http.server.parsing.max-content-length")
-              finishWithIllegalRequestError(StatusCodes.RequestEntityTooLarge, info)
+              finishWithIllegalRequestError(StatusCodes.PayloadTooLarge, info)
 
             case IllegalUriException(errorInfo) =>
               finishWithIllegalRequestError(StatusCodes.BadRequest, errorInfo)

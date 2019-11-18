@@ -57,9 +57,27 @@ public final class StatusCodes {
     public static final StatusCode GONE = akka.http.scaladsl.model.StatusCodes.Gone();
     public static final StatusCode LENGTH_REQUIRED = akka.http.scaladsl.model.StatusCodes.LengthRequired();
     public static final StatusCode PRECONDITION_FAILED = akka.http.scaladsl.model.StatusCodes.PreconditionFailed();
+    public static final StatusCode PAYLOAD_TOO_LARGE = akka.http.scaladsl.model.StatusCodes.PayloadTooLarge();
+
+    /**
+     * @deprecated deprecated in favor of PAYLOAD_TOO_LARGE
+     */
+    @Deprecated
     public static final StatusCode REQUEST_ENTITY_TOO_LARGE = akka.http.scaladsl.model.StatusCodes.RequestEntityTooLarge();
+    public static final StatusCode URI_TOO_LONG = akka.http.scaladsl.model.StatusCodes.UriTooLong();
+
+    /**
+     * @deprecated deprecated in favor of URI_TOO_LONG
+     */
+    @Deprecated
     public static final StatusCode REQUEST_URI_TOO_LONG = akka.http.scaladsl.model.StatusCodes.RequestUriTooLong();
     public static final StatusCode UNSUPPORTED_MEDIA_TYPE = akka.http.scaladsl.model.StatusCodes.UnsupportedMediaType();
+    public static final StatusCode RANGE_NOT_SATISFIABLE = akka.http.scaladsl.model.StatusCodes.RangeNotSatisfiable();
+
+    /**
+     * @deprecated deprecated in favor of RANGE_NOT_SATISFIABLE
+     */
+    @Deprecated
     public static final StatusCode REQUESTED_RANGE_NOT_SATISFIABLE = akka.http.scaladsl.model.StatusCodes.RequestedRangeNotSatisfiable();
     public static final StatusCode EXPECTATION_FAILED = akka.http.scaladsl.model.StatusCodes.ExpectationFailed();
     public static final StatusCode IM_A_TEAPOT = akka.http.scaladsl.model.StatusCodes.ImATeapot();
@@ -70,7 +88,7 @@ public final class StatusCodes {
     public static final StatusCode FAILED_DEPENDENCY = akka.http.scaladsl.model.StatusCodes.FailedDependency();
 
     /**
-     * @deprecated Non-standard Unordered Collection should not be used, deprecated in favor of Too Early
+     * @deprecated Non-standard Unordered Collection should not be used, deprecated in favor of TOO_EARLY
      */
     @Deprecated
     public static final StatusCode UNORDERED_COLLECTION = akka.http.scaladsl.model.StatusCodes.UnorderedCollection();
@@ -89,7 +107,7 @@ public final class StatusCodes {
     public static final StatusCode BAD_GATEWAY = akka.http.scaladsl.model.StatusCodes.BadGateway();
     public static final StatusCode SERVICE_UNAVAILABLE = akka.http.scaladsl.model.StatusCodes.ServiceUnavailable();
     public static final StatusCode GATEWAY_TIMEOUT = akka.http.scaladsl.model.StatusCodes.GatewayTimeout();
-    public static final StatusCode HTTPVERSION_NOT_SUPPORTED = akka.http.scaladsl.model.StatusCodes.HTTPVersionNotSupported();
+    public static final StatusCode HTTPVERSION_NOT_SUPPORTED = akka.http.scaladsl.model.StatusCodes.HttpVersionNotSupported();
     public static final StatusCode VARIANT_ALSO_NEGOTIATES = akka.http.scaladsl.model.StatusCodes.VariantAlsoNegotiates();
     public static final StatusCode INSUFFICIENT_STORAGE = akka.http.scaladsl.model.StatusCodes.InsufficientStorage();
     public static final StatusCode LOOP_DETECTED = akka.http.scaladsl.model.StatusCodes.LoopDetected();

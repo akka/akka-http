@@ -1261,7 +1261,7 @@ class HttpServerSpec extends AkkaSpec(
                 responses.sendError(error.asInstanceOf[Exception])
 
                 expectResponseWithWipedDate(
-                  s"""HTTP/1.1 413 Request Entity Too Large
+                  s"""HTTP/1.1 413 Payload Too Large
                       |Server: akka-http/test
                       |Date: XXXX
                       |Connection: close
@@ -1284,7 +1284,7 @@ class HttpServerSpec extends AkkaSpec(
                 responses.sendError(error.asInstanceOf[Exception])
 
                 expectResponseWithWipedDate(
-                  s"""HTTP/1.1 413 Request Entity Too Large
+                  s"""HTTP/1.1 413 Payload Too Large
                     |Server: akka-http/test
                     |Date: XXXX
                     |Connection: close

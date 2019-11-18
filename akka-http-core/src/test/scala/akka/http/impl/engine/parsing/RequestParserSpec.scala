@@ -538,14 +538,14 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec
 
       "a too-long URI" in new Test {
         "GET /2345678901234567890123456789012345678901 HTTP/1.1" should parseToError(
-          RequestUriTooLong,
+          UriTooLong,
           ErrorInfo("URI length exceeds the configured limit of 40 characters"))
       }
 
       "HTTP version 1.2" in new Test {
         """GET / HTTP/1.2
           |""" should parseToError(
-          HTTPVersionNotSupported,
+          HttpVersionNotSupported,
           ErrorInfo("The server does not support the HTTP protocol version used in the request."))
       }
 
