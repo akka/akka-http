@@ -145,7 +145,7 @@ private[http] final class HttpRequestParser(
         else if (CharacterClasses.WSPCRLF(input(ix).toChar)) ix
         else if (ix < uriEndLimit) findUriEnd(ix + 1)
         else throw new ParsingException(
-          RequestUriTooLong,
+          UriTooLong,
           s"URI length exceeds the configured limit of $maxUriLength characters")
 
       val uriEnd = findUriEnd()
@@ -158,7 +158,7 @@ private[http] final class HttpRequestParser(
       uriEnd + 1
     }
 
-    override def onBadProtocol(): Nothing = throw new ParsingException(HTTPVersionNotSupported)
+    override def onBadProtocol(): Nothing = throw new ParsingException(HttpVersionNotSupported)
 
     // http://tools.ietf.org/html/rfc7230#section-3.3
     override def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,

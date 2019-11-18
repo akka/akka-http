@@ -20,7 +20,6 @@ import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream._
 import akka.{ Done, NotUsed, stream }
-import akka.http.scaladsl.model.ContentType.{ Binary, NonBinary, WithMissingCharset }
 import akka.http.scaladsl.util.FastFuture
 import akka.http.javadsl.{ model => jm }
 import akka.http.impl.util.{ JavaMapping, StreamUtils }
