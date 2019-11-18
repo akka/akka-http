@@ -164,7 +164,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
     def setChosenProtocol(protocol: String): Unit =
       if (chosenProtocol.isEmpty) chosenProtocol = Some(protocol)
       else throw new IllegalStateException("ChosenProtocol was set twice. Http2.serverLayer is not reusable.")
-    def getChosenProtocol(): String = chosenProtocol.getOrElse("h1") // default to http/1, e.g. when ALPN jar is missing
+    def getChosenProtocol(): String = chosenProtocol.getOrElse(Http2AlpnSupport.HTTP11) // default to http/1, e.g. when ALPN jar is missing
 
     var eng: Option[SSLEngine] = None
     def createEngine(): SSLEngine = {
