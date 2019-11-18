@@ -356,26 +356,9 @@ object HttpEntity {
     override def productPrefix = "HttpEntity.Strict"
 
     override def toString = {
-      val dataAsString = contentType match {
-        case _: Binary =>
-          data.toString()
-        case _: WithMissingCharset =>
-          data.toString()
-        case nb: NonBinary =>
-          try {
-            val maxBytes = 4096
-            if (data.length > maxBytes) {
-              val truncatedString = data.take(maxBytes).decodeString(nb.charset.value).dropRight(1)
-              s"$truncatedString ... (${data.length} bytes total)"
-            } else
-              data.decodeString(nb.charset.value)
-          } catch {
-            case NonFatal(e) =>
-              data.toString()
-          }
-      }
+      val dataSizeStr = s"${data.length} bytes total"
 
-      s"$productPrefix($contentType,$dataAsString)"
+      s"$productPrefix($contentType,$dataSizeStr)"
     }
 
     /** Java API */
