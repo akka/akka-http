@@ -89,18 +89,20 @@ trait ReverseProxyDirectives {
       .orElse(intermediary.map(i => Via(List(i))))
 
     val outgoingHeaders = incomingHeaders.flatMap {
-      case _: `X-Real-Ip`           => updatedXRealIpHeaderOption
-      case _: `X-Forwarded-For`     => updatedXForwardedForHeaderOption
-      case _: Via                   => Nil // added back at the end
-      case _: `Timeout-Access`      => Nil
+      // region hop-by-hop headers https://tools.ietf.org/html/rfc2616#section-13.5.1
       case _: Connection            => Nil
       // keep alive header is not included in modeled headers
       case _: `Proxy-Authenticate`  => Nil
       case _: `Proxy-Authorization` => Nil
-      case _: `Transfer-Encoding`   => Nil
       case h if h.is("te")          => Nil
       case h if h.is("trailers")    => Nil
+      case _: `Transfer-Encoding`   => Nil
       case _: Upgrade               => Nil
+      // endregion
+      case _: `X-Real-Ip`           => updatedXRealIpHeaderOption
+      case _: `X-Forwarded-For`     => updatedXForwardedForHeaderOption
+      case _: `Timeout-Access`      => Nil
+      case _: Via                   => Nil // added back at the end
       case h                        => Some(h)
     } ++ maybeVia
 

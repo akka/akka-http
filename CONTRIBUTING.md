@@ -199,7 +199,7 @@ All documentation must abide by the following maxims:
 - When renaming Markdown files, add a rewrite rule to the `.htaccess` file to not break external links.
 
 All documentation is preferred to be in Lightbend's standard documentation format [Paradox](https://github.com/lightbend/paradox).
-The language used by Paradox is a super-set or Markdown which supports most Github Flavored Markdown extensions as well as additional directives to facilitate writing documentation for software projects.
+The language used by Paradox is a super-set of Markdown which supports most Github Flavored Markdown extensions as well as additional directives to facilitate writing documentation for software projects.
 Refer to its documentation to learn about the more advanced features it provides (including code etc).
 
 To generate documentation you can:
