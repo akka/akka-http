@@ -261,9 +261,13 @@ object RejectionHandler {
           supported.map(_.value).mkString("\n")))
       }
       .handleAll[UnsupportedRequestContentTypeRejection] { rejections =>
+        val unsupported = rejections.find(_.contentType.isDefined).flatMap(_.contentType).fold("")(" [" + _ + "]")
         val supported = rejections.flatMap(_.supported).mkString(" or ")
-        val unsupportedContentType = rejections.find(_.contentType.isDefined).map(_.contentType)
-        rejectRequestEntityAndComplete((UnsupportedMediaType, s"The request's Content-Type [$unsupportedContentType] is not supported. Expected:\n" + supported))
+        val expected =
+          if (supported.isEmpty) ""
+          else " Expected:\n" + supported
+
+        rejectRequestEntityAndComplete((UnsupportedMediaType, s"The request's Content-Type$unsupported is not supported.$expected"))
       }
       .handleAll[UnsupportedRequestEncodingRejection] { rejections =>
         val supported = rejections.map(_.supported.value).mkString(" or ")
