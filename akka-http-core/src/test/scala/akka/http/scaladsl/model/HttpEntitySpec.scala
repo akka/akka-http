@@ -21,7 +21,6 @@ import org.scalatest.{ BeforeAndAfterAll, FreeSpec, MustMatchers }
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Promise }
-import scala.util.Random
 
 class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
   val tpe: ContentType = ContentTypes.`application/octet-stream`
