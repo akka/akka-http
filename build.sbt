@@ -58,11 +58,13 @@ lazy val root = Project(
       // We currently expect the java documentation at akka-http/target/javaunidoc, so
       // the following heuristic is hopefully good enough to determine which one is the Java and
       // which one the Scala version.
+
+      // This will fail with a MatchError when -Dakka.genjavadoc.enabled is not set
       val (Seq(java), Seq(scala)) = unidocArtifacts.partition(_.getName contains "java")
 
       Seq(
-        scala -> s"www/api/akka-http/${version.value}",
-        java -> s"www/japi/akka-http/${version.value}")
+        scala -> gustavDir("api").value,
+        java -> gustavDir("japi").value)
     }
   )
   .aggregate(
@@ -172,6 +174,13 @@ lazy val http = project("akka-http")
   )
   .settings(scalaMacroSupport)
   .enablePlugins(BootstrapGenjavadoc, BoilerplatePlugin)
+
+def gustavDir(kind: String) = Def.task {
+  val ver =
+    if (isSnapshot.value) "snapshot"
+    else version.value
+  s"www/$kind/akka-http/$ver"
+}
 
 lazy val http2Support = project("akka-http2-support")
   .settings(commonSettings)
@@ -366,7 +375,7 @@ lazy val docs = project("docs")
     apidocRootPackage := "akka",
     Formatting.docFormatSettings,
     additionalTasks in ValidatePR += paradox in Compile,
-    deployRsyncArtifact := List((paradox in Compile).value -> s"www/docs/akka-http/${version.value}"),
+    deployRsyncArtifact := List((paradox in Compile).value -> gustavDir("docs").value),
     add212CrossDirs(Test)
   )
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
