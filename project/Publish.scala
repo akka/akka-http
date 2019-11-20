@@ -53,7 +53,9 @@ object DeployRsync extends AutoPlugin {
     deployRsync := {
       val (_, host) = (Space ~ StringBasic).parsed
       deployRsyncArtifact.value.foreach {
-        case (from, to) => Seq("rsync", "-rvz", s"$from/", s"$host:$to")!
+        case (from, to) =>
+          val result = Seq("rsync", "-rvz", s"$from/", s"$host:$to").!
+          require(result == 0, "rsync should return success")
       }
     }
   )
