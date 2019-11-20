@@ -240,7 +240,7 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends FreeSpe
           Right(HttpResponse(
             headers = List(`Transfer-Encoding`(TransferEncodings.Extension("fancy"))),
             entity = HttpEntity.Chunked(`application/pdf`, source()))),
-          Left(EntityStreamError(ErrorInfo("Entity stream truncation"))))
+          Left(EntityStreamError(ErrorInfo("Entity stream truncation. The HTTP parser was receiving an entity when the underlying connection was closed unexpectedly."))))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 

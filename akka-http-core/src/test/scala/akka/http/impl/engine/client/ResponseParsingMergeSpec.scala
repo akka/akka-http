@@ -95,7 +95,7 @@ class ResponseParsingMergeSpec extends AkkaSpec {
       responseProbe.expectComplete()
 
       responseChunks.last shouldBe an[EntityStreamError]
-      responseChunks.last shouldEqual EntityStreamError(ErrorInfo("Entity stream truncation"))
+      responseChunks.last shouldEqual EntityStreamError(ErrorInfo("Entity stream truncation. The HTTP parser was receiving an entity when the underlying connection was closed unexpectedly."))
     }
 
   }
