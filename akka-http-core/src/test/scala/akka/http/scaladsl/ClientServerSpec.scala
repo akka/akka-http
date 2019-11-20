@@ -14,6 +14,8 @@ import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
 import scala.util.{ Success, Try }
 import akka.actor.ActorSystem
+import akka.event.Logging
+import akka.event.Logging.LogEvent
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util._
 import akka.http.scaladsl.Http.ServerBinding
@@ -472,6 +474,36 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
         clientIn.expectComplete()
 
         binding.foreach(_.unbind())
+      }
+    }
+
+    "properly complete a simple request/response cycle using Http.singleRequest" in Utils.assertAllStagesStopped {
+      new TestSetup {
+        // make sure no log message above DEBUG are printed by that exchange
+        EventFilter.custom({ case l: LogEvent if l.level != Logging.DebugLevel => true }, 0).intercept {
+          val settings = ConnectionPoolSettings(system).withIdleTimeout(500.millis)
+
+          val request = HttpRequest(uri = s"http://$hostname:$port/abc")
+
+          val responseFut = Http().singleRequest(request, settings = settings)
+          val (serverIn, serverOut) = acceptConnection()
+
+          val serverInSub = serverIn.expectSubscription()
+          serverInSub.request(1)
+          serverIn.expectNext().uri shouldEqual Uri(s"http://$hostname:$port/abc")
+
+          val serverOutSub = serverOut.expectSubscription()
+          serverOutSub.expectRequest()
+          serverOutSub.sendNext(HttpResponse(entity = "yeah"))
+
+          val response = responseFut.awaitResult(1.second.dilated)
+          toStrict(response.entity) shouldEqual HttpEntity("yeah")
+
+          serverIn.expectComplete()
+          serverOutSub.expectCancellation()
+
+          binding.foreach(_.unbind())
+        }
       }
     }
 
