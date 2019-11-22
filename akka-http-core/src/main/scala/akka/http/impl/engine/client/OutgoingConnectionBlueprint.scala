@@ -19,7 +19,7 @@ import akka.stream._
 import akka.stream.scaladsl._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, IllegalResponseException, ResponseEntity }
+import akka.http.scaladsl.model.{ EntityStreamSizeException, HttpRequest, HttpResponse, IllegalResponseException, ResponseEntity }
 import akka.http.impl.engine.rendering.{ HttpRequestRendererFactory, RequestRenderingContext }
 import akka.http.impl.engine.parsing._
 import akka.http.impl.util._
@@ -183,7 +183,8 @@ private[http] object OutgoingConnectionBlueprint {
 
       def onPush(): Unit = grab(responseOutputIn) match {
         case ResponseStart(statusCode, protocol, headers, entityCreator, closeRequested) =>
-          val entity = createEntity(entityCreator) withSizeLimit parserSettings.maxContentLength
+          val entity = createEntity(entityCreator)
+            .withSizeLimit(parserSettings.maxContentLength, EntityStreamSizeException.parsingHint)
           push(httpResponseOut, HttpResponse(statusCode, headers, entity, protocol))
           completeOnMessageEnd = closeRequested
 

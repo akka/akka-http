@@ -114,14 +114,50 @@ object EntityStreamException {
  * The limit can also be configured in code, by calling [[HttpEntity#withSizeLimit]]
  * on the entity before materializing its `dataBytes` stream.
  */
-final case class EntityStreamSizeException(limit: Long, actualSize: Option[Long] = None) extends RuntimeException {
+final class EntityStreamSizeException(val limit: Long, val hint: String, val actualSize: Option[Long] = None) extends RuntimeException with Product {
+  @deprecated("10.1.11", "use the constructor instead")
+  def this(limit: Long, actualSize: Option[Long]) =
+    this(limit, EntityStreamSizeException.userLimitHint, actualSize)
 
   override def getMessage = toString
 
-  override def toString =
-    s"EntityStreamSizeException: actual entity size ($actualSize) exceeded content length limit ($limit bytes)! " +
-      s"You can configure this by setting `akka.http.[server|client].parsing.max-content-length` or calling `HttpEntity.withSizeLimit` " +
-      s"before materializing the dataBytes stream."
+  override def toString = {
+    val actual = actualSize.map(size => s" ($size)").getOrElse("")
+    s"EntityStreamSizeException: actual entity size$actual exceeded content length limit ($limit bytes)! $hint"
+  }
+
+  @deprecated("10.1.11", "not for use")
+  def copy(limit: Long, actualSize: Option[Long]): EntityStreamSizeException =
+    new EntityStreamSizeException(limit, hint, actualSize)
+  @deprecated("10.1.11", "not for use")
+  def canEqual(that: Any): Boolean = that.isInstanceOf[EntityStreamSizeException]
+
+  override def equals(that: Any): Boolean = that match {
+    case that: EntityStreamSizeException => that.canEqual(this) && that.limit == this.limit && that.hint == this.hint && that.actualSize == this.actualSize
+    case _                               => false
+  }
+
+  override def productElement(n: Int): Any = n match {
+    case 0 => limit
+    case 1 => hint
+    case 2 => actualSize
+  }
+
+  override def productArity: Int = 3
+}
+object EntityStreamSizeException {
+  @deprecated("10.1.11", "use the constructor instead")
+  def apply(limit: Long, actualSize: Option[Long]): EntityStreamSizeException =
+    new EntityStreamSizeException(limit, userLimitHint, actualSize)
+
+  val parsingHint =
+    "You can configure the maximum entity size by setting `akka.http.[server|client].parsing.max-content-length` " +
+      "or by calling `HttpEntity.withSizeLimit` before materializing the dataBytes stream.";
+  val decodingHint =
+    "You can configure the maximum entity size after decoding by setting `akka.http.routing.decode-max-size` " +
+      "or by calling `HttpEntity.withSizeLimit` before materializing the dataBytes stream.";
+  val userLimitHint =
+    "You can configure the maximum entity size by calling `HttpEntity.withSizeLimit` before materializing the dataBytes stream."
 }
 
 case class RequestTimeoutException(request: HttpRequest, message: String) extends RuntimeException(message)

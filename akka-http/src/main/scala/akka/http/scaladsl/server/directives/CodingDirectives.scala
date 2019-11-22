@@ -89,7 +89,8 @@ trait CodingDirectives {
                     StatusCodes.BadRequest,
                     ErrorInfo("The request's encoding is corrupt", e.getMessage))
               })
-          } & withSizeLimit(settings.decodeMaxSize)
+              .mapEntity(_.withSizeLimit(settings.decodeMaxSize, EntityStreamSizeException.decodingHint))
+          }
         }
 
     requestEntityEmpty | (

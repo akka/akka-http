@@ -157,6 +157,24 @@ sealed trait HttpEntity extends jm.HttpEntity {
   override def withSizeLimit(maxBytes: Long): HttpEntity
 
   /**
+   * Apply the given size limit to this entity by returning a new entity instance which automatically verifies that the
+   * data stream encapsulated by this instance produces at most `maxBytes` data bytes. In case this verification fails
+   * the respective stream will be terminated with an `EntityStreamException` either directly at materialization
+   * time (if the Content-Length is known) or whenever more data bytes than allowed have been read.
+   *
+   * When called on `Strict` entities the method will return the entity itself if the length is within the bound,
+   * otherwise a `Default` entity with a single element data stream. This allows for potential refinement of the
+   * entity size limit at a later point (before materialization of the data stream).
+   *
+   * By default all message entities produced by the HTTP layer automatically carry the limit that is defined in the
+   * application's `max-content-length` config setting. If the entity is transformed in a way that changes the
+   * Content-Length and then another limit is applied then this new limit will be evaluated against the new
+   * Content-Length. If the entity is transformed in a way that changes the Content-Length and no new limit is applied
+   * then the previous limit will be applied against the previous Content-Length.
+   */
+  def withSizeLimit(maxBytes: Long, hint: String): HttpEntity
+
+  /**
    * Lift the size limit from this entity by returning a new entity instance which skips the size verification.
    *
    * By default all message entities produced by the HTTP layer automatically carry the limit that is defined in the
@@ -204,6 +222,7 @@ sealed trait BodyPartEntity extends HttpEntity with jm.BodyPartEntity {
   override def withContentType(contentType: ContentType): BodyPartEntity
 
   override def withSizeLimit(maxBytes: Long): BodyPartEntity
+  override def withSizeLimit(maxBytes: Long, hint: String): BodyPartEntity
   override def withoutSizeLimit: BodyPartEntity
 }
 
@@ -219,6 +238,11 @@ sealed trait RequestEntity extends HttpEntity with jm.RequestEntity with Respons
    * See [[HttpEntity#withSizeLimit]].
    */
   def withSizeLimit(maxBytes: Long): RequestEntity
+
+  /**
+   * See [[HttpEntity#withSizeLimit]].
+   */
+  def withSizeLimit(maxBytes: Long, hint: String): RequestEntity
 
   /**
    * See [[HttpEntity#withoutSizeLimit]].
@@ -242,6 +266,11 @@ sealed trait ResponseEntity extends HttpEntity with jm.ResponseEntity {
   def withSizeLimit(maxBytes: Long): ResponseEntity
 
   /**
+   * See [[HttpEntity#withSizeLimit]].
+   */
+  def withSizeLimit(maxBytes: Long, hint: String): ResponseEntity
+
+  /**
    * See [[HttpEntity#withoutSizeLimit]]
    */
   def withoutSizeLimit: ResponseEntity
@@ -262,6 +291,11 @@ sealed trait UniversalEntity extends jm.UniversalEntity with MessageEntity with 
    * See [[HttpEntity#withSizeLimit]].
    */
   def withSizeLimit(maxBytes: Long): UniversalEntity
+
+  /**
+   * See [[HttpEntity#withSizeLimit]].
+   */
+  def withSizeLimit(maxBytes: Long, hint: String): UniversalEntity
 
   /**
    * See [[HttpEntity#withoutSizeLimit]]
@@ -346,11 +380,14 @@ object HttpEntity {
       if (contentType == this.contentType) this else copy(contentType = contentType)
 
     override def withSizeLimit(maxBytes: Long): UniversalEntity =
+      withSizeLimit(maxBytes, EntityStreamSizeException.userLimitHint)
+
+    override def withSizeLimit(maxBytes: Long, hint: String): UniversalEntity =
       if (data.length <= maxBytes || isKnownEmpty) this
-      else HttpEntity.Default(contentType, data.length, Source.single(data)) withSizeLimit maxBytes
+      else HttpEntity.Default(contentType, data.length, Source.single(data)).withSizeLimit(maxBytes, hint)
 
     override def withoutSizeLimit: UniversalEntity =
-      withSizeLimit(SizeLimit.Disabled)
+      withSizeLimit(SizeLimit.Disabled, "")
 
     override def productPrefix = "HttpEntity.Strict"
 
@@ -385,10 +422,13 @@ object HttpEntity {
       if (contentType == this.contentType) this else copy(contentType = contentType)
 
     override def withSizeLimit(maxBytes: Long): HttpEntity.Default =
-      copy(data = Limitable.applyForByteStrings(data, SizeLimit(maxBytes, Some(contentLength))))
+      withSizeLimit(maxBytes, EntityStreamSizeException.userLimitHint)
+
+    override def withSizeLimit(maxBytes: Long, hint: String): HttpEntity.Default =
+      copy(data = Limitable.applyForByteStrings(data, hint, SizeLimit(maxBytes, Some(contentLength))))
 
     override def withoutSizeLimit: HttpEntity.Default =
-      withSizeLimit(SizeLimit.Disabled)
+      withSizeLimit(SizeLimit.Disabled, "")
 
     override def productPrefix = "HttpEntity.Default"
 
@@ -415,10 +455,13 @@ object HttpEntity {
     override def dataBytes: Source[ByteString, Any] = data
 
     override def withSizeLimit(maxBytes: Long): Self =
-      withData(Limitable.applyForByteStrings(data, SizeLimit(maxBytes)))
+      withSizeLimit(maxBytes, EntityStreamSizeException.userLimitHint)
+
+    override def withSizeLimit(maxBytes: Long, hint: String): Self =
+      withData(Limitable.applyForByteStrings(data, hint, SizeLimit(maxBytes)))
 
     override def withoutSizeLimit: Self =
-      withSizeLimit(SizeLimit.Disabled)
+      withSizeLimit(SizeLimit.Disabled, "")
 
     override def transformDataBytes(transformer: Flow[ByteString, ByteString, Any]): Self =
       withData(data via transformer)
@@ -483,10 +526,13 @@ object HttpEntity {
     override def dataBytes: Source[ByteString, Any] = chunks.map(_.data).filter(_.nonEmpty)
 
     override def withSizeLimit(maxBytes: Long): HttpEntity.Chunked =
-      copy(chunks = Limitable.applyForChunks(chunks, SizeLimit(maxBytes)))
+      withSizeLimit(maxBytes, EntityStreamSizeException.userLimitHint)
+
+    override def withSizeLimit(maxBytes: Long, hint: String): HttpEntity.Chunked =
+      copy(chunks = Limitable.applyForChunks(chunks, hint, SizeLimit(maxBytes)))
 
     override def withoutSizeLimit: HttpEntity.Chunked =
-      withSizeLimit(SizeLimit.Disabled)
+      withSizeLimit(SizeLimit.Disabled, "")
 
     override def transformDataBytes(transformer: Flow[ByteString, ByteString, Any]): HttpEntity.Chunked = {
       // This construction allows to keep trailing headers. For that the stream is split into two
@@ -612,7 +658,7 @@ object HttpEntity {
     val Disabled = -1 // any negative value will do
   }
 
-  private final class Limitable[T](sizeOf: T => Int) extends GraphStage[FlowShape[T, T]] {
+  private final class Limitable[T](sizeOf: T => Int, hint: String) extends GraphStage[FlowShape[T, T]] {
     val in = Inlet[T]("Limitable.in")
     val out = Outlet[T]("Limitable.out")
     override val shape = FlowShape.of(in, out)
@@ -627,7 +673,7 @@ object HttpEntity {
           case Some(limit: SizeLimit) if limit.isDisabled =>
           // "no limit"
           case Some(SizeLimit(bytes, cl @ Some(contentLength))) =>
-            if (contentLength > bytes) failStage(EntityStreamSizeException(bytes, cl))
+            if (contentLength > bytes) failStage(new EntityStreamSizeException(bytes, hint, cl))
           // else we still count but never throw an error
           case Some(SizeLimit(bytes, None)) =>
             maxBytes = bytes
@@ -640,7 +686,7 @@ object HttpEntity {
         val elem = grab(in)
         bytesLeft -= sizeOf(elem)
         if (bytesLeft >= 0) push(out, elem)
-        else failStage(EntityStreamSizeException(maxBytes))
+        else failStage(new EntityStreamSizeException(maxBytes, hint))
       }
 
       override def onPull(): Unit = {
@@ -651,15 +697,15 @@ object HttpEntity {
     }
   }
   private object Limitable {
-    def applyForByteStrings[Mat](source: Source[ByteString, Mat], limit: SizeLimit): Source[ByteString, Mat] =
-      applyLimit(source, limit)(_.size)
+    def applyForByteStrings[Mat](source: Source[ByteString, Mat], hint: String, limit: SizeLimit): Source[ByteString, Mat] =
+      applyLimit(source, hint, limit)(_.size)
 
-    def applyForChunks[Mat](source: Source[ChunkStreamPart, Mat], limit: SizeLimit): Source[ChunkStreamPart, Mat] =
-      applyLimit(source, limit)(_.data.size)
+    def applyForChunks[Mat](source: Source[ChunkStreamPart, Mat], hint: String, limit: SizeLimit): Source[ChunkStreamPart, Mat] =
+      applyLimit(source, hint, limit)(_.data.size)
 
-    def applyLimit[T, Mat](source: Source[T, Mat], limit: SizeLimit)(sizeOf: T => Int): Source[T, Mat] =
+    def applyLimit[T, Mat](source: Source[T, Mat], hint: String, limit: SizeLimit)(sizeOf: T => Int): Source[T, Mat] =
       if (limit.isDisabled) source withAttributes Attributes(limit) // no need to add stage, it's either there or not needed
-      else source.via(new Limitable(sizeOf)) withAttributes Attributes(limit)
+      else source.via(new Limitable(sizeOf, hint)) withAttributes Attributes(limit)
 
     private val limitableDefaults = Attributes.name("limitable")
   }

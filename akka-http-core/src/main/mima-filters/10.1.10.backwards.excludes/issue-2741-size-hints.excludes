@@ -1,0 +1,10 @@
+# private class
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity#Limitable.this")
+
+# DoNotInherit classes
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.BodyPartEntity.withSizeLimit")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.HttpEntity.withSizeLimit")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.ResponseEntity.withSizeLimit")
+
+# final class
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.scaladsl.model.EntityStreamSizeException$")
