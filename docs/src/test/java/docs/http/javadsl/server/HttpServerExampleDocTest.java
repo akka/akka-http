@@ -7,7 +7,6 @@ package docs.http.javadsl.server;
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.actor.CoordinatedShutdown;
 import akka.http.javadsl.*;
 import akka.http.javadsl.marshallers.jackson.Jackson;
 import akka.http.javadsl.model.*;

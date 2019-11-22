@@ -12,6 +12,7 @@ import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.http.impl.settings.ServerSettingsImpl
 import akka.http.javadsl.model.headers.Host
 import akka.http.javadsl.model.headers.Server
+import akka.util.JavaDurationConverters._
 import akka.io.Inet.SocketOption
 import akka.http.impl.util.JavaMapping.Implicits._
 import com.typesafe.config.Config
@@ -45,6 +46,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
   def getHttp2Settings: Http2ServerSettings = self.http2Settings
   def getDefaultHttpPort: Int
   def getDefaultHttpsPort: Int
+  def getTerminationDeadline: java.time.Duration
   def getTerminationDeadlineExceededResponse: akka.http.javadsl.model.HttpResponse
 
   // ---
@@ -71,6 +73,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
   def withHttp2Settings(newValue: Http2ServerSettings): ServerSettings = self.copy(http2Settings = newValue.asScala)
   def withDefaultHttpPort(newValue: Int): ServerSettings = self.copy(defaultHttpPort = newValue)
   def withDefaultHttpsPort(newValue: Int): ServerSettings = self.copy(defaultHttpPort = newValue)
+  def withTerminationDeadline(newValue: java.time.Duration): ServerSettings = self.copy(terminationDeadline = newValue.asScala)
   def withTerminationDeadlineExceededResponse(response: akka.http.javadsl.model.HttpResponse): ServerSettings =
     self.copy(terminationDeadlineExceededResponse = response.asScala)
 

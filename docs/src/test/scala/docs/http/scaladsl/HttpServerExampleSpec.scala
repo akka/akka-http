@@ -4,8 +4,6 @@
 
 package docs.http.scaladsl
 
-import akka.actor.CoordinatedShutdown
-import akka.actor.CoordinatedShutdown.UnknownReason
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes

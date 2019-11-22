@@ -81,10 +81,9 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
               throw e
           }
       }.mapMaterializedValue {
-        _.map(tcpBinding => ServerBinding(tcpBinding.localAddress)(
-          () => tcpBinding.unbind(),
-          timeout => masterTerminator.terminate(timeout)(fm.executionContext)
-        ))(fm.executionContext)
+        _.map(tcpBinding =>
+          http.registerForCoordinatedShutdown(tcpBinding, settings.terminationDeadline, masterTerminator)(fm.executionContext)
+        )(fm.executionContext)
       }.to(Sink.ignore).run()
   }
 

@@ -190,10 +190,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
       })
       .mapMaterializedValue {
         _.map(tcpBinding =>
-          ServerBinding(tcpBinding.localAddress)(
-            () => tcpBinding.unbind(),
-            timeout => masterTerminator.terminate(timeout)(systemMaterializer.executionContext)
-          )
+          registerForCoordinatedShutdown(tcpBinding, settings.terminationDeadline, masterTerminator)(systemMaterializer.executionContext)
         )(systemMaterializer.executionContext)
       }
   }
@@ -260,17 +257,40 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
             throw e
         }
       }
-      .mapMaterializedValue { m =>
+      .mapMaterializedValue { m: Future[Tcp.ServerBinding] =>
         m.map(tcpBinding =>
-          ServerBinding(
-            tcpBinding.localAddress)(
-              () => tcpBinding.unbind(),
-              timeout => masterTerminator.terminate(timeout)(fm.executionContext)
-            )
+          registerForCoordinatedShutdown(tcpBinding, settings.terminationDeadline, masterTerminator)(fm.executionContext)
         )(fm.executionContext)
       }
       .to(Sink.ignore)
       .run()
+  }
+
+  def registerForCoordinatedShutdown(tcpBinding: Tcp.ServerBinding, terminationDeadline: FiniteDuration, terminator: MasterServerTerminator)(implicit executionContext: ExecutionContext): ServerBinding = {
+    val binding = ServerBinding(tcpBinding.localAddress)(
+      () => tcpBinding.unbind(),
+      timeout => terminator.terminate(timeout)(executionContext)
+    )
+
+    // TODO still need a way for the user to opt-out of this
+
+    val coordinatedShutdown = CoordinatedShutdown(system)
+
+    // In phase 'service-unbind' we unbind and return immediately
+    // to allow Coordinated Shutdown to move on to other phases
+    coordinatedShutdown.addTask(CoordinatedShutdown.PhaseServiceUnbind, "http-unbind") { () =>
+      binding.unbind().map(_ => Done)
+    }
+
+    // In phase 'service-requests-done' we wait until all in-flight service
+    // requests are done (or forcefully stop them if they don't complete before
+    // the deadline
+    coordinatedShutdown.addTask(CoordinatedShutdown.PhaseServiceRequestsDone, "http-graceful-terminate") { () =>
+      // TODO make deadline configurable
+      binding.terminate(terminationDeadline).map(_ => Done)
+    }
+
+    binding
   }
 
   /**
@@ -974,6 +994,8 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
     /**
      * Triggers "graceful" termination request being handled on this connection.
      *
+     * This is called automatically from Coordinated Shutdown, unless you have disabled this using (TODO setting)
+     *
      * Termination works as follows:
      *
      * 1) Unbind:
@@ -981,7 +1003,6 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
      *
      * 1.5) Immediately the ServerBinding `whenTerminationSignalIssued` future is completed.
      * This can be used to signal parts of the application that the http server is shutting down and they should clean up as well.
-     * Note also that for more advanced shut down scenarios you may want to use the Coordinated Shutdown capabilities of Akka.
      *
      * 2) if a connection has no "in-flight" request, it is terminated immediately
      *
@@ -1038,11 +1059,9 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
      *
      * This signal can for example be used to safely terminate the underlying ActorSystem.
      *
-     * Note: This mechanism is currently NOT hooked into the Coordinated Shutdown mechanisms of Akka.
-     *       TODO: This feature request is tracked by: https://github.com/akka/akka-http/issues/1210
-     *
-     * Note that this signal may be used for Coordinated Shutdown to proceed to next steps in the shutdown.
-     * You may also explicitly depend on this future to perform your next shutting down steps.
+     * By default you should not have to handle this manually, as it should be taken care of by the Coordinated
+     * Shutdown mechanism. However, if you have disabled this using (TODO configuration option) you can use
+     * this building block directly.
      */
     def whenTerminated: Future[HttpTerminated] =
       _whenTerminated.future

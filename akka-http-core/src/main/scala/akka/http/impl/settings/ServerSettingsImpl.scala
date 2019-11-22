@@ -16,6 +16,7 @@ import akka.http.javadsl.{ settings => js }
 import akka.ConfigurationException
 import akka.annotation.InternalApi
 import akka.io.Inet.SocketOption
+import akka.util.JavaDurationConverters._
 import akka.http.impl.util._
 import akka.http.scaladsl.model.{ HttpHeader, HttpResponse, StatusCodes }
 import akka.http.scaladsl.model.headers.{ Host, Server }
@@ -43,6 +44,7 @@ private[akka] final case class ServerSettingsImpl(
   http2Settings:                       Http2ServerSettings,
   defaultHttpPort:                     Int,
   defaultHttpsPort:                    Int,
+  terminationDeadline:                 FiniteDuration,
   terminationDeadlineExceededResponse: HttpResponse) extends ServerSettings {
 
   require(0 < maxConnections, "max-connections must be > 0")
@@ -102,6 +104,7 @@ private[http] object ServerSettingsImpl extends SettingsCompanionImpl[ServerSett
     Http2ServerSettings.Http2ServerSettingsImpl.fromSubConfig(root, c.getConfig("http2")),
     c.getInt("default-http-port"),
     c.getInt("default-https-port"),
+    c.getDuration("termination-deadline").asScala,
     terminationDeadlineExceededResponseFrom(c)
   )
 

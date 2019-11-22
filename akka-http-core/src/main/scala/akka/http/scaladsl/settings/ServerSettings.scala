@@ -15,6 +15,7 @@ import akka.http.javadsl.{ settings => js }
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.headers.Server
+import akka.util.JavaDurationConverters._
 import akka.io.Inet.SocketOption
 import com.typesafe.config.Config
 
@@ -50,6 +51,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def http2Settings: Http2ServerSettings
   def defaultHttpPort: Int
   def defaultHttpsPort: Int
+  def terminationDeadline: FiniteDuration
   def terminationDeadlineExceededResponse: HttpResponse
 
   /* Java APIs */
@@ -74,6 +76,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   }
   override def getDefaultHttpPort: Int = defaultHttpPort
   override def getDefaultHttpsPort: Int = defaultHttpsPort
+  override def getTerminationDeadline: java.time.Duration = terminationDeadline.asJava
   override def getTerminationDeadlineExceededResponse: akka.http.javadsl.model.HttpResponse =
     terminationDeadlineExceededResponse
   // ---
@@ -95,6 +98,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   override def getWebsocketSettings: WebSocketSettings = self.websocketSettings
   override def withDefaultHttpPort(newValue: Int): ServerSettings = self.copy(defaultHttpPort = newValue)
   override def withDefaultHttpsPort(newValue: Int): ServerSettings = self.copy(defaultHttpsPort = newValue)
+  override def withTerminationDeadline(newValue: java.time.Duration): ServerSettings = self.copy(terminationDeadline = newValue.asScala)
   override def withTerminationDeadlineExceededResponse(response: akka.http.javadsl.model.HttpResponse): ServerSettings =
     self.copy(terminationDeadlineExceededResponse = response.asScala)
 
