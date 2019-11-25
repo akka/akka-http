@@ -15,7 +15,7 @@ After having been rejected by a route the request will continue to flow through 
 another route that can complete it. If there are more rejections all of them will be picked up and collected.
 
 If the request cannot be completed by (a branch of) the route structure an enclosing @ref[handleRejections](directives/execution-directives/handleRejections.md) directive
-can be used to convert a set of rejections into an @apidoc[HttpResponse] (which, in most cases, will be an error response).
+can be used to convert a set of rejections into an @apidoc[HttpResponse] - which typically would be an error response.
 `Route.seal()` internally wraps its argument route with the @ref[handleRejections](directives/execution-directives/handleRejections.md) directive in order to "catch"
 and handle any rejection.
 
@@ -43,7 +43,7 @@ will handle *all* rejections that reach it.
 
 @@@ note
 Please note that since version `10.1.2`, the default `RejectionHandler` will also discard the entity bytes automatically. If you want to change this behavior,
-please refer to @ref[Customising rejection HTTP Responses](rejections.md#customising-rejections); however, might cause connections to stall 
+please refer to @ref[Customising rejection HTTP Responses](rejections.md#customising-rejections); however, might cause connections to stall
 if the entity is not properly rejected or cancelled on the client side.
 @@@
 

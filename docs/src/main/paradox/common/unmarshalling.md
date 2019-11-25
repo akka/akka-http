@@ -51,7 +51,7 @@ Specifically these are:
 
 @@@ div { .group-scala }
  * @scaladoc[GenericUnmarshallers](akka.http.scaladsl.unmarshalling.GenericUnmarshallers)
-    * @apidoc[Unmarshaller[T, T]] (identity unmarshaller)
+    * @apidoc[Unmarshaller[T, T]](Unmarshaller) (identity unmarshaller)
     * @apidoc[Unmarshaller[Option[A], B]], if an @apidoc[Unmarshaller[A, B]] is available
     * @apidoc[Unmarshaller[A, Option[B]]], if an @apidoc[Unmarshaller[A, B]] is available
 @@@
