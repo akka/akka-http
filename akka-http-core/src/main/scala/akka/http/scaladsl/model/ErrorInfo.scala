@@ -120,8 +120,8 @@ final case class EntityStreamSizeException(limit: Long, actualSize: Option[Long]
 
   override def toString = {
     s"EntityStreamSizeException: incoming entity size (${actualSize.getOrElse("while streaming")}) exceeded size limit ($limit bytes)! " +
-      "This may have been a parser maximum (set via `akka.http.[server|client].parsing.max-content-length`), " +
-      "a decoder maximum (set via `akka.http.routing.decode-max-size`), " +
+      "This may have been a parser limit (set via `akka.http.[server|client].parsing.max-content-length`), " +
+      "a decoder limit (set via `akka.http.routing.decode-max-size`), " +
       "or a custom limit set with `withSizeLimit`."
   }
 }
