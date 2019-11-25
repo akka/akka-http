@@ -245,7 +245,7 @@ header across persistent HTTP connections.
 
 Akka HTTP contains a rich model of the most common HTTP headers. Parsing and rendering is done automatically so that
 applications don't need to care for the actual syntax of headers. Headers not modelled explicitly are represented
-as a @apidoc[RawHeader] (which is essentially a String/String name/value pair).
+as a @apidoc[RawHeader], which is essentially a String/String name/value pair.
 
 See these examples of how to deal with headers:
 

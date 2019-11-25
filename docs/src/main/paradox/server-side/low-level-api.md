@@ -204,8 +204,8 @@ through the stream starting from the stage which failed, all the way downstream 
 
 #### Connections Source failures
 
-In the example below we add a custom @apidoc[GraphStage] (see @scala[@extref[Custom stream processing](akka-docs:scala/stream/stream-customize.html)]@java[@extref[Custom stream processing](akka-docs:java/stream/stream-customize.html)]) in order to react to the
-stream's failure. We signal a `failureMonitor` actor with the cause why the stream is going down, and let the Actor
+In the example below we add a custom @apidoc[GraphStage] in order to react to the
+stream's failure. See @scala[@extref[Custom stream processing](akka-docs:scala/stream/stream-customize.html)]@java[@extref[Custom stream processing](akka-docs:java/stream/stream-customize.html)]) for more on custom stages. We signal a `failureMonitor` actor with the cause why the stream is going down, and let the Actor
 handle the rest – maybe it'll decide to restart the server or shutdown the ActorSystem, that however is not our concern anymore.
 
 Scala
