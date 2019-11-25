@@ -1255,7 +1255,7 @@ class HttpServerSpec extends AkkaSpec(
                   .thrownBy(entity.dataBytes.runFold(ByteString.empty)(_ ++ _).awaitResult(100.millis.dilated))
                   .getCause
                 error shouldEqual EntityStreamSizeException(limit, Some(actualSize))
-                error.getMessage should include("exceeded content length limit")
+                error.getMessage should include("exceeded size limit")
 
                 responses.expectRequest()
                 responses.sendError(error.asInstanceOf[Exception])
@@ -1278,7 +1278,7 @@ class HttpServerSpec extends AkkaSpec(
                   .thrownBy(entity.dataBytes.runFold(ByteString.empty)(_ ++ _).awaitResult(100.millis.dilated))
                   .getCause
                 error shouldEqual EntityStreamSizeException(limit, None)
-                error.getMessage should include("exceeded content length limit")
+                error.getMessage should include("exceeded size limit")
 
                 responses.expectRequest()
                 responses.sendError(error.asInstanceOf[Exception])
