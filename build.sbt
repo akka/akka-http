@@ -36,7 +36,6 @@ inThisBuild(Def.settings(
   Formatting.formatSettings,
   shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
   concurrentRestrictions in Global += Tags.limit(Tags.Test, 1),
-  useCoursier := false, // FIXME: remove once https://github.com/sbt/sbt/issues/4706 has been removed
 ))
 
 lazy val root = Project(
