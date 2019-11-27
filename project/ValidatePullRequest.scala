@@ -222,11 +222,11 @@ object ValidatePullRequest extends AutoPlugin {
           changedDirs,
           name.value,
           Seq(
-            graphFor((update in Compile).value, Compile),
-            graphFor((update in Test).value, Test),
-            graphFor((update in Runtime).value, Runtime),
-            graphFor((update in Provided).value, Provided),
-            graphFor((update in Optional).value, Optional)))(log)
+            graphFor((updateFull in Compile).value, Compile),
+            graphFor((updateFull in Test).value, Test),
+            graphFor((updateFull in Runtime).value, Runtime),
+            graphFor((updateFull in Provided).value, Provided),
+            graphFor((updateFull in Optional).value, Optional)))(log)
       }
 
       if (githubCommandEnforcedBuildAll.isDefined)
