@@ -133,7 +133,7 @@ private[client] object NewHostConnectionPool {
             // don't increase if the embargo level has already changed since the start of the connection attempt
           }
           if (_connectionEmbargo != oldValue) {
-            log.warning(s"Connection attempt failed. Backing off new connection attempts for at least ${_connectionEmbargo}.")
+            log.debug(s"Connection attempt failed. Backing off new connection attempts for at least ${_connectionEmbargo}.")
             slots.foreach(_.onNewConnectionEmbargo(_connectionEmbargo))
           }
         }
