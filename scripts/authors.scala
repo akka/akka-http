@@ -25,7 +25,7 @@ val FilesExp = """(\d+)\sfile[s]? changed""".r
 val InsertionsExp = """(\d+)\sinsertion[s]?\(\+\)""".r
 val DeletionsExp = """(\d+)\sdeletion[s]?\(-\)""".r
 
-val entries = gitCmd.lines_!.foldLeft("")(_ + "\n" + _).split('\0')
+val entries = gitCmd.lazyLines_!.foldLeft("")(_ + "\n" + _).split('\u0000')
 
 val map = entries.foldLeft(Map.empty[String, Stats]) { (map, entry) =>
   val lines = entry.trim.split('\n')
@@ -60,10 +60,13 @@ val map = entries.foldLeft(Map.empty[String, Stats]) { (map, entry) =>
   )(entry => map + (entry.name.toLowerCase -> entry))
 }
 
-val sorted = map.values.toSeq.sortBy(s => (s.commits, s.inserts + s.deletes)).reverse
+val sorted = map.values.toSeq.filter(_.name != "Scala Steward").sortBy(s => (s.commits, s.inserts + s.deletes)).reverse
 
+println(s"For this release we had the help of ${sorted.length} contributors – thank you all very much!")
+println()
+println("```")
 println("commits  added  removed")
 sorted.foreach { entry =>
   println("%7d%7d%9d %s".format(entry.commits, entry.inserts, entry.deletes, entry.name))
 }
-
+println("```")
