@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
 
@@ -6,42 +6,44 @@ ROOT_DIR=$(dirname $(readlink -f $0))/..
 
 LAST_VERSION=$1
 
-echo "Changes in akka-http-core"
+REPLACEMENT="perl -pe s|(.*?)(\(?#(\d+)\)?(\s\(#\d+\))?)?$|\*\1\[#\3\]\(https://github.com/akka/akka-http/pull/\3\)|"
+
+echo "#### akka-http-core"
 echo
-git log --no-merges --reverse --oneline ${LAST_VERSION}.. -- $ROOT_DIR/akka-http-core
+git log --no-merges --reverse --oneline ${LAST_VERSION}.. -- $ROOT_DIR/akka-http-core | $REPLACEMENT
 
 echo
-echo "Changes in akka-http"
+echo "#### akka-http"
 echo
-git log --no-merges --reverse --oneline ${LAST_VERSION}.. -- $ROOT_DIR/akka-http
+git log --no-merges --reverse --oneline ${LAST_VERSION}.. -- $ROOT_DIR/akka-http | $REPLACEMENT
 
 echo
-echo "Changes in akka-http-marshallers"
+echo "#### akka-http-marshallers"
 echo
-git log --no-merges --reverse --oneline ${LAST_VERSION}.. -- $ROOT_DIR/akka-http-marshallers*
+git log --no-merges --reverse --oneline ${LAST_VERSION}.. -- $ROOT_DIR/akka-http-marshallers* | $REPLACEMENT
 
 echo
-echo "Changes in akka-http-testkit"
+echo "#### akka-http-testkit"
 echo
-git log --no-merges --reverse --oneline ${LAST_VERSION}.. -- $ROOT_DIR/akka-http-testkit
+git log --no-merges --reverse --oneline ${LAST_VERSION}.. -- $ROOT_DIR/akka-http-testkit | $REPLACEMENT
 
 echo
-echo "Changes in docs"
+echo "#### docs"
 echo
-git log --no-merges --reverse --oneline ${LAST_VERSION}.. -- $ROOT_DIR/docs
+git log --no-merges --reverse --oneline ${LAST_VERSION}.. -- $ROOT_DIR/docs | $REPLACEMENT
 
 echo
-echo "Changes in akka-http2-support"
+echo "#### akka-http2-support"
 echo
-git log --no-merges --reverse --oneline ${LAST_VERSION}.. -- $ROOT_DIR/akka-http2-support
+git log --no-merges --reverse --oneline ${LAST_VERSION}.. -- $ROOT_DIR/akka-http2-support | $REPLACEMENT
 
 echo
-echo "Changes in akka-http-caching"
+echo "#### akka-http-caching"
 echo
-git log --no-merges --reverse --oneline ${LAST_VERSION}.. -- $ROOT_DIR/akka-http-caching
+git log --no-merges --reverse --oneline ${LAST_VERSION}.. -- $ROOT_DIR/akka-http-caching | $REPLACEMENT
 
 echo
-echo "Changes in build"
+echo "#### build"
 echo
-git log --no-merges --reverse --oneline ${LAST_VERSION}.. -- $ROOT_DIR/project $ROOT_DIR/*.sbt
+git log --no-merges --reverse --oneline ${LAST_VERSION}.. -- $ROOT_DIR/project $ROOT_DIR/*.sbt | $REPLACEMENT | grep -v Update
 
