@@ -1,6 +1,6 @@
 ## Releasing
 
-Create a new issue from the [Akka HTTP Release Train Issue Template](notes/release-train-issue-template.md) and follow the steps.
+Create a new issue from the [Akka HTTP Release Train Issue Template](scripts/release-train-issue-template.md) and follow the steps.
 
 A few more background information about the process can be found below.
 

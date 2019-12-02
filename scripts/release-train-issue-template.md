@@ -31,8 +31,8 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 ### Preparing release notes in the documentation / announcement
 
 - [ ] If this is a new minor (not patch) release, rename the 'akka-http-x.x-stable' reporting project in [WhiteSource](https://saas.whitesourcesoftware.com/) accordingly
-- [ ] Add a release notes entry in docs/src/main/paradox/release-notes/. As a helper run `scripts/commits-for-release-notes.sh <last-version-tag>` which will output a list of commits grouped by submodule, and the closed issues for this milestone.
-- [ ] Create a PR on https://github.com/akka/akka.github.com with a news item draft, using the milestones and `scripts/authors.scala previousVersion thisVersion`
+- [ ] Create a PR to add a release notes entry in docs/src/main/paradox/release-notes/. As a helper run `scripts/commits-for-release-notes.sh <last-version-tag>` which will output a list of commits grouped by submodule, and the closed issues for this milestone.
+- [ ] Create a PR on https://github.com/akka/akka.github.com with a news item draft, using the milestones and `scripts/authors.scala previousVersion master`
 - [ ] Create a PR on https://github.com/akka/akka.github.com updating Akka HTTP dependency for akka.io website: https://github.com/akka/akka.github.com/blob/master/_config.yml
 - [ ] Release notes PR has been merged
 - [ ] Create a new milestone for the next version at https://github.com/akka/akka-http/milestones
@@ -43,14 +43,14 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 - [ ] Make sure there are no stray staging repos on sonatype
 - [ ] Wait until [master build finished](https://travis-ci.org/akka/akka-http/builds/) after merging the release notes
 - [ ] Create a [new release](https://github.com/akka/akka-http/releases/new) with the next tag version (e.g. `v13.3.7`), title and release description linking to announcement, release notes and milestone.
-- [ ] Check that the Travis CI release build has executed successfully
+- [ ] Check that the Travis CI [release build](https://travis-ci.org/akka/akka-http/branches) has executed successfully
 - [ ] Go to https://bintray.com/akka/maven/akka-http and select the just released version
-- [ ] Go to the Maven Central tab and sync with Sonatype
+- [ ] Go to the Maven Central tab and sync with Sonatype. You may need to log in and switch to the 'Old Look' for this.
 - [ ] Log in to Sonatype to Close the staging repository (optional, should happen automatically if selected in Bintray)
 - [ ] Notify Telemetry / Play team to check against staged artifacts
 - [ ] Run a test against the staging repository to make sure the release went well, for example by using https://github.com/akka/akka-http-quickstart-scala.g8 and adding the sonatype staging repo with `resolvers += "Staging Repo" at "https://oss.sonatype.org/content/repositories/comtypesafe-xxx"`
 - [ ] Release the staging repository to Maven Central.
-- [ ] Checkout the newly created tag and run `sbt -Dakka.genjavadoc.enabled=true ++2.12.8 "deployRsync akkarepo@gustav.akka.io"` to deploy API and reference documentation.
+- [ ] Checkout the newly created tag and run `sbt -Dakka.genjavadoc.enabled=true ++2.12.9 "deployRsync akkarepo@gustav.akka.io"` to deploy API and reference documentation.
 
 ### Check availability
 - [ ] Check release on sonatype: https://oss.sonatype.org/content/repositories/releases/com/typesafe/akka/akka-http-core_2.11/
