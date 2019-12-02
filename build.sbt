@@ -385,7 +385,7 @@ lazy val compatibilityTests = Project("akka-http-compatibility-tests", file("akk
   .addAkkaModuleDependency("akka-stream", "provided")
   .settings(
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-http" % "10.1.8" % "provided", // TODO, should we make that latest?
+      "com.typesafe.akka" %% "akka-http" % "10.1.11" % "provided", // TODO, should we make that latest?
     ),
     (dependencyClasspath in Test) := {
       // HACK: We'd like to use `dependsOn(http % "test->compile")` to upgrade the explicit dependency above to the
