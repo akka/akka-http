@@ -76,7 +76,7 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
     // create a testing probe representing the client-side
     final WSProbe wsClient = WSProbe.create(system(), materializer());
 
-    // WS creates a WebSocket request for testing
+    // WS (from ScalatestRouteTest) creates a WebSocket request for testing
     testRoute(websocketRoute).run(WS(Uri.create("/greeter"), wsClient.flow(), materializer()))
       .assertStatusCode(StatusCodes.SWITCHING_PROTOCOLS);
 
