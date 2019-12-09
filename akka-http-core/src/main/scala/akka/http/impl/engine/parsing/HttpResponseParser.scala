@@ -6,7 +6,7 @@ package akka.http.impl.engine.parsing
 
 import scala.annotation.tailrec
 import scala.concurrent.Promise
-import scala.util.control.NoStackTrace
+import scala.util.control.{ NoStackTrace, NonFatal }
 import akka.http.scaladsl.settings.ParserSettings
 import akka.http.impl.model.parser.CharacterClasses
 import akka.util.ByteString
@@ -79,7 +79,7 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
               val reason = asciiString(input, reasonStartIdx, reasonEndIdx)
               StatusCodes.custom(code, reason)
             } catch {
-              case _: Exception => badStatusCodeSpecific(code)
+              case NonFatal(_) => badStatusCodeSpecific(code)
             }
           }
         }
