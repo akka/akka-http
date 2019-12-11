@@ -25,6 +25,7 @@ import javax.net.ssl.SSLEngine
 
 import scala.concurrent.Future
 import scala.collection.immutable
+import scala.concurrent.duration.Duration
 import scala.util.{ Failure, Success }
 import scala.util.control.NonFatal
 
@@ -60,7 +61,14 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
 
     val masterTerminator = new MasterServerTerminator(log)
 
-    Tcp().bind(interface, effectivePort, settings.backlog, settings.socketOptions, halfClose = false, settings.timeouts.idleTimeout)
+    Tcp().bind(
+      interface,
+      effectivePort,
+      settings.backlog,
+      settings.socketOptions,
+      halfClose = false,
+      idleTimeout = Duration.Inf // we knowingly disable idle-timeout on TCP level, as we handle it explicitly in Akka HTTP itself
+    )
       .mapAsyncUnordered(settings.maxConnections) {
         incoming: Tcp.IncomingConnection =>
           try {
