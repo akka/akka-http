@@ -27,7 +27,7 @@ object Dependencies {
   val Versions = Seq(
     crossScalaVersions := Seq("2.12.10", "2.11.12", "2.13.1"), // also update .travis.yml when changing here to avoid confusion
     scalaVersion := crossScalaVersions.value.head,
-    scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.14.2"),
+    scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.14.3"),
     scalaTestVersion := "3.0.8",
     specs2Version := "4.8.1",
   )
