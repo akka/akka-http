@@ -6,6 +6,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.parboiled2.UTF8
 import org.openjdk.jmh.annotations._
+import org.openjdk.jmh.infra.Blackhole
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -27,8 +28,8 @@ class UriParserBenchmark {
   }
 
   @Benchmark
-  def bench_parse_uri(): Unit = {
-    Uri(url).query(UTF8, Uri.ParsingMode.Relaxed)
+  def bench_parse_uri(bh: Blackhole): Unit = {
+    bh.consume(Uri(url).query(UTF8, Uri.ParsingMode.Relaxed))
   }
 
 }
