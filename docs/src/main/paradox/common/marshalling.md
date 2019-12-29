@@ -123,7 +123,7 @@ Akka HTTP gives you a few convenience tools for constructing marshallers for you
 Before you do that you need to think about what kind of marshaller you want to create.
 If all your marshaller needs to produce is a `MessageEntity` then you should probably provide a
 @scala[`ToEntityMarshaller[T]`]@java[@apidoc[Marshaller[T, MessageEntity]]]. The advantage here is that it will work on both the client- as well as the server-side since
-a @scala[`ToReponseMarshaller[T]`]@java[@apidoc[Marshaller[T, HttpResponse]]] as well as a @scala[`ToRequestMarshaller[T]`]@java[@apidoc[Marshaller[T, HttpRequest]]] can automatically be created if a
+a @scala[`ToResponseMarshaller[T]`]@java[@apidoc[Marshaller[T, HttpResponse]]] as well as a @scala[`ToRequestMarshaller[T]`]@java[@apidoc[Marshaller[T, HttpRequest]]] can automatically be created if a
 @scala[`ToEntityMarshaller[T]`]@java[@apidoc[Marshaller[T, MessageEntity]]] is available.
 
 If, however, your marshaller also needs to set things like the response status code, the request method, the request URI
