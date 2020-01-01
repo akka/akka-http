@@ -12,7 +12,7 @@ object Dependencies {
   import DependencyHelpers._
 
   val jacksonVersion = "2.10.2"
-  val junitVersion = "4.12"
+  val junitVersion = "4.13"
   val h2specVersion = "1.5.0"
   val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
   val h2specExe = "h2spec" + DependencyHelpers.exeIfWindows
