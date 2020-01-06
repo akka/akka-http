@@ -95,21 +95,6 @@ def add213CrossDirs(config: Configuration): Seq[Setting[_]] = Seq(
   }
 )
 
-// TODO: remove once 2.11 is dropped, https://github.com/akka/akka-http/issues/2589
-/**
- * Adds a `src/.../scala-2.12+` source directory for Scala 2.12 and newer
- * and a `src/.../scala-2.12-` source directory for Scala version older than 2.12
- */
-def add212CrossDirs(config: Configuration): Seq[Setting[_]] = Seq(
-  unmanagedSourceDirectories in config += {
-    val sourceDir = (sourceDirectory in config).value
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, n)) if n >= 12 => sourceDir / "scala-2.12+"
-      case _                       => sourceDir / "scala-2.12-"
-    }
-  }
-)
-
 val commonSettings =
   add213CrossDirs(Compile) ++
   add213CrossDirs(Test)
@@ -326,7 +311,7 @@ lazy val docs = project("docs")
   .enablePlugins(AkkaParadoxPlugin, NoPublish, DeployRsync)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .addAkkaModuleDependency("akka-stream", "provided")
-  .addAkkaModuleDependency("akka-actor-typed", "provided", includeIfScalaVersionMatches = _ != "2.11") // no akka-actor-typed in 2.11 any more
+  .addAkkaModuleDependency("akka-actor-typed", "provided")
   .dependsOn(
     httpCore, http, httpXml, http2Support, httpMarshallersJava, httpMarshallersScala, httpCaching,
     httpTests % "compile;test->test", httpTestkit % "compile;test->test"
@@ -375,7 +360,6 @@ lazy val docs = project("docs")
     Formatting.docFormatSettings,
     additionalTasks in ValidatePR += paradox in Compile,
     deployRsyncArtifact := List((paradox in Compile).value -> gustavDir("docs").value),
-    add212CrossDirs(Test)
   )
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
 
