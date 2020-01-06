@@ -49,13 +49,13 @@ public interface HttpMessage {
 
     /**
      * Try to find the first header with the given name (case-insensitive) and return
-     * Some(header), otherwise this method returns None.
+     * Optional.of(header), otherwise this method returns an empty Optional.
      */
     Optional<HttpHeader> getHeader(String headerName);
 
     /**
      * Try to find the first header of the given class and return
-     * Some(header), otherwise this method returns None.
+     * Optional.of(header), otherwise this method returns an empty Optional.
      */
     <T extends HttpHeader> Optional<T> getHeader(Class<T> headerClass);
 
@@ -64,6 +64,22 @@ public interface HttpMessage {
      * of this message.
      */
     <T extends HttpHeader> Iterable<T> getHeaders(Class<T> headerClass);
+
+    /**
+     * An iterable containing the attributes for this message.
+     */
+    Iterable<Object> getAttributes();
+
+    /**
+     * Try to find the first attribute of the given class and return
+     * Optional.of(attribute), otherwise this method returns an empty Optional
+     */
+    <T> Optional<T> getAttribute(Class<T> attributeClass);
+
+    /**
+     * An iterable containing all attributes of the given class of this message
+     */
+     <T> Iterable<T> getAttributes(Class<T> attributeClass);
 
     /**
      * The entity of this message.

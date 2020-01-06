@@ -71,6 +71,14 @@ class HttpMessageSpec extends WordSpec with Matchers {
       val request = HttpRequest().withHeaders(oneCookieHeader, anotherCookieHeader, hostHeader)
       request.headers[`Set-Cookie`] should ===(Seq(oneCookieHeader, anotherCookieHeader))
     }
+    "retrieve all attributes of a given class when calling attributes[...]" in {
+      val oneStringAttribute: String = "A string attribute!"
+      val anotherStringAttribute: String = "And another"
+      val intAttribute: Integer = 42
+      val request = HttpRequest().withAttributes(oneStringAttribute, anotherStringAttribute, intAttribute)
+      println(request.attributes)
+      request.attributes[String] should ===(Seq(oneStringAttribute, anotherStringAttribute))
+    }
   }
 
 }
