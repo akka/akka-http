@@ -60,7 +60,7 @@ object Dependencies {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
       val gson        = "com.google.code.gson"             % "gson"                    % "2.8.6"             % "test"
       val jacksonXml  = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml"  % jacksonXmlVersion   % "test" // ApacheV2
-      val reflections = "org.reflections"                  % "reflections"             % "0.9.11"            % "test" // WTFPL
+      val reflections = "org.reflections"                  % "reflections"             % "0.9.12"            % "test" // WTFPL
     }
 
     object Test {
