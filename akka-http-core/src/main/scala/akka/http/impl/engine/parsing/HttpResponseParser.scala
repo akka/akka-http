@@ -5,7 +5,6 @@
 package akka.http.impl.engine.parsing
 
 import javax.net.ssl.SSLSession
-
 import scala.annotation.tailrec
 import scala.concurrent.Promise
 import scala.util.control.{ NoStackTrace, NonFatal }
@@ -16,6 +15,7 @@ import akka.http.scaladsl.model.{ ParsingException => _, _ }
 import akka.http.scaladsl.model.headers._
 import ParserOutput._
 import akka.annotation.InternalApi
+import akka.http.impl.util.LogByteStringTools
 import akka.stream.scaladsl.Source
 
 /**
@@ -53,13 +53,16 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
       if (byteChar(input, cursor) == ' ') {
         cursor = parseStatus(input, cursor + 1)
         parseHeaderLines(input, cursor)
-      } else onBadProtocol()
+      } else onBadProtocol(input.drop(cursor))
     } else {
       emit(NeedNextRequestMethod)
       continue(input, offset)(startNewMessage)
     }
 
-  override final def onBadProtocol() = throw new ParsingException("The server-side HTTP version is not supported")
+  override final def onBadProtocol(input: ByteString) =
+    throw new ParsingException(
+      "The server-side protocol or HTTP version is not supported",
+      s"start of response: [${LogByteStringTools.printByteString(input.take(16), 16, addPrefix = false, indent = "")}]")
 
   private def parseStatus(input: ByteString, cursor: Int): Int = {
     def badStatusCode() = throw new ParsingException("Illegal response status code")

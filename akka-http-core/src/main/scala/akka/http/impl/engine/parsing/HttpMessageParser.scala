@@ -48,7 +48,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
   protected def headerParser: HttpHeaderParser
   protected def isResponseParser: Boolean
   /** invoked if the specified protocol is unknown */
-  protected def onBadProtocol(): Nothing
+  protected def onBadProtocol(input: ByteString): Nothing
   protected def parseMessage(input: ByteString, offset: Int): HttpMessageParser.StateResult
   protected def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
                             clh: Option[`Content-Length`], cth: Option[`Content-Type`], isChunked: Boolean,
@@ -120,10 +120,10 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
       protocol = c(7) match {
         case '0' => `HTTP/1.0`
         case '1' => `HTTP/1.1`
-        case _   => onBadProtocol()
+        case _   => onBadProtocol(input.drop(cursor))
       }
       cursor + 8
-    } else onBadProtocol()
+    } else onBadProtocol(input.drop(cursor))
   }
 
   /**
