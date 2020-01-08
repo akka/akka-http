@@ -62,26 +62,24 @@ private[akka] object LogByteStringTools {
       case SessionBytes(session, bytes) => "SessionBytes " + printByteString(bytes, maxBytes)
     }).addAttributes(LogFailuresOnDebugAttributes)
 
-  def printByteString(bytes: ByteString, maxBytes: Int = MaxBytesPrinted): String = {
-    val indent = " "
-
+  def printByteString(bytes: ByteString, maxBytes: Int = MaxBytesPrinted, addPrefix: Boolean = true, indent: String = " "): String = {
     def formatBytes(bs: ByteString): Iterator[String] = {
       def asHex(b: Byte): String = b formatted "%02X"
 
       def formatLine(bs: ByteString): String = {
         val hex = bs.map(asHex).mkString(" ")
         val ascii = bs.map(asASCII).mkString
-        f"$indent%s  $hex%-48s | $ascii"
+        f"$indent%s$hex%-48s | $ascii"
       }
       def formatBytes(bs: ByteString): String =
         bs.grouped(16).map(formatLine).mkString("\n")
 
       val prefix = s"${indent}ByteString(${bs.size} bytes)"
 
-      if (bs.size <= maxBytes * 2) Iterator(prefix + "\n", formatBytes(bs))
+      if (bs.size <= maxBytes * 2) Iterator(if (addPrefix) prefix + "\n" else "", formatBytes(bs))
       else
         Iterator(
-          s"$prefix first + last $maxBytes:\n",
+          if (addPrefix) s"$prefix first + last $maxBytes:\n" else "",
           formatBytes(bs.take(maxBytes)),
           s"\n$indent                    ... [${bs.size - (maxBytes * 2)} bytes omitted] ...\n",
           formatBytes(bs.takeRight(maxBytes)))

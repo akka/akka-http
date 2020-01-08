@@ -298,8 +298,8 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends AkkaSpe
 
     "reject a response with" should {
       "HTTP version 1.2" in new Test {
-        Seq(s"HTTP/1.2 200 OK${newLine}") should generalMultiParseTo(Left(MessageStartError(
-          400: StatusCode, ErrorInfo("The server-side HTTP version is not supported"))))
+        Seq("HTTP/1.2 200 OK") should generalMultiParseTo(Left(MessageStartError(
+          400: StatusCode, ErrorInfo("The server-side protocol or HTTP version is not supported", "start of response: [48 54 54 50 2F 31 2E 32 20 32 30 30 20 4F 4B     | HTTP/1.2 200 OK]"))))
       }
 
       "an illegal status code" in new Test {

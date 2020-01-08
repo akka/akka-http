@@ -82,7 +82,7 @@ private[http] final class HttpRequestParser(
           parseHeaderLines(input, cursor + 2)
         else if (byteChar(input, cursor) == '\n')
           parseHeaderLines(input, cursor + 1)
-        else onBadProtocol()
+        else onBadProtocol(input.drop(cursor))
       } else
         // Without HTTP pipelining it's likely that buffer is exhausted after reading one message,
         // so we check above explicitly if we are done and stop work here without running into NotEnoughDataException
@@ -167,7 +167,7 @@ private[http] final class HttpRequestParser(
       uriEnd + 1
     }
 
-    override def onBadProtocol(): Nothing = throw new ParsingException(HttpVersionNotSupported)
+    override def onBadProtocol(input: ByteString): Nothing = throw new ParsingException(HttpVersionNotSupported, "")
 
     // http://tools.ietf.org/html/rfc7230#section-3.3
     override def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,

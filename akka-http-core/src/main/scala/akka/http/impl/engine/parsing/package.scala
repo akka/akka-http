@@ -62,10 +62,12 @@ package parsing {
   private[parsing] class ParsingException(
     val status: StatusCode,
     val info:   ErrorInfo) extends RuntimeException(info.formatPretty) {
-    def this(status: StatusCode, summary: String = "") =
+    def this(status: StatusCode, summary: String) =
       this(status, ErrorInfo(if (summary.isEmpty) status.defaultMessage else summary))
     def this(summary: String) =
       this(StatusCodes.BadRequest, ErrorInfo(summary))
+    def this(summary: String, detail: String) =
+      this(StatusCodes.BadRequest, ErrorInfo(summary, detail))
   }
 
   /**

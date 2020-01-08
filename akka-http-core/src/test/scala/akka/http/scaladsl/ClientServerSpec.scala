@@ -9,7 +9,6 @@ import java.net.{ BindException, Socket }
 import java.security.{ KeyStore, SecureRandom }
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicLong
-
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
@@ -39,6 +38,7 @@ import akka.testkit._
 import akka.util.ByteString
 import com.github.ghik.silencer.silent
 import com.typesafe.config.{ Config, ConfigFactory }
+
 import javax.net.ssl.{ SSLContext, TrustManagerFactory }
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.concurrent.Eventually.eventually
@@ -908,6 +908,19 @@ Host: example.com
         // Test with a POST so auto-retry isn't triggered:
         Await.ready(Http().singleRequest(HttpRequest(uri = uri, method = HttpMethods.POST), settings = settings), 30.seconds)
       }
+
+      Await.result(binding.unbind(), 10.seconds)
+      Http().shutdownAllConnectionPools().futureValue
+    }
+
+    "produce a useful error message when connecting to an endpoint speaking wrong protocol" in Utils.assertAllStagesStopped {
+      val settings = ConnectionPoolSettings(system).withUpdatedConnectionSettings(_.withIdleTimeout(100.millis))
+
+      val binding = Tcp().bindAndHandle(Flow[ByteString].map(_ => ByteString("hello world!")), "127.0.0.1", 0).futureValue
+      val uri = "http://" + binding.localAddress.getHostString + ":" + binding.localAddress.getPort
+
+      val ex = the[IllegalResponseException] thrownBy Await.result(Http().singleRequest(HttpRequest(uri = uri, method = HttpMethods.POST), settings = settings), 30.seconds)
+      ex.info.formatPretty shouldEqual "The server-side protocol or HTTP version is not supported: start of response: [68 65 6C 6C 6F 20 77 6F 72 6C 64 21              | hello world!]"
 
       Await.result(binding.unbind(), 10.seconds)
       Http().shutdownAllConnectionPools().futureValue

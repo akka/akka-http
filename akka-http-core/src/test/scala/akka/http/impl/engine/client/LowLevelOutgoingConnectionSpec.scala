@@ -540,7 +540,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpecWithMaterializer with Insid
 
         responsesSub.request(1)
         val error @ IllegalResponseException(info) = responses.expectError()
-        info.summary shouldEqual "The server-side HTTP version is not supported"
+        info.formatPretty shouldEqual "The server-side protocol or HTTP version is not supported: start of response: [48 54 54 50 2F 31 2E 32 20 32 30 30 20 4F 4B 0D  | HTTP/1.2 200 OK.]"
         netOut.expectError(error)
         requestsSub.expectCancellation()
         netInSub.expectCancellation()
