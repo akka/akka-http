@@ -11,8 +11,7 @@ import scala.language.implicitConversions
 object Dependencies {
   import DependencyHelpers._
 
-  val jacksonDatabindVersion = "2.10.2"
-  val jacksonXmlVersion = "2.10.2"
+  val jacksonVersion = "2.10.2"
   val junitVersion = "4.12"
   val h2specVersion = "1.5.0"
   val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
@@ -25,11 +24,11 @@ object Dependencies {
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.12.10", "2.11.12", "2.13.1"), // also update .travis.yml when changing here to avoid confusion
+    crossScalaVersions := Seq("2.12.10", "2.13.1"),
     scalaVersion := crossScalaVersions.value.head,
-    scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.14.2"),
+    scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.14.3"),
     scalaTestVersion := "3.0.8",
-    specs2Version := "4.8.1",
+    specs2Version := "4.8.2",
   )
 
   object Provided {
@@ -45,7 +44,7 @@ object Dependencies {
     val sprayJson   = "io.spray"                     %% "spray-json"                   % "1.3.5"       // ApacheV2
 
     // For akka-http-jackson support
-    val jacksonDatabind = "com.fasterxml.jackson.core" % "jackson-databind"            % jacksonDatabindVersion // ApacheV2
+    val jacksonDatabind = "com.fasterxml.jackson.core" % "jackson-databind"            % jacksonVersion // ApacheV2
 
     // For akka-http-testkit-java
     val junit       = "junit"                         % "junit"                        % junitVersion  // Common Public License 1.0
@@ -59,7 +58,7 @@ object Dependencies {
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
       val gson        = "com.google.code.gson"             % "gson"                    % "2.8.6"             % "test"
-      val jacksonXml  = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml"  % jacksonXmlVersion   % "test" // ApacheV2
+      val jacksonXml  = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml"  % jacksonVersion   % "test" // ApacheV2
       val reflections = "org.reflections"                  % "reflections"             % "0.9.11"            % "test" // WTFPL
     }
 
