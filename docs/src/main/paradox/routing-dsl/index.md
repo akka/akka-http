@@ -82,26 +82,26 @@ First let's start by defining the `Behavior` that will act as a repository for t
 strictly needed for our sample but just to have an actual actor to interact with:
 
 Scala
-:  @@snip [HttpServerWithTypedSample.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSample.scala) { #akka-typed-behavior }
+:  @@snip [HttpServerWithTypedSample.scala]($test$/scala/docs/http/scaladsl/HttpServerWithTypedSample.scala) { #akka-typed-behavior }
 
 
 Then, let's define the JSON marshaller and unmarshallers for the HTTP routes:
 
 Scala
-:  @@snip [HttpServerWithTypedSample.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSample.scala) { #akka-typed-json }
+:  @@snip [HttpServerWithTypedSample.scala]($test$/scala/docs/http/scaladsl/HttpServerWithTypedSample.scala) { #akka-typed-json }
 
 
 Next step is to define the @apidoc[Route$] that will communicate with the previously defined behavior
 and handle all its possible responses:
 
 Scala
-:  @@snip [HttpServerWithTypedSample.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSample.scala) { #akka-typed-route }
+:  @@snip [HttpServerWithTypedSample.scala]($test$/scala/docs/http/scaladsl/HttpServerWithTypedSample.scala) { #akka-typed-route }
 
 
 Finally, we create a `Behavior` that bootstraps the web server and use it as the root behavior of our actor system:
 
 Scala
-:  @@snip [HttpServerWithTypedSample.scala]($test$/scala-2.12+/docs/http/scaladsl/HttpServerWithTypedSample.scala) { #akka-typed-bootstrap }
+:  @@snip [HttpServerWithTypedSample.scala]($test$/scala/docs/http/scaladsl/HttpServerWithTypedSample.scala) { #akka-typed-bootstrap }
 
 
 Note that the `akka.actor.typed.ActorSystem` is converted with `toClassic`, which comes from
