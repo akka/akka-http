@@ -26,7 +26,7 @@ cache:
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot
     - $HOME/.jabba/jdk
-    - $HOME/.coursier
+    - $HOME/.cache/coursier
 
 script:
   - jabba use "adopt@1.8-0"
