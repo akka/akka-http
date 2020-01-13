@@ -28,7 +28,7 @@ object Dependencies {
     scalaVersion := crossScalaVersions.value.head,
     scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.14.3"),
     scalaTestVersion := "3.0.8",
-    specs2Version := "4.8.2",
+    specs2Version := "4.8.3",
   )
 
   object Provided {
