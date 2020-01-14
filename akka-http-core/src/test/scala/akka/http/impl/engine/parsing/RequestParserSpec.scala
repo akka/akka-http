@@ -15,7 +15,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.stream.TLSProtocol._
 import org.scalatest.matchers.Matcher
-import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
+import org.scalatest.BeforeAndAfterAll
 import akka.http.scaladsl.settings.{ ParserSettings, WebSocketSettings }
 import akka.http.impl.engine.parsing.ParserOutput._
 import akka.http.impl.settings.WebSocketSettingsImpl
@@ -32,8 +32,10 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
 import akka.testkit._
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-abstract class RequestParserSpec(mode: String, newLine: String) extends FreeSpec with Matchers with BeforeAndAfterAll {
+abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
     akka.event-handlers = ["akka.testkit.TestEventListener"]
     akka.loglevel = WARNING

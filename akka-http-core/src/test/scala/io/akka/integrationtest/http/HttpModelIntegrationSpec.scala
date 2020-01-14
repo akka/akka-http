@@ -8,7 +8,7 @@ import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
+import org.scalatest.BeforeAndAfterAll
 import akka.util.ByteString
 import akka.actor.ActorSystem
 import akka.http.ccompat._
@@ -17,6 +17,8 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.testkit._
 import headers._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 /**
  * Integration test for external HTTP libraries that are built on top of
@@ -35,7 +37,7 @@ import headers._
  * check for any visibility issues when Akka HTTP core is used by third
  * party libraries.
  */
-class HttpModelIntegrationSpec extends WordSpec with Matchers with BeforeAndAfterAll {
+class HttpModelIntegrationSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   val testConf: Config = ConfigFactory.parseString("""
     akka.event-handlers = ["akka.testkit.TestEventListener"]

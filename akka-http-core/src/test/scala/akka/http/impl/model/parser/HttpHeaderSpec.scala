@@ -6,7 +6,6 @@ package akka.http.impl.model.parser
 
 import akka.http.scaladsl.settings.ParserSettings.CookieParsingMode
 import akka.http.impl.model.parser.HeaderParser.Settings
-import org.scalatest.{ FreeSpec, Matchers }
 import org.scalatest.matchers.{ MatchResult, Matcher }
 import akka.http.impl.util._
 import akka.http.scaladsl.model._
@@ -21,8 +20,10 @@ import java.net.InetAddress
 
 import akka.http.scaladsl.model.MediaType.WithOpenCharset
 import org.scalatest.exceptions.TestFailedException
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class HttpHeaderSpec extends FreeSpec with Matchers {
+class HttpHeaderSpec extends AnyFreeSpec with Matchers {
   val `application/vnd.spray` = MediaType.applicationBinary("vnd.spray", MediaType.Compressible)
   val PROPFIND = HttpMethod.custom("PROPFIND")
 

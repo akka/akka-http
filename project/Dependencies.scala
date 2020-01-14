@@ -27,7 +27,7 @@ object Dependencies {
     crossScalaVersions := Seq("2.12.10", "2.13.1"),
     scalaVersion := crossScalaVersions.value.head,
     scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.14.3"),
-    scalaTestVersion := "3.0.8",
+    scalaTestVersion := "3.1.0",
     specs2Version := "4.8.3",
   )
 
@@ -65,6 +65,8 @@ object Dependencies {
     object Test {
       val junit        = Compile.junit                                                                       % "test" // Common Public License 1.0
       val scalatest    = Def.setting { "org.scalatest"  %% "scalatest"   % scalaTestVersion.value   % "test" }      // ApacheV2
+      val scalatestplusScalacheck = "org.scalatestplus" %% "scalacheck-1-14" % "3.1.0.1" % "test"
+      val scalatestplusJUnit      = "org.scalatestplus" %% "junit-4-12"      % "3.1.0.0" % "test"
       val specs2       = Def.setting { "org.specs2"     %% "specs2-core" % specs2Version.value      % "test" }      // MIT
       val scalacheck   = Def.setting { "org.scalacheck" %% "scalacheck"  % scalaCheckVersion.value  % "test" }      // New BSD
       val junitIntf    = "com.novocode"                % "junit-interface"              % "0.11"             % "test" // MIT
@@ -88,7 +90,7 @@ object Dependencies {
 
   lazy val httpCore = l ++= Seq(
     Test.sprayJson, // for WS Autobahn test metadata
-    Test.scalatest.value, Test.scalacheck.value, Test.junit
+    Test.scalatest.value, Test.scalatestplusScalacheck, Test.scalatestplusJUnit, Test.junit
   )
 
   lazy val httpCaching = l ++= Seq(

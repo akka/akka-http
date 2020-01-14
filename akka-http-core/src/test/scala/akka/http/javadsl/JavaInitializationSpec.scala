@@ -4,9 +4,10 @@
 
 package akka.http.javadsl
 
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class JavaInitializationSpec extends WordSpec with Matchers {
+class JavaInitializationSpec extends AnyWordSpec with Matchers {
 
   implicit class HeaderCheck[T](self: T) {
     def =!=(expected: String) = {

@@ -7,8 +7,7 @@ package akka.testkit
 import org.scalactic.{ CanEqual, TypeCheckedTripleEquals }
 
 import language.postfixOps
-import org.scalatest.{ BeforeAndAfterAll, WordSpecLike }
-import org.scalatest.Matchers
+import org.scalatest.BeforeAndAfterAll
 import akka.actor.ActorSystem
 import akka.event.{ Logging, LoggingAdapter }
 
@@ -18,6 +17,8 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import akka.dispatch.Dispatchers
 import akka.testkit.TestEvent._
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object AkkaSpec {
   val testConf: Config = ConfigFactory.parseString("""
@@ -56,7 +57,7 @@ object AkkaSpec {
 }
 
 abstract class AkkaSpec(_system: ActorSystem)
-  extends TestKit(_system) with WordSpecLike with Matchers with BeforeAndAfterAll with WatchedByCoroner
+  extends TestKit(_system) with AnyWordSpecLike with Matchers with BeforeAndAfterAll with WatchedByCoroner
   with TypeCheckedTripleEquals with ScalaFutures {
 
   implicit val patience = PatienceConfig(testKitSettings.DefaultTimeout.duration)

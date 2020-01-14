@@ -9,13 +9,14 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.HttpMethods._
 import akka.stream.ActorMaterializer
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.{ Matchers, WordSpec }
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import org.scalatest.BeforeAndAfterAll
 import akka.testkit._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ClientSpec extends WordSpec with Matchers with BeforeAndAfterAll {
+class ClientSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.loglevel = ERROR

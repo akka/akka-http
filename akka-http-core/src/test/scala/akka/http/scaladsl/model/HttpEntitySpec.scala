@@ -17,12 +17,14 @@ import akka.testkit._
 import akka.util.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.matchers.{ MatchResult, Matcher }
-import org.scalatest.{ BeforeAndAfterAll, FreeSpec, MustMatchers }
+import org.scalatest.BeforeAndAfterAll
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Promise }
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.must.Matchers
 
-class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
+class HttpEntitySpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
   val tpe: ContentType = ContentTypes.`application/octet-stream`
   val abc = ByteString("abc")
   val de = ByteString("de")

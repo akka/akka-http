@@ -8,9 +8,10 @@ import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.testkit.{ EventFilter, TestKit, TestProbe }
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class SslConfigWarningsSpec extends WordSpec with Matchers {
+class SslConfigWarningsSpec extends AnyWordSpec with Matchers {
   val testConf: Config = ConfigFactory.parseString("""
     akka.loglevel = INFO
     akka.stdout-loglevel = INFO

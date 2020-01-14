@@ -5,9 +5,10 @@
 package akka.http.impl.util
 
 import akka.util.ByteString
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ByteStringParserInputSpec extends WordSpec with Matchers {
+class ByteStringParserInputSpec extends AnyWordSpec with Matchers {
 
   "The ByteStringParserInput" should {
     val parser = new ByteStringParserInput(ByteString("abcde", "ISO-8859-1"))

@@ -8,10 +8,11 @@ package model
 package sse
 
 import akka.util.ByteString
-import org.scalatest.{ Matchers, WordSpec }
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-final class ServerSentEventSpec extends WordSpec with Matchers with ScalaCheckDrivenPropertyChecks {
+final class ServerSentEventSpec extends AnyWordSpec with Matchers with ScalaCheckDrivenPropertyChecks {
 
   "Creating a ServerSentEvent" should {
     "throw an IllegalArgumentException if type contains a \n or \r character" in {

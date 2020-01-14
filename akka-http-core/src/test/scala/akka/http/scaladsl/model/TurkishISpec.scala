@@ -5,10 +5,11 @@
 package akka.http.scaladsl.model
 
 import java.util.Locale
-import org.scalatest.{ Matchers, WordSpec }
 import akka.http.impl.util._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class TurkishISpec extends WordSpec with Matchers {
+class TurkishISpec extends AnyWordSpec with Matchers {
   "Model" should {
     "not suffer from turkish-i problem" in {
       val charsetCons = Class.forName("akka.http.scaladsl.model.HttpCharsets$").getDeclaredConstructor()
