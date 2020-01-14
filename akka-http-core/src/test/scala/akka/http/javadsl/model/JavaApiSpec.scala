@@ -8,12 +8,12 @@ import java.util.Optional
 
 import akka.japi.Pair
 
-import org.scalatest.{ FreeSpec, MustMatchers }
-
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.must.Matchers
 
-class JavaApiSpec extends FreeSpec with MustMatchers {
+class JavaApiSpec extends AnyFreeSpec with Matchers {
   "The Java API should work for" - {
     "work with Uris" - {
       "query" in {

@@ -13,8 +13,10 @@ import akka.util.ByteString
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import spray.json.{ JsArray, JsString, JsValue }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class SprayJsonSupportSpec extends WordSpec with Matchers with ScalaFutures {
+class SprayJsonSupportSpec extends AnyWordSpec with Matchers with ScalaFutures {
   import SprayJsonSupport._
   import SprayJsonSupportSpec._
   import spray.json.DefaultJsonProtocol._

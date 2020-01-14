@@ -6,12 +6,13 @@ package akka.http.scaladsl.model
 
 import java.io._
 import headers._
-import org.scalatest.{ Matchers, WordSpec }
 import org.scalatest.matchers.{ MatchResult, Matcher }
 import scala.util.Try
 import akka.util.ByteString
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class SerializabilitySpec extends WordSpec with Matchers {
+class SerializabilitySpec extends AnyWordSpec with Matchers {
 
   "HttpRequests" should {
     "be serializable" when {

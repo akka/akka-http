@@ -8,11 +8,12 @@ import java.nio.charset.Charset
 import java.net.InetAddress
 import akka.http.impl.util.StringRendering
 import org.scalatest.matchers.{ MatchResult, Matcher }
-import org.scalatest.{ Matchers, WordSpec }
 import akka.parboiled2.UTF8
 import Uri._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class UriSpec extends WordSpec with Matchers {
+class UriSpec extends AnyWordSpec with Matchers {
 
   "Uri.Host instances" should {
 

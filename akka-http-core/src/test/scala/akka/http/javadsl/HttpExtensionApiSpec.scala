@@ -22,11 +22,13 @@ import akka.stream.javadsl.{ Flow, Keep, Sink, Source }
 import akka.stream.testkit.TestSubscriber
 import akka.testkit.TestKit
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
+import org.scalatest.BeforeAndAfterAll
 
 import scala.util.Try
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class HttpExtensionApiSpec extends WordSpec with Matchers with BeforeAndAfterAll {
+class HttpExtensionApiSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   // tries to cover all surface area of javadsl.Http
 

@@ -9,7 +9,7 @@ import java.net.InetSocketAddress
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
-import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.Matcher
 import akka.actor.ActorSystem
 import akka.event.NoLogging
@@ -22,8 +22,10 @@ import akka.stream.ActorMaterializer
 import HttpEntity._
 import HttpMethods._
 import akka.testkit._
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
+class RequestRendererSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
     akka.event-handlers = ["akka.testkit.TestEventListener"]
     akka.loglevel = WARNING""")

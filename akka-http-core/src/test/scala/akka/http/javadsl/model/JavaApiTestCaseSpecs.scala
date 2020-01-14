@@ -11,11 +11,12 @@ import akka.http.javadsl.model.headers.Cookie
 import akka.http.scaladsl.model
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import akka.stream.TLSClientAuth
-import org.scalatest.{ FreeSpec, MustMatchers }
 
 import scala.collection.immutable
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.must.Matchers
 
-class JavaApiTestCaseSpecs extends FreeSpec with MustMatchers {
+class JavaApiTestCaseSpecs extends AnyFreeSpec with Matchers {
   "JavaApiTestCases should work as intended" - {
     "buildRequest" in {
       JavaApiTestCases.buildRequest() must be(

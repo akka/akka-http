@@ -5,9 +5,11 @@
 package akka.http.javadsl
 
 import akka.http.javadsl.model._
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ConnectHttpSpec extends WordSpec with Matchers with BeforeAndAfterAll {
+class ConnectHttpSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   val httpContext = ConnectionContext.noEncryption()
   val httpsContext = ConnectionContext.https(null)

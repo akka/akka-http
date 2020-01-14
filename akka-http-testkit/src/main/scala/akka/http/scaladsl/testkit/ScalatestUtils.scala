@@ -12,9 +12,10 @@ import org.scalatest.matchers.Matcher
 
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.util.Try
+import org.scalatest.matchers
 
 trait ScalatestUtils extends MarshallingTestUtils {
-  import org.scalatest.Matchers._
+  import matchers.should.Matchers._
 
   def evaluateTo[T](value: T): Matcher[Future[T]] =
     equal(value).matcher[T] compose (x => Await.result(x, marshallingTimeout))

@@ -7,10 +7,11 @@ package akka.http.impl.engine.parsing
 import java.util.regex.Pattern
 import scala.annotation.tailrec
 import scala.util.Random
-import org.scalatest.{ Matchers, WordSpec }
 import akka.util.ByteString
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class BoyerMooreSpec extends WordSpec with Matchers {
+class BoyerMooreSpec extends AnyWordSpec with Matchers {
 
   "The Boyer Moore implementation" should {
 

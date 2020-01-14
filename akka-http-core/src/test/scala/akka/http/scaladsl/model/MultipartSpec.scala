@@ -8,15 +8,17 @@ import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import org.scalatest.{ BeforeAndAfterAll, Inside, Matchers, WordSpec }
+import org.scalatest.{ BeforeAndAfterAll, Inside }
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
 import akka.actor.ActorSystem
 import akka.testkit._
 import headers._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class MultipartSpec extends WordSpec with Matchers with Inside with BeforeAndAfterAll {
+class MultipartSpec extends AnyWordSpec with Matchers with Inside with BeforeAndAfterAll {
 
   val testConf: Config = ConfigFactory.parseString("""
   akka.event-handlers = ["akka.testkit.TestEventListener"]

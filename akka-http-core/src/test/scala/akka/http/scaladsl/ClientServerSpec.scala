@@ -34,11 +34,13 @@ import akka.util.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import com.typesafe.sslconfig.ssl.{ SSLConfigSettings, SSLLooseConfig }
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.concurrent.Eventually.eventually
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with WithLogCapturing {
+class ClientServerSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with WithLogCapturing {
   val testConf: Config = ConfigFactory.parseString("""
     akka.loglevel = DEBUG
     akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]

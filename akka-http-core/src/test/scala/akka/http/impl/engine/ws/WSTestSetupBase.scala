@@ -7,9 +7,9 @@ package akka.http.impl.engine.ws
 import akka.http.impl.engine.ws.Protocol.Opcode
 import akka.http.impl.engine.ws.WSTestUtils._
 import akka.util.ByteString
-import org.scalatest.Matchers
 
 import scala.util.Random
+import org.scalatest.matchers.should.Matchers
 
 trait WSTestSetupBase extends Matchers {
   def send(bytes: ByteString): Unit

@@ -6,9 +6,10 @@ package akka.http.scaladsl.model
 
 import akka.util.ByteString
 import headers._
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class HttpMessageSpec extends WordSpec with Matchers {
+class HttpMessageSpec extends AnyWordSpec with Matchers {
 
   def test(uri: String, effectiveUri: String, headers: HttpHeader*) =
     HttpRequest.effectiveUri(Uri(uri), List(headers: _*), securedConnection = false, null) shouldEqual Uri(effectiveUri)

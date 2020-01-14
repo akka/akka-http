@@ -5,15 +5,16 @@
 package akka.http.scaladsl.util
 
 import akka.http.scaladsl.util.FastFuture._
-import org.scalatest.{ FreeSpec, Matchers }
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
 import scala.util.control.NoStackTrace
 import scala.util.{ Failure, Success, Try }
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class FastFutureSpec extends FreeSpec with Matchers {
+class FastFutureSpec extends AnyFreeSpec with Matchers {
   object TheException extends RuntimeException("Expected exception") with NoStackTrace
 
   "FastFuture should implement" - {
