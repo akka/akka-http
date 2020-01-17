@@ -16,6 +16,7 @@ import headers._
 import StatusCodes._
 import ParserOutput._
 import akka.annotation.InternalApi
+import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.util.ByteStringParserInput
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.stream.TLSProtocol.SessionBytes
@@ -101,7 +102,7 @@ private[http] final class HttpRequestParser(
         } else
           throw new ParsingException(
             BadRequest,
-            ErrorInfo("Unsupported HTTP method", s"HTTP method too long (started with '${sb.toString}'). " +
+            ErrorInfo("Unsupported HTTP method", s"HTTP method too long (started with '${sb.toString}')$remoteAddressStr. " +
               "Increase `akka.http.server.parsing.max-method-length` to support HTTP methods with more characters."))
 
       @tailrec def parseMethod(meth: HttpMethod, ix: Int = 1): Int =
@@ -130,8 +131,10 @@ private[http] final class HttpRequestParser(
         case 0x16 =>
           throw new ParsingException(
             BadRequest,
-            ErrorInfo("Unsupported HTTP method", s"The HTTP method started with 0x16 rather than any known HTTP method. " +
-              "Perhaps this was an HTTPS request sent to an HTTP endpoint?"))
+            ErrorInfo(
+              "Unsupported HTTP method",
+              s"The HTTP method started with 0x16 rather than any known HTTP method$remoteAddressStr. " +
+                "Perhaps this was an HTTPS request sent to an HTTP endpoint?"))
         case _ => parseCustomMethod()
       }
     }
@@ -146,7 +149,7 @@ private[http] final class HttpRequestParser(
         else if (ix < uriEndLimit) findUriEnd(ix + 1)
         else throw new ParsingException(
           UriTooLong,
-          s"URI length exceeds the configured limit of $maxUriLength characters")
+          s"URI length exceeds the configured limit of $maxUriLength characters$remoteAddressStr")
 
       val uriEnd = findUriEnd()
       try {
@@ -220,6 +223,11 @@ private[http] final class HttpRequestParser(
         }
       } else failMessageStart("Request is missing required `Host` header")
 
+    private def remoteAddressStr: String =
+      inheritedAttributes.get[HttpAttributes.RemoteAddress].map(_.address) match {
+        case Some(addr) => s" from ${addr.getHostString}"
+        case None       => ""
+      }
   }
 
   override def toString: String = "HttpRequestParser"
