@@ -29,6 +29,8 @@ import scala.compat.java8.OptionConverters._
 import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
 
+import com.github.ghik.silencer.silent
+
 object Http extends ExtensionId[Http] with ExtensionIdProvider {
   override def get(system: ActorSystem): Http = super.get(system)
   def lookup() = Http
@@ -40,6 +42,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   import language.implicitConversions
   private implicit def completionStageCovariant[T, U >: T](in: CompletionStage[T]): CompletionStage[U] = in.asInstanceOf[CompletionStage[U]]
+  @silent("never used")
   private implicit def javaModelIsScalaModel[J <: AnyRef, S <: J](in: Future[J])(implicit ev: JavaMapping.Inherited[J, S]): Future[S] = in.asInstanceOf[Future[S]]
 
   private lazy val delegate = akka.http.scaladsl.Http(system)

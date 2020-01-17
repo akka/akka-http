@@ -32,6 +32,10 @@ object Common extends AutoPlugin {
     javacOptions in (Compile, compile) ++=
       // From jdk9 onwards this is covered by the '-release' flag above
       onlyOnJdk8("-target", "1.8"),
+    libraryDependencies ++= Seq(
+      compilerPlugin("com.github.ghik" % "silencer-plugin" % silencerVersion cross CrossVersion.full),
+      "com.github.ghik" % "silencer-lib" % silencerVersion % Provided cross CrossVersion.full
+    ),
   )
 
   val specificationVersion: String = sys.props("java.specification.version")
@@ -44,5 +48,6 @@ object Common extends AutoPlugin {
   }
 
   def scalaMinorVersion: Def.Initialize[Long] = Def.setting { CrossVersion.partialVersion(scalaVersion.value).get._2 }
+  val silencerVersion = "1.4.4"
 
 }
