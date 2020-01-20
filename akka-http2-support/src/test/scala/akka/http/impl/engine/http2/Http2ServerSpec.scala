@@ -30,7 +30,6 @@ import com.twitter.hpack.{ Decoder, Encoder, HeaderListener }
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
-import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.{ Await, Future, Promise }
@@ -201,6 +200,42 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
           protocol = HttpProtocols.`HTTP/2.0`))
         sendHEADERS(streamId, endStream = true, endHeaders = true, requestHeaderBlock)
         expectRequest().headers shouldBe expectedRequest.headers
+      }
+
+      "acknowledge change to SETTINGS_HEADER_TABLE_SIZE in next HEADER frame" in new TestSetup with RequestResponseProbes {
+        sendSETTING(SettingIdentifier.SETTINGS_HEADER_TABLE_SIZE, 8192)
+        expectSettingsAck()
+
+        val headerBlock = HPackSpecExamples.C41FirstRequestWithHuffman
+
+        sendHEADERS(1, endStream = true, endHeaders = true, headerBlock)
+        requestIn.ensureSubscription()
+        requestIn.expectNoMessage(remainingOrDefault)
+
+        val request = expectRequestRaw()
+
+        request.method shouldBe HttpMethods.GET
+        request.uri shouldBe Uri("http://www.example.com/")
+
+        val streamIdHeader = request.header[Http2StreamIdHeader].getOrElse(Http2Compliance.missingHttpIdHeaderException)
+        responseOut.sendNext(HPackSpecExamples.FirstResponse.addHeader(streamIdHeader))
+        val headerPayload = expectHeaderBlock(1)
+
+        // Dynamic Table Size Update (https://tools.ietf.org/html/rfc7541#section-6.3) is
+        //
+        // 0   1   2   3   4   5   6   7
+        // +---+---+---+---+---+---+---+---+
+        // | 0 | 0 | 1 |   Max size (5+)   |
+        // +---+---------------------------+
+        //
+        // 8192 is 10000000000000 = 14 bits, i.e. needs more than 4 bits
+        // 8192 - 16 = 8176 = 111111 1110000
+        // 001 11111 = 63
+        // 1 1110000 = 225
+        // 0 0111111 = 63
+
+        val dynamicTableUpdateTo8192 = ByteString(63, 225, 63)
+        headerPayload shouldBe dynamicTableUpdateTo8192 ++ HPackSpecExamples.C61FirstResponseWithHuffman
       }
     }
 
