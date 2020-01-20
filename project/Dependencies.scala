@@ -121,7 +121,7 @@ object Dependencies {
     libraryDependencies += Test.scalatest.value
   )
 
-  lazy val httpJackson = l ++= Seq(jacksonDatabind)
+  lazy val httpJackson = l ++= Seq(jacksonDatabind, Test.scalatest.value, Test.junit)
 
   lazy val docs = l ++= Seq(Docs.sprayJson, Docs.gson, Docs.jacksonXml, Docs.reflections)
 }
