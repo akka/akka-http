@@ -225,7 +225,7 @@ private[http] final class HttpRequestParser(
 
     private def remoteAddressStr: String =
       inheritedAttributes.get[HttpAttributes.RemoteAddress].map(_.address) match {
-        case Some(addr) => s" from ${addr.getHostString}"
+        case Some(addr) => s" from ${addr.getHostString}:${addr.getPort}"
         case None       => ""
       }
   }
