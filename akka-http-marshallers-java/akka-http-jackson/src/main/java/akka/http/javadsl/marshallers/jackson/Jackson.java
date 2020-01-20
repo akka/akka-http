@@ -62,7 +62,7 @@ public class Jackson {
     try {
       return mapper.readerFor(expectedType).readValue(json);
     } catch (IOException e) {
-      throw new IllegalArgumentException("Cannot unmarshal JSON as " + expectedType.getSimpleName(), e);
+      throw new IllegalArgumentException("Cannot unmarshal JSON as " + expectedType.getSimpleName() + ": " + e.getMessage(), e);
     }
   }
 }
