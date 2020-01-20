@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.http.javadsl.marshallers.jackson;
 
 import akka.actor.ActorSystem;
