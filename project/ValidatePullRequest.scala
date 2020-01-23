@@ -337,7 +337,19 @@ object AggregatePRValidation extends AutoPlugin {
 
       val (newState, result) = runAggregated(executePullRequestValidation in extracted.currentRef, state.value)
 
-      val allResults = result.toEither.right.get.flatMap(_.value.toEither.right.get).filterNot(_.key == null).sortBy(_.key.scope.project.toString)
+      implicit class AddBetterEitherError[T](val e: Either[sbt.Incomplete, T]) {
+        def getSafe: T = e match {
+          case Left(i) => throw new IllegalStateException(s"Was not Right but [$i]", i.directCause.getOrElse(null))
+          case Right(t) => t
+        }
+      }
+
+      val allResults =
+        result
+          .toEither.getSafe
+          .flatMap(_.value.toEither.getSafe)
+          .filterNot(_.key == null)
+          .sortBy(_.key.scope.project.toString)
 
       val onlyTestResults: Seq[KeyValue[Tests.Output]] = allResults collect {
         case KeyValue(key, Value(o: Tests.Output)) => KeyValue(key, o)
