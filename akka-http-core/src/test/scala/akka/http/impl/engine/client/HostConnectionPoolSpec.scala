@@ -208,9 +208,15 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
         reqBytesOut.sendNext(ByteString("hello"))
         reqBytesIn.expectUtf8EncodedString("hello")
 
-        reqBytesOut.sendError(new RuntimeException("oops, could not finish sending request"))
+        val theError = new RuntimeException("oops, could not finish sending request")
 
-        expectResponseError()
+        // make sure these errors are not noisily logged
+        EventFilter[RuntimeException](occurrences = 0).intercept {
+          reqBytesOut.sendError(theError)
+
+          val error = expectResponseError()
+          error shouldBe theError
+        }
 
         // FIXME: it seems on TCP cancellation might overtake the error on the server-side so we get a cancellation / regular completion here
         // conn1.serverRequests.expectError()
