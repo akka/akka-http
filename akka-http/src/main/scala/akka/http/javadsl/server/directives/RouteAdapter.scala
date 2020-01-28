@@ -26,7 +26,6 @@ final class RouteAdapter(val delegate: akka.http.scaladsl.server.Route) extends 
 
   private def scalaFlow(system: ActorSystem, materializer: Materializer): Flow[HttpRequest, HttpResponse, NotUsed] = {
     implicit val s: ActorSystem = system
-    implicit val m: Materializer = materializer
     Flow[HttpRequest].map(_.asScala).via(delegate).map(_.asJava)
   }
 

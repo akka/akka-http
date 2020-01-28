@@ -11,7 +11,7 @@ import akka.http.scaladsl.server.directives.BasicDirectives
 import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
 import akka.http.scaladsl.util.FastFuture._
 import akka.stream.scaladsl.Flow
-import akka.stream.{ ActorMaterializerHelper, Materializer }
+import akka.stream.{ ActorMaterializerHelper, Materializer, SystemMaterializer }
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 
@@ -56,8 +56,7 @@ object Route {
    *
    * This conversion is also implicitly available whereever a `Route`` is used through [[RouteResult#routeToFlow]].
    */
-  // FIXME https://github.com/akka/akka-http/issues/2886 or https://github.com/akka/akka/pull/28494
-  def toFlow(route: Route)(implicit system: ActorSystem, materializer: Materializer): Flow[HttpRequest, HttpResponse, NotUsed] =
+  def toFlow(route: Route)(implicit system: ActorSystem): Flow[HttpRequest, HttpResponse, NotUsed] =
     Flow[HttpRequest].mapAsync(1)(asyncHandler(route, RoutingSettings(system), ParserSettings(system)))
 
   /**
@@ -74,9 +73,10 @@ object Route {
                                 exceptionHandler: ExceptionHandler         = null): Flow[HttpRequest, HttpResponse, NotUsed] =
     Flow[HttpRequest].mapAsync(1)(asyncHandler(route))
 
-  // FIXME https://github.com/akka/akka-http/issues/2886 or https://github.com/akka/akka/pull/28494
-  def asyncHandler(route: Route, routingSettings: RoutingSettings, parserSettings: ParserSettings)(implicit system: ActorSystem, materializer: Materializer): HttpRequest => Future[HttpResponse] = {
+  def asyncHandler(route: Route, routingSettings: RoutingSettings, parserSettings: ParserSettings)(implicit system: ActorSystem): HttpRequest => Future[HttpResponse] = {
     val routingLog = RoutingLog(system.log)
+    val executionContext = system.dispatcher
+    val materializer = SystemMaterializer(system).materializer
     // We can seal more efficiently here because we know we can have no inherited settings:
     val sealedRoute = {
       import directives.ExecutionDirectives._
@@ -84,11 +84,11 @@ object Route {
         .tapply(_ => route)
     }
     request => {
-      sealedRoute(new RequestContextImpl(request, routingLog.requestLog(request), routingSettings, parserSettings)(system.dispatcher, materializer)).fast
+      sealedRoute(new RequestContextImpl(request, routingLog.requestLog(request), routingSettings, parserSettings)(executionContext, materializer)).fast
         .map {
           case RouteResult.Complete(response) => response
           case RouteResult.Rejected(rejected) => throw new IllegalStateException(s"Unhandled rejections '$rejected', unsealed RejectionHandler?!")
-        }(materializer.executionContext)
+        }(executionContext)
     }
   }
 

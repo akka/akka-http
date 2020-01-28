@@ -38,8 +38,7 @@ object RouteResult {
    * Defined here because `Route` is defined as type `Route = RequestContext => Future[RouteResult]`,
    * which brings this implicit in scope whereever a `Route` is provided though those generic parameters.
    */
-  // FIXME https://github.com/akka/akka-http/issues/2886 or https://github.com/akka/akka/pull/28494
-  implicit def routeToFlow(route: Route)(implicit system: ActorSystem, materializer: Materializer): Flow[HttpRequest, HttpResponse, NotUsed] =
+  implicit def routeToFlow(route: Route)(implicit system: ActorSystem): Flow[HttpRequest, HttpResponse, NotUsed] =
     Route.toFlow(route)
 
   @deprecated("Replaced by routeToFlow", "10.2.0")
