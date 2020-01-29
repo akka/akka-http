@@ -11,7 +11,7 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "1.0.0")
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.6.1")
 addSbtPlugin("org.scalariform" % "sbt-scalariform" % "1.8.3")
 addSbtPlugin("com.dwijnand" % "sbt-dynver" % "4.0.0")
-addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.2")
+addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.3")
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.0")
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.3.7")
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.10.0-RC1") // for advanced PR validation features
