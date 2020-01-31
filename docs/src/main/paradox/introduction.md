@@ -185,7 +185,7 @@ Scala
 Java
 :   @@snip [HttpServerActorInteractionExample.java]($test$/java/docs/http/javadsl/HttpServerActorInteractionExample.java) { #actor-interaction }
 
-When you run this server, you can add an auction bid via `curl -X PUT http://localhost:8080/auction?bid=22&user=MartinO` on the terminal; and then you can view the auction status either in a browser, at the url [http://localhost:8080/auction](http://localhost:8080/auction), or, on the terminal, via `curl http://localhost:8080/auction`.
+When you run this server, you can add an auction bid via `curl -X PUT "http://localhost:8080/auction?bid=22&user=MartinO"` on the terminal; and then you can view the auction status either in a browser, at the url [http://localhost:8080/auction](http://localhost:8080/auction), or, on the terminal, via `curl http://localhost:8080/auction`.
 
 More details on how JSON marshalling and unmarshalling works can be found in the @ref[JSON Support section](common/json-support.md).
 
