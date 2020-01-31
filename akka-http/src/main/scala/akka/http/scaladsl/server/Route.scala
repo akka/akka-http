@@ -5,13 +5,13 @@
 package akka.http.scaladsl.server
 
 import akka.NotUsed
-import akka.actor.ActorSystem
+import akka.actor.{ ActorSystem, ClassicActorSystemProvider }
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.server.directives.BasicDirectives
 import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
 import akka.http.scaladsl.util.FastFuture._
 import akka.stream.scaladsl.Flow
-import akka.stream.{ ActorMaterializerHelper, Materializer, SystemMaterializer }
+import akka.stream.{ ActorMaterializerHelper, Materializer }
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 
@@ -76,7 +76,9 @@ object Route {
   def asyncHandler(route: Route, routingSettings: RoutingSettings, parserSettings: ParserSettings)(implicit system: ActorSystem): HttpRequest => Future[HttpResponse] = {
     val routingLog = RoutingLog(system.log)
     val executionContext = system.dispatcher
-    val materializer = SystemMaterializer(system).materializer
+    val materializer = Materializer.matFromSystem(new ClassicActorSystemProvider {
+      override val classicSystem = system
+    })
     // We can seal more efficiently here because we know we can have no inherited settings:
     val sealedRoute = {
       import directives.ExecutionDirectives._
