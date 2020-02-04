@@ -16,7 +16,7 @@ The akka-http server engine adds the `Remote-Address` header to every request au
 setting `akka.http.server.remote-address-header` is set to `on`. Per default it is set to `off`.
 
 @@@ warning
-Clients can send any values in these headers. When the value is an invalid IP address, then this extractor will return `RemoteAddress.Unknown`. If the client is not a tructed upstream, the IP address can be malicious and by pass your security rules.
+Clients can send any values in these headers. When the value is an invalid IP address, then this extractor will return `RemoteAddress.Unknown`. If the client is not a trusted upstream, the IP address can be malicious and by pass your security rules.
 @@@
 
 ## Example
