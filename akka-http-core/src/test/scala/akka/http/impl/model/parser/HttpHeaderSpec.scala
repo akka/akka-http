@@ -513,6 +513,16 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
           extension = Some("extension with blanks"))).renderedTo(
           "foo=bar; Domain=example.com; Path=/this is a path with blanks; extension with blanks")
 
+      // SameSite values
+      "Set-Cookie: name=123; SameSite=Lax" =!=
+        `Set-Cookie`(HttpCookie("name", "123", sameSite = Some(SameSite.Lax)))
+      "Set-Cookie: name=123; SameSite=Strict" =!=
+        `Set-Cookie`(HttpCookie("name", "123", sameSite = Some(SameSite.Strict)))
+      "Set-Cookie: name=123; SameSite=None" =!=
+        `Set-Cookie`(HttpCookie("name", "123", sameSite = Some(SameSite.None)))
+      "Set-Cookie: name=123" =!=
+        `Set-Cookie`(HttpCookie("name", "123", sameSite = None))
+
       // test all weekdays
       "Set-Cookie: lang=; Expires=Sun, 07 Dec 2014 00:42:55 GMT; Max-Age=12345" =!=
         `Set-Cookie`(HttpCookie("lang", "", expires = Some(DateTime(2014, 12, 7, 0, 42, 55)), maxAge = Some(12345)))

@@ -266,7 +266,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding =>
   }
 
   def `cookie-av` = rule {
-    `expires-av` | `max-age-av` | `domain-av` | `path-av` | `secure-av` | `httponly-av` | `extension-av`
+    `expires-av` | `max-age-av` | `domain-av` | `path-av` | `same-site-av` | `secure-av` | `httponly-av` | `extension-av`
   }
 
   def `expires-av` = rule {
@@ -296,6 +296,14 @@ private[parser] trait CommonRules { this: Parser with StringBuilding =>
     capture(zeroOrMore(`av-octet`)) ~ OWS
   }
 
+  def `same-site-av` = rule {
+    ignoreCase("samesite=") ~ OWS ~ `same-site-value` ~> { (c: HttpCookie, sameSiteValue: String) => c.withSameSite(sameSite = SameSite(sameSiteValue)) }
+  }
+
+  def `same-site-value` = rule {
+    capture(ignoreCase("lax") | ignoreCase("strict") | ignoreCase("none")) ~ OWS
+  }
+
   def `secure-av` = rule {
     ignoreCase("secure") ~ OWS ~> { (cookie: HttpCookie) => cookie.copy(secure = true) }
   }
@@ -310,6 +318,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding =>
       | ignoreCase("max-age=")
       | ignoreCase("domain=")
       | ignoreCase("path=")
+      | ignoreCase("samesite=")
       | ignoreCase("secure")
       | ignoreCase("httponly")) ~
       capture(zeroOrMore(`av-octet`)) ~ OWS ~> { (c: HttpCookie, s: String) => c.copy(extension = Some(s)) }
