@@ -9,6 +9,7 @@ import scala.collection.immutable.TreeMap
 
 import akka.parboiled2.Parser
 import akka.http.scaladsl.model._
+import akka.http.impl.util._
 
 private[parser] trait ContentTypeHeader { this: Parser with CommonRules with CommonActions =>
 
@@ -33,7 +34,7 @@ private[parser] trait ContentTypeHeader { this: Parser with CommonRules with Com
           case x: MediaType.WithOpenCharset if charset.isEmpty   => ContentType.WithMissingCharset(x)
         }
 
-      case Seq(("charset", value), tail @ _*) =>
+      case Seq((key, value), tail @ _*) if key.toRootLowerCase == "charset" =>
         contentType(main, sub, tail, Some(getCharset(value)), builder)
 
       case Seq(kvp, tail @ _*) =>
