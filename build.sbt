@@ -36,6 +36,9 @@ inThisBuild(Def.settings(
   Formatting.formatSettings,
   shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
   concurrentRestrictions in Global += Tags.limit(Tags.Test, 1),
+  // with coursier the dependency resolution with this extra setting breaks leading to missing akka dependencies
+  // in the provided classpath
+  useCoursier := System.getProperty("akka.http.test-against-akka-master", "false") != "true",
 ))
 
 lazy val root = Project(
