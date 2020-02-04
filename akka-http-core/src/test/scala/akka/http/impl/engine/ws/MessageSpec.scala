@@ -17,7 +17,7 @@ import akka.util.ByteString
 import akka.http.scaladsl.model.ws._
 import Protocol.Opcode
 import akka.http.impl.settings.WebSocketSettingsImpl
-import akka.http.impl.util.AkkaSpecWithMaterializer
+import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
 import akka.http.scaladsl.settings.WebSocketSettings
 import akka.testkit._
 import akka.stream.OverflowStrategy
@@ -995,15 +995,15 @@ class MessageSpec extends AkkaSpecWithMaterializer with Eventually {
     def pushMessage(msg: Message): Unit = messageOut.sendNext(msg)
 
     Source.fromPublisher(netIn)
-      .via(printEvent("netIn"))
+      .via(LogByteStringTools.logByteString("netIn", 1000))
       .via(FrameEventParser)
       .via(printEvent("stackIn"))
       .via(WebSocket
         .stack(serverSide, websocketSettings = websocketSettings, closeTimeout = closeTimeout, log = system.log)
         .join(messageHandler))
-      .via(printEvent("frameRendererIn"))
+      .via(printEvent("stackOut"))
       .via(new FrameEventRenderer)
-      .via(printEvent("frameRendererOut"))
+      .via(LogByteStringTools.logByteString("netOut", 1000))
       .buffer(1, OverflowStrategy.backpressure) // alternatively need to request(1) before expectComplete
       .to(netOut.sink)
       .run()
@@ -1118,8 +1118,5 @@ class MessageSpec extends AkkaSpecWithMaterializer with Eventually {
 
   }
 
-  final val Trace = false // compile time constant; set to `true` for debugging purposes;
-  def printEvent[T](marker: String): Flow[T, T, NotUsed] =
-    if (Trace) Flow[T].log(marker)
-    else Flow[T]
+  def printEvent[T](marker: String): Flow[T, T, NotUsed] = Flow[T].log(marker)
 }
