@@ -1,0 +1,23 @@
+# Removal of explicitly-deprecated API
+ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.UseHttp2*")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.ConnectionContext.https")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpConnectionContext.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpConnectionContext.create")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.Http*ConnectionContext.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.Http*ConnectionContext.withHttp2")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpsConnectionContext.<init>$default$7")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.ConnectionContext.https$default$7")
+
+ProblemFilters.exclude[MissingClassProblem]("akka.http.javadsl.UseHttp2*")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.*ConnectionContext.withHttp2")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.*ConnectionContext.http2")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ConnectHttp.toHostHttps")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ConnectHttp.toHost")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ConnectHttp.http2")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ConnectHttpImpl.http2")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ConnectHttpsImpl.http2")

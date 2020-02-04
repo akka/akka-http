@@ -20,10 +20,6 @@ abstract class ConnectHttp {
   def isHttps: Boolean
   def connectionContext: Optional[HttpsConnectionContext]
 
-  /** This method is planned to disappear in 10.2.0 */
-  @Deprecated
-  def http2: UseHttp2
-
   final def effectiveHttpsConnectionContext(fallbackContext: HttpsConnectionContext): HttpsConnectionContext =
     connectionContext.asScala
       .getOrElse(fallbackContext)
@@ -61,13 +57,6 @@ object ConnectHttp {
    * which can then be retrieved by the materialized [[akka.http.javadsl.Http.ServerBinding]].
    */
   def toHost(host: String, port: Int): ConnectHttp = {
-    require(port >= 0, "port must be >= 0")
-    toHost(createUriWithScheme("http", host), port)
-  }
-
-  /** This method is planned to disappear in 10.2.0 */
-  @Deprecated
-  def toHost(host: String, port: Int, http2: UseHttp2): ConnectHttp = {
     require(port >= 0, "port must be >= 0")
     toHost(createUriWithScheme("http", host), port)
   }
@@ -115,14 +104,6 @@ object ConnectHttp {
     toHostHttps(createUriWithScheme("https", host), port)
   }
 
-  /** This method is planned to disappear in 10.2.0 */
-  @Deprecated
-  @throws(classOf[IllegalArgumentException])
-  def toHostHttps(host: String, port: Int, http2: UseHttp2): ConnectWithHttps = {
-    require(port >= 0, "port must be >= 0")
-    toHostHttps(createUriWithScheme("https", host), port)
-  }
-
   private def toHostHttps(uriHost: Uri, port: Int): ConnectWithHttps = {
     val s = uriHost.scheme.toLowerCase(Locale.ROOT)
     require(s == "" || s == "https", "toHostHttps used with non https scheme! Was: " + uriHost)
@@ -153,10 +134,6 @@ abstract class ConnectWithHttps extends ConnectHttp {
 /** INTERNAL API */
 @InternalApi
 final class ConnectHttpImpl(val host: String, val port: Int) extends ConnectHttp {
-  /** This field is planned to disappear in 10.2.0 */
-  @Deprecated
-  val http2: UseHttp2 = null
-
   def isHttps: Boolean = false
 
   def connectionContext: Optional[HttpsConnectionContext] = Optional.empty()
@@ -166,10 +143,6 @@ final class ConnectHttpImpl(val host: String, val port: Int) extends ConnectHttp
 @InternalApi
 final class ConnectHttpsImpl(val host: String, val port: Int, val context: Optional[HttpsConnectionContext] = Optional.empty())
   extends ConnectWithHttps {
-
-  /** This field is planned to disappear in 10.2.0 */
-  @Deprecated
-  val http2: UseHttp2 = null
 
   override def isHttps: Boolean = true
 

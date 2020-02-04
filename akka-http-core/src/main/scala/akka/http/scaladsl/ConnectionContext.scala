@@ -11,8 +11,6 @@ import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import scala.collection.JavaConverters._
 import java.util.{ Optional, Collection => JCollection }
 
-import akka.http.javadsl
-import akka.http.scaladsl.UseHttp2.Negotiated
 import javax.net.ssl._
 
 import scala.collection.immutable
@@ -35,21 +33,6 @@ object ConnectionContext {
     new HttpsConnectionContext(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
   //#https-context-creation
 
-  @deprecated("This method is planned to disappear in 10.2.0", "10.1.9")
-  def https(
-    sslContext:          SSLContext,
-    sslConfig:           Option[AkkaSSLConfig],
-    enabledCipherSuites: Option[immutable.Seq[String]],
-    enabledProtocols:    Option[immutable.Seq[String]],
-    clientAuth:          Option[TLSClientAuth],
-    sslParameters:       Option[SSLParameters],
-    http2:               UseHttp2) =
-    new HttpsConnectionContext(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
-
-  // for bincompat
-  @deprecated("This method is planned to disappear in 10.2.0", "10.1.9")
-  private[scaladsl] def https$default$7(): akka.http.scaladsl.UseHttp2 = UseHttp2.Negotiated
-
   @deprecated("for binary-compatibility", "2.4.7")
   def https(
     sslContext:          SSLContext,
@@ -57,7 +40,7 @@ object ConnectionContext {
     enabledProtocols:    Option[immutable.Seq[String]],
     clientAuth:          Option[TLSClientAuth],
     sslParameters:       Option[SSLParameters]) =
-    new HttpsConnectionContext(sslContext, sslConfig = None, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters, http2 = Negotiated)
+    new HttpsConnectionContext(sslContext, sslConfig = None, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
 
   def noEncryption() = HttpConnectionContext
 }
@@ -71,17 +54,6 @@ final class HttpsConnectionContext(
   val sslParameters:       Option[SSLParameters]         = None)
   extends akka.http.javadsl.HttpsConnectionContext with ConnectionContext {
 
-  @deprecated("This constructor is planned to disappear in 10.2.0", "10.1.9")
-  def this(
-    sslContext:          SSLContext,
-    sslConfig:           Option[AkkaSSLConfig],
-    enabledCipherSuites: Option[immutable.Seq[String]],
-    enabledProtocols:    Option[immutable.Seq[String]],
-    clientAuth:          Option[TLSClientAuth],
-    sslParameters:       Option[SSLParameters],
-    http2:               UseHttp2) =
-    this(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
-
   @deprecated("for binary-compatibility", since = "2.4.7")
   def this(
     sslContext:          SSLContext,
@@ -89,7 +61,7 @@ final class HttpsConnectionContext(
     enabledProtocols:    Option[immutable.Seq[String]],
     clientAuth:          Option[TLSClientAuth],
     sslParameters:       Option[SSLParameters]) =
-    this(sslContext, sslConfig = None, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters, http2 = Negotiated)
+    this(sslContext, sslConfig = None, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
 
   def firstSession = NegotiateNewSession(enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
 
@@ -98,28 +70,9 @@ final class HttpsConnectionContext(
   override def getEnabledProtocols: Optional[JCollection[String]] = enabledProtocols.map(_.asJavaCollection).asJava
   override def getClientAuth: Optional[TLSClientAuth] = clientAuth.asJava
   override def getSslParameters: Optional[SSLParameters] = sslParameters.asJava
-
-  /** This method is planned to disappear in 10.2.0 */
-  @Deprecated
-  override def withHttp2(newValue: javadsl.UseHttp2): javadsl.HttpsConnectionContext = this
-  @deprecated("This method is planned to disappear in 10.2.0", "10.1.9")
-  def withHttp2(newValue: UseHttp2): javadsl.HttpsConnectionContext = this
-}
-object HttpsConnectionContext {
-  // For binary compatibility, planned to disappear in 10.2.0
-  private[http] def `<init>$default$7`(): UseHttp2 = null
 }
 
-sealed class HttpConnectionContext extends akka.http.javadsl.HttpConnectionContext with ConnectionContext {
-  @deprecated("This method is planned to disappear in 10.2.0", "10.1.9")
-  def this(http2: UseHttp2) = this()
-
-  /** This method is planned to disappear in 10.2.0 */
-  @Deprecated
-  override def withHttp2(newValue: javadsl.UseHttp2): javadsl.HttpConnectionContext = this
-  @deprecated("This method is planned to disappear in 10.2.0", "10.1.9")
-  def withHttp2(newValue: UseHttp2): javadsl.HttpConnectionContext = this
-}
+sealed class HttpConnectionContext extends akka.http.javadsl.HttpConnectionContext with ConnectionContext
 
 final object HttpConnectionContext extends HttpConnectionContext {
   /** Java API */
@@ -128,16 +81,5 @@ final object HttpConnectionContext extends HttpConnectionContext {
   /** Java API */
   def create() = this
 
-  /**
-   * Java API
-   *
-   * This method is planned to disappear in 10.2.0
-   */
-  @Deprecated
-  @deprecated("This method is planned to disappear in 10.2.0", "10.1.9")
-  def create(http2: UseHttp2) = HttpConnectionContext()
-
   def apply() = new HttpConnectionContext()
-  @deprecated("This method is planned to disappear in 10.2.0", "10.1.9")
-  def apply(http2: UseHttp2) = new HttpConnectionContext()
 }
