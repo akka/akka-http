@@ -72,7 +72,7 @@ class EntityDiscardingSpec extends AkkaSpec {
 
         val de2 = response.discardEntityBytes()
         val secondRunException = intercept[IllegalStateException] { Await.result(de2.future, 3.seconds.dilated) }
-        secondRunException.getMessage should include("Source cannot be materialized more than once")
+        secondRunException.getMessage should include("cannot be materialized more than once")
       } finally bound.unbind().futureValue
     }
   }
