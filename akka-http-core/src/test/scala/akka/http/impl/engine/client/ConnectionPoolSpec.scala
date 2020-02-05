@@ -622,7 +622,6 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
   class TestSetup(
     serverSettings: ServerSettings = ServerSettings(system),
     autoAccept:     Boolean        = false) {
-    val (serverHostName, serverPort) = SocketUtil.temporaryServerHostnameAndPort()
 
     def asyncTestServerHandler(connNr: Int): HttpRequest => Future[HttpResponse] = {
       val handler = testServerHandler(connNr)
@@ -640,25 +639,33 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
 
     val incomingConnectionCounter = new AtomicInteger
     val incomingConnections = TestSubscriber.manualProbe[Http.IncomingConnection]
-    val incomingConnectionsSub = {
+    val (incomingConnectionsSub, serverHostName: String, serverPort: Int) = {
       val rawBytesInjection = BidiFlow.fromFlows(
         Flow[SslTlsOutbound].collect[ByteString] { case SendBytes(x) => mapServerSideOutboundRawBytes(x) }
           .recover({ case NoErrorComplete => ByteString.empty }),
         Flow[ByteString].map(SessionBytes(null, _)))
       val sink = if (autoAccept) Sink.foreach[Http.IncomingConnection](handleConnection) else Sink.fromSubscriber(incomingConnections)
-      Tcp().bind(serverHostName, serverPort, idleTimeout = serverSettings.timeouts.idleTimeout)
-        .map { c =>
-          val layer = Http().serverLayer(serverSettings, log = log)
-          val flow = (layer atop rawBytesInjection join c.flow)
-            .mapMaterializedValue(_ =>
-              new ServerTerminator {
-                // this is simply a mock, since we do not use termination in these tests anyway
-                def terminate(deadline: FiniteDuration)(implicit ec: ExecutionContext): Future[HttpTerminated] =
-                  Future.successful(HttpServerTerminated)
-              })
-          Http.IncomingConnection(c.localAddress, c.remoteAddress, flow)
-        }.runWith(sink)
-      if (autoAccept) null else incomingConnections.expectSubscription()
+
+      val binding =
+        Tcp()
+          .bind("localhost", 0, idleTimeout = serverSettings.timeouts.idleTimeout)
+          .map { c =>
+            val layer = Http().serverLayer(serverSettings, log = log)
+            val flow = (layer atop rawBytesInjection join c.flow)
+              .mapMaterializedValue(_ =>
+                new ServerTerminator {
+                  // this is simply a mock, since we do not use termination in these tests anyway
+                  def terminate(deadline: FiniteDuration)(implicit ec: ExecutionContext): Future[HttpTerminated] =
+                    Future.successful(HttpServerTerminated)
+                })
+            Http.IncomingConnection(c.localAddress, c.remoteAddress, flow)
+          }
+          .to(sink)
+          .run()
+          .awaitResult(3.seconds)
+
+      val sub = if (autoAccept) null else incomingConnections.expectSubscription()
+      (sub, binding.localAddress.getHostString, binding.localAddress.getPort)
     }
 
     def acceptIncomingConnection(): Unit = {
