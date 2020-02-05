@@ -96,13 +96,13 @@ object HttpServerWithTypedSample {
 
   class JobRoutes(buildJobRepository: ActorRef[JobRepository.Command])(implicit system: ActorSystem[_]) extends JsonSupport {
 
-    import akka.actor.typed.scaladsl.AskPattern._
+    import akka.actor.typed.scaladsl.AskPattern.Askable
 
     // asking someone requires a timeout and a scheduler, if the timeout hits without response
     // the ask is failed with a TimeoutException
     implicit val timeout: Timeout = 3.seconds
     // implicit scheduler only needed in 2.5
-    // in 2.6 having an implicit typed ActorSystem in scope is enough
+    // in 2.6 having an implicit typed ActorSystem in scope is enough if you import AskPattern.schedulerFromActorSystem
     implicit val scheduler = system.scheduler
 
     lazy val theJobRoutes: Route =
