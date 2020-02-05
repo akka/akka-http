@@ -49,13 +49,13 @@ public interface HttpMessage {
 
     /**
      * Try to find the first header with the given name (case-insensitive) and return
-     * Some(header), otherwise this method returns None.
+     * Optional.of(header), otherwise this method returns an empty Optional.
      */
     Optional<HttpHeader> getHeader(String headerName);
 
     /**
      * Try to find the first header of the given class and return
-     * Some(header), otherwise this method returns None.
+     * Optional.of(header), otherwise this method returns an empty Optional.
      */
     <T extends HttpHeader> Optional<T> getHeader(Class<T> headerClass);
 
