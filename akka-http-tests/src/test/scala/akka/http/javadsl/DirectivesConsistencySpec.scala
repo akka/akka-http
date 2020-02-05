@@ -8,11 +8,12 @@ import java.lang.reflect.{ Modifier, Method }
 
 import akka.http.javadsl.server.directives.CorrespondsTo
 import org.scalatest.exceptions.TestPendingException
-import org.scalatest.{ Matchers, WordSpec }
 
 import scala.util.control.NoStackTrace
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class DirectivesConsistencySpec extends WordSpec with Matchers {
+class DirectivesConsistencySpec extends AnyWordSpec with Matchers {
 
   val scalaDirectivesClazz = classOf[akka.http.scaladsl.server.Directives]
   val javaDirectivesClazz = classOf[akka.http.javadsl.server.AllDirectives]

@@ -17,9 +17,10 @@ import com.typesafe.sslconfig.akka.AkkaSSLConfig
 //#imports
 
 import docs.CompileOnlySpec
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-abstract class HttpsServerExampleSpec extends WordSpec with Matchers
+abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
   with Directives with CompileOnlySpec {
 
   class HowToObtainSSLConfig {

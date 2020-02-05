@@ -16,14 +16,16 @@ import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.Utils.assertAllStagesStopped
 import akka.testkit.TestKit
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
+import org.scalatest.BeforeAndAfterAll
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 abstract class DontLeakActorsOnFailingConnectionSpecs(poolImplementation: String)
-  extends WordSpecLike with Matchers with BeforeAndAfterAll with WithLogCapturing {
+  extends AnyWordSpecLike with Matchers with BeforeAndAfterAll with WithLogCapturing {
 
   val config = ConfigFactory.parseString(s"""
     akka {

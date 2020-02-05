@@ -9,7 +9,8 @@ package sse
 
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
-import org.scalatest.{ AsyncWordSpec, Matchers }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AsyncWordSpec
 
 final class LineParserSpec extends AsyncWordSpec with Matchers with BaseUnmarshallingSpec {
 

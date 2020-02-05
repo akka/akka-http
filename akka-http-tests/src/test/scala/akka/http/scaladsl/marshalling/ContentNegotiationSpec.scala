@@ -9,15 +9,16 @@ import scala.concurrent.duration._
 import akka.http.scaladsl.server.MediaTypeNegotiator
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
 import akka.util.ByteString
-import org.scalatest.{ FreeSpec, Matchers }
 import akka.http.scaladsl.util.FastFuture._
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
 import MediaTypes._
 import HttpCharsets._
 import akka.http.scaladsl.server.util.VarArgsFunction1
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class ContentNegotiationSpec extends FreeSpec with Matchers {
+class ContentNegotiationSpec extends AnyFreeSpec with Matchers {
   "Content Negotiation should work properly for requests with header(s)" - {
     "(without headers)" test { accept =>
       accept(`text/plain` withCharset `UTF-16`) should select(`text/plain` withCharset `UTF-16`)

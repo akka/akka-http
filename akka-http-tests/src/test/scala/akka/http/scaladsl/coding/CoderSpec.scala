@@ -14,15 +14,16 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import java.util.concurrent.ThreadLocalRandom
 import scala.util.control.NoStackTrace
-import org.scalatest.{ Inspectors, WordSpec }
+import org.scalatest.Inspectors
 import akka.util.ByteString
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.http.scaladsl.model.{ HttpEntity, HttpRequest }
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.impl.util._
 import akka.testkit._
+import org.scalatest.wordspec.AnyWordSpec
 
-abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors {
+abstract class CoderSpec extends AnyWordSpec with CodecSpecSupport with Inspectors {
   protected def Coder: Coder with StreamDecoder
   protected def newDecodedInputStream(underlying: InputStream): InputStream
   protected def newEncodedOutputStream(underlying: OutputStream): OutputStream

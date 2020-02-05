@@ -9,7 +9,8 @@ import akka.http.scaladsl.model.{ HttpCharsets, HttpEntity, MediaTypes }
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.http.impl.util._
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 case class Employee(fname: String, name: String, age: Int, id: Long, boardMember: Boolean) {
   require(!boardMember || age > 40, "Board members must be older than 40")
@@ -33,7 +34,7 @@ object Employee {
 }
 
 /** Common infrastructure needed for several json support subprojects */
-abstract class JsonSupportSpec extends WordSpec with Matchers with ScalatestRouteTest {
+abstract class JsonSupportSpec extends AnyWordSpec with Matchers with ScalatestRouteTest {
   require(getClass.getSimpleName.endsWith("Spec"))
   // assuming that the classname ends with "Spec"
   def name: String = getClass.getSimpleName.dropRight(4)

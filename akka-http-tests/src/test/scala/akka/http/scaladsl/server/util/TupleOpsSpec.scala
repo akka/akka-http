@@ -4,9 +4,10 @@
 
 package akka.http.scaladsl.server.util
 
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class TupleOpsSpec extends WordSpec with Matchers {
+class TupleOpsSpec extends AnyWordSpec with Matchers {
   import TupleOps._
 
   "The TupleOps" should {

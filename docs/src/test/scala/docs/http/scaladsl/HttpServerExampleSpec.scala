@@ -11,12 +11,13 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes
 import akka.testkit.TestActors
 import docs.CompileOnlySpec
-import org.scalatest.{ Matchers, WordSpec }
 
 import scala.language.postfixOps
 import scala.concurrent.{ Await, ExecutionContext, Future }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class HttpServerExampleSpec extends WordSpec with Matchers
+class HttpServerExampleSpec extends AnyWordSpec with Matchers
   with CompileOnlySpec {
 
   // never actually called

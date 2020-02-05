@@ -13,11 +13,12 @@ import akka.http.scaladsl.server.Directives
 import akka.http.scaladsl.testkit.RouteTest
 import akka.http.scaladsl.testkit.TestFrameworkInterface.Scalatest
 import akka.stream.scaladsl.{ Sink, Source }
-import org.scalatest.{ Matchers, WordSpec }
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-final class EventStreamMarshallingSpec extends WordSpec with Matchers with RouteTest with Scalatest {
+final class EventStreamMarshallingSpec extends AnyWordSpec with Matchers with RouteTest with Scalatest {
   import Directives._
   import akka.http.scaladsl.marshalling.sse.EventStreamMarshalling._
 

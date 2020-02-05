@@ -8,7 +8,6 @@ import akka.stream.{ Attributes, FlowShape }
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 
 import scala.concurrent.duration._
-import org.scalatest.WordSpec
 import akka.util.ByteString
 import akka.stream.stage._
 import akka.http.scaladsl.model._
@@ -16,8 +15,9 @@ import akka.http.impl.util._
 import akka.testkit._
 import headers._
 import HttpMethods.POST
+import org.scalatest.wordspec.AnyWordSpec
 
-class DecoderSpec extends WordSpec with CodecSpecSupport {
+class DecoderSpec extends AnyWordSpec with CodecSpecSupport {
 
   "A Decoder" should {
     "not transform the message if it doesn't contain a Content-Encoding header" in {

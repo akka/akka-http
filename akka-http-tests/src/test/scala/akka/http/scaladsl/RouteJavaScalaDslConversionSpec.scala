@@ -7,9 +7,9 @@ package akka.http.scaladsl
 import java.util.function.Supplier
 
 import akka.http.javadsl.server.Route
-import org.scalatest.WordSpec
+import org.scalatest.wordspec.AnyWordSpec
 
-class RouteJavaScalaDslConversionSpec extends WordSpec {
+class RouteJavaScalaDslConversionSpec extends AnyWordSpec {
 
   "Routes" must {
 

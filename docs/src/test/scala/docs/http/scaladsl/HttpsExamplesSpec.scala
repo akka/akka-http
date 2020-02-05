@@ -9,9 +9,10 @@ import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import docs.CompileOnlySpec
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class HttpsExamplesSpec extends WordSpec with Matchers with CompileOnlySpec {
+class HttpsExamplesSpec extends AnyWordSpec with Matchers with CompileOnlySpec {
 
   "disable SNI for connection" in compileOnlySpec {
     val unsafeHost = "example.com"

@@ -4,9 +4,10 @@
 
 package docs.http.scaladsl
 
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class SprayJsonExampleSpec extends WordSpec with Matchers {
+class SprayJsonExampleSpec extends AnyWordSpec with Matchers {
 
   def compileOnlySpec(body: => Unit) = ()
 
