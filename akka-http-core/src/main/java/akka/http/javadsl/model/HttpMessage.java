@@ -66,6 +66,12 @@ public interface HttpMessage {
     <T extends HttpHeader> Iterable<T> getHeaders(Class<T> headerClass);
 
     /**
+     * Try to find the attribute for the given key and return
+     * Optional.of(attribute), otherwise this method returns an empty Optional.
+     */
+    <T> Optional<T> getAttribute(AttributeKey<T> key);
+
+    /**
      * The entity of this message.
      */
     ResponseEntity entity();
@@ -120,6 +126,8 @@ public interface HttpMessage {
          * Returns a copy of this message with new headers.
          */
         Self withHeaders(Iterable<HttpHeader> headers);
+
+        <T> Self addAttribute(AttributeKey<T> key, T value);
 
         /**
          * Returns a copy of this message with the given http credential header added to the list of headers.

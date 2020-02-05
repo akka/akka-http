@@ -42,6 +42,7 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def isResponse: Boolean
 
   def headers: immutable.Seq[HttpHeader]
+  def attributes: Map[AttributeKey[Any], Any]
   def entity: ResponseEntity
   def protocol: HttpProtocol
 
@@ -100,6 +101,9 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def withDefaultHeaders(firstHeader: HttpHeader, otherHeaders: HttpHeader*): Self =
     withDefaultHeaders(firstHeader +: otherHeaders.toList)
 
+  /** Returns a copy of this message with the attributes set to the given ones. */
+  def withAttributes(headers: Map[AttributeKey[Any], Any]): Self
+
   /** Returns a copy of this message with the entity set to the given one. */
   def withEntity(entity: MessageEntity): Self
 
@@ -116,6 +120,9 @@ sealed trait HttpMessage extends jm.HttpMessage {
 
   /** Returns a copy of this message with the list of headers transformed by the given function */
   def mapHeaders(f: immutable.Seq[HttpHeader] => immutable.Seq[HttpHeader]): Self = withHeaders(f(headers))
+
+  /** Returns a copy of this message with the attributes transformed by the given function */
+  def mapAttributes(f: Map[AttributeKey[Any], Any] => Map[AttributeKey[Any], Any]): Self = withAttributes(f(attributes))
 
   /**
    * The content encoding as specified by the Content-Encoding header. If no Content-Encoding header is present the
@@ -141,6 +148,9 @@ sealed trait HttpMessage extends jm.HttpMessage {
     case h: T => h
   }
 
+  def attribute[T](key: jm.AttributeKey[T]): Option[T] =
+    attributes.get(key.asInstanceOf[AttributeKey[Any]]).map(_.asInstanceOf[T])
+
   /**
    * Returns true if this message is an:
    *  - HttpRequest and the client does not want to reuse the connection after the response for this request has been received
@@ -149,6 +159,8 @@ sealed trait HttpMessage extends jm.HttpMessage {
   def connectionCloseExpected: Boolean = HttpMessage.connectionCloseExpected(protocol, header[Connection])
 
   def addHeader(header: jm.HttpHeader): Self = mapHeaders(_ :+ header.asInstanceOf[HttpHeader])
+
+  def addAttribute[T](key: jm.AttributeKey[T], value: T): Self = mapAttributes(_.updated(key.asInstanceOf[AttributeKey[Any]], value))
 
   def addCredentials(credentials: jm.headers.HttpCredentials): Self = addHeader(jm.headers.Authorization.create(credentials))
 
@@ -196,6 +208,11 @@ sealed trait HttpMessage extends jm.HttpMessage {
     import JavaMapping.Implicits._
     withHeaders(headers.asScala.toVector.map(_.asScala))
   }
+  /** Java API */
+  def getAttribute[T](attributeKey: jm.AttributeKey[T]): Optional[T] = {
+    Util.convertOption(attribute(attributeKey.asInstanceOf[AttributeKey[T]]))
+  }
+
   /** Java API */
   def toStrict(timeoutMillis: Long, ec: Executor, materializer: Materializer): CompletionStage[Self] = {
     val ex = ExecutionContext.fromExecutor(ec)
@@ -265,11 +282,12 @@ object HttpMessage {
  * The immutable model HTTP request model.
  */
 final class HttpRequest(
-  val method:   HttpMethod,
-  val uri:      Uri,
-  val headers:  immutable.Seq[HttpHeader],
-  val entity:   RequestEntity,
-  val protocol: HttpProtocol)
+  val method:     HttpMethod,
+  val uri:        Uri,
+  val headers:    immutable.Seq[HttpHeader],
+  val attributes: Map[AttributeKey[Any], Any],
+  val entity:     RequestEntity,
+  val protocol:   HttpProtocol)
   extends jm.HttpRequest with HttpMessage {
 
   HttpRequest.verifyUri(uri)
@@ -283,6 +301,10 @@ final class HttpRequest(
 
   override def isRequest = true
   override def isResponse = false
+
+  @deprecated("for backwards compatibility", "10.2.0")
+  def this(method: HttpMethod, uri: Uri, headers: immutable.Seq[HttpHeader], entity: RequestEntity, protocol: HttpProtocol) =
+    this(method, uri, headers, Map.empty, entity, protocol)
 
   /**
    * Resolve this request's URI according to the logic defined at
@@ -314,6 +336,9 @@ final class HttpRequest(
   override def withHeaders(headers: immutable.Seq[HttpHeader]): HttpRequest =
     if (headers eq this.headers) this else copy(headers = headers)
 
+  override def withAttributes(attributes: Map[AttributeKey[Any], Any]): HttpRequest =
+    if (attributes eq this.attributes) this else copy(attributes = attributes)
+
   override def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: RequestEntity): HttpRequest = copy(headers = headers, entity = entity)
   override def withEntity(entity: jm.RequestEntity): HttpRequest = copy(entity = entity.asInstanceOf[RequestEntity])
   override def withEntity(entity: MessageEntity): HttpRequest = copy(entity = entity)
@@ -335,12 +360,21 @@ final class HttpRequest(
 
   /* Manual Case Class things, to easen bin-compat */
 
+  @deprecated("Kept for binary compatibility", "10.0.2")
   def copy(
-    method:   HttpMethod                = method,
-    uri:      Uri                       = uri,
-    headers:  immutable.Seq[HttpHeader] = headers,
-    entity:   RequestEntity             = entity,
-    protocol: HttpProtocol              = protocol) = new HttpRequest(method, uri, headers, entity, protocol)
+    method:   HttpMethod,
+    uri:      Uri,
+    headers:  immutable.Seq[HttpHeader],
+    entity:   RequestEntity,
+    protocol: HttpProtocol) = new HttpRequest(method, uri, headers, attributes, entity, protocol)
+
+  def copy(
+    method:     HttpMethod                  = method,
+    uri:        Uri                         = uri,
+    headers:    immutable.Seq[HttpHeader]   = headers,
+    entity:     RequestEntity               = entity,
+    protocol:   HttpProtocol                = protocol,
+    attributes: Map[AttributeKey[Any], Any] = attributes) = new HttpRequest(method, uri, headers, attributes, entity, protocol)
 
   override def hashCode(): Int = {
     var result = HashCode.SEED
@@ -439,7 +473,7 @@ object HttpRequest {
     uri:      Uri                       = Uri./,
     headers:  immutable.Seq[HttpHeader] = Nil,
     entity:   RequestEntity             = HttpEntity.Empty,
-    protocol: HttpProtocol              = HttpProtocols.`HTTP/1.1`) = new HttpRequest(method, uri, headers, entity, protocol)
+    protocol: HttpProtocol              = HttpProtocols.`HTTP/1.1`) = new HttpRequest(method, uri, headers, Map.empty, entity, protocol)
 
   def unapply(any: HttpRequest) = new OptHttpRequest(any)
 }
@@ -448,10 +482,11 @@ object HttpRequest {
  * The immutable HTTP response model.
  */
 final class HttpResponse(
-  val status:   StatusCode,
-  val headers:  immutable.Seq[HttpHeader],
-  val entity:   ResponseEntity,
-  val protocol: HttpProtocol)
+  val status:     StatusCode,
+  val headers:    immutable.Seq[HttpHeader],
+  val attributes: Map[AttributeKey[Any], Any],
+  val entity:     ResponseEntity,
+  val protocol:   HttpProtocol)
   extends jm.HttpResponse with HttpMessage {
 
   require(entity.isKnownEmpty || status.allowsEntity, "Responses with this status code must have an empty entity")
@@ -465,8 +500,15 @@ final class HttpResponse(
   override def isRequest = false
   override def isResponse = true
 
+  @deprecated("for backwards compatibility", "10.2.0")
+  def this(status: StatusCode, headers: immutable.Seq[HttpHeader], entity: ResponseEntity, protocol: HttpProtocol) =
+    this(status, headers, Map.empty, entity, protocol)
+
   override def withHeaders(headers: immutable.Seq[HttpHeader]): HttpResponse =
     if (headers eq this.headers) this else copy(headers = headers)
+
+  def withAttributes(attributes: Map[AttributeKey[Any], Any]): HttpResponse =
+    if (attributes eq this.attributes) this else copy(attributes = attributes)
 
   override def withProtocol(protocol: akka.http.javadsl.model.HttpProtocol): akka.http.javadsl.model.HttpResponse = withProtocol(protocol.asInstanceOf[HttpProtocol])
   def withProtocol(protocol: HttpProtocol): HttpResponse = copy(protocol = protocol)
@@ -486,10 +528,19 @@ final class HttpResponse(
   /* Manual Case Class things, to ease bin-compat */
 
   def copy(
-    status:   StatusCode                = status,
-    headers:  immutable.Seq[HttpHeader] = headers,
-    entity:   ResponseEntity            = entity,
-    protocol: HttpProtocol              = protocol) = new HttpResponse(status, headers, entity, protocol)
+    status:     StatusCode                  = status,
+    headers:    immutable.Seq[HttpHeader]   = headers,
+    entity:     ResponseEntity              = entity,
+    protocol:   HttpProtocol                = protocol,
+    attributes: Map[AttributeKey[Any], Any] = attributes
+  ) = new HttpResponse(status, headers, attributes, entity, protocol)
+
+  @deprecated("kept for binary compatibility", "10.2.0")
+  def copy(
+    status:   StatusCode,
+    headers:  immutable.Seq[HttpHeader],
+    entity:   ResponseEntity,
+    protocol: HttpProtocol) = new HttpResponse(status, headers, attributes, entity, protocol)
 
   override def equals(obj: scala.Any): Boolean = obj match {
     case HttpResponse(_status, _headers, _entity, _protocol) =>
@@ -526,7 +577,7 @@ object HttpResponse {
     status:   StatusCode                = StatusCodes.OK,
     headers:  immutable.Seq[HttpHeader] = Nil,
     entity:   ResponseEntity            = HttpEntity.Empty,
-    protocol: HttpProtocol              = HttpProtocols.`HTTP/1.1`) = new HttpResponse(status, headers, entity, protocol)
+    protocol: HttpProtocol              = HttpProtocols.`HTTP/1.1`) = new HttpResponse(status, headers, Map.empty, entity, protocol)
 
   def unapply(any: HttpResponse): OptHttpResponse = new OptHttpResponse(any)
 }

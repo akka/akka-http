@@ -8,6 +8,7 @@ import akka.util.ByteString
 import headers._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import akka.http.javadsl.{ model => jm }
 
 class HttpMessageSpec extends AnyWordSpec with Matchers {
 
@@ -71,6 +72,24 @@ class HttpMessageSpec extends AnyWordSpec with Matchers {
       val hostHeader = Host("akka.io")
       val request = HttpRequest().withHeaders(oneCookieHeader, anotherCookieHeader, hostHeader)
       request.headers[`Set-Cookie`] should ===(Seq(oneCookieHeader, anotherCookieHeader))
+    }
+    "retrieve an attribute by key" in {
+      val oneStringKey = AttributeKey[String]()
+      val otherStringKey = AttributeKey[String]()
+      val intKey = jm.AttributeKey.newInstance[Int]()
+
+      val oneStringAttribute = "A string attribute!"
+      val otherStringAttribute = "Another"
+      val intAttribute = 42
+
+      val request = HttpRequest()
+        .addAttribute(oneStringKey, oneStringAttribute)
+        .addAttribute(otherStringKey, otherStringAttribute)
+        .addAttribute(intKey, intAttribute)
+
+      request.attribute(oneStringKey) should be(Some(oneStringAttribute))
+      request.attribute(otherStringKey) should be(Some(otherStringAttribute))
+      request.attribute(intKey) should be(Some(intAttribute))
     }
   }
 
