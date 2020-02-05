@@ -25,7 +25,6 @@ class TightRequestTimeoutSpec extends WordSpec with Matchers with BeforeAndAfter
     akka.http.server.request-timeout = 10ms""")
 
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
-  import system.dispatcher
   implicit val materializer = ActorMaterializer()
   implicit val patience = PatienceConfig(3.seconds.dilated)
 
@@ -34,9 +33,9 @@ class TightRequestTimeoutSpec extends WordSpec with Matchers with BeforeAndAfter
   "Tight request timeout" should {
 
     "not cause double push error caused by the late response attempting to push" in {
-      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
       val slowHandler = Flow[HttpRequest].map(_ => HttpResponse()).delay(500.millis.dilated, OverflowStrategy.backpressure)
-      val binding = Http().bindAndHandle(slowHandler, hostname, port)
+      val binding = Http().bindAndHandle(slowHandler, "localhost", 0).futureValue
+      val (hostname, port) = (binding.localAddress.getHostString, binding.localAddress.getPort)
 
       val p = TestProbe()
       system.eventStream.subscribe(p.ref, classOf[Logging.Error])
@@ -46,7 +45,7 @@ class TightRequestTimeoutSpec extends WordSpec with Matchers with BeforeAndAfter
 
       p.expectNoMessage(1.second) // here the double push might happen
 
-      binding.flatMap(_.unbind()).futureValue
+      binding.unbind().futureValue
     }
 
   }
