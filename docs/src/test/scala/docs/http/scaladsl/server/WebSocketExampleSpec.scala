@@ -14,11 +14,12 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Sink }
 import akka.util.ByteString
 import docs.CompileOnlySpec
-import org.scalatest.{ Matchers, WordSpec }
 
 import scala.io.StdIn
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class WebSocketExampleSpec extends WordSpec with Matchers with CompileOnlySpec {
+class WebSocketExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpec {
   "core-example" in compileOnlySpec {
     //#websocket-example-using-core
     import akka.actor.ActorSystem

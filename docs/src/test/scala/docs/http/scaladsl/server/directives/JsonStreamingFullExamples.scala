@@ -4,9 +4,9 @@
 
 package docs.http.scaladsl.server.directives
 
-import org.scalatest.WordSpec
+import org.scalatest.wordspec.AnyWordSpec
 
-class JsonStreamingFullExamples extends WordSpec {
+class JsonStreamingFullExamples extends AnyWordSpec {
 
   "compile only spec" in {}
 

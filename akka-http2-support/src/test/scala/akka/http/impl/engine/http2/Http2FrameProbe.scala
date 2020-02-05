@@ -13,9 +13,9 @@ import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.stream.impl.io.ByteStringParser.ByteReader
 import akka.stream.scaladsl.Sink
 import akka.util.ByteString
-import org.scalatest.Matchers
 
 import scala.annotation.tailrec
+import org.scalatest.matchers.should.Matchers
 
 trait Http2FrameProbe {
   def sink: Sink[ByteString, Any]

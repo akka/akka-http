@@ -4,10 +4,11 @@
 
 package akka.http.impl.engine.http2
 
-import org.scalatest.{ Matchers, WordSpec }
 import org.scalatest.matchers.{ MatchResult, Matcher }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class PriorityTreeSpec extends WordSpec with Matchers {
+class PriorityTreeSpec extends AnyWordSpec with Matchers {
   "PriorityTree" should {
     "contain only the root node if empty" in {
       PriorityTree() should printLike(

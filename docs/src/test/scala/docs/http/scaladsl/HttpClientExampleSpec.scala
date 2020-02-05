@@ -8,9 +8,10 @@ import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import docs.CompileOnlySpec
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec {
+class HttpClientExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpec {
 
   "manual-entity-consume-example-1" in compileOnlySpec {
     //#manual-entity-consume-example-1

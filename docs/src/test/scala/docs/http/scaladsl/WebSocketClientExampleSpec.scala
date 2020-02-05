@@ -5,9 +5,10 @@
 package docs.http.scaladsl
 
 import docs.CompileOnlySpec
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class WebSocketClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec {
+class WebSocketClientExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpec {
 
   "singleWebSocket-request-example" in compileOnlySpec {
     //#single-WebSocket-request

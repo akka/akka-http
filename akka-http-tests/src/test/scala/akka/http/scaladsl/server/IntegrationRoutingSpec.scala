@@ -11,10 +11,12 @@ import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.stream.ActorMaterializer
 import akka.testkit.{ AkkaSpec, SocketUtil, TestKit }
 import org.scalatest.concurrent.{ IntegrationPatience, ScalaFutures }
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 /** not (yet?) ready for public consuption */
-private[akka] trait IntegrationRoutingSpec extends WordSpecLike with Matchers with BeforeAndAfterAll
+private[akka] trait IntegrationRoutingSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll
   with Directives with RequestBuilding
   with ScalaFutures with IntegrationPatience {
   import IntegrationRoutingSpec._

@@ -12,9 +12,10 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ ExceptionHandler, RequestContext }
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.model.HttpMethods.GET
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class CachingDirectivesSpec extends WordSpec with Matchers with ScalatestRouteTest with CachingDirectives {
+class CachingDirectivesSpec extends AnyWordSpec with Matchers with ScalatestRouteTest with CachingDirectives {
 
   val simpleKeyer: PartialFunction[RequestContext, Uri] = {
     case r: RequestContext if r.request.method == GET => r.request.uri

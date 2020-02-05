@@ -9,7 +9,8 @@ package sse
 
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.stream.scaladsl.{ Sink, Source }
-import org.scalatest.{ AsyncWordSpec, Matchers }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AsyncWordSpec
 
 final class ServerSentEventParserSpec extends AsyncWordSpec with Matchers with BaseUnmarshallingSpec {
 

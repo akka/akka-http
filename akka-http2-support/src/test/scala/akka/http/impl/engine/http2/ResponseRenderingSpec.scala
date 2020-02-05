@@ -9,11 +9,12 @@ import java.time.format.DateTimeFormatter
 import akka.event.NoLogging
 import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.model.{ ContentTypes, DateTime, TransferEncodings }
-import org.scalatest.{ Matchers, WordSpec }
 
 import scala.collection.immutable.Seq
 import scala.collection.immutable.VectorBuilder
 import scala.util.Try
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 object MyCustomHeader extends ModeledCustomHeaderCompanion[MyCustomHeader] {
   override def name: String = "custom-header"
@@ -24,7 +25,7 @@ class MyCustomHeader(val value: String, val renderInResponses: Boolean) extends 
   override def renderInRequests(): Boolean = false
 }
 
-class ResponseRenderingSpec extends WordSpec with Matchers {
+class ResponseRenderingSpec extends AnyWordSpec with Matchers {
 
   "The response header logic" should {
 

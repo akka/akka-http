@@ -5,11 +5,12 @@
 package akka.http.scaladsl.server
 package directives
 
-import org.scalatest.{ FreeSpec, Inside }
+import org.scalatest.Inside
 import akka.http.scaladsl.unmarshalling.Unmarshaller, Unmarshaller._
 import akka.http.scaladsl.model.StatusCodes
+import org.scalatest.freespec.AnyFreeSpec
 
-class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Inside {
+class ParameterDirectivesSpec extends AnyFreeSpec with GenericRoutingSpec with Inside {
   "when used with 'as[Int]' the parameter directive should" - {
     "extract a parameter value as Int" in {
       Get("/?amount=123") ~> {

@@ -5,8 +5,6 @@
 package akka.http.scaladsl.testkit
 
 import scala.concurrent.duration._
-import org.scalatest.FreeSpec
-import org.scalatest.Matchers
 import akka.testkit._
 import akka.util.Timeout
 import akka.pattern.ask
@@ -19,8 +17,10 @@ import Directives._
 
 import scala.concurrent.Await
 import scala.concurrent.Future
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class ScalatestRouteTestSpec extends FreeSpec with Matchers with ScalatestRouteTest {
+class ScalatestRouteTestSpec extends AnyFreeSpec with Matchers with ScalatestRouteTest {
 
   "The ScalatestRouteTest should support" - {
 

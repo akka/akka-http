@@ -13,9 +13,10 @@ import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.stream.scaladsl.{ Sink, Source }
 import java.util.{ List => JList }
-import org.scalatest.{ AsyncWordSpec, Matchers }
 import scala.collection.JavaConverters
 import scala.collection.immutable.Seq
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AsyncWordSpec
 
 object EventStreamUnmarshallingSpec {
 

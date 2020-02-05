@@ -7,7 +7,7 @@ package akka.http.scaladsl.unmarshalling
 import java.util.UUID
 
 import akka.http.scaladsl.unmarshalling.Unmarshaller.EitherUnmarshallingException
-import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
+import org.scalatest.BeforeAndAfterAll
 import akka.http.scaladsl.testkit.ScalatestUtils
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.MediaType.WithFixedCharset
@@ -18,8 +18,10 @@ import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with ScalatestUtils {
+class UnmarshallingSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll with ScalatestUtils {
   implicit val system = ActorSystem(getClass.getSimpleName)
   implicit val materializer = ActorMaterializer()
   import system.dispatcher

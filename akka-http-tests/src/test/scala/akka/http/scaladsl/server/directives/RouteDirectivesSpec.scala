@@ -6,7 +6,6 @@ package akka.http.scaladsl.server.directives
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
-import org.scalatest.FreeSpec
 import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
 import akka.testkit.EventFilter
@@ -16,8 +15,9 @@ import akka.http.scaladsl.server._
 import akka.http.scaladsl.model._
 import headers._
 import StatusCodes._
+import org.scalatest.freespec.AnyFreeSpec
 
-class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
+class RouteDirectivesSpec extends AnyFreeSpec with GenericRoutingSpec {
 
   "The `complete` directive should" - {
     "by chainable with the `&` operator" in {
