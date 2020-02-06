@@ -5,6 +5,7 @@
 package akka.http.scaladsl.server
 
 import org.scalatest.{ WordSpec, Suite, Matchers }
+import akka.http.impl.util.WithLogCapturing
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 
@@ -16,4 +17,10 @@ trait GenericRoutingSpec extends Matchers with Directives with ScalatestRouteTes
   def echoComplete2[T, U]: (T, U) => Route = { (x, y) => complete(s"$x $y") }
 }
 
-abstract class RoutingSpec extends WordSpec with GenericRoutingSpec
+abstract class RoutingSpec extends WordSpec with GenericRoutingSpec with WithLogCapturing {
+  override def testConfigSource: String =
+    """
+       akka.loglevel = DEBUG
+       akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
+    """
+}
