@@ -6,7 +6,11 @@ package akka.http.scaladsl.model
 
 import akka.http.javadsl.{ model => jm }
 
-class AttributeKey[T] extends jm.AttributeKey[T]
+import scala.reflect.ClassTag
+
+case class AttributeKey[T](name: String, private val clazz: Class[_]) extends jm.AttributeKey[T]
+
 object AttributeKey {
-  def apply[T](): AttributeKey[T] = new AttributeKey[T]()
+  def apply[T: ClassTag](name: String): AttributeKey[T] =
+    new AttributeKey[T](name, implicitly[ClassTag[T]].runtimeClass)
 }

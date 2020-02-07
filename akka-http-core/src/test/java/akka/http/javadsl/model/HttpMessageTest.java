@@ -12,21 +12,29 @@ import org.scalatestplus.junit.JUnitSuite;
 public class HttpMessageTest extends JUnitSuite {
     @Test
     public void testRetrieveAttributeByKey() {
-        AttributeKey<String> oneStringKey = AttributeKey.newInstance();
-        AttributeKey<String> otherStringKey = AttributeKey.newInstance();
-        AttributeKey<Integer> intKey = AttributeKey$.MODULE$.apply();
+        AttributeKey<String> oneStringKey = AttributeKey.create("one", String.class);
+        // keys with the same type but different names should be considered different
+        AttributeKey<String> otherStringKey = AttributeKey.create("other", String.class);
 
-        String oneStringAttribute = "A string attribute!";
-        String otherStringAttribute = "Another";
-        Integer intAttribute = 42;
+        // it should be possible to use 'Scala attribute keys' in the Java API's
+        AttributeKey<Integer> intKey = AttributeKey$.MODULE$.apply("int", Integer.class);
+        // keys with the same name but different types should be considered different
+        AttributeKey<Integer> otherIntKey = AttributeKey.create("other", Integer.class);
+
+        String oneString = "A string attribute!";
+        String otherString = "Another";
+        Integer integer = 42;
+        Integer otherInteger = 37;
 
         HttpRequest request = HttpRequest.create()
-                .addAttribute(oneStringKey, oneStringAttribute)
-                .addAttribute(otherStringKey, otherStringAttribute)
-                .addAttribute(intKey, intAttribute);
+                .addAttribute(oneStringKey, oneString)
+                .addAttribute(otherStringKey, otherString)
+                .addAttribute(intKey, integer)
+                .addAttribute(otherIntKey, otherInteger);
 
-        assertEquals(oneStringAttribute, request.getAttribute(oneStringKey).get());
-        assertEquals(otherStringAttribute, request.getAttribute(otherStringKey).get());
-        assertEquals(intAttribute, request.getAttribute(intKey).get());
+        assertEquals(oneString, request.getAttribute(oneStringKey).get());
+        assertEquals(otherString, request.getAttribute(otherStringKey).get());
+        assertEquals(integer, request.getAttribute(intKey).get());
+        assertEquals(otherInteger, request.getAttribute(otherIntKey).get());
     }
 }

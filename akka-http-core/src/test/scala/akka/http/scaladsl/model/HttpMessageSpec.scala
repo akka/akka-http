@@ -74,22 +74,29 @@ class HttpMessageSpec extends AnyWordSpec with Matchers {
       request.headers[`Set-Cookie`] should ===(Seq(oneCookieHeader, anotherCookieHeader))
     }
     "retrieve an attribute by key" in {
-      val oneStringKey = AttributeKey[String]()
-      val otherStringKey = AttributeKey[String]()
-      val intKey = jm.AttributeKey.newInstance[Int]()
+      val oneStringKey = AttributeKey[String]("one")
+      // keys with the same type but different names should be different
+      val otherStringKey = AttributeKey[String]("other")
+      // it should be possible to use 'Java attribute keys' in the Scala API's
+      val intKey = jm.AttributeKey.create("int", classOf[Int])
+      // keys with the same name but different types should be different
+      val otherIntKey = AttributeKey[Int]("other")
 
-      val oneStringAttribute = "A string attribute!"
-      val otherStringAttribute = "Another"
-      val intAttribute = 42
+      val oneString = "A string attribute!"
+      val otherString = "Another"
+      val int = 42
+      val otherInt = 37
 
       val request = HttpRequest()
-        .addAttribute(oneStringKey, oneStringAttribute)
-        .addAttribute(otherStringKey, otherStringAttribute)
-        .addAttribute(intKey, intAttribute)
+        .addAttribute(oneStringKey, oneString)
+        .addAttribute(otherStringKey, otherString)
+        .addAttribute(intKey, int)
+        .addAttribute(otherIntKey, otherInt)
 
-      request.attribute(oneStringKey) should be(Some(oneStringAttribute))
-      request.attribute(otherStringKey) should be(Some(otherStringAttribute))
-      request.attribute(intKey) should be(Some(intAttribute))
+      request.attribute(oneStringKey) should be(Some(oneString))
+      request.attribute(otherStringKey) should be(Some(otherString))
+      request.attribute(intKey) should be(Some(int))
+      request.attribute(otherIntKey) should be(Some(otherInt))
     }
   }
 
