@@ -75,9 +75,12 @@ class ClientServerSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll 
       val probe = TestSubscriber.manualProbe[Http.IncomingConnection]()
       // not really testing anything here, problem is that it is hard to find an unused port otherwise
       val settings = ServerSettings(system).withDefaultHttpPort(0)
-      val binding = Http().bind("0.0.0.0", settings = settings).to(Sink.fromSubscriber(probe)).run()
+      val bindingF = Http().bind("0.0.0.0", settings = settings).to(Sink.fromSubscriber(probe)).run()
       val sub = probe.expectSubscription() // if we get it we are bound
-      Await.result(binding, 1.second.dilated).unbind()
+      val binding = Await.result(bindingF, 1.second.dilated)
+      // though, that wouldn't probably happen because binding ports < 1024 is restricted in most environments
+      binding.localAddress.getPort should not be (80)
+      binding.unbind()
       sub.cancel()
     }
 
