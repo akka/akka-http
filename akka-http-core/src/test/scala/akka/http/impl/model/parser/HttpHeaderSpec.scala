@@ -224,6 +224,8 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
         `Content-Type`(`application/json`)
       "Content-Type: text/plain; charset=utf8" =!=
         `Content-Type`(ContentType(`text/plain`, `UTF-8`)).renderedTo("text/plain; charset=UTF-8")
+      "Content-Type: text/plain; Charset=utf8" =!=
+        `Content-Type`(ContentType(`text/plain`, `UTF-8`)).renderedTo("text/plain; charset=UTF-8")
       "Content-Type: text/plain" =!=
         `Content-Type`(ContentType.WithMissingCharset(MediaTypes.`text/plain`)).renderedTo("text/plain")
       "Content-Type: text/xml2; version=3; charset=windows-1252" =!=

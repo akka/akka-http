@@ -8,6 +8,8 @@ import akka.annotation.InternalApi
 import akka.http.impl.util._
 import akka.http.scaladsl.model._
 
+import scala.annotation.tailrec
+
 /** INTERNAL API */
 @InternalApi
 private[parser] trait CommonActions {
@@ -57,4 +59,21 @@ private[parser] trait CommonActions {
     HttpCharsets
       .getForKeyCaseInsensitive(name)
       .getOrElse(HttpCharset.custom(name))
+
+  /**
+   * Returns true if both strings only contain ASCII characters and each character matches case insensitively.
+   */
+  def equalsAsciiCaseInsensitive(str1: String, str2: String): Boolean = {
+    @tailrec def stringEquals(at: Int, length: Int): Boolean =
+      if (at < length) {
+        val char1 = str1.charAt(at)
+        val char2 = str2.charAt(at)
+
+        (char1 | char2) < 0x80 &&
+          Character.toLowerCase(char1) == Character.toLowerCase(char2) &&
+          stringEquals(at + 1, length)
+      } else true
+
+    str1.length == str2.length && stringEquals(0, str1.length)
+  }
 }
