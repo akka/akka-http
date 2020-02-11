@@ -65,7 +65,7 @@ class ClientServerSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll 
 
     "properly bind a server" in {
       val probe = TestSubscriber.manualProbe[Http.IncomingConnection]()
-      val binding = Http().bind("0.0.0.0", 0).to(Sink.fromSubscriber(probe)).run()
+      val binding = Http().bind("127.0.0.1", 0).to(Sink.fromSubscriber(probe)).run()
       val sub = probe.expectSubscription() // if we get it we are bound
       Await.result(binding, 1.second.dilated).unbind()
       sub.cancel()
