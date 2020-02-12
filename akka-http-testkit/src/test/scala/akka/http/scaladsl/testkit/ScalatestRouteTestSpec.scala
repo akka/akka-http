@@ -14,6 +14,7 @@ import akka.http.scaladsl.model._
 import StatusCodes._
 import HttpMethods._
 import Directives._
+import org.scalatest.exceptions.TestFailedException
 
 import scala.concurrent.Await
 import scala.concurrent.Future
@@ -84,6 +85,28 @@ class ScalatestRouteTestSpec extends AnyFreeSpec with Matchers with ScalatestRou
         responseEntity shouldEqual HttpEntity(ContentTypes.`text/plain(UTF-8)`, "abc")
         header("Fancy") shouldEqual Some(pinkHeader)
       }(result)
+    }
+
+    "failing the test inside the route" in {
+
+      val route = get {
+        fail()
+      }
+
+      assertThrows[TestFailedException] {
+        Get() ~> route
+      }
+    }
+
+    "internal server error" in {
+
+      val route = get {
+        throw new RuntimeException("BOOM")
+      }
+
+      Get() ~> route ~> check {
+        status shouldEqual InternalServerError
+      }
     }
   }
 }

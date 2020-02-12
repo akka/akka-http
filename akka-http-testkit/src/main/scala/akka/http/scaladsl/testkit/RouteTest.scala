@@ -155,7 +155,13 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
               securedConnection = defaultHostInfo.securedConnection,
               defaultHostHeader = defaultHostInfo.host)
           val ctx = new RequestContextImpl(effectiveRequest, routingLog.requestLog(effectiveRequest), routingSettings)
-          val sealedExceptionHandler = ExceptionHandler.seal(exceptionHandler)
+
+          val sealedExceptionHandler = {
+            // Use special handler for test framework exceptions instead of swallowing them and returning 500 response
+            val updatedEH = if (exceptionHandler eq null) testExceptionHandler else exceptionHandler.withFallback(testExceptionHandler)
+            ExceptionHandler.seal(updatedEH)
+          }
+
           val semiSealedRoute = // sealed for exceptions but not for rejections
             Directives.handleExceptions(sealedExceptionHandler)(route)
           val deferrableRouteResult = semiSealedRoute(ctx)
