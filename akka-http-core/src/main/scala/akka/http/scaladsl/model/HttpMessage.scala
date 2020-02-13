@@ -360,7 +360,7 @@ final class HttpRequest(
 
   /* Manual Case Class things, to easen bin-compat */
 
-  @deprecated("Kept for binary compatibility", "10.0.2")
+  @deprecated("Kept for binary compatibility", "10.2.0")
   def copy(
     method:   HttpMethod,
     uri:      Uri,
