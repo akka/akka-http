@@ -511,11 +511,14 @@ private[client] object NewHostConnectionPool {
               slot.onConnectionCompleted()
             }
           override def onUpstreamFailure(ex: Throwable): Unit =
-            if (connectionEstablished)
-              withSlot { slot =>
+            withSlot { slot =>
+              if (connectionEstablished) {
                 slot.debug("Connection failed")
                 slot.onConnectionFailed(ex)
               }
+              // otherwise, rely on connection.onComplete to fail below
+              // (connection error is sent through matValue future and through the stream)
+            }
 
           def onPull(): Unit = () // emitRequests makes sure not to push too early
 
