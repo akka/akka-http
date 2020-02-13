@@ -34,6 +34,7 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   def socketOptions: immutable.Seq[SocketOption]
   def parserSettings: ParserSettings
   def logUnencryptedNetworkBytes: Option[Int]
+  def streamCancellationDelay: FiniteDuration
   def localAddress: Option[InetSocketAddress]
 
   /** The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used. */
@@ -43,9 +44,10 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   // ---
 
   // overrides for more specific return type
-  override def withConnectingTimeout(newValue: FiniteDuration): ClientConnectionSettings = self.copy(connectingTimeout = newValue)
-  override def withIdleTimeout(newValue: Duration): ClientConnectionSettings = self.copy(idleTimeout = newValue)
-  override def withRequestHeaderSizeHint(newValue: Int): ClientConnectionSettings = self.copy(requestHeaderSizeHint = newValue)
+  def withConnectingTimeout(newValue: FiniteDuration): ClientConnectionSettings = self.copy(connectingTimeout = newValue)
+  def withIdleTimeout(newValue: Duration): ClientConnectionSettings = self.copy(idleTimeout = newValue)
+  def withRequestHeaderSizeHint(newValue: Int): ClientConnectionSettings = self.copy(requestHeaderSizeHint = newValue)
+  def withStreamCancellationDelay(newValue: FiniteDuration): ClientConnectionSettings = self.copy(streamCancellationDelay = newValue)
 
   // overloads for idiomatic Scala use
   def withWebsocketSettings(newValue: WebSocketSettings): ClientConnectionSettings = self.copy(websocketSettings = newValue)
