@@ -26,6 +26,9 @@ import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.ws.{ Message, WebSocketRequest, WebSocketUpgradeResponse }
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
 import akka.http.scaladsl.util.FastFuture
+import akka.stream.Attributes.CancellationStrategy
+import akka.stream.Attributes.CancellationStrategy.AfterDelay
+import akka.stream.Attributes.CancellationStrategy.FailStage
 import akka.{ Done, NotUsed }
 import akka.stream._
 import akka.stream.TLSProtocol._
@@ -462,6 +465,8 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     val hostHeader = if (port == connectionContext.defaultPort) Host(host) else Host(host, port)
     val layer = clientLayer(hostHeader, settings, log)
     layer.joinMat(_outgoingTlsConnectionLayer(host, port, settings, connectionContext, log))(Keep.right)
+      // already added in clientLayer but needed here again to also include transport layer
+      .addAttributes(cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
   }
 
   private def _outgoingTlsConnectionLayer(host: String, port: Int,
@@ -489,6 +494,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     settings:   ClientConnectionSettings,
     log:        LoggingAdapter           = system.log): ClientLayer =
     OutgoingConnectionBlueprint(hostHeader, settings, log)
+      .addAttributes(cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
 
   // ** CONNECTION POOL ** //
 
@@ -734,6 +740,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     settings: ClientConnectionSettings = ClientConnectionSettings(system),
     log:      LoggingAdapter           = system.log): Http.WebSocketClientLayer =
     WebSocketClientBlueprint(request, settings, log)
+      .addAttributes(cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
 
   /**
    * Constructs a flow that once materialized establishes a WebSocket connection to the given Uri.
@@ -762,6 +769,8 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
 
     webSocketClientLayer(request, settings, log)
       .join(_outgoingTlsConnectionLayer(host, port, settings.withLocalAddressOverride(localAddress), ctx, log))
+      // also added webSocketClientLayer but we want to make sure it covers the whole stack
+      .addAttributes(cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
   }
 
   /**
@@ -1127,6 +1136,14 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
     if (settings.remoteAddressHeader) HttpAttributes.remoteAddress(incoming.remoteAddress)
     else HttpAttributes.empty
 
+  @InternalApi
+  private[http] def cancellationStrategyAttributeForDelay(delay: FiniteDuration): Attributes =
+    Attributes(CancellationStrategy {
+      delay match {
+        case Duration.Zero => FailStage
+        case d             => AfterDelay(d, FailStage)
+      }
+    })
 }
 
 /**

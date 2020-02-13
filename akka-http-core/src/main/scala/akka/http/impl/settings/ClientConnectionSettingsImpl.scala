@@ -30,6 +30,7 @@ private[akka] final case class ClientConnectionSettingsImpl(
   websocketSettings:          WebSocketSettings,
   socketOptions:              immutable.Seq[SocketOption],
   parserSettings:             ParserSettings,
+  streamCancellationDelay:    FiniteDuration,
   localAddress:               Option[InetSocketAddress],
   transport:                  ClientTransport)
   extends akka.http.scaladsl.settings.ClientConnectionSettings {
@@ -56,6 +57,7 @@ private[akka] object ClientConnectionSettingsImpl extends SettingsCompanionImpl[
       websocketSettings = WebSocketSettingsImpl.client(c.getConfig("websocket")),
       socketOptions = SocketOptionSettings.fromSubConfig(root, c.getConfig("socket-options")),
       parserSettings = ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing")),
+      streamCancellationDelay = c.getFiniteDuration("stream-cancellation-delay"),
       localAddress = None,
       transport = ClientTransport.TCP)
   }
