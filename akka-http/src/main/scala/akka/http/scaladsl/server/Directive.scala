@@ -13,6 +13,15 @@ import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
 import akka.http.impl.util._
 
+final case class DirectiveMetaInformation(name: String)
+
+// FIXME: in the best case we can move that into Directive.apply for less indirection
+private class DirectiveWithChangedMetaInformation[L](original: Directive[L], _metaInformation: DirectiveMetaInformation)(implicit ev: Tuple[L]) extends Directive[L] {
+  override def tapply(f: L => Route): Route = original.tapply(f)
+  override def metaInformation: Option[DirectiveMetaInformation] = Some(_metaInformation)
+  override def withMetaInformation(newInformation: DirectiveMetaInformation): Directive[L] = new DirectiveWithChangedMetaInformation[L](original, newInformation)
+}
+
 /**
  * A directive that provides a tuple of values of type `L` to create an inner route.
  */
@@ -27,6 +36,12 @@ abstract class Directive[L](implicit val ev: Tuple[L]) {
    */
   def tapply(f: L => Route): Route
   //#basic
+
+  def metaInformation: Option[DirectiveMetaInformation] = None
+  def withMetaInformation(newInformation: DirectiveMetaInformation): Directive[L] =
+    new DirectiveWithChangedMetaInformation[L](this, newInformation)
+  def named(name: String): Directive[L] = withMetaInformation(DirectiveMetaInformation(name))
+
   /**
    * Joins two directives into one which runs the second directive if the first one rejects.
    *

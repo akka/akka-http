@@ -84,7 +84,7 @@ trait MethodDirectives {
     extractMethod.flatMap[Unit] {
       case `httpMethod` => pass
       case _            => reject(MethodRejection(httpMethod))
-    } & cancelRejections(classOf[MethodRejection])
+    } & cancelRejections(classOf[MethodRejection]) named s"method($httpMethod)"
   //#method
 
   /**
@@ -114,12 +114,12 @@ object MethodDirectives extends MethodDirectives {
     BasicDirectives.extract(_.request.method)
 
   // format: OFF
-  private val _delete : Directive0 = method(DELETE)
-  private val _get    : Directive0 = method(GET)
-  private val _head   : Directive0 = method(HEAD)
-  private val _options: Directive0 = method(OPTIONS)
-  private val _patch  : Directive0 = method(PATCH)
-  private val _post   : Directive0 = method(POST)
-  private val _put    : Directive0 = method(PUT)
+  private val _delete : Directive0 = method(DELETE) named "delete"
+  private val _get    : Directive0 = method(GET) named "get"
+  private val _head   : Directive0 = method(HEAD) named "head"
+  private val _options: Directive0 = method(OPTIONS) named "options"
+  private val _patch  : Directive0 = method(PATCH) named "patch"
+  private val _post   : Directive0 = method(POST) named "post"
+  private val _put    : Directive0 = method(PUT) named "put"
   // format: ON
 }
