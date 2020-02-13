@@ -89,6 +89,33 @@ class ModelSpec extends AkkaSpec {
     credentialsOfRequest(HttpRequest(headers = List(Authorization(GenericHttpCredentials("Other", Map.empty[String, String]))))) should be(None)
   }
 
+  "deal with attributes" in {
+    //#attributes
+    case class User(name: String)
+    object User {
+      val attributeKey = AttributeKey[User]("user")
+    }
+
+    def determineUser(req: HttpRequest): HttpRequest = {
+      val user = // ... somehow determine the user for this request
+        //#attributes
+        User("joe")
+      //#attributes
+
+      // Add the attribute
+      req.addAttribute(User.attributeKey, user)
+    }
+    //#attributes
+
+    val requestWithAttribute = determineUser(HttpRequest())
+    //#attributes
+
+    // Retrieve the attribute
+    val user: Option[User] = requestWithAttribute.attribute(User.attributeKey)
+    //#attributes
+    user should be(Some(User("joe")))
+  }
+
   "Synthetic-header-s3" in {
     //#synthetic-header-s3
     import akka.http.scaladsl.model.headers.`Raw-Request-URI`
