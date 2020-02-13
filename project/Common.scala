@@ -6,10 +6,12 @@ package akka
 
 import sbt._
 import Keys._
+import com.lightbend.paradox.projectinfo.ParadoxProjectInfoPluginKeys._
 
 object Common extends AutoPlugin {
   override def trigger: PluginTrigger = allRequirements
   override lazy val projectSettings = Seq(
+    projectInfoVersion := (if (isSnapshot.value) "snapshot" else version.value),
     scalacOptions ++= Seq(
       "-deprecation",
       "-encoding", "UTF-8", // yes, this is 2 args
