@@ -23,6 +23,7 @@ import scala.concurrent.{ ExecutionContextExecutor, Future }
 private[http] class RequestContextImpl(
   val request:          HttpRequest,
   val unmatchedPath:    Uri.Path,
+  val tokenValues:      Map[ExtractionToken[_], Any],
   val executionContext: ExecutionContextExecutor,
   val materializer:     Materializer,
   val log:              LoggingAdapter,
@@ -30,10 +31,10 @@ private[http] class RequestContextImpl(
   val parserSettings:   ParserSettings) extends RequestContext {
 
   def this(request: HttpRequest, log: LoggingAdapter, settings: RoutingSettings, parserSettings: ParserSettings)(implicit ec: ExecutionContextExecutor, materializer: Materializer) =
-    this(request, request.uri.path, ec, materializer, log, settings, parserSettings)
+    this(request, request.uri.path, Map.empty, ec, materializer, log, settings, parserSettings)
 
   def this(request: HttpRequest, log: LoggingAdapter, settings: RoutingSettings)(implicit ec: ExecutionContextExecutor, materializer: Materializer) =
-    this(request, request.uri.path, ec, materializer, log, settings, ParserSettings(ActorMaterializerHelper.downcast(materializer).system))
+    this(request, request.uri.path, Map.empty, ec, materializer, log, settings, ParserSettings(ActorMaterializerHelper.downcast(materializer).system))
 
   def reconfigure(executionContext: ExecutionContextExecutor, materializer: Materializer, log: LoggingAdapter, settings: RoutingSettings): RequestContext =
     copy(executionContext = executionContext, materializer = materializer, log = log, routingSettings = settings)
@@ -106,15 +107,19 @@ private[http] class RequestContextImpl(
     case _ => this
   }
 
+  override def tokenValue[T](token: ExtractionToken[T]): T = tokenValues(token).asInstanceOf[T]
+  override def addTokenValue[T](token: ExtractionToken[T], value: T): RequestContext = copy(tokenValues = tokenValues + (token -> value))
+
   private def copy(
-    request:          HttpRequest              = request,
-    unmatchedPath:    Uri.Path                 = unmatchedPath,
-    executionContext: ExecutionContextExecutor = executionContext,
-    materializer:     Materializer             = materializer,
-    log:              LoggingAdapter           = log,
-    routingSettings:  RoutingSettings          = settings,
-    parserSettings:   ParserSettings           = parserSettings) =
-    new RequestContextImpl(request, unmatchedPath, executionContext, materializer, log, routingSettings, parserSettings)
+    request:          HttpRequest                  = request,
+    unmatchedPath:    Uri.Path                     = unmatchedPath,
+    tokenValues:      Map[ExtractionToken[_], Any] = tokenValues,
+    executionContext: ExecutionContextExecutor     = executionContext,
+    materializer:     Materializer                 = materializer,
+    log:              LoggingAdapter               = log,
+    routingSettings:  RoutingSettings              = settings,
+    parserSettings:   ParserSettings               = parserSettings) =
+    new RequestContextImpl(request, unmatchedPath, tokenValues, executionContext, materializer, log, routingSettings, parserSettings)
 
   override def toString: String =
     s"""RequestContext($request, $unmatchedPath, [more settings])"""

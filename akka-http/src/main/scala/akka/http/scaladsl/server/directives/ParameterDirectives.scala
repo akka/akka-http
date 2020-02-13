@@ -74,10 +74,10 @@ object ParameterDirectives extends ParameterDirectives {
     def apply(): Out
   }
   object ParamMagnet {
-    implicit def apply[T](value: T)(implicit pdef: ParamDef[T]): ParamMagnet { type Out = pdef.Out } =
+    implicit def apply[T, O](value: T)(implicit pdef: ParamDef[T] { type Out = Directive[O] }): ParamMagnet { type Out = pdef.Out } =
       new ParamMagnet {
         type Out = pdef.Out
-        def apply() = pdef(value)
+        def apply() = pdef(value) named "parameters"
       }
   }
 
