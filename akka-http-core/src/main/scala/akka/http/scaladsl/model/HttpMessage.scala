@@ -302,8 +302,8 @@ final class HttpRequest(
   override def isRequest = true
   override def isResponse = false
 
-  @deprecated("for backwards compatibility", "10.2.0")
-  def this(method: HttpMethod, uri: Uri, headers: immutable.Seq[HttpHeader], entity: RequestEntity, protocol: HttpProtocol) =
+  @deprecated("use the constructor that includes an attributes parameter instead", "10.2.0")
+  private[model] def this(method: HttpMethod, uri: Uri, headers: immutable.Seq[HttpHeader], entity: RequestEntity, protocol: HttpProtocol) =
     this(method, uri, headers, Map.empty, entity, protocol)
 
   /**
@@ -360,8 +360,8 @@ final class HttpRequest(
 
   /* Manual Case Class things, to easen bin-compat */
 
-  @deprecated("Kept for binary compatibility", "10.2.0")
-  def copy(
+  @deprecated("use the method that includes an attributes parameter instead", "10.2.0")
+  private[model] def copy(
     method:   HttpMethod,
     uri:      Uri,
     headers:  immutable.Seq[HttpHeader],
@@ -387,10 +387,11 @@ final class HttpRequest(
   }
 
   override def equals(obj: scala.Any): Boolean = obj match {
-    case HttpRequest(_method, _uri, _headers, _entity, _protocol) =>
+    case request @ HttpRequest(_method, _uri, _headers, _entity, _protocol) =>
       method == _method &&
         uri == _uri &&
         headers == _headers &&
+        attributes == request.attributes &&
         entity == _entity &&
         protocol == _protocol
     case _ => false
@@ -500,8 +501,8 @@ final class HttpResponse(
   override def isRequest = false
   override def isResponse = true
 
-  @deprecated("for backwards compatibility", "10.2.0")
-  def this(status: StatusCode, headers: immutable.Seq[HttpHeader], entity: ResponseEntity, protocol: HttpProtocol) =
+  @deprecated("use the constructor that includes an attributes parameter instead", "10.2.0")
+  private[model] def this(status: StatusCode, headers: immutable.Seq[HttpHeader], entity: ResponseEntity, protocol: HttpProtocol) =
     this(status, headers, Map.empty, entity, protocol)
 
   override def withHeaders(headers: immutable.Seq[HttpHeader]): HttpResponse =
@@ -535,17 +536,18 @@ final class HttpResponse(
     attributes: Map[AttributeKey[Any], Any] = attributes
   ) = new HttpResponse(status, headers, attributes, entity, protocol)
 
-  @deprecated("kept for binary compatibility", "10.2.0")
-  def copy(
+  @deprecated("use the method that includes an attributes parameter instead", "10.2.0")
+  private[model] def copy(
     status:   StatusCode,
     headers:  immutable.Seq[HttpHeader],
     entity:   ResponseEntity,
     protocol: HttpProtocol) = new HttpResponse(status, headers, attributes, entity, protocol)
 
   override def equals(obj: scala.Any): Boolean = obj match {
-    case HttpResponse(_status, _headers, _entity, _protocol) =>
+    case response @ HttpResponse(_status, _headers, _entity, _protocol) =>
       status == _status &&
         headers == _headers &&
+        attributes == response.attributes &&
         entity == _entity &&
         protocol == _protocol
     case _ => false
