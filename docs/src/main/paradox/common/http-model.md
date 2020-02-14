@@ -368,6 +368,8 @@ Scala
 Java
 :   @@snip [ModelDocTest.java]($test$/java/docs/http/javadsl/ModelDocTest.java) { #attributes }
 
+Message attributes are only to be used within in your application, they are not present on the wire.
+
 ## Parsing / Rendering
 
 Parsing and rendering of HTTP data structures is heavily optimized and for most types there's currently no public API
