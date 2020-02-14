@@ -97,6 +97,10 @@ class HttpMessageSpec extends AnyWordSpec with Matchers {
       request.attribute(otherStringKey) should be(Some(otherString))
       request.attribute(intKey) should be(Some(int))
       request.attribute(otherIntKey) should be(Some(otherInt))
+
+      val smaller = request.removeAttribute(intKey)
+      smaller.attribute(otherStringKey) should be(Some(otherString))
+      smaller.attribute(intKey) should be(None)
     }
   }
 

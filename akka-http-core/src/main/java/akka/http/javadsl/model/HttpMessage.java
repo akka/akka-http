@@ -140,6 +140,11 @@ public interface HttpMessage {
         Self removeHeader(String headerName);
 
         /**
+         * Returns a copy of this message with the attribute with this key (if any) removed.
+         */
+        Self removeAttribute(AttributeKey<?> key);
+
+        /**
          * Returns a copy of this message with a new entity.
          */
         Self withEntity(String string);

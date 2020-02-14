@@ -170,6 +170,8 @@ sealed trait HttpMessage extends jm.HttpMessage {
     mapHeaders(_.filterNot(_.is(lowerHeaderName)))
   }
 
+  def removeAttribute(key: jm.AttributeKey[_]): Self = mapAttributes(_ - key.asInstanceOf[AttributeKey[Any]])
+
   def withEntity(string: String): Self = withEntity(HttpEntity(string))
   def withEntity(bytes: Array[Byte]): Self = withEntity(HttpEntity(bytes))
   def withEntity(bytes: ByteString): Self = withEntity(HttpEntity(bytes))

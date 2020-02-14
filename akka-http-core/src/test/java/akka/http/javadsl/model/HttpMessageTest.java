@@ -6,8 +6,10 @@ package akka.http.javadsl.model;
 
 import akka.http.scaladsl.model.AttributeKey$;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
 import org.scalatestplus.junit.JUnitSuite;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class HttpMessageTest extends JUnitSuite {
     @Test
@@ -36,5 +38,9 @@ public class HttpMessageTest extends JUnitSuite {
         assertEquals(otherString, request.getAttribute(otherStringKey).get());
         assertEquals(integer, request.getAttribute(intKey).get());
         assertEquals(otherInteger, request.getAttribute(otherIntKey).get());
+
+        HttpRequest smaller = request.removeAttribute(intKey);
+        assertEquals(otherString, smaller.getAttribute(otherStringKey).get());
+        assertFalse(smaller.getAttribute(intKey).isPresent());
     }
 }
