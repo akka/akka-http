@@ -540,7 +540,7 @@ final class HttpResponse(
     headers:    immutable.Seq[HttpHeader] = headers,
     entity:     ResponseEntity            = entity,
     protocol:   HttpProtocol              = protocol,
-    attributes: Map[AttributeKey[_], _] = attributes
+    attributes: Map[AttributeKey[_], _]   = attributes
   ) = new HttpResponse(status, headers, attributes, entity, protocol)
 
   @deprecated("use the method that includes an attributes parameter instead", "10.2.0")
