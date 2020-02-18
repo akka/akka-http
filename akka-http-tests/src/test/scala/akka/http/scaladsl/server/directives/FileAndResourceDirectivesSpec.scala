@@ -492,7 +492,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     "reject path traversal attempts" in {
       def _listDirectoryContents(directory: String) = listDirectoryContents(new File(testRoot, directory).getCanonicalPath)
       def route(uri: String) =
-        mapRequestContext(_.withUnmatchedPath(Path("/" + uri)).mapRequest(_.copy(uri = "/" + uri))) {
+        mapRequestContext(_.withUnmatchedPath(Path("/" + uri)).mapRequest(_.withUri("/" + uri))) {
           _listDirectoryContents("someDir/sub")
         }
 

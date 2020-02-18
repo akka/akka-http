@@ -36,7 +36,7 @@ trait RouteTestResultComponent {
       }
     }
 
-    def response: HttpResponse = rawResponse.copy(entity = entity)
+    def response: HttpResponse = rawResponse.withEntity(entity)
 
     /** Returns a "fresh" entity with a "fresh" unconsumed byte- or chunk stream (if not strict) */
     def entity: ResponseEntity = entityRecreator()

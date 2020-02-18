@@ -403,7 +403,7 @@ trait BasicDirectives {
             StatusCodes.RequestTimeout,
             ErrorInfo(s"Request timed out after $timeout while waiting for entity data", "Consider increasing the timeout for toStrict"))
       }.flatMap { strictEntity =>
-        val newCtx = ctx.mapRequest(_.copy(entity = strictEntity))
+        val newCtx = ctx.mapRequest(_.withEntity(strictEntity))
         inner(())(newCtx)
       }
     }

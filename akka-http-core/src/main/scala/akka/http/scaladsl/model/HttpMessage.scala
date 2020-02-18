@@ -370,7 +370,7 @@ final class HttpRequest(
     entity:   RequestEntity,
     protocol: HttpProtocol) = new HttpRequest(method, uri, headers, attributes, entity, protocol)
 
-  def copy(
+  private[model] def copy(
     method:     HttpMethod                  = method,
     uri:        Uri                         = uri,
     headers:    immutable.Seq[HttpHeader]   = headers,
@@ -530,7 +530,7 @@ final class HttpResponse(
 
   /* Manual Case Class things, to ease bin-compat */
 
-  def copy(
+  private[model] def copy(
     status:     StatusCode                  = status,
     headers:    immutable.Seq[HttpHeader]   = headers,
     entity:     ResponseEntity              = entity,

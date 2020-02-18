@@ -242,7 +242,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "0mapResponse" in {
     //#mapResponse0
     def overwriteResultStatus(response: HttpResponse): HttpResponse =
-      response.copy(status = StatusCodes.BadGateway)
+      response.withStatus(StatusCodes.BadGateway)
     val route = mapResponse(overwriteResultStatus)(complete("abc"))
 
     // tests:
@@ -265,7 +265,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
           case code if code.isSuccess => response
           case code =>
             log.warning("Dropping response entity since response status code was: {}", code)
-            response.copy(entity = NullJsonEntity)
+            response.withEntity(NullJsonEntity)
         }
 
       /** Wrapper for all of our JSON API routes */
@@ -301,7 +301,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     val makeEverythingOk = mapRouteResult {
       case Complete(response) =>
         // "Everything is OK!"
-        Complete(response.copy(status = 200))
+        Complete(response.withStatus(200))
       case r => r
     }
 
@@ -498,7 +498,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   }
   "0mapRequest" in {
     //#mapRequest0
-    def transformToPostRequest(req: HttpRequest): HttpRequest = req.copy(method = HttpMethods.POST)
+    def transformToPostRequest(req: HttpRequest): HttpRequest = req.withMethod(HttpMethods.POST)
     val route =
       mapRequest(transformToPostRequest) {
         extractRequest { req =>
