@@ -354,6 +354,10 @@ class HttpClientExampleSpec extends AnyWordSpec with Matchers with CompileOnlySp
 
     //#create-simple-request
     HttpRequest(uri = "https://akka.io")
+
+    // or:
+    import akka.http.scaladsl.client.RequestBuilding.Get
+    Get("https://akka.io")
     //#create-simple-request
 
     //#create-post-request
@@ -362,6 +366,10 @@ class HttpClientExampleSpec extends AnyWordSpec with Matchers with CompileOnlySp
       uri = "https://userservice.example/users",
       entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "data")
     )
+
+    // or:
+    import akka.http.scaladsl.client.RequestBuilding.Post
+    Post("https://userservice.example/users", HttpEntity(ContentTypes.`text/plain(UTF-8)`, "data"))
     //#create-post-request
 
     implicit val materializer: ActorMaterializer = null
