@@ -41,7 +41,7 @@ class RejectionSpec extends RoutingSpec {
           complete("Hello there")
         } ~
           path("unsupported-content-type") {
-            parameters(("provide-content-type".as[Boolean], "provide-supported".as[Boolean])) {
+            parameters("provide-content-type".as[Boolean], "provide-supported".as[Boolean]) {
               (provideContentType, provideSupported) =>
 
                 val supported =

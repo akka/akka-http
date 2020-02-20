@@ -82,7 +82,7 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec w
   "required-value" in {
     //#required-value
     val route =
-      parameters("color", "action".requiredValue("true")) { (color) =>
+      parameters("color", "action".requiredValue("true")) { (color, _) =>
         complete(s"The color is '$color'.")
       }
 
