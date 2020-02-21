@@ -356,6 +356,20 @@ Implement @apidoc[ModeledCustomHeader] and @java[@javadoc[ModeledCustomHeaderFac
 able to use the convenience methods that allow parsing the custom user-defined header from @apidoc[HttpHeader].
 @@@
 
+## Attributes
+
+Sometimes it can be useful to keep track of some information associated with a request without
+explicitly closing over it. Such information can be attached to a request or response though
+message attributes:
+
+Scala
+:   @@snip [ModelSpec.scala]($test$/scala/docs/http/scaladsl/ModelSpec.scala) { #attributes }
+
+Java
+:   @@snip [ModelDocTest.java]($test$/java/docs/http/javadsl/ModelDocTest.java) { #attributes }
+
+Message attributes are only to be used within in your application, they are not present on the wire.
+
 ## Parsing / Rendering
 
 Parsing and rendering of HTTP data structures is heavily optimized and for most types there's currently no public API

@@ -294,7 +294,7 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends AnyFree
       override def equals(other: scala.Any): Boolean = other match {
         case other: StrictEqualHttpResponse =>
 
-          this.resp.copy(entity = HttpEntity.Empty) == other.resp.copy(entity = HttpEntity.Empty) &&
+          this.resp.withEntity(HttpEntity.Empty) == other.resp.withEntity(HttpEntity.Empty) &&
             Await.result(this.resp.entity.toStrict(awaitAtMost), awaitAtMost) ==
             Await.result(other.resp.entity.toStrict(awaitAtMost), awaitAtMost)
       }

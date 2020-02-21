@@ -1192,10 +1192,10 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     }
     def decodeHeadersToResponse(bytes: ByteString): HttpResponse =
       decodeHeaders(bytes).foldLeft(HttpResponse())((old, header) => header match {
-        case (":status", value)                             => old.copy(status = value.toInt)
-        case ("content-length", value) if value.toLong == 0 => old.copy(entity = HttpEntity.Empty)
-        case ("content-length", value)                      => old.copy(entity = HttpEntity.Default(old.entity.contentType, value.toLong, Source.empty))
-        case ("content-type", value)                        => old.copy(entity = old.entity.withContentType(ContentType.parse(value).right.get))
+        case (":status", value)                             => old.withStatus(value.toInt)
+        case ("content-length", value) if value.toLong == 0 => old.withEntity(HttpEntity.Empty)
+        case ("content-length", value)                      => old.withEntity(HttpEntity.Default(old.entity.contentType, value.toLong, Source.empty))
+        case ("content-type", value)                        => old.withEntity(old.entity.withContentType(ContentType.parse(value).right.get))
         case (name, value)                                  => old.addHeader(RawHeader(name, value)) // FIXME: decode to modeled headers
       })
   }

@@ -102,7 +102,7 @@ trait MethodDirectives {
     parameter(paramName?) flatMap {
       case Some(method) =>
         getForKey(method.toUpperCase) match {
-          case Some(m) => mapRequest(_.copy(method = m))
+          case Some(m) => mapRequest(_.withMethod(m))
           case _       => complete(StatusCodes.NotImplemented)
         }
       case None => pass

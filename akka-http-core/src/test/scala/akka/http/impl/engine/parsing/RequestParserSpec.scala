@@ -618,7 +618,7 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeS
     class StrictEqualHttpRequest(val req: HttpRequest) {
       override def equals(other: scala.Any): Boolean = other match {
         case other: StrictEqualHttpRequest =>
-          this.req.copy(entity = HttpEntity.Empty) == other.req.copy(entity = HttpEntity.Empty) &&
+          this.req.withEntity(HttpEntity.Empty) == other.req.withEntity(HttpEntity.Empty) &&
             this.req.entity.toStrict(awaitAtMost).awaitResult(awaitAtMost) ==
             other.req.entity.toStrict(awaitAtMost).awaitResult(awaitAtMost)
       }

@@ -6,6 +6,7 @@ package docs.http.javadsl;
 
 import akka.util.ByteString;
 import org.junit.Test;
+import static org.junit.Assert.assertEquals;
 
 //#import-model
 import akka.http.javadsl.model.*;
@@ -88,6 +89,39 @@ public class ModelDocTest {
             return Optional.empty();
     }
     //#headers
+
+    static
+    //#attributes
+    class User {
+        final String name;
+        public User(String name) {
+            this.name = name;
+        }
+
+        public static final AttributeKey<User> attributeKey = AttributeKey.create("user", User.class);
+    }
+
+    public HttpRequest determineUser(HttpRequest request) {
+        User user = //... somehow determine the user for this request
+        //#attributes
+        new User("joe");
+        //#attributes
+
+        // Add the attribute
+        return request.addAttribute(User.attributeKey, user);
+    }
+    //#attributes
+
+  @Test
+  public void testAttributes() {
+    HttpRequest requestWithAttribute = determineUser(HttpRequest.create());
+    //#attributes
+
+    // Retrieve the attribute
+    Optional<User> user = requestWithAttribute.getAttribute(User.attributeKey);
+    //#attributes
+    assertEquals("joe", user.get().name);
+  }
 
   @Test
   public void syntheticHeaderS3() {

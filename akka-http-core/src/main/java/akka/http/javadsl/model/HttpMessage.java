@@ -66,6 +66,12 @@ public interface HttpMessage {
     <T extends HttpHeader> Iterable<T> getHeaders(Class<T> headerClass);
 
     /**
+     * Try to find the attribute for the given key and return
+     * Optional.of(attribute), otherwise this method returns an empty Optional.
+     */
+    <T> Optional<T> getAttribute(AttributeKey<T> key);
+
+    /**
      * The entity of this message.
      */
     ResponseEntity entity();
@@ -121,6 +127,8 @@ public interface HttpMessage {
          */
         Self withHeaders(Iterable<HttpHeader> headers);
 
+        <T> Self addAttribute(AttributeKey<T> key, T value);
+
         /**
          * Returns a copy of this message with the given http credential header added to the list of headers.
          */
@@ -130,6 +138,11 @@ public interface HttpMessage {
          * Returns a copy of this message with all headers of the given name (case-insensitively) removed.
          */
         Self removeHeader(String headerName);
+
+        /**
+         * Returns a copy of this message with the attribute with this key (if any) removed.
+         */
+        Self removeAttribute(AttributeKey<?> key);
 
         /**
          * Returns a copy of this message with a new entity.
