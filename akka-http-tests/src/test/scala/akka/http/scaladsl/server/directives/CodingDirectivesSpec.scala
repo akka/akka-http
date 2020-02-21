@@ -26,10 +26,6 @@ import scala.concurrent.duration._
 
 class CodingDirectivesSpec extends RoutingSpec with Inside {
 
-  override def testConfigSource = """
-    akka.loggers = ["akka.testkit.TestEventListener"]
-  """
-
   implicit val routeTestTimeout = RouteTestTimeout(3.seconds.dilated)
 
   val echoRequestContent: Route = { ctx => ctx.complete(ctx.request.entity.dataBytes.utf8String) }

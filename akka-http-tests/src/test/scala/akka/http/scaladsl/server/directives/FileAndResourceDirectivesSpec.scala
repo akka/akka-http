@@ -30,9 +30,8 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
   val testRoot = new File("akka-http-tests/src/test/resources")
   require(testRoot.exists(), s"testRoot was not found at ${testRoot.getAbsolutePath}")
 
-  override def testConfigSource = """
+  override def testConfigSource = super.testConfigSource ++ """
     akka.http.routing.range-coalescing-threshold = 1
-    akka.loggers = ["akka.testkit.TestEventListener"]
   """
 
   def writeAllText(text: String, file: File): Unit =

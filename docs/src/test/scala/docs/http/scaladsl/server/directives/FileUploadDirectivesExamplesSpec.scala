@@ -20,7 +20,9 @@ import scala.concurrent.duration._
 
 class FileUploadDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
-  override def testConfigSource = "akka.actor.default-mailbox.mailbox-type = \"akka.dispatch.UnboundedMailbox\""
+  override def testConfigSource = super.testConfigSource ++ """
+    akka.actor.default-mailbox.mailbox-type = "akka.dispatch.UnboundedMailbox"
+  """
 
   // test touches disk, so give it some time
   implicit val routeTimeout = RouteTestTimeout(3.seconds.dilated)

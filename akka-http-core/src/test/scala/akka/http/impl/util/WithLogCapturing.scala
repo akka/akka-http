@@ -10,19 +10,22 @@ import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.event.Logging._
 import akka.testkit.{ EventFilter, TestEventListener }
+
 import org.scalatest.{ Outcome, SuiteMixin, TestSuite }
+import org.scalatest.concurrent.Eventually
+import org.scalatest.matchers.should.Matchers
 
 /**
  * Mixin this trait to a test to make log lines appear only when the test failed.
  */
-trait WithLogCapturing extends SuiteMixin { this: TestSuite =>
+trait WithLogCapturing extends SuiteMixin with Matchers with Eventually { this: TestSuite =>
   implicit def system: ActorSystem
 
-  abstract override def withFixture(test: NoArgTest): Outcome = {
-    // When filtering just collects events into this var (yeah, it's a hack to do that in a filter).
-    // We assume that the filter will always ever be used from a single actor, so a regular var should be fine.
-    var events: List[LogEvent] = Nil
+  // When filtering just collects events into this var (yeah, it's a hack to do that in a filter).
+  var events: List[LogEvent] = null
 
+  abstract override def withFixture(test: NoArgTest): Outcome = {
+    events = Nil
     object LogEventCollector extends EventFilter(Int.MaxValue) {
       override protected def matches(event: Logging.LogEvent): Boolean = {
         events ::= event
@@ -35,17 +38,26 @@ trait WithLogCapturing extends SuiteMixin { this: TestSuite =>
       myLogger.debug(s"Logging started for test [${test.name}]")
       val r = test()
       myLogger.debug(s"Logging finished for test [${test.name}]")
+      eventually { events.map(_.message) should contain(s"Logging finished for test [${test.name}]") }
       r
     }
 
     if (!(res.isSucceeded || res.isPending)) {
       println(s"--> [${Console.BLUE}${test.name}${Console.RESET}] Start of log messages of test that [$res]")
       val logger = new StdOutLogger {}
-      withPrefixedOut("| ") { events.reverse.foreach(logger.print) }
+      withPrefixedOut("| ") {
+        events.reverse.foreach(logger.print)
+      }
       println(s"<-- [${Console.BLUE}${test.name}${Console.RESET}] End of log messages of test that [$res]")
     }
-
     res
+  }
+
+  def expectNoWarningsOrErrors(): Unit = {
+    events should not be (null)
+    events.find(e => e.level == WarningLevel || e.level == ErrorLevel) should be(empty)
+    Thread.sleep(1000)
+    events.find(e => e.level == WarningLevel || e.level == ErrorLevel) should be(empty)
   }
 
   /** Adds a prefix to every line printed out during execution of the thunk. */

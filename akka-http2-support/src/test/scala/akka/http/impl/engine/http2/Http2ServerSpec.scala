@@ -302,6 +302,28 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         val error = entityDataIn.expectError()
         error.getMessage shouldBe "Stream with ID [1] was closed by peer with code INTERNAL_ERROR(0x02)"
       }
+
+      // https://github.com/akka/akka-http/issues/2957
+      "close the stream when we receive a RST after we have half-closed ourselves as well" in new WaitingForRequestData {
+        import akka.http.scaladsl.client.RequestBuilding._
+        // Client sends the request, but doesn't close the stream yet. This is a bit weird, but it's whet grpcurl does ;)
+        val post = Post("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo")
+        sendHEADERS(streamId = 1, endStream = false, endHeaders = true, encodeRequestHeaders(request))
+        sendDATA(streamId = 1, endStream = false, ByteString(0, 0, 0, 0, 0x10, 0x22, 0x0e) ++ ByteString.fromString("GreeterService"))
+
+        // We emit a 404 response, half-closing the stream.
+        emitResponse(streamId = 1, HttpResponse(StatusCodes.NotFound))
+
+        // The client closes the stream with a protocol error. We should look into whether this is legit - but
+        // in any case we should handle it correctly.
+        sendRST_STREAM(streamId = 1, ErrorCode.PROTOCOL_ERROR)
+        entityDataIn.expectError()
+
+        // Unfortunately we can't check the problem in
+        // https://github.com/akka/akka-http/issues/2957
+        // is fixed without looking at the logs.
+        expectNoWarningsOrErrors()
+      }
       "not fail the whole connection when one stream is RST twice" in new WaitingForRequestData {
         sendRST_STREAM(TheStreamId, ErrorCode.STREAM_CLOSED)
         val error = entityDataIn.expectError()
