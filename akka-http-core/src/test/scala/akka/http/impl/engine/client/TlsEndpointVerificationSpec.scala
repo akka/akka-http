@@ -6,7 +6,6 @@ package akka.http.impl.engine.client
 
 import akka.NotUsed
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
-import akka.stream.{ Server, Client }
 import akka.stream.scaladsl._
 import akka.http.impl.util._
 import akka.http.scaladsl.{ ConnectionContext, Http }
@@ -91,8 +90,8 @@ class TlsEndpointVerificationSpec extends AkkaSpecWithMaterializer("""
       else HttpResponse(StatusCodes.BadRequest, entity = "Tls-Session-Info header verification failed")
     }
 
-    val serverSideTls = Http().sslTlsStage(ExampleHttpContexts.exampleServerContext, Server)
-    val clientSideTls = Http().sslTlsStage(clientContext, Client, Some(hostname -> 8080))
+    val serverSideTls = Http().sslTlsServerStage(ExampleHttpContexts.exampleServerContext)
+    val clientSideTls = Http().sslTlsClientStage(clientContext, hostname, 8080)
 
     val server =
       Http().serverLayer()

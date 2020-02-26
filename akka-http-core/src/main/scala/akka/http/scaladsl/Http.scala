@@ -100,7 +100,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     connectionContext: ConnectionContext,
     log:               LoggingAdapter): ServerLayerBidiFlow = {
     val httpLayer = serverLayer(settings, None, log, connectionContext.isSecure)
-    val tlsStage = sslTlsStage(connectionContext, Server)
+    val tlsStage = sslTlsServerStage(connectionContext)
 
     val serverBidiFlow =
       settings.idleTimeout match {
@@ -450,7 +450,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   private def _outgoingTlsConnectionLayer(host: String, port: Int,
                                           settings: ClientConnectionSettings, connectionContext: ConnectionContext,
                                           log: LoggingAdapter): Flow[SslTlsOutbound, SslTlsInbound, Future[OutgoingConnection]] = {
-    val tlsStage = sslTlsStage(connectionContext, Client, Some(host -> port))
+    val tlsStage = sslTlsClientStage(connectionContext, host, port)
 
     tlsStage.joinMat(settings.transport.connectTo(host, port, settings))(Keep.right)
   }
@@ -782,10 +782,32 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   }
 
   /** Creates real or placebo SslTls stage based on if ConnectionContext is HTTPS or not. */
-  private[http] def sslTlsStage(connectionContext: ConnectionContext, role: TLSRole, hostInfo: Option[(String, Int)] = None) =
+  private[http] def sslTlsClientStage(connectionContext: ConnectionContext, host: String, port: Int) =
     connectionContext match {
-      case hctx: HttpsConnectionContext => TLS(hctx.sslContext, connectionContext.sslConfig, hctx.firstSession, role, hostInfo = hostInfo, closing = TLSClosing.eagerClose)
-      case other                        => TLSPlacebo() // if it's not HTTPS, we don't enable SSL/TLS
+      case hctx: HttpsConnectionContext =>
+        hctx.sslContextData match {
+          case Left(sslContext) =>
+            TLS(sslContext, connectionContext.sslConfig, hctx.firstSession, Client, hostInfo = Some(host, port), closing = TLSClosing.eagerClose)
+          case Right(engineCreator) =>
+            val engine = engineCreator(Some((host, port)))
+            TLS(engine.create, engine.validate, EagerClose)
+        }
+      case other =>
+        TLSPlacebo() // if it's not HTTPS, we don't enable SSL/TLS
+    }
+  /** Creates real or placebo SslTls stage based on if ConnectionContext is HTTPS or not. */
+  private[http] def sslTlsServerStage(connectionContext: ConnectionContext) =
+    connectionContext match {
+      case hctx: HttpsConnectionContext =>
+        hctx.sslContextData match {
+          case Left(sslContext) =>
+            TLS(sslContext, connectionContext.sslConfig, hctx.firstSession, Server, hostInfo = None, closing = TLSClosing.eagerClose)
+          case Right(engineCreator) =>
+            val engine = engineCreator(None)
+            TLS(engine.create, engine.validate, TLSClosing.eagerClose)
+        }
+      case other =>
+        TLSPlacebo() // if it's not HTTPS, we don't enable SSL/TLS
     }
 
   /**
@@ -1167,7 +1189,7 @@ trait DefaultSSLContextCreation {
     }
 
     new HttpsConnectionContext(
-      sslContext,
+      Left(sslContext),
       Some(sslConfig),
       Some(cipherSuites.toList),
       Some(defaultProtocols.toList),

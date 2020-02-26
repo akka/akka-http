@@ -11,7 +11,7 @@ import java.security.cert.{ Certificate, CertificateFactory }
 
 import akka.actor.ActorSystem
 import javax.net.ssl.{ KeyManagerFactory, SSLContext, SSLParameters, TrustManagerFactory }
-import akka.http.scaladsl.{ ClientTransport, Http, HttpsConnectionContext }
+import akka.http.scaladsl.{ ClientTransport, Http, ConnectionContext, HttpsConnectionContext }
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.scaladsl.Flow
@@ -24,6 +24,7 @@ import scala.concurrent.Future
  */
 object ExampleHttpContexts {
 
+  implicit val system: ActorSystem = ???
   // TODO show example how to obtain pre-configured context from ssl-config
 
   def getExampleServerContext() = exampleServerContext.asJava
@@ -41,7 +42,7 @@ object ExampleHttpContexts {
     val context = SSLContext.getInstance("TLS")
     context.init(keyManagerFactory.getKeyManagers, null, new SecureRandom)
 
-    new HttpsConnectionContext(context)
+    ConnectionContext.httpsServer(context)
   }
 
   val exampleClientContext = {
@@ -56,9 +57,7 @@ object ExampleHttpContexts {
     val context = SSLContext.getInstance("TLS")
     context.init(null, certManagerFactory.getTrustManagers, new SecureRandom)
 
-    val params = new SSLParameters()
-    params.setEndpointIdentificationAlgorithm("https")
-    new HttpsConnectionContext(context, sslParameters = Some(params))
+    ConnectionContext.httpsClient(context)
   }
 
   def resourceStream(resourceName: String): InputStream = {

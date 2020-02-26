@@ -55,7 +55,7 @@ abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
 
     val sslContext: SSLContext = SSLContext.getInstance("TLS")
     sslContext.init(keyManagerFactory.getKeyManagers, tmf.getTrustManagers, new SecureRandom)
-    val https: HttpsConnectionContext = ConnectionContext.https(sslContext)
+    val https: HttpsConnectionContext = ConnectionContext.httpsServer(sslContext)
     //#low-level-default
 
     //#both-https-and-http

@@ -714,8 +714,8 @@ Host: example.com
       def handler(req: HttpRequest): HttpResponse =
         HttpResponse(entity = HttpEntity.CloseDelimited(ContentTypes.`application/octet-stream`, Source.fromPublisher(source)))
 
-      val serverSideTls = Http().sslTlsStage(ExampleHttpContexts.exampleServerContext, akka.stream.Server)
-      val clientSideTls = Http().sslTlsStage(ExampleHttpContexts.exampleClientContext, akka.stream.Client, Some("akka.example.org" -> 8080))
+      val serverSideTls = Http().sslTlsServerStage(ExampleHttpContexts.exampleServerContext)
+      val clientSideTls = Http().sslTlsClientStage(ExampleHttpContexts.exampleClientContext, "akka.example.org", 8080)
 
       val server: Flow[ByteString, ByteString, Any] =
         Http().serverLayer()
