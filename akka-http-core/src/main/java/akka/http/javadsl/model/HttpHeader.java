@@ -4,13 +4,15 @@
 
 package akka.http.javadsl.model;
 
+import akka.annotation.DoNotInherit;
 import akka.http.scaladsl.model.IllegalHeaderException;
 
 /**
  * The base type representing Http headers. All actual header values will be instances
  * of one of the subtypes defined in the `headers` packages. Unknown headers will be subtypes
- * of {@link akka.http.javadsl.model.headers.RawHeader}.
+ * of {@link akka.http.javadsl.model.headers.RawHeader}. Not for user extension.
  */
+@DoNotInherit
 public abstract class HttpHeader {
     /**
      * Returns the name of the header.
