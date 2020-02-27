@@ -4,14 +4,19 @@
 
 package akka.http.impl.engine.client
 
+import java.security.{ KeyStore, SecureRandom }
+import java.security.cert.CertificateFactory
+
 import akka.NotUsed
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import akka.stream.scaladsl._
 import akka.http.impl.util._
 import akka.http.scaladsl.{ ConnectionContext, Http }
-import akka.http.scaladsl.model.{ StatusCodes, HttpResponse, HttpRequest }
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, StatusCodes }
 import akka.http.scaladsl.model.headers.{ Host, `Tls-Session-Info` }
-import org.scalatest.time.{ Span, Seconds }
+import javax.net.ssl.{ SSLContext, TrustManagerFactory }
+import org.scalatest.time.{ Seconds, Span }
+
 import scala.concurrent.Future
 
 class TlsEndpointVerificationSpec extends AkkaSpecWithMaterializer("""
@@ -42,10 +47,43 @@ class TlsEndpointVerificationSpec extends AkkaSpecWithMaterializer("""
       }
     }
     "not accept certificates for foreign hosts" in {
+      // We try to connect to 'hijack.de', but this connection is hijacked by a suspicious server
+      // identifying as akka.example.org ;)
       val pipe = pipeline(ExampleHttpContexts.exampleClientContext, hostname = "hijack.de") // example context does include custom CA
 
       whenReady(pipe(HttpRequest(uri = "https://hijack.de/")).failed, timeout) { e =>
         e shouldBe an[Exception]
+      }
+    }
+    "allow disabling endpoint verification" in {
+      val context = {
+        val certStore = KeyStore.getInstance(KeyStore.getDefaultType)
+        certStore.load(null, null)
+        // only do this if you want to accept a custom root CA. Understand what you are doing!
+        certStore.setCertificateEntry("ca", CertificateFactory.getInstance("X.509").generateCertificate(getClass.getClassLoader.getResourceAsStream("keys/rootCA.crt")))
+
+        val certManagerFactory = TrustManagerFactory.getInstance("SunX509")
+        certManagerFactory.init(certStore)
+
+        val context = SSLContext.getInstance("TLS")
+        context.init(null, certManagerFactory.getTrustManagers, new SecureRandom)
+        context
+      }
+      val insecureSslEngineFactory = () => {
+        val engine = context.createSSLEngine()
+        engine.setUseClientMode(true)
+        engine
+      }
+      val clientConnectionContext = ConnectionContext.https(_ => insecureSslEngineFactory)
+
+      // We try to connect to 'hijack.de', and even though this connection is hijacked by a suspicious server
+      // identifying as akka.example.org we want to connect anyway
+      val pipe = pipeline(clientConnectionContext, hostname = "hijack.de")
+
+      whenReady(pipe(HttpRequest(uri = "https://hijack.de:8080/")), timeout) { response =>
+        response.status shouldEqual StatusCodes.OK
+        val tlsInfo = response.header[`Tls-Session-Info`].get
+        tlsInfo.peerPrincipal.get.getName shouldEqual "CN=akka.example.org,O=Internet Widgits Pty Ltd,ST=Some-State,C=AU"
       }
     }
 

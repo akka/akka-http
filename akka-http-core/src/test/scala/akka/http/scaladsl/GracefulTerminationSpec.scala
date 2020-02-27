@@ -4,6 +4,8 @@
 
 package akka.http.scaladsl
 
+import java.security.cert.CertificateFactory
+import java.security.{ KeyStore, SecureRandom }
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ ArrayBlockingQueue, TimeUnit }
 
@@ -154,7 +156,7 @@ class GracefulTerminationSpec
 
       val time: FiniteDuration = 1.second
 
-      ensureServerDeliveredRequest()
+      ensureServerDeliveredRequest(r1)
       val terminateFuture = serverBinding.terminate(hardDeadline = time)
 
       r1.futureValue.status should ===(StatusCodes.ServiceUnavailable)
@@ -167,7 +169,7 @@ class GracefulTerminationSpec
       val r1 = makeRequest() // establish connection
       val time: FiniteDuration = 3.seconds
 
-      ensureServerDeliveredRequest() // we want the request to be in the server user's hands before we cause termination
+      ensureServerDeliveredRequest(r1) // we want the request to be in the server user's hands before we cause termination
       serverBinding.terminate(hardDeadline = time)
       reply(_ => HttpResponse(StatusCodes.OK))
 
@@ -179,7 +181,7 @@ class GracefulTerminationSpec
       val r1 = makeRequest() // establish connection
       val time: FiniteDuration = 3.seconds
 
-      ensureServerDeliveredRequest() // we want the request to be in the server user's hands before we cause termination
+      ensureServerDeliveredRequest(r1) // we want the request to be in the server user's hands before we cause termination
       serverBinding.terminate(hardDeadline = time)
 
       reply(_ => HttpResponse(StatusCodes.OK))
@@ -215,7 +217,7 @@ class GracefulTerminationSpec
       val r1 = makeRequest() // establish connection
       val time: FiniteDuration = 3.seconds
 
-      ensureServerDeliveredRequest() // we want the request to be in the server user's hands before we cause termination
+      ensureServerDeliveredRequest(r1) // we want the request to be in the server user's hands before we cause termination
       serverBinding.terminate(hardDeadline = time)
       Thread.sleep(time.toMillis / 2)
       reply(_ => HttpResponse(StatusCodes.OK))
@@ -242,7 +244,7 @@ class GracefulTerminationSpec
         val r1 = makeRequest() // establish connection
         val time: FiniteDuration = 1.seconds
 
-        ensureServerDeliveredRequest() // we want the request to be in the server user's hands before we cause termination
+        ensureServerDeliveredRequest(r1) // we want the request to be in the server user's hands before we cause termination
         serverBinding.terminate(hardDeadline = time)
 
         akka.pattern.after(2.second, system.scheduler) {
@@ -260,7 +262,7 @@ class GracefulTerminationSpec
         val r1 = makeRequest() // establish connection
         val time: FiniteDuration = 1.seconds
 
-        ensureServerDeliveredRequest() // we want the request to be in the server user's hands before we cause termination
+        ensureServerDeliveredRequest(r1) // we want the request to be in the server user's hands before we cause termination
         serverBinding.terminate(hardDeadline = time)
 
         akka.pattern.after(2.second, system.scheduler) {
@@ -285,25 +287,32 @@ class GracefulTerminationSpec
     var idleTimeoutBaseForUniqueness = 10
 
     def nextRequest() = HttpRequest(uri = s"https://akka.example.org/${counter.incrementAndGet()}", entity = "hello-from-client")
-
     val serverConnectionContext = ExampleHttpContexts.exampleServerContext
-    val clientConnectionContext = ConnectionContext.https(ExampleHttpContexts.exampleClientContext.sslContext)
+    val clientConnectionContext = ExampleHttpContexts.exampleClientContext
 
     val serverQueue = new ArrayBlockingQueue[(HttpRequest, Promise[HttpResponse])](16)
 
     def handler(req: HttpRequest): Future[HttpResponse] = {
+      log.info(s"handler called for ${req.uri}")
       val p = Promise[HttpResponse]()
       val entry = req -> p
       serverQueue.add(entry)
       p.future
     }
 
-    def ensureServerDeliveredRequest(): HttpRequest = {
+    def ensureServerDeliveredRequest(clientView: Future[HttpResponse]): HttpRequest = {
       try eventually {
         // we're trying this until a request sent from client arrives in the "user handler" (in the queue)
         serverQueue.peek()._1
       } catch {
-        case ex: Throwable => throw new Exception("Unable to ensure request arriving at server within time limit", ex)
+        case ex: Throwable =>
+          // If we didn't see the request at the server, perhaps it failed already at the client:
+          clientView.value match {
+            case Some(result) =>
+              fail(s"Did not see request arrive at server, but client saw result [$result]")
+            case _ =>
+              fail("Unable to ensure request arriving at server within time limit", ex)
+          }
       }
     }
 

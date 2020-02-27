@@ -74,7 +74,7 @@ object ConnectionContext {
   }
   //#https-context-creation
 
-  @deprecated("we discourage AkkaSSLConfig now", "10.2.0")
+  @deprecated("use httpsClient, httpsServer, or the lower-level SSLEngine-based constructor", "10.2.0")
   def https(
     sslContext:          SSLContext,
     sslConfig:           Option[AkkaSSLConfig]         = None,
@@ -106,7 +106,7 @@ final class HttpsConnectionContext(
   protected[http] override final def defaultPort: Int = 443
 
   @deprecated("not always available", "10.2.0")
-  def sslContext: SSLContext = sslContextData.left.getOrElse(null)
+  def sslContext: SSLContext = sslContextData.left.getOrElse(???)
 
   def firstSession = NegotiateNewSession(enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
 
