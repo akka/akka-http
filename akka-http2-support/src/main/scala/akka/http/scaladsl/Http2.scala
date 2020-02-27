@@ -169,7 +169,10 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
 
     var eng: Option[SSLEngine] = None
     def createEngine(): SSLEngine = {
-      val engine = httpsContext.sslContext.createSSLEngine()
+      val engine = httpsContext.sslContextData match {
+        case Left(context) => context.createSSLEngine()
+        case Right(e)      => e(None).create()
+      }
       eng = Some(engine)
       engine.setUseClientMode(false)
       Http2AlpnSupport.applySessionParameters(engine, httpsContext.firstSession)
