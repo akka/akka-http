@@ -208,7 +208,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
     outlet.setHandler(this)
 
     def onPull(): Unit = dispatchNextChunk()
-    override def onDownstreamFinish(): Unit = {
+    override def onDownstreamFinish(cause: Throwable): Unit = {
       multiplexer.pushControlFrame(RstStreamFrame(streamId, ErrorCode.CANCEL))
       incomingStreams -= streamId
     }

@@ -414,7 +414,7 @@ class ClientServerSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll 
             override def postStop(): Unit = stageCounter.decrementAndGet()
             override def onPush(): Unit = push(out, HttpResponse(entity = stageCounter.get().toString))
             override def onPull(): Unit = pull(in)
-            override def onDownstreamFinish(): Unit = cancelCounter.incrementAndGet()
+            override def onDownstreamFinish(cause: Throwable): Unit = cancelCounter.incrementAndGet()
 
             setHandlers(in, out, this)
           }

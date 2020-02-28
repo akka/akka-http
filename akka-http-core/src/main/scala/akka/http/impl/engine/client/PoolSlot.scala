@@ -105,7 +105,7 @@ private object PoolSlot {
           } else pull(slotCommandIn)
         }
 
-        override def onDownstreamFinish(): Unit = connectionFlowSource.complete()
+        override def onDownstreamFinish(cause: Throwable): Unit = connectionFlowSource.complete()
       }
 
       // SinkInlet is connected to the connectionFlow's outlet, an upstream

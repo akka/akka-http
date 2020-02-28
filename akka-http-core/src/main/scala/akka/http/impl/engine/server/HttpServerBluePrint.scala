@@ -111,7 +111,7 @@ private[http] object HttpServerBluePrint {
       }
 
       // optimization: this callback is used to handle entity substream cancellation to avoid allocating a dedicated handler
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         if (entitySource ne null) {
           // application layer has cancelled or only partially consumed response entity:
           // connection will be closed
@@ -189,7 +189,7 @@ private[http] object HttpServerBluePrint {
             // so can pull downstream then
             downstreamPullWaiting = true
           }
-          override def onDownstreamFinish(): Unit = {
+          override def onDownstreamFinish(cause: Throwable): Unit = {
             // downstream signalled not wanting any more requests
             // we should keep processing the entity stream and then
             // when it completes complete the stage
@@ -274,7 +274,7 @@ private[http] object HttpServerBluePrint {
       // TODO: provide and use default impl for simply connecting an input and an output port as we do here
       setHandler(requestOut, new OutHandler {
         def onPull(): Unit = pull(requestIn)
-        override def onDownstreamFinish() = cancel(requestIn)
+        override def onDownstreamFinish(cause: Throwable) = cancel(requestIn, cause)
       })
       setHandler(responseIn, new InHandler {
         def onPush(): Unit = {
@@ -287,7 +287,7 @@ private[http] object HttpServerBluePrint {
       })
       setHandler(responseOut, new OutHandler {
         def onPull(): Unit = pull(responseIn)
-        override def onDownstreamFinish() = cancel(responseIn)
+        override def onDownstreamFinish(cause: Throwable) = cancel(responseIn, cause)
       })
     }
   }
@@ -410,7 +410,7 @@ private[http] object HttpServerBluePrint {
         def onPull(): Unit =
           if (oneHundredContinueResponsePending) pullSuppressed = true
           else if (!hasBeenPulled(requestParsingIn)) pull(requestParsingIn)
-        override def onDownstreamFinish() = cancel(requestParsingIn)
+        override def onDownstreamFinish(cause: Throwable) = cancel(requestParsingIn, cause)
       })
 
       setHandler(httpResponseIn, new InHandler {
@@ -624,7 +624,7 @@ private[http] object HttpServerBluePrint {
       })
       setHandler(toNet, new OutHandler {
         override def onPull(): Unit = pull(fromHttp)
-        override def onDownstreamFinish(): Unit = completeStage()
+        override def onDownstreamFinish(cause: Throwable): Unit = completeStage()
       })
 
       setHandler(fromNet, new InHandler {
@@ -634,7 +634,7 @@ private[http] object HttpServerBluePrint {
       })
       setHandler(toHttp, new OutHandler {
         override def onPull(): Unit = pull(fromNet)
-        override def onDownstreamFinish(): Unit = cancel(fromNet)
+        override def onDownstreamFinish(cause: Throwable): Unit = cancel(fromNet, cause)
       })
 
       private var activeTimers = 0
@@ -669,9 +669,9 @@ private[http] object HttpServerBluePrint {
         if (isClosed(fromNet)) {
           setHandler(toNet, new OutHandler {
             override def onPull(): Unit = sinkIn.pull()
-            override def onDownstreamFinish(): Unit = {
+            override def onDownstreamFinish(cause: Throwable): Unit = {
               completeStage()
-              sinkIn.cancel()
+              sinkIn.cancel(cause)
             }
           })
           newFlow.runWith(Source.empty, sinkIn.sink)(subFusingMaterializer)
@@ -686,9 +686,9 @@ private[http] object HttpServerBluePrint {
 
           setHandler(toNet, new OutHandler {
             override def onPull(): Unit = sinkIn.pull()
-            override def onDownstreamFinish(): Unit = {
+            override def onDownstreamFinish(cause: Throwable): Unit = {
               completeStage()
-              sinkIn.cancel()
+              sinkIn.cancel(cause)
               sourceOut.complete()
             }
           })
@@ -715,10 +715,10 @@ private[http] object HttpServerBluePrint {
 
               sourceOut.setHandler(new OutHandler {
                 override def onPull(): Unit = if (!hasBeenPulled(fromNet)) pull(fromNet)
-                override def onDownstreamFinish(): Unit = cancel(fromNet)
+                override def onDownstreamFinish(cause: Throwable): Unit = cancel(fromNet, cause)
               })
             }
-            override def onDownstreamFinish(): Unit = cancel(fromNet)
+            override def onDownstreamFinish(cause: Throwable): Unit = cancel(fromNet, cause)
           })
 
           newFlow.runWith(sourceOut.source, sinkIn.sink)(subFusingMaterializer)

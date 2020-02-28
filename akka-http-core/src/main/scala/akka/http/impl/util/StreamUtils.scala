@@ -205,7 +205,7 @@ private[http] object StreamUtils {
 
       var timeout: OptionVal[Cancellable] = OptionVal.None
 
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         cancelAfter match {
           case finite: FiniteDuration =>
             log.debug(s"Delaying cancellation for $finite")

@@ -522,7 +522,7 @@ private[client] object NewHostConnectionPool {
 
           def onPull(): Unit = () // emitRequests makes sure not to push too early
 
-          override def onDownstreamFinish(): Unit =
+          override def onDownstreamFinish(cause: Throwable): Unit =
             withSlot(_.debug("Connection cancelled"))
 
           /** Helper that makes sure requestOut is pulled before pushing */
@@ -537,7 +537,7 @@ private[client] object NewHostConnectionPool {
                   requestOut.setHandler(connection)
                 }
 
-                override def onDownstreamFinish(): Unit = connection.onDownstreamFinish()
+                override def onDownstreamFinish(cause: Throwable): Unit = connection.onDownstreamFinish(cause)
               })
         }
         def openConnection(slot: Slot): SlotConnection = {
@@ -585,9 +585,9 @@ private[client] object NewHostConnectionPool {
           log.debug("Pool upstream failed with {}", ex)
           super.onUpstreamFailure(ex)
         }
-        override def onDownstreamFinish(): Unit = {
+        override def onDownstreamFinish(cause: Throwable): Unit = {
           log.debug("Pool downstream cancelled")
-          super.onDownstreamFinish()
+          super.onDownstreamFinish(cause)
         }
         override def postStop(): Unit = {
           slots.foreach(_.shutdown())

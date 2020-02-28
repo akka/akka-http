@@ -125,9 +125,9 @@ private[http] class HttpResponseRendererFactory(
             override def onPull(): Unit =
               if (!headersSent) sendHeaders()
               else sinkIn.pull()
-            override def onDownstreamFinish(): Unit = {
+            override def onDownstreamFinish(cause: Throwable): Unit = {
               completeStage()
-              sinkIn.cancel()
+              sinkIn.cancel(cause)
             }
           })
 

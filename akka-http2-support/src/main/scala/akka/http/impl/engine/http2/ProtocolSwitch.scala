@@ -119,9 +119,9 @@ private[http] object ProtocolSwitch {
 
             val outHandler = new OutHandler {
               override def onPull(): Unit = in.pull()
-              override def onDownstreamFinish(): Unit = {
-                in.cancel()
-                super.onDownstreamFinish()
+              override def onDownstreamFinish(cause: Throwable): Unit = {
+                in.cancel(cause)
+                super.onDownstreamFinish(cause)
               }
             }
             in.setHandler(handler)
