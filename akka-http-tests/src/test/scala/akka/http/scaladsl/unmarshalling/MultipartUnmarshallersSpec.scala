@@ -5,7 +5,7 @@
 package akka.http.scaladsl.unmarshalling
 
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.{ Await, ExecutionContext, Future }
 import org.scalatest.matchers.Matcher
 import org.scalatest.BeforeAndAfterAll
 import akka.http.scaladsl.testkit.ScalatestUtils
@@ -26,7 +26,7 @@ import org.scalatest.matchers.should.Matchers
 trait MultipartUnmarshallersSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll with ScalatestUtils {
   implicit val system = ActorSystem(getClass.getSimpleName)
   implicit val materializer = ActorMaterializer()
-  import system.dispatcher
+  implicit val ec: ExecutionContext = system.dispatcher
 
   def lineFeed: String
 

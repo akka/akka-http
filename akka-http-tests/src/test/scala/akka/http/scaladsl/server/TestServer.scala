@@ -15,6 +15,7 @@ import akka.stream.scaladsl._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.common.EntityStreamingSupport
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.io.StdIn
 
@@ -26,7 +27,7 @@ object TestServer extends App {
     """)
 
   implicit val system = ActorSystem("ServerTest", testConf)
-  import system.dispatcher
+  implicit val ec: ExecutionContext = system.dispatcher
   implicit val materializer = ActorMaterializer()
 
   import spray.json.DefaultJsonProtocol._

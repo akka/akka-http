@@ -18,13 +18,13 @@ import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
+import scala.concurrent.ExecutionContext
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class UnmarshallingSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll with ScalatestUtils {
   implicit val system = ActorSystem(getClass.getSimpleName)
   implicit val materializer = ActorMaterializer()
-  import system.dispatcher
 
   override val testConfig = ConfigFactory.load()
 
@@ -99,6 +99,8 @@ class UnmarshallingSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll
   }
 
   "Unmarshaller.forContentTypes" - {
+    implicit val ec: ExecutionContext = system.dispatcher
+
     "should handle media ranges of types with missing charset by assuming UTF-8 charset when matching" in {
       val um = Unmarshaller.stringUnmarshaller.forContentTypes(MediaTypes.`text/plain`)
       Await.result(um(HttpEntity(MediaTypes.`text/plain`.withMissingCharset, "Hêllö".getBytes("utf-8"))), 1.second.dilated) should ===("Hêllö")

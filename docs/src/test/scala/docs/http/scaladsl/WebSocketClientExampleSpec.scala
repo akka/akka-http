@@ -15,7 +15,6 @@ class WebSocketClientExampleSpec extends AnyWordSpec with Matchers with CompileO
     import akka.actor.ActorSystem
     import akka.{ Done, NotUsed }
     import akka.http.scaladsl.Http
-    import akka.stream.ActorMaterializer
     import akka.stream.scaladsl._
     import akka.http.scaladsl.model._
     import akka.http.scaladsl.model.ws._
@@ -25,7 +24,6 @@ class WebSocketClientExampleSpec extends AnyWordSpec with Matchers with CompileO
     object SingleWebSocketRequest {
       def main(args: Array[String]) = {
         implicit val system = ActorSystem()
-        implicit val materializer = ActorMaterializer()
         import system.dispatcher
 
         // print each incoming strict text message
@@ -72,12 +70,10 @@ class WebSocketClientExampleSpec extends AnyWordSpec with Matchers with CompileO
     import akka.actor.ActorSystem
     import akka.NotUsed
     import akka.http.scaladsl.Http
-    import akka.stream.ActorMaterializer
     import akka.stream.scaladsl._
     import akka.http.scaladsl.model.ws._
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
 
     //#half-closed-WebSocket-closing-example
 
@@ -98,14 +94,12 @@ class WebSocketClientExampleSpec extends AnyWordSpec with Matchers with CompileO
   "half-closed-WebSocket-working-example" in compileOnlySpec {
     import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
-    import akka.stream.ActorMaterializer
     import akka.stream.scaladsl._
     import akka.http.scaladsl.model.ws._
 
     import scala.concurrent.Promise
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
 
     //#half-closed-WebSocket-working-example
 
@@ -129,14 +123,12 @@ class WebSocketClientExampleSpec extends AnyWordSpec with Matchers with CompileO
   "half-closed-WebSocket-finite-working-example" in compileOnlySpec {
     import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
-    import akka.stream.ActorMaterializer
     import akka.stream.scaladsl._
     import akka.http.scaladsl.model.ws._
 
     import scala.concurrent.Promise
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
 
     //#half-closed-WebSocket-finite-working-example
 
@@ -161,13 +153,11 @@ class WebSocketClientExampleSpec extends AnyWordSpec with Matchers with CompileO
     import akka.actor.ActorSystem
     import akka.NotUsed
     import akka.http.scaladsl.Http
-    import akka.stream.ActorMaterializer
     import akka.stream.scaladsl._
     import akka.http.scaladsl.model.headers.{ Authorization, BasicHttpCredentials }
     import akka.http.scaladsl.model.ws._
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
     import collection.immutable.Seq
 
     val flow: Flow[Message, Message, NotUsed] =
@@ -191,7 +181,6 @@ class WebSocketClientExampleSpec extends AnyWordSpec with Matchers with CompileO
     import akka.actor.ActorSystem
     import akka.Done
     import akka.http.scaladsl.Http
-    import akka.stream.ActorMaterializer
     import akka.stream.scaladsl._
     import akka.http.scaladsl.model._
     import akka.http.scaladsl.model.ws._
@@ -201,7 +190,6 @@ class WebSocketClientExampleSpec extends AnyWordSpec with Matchers with CompileO
     object WebSocketClientFlow {
       def main(args: Array[String]) = {
         implicit val system = ActorSystem()
-        implicit val materializer = ActorMaterializer()
         import system.dispatcher
 
         // Future[Done] is the materialized value of Sink.foreach,
@@ -252,14 +240,12 @@ class WebSocketClientExampleSpec extends AnyWordSpec with Matchers with CompileO
 
     import akka.actor.ActorSystem
     import akka.NotUsed
-    import akka.stream.ActorMaterializer
     import akka.http.scaladsl.{ ClientTransport, Http }
     import akka.http.scaladsl.settings.ClientConnectionSettings
     import akka.http.scaladsl.model.ws._
     import akka.stream.scaladsl._
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
 
     val flow: Flow[Message, Message, NotUsed] =
       Flow.fromSinkAndSource(
@@ -281,14 +267,12 @@ class WebSocketClientExampleSpec extends AnyWordSpec with Matchers with CompileO
 
     import akka.actor.ActorSystem
     import akka.NotUsed
-    import akka.stream.ActorMaterializer
     import akka.http.scaladsl.{ ClientTransport, Http }
     import akka.http.scaladsl.settings.ClientConnectionSettings
     import akka.http.scaladsl.model.ws._
     import akka.stream.scaladsl._
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
 
     val flow: Flow[Message, Message, NotUsed] =
       Flow.fromSinkAndSource(

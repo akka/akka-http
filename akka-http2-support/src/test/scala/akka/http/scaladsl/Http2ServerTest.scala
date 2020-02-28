@@ -17,6 +17,7 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Await
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.io.StdIn
@@ -36,13 +37,8 @@ object Http2ServerTest extends App {
     akka.http.server.preview.enable-http2 = true
                                                    """)
   implicit val system = ActorSystem("ServerTest", testConf)
-  import system.dispatcher
-
-  val settings = ActorMaterializerSettings(system)
-    .withFuzzing(false)
-    //    .withSyncProcessingLimit(Int.MaxValue)
-    .withInputBuffer(128, 128)
-  implicit val fm = ActorMaterializer(settings)
+  implicit val ec: ExecutionContext = system.dispatcher
+  implicit val fm = ActorMaterializer()
 
   def slowDown[T](millis: Int): T => Future[T] = { t =>
     akka.pattern.after(millis.millis, system.scheduler)(Future.successful(t))

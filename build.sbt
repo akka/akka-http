@@ -309,8 +309,10 @@ def httpMarshallersJavaSubproject(name: String) =
 lazy val docs = project("docs")
   .enablePlugins(AkkaParadoxPlugin, NoPublish, DeployRsync)
   .disablePlugins(BintrayPlugin, MimaPlugin)
-  .addAkkaModuleDependency("akka-stream", "provided")
-  .addAkkaModuleDependency("akka-actor-typed", "provided")
+  .addAkkaModuleDependency("akka-stream", "provided", AkkaDependency.docs)
+  .addAkkaModuleDependency("akka-actor-typed", "provided", AkkaDependency.docs)
+  .addAkkaModuleDependency("akka-multi-node-testkit", "provided", AkkaDependency.docs)
+  .addAkkaModuleDependency("akka-stream-testkit", "provided", AkkaDependency.docs)
   .dependsOn(
     httpCore, http, httpXml, http2Support, httpMarshallersJava, httpMarshallersScala, httpCaching,
     httpTests % "compile;test->test", httpTestkit % "compile;test->test"

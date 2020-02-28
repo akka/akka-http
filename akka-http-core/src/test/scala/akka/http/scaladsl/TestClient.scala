@@ -81,8 +81,6 @@ object TestClient extends App {
     akka.log-dead-letters = off
     akka.io.tcp.trace-logging = off""")
     implicit val system = ActorSystem("ServerTest", testConf)
-    implicit val fm = ActorMaterializer()
-    import system.dispatcher
 
     try {
       val done = Future.traverse(urls.zipWithIndex) {
