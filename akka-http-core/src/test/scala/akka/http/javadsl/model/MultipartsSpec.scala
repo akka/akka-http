@@ -11,8 +11,8 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, Inside }
-import akka.stream.ActorMaterializer
 import akka.actor.ActorSystem
+import akka.stream.SystemMaterializer
 import akka.stream.javadsl.Source
 import akka.testkit._
 
@@ -26,7 +26,7 @@ class MultipartsSpec extends AnyWordSpec with Matchers with Inside with BeforeAn
   akka.event-handlers = ["akka.testkit.TestEventListener"]
   akka.loglevel = WARNING""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
-  implicit val materializer = ActorMaterializer()
+  val materializer = SystemMaterializer.get(system).materializer
   override def afterAll() = TestKit.shutdownActorSystem(system)
 
   "Multiparts.createFormDataFromParts" should {

@@ -17,7 +17,6 @@ class JsonStreamingFullExamples extends AnyWordSpec {
   import akka.http.scaladsl.common.{ EntityStreamingSupport, JsonEntityStreamingSupport }
   import akka.http.scaladsl.model.{ HttpEntity, _ }
   import akka.http.scaladsl.server.Directives._
-  import akka.stream.ActorMaterializer
   import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
   import akka.http.scaladsl.marshalling.{ Marshaller, ToEntityMarshaller }
   import akka.stream.scaladsl.Source
@@ -46,7 +45,6 @@ class JsonStreamingFullExamples extends AnyWordSpec {
 
   object ApiServer extends App with UserProtocol {
     implicit val system = ActorSystem("api")
-    implicit val materializer = ActorMaterializer()
     implicit val executionContext = system.dispatcher
 
     implicit val jsonStreamingSupport: JsonEntityStreamingSupport = EntityStreamingSupport.json()

@@ -7,7 +7,6 @@ package akka.http.impl.util
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.NotUsed
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
@@ -18,8 +17,6 @@ import akka.testkit._
 import org.scalatest.concurrent.Eventually
 
 class One2OneBidiFlowSpec extends AkkaSpec with Eventually {
-  implicit val materializer = ActorMaterializer()
-
   "A One2OneBidiFlow" must {
 
     def test(flow: Flow[Int, Int, NotUsed]) =

@@ -4,15 +4,15 @@
 
 package akka.http.scaladsl
 
-import akka.stream.ActorMaterializer
+import scala.concurrent.ExecutionContext
+
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
 import akka.testkit.AkkaSpec
 
 class FormDataSpec extends AkkaSpec {
-  implicit val materializer = ActorMaterializer()
-  import system.dispatcher
+  implicit val ec: ExecutionContext = system.dispatcher
 
   val formData = FormData(Map("surname" -> "Smith", "age" -> "42"))
 

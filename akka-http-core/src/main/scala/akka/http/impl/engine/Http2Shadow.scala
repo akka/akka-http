@@ -11,7 +11,7 @@ import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.ConnectionContext
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.ServerSettings
-import akka.stream.{ ActorMaterializerHelper, Materializer }
+import akka.stream.Materializer
 
 import scala.concurrent.Future
 
@@ -38,10 +38,8 @@ private[akka] object Http2Shadow {
     parallelism: Int,
     log:         LoggingAdapter)(implicit fm: Materializer): Future[ServerBinding] = {
 
-    val mat = ActorMaterializerHelper.downcast(fm)
-
     try {
-      val system = mat.system.asInstanceOf[ExtendedActorSystem]
+      val system = fm.system.asInstanceOf[ExtendedActorSystem]
       val extensionIdClazz = system.dynamicAccess.getClassFor[ShadowHttp2]("akka.http.scaladsl.Http2").get
 
       val extensionInstance: ShadowHttp2Ext = extensionIdClazz.getMethod("get", Array(classOf[ActorSystem]): _*)

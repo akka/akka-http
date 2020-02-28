@@ -17,7 +17,7 @@ import org.scalatest.matchers.Matcher
 import akka.util.ByteString
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
-import akka.stream.{ ActorMaterializer, Attributes, FlowShape, Inlet, Outlet }
+import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.http.scaladsl.util.FastFuture._
 import akka.http.impl.util._
 import akka.http.scaladsl.model._
@@ -42,7 +42,6 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends AnyFree
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
 
-  implicit val materializer = ActorMaterializer()
   val ServerOnTheMove = StatusCodes.custom(331, "Server on the move")
   val TotallyUnrecognized = StatusCodes.custom(456, "Totally unrecognized")
 

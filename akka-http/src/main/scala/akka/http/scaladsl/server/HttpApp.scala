@@ -12,7 +12,6 @@ import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
-import akka.stream.ActorMaterializer
 import akka.http.scaladsl.settings.ServerSettings
 import com.typesafe.config.ConfigFactory
 
@@ -86,7 +85,6 @@ abstract class HttpApp extends Directives {
   def startServer(host: String, port: Int, settings: ServerSettings, system: Option[ActorSystem]): Unit = {
     implicit val theSystem = system.getOrElse(ActorSystem(Logging.simpleName(this).replaceAll("\\$", "")))
     systemReference.set(theSystem)
-    implicit val materializer = ActorMaterializer()
     implicit val executionContext: ExecutionContextExecutor = theSystem.dispatcher
 
     val bindingFuture = Http().bindAndHandle(

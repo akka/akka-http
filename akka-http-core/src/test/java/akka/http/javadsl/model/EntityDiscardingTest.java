@@ -7,7 +7,8 @@ package akka.http.javadsl.model;
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.japi.function.Procedure;
-import akka.stream.ActorMaterializer;
+import akka.stream.Materializer;
+import akka.stream.SystemMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
@@ -24,7 +25,7 @@ import static org.junit.Assert.assertEquals;
 public class EntityDiscardingTest extends JUnitSuite {
 
   private ActorSystem sys = ActorSystem.create("test");
-  private ActorMaterializer mat = ActorMaterializer.create(sys);
+  private Materializer mat = SystemMaterializer.get(sys).materializer();
   private Iterable<ByteString> testData = Arrays.asList(ByteString.fromString("abc"), ByteString.fromString("def"));
 
   @Test

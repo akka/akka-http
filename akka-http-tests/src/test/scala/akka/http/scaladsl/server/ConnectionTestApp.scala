@@ -8,9 +8,10 @@ import akka.actor._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, Uri }
 import akka.stream.scaladsl.{ Flow, Sink, Source }
-import akka.stream.{ ActorMaterializer, OverflowStrategy }
+import akka.stream.OverflowStrategy
 import com.typesafe.config.{ Config, ConfigFactory }
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.io.StdIn
 import scala.util.{ Failure, Success, Try }
@@ -28,8 +29,7 @@ object ConnectionTestApp {
     """)
 
   implicit val system = ActorSystem("ConnectionTest", testConf)
-  import system.dispatcher
-  implicit val materializer = ActorMaterializer()
+  implicit val ec: ExecutionContext = system.dispatcher
 
   val clientFlow = Http().superPool[Int]()
 

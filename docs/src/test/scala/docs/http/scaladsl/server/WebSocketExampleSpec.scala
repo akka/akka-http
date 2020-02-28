@@ -10,7 +10,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ws.{ BinaryMessage, Message, WebSocketRequest }
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ServerSettings }
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Sink }
 import akka.util.ByteString
 import docs.CompileOnlySpec
@@ -23,7 +22,6 @@ class WebSocketExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpe
   "core-example" in compileOnlySpec {
     //#websocket-example-using-core
     import akka.actor.ActorSystem
-    import akka.stream.ActorMaterializer
     import akka.stream.scaladsl.{ Source, Flow }
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model.ws.UpgradeToWebSocket
@@ -32,7 +30,6 @@ class WebSocketExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpe
     import akka.http.scaladsl.model.HttpMethods._
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
 
     //#websocket-handler
     // The Greeter WebSocket Service expects a "name" per message and
@@ -78,14 +75,12 @@ class WebSocketExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpe
   }
   "routing-example" in compileOnlySpec {
     import akka.actor.ActorSystem
-    import akka.stream.ActorMaterializer
     import akka.stream.scaladsl.{ Source, Flow }
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model.ws.{ TextMessage, Message }
     import akka.http.scaladsl.server.Directives
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
 
     import Directives._
 
@@ -120,8 +115,8 @@ class WebSocketExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpe
   }
 
   "ping-server-example" in compileOnlySpec {
-    implicit val system: ActorSystem = ???
-    implicit val mat: ActorMaterializer = ???
+    implicit val system: ActorSystem = null
+    val route = null
     //#websocket-ping-payload-server
     val defaultSettings = ServerSettings(system)
 
@@ -133,13 +128,12 @@ class WebSocketExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpe
     val customServerSettings =
       defaultSettings.withWebsocketSettings(customWebsocketSettings)
 
-    Http().bindAndHandle(???, "127.0.0.1", settings = customServerSettings)
+    Http().bindAndHandle(route, "127.0.0.1", settings = customServerSettings)
     //#websocket-ping-payload-server
   }
 
   "ping-example" in compileOnlySpec {
-    implicit val system: ActorSystem = ???
-    implicit val mat: ActorMaterializer = ???
+    implicit val system: ActorSystem = null
     //#websocket-client-ping-payload
     val defaultSettings = ClientConnectionSettings(system)
 

@@ -9,7 +9,7 @@ import akka.http.impl.engine.parsing.ParserOutput
 import akka.http.impl.engine.parsing.ParserOutput.{ StrictEntityCreator, EntityStreamError, EntityChunk, StreamedEntityCreator }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ParserSettings
-import akka.stream.{ ActorMaterializer, Attributes }
+import akka.stream.Attributes
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.{ TestSubscriber, TestPublisher }
 import akka.util.ByteString
@@ -46,8 +46,6 @@ class PrepareResponseSpec extends AkkaSpec {
   "The PrepareRequest stage" should {
 
     "not lose demand that comes in while streaming entity" in {
-      implicit val mat = ActorMaterializer()
-
       val inProbe = TestPublisher.manualProbe[ParserOutput.ResponseOutput]()
       val responseProbe = TestSubscriber.manualProbe[HttpResponse]
 
@@ -91,8 +89,6 @@ class PrepareResponseSpec extends AkkaSpec {
     }
 
     "not lose demand that comes in while handling strict entity" in {
-      implicit val mat = ActorMaterializer()
-
       val inProbe = TestPublisher.manualProbe[ParserOutput.ResponseOutput]()
       val responseProbe = TestSubscriber.manualProbe[HttpResponse]
 
@@ -127,8 +123,6 @@ class PrepareResponseSpec extends AkkaSpec {
     "complete entity stream then complete stage when downstream cancels" in {
       // to make it possible to cancel a big file download for example
       // without downloading the entire response first
-      implicit val mat = ActorMaterializer()
-
       val inProbe = TestPublisher.manualProbe[ParserOutput.ResponseOutput]()
       val responseProbe = TestSubscriber.manualProbe[HttpResponse]
 
@@ -168,8 +162,6 @@ class PrepareResponseSpec extends AkkaSpec {
     }
 
     "complete stage when downstream cancels before end of strict request has arrived" in {
-      implicit val mat = ActorMaterializer()
-
       val inProbe = TestPublisher.manualProbe[ParserOutput.ResponseOutput]()
       val responseProbe = TestSubscriber.manualProbe[HttpResponse]
 
@@ -196,8 +188,6 @@ class PrepareResponseSpec extends AkkaSpec {
     }
 
     "cancel entire stage when the entity stream is canceled" in {
-      implicit val mat = ActorMaterializer()
-
       val inProbe = TestPublisher.manualProbe[ParserOutput.ResponseOutput]()
       val responseProbe = TestSubscriber.manualProbe[HttpResponse]
 

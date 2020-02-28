@@ -27,11 +27,9 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     //#binding-example
     import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
-    import akka.stream.ActorMaterializer
     import akka.stream.scaladsl._
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
     implicit val executionContext = system.dispatcher
 
     val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] =
@@ -50,14 +48,12 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.Http.ServerBinding
     import akka.http.scaladsl.server.Directives._
-    import akka.stream.ActorMaterializer
 
     import scala.concurrent.Future
 
     object WebServer {
       def main(args: Array[String]) {
         implicit val system = ActorSystem()
-        implicit val materializer = ActorMaterializer()
         // needed for the future foreach in the end
         implicit val executionContext = system.dispatcher
 
@@ -89,12 +85,10 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.Http.ServerBinding
-    import akka.stream.ActorMaterializer
 
     import scala.concurrent.Future
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
     // needed for the future foreach in the end
     implicit val executionContext = system.dispatcher
 
@@ -121,11 +115,9 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     import akka.actor.ActorSystem
     import akka.actor.ActorRef
     import akka.http.scaladsl.Http
-    import akka.stream.ActorMaterializer
     import akka.stream.scaladsl.Flow
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
     implicit val executionContext = system.dispatcher
 
     import Http._
@@ -151,11 +143,9 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model._
-    import akka.stream.ActorMaterializer
     import akka.stream.scaladsl.Flow
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
     implicit val executionContext = system.dispatcher
 
     val (host, port) = ("localhost", 8080)
@@ -188,11 +178,9 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model.HttpMethods._
     import akka.http.scaladsl.model._
-    import akka.stream.ActorMaterializer
     import akka.stream.scaladsl.Sink
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
     implicit val executionContext = system.dispatcher
 
     val serverSource = Http().bind(interface = "localhost", port = 8080)
@@ -231,14 +219,12 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model.HttpMethods._
     import akka.http.scaladsl.model._
-    import akka.stream.ActorMaterializer
     import scala.io.StdIn
 
     object WebServer {
 
       def main(args: Array[String]) {
         implicit val system = ActorSystem()
-        implicit val materializer = ActorMaterializer()
         // needed for the future map/flatmap in the end
         implicit val executionContext = system.dispatcher
 
@@ -277,13 +263,11 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model.{ ContentTypes, HttpEntity }
     import akka.http.scaladsl.server.Directives._
-    import akka.stream.ActorMaterializer
     import scala.io.StdIn
 
     object WebServer {
       def main(args: Array[String]) {
         implicit val system = ActorSystem()
-        implicit val materializer = ActorMaterializer()
         // needed for the future flatMap/onComplete in the end
         implicit val executionContext = system.dispatcher
 
@@ -320,14 +304,12 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model._
     import akka.http.scaladsl.server.Directives._
-    import akka.stream.ActorMaterializer
     import scala.io.StdIn
 
     object WebServer {
       def main(args: Array[String]) {
 
         implicit val system = ActorSystem("my-system")
-        implicit val materializer = ActorMaterializer()
         // needed for the future flatMap/onComplete in the end
         implicit val executionContext = system.dispatcher
 
@@ -359,7 +341,6 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     import akka.http.scaladsl.server.Directives._
     import akka.http.scaladsl.unmarshalling.FromRequestUnmarshaller
     import akka.pattern.ask
-    import akka.stream.ActorMaterializer
     import akka.util.Timeout
 
     // types used by the API routes
@@ -376,7 +357,6 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     implicit val orderSeqM: ToResponseMarshaller[Seq[Order]] = ???
     implicit val timeout: Timeout = ??? // for actor asks
     implicit val ec: ExecutionContext = ???
-    implicit val mat: ActorMaterializer = ???
     implicit val sys: ActorSystem = ???
 
     // backend entry points
@@ -471,7 +451,6 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     import akka.http.scaladsl.Http
     import akka.http.scaladsl.model.{ HttpEntity, ContentTypes }
     import akka.http.scaladsl.server.Directives._
-    import akka.stream.ActorMaterializer
     import scala.util.Random
     import scala.io.StdIn
 
@@ -480,7 +459,6 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
       def main(args: Array[String]) {
 
         implicit val system = ActorSystem()
-        implicit val materializer = ActorMaterializer()
         // needed for the future flatMap/onComplete in the end
         implicit val executionContext = system.dispatcher
 
@@ -521,7 +499,6 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     import akka.http.scaladsl.server.Directives._
     import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
     import akka.pattern.ask
-    import akka.stream.ActorMaterializer
     import akka.util.Timeout
     import spray.json.DefaultJsonProtocol._
     import scala.concurrent.Future
@@ -551,7 +528,6 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
 
       def main(args: Array[String]) {
         implicit val system = ActorSystem()
-        implicit val materializer = ActorMaterializer()
         // needed for the future flatMap/onComplete in the end
         implicit val executionContext = system.dispatcher
 
@@ -594,11 +570,9 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     import akka.actor.ActorSystem
     import akka.http.scaladsl.server.Directives._
     import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-    import akka.stream.ActorMaterializer
     import spray.json.DefaultJsonProtocol._
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
     // needed for the future flatMap/onComplete in the end
     implicit val executionContext = system.dispatcher
 
@@ -624,11 +598,9 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     import akka.actor.ActorSystem
     import akka.stream.scaladsl.FileIO
     import akka.http.scaladsl.server.Directives._
-    import akka.stream.ActorMaterializer
     import java.io.File
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
     // needed for the future flatMap/onComplete in the end
     implicit val executionContext = system.dispatcher
 
@@ -652,11 +624,9 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     //#discard-discardEntityBytes
     import akka.actor.ActorSystem
     import akka.http.scaladsl.server.Directives._
-    import akka.stream.ActorMaterializer
     import akka.http.scaladsl.model.HttpRequest
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
     // needed for the future flatMap/onComplete in the end
     implicit val executionContext = system.dispatcher
 
@@ -682,10 +652,8 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     import akka.stream.scaladsl.Sink
     import akka.http.scaladsl.server.Directives._
     import akka.http.scaladsl.model.headers.Connection
-    import akka.stream.ActorMaterializer
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
     // needed for the future flatMap/onComplete in the end
     implicit val executionContext = system.dispatcher
 
@@ -713,12 +681,10 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
     import akka.http.scaladsl.server.Directives._
     import akka.http.scaladsl.server.Route
-    import akka.stream.ActorMaterializer
     import spray.json.DefaultJsonProtocol._
     import spray.json._
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
 
     //#dynamic-routing-example
     case class MockDefinition(path: String, requests: Seq[JsValue], responses: Seq[JsValue])
@@ -761,12 +727,10 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     import akka.actor.ActorSystem
     import akka.http.scaladsl.server.Directives._
     import akka.http.scaladsl.server.Route
-    import akka.stream.ActorMaterializer
     import scala.concurrent.duration._
 
     implicit val system = ActorSystem()
     implicit val dispatcher = system.dispatcher
-    implicit val materializer = ActorMaterializer()
 
     val routes = get {
       complete("Hello world!")

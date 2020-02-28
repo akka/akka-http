@@ -4,11 +4,12 @@
 
 package akka.http.scaladsl.marshallers.sprayjson
 
+import scala.concurrent.ExecutionContext
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.MessageEntity
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.ActorMaterializer
 import akka.util.ByteString
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
@@ -23,8 +24,7 @@ class SprayJsonSupportSpec extends AnyWordSpec with Matchers with ScalaFutures {
 
   implicit val exampleFormat = jsonFormat1(Example.apply)
   implicit val sys = ActorSystem("SprayJsonSupportSpec")
-  implicit val mat = ActorMaterializer()
-  import sys.dispatcher
+  implicit val ec: ExecutionContext = sys.dispatcher
 
   val TestString = "Contains all UTF-8 characters: 2-byte: £, 3-byte: ﾖ, 4-byte: 😁, 4-byte as a literal surrogate pair: \uD83D\uDE01"
 

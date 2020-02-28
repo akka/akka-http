@@ -12,7 +12,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
-import akka.stream.{ ActorMaterializerHelper, Materializer }
+import akka.stream.Materializer
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 
@@ -33,7 +33,7 @@ private[http] class RequestContextImpl(
     this(request, request.uri.path, ec, materializer, log, settings, parserSettings)
 
   def this(request: HttpRequest, log: LoggingAdapter, settings: RoutingSettings)(implicit ec: ExecutionContextExecutor, materializer: Materializer) =
-    this(request, request.uri.path, ec, materializer, log, settings, ParserSettings(ActorMaterializerHelper.downcast(materializer).system))
+    this(request, request.uri.path, ec, materializer, log, settings, ParserSettings(materializer.system))
 
   def reconfigure(executionContext: ExecutionContextExecutor, materializer: Materializer, log: LoggingAdapter, settings: RoutingSettings): RequestContext =
     copy(executionContext = executionContext, materializer = materializer, log = log, routingSettings = settings)

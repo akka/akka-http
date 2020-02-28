@@ -12,7 +12,6 @@ import javax.net.ssl.{ SSLContext, TrustManagerFactory, KeyManagerFactory }
 import akka.actor.ActorSystem
 import akka.http.scaladsl.server.{ Route, Directives }
 import akka.http.scaladsl.{ ConnectionContext, HttpsConnectionContext, Http }
-import akka.stream.ActorMaterializer
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 //#imports
 
@@ -33,7 +32,6 @@ abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
   "low level api" in compileOnlySpec {
     //#low-level-default
     implicit val system = ActorSystem()
-    implicit val mat = ActorMaterializer()
     implicit val dispatcher = system.dispatcher
 
     // Manual HTTPS configuration

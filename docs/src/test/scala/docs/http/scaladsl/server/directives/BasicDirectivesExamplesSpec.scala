@@ -11,7 +11,7 @@ import akka.http.scaladsl.model.headers.{ RawHeader, Server }
 import akka.http.scaladsl.server.RouteResult.{ Complete, Rejected }
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.settings.RoutingSettings
-import akka.stream.ActorMaterializer
+import akka.stream.{ Materializer, SystemMaterializer }
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
 import docs.CompileOnlySpec
@@ -50,7 +50,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   }
   "withMaterializer-0" in {
     //#withMaterializer-0
-    val special = ActorMaterializer(namePrefix = Some("special"))
+    val special = Materializer(system).withNamePrefix("special")
 
     def sample() =
       path("sample") {
@@ -72,7 +72,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
     // tests:
     Get("/sample") ~> route ~> check {
-      responseAs[String] shouldEqual s"Materialized by ${materializer.##}!"
+      responseAs[String] shouldEqual s"Materialized by ${SystemMaterializer(system).materializer.##}!"
     }
     Get("/special/sample") ~> route ~> check {
       responseAs[String] shouldEqual s"Materialized by ${special.##}!"
@@ -86,7 +86,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
         extractMaterializer { materializer =>
           complete {
             // explicitly use the `materializer`:
-            Source.single(s"Materialized by ${materializer.##}!")
+            Source.single(s"Materialized by ${SystemMaterializer(system).materializer.##}!")
               .runWith(Sink.head)(materializer)
           }
         }
@@ -94,7 +94,7 @@ class BasicDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
     // tests:
     Get("/sample") ~> route ~> check {
-      responseAs[String] shouldEqual s"Materialized by ${materializer.##}!"
+      responseAs[String] shouldEqual s"Materialized by ${SystemMaterializer(system).materializer.##}!"
     }
     //#extractMaterializer-0
   }

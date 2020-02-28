@@ -8,7 +8,6 @@ import scala.concurrent.Promise
 
 import akka.Done
 import akka.NotUsed
-import akka.stream.ActorMaterializer
 import akka.stream.OverflowStrategy
 import akka.stream.QueueOfferResult.Enqueued
 import akka.stream.TLSProtocol._
@@ -24,7 +23,6 @@ import org.scalatest.exceptions.TestFailedException
 import org.scalatest.time.{ Span, Seconds, Milliseconds }
 
 class ProtocolSwitchSpec extends AkkaSpec {
-  implicit val mat = ActorMaterializer()
 
   override implicit val patience: PatienceConfig = PatienceConfig(timeout = Span(2, Seconds), interval = Span(50, Milliseconds))
 

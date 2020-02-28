@@ -10,11 +10,11 @@ import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
 import akka.http.scaladsl.server.directives.Credentials
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor.ActorSystem
-import akka.stream._
 import akka.stream.scaladsl._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.common.EntityStreamingSupport
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.io.StdIn
 
@@ -26,8 +26,7 @@ object TestServer extends App {
     """)
 
   implicit val system = ActorSystem("ServerTest", testConf)
-  import system.dispatcher
-  implicit val materializer = ActorMaterializer()
+  implicit val ec: ExecutionContext = system.dispatcher
 
   import spray.json.DefaultJsonProtocol._
   import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._

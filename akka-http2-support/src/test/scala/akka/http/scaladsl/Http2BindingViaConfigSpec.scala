@@ -7,7 +7,6 @@ package akka.http.scaladsl
 import akka.event.Logging
 import akka.http.impl.util.ExampleHttpContexts
 import akka.http.scaladsl.model._
-import akka.stream._
 import akka.testkit.{ AkkaSpec, TestProbe, SocketUtil }
 
 import scala.concurrent.Future
@@ -20,7 +19,6 @@ class Http2BindingViaConfigSpec extends AkkaSpec("""
     akka.loglevel = DEBUG
     akka.log-dead-letters = off
   """) {
-  implicit val mat = ActorMaterializer()
   import system.dispatcher
 
   val (host, port) = SocketUtil.temporaryServerHostnameAndPort()

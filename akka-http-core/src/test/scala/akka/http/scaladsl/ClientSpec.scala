@@ -7,7 +7,6 @@ package akka.http.scaladsl
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.HttpMethods._
-import akka.stream.ActorMaterializer
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -25,7 +24,6 @@ class ClientSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     akka.log-dead-letters = OFF
     akka.http.server.request-timeout = infinite""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
-  implicit val materializer = ActorMaterializer()
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
 

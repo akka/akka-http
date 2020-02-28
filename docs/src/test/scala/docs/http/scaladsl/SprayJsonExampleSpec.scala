@@ -53,7 +53,6 @@ class SprayJsonExampleSpec extends AnyWordSpec with Matchers {
     //#second-spray-json-example
     import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
-    import akka.stream.ActorMaterializer
     import akka.Done
     import akka.http.scaladsl.server.Route
     import akka.http.scaladsl.server.Directives._
@@ -71,7 +70,6 @@ class SprayJsonExampleSpec extends AnyWordSpec with Matchers {
 
       // needed to run the route
       implicit val system = ActorSystem()
-      implicit val materializer = ActorMaterializer()
       // needed for the future map/flatmap in the end and future in fetchItem and saveOrder
       implicit val executionContext = system.dispatcher
 

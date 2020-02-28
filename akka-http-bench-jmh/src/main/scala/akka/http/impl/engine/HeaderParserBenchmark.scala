@@ -16,7 +16,7 @@ import scala.concurrent.duration._
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @BenchmarkMode(Array(Mode.Throughput))
-class HeaderParserBenchmark {
+final class HeaderParserBenchmark {
   implicit val system: ActorSystem = ActorSystem("header-parser-benchmark")
 
   @Param(Array("no", "yes"))

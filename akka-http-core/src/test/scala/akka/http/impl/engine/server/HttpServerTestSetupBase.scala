@@ -21,7 +21,6 @@ import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 
 abstract class HttpServerTestSetupBase {
   implicit def system: ActorSystem
-  implicit def materializer: Materializer
 
   val requests = TestSubscriber.probe[HttpRequest]
   val responses = TestPublisher.probe[HttpResponse]()

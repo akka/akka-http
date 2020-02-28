@@ -8,6 +8,8 @@ import akka.stream.ActorMaterializer
 import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter
 
+// TODO #2886 check that the SystemMaterializer is shut down before the rest of the system,
+// if so this helper is no longer necessary.
 abstract class AkkaSpecWithMaterializer(s: String)
   extends AkkaSpec(s +
     """

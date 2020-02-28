@@ -9,14 +9,11 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.settings.ConnectionPoolSettings
-import akka.stream.ActorMaterializer
 import akka.testkit.{ AkkaSpec, SocketUtil }
 import org.scalatest.concurrent.ScalaFutures
 
 class CustomStatusCodesSpec extends AkkaSpec with ScalaFutures
   with Directives with RequestBuilding {
-
-  implicit val mat = ActorMaterializer()
 
   "Http" should {
     "allow registering custom status code" in {

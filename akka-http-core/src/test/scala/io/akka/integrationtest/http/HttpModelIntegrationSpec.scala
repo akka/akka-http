@@ -13,7 +13,6 @@ import akka.util.ByteString
 import akka.actor.ActorSystem
 import akka.http.ccompat._
 import akka.http.scaladsl.model._
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.testkit._
 import headers._
@@ -45,8 +44,6 @@ class HttpModelIntegrationSpec extends AnyWordSpec with Matchers with BeforeAndA
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
-
-  implicit val materializer = ActorMaterializer()
 
   "External HTTP libraries" should {
 

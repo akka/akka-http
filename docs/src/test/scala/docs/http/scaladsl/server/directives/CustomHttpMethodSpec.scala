@@ -10,7 +10,6 @@ import akka.http.scaladsl.model.HttpProtocols._
 import akka.http.scaladsl.model.RequestEntityAcceptance.Expected
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives
-import akka.stream.ActorMaterializer
 import akka.testkit.{ AkkaSpec, SocketUtil }
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
@@ -19,8 +18,6 @@ import scala.concurrent.duration._
 
 class CustomHttpMethodSpec extends AkkaSpec with ScalaFutures
   with Directives with RequestBuilding {
-
-  implicit val mat = ActorMaterializer()
 
   "Http" should {
     "allow registering custom method" in {

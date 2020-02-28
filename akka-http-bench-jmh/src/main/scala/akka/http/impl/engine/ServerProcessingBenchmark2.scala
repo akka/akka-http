@@ -13,7 +13,6 @@ import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers
 import akka.http.scaladsl.settings.ServerSettings
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
@@ -41,7 +40,6 @@ class ServerProcessingBenchmark2 extends CommonBenchmark {
   var httpFlow: Flow[ByteString, ByteString, Any] = _
 
   implicit var system: ActorSystem = _
-  implicit var mat: ActorMaterializer = _
 
   @Benchmark
   @OperationsPerInvocation(1)
@@ -69,7 +67,6 @@ class ServerProcessingBenchmark2 extends CommonBenchmark {
         """)
         .withFallback(ConfigFactory.load())
     system = ActorSystem("AkkaHttpBenchmarkSystem", config)
-    mat = ActorMaterializer()
 
     val byteChunk = ByteString(new Array[Byte](bytesPerChunk.toInt))
     val streamedBytes = Source.repeat(byteChunk).take(numChunks.toInt) // 1MB of data

@@ -15,7 +15,7 @@ import akka.http.javadsl.server.Route;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.javadsl.testkit.TestRouteResult;
-import akka.stream.ActorMaterializer;
+import akka.stream.Materializer;
 import akka.util.ByteString;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -51,7 +51,7 @@ public class RangeDirectivesExamplesTest extends JUnitRouteTest {
                 akka.http.javadsl.model.ContentRange.create(0, 2, 8);
         final akka.http.javadsl.model.ContentRange bytes678Range =
                 akka.http.javadsl.model.ContentRange.create(6, 7, 8);
-        final ActorMaterializer materializer = systemResource().materializer();
+        final Materializer materializer = systemResource().materializer();
 
         testRoute(route).run(HttpRequest.GET("/")
                 .addHeader(Range.create(RangeUnits.BYTES, ByteRange.createSlice(3, 4))))

@@ -11,7 +11,6 @@ import scala.concurrent.Await
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.ws._
-import akka.stream._
 import akka.stream.scaladsl.{ Flow, Source }
 import com.typesafe.config.{ Config, ConfigFactory }
 import HttpMethods._
@@ -29,11 +28,6 @@ object TestServer extends App {
     """)
   implicit val system = ActorSystem("ServerTest", testConf)
 
-  val settings = ActorMaterializerSettings(system)
-    .withFuzzing(false)
-    //    .withSyncProcessingLimit(Int.MaxValue)
-    .withInputBuffer(128, 128)
-  implicit val fm = ActorMaterializer(settings)
   try {
     val binding = Http().bindAndHandleSync({
       case req @ HttpRequest(GET, Uri.Path("/"), _, _, _) if req.header[UpgradeToWebSocket].isDefined =>

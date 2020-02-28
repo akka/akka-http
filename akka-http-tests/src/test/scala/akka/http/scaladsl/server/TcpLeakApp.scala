@@ -9,7 +9,7 @@ import java.net.InetSocketAddress
 import akka.actor.{ ActorSystem, ActorSystemImpl }
 import akka.event.Logging
 import akka.stream.scaladsl._
-import akka.stream.{ ActorAttributes, ActorMaterializer }
+import akka.stream.ActorAttributes
 import akka.util.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.io.StdIn
@@ -21,7 +21,6 @@ object TcpLeakApp extends App {
     akka.log-dead-letters = on
     akka.io.tcp.trace-logging = on""")
   implicit val system = ActorSystem("ServerTest", testConf)
-  implicit val fm = ActorMaterializer()
 
   import system.dispatcher
 

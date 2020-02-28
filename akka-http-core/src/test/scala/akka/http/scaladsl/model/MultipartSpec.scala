@@ -9,7 +9,6 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, Inside }
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
 import akka.actor.ActorSystem
@@ -24,7 +23,6 @@ class MultipartSpec extends AnyWordSpec with Matchers with Inside with BeforeAnd
   akka.event-handlers = ["akka.testkit.TestEventListener"]
   akka.loglevel = WARNING""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
-  implicit val materializer = ActorMaterializer()
   override def afterAll() = TestKit.shutdownActorSystem(system)
 
   "Multipart.General" should {

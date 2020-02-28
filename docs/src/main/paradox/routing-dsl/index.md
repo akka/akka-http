@@ -105,7 +105,7 @@ Scala
 
 
 Note that the `akka.actor.typed.ActorSystem` is converted with `toClassic`, which comes from
-`import akka.actor.typed.scaladsl.adapter._`. If you are using an earlier version than Akka 2.5.26 this conversion method is named `toUntyped`.
+`import akka.actor.typed.scaladsl.adapter._`.
 
 ## Dynamic Routing Example
 

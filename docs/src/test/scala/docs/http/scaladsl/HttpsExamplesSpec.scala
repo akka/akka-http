@@ -6,7 +6,6 @@ package docs.http.scaladsl
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.stream.ActorMaterializer
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import docs.CompileOnlySpec
 import org.scalatest.matchers.should.Matchers
@@ -18,7 +17,6 @@ class HttpsExamplesSpec extends AnyWordSpec with Matchers with CompileOnlySpec {
     val unsafeHost = "example.com"
     //#disable-sni-connection
     implicit val system = ActorSystem()
-    implicit val mat = ActorMaterializer()
 
     // WARNING: disabling SNI is a very bad idea, please don't unless you have a very good reason to.
     val badSslConfig = AkkaSSLConfig().mapSettings(s => s.withLoose(s.loose.withDisableSNI(true)))

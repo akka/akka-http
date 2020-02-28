@@ -6,12 +6,12 @@ package akka.http.impl.engine.ws
 
 import akka.NotUsed
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ws.{ TextMessage, BinaryMessage, Message }
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.util.ByteString
 
@@ -23,8 +23,7 @@ import scala.util.{ Failure, Success }
  */
 object EchoTestClientApp extends App {
   implicit val system = ActorSystem()
-  import system.dispatcher
-  implicit val materializer = ActorMaterializer()
+  implicit val ec: ExecutionContext = system.dispatcher
 
   def delayedCompletion(delay: FiniteDuration): Source[Nothing, NotUsed] =
     Source.single(1)

@@ -211,8 +211,7 @@ abstract class BasicDirectives {
     D.extractMaterializer { m => inner.apply(m).delegate })
 
   /**
-   * Extracts the [[akka.actor.ActorSystem]] if the available Materializer is an [[akka.stream.ActorMaterializer]].
-   * Otherwise throws an exception as it won't be able to extract the system from arbitrary materializers.
+   * Extracts the [[akka.actor.ActorSystem]]
    */
   def extractActorSystem(inner: JFunction[ActorSystem, Route]): Route = RouteAdapter(
     D.extractActorSystem { system => inner.apply(system).delegate })

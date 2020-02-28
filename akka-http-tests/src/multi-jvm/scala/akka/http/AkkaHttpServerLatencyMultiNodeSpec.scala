@@ -13,7 +13,6 @@ import akka.http.scaladsl.model.{ ContentTypes, HttpEntity }
 import akka.http.scaladsl.server.{ Directives, Route }
 import akka.http.scaladsl.Http
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.testkit.{ ImplicitSender, LongRunningTest, SocketUtil }
 import akka.util.{ ByteString, Timeout }
@@ -22,7 +21,7 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.exceptions.TestPendingException
 
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Promise }
+import scala.concurrent.{ Await, ExecutionContext, Promise }
 import scala.util.Try
 
 object AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeConfig {
@@ -168,8 +167,7 @@ class AkkaHttpServerLatencyMultiNodeSpec extends MultiNodeSpec(AkkaHttpServerLat
 
   if (enableSpec) {
     "Akka HTTP" must {
-      implicit val dispatcher = system.dispatcher
-      implicit val mat = ActorMaterializer()
+      implicit val ec: ExecutionContext = system.dispatcher
 
       "start Akka HTTP" taggedAs LongRunningTest in {
         enterBarrier("startup")

@@ -12,7 +12,7 @@ import akka.http.scaladsl.server._
 import akka.http.scaladsl.settings.RoutingSettings
 import akka.http.scaladsl.unmarshalling._
 import akka.http.scaladsl.util.FastFuture._
-import akka.stream.{ ActorMaterializer, Materializer }
+import akka.stream.Materializer
 import akka.testkit.TestKit
 import akka.util.ConstantFun
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -44,7 +44,6 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
   }
   implicit val system = createActorSystem()
   implicit def executor = system.dispatcher
-  implicit val materializer = ActorMaterializer()
 
   def cleanUp(): Unit = TestKit.shutdownActorSystem(system)
 

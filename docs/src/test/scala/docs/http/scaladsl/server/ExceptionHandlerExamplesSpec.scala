@@ -19,7 +19,6 @@ object MyExplicitExceptionHandler {
   import StatusCodes._
   import akka.http.scaladsl.server._
   import Directives._
-  import akka.stream.ActorMaterializer
 
   val myExceptionHandler = ExceptionHandler {
     case _: ArithmeticException =>
@@ -32,7 +31,6 @@ object MyExplicitExceptionHandler {
   object MyApp extends App {
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
 
     val route: Route =
       handleExceptions(myExceptionHandler) {
@@ -55,7 +53,6 @@ object MyImplicitExceptionHandler {
   import StatusCodes._
   import akka.http.scaladsl.server._
   import Directives._
-  import akka.stream.ActorMaterializer
 
   implicit def myExceptionHandler: ExceptionHandler =
     ExceptionHandler {
@@ -69,7 +66,6 @@ object MyImplicitExceptionHandler {
   object MyApp extends App {
 
     implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
 
     val route: Route =
     // ... some route structure
@@ -118,7 +114,6 @@ object RespondWithHeaderExceptionHandlerExample {
   import akka.http.scaladsl.server._
   import Directives._
   import akka.http.scaladsl.Http
-  import akka.stream.ActorMaterializer
   import RespondWithHeaderExceptionHandler.route
 
 
@@ -153,7 +148,6 @@ object RespondWithHeaderExceptionHandlerExample {
 
   object MyApp extends App {
     implicit val system = ActorSystem()
-    implicit val materializer = ActorMaterializer()
 
     Http().bindAndHandle(route, "localhost", 8080)
   }

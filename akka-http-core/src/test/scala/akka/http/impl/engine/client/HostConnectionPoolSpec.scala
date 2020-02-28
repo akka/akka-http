@@ -178,7 +178,7 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
         pendingIn(targetImpl = LegacyPoolImplementation) // not implemented in legacy
         pendingIn(targetTrans = PassThrough) // infra seems to be missing something
 
-        // FIXME: set subscription timeout to value relating to below `expectNoMsg`
+        // FIXME: set subscription timeout to value relating to below `expectNoMessage`
 
         pushRequest(HttpRequest(uri = "/1"))
         val conn1 = expectNextConnection()

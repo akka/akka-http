@@ -29,8 +29,6 @@ import scala.util.{ Failure, Success }
 class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.fuzzing-mode=off")
   with Eventually {
 
-  implicit val materializer = ActorMaterializer()
-
   "A WebSocket server" must {
 
     "not reset the connection when no data are flowing" in Utils.assertAllStagesStopped {

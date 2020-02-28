@@ -8,14 +8,15 @@ import akka.http.impl.util.AkkaSpecWithMaterializer
 import javax.net.ssl.SSLContext
 import akka.http.scaladsl.{ ConnectionContext, Http }
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
-import akka.stream.ActorMaterializer
+import akka.stream.SystemMaterializer
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber, Utils }
 import akka.http.scaladsl.model.headers
 import akka.testkit.SocketUtil
 
 class ClientCancellationSpec extends AkkaSpecWithMaterializer {
-  val noncheckedMaterializer = ActorMaterializer()
+  // TODO document why this explicit materializer is needed here?
+  val noncheckedMaterializer = SystemMaterializer(system).materializer
 
   "Http client connections" must {
     val address = SocketUtil.temporaryServerAddress()

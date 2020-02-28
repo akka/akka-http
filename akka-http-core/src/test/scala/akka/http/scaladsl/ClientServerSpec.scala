@@ -52,14 +52,19 @@ class ClientServerSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll 
                                                    """)
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
-  implicit val materializer = ActorMaterializer()
+  // TODO #2886
+  // using SystemMaterializer here does not seem to work:
+  // - produce a useful error message when connecting to a HTTP endpoint over HTTPS fails
+  // - and then when it tries to print a nice stream overview that fails too because the StreamSupervisor
+  // also has a TLSActor child apart from the expected ActorGraphInterpreter
+  implicit val materializer: Materializer = Materializer(system) //SystemMaterializer(system).materializer //ActorMaterializer()
   implicit val patience = PatienceConfig(3.seconds.dilated)
 
   val testConf2: Config =
     ConfigFactory.parseString("akka.stream.materializer.subscription-timeout.timeout = 1 s")
       .withFallback(testConf)
   val system2 = ActorSystem(getClass.getSimpleName, testConf2)
-  val materializer2 = ActorMaterializer.create(system2)
+  val materializer2 = SystemMaterializer(system2).materializer
 
   "The low-level HTTP infrastructure" should {
 

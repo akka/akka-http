@@ -8,7 +8,6 @@ import akka.http.scaladsl.model.HttpEntity.Chunked
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.{ ContentType, HttpRequest, HttpResponse }
 import akka.http.scaladsl.model.MediaTypes._
-import akka.stream.{ ActorMaterializer, Materializer }
 import akka.stream.testkit.Utils.{ TE, _ }
 import akka.testkit._
 import org.scalatest.Inside
@@ -22,13 +21,11 @@ class HttpServerBug21008Spec extends AkkaSpec(
    akka.loggers = ["akka.testkit.TestEventListener", "akka.event.Logging$DefaultLogger"]
    akka.http.server.request-timeout = infinite
    akka.test.filter-leeway=1s""") with Inside { spec =>
-  implicit val materializer = ActorMaterializer()
 
   "The HttpServer" should {
 
     "not cause internal graph failures when consuming a `100 Continue` entity triggers a failure" in assertAllStagesStopped(new HttpServerTestSetupBase {
       override implicit def system = HttpServerBug21008Spec.this.system
-      override implicit def materializer: Materializer = HttpServerBug21008Spec.this.materializer
 
       send("""POST / HTTP/1.1
              |Host: example.com

@@ -18,7 +18,6 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.http.impl.util._
 import akka.stream.scaladsl._
-import akka.stream.ActorMaterializer
 import HttpEntity._
 import HttpMethods._
 import akka.testkit._
@@ -31,8 +30,6 @@ class RequestRendererSpec extends AnyFreeSpec with Matchers with BeforeAndAfterA
     akka.loglevel = WARNING""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
-
-  implicit val materializer = ActorMaterializer()
 
   "The request preparation logic should" - {
     "properly render an unchunked" - {

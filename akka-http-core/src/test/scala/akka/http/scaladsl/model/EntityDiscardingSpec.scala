@@ -6,7 +6,6 @@ package akka.http.scaladsl.model
 
 import akka.Done
 import akka.http.scaladsl.Http
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.testkit._
 import scala.concurrent.duration._
@@ -15,8 +14,6 @@ import akka.util.ByteString
 import scala.concurrent.{ Await, Promise }
 
 class EntityDiscardingSpec extends AkkaSpec {
-
-  implicit val mat = ActorMaterializer()
 
   val testData = Vector.tabulate(200)(i => ByteString(s"row-$i"))
 
