@@ -7,6 +7,7 @@ package akka
 import sbt._
 import Keys._
 import com.lightbend.paradox.projectinfo.ParadoxProjectInfoPluginKeys._
+import com.typesafe.tools.mima.plugin.MimaKeys._
 
 object Common extends AutoPlugin {
   override def trigger: PluginTrigger = allRequirements
@@ -34,6 +35,7 @@ object Common extends AutoPlugin {
     javacOptions in (Compile, compile) ++=
       // From jdk9 onwards this is covered by the '-release' flag above
       onlyOnJdk8("-target", "1.8"),
+    mimaReportSignatureProblems := true,
   )
 
   val specificationVersion: String = sys.props("java.specification.version")
