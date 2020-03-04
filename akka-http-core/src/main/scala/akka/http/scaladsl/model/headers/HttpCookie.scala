@@ -68,7 +68,6 @@ final class HttpCookie private[http] (
   val extension: Option[String],
   val sameSite:  Option[SameSite]) extends jm.headers.HttpCookie with ToStringRenderable with Product with Serializable with Equals {
 
-  @deprecated("for binary compatibility", since = "10.2.0")
   def this(
     name:      String,
     value:     String,
