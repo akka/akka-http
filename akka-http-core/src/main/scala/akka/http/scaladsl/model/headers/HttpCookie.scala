@@ -25,7 +25,7 @@ sealed abstract case class HttpCookiePair private (
   value: String) extends jm.headers.HttpCookiePair with ToStringRenderable {
 
   def render[R <: Rendering](r: R): r.type = r ~~ name ~~ '=' ~~ value
-  def toCookie: HttpCookie = HttpCookie.createFromPair(this)
+  def toCookie: HttpCookie = HttpCookie(this.name, this.value)
 }
 object HttpCookiePair {
   def apply(pair: (String, String)): HttpCookiePair = apply(pair._1, pair._2)
@@ -243,19 +243,7 @@ object HttpCookie {
     cookie.extension
   ))
 
-  def createFromPair(
-    pair:      HttpCookiePair,
-    expires:   Option[DateTime] = None,
-    maxAge:    Option[Long]     = None,
-    domain:    Option[String]   = None,
-    path:      Option[String]   = None,
-    secure:    Boolean          = false,
-    httpOnly:  Boolean          = false,
-    extension: Option[String]   = None,
-    sameSite:  Option[SameSite] = None): HttpCookie =
-    new HttpCookie(pair.name, pair.value, expires, maxAge, domain, path, secure, httpOnly, extension, sameSite)
-
-  @deprecated("Use createFromPair instead", "10.2.0")
+  @deprecated("Use HttpCookiePair.toCookie and withXxx methods instead", "10.2.0")
   def fromPair(
     pair:      HttpCookiePair,
     expires:   Option[DateTime] = None,
