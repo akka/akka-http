@@ -270,15 +270,15 @@ private[parser] trait CommonRules { this: Parser with StringBuilding =>
   }
 
   def `expires-av` = rule {
-    ignoreCase("expires=") ~ OWS ~ `expires-date` ~> { (c: HttpCookie, dt: DateTime) => c.copy(expires = Some(dt)) }
+    ignoreCase("expires=") ~ OWS ~ `expires-date` ~> { (c: HttpCookie, dt: DateTime) => c.withExpires(dt) }
   }
 
   def `max-age-av` = rule {
-    ignoreCase("max-age=") ~ OWS ~ longNumberCappedAtIntMaxValue ~> { (c: HttpCookie, seconds: Long) => c.copy(maxAge = Some(seconds)) }
+    ignoreCase("max-age=") ~ OWS ~ longNumberCappedAtIntMaxValue ~> { (c: HttpCookie, seconds: Long) => c.withMaxAge(seconds) }
   }
 
   def `domain-av` = rule {
-    ignoreCase("domain=") ~ OWS ~ `domain-value` ~> { (c: HttpCookie, domainName: String) => c.copy(domain = Some(domainName)) }
+    ignoreCase("domain=") ~ OWS ~ `domain-value` ~> { (c: HttpCookie, domainName: String) => c.withDomain(domainName) }
   }
 
   // https://tools.ietf.org/html/rfc1034#section-3.5 relaxed by https://tools.ietf.org/html/rfc1123#section-2
@@ -288,7 +288,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding =>
   }
 
   def `path-av` = rule {
-    ignoreCase("path=") ~ OWS ~ `path-value` ~> { (c: HttpCookie, pathValue: String) => c.copy(path = Some(pathValue)) }
+    ignoreCase("path=") ~ OWS ~ `path-value` ~> { (c: HttpCookie, pathValue: String) => c.withPath(pathValue) }
   }
 
   // http://www.rfc-editor.org/errata_search.php?rfc=6265
@@ -305,11 +305,11 @@ private[parser] trait CommonRules { this: Parser with StringBuilding =>
   }
 
   def `secure-av` = rule {
-    ignoreCase("secure") ~ OWS ~> { (cookie: HttpCookie) => cookie.copy(secure = true) }
+    ignoreCase("secure") ~ OWS ~> { (cookie: HttpCookie) => cookie.withSecure(true) }
   }
 
   def `httponly-av` = rule {
-    ignoreCase("httponly") ~ OWS ~> { (cookie: HttpCookie) => cookie.copy(httpOnly = true) }
+    ignoreCase("httponly") ~ OWS ~> { (cookie: HttpCookie) => cookie.withHttpOnly(true) }
   }
 
   // http://www.rfc-editor.org/errata_search.php?rfc=6265
@@ -321,7 +321,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding =>
       | ignoreCase("samesite=")
       | ignoreCase("secure")
       | ignoreCase("httponly")) ~
-      capture(zeroOrMore(`av-octet`)) ~ OWS ~> { (c: HttpCookie, s: String) => c.copy(extension = Some(s)) }
+      capture(zeroOrMore(`av-octet`)) ~ OWS ~> { (c: HttpCookie, s: String) => c.withExtension(s) }
   }
 
   // ******************************************************************************************

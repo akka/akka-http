@@ -5,7 +5,6 @@
 package akka.http.scaladsl.model.headers
 
 import akka.http.impl.model.parser.CharacterClasses
-import akka.http.javadsl.model.headers
 import akka.parboiled2.CharPredicate
 import java.util.{ Optional, OptionalLong }
 
@@ -81,10 +80,19 @@ final class HttpCookie private[http] (
     httpOnly:  Boolean          = false,
     extension: Option[String]   = None) = this(name, value, expires, maxAge, domain, path, secure, httpOnly, extension, None)
 
-  // This is used internally when parsing SameSite attribute.
-  private[http] def withSameSite(sameSite: Option[SameSite]) = new HttpCookie(name, value, expires, maxAge, domain, path, secure, httpOnly, extension, sameSite)
+  @deprecated("for binary compatibility", since = "10.2.0")
+  private[headers] def copy(
+    name:      String,
+    value:     String,
+    expires:   Option[DateTime],
+    maxAge:    Option[Long],
+    domain:    Option[String],
+    path:      Option[String],
+    secure:    Boolean,
+    httpOnly:  Boolean,
+    extension: Option[String]): HttpCookie = copy(name = name, value = value, expires = expires, maxAge = maxAge, domain = domain, path = path, secure = secure, httpOnly = httpOnly, extension = extension)
 
-  def copy(
+  private[headers] def copy(
     name:      String           = this.name,
     value:     String           = this.value,
     expires:   Option[DateTime] = this.expires,
@@ -93,7 +101,9 @@ final class HttpCookie private[http] (
     path:      Option[String]   = this.path,
     secure:    Boolean          = this.secure,
     httpOnly:  Boolean          = this.httpOnly,
-    extension: Option[String]   = this.extension) = new HttpCookie(name, value, expires, maxAge, domain, path, secure, httpOnly, extension, None)
+    extension: Option[String]   = this.extension,
+    sameSite:  Option[SameSite] = this.sameSite): HttpCookie =
+    new HttpCookie(name, value, expires, maxAge, domain, path, secure, httpOnly, extension, sameSite)
 
   override def productArity: Int = 9
 
@@ -169,24 +179,27 @@ final class HttpCookie private[http] (
   def getMaxAge: OptionalLong = maxAge.asPrimitive
   /** Java API */
   def getExpires: Optional[jm.DateTime] = expires.map(_.asJava).asJava
+
+  def withName(name: String): HttpCookie = copy(name = name)
+  def withValue(value: String): HttpCookie = copy(value = value)
+  /** Scala API */
+  def withExpires(dateTime: DateTime): HttpCookie = copy(expires = Some(dateTime))
   /** Java API */
-  def withExpires(dateTime: jm.DateTime): headers.HttpCookie = copy(expires = Some(dateTime.asScala))
+  def withExpires(dateTime: jm.DateTime): HttpCookie = copy(expires = Some(dateTime.asScala))
+
+  def withDomain(domain: String): HttpCookie = copy(domain = Some(domain))
+  def withPath(path: String): HttpCookie = copy(path = Some(path))
+  def withMaxAge(maxAge: Long): HttpCookie = copy(maxAge = Some(maxAge))
+  def withSecure(secure: Boolean): HttpCookie = copy(secure = secure)
+  def withHttpOnly(httpOnly: Boolean): HttpCookie = copy(httpOnly = httpOnly)
+  def withSameSite(sameSite: jm.headers.SameSite): HttpCookie = copy(sameSite = Option(sameSite.asScala()))
+
+  /** Scala API */
+  def withSameSite(sameSite: Option[SameSite]) = copy(sameSite = sameSite)
   /** Java API */
-  def withDomain(domain: String): headers.HttpCookie = copy(domain = Some(domain))
-  /** Java API */
-  def withPath(path: String): headers.HttpCookie = copy(path = Some(path))
-  /** Java API */
-  def withMaxAge(maxAge: Long): headers.HttpCookie = copy(maxAge = Some(maxAge))
-  /** Java API */
-  def withSecure(secure: Boolean): headers.HttpCookie = copy(secure = secure)
-  /** Java API */
-  def withHttpOnly(httpOnly: Boolean): headers.HttpCookie = copy(httpOnly = httpOnly)
-  /** Java API */
-  def withSameSite(sameSite: jm.headers.SameSite): headers.HttpCookie = new HttpCookie(name, value, expires, maxAge, domain, path, secure, httpOnly, extension, Option(sameSite.asScala()))
-  /** Java API */
-  def withSameSite(sameSite: Optional[jm.headers.SameSite]): headers.HttpCookie = new HttpCookie(name, value, expires, maxAge, domain, path, secure, httpOnly, extension, sameSite.asScala.map(_.asScala()))
-  /** Java API */
-  def withExtension(extension: String): headers.HttpCookie = copy(extension = Some(extension))
+  def withSameSite(sameSite: Optional[jm.headers.SameSite]): HttpCookie = copy(sameSite = sameSite.asScala.map(_.asScala()))
+
+  def withExtension(extension: String): HttpCookie = copy(extension = Some(extension))
 }
 
 object HttpCookie {
@@ -252,7 +265,7 @@ object HttpCookie {
     secure:    Boolean          = false,
     httpOnly:  Boolean          = false,
     extension: Option[String]   = None): HttpCookie =
-    new HttpCookie(pair.name, pair.value, expires, maxAge, domain, path, secure, httpOnly, extension, None)
+    HttpCookie(pair.name, pair.value, expires, maxAge, domain, path, secure, httpOnly, extension, None)
 
   import akka.http.impl.model.parser.CharacterClasses._
 
