@@ -116,21 +116,24 @@ class GracefulTerminationSpec
     }
 
     "in-flight request responses should include Connection: close and connection should be closed" in new TestSetup {
-      override val basePoolSettings: ConnectionPoolSettings = super.basePoolSettings.withTransport(new ClientTransport {
-        override def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[Http.OutgoingConnection]] = {
-          ClientTransport.TCP.connectTo(host, port, settings)
-            .mapMaterializedValue { conn =>
-              val result = Promise[Http.OutgoingConnection]()
-              conn.onComplete {
-                case Success(s) => result.trySuccess(s)
-                case Failure(ex) =>
-                  log.debug(s"Delaying failure ${ex.getMessage}")
-                  system.scheduler.scheduleOnce(100.millis)(result.tryFailure(ex))
-              }
-              result.future
+      override val basePoolSettings: ConnectionPoolSettings =
+        super.basePoolSettings
+          .withTransport(new ClientTransport {
+            override def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[Http.OutgoingConnection]] = {
+              ClientTransport.TCP.connectTo(host, port, settings)
+                .mapMaterializedValue { conn =>
+                  val result = Promise[Http.OutgoingConnection]()
+                  conn.onComplete {
+                    case Success(s) => result.trySuccess(s)
+                    case Failure(ex) =>
+                      log.debug(s"Delaying failure ${ex.getMessage}")
+                      system.scheduler.scheduleOnce(100.millis)(result.tryFailure(ex))
+                  }
+                  result.future
+                }
             }
-        }
-      })
+          })
+          .withMaxRetries(0) // disable retries for this test since they will be extra slow because we delay failures each by 100ms
 
       val r1 = makeRequest() // establish connection
       val time: FiniteDuration = 3.seconds
