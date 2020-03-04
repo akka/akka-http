@@ -138,8 +138,7 @@ lazy val httpCore = project("akka-http-core")
   .addAkkaModuleDependency(
     "akka-stream-testkit",
     "test",
-    shouldUseSourceDependency = true,
-    uri("git://github.com/akka/akka.git#master"),
+    AkkaDependency.Sources("git://github.com/akka/akka.git#master"),
     onlyIf = System.getProperty("akka.http.test-against-akka-master", "false") == "true"
   )
   .settings(Dependencies.httpCore)
