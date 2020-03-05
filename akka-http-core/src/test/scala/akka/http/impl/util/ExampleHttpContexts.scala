@@ -10,8 +10,8 @@ import java.security.{ KeyStore, SecureRandom }
 import java.security.cert.{ Certificate, CertificateFactory }
 
 import akka.actor.ActorSystem
-import javax.net.ssl.{ KeyManagerFactory, SSLContext, SSLParameters, TrustManagerFactory }
-import akka.http.scaladsl.{ ClientTransport, Http, ConnectionContext, HttpsConnectionContext }
+import javax.net.ssl.{ KeyManagerFactory, SSLContext, TrustManagerFactory }
+import akka.http.scaladsl.{ ClientTransport, Http, ConnectionContext }
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.scaladsl.Flow
@@ -42,7 +42,10 @@ object ExampleHttpContexts {
     ConnectionContext.httpsServer(context)
   }
 
-  def exampleClientContext(implicit system: ActorSystem) = {
+  def exampleClientContext(implicit system: ActorSystem) =
+    ConnectionContext.httpsClient(exampleClientSSLContext)
+
+  val exampleClientSSLContext = {
     val certStore = KeyStore.getInstance(KeyStore.getDefaultType)
     certStore.load(null, null)
     // only do this if you want to accept a custom root CA. Understand what you are doing!
@@ -53,8 +56,7 @@ object ExampleHttpContexts {
 
     val context = SSLContext.getInstance("TLSv1.2")
     context.init(null, certManagerFactory.getTrustManagers, new SecureRandom)
-
-    ConnectionContext.httpsClient(context)
+    context
   }
 
   def resourceStream(resourceName: String): InputStream = {
