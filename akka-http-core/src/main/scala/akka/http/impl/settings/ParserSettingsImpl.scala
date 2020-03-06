@@ -67,7 +67,11 @@ object ParserSettingsImpl extends SettingsCompanionImpl[ParserSettingsImpl]("akk
   def forServer(root: Config): ParserSettingsImpl =
     fromSubConfig(root, root.getConfig("akka.http.server.parsing"))
 
-  def fromSubConfig(root: Config, inner: Config): ParserSettingsImpl = {
+  @deprecated("please supply a default value for max-content-length")
+  def fromSubConfig(root: Config, inner: Config): ParserSettingsImpl =
+    fromSubConfig(root, inner, 8 * 1000 * 1000)
+
+  def fromSubConfig(root: Config, inner: Config, defaultMaxContentLength: Long): ParserSettingsImpl = {
     val c = inner.withFallback(root.getConfig(prefix))
     val cacheConfig = c getConfig "header-cache"
 
@@ -78,7 +82,7 @@ object ParserSettingsImpl extends SettingsCompanionImpl[ParserSettingsImpl]("akk
       c.getIntBytes("max-header-name-length"),
       c.getIntBytes("max-header-value-length"),
       c.getIntBytes("max-header-count"),
-      c.getPossiblyInfiniteBytes("max-content-length"),
+      c.getPossiblyInfiniteBytes("max-content-length", defaultMaxContentLength),
       c.getPossiblyInfiniteBytes("max-to-strict-bytes"),
       c.getIntBytes("max-chunk-ext-length"),
       c.getIntBytes("max-chunk-size"),

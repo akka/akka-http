@@ -16,10 +16,12 @@ class HttpConfigurationSpec extends AkkaSpec {
 
   "Reference configurations" should {
     "have default client and server `parsing` settings" in {
-      ServerSettings(system).parserSettings.toString should ===(ClientConnectionSettings(system).parserSettings.toString)
+      ServerSettings(system).parserSettings.withMaxContentLength(Long.MaxValue).toString should ===(ClientConnectionSettings(system).parserSettings.toString)
+      ServerSettings(system).parserSettings.toString should ===(ClientConnectionSettings(system).parserSettings.withMaxContentLength(8 * 1000 * 1000).toString)
     }
     "have default client and pool `parsing` settings" in {
-      ServerSettings(system).parserSettings.toString should ===(ConnectionPoolSettings(system).connectionSettings.parserSettings.toString)
+      ServerSettings(system).parserSettings.withMaxContentLength(Long.MaxValue).toString should ===(ConnectionPoolSettings(system).connectionSettings.parserSettings.toString)
+      ServerSettings(system).parserSettings.toString should ===(ConnectionPoolSettings(system).connectionSettings.parserSettings.withMaxContentLength(8 * 1000 * 1000).toString)
     }
     "have default client and pool `client` settings" in {
       ClientConnectionSettings(system).toString should ===(ConnectionPoolSettings(system).connectionSettings.toString)
