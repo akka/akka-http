@@ -106,7 +106,7 @@ private[http] object ServerSettingsImpl extends SettingsCompanionImpl[ServerSett
     LogUnencryptedNetworkBytes(c.getString("log-unencrypted-network-bytes")),
     SocketOptionSettings.fromSubConfig(root, c.getConfig("socket-options")),
     defaultHostHeader =
-      HttpHeader.parse("Host", c.getString("default-host-header"), ParserSettings(root)) match {
+      HttpHeader.parse("Host", c.getString("default-host-header"), ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing"))) match {
         case HttpHeader.ParsingResult.Ok(x: Host, Nil) => x
         case result =>
           val info = result.errors.head.withSummary("Configured `default-host-header` is illegal")
