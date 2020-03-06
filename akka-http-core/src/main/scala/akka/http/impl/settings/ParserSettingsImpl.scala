@@ -82,7 +82,7 @@ object ParserSettingsImpl extends SettingsCompanionImpl[ParserSettingsImpl]("akk
       c.getIntBytes("max-header-name-length"),
       c.getIntBytes("max-header-value-length"),
       c.getIntBytes("max-header-count"),
-      c.getPossiblyInfiniteBytes("max-content-length", defaultMaxContentLength),
+      c.getPossiblyInfiniteBytesOr("max-content-length", defaultMaxContentLength),
       c.getPossiblyInfiniteBytes("max-to-strict-bytes"),
       c.getIntBytes("max-chunk-ext-length"),
       c.getIntBytes("max-chunk-size"),
