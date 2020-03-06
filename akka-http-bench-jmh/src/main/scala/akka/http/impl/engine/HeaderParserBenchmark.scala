@@ -42,7 +42,7 @@ class HeaderParserBenchmark {
 
   private def settings() = {
     val root = ConfigFactory.load()
-    val settings = ParserSettingsImpl.fromSubConfig(root, root.getConfig("akka.http.server.parsing", 8 * 1000 * 1000))
+    val settings = ParserSettingsImpl.fromSubConfig(root, root.getConfig("akka.http.server.parsing", ParserSettingsImpl.defaultMaxContentLengthServer))
     if (withCustomMediaTypes == "no") settings
     else settings.withCustomMediaTypes(
       MediaType.customWithOpenCharset("application", "json")

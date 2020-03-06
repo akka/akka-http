@@ -64,12 +64,15 @@ object ParserSettingsImpl extends SettingsCompanionImpl[ParserSettingsImpl]("akk
   private[this] val noCustomStatusCodes: Int => Option[StatusCode] = ConstantFun.scalaAnyToNone
   private[ParserSettingsImpl] val noCustomMediaTypes: (String, String) => Option[MediaType] = ConstantFun.scalaAnyTwoToNone
 
+  val defaultMaxContentLengthServer = 8 * 1024 * 1024
+  val defaultMaxContentLengthClient = Long.MaxValue
+
   def forServer(root: Config): ParserSettingsImpl =
-    fromSubConfig(root, root.getConfig("akka.http.server.parsing"))
+    fromSubConfig(root, root.getConfig("akka.http.server.parsing"), defaultMaxContentLengthServer)
 
   @deprecated("please supply a default value for max-content-length")
   def fromSubConfig(root: Config, inner: Config): ParserSettingsImpl =
-    fromSubConfig(root, inner, 8 * 1000 * 1000)
+    fromSubConfig(root, inner, defaultMaxContentLengthServer)
 
   def fromSubConfig(root: Config, inner: Config, defaultMaxContentLength: Long): ParserSettingsImpl = {
     val c = inner.withFallback(root.getConfig(prefix))

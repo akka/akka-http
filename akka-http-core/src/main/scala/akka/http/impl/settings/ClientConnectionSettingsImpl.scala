@@ -56,7 +56,7 @@ private[akka] object ClientConnectionSettingsImpl extends SettingsCompanionImpl[
       logUnencryptedNetworkBytes = LogUnencryptedNetworkBytes(c getString "log-unencrypted-network-bytes"),
       websocketSettings = WebSocketSettingsImpl.client(c.getConfig("websocket")),
       socketOptions = SocketOptionSettings.fromSubConfig(root, c.getConfig("socket-options")),
-      parserSettings = ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing"), Long.MaxValue),
+      parserSettings = ParserSettingsImpl.fromSubConfig(root, c.getConfig("parsing"), ParserSettingsImpl.defaultMaxContentLengthClient),
       streamCancellationDelay = c.getFiniteDuration("stream-cancellation-delay"),
       localAddress = None,
       transport = ClientTransport.TCP)
