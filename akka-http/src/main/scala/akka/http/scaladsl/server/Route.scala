@@ -54,10 +54,10 @@ object Route {
   /**
    * Turns a `Route` into a server flow.
    *
-   * This conversion is also implicitly available whereever a `Route`` is used through [[RouteResult#routeToFlow]].
+   * This conversion is also implicitly available whereever a `Route` is used through [[RouteResult#routeToFlow]].
    */
   def toFlow(route: Route)(implicit system: ActorSystem): Flow[HttpRequest, HttpResponse, NotUsed] =
-    Flow[HttpRequest].mapAsync(1)(asyncHandler(route, RoutingSettings(system), ParserSettings(system)))
+    Flow[HttpRequest].mapAsync(1)(asyncHandler(route, RoutingSettings(system), ParserSettings.forServer(system)))
 
   /**
    * Turns a `Route` into a server flow.

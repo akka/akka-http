@@ -8,6 +8,7 @@ import java.util
 import java.util.Optional
 import java.util.function.Function
 
+import akka.actor.ActorSystem
 import akka.annotation.DoNotInherit
 import akka.http.impl.settings.ParserSettingsImpl
 import akka.http.impl.util._
@@ -160,4 +161,6 @@ object ParserSettings extends SettingsCompanion[ParserSettings] {
 
   override def apply(config: Config): ParserSettings = ParserSettingsImpl(config)
   override def apply(configOverrides: String): ParserSettings = ParserSettingsImpl(configOverrides)
+
+  def forServer(system: ActorSystem): ParserSettings = ParserSettingsImpl.forServer(system.settings.config)
 }
