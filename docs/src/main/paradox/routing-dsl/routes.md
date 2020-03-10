@@ -165,6 +165,11 @@ specific cases up front and the most general cases in the back.
 
 ## Sealing a Route
 
+A sealed route has these properties:
+
+ * The result of the route will always be a complete response, i.e. the result of the future is a `Success(RouteResult.Complete(response))`, never a failed future and never a rejected route. 
+ * Consequently, no route alternatives will be tried that were combined with this route.
+
 As described in @ref[Rejections](rejections.md) and @ref[Exception Handling](exception-handling.md),
 there are generally two ways to handle rejections and exceptions.
 
