@@ -85,6 +85,10 @@ private[http] final class UriParser(
     case Uri.ParsingMode.Strict => `pchar-base`
     case _                      => `relaxed-path-segment-char`
   }
+  private[this] val `query-char` = uriParsingMode match {
+    case Uri.ParsingMode.Strict => `query-fragment-char`
+    case _                      => `relaxed-query-char`
+  }
   private[this] val `query-key-char` = uriParsingMode match {
     case Uri.ParsingMode.Strict  => `strict-query-key-char`
     case Uri.ParsingMode.Relaxed => `relaxed-query-key-char`
@@ -194,7 +198,7 @@ private[http] final class UriParser(
   def pchar = rule { `path-segment-char` ~ appendSB() | `pct-encoded` }
 
   def rawQueryString = rule {
-    clearSB() ~ oneOrMore(`raw-query-char` ~ appendSB()) ~ run(setRawQueryString(sb.toString)) | run(setRawQueryString(""))
+    clearSB() ~ oneOrMore(`query-char` ~ appendSB() | `pct-encoded`) ~ run(setRawQueryString(sb.toString)) | run(setRawQueryString(""))
   }
 
   // http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1

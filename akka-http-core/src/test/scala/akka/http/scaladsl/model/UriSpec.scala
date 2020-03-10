@@ -583,7 +583,8 @@ class UriSpec extends AnyWordSpec with Matchers {
       normalize("?key") shouldEqual "?key"
       normalize("?key=") shouldEqual "?key="
       normalize("?key=&a=b") shouldEqual "?key=&a=b"
-      normalize("?key={}&a=[]") shouldEqual "?key={}&a=[]"
+      normalize("?key={}&a=[]") shouldEqual "?key=%7B%7D&a=%5B%5D"
+      normalize("?key=%7B%7D&a=%5B%5D") shouldEqual "?key=%7B%7D&a=%5B%5D"
       normalize("?=value") shouldEqual "?=value"
       normalize("?key=value") shouldEqual "?key=value"
       normalize("?a+b") shouldEqual "?a+b"
@@ -753,6 +754,10 @@ class UriSpec extends AnyWordSpec with Matchers {
       uri.withQuery(Query("param1" -> "value1")) shouldEqual Uri("http://host/path?param1=value1#fragment")
       uri.withQuery(Query(Map("param1" -> "value1"))) shouldEqual Uri("http://host/path?param1=value1#fragment")
       uri.withRawQueryString("param1=value1") shouldEqual Uri("http://host/path?param1=value1#fragment")
+
+      uri.withQuery(Query("param1" -> "val\"ue1")) shouldEqual Uri("http://host/path?param1=val%22ue1#fragment")
+      uri.withRawQueryString("param1=val%22ue1") shouldEqual Uri("http://host/path?param1=val%22ue1#fragment")
+      uri.withRawQueryString("param1=val\"ue1") shouldEqual Uri("http://host/path?param1=val\"ue1#fragment")
 
       uri.withFragment("otherFragment") shouldEqual Uri("http://host/path?query#otherFragment")
     }

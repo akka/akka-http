@@ -21,7 +21,8 @@ import Uri._
 
 /**
  * An immutable model of an internet URI as defined by http://tools.ietf.org/html/rfc3986.
- * All members of this class represent the *decoded* URI elements (i.e. without percent-encoding).
+ * All members of this class represent the *decoded* URI elements (i.e. without percent-encoding),
+ * with the exception of 'rawQueryString'.
  */
 sealed abstract case class Uri(scheme: String, authority: Authority, path: Path, rawQueryString: Option[String],
                                fragment: Option[String]) {
@@ -887,7 +888,10 @@ object UriRendering {
     if (authority.nonEmpty) r ~~ '/' ~~ '/'
     renderAuthority(r, authority, path, scheme, charset)
     renderPath(r, path, charset, encodeFirstSegmentColons = isRelative)
-    rawQueryString.foreach(r ~~ '?' ~~ _)
+    rawQueryString.foreach(qs => {
+      r ~~ '?'
+      encode(r, qs, UTF8, `query-fragment-char` ++ '%', false)
+    })
     r
   }
 

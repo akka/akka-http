@@ -46,6 +46,12 @@ object TestServer extends App {
   // format: OFF
   val routes = {
     get {
+      path("echouri") {
+        extractUri { uri =>
+          system.log.warning(uri.toString)
+          complete("OK!")
+        }
+      } ~
       path("") {
         withRequestTimeout(1.milli, _ => HttpResponse(
           StatusCodes.EnhanceYourCalm,
