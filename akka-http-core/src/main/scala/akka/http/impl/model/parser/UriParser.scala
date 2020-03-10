@@ -36,7 +36,7 @@ private[http] final class UriParser(
 
   def parseAbsoluteUri(): Uri =
     rule(`absolute-URI` ~ EOI).run() match {
-      case Right(_)    => create(_scheme, _userinfo, _host, _port, collapseDotSegments(_path), _rawQueryString, _fragment)
+      case Right(_)    => create(_scheme, _userinfo, _host, _port, collapseDotSegments(_path), _query, _fragment)
       case Left(error) => fail(error, "absolute URI")
     }
 
@@ -48,7 +48,7 @@ private[http] final class UriParser(
 
   def parseAndResolveUriReference(base: Uri): Uri =
     rule(`URI-reference` ~ EOI).run() match {
-      case Right(_)    => resolve(_scheme, _userinfo, _host, _port, _path, _rawQueryString, _fragment, base)
+      case Right(_)    => resolve(_scheme, _userinfo, _host, _port, _path, _query, _fragment, base)
       case Left(error) => fail(error, "URI reference")
     }
 
@@ -85,6 +85,10 @@ private[http] final class UriParser(
     case Uri.ParsingMode.Strict => `pchar-base`
     case _                      => `relaxed-path-segment-char`
   }
+  private[this] val `query-char` = uriParsingMode match {
+    case Uri.ParsingMode.Strict => `query-fragment-char`
+    case _                      => `relaxed-query-char`
+  }
   private[this] val `query-key-char` = uriParsingMode match {
     case Uri.ParsingMode.Strict  => `strict-query-key-char`
     case Uri.ParsingMode.Relaxed => `relaxed-query-key-char`
@@ -103,7 +107,7 @@ private[http] final class UriParser(
   private[this] var _host: Host = Host.Empty
   private[this] var _port: Int = 0
   private[this] var _path: Path = Path.Empty
-  private[this] var _rawQueryString: Option[String] = None
+  private[this] var _query: Query = Query.Empty
   private[this] var _fragment: Option[String] = None
 
   private[this] def setScheme(scheme: String): Unit = _scheme = scheme
@@ -111,7 +115,7 @@ private[http] final class UriParser(
   private[this] def setHost(host: Host): Unit = _host = host
   private[this] def setPort(port: Int): Unit = _port = port
   private[this] def setPath(path: Path): Unit = _path = path
-  private[this] def setRawQueryString(rawQueryString: String): Unit = _rawQueryString = Some(rawQueryString)
+  private[this] def setQuery(query: Query): Unit = _query = query
   private[this] def setFragment(fragment: String): Unit = _fragment = Some(fragment)
 
   // http://tools.ietf.org/html/rfc3986#appendix-A
@@ -194,7 +198,7 @@ private[http] final class UriParser(
   def pchar = rule { `path-segment-char` ~ appendSB() | `pct-encoded` }
 
   def rawQueryString = rule {
-    clearSB() ~ oneOrMore(`raw-query-char` ~ appendSB()) ~ run(setRawQueryString(sb.toString)) | run(setRawQueryString(""))
+    clearSB() ~ oneOrMore(`query-char` ~ appendSB() | `pct-encoded`) ~ run(setQuery(Query(sb.toString, uriParsingCharset, uriParsingMode))) | run(setQuery(Query.Empty))
   }
 
   // http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1
@@ -262,7 +266,7 @@ private[http] final class UriParser(
     rule(`request-target` ~ EOI).run() match {
       case Right(_) =>
         val path = if (_scheme.isEmpty) _path else collapseDotSegments(_path)
-        create(_scheme, _userinfo, _host, _port, path, _rawQueryString, _fragment)
+        create(_scheme, _userinfo, _host, _port, path, _query, _fragment)
       case Left(error) => fail(error, "request-target")
     }
 
@@ -283,11 +287,11 @@ private[http] final class UriParser(
     `absolute-path` ~ optional('?' ~ rawQueryString) // origin-form
   ) // TODO: asterisk-form
 
-  def parseHttp2PathPseudoHeader(): (Uri.Path, Option[String]) =
+  def parseHttp2PathPseudoHeader(): (Uri.Path, Query) =
     rule(`http2-path-pseudo-header` ~ EOI).run() match {
       case Right(_) =>
         val path = collapseDotSegments(_path)
-        (path, _rawQueryString)
+        (path, _query)
       case Left(error) => fail(error, "http2-path-pseudo-header")
     }
 
@@ -309,7 +313,7 @@ private[http] final class UriParser(
 
   private def createUriReference(): Uri = {
     val path = if (_scheme.isEmpty) _path else collapseDotSegments(_path)
-    create(_scheme, _userinfo, _host, normalizePort(_port, _scheme), path, _rawQueryString, _fragment)
+    create(_scheme, _userinfo, _host, normalizePort(_port, _scheme), path, _query, _fragment)
   }
 }
 

@@ -46,7 +46,7 @@ private[http] case class JavaUri(uri: sm.Uri) extends jm.Uri {
     gatherSegments(uri.path).asJava
   }
 
-  def rawQueryString: Optional[String] = uri.rawQueryString.asJava
+  def rawQueryString: Optional[String] = if (uri.query.isEmpty) Optional.of(uri.query.toString) else Optional.empty()
   def queryString(charset: Charset): Optional[String] = uri.queryString(charset).asJava
   def query: jm.Query = uri.query().asJava
   def query(charset: Charset, mode: ParsingMode): jm.Query = uri.query(charset, mode).asJava
