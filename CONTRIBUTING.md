@@ -177,7 +177,7 @@ For a Pull Request to be considered at all it has to meet these requirements:
 
 Some additional guidelines regarding source code are:
 
-- files should start with a ``Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>`` copyright header
+- files should start with a ``Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>`` copyright header
 - keep the code [DRY](https://www.oreilly.com/library/view/97-things-every/9780596809515/ch30.html)
 - apply the [Boy Scout Rule](https://www.oreilly.com/library/view/97-things-every/9780596809515/ch08.html) whenever you have the chance to
 - Never delete or change existing copyright notices, just add additional info.  
