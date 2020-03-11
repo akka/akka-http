@@ -594,6 +594,8 @@ class UriSpec extends AnyWordSpec with Matchers {
       normalize("?a=1&b=2") shouldEqual "?a=1&b=2"
       normalize("?a+b=c%2Bd") shouldEqual "?a+b=c%2Bd"
       normalize("?a&a") shouldEqual "?a&a"
+      normalize("?foo\"bar") shouldEqual "?foo%22bar"
+      a[IllegalUriException] should be thrownBy normalize("?foo\"bar", mode = Uri.ParsingMode.Strict)
       normalize("?&#") shouldEqual "?&#"
       normalize("?#") shouldEqual "?#"
       normalize("#") shouldEqual "#"
@@ -642,6 +644,21 @@ class UriSpec extends AnyWordSpec with Matchers {
           "Illegal URI reference: Unexpected end of input, expected HEXDIG (line 1, column 31)",
           "http://www.example.com/%CE%B8%\n" +
             "                              ^")
+      }
+
+      // illegal percent-encoding in a query string
+      the[IllegalUriException] thrownBy Uri("http://host?use%2G") shouldBe {
+        IllegalUriException(
+          "Illegal URI reference: Invalid input 'G', expected HEXDIG (line 1, column 18)",
+          "http://host?use%2G\n" +
+            "                 ^")
+      }
+      // illegal percent-encoding in a fragment
+      the[IllegalUriException] thrownBy Uri("http://host#use%2G") shouldBe {
+        IllegalUriException(
+          "Illegal URI reference: Invalid input 'G', expected HEXDIG (line 1, column 18)",
+          "http://host#use%2G\n" +
+            "                 ^")
       }
 
       // illegal path
