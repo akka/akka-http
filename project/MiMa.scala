@@ -90,7 +90,8 @@ object MiMa extends AutoPlugin {
 
       forks.flatMap(forkFilter).toMap ++
       filters.filterKeys(_ startsWith currentFork)
-    }
+    },
+    mimaReportSignatureProblems := true,
   )
 
   def latestForkVersion(fork: String, allVersions: Seq[String]): String =
