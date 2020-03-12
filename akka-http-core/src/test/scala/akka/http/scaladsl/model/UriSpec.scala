@@ -774,7 +774,7 @@ class UriSpec extends AnyWordSpec with Matchers {
 
       uri.withQuery(Query("param1" -> "val\"ue1")) shouldEqual Uri("http://host/path?param1=val%22ue1#fragment")
       uri.withRawQueryString("param1=val%22ue1") shouldEqual Uri("http://host/path?param1=val%22ue1#fragment")
-      uri.withRawQueryString("param1=val\"ue1") shouldEqual Uri("http://host/path?param1=val\"ue1#fragment")
+      uri.withRawQueryString("param1=val\"ue1") shouldEqual Uri("http://host/path?param1=val%22ue1#fragment")
 
       uri.withFragment("otherFragment") shouldEqual Uri("http://host/path?query#otherFragment")
     }
@@ -818,6 +818,13 @@ class UriSpec extends AnyWordSpec with Matchers {
     "properly render as HTTP request target origin forms" in {
       Uri("http://example.com/foo/bar?query=1#frag").toHttpRequestTargetOriginForm.toString shouldEqual "/foo/bar?query=1"
       Uri("http://example.com//foo/bar?query=1#frag").toHttpRequestTargetOriginForm.toString shouldEqual "//foo/bar?query=1"
+    }
+
+    "properly render query strings with invalid values" in {
+      val uri = Uri("http://host/path?query#fragment")
+      uri.withQuery(Query("param1" -> "val\"ue1")).toString shouldEqual "http://host/path?param1=val%22ue1#fragment"
+      uri.withRawQueryString("param1=val%22ue1").toString shouldEqual "http://host/path?param1=val%22ue1#fragment"
+      uri.withRawQueryString("param1=val\"ue1").toString shouldEqual "http://host/path?param1=val%22ue1#fragment"
     }
 
     "survive parsing a URI with thousands of path segments" in {

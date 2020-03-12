@@ -7,8 +7,8 @@ package akka.http.impl.model.parser
 import java.nio.charset.Charset
 
 import akka.parboiled2._
-import akka.http.impl.util.enhanceString_
-import akka.http.scaladsl.model.Uri
+import akka.http.impl.util.{ StringRendering, enhanceString_ }
+import akka.http.scaladsl.model.{ Uri, UriRendering }
 import akka.http.scaladsl.model.headers.HttpOrigin
 import Parser.DeliveryScheme.Either
 import Uri._
@@ -64,6 +64,30 @@ private[http] final class UriParser(
       case Left(error) => fail(error, "URI host")
     }
 
+  /**
+   * @return a 'raw' (percent-encoded) query string that does not contain invalid characters.
+   */
+  def parseRawQueryString(): String = {
+    rule(rawQueryString ~ EOI).run() match {
+      case Right(())   => encodeRawQueryString(sb.toString)
+      case Left(error) => fail(error, "rawQueryString")
+    }
+  }
+
+  /**
+   * @param rawQueryString raw, percent-encoded query string, possibly containing invalid unescaped characters
+   *                       when in 'relaxed' mode, but never invalid escaped characters (e.g. '%x2')
+   * @return percent-encoded query string, guaranteed not to contain invalid unescaped characters
+   */
+  def encodeRawQueryString(rawQueryString: String): String = {
+    uriParsingMode match {
+      case Uri.ParsingMode.Strict =>
+        rawQueryString
+      case Uri.ParsingMode.Relaxed =>
+        UriRendering.encode(new StringRendering, sb.toString, uriParsingCharset, `query-fragment-char` ++ '%', false).get
+    }
+  }
+
   def parseQuery(): Query =
     rule(query ~ EOI).run() match {
       case Right(query) => query
@@ -115,7 +139,7 @@ private[http] final class UriParser(
   private[this] def setHost(host: Host): Unit = _host = host
   private[this] def setPort(port: Int): Unit = _port = port
   private[this] def setPath(path: Path): Unit = _path = path
-  private[this] def setRawQueryString(rawQueryString: String): Unit = _rawQueryString = Some(rawQueryString)
+  private[this] def setRawQueryString(rawQueryString: String): Unit = _rawQueryString = Some(encodeRawQueryString(rawQueryString))
   private[this] def setFragment(fragment: String): Unit = _fragment = Some(fragment)
 
   // http://tools.ietf.org/html/rfc3986#appendix-A
