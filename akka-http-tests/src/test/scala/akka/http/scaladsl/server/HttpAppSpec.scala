@@ -12,12 +12,13 @@ import java.net.SocketException
 
 import akka.Done
 import akka.actor.ActorSystem
+import akka.http.impl.util.AkkaSpecWithMaterializer
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.{ HttpRequest, StatusCodes }
 import akka.http.scaladsl.settings.ServerSettings
-import akka.testkit.{ AkkaSpec, EventFilter }
+import akka.testkit.EventFilter
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
 
@@ -25,7 +26,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.util.Try
 
-class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
+class HttpAppSpec extends AkkaSpecWithMaterializer with RequestBuilding with Eventually {
   import system.dispatcher
 
   class MinimalApp extends HttpApp {
@@ -230,7 +231,7 @@ class HttpAppSpec extends AkkaSpec with RequestBuilding with Eventually {
         val port = serverSocket.getLocalPort
 
         try {
-          EventFilter[SocketException](message = "Address already in use", occurrences = 1) intercept {
+          EventFilter[SocketException](pattern = ".*Address already in use.*", occurrences = 1) intercept {
             sneaky.startServer("localhost", port, system)
           }
 

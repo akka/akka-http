@@ -264,7 +264,8 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
       requestIn.sendNext(HttpRequest(uri = "/crash") -> 43)
       responseOutSub.request(2)
 
-      val remainingResponsesToKill = new AtomicInteger(1)
+      // must be lazy to prevent initialization problem because `mapServerSideOutboundRawBytes` might be called before the value is initialized
+      lazy val remainingResponsesToKill = new AtomicInteger(1)
       override def mapServerSideOutboundRawBytes(bytes: ByteString): ByteString =
         if (bytes.utf8String.contains("/crash") && remainingResponsesToKill.decrementAndGet() >= 0)
           sys.error("CRASH BOOM BANG")
@@ -281,14 +282,14 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
       if (poolImplementation == PoolImplementation.Legacy)
         pending
 
-      val remainingResponsesToKill = new AtomicInteger(5)
-
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int](maxRetries = 4)
 
       requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
       requestIn.sendNext(HttpRequest(uri = "/crash") -> 43)
       responseOutSub.request(2)
 
+      // must be lazy to prevent initialization problem because `mapServerSideOutboundRawBytes` might be called before the value is initialized
+      lazy val remainingResponsesToKill = new AtomicInteger(5)
       override def mapServerSideOutboundRawBytes(bytes: ByteString): ByteString =
         if (bytes.utf8String.contains("/crash") && remainingResponsesToKill.decrementAndGet() >= 0)
           sys.error("CRASH BOOM BANG")
@@ -311,7 +312,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
       val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int](idleTimeout = 200.millis)
       val gateway = hcp.gateway
 
-      val responseEntityPub = TestPublisher.probe[ByteString]()
+      lazy val responseEntityPub = TestPublisher.probe[ByteString]()
 
       override def testServerHandler(connNr: Int): HttpRequest => HttpResponse = {
         case request @ HttpRequest(_, Uri.Path("/a"), _, _, _) =>
@@ -622,7 +623,6 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
   class TestSetup(
     serverSettings: ServerSettings = ServerSettings(system),
     autoAccept:     Boolean        = false) {
-    val (serverHostName, serverPort) = SocketUtil.temporaryServerHostnameAndPort()
 
     def asyncTestServerHandler(connNr: Int): HttpRequest => Future[HttpResponse] = {
       val handler = testServerHandler(connNr)
@@ -640,25 +640,33 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
 
     val incomingConnectionCounter = new AtomicInteger
     val incomingConnections = TestSubscriber.manualProbe[Http.IncomingConnection]
-    val incomingConnectionsSub = {
+    val (incomingConnectionsSub, serverHostName: String, serverPort: Int) = {
       val rawBytesInjection = BidiFlow.fromFlows(
         Flow[SslTlsOutbound].collect[ByteString] { case SendBytes(x) => mapServerSideOutboundRawBytes(x) }
           .recover({ case NoErrorComplete => ByteString.empty }),
         Flow[ByteString].map(SessionBytes(null, _)))
       val sink = if (autoAccept) Sink.foreach[Http.IncomingConnection](handleConnection) else Sink.fromSubscriber(incomingConnections)
-      Tcp().bind(serverHostName, serverPort, idleTimeout = serverSettings.timeouts.idleTimeout)
-        .map { c =>
-          val layer = Http().serverLayer(serverSettings, log = log)
-          val flow = (layer atop rawBytesInjection join c.flow)
-            .mapMaterializedValue(_ =>
-              new ServerTerminator {
-                // this is simply a mock, since we do not use termination in these tests anyway
-                def terminate(deadline: FiniteDuration)(implicit ec: ExecutionContext): Future[HttpTerminated] =
-                  Future.successful(HttpServerTerminated)
-              })
-          Http.IncomingConnection(c.localAddress, c.remoteAddress, flow)
-        }.runWith(sink)
-      if (autoAccept) null else incomingConnections.expectSubscription()
+
+      val binding =
+        Tcp()
+          .bind("localhost", 0, idleTimeout = serverSettings.timeouts.idleTimeout)
+          .map { c =>
+            val layer = Http().serverLayer(serverSettings, log = log)
+            val flow = (layer atop rawBytesInjection join c.flow)
+              .mapMaterializedValue(_ =>
+                new ServerTerminator {
+                  // this is simply a mock, since we do not use termination in these tests anyway
+                  def terminate(deadline: FiniteDuration)(implicit ec: ExecutionContext): Future[HttpTerminated] =
+                    Future.successful(HttpServerTerminated)
+                })
+            Http.IncomingConnection(c.localAddress, c.remoteAddress, flow)
+          }
+          .to(sink)
+          .run()
+          .awaitResult(3.seconds)
+
+      val sub = if (autoAccept) null else incomingConnections.expectSubscription()
+      (sub, binding.localAddress.getHostString, binding.localAddress.getPort)
     }
 
     def acceptIncomingConnection(): Unit = {
@@ -755,7 +763,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
 
   implicit class MustContain[T](specimen: Seq[T]) {
     def mustContainLike(pf: PartialFunction[T, Unit]): Unit =
-      specimen.collectFirst(pf) getOrElse fail("did not contain")
+      specimen.collectFirst(pf) getOrElse fail(s"None of [${specimen.mkString(", ")}] matched partial function")
   }
 
   object NoErrorComplete extends SingletonException

@@ -73,5 +73,28 @@ class Specs2RouteTestSpec extends Specification with Specs2RouteTest {
         header("Fancy") shouldEqual Some(pinkHeader)
       }(result)
     }
+
+    "failing the test inside the route" in {
+
+      val route = get {
+        failure("BOOM")
+        complete(HttpResponse())
+      }
+
+      {
+        Get() ~> route
+      } must throwA[org.specs2.execute.FailureException]
+    }
+
+    "internal server error" in {
+
+      val route = get {
+        throw new RuntimeException("BOOM")
+      }
+
+      Get() ~> route ~> check {
+        status shouldEqual InternalServerError
+      }
+    }
   }
 }

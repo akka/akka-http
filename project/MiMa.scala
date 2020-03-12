@@ -26,43 +26,45 @@ object MiMa extends AutoPlugin {
   val forks = Seq("10.0.")
   val currentFork = "10.1."
 
+  // manually maintained list of previous versions to make sure all incompatibilities are found
+  // even if so far no files have been been created in this project's mima-filters directory
+  val pre213Versions = Set(
+    "10.0.0",
+    "10.0.1",
+    "10.0.2",
+    "10.0.3",
+    "10.0.4",
+    "10.0.5",
+    "10.0.6",
+    "10.0.7",
+    "10.0.8",
+    "10.0.9",
+    "10.0.10",
+    "10.0.11",
+    "10.0.12",
+    "10.0.13",
+    "10.0.14",
+    "10.0.15",
+    "10.1.0",
+    "10.1.1",
+    "10.1.2",
+    "10.1.3",
+    "10.1.4",
+    "10.1.5",
+    "10.1.6",
+    "10.1.7",
+  )
+  val post213Versions = Set(
+    "10.1.8",
+    "10.1.9",
+    "10.1.10",
+    "10.1.11",
+  )
+
+  lazy val latestVersion = post213Versions.max(versionOrdering)
+
   override val projectSettings = Seq(
     mimaPreviousArtifacts := {
-      // manually maintained list of previous versions to make sure all incompatibilities are found
-      // even if so far no files have been been created in this project's mima-filters directory
-      val pre213Versions = Set(
-          "10.0.0",
-          "10.0.1",
-          "10.0.2",
-          "10.0.3",
-          "10.0.4",
-          "10.0.5",
-          "10.0.6",
-          "10.0.7",
-          "10.0.8",
-          "10.0.9",
-          "10.0.10",
-          "10.0.11",
-          "10.0.12",
-          "10.0.13",
-          "10.0.14",
-          "10.0.15",
-          "10.1.0",
-          "10.1.1",
-          "10.1.2",
-          "10.1.3",
-          "10.1.4",
-          "10.1.5",
-          "10.1.6",
-          "10.1.7",
-      )
-      val post213Versions = Set(
-          "10.1.8",
-          "10.1.9",
-          "10.1.10",
-          "10.1.11",
-      )
-
       val versions =
         if (scalaBinaryVersion.value == "2.13") post213Versions
         else pre213Versions ++ post213Versions
@@ -98,7 +100,7 @@ object MiMa extends AutoPlugin {
       .last
 
   // copied from https://github.com/lightbend/migration-manager/blob/e54f3914741b7f528da5507e515cc84db60abdd5/core/src/main/scala/com/typesafe/tools/mima/core/ProblemReporting.scala#L14-L19
-  private val versionOrdering = Ordering[(Int, Int, Int)].on { version: String =>
+  private lazy val versionOrdering = Ordering[(Int, Int, Int)].on { version: String =>
     val ModuleVersion = """(\d+)\.?(\d+)?\.?(.*)?""".r
     val ModuleVersion(epoch, major, minor) = version
     val toNumeric = (revision: String) => Try(revision.replace("x", Short.MaxValue.toString).filter(_.isDigit).toInt).getOrElse(0)

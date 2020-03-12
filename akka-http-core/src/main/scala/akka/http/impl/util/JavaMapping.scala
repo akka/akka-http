@@ -180,6 +180,9 @@ private[http] object JavaMapping {
   class Inherited[J <: AnyRef, S <: J](implicit classTag: ClassTag[S]) extends JavaMapping[J, S] {
     def toJava(scalaObject: S): J = scalaObject
     def toScala(javaObject: J): S = cast[S](javaObject)
+
+    import scala.language.higherKinds
+    def downcast[F[+_]](f: F[J]): F[S] = f.asInstanceOf[F[S]]
   }
 
   implicit object ConnectionContext extends Inherited[ConnectionContext, akka.http.scaladsl.ConnectionContext]

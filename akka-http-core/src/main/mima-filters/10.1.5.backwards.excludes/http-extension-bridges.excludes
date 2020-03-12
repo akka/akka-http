@@ -1,0 +1,5 @@
+# When compiling against recent 2.6 we get spurious warnings about these entries on Scala 2.12
+# because the old Scala 2.12 compiler used to compile akka-http <= 10.1.5 generate extra static method bridges
+# With 2.6 it generates a similar bridge (but not quite the same) which seems to confuse mima
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.javadsl.Http.get")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.Http.apply")

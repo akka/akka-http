@@ -1251,9 +1251,12 @@ class HttpServerSpec extends AkkaSpec(
           def expectDefaultEntityWithSizeError(limit: Int, actualSize: Int) =
             inside(request) {
               case HttpRequest(POST, _, _, entity @ HttpEntity.Default(_, `actualSize`, _), _) =>
-                val error = the[Exception]
-                  .thrownBy(entity.dataBytes.runFold(ByteString.empty)(_ ++ _).awaitResult(100.millis.dilated))
-                  .getCause
+                val origError = the[Exception]
+                  .thrownBy(entity.dataBytes.runFold(ByteString.empty)(_ ++ _).awaitResult(3.seconds.dilated))
+
+                log.error(origError, "Original Error")
+                val error = origError.getCause
+
                 error shouldEqual EntityStreamSizeException(limit, Some(actualSize))
                 error.getMessage should include("exceeded size limit")
 
@@ -1274,9 +1277,11 @@ class HttpServerSpec extends AkkaSpec(
           def expectChunkedEntityWithSizeError(limit: Int) =
             inside(request) {
               case HttpRequest(POST, _, _, entity: HttpEntity.Chunked, _) =>
-                val error = the[Exception]
-                  .thrownBy(entity.dataBytes.runFold(ByteString.empty)(_ ++ _).awaitResult(100.millis.dilated))
-                  .getCause
+                val origError = the[Exception]
+                  .thrownBy(entity.dataBytes.runFold(ByteString.empty)(_ ++ _).awaitResult(3.seconds.dilated))
+
+                log.error(origError, "Original Error")
+                val error = origError.getCause
                 error shouldEqual EntityStreamSizeException(limit, None)
                 error.getMessage should include("exceeded size limit")
 

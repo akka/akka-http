@@ -4,9 +4,12 @@
 
 package docs.http.scaladsl
 
+import scala.concurrent.ExecutionContext
+
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.settings.ConnectionPoolSettings
+
 import docs.CompileOnlySpec
 import org.scalatest.{ Matchers, WordSpec }
 
@@ -353,14 +356,23 @@ class HttpClientExampleSpec extends WordSpec with Matchers with CompileOnlySpec 
 
     //#create-simple-request
     HttpRequest(uri = "https://akka.io")
+
+    // or:
+    import akka.http.scaladsl.client.RequestBuilding.Get
+    Get("https://akka.io")
     //#create-simple-request
 
+    implicit val ec: ExecutionContext = null
     //#create-post-request
     HttpRequest(
       method = HttpMethods.POST,
       uri = "https://userservice.example/users",
       entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "data")
     )
+
+    // or:
+    import akka.http.scaladsl.client.RequestBuilding.Post
+    Post("https://userservice.example/users", "data")
     //#create-post-request
 
     implicit val materializer: ActorMaterializer = null
