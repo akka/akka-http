@@ -1,0 +1,4 @@
+# Only happening with Scala 2.11, probably introduced in c32f822b9d540bfc4cf25e24754169d3056489d2
+
+# Change in internal class
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.model.parser.CommonActions.equalsAsciiCaseInsensitive")
