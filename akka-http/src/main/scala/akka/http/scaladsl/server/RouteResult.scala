@@ -35,8 +35,10 @@ object RouteResult {
   /**
    * Turns a `Route` into a server flow.
    *
-   * Defined here because `Route` is defined as type `Route = RequestContext => Future[RouteResult]`,
-   * which brings this implicit in scope whereever a `Route` is provided though those generic parameters.
+   * This implicit conversion is defined here because `Route` is an alias for
+   * `RequestContext => Future[RouteResult]`, and the fact that `RouteResult`
+   * is in that type means this implicit conversion come into scope whereever
+   * a `Route` is given but a `Flow` is expected.
    */
   implicit def routeToFlow(route: Route)(implicit system: ActorSystem): Flow[HttpRequest, HttpResponse, NotUsed] =
     Route.toFlow(route)
