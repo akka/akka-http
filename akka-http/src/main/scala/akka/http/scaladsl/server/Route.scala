@@ -82,7 +82,7 @@ object Route {
     // We can seal more efficiently here because we know we can have no inherited settings:
     val sealedRoute = {
       import directives.ExecutionDirectives._
-      (handleExceptions(ExceptionHandler.seal(ExceptionHandler.default(routingSettings))(routingSettings)) & handleRejections(RejectionHandler.default.seal))
+      (handleExceptions(ExceptionHandler.default(routingSettings)) & handleRejections(RejectionHandler.default))
         .tapply(_ => route)
     }
     request => {
