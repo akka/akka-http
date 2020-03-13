@@ -75,8 +75,8 @@ object Route {
 
   def asyncHandler(route: Route, routingSettings: RoutingSettings, parserSettings: ParserSettings)(implicit system: ActorSystem): HttpRequest => Future[HttpResponse] = {
     val routingLog = RoutingLog(system.log)
-    val executionContext = system.dispatcher
-    val materializer = Materializer.matFromSystem(new ClassicActorSystemProvider {
+    implicit val executionContext = system.dispatcher
+    implicit val materializer = Materializer.matFromSystem(new ClassicActorSystemProvider {
       override val classicSystem = system
     })
     // We can seal more efficiently here because we know we can have no inherited settings:
@@ -86,11 +86,11 @@ object Route {
         .tapply(_ => route)
     }
     request => {
-      sealedRoute(new RequestContextImpl(request, routingLog.requestLog(request), routingSettings, parserSettings)(executionContext, materializer)).fast
+      sealedRoute(new RequestContextImpl(request, routingLog.requestLog(request), routingSettings, parserSettings)).fast
         .map {
           case RouteResult.Complete(response) => response
           case RouteResult.Rejected(rejected) => throw new IllegalStateException(s"Unhandled rejections '$rejected', unsealed RejectionHandler?!")
-        }(executionContext)
+        }
     }
   }
 
