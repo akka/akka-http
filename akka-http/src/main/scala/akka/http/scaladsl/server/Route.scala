@@ -97,7 +97,7 @@ object Route {
   /**
    * Turns a `Route` into an async handler function.
    */
-  @deprecated("replaced by asyncHandler without ec or rejection/exception handlers", "10.2.0")
+  @deprecated("Use `asyncHandler` overload without passing ec or rejection/exception handlers. Use directives to specify custom exceptions or rejection handlers", "10.2.0")
   def asyncHandler(route: Route)(implicit
     routingSettings: RoutingSettings,
                                  parserSettings:   ParserSettings,
