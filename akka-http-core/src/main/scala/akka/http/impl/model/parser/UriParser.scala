@@ -69,22 +69,16 @@ private[http] final class UriParser(
    */
   def parseRawQueryString(): String = {
     rule(rawQueryString ~ EOI).run() match {
-      case Right(())   => encodeRawQueryString(sb.toString)
+      case Right(()) =>
+        uriParsingMode match {
+          case Uri.ParsingMode.Strict =>
+            // Cannot contain invalid characters in strict mode
+            sb.toString
+          case Uri.ParsingMode.Relaxed =>
+            // Percent-encode invalid characters
+            UriRendering.encode(new StringRendering, sb.toString, uriParsingCharset, `query-fragment-char` ++ '%', false).get
+        }
       case Left(error) => fail(error, "rawQueryString")
-    }
-  }
-
-  /**
-   * @param rawQueryString raw, percent-encoded query string, possibly containing invalid unescaped characters
-   *                       when in 'relaxed' mode, but never invalid escaped characters (e.g. '%x2')
-   * @return percent-encoded query string, guaranteed not to contain invalid unescaped characters
-   */
-  def encodeRawQueryString(rawQueryString: String): String = {
-    uriParsingMode match {
-      case Uri.ParsingMode.Strict =>
-        rawQueryString
-      case Uri.ParsingMode.Relaxed =>
-        UriRendering.encode(new StringRendering, sb.toString, uriParsingCharset, `query-fragment-char` ++ '%', false).get
     }
   }
 
@@ -131,6 +125,10 @@ private[http] final class UriParser(
   private[this] var _host: Host = Host.Empty
   private[this] var _port: Int = 0
   private[this] var _path: Path = Path.Empty
+  /**
+   *  Percent-encoded. May contain characters not permitted by https://tools.ietf.org/html/rfc3986#section-3.4
+   *  when parsing in 'relaxed' mode.
+   */
   private[this] var _rawQueryString: Option[String] = None
   private[this] var _fragment: Option[String] = None
 
@@ -139,7 +137,7 @@ private[http] final class UriParser(
   private[this] def setHost(host: Host): Unit = _host = host
   private[this] def setPort(port: Int): Unit = _port = port
   private[this] def setPath(path: Path): Unit = _path = path
-  private[this] def setRawQueryString(rawQueryString: String): Unit = _rawQueryString = Some(encodeRawQueryString(rawQueryString))
+  private[this] def setRawQueryString(rawQueryString: String): Unit = _rawQueryString = Some(rawQueryString)
   private[this] def setFragment(fragment: String): Unit = _fragment = Some(fragment)
 
   // http://tools.ietf.org/html/rfc3986#appendix-A
@@ -311,6 +309,10 @@ private[http] final class UriParser(
     `absolute-path` ~ optional('?' ~ rawQueryString) // origin-form
   ) // TODO: asterisk-form
 
+  /**
+   * @return path and query string. The query string should be percent-encoded, but may still
+   *                    characters outside of the RFC3986 range when parsing in 'relaxed' mode.
+   */
   def parseHttp2PathPseudoHeader(): (Uri.Path, Option[String]) =
     rule(`http2-path-pseudo-header` ~ EOI).run() match {
       case Right(_) =>

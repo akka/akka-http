@@ -71,6 +71,7 @@ private[http] case class JavaUri(uri: sm.Uri) extends jm.Uri {
   def rawQueryString(rawQuery: String): jm.Uri = rawQueryString(rawQuery, false)
   def rawQueryString(rawQuery: String, strict: Boolean): jm.Uri =
     t(_.withRawQueryString(rawQuery, if (strict) sm.Uri.ParsingMode.Strict else sm.Uri.ParsingMode.Relaxed))
+
   def query(query: jm.Query): jm.Uri = t(_.withQuery(query.asScala))
 
   def addPathSegment(segment: String): jm.Uri = t { u =>
