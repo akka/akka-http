@@ -34,7 +34,8 @@ abstract class RouteTest extends AllDirectives with WSTestRequestBuilding {
   implicit def materializer: Materializer
   implicit def executionContext: ExecutionContextExecutor = system.dispatcher
 
-  protected def awaitDuration: FiniteDuration = 3.seconds.dilated
+  protected def defaultAwaitDuration = 3.seconds
+  protected def awaitDuration: FiniteDuration = defaultAwaitDuration.dilated
 
   protected def defaultHostInfo: DefaultHostInfo = DefaultHostInfo(Host.create("example.com"), false)
 

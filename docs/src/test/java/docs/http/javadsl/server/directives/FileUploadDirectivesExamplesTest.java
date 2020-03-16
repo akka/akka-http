@@ -15,6 +15,7 @@ import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import org.junit.Ignore;
 import org.junit.Test;
+import scala.concurrent.duration.FiniteDuration;
 
 import java.io.File;
 import java.nio.charset.Charset;
@@ -25,6 +26,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -59,6 +61,11 @@ import static akka.http.javadsl.server.Directives.onSuccess;
 //#fileUploadAll
 
 public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
+
+  @Override
+  public FiniteDuration defaultAwaitDuration() {
+    return new FiniteDuration(7, TimeUnit.SECONDS);
+  }
 
   @Test
   public void testUploadedFile() {

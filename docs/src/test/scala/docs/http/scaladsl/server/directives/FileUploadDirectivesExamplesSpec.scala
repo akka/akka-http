@@ -23,7 +23,7 @@ class FileUploadDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec 
   override def testConfigSource = "akka.actor.default-mailbox.mailbox-type = \"akka.dispatch.UnboundedMailbox\""
 
   // test touches disk, so give it some time
-  implicit val routeTimeout = RouteTestTimeout(3.seconds.dilated)
+  implicit val routeTimeout = RouteTestTimeout(7.seconds.dilated)
 
   "uploadedFile" in {
     //#uploadedFile
