@@ -310,7 +310,7 @@ private[http] final class UriParser(
   ) // TODO: asterisk-form
 
   /**
-   * @return path and query string. The query string should be percent-encoded, but may still
+   * @return path and query string. The query string should be percent-encoded, but may still contain
    *                    characters outside of the RFC3986 range when parsing in 'relaxed' mode.
    */
   def parseHttp2PathPseudoHeader(): (Uri.Path, Option[String]) =
@@ -342,4 +342,3 @@ private[http] final class UriParser(
     create(_scheme, _userinfo, _host, normalizePort(_port, _scheme), path, _rawQueryString, _fragment)
   }
 }
-
