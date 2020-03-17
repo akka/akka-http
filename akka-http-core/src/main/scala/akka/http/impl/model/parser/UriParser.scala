@@ -348,4 +348,3 @@ private[http] final class UriParser(
     createSafe(_scheme, Authority(_host, normalizePort(_port, _scheme), _userinfo), path, _rawQueryString, _fragment)
   }
 }
-
