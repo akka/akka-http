@@ -58,9 +58,9 @@ sealed abstract case class Uri(scheme: String, authority: Authority, path: Path,
   /**
    * Returns a copy of this Uri with the given components.
    *
-   *  If you want to use the copy constructor to update the rawQueryString, it is up to you to
-   *  make sure the query string does not contain invalid characters. For this reason we
-   *  recommend you to use [[Uri#withRawQueryString()]] instead.
+   * If you want to use the copy constructor to update the 'rawQueryString', it is up to you to
+   * make sure the query string does not contain invalid characters. For this reason we
+   * recommend using [[Uri#withRawQueryString()]] instead.
    */
   def copy(scheme: String = scheme, authority: Authority = authority, path: Path = path,
            rawQueryString: Option[String] = rawQueryString, fragment: Option[String] = fragment): Uri =
