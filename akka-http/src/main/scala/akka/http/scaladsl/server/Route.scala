@@ -79,19 +79,13 @@ object Route {
     implicit val materializer = Materializer.matFromSystem(new ClassicActorSystemProvider {
       override val classicSystem = system
     })
-    // We can seal more efficiently here because we know we can have no inherited settings:
+    // This is essentially the same as `seal(route)` but a bit more efficient because we know we have no inherited settings:
     val sealedRoute = {
       import directives.ExecutionDirectives._
       (handleExceptions(ExceptionHandler.default(routingSettings)) & handleRejections(RejectionHandler.default))
         .tapply(_ => route)
     }
-    request => {
-      sealedRoute(new RequestContextImpl(request, routingLog.requestLog(request), routingSettings, parserSettings)).fast
-        .map {
-          case RouteResult.Complete(response) => response
-          case RouteResult.Rejected(rejected) => throw new IllegalStateException(s"Unhandled rejections '$rejected', unsealed RejectionHandler?!")
-        }
-    }
+    createAsyncHandler(sealedRoute, routingLog, routingSettings, parserSettings)
   }
 
   /**
@@ -111,13 +105,16 @@ object Route {
     {
       implicit val executionContext: ExecutionContextExecutor = effectiveEC // overrides parameter
       val effectiveParserSettings = if (parserSettings ne null) parserSettings else ParserSettings(ActorMaterializerHelper.downcast(materializer).system)
-      val sealedRoute = seal(route)
-      request =>
-        sealedRoute(new RequestContextImpl(request, routingLog.requestLog(request), routingSettings, effectiveParserSettings)).fast
-          .map {
-            case RouteResult.Complete(response) => response
-            case RouteResult.Rejected(rejected) => throw new IllegalStateException(s"Unhandled rejections '$rejected', unsealed RejectionHandler?!")
-          }
+      createAsyncHandler(seal(route), routingLog, routingSettings, effectiveParserSettings)
     }
+  }
+
+  private def createAsyncHandler(sealedRoute: Route, routingLog: RoutingLog, routingSettings: RoutingSettings, parserSettings: ParserSettings)(implicit ec: ExecutionContextExecutor, mat: Materializer): HttpRequest => Future[HttpResponse] = {
+    request =>
+      sealedRoute(new RequestContextImpl(request, routingLog.requestLog(request), routingSettings, parserSettings)).fast
+        .map {
+          case RouteResult.Complete(response) => response
+          case RouteResult.Rejected(rejected) => throw new IllegalStateException(s"Unhandled rejections '$rejected', unsealed RejectionHandler?!")
+        }
   }
 }
