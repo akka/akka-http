@@ -161,7 +161,7 @@ sealed abstract case class Uri(scheme: String, authority: Authority, path: Path,
    * The given base Uri must be absolute.
    */
   def resolvedAgainst(base: Uri): Uri =
-    resolveSafe(scheme, authority.userinfo, authority.host, authority.port, path, rawQueryString, fragment, base)
+    resolveUnsafe(scheme, authority.userinfo, authority.host, authority.port, path, rawQueryString, fragment, base)
 
   /**
    * Converts this URI to an "effective HTTP request URI" as defined by
@@ -747,17 +747,19 @@ object Uri {
   /**
    * https://tools.ietf.org/html/rfc3986#section-5.2.2
    *
+   * 'Unsafe' in the sense that queryString validation must already have been done.
+   *
    * @param query percent-encoded query string that must be guaranteed
    *                    not to contain invalid percent-encodings or characters not allowed by
    *                    the RFC.
    */
-  private[http] def resolveSafe(scheme: String, userinfo: String, host: Host, port: Int, path: Path, query: Option[String],
-                                fragment: Option[String], base: Uri): Uri = {
+  private[http] def resolveUnsafe(scheme: String, userinfo: String, host: Host, port: Int, path: Path, query: Option[String],
+                                  fragment: Option[String], base: Uri): Uri = {
     require(base.isAbsolute, "Resolution base Uri must be absolute")
     if (scheme.isEmpty)
       if (host.isEmpty)
         if (path.isEmpty) {
-          createSafe(base.scheme, base.authority, base.path, query.orElse(base.rawQueryString), fragment)
+          createUnsafe(base.scheme, base.authority, base.path, query.orElse(base.rawQueryString), fragment)
         } else {
           // http://tools.ietf.org/html/rfc3986#section-5.2.3
           def mergePaths(base: Uri, path: Path): Path =
@@ -772,10 +774,10 @@ object Uri {
               replaceLastSegment(base.path, path)
             }
           val p = if (path.startsWithSlash) path else mergePaths(base, path)
-          createSafe(base.scheme, base.authority, collapseDotSegments(p), query, fragment)
+          createUnsafe(base.scheme, base.authority, collapseDotSegments(p), query, fragment)
         }
-      else createSafe(base.scheme, Authority(host, port, userinfo), collapseDotSegments(path), query, fragment)
-    else createSafe(scheme, Authority(host, port, userinfo), collapseDotSegments(path), query, fragment)
+      else createUnsafe(base.scheme, Authority(host, port, userinfo), collapseDotSegments(path), query, fragment)
+    else createUnsafe(scheme, Authority(host, port, userinfo), collapseDotSegments(path), query, fragment)
   }
 
   private[http] def decode(string: String, charset: Charset): String = {
@@ -899,15 +901,17 @@ object Uri {
    */
   private[http] def create(scheme: String, authority: Authority, path: Path, queryString: Option[String],
                            fragment: Option[String]): Uri =
-    createSafe(scheme, authority, path, queryString.map(new UriParser(_).parseRawQueryString()), fragment)
+    createUnsafe(scheme, authority, path, queryString.map(new UriParser(_).parseRawQueryString()), fragment)
 
   /**
+   * 'Unsafe' in the sense that queryString validation must already have been done.
+   *
    * @param queryString percent-encoded query string that must be guaranteed
    *                    not to contain invalid percent-encodings or characters not allowed by
    *                    the RFC.
    */
-  private[http] def createSafe(scheme: String, authority: Authority, path: Path, queryString: Option[String],
-                               fragment: Option[String]): Uri =
+  private[http] def createUnsafe(scheme: String, authority: Authority, path: Path, queryString: Option[String],
+                                 fragment: Option[String]): Uri =
     if (path.isEmpty && scheme.isEmpty && authority.isEmpty && queryString.isEmpty && fragment.isEmpty) Empty
     else new Uri(scheme, authority, path, queryString, fragment) { def isEmpty = false }
 }

@@ -36,7 +36,7 @@ private[http] final class UriParser(
 
   def parseAbsoluteUri(): Uri =
     rule(`absolute-URI` ~ EOI).run() match {
-      case Right(_)    => createSafe(_scheme, Authority(_host, _port, _userinfo), collapseDotSegments(_path), _rawQueryString, _fragment)
+      case Right(_)    => createUnsafe(_scheme, Authority(_host, _port, _userinfo), collapseDotSegments(_path), _rawQueryString, _fragment)
       case Left(error) => fail(error, "absolute URI")
     }
 
@@ -48,7 +48,7 @@ private[http] final class UriParser(
 
   def parseAndResolveUriReference(base: Uri): Uri =
     rule(`URI-reference` ~ EOI).run() match {
-      case Right(_)    => resolveSafe(_scheme, _userinfo, _host, _port, _path, _rawQueryString, _fragment, base)
+      case Right(_)    => resolveUnsafe(_scheme, _userinfo, _host, _port, _path, _rawQueryString, _fragment, base)
       case Left(error) => fail(error, "URI reference")
     }
 
@@ -294,7 +294,7 @@ private[http] final class UriParser(
     rule(`request-target` ~ EOI).run() match {
       case Right(_) =>
         val path = if (_scheme.isEmpty) _path else collapseDotSegments(_path)
-        createSafe(_scheme, Authority(_host, _port, _userinfo), path, _rawQueryString, _fragment)
+        createUnsafe(_scheme, Authority(_host, _port, _userinfo), path, _rawQueryString, _fragment)
       case Left(error) => fail(error, "request-target")
     }
 
@@ -345,6 +345,6 @@ private[http] final class UriParser(
 
   private def createUriReference(): Uri = {
     val path = if (_scheme.isEmpty) _path else collapseDotSegments(_path)
-    createSafe(_scheme, Authority(_host, normalizePort(_port, _scheme), _userinfo), path, _rawQueryString, _fragment)
+    createUnsafe(_scheme, Authority(_host, normalizePort(_port, _scheme), _userinfo), path, _rawQueryString, _fragment)
   }
 }
