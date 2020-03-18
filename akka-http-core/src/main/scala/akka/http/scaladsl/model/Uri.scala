@@ -325,7 +325,7 @@ object Uri {
    *
    * @param mode if `Relaxed`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
    * @return path and percent-encoded query string. When in in 'relaxed' mode, characters not permitted by https://tools.ietf.org/html/rfc3986#section-3.4
-   *         *  are already automatically percent-encoded here
+   *         are already automatically percent-encoded here
    */
   private[http] def parseHttp2PathPseudoHeader(headerValue: ParserInput, charset: Charset = UTF8,
                                                mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): (Uri.Path, Option[String]) =
@@ -1025,4 +1025,3 @@ object UriRendering {
 
   private[http] def isAsciiCompatible(cs: Charset) = cs == UTF8 || cs == ISO88591 || cs == ASCII
 }
-
