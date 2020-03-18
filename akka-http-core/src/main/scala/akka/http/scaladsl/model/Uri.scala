@@ -58,9 +58,9 @@ sealed abstract case class Uri(scheme: String, authority: Authority, path: Path,
   /**
    * Returns a copy of this Uri with the given components.
    *
-   *  If you want to use the copy constructor to update the rawQueryString, it is up to you to
-   *  make sure the query string does not contain invalid characters. For this reason we
-   *  recommend you to use [[Uri#withRawQueryString()]] instead.
+   * If you want to use the copy constructor to update the 'rawQueryString', it is up to you to
+   * make sure the query string does not contain invalid characters. For this reason we
+   * recommend using [[Uri#withRawQueryString()]] instead.
    */
   def copy(scheme: String = scheme, authority: Authority = authority, path: Path = path,
            rawQueryString: Option[String] = rawQueryString, fragment: Option[String] = fragment): Uri =
@@ -325,7 +325,7 @@ object Uri {
    *
    * @param mode if `Relaxed`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
    * @return path and percent-encoded query string. When in in 'relaxed' mode, characters not permitted by https://tools.ietf.org/html/rfc3986#section-3.4
-   *         *  are already automatically percent-encoded here
+   *         are already automatically percent-encoded here
    */
   private[http] def parseHttp2PathPseudoHeader(headerValue: ParserInput, charset: Charset = UTF8,
                                                mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): (Uri.Path, Option[String]) =
@@ -1029,4 +1029,3 @@ object UriRendering {
 
   private[http] def isAsciiCompatible(cs: Charset) = cs == UTF8 || cs == ISO88591 || cs == ASCII
 }
-
