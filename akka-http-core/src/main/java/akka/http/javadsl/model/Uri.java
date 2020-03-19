@@ -123,8 +123,32 @@ public abstract class Uri {
 
   /**
    * Returns a copy of this instance with a new query.
+   *
+   * Characters that are not within the range described at https://tools.ietf.org/html/rfc3986#section-3.4
+   * should be percent-encoded. Characters that are in that range may or may not be percent-encoded,
+   * and depending on how the query string is parsed this might be relevant: for example, when interpreting
+   * the query string as 'key=value' pairs you could use the percent-encoded '=' ('%22) to include a '=' in the
+   * key or value.
+   *
+   * When characters are encountered that are outside of the RFC3986 range they are automatically
+   * percent-encoded, but be aware that relying on this is usually a programming error.
    */
   public abstract Uri rawQueryString(String rawQuery);
+
+  /**
+   * Returns a copy of this instance with a new query.
+   *
+   * Characters that are not within the range described at https://tools.ietf.org/html/rfc3986#section-3.4
+   * should be percent-encoded. Characters that are in that range may or may not be percent-encoded,
+   * and depending on how the query string is parsed this might be relevant: for example, when interpreting
+   * the query string as 'key=value' pairs you could use the percent-encoded '=' ('%22) to include a '=' in the
+   * key or value.
+   *
+   * @param strict depending on the 'strict' flag, characters outside of the range allowed by RFC3986 will
+   *             either cause a `IllegalUriException` or be automatically percent-encoded. Be aware that relying
+   *             on automatic percent-encoding is usually a programming error.
+   */
+  public abstract Uri rawQueryString(String rawQuery, boolean strict);
 
   /**
    * Returns a copy of this instance with a new query.

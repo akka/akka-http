@@ -11,8 +11,9 @@ import java.nio.charset.Charset
 
 import scala.annotation.tailrec
 import scala.collection.{ immutable, mutable }
+import akka.annotation.DoNotInherit
 import akka.parboiled2.{ CharPredicate, CharUtils, ParserInput }
-import akka.http.ccompat.{ QuerySeqOptimized, Builder }
+import akka.http.ccompat.{ Builder, QuerySeqOptimized }
 import akka.http.javadsl.{ model => jm }
 import akka.http.impl.model.parser.UriParser
 import akka.http.impl.model.parser.CharacterClasses._
@@ -20,9 +21,13 @@ import akka.http.impl.util._
 import Uri._
 
 /**
- * An immutable model of an internet URI as defined by http://tools.ietf.org/html/rfc3986.
- * All members of this class represent the *decoded* URI elements (i.e. without percent-encoding).
+ * An immutable model of an internet URI as defined by https://tools.ietf.org/html/rfc3986.
+ * All members of this class represent the *decoded* URI elements (i.e. without percent-encoding),
+ * with the exception of 'rawQueryString': rawQueryString should be a string that only contains
+ * characters permitted by https://tools.ietf.org/html/rfc3986#section-3.4, any other characters
+ * must be percent-encoded (for example through UriParser.parseRawQueryString)
  */
+@DoNotInherit
 sealed abstract case class Uri(scheme: String, authority: Authority, path: Path, rawQueryString: Option[String],
                                fragment: Option[String]) {
 
@@ -52,6 +57,10 @@ sealed abstract case class Uri(scheme: String, authority: Authority, path: Path,
 
   /**
    * Returns a copy of this Uri with the given components.
+   *
+   * If you want to use the copy constructor to update the 'rawQueryString', it is up to you to
+   * make sure the query string does not contain invalid characters. For this reason we
+   * recommend using [[Uri#withRawQueryString()]] instead.
    */
   def copy(scheme: String = scheme, authority: Authority = authority, path: Path = path,
            rawQueryString: Option[String] = rawQueryString, fragment: Option[String] = fragment): Uri =
@@ -112,9 +121,34 @@ sealed abstract case class Uri(scheme: String, authority: Authority, path: Path,
   def withQuery(query: Query): Uri = copy(rawQueryString = if (query.isEmpty) None else Some(query.toString))
 
   /**
-   * Returns a copy of this Uri with a Query created using the given query string.
+   * Returns a copy of this Uri with the given query string.
+   *
+   * Characters that are not within the range described at https://tools.ietf.org/html/rfc3986#section-3.4
+   * should be percent-encoded. Characters that are in that range may or may not be percent-encoded,
+   * and depending on how the query string is parsed this might be relevant: for example, when interpreting
+   * the query string as 'key=value' pairs you could use the percent-encoded '=' ('%22) to include a '=' in a
+   * key or value.
+   *
+   * When characters are encountered that are outside of the RFC3986 range they are automatically
+   * percent-encoded, but be aware that relying on this is usually a programming error.
    */
-  def withRawQueryString(rawQuery: String): Uri = copy(rawQueryString = Some(rawQuery))
+  def withRawQueryString(rawQuery: String): Uri = withRawQueryString(rawQuery, Uri.ParsingMode.Relaxed)
+
+  /**
+   * Returns a copy of this Uri with the given query string.
+   *
+   * Characters that are not within the range described at https://tools.ietf.org/html/rfc3986#section-3.4
+   * must be percent-encoded. Characters that are in that range may or may not be percent-encoded,
+   * and depending on how the query string is parsed this might be relevant: for example, when interpreting
+   * the query string as 'key=value' pairs you could use the percent-encoded '=' ('%22) to include a '=' in the
+   * key or value.
+   *
+   * @param mode depending on the mode, characters outside of the range allowed by RFC3986 will
+   *             either cause an `IllegalUriException` or be automatically percent-encoded. Be aware that relying
+   *             on automatic percent-encoding is usually a programming error.
+   */
+  def withRawQueryString(rawQueryString: String, mode: Uri.ParsingMode): Uri =
+    copy(rawQueryString = Some(new UriParser(rawQueryString, uriParsingMode = mode).parseRawQueryString()))
 
   /**
    * Returns a copy of this Uri with the given fragment.
@@ -127,7 +161,7 @@ sealed abstract case class Uri(scheme: String, authority: Authority, path: Path,
    * The given base Uri must be absolute.
    */
   def resolvedAgainst(base: Uri): Uri =
-    resolve(scheme, authority.userinfo, authority.host, authority.port, path, rawQueryString, fragment, base)
+    resolveUnsafe(scheme, authority.userinfo, authority.host, authority.port, path, rawQueryString, fragment, base)
 
   /**
    * Converts this URI to an "effective HTTP request URI" as defined by
@@ -200,8 +234,9 @@ object Uri {
    * Parses a valid URI string into a normalized URI reference as defined
    * by http://tools.ietf.org/html/rfc3986#section-4.1.
    * Percent-encoded octets are decoded using the given charset (where specified by the RFC).
-   * If strict is `false`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
    * If the given string is not a valid URI the method throws an `IllegalUriException`.
+   *
+   * @param mode if `Relaxed`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
    */
   def apply(input: ParserInput, mode: Uri.ParsingMode): Uri = apply(input, UTF8, mode)
 
@@ -209,8 +244,9 @@ object Uri {
    * Parses a valid URI string into a normalized URI reference as defined
    * by http://tools.ietf.org/html/rfc3986#section-4.1.
    * Percent-encoded octets are decoded using the given charset (where specified by the RFC).
-   * If strict is `false`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
    * If the given string is not a valid URI the method throws an `IllegalUriException`.
+   *
+   * @param mode if `Relaxed`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
    */
   def apply(input: ParserInput, charset: Charset, mode: Uri.ParsingMode): Uri =
     new UriParser(input, charset, mode).parseUriReference()
@@ -220,6 +256,10 @@ object Uri {
    * All components are verified and normalized except the authority which is kept as provided.
    * If the given combination of components does not constitute a valid URI as defined by
    * http://tools.ietf.org/html/rfc3986 the method throws an `IllegalUriException`.
+   *
+   * @param queryString percent-encoded query string. When characters are
+   *                    encountered that are outside of the RFC3986 range they
+   *                    are automatically percent-encoded
    */
   def apply(scheme: String = "", authority: Authority = Authority.Empty, path: Path = Path.Empty,
             queryString: Option[String] = None, fragment: Option[String] = None): Uri = {
@@ -246,8 +286,9 @@ object Uri {
   /**
    * Parses a string into a normalized absolute URI as defined by http://tools.ietf.org/html/rfc3986#section-4.3.
    * Percent-encoded octets are decoded using the given charset (where specified by the RFC).
-   * If strict is `false`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
    * If the given string is not a valid URI the method throws an `IllegalUriException`.
+   *
+   * @param mode if `Relaxed`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
    */
   def parseAbsolute(input: ParserInput, charset: Charset = UTF8, mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): Uri =
     new UriParser(input, charset, mode).parseAbsoluteUri()
@@ -257,8 +298,9 @@ object Uri {
    * defined by http://tools.ietf.org/html/rfc3986#section-5.2.
    * Note that the given base Uri must be absolute (i.e. define a scheme).
    * Percent-encoded octets are decoded using the given charset (where specified by the RFC).
-   * If strict is `false`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
    * If the given string is not a valid URI the method throws an `IllegalUriException`.
+   *
+   * @param mode if `Relaxed`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
    */
   def parseAndResolve(string: ParserInput, base: Uri, charset: Charset = UTF8,
                       mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): Uri =
@@ -267,8 +309,9 @@ object Uri {
   /**
    * Parses the given string into an HTTP request target URI as defined by
    * http://tools.ietf.org/html/rfc7230#section-5.3.
-   * If strict is `false`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
    * If the given string is not a valid URI the method throws an `IllegalUriException`.
+   *
+   * @param mode if `Relaxed`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
    */
   def parseHttpRequestTarget(requestTarget: ParserInput, charset: Charset = UTF8,
                              mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): Uri =
@@ -278,8 +321,11 @@ object Uri {
    * Parses the given string as if it were the value of an HTTP/2 ":path" pseudo-header.
    * The result is a path and a query string as defined in
    * https://tools.ietf.org/html/rfc7540#section-8.1.2.3
-   * If strict is `false`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
    * If the given string is not a valid path or query string the method throws an `IllegalUriException`.
+   *
+   * @param mode if `Relaxed`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
+   * @return path and percent-encoded query string. When in in 'relaxed' mode, characters not permitted by https://tools.ietf.org/html/rfc3986#section-3.4
+   *         are already automatically percent-encoded here
    */
   private[http] def parseHttp2PathPseudoHeader(headerValue: ParserInput, charset: Charset = UTF8,
                                                mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): (Uri.Path, Option[String]) =
@@ -289,8 +335,9 @@ object Uri {
    * Parses the given string as if it were the value of an HTTP/2 ":authority" pseudo-header.
    * The result is an authority object.
    * https://tools.ietf.org/html/rfc7540#section-8.1.2.3
-   * If strict is `false`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
    * If the given string is not a valid path or query string the method throws an `IllegalUriException`.
+   *
+   * @param mode if `Relaxed`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
    */
   private[http] def parseHttp2AuthorityPseudoHeader(headerValue: ParserInput, charset: Charset = UTF8,
                                                     mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): Uri.Authority =
@@ -303,8 +350,9 @@ object Uri {
    *  - percent-encoded octets are decoded if allowed, otherwise they are converted to uppercase hex notation
    *  - `.` and `..` path segments are resolved as far as possible
    *
-   * If strict is `false`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
    * If the given string is not a valid URI the method throws an `IllegalUriException`.
+   *
+   * @param mode if `Relaxed`, accepts unencoded visible 7-bit ASCII characters in addition to the RFC.
    */
   def normalize(uri: ParserInput, charset: Charset = UTF8, mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): String = {
     val parsed = apply(uri, charset, mode)
@@ -696,15 +744,22 @@ object Uri {
       }
   }
 
-  // http://tools.ietf.org/html/rfc3986#section-5.2.2
-  private[http] def resolve(scheme: String, userinfo: String, host: Host, port: Int, path: Path, query: Option[String],
-                            fragment: Option[String], base: Uri): Uri = {
+  /**
+   * https://tools.ietf.org/html/rfc3986#section-5.2.2
+   *
+   * 'Unsafe' in the sense that queryString validation must already have been done.
+   *
+   * @param query percent-encoded query string that must be guaranteed
+   *                    not to contain invalid percent-encodings or characters not allowed by
+   *                    the RFC.
+   */
+  private[http] def resolveUnsafe(scheme: String, userinfo: String, host: Host, port: Int, path: Path, query: Option[String],
+                                  fragment: Option[String], base: Uri): Uri = {
     require(base.isAbsolute, "Resolution base Uri must be absolute")
     if (scheme.isEmpty)
       if (host.isEmpty)
         if (path.isEmpty) {
-          val q = if (query.isEmpty) base.rawQueryString else query
-          create(base.scheme, base.authority, base.path, q, fragment)
+          createUnsafe(base.scheme, base.authority, base.path, query.orElse(base.rawQueryString), fragment)
         } else {
           // http://tools.ietf.org/html/rfc3986#section-5.2.3
           def mergePaths(base: Uri, path: Path): Path =
@@ -719,10 +774,10 @@ object Uri {
               replaceLastSegment(base.path, path)
             }
           val p = if (path.startsWithSlash) path else mergePaths(base, path)
-          create(base.scheme, base.authority, collapseDotSegments(p), query, fragment)
+          createUnsafe(base.scheme, base.authority, collapseDotSegments(p), query, fragment)
         }
-      else create(base.scheme, userinfo, host, port, collapseDotSegments(path), query, fragment)
-    else create(scheme, userinfo, host, port, collapseDotSegments(path), query, fragment)
+      else createUnsafe(base.scheme, Authority(host, port, userinfo), collapseDotSegments(path), query, fragment)
+    else createUnsafe(scheme, Authority(host, port, userinfo), collapseDotSegments(path), query, fragment)
   }
 
   private[http] def decode(string: String, charset: Charset): String = {
@@ -830,12 +885,33 @@ object Uri {
 
   private[http] def fail(summary: String, detail: String = "") = throw IllegalUriException(summary, detail)
 
+  /**
+   * @param queryString percent-encoded query string. When characters are
+   *                    encountered that are outside of the RFC3986 range they
+   *                    are automatically percent-encoded
+   */
   private[http] def create(scheme: String, userinfo: String, host: Host, port: Int, path: Path, queryString: Option[String],
                            fragment: Option[String]): Uri =
     create(scheme, Authority(host, port, userinfo), path, queryString, fragment)
 
+  /**
+   * @param queryString percent-encoded query string. When characters are
+   *                    encountered that are outside of the RFC3986 range they
+   *                    are automatically percent-encoded
+   */
   private[http] def create(scheme: String, authority: Authority, path: Path, queryString: Option[String],
                            fragment: Option[String]): Uri =
+    createUnsafe(scheme, authority, path, queryString.map(new UriParser(_).parseRawQueryString()), fragment)
+
+  /**
+   * 'Unsafe' in the sense that queryString validation must already have been done.
+   *
+   * @param queryString percent-encoded query string that must be guaranteed
+   *                    not to contain invalid percent-encodings or characters not allowed by
+   *                    the RFC.
+   */
+  private[http] def createUnsafe(scheme: String, authority: Authority, path: Path, queryString: Option[String],
+                                 fragment: Option[String]): Uri =
     if (path.isEmpty && scheme.isEmpty && authority.isEmpty && queryString.isEmpty && fragment.isEmpty) Empty
     else new Uri(scheme, authority, path, queryString, fragment) { def isEmpty = false }
 }
@@ -953,4 +1029,3 @@ object UriRendering {
 
   private[http] def isAsciiCompatible(cs: Charset) = cs == UTF8 || cs == ISO88591 || cs == ASCII
 }
-

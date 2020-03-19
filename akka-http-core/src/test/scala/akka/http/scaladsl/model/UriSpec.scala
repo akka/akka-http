@@ -583,7 +583,8 @@ class UriSpec extends AnyWordSpec with Matchers {
       normalize("?key") shouldEqual "?key"
       normalize("?key=") shouldEqual "?key="
       normalize("?key=&a=b") shouldEqual "?key=&a=b"
-      normalize("?key={}&a=[]") shouldEqual "?key={}&a=[]"
+      normalize("?key={}&a=[]") shouldEqual "?key=%7B%7D&a=%5B%5D"
+      normalize("?key=%7B%7D&a=%5B%5D") shouldEqual "?key=%7B%7D&a=%5B%5D"
       normalize("?=value") shouldEqual "?=value"
       normalize("?key=value") shouldEqual "?key=value"
       normalize("?a+b") shouldEqual "?a+b"
@@ -593,6 +594,8 @@ class UriSpec extends AnyWordSpec with Matchers {
       normalize("?a=1&b=2") shouldEqual "?a=1&b=2"
       normalize("?a+b=c%2Bd") shouldEqual "?a+b=c%2Bd"
       normalize("?a&a") shouldEqual "?a&a"
+      normalize("?foo\"bar") shouldEqual "?foo%22bar"
+      a[IllegalUriException] should be thrownBy normalize("?foo\"bar", mode = Uri.ParsingMode.Strict)
       normalize("?&#") shouldEqual "?&#"
       normalize("?#") shouldEqual "?#"
       normalize("#") shouldEqual "#"
@@ -641,6 +644,21 @@ class UriSpec extends AnyWordSpec with Matchers {
           "Illegal URI reference: Unexpected end of input, expected HEXDIG (line 1, column 31)",
           "http://www.example.com/%CE%B8%\n" +
             "                              ^")
+      }
+
+      // illegal percent-encoding in a query string
+      the[IllegalUriException] thrownBy Uri("http://host?use%2G") shouldBe {
+        IllegalUriException(
+          "Illegal URI reference: Invalid input 'G', expected HEXDIG (line 1, column 18)",
+          "http://host?use%2G\n" +
+            "                 ^")
+      }
+      // illegal percent-encoding in a fragment
+      the[IllegalUriException] thrownBy Uri("http://host#use%2G") shouldBe {
+        IllegalUriException(
+          "Illegal URI reference: Invalid input 'G', expected HEXDIG (line 1, column 18)",
+          "http://host#use%2G\n" +
+            "                 ^")
       }
 
       // illegal path
@@ -754,6 +772,10 @@ class UriSpec extends AnyWordSpec with Matchers {
       uri.withQuery(Query(Map("param1" -> "value1"))) shouldEqual Uri("http://host/path?param1=value1#fragment")
       uri.withRawQueryString("param1=value1") shouldEqual Uri("http://host/path?param1=value1#fragment")
 
+      uri.withQuery(Query("param1" -> "val\"ue1")) shouldEqual Uri("http://host/path?param1=val%22ue1#fragment")
+      uri.withRawQueryString("param1=val%22ue1") shouldEqual Uri("http://host/path?param1=val%22ue1#fragment")
+      uri.withRawQueryString("param1=val\"ue1") shouldEqual Uri("http://host/path?param1=val%22ue1#fragment")
+
       uri.withFragment("otherFragment") shouldEqual Uri("http://host/path?query#otherFragment")
     }
 
@@ -796,6 +818,13 @@ class UriSpec extends AnyWordSpec with Matchers {
     "properly render as HTTP request target origin forms" in {
       Uri("http://example.com/foo/bar?query=1#frag").toHttpRequestTargetOriginForm.toString shouldEqual "/foo/bar?query=1"
       Uri("http://example.com//foo/bar?query=1#frag").toHttpRequestTargetOriginForm.toString shouldEqual "//foo/bar?query=1"
+    }
+
+    "properly render query strings with invalid values" in {
+      val uri = Uri("http://host/path?query#fragment")
+      uri.withQuery(Query("param1" -> "val\"ue1")).toString shouldEqual "http://host/path?param1=val%22ue1#fragment"
+      uri.withRawQueryString("param1=val%22ue1").toString shouldEqual "http://host/path?param1=val%22ue1#fragment"
+      uri.withRawQueryString("param1=val\"ue1").toString shouldEqual "http://host/path?param1=val%22ue1#fragment"
     }
 
     "survive parsing a URI with thousands of path segments" in {
