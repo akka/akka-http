@@ -413,6 +413,7 @@ class UriSpec extends AnyWordSpec with Matchers {
 
       relaxed("a=b?c") shouldEqual ("a", "b?c") +: Query.Empty
       relaxed("a=b/c") shouldEqual ("a", "b/c") +: Query.Empty
+      relaxed("a=b|c") shouldEqual ("a", "b|c") +: Query.Empty
 
       //#query-relaxed-mode-success
       relaxed("a^=b") shouldEqual ("a^", "b") +: Query.Empty
@@ -460,12 +461,14 @@ class UriSpec extends AnyWordSpec with Matchers {
       Query("a&b" -> "c").toString() shouldEqual "a%26b=c"
       Query("a+b" -> "c").toString() shouldEqual "a%2Bb=c"
       Query("a;b" -> "c").toString() shouldEqual "a%3Bb=c"
+      Query("a|b" -> "c").toString() shouldEqual "a%7Cb=c"
     }
     "encode special separators in query parameter values" in {
       Query("a" -> "b=c").toString() shouldEqual "a=b%3Dc"
       Query("a" -> "b&c").toString() shouldEqual "a=b%26c"
       Query("a" -> "b+c").toString() shouldEqual "a=b%2Bc"
       Query("a" -> "b;c").toString() shouldEqual "a=b%3Bc"
+      Query("a" -> "b|c").toString() shouldEqual "a=b%7Cc"
     }
   }
 
@@ -596,6 +599,8 @@ class UriSpec extends AnyWordSpec with Matchers {
       normalize("?a&a") shouldEqual "?a&a"
       normalize("?foo\"bar") shouldEqual "?foo%22bar"
       a[IllegalUriException] should be thrownBy normalize("?foo\"bar", mode = Uri.ParsingMode.Strict)
+      normalize("?foo|bar") shouldEqual "?foo%7Cbar"
+      a[IllegalUriException] should be thrownBy normalize("?foo|bar", mode = Uri.ParsingMode.Strict)
       normalize("?&#") shouldEqual "?&#"
       normalize("?#") shouldEqual "?#"
       normalize("#") shouldEqual "#"
@@ -825,6 +830,7 @@ class UriSpec extends AnyWordSpec with Matchers {
       uri.withQuery(Query("param1" -> "val\"ue1")).toString shouldEqual "http://host/path?param1=val%22ue1#fragment"
       uri.withRawQueryString("param1=val%22ue1").toString shouldEqual "http://host/path?param1=val%22ue1#fragment"
       uri.withRawQueryString("param1=val\"ue1").toString shouldEqual "http://host/path?param1=val%22ue1#fragment"
+      uri.withRawQueryString("param1=val|ue1").toString shouldEqual "http://host/path?param1=val%7Cue1#fragment"
     }
 
     "survive parsing a URI with thousands of path segments" in {
