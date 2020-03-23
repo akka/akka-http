@@ -340,12 +340,12 @@ private[pool] object SlotState {
     final override def isIdle = false
 
     override def onRequestEntityCompleted(ctx: SlotContext): SlotState =
-      if (ctx.isConnectionClosed) Unconnected
+      if (ctx.isConnectionClosed) ToBeClosed
       else Idle
     override def onRequestEntityFailed(ctx: SlotContext, cause: Throwable): SlotState =
-      if (ctx.isConnectionClosed) Unconnected
+      if (ctx.isConnectionClosed) ToBeClosed // ignore error here
       else Idle
-    override def onConnectionCompleted(ctx: SlotContext): SlotState = Unconnected
-    override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = Unconnected
+    override def onConnectionCompleted(ctx: SlotContext): SlotState = ToBeClosed
+    override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = Failed(cause)
   }
 }
