@@ -4,27 +4,16 @@
 
 package akka.http.scaladsl.model
 
-import com.typesafe.config.{ Config, ConfigFactory }
+import akka.http.impl.util.AkkaSpecWithMaterializer
+import akka.http.scaladsl.model.headers._
+import akka.stream.scaladsl.{ Sink, Source }
+import akka.testkit._
+import akka.util.ByteString
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import org.scalatest.{ BeforeAndAfterAll, Inside, Matchers, WordSpec }
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{ Sink, Source }
-import akka.util.ByteString
-import akka.actor.ActorSystem
-import akka.testkit._
-import headers._
 
-class MultipartSpec extends WordSpec with Matchers with Inside with BeforeAndAfterAll {
-
-  val testConf: Config = ConfigFactory.parseString("""
-  akka.event-handlers = ["akka.testkit.TestEventListener"]
-  akka.loglevel = WARNING""")
-  implicit val system = ActorSystem(getClass.getSimpleName, testConf)
-  implicit val materializer = ActorMaterializer()
-  override def afterAll() = TestKit.shutdownActorSystem(system)
-
+class MultipartSpec extends AkkaSpecWithMaterializer {
   "Multipart.General" should {
     "support `toStrict` on the streamed model" in {
       val streamed = Multipart.General(
