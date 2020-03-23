@@ -45,7 +45,9 @@ private[akka] final case class ServerSettingsImpl(
   defaultHttpPort:                     Int,
   defaultHttpsPort:                    Int,
   terminationDeadlineExceededResponse: HttpResponse,
-  parsingErrorHandler:                 String) extends ServerSettings {
+  parsingErrorHandler:                 String,
+  streamCancellationDelay:             FiniteDuration
+) extends ServerSettings {
 
   require(0 < maxConnections, "max-connections must be > 0")
   require(0 < pipeliningLimit && pipeliningLimit <= 1024, "pipelining-limit must be > 0 and <= 1024")
@@ -106,7 +108,8 @@ private[http] object ServerSettingsImpl extends SettingsCompanionImpl[ServerSett
     c.getInt("default-http-port"),
     c.getInt("default-https-port"),
     terminationDeadlineExceededResponseFrom(c),
-    c.getString("parsing.error-handler")
+    c.getString("parsing.error-handler"),
+    c.getFiniteDuration("stream-cancellation-delay")
   )
 
   private def terminationDeadlineExceededResponseFrom(c: Config): HttpResponse = {
