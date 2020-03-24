@@ -230,7 +230,7 @@ object HttpCookie {
     extension: Option[String]
   ) = new HttpCookie(name, value, expires, maxAge, domain, path, secure, httpOnly, extension, None)
 
-  @deprecated("for binary compatibility", since = "10.2.0")
+  @deprecated("Pattern matching on HttpCookie is deprecated because of the big number of fields and potential future compatibility hazards. Please use other means to check the fields.", since = "10.2.0")
   def unapply(cookie: HttpCookie) = Option((
     cookie.name(),
     cookie.value(),
