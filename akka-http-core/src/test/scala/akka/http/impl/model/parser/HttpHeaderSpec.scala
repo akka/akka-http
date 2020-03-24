@@ -522,6 +522,12 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
         `Set-Cookie`(HttpCookie("name", "123", sameSite = Some(SameSite.None)))
       "Set-Cookie: name=123" =!=
         `Set-Cookie`(HttpCookie("name", "123", sameSite = None))
+      "Set-Cookie: name=123; SameSite=sTRIct" =!=
+        `Set-Cookie`(HttpCookie("name", "123", sameSite = Some(SameSite.Strict))).renderedTo("name=123; SameSite=Strict")
+      "Set-Cookie: name=123; SameSite=lAX" =!=
+        `Set-Cookie`(HttpCookie("name", "123", sameSite = Some(SameSite.Lax))).renderedTo("name=123; SameSite=Lax")
+      "Set-Cookie: name=123; SameSite=NONE" =!=
+        `Set-Cookie`(HttpCookie("name", "123", sameSite = Some(SameSite.None))).renderedTo("name=123; SameSite=None")
 
       // test all weekdays
       "Set-Cookie: lang=; Expires=Sun, 07 Dec 2014 00:42:55 GMT; Max-Age=12345" =!=
