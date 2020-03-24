@@ -191,11 +191,12 @@ final class HttpCookie private[http] (
   def withMaxAge(maxAge: Long): HttpCookie = copy(maxAge = Some(maxAge))
   def withSecure(secure: Boolean): HttpCookie = copy(secure = secure)
   def withHttpOnly(httpOnly: Boolean): HttpCookie = copy(httpOnly = httpOnly)
-  def withSameSite(sameSite: jm.headers.SameSite): HttpCookie = copy(sameSite = Option(sameSite.asScala()))
 
   /** Scala API */
+  def withSameSite(sameSite: SameSite) = copy(sameSite = Some(sameSite))
   def withSameSite(sameSite: Option[SameSite]) = copy(sameSite = sameSite)
   /** Java API */
+  def withSameSite(sameSite: jm.headers.SameSite): HttpCookie = copy(sameSite = Option(sameSite.asScala()))
   def withSameSite(sameSite: Optional[jm.headers.SameSite]): HttpCookie = copy(sameSite = sameSite.asScala.map(_.asScala()))
 
   def withExtension(extension: String): HttpCookie = copy(extension = Some(extension))
