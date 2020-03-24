@@ -59,6 +59,37 @@ private[akka] final case class ConnectionPoolSettingsImpl(
 
     s"Perhaps try $below or $above."
   }
+
+  /** INTERNAL API */
+  private[http] def copyDeep(
+    mapHostOverrides:                  ConnectionPoolSettings => ConnectionPoolSettings,
+    maxConnections:                    Int                                              = maxConnections,
+    minConnections:                    Int                                              = minConnections,
+    maxRetries:                        Int                                              = maxRetries,
+    maxOpenRequests:                   Int                                              = maxOpenRequests,
+    pipeliningLimit:                   Int                                              = pipeliningLimit,
+    maxConnectionLifetime:             Duration                                         = maxConnectionLifetime,
+    baseConnectionBackoff:             FiniteDuration                                   = baseConnectionBackoff,
+    maxConnectionBackoff:              FiniteDuration                                   = maxConnectionBackoff,
+    idleTimeout:                       Duration                                         = idleTimeout,
+    connectionSettings:                ClientConnectionSettings                         = connectionSettings,
+    poolImplementation:                PoolImplementation                               = poolImplementation,
+    responseEntitySubscriptionTimeout: Duration                                         = responseEntitySubscriptionTimeout): ConnectionPoolSettings =
+    copy(
+      maxConnections,
+      minConnections,
+      maxRetries,
+      maxOpenRequests,
+      pipeliningLimit,
+      maxConnectionLifetime,
+      baseConnectionBackoff,
+      maxConnectionBackoff,
+      idleTimeout,
+      connectionSettings,
+      poolImplementation,
+      responseEntitySubscriptionTimeout,
+      hostOverrides = hostOverrides.map { case (k, v) => k -> mapHostOverrides(v) })
+
 }
 
 /** INTERNAL API */
