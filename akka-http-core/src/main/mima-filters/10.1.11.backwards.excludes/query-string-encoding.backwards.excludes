@@ -1,0 +1,8 @@
+# Not for inheritence
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.model.Uri.rawQueryString")
+
+# private[http]
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.Uri.resolve")
+
+# impl
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.model.parser.CharacterClasses.raw-query-char")

@@ -506,14 +506,13 @@ object MimaWithPrValidation extends AutoPlugin {
         // filters * found is n-squared, it's fixable in principle by special-casing known
         // filter types or something, not worth it most likely...
 
-        // version string "x.y.z" is converted to an Int tuple (x, y, z) for comparison
-        val versionOrdering = Ordering[(Int, Int, Int)].on { version: String =>
-          val ModuleVersion = """(\d+)\.(\d+)\.(.*)""".r
-          val ModuleVersion(epoch, major, minor) = version
-          val toNumeric = (revision: String) => Try(revision.filter(_.isDigit).toInt).getOrElse(0)
-          (toNumeric(epoch), toNumeric(major), toNumeric(minor))
+        val versionOrdering = {
+          // version string "x.y.z" is converted to an Int tuple (x, y, z) for comparison
+          val VersionRegex = """(\d+)\.?(\d+)?\.?(.*)?""".r
+          def int(versionPart: String) =
+            Try(versionPart.replace("x", Short.MaxValue.toString).filter(_.isDigit).toInt).getOrElse(0)
+          Ordering[(Int, Int, Int)].on[String] { case VersionRegex(x, y, z) => (int(x), int(y), int(z)) }
         }
-
         def isReported(module: ModuleID, verionedFilters: Map[String, Seq[core.ProblemFilter]])(problem: core.Problem) = (verionedFilters.collect {
           // get all filters that apply to given module version or any version after it
           case f @ (version, filters) if versionOrdering.gteq(version, module.revision) => filters

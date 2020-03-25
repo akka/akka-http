@@ -17,3 +17,10 @@ This has been simplified to use system defaults instead:
 
 * To set Routing or Parser settings, set them in your actor system configuration, e.g. via `application.conf`
 * To apply a custom @apidoc[http.*.RejectionHandler] or @apidoc[ExceptionHandler], use the @ref[handleRejections](../routing-dsl/directives/execution-directives/handleRejections.md) and @ref[handleExceptions](../routing-dsl/directives/execution-directives/handleExceptions.md) directives
+
+### Strict query strings
+
+In 10.1.x, while parsing the query string of a URI, characters were accepted that are
+not allowed according to RFC 3986, even when `parsing.uri-parsing-mode` was
+set to the default value of `strict`. Parsing such URIs will now fail in `strict` mode.
+If you want to allow such characters in incoming URIs, set `parsing.uri-parsing-mode` to `relaxed`, in which case these characters will be percent-encoded automatically.

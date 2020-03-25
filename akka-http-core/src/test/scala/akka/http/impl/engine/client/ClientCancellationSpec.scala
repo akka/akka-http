@@ -4,32 +4,38 @@
 
 package akka.http.impl.engine.client
 
-import akka.http.impl.util.AkkaSpecWithMaterializer
 import javax.net.ssl.SSLContext
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import akka.http.impl.util.AkkaSpecWithMaterializer
 import akka.http.scaladsl.{ ConnectionContext, Http }
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber, Utils }
 import akka.http.scaladsl.model.headers
-import akka.testkit.SocketUtil
 
 class ClientCancellationSpec extends AkkaSpecWithMaterializer {
   val noncheckedMaterializer = ActorMaterializer()
 
   "Http client connections" must {
-    val address = SocketUtil.temporaryServerAddress()
-    Http().bindAndHandleSync(
-      { req => HttpResponse(headers = headers.Connection("close") :: Nil) },
-      address.getHostName,
-      address.getPort)(noncheckedMaterializer)
+    val address = Await.result(
+      Http().bindAndHandleSync(
+        { req => HttpResponse(headers = headers.Connection("close") :: Nil) },
+        "localhost", 0)(noncheckedMaterializer),
+      5.seconds
+    ).localAddress
 
-    val addressTls = SocketUtil.temporaryServerAddress()
-    Http().bindAndHandleSync(
-      { req => HttpResponse() }, // TLS client does full-close, no need for the connection:close header
-      addressTls.getHostName,
-      addressTls.getPort,
-      connectionContext = ConnectionContext.https(SSLContext.getDefault))(noncheckedMaterializer)
+    val addressTls = Await.result(
+      Http().bindAndHandleSync(
+        { req => HttpResponse() }, // TLS client does full-close, no need for the connection:close header
+        "localhost",
+        0,
+        connectionContext = ConnectionContext.https(SSLContext.getDefault))(noncheckedMaterializer),
+      5.seconds
+    ).localAddress
 
     def testCase(connection: Flow[HttpRequest, HttpResponse, Any]): Unit = Utils.assertAllStagesStopped {
       val requests = TestPublisher.probe[HttpRequest]()
