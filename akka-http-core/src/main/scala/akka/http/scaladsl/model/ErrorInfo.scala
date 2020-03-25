@@ -47,6 +47,8 @@ final class ErrorInfo(
 
   /** INTERNAL API */
   @InternalApi private[akka] def this(summary: String, detail: String) = this(summary, detail, "")
+
+  override def toString(): String = s"ErrorInfo($summary, $detail, $errorHeaderName)"
 }
 
 object ErrorInfo {

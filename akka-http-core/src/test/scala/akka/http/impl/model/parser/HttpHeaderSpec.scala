@@ -528,6 +528,11 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
         `Set-Cookie`(HttpCookie("name", "123", sameSite = Some(SameSite.Lax))).renderedTo("name=123; SameSite=Lax")
       "Set-Cookie: name=123; SameSite=NONE" =!=
         `Set-Cookie`(HttpCookie("name", "123", sameSite = Some(SameSite.None))).renderedTo("name=123; SameSite=None")
+      "Set-Cookie: name=123; SameSite=Wrong" =!=
+        ErrorInfo(
+          "Illegal HTTP header 'Set-Cookie': Invalid input 'W', expected OWS or same-site-value (line 1, column 20)", "name=123; SameSite=Wrong\n                   ^")
+      "Set-Cookie: name=123" =!=
+        `Set-Cookie`(HttpCookie("name", "123", sameSite = SameSite("Wrong"))).renderedTo("name=123")
 
       // test all weekdays
       "Set-Cookie: lang=; Expires=Sun, 07 Dec 2014 00:42:55 GMT; Max-Age=12345" =!=
