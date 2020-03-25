@@ -257,6 +257,7 @@ private[client] object NewHostConnectionPool {
 
                 debug(s"Before event [${event.name}] In state [${state.name}] for [${timeInState / 1000000} ms]")
                 state = event.transition(state, this, arg)
+                require(state != Unconnected, "Slot must not change to Unconnected state") // Use ToBeClosed or Failed instead from state impls
                 debug(s"After event [${event.name}] State change [${previousState.name}] -> [${state.name}]")
 
                 state.stateTimeout match {
