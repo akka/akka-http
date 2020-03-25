@@ -68,6 +68,7 @@ final class HttpCookie private[http] (
   val extension: Option[String],
   val sameSite:  Option[SameSite]) extends jm.headers.HttpCookie with ToStringRenderable with Product with Serializable with Equals {
 
+  @deprecated("Please use HttpCookie(name, value).withXxx()", "10.2.0")
   def this(
     name:      String,
     value:     String,
@@ -204,6 +205,10 @@ final class HttpCookie private[http] (
 
 object HttpCookie {
 
+  /**
+   * You are encouraged to provide only 'name' and 'value' here, and use
+   * 'withXxx' methods to populate other fields.
+   */
   def apply(
     name:      String,
     value:     String,
@@ -213,21 +218,7 @@ object HttpCookie {
     path:      Option[String]   = None,
     secure:    Boolean          = false,
     httpOnly:  Boolean          = false,
-    extension: Option[String]   = None,
-    sameSite:  Option[SameSite] = None
-  ) = new HttpCookie(name, value, expires, maxAge, domain, path, secure, httpOnly, extension, sameSite)
-
-  @deprecated("for binary compatibility", since = "10.2.0")
-  def apply(
-    name:      String,
-    value:     String,
-    expires:   Option[DateTime],
-    maxAge:    Option[Long],
-    domain:    Option[String],
-    path:      Option[String],
-    secure:    Boolean,
-    httpOnly:  Boolean,
-    extension: Option[String]
+    extension: Option[String]   = None
   ) = new HttpCookie(name, value, expires, maxAge, domain, path, secure, httpOnly, extension, None)
 
   @deprecated("Pattern matching on HttpCookie is deprecated because of the big number of fields and potential future compatibility hazards. Please use other means to check the fields.", since = "10.2.0")
@@ -253,7 +244,7 @@ object HttpCookie {
     secure:    Boolean          = false,
     httpOnly:  Boolean          = false,
     extension: Option[String]   = None): HttpCookie =
-    HttpCookie(pair.name, pair.value, expires, maxAge, domain, path, secure, httpOnly, extension, None)
+    new HttpCookie(pair.name, pair.value, expires, maxAge, domain, path, secure, httpOnly, extension, None)
 
   import akka.http.impl.model.parser.CharacterClasses._
 
