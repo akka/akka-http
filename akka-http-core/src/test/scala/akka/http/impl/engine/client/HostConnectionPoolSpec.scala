@@ -137,6 +137,31 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
         resBodyIn.request(1) // FIXME: should we support eager completion here? (reason is substreamHandler in PrepareResponse)
         resBodyIn.expectComplete()
       }
+      "not crash slot when connection is aborted after an early response while waiting for rest of request entity" inWithShutdown new SetupWithServerProbes {
+        // #1439
+        val reqEntityProbe = pushChunkedRequest()
+        responseOut.request(1)
+
+        val conn1 = expectNextConnection()
+        val reqInProbe = conn1.expectChunkedRequestBytesAsProbe()
+
+        // request coming in
+        reqEntityProbe.sendNext(ByteString("test"))
+        reqInProbe.expectUtf8EncodedString("test")
+
+        // ...
+        reqEntityProbe.sendNext(ByteString("test2"))
+        reqInProbe.expectUtf8EncodedString("test2")
+
+        conn1.failHandler(new RuntimeException("test"))
+
+        // In #1439, the next request now ran into a broken slot and the request is dropped to the floor
+        pushRequest()
+        val conn2 = expectNextConnection()
+        conn2.expectRequest()
+        conn2.pushResponse()
+        expectResponse()
+      }
       "open up to max-connections when enough requests are pending" inWithShutdown new SetupWithServerProbes(_.withMaxConnections(2)) {
         pushRequest(HttpRequest(uri = "/1"))
         val conn1 = expectNextConnection()
