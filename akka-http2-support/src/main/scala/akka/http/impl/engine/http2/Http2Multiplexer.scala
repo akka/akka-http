@@ -150,7 +150,6 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
               trailer = Some(ParsedHeadersFrame(streamId, endStream = true, ResponseRendering.renderHeaders(headers, log), None))
           }
 
-          debug(s"[$streamId] buffered ${buffer.size} bytes")
           maybePull()
 
           // else wait for more data being drained
