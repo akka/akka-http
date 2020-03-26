@@ -75,16 +75,18 @@ object Route {
 
   def asyncHandler(route: Route, routingSettings: RoutingSettings, parserSettings: ParserSettings)(implicit system: ActorSystem): HttpRequest => Future[HttpResponse] = {
     val routingLog = RoutingLog(system.log)
-    implicit val executionContext = system.dispatcher
-    implicit val materializer = Materializer.matFromSystem(new ClassicActorSystemProvider {
-      override val classicSystem = system
-    })
+
     // This is essentially the same as `seal(route)` but a bit more efficient because we know we have no inherited settings:
     val sealedRoute = {
       import directives.ExecutionDirectives._
       (handleExceptions(ExceptionHandler.default(routingSettings)) & handleRejections(RejectionHandler.default))
         .tapply(_ => route)
     }
+
+    implicit val executionContext = system.dispatcher
+    implicit val materializer = Materializer.matFromSystem(new ClassicActorSystemProvider {
+      override val classicSystem = system
+    })
     createAsyncHandler(sealedRoute, routingLog, routingSettings, parserSettings)
   }
 
