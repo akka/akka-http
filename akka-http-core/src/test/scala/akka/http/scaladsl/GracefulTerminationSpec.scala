@@ -293,7 +293,6 @@ class GracefulTerminationSpec
     val serverQueue = new ArrayBlockingQueue[(HttpRequest, Promise[HttpResponse])](16)
 
     def handler(req: HttpRequest): Future[HttpResponse] = {
-      log.info(s"handler called for ${req.uri}")
       val p = Promise[HttpResponse]()
       val entry = req -> p
       serverQueue.add(entry)
