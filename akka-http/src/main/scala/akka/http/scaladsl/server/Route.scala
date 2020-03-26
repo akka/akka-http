@@ -5,13 +5,13 @@
 package akka.http.scaladsl.server
 
 import akka.NotUsed
-import akka.actor.{ ActorSystem, ClassicActorSystemProvider }
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.server.directives.BasicDirectives
 import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
 import akka.http.scaladsl.util.FastFuture._
 import akka.stream.scaladsl.Flow
-import akka.stream.{ ActorMaterializerHelper, Materializer }
+import akka.stream.{ ActorMaterializerHelper, Materializer, SystemMaterializer }
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 
@@ -83,11 +83,7 @@ object Route {
         .tapply(_ => route)
     }
 
-    implicit val executionContext = system.dispatcher
-    implicit val materializer = Materializer.matFromSystem(new ClassicActorSystemProvider {
-      override val classicSystem = system
-    })
-    createAsyncHandler(sealedRoute, routingLog, routingSettings, parserSettings)
+    createAsyncHandler(sealedRoute, routingLog, routingSettings, parserSettings)(system.dispatcher, SystemMaterializer(system).materializer)
   }
 
   /**
@@ -103,12 +99,8 @@ object Route {
                                  rejectionHandler: RejectionHandler         = RejectionHandler.default,
                                  exceptionHandler: ExceptionHandler         = null): HttpRequest => Future[HttpResponse] = {
     val effectiveEC = if (executionContext ne null) executionContext else materializer.executionContext
-
-    {
-      implicit val executionContext: ExecutionContextExecutor = effectiveEC // overrides parameter
-      val effectiveParserSettings = if (parserSettings ne null) parserSettings else ParserSettings(ActorMaterializerHelper.downcast(materializer).system)
-      createAsyncHandler(seal(route), routingLog, routingSettings, effectiveParserSettings)
-    }
+    val effectiveParserSettings = if (parserSettings ne null) parserSettings else ParserSettings(ActorMaterializerHelper.downcast(materializer).system)
+    createAsyncHandler(seal(route), routingLog, routingSettings, effectiveParserSettings)(effectiveEC, materializer)
   }
 
   private def createAsyncHandler(sealedRoute: Route, routingLog: RoutingLog, routingSettings: RoutingSettings, parserSettings: ParserSettings)(implicit ec: ExecutionContextExecutor, mat: Materializer): HttpRequest => Future[HttpResponse] = {
