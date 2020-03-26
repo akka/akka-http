@@ -56,11 +56,10 @@ object AkkaDependency {
             project.dependsOn(withConfig)
           case Artifact(akkaVersion) =>
             project.settings(libraryDependencies += {
-              val dep = "com.typesafe.akka" %% module % akkaVersion
-                val withConfig =
-                if (config == "") dep
-                else dep % config
-              withConfig
+              if (config == "")
+                "com.typesafe.akka" %% module % akkaVersion
+              else
+                "com.typesafe.akka" %% module % akkaVersion % config
             })
         }
       }
