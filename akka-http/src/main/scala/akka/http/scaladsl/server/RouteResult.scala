@@ -5,6 +5,7 @@
 package akka.http.scaladsl.server
 
 import akka.NotUsed
+import akka.actor.ActorSystem
 import akka.http.javadsl
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
@@ -31,7 +32,19 @@ object RouteResult {
     override def getRejections = rejections.map(r => r: javadsl.server.Rejection).asJava
   }
 
-  implicit def route2HandlerFlow(route: Route)(
+  /**
+   * Turns a `Route` into a server flow.
+   *
+   * This implicit conversion is defined here because `Route` is an alias for
+   * `RequestContext => Future[RouteResult]`, and the fact that `RouteResult`
+   * is in that type means this implicit conversion come into scope whereever
+   * a `Route` is given but a `Flow` is expected.
+   */
+  implicit def routeToFlow(route: Route)(implicit system: ActorSystem): Flow[HttpRequest, HttpResponse, NotUsed] =
+    Route.toFlow(route)
+
+  @deprecated("Replaced by routeToFlow", "10.2.0")
+  def route2HandlerFlow(route: Route)(
     implicit
     routingSettings:  RoutingSettings,
     parserSettings:   ParserSettings,
@@ -45,6 +58,6 @@ object RouteResult {
       case e: ExecutionContextExecutor => e
       case _                           => null
     }
-    Route.handlerFlow(route)
+    Route.handlerFlow(route)(routingSettings, parserSettings, materializer, routingLog, ec, rejectionHandler, exceptionHandler)
   }
 }
