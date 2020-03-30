@@ -171,7 +171,7 @@ sealed trait HttpMessage extends jm.HttpMessage {
   /** Removes the header with the given name (case-insensitive) */
   def removeHeader(headerName: String): Self = {
     val lowerHeaderName = headerName.toRootLowerCase
-    mapHeaders(_.filterNot(_.is(lowerHeaderName)))
+    withHeaders(headers.filterNot(_.is(lowerHeaderName)))
   }
 
   def removeAttribute(key: jm.AttributeKey[_]): Self = {
@@ -211,7 +211,7 @@ sealed trait HttpMessage extends jm.HttpMessage {
     Util.convertOption(headers.find(_.is(lowerCased))) // Upcast because of invariance
   }
   /** Java API */
-  def addHeaders(headers: JIterable[jm.HttpHeader]): Self = mapHeaders(_ ++ headers.asScala.asInstanceOf[Iterable[HttpHeader]])
+  def addHeaders(headers: JIterable[jm.HttpHeader]): Self = withHeaders(this.headers ++ headers.asScala.asInstanceOf[Iterable[HttpHeader]])
   /** Java API */
   def withHeaders(headers: JIterable[jm.HttpHeader]): Self = {
     import JavaMapping.Implicits._
