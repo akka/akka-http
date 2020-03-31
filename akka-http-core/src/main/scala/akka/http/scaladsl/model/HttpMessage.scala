@@ -158,7 +158,8 @@ sealed trait HttpMessage extends jm.HttpMessage {
    */
   def connectionCloseExpected: Boolean = HttpMessage.connectionCloseExpected(protocol, header[Connection])
 
-  def addHeader(header: jm.HttpHeader): Self = mapHeaders(_ :+ header.asInstanceOf[HttpHeader])
+  /** Return a new instance with the given header added to the headers sequence. It's undefined where the header is added to the sequence */
+  def addHeader(header: jm.HttpHeader): Self = withHeaders(header.asInstanceOf[HttpHeader] +: headers)
 
   def addAttribute[T](key: jm.AttributeKey[T], value: T): Self = {
     val ev = implicitly[JavaMapping[jm.AttributeKey[T], AttributeKey[T]]]
@@ -170,7 +171,7 @@ sealed trait HttpMessage extends jm.HttpMessage {
   /** Removes the header with the given name (case-insensitive) */
   def removeHeader(headerName: String): Self = {
     val lowerHeaderName = headerName.toRootLowerCase
-    mapHeaders(_.filterNot(_.is(lowerHeaderName)))
+    withHeaders(headers.filterNot(_.is(lowerHeaderName)))
   }
 
   def removeAttribute(key: jm.AttributeKey[_]): Self = {
@@ -210,7 +211,7 @@ sealed trait HttpMessage extends jm.HttpMessage {
     Util.convertOption(headers.find(_.is(lowerCased))) // Upcast because of invariance
   }
   /** Java API */
-  def addHeaders(headers: JIterable[jm.HttpHeader]): Self = mapHeaders(_ ++ headers.asScala.asInstanceOf[Iterable[HttpHeader]])
+  def addHeaders(headers: JIterable[jm.HttpHeader]): Self = withHeaders(this.headers ++ headers.asScala.asInstanceOf[Iterable[HttpHeader]])
   /** Java API */
   def withHeaders(headers: JIterable[jm.HttpHeader]): Self = {
     import JavaMapping.Implicits._
