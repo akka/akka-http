@@ -27,8 +27,8 @@ import akka.http.scaladsl.model._
 sealed abstract class ModeledCompanion[T: ClassTag] extends Renderable {
   val name = ModeledCompanion.nameFromClass(getClass)
   val lowercaseName = name.toRootLowerCase
-  private[this] val nameBytes = name.asciiBytes
-  final def render[R <: Rendering](r: R): r.type = r ~~ nameBytes ~~ ':' ~~ ' '
+  private[this] val nameAndColonSpaceBytes = (name + ": ").asciiBytes
+  final def render[R <: Rendering](r: R): r.type = r ~~ nameAndColonSpaceBytes
 
   /**
    * Parses the given value into a header of this type. Returns `Right[T]` if parsing
@@ -62,7 +62,7 @@ sealed trait ModeledHeader extends HttpHeader with Serializable {
   def name: String = companion.name
   def value: String = renderValue(new StringRendering).get
   def lowercaseName: String = companion.lowercaseName
-  final def render[R <: Rendering](r: R): r.type = renderValue(r ~~ companion)
+  final def render[R <: Rendering](r: R): r.type = renderValue(companion.render(r))
   protected[http] def renderValue[R <: Rendering](r: R): r.type
   protected def companion: ModeledCompanion[_]
 }
