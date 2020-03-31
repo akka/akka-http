@@ -114,15 +114,18 @@ abstract class Parser(
   private var _cursor: Int = _
 
   // the value stack instance we operate on
-  private var _valueStack: ValueStack = _
+  private var _valueStack: ValueStack = new ValueStack(initialValueStackSize, maxValueStackSize)
 
   // the current ErrorAnalysisPhase or null (in the initial run)
   private var phase: ErrorAnalysisPhase = _
+
+  private var _maxLength = -1
 
   def copyStateFrom(other: Parser, offset: Int): Unit = {
     _cursorChar = other._cursorChar
     _cursor = other._cursor - offset
     _valueStack = other._valueStack
+    _maxLength = other._maxLength
     phase = other.phase
     if (phase ne null) phase.applyOffset(offset)
   }
@@ -138,6 +141,7 @@ abstract class Parser(
   def __run[L <: HList](rule: => RuleN[L])(implicit scheme: Parser.DeliveryScheme[L]): scheme.Result = {
     def runRule(): Boolean = {
       _cursor = -1
+      _maxLength = input.length
       __advance()
       valueStack.clear()
       try rule ne null
@@ -146,10 +150,7 @@ abstract class Parser(
       }
     }
 
-    def phase0_initialRun() = {
-      _valueStack = new ValueStack(initialValueStackSize, maxValueStackSize)
-      runRule()
-    }
+    def phase0_initialRun() = runRule()
 
     def phase1_establishPrincipalErrorIndex(): Int = {
       val phase1 = new EstablishingPrincipalErrorIndex()
@@ -225,12 +226,10 @@ abstract class Parser(
    * THIS IS NOT PUBLIC API and might become hidden in future. Use only if you know what you are doing!
    */
   def __advance(): Boolean = {
-    var c = _cursor
-    val max = input.length
-    if (c < max) {
-      c += 1
-      _cursor = c
-      _cursorChar = if (c == max) EOI else input charAt c
+    val c = _cursor
+    if (c < _maxLength) {
+      _cursor = c + 1
+      _cursorChar = if ((c + 1) == _maxLength) EOI else input charAt (c + 1)
     }
     true
   }
