@@ -10,7 +10,7 @@ import scala.annotation.{ switch, tailrec }
 import akka.http.scaladsl.settings.{ ParserSettings, WebSocketSettings }
 import akka.util.{ ByteString, OptionVal }
 import akka.http.impl.engine.ws.Handshake
-import akka.http.impl.model.parser.CharacterClasses
+import akka.http.impl.model.parser.{ CharacterClasses, UriParser }
 import akka.http.scaladsl.model.{ ParsingException => _, _ }
 import headers._
 import StatusCodes._
@@ -18,6 +18,7 @@ import ParserOutput._
 import akka.annotation.InternalApi
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.util.ByteStringParserInput
+import akka.parboiled2.ParserInput
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.stream.TLSProtocol.SessionBytes
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
@@ -139,6 +140,8 @@ private[http] final class HttpRequestParser(
       }
     }
 
+    val uriParser = new UriParser(null: ParserInput, uriParsingMode = uriParsingMode)
+
     def parseRequestTarget(input: ByteString, cursor: Int): Int = {
       val uriStart = cursor
       val uriEndLimit = cursor + maxUriLength
@@ -154,7 +157,8 @@ private[http] final class HttpRequestParser(
       val uriEnd = findUriEnd()
       try {
         uriBytes = input.slice(uriStart, uriEnd)
-        uri = Uri.parseHttpRequestTarget(new ByteStringParserInput(uriBytes), mode = uriParsingMode)
+        uriParser.input = new ByteStringParserInput(uriBytes)
+        uri = uriParser.parseHttpRequestTarget()
       } catch {
         case IllegalUriException(info) => throw new ParsingException(BadRequest, info)
       }

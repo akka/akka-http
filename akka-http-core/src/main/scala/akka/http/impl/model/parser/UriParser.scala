@@ -21,7 +21,7 @@ import akka.annotation.InternalApi
  */
 @InternalApi
 private[http] final class UriParser(
-  val input:             ParserInput,
+  var input:             ParserInput,
   val uriParsingCharset: Charset,
   val uriParsingMode:    Uri.ParsingMode,
   val maxValueStackSize: Int) extends Parser(maxValueStackSize)
