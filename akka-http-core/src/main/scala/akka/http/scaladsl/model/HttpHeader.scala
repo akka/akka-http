@@ -59,7 +59,7 @@ object HttpHeader {
    *    (http://tools.ietf.org/html/rfc7230#section-3.2). In this case the method returns a `ParsingResult.Error`.
    */
   def parse(name: String, value: String, settings: HeaderParser.Settings = HeaderParser.DefaultSettings): ParsingResult =
-    if (name.forall(CharacterClasses.tchar)) {
+    if (name.forall(c => CharacterClasses.tchar(c))) {
       import akka.parboiled2.Parser.DeliveryScheme.Try
       val parser = new HeaderParser(value, settings)
       parser.`header-field-value`.run() match {

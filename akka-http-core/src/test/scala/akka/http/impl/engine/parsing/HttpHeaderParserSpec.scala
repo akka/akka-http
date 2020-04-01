@@ -290,7 +290,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
       val regularKeys = Iterator.from(1).map(i => s"key_$i").take(numKeys)
       private val zeroHashStrings: Iterator[String] = HashCodeCollider.zeroHashCodeIterator()
       val collidingKeys = zeroHashStrings
-        .filter(_.forall(CharacterClasses.tchar))
+        .filter(_.forall(ch => CharacterClasses.tchar(ch)))
         .take(numKeys)
 
       def createHeader(keys: Iterator[String]): String = "Accept: text/plain" + keys.mkString(";", "=x;", "=x") + newLine + "x"
