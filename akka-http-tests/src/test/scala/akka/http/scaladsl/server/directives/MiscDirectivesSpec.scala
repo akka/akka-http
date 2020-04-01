@@ -16,10 +16,6 @@ import akka.http.scaladsl.server.util.VarArgsFunction1
 
 class MiscDirectivesSpec extends RoutingSpec {
 
-  override def testConfigSource = """
-    akka.loggers = ["akka.testkit.TestEventListener"]
-  """
-
   "the extractClientIP directive" should {
     "extract from a X-Forwarded-For header" in {
       Get() ~> addHeaders(`X-Forwarded-For`(remoteAddress("2.3.4.5")), RawHeader("x-real-ip", "1.2.3.4")) ~> {

@@ -141,7 +141,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
         }
       case r: RstStreamFrame =>
         buffer.onRstStreamFrame(r)
-        multiplexer.cancelSubStream(r.streamId)
+        onReset(r.streamId)
         Closed
 
       case h: ParsedHeadersFrame =>
@@ -156,6 +156,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
 
       case _ => throw new IllegalStateException(s"Unexpected frame type ${event.frameTypeName} in state ${this.getClass.getName}.")
     }
+    protected def onReset(streamId: Int): Unit
 
     protected def maybeFinishStream(endStream: Boolean): IncomingStreamState =
       if (endStream) afterEndStreamReceived else this
@@ -169,11 +170,18 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
   // on the incoming side there's (almost) no difference between Open and HalfClosedLocal
   case class Open(buffer: IncomingStreamBuffer) extends ReceivingData(HalfClosedRemote) {
     override def handleOutgoingEnded(): IncomingStreamState = HalfClosedLocal(buffer)
+
+    override protected def onReset(streamId: Int): Unit =
+      multiplexer.cancelSubStream(streamId)
   }
   /**
    * We have closed the outgoing stream, but the incoming stream is still going.
    */
-  case class HalfClosedLocal(buffer: IncomingStreamBuffer) extends ReceivingData(Closed)
+  case class HalfClosedLocal(buffer: IncomingStreamBuffer) extends ReceivingData(Closed) {
+    override protected def onReset(streamId: Int): Unit = {
+      // nothing further to do as we're already half-closed
+    }
+  }
 
   /**
    * They have closed the incoming stream, but the outgoing stream is still going.
