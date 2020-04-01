@@ -1,0 +1,5 @@
+# Changes to internal classes
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.rendering.RenderSupport.CrLf")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.engine.rendering.RenderSupport.CrLf")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.parsing.HttpResponseParser.parseHeaderLines$default$3")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.parsing.HttpMessageParser.parseHeaderLines$default$3")
