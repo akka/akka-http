@@ -5,17 +5,17 @@
 package akka.http.scaladsl
 
 import akka.{ Done, NotUsed }
-import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
+import akka.actor.{ ActorSystem, ClassicActorSystemProvider, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
-import akka.http.impl.engine.http2.{ ProtocolSwitch, Http2AlpnSupport, Http2Blueprint }
+import akka.http.impl.engine.http2.{ Http2AlpnSupport, Http2Blueprint, ProtocolSwitch }
 import akka.http.impl.engine.server.MasterServerTerminator
 import akka.http.impl.engine.server.UpgradeToOtherProtocolResponseHeader
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.TLSProtocol.{ SslTlsInbound, SslTlsOutbound }
-import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Source, Sink, TLS, TLSPlacebo, Tcp }
+import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Sink, Source, TLS, TLSPlacebo, Tcp }
 import akka.http.scaladsl.model.headers.{ Connection, RawHeader, Upgrade, UpgradeProtocol }
 import akka.http.scaladsl.model.http2.{ Http2SettingsHeader, Http2StreamIdHeader }
 import akka.stream.{ IgnoreComplete, Materializer }
@@ -197,7 +197,9 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
 
 object Http2 extends ExtensionId[Http2Ext] with ExtensionIdProvider {
   override def get(system: ActorSystem): Http2Ext = super.get(system)
-  def apply()(implicit system: ActorSystem): Http2Ext = super.apply(system)
+  override def get(system: ClassicActorSystemProvider): Http2Ext = super.get(system)
+  def apply()(implicit system: ClassicActorSystemProvider): Http2Ext = super.apply(system)
+  override def apply(system: ActorSystem): Http2Ext = super.apply(system)
   def lookup(): ExtensionId[_ <: Extension] = Http2
   def createExtension(system: ExtendedActorSystem): Http2Ext =
     new Http2Ext(system.settings.config getConfig "akka.http")(system)

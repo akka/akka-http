@@ -16,7 +16,7 @@ object AkkaDependency {
 
   // Updated only when needed
   // https://doc.akka.io//docs/akka/current/project/downstream-upgrade-strategy.html
-  val defaultAkkaVersion = "2.5.30"
+  val defaultAkkaVersion = "2.5.31"
   val akkaVersion =
     System.getProperty("akka.http.build.akka.version", defaultAkkaVersion) match {
       case "default" => defaultAkkaVersion
