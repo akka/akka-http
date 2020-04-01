@@ -1,0 +1,3 @@
+# Changes to internal classes
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.engine.parsing.HttpMessageParser.akka$http$impl$engine$parsing$HttpMessageParser$_setter_$akka$http$impl$engine$parsing$HttpMessageParser$$_headerBuffer_=")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.engine.parsing.HttpMessageParser.akka$http$impl$engine$parsing$HttpMessageParser$$_headerBuffer")

@@ -52,9 +52,15 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
                             clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
                             expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): HttpMessageParser.StateResult
 
-  protected final def initialHeaderBuffer: ListBuffer[HttpHeader] =
-    if (settings.includeTlsSessionInfoHeader && tlsSessionInfoHeader != null) new ListBuffer() += tlsSessionInfoHeader
-    else new ListBuffer()
+  private[this] val _headerBuffer = new ListBuffer[HttpHeader]()
+  protected final def initialHeaderBuffer: ListBuffer[HttpHeader] = {
+    _headerBuffer.clear()
+
+    if (settings.includeTlsSessionInfoHeader && tlsSessionInfoHeader != null)
+      _headerBuffer += tlsSessionInfoHeader
+
+    _headerBuffer
+  }
 
   final def parseSessionBytes(input: SessionBytes): Output = {
     if (input.session ne lastSession) {
@@ -123,7 +129,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
     } else onBadProtocol
   }
 
-  @tailrec protected final def parseHeaderLines(input: ByteString, lineStart: Int, headers: ListBuffer[HttpHeader] = initialHeaderBuffer,
+  @tailrec protected final def parseHeaderLines(input: ByteString, lineStart: Int, headers: ListBuffer[HttpHeader],
                                                 headerCount: Int = 0, ch: Option[Connection] = None,
                                                 clh: Option[`Content-Length`] = None, cth: Option[`Content-Type`] = None,
                                                 teh: Option[`Transfer-Encoding`] = None, e100c: Boolean = false,
