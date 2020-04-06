@@ -104,9 +104,6 @@ Scala
 :  @@snip [HttpServerWithTypedSample.scala]($test$/scala/docs/http/scaladsl/HttpServerWithTypedSample.scala) { #akka-typed-bootstrap }
 
 
-Note that the `akka.actor.typed.ActorSystem` is converted with `toClassic`, which comes from
-`import akka.actor.typed.scaladsl.adapter._`.
-
 ## Dynamic Routing Example
 
 As the routes are evaluated for each request, it is possible to make changes at runtime. Please note that every access

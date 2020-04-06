@@ -38,7 +38,6 @@ object Http2ServerTest extends App {
                                                    """)
   implicit val system = ActorSystem("ServerTest", testConf)
   implicit val ec: ExecutionContext = system.dispatcher
-  implicit val fm = ActorMaterializer()
 
   def slowDown[T](millis: Int): T => Future[T] = { t =>
     akka.pattern.after(millis.millis, system.scheduler)(Future.successful(t))

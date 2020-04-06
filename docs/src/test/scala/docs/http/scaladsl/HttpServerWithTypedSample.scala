@@ -144,7 +144,6 @@ object HttpServerWithTypedSample {
 
   //#akka-typed-bootstrap
   import akka.actor.typed.PostStop
-  import akka.actor.typed.scaladsl.adapter._
   import akka.http.scaladsl.Http.ServerBinding
   import akka.http.scaladsl.Http
   import akka.stream.SystemMaterializer
@@ -163,10 +162,6 @@ object HttpServerWithTypedSample {
     def apply(host: String, port: Int): Behavior[Message] = Behaviors.setup { ctx =>
 
       implicit val system = ctx.system
-      // http doesn't know about akka typed so provide untyped system
-      implicit val untypedSystem: akka.actor.ActorSystem = ctx.system.toClassic
-      // FIXME #2893 should not be needed
-      implicit val materializer = SystemMaterializer(untypedSystem).materializer
       implicit val ec: ExecutionContextExecutor = ctx.system.executionContext
 
       val buildJobRepository = ctx.spawn(JobRepository(), "JobRepository")

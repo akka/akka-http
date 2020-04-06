@@ -5,7 +5,7 @@
 package akka.http.scaladsl.server
 
 import akka.NotUsed
-import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.http.javadsl
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
@@ -40,7 +40,7 @@ object RouteResult {
    * is in that type means this implicit conversion come into scope whereever
    * a `Route` is given but a `Flow` is expected.
    */
-  implicit def routeToFlow(route: Route)(implicit system: ActorSystem): Flow[HttpRequest, HttpResponse, NotUsed] =
+  implicit def routeToFlow(route: Route)(implicit system: ClassicActorSystemProvider): Flow[HttpRequest, HttpResponse, NotUsed] =
     Route.toFlow(route)
 
   @deprecated("Replaced by routeToFlow", "10.2.0")

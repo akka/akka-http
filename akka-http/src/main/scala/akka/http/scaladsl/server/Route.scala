@@ -5,7 +5,7 @@
 package akka.http.scaladsl.server
 
 import akka.NotUsed
-import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.server.directives.BasicDirectives
 import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
@@ -56,8 +56,8 @@ object Route {
    *
    * This conversion is also implicitly available whereever a `Route` is used through [[RouteResult#routeToFlow]].
    */
-  def toFlow(route: Route)(implicit system: ActorSystem): Flow[HttpRequest, HttpResponse, NotUsed] =
-    Flow[HttpRequest].mapAsync(1)(asyncHandler(route, RoutingSettings(system), ParserSettings.forServer(system)))
+  def toFlow(route: Route)(implicit system: ClassicActorSystemProvider): Flow[HttpRequest, HttpResponse, NotUsed] =
+    Flow[HttpRequest].mapAsync(1)(asyncHandler(route, RoutingSettings(system.classicSystem), ParserSettings.forServer(system.classicSystem)))
 
   /**
    * Turns a `Route` into a server flow.
@@ -73,8 +73,8 @@ object Route {
                                 exceptionHandler: ExceptionHandler         = null): Flow[HttpRequest, HttpResponse, NotUsed] =
     Flow[HttpRequest].mapAsync(1)(asyncHandler(route))
 
-  def asyncHandler(route: Route, routingSettings: RoutingSettings, parserSettings: ParserSettings)(implicit system: ActorSystem): HttpRequest => Future[HttpResponse] = {
-    val routingLog = RoutingLog(system.log)
+  def asyncHandler(route: Route, routingSettings: RoutingSettings, parserSettings: ParserSettings)(implicit system: ClassicActorSystemProvider): HttpRequest => Future[HttpResponse] = {
+    val routingLog = RoutingLog(system.classicSystem.log)
 
     // This is essentially the same as `seal(route)` but a bit more efficient because we know we have no inherited settings:
     val sealedRoute = {
@@ -83,7 +83,7 @@ object Route {
         .tapply(_ => route)
     }
 
-    createAsyncHandler(sealedRoute, routingLog, routingSettings, parserSettings)(system.dispatcher, SystemMaterializer(system).materializer)
+    createAsyncHandler(sealedRoute, routingLog, routingSettings, parserSettings)(system.classicSystem.dispatcher, SystemMaterializer(system).materializer)
   }
 
   /**
