@@ -263,7 +263,7 @@ private[http] final class UriParser(
       if (valueStack.size + 5 <= maxValueStackSize) keyValuePairsWithReversalAvoidance
       else keyValuePairsWithLimitedStackUse
 
-    rule { keyValuePairs }
+    rule { (EOI ~ push(Query.Empty)) | keyValuePairs }
   }
 
   def fragment = rule(

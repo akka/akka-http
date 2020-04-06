@@ -150,7 +150,7 @@ public class UriTest extends JUnitSuite {
     //query component (name: "a", and value: "b") is equal to parsed query string "a=b"
     assertEquals(Query.create(Pair.create("a", "b")), strict("a=b"));
 
-    assertEquals(Query.create(Pair.create("", "")), strict(""));
+    assertEquals(Query.EMPTY, strict(""));
     assertEquals(Query.create(Pair.create("a", "")), strict("a"));
     assertEquals(Query.create(Pair.create("a", "")), strict("a="));
     assertEquals(Query.create(Pair.create("a", " ")), strict("a=+"));
@@ -237,7 +237,7 @@ public class UriTest extends JUnitSuite {
   @Test
   public void testRelaxedMode() {
     //#query-relaxed-mode
-    assertEquals(Query.create(Pair.create("", "")), relaxed(""));
+    assertEquals(Query.EMPTY, relaxed(""));
     assertEquals(Query.create(Pair.create("a", "")), relaxed("a"));
     assertEquals(Query.create(Pair.create("a", "")), relaxed("a="));
     assertEquals(Query.create(Pair.create("a", " ")), relaxed("a=+"));
