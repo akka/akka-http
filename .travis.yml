@@ -5,6 +5,9 @@ scala:
 
 sudo: false
 
+git:
+  depth: 500 # to make sure we have enough depth to power git describe for sbt-dynver (used for snapshot version numbers)
+
 before_install:
   # make comparing to origin/master work
   - git remote set-branches --add origin master && git fetch
