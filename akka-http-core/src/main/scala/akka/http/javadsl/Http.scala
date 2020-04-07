@@ -6,18 +6,20 @@ package akka.http.javadsl
 
 import java.net.InetSocketAddress
 import java.util.Optional
+
 import akka.http.impl.util.JavaMapping
 import akka.http.impl.util.JavaMapping.HttpsConnectionContext
 import akka.http.javadsl.model.ws._
-import akka.http.javadsl.settings.{ ConnectionPoolSettings, ClientConnectionSettings, ServerSettings }
+import akka.http.javadsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
 import akka.{ NotUsed, stream }
 import akka.stream.TLSProtocol._
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
+
 import scala.concurrent.Future
 import scala.util.Try
 import akka.stream.scaladsl.Keep
-import akka.japi.{ Pair, Function }
-import akka.actor.{ ExtendedActorSystem, ActorSystem, ExtensionIdProvider, ExtensionId }
+import akka.japi.{ Function, Pair }
+import akka.actor.{ ActorSystem, ClassicActorSystemProvider, ExtendedActorSystem, ExtensionId, ExtensionIdProvider }
 import akka.event.LoggingAdapter
 import akka.stream.Materializer
 import akka.stream.javadsl.{ BidiFlow, Flow, Source }
@@ -25,12 +27,14 @@ import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.scaladsl.{ model => sm }
 import akka.http.javadsl.model._
 import akka.http._
+
 import scala.compat.java8.OptionConverters._
 import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
 
 object Http extends ExtensionId[Http] with ExtensionIdProvider {
   override def get(system: ActorSystem): Http = super.get(system)
+  override def get(system: ClassicActorSystemProvider): Http = super.get(system)
   def lookup() = Http
   def createExtension(system: ExtendedActorSystem): Http = new Http(system)
 }

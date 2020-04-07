@@ -1124,7 +1124,8 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
 
   //////////////////// EXTENSION SETUP ///////////////////
 
-  def apply()(implicit system: ActorSystem): HttpExt = super.apply(system)
+  def apply()(implicit system: ClassicActorSystemProvider): HttpExt = super.apply(system)
+  override def apply(system: ActorSystem): HttpExt = super.apply(system)
 
   def lookup() = Http
 
