@@ -12,6 +12,7 @@ import com.typesafe.config.Config
 import scala.collection.JavaConverters._
 import akka.http.scaladsl.model._
 import akka.http.impl.util._
+import akka.http.scaladsl.settings.ParserSettings
 
 /** INTERNAL API */
 @InternalApi
@@ -22,7 +23,7 @@ private[akka] final case class ParserSettingsImpl(
   maxHeaderNameLength:                      Int,
   maxHeaderValueLength:                     Int,
   maxHeaderCount:                           Int,
-  maxContentLength:                         Long,
+  maxContentLengthSetting:                  Option[Long],
   maxToStrictBytes:                         Long,
   maxChunkExtLength:                        Int,
   maxChunkSize:                             Int,
@@ -46,7 +47,7 @@ private[akka] final case class ParserSettingsImpl(
   require(maxHeaderNameLength > 0, "max-header-name-length must be > 0")
   require(maxHeaderValueLength > 0, "max-header-value-length must be > 0")
   require(maxHeaderCount > 0, "max-header-count must be > 0")
-  require(maxContentLength > 0, "max-content-length must be > 0")
+  require(maxContentLengthSetting.forall(_ > 0), "if set max-content-length must be > 0")
   require(maxChunkExtLength > 0, "max-chunk-ext-length must be > 0")
   require(maxChunkSize > 0, "max-chunk-size must be > 0")
 
@@ -54,6 +55,8 @@ private[akka] final case class ParserSettingsImpl(
 
   override def headerValueCacheLimit(headerName: String): Int =
     headerValueCacheLimits.getOrElse(headerName, defaultHeaderValueCacheLimit)
+
+  override def maxContentLength: Long = maxContentLengthSetting.get
 
   override def productPrefix = "ParserSettings"
 }
@@ -64,7 +67,7 @@ object ParserSettingsImpl extends SettingsCompanionImpl[ParserSettingsImpl]("akk
   private[this] val noCustomStatusCodes: Int => Option[StatusCode] = ConstantFun.scalaAnyToNone
   private[ParserSettingsImpl] val noCustomMediaTypes: (String, String) => Option[MediaType] = ConstantFun.scalaAnyTwoToNone
 
-  def forServer(root: Config): ParserSettingsImpl =
+  def forServer(root: Config): ParserSettings =
     fromSubConfig(root, root.getConfig("akka.http.server.parsing"))
 
   def fromSubConfig(root: Config, inner: Config): ParserSettingsImpl = {
@@ -78,7 +81,7 @@ object ParserSettingsImpl extends SettingsCompanionImpl[ParserSettingsImpl]("akk
       c.getIntBytes("max-header-name-length"),
       c.getIntBytes("max-header-value-length"),
       c.getIntBytes("max-header-count"),
-      c.getPossiblyInfiniteBytes("max-content-length"),
+      c.ifDefined("max-content-length", _.getPossiblyInfiniteBytes(_)),
       c.getPossiblyInfiniteBytes("max-to-strict-bytes"),
       c.getIntBytes("max-chunk-ext-length"),
       c.getIntBytes("max-chunk-size"),

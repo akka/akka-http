@@ -46,4 +46,7 @@ private[http] class EnhancedConfig(val underlying: Config) extends AnyVal {
     case "infinite" => Long.MaxValue
     case x          => underlying.getBytes(path)
   }
+  def ifDefined[T](path: String, f: (Config, String) => T): Option[T] =
+    if (underlying.hasPath(path)) Some(f(underlying, path))
+    else None
 }
