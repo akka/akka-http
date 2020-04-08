@@ -9,13 +9,12 @@ import akka.http.scaladsl.server.Route
 import docs.CompileOnlySpec
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives._
-import akka.stream.ActorMaterializer
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model._
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.duration._
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.{ ExecutionContext, Future, Promise }
 import akka.testkit.{ AkkaSpec, SocketUtil }
 
 private[this] object TimeoutDirectivesInfiniteTimeoutTestConfig {
@@ -31,8 +30,7 @@ private[this] object TimeoutDirectivesInfiniteTimeoutTestConfig {
 class TimeoutDirectivesExamplesSpec extends AkkaSpec(TimeoutDirectivesInfiniteTimeoutTestConfig.testConf)
   with ScalaFutures with CompileOnlySpec {
   //#testSetup
-  import system.dispatcher
-  implicit val materializer = ActorMaterializer()
+  implicit val ec: ExecutionContext = system.dispatcher
 
   def slowFuture(): Future[String] = Promise[String].future // TODO: move to Future.never in Scala 2.12
 
@@ -161,8 +159,7 @@ private[this] object TimeoutDirectivesFiniteTimeoutTestConfig {
 
 class TimeoutDirectivesFiniteTimeoutExamplesSpec extends AkkaSpec(TimeoutDirectivesFiniteTimeoutTestConfig.testConf)
   with ScalaFutures with CompileOnlySpec {
-  import system.dispatcher
-  implicit val materializer = ActorMaterializer()
+  implicit val ec: ExecutionContext = system.dispatcher
 
   def slowFuture(): Future[String] = Promise[String].future // TODO: move to Future.never in Scala 2.12
 

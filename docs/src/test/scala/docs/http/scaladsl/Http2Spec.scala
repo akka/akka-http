@@ -6,7 +6,6 @@ package docs.http.scaladsl
 
 import akka.http.impl.util.ExampleHttpContexts
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, StatusCodes }
-import akka.stream.ActorMaterializer
 
 //#bindAndHandleSecure
 import scala.concurrent.Future
@@ -33,7 +32,6 @@ object Http2Spec {
   val asyncHandler: HttpRequest => Future[HttpResponse] = _ => Future.successful(HttpResponse(status = StatusCodes.ImATeapot))
   val httpsServerContext: HttpsConnectionContext = ExampleHttpContexts.exampleServerContext
   implicit val system: ActorSystem = ActorSystem()
-  implicit val materializer: Materializer = ActorMaterializer()
 
   //#bindAndHandleSecure
   Http().bindAndHandleAsync(

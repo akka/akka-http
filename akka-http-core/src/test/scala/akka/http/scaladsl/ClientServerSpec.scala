@@ -59,7 +59,7 @@ class ClientServerSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll 
     ConfigFactory.parseString("akka.stream.materializer.subscription-timeout.timeout = 1 s")
       .withFallback(testConf)
   val system2 = ActorSystem(getClass.getSimpleName, testConf2)
-  val materializer2 = ActorMaterializer.create(system2)
+  val materializer2 = SystemMaterializer(system2).materializer
 
   "The low-level HTTP infrastructure" should {
 

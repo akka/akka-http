@@ -4,7 +4,7 @@
 
 package akka.http.scaladsl.settings
 
-import akka.actor.{ ActorRefFactory, ActorSystem }
+import akka.actor.{ ActorRefFactory, ActorSystem, ClassicActorSystemProvider }
 import akka.annotation.InternalApi
 import com.typesafe.config.Config
 import akka.http.impl.util._
@@ -17,7 +17,9 @@ private[akka] trait SettingsCompanion[T] {
    * Creates an instance of settings using the configuration provided by the given ActorSystem.
    */
   final def apply(system: ActorSystem): T = apply(system.settings.config)
-  implicit def default(implicit system: ActorRefFactory): T = apply(actorSystem)
+  final def apply(system: ClassicActorSystemProvider): T = apply(system.classicSystem.settings.config)
+  implicit def default(implicit system: ClassicActorSystemProvider): T = apply(system.classicSystem)
+  def default(actorRefFactory: ActorRefFactory): T = apply(actorSystem(actorRefFactory))
 
   /**
    * Creates an instance of settings using the given Config.

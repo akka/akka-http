@@ -142,16 +142,12 @@ object HttpServerWithTypedSample {
   }
   //#akka-typed-route
 
-  /* there are still differences making this impossible to compile both for 2.5 and 2.6 at the same time
-     without passing implicits explicitly and making the sample somewhat weird. This is however verified
-     against 2.6.0-RC1 with those implicits noted removed.
-
   //#akka-typed-bootstrap
   import akka.actor.typed.PostStop
-  import akka.actor.typed.scaladsl.adapter._
-  import akka.stream.ActorMaterializer
   import akka.http.scaladsl.Http.ServerBinding
   import akka.http.scaladsl.Http
+  import akka.stream.SystemMaterializer
+  import akka.stream.Materializer
 
   import scala.concurrent.ExecutionContextExecutor
   import scala.util.{ Success, Failure }
@@ -166,11 +162,6 @@ object HttpServerWithTypedSample {
     def apply(host: String, port: Int): Behavior[Message] = Behaviors.setup { ctx =>
 
       implicit val system = ctx.system
-      // http doesn't know about akka typed so provide untyped system
-      implicit val untypedSystem: akka.actor.ActorSystem = ctx.system.toClassic
-      // implicit materializer only required in Akka 2.5
-      // in 2.6 having an implicit classic or typed ActorSystem in scope is enough
-      implicit val materializer: ActorMaterializer = ActorMaterializer()(ctx.system.toClassic)
       implicit val ec: ExecutionContextExecutor = ctx.system.executionContext
 
       val buildJobRepository = ctx.spawn(JobRepository(), "JobRepository")
@@ -223,6 +214,4 @@ object HttpServerWithTypedSample {
       ActorSystem(Server("localhost", 8080), "BuildJobsServer")
   }
   //#akka-typed-bootstrap
-
-  */
 }

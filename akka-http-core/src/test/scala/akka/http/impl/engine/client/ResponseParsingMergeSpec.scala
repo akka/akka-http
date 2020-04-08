@@ -11,8 +11,7 @@ import akka.http.impl.engine.parsing.{ HttpHeaderParser, HttpResponseParser, Par
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ParserSettings
 import akka.stream.TLSProtocol.SessionBytes
-import akka.stream.javadsl.RunnableGraph
-import akka.stream.scaladsl.{ GraphDSL, Sink, Source }
+import akka.stream.scaladsl.{ GraphDSL, RunnableGraph, Sink, Source }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.stream.{ ActorMaterializer, Attributes, ClosedShape }
 import akka.testkit.AkkaSpec
@@ -47,7 +46,7 @@ class ResponseParsingMergeSpec extends AkkaSpec {
 
           ClosedShape
         }.withAttributes(Attributes.inputBuffer(1, 8))
-      ).run(mat)
+      ).run()
 
       val inSessionBytesSub = inSessionBytesProbe.expectSubscription()
       val inBypassSub = inBypassProbe.expectSubscription()

@@ -17,7 +17,7 @@ import akka.actor.ActorSystem
 import akka.event.NoLogging
 import akka.http.javadsl.model._
 import akka.japi.Function
-import akka.stream.ActorMaterializer
+import akka.stream.SystemMaterializer
 import akka.stream.javadsl.{ Flow, Keep, Sink, Source }
 import akka.stream.testkit.TestSubscriber
 import akka.testkit.TestKit
@@ -46,7 +46,7 @@ class HttpExtensionApiSpec extends AnyWordSpec with Matchers with BeforeAndAfter
 
     ActorSystem(getClass.getSimpleName, testConf)
   }
-  implicit val materializer = ActorMaterializer()
+  val materializer = SystemMaterializer.get(system).materializer
 
   val http = Http.get(system)
   val connectionContext = ConnectionContext.noEncryption()

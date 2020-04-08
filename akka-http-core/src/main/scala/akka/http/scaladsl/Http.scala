@@ -389,7 +389,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   // ** CLIENT ** //
 
   private[this] val poolMasterActorRef = system.systemActorOf(PoolMasterActor.props, "pool-master")
-  private[this] val systemMaterializer = ActorMaterializer()
+  private[this] val systemMaterializer = SystemMaterializer(system).materializer
 
   /**
    * Creates a [[akka.stream.scaladsl.Flow]] representing a prospective HTTP client connection to the given endpoint.
