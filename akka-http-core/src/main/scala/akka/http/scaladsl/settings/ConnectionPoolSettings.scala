@@ -89,13 +89,13 @@ object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] 
   override def apply(config: Config) = ConnectionPoolSettingsImpl(config)
 
   /**
-   * Builds a ConnectionPoolSettings that has the host specific overrides populated from config
+   * Builds `ConnectionPoolSettings` that have the host specific overrides populated from config
    *
    * This is the ONLY place that a connection pool object can be created that has the ability to be configured per
    * host, and it's ONLY used by `HttpExt.defaultConnectionPoolSettings`. The intent is NOT to let users define or use
    * this, or even for akka internally to use this. Think of this more like a placeholder for the
-   * `defaultConnectionPoolSettings` provided in the HttpExt.singleRequest and other client methods instead of breaking
-   * binary compatibility by making those calls take an `Option[_]`or using `null`
+   * `defaultConnectionPoolSettings` provided in the `HttpExt.singleRequest` and other client methods instead of breaking
+   * binary compatibility by making those calls take an `Option[_]` or using `null`
    *
    */
   @ApiMayChange
@@ -104,13 +104,13 @@ object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] 
   }
 
   /**
-   * Builds a ConnectionPoolSettings that has the host specific overrides populated from config
+   * Builds `ConnectionPoolSettings` that have the host specific overrides populated from config
    *
    * This is the ONLY place that a connection pool object can be created that has the abililty to be configured per
    * host, and it's ONLY used by `HttpExt.defaultConnectionPoolSettings`. The intent is NOT to let users define or use
    * this, or even for akka internally to use this. Think of this more like a placeholder for the
-   * `defaultConnectionPoolSettings` provided in the HttpExt.singleRequest and other client methods instead of breaking
-   * binary compatibility by making those calls take an `Option[_]`or using `null`
+   * `defaultConnectionPoolSettings` provided in the `HttpExt.singleRequest` and other client methods instead of breaking
+   * binary compatibility by making those calls take an `Option[_]` or using `null`
    *
    */
   @ApiMayChange
