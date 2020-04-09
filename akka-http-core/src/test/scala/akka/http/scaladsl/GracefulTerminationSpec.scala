@@ -55,7 +55,7 @@ class GracefulTerminationSpec
       // immediately trying a new connection should cause `Connection refused` since we unbind immediately:
       val r3 = makeRequest(ensureNewConnection = true)
       val ex = intercept[StreamTcpException] {
-        Await.result(r3, 5.seconds)
+        Await.result(r3, 2.seconds)
       }
       ex.getMessage should include("Connection refused")
     }
@@ -201,7 +201,7 @@ class GracefulTerminationSpec
   }
 
   private def ensureConnectionIsClosed(r: Future[HttpResponse]): Assertion =
-    (the[StreamTcpException] thrownBy Await.result(r, 6.second)).getMessage should endWith("Connection refused")
+    (the[StreamTcpException] thrownBy Await.result(r, 1.second)).getMessage should endWith("Connection refused")
 
   class TestSetup(overrideResponse: Option[HttpResponse] = None) {
     val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
