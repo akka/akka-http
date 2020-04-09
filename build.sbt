@@ -325,7 +325,7 @@ lazy val docs = project("docs")
     paradoxProperties in Compile ++= Map(
       "project.name" -> "Akka HTTP",
       "canonical.base_url" -> "https://doc.akka.io/docs/akka-http/current",
-      "akka.version" -> AkkaDependency.akkaVersion,
+      "akka.version" -> AkkaDependency.docs.version,
       "alpn-agent.version" -> Dependencies.alpnAgentVersion,
       "scala.binary_version" -> scalaBinaryVersion.value, // to be consistent with Akka build
       "scala.binaryVersion" -> scalaBinaryVersion.value,
@@ -341,12 +341,13 @@ lazy val docs = project("docs")
         val v = if (isSnapshot.value) "current" else version.value
         s"https://doc.akka.io/japi/akka-http/$v"
       },
-      "javadoc.akka.base_url" -> s"https://doc.akka.io/japi/akka/${AkkaDependency.akkaVersion}",
+      "javadoc.akka.base_url" -> s"https://doc.akka.io/japi/akka/${AkkaDependency.docs.version}",
+      "javadoc.akka.link_style" -> "direct",
       "scaladoc.akka.http.base_url" -> {
         val v = if (isSnapshot.value) "current" else version.value
         s"https://doc.akka.io/api/akka-http/$v"
       },
-      "scaladoc.akka.base_url" -> s"https://doc.akka.io/api/akka/${AkkaDependency.akkaVersion}",
+      "scaladoc.akka.base_url" -> s"https://doc.akka.io/api/akka/${AkkaDependency.docs.version}",
       "algolia.docsearch.api_key" -> "0ccbb8bf5148554a406fbf07df0a93b9",
       "algolia.docsearch.index_name" -> "akka-http",
       "google.analytics.account" -> "UA-21117439-1",

@@ -19,7 +19,7 @@ It's a simple alias for a function turning a @apidoc[RequestContext] into a `Fut
 A @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@apidoc[Route]] itself is a function that operates on a @apidoc[RequestContext] and returns a @apidoc[RouteResult]. The
 @apidoc[RequestContext] is a data structure that contains the current request and auxiliary data like the so far unmatched
 path of the request URI that gets passed through the route structure. It also contains the current `ExecutionContext`
-and `akka.stream.Materializer`, so that these don't have to be passed around manually.
+and @apidoc[Materializer], so that these don't have to be passed around manually.
 
 @@@
 
