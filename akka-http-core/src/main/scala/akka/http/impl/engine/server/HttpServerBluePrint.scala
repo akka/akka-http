@@ -16,6 +16,7 @@ import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.japi.Function
 import akka.event.LoggingAdapter
+import akka.http.ParsingErrorHandler
 import akka.util.ByteString
 import akka.stream._
 import akka.stream.TLSProtocol._
@@ -59,11 +60,11 @@ import scala.util.Failure
  */
 @InternalApi
 private[http] object HttpServerBluePrint {
-  def apply(settings: ServerSettings, log: LoggingAdapter, isSecureConnection: Boolean): Http.ServerLayer =
+  def apply(settings: ServerSettings, parsingErrorHandler: ParsingErrorHandler, log: LoggingAdapter, isSecureConnection: Boolean): Http.ServerLayer =
     userHandlerGuard(settings.pipeliningLimit) atop
       requestTimeoutSupport(settings.timeouts.requestTimeout, log) atop
       requestPreparation(settings) atop
-      controller(settings, log) atop
+      controller(settings, parsingErrorHandler, log) atop
       parsingRendering(settings, log, isSecureConnection) atop
       websocketSupport(settings, log) atop
       tlsSupport atop
@@ -78,8 +79,8 @@ private[http] object HttpServerBluePrint {
   def parsingRendering(settings: ServerSettings, log: LoggingAdapter, isSecureConnection: Boolean): BidiFlow[ResponseRenderingContext, ResponseRenderingOutput, SessionBytes, RequestOutput, NotUsed] =
     BidiFlow.fromFlows(rendering(settings, log), parsing(settings, log, isSecureConnection))
 
-  def controller(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ResponseRenderingContext, RequestOutput, RequestOutput, NotUsed] =
-    BidiFlow.fromGraph(new ControllerStage(settings, log)).reversed
+  def controller(settings: ServerSettings, parsingErrorHandler: ParsingErrorHandler, log: LoggingAdapter): BidiFlow[HttpResponse, ResponseRenderingContext, RequestOutput, RequestOutput, NotUsed] =
+    BidiFlow.fromGraph(new ControllerStage(settings, parsingErrorHandler, log)).reversed
 
   def requestPreparation(settings: ServerSettings): BidiFlow[HttpResponse, HttpResponse, RequestOutput, HttpRequest, NotUsed] =
     BidiFlow.fromFlows(Flow[HttpResponse], new PrepareRequests(settings))
@@ -362,7 +363,7 @@ private[http] object HttpServerBluePrint {
     def timeout = currentTimeout
   }
 
-  class ControllerStage(settings: ServerSettings, log: LoggingAdapter)
+  class ControllerStage(settings: ServerSettings, parsingErrorHandler: ParsingErrorHandler, log: LoggingAdapter)
     extends GraphStage[BidiShape[RequestOutput, RequestOutput, HttpResponse, ResponseRenderingContext]] {
     private val requestParsingIn = Inlet[RequestOutput]("ControllerStage.requestParsingIn")
     private val requestPrepOut = Outlet[RequestOutput]("ControllerStage.requestPrepOut")
@@ -491,11 +492,8 @@ private[http] object HttpServerBluePrint {
       })
 
       def finishWithIllegalRequestError(status: StatusCode, info: ErrorInfo): Unit = {
-        logParsingError(
-          info withSummaryPrepended s"Illegal request, responding with status '$status'",
-          log, settings.parserSettings.errorLoggingVerbosity)
-        val msg = if (settings.verboseErrorMessages) info.formatPretty else info.summary
-        emitErrorResponse(HttpResponse(status, entity = msg))
+        val errorResponse = JavaMapping.toScala(parsingErrorHandler.handle(status, info, log, settings))
+        emitErrorResponse(errorResponse)
       }
 
       def emitErrorResponse(response: HttpResponse): Unit =
