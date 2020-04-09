@@ -4,7 +4,7 @@
 
 package akka.http.impl.engine.server
 
-import java.net.{InetAddress, InetSocketAddress}
+import java.net.{ InetAddress, InetSocketAddress }
 
 import akka.event.LoggingAdapter
 import akka.http.ParsingErrorHandler
