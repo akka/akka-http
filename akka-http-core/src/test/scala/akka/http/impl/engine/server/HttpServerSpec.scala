@@ -989,6 +989,78 @@ class HttpServerSpec extends AkkaSpec(
       shutdownBlueprint()
     })
 
+    "support remote-address-attribute" which {
+      "remote-address-attribute == X-Forward-For" in assertAllStagesStopped(new TestSetup {
+        lazy val theAddress = InetAddress.getByName("123.123.123.123")
+
+        override def settings: ServerSettings = super.settings.withRemoteAddressAttribute(Some(`X-Forwarded-For`))
+
+        send(
+          """GET / HTTP/1.1
+            |Host: example.com
+            |X-Forwarded-For: 123.123.123.123
+            |X-Real-Ip: 123.123.123.123
+            |Remote-Address: 123.123.123.123
+            |
+            |""".stripMarginWithNewline("\r\n"))
+
+        val request = expectRequest()
+        request.header[`X-Forwarded-For`] should contain(`X-Forwarded-For`(RemoteAddress(theAddress)))
+        request.header[`X-Real-Ip`] should be(None)
+        request.header[`Remote-Address`] should be(None)
+        shutdownBlueprint()
+      })
+
+      "remote-address-attribute == X-Real-Ip" in assertAllStagesStopped(new TestSetup {
+        lazy val theAddress = InetAddress.getByName("123.123.123.123")
+
+        override def settings: ServerSettings = super.settings.withRemoteAddressAttribute(Some(`X-Real-Ip`))
+
+        send(
+          """GET / HTTP/1.1
+            |Host: example.com
+            |X-Forwarded-For: 123.123.123.123
+            |X-Real-Ip: 123.123.123.123
+            |Remote-Address: 123.123.123.123
+            |
+            |""".stripMarginWithNewline("\r\n"))
+
+        val request = expectRequest()
+        request.header[`X-Real-Ip`] should contain(`X-Real-Ip`(RemoteAddress(theAddress)))
+        request.header[`X-Forwarded-For`] should be(None)
+        request.header[`Remote-Address`] should be(None)
+        shutdownBlueprint()
+      })
+
+      "remote-address-attribute == Remote-Address" in assertAllStagesStopped(new TestSetup {
+        lazy val theAddress = InetAddress.getByName("123.123.123.123")
+
+        override def settings: ServerSettings = super.settings.withRemoteAddressAttribute(Some(`Remote-Address`))
+
+        override def modifyServer(server: ServerLayer): ServerLayer = {
+          BidiFlow.fromGraph(server.withAttributes(
+            HttpAttributes.remoteAddress(new InetSocketAddress(theAddress, 8080))
+          ))
+        }
+
+        send(
+          """GET / HTTP/1.1
+            |Host: example.com
+            |X-Forwarded-For: 123.123.123.123
+            |X-Real-Ip: 123.123.123.123
+            |Remote-Address: 124.124.124.124
+            |
+            |""".stripMarginWithNewline("\r\n"))
+
+        val request = expectRequest()
+        request.header[`Remote-Address`] should contain(`Remote-Address`(RemoteAddress(theAddress, Some(8080))))
+        request.header[`X-Real-Ip`] should be(None)
+        request.header[`X-Forwarded-For`] should be(None)
+        shutdownBlueprint()
+      })
+
+    }
+
     "don't leak stages when connection is closed for request" which {
       "uses GET method with an unread empty chunked entity" in assertAllStagesStopped(new TestSetup {
         send("""GET / HTTP/1.1

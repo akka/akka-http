@@ -13,8 +13,7 @@ import akka.http.impl.util._
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.{ settings => js }
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.headers.Host
-import akka.http.scaladsl.model.headers.Server
+import akka.http.scaladsl.model.headers.{ Host, ModeledCompanion, Server }
 import akka.io.Inet.SocketOption
 import com.typesafe.config.Config
 
@@ -35,6 +34,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def maxConnections: Int
   def pipeliningLimit: Int
   def remoteAddressHeader: Boolean
+  def remoteAddressAttribute: Option[ModeledCompanion[_]]
   def rawRequestUriHeader: Boolean
   def transparentHeadRequests: Boolean
   def verboseErrorMessages: Boolean
@@ -83,6 +83,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   override def withMaxConnections(newValue: Int): ServerSettings = self.copy(maxConnections = newValue)
   override def withPipeliningLimit(newValue: Int): ServerSettings = self.copy(pipeliningLimit = newValue)
   override def withRemoteAddressHeader(newValue: Boolean): ServerSettings = self.copy(remoteAddressHeader = newValue)
+  override def withRemoteAddressAttribute(newValue: Option[ModeledCompanion[_]]): ServerSettings = self.copy(remoteAddressAttribute = newValue)
   override def withRawRequestUriHeader(newValue: Boolean): ServerSettings = self.copy(rawRequestUriHeader = newValue)
   override def withTransparentHeadRequests(newValue: Boolean): ServerSettings = self.copy(transparentHeadRequests = newValue)
   override def withVerboseErrorMessages(newValue: Boolean): ServerSettings = self.copy(verboseErrorMessages = newValue)
