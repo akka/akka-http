@@ -18,7 +18,7 @@ import akka.annotation.InternalApi
 import akka.io.Inet.SocketOption
 import akka.http.impl.util._
 import akka.http.scaladsl.model.{ HttpHeader, HttpResponse, StatusCodes }
-import akka.http.scaladsl.model.headers.{ Host, ModeledCompanion, Server, `Remote-Address`, `X-Forwarded-For`, `X-Real-Ip` }
+import akka.http.scaladsl.model.headers.{ Host, Server }
 import akka.http.scaladsl.settings.ServerSettings.LogUnencryptedNetworkBytes
 
 /** INTERNAL API */
@@ -30,7 +30,7 @@ private[akka] final case class ServerSettingsImpl(
   maxConnections:                      Int,
   pipeliningLimit:                     Int,
   remoteAddressHeader:                 Boolean,
-  remoteAddressAttribute:              Option[ModeledCompanion[_]],
+  remoteAddressAttribute:              Boolean,
   rawRequestUriHeader:                 Boolean,
   transparentHeadRequests:             Boolean,
   verboseErrorMessages:                Boolean,
@@ -84,12 +84,7 @@ private[http] object ServerSettingsImpl extends SettingsCompanionImpl[ServerSett
     c.getInt("max-connections"),
     c.getInt("pipelining-limit"),
     c.getBoolean("remote-address-header"),
-    c.getString("remote-address-attribute").toOption.map { attribute =>
-      val allowedHeaders = Seq(`Remote-Address`, `X-Forwarded-For`, `X-Real-Ip`)
-      allowedHeaders.find(_.name == attribute).getOrElse {
-        throw new ConfigurationException(s"Configured `remote-address-attribute` is illegal, was: [$attribute], allowed values contain ${allowedHeaders.map(_.name).mkString(",")}")
-      }
-    },
+    c.getBoolean("remote-address-attribute"),
     c.getBoolean("raw-request-uri-header"),
     c.getBoolean("transparent-head-requests"),
     c.getBoolean("verbose-error-messages"),

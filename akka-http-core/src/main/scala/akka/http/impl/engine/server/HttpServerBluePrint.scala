@@ -99,7 +99,6 @@ private[http] object HttpServerBluePrint {
     override val shape: FlowShape[RequestOutput, HttpRequest] = FlowShape.of(in, out)
 
     override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
-      val remoteAddress = inheritedAttributes.get[HttpAttributes.RemoteAddress].map(_.address)
 
       var downstreamPullWaiting = false
       var completionDeferred = false
@@ -123,23 +122,23 @@ private[http] object HttpServerBluePrint {
       override def onPush(): Unit = grab(in) match {
         case RequestStart(method, uri, protocol, hdrs, entityCreator, _, _) =>
           val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
+          lazy val remoteAddressOpt = inheritedAttributes.get[HttpAttributes.RemoteAddress].map(_.address)
 
-          val effectiveHeaders = {
-            settings.remoteAddressAttribute.fold {
-              if (settings.remoteAddressHeader && remoteAddress.isDefined)
-                headers.`Remote-Address`(RemoteAddress(remoteAddress.get)) +: hdrs
-              else hdrs
-            } { attribute =>
-              val filteredHeaders = hdrs.filterNot(hdr => hdr.name == headers.`Remote-Address`.name
-                || ((hdr.name == headers.`X-Forwarded-For`.name || hdr.name == headers.`X-Real-Ip`.name) && hdr.name != attribute.name))
-              if (attribute == headers.`Remote-Address` && remoteAddress.isDefined)
-                headers.`Remote-Address`(RemoteAddress(remoteAddress.get)) +: filteredHeaders
-              else filteredHeaders
-            }
-          }
+          val effectiveHeaders =
+            if (settings.remoteAddressHeader && remoteAddressOpt.isDefined)
+              headers.`Remote-Address`(RemoteAddress(remoteAddressOpt.get)) +: hdrs
+            else hdrs
 
           val entity = createEntity(entityCreator) withSizeLimit settings.parserSettings.maxContentLength
-          push(out, HttpRequest(effectiveMethod, uri, effectiveHeaders, entity, protocol))
+          val httpRequest = HttpRequest(effectiveMethod, uri, effectiveHeaders, entity, protocol)
+
+          val effectiveHttpRequest = if (settings.remoteAddressAttribute) {
+            remoteAddressOpt.fold(httpRequest) { remoteAddress =>
+              httpRequest.addAttribute[RemoteAddress](HttpRequest.AttributeKeys.remoteAddress, RemoteAddress(remoteAddress))
+            }
+          } else httpRequest
+
+          push(out, effectiveHttpRequest)
         case other =>
           throw new IllegalStateException(s"unexpected element of type ${other.getClass}")
       }
