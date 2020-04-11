@@ -111,7 +111,7 @@ object MiscDirectives extends MiscDirectives {
       headerValuePF { case `Remote-Address`(address) => address } |
       headerValuePF { case `X-Real-Ip`(address) => address } |
       extractRequest.map { request =>
-        request.attribute(HttpRequest.AttributeKeys.remoteAddress).getOrElse(RemoteAddress.Unknown)
+        request.attribute(AttributeKeys.remoteAddress).getOrElse(RemoteAddress.Unknown)
       }
 
   private val _requestEntityEmpty: Directive0 =

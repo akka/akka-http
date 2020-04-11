@@ -485,10 +485,6 @@ object HttpRequest {
     protocol: HttpProtocol              = HttpProtocols.`HTTP/1.1`) = new HttpRequest(method, uri, headers, Map.empty, entity, protocol)
 
   def unapply(any: HttpRequest) = new OptHttpRequest(any)
-
-  object AttributeKeys {
-    def remoteAddress: AttributeKey[RemoteAddress] = AttributeKey[RemoteAddress]("remote-address")
-  }
 }
 
 /**
