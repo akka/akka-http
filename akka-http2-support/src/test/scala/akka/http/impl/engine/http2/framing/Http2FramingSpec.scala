@@ -263,7 +263,7 @@ class Http2FramingSpec extends AkkaSpecWithMaterializer {
         )))
       }
       // 6.5.3: An endpoint that receives a SETTINGS frame with any unknown or unsupported identifier MUST ignore that setting
-      "with an unknown setting" in {
+      "with an experimental, unknown setting" in {
         // As observed being sent by grpcc in the first SETTINGS frame:
         b"""xxxxxxxx
             xxxxxxxx
@@ -280,6 +280,26 @@ class Http2FramingSpec extends AkkaSpecWithMaterializer {
             xxxxxxxx
             xxxxxxxx
             xxxxxxxx=1
+         """ should parseTo(SettingsFrame(Nil), checkRendering = false)
+      }
+      // 6.5.3: An endpoint that receives a SETTINGS frame with any unknown or unsupported identifier MUST ignore that setting
+      "with an unsupported setting" in {
+        // As observed being sent by envoy 1.14.1 in the first SETTINGS frame:
+        b"""xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=6   # length
+            00000100     # type = 0x4 = SETTINGS
+            00000000     # no flags
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=0   # no stream ID
+            xxxxxxxx
+            xxxxxxxx=8   # SETTINGS_ENABLE_CONNECT_PROTOCOL https://www.iana.org/assignments/http2-parameters/http2-parameters.xhtml#settings
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx
+            xxxxxxxx=0
          """ should parseTo(SettingsFrame(Nil), checkRendering = false)
       }
       "ack" in {

@@ -25,7 +25,7 @@ private[http] object Http2FrameParsing {
       if (payload.hasRemaining) {
         val id = payload.readShortBE()
         val value = payload.readIntBE()
-        if (isKnownId(id)) readSettings(Setting(SettingIdentifier.byId(id), value) :: read)
+        if (SettingIdentifier.isKnownId(id)) readSettings(Setting(SettingIdentifier.byId(id), value) :: read)
         else readSettings(read)
       } else read.reverse
 
