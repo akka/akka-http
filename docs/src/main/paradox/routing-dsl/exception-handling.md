@@ -84,7 +84,7 @@ so as a rule of thumb, you should try to minimize the number of `Throwable` inst
 reaching the exception handler.
 
 To understand the performance implications of (mis-)using exceptions,
-have a read at this excellent post by A. Shipilёv: [The Exceptional Performance of Lil' Exception](https://shipilev.net/blog/2014/exceptional-performance).
+have a read at this excellent post by A. Shipilёv: [The Exceptional Performance of Lil' Exception](https://shipilev.net/blog/2014/exceptional-performance/).
 @@@
 
 

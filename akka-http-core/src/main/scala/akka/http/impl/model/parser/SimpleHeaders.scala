@@ -22,43 +22,43 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
     ("none" ~ push(Nil) | zeroOrMore(ws(',')) ~ oneOrMore(`range-unit`).separatedBy(listSep)) ~ EOI ~> (`Accept-Ranges`(_))
   }
 
-  // http://www.w3.org/TR/cors/#access-control-allow-credentials-response-header
+  // https://www.w3.org/TR/cors/#access-control-allow-credentials-response-header
   // in addition to the spec we also allow for a `false` value
   def `access-control-allow-credentials` = rule(
     ("true" ~ push(`Access-Control-Allow-Credentials`(true))
       | "false" ~ push(`Access-Control-Allow-Credentials`(false))) ~ EOI)
 
-  // http://www.w3.org/TR/cors/#access-control-allow-headers-response-header
+  // https://www.w3.org/TR/cors/#access-control-allow-headers-response-header
   def `access-control-allow-headers` = rule {
     zeroOrMore(token).separatedBy(listSep) ~ EOI ~> (`Access-Control-Allow-Headers`(_))
   }
 
-  // http://www.w3.org/TR/cors/#access-control-allow-methods-response-header
+  // https://www.w3.org/TR/cors/#access-control-allow-methods-response-header
   def `access-control-allow-methods` = rule {
     zeroOrMore(httpMethodDef).separatedBy(listSep) ~ EOI ~> (`Access-Control-Allow-Methods`(_))
   }
 
-  // http://www.w3.org/TR/cors/#access-control-allow-origin-response-header
+  // https://www.w3.org/TR/cors/#access-control-allow-origin-response-header
   def `access-control-allow-origin` = rule(
     ws('*') ~ EOI ~ push(`Access-Control-Allow-Origin`.`*`)
       | `origin-list-or-null` ~ EOI ~> (origins => `Access-Control-Allow-Origin`.forRange(HttpOriginRange(origins: _*))))
 
-  // http://www.w3.org/TR/cors/#access-control-expose-headers-response-header
+  // https://www.w3.org/TR/cors/#access-control-expose-headers-response-header
   def `access-control-expose-headers` = rule {
     zeroOrMore(token).separatedBy(listSep) ~ EOI ~> (`Access-Control-Expose-Headers`(_))
   }
 
-  // http://www.w3.org/TR/cors/#access-control-max-age-response-header
+  // https://www.w3.org/TR/cors/#access-control-max-age-response-header
   def `access-control-max-age` = rule {
     `delta-seconds` ~ EOI ~> (`Access-Control-Max-Age`(_))
   }
 
-  // http://www.w3.org/TR/cors/#access-control-request-headers-request-header
+  // https://www.w3.org/TR/cors/#access-control-request-headers-request-header
   def `access-control-request-headers` = rule {
     zeroOrMore(token).separatedBy(listSep) ~ EOI ~> (`Access-Control-Request-Headers`(_))
   }
 
-  // http://www.w3.org/TR/cors/#access-control-request-method-request-header
+  // https://www.w3.org/TR/cors/#access-control-request-method-request-header
   def `access-control-request-method` = rule {
     httpMethodDef ~ EOI ~> (`Access-Control-Request-Method`(_))
   }

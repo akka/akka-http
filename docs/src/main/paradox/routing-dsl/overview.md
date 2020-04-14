@@ -13,7 +13,7 @@ Java
 While it'd be perfectly possible to define a complete REST API service purely by @scala[pattern-matching against]@java[inspecting] the incoming
 @apidoc[HttpRequest] @scala[(maybe with the help of a few extractors in the way of [Unfiltered](https://unfiltered.ws/))] this approach becomes somewhat
 unwieldy for larger services due to the amount of syntax "ceremony" required. Also, it doesn't help in keeping your
-service definition as [DRY](http://en.wikipedia.org/wiki/Don%27t_repeat_yourself) as you might like.
+service definition as [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself) as you might like.
 
 As an alternative Akka HTTP provides a flexible DSL for expressing your service behavior as a structure of
 composable elements (called @ref[Directives](directives/index.md)) in a concise and readable way. Directives are assembled into a so called

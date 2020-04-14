@@ -20,10 +20,10 @@ from a background with non-"streaming first" HTTP Servers.
 
 ## Streams and HTTP
 
-The Akka HTTP server is implemented on top of @scala[@extref[Streams](akka-docs:scala/stream/index.html)]@java[@extref[Streams](akka-docs:java/stream/index.html)] and makes heavy use of it - in its
+The Akka HTTP server is implemented on top of @extref[Streams](akka-docs:stream/index.html) and makes heavy use of it - in its
 implementation as well as on all levels of its API.
 
-On the connection level Akka HTTP offers basically the same kind of interface as @scala[@extref[Working with streaming IO](akka-docs:scala/stream/stream-io.html)]@java[@extref[Working with streaming IO](akka-docs:java/stream/stream-io.html)]:
+On the connection level Akka HTTP offers basically the same kind of interface as @extref[Working with streaming IO](akka-docs:stream/stream-io.html):
 A socket binding is represented as a stream of incoming connections. The application pulls connections from this stream
 source and, for each of them, provides a @apidoc[Flow[HttpRequest, HttpResponse, \_]] to "translate" requests into responses.
 
@@ -205,7 +205,7 @@ through the stream starting from the stage which failed, all the way downstream 
 #### Connections Source failures
 
 In the example below we add a custom @apidoc[GraphStage] in order to react to the
-stream's failure. See @scala[@extref[Custom stream processing](akka-docs:scala/stream/stream-customize.html)]@java[@extref[Custom stream processing](akka-docs:java/stream/stream-customize.html)]) for more on custom stages. We signal a `failureMonitor` actor with the cause why the stream is going down, and let the Actor
+stream's failure. See @extref[Custom stream processing](akka-docs:stream/stream-customize.html) for more on custom stages. We signal a `failureMonitor` actor with the cause why the stream is going down, and let the Actor
 handle the rest – maybe it'll decide to restart the server or shutdown the ActorSystem, that however is not our concern anymore.
 
 Scala

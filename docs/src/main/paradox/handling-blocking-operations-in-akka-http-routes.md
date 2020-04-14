@@ -93,7 +93,7 @@ my-blocking-dispatcher {
 }
 ```
 
-There are many dispatcher options available which can be found in @extref[Dispatchers](akka-docs:scala/dispatchers.html).
+There are many dispatcher options available which can be found in @extref[Dispatchers](akka-docs:dispatchers.html).
 
 Here `thread-pool-executor` is used, which has a hardcoded limit of threads. It keeps a set number of threads
 available that allow for safe isolation of the blocking operations. The size settings should depend on the app's

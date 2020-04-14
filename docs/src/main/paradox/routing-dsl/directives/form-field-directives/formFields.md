@@ -69,7 +69,7 @@ Query parameters can be handled in a similar way, see @ref[parameters](../parame
 
 ## Unmarshalling
 
-Data POSTed from [HTML forms](http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4) is either of type `application/x-www-form-urlencoded` or of type
+Data POSTed from [HTML forms](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4) is either of type `application/x-www-form-urlencoded` or of type
 `multipart/form-data`. The value of an url-encoded field is a `String` while the value of a
 `multipart/form-data`-encoded field is a "body part" containing an entity. This means that different kind of unmarshallers are needed depending
 on what the Content-Type of the request is:

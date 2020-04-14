@@ -52,7 +52,7 @@ SSL Config settings used by Akka HTTP (as well as Streaming TCP) are located und
 
 ## Detailed configuration and workarounds
 
-Akka HTTP relies on [Lightbend SSL-Config](https://lightbend.github.io/ssl-config) which is a library maintained by Lightbend that makes configuring
+Akka HTTP relies on [Lightbend SSL-Config](https://lightbend.github.io/ssl-config/) which is a library maintained by Lightbend that makes configuring
 things related to SSL/TLS much simpler than using the raw SSL APIs provided by the JDK. Please refer to its
 documentation to learn more about it.
 

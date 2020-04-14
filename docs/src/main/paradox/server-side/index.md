@@ -1,7 +1,7 @@
 # 4. Server API
 
 Apart from the @ref[HTTP Client](../client-side/index.md) Akka HTTP also provides an embedded,
-[Reactive-Streams](https://www.reactive-streams.org/)-based, fully asynchronous HTTP/1.1 server implemented on top of @scala[@extref[Streams](akka-docs:scala/stream/index.html)]@java[@extref[Streams](akka-docs:java/stream/index.html)].
+[Reactive-Streams](https://www.reactive-streams.org/)-based, fully asynchronous HTTP/1.1 server implemented on top of @extref[Streams](akka-docs:stream/index.html).
 
 It supports the following features:
 

@@ -10,7 +10,7 @@
 
 ## Description
 
-Extracts all HTTP form fields at once as a @scala[`Map[String, String]`]@java[`Map<String, String>`] mapping form field names to form field values. Data posted from [HTML Forms](http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4) is either of type `application/x-www-form-urlencoded` or of type `multipart/form-data`.
+Extracts all HTTP form fields at once as a @scala[`Map[String, String]`]@java[`Map<String, String>`] mapping form field names to form field values. Data posted from [HTML Forms](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4) is either of type `application/x-www-form-urlencoded` or of type `multipart/form-data`.
 
 If form data contain a field value several times, the map will contain the last one.
 
