@@ -99,6 +99,7 @@ private[http] object HttpServerBluePrint {
     override val shape: FlowShape[RequestOutput, HttpRequest] = FlowShape.of(in, out)
 
     override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
+      val remoteAddressOpt = inheritedAttributes.get[HttpAttributes.RemoteAddress].map(_.address)
 
       var downstreamPullWaiting = false
       var completionDeferred = false
@@ -122,7 +123,6 @@ private[http] object HttpServerBluePrint {
       override def onPush(): Unit = grab(in) match {
         case RequestStart(method, uri, protocol, hdrs, entityCreator, _, _) =>
           val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
-          lazy val remoteAddressOpt = inheritedAttributes.get[HttpAttributes.RemoteAddress].map(_.address)
 
           val effectiveHeaders =
             if (settings.remoteAddressHeader && remoteAddressOpt.isDefined)
