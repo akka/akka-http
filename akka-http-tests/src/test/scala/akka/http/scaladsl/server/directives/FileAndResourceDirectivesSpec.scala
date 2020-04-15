@@ -324,10 +324,10 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     val base = new File(getClass.getClassLoader.getResource("").toURI).getPath
     new File(base, "subDirectory/emptySub").mkdir()
     def eraseDateTime(s: String) = s.replaceAll("""\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d""", "xxxx-xx-xx xx:xx:xx")
-    implicit val settings = RoutingSettings.default.withRenderVanityFooter(false)
+    val settings = RoutingSettings.default.withRenderVanityFooter(false)
 
     "properly render a simple directory" in {
-      Get() ~> listDirectoryContents(base + "/someDir") ~> check {
+      Get() ~> withSettings(settings)(listDirectoryContents(base + "/someDir")) ~> check {
         eraseDateTime(responseAs[String]) shouldEqual prep {
           """<html>
             |<head><title>Index of /</title></head>
@@ -347,7 +347,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       }
     }
     "properly render a sub directory" in {
-      Get("/sub/") ~> listDirectoryContents(base + "/someDir") ~> check {
+      Get("/sub/") ~> withSettings(settings)(listDirectoryContents(base + "/someDir")) ~> check {
         eraseDateTime(responseAs[String]) shouldEqual prep {
           """<html>
             |<head><title>Index of /sub/</title></head>
@@ -366,7 +366,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       }
     }
     "properly render the union of several directories" in {
-      Get() ~> listDirectoryContents(base + "/someDir", base + "/subDirectory") ~> check {
+      Get() ~> withSettings(settings)(listDirectoryContents(base + "/someDir", base + "/subDirectory")) ~> check {
         eraseDateTime(responseAs[String]) shouldEqual prep {
           """<html>
             |<head><title>Index of /</title></head>
@@ -388,7 +388,6 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       }
     }
     "properly render an empty sub directory with vanity footer" in {
-      val settings = 0 // shadow implicit
       Get("/emptySub/") ~> listDirectoryContents(base + "/subDirectory") ~> check {
         eraseDateTime(responseAs[String]) shouldEqual prep {
           """<html>
@@ -410,7 +409,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       }
     }
     "properly render an empty top-level directory" in {
-      Get() ~> listDirectoryContents(base + "/subDirectory/emptySub") ~> check {
+      Get() ~> withSettings(settings)(listDirectoryContents(base + "/subDirectory/emptySub")) ~> check {
         eraseDateTime(responseAs[String]) shouldEqual prep {
           """<html>
             |<head><title>Index of /</title></head>
@@ -428,7 +427,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       }
     }
     "properly render a simple directory with a path prefix" in {
-      Get("/files/") ~> pathPrefix("files")(listDirectoryContents(base + "/someDir")) ~> check {
+      Get("/files/") ~> withSettings(settings)(pathPrefix("files")(listDirectoryContents(base + "/someDir"))) ~> check {
         eraseDateTime(responseAs[String]) shouldEqual prep {
           """<html>
             |<head><title>Index of /files/</title></head>
@@ -448,7 +447,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       }
     }
     "properly render a sub directory with a path prefix" in {
-      Get("/files/sub/") ~> pathPrefix("files")(listDirectoryContents(base + "/someDir")) ~> check {
+      Get("/files/sub/") ~> withSettings(settings)(pathPrefix("files")(listDirectoryContents(base + "/someDir"))) ~> check {
         eraseDateTime(responseAs[String]) shouldEqual prep {
           """<html>
             |<head><title>Index of /files/sub/</title></head>
@@ -467,7 +466,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       }
     }
     "properly render an empty top-level directory with a path prefix" in {
-      Get("/files/") ~> pathPrefix("files")(listDirectoryContents(base + "/subDirectory/emptySub")) ~> check {
+      Get("/files/") ~> withSettings(settings)(pathPrefix("files")(listDirectoryContents(base + "/subDirectory/emptySub"))) ~> check {
         eraseDateTime(responseAs[String]) shouldEqual prep {
           """<html>
             |<head><title>Index of /files/</title></head>

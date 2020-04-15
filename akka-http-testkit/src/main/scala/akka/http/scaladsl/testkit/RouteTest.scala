@@ -5,6 +5,7 @@
 package akka.http.scaladsl.testkit
 
 import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ Host, Upgrade, `Sec-WebSocket-Protocol` }
@@ -140,15 +141,15 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
     }
     implicit def injectIntoRoute(implicit
       timeout: RouteTestTimeout,
-                                 defaultHostInfo:  DefaultHostInfo,
-                                 routingSettings:  RoutingSettings,
-                                 executionContext: ExecutionContext,
-                                 materializer:     Materializer,
-                                 routingLog:       RoutingLog,
-                                 exceptionHandler: ExceptionHandler = null) =
+                                 defaultHostInfo: DefaultHostInfo,
+                                 system:          ClassicActorSystemProvider) =
       new TildeArrow[RequestContext, Future[RouteResult]] {
         type Out = RouteTestResult
         def apply(request: HttpRequest, route: Route): Out = {
+          implicit val executionContext: ExecutionContext = system.classicSystem.dispatcher
+          val routingSettings = RoutingSettings(system)
+          val routingLog = RoutingLog(system.classicSystem.log)
+
           val routeTestResult = new RouteTestResult(timeout.duration)
           val effectiveRequest =
             request.withEffectiveUri(
@@ -156,11 +157,7 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
               defaultHostHeader = defaultHostInfo.host)
           val ctx = new RequestContextImpl(effectiveRequest, routingLog.requestLog(effectiveRequest), routingSettings)
 
-          val sealedExceptionHandler = {
-            // Use special handler for test framework exceptions instead of swallowing them and returning 500 response
-            val updatedEH = if (exceptionHandler eq null) testExceptionHandler else exceptionHandler.withFallback(testExceptionHandler)
-            ExceptionHandler.seal(updatedEH)
-          }
+          val sealedExceptionHandler = ExceptionHandler.seal(testExceptionHandler)
 
           val semiSealedRoute = // sealed for exceptions but not for rejections
             Directives.handleExceptions(sealedExceptionHandler)(route)
