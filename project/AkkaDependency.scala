@@ -26,7 +26,11 @@ object AkkaDependency {
       case None =>
         Option(System.getProperty("akka.http.build.akka.version")) match {
           case Some("master") => Artifact(determineLatestSnapshot(), true)
-          case Some("release-2.5") => Artifact(determineLatestSnapshot("2.5"), true)
+          case Some("release-2.5") => 
+            // Don't 'downgrade' building even if akka.sources asks for it
+            // (typically for the docs that require 2.6)
+            if (defaultVersion.startsWith("2.5")) Artifact(determineLatestSnapshot("2.5"), true)
+            else Artifact(defaultVersion)
           case Some("default") => Artifact(defaultVersion)
           case Some(other) => Artifact(other, true)
           case None => Artifact(defaultVersion)
