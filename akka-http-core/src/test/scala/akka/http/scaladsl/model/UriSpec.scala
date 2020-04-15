@@ -533,6 +533,9 @@ class UriSpec extends AnyWordSpec with Matchers {
       Uri("http://:8000/foo") shouldEqual Uri("http", Authority(Host.Empty, 8000), Path / "foo")
       Uri("http://:80/foo") shouldEqual Uri("http", Authority(Host.Empty, 0), Path / "foo")
 
+      Uri("").query() shouldBe empty
+      Uri("").query().toMap shouldBe empty
+
       Uri("?").query() shouldBe empty
       Uri("?").query().toMap shouldBe empty
     }
