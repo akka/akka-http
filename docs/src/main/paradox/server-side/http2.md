@@ -45,7 +45,7 @@ Note that `bindAndHandle` currently does not support HTTP/2, you must use `bindA
 While un-encrypted connections are allowed by HTTP/2, this is [sometimes discouraged](https://http2.github.io/faq/#does-http2-require-encryption).
 
 There are 2 ways to implement un-encrypted HTTP/2 connections: by using the
-[HTTP Upgrade mechanism](http://httpwg.org/specs/rfc7540.html#discover-http)
+[HTTP Upgrade mechanism](https://httpwg.org/specs/rfc7540.html#discover-http)
 or by starting communication in HTTP/2 directly which requires the client to
 have [Prior Knowledge](https://httpwg.org/specs/rfc7540.html#known-http) of
 HTTP/2 support.
@@ -61,7 +61,7 @@ Java
 #### h2c Upgrade
 
 The advantage of switching from HTTP/1.1 to HTTP/2 using the
-[HTTP Upgrade mechanism](http://httpwg.org/specs/rfc7540.html#discover-http)
+[HTTP Upgrade mechanism](https://httpwg.org/specs/rfc7540.html#discover-http)
 is that both HTTP/1.1 and HTTP/2 clients can connect to the server on the
 same port, without being aware beforehand which protocol the server supports.
 
@@ -77,7 +77,7 @@ The other option is to connect and start communicating in HTTP/2 immediately.
 The downside of this approach is the client must know beforehand that the
 server supports HTTP/2.
 For the reason this approach is known as h2c with
-Prior Knowledge](http://httpwg.org/specs/rfc7540.html#known-http) of HTTP/2
+[Prior Knowledge](https://httpwg.org/specs/rfc7540.html#known-http) of HTTP/2
 support.
 
 ## Testing with cURL
@@ -130,7 +130,7 @@ This shows `curl` declaring it is ready to speak `h2` (the shorthand name of HTT
 
 [Application-Layer Protocol Negotiation (ALPN)](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation) is used to negotiate whether both client and server support HTTP/2.
 
-ALPN support comes with the JVM starting from version 9. If you're on a previous version of the JVM, you'll have to load a Java Agent to provide this functionality. We recommend the agent from the [Jetty](http://www.eclipse.org/jetty/) project, `jetty-alpn-agent`.
+ALPN support comes with the JVM starting from version 9. If you're on a previous version of the JVM, you'll have to load a Java Agent to provide this functionality. We recommend the agent from the [Jetty](https://www.eclipse.org/jetty/) project, `jetty-alpn-agent`.
 
 ### manually
 

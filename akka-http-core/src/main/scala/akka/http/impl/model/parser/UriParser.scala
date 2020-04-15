@@ -229,7 +229,7 @@ private[http] final class UriParser(
     clearSB() ~ oneOrMore(`query-char` ~ appendSB() | `pct-encoded`) ~ run(setRawQueryString(sb.toString)) | run(setRawQueryString(""))
   }
 
-  // http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1
+  // https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1
   def query: Rule1[Query] = {
     def part(`query-char`: CharPredicate) =
       rule(clearSBForDecoding() ~

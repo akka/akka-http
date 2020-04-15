@@ -14,7 +14,7 @@ Please subscribe to the [akka-security](https://groups.google.com/forum/#!forum/
 
 ## Severity
 
-The [CVSS](https://en.wikipedia.org/wiki/CVSS) score of this vulnerability is 6.4 (Medium), based on vector [AV:N/AC:L/Au:N/C:N/I:N/A:C/E:F/RL:OF/RC:C](https://nvd.nist.gov/cvss.cfm?calculator&version=2&vector=%28AV:N/AC:L/Au:N/C:N/I:N/A:C/E:F/RL:OF/RC:C%29).
+The [CVSS](https://en.wikipedia.org/wiki/CVSS) score of this vulnerability is 6.4 (Medium), based on vector [AV:N/AC:L/Au:N/C:N/I:N/A:C/E:F/RL:OF/RC:C](https://nvd.nist.gov/vuln-metrics/cvss/v2-calculator?calculator&version=2&vector=%28AV:N/AC:L/Au:N/C:N/I:N/A:C/E:F/RL:OF/RC:C%29).
 
 ## Affected Versions
 

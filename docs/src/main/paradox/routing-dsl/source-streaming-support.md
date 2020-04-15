@@ -37,7 +37,7 @@ Scala
 
 ## Responding with JSON Streams
 
-In this example we implement an API representing an infinite stream of tweets, very much like Twitter's [Streaming API](https://dev.twitter.com/streaming/overview).
+In this example we implement an API representing an infinite stream of tweets, very much like Twitter's [Streaming API](https://developer.twitter.com/en/docs).
 
 @@@ div { .group-scala }
 
@@ -132,7 +132,7 @@ the server and is feeding it with one line of measurement data.
 
 In this example, we want to consume this data in a streaming fashion from the request entity and also apply
 back pressure to the underlying TCP connection should the server be unable to cope with the rate of incoming data. Back pressure
-is automatically applied thanks to @extref[Akka Streams](akka-docs:scala/stream/index.html).
+is automatically applied thanks to @extref[Akka Streams](akka-docs:stream/index.html).
 
 Scala
 :   @@snip [JsonStreamingExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/JsonStreamingExamplesSpec.scala) { #measurement-model #measurement-format }
