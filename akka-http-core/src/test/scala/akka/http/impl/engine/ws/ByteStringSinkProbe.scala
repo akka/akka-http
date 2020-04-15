@@ -67,7 +67,13 @@ private[http] object ByteStringSinkProbe {
           inBuffer = inBuffer.drop(length)
           res
         } else {
-          inBuffer ++= probe.requestNext()
+          try inBuffer ++= probe.requestNext()
+          catch {
+            case ex if ex.getMessage.contains("Expected OnNext") =>
+              throw new AssertionError(
+                s"Expected [$length] bytes but only got [${inBuffer.size}] bytes\n${PrettyByteString.asPretty(inBuffer).prettyPrint(1024)}"
+              )
+          }
           expectBytes(length)
         }
 
