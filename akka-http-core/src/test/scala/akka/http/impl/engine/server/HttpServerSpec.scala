@@ -473,6 +473,7 @@ class HttpServerSpec extends AkkaSpec(
     })
 
     "not emit entities when responding to HEAD requests if transparent-head-requests is enabled (with Strict)" in assertAllStagesStopped(new TestSetup {
+      override def settings = super.settings.withTransparentHeadRequests(true)
       send("""HEAD / HTTP/1.1
              |Host: example.com
              |
@@ -495,6 +496,7 @@ class HttpServerSpec extends AkkaSpec(
     })
 
     "not emit entities when responding to HEAD requests if transparent-head-requests is enabled (with Default)" in assertAllStagesStopped(new TestSetup {
+      override def settings = super.settings.withTransparentHeadRequests(true)
       send("""HEAD / HTTP/1.1
              |Host: example.com
              |
@@ -520,6 +522,7 @@ class HttpServerSpec extends AkkaSpec(
     })
 
     "not emit entities when responding to HEAD requests if transparent-head-requests is enabled (with CloseDelimited)" in assertAllStagesStopped(new TestSetup {
+      override def settings = super.settings.withTransparentHeadRequests(true)
       send("""HEAD / HTTP/1.1
              |Host: example.com
              |
@@ -546,6 +549,7 @@ class HttpServerSpec extends AkkaSpec(
     })
 
     "not emit entities when responding to HEAD requests if transparent-head-requests is enabled (with Chunked)" in assertAllStagesStopped(new TestSetup {
+      override def settings = super.settings.withTransparentHeadRequests(true)
       send("""HEAD / HTTP/1.1
              |Host: example.com
              |
@@ -571,6 +575,7 @@ class HttpServerSpec extends AkkaSpec(
     })
 
     "respect Connection headers of HEAD requests if transparent-head-requests is enabled" in assertAllStagesStopped(new TestSetup {
+      override def settings = ServerSettings(system).withTransparentHeadRequests(true)
       send("""HEAD / HTTP/1.1
              |Host: example.com
              |Connection: close
