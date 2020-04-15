@@ -317,7 +317,7 @@ class UriSpec extends AnyWordSpec with Matchers {
       //query component "a=b" is parsed into parameter name: "a", and value: "b"
       strict("a=b") shouldEqual ("a", "b") +: Query.Empty
 
-      strict("") shouldEqual ("", "") +: Query.Empty
+      strict("") shouldEqual Query.Empty
       strict("a") shouldEqual ("a", "") +: Query.Empty
       strict("a=") shouldEqual ("a", "") +: Query.Empty
       strict("a=+") shouldEqual ("a", " ") +: Query.Empty //'+' is parsed to ' '
@@ -385,7 +385,7 @@ class UriSpec extends AnyWordSpec with Matchers {
       def relaxed(queryString: String): Query = Query(queryString, mode = Uri.ParsingMode.Relaxed)
       //#query-relaxed-mode
 
-      relaxed("") shouldEqual ("", "") +: Query.Empty
+      relaxed("") shouldEqual Query.Empty
       relaxed("a") shouldEqual ("a", "") +: Query.Empty
       relaxed("a=") shouldEqual ("a", "") +: Query.Empty
       relaxed("a=+") shouldEqual ("a", " ") +: Query.Empty
@@ -532,6 +532,12 @@ class UriSpec extends AnyWordSpec with Matchers {
       // empty host
       Uri("http://:8000/foo") shouldEqual Uri("http", Authority(Host.Empty, 8000), Path / "foo")
       Uri("http://:80/foo") shouldEqual Uri("http", Authority(Host.Empty, 0), Path / "foo")
+
+      Uri("").query() shouldBe empty
+      Uri("").query().toMap shouldBe empty
+
+      Uri("?").query() shouldBe empty
+      Uri("?").query().toMap shouldBe empty
     }
 
     "properly complete a normalization cycle" in {
