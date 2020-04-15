@@ -1080,7 +1080,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
         pollForWindowUpdates(duration)
       } catch {
-        case e: AssertionError if e.getMessage contains "Expected OnNext(_), yet no element signaled during" =>
+        case e: AssertionError if e.getMessage contains "but only got [0] bytes" =>
         // timeout, that's expected
         case e: AssertionError if (e.getMessage contains "block took") && (e.getMessage contains "exceeding") =>
           // pause like GC, poll again just to be sure
