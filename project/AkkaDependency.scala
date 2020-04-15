@@ -14,7 +14,7 @@ object AkkaDependency {
     // so 'x.y', 'x.y.z', 'current' or 'snapshot'
     def link: String
   }
-  case class Artifact(version: String) extends Akka {
+  case class Artifact(version: String, isSnapshot: Boolean = false) extends Akka {
     override def link = VersionNumber(version) match { case VersionNumber(Seq(x, y, _*), _, _) => s"$x.$y" }
   }
   case class Sources(uri: String, link: String = "current") extends Akka
@@ -25,20 +25,21 @@ object AkkaDependency {
         Sources(akkaSources)
       case None =>
         Option(System.getProperty("akka.http.build.akka.version")) match {
-          case Some("master") => Sources("git://github.com/akka/akka.git#master", "snapshot")
-          case Some("release-2.5") => Sources("git://github.com/akka/akka.git#release-2.5", "2.5")
+          case Some("master") => Artifact(determineLatestSnapshot(), true)
+          case Some("release-2.5") => Artifact(determineLatestSnapshot("2.5"), true)
           case Some("default") => Artifact(defaultVersion)
-          case Some(other) => Artifact(other)
+          case Some(other) => Artifact(other, true)
           case None => Artifact(defaultVersion)
         }
     }
   }
+
   // Default version updated only when needed, https://doc.akka.io//docs/akka/current/project/downstream-upgrade-strategy.html
   val default = akkaDependency(defaultVersion = "2.5.31")
   val docs = akkaDependency(defaultVersion = "2.6.4")
 
   val akkaVersion: String = default match {
-    case Artifact(version) => version
+    case Artifact(version, _) => version
     case Sources(uri, _) => uri
   }
 
@@ -60,15 +61,28 @@ object AkkaDependency {
               else moduleRef % config
 
             project.dependsOn(withConfig)
-          case Artifact(akkaVersion) =>
-            project.settings(libraryDependencies += {
-              if (config == "")
-                "com.typesafe.akka" %% module % akkaVersion
-              else
-                "com.typesafe.akka" %% module % akkaVersion % config
-            })
+          case Artifact(akkaVersion, akkaSnapshot) =>
+            project.settings(
+              libraryDependencies += {
+                if (config == "")
+                  "com.typesafe.akka" %% module % akkaVersion
+                else
+                  "com.typesafe.akka" %% module % akkaVersion % config
+              },
+              resolvers ++= (if (akkaSnapshot) Seq("Akka Snapshots" at "https://repo.akka.io/snapshots") else Nil)
+            )
         }
       }
       else project // return unchanged
+  }
+
+  private def determineLatestSnapshot(prefix: String = ""): String = {
+    import sbt.librarymanagement.Http.http
+    import gigahorse.GigahorseSupport.url
+    import scala.concurrent.Await
+    import scala.concurrent.duration._
+
+    val body = Await.result(http.run(url("https://repo.akka.io/snapshots/com/typesafe/akka/akka-actor_2.12/")), 10.seconds).bodyAsString
+    """href="([^?/].*?)/"""".r.findAllMatchIn(body).map(_.group(1)).filter(_.startsWith(prefix)).toList.last
   }
 }
