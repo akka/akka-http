@@ -134,7 +134,7 @@ private[http] object HttpServerBluePrint {
 
           val effectiveHttpRequest = if (settings.remoteAddressAttribute) {
             remoteAddressOpt.fold(httpRequest) { remoteAddress =>
-              httpRequest.addAttribute[RemoteAddress](AttributeKeys.remoteAddress, RemoteAddress(remoteAddress))
+              httpRequest.addAttribute(AttributeKeys.remoteAddress, RemoteAddress(remoteAddress))
             }
           } else httpRequest
 
