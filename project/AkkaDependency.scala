@@ -9,9 +9,15 @@ import Keys._
 
 object AkkaDependency {
 
-  sealed trait Akka
-  case class Artifact(version: String) extends Akka
-  case class Sources(uri: String) extends Akka
+  sealed trait Akka {
+    // The version to use in api/japi/docs links,
+    // so 'x.y', 'x.y.z', 'current' or 'snapshot'
+    def link: String
+  }
+  case class Artifact(version: String) extends Akka {
+    override def link = VersionNumber(version) match { case VersionNumber(Seq(x, y, _*), _, _) => s"$x.$y" }
+  }
+  case class Sources(uri: String, link: String = "current") extends Akka
 
   def akkaDependency(defaultVersion: String): Akka = {
     Option(System.getProperty("akka.sources")) match {
@@ -19,8 +25,8 @@ object AkkaDependency {
         Sources(akkaSources)
       case None =>
         Option(System.getProperty("akka.http.build.akka.version")) match {
-          case Some("master") => Sources("git://github.com/akka/akka.git#master")
-          case Some("release-2.5") => Sources("git://github.com/akka/akka.git#release-2.5")
+          case Some("master") => Sources("git://github.com/akka/akka.git#master", "snapshot")
+          case Some("release-2.5") => Sources("git://github.com/akka/akka.git#release-2.5", "2.5")
           case Some("default") => Artifact(defaultVersion)
           case Some(other) => Artifact(other)
           case None => Artifact(defaultVersion)
@@ -33,7 +39,7 @@ object AkkaDependency {
 
   val akkaVersion: String = default match {
     case Artifact(version) => version
-    case Sources(uri) => uri
+    case Sources(uri, _) => uri
   }
 
   implicit class RichProject(project: Project) {
@@ -44,7 +50,7 @@ object AkkaDependency {
                                 onlyIf: Boolean = true): Project =
       if (onlyIf) {
         akka match {
-          case Sources(sources) =>
+          case Sources(sources, _) =>
             // as a little hacky side effect also disable aggregation of samples
             System.setProperty("akka.build.aggregateSamples", "false")
 
