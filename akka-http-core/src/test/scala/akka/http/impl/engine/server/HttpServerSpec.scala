@@ -920,6 +920,35 @@ class HttpServerSpec extends AkkaSpec(
       netOut.expectComplete()
     })
 
+    "not leak stages when network fails while streaming response" in assertAllStagesStopped(new TestSetup {
+      send("""GET / HTTP/1.1
+             |Host: example.com
+             |
+             |""")
+
+      expectRequest()
+      val dataOut = TestPublisher.probe[ByteString]()
+      val entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(dataOut))
+      responses.sendNext(HttpResponse(entity = entity))
+
+      expectResponseWithWipedDate(
+        """HTTP/1.1 200 OK
+          |Server: akka-http/test
+          |Date: XXXX
+          |Transfer-Encoding: chunked
+          |Content-Type: application/octet-stream
+          |
+          |""")
+
+      dataOut.sendNext(ByteString("hello "))
+      netOut.expectUtf8EncodedString("6\r\nhello \r\n")
+
+      dataOut.sendNext(ByteString("world"))
+      netOut.expectUtf8EncodedString("5\r\nworld\r\n")
+
+      netIn.sendError(new RuntimeException("network error"))
+    })
+
     "deliver a request with a non-RFC3986 request-target" in assertAllStagesStopped(new TestSetup {
       send("""GET //foo HTTP/1.1
              |Host: example.com
