@@ -62,17 +62,17 @@ class CachingDirectivesSpec extends AnyWordSpec with Matchers with ScalatestRout
 
     "be transparent to exceptions thrown from its inner route" in {
       case object MyException extends SingletonException
-      implicit val myExceptionHandler = ExceptionHandler {
+      val myExceptionHandler = ExceptionHandler {
         case MyException => complete("Good")
       }
 
-      Get() ~> cache(routeCache, simpleKeyer) {
+      Get() ~> handleExceptions(myExceptionHandler)(cache(routeCache, simpleKeyer) {
         _ => throw MyException // thrown directly
-      } ~> check { responseAs[String] shouldEqual "Good" }
+      }) ~> check { responseAs[String] shouldEqual "Good" }
 
-      Get() ~> cache(routeCache, simpleKeyer) {
+      Get() ~> handleExceptions(myExceptionHandler)(cache(routeCache, simpleKeyer) {
         _.fail(MyException) // bubbling up
-      } ~> check { responseAs[String] shouldEqual "Good" }
+      }) ~> check { responseAs[String] shouldEqual "Good" }
     }
   }
 

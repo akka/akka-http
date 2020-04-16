@@ -92,9 +92,9 @@ class Specs2RouteTestSpec extends Specification with Specs2RouteTest {
         throw new RuntimeException("BOOM")
       }
 
-      Get() ~> route ~> check {
+      Get().~>(route).~>(check {
         status shouldEqual InternalServerError
-      }
+      })
     }
   }
 }
