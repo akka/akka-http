@@ -43,4 +43,13 @@ public class HttpMessageTest extends JUnitSuite {
         assertEquals(otherString, smaller.getAttribute(otherStringKey).get());
         assertFalse(smaller.getAttribute(intKey).isPresent());
     }
+
+    @Test
+    public void testAttributeKeys() {
+        HttpRequest request = HttpRequest.create();
+        RemoteAddress remoteAddress = RemoteAddress.create(new byte[]{10,0,0,1});
+        HttpRequest newRequest = request.addAttribute(AttributeKeys.remoteAddress, remoteAddress);
+
+        assert(newRequest.getAttribute(AttributeKeys.remoteAddress).get().equals(remoteAddress));
+    }
 }

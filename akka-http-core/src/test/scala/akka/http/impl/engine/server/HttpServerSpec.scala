@@ -1018,6 +1018,31 @@ class HttpServerSpec extends AkkaSpec(
       shutdownBlueprint()
     })
 
+    "support remote-address-attribute" in assertAllStagesStopped(new TestSetup {
+      lazy val theAddress = InetAddress.getByName("127.5.2.1")
+
+      override def settings: ServerSettings = super.settings.withRemoteAddressAttribute(true)
+
+      override def modifyServer(server: ServerLayer): ServerLayer = {
+        BidiFlow.fromGraph(server.withAttributes(
+          HttpAttributes.remoteAddress(new InetSocketAddress(theAddress, 8080))
+        ))
+      }
+
+      send(
+        """GET / HTTP/1.1
+            |Host: example.com
+            |X-Forwarded-For: 123.123.123.123
+            |X-Real-Ip: 123.123.123.123
+            |Remote-Address: 123.123.123.123
+            |
+            |""".stripMarginWithNewline("\r\n"))
+
+      val request = expectRequest()
+      request.attributes(AttributeKeys.remoteAddress) should equal(RemoteAddress(theAddress, Some(8080)))
+      shutdownBlueprint()
+    })
+
     "don't leak stages when connection is closed for request" which {
       "uses GET method with an unread empty chunked entity" in assertAllStagesStopped(new TestSetup {
         send("""GET / HTTP/1.1

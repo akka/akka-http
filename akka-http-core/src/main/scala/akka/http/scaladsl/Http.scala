@@ -1134,7 +1134,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
 
   @InternalApi
   private[akka] def prepareAttributes(settings: ServerSettings, incoming: Tcp.IncomingConnection) =
-    if (settings.remoteAddressHeader) HttpAttributes.remoteAddress(incoming.remoteAddress)
+    if (settings.remoteAddressHeader || settings.remoteAddressAttribute) HttpAttributes.remoteAddress(incoming.remoteAddress)
     else HttpAttributes.empty
 
   @InternalApi

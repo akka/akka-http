@@ -1,0 +1,6 @@
+# add remoteAddressAttribute to @DoNotInherit akka.http.scaladsl.settings.ServerSettings
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ServerSettings.remoteAddressAttribute")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.settings.ServerSettingsImpl.unapply")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.ServerSettingsImpl.*")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ServerSettingsImpl.*")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ServerSettings.getRemoteAddressAttribute")
