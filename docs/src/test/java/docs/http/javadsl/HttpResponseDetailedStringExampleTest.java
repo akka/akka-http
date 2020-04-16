@@ -46,8 +46,7 @@ public class HttpResponseDetailedStringExampleTest {
 
         // ... while default `toString` doesn't.
         assertFalse(httpResponseWithHeadersAndBody.toString().contains(piiHeader.toString()));
-        // TODO: Uncomment once https://github.com/akka/akka-http/pull/2737 gets merged
-        // assertFalse(httpResponseWithHeadersAndBody.toString().contains(piiBody.toString()));
+        assertFalse(httpResponseWithHeadersAndBody.toString().contains(piiBody.getData().utf8String()));
 
     }
 
