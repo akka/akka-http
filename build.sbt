@@ -138,7 +138,6 @@ lazy val httpCore = project("akka-http-core")
   .settings(AutomaticModuleName.settings("akka.http.core"))
   .dependsOn(parsing)
   .addAkkaModuleDependency("akka-stream", "provided")
-  .addAkkaModuleDependency("akka-discovery", "provided")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
   .addAkkaModuleDependency(
     "akka-stream-testkit",
@@ -156,6 +155,7 @@ lazy val http = project("akka-http")
   .settings(AutomaticModuleName.settings("akka.http"))
   .dependsOn(httpCore)
   .addAkkaModuleDependency("akka-stream", "provided")
+  .addAkkaModuleDependency("akka-discovery", "provided")
   .settings(Dependencies.http)
   .settings(
     scalacOptions in Compile += "-language:_"
@@ -240,6 +240,7 @@ lazy val httpTests = project("akka-http-tests")
   .settings(headerSettings(MultiJvm))
   .settings(additionalTasks in ValidatePR += headerCheck in MultiJvm)
   .addAkkaModuleDependency("akka-stream", "provided")
+  .addAkkaModuleDependency("akka-discovery", "provided")
   .addAkkaModuleDependency("akka-multi-node-testkit", "test")
 
 lazy val httpJmhBench = project("akka-http-bench-jmh")

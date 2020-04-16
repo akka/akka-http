@@ -20,6 +20,7 @@ patch versions. However, binary compatibility will attempted to be kept as much 
 
 Scala
 :   ```scala
+    akka.http.scaladsl.client.DiscoveryClientTransport
     akka.http.scaladsl.server.directives.FileUploadDirectives#storeUploadedFile
     akka.http.scaladsl.server.directives.FileUploadDirectives#storeUploadedFiles
     akka.http.scaladsl.server.directives.FileUploadDirectives#fileUploadAll

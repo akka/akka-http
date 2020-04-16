@@ -2,7 +2,7 @@
  * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.http.scaladsl
+package akka.http.scaladsl.client
 
 import java.net.InetSocketAddress
 
@@ -12,13 +12,14 @@ import akka.discovery.ServiceDiscovery
 import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.settings.ClientConnectionSettings
-import akka.stream.{ AbruptStageTerminationException, Attributes, FlowShape, Inlet, Outlet }
-import akka.stream.scaladsl.{ Flow, Keep, Source, Tcp }
-import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler }
-import akka.util.{ ByteString, OptionVal }
+import akka.http.scaladsl.{ClientTransport, Http}
+import akka.stream.scaladsl.{Flow, Keep, Source, Tcp}
+import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler}
+import akka.stream._
+import akka.util.{ByteString, OptionVal}
 
-import scala.concurrent.{ Future, Promise }
-import scala.util.{ Failure, Success, Try }
+import scala.concurrent.{Future, Promise}
+import scala.util.{Failure, Success, Try}
 
 @ApiMayChange
 class DiscoveryClientTransport(discovery: ServiceDiscovery) extends ClientTransport {
