@@ -12,14 +12,14 @@ import akka.discovery.ServiceDiscovery
 import akka.dispatch.ExecutionContexts
 import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.settings.ClientConnectionSettings
-import akka.http.scaladsl.{ClientTransport, Http}
-import akka.stream.scaladsl.{Flow, Keep, Source, Tcp}
-import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler}
+import akka.http.scaladsl.{ ClientTransport, Http }
+import akka.stream.scaladsl.{ Flow, Keep, Source, Tcp }
+import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler }
 import akka.stream._
-import akka.util.{ByteString, OptionVal}
+import akka.util.{ ByteString, OptionVal }
 
-import scala.concurrent.{Future, Promise}
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.{ Future, Promise }
+import scala.util.{ Failure, Success, Try }
 
 @ApiMayChange
 class DiscoveryClientTransport(discovery: ServiceDiscovery) extends ClientTransport {
@@ -155,11 +155,11 @@ class DiscoveryClientTransport(discovery: ServiceDiscovery) extends ClientTransp
               }
               if (Initializing.downstreamFinished) subSink.cancel()
               else {
-                  //todo: should this be invoked before and independently of checking downstreamCause?
-                  // in most case if downstream pulls and then closes, the pull is 'lost'. is it possible for some flows to actually care about this? (non-eager broadcast?)
-                  if (isAvailable(out)) {
-                    subSink.pull()
-                  }
+                //todo: should this be invoked before and independently of checking downstreamCause?
+                // in most case if downstream pulls and then closes, the pull is 'lost'. is it possible for some flows to actually care about this? (non-eager broadcast?)
+                if (isAvailable(out)) {
+                  subSink.pull()
+                }
               }
             case Failure(ex) =>
               innerMatValue.failure(new IllegalStateException("Never materialized", ex))

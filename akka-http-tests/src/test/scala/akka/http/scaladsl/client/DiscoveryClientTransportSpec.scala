@@ -10,7 +10,7 @@ import akka.discovery.{ Lookup, ServiceDiscovery }
 import akka.discovery.ServiceDiscovery.{ Resolved, ResolvedTarget }
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.settings.{ClientConnectionSettings, ConnectionPoolSettings}
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings }
 import akka.testkit.AkkaSpec
 
 import scala.concurrent.Future
