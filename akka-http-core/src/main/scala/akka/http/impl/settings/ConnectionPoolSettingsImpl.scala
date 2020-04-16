@@ -28,8 +28,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   idleTimeout:                       Duration,
   connectionSettings:                ClientConnectionSettings,
   responseEntitySubscriptionTimeout: Duration,
-  hostOverrides:                     immutable.Seq[(Regex, ConnectionPoolSettings)],
-  hostOverrideImpl:                  HostOverride)
+  hostOverrides:                     immutable.Seq[(Regex, ConnectionPoolSettings)])
   extends ConnectionPoolSettings {
 
   require(maxConnections > 0, "max-connections must be > 0")
@@ -73,7 +72,6 @@ private[akka] final case class ConnectionPoolSettingsImpl(
     maxConnectionBackoff:              FiniteDuration                                   = maxConnectionBackoff,
     idleTimeout:                       Duration                                         = idleTimeout,
     connectionSettings:                ClientConnectionSettings                         = connectionSettings,
-    poolImplementation:                PoolImplementation                               = poolImplementation,
     responseEntitySubscriptionTimeout: Duration                                         = responseEntitySubscriptionTimeout): ConnectionPoolSettings =
     copy(
       maxConnections,
@@ -86,7 +84,6 @@ private[akka] final case class ConnectionPoolSettingsImpl(
       maxConnectionBackoff,
       idleTimeout,
       connectionSettings,
-      poolImplementation,
       responseEntitySubscriptionTimeout,
       hostOverrides = hostOverrides.map { case (k, v) => k -> mapHostOverrides(v) })
 
@@ -134,9 +131,8 @@ private[akka] object ConnectionPoolSettingsImpl extends SettingsCompanionImpl[Co
       c.getFiniteDuration("max-connection-backoff"),
       c.getPotentiallyInfiniteDuration("idle-timeout"),
       ClientConnectionSettingsImpl.fromSubConfig(root, c.getConfig("client")),
-      c.getPotentiallyInfiniteDuration("response-entity-subscription-timeout"),
-      List.empty,
-      NoOpHostOverride
+      c getPotentiallyInfiniteDuration "response-entity-subscription-timeout",
+      List.empty
     )
   }
 

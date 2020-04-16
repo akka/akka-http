@@ -38,9 +38,8 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
    * by the default connection pool in the Http extension, so user supplied connection pools will
    * never have any overrides, so will always use the object passed explicitly
    */
-  private[akka] def forHost(h: String): ConnectionPoolSettings = {
-    hostOverrideImpl.apply(h, this)
-  }
+  private[akka] def forHost(host: String): ConnectionPoolSettings =
+    hostOverrides.find(_._1.pattern.matcher(host).matches()).map(_._2).getOrElse(this)
 
   /**
    * The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used.
@@ -106,7 +105,7 @@ object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] 
   /**
    * Builds `ConnectionPoolSettings` that have the host specific overrides populated from config
    *
-   * This is the ONLY place that a connection pool object can be created that has the abililty to be configured per
+   * This is the ONLY place that a connection pool object can be created that has the ability to be configured per
    * host, and it's ONLY used by `HttpExt.defaultConnectionPoolSettings`. The intent is NOT to let users define or use
    * this, or even for akka internally to use this. Think of this more like a placeholder for the
    * `defaultConnectionPoolSettings` provided in the `HttpExt.singleRequest` and other client methods instead of breaking
@@ -114,7 +113,7 @@ object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] 
    *
    */
   @ApiMayChange
-  def withOverrides(config: Config, overrideImpl: HostOverride = DefaultHostOverride): ConnectionPoolSettings = {
+  def withOverrides(config: Config): ConnectionPoolSettings = {
     import scala.collection.JavaConverters._
 
     val configOverrides = config.getConfigList("akka.http.host-connection-pool.per-host-override").asScala.toList.flatMap { cfg =>
@@ -124,7 +123,7 @@ object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] 
       }
     }
 
-    ConnectionPoolSettingsImpl(config).copy(hostOverrides = configOverrides, hostOverrideImpl = overrideImpl)
+    ConnectionPoolSettingsImpl(config).copy(hostOverrides = configOverrides)
   }
 
   override def apply(configOverrides: String) = ConnectionPoolSettingsImpl(configOverrides)
