@@ -138,6 +138,7 @@ lazy val httpCore = project("akka-http-core")
   .settings(AutomaticModuleName.settings("akka.http.core"))
   .dependsOn(parsing)
   .addAkkaModuleDependency("akka-stream", "provided")
+  .addAkkaModuleDependency("akka-discovery", "provided")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
   .addAkkaModuleDependency(
     "akka-stream-testkit",
