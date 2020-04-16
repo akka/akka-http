@@ -15,15 +15,13 @@ the `RejectionHandler`/`ExceptionHandler` to use.
 
 This has been simplified to use system defaults instead:
 
-* To set Routing or Parser settings, set them in your actor system configuration, e.g. via `application.conf`
+* To set Routing or Parser settings, set them in your actor system configuration, e.g. via `application.conf`. In the rare case where you'd like to test routes with different @apidoc[RoutingSettings] within the same test, you can use the @ref[withSettings](../routing-dsl/directives/basic-directives/withSettings.md) directive.
 * To apply a custom @apidoc[http.*.RejectionHandler] or @apidoc[ExceptionHandler], use the @ref[handleRejections](../routing-dsl/directives/execution-directives/handleRejections.md) and @ref[handleExceptions](../routing-dsl/directives/execution-directives/handleExceptions.md) directives
 
 #### In RouteTest
 
 Similarly, @apidoc[RouteTest] no longer automatically picks up such implicit values, and you
-can use the same approach to explicitly set those instead. In the rare case where you'd like
-to test routes with different @apidoc[RoutingSettings] within the same test, you can use the
-@ref[withSettings](../routing-dsl/directives/basic-directives/withSettings.md) directive.
+can use the same approach to explicitly set them instead.
 
 ### Strict query strings
 
