@@ -103,6 +103,11 @@ class DiscoveryClientTransport(discovery: ServiceDiscovery) extends ClientTransp
           //will later be propagated to the materialized flow (by examining isAvailable(out))
           override def onPull(): Unit = {}
 
+          var downstreamFinished: Boolean = false
+          override def onDownstreamFinish(): Unit = {
+            downstreamFinished = true
+          }
+
           def onFuture(futureRes: Try[Flow[In, Out, M]]) = futureRes match {
             case Failure(exception) =>
               setKeepGoing(false)
@@ -147,10 +152,13 @@ class DiscoveryClientTransport(discovery: ServiceDiscovery) extends ClientTransp
                   if (isClosed(in))
                     subSource.complete()
               }
-              //todo: should this be invoked before and independently of checking downstreamCause?
-              // in most case if downstream pulls and then closes, the pull is 'lost'. is it possible for some flows to actually care about this? (non-eager broadcast?)
-              if (isAvailable(out)) {
-                subSink.pull()
+              if (Initializing.downstreamFinished) subSink.cancel()
+              else {
+                  //todo: should this be invoked before and independently of checking downstreamCause?
+                  // in most case if downstream pulls and then closes, the pull is 'lost'. is it possible for some flows to actually care about this? (non-eager broadcast?)
+                  if (isAvailable(out)) {
+                    subSink.pull()
+                  }
               }
             case Failure(ex) =>
               innerMatValue.failure(new IllegalStateException("Never materialized", ex))
