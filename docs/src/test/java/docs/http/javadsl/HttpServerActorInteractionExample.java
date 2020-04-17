@@ -4,7 +4,7 @@
 
 package docs.http.javadsl;
 
-//#actor-interaction
+// #actor-interaction
 import akka.NotUsed;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -45,19 +45,20 @@ public class HttpServerActorInteractionExample extends AllDirectives {
     final Http http = Http.get(system);
     final ActorMaterializer materializer = ActorMaterializer.create(system);
 
-    //In order to access all directives we need an instance where the routes are define.
+    // In order to access all directives we need an instance where the routes are define.
     HttpServerActorInteractionExample app = new HttpServerActorInteractionExample(system);
 
-    final Flow<HttpRequest, HttpResponse, NotUsed> routeFlow = app.createRoute().flow(system, materializer);
-    final CompletionStage<ServerBinding> binding = http.bindAndHandle(routeFlow,
-      ConnectHttp.toHost("localhost", 8080), materializer);
+    final Flow<HttpRequest, HttpResponse, NotUsed> routeFlow =
+        app.createRoute().flow(system, materializer);
+    final CompletionStage<ServerBinding> binding =
+        http.bindAndHandle(routeFlow, ConnectHttp.toHost("localhost", 8080), materializer);
 
     System.out.println("Server online at http://localhost:8080/\nPress RETURN to stop...");
     System.in.read(); // let it run until user presses return
 
     binding
-      .thenCompose(ServerBinding::unbind) // trigger unbinding from the port
-      .thenAccept(unbound -> system.terminate()); // and shutdown when done
+        .thenCompose(ServerBinding::unbind) // trigger unbinding from the port
+        .thenAccept(unbound -> system.terminate()); // and shutdown when done
   }
 
   private HttpServerActorInteractionExample(final ActorSystem system) {
@@ -66,21 +67,32 @@ public class HttpServerActorInteractionExample extends AllDirectives {
 
   private Route createRoute() {
     return concat(
-      path("auction", () -> concat(
-        put(() ->
-          parameter(StringUnmarshallers.INTEGER, "bid", bid ->
-            parameter("user", user -> {
-              // place a bid, fire-and-forget
-              auction.tell(new Bid(user, bid), ActorRef.noSender());
-              return complete(StatusCodes.ACCEPTED, "bid placed");
-            })
-          )),
-        get(() -> {
-          final Timeout timeout = Timeout.durationToTimeout(FiniteDuration.apply(5, TimeUnit.SECONDS));
-          // query the actor for the current auction state
-          CompletionStage<Bids> bids = ask(auction, new GetBids(), timeout).thenApply((Bids.class::cast));
-          return completeOKWithFuture(bids, Jackson.marshaller());
-        }))));
+        path(
+            "auction",
+            () ->
+                concat(
+                    put(
+                        () ->
+                            parameter(
+                                StringUnmarshallers.INTEGER,
+                                "bid",
+                                bid ->
+                                    parameter(
+                                        "user",
+                                        user -> {
+                                          // place a bid, fire-and-forget
+                                          auction.tell(new Bid(user, bid), ActorRef.noSender());
+                                          return complete(StatusCodes.ACCEPTED, "bid placed");
+                                        }))),
+                    get(
+                        () -> {
+                          final Timeout timeout =
+                              Timeout.durationToTimeout(FiniteDuration.apply(5, TimeUnit.SECONDS));
+                          // query the actor for the current auction state
+                          CompletionStage<Bids> bids =
+                              ask(auction, new GetBids(), timeout).thenApply((Bids.class::cast));
+                          return completeOKWithFuture(bids, Jackson.marshaller());
+                        }))));
   }
 
   static class Bid {
@@ -93,9 +105,7 @@ public class HttpServerActorInteractionExample extends AllDirectives {
     }
   }
 
-  static class GetBids {
-
-  }
+  static class GetBids {}
 
   static class Bids {
     public final List<Bid> bids;
@@ -118,16 +128,20 @@ public class HttpServerActorInteractionExample extends AllDirectives {
     @Override
     public Receive createReceive() {
       return receiveBuilder()
-        .match(HttpServerActorInteractionExample.Bid.class, bid -> {
-          bids.add(bid);
-          log.info("Bid complete: {}, {}", bid.userId, bid.offer);
-        })
-        .match(HttpServerActorInteractionExample.GetBids.class, m -> {
-          sender().tell(new HttpServerActorInteractionExample.Bids(bids), self());
-        })
-        .matchAny(o -> log.info("Invalid message"))
-        .build();
+          .match(
+              HttpServerActorInteractionExample.Bid.class,
+              bid -> {
+                bids.add(bid);
+                log.info("Bid complete: {}, {}", bid.userId, bid.offer);
+              })
+          .match(
+              HttpServerActorInteractionExample.GetBids.class,
+              m -> {
+                sender().tell(new HttpServerActorInteractionExample.Bids(bids), self());
+              })
+          .matchAny(o -> log.info("Invalid message"))
+          .build();
     }
   }
 }
-//#actor-interaction
+// #actor-interaction

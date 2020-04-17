@@ -19,144 +19,130 @@ import java.util.Map.Entry;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-//#formField
+// #formField
 import akka.http.javadsl.server.Directives;
 
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.formField;
 
-//#formField
+// #formField
 
-//#formFieldMap
+// #formFieldMap
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.formFieldMap;
 
-//#formFieldMap
-//#formFieldList
+// #formFieldMap
+// #formFieldList
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.formFieldList;
 
-//#formFieldList
-//#formFieldMultiMap
+// #formFieldList
+// #formFieldMultiMap
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.formFieldMultiMap;
 
-//#formFieldMultiMap
+// #formFieldMultiMap
 
 public class FormFieldDirectivesExamplesTest extends JUnitRouteTest {
 
   @Test
   public void testFormField() {
-    //#formField
-    final Route route = Directives.concat(
-      formField("color", color ->
-        complete("The color is '" + color + "'")
-      ),
-      formField(StringUnmarshallers.INTEGER, "id", id ->
-        complete("The id is '" + id + "'")
-      )
-    );
+    // #formField
+    final Route route =
+        Directives.concat(
+            formField("color", color -> complete("The color is '" + color + "'")),
+            formField(StringUnmarshallers.INTEGER, "id", id -> complete("The id is '" + id + "'")));
 
     // tests:
     final FormData formData = FormData.create(Pair.create("color", "blue"));
-    testRoute(route).run(HttpRequest.POST("/").withEntity(formData.toEntity()))
-      .assertEntity("The color is 'blue'");
+    testRoute(route)
+        .run(HttpRequest.POST("/").withEntity(formData.toEntity()))
+        .assertEntity("The color is 'blue'");
 
-    testRoute(route).run(HttpRequest.GET("/"))
-      .assertStatusCode(StatusCodes.BAD_REQUEST)
-      .assertEntity("Request is missing required form field 'color'");
-    //#formField
+    testRoute(route)
+        .run(HttpRequest.GET("/"))
+        .assertStatusCode(StatusCodes.BAD_REQUEST)
+        .assertEntity("Request is missing required form field 'color'");
+    // #formField
   }
 
   @Test
   public void testFormFieldMap() {
-    //#formFieldMap
-    final Function<Map<String, String>, String> mapToString = map ->
-      map.entrySet()
-        .stream()
-        .map(e -> e.getKey() + " = '" + e.getValue() +"'")
-        .collect(Collectors.joining(", "));
+    // #formFieldMap
+    final Function<Map<String, String>, String> mapToString =
+        map ->
+            map.entrySet().stream()
+                .map(e -> e.getKey() + " = '" + e.getValue() + "'")
+                .collect(Collectors.joining(", "));
 
-
-    final Route route = formFieldMap(fields ->
-      complete("The form fields are " + mapToString.apply(fields))
-    );
+    final Route route =
+        formFieldMap(fields -> complete("The form fields are " + mapToString.apply(fields)));
 
     // tests:
     final FormData formDataDiffKey =
-      FormData.create(
-        Pair.create("color", "blue"),
-        Pair.create("count", "42"));
-    testRoute(route).run(HttpRequest.POST("/").withEntity(formDataDiffKey.toEntity()))
-      .assertEntity("The form fields are color = 'blue', count = '42'");
+        FormData.create(Pair.create("color", "blue"), Pair.create("count", "42"));
+    testRoute(route)
+        .run(HttpRequest.POST("/").withEntity(formDataDiffKey.toEntity()))
+        .assertEntity("The form fields are color = 'blue', count = '42'");
 
-    final FormData formDataSameKey =
-      FormData.create(
-        Pair.create("x", "1"),
-        Pair.create("x", "5"));
-    testRoute(route).run(HttpRequest.POST("/").withEntity(formDataSameKey.toEntity()))
-      .assertEntity( "The form fields are x = '5'");
-    //#formFieldMap
+    final FormData formDataSameKey = FormData.create(Pair.create("x", "1"), Pair.create("x", "5"));
+    testRoute(route)
+        .run(HttpRequest.POST("/").withEntity(formDataSameKey.toEntity()))
+        .assertEntity("The form fields are x = '5'");
+    // #formFieldMap
   }
 
   @Test
   public void testFormFieldMultiMap() {
-    //#formFieldMultiMap
-    final Function<Map<String, List<String>>, String> mapToString = map ->
-      map.entrySet()
-        .stream()
-        .map(e -> e.getKey() + " -> " + e.getValue().size())
-        .collect(Collectors.joining(", "));
+    // #formFieldMultiMap
+    final Function<Map<String, List<String>>, String> mapToString =
+        map ->
+            map.entrySet().stream()
+                .map(e -> e.getKey() + " -> " + e.getValue().size())
+                .collect(Collectors.joining(", "));
 
-    final Route route = formFieldMultiMap(fields ->
-      complete("There are form fields " + mapToString.apply(fields))
-    );
+    final Route route =
+        formFieldMultiMap(fields -> complete("There are form fields " + mapToString.apply(fields)));
 
     // test:
     final FormData formDataDiffKey =
-      FormData.create(
-        Pair.create("color", "blue"),
-        Pair.create("count", "42"));
-    testRoute(route).run(HttpRequest.POST("/").withEntity(formDataDiffKey.toEntity()))
-      .assertEntity("There are form fields color -> 1, count -> 1");
+        FormData.create(Pair.create("color", "blue"), Pair.create("count", "42"));
+    testRoute(route)
+        .run(HttpRequest.POST("/").withEntity(formDataDiffKey.toEntity()))
+        .assertEntity("There are form fields color -> 1, count -> 1");
 
     final FormData formDataSameKey =
-      FormData.create(
-        Pair.create("x", "23"),
-        Pair.create("x", "4"),
-        Pair.create("x", "89"));
-    testRoute(route).run(HttpRequest.POST("/").withEntity(formDataSameKey.toEntity()))
-      .assertEntity("There are form fields x -> 3");
-    //#formFieldMultiMap
+        FormData.create(Pair.create("x", "23"), Pair.create("x", "4"), Pair.create("x", "89"));
+    testRoute(route)
+        .run(HttpRequest.POST("/").withEntity(formDataSameKey.toEntity()))
+        .assertEntity("There are form fields x -> 3");
+    // #formFieldMultiMap
   }
 
   @Test
   public void testFormFieldList() {
-    //#formFieldList
-    final Function<List<Entry<String, String>>, String> listToString = list ->
-      list.stream()
-        .map(e -> e.getKey() + " = '" + e.getValue() +"'")
-        .collect(Collectors.joining(", "));
+    // #formFieldList
+    final Function<List<Entry<String, String>>, String> listToString =
+        list ->
+            list.stream()
+                .map(e -> e.getKey() + " = '" + e.getValue() + "'")
+                .collect(Collectors.joining(", "));
 
-    final Route route = formFieldList(fields ->
-      complete("The form fields are " + listToString.apply(fields))
-    );
+    final Route route =
+        formFieldList(fields -> complete("The form fields are " + listToString.apply(fields)));
 
     // tests:
     final FormData formDataDiffKey =
-      FormData.create(
-        Pair.create("color", "blue"),
-        Pair.create("count", "42"));
-    testRoute(route).run(HttpRequest.POST("/").withEntity(formDataDiffKey.toEntity()))
-      .assertEntity("The form fields are color = 'blue', count = '42'");
+        FormData.create(Pair.create("color", "blue"), Pair.create("count", "42"));
+    testRoute(route)
+        .run(HttpRequest.POST("/").withEntity(formDataDiffKey.toEntity()))
+        .assertEntity("The form fields are color = 'blue', count = '42'");
 
     final FormData formDataSameKey =
-      FormData.create(
-        Pair.create("x", "23"),
-        Pair.create("x", "4"),
-        Pair.create("x", "89"));
-    testRoute(route).run(HttpRequest.POST("/").withEntity(formDataSameKey.toEntity()))
-      .assertEntity("The form fields are x = '23', x = '4', x = '89'");
-    //#formFieldList
+        FormData.create(Pair.create("x", "23"), Pair.create("x", "4"), Pair.create("x", "89"));
+    testRoute(route)
+        .run(HttpRequest.POST("/").withEntity(formDataSameKey.toEntity()))
+        .assertEntity("The form fields are x = '23', x = '4', x = '89'");
+    // #formFieldList
   }
 }

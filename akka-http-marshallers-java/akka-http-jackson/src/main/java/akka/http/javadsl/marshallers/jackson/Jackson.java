@@ -19,7 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class Jackson {
   private static final ObjectMapper defaultObjectMapper =
-    new ObjectMapper().enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY);
+      new ObjectMapper().enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY);
 
   public static <T> Marshaller<T, RequestEntity> marshaller() {
     return marshaller(defaultObjectMapper);
@@ -27,26 +27,25 @@ public class Jackson {
 
   public static <T> Marshaller<T, RequestEntity> marshaller(ObjectMapper mapper) {
     return Marshaller.wrapEntity(
-      u -> toJSON(mapper, u),
-      Marshaller.stringToEntity(),
-      MediaTypes.APPLICATION_JSON
-    );
+        u -> toJSON(mapper, u), Marshaller.stringToEntity(), MediaTypes.APPLICATION_JSON);
   }
 
   public static <T> Unmarshaller<ByteString, T> byteStringUnmarshaller(Class<T> expectedType) {
     return byteStringUnmarshaller(defaultObjectMapper, expectedType);
   }
-  
+
   public static <T> Unmarshaller<HttpEntity, T> unmarshaller(Class<T> expectedType) {
     return unmarshaller(defaultObjectMapper, expectedType);
   }
 
-  public static <T> Unmarshaller<HttpEntity, T> unmarshaller(ObjectMapper mapper, Class<T> expectedType) {
+  public static <T> Unmarshaller<HttpEntity, T> unmarshaller(
+      ObjectMapper mapper, Class<T> expectedType) {
     return Unmarshaller.forMediaType(MediaTypes.APPLICATION_JSON, Unmarshaller.entityToString())
-                       .thenApply(s -> fromJSON(mapper, s, expectedType));
+        .thenApply(s -> fromJSON(mapper, s, expectedType));
   }
-  
-  public static <T> Unmarshaller<ByteString, T> byteStringUnmarshaller(ObjectMapper mapper, Class<T> expectedType) {
+
+  public static <T> Unmarshaller<ByteString, T> byteStringUnmarshaller(
+      ObjectMapper mapper, Class<T> expectedType) {
     return Unmarshaller.sync(s -> fromJSON(mapper, s.utf8String(), expectedType));
   }
 
@@ -62,7 +61,8 @@ public class Jackson {
     try {
       return mapper.readerFor(expectedType).readValue(json);
     } catch (IOException e) {
-      throw new IllegalArgumentException("Cannot unmarshal JSON as " + expectedType.getSimpleName() + ": " + e.getMessage(), e);
+      throw new IllegalArgumentException(
+          "Cannot unmarshal JSON as " + expectedType.getSimpleName() + ": " + e.getMessage(), e);
     }
   }
 }

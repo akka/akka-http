@@ -4,35 +4,34 @@
 
 package docs.http.javadsl.server;
 
-//#imports
-//#minimal-imports
+// #imports
+// #minimal-imports
 import akka.Done;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.server.HttpApp;
 import akka.http.javadsl.server.Route;
-//#minimal-imports
+// #minimal-imports
 import akka.http.javadsl.settings.ServerSettings;
 import akka.http.javadsl.ServerBinding;
 import com.typesafe.config.ConfigFactory;
-//#imports
+// #imports
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 
-//#selfClosing
+// #selfClosing
 import scala.concurrent.duration.Duration;
 import scala.runtime.BoxedUnit;
-//#selfClosing
-//#imports
-//#minimal-imports
+// #selfClosing
+// #imports
+// #minimal-imports
 import java.util.Optional;
 import java.util.concurrent.*;
-//#minimal-imports
-//#imports
-//#selfClosing
+// #minimal-imports
+// #imports
+// #selfClosing
 
 import static akka.pattern.PatternsCS.after;
-//#selfClosing
-
+// #selfClosing
 
 public class HttpAppExampleTest extends JUnitSuite {
 
@@ -42,174 +41,158 @@ public class HttpAppExampleTest extends JUnitSuite {
   }
 
   static
-  //#minimal-routing-example
-  //#with-settings-routing-example
-  //#ownActorSystem
-  //#ownActorSystemAndSettings
+  // #minimal-routing-example
+  // #with-settings-routing-example
+  // #ownActorSystem
+  // #ownActorSystemAndSettings
 
-    // Server definition
-    class MinimalHttpApp extends HttpApp {
-      @Override
-      protected Route routes() {
-        return path("hello", () ->
-          get(() ->
-            complete("<h1>Say hello to akka-http</h1>")
-          )
-        );
-      }
+  // Server definition
+  class MinimalHttpApp extends HttpApp {
+    @Override
+    protected Route routes() {
+      return path("hello", () -> get(() -> complete("<h1>Say hello to akka-http</h1>")));
     }
+  }
 
-  //#minimal-routing-example
-  //#with-settings-routing-example
-  //#ownActorSystem
-  //#ownActorSystemAndSettings
+  // #minimal-routing-example
+  // #with-settings-routing-example
+  // #ownActorSystem
+  // #ownActorSystemAndSettings
 
   void minimalServer() throws ExecutionException, InterruptedException {
-    //#minimal-routing-example
+    // #minimal-routing-example
     // Starting the server
     final MinimalHttpApp myServer = new MinimalHttpApp();
     myServer.startServer("localhost", 8080);
-    //#minimal-routing-example
+    // #minimal-routing-example
   }
 
-
   void withSettingsServer() throws ExecutionException, InterruptedException {
-    //#with-settings-routing-example
+    // #with-settings-routing-example
     // Starting the server
     final MinimalHttpApp myServer = new MinimalHttpApp();
-    final ServerSettings settings = ServerSettings.create(ConfigFactory.load()).withVerboseErrorMessages(true);
+    final ServerSettings settings =
+        ServerSettings.create(ConfigFactory.load()).withVerboseErrorMessages(true);
     myServer.startServer("localhost", 8080, settings);
-    //#with-settings-routing-example
+    // #with-settings-routing-example
   }
 
   void ownActorSystem() throws ExecutionException, InterruptedException {
-    //#ownActorSystem
+    // #ownActorSystem
     // Starting the server
     final ActorSystem system = ActorSystem.apply("myOwn");
     new MinimalHttpApp().startServer("localhost", 8080, system);
     // ActorSystem is not terminated after server shutdown
     // It must be manually terminated
     system.terminate();
-    //#ownActorSystem
+    // #ownActorSystem
   }
 
   void ownActorSystemAndSettings() throws ExecutionException, InterruptedException {
-    //#ownActorSystemAndSettings
+    // #ownActorSystemAndSettings
     // Starting the server
     final ActorSystem system = ActorSystem.apply("myOwn");
-    final ServerSettings settings = ServerSettings.create(ConfigFactory.load()).withVerboseErrorMessages(true);
+    final ServerSettings settings =
+        ServerSettings.create(ConfigFactory.load()).withVerboseErrorMessages(true);
     new MinimalHttpApp().startServer("localhost", 8080, settings, system);
     // ActorSystem is not terminated after server shutdown
     // It must be manually terminated
     system.terminate();
-    //#ownActorSystemAndSettings
+    // #ownActorSystemAndSettings
   }
 
   static
-  //#serverTerminationSignal
+  // #serverTerminationSignal
 
-    // Server definition
-    class SelfDestroyingHttpApp extends HttpApp {
+  // Server definition
+  class SelfDestroyingHttpApp extends HttpApp {
 
-      @Override
-      protected Route routes() {
-        return path("hello", () ->
-          get(() ->
-              complete("<h1>Say hello to akka-http</h1>")
-          )
-        );
-      }
+    @Override
+    protected Route routes() {
+      return path("hello", () -> get(() -> complete("<h1>Say hello to akka-http</h1>")));
+    }
 
-      @Override
-      protected CompletionStage<Done> waitForShutdownSignal(ActorSystem system) {
-        return after(Duration.apply(5, TimeUnit.SECONDS),
+    @Override
+    protected CompletionStage<Done> waitForShutdownSignal(ActorSystem system) {
+      return after(
+          Duration.apply(5, TimeUnit.SECONDS),
           system.scheduler(),
           system.dispatcher().prepare(),
           CompletableFuture.completedFuture(Done.getInstance()));
-      }
     }
+  }
 
-  //#serverTerminationSignal
+  // #serverTerminationSignal
 
   void selfDestroyingServer() throws ExecutionException, InterruptedException {
-    //#serverTerminationSignal
+    // #serverTerminationSignal
     // Starting the server
     final SelfDestroyingHttpApp myServer = new SelfDestroyingHttpApp();
     myServer.startServer("localhost", 8080, ServerSettings.create(ConfigFactory.load()));
-    //#serverTerminationSignal
+    // #serverTerminationSignal
   }
 
-
   static
-  //#bindingError
+  // #bindingError
 
-    // Server definition
-    class FailBindingOverrideHttpApp extends HttpApp {
+  // Server definition
+  class FailBindingOverrideHttpApp extends HttpApp {
 
-      @Override
-      protected Route routes() {
-        return path("hello", () ->
-          get(() ->
-            complete("<h1>Say hello to akka-http</h1>")
-          )
-        );
-      }
-
-      @Override
-      protected void postHttpBinding(ServerBinding binding) {
-        super.postHttpBinding(binding);
-        final ActorSystem sys = systemReference.get();
-        sys.log().info("Running on [" + sys.name() + "] actor system");
-      }
-
-      @Override
-      protected void postHttpBindingFailure(Throwable cause) {
-        System.out.println("I can't bind!");
-      }
+    @Override
+    protected Route routes() {
+      return path("hello", () -> get(() -> complete("<h1>Say hello to akka-http</h1>")));
     }
 
-  //#bindingError
+    @Override
+    protected void postHttpBinding(ServerBinding binding) {
+      super.postHttpBinding(binding);
+      final ActorSystem sys = systemReference.get();
+      sys.log().info("Running on [" + sys.name() + "] actor system");
+    }
+
+    @Override
+    protected void postHttpBindingFailure(Throwable cause) {
+      System.out.println("I can't bind!");
+    }
+  }
+
+  // #bindingError
 
   void errorBinding() throws ExecutionException, InterruptedException {
-    //#bindingError
+    // #bindingError
     // Starting the server
     final FailBindingOverrideHttpApp myServer = new FailBindingOverrideHttpApp();
     myServer.startServer("localhost", 80, ServerSettings.create(ConfigFactory.load()));
-    //#bindingError
+    // #bindingError
   }
 
   static
-  //#postShutdown
+  // #postShutdown
 
-    // Server definition
-    class PostShutdownOverrideHttpApp extends HttpApp {
+  // Server definition
+  class PostShutdownOverrideHttpApp extends HttpApp {
 
-      @Override
-      protected Route routes() {
-        return path("hello", () ->
-          get(() ->
-            complete("<h1>Say hello to akka-http</h1>")
-          )
-        );
-      }
-
-      private void cleanUpResources() {
-      }
-
-      @Override
-      protected void postServerShutdown(Optional<Throwable> failure, ActorSystem system) {
-        cleanUpResources();
-      }
+    @Override
+    protected Route routes() {
+      return path("hello", () -> get(() -> complete("<h1>Say hello to akka-http</h1>")));
     }
 
-  //#postShutdown
+    private void cleanUpResources() {}
 
-  void overridePostShutdown() throws ExecutionException, InterruptedException {
-    //#postShutdown
-    // Starting the server
-    ActorSystem system = ActorSystem.apply("myActorSystem");
-    new PostShutdownOverrideHttpApp().startServer("localhost", 8080, ServerSettings.create(system), system);
-    //#postShutdown
+    @Override
+    protected void postServerShutdown(Optional<Throwable> failure, ActorSystem system) {
+      cleanUpResources();
+    }
   }
 
+  // #postShutdown
+
+  void overridePostShutdown() throws ExecutionException, InterruptedException {
+    // #postShutdown
+    // Starting the server
+    ActorSystem system = ActorSystem.apply("myActorSystem");
+    new PostShutdownOverrideHttpApp()
+        .startServer("localhost", 8080, ServerSettings.create(system), system);
+    // #postShutdown
+  }
 }

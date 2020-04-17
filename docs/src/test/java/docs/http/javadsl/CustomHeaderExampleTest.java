@@ -20,15 +20,15 @@ import java.util.Optional;
 
 import static org.junit.Assert.*;
 
-//#header-value-pf
+// #header-value-pf
 import akka.http.javadsl.server.Directives;
 
 import static akka.http.javadsl.server.Directives.headerValuePF;
 
-//#header-value-pf
+// #header-value-pf
 
 public class CustomHeaderExampleTest extends JUnitRouteTest {
-  //#modeled-api-key-custom-header
+  // #modeled-api-key-custom-header
   public static class ApiTokenHeader extends ModeledCustomHeader {
 
     ApiTokenHeader(String name, String value) {
@@ -42,7 +42,6 @@ public class CustomHeaderExampleTest extends JUnitRouteTest {
     public boolean renderInRequests() {
       return false;
     }
-
   }
 
   static class ApiTokenHeaderFactory extends ModeledCustomHeaderFactory<ApiTokenHeader> {
@@ -55,13 +54,12 @@ public class CustomHeaderExampleTest extends JUnitRouteTest {
     public ApiTokenHeader parse(String value) {
       return new ApiTokenHeader(name(), value);
     }
-
   }
-  //#modeled-api-key-custom-header
+  // #modeled-api-key-custom-header
 
   @Test
   public void showCreation() {
-    //#conversion-creation-custom-header
+    // #conversion-creation-custom-header
     final ApiTokenHeaderFactory apiTokenHeaderFactory = new ApiTokenHeaderFactory();
     final ApiTokenHeader token = apiTokenHeaderFactory.create("token");
     assertEquals("token", token.value());
@@ -70,60 +68,59 @@ public class CustomHeaderExampleTest extends JUnitRouteTest {
     assertEquals("apiKey", header.name());
     assertEquals("token", header.value());
 
-    final Optional<ApiTokenHeader> fromRaw = apiTokenHeaderFactory
-      .from(RawHeader.create("apiKey", "token"));
+    final Optional<ApiTokenHeader> fromRaw =
+        apiTokenHeaderFactory.from(RawHeader.create("apiKey", "token"));
     assertTrue("Expected a header", fromRaw.isPresent());
     assertEquals("apiKey", fromRaw.get().name());
     assertEquals("token", fromRaw.get().value());
 
     // will match, header keys are case insensitive
-    final Optional<ApiTokenHeader> fromRawUpper = apiTokenHeaderFactory
-      .from(RawHeader.create("APIKEY", "token"));
+    final Optional<ApiTokenHeader> fromRawUpper =
+        apiTokenHeaderFactory.from(RawHeader.create("APIKEY", "token"));
     assertTrue("Expected a header", fromRawUpper.isPresent());
     assertEquals("apiKey", fromRawUpper.get().name());
     assertEquals("token", fromRawUpper.get().value());
 
     // won't match, different header name
-    final Optional<ApiTokenHeader> wrong = apiTokenHeaderFactory
-      .from(RawHeader.create("different", "token"));
+    final Optional<ApiTokenHeader> wrong =
+        apiTokenHeaderFactory.from(RawHeader.create("different", "token"));
     assertFalse(wrong.isPresent());
-    //#conversion-creation-custom-header
+    // #conversion-creation-custom-header
   }
 
   @Test
   public void testExtraction() {
-    //#header-value-pf
+    // #header-value-pf
     final ApiTokenHeaderFactory apiTokenHeaderFactory = new ApiTokenHeaderFactory();
     final PartialFunction<HttpHeader, String> extractFromCustomHeader =
-      new JavaPartialFunction<HttpHeader, String>() {
+        new JavaPartialFunction<HttpHeader, String>() {
 
-        @Override
-        public String apply(HttpHeader header, boolean isCheck) throws Exception {
-          if (isCheck)
-            return null;
-          return apiTokenHeaderFactory.from(header)
-            .map(apiTokenHeader -> "extracted> " + apiTokenHeader)
-            .orElseGet(() -> "raw> " + header);
-        }
-      };
+          @Override
+          public String apply(HttpHeader header, boolean isCheck) throws Exception {
+            if (isCheck) return null;
+            return apiTokenHeaderFactory
+                .from(header)
+                .map(apiTokenHeader -> "extracted> " + apiTokenHeader)
+                .orElseGet(() -> "raw> " + header);
+          }
+        };
 
     final Route route = headerValuePF(extractFromCustomHeader, Directives::complete);
 
     testRoute(route)
-      .run(HttpRequest.GET("/").addHeader(RawHeader.create("apiKey", "TheKey")))
-      .assertStatusCode(StatusCodes.OK)
-      .assertEntity("extracted> apiKey: TheKey");
+        .run(HttpRequest.GET("/").addHeader(RawHeader.create("apiKey", "TheKey")))
+        .assertStatusCode(StatusCodes.OK)
+        .assertEntity("extracted> apiKey: TheKey");
 
     testRoute(route)
-      .run(HttpRequest.GET("/").addHeader(RawHeader.create("somethingElse", "TheKey")))
-      .assertStatusCode(StatusCodes.OK)
-      .assertEntity("raw> somethingElse: TheKey");
+        .run(HttpRequest.GET("/").addHeader(RawHeader.create("somethingElse", "TheKey")))
+        .assertStatusCode(StatusCodes.OK)
+        .assertEntity("raw> somethingElse: TheKey");
 
     testRoute(route)
-      .run(HttpRequest.GET("/").addHeader(apiTokenHeaderFactory.create("TheKey")))
-      .assertStatusCode(StatusCodes.OK)
-      .assertEntity("extracted> apiKey: TheKey");
-    //#header-value-pf
+        .run(HttpRequest.GET("/").addHeader(apiTokenHeaderFactory.create("TheKey")))
+        .assertStatusCode(StatusCodes.OK)
+        .assertEntity("extracted> apiKey: TheKey");
+    // #header-value-pf
   }
-
 }

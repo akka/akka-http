@@ -3,7 +3,7 @@
  */
 
 package docs.http.javadsl;
-//#minimal-routing-example
+// #minimal-routing-example
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.ConnectHttp;
@@ -27,12 +27,13 @@ public class HttpServerMinimalExampleTest extends AllDirectives {
     final Http http = Http.get(system);
     final ActorMaterializer materializer = ActorMaterializer.create(system);
 
-    //In order to access all directives we need an instance where the routes are define.
+    // In order to access all directives we need an instance where the routes are define.
     HttpServerMinimalExampleTest app = new HttpServerMinimalExampleTest();
 
-    final Flow<HttpRequest, HttpResponse, NotUsed> routeFlow = app.createRoute().flow(system, materializer);
-    final CompletionStage<ServerBinding> binding = http.bindAndHandle(routeFlow,
-        ConnectHttp.toHost("localhost", 8080), materializer);
+    final Flow<HttpRequest, HttpResponse, NotUsed> routeFlow =
+        app.createRoute().flow(system, materializer);
+    final CompletionStage<ServerBinding> binding =
+        http.bindAndHandle(routeFlow, ConnectHttp.toHost("localhost", 8080), materializer);
 
     System.out.println("Server online at http://localhost:8080/\nPress RETURN to stop...");
     System.in.read(); // let it run until user presses return
@@ -43,10 +44,7 @@ public class HttpServerMinimalExampleTest extends AllDirectives {
   }
 
   private Route createRoute() {
-    return concat(
-        path("hello", () ->
-            get(() ->
-                complete("<h1>Say hello to akka-http</h1>"))));
+    return concat(path("hello", () -> get(() -> complete("<h1>Say hello to akka-http</h1>"))));
   }
 }
-//#minimal-routing-example
+// #minimal-routing-example

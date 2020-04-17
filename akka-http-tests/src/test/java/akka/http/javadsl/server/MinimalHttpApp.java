@@ -17,16 +17,13 @@ public class MinimalHttpApp extends HttpApp {
   CompletableFuture<Done> shutdownTrigger = new CompletableFuture<>();
   CompletableFuture<ServerBinding> bindingPromise = new CompletableFuture<>();
 
-
   public void shutdown() {
     shutdownTrigger.complete(Done.getInstance());
   }
-    
+
   @Override
   protected Route routes() {
-    return path("foo", () ->
-        complete("bar")
-      );
+    return path("foo", () -> complete("bar"));
   }
 
   @Override

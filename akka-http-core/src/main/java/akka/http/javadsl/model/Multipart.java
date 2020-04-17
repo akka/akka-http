@@ -18,143 +18,146 @@ import akka.stream.javadsl.Source;
  * The model of multipart content for media-types `multipart/\*` (general multipart content),
  * `multipart/form-data` and `multipart/byteranges`.
  *
- * The basic modelling classes for these media-types ([[akka.http.scaladsl.Multipart.General]], [[Multipart.FormData]] and
- * [[akka.http.scaladsl.Multipart.ByteRanges]], respectively) are stream-based but each have a strict counterpart
- * (namely [[akka.http.scaladsl.Multipart.General.Strict]], [[akka.http.scaladsl.Multipart.FormData.Strict]] and
- * [[akka.http.scaladsl.Multipart.ByteRanges.Strict]]).
+ * <p>The basic modelling classes for these media-types ([[akka.http.scaladsl.Multipart.General]],
+ * [[Multipart.FormData]] and [[akka.http.scaladsl.Multipart.ByteRanges]], respectively) are
+ * stream-based but each have a strict counterpart (namely
+ * [[akka.http.scaladsl.Multipart.General.Strict]], [[akka.http.scaladsl.Multipart.FormData.Strict]]
+ * and [[akka.http.scaladsl.Multipart.ByteRanges.Strict]]).
  */
 public interface Multipart {
 
-    MediaType.Multipart getMediaType();
+  MediaType.Multipart getMediaType();
 
-    Source<? extends Multipart.BodyPart, Object> getParts();
+  Source<? extends Multipart.BodyPart, Object> getParts();
 
-    /**
-     * Converts this content into its strict counterpart.
-     * The given `timeout` denotes the max time that an individual part must be read in.
-     * The CompletionStage is failed with an TimeoutException if one part isn't read completely after the given timeout.
-     */
-    CompletionStage<? extends Multipart.Strict> toStrict(long timeoutMillis, Materializer materializer);
+  /**
+   * Converts this content into its strict counterpart. The given `timeout` denotes the max time
+   * that an individual part must be read in. The CompletionStage is failed with an TimeoutException
+   * if one part isn't read completely after the given timeout.
+   */
+  CompletionStage<? extends Multipart.Strict> toStrict(
+      long timeoutMillis, Materializer materializer);
 
-    /**
-     * Creates an entity from this multipart object using the specified boundary.
-     */
-    RequestEntity toEntity(String boundary);
+  /** Creates an entity from this multipart object using the specified boundary. */
+  RequestEntity toEntity(String boundary);
 
-    /**
-     * Creates an entity from this multipart object using a random boundary.
-     */
-    RequestEntity toEntity();
+  /** Creates an entity from this multipart object using a random boundary. */
+  RequestEntity toEntity();
 
-    interface Strict extends Multipart {
-        Source<? extends Multipart.BodyPart.Strict, Object> getParts();
+  interface Strict extends Multipart {
+    Source<? extends Multipart.BodyPart.Strict, Object> getParts();
 
-        Iterable<? extends Multipart.BodyPart.Strict> getStrictParts();
+    Iterable<? extends Multipart.BodyPart.Strict> getStrictParts();
 
-        /**
-         * Creates an entity from this multipart object using the specified boundary.
-         */
-        HttpEntity.Strict toEntity(String boundary);
+    /** Creates an entity from this multipart object using the specified boundary. */
+    HttpEntity.Strict toEntity(String boundary);
 
-        /**
-         * Creates an entity from this multipart object using a random boundary.
-         */
-        HttpEntity.Strict toEntity();
+    /** Creates an entity from this multipart object using a random boundary. */
+    HttpEntity.Strict toEntity();
+  }
+
+  interface BodyPart {
+    BodyPartEntity getEntity();
+
+    Iterable<HttpHeader> getHeaders();
+
+    Optional<ContentDisposition> getContentDispositionHeader();
+
+    Map<String, String> getDispositionParams();
+
+    Optional<ContentDispositionType> getDispositionType();
+
+    CompletionStage<? extends Multipart.BodyPart.Strict> toStrict(
+        long timeoutMillis, Materializer materializer);
+
+    interface Strict extends Multipart.BodyPart {
+      HttpEntity.Strict getEntity();
+    }
+  }
+
+  /** Basic model for multipart content as defined by http://tools.ietf.org/html/rfc2046. */
+  interface General extends Multipart {
+    Source<? extends Multipart.General.BodyPart, Object> getParts();
+
+    CompletionStage<Multipart.General.Strict> toStrict(
+        long timeoutMillis, Materializer materializer);
+
+    interface Strict extends Multipart.General, Multipart.Strict {
+      Source<Multipart.General.BodyPart.Strict, Object> getParts();
+
+      Iterable<? extends Multipart.General.BodyPart.Strict> getStrictParts();
     }
 
-    interface BodyPart {
-        BodyPartEntity getEntity();
+    interface BodyPart extends Multipart.BodyPart {
+      CompletionStage<Multipart.General.BodyPart.Strict> toStrict(
+          long timeoutMillis, Materializer materializer);
 
-        Iterable<HttpHeader> getHeaders();
+      interface Strict extends Multipart.General.BodyPart, Multipart.BodyPart.Strict {}
+    }
+  }
 
-        Optional<ContentDisposition> getContentDispositionHeader();
+  /**
+   * Model for `multipart/form-data` content as defined in http://tools.ietf.org/html/rfc2388. All
+   * parts must have distinct names. (This is not verified!)
+   */
+  interface FormData extends Multipart {
+    Source<? extends Multipart.FormData.BodyPart, Object> getParts();
 
-        Map<String, String> getDispositionParams();
+    CompletionStage<Multipart.FormData.Strict> toStrict(
+        long timeoutMillis, Materializer materializer);
 
-        Optional<ContentDispositionType> getDispositionType();
+    interface Strict extends Multipart.FormData, Multipart.Strict {
+      Source<Multipart.FormData.BodyPart.Strict, Object> getParts();
 
-        CompletionStage<? extends Multipart.BodyPart.Strict> toStrict(long timeoutMillis, Materializer materializer);
-
-        interface Strict extends Multipart.BodyPart {
-            HttpEntity.Strict getEntity();
-        }
+      Iterable<? extends Multipart.FormData.BodyPart.Strict> getStrictParts();
     }
 
-    /**
-     * Basic model for multipart content as defined by http://tools.ietf.org/html/rfc2046.
-     */
-    interface General extends Multipart {
-        Source<? extends Multipart.General.BodyPart, Object> getParts();
+    interface BodyPart extends Multipart.BodyPart {
+      String getName();
 
-        CompletionStage<Multipart.General.Strict> toStrict(long timeoutMillis, Materializer materializer);
+      Map<String, String> getAdditionalDispositionParams();
 
-        interface Strict extends Multipart.General, Multipart.Strict {
-            Source<Multipart.General.BodyPart.Strict, Object> getParts();
-            
-            Iterable<? extends Multipart.General.BodyPart.Strict> getStrictParts();
-        }
+      Iterable<HttpHeader> getAdditionalHeaders();
 
-        interface BodyPart extends Multipart.BodyPart {
-            CompletionStage<Multipart.General.BodyPart.Strict> toStrict(long timeoutMillis, Materializer materializer);
+      Optional<String> getFilename();
 
-            interface Strict extends Multipart.General.BodyPart, Multipart.BodyPart.Strict {
-            }
-        }
+      CompletionStage<Multipart.FormData.BodyPart.Strict> toStrict(
+          long timeoutMillis, Materializer materializer);
+
+      interface Strict extends Multipart.FormData.BodyPart, Multipart.BodyPart.Strict {}
+    }
+  }
+
+  /**
+   * Model for `multipart/byteranges` content as defined by
+   * https://tools.ietf.org/html/rfc7233#section-5.4.1 and
+   * https://tools.ietf.org/html/rfc7233#appendix-A
+   */
+  interface ByteRanges extends Multipart {
+    Source<? extends Multipart.ByteRanges.BodyPart, Object> getParts();
+
+    CompletionStage<Multipart.ByteRanges.Strict> toStrict(
+        long timeoutMillis, Materializer materializer);
+
+    interface Strict extends Multipart.ByteRanges, Multipart.Strict {
+      Source<Multipart.ByteRanges.BodyPart.Strict, Object> getParts();
+
+      Iterable<? extends Multipart.ByteRanges.BodyPart.Strict> getStrictParts();
     }
 
-    /**
-     * Model for `multipart/form-data` content as defined in http://tools.ietf.org/html/rfc2388.
-     * All parts must have distinct names. (This is not verified!)
-     */
-    interface FormData extends Multipart {
-        Source<? extends Multipart.FormData.BodyPart, Object> getParts();
+    interface BodyPart extends Multipart.BodyPart {
+      ContentRange getContentRange();
 
-        CompletionStage<Multipart.FormData.Strict> toStrict(long timeoutMillis, Materializer materializer);
+      RangeUnit getRangeUnit();
 
-        interface Strict extends Multipart.FormData, Multipart.Strict {
-            Source<Multipart.FormData.BodyPart.Strict, Object> getParts();
+      Iterable<HttpHeader> getAdditionalHeaders();
 
-            Iterable<? extends Multipart.FormData.BodyPart.Strict> getStrictParts();
-        }
+      akka.http.javadsl.model.headers.ContentRange getContentRangeHeader();
 
-        interface BodyPart extends Multipart.BodyPart {
-            String getName();
-            Map<String, String> getAdditionalDispositionParams();
-            Iterable<HttpHeader> getAdditionalHeaders();
-            Optional<String> getFilename();
+      CompletionStage<Multipart.ByteRanges.BodyPart.Strict> toStrict(
+          long timeoutMillis, Materializer materializer);
 
-            CompletionStage<Multipart.FormData.BodyPart.Strict> toStrict(long timeoutMillis, Materializer materializer);
-
-            interface Strict extends Multipart.FormData.BodyPart, Multipart.BodyPart.Strict {
-            }
-        }
+      interface Strict extends Multipart.ByteRanges.BodyPart, Multipart.BodyPart.Strict {}
     }
-
-    /**
-     * Model for `multipart/byteranges` content as defined by
-     * https://tools.ietf.org/html/rfc7233#section-5.4.1 and https://tools.ietf.org/html/rfc7233#appendix-A
-     */
-    interface ByteRanges extends Multipart {
-        Source<? extends Multipart.ByteRanges.BodyPart, Object> getParts();
-
-        CompletionStage<Multipart.ByteRanges.Strict> toStrict(long timeoutMillis, Materializer materializer);
-
-        interface Strict extends Multipart.ByteRanges, Multipart.Strict {
-            Source<Multipart.ByteRanges.BodyPart.Strict, Object> getParts();
-
-            Iterable<? extends Multipart.ByteRanges.BodyPart.Strict> getStrictParts();
-        }
-
-        interface BodyPart extends Multipart.BodyPart {
-            ContentRange getContentRange();
-            RangeUnit getRangeUnit();
-            Iterable<HttpHeader> getAdditionalHeaders();
-            akka.http.javadsl.model.headers.ContentRange getContentRangeHeader();
-
-            CompletionStage<Multipart.ByteRanges.BodyPart.Strict> toStrict(long timeoutMillis, Materializer materializer);
-
-            interface Strict extends Multipart.ByteRanges.BodyPart, Multipart.BodyPart.Strict {
-            }
-        }
-    }
+  }
 }

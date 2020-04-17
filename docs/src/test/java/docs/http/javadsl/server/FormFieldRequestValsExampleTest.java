@@ -4,7 +4,6 @@
 
 package docs.http.javadsl.server;
 
-
 import org.junit.Test;
 
 import akka.http.javadsl.model.FormData;
@@ -16,62 +15,56 @@ import akka.http.javadsl.unmarshalling.Unmarshaller;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.japi.Pair;
 
-//#simple
+// #simple
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.formField;
 
-//#simple
-//#custom-unmarshal
+// #simple
+// #custom-unmarshal
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.formField;
 
-//#custom-unmarshal
+// #custom-unmarshal
 
 public class FormFieldRequestValsExampleTest extends JUnitRouteTest {
 
   @Test
   public void testFormFieldVals() {
-    //#simple
+    // #simple
 
     final Route route =
-      formField("name", n ->
-        formField(StringUnmarshallers.INTEGER, "age", a ->
-          complete(String.format("Name: %s, age: %d", n, a))
-        )
-      );
+        formField(
+            "name",
+            n ->
+                formField(
+                    StringUnmarshallers.INTEGER,
+                    "age",
+                    a -> complete(String.format("Name: %s, age: %d", n, a))));
 
     // tests:
-    final FormData formData = FormData.create(
-      Pair.create("name", "Blippy"),
-      Pair.create("age", "42"));
-    final HttpRequest request =
-      HttpRequest
-        .POST("/")
-        .withEntity(formData.toEntity());
+    final FormData formData =
+        FormData.create(Pair.create("name", "Blippy"), Pair.create("age", "42"));
+    final HttpRequest request = HttpRequest.POST("/").withEntity(formData.toEntity());
     testRoute(route).run(request).assertEntity("Name: Blippy, age: 42");
 
-    //#simple
+    // #simple
   }
 
   @Test
   public void testFormFieldValsUnmarshaling() {
-    //#custom-unmarshal
-    Unmarshaller<String, SampleId> SAMPLE_ID = StringUnmarshaller.sync(s -> new SampleId(Integer.valueOf(s)));
+    // #custom-unmarshal
+    Unmarshaller<String, SampleId> SAMPLE_ID =
+        StringUnmarshaller.sync(s -> new SampleId(Integer.valueOf(s)));
 
     final Route route =
-      formField(SAMPLE_ID, "id", sid ->
-        complete(String.format("SampleId: %s", sid.id))
-      );
+        formField(SAMPLE_ID, "id", sid -> complete(String.format("SampleId: %s", sid.id)));
 
     // tests:
     final FormData formData = FormData.create(Pair.create("id", "1337"));
-    final HttpRequest request =
-      HttpRequest
-        .POST("/")
-        .withEntity(formData.toEntity());
+    final HttpRequest request = HttpRequest.POST("/").withEntity(formData.toEntity());
     testRoute(route).run(request).assertEntity("SampleId: 1337");
 
-    //#custom-unmarshal
+    // #custom-unmarshal
   }
 
   static class SampleId {
@@ -81,6 +74,4 @@ public class FormFieldRequestValsExampleTest extends JUnitRouteTest {
       this.id = id;
     }
   }
-
-
 }

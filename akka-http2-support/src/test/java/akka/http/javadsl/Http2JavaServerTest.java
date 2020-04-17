@@ -20,29 +20,31 @@ import java.util.concurrent.CompletionStage;
 
 public class Http2JavaServerTest {
   public static void main(String[] args) {
-    Config testConf = ConfigFactory.parseString(
-      "akka.loglevel = INFO\n" +
-      "akka.log-dead-letters = off\n" +
-      "akka.stream.materializer.debug.fuzzing-mode = off\n" +
-      "akka.actor.serialize-creators = off\n" +
-      "akka.actor.serialize-messages = off\n" +
-      "#akka.actor.default-dispatcher.throughput = 1000\n" +
-      "akka.actor.default-dispatcher.fork-join-executor.parallelism-max=8\n" +
-      "akka.http.server.preview.enable-http2 = on\n"
-    );
+    Config testConf =
+        ConfigFactory.parseString(
+            "akka.loglevel = INFO\n"
+                + "akka.log-dead-letters = off\n"
+                + "akka.stream.materializer.debug.fuzzing-mode = off\n"
+                + "akka.actor.serialize-creators = off\n"
+                + "akka.actor.serialize-messages = off\n"
+                + "#akka.actor.default-dispatcher.throughput = 1000\n"
+                + "akka.actor.default-dispatcher.fork-join-executor.parallelism-max=8\n"
+                + "akka.http.server.preview.enable-http2 = on\n");
     ActorSystem system = ActorSystem.create("ServerTest", testConf);
     Materializer materializer = ActorMaterializer.create(system);
 
     Function<HttpRequest, CompletionStage<HttpResponse>> handler =
-      request -> CompletableFuture.completedFuture(HttpResponse.create().withEntity(request.entity()));
+        request ->
+            CompletableFuture.completedFuture(HttpResponse.create().withEntity(request.entity()));
 
     HttpsConnectionContext httpsConnectionContext = ExampleHttpContexts.getExampleServerContext();
 
-    Http.get(system).bindAndHandleAsync(
-      handler,
-      ConnectWithHttps.toHostHttps("localhost", 9001)
-        .withCustomHttpsContext(httpsConnectionContext),
-      materializer);
+    Http.get(system)
+        .bindAndHandleAsync(
+            handler,
+            ConnectWithHttps.toHostHttps("localhost", 9001)
+                .withCustomHttpsContext(httpsConnectionContext),
+            materializer);
 
     // TODO what about unencrypted http2?
   }

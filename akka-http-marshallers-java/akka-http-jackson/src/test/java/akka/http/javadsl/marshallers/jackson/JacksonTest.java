@@ -26,6 +26,7 @@ public class JacksonTest extends JUnitSuite {
 
   public static class SomeData {
     public final String field;
+
     @JsonCreator
     public SomeData(@JsonProperty("field") String field) {
       this.field = field;
@@ -37,14 +38,22 @@ public class JacksonTest extends JUnitSuite {
     ActorSystem sys = ActorSystem.create("test");
     try {
       Materializer materializer = ActorMaterializer.create(sys);
-      CompletionStage<SomeData> unmarshalled = Jackson.unmarshaller(SomeData.class).unmarshal(HttpEntities.create(ContentTypes.APPLICATION_JSON, "{\"droids\":\"not the ones you are looking for\"}"), materializer);
+      CompletionStage<SomeData> unmarshalled =
+          Jackson.unmarshaller(SomeData.class)
+              .unmarshal(
+                  HttpEntities.create(
+                      ContentTypes.APPLICATION_JSON,
+                      "{\"droids\":\"not the ones you are looking for\"}"),
+                  materializer);
 
-
-        SomeData result = unmarshalled.toCompletableFuture().get(3, TimeUnit.SECONDS);
-        throw new AssertionError("Invalid json should not parse to object");
+      SomeData result = unmarshalled.toCompletableFuture().get(3, TimeUnit.SECONDS);
+      throw new AssertionError("Invalid json should not parse to object");
     } catch (ExecutionException ex) {
       // CompletableFuture.get wraps in one layer of ExecutionException
-      assertTrue(ex.getCause().getMessage().startsWith("Cannot unmarshal JSON as SomeData: Unrecognized field \"droids\""));
+      assertTrue(
+          ex.getCause()
+              .getMessage()
+              .startsWith("Cannot unmarshal JSON as SomeData: Unrecognized field \"droids\""));
     } finally {
       sys.terminate();
     }

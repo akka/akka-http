@@ -9,20 +9,18 @@ package akka.http.javadsl.model.headers;
  * http://tools.ietf.org/search/rfc6265#section-4.2.1
  */
 public abstract class HttpCookiePair {
-    public abstract String name();
-    public abstract String value();
+  public abstract String name();
 
-    /**
-     * Converts this cookie pair into an HttpCookie to be used with the
-     * `Set-Cookie` header.
-     */
-    public abstract HttpCookie toCookie();
+  public abstract String value();
 
-    public static HttpCookiePair create(String name, String value) {
-        return akka.http.scaladsl.model.headers.HttpCookiePair.apply(name, value);
-    }
+  /** Converts this cookie pair into an HttpCookie to be used with the `Set-Cookie` header. */
+  public abstract HttpCookie toCookie();
 
-    public static HttpCookiePair createRaw(String name, String value) {
-        return akka.http.scaladsl.model.headers.HttpCookiePair.raw(name, value);
-    }
+  public static HttpCookiePair create(String name, String value) {
+    return akka.http.scaladsl.model.headers.HttpCookiePair.apply(name, value);
+  }
+
+  public static HttpCookiePair createRaw(String name, String value) {
+    return akka.http.scaladsl.model.headers.HttpCookiePair.raw(name, value);
+  }
 }

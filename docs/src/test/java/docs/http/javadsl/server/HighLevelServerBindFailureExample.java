@@ -4,7 +4,7 @@
 
 package docs.http.javadsl.server;
 
-//#binding-failure-high-level-example
+// #binding-failure-high-level-example
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
@@ -30,15 +30,18 @@ public class HighLevelServerBindFailureExample {
     final Route route = app.createRoute();
 
     final Flow<HttpRequest, HttpResponse, NotUsed> handler = route.flow(system, materializer);
-    final CompletionStage<ServerBinding> binding = Http.get(system).bindAndHandle(handler, ConnectHttp.toHost("127.0.0.1", 8080), materializer);
+    final CompletionStage<ServerBinding> binding =
+        Http.get(system)
+            .bindAndHandle(handler, ConnectHttp.toHost("127.0.0.1", 8080), materializer);
 
-    binding.exceptionally(failure -> {
-      System.err.println("Something very bad happened! " + failure.getMessage());
-      system.terminate();
-      return null;
-    });
+    binding.exceptionally(
+        failure -> {
+          System.err.println("Something very bad happened! " + failure.getMessage());
+          system.terminate();
+          return null;
+        });
 
     system.terminate();
   }
 }
-//#binding-failure-high-level-example
+// #binding-failure-high-level-example

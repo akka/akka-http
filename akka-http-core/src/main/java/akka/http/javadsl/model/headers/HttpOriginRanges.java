@@ -5,7 +5,8 @@
 package akka.http.javadsl.model.headers;
 
 public final class HttpOriginRanges {
-    private HttpOriginRanges() { }
+  private HttpOriginRanges() {}
 
-    public static final HttpOriginRange ALL = akka.http.scaladsl.model.headers.HttpOriginRange.$times$.MODULE$;
+  public static final HttpOriginRange ALL =
+      akka.http.scaladsl.model.headers.HttpOriginRange.$times$.MODULE$;
 }

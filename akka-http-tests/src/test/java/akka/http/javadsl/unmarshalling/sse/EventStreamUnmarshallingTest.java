@@ -32,27 +32,27 @@ import static scala.compat.java8.FutureConverters.toJava;
 
 public class EventStreamUnmarshallingTest extends JUnitSuite {
 
-    @Test
-    public void testFromEventsStream() throws Exception {
-        ActorSystem system = ActorSystem.create();
-        try {
-            Materializer mat = ActorMaterializer.create(system);
+  @Test
+  public void testFromEventsStream() throws Exception {
+    ActorSystem system = ActorSystem.create();
+    try {
+      Materializer mat = ActorMaterializer.create(system);
 
-            List<ServerSentEvent> events = EventStreamUnmarshallingSpec.eventsAsJava();
-            HttpEntity entity = EventStreamUnmarshallingSpec.entity();
+      List<ServerSentEvent> events = EventStreamUnmarshallingSpec.eventsAsJava();
+      HttpEntity entity = EventStreamUnmarshallingSpec.entity();
 
-            //#event-stream-unmarshalling-example
-            List<ServerSentEvent> unmarshalledEvents =
-                    EventStreamUnmarshalling.fromEventsStream(system)
-                            .unmarshal(entity, system.dispatcher(), mat)
-                            .thenCompose(source -> source.runWith(Sink.seq(), mat))
-                            .toCompletableFuture()
-                            .get(3000, TimeUnit.SECONDS);
-            //#event-stream-unmarshalling-example
+      // #event-stream-unmarshalling-example
+      List<ServerSentEvent> unmarshalledEvents =
+          EventStreamUnmarshalling.fromEventsStream(system)
+              .unmarshal(entity, system.dispatcher(), mat)
+              .thenCompose(source -> source.runWith(Sink.seq(), mat))
+              .toCompletableFuture()
+              .get(3000, TimeUnit.SECONDS);
+      // #event-stream-unmarshalling-example
 
-            Assert.assertEquals(events, unmarshalledEvents);
-        } finally {
-            toJava(system.terminate()).toCompletableFuture().get(42, TimeUnit.SECONDS);
-        }
+      Assert.assertEquals(events, unmarshalledEvents);
+    } finally {
+      toJava(system.terminate()).toCompletableFuture().get(42, TimeUnit.SECONDS);
     }
+  }
 }

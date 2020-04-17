@@ -25,39 +25,39 @@ import java.util.function.Function;
 import java.util.Optional;
 import akka.japi.Option;
 
-//#authenticateBasic
+// #authenticateBasic
 import akka.http.javadsl.server.directives.SecurityDirectives.ProvidedCredentials;
 
 import static akka.http.javadsl.server.Directives.authenticateBasic;
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.path;
 
-//#authenticateBasic
-//#authenticateBasicPF
+// #authenticateBasic
+// #authenticateBasicPF
 import akka.http.javadsl.server.directives.SecurityDirectives.ProvidedCredentials;
 
 import static akka.http.javadsl.server.Directives.authenticateBasicPF;
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.path;
 
-//#authenticateBasicPF
-//#authenticateBasicPFAsync
+// #authenticateBasicPF
+// #authenticateBasicPFAsync
 import akka.http.javadsl.server.directives.SecurityDirectives.ProvidedCredentials;
 
 import static akka.http.javadsl.server.Directives.authenticateBasicPFAsync;
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.path;
 
-//#authenticateBasicPFAsync
-//#authenticateBasicAsync
+// #authenticateBasicPFAsync
+// #authenticateBasicAsync
 import akka.http.javadsl.server.directives.SecurityDirectives.ProvidedCredentials;
 
 import static akka.http.javadsl.server.Directives.authenticateBasicAsync;
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.path;
 
-//#authenticateBasicAsync
-//#authenticateOrRejectWithChallenge
+// #authenticateBasicAsync
+// #authenticateOrRejectWithChallenge
 import akka.http.javadsl.model.headers.HttpChallenge;
 import akka.http.javadsl.model.headers.HttpCredentials;
 
@@ -65,248 +65,295 @@ import static akka.http.javadsl.server.Directives.authenticateOrRejectWithChalle
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.path;
 
-//#authenticateOrRejectWithChallenge
-//#authorize
+// #authenticateOrRejectWithChallenge
+// #authorize
 import akka.http.javadsl.server.directives.SecurityDirectives.ProvidedCredentials;
 
 import static akka.http.javadsl.server.Directives.authorize;
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.path;
-//#authorize
-//#authorizeAsync
+// #authorize
+// #authorizeAsync
 import akka.http.javadsl.server.directives.SecurityDirectives.ProvidedCredentials;
 
 import static akka.http.javadsl.server.Directives.authorizeAsync;
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.path;
-//#authorizeAsync
-//#extractCredentials
+// #authorizeAsync
+// #extractCredentials
 import akka.http.javadsl.model.headers.HttpCredentials;
 
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.extractCredentials;
 
-//#extractCredentials
+// #extractCredentials
 
 public class SecurityDirectivesExamplesTest extends JUnitRouteTest {
 
   @Test
   public void testAuthenticateBasic() {
-    //#authenticateBasic
+    // #authenticateBasic
     final Function<Optional<ProvidedCredentials>, Optional<String>> myUserPassAuthenticator =
-      credentials ->
-        credentials.filter(c -> c.verify("p4ssw0rd")).map(ProvidedCredentials::identifier);
+        credentials ->
+            credentials.filter(c -> c.verify("p4ssw0rd")).map(ProvidedCredentials::identifier);
 
-    final Route route = path("secured", () ->
-      authenticateBasic("secure site", myUserPassAuthenticator, userName ->
-        complete("The user is '" + userName + "'")
-      )
-    ).seal();
+    final Route route =
+        path(
+                "secured",
+                () ->
+                    authenticateBasic(
+                        "secure site",
+                        myUserPassAuthenticator,
+                        userName -> complete("The user is '" + userName + "'")))
+            .seal();
 
     // tests:
-    testRoute(route).run(HttpRequest.GET("/secured"))
-      .assertStatusCode(StatusCodes.UNAUTHORIZED)
-      .assertEntity("The resource requires authentication, which was not supplied with the request")
-      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
+    testRoute(route)
+        .run(HttpRequest.GET("/secured"))
+        .assertStatusCode(StatusCodes.UNAUTHORIZED)
+        .assertEntity(
+            "The resource requires authentication, which was not supplied with the request")
+        .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
 
     final HttpCredentials validCredentials =
-      BasicHttpCredentials.createBasicHttpCredentials("John", "p4ssw0rd");
-    testRoute(route).run(HttpRequest.GET("/secured").addCredentials(validCredentials))
-      .assertEntity("The user is 'John'");
+        BasicHttpCredentials.createBasicHttpCredentials("John", "p4ssw0rd");
+    testRoute(route)
+        .run(HttpRequest.GET("/secured").addCredentials(validCredentials))
+        .assertEntity("The user is 'John'");
 
     final HttpCredentials invalidCredentials =
-      BasicHttpCredentials.createBasicHttpCredentials("Peter", "pan");
-    testRoute(route).run(HttpRequest.GET("/secured").addCredentials(invalidCredentials))
-      .assertStatusCode(StatusCodes.UNAUTHORIZED)
-      .assertEntity("The supplied authentication is invalid")
-      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
-    //#authenticateBasic
+        BasicHttpCredentials.createBasicHttpCredentials("Peter", "pan");
+    testRoute(route)
+        .run(HttpRequest.GET("/secured").addCredentials(invalidCredentials))
+        .assertStatusCode(StatusCodes.UNAUTHORIZED)
+        .assertEntity("The supplied authentication is invalid")
+        .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
+    // #authenticateBasic
   }
-
 
   @Test
   public void testAuthenticateBasicPF() {
-    //#authenticateBasicPF
+    // #authenticateBasicPF
     final PartialFunction<Optional<ProvidedCredentials>, String> myUserPassAuthenticator =
-      new JavaPartialFunction<Optional<ProvidedCredentials>, String>() {
-        @Override
-        public String apply(Optional<ProvidedCredentials> opt, boolean isCheck) throws Exception {
-          if (opt.filter(c -> (c != null) && c.verify("p4ssw0rd")).isPresent()) {
-            if (isCheck) return null;
-            else return opt.get().identifier();
-          } else if (opt.filter(c -> (c != null) && c.verify("p4ssw0rd-special")).isPresent()) {
-            if (isCheck) return null;
-            else return opt.get().identifier() + "-admin";
-          } else {
-            throw noMatch();
+        new JavaPartialFunction<Optional<ProvidedCredentials>, String>() {
+          @Override
+          public String apply(Optional<ProvidedCredentials> opt, boolean isCheck) throws Exception {
+            if (opt.filter(c -> (c != null) && c.verify("p4ssw0rd")).isPresent()) {
+              if (isCheck) return null;
+              else return opt.get().identifier();
+            } else if (opt.filter(c -> (c != null) && c.verify("p4ssw0rd-special")).isPresent()) {
+              if (isCheck) return null;
+              else return opt.get().identifier() + "-admin";
+            } else {
+              throw noMatch();
+            }
           }
-        }
-      };
+        };
 
-    final Route route = path("secured", () ->
-      authenticateBasicPF("secure site", myUserPassAuthenticator, userName ->
-        complete("The user is '" + userName + "'")
-      )
-    ).seal();
+    final Route route =
+        path(
+                "secured",
+                () ->
+                    authenticateBasicPF(
+                        "secure site",
+                        myUserPassAuthenticator,
+                        userName -> complete("The user is '" + userName + "'")))
+            .seal();
 
     // tests:
-    testRoute(route).run(HttpRequest.GET("/secured"))
-      .assertStatusCode(StatusCodes.UNAUTHORIZED)
-      .assertEntity("The resource requires authentication, which was not supplied with the request")
-      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
+    testRoute(route)
+        .run(HttpRequest.GET("/secured"))
+        .assertStatusCode(StatusCodes.UNAUTHORIZED)
+        .assertEntity(
+            "The resource requires authentication, which was not supplied with the request")
+        .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
 
     final HttpCredentials validCredentials =
-      BasicHttpCredentials.createBasicHttpCredentials("John", "p4ssw0rd");
-    testRoute(route).run(HttpRequest.GET("/secured").addCredentials(validCredentials))
-      .assertEntity("The user is 'John'");
+        BasicHttpCredentials.createBasicHttpCredentials("John", "p4ssw0rd");
+    testRoute(route)
+        .run(HttpRequest.GET("/secured").addCredentials(validCredentials))
+        .assertEntity("The user is 'John'");
 
     final HttpCredentials validAdminCredentials =
-      BasicHttpCredentials.createBasicHttpCredentials("John", "p4ssw0rd-special");
-    testRoute(route).run(HttpRequest.GET("/secured").addCredentials(validAdminCredentials))
-      .assertEntity("The user is 'John-admin'");
+        BasicHttpCredentials.createBasicHttpCredentials("John", "p4ssw0rd-special");
+    testRoute(route)
+        .run(HttpRequest.GET("/secured").addCredentials(validAdminCredentials))
+        .assertEntity("The user is 'John-admin'");
 
     final HttpCredentials invalidCredentials =
-      BasicHttpCredentials.createBasicHttpCredentials("Peter", "pan");
-    testRoute(route).run(HttpRequest.GET("/secured").addCredentials(invalidCredentials))
-      .assertStatusCode(StatusCodes.UNAUTHORIZED)
-      .assertEntity("The supplied authentication is invalid")
-      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
-    //#authenticateBasicPF
+        BasicHttpCredentials.createBasicHttpCredentials("Peter", "pan");
+    testRoute(route)
+        .run(HttpRequest.GET("/secured").addCredentials(invalidCredentials))
+        .assertStatusCode(StatusCodes.UNAUTHORIZED)
+        .assertEntity("The supplied authentication is invalid")
+        .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
+    // #authenticateBasicPF
   }
 
   @Test
   public void testAuthenticateBasicPFAsync() {
-    //#authenticateBasicPFAsync
+    // #authenticateBasicPFAsync
     class User {
       private final String id;
+
       public User(String id) {
         this.id = id;
       }
+
       public String getId() {
         return id;
       }
     }
 
-    final PartialFunction<Optional<ProvidedCredentials>, CompletionStage<User>> myUserPassAuthenticator =
-      new JavaPartialFunction<Optional<ProvidedCredentials>,CompletionStage<User>>() {
-        @Override
-        public CompletionStage<User> apply(Optional<ProvidedCredentials> opt, boolean isCheck) throws Exception {
-          if (opt.filter(c -> (c != null) && c.verify("p4ssw0rd")).isPresent()) {
-            if (isCheck) return CompletableFuture.completedFuture(null);
-            else return CompletableFuture.completedFuture(new User(opt.get().identifier()));
-          } else {
-            throw noMatch();
-          }
-        }
-      };
+    final PartialFunction<Optional<ProvidedCredentials>, CompletionStage<User>>
+        myUserPassAuthenticator =
+            new JavaPartialFunction<Optional<ProvidedCredentials>, CompletionStage<User>>() {
+              @Override
+              public CompletionStage<User> apply(Optional<ProvidedCredentials> opt, boolean isCheck)
+                  throws Exception {
+                if (opt.filter(c -> (c != null) && c.verify("p4ssw0rd")).isPresent()) {
+                  if (isCheck) return CompletableFuture.completedFuture(null);
+                  else return CompletableFuture.completedFuture(new User(opt.get().identifier()));
+                } else {
+                  throw noMatch();
+                }
+              }
+            };
 
-    final Route route = path("secured", () ->
-      authenticateBasicPFAsync("secure site", myUserPassAuthenticator, user ->
-        complete("The user is '" + user.getId() + "'"))
-    ).seal();
+    final Route route =
+        path(
+                "secured",
+                () ->
+                    authenticateBasicPFAsync(
+                        "secure site",
+                        myUserPassAuthenticator,
+                        user -> complete("The user is '" + user.getId() + "'")))
+            .seal();
 
     // tests:
-    testRoute(route).run(HttpRequest.GET("/secured"))
-      .assertStatusCode(StatusCodes.UNAUTHORIZED)
-      .assertEntity("The resource requires authentication, which was not supplied with the request")
-      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
+    testRoute(route)
+        .run(HttpRequest.GET("/secured"))
+        .assertStatusCode(StatusCodes.UNAUTHORIZED)
+        .assertEntity(
+            "The resource requires authentication, which was not supplied with the request")
+        .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
 
     final HttpCredentials validCredentials =
-      BasicHttpCredentials.createBasicHttpCredentials("John", "p4ssw0rd");
-    testRoute(route).run(HttpRequest.GET("/secured").addCredentials(validCredentials))
-      .assertEntity("The user is 'John'");
+        BasicHttpCredentials.createBasicHttpCredentials("John", "p4ssw0rd");
+    testRoute(route)
+        .run(HttpRequest.GET("/secured").addCredentials(validCredentials))
+        .assertEntity("The user is 'John'");
 
     final HttpCredentials invalidCredentials =
-      BasicHttpCredentials.createBasicHttpCredentials("Peter", "pan");
-    testRoute(route).run(HttpRequest.GET("/secured").addCredentials(invalidCredentials))
-      .assertStatusCode(StatusCodes.UNAUTHORIZED)
-      .assertEntity("The supplied authentication is invalid")
-      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
-    //#authenticateBasicPFAsync
+        BasicHttpCredentials.createBasicHttpCredentials("Peter", "pan");
+    testRoute(route)
+        .run(HttpRequest.GET("/secured").addCredentials(invalidCredentials))
+        .assertStatusCode(StatusCodes.UNAUTHORIZED)
+        .assertEntity("The supplied authentication is invalid")
+        .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
+    // #authenticateBasicPFAsync
   }
 
   @Test
   public void testAuthenticateBasicAsync() {
-    //#authenticateBasicAsync
-    final Function<Optional<ProvidedCredentials>, CompletionStage<Optional<String>>> myUserPassAuthenticator = opt -> {
-      if (opt.filter(c -> (c != null) && c.verify("p4ssw0rd")).isPresent()) {
-        return CompletableFuture.completedFuture(Optional.of(opt.get().identifier()));
-      } else {
-        return CompletableFuture.completedFuture(Optional.empty());
-      }
-    };
+    // #authenticateBasicAsync
+    final Function<Optional<ProvidedCredentials>, CompletionStage<Optional<String>>>
+        myUserPassAuthenticator =
+            opt -> {
+              if (opt.filter(c -> (c != null) && c.verify("p4ssw0rd")).isPresent()) {
+                return CompletableFuture.completedFuture(Optional.of(opt.get().identifier()));
+              } else {
+                return CompletableFuture.completedFuture(Optional.empty());
+              }
+            };
 
-    final Route route = path("secured", () ->
-      authenticateBasicAsync("secure site", myUserPassAuthenticator, userName ->
-        complete("The user is '" + userName + "'")
-      )
-    ).seal();
+    final Route route =
+        path(
+                "secured",
+                () ->
+                    authenticateBasicAsync(
+                        "secure site",
+                        myUserPassAuthenticator,
+                        userName -> complete("The user is '" + userName + "'")))
+            .seal();
 
     // tests:
-    testRoute(route).run(HttpRequest.GET("/secured"))
-      .assertStatusCode(StatusCodes.UNAUTHORIZED)
-      .assertEntity("The resource requires authentication, which was not supplied with the request")
-      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
+    testRoute(route)
+        .run(HttpRequest.GET("/secured"))
+        .assertStatusCode(StatusCodes.UNAUTHORIZED)
+        .assertEntity(
+            "The resource requires authentication, which was not supplied with the request")
+        .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
 
     final HttpCredentials validCredentials =
-      BasicHttpCredentials.createBasicHttpCredentials("John", "p4ssw0rd");
-    testRoute(route).run(HttpRequest.GET("/secured").addCredentials(validCredentials))
-      .assertEntity("The user is 'John'");
+        BasicHttpCredentials.createBasicHttpCredentials("John", "p4ssw0rd");
+    testRoute(route)
+        .run(HttpRequest.GET("/secured").addCredentials(validCredentials))
+        .assertEntity("The user is 'John'");
 
     final HttpCredentials invalidCredentials =
-      BasicHttpCredentials.createBasicHttpCredentials("Peter", "pan");
-    testRoute(route).run(HttpRequest.GET("/secured").addCredentials(invalidCredentials))
-      .assertStatusCode(StatusCodes.UNAUTHORIZED)
-      .assertEntity("The supplied authentication is invalid")
-      .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
-    //#authenticateBasicAsync
+        BasicHttpCredentials.createBasicHttpCredentials("Peter", "pan");
+    testRoute(route)
+        .run(HttpRequest.GET("/secured").addCredentials(invalidCredentials))
+        .assertStatusCode(StatusCodes.UNAUTHORIZED)
+        .assertEntity("The supplied authentication is invalid")
+        .assertHeaderExists("WWW-Authenticate", "Basic realm=\"secure site\",charset=UTF-8");
+    // #authenticateBasicAsync
   }
 
   @Test
   public void testAuthenticateOrRejectWithChallenge() {
-    //#authenticateOrRejectWithChallenge
+    // #authenticateOrRejectWithChallenge
     final HttpChallenge challenge = HttpChallenge.create("MyAuth", new Option.Some<>("MyRealm"));
 
     // your custom authentication logic:
     final Function<HttpCredentials, Boolean> auth = credentials -> true;
 
-    final Function<Optional<HttpCredentials>, CompletionStage<Either<HttpChallenge, String>>> myUserPassAuthenticator =
-      opt -> {
-        if (opt.isPresent() && auth.apply(opt.get())) {
-          return CompletableFuture.completedFuture(Right.apply("some-user-name-from-creds"));
-        } else {
-          return CompletableFuture.completedFuture(Left.apply(challenge));
-        }
-      };
+    final Function<Optional<HttpCredentials>, CompletionStage<Either<HttpChallenge, String>>>
+        myUserPassAuthenticator =
+            opt -> {
+              if (opt.isPresent() && auth.apply(opt.get())) {
+                return CompletableFuture.completedFuture(Right.apply("some-user-name-from-creds"));
+              } else {
+                return CompletableFuture.completedFuture(Left.apply(challenge));
+              }
+            };
 
-    final Route route = path("secured", () ->
-      authenticateOrRejectWithChallenge(myUserPassAuthenticator, userName ->
-        complete("Authenticated!")
-      )
-    ).seal();
+    final Route route =
+        path(
+                "secured",
+                () ->
+                    authenticateOrRejectWithChallenge(
+                        myUserPassAuthenticator, userName -> complete("Authenticated!")))
+            .seal();
 
     // tests:
-    testRoute(route).run(HttpRequest.GET("/secured"))
-      .assertStatusCode(StatusCodes.UNAUTHORIZED)
-      .assertEntity("The resource requires authentication, which was not supplied with the request")
-      .assertHeaderExists("WWW-Authenticate", "MyAuth realm=\"MyRealm\"");
+    testRoute(route)
+        .run(HttpRequest.GET("/secured"))
+        .assertStatusCode(StatusCodes.UNAUTHORIZED)
+        .assertEntity(
+            "The resource requires authentication, which was not supplied with the request")
+        .assertHeaderExists("WWW-Authenticate", "MyAuth realm=\"MyRealm\"");
 
     final HttpCredentials validCredentials =
-      BasicHttpCredentials.createBasicHttpCredentials("John", "p4ssw0rd");
-    testRoute(route).run(HttpRequest.GET("/secured").addCredentials(validCredentials))
-      .assertStatusCode(StatusCodes.OK)
-      .assertEntity("Authenticated!");
-    //#authenticateOrRejectWithChallenge
+        BasicHttpCredentials.createBasicHttpCredentials("John", "p4ssw0rd");
+    testRoute(route)
+        .run(HttpRequest.GET("/secured").addCredentials(validCredentials))
+        .assertStatusCode(StatusCodes.OK)
+        .assertEntity("Authenticated!");
+    // #authenticateOrRejectWithChallenge
   }
 
   @Test
   public void testAuthorize() {
-    //#authorize
+    // #authorize
     class User {
       private final String name;
+
       public User(String name) {
         this.name = name;
       }
+
       public String getName() {
         return name;
       }
@@ -314,49 +361,58 @@ public class SecurityDirectivesExamplesTest extends JUnitRouteTest {
 
     // authenticate the user:
     final Function<Optional<ProvidedCredentials>, Optional<User>> myUserPassAuthenticator =
-      opt -> {
-        if (opt.isPresent()) {
-          return Optional.of(new User(opt.get().identifier()));
-        } else {
-          return Optional.empty();
-        }
-      };
+        opt -> {
+          if (opt.isPresent()) {
+            return Optional.of(new User(opt.get().identifier()));
+          } else {
+            return Optional.empty();
+          }
+        };
 
     // check if user is authorized to perform admin actions:
     final Set<String> admins = new HashSet<>();
     admins.add("Peter");
     final Function<User, Boolean> hasAdminPermissions = user -> admins.contains(user.getName());
 
-    final Route route = authenticateBasic("secure site", myUserPassAuthenticator, user ->
-      path("peters-lair", () ->
-        authorize(() -> hasAdminPermissions.apply(user), () ->
-          complete("'" + user.getName() +"' visited Peter's lair")
-        )
-      )
-    ).seal();
+    final Route route =
+        authenticateBasic(
+                "secure site",
+                myUserPassAuthenticator,
+                user ->
+                    path(
+                        "peters-lair",
+                        () ->
+                            authorize(
+                                () -> hasAdminPermissions.apply(user),
+                                () -> complete("'" + user.getName() + "' visited Peter's lair"))))
+            .seal();
 
     // tests:
     final HttpCredentials johnsCred =
-      BasicHttpCredentials.createBasicHttpCredentials("John", "p4ssw0rd");
-    testRoute(route).run(HttpRequest.GET("/peters-lair").addCredentials(johnsCred))
-      .assertStatusCode(StatusCodes.FORBIDDEN)
-      .assertEntity("The supplied authentication is not authorized to access this resource");
+        BasicHttpCredentials.createBasicHttpCredentials("John", "p4ssw0rd");
+    testRoute(route)
+        .run(HttpRequest.GET("/peters-lair").addCredentials(johnsCred))
+        .assertStatusCode(StatusCodes.FORBIDDEN)
+        .assertEntity("The supplied authentication is not authorized to access this resource");
 
     final HttpCredentials petersCred =
-      BasicHttpCredentials.createBasicHttpCredentials("Peter", "pan");
-    testRoute(route).run(HttpRequest.GET("/peters-lair").addCredentials(petersCred))
-      .assertEntity("'Peter' visited Peter's lair");
-    //#authorize
+        BasicHttpCredentials.createBasicHttpCredentials("Peter", "pan");
+    testRoute(route)
+        .run(HttpRequest.GET("/peters-lair").addCredentials(petersCred))
+        .assertEntity("'Peter' visited Peter's lair");
+    // #authorize
   }
 
   @Test
   public void testAuthorizeAsync() {
-    //#authorizeAsync
+    // #authorizeAsync
     class User {
       private final String name;
+
       public User(String name) {
         this.name = name;
       }
+
       public String getName() {
         return name;
       }
@@ -364,13 +420,13 @@ public class SecurityDirectivesExamplesTest extends JUnitRouteTest {
 
     // authenticate the user:
     final Function<Optional<ProvidedCredentials>, Optional<User>> myUserPassAuthenticator =
-      opt -> {
-        if (opt.isPresent()) {
-          return Optional.of(new User(opt.get().identifier()));
-        } else {
-          return Optional.empty();
-        }
-      };
+        opt -> {
+          if (opt.isPresent()) {
+            return Optional.of(new User(opt.get().identifier()));
+          } else {
+            return Optional.empty();
+          }
+        };
 
     // check if user is authorized to perform admin actions,
     // this could potentially be a long operation so it would return a Future
@@ -379,49 +435,58 @@ public class SecurityDirectivesExamplesTest extends JUnitRouteTest {
     final Set<String> synchronizedAdmins = Collections.synchronizedSet(admins);
 
     final Function<User, CompletionStage<Object>> hasAdminPermissions =
-      user -> CompletableFuture.completedFuture(synchronizedAdmins.contains(user.getName()));
+        user -> CompletableFuture.completedFuture(synchronizedAdmins.contains(user.getName()));
 
-    final Route route = authenticateBasic("secure site", myUserPassAuthenticator, user ->
-      path("peters-lair", () ->
-        authorizeAsync(() -> hasAdminPermissions.apply(user), () ->
-          complete("'" + user.getName() +"' visited Peter's lair")
-        )
-      )
-    ).seal();
+    final Route route =
+        authenticateBasic(
+                "secure site",
+                myUserPassAuthenticator,
+                user ->
+                    path(
+                        "peters-lair",
+                        () ->
+                            authorizeAsync(
+                                () -> hasAdminPermissions.apply(user),
+                                () -> complete("'" + user.getName() + "' visited Peter's lair"))))
+            .seal();
 
     // tests:
     final HttpCredentials johnsCred =
-      BasicHttpCredentials.createBasicHttpCredentials("John", "p4ssw0rd");
-    testRoute(route).run(HttpRequest.GET("/peters-lair").addCredentials(johnsCred))
-      .assertStatusCode(StatusCodes.FORBIDDEN)
-      .assertEntity("The supplied authentication is not authorized to access this resource");
+        BasicHttpCredentials.createBasicHttpCredentials("John", "p4ssw0rd");
+    testRoute(route)
+        .run(HttpRequest.GET("/peters-lair").addCredentials(johnsCred))
+        .assertStatusCode(StatusCodes.FORBIDDEN)
+        .assertEntity("The supplied authentication is not authorized to access this resource");
 
     final HttpCredentials petersCred =
-      BasicHttpCredentials.createBasicHttpCredentials("Peter", "pan");
-    testRoute(route).run(HttpRequest.GET("/peters-lair").addCredentials(petersCred))
-      .assertEntity("'Peter' visited Peter's lair");
-    //#authorizeAsync
+        BasicHttpCredentials.createBasicHttpCredentials("Peter", "pan");
+    testRoute(route)
+        .run(HttpRequest.GET("/peters-lair").addCredentials(petersCred))
+        .assertEntity("'Peter' visited Peter's lair");
+    // #authorizeAsync
   }
 
   @Test
   public void testExtractCredentials() {
-    //#extractCredentials
-    final Route route = extractCredentials(optCreds -> {
-      if (optCreds.isPresent()) {
-        return complete("Credentials: " + optCreds.get());
-      } else {
-        return complete("No credentials");
-      }
-    });
+    // #extractCredentials
+    final Route route =
+        extractCredentials(
+            optCreds -> {
+              if (optCreds.isPresent()) {
+                return complete("Credentials: " + optCreds.get());
+              } else {
+                return complete("No credentials");
+              }
+            });
 
     // tests:
     final HttpCredentials johnsCred =
-      BasicHttpCredentials.createBasicHttpCredentials("John", "p4ssw0rd");
-    testRoute(route).run(HttpRequest.GET("/").addCredentials(johnsCred))
-      .assertEntity("Credentials: Basic Sm9objpwNHNzdzByZA==");
+        BasicHttpCredentials.createBasicHttpCredentials("John", "p4ssw0rd");
+    testRoute(route)
+        .run(HttpRequest.GET("/").addCredentials(johnsCred))
+        .assertEntity("Credentials: Basic Sm9objpwNHNzdzByZA==");
 
-    testRoute(route).run(HttpRequest.GET("/"))
-      .assertEntity("No credentials");
-    //#extractCredentials
+    testRoute(route).run(HttpRequest.GET("/")).assertEntity("No credentials");
+    // #extractCredentials
   }
 }

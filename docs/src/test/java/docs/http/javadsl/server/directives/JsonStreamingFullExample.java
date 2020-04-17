@@ -4,7 +4,7 @@
 
 package docs.http.javadsl.server.directives;
 
-//#custom-content-type
+// #custom-content-type
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.ConnectHttp;
@@ -23,57 +23,61 @@ import java.util.stream.Stream;
 
 public class JsonStreamingFullExample extends AllDirectives {
 
-    public Route createRoute() {
-        final MediaType.WithFixedCharset mediaType =
-                MediaTypes.applicationWithFixedCharset("vnd.example.api.v1+json", HttpCharsets.UTF_8);
+  public Route createRoute() {
+    final MediaType.WithFixedCharset mediaType =
+        MediaTypes.applicationWithFixedCharset("vnd.example.api.v1+json", HttpCharsets.UTF_8);
 
-        final ContentType.WithFixedCharset contentType = ContentTypes.create(mediaType);
+    final ContentType.WithFixedCharset contentType = ContentTypes.create(mediaType);
 
-        final Marshaller<User, RequestEntity> userMarshaller =
-                Marshaller.withFixedContentType(contentType, (User user) -> HttpEntities.create(contentType, user.toJson()));
+    final Marshaller<User, RequestEntity> userMarshaller =
+        Marshaller.withFixedContentType(
+            contentType, (User user) -> HttpEntities.create(contentType, user.toJson()));
 
-        final EntityStreamingSupport jsonStreamingSupport = EntityStreamingSupport.json()
-                .withContentType(contentType)
-                .withParallelMarshalling(10, false);
+    final EntityStreamingSupport jsonStreamingSupport =
+        EntityStreamingSupport.json()
+            .withContentType(contentType)
+            .withParallelMarshalling(10, false);
 
-        return get(() ->
-                pathPrefix("users", () ->
-                        completeOKWithSource(fetchUsers(), userMarshaller, jsonStreamingSupport)
-                )
-        );
+    return get(
+        () ->
+            pathPrefix(
+                "users",
+                () -> completeOKWithSource(fetchUsers(), userMarshaller, jsonStreamingSupport)));
+  }
+
+  private Source<User, NotUsed> fetchUsers() {
+    final Random rnd = new Random();
+    return Source.fromIterator(
+        () -> Stream.generate(rnd::nextInt).map(this::dummyUser).limit(10000).iterator());
+  }
+
+  private User dummyUser(int id) {
+    return new User(id, "User " + id);
+  }
+
+  static final class User {
+    int id;
+    String name;
+
+    User(int id, String name) {
+      this.id = id;
+      this.name = name;
     }
 
-    private Source<User, NotUsed> fetchUsers() {
-        final Random rnd = new Random();
-        return Source.fromIterator(() -> Stream.generate(rnd::nextInt).map(this::dummyUser).limit(10000).iterator());
+    String toJson() {
+      return "{\"id\":\"" + id + "\", \"name\":\"" + name + "\"}";
     }
+  }
 
-    private User dummyUser(int id) {
-        return new User(id, "User " + id);
-    }
+  public static void main(String[] args) {
+    ActorSystem system = ActorSystem.create();
+    final JsonStreamingFullExample app = new JsonStreamingFullExample();
+    final Http http = Http.get(system);
+    final ActorMaterializer materializer = ActorMaterializer.create(system);
 
-    static final class User {
-        int id;
-        String name;
-
-        User(int id, String name) {
-            this.id = id;
-            this.name = name;
-        }
-
-        String toJson() {
-            return "{\"id\":\"" + id + "\", \"name\":\"" + name + "\"}";
-        }
-    }
-
-    public static void main(String[] args) {
-        ActorSystem system = ActorSystem.create();
-        final JsonStreamingFullExample app = new JsonStreamingFullExample();
-        final Http http = Http.get(system);
-        final ActorMaterializer materializer = ActorMaterializer.create(system);
-
-        final Flow<HttpRequest, HttpResponse, NotUsed> routeFlow = app.createRoute().flow(system, materializer);
-        http.bindAndHandle(routeFlow, ConnectHttp.toHost("localhost", 8080), materializer);
-    }
+    final Flow<HttpRequest, HttpResponse, NotUsed> routeFlow =
+        app.createRoute().flow(system, materializer);
+    http.bindAndHandle(routeFlow, ConnectHttp.toHost("localhost", 8080), materializer);
+  }
 }
-//#custom-content-type
+// #custom-content-type

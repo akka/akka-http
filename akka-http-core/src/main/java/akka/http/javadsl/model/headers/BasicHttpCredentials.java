@@ -4,7 +4,9 @@
 
 package akka.http.javadsl.model.headers;
 
-public abstract class BasicHttpCredentials extends akka.http.scaladsl.model.headers.HttpCredentials {
-    public abstract String username();
-    public abstract String password();
+public abstract class BasicHttpCredentials
+    extends akka.http.scaladsl.model.headers.HttpCredentials {
+  public abstract String username();
+
+  public abstract String password();
 }

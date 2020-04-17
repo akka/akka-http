@@ -17,20 +17,22 @@ import java.util.concurrent.CompletionStage;
 
 public class GracefulTerminationCompileTest {
 
-    public static void main(String[] args) throws Exception {
-        ActorSystem system = ActorSystem.create();
-        Materializer materializer = ActorMaterializer.create(system);
+  public static void main(String[] args) throws Exception {
+    ActorSystem system = ActorSystem.create();
+    Materializer materializer = ActorMaterializer.create(system);
 
-        Http http = Http.get(system);
+    Http http = Http.get(system);
 
-        Function<HttpRequest, CompletionStage<HttpResponse>> handle = (req) -> {
-            return CompletableFuture.completedFuture(HttpResponse.create());
+    Function<HttpRequest, CompletionStage<HttpResponse>> handle =
+        (req) -> {
+          return CompletableFuture.completedFuture(HttpResponse.create());
         };
-        CompletionStage<ServerBinding> bound = http.bindAndHandleAsync(handle, ConnectHttp.toHost("127.0.0.1"), materializer);
+    CompletionStage<ServerBinding> bound =
+        http.bindAndHandleAsync(handle, ConnectHttp.toHost("127.0.0.1"), materializer);
 
-        ServerBinding serverBinding = bound.toCompletableFuture().get();
-        CompletionStage<HttpTerminated> terminate = serverBinding.terminate(Duration.ofSeconds(1));
-        CompletionStage<Duration> whenSignalled = serverBinding.whenTerminationSignalIssued();
-        CompletionStage<HttpTerminated> whenTerminated = serverBinding.whenTerminated();
-    }
+    ServerBinding serverBinding = bound.toCompletableFuture().get();
+    CompletionStage<HttpTerminated> terminate = serverBinding.terminate(Duration.ofSeconds(1));
+    CompletionStage<Duration> whenSignalled = serverBinding.whenTerminationSignalIssued();
+    CompletionStage<HttpTerminated> whenTerminated = serverBinding.whenTerminated();
+  }
 }

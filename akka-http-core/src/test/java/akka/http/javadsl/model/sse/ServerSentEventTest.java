@@ -25,53 +25,50 @@ import org.scalatestplus.junit.JUnitSuite;
 
 public class ServerSentEventTest extends JUnitSuite {
 
-    @Test
-    public void create() {
-        final ServerSentEvent event = ServerSentEvent.create(
-                "data",
-                Optional.of("type"),
-                Optional.of("id"),
-                OptionalInt.of(1000)
-        );
-        Assert.assertEquals("data", event.getData());
-        Assert.assertEquals(Optional.of("type"), event.getEventType());
-        Assert.assertEquals(Optional.of("id"), event.getId());
-        Assert.assertEquals(OptionalInt.of(1000), event.getRetry());
-    }
+  @Test
+  public void create() {
+    final ServerSentEvent event =
+        ServerSentEvent.create(
+            "data", Optional.of("type"), Optional.of("id"), OptionalInt.of(1000));
+    Assert.assertEquals("data", event.getData());
+    Assert.assertEquals(Optional.of("type"), event.getEventType());
+    Assert.assertEquals(Optional.of("id"), event.getId());
+    Assert.assertEquals(OptionalInt.of(1000), event.getRetry());
+  }
 
-    @Test
-    public void createData() {
-        final ServerSentEvent event = ServerSentEvent.create("data");
-        Assert.assertEquals("data", event.getData());
-    }
+  @Test
+  public void createData() {
+    final ServerSentEvent event = ServerSentEvent.create("data");
+    Assert.assertEquals("data", event.getData());
+  }
 
-    @Test
-    public void createDataEvent() {
-        final ServerSentEvent event = ServerSentEvent.create("data", "type");
-        Assert.assertEquals("data", event.getData());
-        Assert.assertEquals(Optional.of("type"), event.getEventType());
-    }
+  @Test
+  public void createDataEvent() {
+    final ServerSentEvent event = ServerSentEvent.create("data", "type");
+    Assert.assertEquals("data", event.getData());
+    Assert.assertEquals(Optional.of("type"), event.getEventType());
+  }
 
-    @Test
-    public void createDataEventId() {
-        final ServerSentEvent event = ServerSentEvent.create("data", "type", "id");
-        Assert.assertEquals("data", event.getData());
-        Assert.assertEquals(Optional.of("type"), event.getEventType());
-        Assert.assertEquals(Optional.of("id"), event.getId());
-    }
+  @Test
+  public void createDataEventId() {
+    final ServerSentEvent event = ServerSentEvent.create("data", "type", "id");
+    Assert.assertEquals("data", event.getData());
+    Assert.assertEquals(Optional.of("type"), event.getEventType());
+    Assert.assertEquals(Optional.of("id"), event.getId());
+  }
 
-    @Test
-    public void createRetry() {
-        final ServerSentEvent event = ServerSentEvent.create("data", 1000);
-        Assert.assertEquals(OptionalInt.of(1000), event.getRetry());
-    }
+  @Test
+  public void createRetry() {
+    final ServerSentEvent event = ServerSentEvent.create("data", 1000);
+    Assert.assertEquals(OptionalInt.of(1000), event.getRetry());
+  }
 
-    @Test
-    public void heartbeat() {
-        final ServerSentEvent event = ServerSentEvent.heartbeat();
-        Assert.assertEquals("", event.getData());
-        Assert.assertEquals(Optional.empty(), event.getEventType());
-        Assert.assertEquals(Optional.empty(), event.getId());
-        Assert.assertEquals(OptionalInt.empty(), event.getRetry());
-    }
+  @Test
+  public void heartbeat() {
+    final ServerSentEvent event = ServerSentEvent.heartbeat();
+    Assert.assertEquals("", event.getData());
+    Assert.assertEquals(Optional.empty(), event.getEventType());
+    Assert.assertEquals(Optional.empty(), event.getId());
+    Assert.assertEquals(OptionalInt.empty(), event.getRetry());
+  }
 }

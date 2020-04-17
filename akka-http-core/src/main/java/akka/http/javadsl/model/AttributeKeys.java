@@ -5,5 +5,6 @@
 package akka.http.javadsl.model;
 
 public final class AttributeKeys {
-    public static final AttributeKey<RemoteAddress> remoteAddress = (AttributeKey<RemoteAddress>)(Object)akka.http.scaladsl.model.AttributeKeys.remoteAddress();
+  public static final AttributeKey<RemoteAddress> remoteAddress =
+      (AttributeKey<RemoteAddress>) (Object) akka.http.scaladsl.model.AttributeKeys.remoteAddress();
 }

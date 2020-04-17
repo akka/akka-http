@@ -16,28 +16,28 @@ import org.junit.Test;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-//#example-entity-with-json
+// #example-entity-with-json
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.entity;
 
-//#example-entity-with-json
-//#example-completeWith-with-json
+// #example-entity-with-json
+// #example-completeWith-with-json
 import static akka.http.javadsl.server.Directives.completeWith;
 
-//#example-completeWith-with-json
-//#example-handleWith-with-json
+// #example-completeWith-with-json
+// #example-handleWith-with-json
 import static akka.http.javadsl.server.Directives.handleWith;
 
-//#example-handleWith-with-json
+// #example-handleWith-with-json
 
 public class MarshallingDirectivesExamplesTest extends JUnitRouteTest {
 
-  //#person
-  static public class Person {
+  // #person
+  public static class Person {
     private final String name;
     private final int favoriteNumber;
 
-    //default constructor required for Jackson
+    // default constructor required for Jackson
     public Person() {
       this.name = "";
       this.favoriteNumber = 0;
@@ -56,86 +56,95 @@ public class MarshallingDirectivesExamplesTest extends JUnitRouteTest {
       return favoriteNumber;
     }
   }
-  //#person
+  // #person
 
   @Test
   public void testEntity() {
-    //#example-entity-with-json
+    // #example-entity-with-json
     final Unmarshaller<HttpEntity, Person> unmarshaller = Jackson.unmarshaller(Person.class);
 
-    final Route route = entity(unmarshaller, person ->
-      complete( "Person:" +  person.getName() + " - favoriteNumber:" + person.getFavoriteNumber() )
-    );
+    final Route route =
+        entity(
+            unmarshaller,
+            person ->
+                complete(
+                    "Person:"
+                        + person.getName()
+                        + " - favoriteNumber:"
+                        + person.getFavoriteNumber()));
 
-    testRoute(route).run(
-      HttpRequest.POST("/")
-        .withEntity(
-          HttpEntities.create(
-            ContentTypes.APPLICATION_JSON, "{\"name\":\"Jane\",\"favoriteNumber\":42}"
-          )
-        )
-    ).assertEntity("Person:Jane - favoriteNumber:42");
-    //#example-entity-with-json
+    testRoute(route)
+        .run(
+            HttpRequest.POST("/")
+                .withEntity(
+                    HttpEntities.create(
+                        ContentTypes.APPLICATION_JSON,
+                        "{\"name\":\"Jane\",\"favoriteNumber\":42}")))
+        .assertEntity("Person:Jane - favoriteNumber:42");
+    // #example-entity-with-json
   }
 
   @Test
   public void testCompleteWith() {
-    //#example-completeWith-with-json
-    final Marshaller<Person, HttpResponse> marshaller = Marshaller.entityToOKResponse(Jackson.<Person>marshaller());
+    // #example-completeWith-with-json
+    final Marshaller<Person, HttpResponse> marshaller =
+        Marshaller.entityToOKResponse(Jackson.<Person>marshaller());
 
-    //Please note that you can also pass completionFunction to another thread and use it there to complete the request.
-    //For example:
-    //final Consumer<Consumer<Person>> findPerson = completionFunction -> {
+    // Please note that you can also pass completionFunction to another thread and use it there to
+    // complete the request.
+    // For example:
+    // final Consumer<Consumer<Person>> findPerson = completionFunction -> {
     //  CompletableFuture.runAsync(() ->
     //   /* ... some processing logic... */
     //   completionFunction.accept(new Person("Jane", 42)));
-    //};
-    final Consumer<Consumer<Person>> findPerson = completionFunction -> {
+    // };
+    final Consumer<Consumer<Person>> findPerson =
+        completionFunction -> {
 
-      //... some processing logic...
+          // ... some processing logic...
 
-      //complete the request
-      completionFunction.accept(new Person("Jane", 42));
-    };
+          // complete the request
+          completionFunction.accept(new Person("Jane", 42));
+        };
 
     final Route route = completeWith(marshaller, findPerson);
 
     // tests:
-    final TestRouteResult routeResult = testRoute(route).run(
-            HttpRequest.GET("/")
-    );
+    final TestRouteResult routeResult = testRoute(route).run(HttpRequest.GET("/"));
     routeResult.assertMediaType(MediaTypes.APPLICATION_JSON);
     routeResult.assertEntity("{\"favoriteNumber\":42,\"name\":\"Jane\"}");
-    //#example-completeWith-with-json
+    // #example-completeWith-with-json
   }
 
   @Test
   public void testHandleWith() {
-    //#example-handleWith-with-json
+    // #example-handleWith-with-json
     final Unmarshaller<HttpEntity, Person> unmarshaller = Jackson.unmarshaller(Person.class);
-    final Marshaller<Person, HttpResponse> marshaller = Marshaller.entityToOKResponse(Jackson.<Person>marshaller());
+    final Marshaller<Person, HttpResponse> marshaller =
+        Marshaller.entityToOKResponse(Jackson.<Person>marshaller());
 
-    final Function<Person, Person> updatePerson = person -> {
+    final Function<Person, Person> updatePerson =
+        person -> {
 
-      //... some processing logic...
+          // ... some processing logic...
 
-      //return the person
-      return person;
-    };
+          // return the person
+          return person;
+        };
 
     final Route route = handleWith(unmarshaller, marshaller, updatePerson);
 
     // tests:
-    final TestRouteResult routeResult = testRoute(route).run(
-      HttpRequest.POST("/")
-        .withEntity(
-          HttpEntities.create(
-            ContentTypes.APPLICATION_JSON, "{\"name\":\"Jane\",\"favoriteNumber\":42}"
-          )
-        )
-    );
+    final TestRouteResult routeResult =
+        testRoute(route)
+            .run(
+                HttpRequest.POST("/")
+                    .withEntity(
+                        HttpEntities.create(
+                            ContentTypes.APPLICATION_JSON,
+                            "{\"name\":\"Jane\",\"favoriteNumber\":42}")));
     routeResult.assertMediaType(MediaTypes.APPLICATION_JSON);
     routeResult.assertEntity("{\"favoriteNumber\":42,\"name\":\"Jane\"}");
-    //#example-handleWith-with-json
+    // #example-handleWith-with-json
   }
 }

@@ -16,148 +16,136 @@ import scala.NotImplementedError;
 
 import static akka.http.javadsl.server.PathMatchers.segment;
 
-//#getFromFile
+// #getFromFile
 import static akka.http.javadsl.server.Directives.getFromFile;
 import static akka.http.javadsl.server.Directives.path;
 
-//#getFromFile
-//#getFromResource
+// #getFromFile
+// #getFromResource
 import static akka.http.javadsl.server.Directives.getFromResource;
 import static akka.http.javadsl.server.Directives.path;
 
-//#getFromResource
-//#listDirectoryContents
+// #getFromResource
+// #listDirectoryContents
 import akka.http.javadsl.server.Directives;
 
 import static akka.http.javadsl.server.Directives.listDirectoryContents;
 import static akka.http.javadsl.server.Directives.path;
 
-//#listDirectoryContents
-//#getFromBrowseableDirectory
+// #listDirectoryContents
+// #getFromBrowseableDirectory
 import static akka.http.javadsl.server.Directives.getFromBrowseableDirectory;
 import static akka.http.javadsl.server.Directives.path;
 
-//#getFromBrowseableDirectory
-//#getFromBrowseableDirectories
+// #getFromBrowseableDirectory
+// #getFromBrowseableDirectories
 import static akka.http.javadsl.server.Directives.getFromBrowseableDirectories;
 import static akka.http.javadsl.server.Directives.path;
 
-//#getFromBrowseableDirectories
-//#getFromDirectory
+// #getFromBrowseableDirectories
+// #getFromDirectory
 import static akka.http.javadsl.server.Directives.getFromDirectory;
 import static akka.http.javadsl.server.Directives.pathPrefix;
 
-//#getFromDirectory
-//#getFromResourceDirectory
+// #getFromDirectory
+// #getFromResourceDirectory
 import static akka.http.javadsl.server.Directives.getFromResourceDirectory;
 import static akka.http.javadsl.server.Directives.pathPrefix;
 
-//#getFromResourceDirectory
+// #getFromResourceDirectory
 
 public class FileAndResourceDirectivesExamplesTest extends JUnitRouteTest {
 
   @Ignore("Compile only test")
   @Test
   public void testGetFromFile() {
-    //#getFromFile
-    final Route route = path(PathMatchers.segment("logs").slash(segment()), name ->
-      getFromFile(name + ".log")
-    );
+    // #getFromFile
+    final Route route =
+        path(PathMatchers.segment("logs").slash(segment()), name -> getFromFile(name + ".log"));
 
     // tests:
-    testRoute(route).run(HttpRequest.GET("/logs/example"))
-      .assertEntity("example file contents");
-    //#getFromFile
+    testRoute(route).run(HttpRequest.GET("/logs/example")).assertEntity("example file contents");
+    // #getFromFile
   }
 
   @Ignore("Compile only test")
   @Test
   public void testGetFromResource() {
-    //#getFromResource
-    final Route route = path(PathMatchers.segment("logs").slash(segment()), name ->
-      getFromResource(name + ".log")
-    );
+    // #getFromResource
+    final Route route =
+        path(PathMatchers.segment("logs").slash(segment()), name -> getFromResource(name + ".log"));
 
     // tests:
-    testRoute(route).run(HttpRequest.GET("/logs/example"))
-      .assertEntity("example file contents");
-    //#getFromResource
+    testRoute(route).run(HttpRequest.GET("/logs/example")).assertEntity("example file contents");
+    // #getFromResource
   }
 
   @Ignore("Compile only test")
   @Test
   public void testListDirectoryContents() {
-    //#listDirectoryContents
-    final Route route = Directives.concat(
-      path("tmp", () -> listDirectoryContents("/tmp")),
-      path("custom", () -> {
-        // implement your custom renderer here
-        final DirectoryRenderer renderer = renderVanityFooter -> {
-          throw new NotImplementedError();
-        };
-        return listDirectoryContents(renderer, "/tmp");
-      })
-    );
+    // #listDirectoryContents
+    final Route route =
+        Directives.concat(
+            path("tmp", () -> listDirectoryContents("/tmp")),
+            path(
+                "custom",
+                () -> {
+                  // implement your custom renderer here
+                  final DirectoryRenderer renderer =
+                      renderVanityFooter -> {
+                        throw new NotImplementedError();
+                      };
+                  return listDirectoryContents(renderer, "/tmp");
+                }));
 
     // tests:
-    testRoute(route).run(HttpRequest.GET("/logs/example"))
-      .assertEntity("example file contents");
-    //#listDirectoryContents
+    testRoute(route).run(HttpRequest.GET("/logs/example")).assertEntity("example file contents");
+    // #listDirectoryContents
   }
 
   @Ignore("Compile only test")
   @Test
   public void testGetFromBrowseableDirectory() {
-    //#getFromBrowseableDirectory
-    final Route route = path("tmp", () ->
-      getFromBrowseableDirectory("/tmp")
-    );
+    // #getFromBrowseableDirectory
+    final Route route = path("tmp", () -> getFromBrowseableDirectory("/tmp"));
 
     // tests:
-    testRoute(route).run(HttpRequest.GET("/tmp"))
-      .assertStatusCode(StatusCodes.OK);
-    //#getFromBrowseableDirectory
+    testRoute(route).run(HttpRequest.GET("/tmp")).assertStatusCode(StatusCodes.OK);
+    // #getFromBrowseableDirectory
   }
 
   @Ignore("Compile only test")
   @Test
   public void testGetFromBrowseableDirectories() {
-    //#getFromBrowseableDirectories
-    final Route route = path("tmp", () ->
-      getFromBrowseableDirectories("/main", "/backups")
-    );
+    // #getFromBrowseableDirectories
+    final Route route = path("tmp", () -> getFromBrowseableDirectories("/main", "/backups"));
 
     // tests:
-    testRoute(route).run(HttpRequest.GET("/tmp"))
-      .assertStatusCode(StatusCodes.OK);
-    //#getFromBrowseableDirectories
+    testRoute(route).run(HttpRequest.GET("/tmp")).assertStatusCode(StatusCodes.OK);
+    // #getFromBrowseableDirectories
   }
 
   @Ignore("Compile only test")
   @Test
   public void testGetFromDirectory() {
-    //#getFromDirectory
-    final Route route = pathPrefix("tmp", () ->
-      getFromDirectory("/tmp")
-    );
+    // #getFromDirectory
+    final Route route = pathPrefix("tmp", () -> getFromDirectory("/tmp"));
 
     // tests:
-    testRoute(route).run(HttpRequest.GET("/tmp/example"))
-      .assertEntity("example file contents");
-    //#getFromDirectory
+    testRoute(route).run(HttpRequest.GET("/tmp/example")).assertEntity("example file contents");
+    // #getFromDirectory
   }
 
   @Ignore("Compile only test")
   @Test
   public void testGetFromResourceDirectory() {
-    //#getFromResourceDirectory
-    final Route route = pathPrefix("examples", () ->
-      getFromResourceDirectory("/examples")
-    );
+    // #getFromResourceDirectory
+    final Route route = pathPrefix("examples", () -> getFromResourceDirectory("/examples"));
 
     // tests:
-    testRoute(route).run(HttpRequest.GET("/examples/example-1"))
-      .assertEntity("example file contents");
-    //#getFromResourceDirectory
+    testRoute(route)
+        .run(HttpRequest.GET("/examples/example-1"))
+        .assertEntity("example file contents");
+    // #getFromResourceDirectory
   }
 }

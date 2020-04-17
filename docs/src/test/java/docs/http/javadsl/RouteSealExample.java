@@ -20,32 +20,29 @@ import java.io.IOException;
 
 import java.util.concurrent.CompletionStage;
 
-//#route-seal-example
+// #route-seal-example
 public class RouteSealExample extends AllDirectives {
 
-  public static void main(String [] args) throws IOException {
+  public static void main(String[] args) throws IOException {
     RouteSealExample app = new RouteSealExample();
     app.runServer();
   }
 
-  public void runServer(){
+  public void runServer() {
     ActorSystem system = ActorSystem.create();
     final ActorMaterializer materializer = ActorMaterializer.create(system);
 
-    Route sealedRoute = get(
-      () -> pathSingleSlash( () ->
-        complete("Captain on the bridge!")
-      )
-    ).seal();
+    Route sealedRoute = get(() -> pathSingleSlash(() -> complete("Captain on the bridge!"))).seal();
 
-    Route route = respondWithHeader(
-      RawHeader.create("special-header", "you always have this even in 404"),
-      () -> sealedRoute
-    );
+    Route route =
+        respondWithHeader(
+            RawHeader.create("special-header", "you always have this even in 404"),
+            () -> sealedRoute);
 
     final Http http = Http.get(system);
     final Flow<HttpRequest, HttpResponse, NotUsed> routeFlow = route.flow(system, materializer);
-    final CompletionStage<ServerBinding> binding = http.bindAndHandle(routeFlow, ConnectHttp.toHost("localhost", 8080), materializer);
+    final CompletionStage<ServerBinding> binding =
+        http.bindAndHandle(routeFlow, ConnectHttp.toHost("localhost", 8080), materializer);
   }
 }
-//#route-seal-example
+// #route-seal-example

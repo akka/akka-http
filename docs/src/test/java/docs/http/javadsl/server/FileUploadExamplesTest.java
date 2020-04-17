@@ -30,21 +30,21 @@ import java.util.concurrent.CompletionStage;
 import static akka.http.javadsl.server.PathMatchers.longSegment;
 import static akka.http.javadsl.server.PathMatchers.segment;
 
-//#simple-upload
+// #simple-upload
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.entity;
 import static akka.http.javadsl.server.Directives.onSuccess;
 import static akka.http.javadsl.server.Directives.path;
 
-//#simple-upload
+// #simple-upload
 
-//#stream-csv-upload
+// #stream-csv-upload
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.entity;
 import static akka.http.javadsl.server.Directives.onComplete;
 import static akka.http.javadsl.server.Directives.path;
 
-//#stream-csv-upload
+// #stream-csv-upload
 
 public class FileUploadExamplesTest extends JUnitRouteTest {
 
@@ -55,48 +55,66 @@ public class FileUploadExamplesTest extends JUnitRouteTest {
 
   Route uploadVideo() {
     final Materializer materializer = null;
-    return 
-    //#simple-upload
-      path("video", () ->
-      entity(Unmarshaller.entityToMultipartFormData(), formData -> {
-        // collect all parts of the multipart as it arrives into a map
-        final CompletionStage<Map<String, Object>> allParts =
-          formData.getParts().mapAsync(1, bodyPart -> {
-            if ("file".equals(bodyPart.getName())) {
-              // stream into a file as the chunks of it arrives and return a CompletionStage
-              // file to where it got stored
-              final File file = File.createTempFile("upload", "tmp");
-              return bodyPart.getEntity().getDataBytes()
-                .runWith(FileIO.toPath(file.toPath()), materializer)
-                .thenApply(ignore ->
-                  new Pair<String, Object>(bodyPart.getName(), file)
-                );
-            } else {
-              // collect form field values
-              return bodyPart.toStrict(2 * 1000, materializer)
-                .thenApply(strict ->
-                  new Pair<String, Object>(bodyPart.getName(),
-                    strict.getEntity().getData().utf8String())
-                );
-            }
-          }).runFold(new HashMap<String, Object>(), (acc, pair) -> {
-            acc.put(pair.first(), pair.second());
-            return acc;
-          }, materializer);
+    return
+    // #simple-upload
+    path(
+        "video",
+        () ->
+            entity(
+                Unmarshaller.entityToMultipartFormData(),
+                formData -> {
+                  // collect all parts of the multipart as it arrives into a map
+                  final CompletionStage<Map<String, Object>> allParts =
+                      formData
+                          .getParts()
+                          .mapAsync(
+                              1,
+                              bodyPart -> {
+                                if ("file".equals(bodyPart.getName())) {
+                                  // stream into a file as the chunks of it arrives and return a
+                                  // CompletionStage
+                                  // file to where it got stored
+                                  final File file = File.createTempFile("upload", "tmp");
+                                  return bodyPart
+                                      .getEntity()
+                                      .getDataBytes()
+                                      .runWith(FileIO.toPath(file.toPath()), materializer)
+                                      .thenApply(
+                                          ignore ->
+                                              new Pair<String, Object>(bodyPart.getName(), file));
+                                } else {
+                                  // collect form field values
+                                  return bodyPart
+                                      .toStrict(2 * 1000, materializer)
+                                      .thenApply(
+                                          strict ->
+                                              new Pair<String, Object>(
+                                                  bodyPart.getName(),
+                                                  strict.getEntity().getData().utf8String()));
+                                }
+                              })
+                          .runFold(
+                              new HashMap<String, Object>(),
+                              (acc, pair) -> {
+                                acc.put(pair.first(), pair.second());
+                                return acc;
+                              },
+                              materializer);
 
-        // simulate a DB call
-        final CompletionStage<Void> done = allParts.thenCompose(map ->
-          // You would have some better validation/unmarshalling here
-          DB.create((File) map.get("file"),
-            (String) map.get("title"),
-            (String) map.get("author")
-          ));
+                  // simulate a DB call
+                  final CompletionStage<Void> done =
+                      allParts.thenCompose(
+                          map ->
+                              // You would have some better validation/unmarshalling here
+                              DB.create(
+                                  (File) map.get("file"),
+                                  (String) map.get("title"),
+                                  (String) map.get("author")));
 
-        // when processing have finished create a response for the user
-        return onSuccess(allParts, x -> complete("ok!"));
-      })
-    );
-    //#simple-upload
+                  // when processing have finished create a response for the user
+                  return onSuccess(allParts, x -> complete("ok!"));
+                }));
+    // #simple-upload
 
   }
 
@@ -106,37 +124,55 @@ public class FileUploadExamplesTest extends JUnitRouteTest {
     }
   }
 
-  //#stream-csv-upload
+  // #stream-csv-upload
   Route csvUploads() {
-    //#stream-csv-upload
+    // #stream-csv-upload
     final Materializer materializer = materializer();
     final ActorRef metadataActor = system().deadLetters();
-    //#stream-csv-upload
+    // #stream-csv-upload
     final Flow<ByteString, ByteString, NotUsed> splitLines =
-      Framing.delimiter(ByteString.fromString("\n"), 256);
+        Framing.delimiter(ByteString.fromString("\n"), 256);
 
-    return path(segment("metadata").slash(longSegment()), id ->
-      entity(Unmarshaller.entityToMultipartFormData(), formData -> {
+    return path(
+        segment("metadata").slash(longSegment()),
+        id ->
+            entity(
+                Unmarshaller.entityToMultipartFormData(),
+                formData -> {
+                  final CompletionStage<Done> done =
+                      formData
+                          .getParts()
+                          .mapAsync(
+                              1,
+                              bodyPart ->
+                                  bodyPart
+                                      .getFilename()
+                                      .filter(name -> name.endsWith(".csv"))
+                                      .map(
+                                          ignored ->
+                                              bodyPart
+                                                  .getEntity()
+                                                  .getDataBytes()
+                                                  .via(splitLines)
+                                                  .map(bs -> bs.utf8String().split(","))
+                                                  .runForeach(
+                                                      csv ->
+                                                          metadataActor.tell(
+                                                              new Entry(id, csv),
+                                                              ActorRef.noSender()),
+                                                      materializer))
+                                      .orElseGet(
+                                          () ->
+                                              // in case the uploaded file is not a CSV
+                                              CompletableFuture.completedFuture(
+                                                  Done.getInstance())))
+                          .runWith(Sink.ignore(), materializer);
 
-        final CompletionStage<Done> done = formData.getParts().mapAsync(1, bodyPart ->
-          bodyPart.getFilename().filter(name -> name.endsWith(".csv")).map(ignored ->
-            bodyPart.getEntity().getDataBytes()
-              .via(splitLines)
-              .map(bs -> bs.utf8String().split(","))
-              .runForeach(csv ->
-                  metadataActor.tell(new Entry(id, csv), ActorRef.noSender()),
-                materializer)
-          ).orElseGet(() ->
-            // in case the uploaded file is not a CSV
-            CompletableFuture.completedFuture(Done.getInstance()))
-        ).runWith(Sink.ignore(), materializer);
-
-        // when processing have finished create a response for the user
-        return onComplete(() -> done, ignored -> complete("ok!"));
-      })
-    );
+                  // when processing have finished create a response for the user
+                  return onComplete(() -> done, ignored -> complete("ok!"));
+                }));
   }
-  //#stream-csv-upload
+  // #stream-csv-upload
 
   static class Entry implements Serializable {
     final Long id;
@@ -149,11 +185,7 @@ public class FileUploadExamplesTest extends JUnitRouteTest {
 
     @Override
     public String toString() {
-      return "Entry{" +
-        "id=" + id +
-        ", values=" + Arrays.toString(values) +
-        '}';
+      return "Entry{" + "id=" + id + ", values=" + Arrays.toString(values) + '}';
     }
   }
-
 }

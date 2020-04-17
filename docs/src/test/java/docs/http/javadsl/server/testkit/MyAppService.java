@@ -4,7 +4,7 @@
 
 package docs.http.javadsl.server.testkit;
 
-//#simple-app
+// #simple-app
 
 import akka.actor.ActorSystem;
 import akka.http.javadsl.ConnectHttp;
@@ -24,18 +24,22 @@ public class MyAppService extends AllDirectives {
   }
 
   public Route createRoute() {
-    return
-      get(() ->
-        pathPrefix("calculator", () ->
-          path("add", () ->
-            parameter(StringUnmarshallers.DOUBLE, "x", x ->
-              parameter(StringUnmarshallers.DOUBLE, "y", y ->
-                complete(add(x, y))
-              )
-            )
-          )
-        )
-      );
+    return get(
+        () ->
+            pathPrefix(
+                "calculator",
+                () ->
+                    path(
+                        "add",
+                        () ->
+                            parameter(
+                                StringUnmarshallers.DOUBLE,
+                                "x",
+                                x ->
+                                    parameter(
+                                        StringUnmarshallers.DOUBLE,
+                                        "y",
+                                        y -> complete(add(x, y)))))));
   }
 
   public static void main(String[] args) throws IOException {
@@ -46,10 +50,11 @@ public class MyAppService extends AllDirectives {
 
     final ConnectHttp host = ConnectHttp.toHost("127.0.0.1");
 
-    Http.get(system).bindAndHandle(app.createRoute().flow(system, materializer), host, materializer);
+    Http.get(system)
+        .bindAndHandle(app.createRoute().flow(system, materializer), host, materializer);
 
     System.console().readLine("Type RETURN to exit...");
     system.terminate();
   }
 }
-//#simple-app
+// #simple-app

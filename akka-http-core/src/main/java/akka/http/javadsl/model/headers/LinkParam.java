@@ -5,6 +5,7 @@
 package akka.http.javadsl.model.headers;
 
 public abstract class LinkParam {
-    public abstract String key();
-    public abstract Object value();
+  public abstract String key();
+
+  public abstract Object value();
 }

@@ -19,16 +19,9 @@ public class MarshallingDirectivesTest extends JUnitRouteTest {
 
   @Test
   public void testEntityAsString() {
-    TestRoute route =
-      testRoute(
-        entity(Unmarshaller.entityToString(), Directives::complete)
-      );
+    TestRoute route = testRoute(entity(Unmarshaller.entityToString(), Directives::complete));
 
-    HttpRequest request =
-      HttpRequest.POST("/")
-        .withEntity("abcdef");
-    route.run(request)
-      .assertStatusCode(StatusCodes.OK)
-      .assertEntity("abcdef");
+    HttpRequest request = HttpRequest.POST("/").withEntity("abcdef");
+    route.run(request).assertStatusCode(StatusCodes.OK).assertEntity("abcdef");
   }
 }

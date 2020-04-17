@@ -18,10 +18,10 @@ public class HttpsServerExampleTest extends JUnitSuite {
   }
 
   void sslConfigGet() {
-    //#akka-ssl-config
+    // #akka-ssl-config
     final ActorSystem system = ActorSystem.create();
 
     final AkkaSSLConfig sslConfig = AkkaSSLConfig.get(system);
-    //#akka-ssl-config
+    // #akka-ssl-config
   }
 }

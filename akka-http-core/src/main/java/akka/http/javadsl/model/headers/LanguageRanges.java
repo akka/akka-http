@@ -5,7 +5,8 @@
 package akka.http.javadsl.model.headers;
 
 public class LanguageRanges {
-    private LanguageRanges() { }
+  private LanguageRanges() {}
 
-    public static final LanguageRange ALL = akka.http.scaladsl.model.headers.LanguageRange.$times$.MODULE$;
+  public static final LanguageRange ALL =
+      akka.http.scaladsl.model.headers.LanguageRange.$times$.MODULE$;
 }

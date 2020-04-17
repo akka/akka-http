@@ -24,9 +24,7 @@ public class PetStoreAPITest extends JUnitRouteTest {
   public void testGetPet() {
     TestRouteResult response = createRoute().run(HttpRequest.GET("/pet/1"));
 
-    response
-      .assertStatusCode(StatusCodes.OK)
-      .assertMediaType("application/json");
+    response.assertStatusCode(StatusCodes.OK).assertMediaType("application/json");
 
     Pet pet = response.entity(Jackson.unmarshaller(Pet.class));
     assertEquals("cat", pet.getName());
@@ -35,15 +33,15 @@ public class PetStoreAPITest extends JUnitRouteTest {
 
   @Test
   public void testGetMissingPet() {
-    createRoute().run(HttpRequest.GET("/pet/999"))
-      .assertStatusCode(StatusCodes.NOT_FOUND);
+    createRoute().run(HttpRequest.GET("/pet/999")).assertStatusCode(StatusCodes.NOT_FOUND);
   }
 
   @Test
   public void testPutPet() {
     HttpRequest request =
-      HttpRequest.PUT("/pet/1")
-        .withEntity(MediaTypes.APPLICATION_JSON.toContentType(), "{\"id\": 1, \"name\": \"giraffe\"}");
+        HttpRequest.PUT("/pet/1")
+            .withEntity(
+                MediaTypes.APPLICATION_JSON.toContentType(), "{\"id\": 1, \"name\": \"giraffe\"}");
 
     TestRouteResult response = createRoute().run(request);
 
@@ -60,8 +58,7 @@ public class PetStoreAPITest extends JUnitRouteTest {
 
     HttpRequest request = HttpRequest.DELETE("/pet/0");
 
-    createRoute(data).run(request)
-      .assertStatusCode(StatusCodes.OK);
+    createRoute(data).run(request).assertStatusCode(StatusCodes.OK);
 
     // test actual deletion from data store
     assertFalse(data.containsKey(0));

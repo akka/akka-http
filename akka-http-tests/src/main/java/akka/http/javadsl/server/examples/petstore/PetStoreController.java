@@ -12,14 +12,14 @@ import akka.http.javadsl.server.Route;
 import java.util.Map;
 
 public class PetStoreController {
-    private Map<Integer, Pet> dataStore;
+  private Map<Integer, Pet> dataStore;
 
-    public PetStoreController(Map<Integer, Pet> dataStore) {
-        this.dataStore = dataStore;
-    }
-    
-    public Route deletePet(int petId) {
-        dataStore.remove(petId);
-        return complete(StatusCodes.OK);
-    }
+  public PetStoreController(Map<Integer, Pet> dataStore) {
+    this.dataStore = dataStore;
+  }
+
+  public Route deletePet(int petId) {
+    dataStore.remove(petId);
+    return complete(StatusCodes.OK);
+  }
 }

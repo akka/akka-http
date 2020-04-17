@@ -4,7 +4,7 @@
 
 package docs.http.javadsl;
 
-//#explicit-handler-example
+// #explicit-handler-example
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.ConnectHttp;
@@ -31,20 +31,23 @@ public class ExceptionHandlerExample extends AllDirectives {
 
     final ExceptionHandlerExample app = new ExceptionHandlerExample();
 
-    final Flow<HttpRequest, HttpResponse, NotUsed> routeFlow = app.createRoute().flow(system, materializer);
-    final CompletionStage<ServerBinding> binding = http.bindAndHandle(routeFlow, ConnectHttp.toHost("localhost", 8080), materializer);
+    final Flow<HttpRequest, HttpResponse, NotUsed> routeFlow =
+        app.createRoute().flow(system, materializer);
+    final CompletionStage<ServerBinding> binding =
+        http.bindAndHandle(routeFlow, ConnectHttp.toHost("localhost", 8080), materializer);
   }
-
 
   public Route createRoute() {
-    final ExceptionHandler divByZeroHandler = ExceptionHandler.newBuilder()
-      .match(ArithmeticException.class, x ->
-        complete(StatusCodes.BAD_REQUEST, "You've got your arithmetic wrong, fool!"))
-      .build();
+    final ExceptionHandler divByZeroHandler =
+        ExceptionHandler.newBuilder()
+            .match(
+                ArithmeticException.class,
+                x -> complete(StatusCodes.BAD_REQUEST, "You've got your arithmetic wrong, fool!"))
+            .build();
 
-    return path(PathMatchers.segment("divide").slash(integerSegment()).slash(integerSegment()), (a, b) ->
-      handleExceptions(divByZeroHandler, () -> complete("The result is " + (a / b)))
-    );
+    return path(
+        PathMatchers.segment("divide").slash(integerSegment()).slash(integerSegment()),
+        (a, b) -> handleExceptions(divByZeroHandler, () -> complete("The result is " + (a / b))));
   }
 }
-//#explicit-handler-example
+// #explicit-handler-example

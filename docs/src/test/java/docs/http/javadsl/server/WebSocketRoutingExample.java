@@ -15,31 +15,27 @@ import akka.http.javadsl.model.ws.TextMessage;
 
 public class WebSocketRoutingExample extends AllDirectives {
 
-  //#websocket-route
+  // #websocket-route
   public Route createRoute() {
-    return
-      path("greeter", () ->
-        handleWebSocketMessages(greeter())
-      );
+    return path("greeter", () -> handleWebSocketMessages(greeter()));
   }
-  //#websocket-route
+  // #websocket-route
 
   /**
-   * A handler that treats incoming messages as a name,
-   * and responds with a greeting to that name
+   * A handler that treats incoming messages as a name, and responds with a greeting to that name
    */
   public static Flow<Message, Message, NotUsed> greeter() {
-    return
-      Flow.<Message>create()
-        .collect(new JavaPartialFunction<Message, Message>() {
-          @Override
-          public Message apply(Message msg, boolean isCheck) throws Exception {
-            if (isCheck) {
-              if (msg.isText()) return null;
-              else throw noMatch();
-            } else return handleTextMessage(msg.asTextMessage());
-          }
-        });
+    return Flow.<Message>create()
+        .collect(
+            new JavaPartialFunction<Message, Message>() {
+              @Override
+              public Message apply(Message msg, boolean isCheck) throws Exception {
+                if (isCheck) {
+                  if (msg.isText()) return null;
+                  else throw noMatch();
+                } else return handleTextMessage(msg.asTextMessage());
+              }
+            });
   }
 
   public static TextMessage handleTextMessage(TextMessage msg) {

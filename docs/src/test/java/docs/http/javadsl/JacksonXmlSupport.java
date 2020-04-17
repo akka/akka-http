@@ -4,7 +4,7 @@
 
 package docs.http.javadsl;
 
-//#jackson-xml-support
+// #jackson-xml-support
 import java.io.IOException;
 import java.util.List;
 import java.util.Arrays;
@@ -17,20 +17,18 @@ import akka.http.javadsl.unmarshalling.Unmarshaller;
 
 public class JacksonXmlSupport {
   private static final ObjectMapper DEFAULT_XML_MAPPER =
-    new XmlMapper().enable(SerializationFeature.WRAP_ROOT_VALUE);
-  private static final List<MediaType> XML_MEDIA_TYPES = Arrays.asList(MediaTypes.APPLICATION_XML, MediaTypes.TEXT_XML);
+      new XmlMapper().enable(SerializationFeature.WRAP_ROOT_VALUE);
+  private static final List<MediaType> XML_MEDIA_TYPES =
+      Arrays.asList(MediaTypes.APPLICATION_XML, MediaTypes.TEXT_XML);
 
   public static <T> Marshaller<T, RequestEntity> marshaller() {
     return Marshaller.wrapEntity(
-      u -> toXML(DEFAULT_XML_MAPPER, u),
-      Marshaller.stringToEntity(),
-      MediaTypes.APPLICATION_XML
-    );
+        u -> toXML(DEFAULT_XML_MAPPER, u), Marshaller.stringToEntity(), MediaTypes.APPLICATION_XML);
   }
 
   public static <T> Unmarshaller<HttpEntity, T> unmarshaller(Class<T> expectedType) {
     return Unmarshaller.forMediaTypes(XML_MEDIA_TYPES, Unmarshaller.entityToString())
-                       .thenApply(xml -> fromXML(DEFAULT_XML_MAPPER, xml, expectedType));
+        .thenApply(xml -> fromXML(DEFAULT_XML_MAPPER, xml, expectedType));
   }
 
   private static <T> String toXML(ObjectMapper mapper, T object) {
@@ -45,8 +43,9 @@ public class JacksonXmlSupport {
     try {
       return mapper.readerFor(expectedType).readValue(xml);
     } catch (IOException e) {
-      throw new IllegalArgumentException("Cannot unmarshal XML as " + expectedType.getSimpleName(), e);
+      throw new IllegalArgumentException(
+          "Cannot unmarshal XML as " + expectedType.getSimpleName(), e);
     }
   }
 }
-//#jackson-xml-support
+// #jackson-xml-support

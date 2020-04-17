@@ -29,70 +29,73 @@ import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
 
-//#application-custom-java
+// #application-custom-java
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.extractRequest;
 
-//#application-custom-java
+// #application-custom-java
 
 public class CustomStatusCodesExampleTest extends JUnitRouteTest {
 
   @Test
-  public void customStatusCodes() throws ExecutionException, InterruptedException, NoSuchAlgorithmException {
+  public void customStatusCodes()
+      throws ExecutionException, InterruptedException, NoSuchAlgorithmException {
 
     final ActorSystem system = system();
     final Materializer materializer = materializer();
     final String host = "127.0.0.1";
 
-    //#application-custom-java
+    // #application-custom-java
     // Define custom status code:
-    final StatusCode leetCode = StatusCodes.custom(777, // Our custom status code
-      "LeetCode", // Our custom reason
-      "Some reason", // Our custom default message
-      true, // It should be considered a success response
-      false);// Does not allow entities
+    final StatusCode leetCode =
+        StatusCodes.custom(
+            777, // Our custom status code
+            "LeetCode", // Our custom reason
+            "Some reason", // Our custom default message
+            true, // It should be considered a success response
+            false); // Does not allow entities
 
     // Add custom method to parser settings:
-    final ParserSettings parserSettings = ParserSettings.create(system)
-      .withCustomStatusCodes(leetCode);
-    final ServerSettings serverSettings = ServerSettings.create(system)
-      .withParserSettings(parserSettings);
+    final ParserSettings parserSettings =
+        ParserSettings.create(system).withCustomStatusCodes(leetCode);
+    final ServerSettings serverSettings =
+        ServerSettings.create(system).withParserSettings(parserSettings);
 
-    final ClientConnectionSettings clientConSettings = ClientConnectionSettings.create(system)
-      .withParserSettings(parserSettings);
-    final ConnectionPoolSettings clientSettings = ConnectionPoolSettings.create(system)
-      .withConnectionSettings(clientConSettings);
+    final ClientConnectionSettings clientConSettings =
+        ClientConnectionSettings.create(system).withParserSettings(parserSettings);
+    final ConnectionPoolSettings clientSettings =
+        ConnectionPoolSettings.create(system).withConnectionSettings(clientConSettings);
 
-    final Route route = extractRequest(req ->
-      complete(HttpResponse.create().withStatus(leetCode))
-    );
+    final Route route = extractRequest(req -> complete(HttpResponse.create().withStatus(leetCode)));
 
     // Use serverSettings in server:
-    final CompletionStage<ServerBinding> binding = Http.get(system)
-      .bindAndHandle(route.flow(system, materializer),
-        ConnectHttp.toHost(host, 0),
-        serverSettings,
-        system.log(),
-        materializer);
+    final CompletionStage<ServerBinding> binding =
+        Http.get(system)
+            .bindAndHandle(
+                route.flow(system, materializer),
+                ConnectHttp.toHost(host, 0),
+                serverSettings,
+                system.log(),
+                materializer);
 
     final ServerBinding serverBinding = binding.toCompletableFuture().get();
 
     final int port = serverBinding.localAddress().getPort();
 
     // Use clientSettings in client:
-    final HttpResponse response = Http.get(system)
-      .singleRequest(HttpRequest
-        .GET("http://" + host + ":" + port + "/"),
-        ConnectionContext.https(SSLContext.getDefault()),
-        clientSettings,
-        system.log(),
-        materializer)
-      .toCompletableFuture()
-      .get();
+    final HttpResponse response =
+        Http.get(system)
+            .singleRequest(
+                HttpRequest.GET("http://" + host + ":" + port + "/"),
+                ConnectionContext.https(SSLContext.getDefault()),
+                clientSettings,
+                system.log(),
+                materializer)
+            .toCompletableFuture()
+            .get();
 
     // Check we get the right code back
     assertEquals(leetCode, response.status());
-    //#application-custom-java
+    // #application-custom-java
   }
-
 }

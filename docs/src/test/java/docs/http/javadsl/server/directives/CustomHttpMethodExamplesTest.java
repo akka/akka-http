@@ -29,62 +29,61 @@ import java.util.concurrent.TimeoutException;
 import static akka.http.javadsl.model.HttpProtocols.HTTP_1_1;
 import static akka.http.javadsl.model.RequestEntityAcceptances.Expected;
 
-//#customHttpMethod
+// #customHttpMethod
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.route;
 import static akka.http.javadsl.server.Directives.extractMethod;
 
-//#customHttpMethod
+// #customHttpMethod
 public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
 
   @Test
   public void testComposition() throws InterruptedException, ExecutionException, TimeoutException {
-    ActorSystem  system = system();
+    ActorSystem system = system();
     Materializer materializer = materializer();
     LoggingAdapter loggingAdapter = NoLogging.getInstance();
 
-    int    port = 9090;
+    int port = 9090;
     String host = "127.0.0.1";
 
-    //#customHttpMethod
+    // #customHttpMethod
 
     // define custom method type:
-    HttpMethod BOLT =
-      HttpMethods.custom("BOLT", false, true, Expected);
+    HttpMethod BOLT = HttpMethods.custom("BOLT", false, true, Expected);
 
     // add custom method to parser settings:
-    final ParserSettings parserSettings =
-      ParserSettings.create(system).withCustomMethods(BOLT);
+    final ParserSettings parserSettings = ParserSettings.create(system).withCustomMethods(BOLT);
     final ServerSettings serverSettings =
-      ServerSettings.create(system).withParserSettings(parserSettings);
+        ServerSettings.create(system).withParserSettings(parserSettings);
 
-    final Route routes = concat(
-      extractMethod( method ->
-        complete( "This is a " + method.name() + " request.")
-      )
-    );
+    final Route routes =
+        concat(extractMethod(method -> complete("This is a " + method.name() + " request.")));
     final Flow<HttpRequest, HttpResponse, NotUsed> handler = routes.flow(system, materializer);
     final Http http = Http.get(system);
     final CompletionStage<ServerBinding> binding =
-      http.bindAndHandle(
-        handler,
-        ConnectHttp.toHost(host, port),
-        serverSettings,
-        loggingAdapter,
-        materializer);
+        http.bindAndHandle(
+            handler, ConnectHttp.toHost(host, port), serverSettings, loggingAdapter, materializer);
 
-    HttpRequest request = HttpRequest.create()
-      .withUri("http://" + host + ":" + Integer.toString(port))
-      .withMethod(BOLT)
-      .withProtocol(HTTP_1_1);
+    HttpRequest request =
+        HttpRequest.create()
+            .withUri("http://" + host + ":" + Integer.toString(port))
+            .withMethod(BOLT)
+            .withProtocol(HTTP_1_1);
 
     CompletionStage<HttpResponse> response = http.singleRequest(request, materializer);
-    //#customHttpMethod
+    // #customHttpMethod
 
     assertEquals(StatusCodes.OK, response.toCompletableFuture().get(3, TimeUnit.SECONDS).status());
     assertEquals(
-      "This is a BOLT request.",
-      response.toCompletableFuture().get().entity().toStrict(3000, materializer).toCompletableFuture().get().getData().utf8String()
-    );
+        "This is a BOLT request.",
+        response
+            .toCompletableFuture()
+            .get()
+            .entity()
+            .toStrict(3000, materializer)
+            .toCompletableFuture()
+            .get()
+            .getData()
+            .utf8String());
   }
 }

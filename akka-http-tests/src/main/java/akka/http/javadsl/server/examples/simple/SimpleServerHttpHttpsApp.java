@@ -22,7 +22,7 @@ import java.io.IOException;
 public class SimpleServerHttpHttpsApp {
 
   public Route createRoute() {
-    return get( () -> complete("Hello World!") );
+    return get(() -> complete("Hello World!"));
   }
 
   // ** STARTING THE SERVER ** //
@@ -32,22 +32,24 @@ public class SimpleServerHttpHttpsApp {
     final ActorMaterializer materializer = ActorMaterializer.create(system);
 
     final SimpleServerApp app = new SimpleServerApp();
-    final Flow<HttpRequest, HttpResponse, NotUsed> flow = app.createRoute().flow(system, materializer);
+    final Flow<HttpRequest, HttpResponse, NotUsed> flow =
+        app.createRoute().flow(system, materializer);
 
-    //#both-https-and-http
+    // #both-https-and-http
     final Http http = Http.get(system);
-    //Run HTTP server firstly
+    // Run HTTP server firstly
     http.bindAndHandle(flow, ConnectHttp.toHost("localhost", 80), materializer);
 
-    //get configured HTTPS context
+    // get configured HTTPS context
     HttpsConnectionContext https = SimpleServerApp.useHttps(system);
 
-    // sets default context to HTTPS – all Http() bound servers for this ActorSystem will use HTTPS from now on
+    // sets default context to HTTPS – all Http() bound servers for this ActorSystem will use HTTPS
+    // from now on
     http.setDefaultServerHttpContext(https);
 
-    //Then run HTTPS server
+    // Then run HTTPS server
     http.bindAndHandle(flow, ConnectHttp.toHost("localhost", 443), materializer);
-    //#both-https-and-http
+    // #both-https-and-http
 
     System.out.println("Type RETURN to exit");
     System.in.read();

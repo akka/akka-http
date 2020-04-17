@@ -25,55 +25,57 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 public class JavaTestServer {
-    public static void main(String[] args) throws Exception {
-        ActorSystem system = ActorSystem.create();
+  public static void main(String[] args) throws Exception {
+    ActorSystem system = ActorSystem.create();
 
-        try {
-            final Materializer materializer = ActorMaterializer.create(system);
+    try {
+      final Materializer materializer = ActorMaterializer.create(system);
 
-            CompletionStage<ServerBinding> serverBindingFuture =
-                    Http.get(system).bindAndHandleSync(
-                      request -> {
-                          System.out.println("Handling request to " + request.getUri());
+      CompletionStage<ServerBinding> serverBindingFuture =
+          Http.get(system)
+              .bindAndHandleSync(
+                  request -> {
+                    System.out.println("Handling request to " + request.getUri());
 
-                          if (request.getUri().path().equals("/"))
-                              return WebSocket.handleWebSocketRequestWith(request, echoMessages());
-                          else if (request.getUri().path().equals("/greeter"))
-                              return WebSocket.handleWebSocketRequestWith(request, greeter());
-                          else
-                              return JavaApiTestCases.handleRequest(request);
-                      }, ConnectHttp.toHost("localhost", 8080), materializer);
+                    if (request.getUri().path().equals("/"))
+                      return WebSocket.handleWebSocketRequestWith(request, echoMessages());
+                    else if (request.getUri().path().equals("/greeter"))
+                      return WebSocket.handleWebSocketRequestWith(request, greeter());
+                    else return JavaApiTestCases.handleRequest(request);
+                  },
+                  ConnectHttp.toHost("localhost", 8080),
+                  materializer);
 
-            serverBindingFuture.toCompletableFuture().get(1, TimeUnit.SECONDS); // will throw if binding fails
-            System.out.println("Press ENTER to stop.");
-            new BufferedReader(new InputStreamReader(System.in)).readLine();
-        } finally {
-            system.terminate();
-        }
+      serverBindingFuture
+          .toCompletableFuture()
+          .get(1, TimeUnit.SECONDS); // will throw if binding fails
+      System.out.println("Press ENTER to stop.");
+      new BufferedReader(new InputStreamReader(System.in)).readLine();
+    } finally {
+      system.terminate();
     }
+  }
 
-    public static Flow<Message, Message, NotUsed> echoMessages() {
-        return Flow.create(); // the identity operation
-    }
+  public static Flow<Message, Message, NotUsed> echoMessages() {
+    return Flow.create(); // the identity operation
+  }
 
-    public static Flow<Message, Message, NotUsed> greeter() {
-        return
-            Flow.<Message>create()
-                .collect(new JavaPartialFunction<Message, Message>() {
-                    @Override
-                    public Message apply(Message msg, boolean isCheck) throws Exception {
-                        if (isCheck)
-                            if (msg.isText()) return null;
-                            else throw noMatch();
-                        else
-                            return handleTextMessage(msg.asTextMessage());
-                    }
-                });
-    }
-    public static TextMessage handleTextMessage(TextMessage msg) {
-        if (msg.isStrict())
-            return TextMessage.create("Hello "+msg.getStrictText());
-        else
-            return TextMessage.create(Source.single("Hello ").concat(msg.getStreamedText()));
-    }
+  public static Flow<Message, Message, NotUsed> greeter() {
+    return Flow.<Message>create()
+        .collect(
+            new JavaPartialFunction<Message, Message>() {
+              @Override
+              public Message apply(Message msg, boolean isCheck) throws Exception {
+                if (isCheck)
+                  if (msg.isText()) return null;
+                  else throw noMatch();
+                else return handleTextMessage(msg.asTextMessage());
+              }
+            });
+  }
+
+  public static TextMessage handleTextMessage(TextMessage msg) {
+    if (msg.isStrict()) return TextMessage.create("Hello " + msg.getStrictText());
+    else return TextMessage.create(Source.single("Hello ").concat(msg.getStreamedText()));
+  }
 }

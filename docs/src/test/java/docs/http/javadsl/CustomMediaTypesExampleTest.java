@@ -29,11 +29,11 @@ import java.util.concurrent.ExecutionException;
 import static org.junit.Assert.assertEquals;
 import static akka.util.ByteString.emptyByteString;
 
-//#application-custom-java
+// #application-custom-java
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.extractRequest;
 
-//#application-custom-java
+// #application-custom-java
 
 public class CustomMediaTypesExampleTest extends JUnitRouteTest {
 
@@ -44,49 +44,67 @@ public class CustomMediaTypesExampleTest extends JUnitRouteTest {
     final Materializer materializer = materializer();
     final String host = "127.0.0.1";
 
-    //#application-custom-java
+    // #application-custom-java
     // Define custom media type:
     final MediaType.WithFixedCharset applicationCustom =
-      MediaTypes.customWithFixedCharset("application", "custom", // The new Media Type name
-        HttpCharsets.UTF_8, // The charset used
-        new HashMap<>(), // Empty parameters
-        false); // No arbitrary subtypes are allowed
+        MediaTypes.customWithFixedCharset(
+            "application",
+            "custom", // The new Media Type name
+            HttpCharsets.UTF_8, // The charset used
+            new HashMap<>(), // Empty parameters
+            false); // No arbitrary subtypes are allowed
 
     // Add custom media type to parser settings:
-    final ParserSettings parserSettings = ParserSettings.create(system)
-      .withCustomMediaTypes(applicationCustom);
-    final ServerSettings serverSettings = ServerSettings.create(system)
-      .withParserSettings(parserSettings);
+    final ParserSettings parserSettings =
+        ParserSettings.create(system).withCustomMediaTypes(applicationCustom);
+    final ServerSettings serverSettings =
+        ServerSettings.create(system).withParserSettings(parserSettings);
 
-    final Route route = extractRequest(req ->
-      complete(req.entity().getContentType().toString() + " = "
-        + req.entity().getContentType().getClass())
-    );
+    final Route route =
+        extractRequest(
+            req ->
+                complete(
+                    req.entity().getContentType().toString()
+                        + " = "
+                        + req.entity().getContentType().getClass()));
 
-    final CompletionStage<ServerBinding> binding = Http.get(system)
-      .bindAndHandle(route.flow(system, materializer),
-        ConnectHttp.toHost(host, 0),
-        serverSettings,
-        system.log(),
-        materializer);
+    final CompletionStage<ServerBinding> binding =
+        Http.get(system)
+            .bindAndHandle(
+                route.flow(system, materializer),
+                ConnectHttp.toHost(host, 0),
+                serverSettings,
+                system.log(),
+                materializer);
 
-    //#application-custom-java
+    // #application-custom-java
     final ServerBinding serverBinding = binding.toCompletableFuture().get();
 
     final int port = serverBinding.localAddress().getPort();
 
-    final HttpResponse response = Http.get(system)
-      .singleRequest(HttpRequest
-        .GET("http://" + host + ":" + port + "/")
-        .withEntity(applicationCustom.toContentType(), "~~example~=~value~~"), materializer)
-      .toCompletableFuture()
-      .get();
+    final HttpResponse response =
+        Http.get(system)
+            .singleRequest(
+                HttpRequest.GET("http://" + host + ":" + port + "/")
+                    .withEntity(applicationCustom.toContentType(), "~~example~=~value~~"),
+                materializer)
+            .toCompletableFuture()
+            .get();
 
     assertEquals(StatusCodes.OK, response.status());
-    final String body = response.entity().toStrict(1000, materializer).toCompletableFuture().get()
-      .getDataBytes().runFold(emptyByteString(), (a, b) -> a.$plus$plus(b), materializer)
-      .toCompletableFuture().get().utf8String();
-    assertEquals("application/custom = class akka.http.scaladsl.model.ContentType$WithFixedCharset", body); // it's the Scala DSL package because it's the only instance of the Java DSL
+    final String body =
+        response
+            .entity()
+            .toStrict(1000, materializer)
+            .toCompletableFuture()
+            .get()
+            .getDataBytes()
+            .runFold(emptyByteString(), (a, b) -> a.$plus$plus(b), materializer)
+            .toCompletableFuture()
+            .get()
+            .utf8String();
+    assertEquals(
+        "application/custom = class akka.http.scaladsl.model.ContentType$WithFixedCharset",
+        body); // it's the Scala DSL package because it's the only instance of the Java DSL
   }
-
 }

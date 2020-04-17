@@ -3,22 +3,17 @@
  */
 
 package docs.http.javadsl.server.testkit;
-//#source-quote
+// #source-quote
 import akka.http.javadsl.server.AllDirectives;
 import akka.http.javadsl.server.Route;
 
 public class MyAppFragment extends AllDirectives {
 
-    public Route createRoute() {
-        return
-                //#fragment
-                pathEnd(() ->
-                        get(() ->
-                                complete("Fragments of imagination")
-                        )
-                );
-                //#fragment
-    }
-
+  public Route createRoute() {
+    return
+    // #fragment
+    pathEnd(() -> get(() -> complete("Fragments of imagination")));
+    // #fragment
+  }
 }
-//#source-quote
+// #source-quote

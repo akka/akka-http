@@ -4,14 +4,11 @@
 
 package akka.http.javadsl.model.headers;
 
-/**
- *  Model for the `Age` header.
- *  Specification: http://tools.ietf.org/html/rfc7234#section-5.1
- */
+/** Model for the `Age` header. Specification: http://tools.ietf.org/html/rfc7234#section-5.1 */
 public abstract class Age extends akka.http.scaladsl.model.HttpHeader {
-    public abstract long deltaSeconds();
+  public abstract long deltaSeconds();
 
-    public static Age create(long deltaSeconds) {
-        return new akka.http.scaladsl.model.headers.Age(deltaSeconds);
-    }
+  public static Age create(long deltaSeconds) {
+    return new akka.http.scaladsl.model.headers.Age(deltaSeconds);
+  }
 }

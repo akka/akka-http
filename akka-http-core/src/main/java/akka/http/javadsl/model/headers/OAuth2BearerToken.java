@@ -5,5 +5,5 @@
 package akka.http.javadsl.model.headers;
 
 public abstract class OAuth2BearerToken extends akka.http.scaladsl.model.headers.HttpCredentials {
-    public abstract String token();
+  public abstract String token();
 }

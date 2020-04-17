@@ -5,7 +5,8 @@
 package akka.http.javadsl.model;
 
 public final class RemoteAddresses {
-    private RemoteAddresses() { }
+  private RemoteAddresses() {}
 
-    public static final RemoteAddress UNKNOWN = akka.http.scaladsl.model.RemoteAddress.Unknown$.MODULE$;
+  public static final RemoteAddress UNKNOWN =
+      akka.http.scaladsl.model.RemoteAddress.Unknown$.MODULE$;
 }

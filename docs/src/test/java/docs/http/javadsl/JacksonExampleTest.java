@@ -3,7 +3,7 @@
  */
 
 package docs.http.javadsl;
-//#second-jackson-example
+// #second-jackson-example
 import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
@@ -37,19 +37,20 @@ public class JacksonExampleTest extends AllDirectives {
     final Http http = Http.get(system);
     final ActorMaterializer materializer = ActorMaterializer.create(system);
 
-    //In order to access all directives we need an instance where the routes are define.
+    // In order to access all directives we need an instance where the routes are define.
     JacksonExampleTest app = new JacksonExampleTest();
 
-    final Flow<HttpRequest, HttpResponse, NotUsed> routeFlow = app.createRoute().flow(system, materializer);
-    final CompletionStage<ServerBinding> binding = http.bindAndHandle(routeFlow,
-      ConnectHttp.toHost("localhost", 8080), materializer);
+    final Flow<HttpRequest, HttpResponse, NotUsed> routeFlow =
+        app.createRoute().flow(system, materializer);
+    final CompletionStage<ServerBinding> binding =
+        http.bindAndHandle(routeFlow, ConnectHttp.toHost("localhost", 8080), materializer);
 
     System.out.println("Server online at http://localhost:8080/\nPress RETURN to stop...");
     System.in.read(); // let it run until user presses return
 
     binding
-      .thenCompose(ServerBinding::unbind) // trigger unbinding from the port
-      .thenAccept(unbound -> system.terminate()); // and shutdown when done
+        .thenCompose(ServerBinding::unbind) // trigger unbinding from the port
+        .thenAccept(unbound -> system.terminate()); // and shutdown when done
   }
 
   // (fake) async database query api
@@ -65,24 +66,34 @@ public class JacksonExampleTest extends AllDirectives {
   private Route createRoute() {
 
     return concat(
-      get(() ->
-        pathPrefix("item", () ->
-          path(longSegment(), (Long id) -> {
-            final CompletionStage<Optional<Item>> futureMaybeItem = fetchItem(id);
-            return onSuccess(futureMaybeItem, maybeItem ->
-              maybeItem.map(item -> completeOK(item, Jackson.marshaller()))
-                .orElseGet(() -> complete(StatusCodes.NOT_FOUND, "Not Found"))
-            );
-          }))),
-      post(() ->
-        path("create-order", () ->
-          entity(Jackson.unmarshaller(Order.class), order -> {
-            CompletionStage<Done> futureSaved = saveOrder(order);
-            return onSuccess(futureSaved, done ->
-              complete("order created")
-            );
-          })))
-    );
+        get(
+            () ->
+                pathPrefix(
+                    "item",
+                    () ->
+                        path(
+                            longSegment(),
+                            (Long id) -> {
+                              final CompletionStage<Optional<Item>> futureMaybeItem = fetchItem(id);
+                              return onSuccess(
+                                  futureMaybeItem,
+                                  maybeItem ->
+                                      maybeItem
+                                          .map(item -> completeOK(item, Jackson.marshaller()))
+                                          .orElseGet(
+                                              () -> complete(StatusCodes.NOT_FOUND, "Not Found")));
+                            }))),
+        post(
+            () ->
+                path(
+                    "create-order",
+                    () ->
+                        entity(
+                            Jackson.unmarshaller(Order.class),
+                            order -> {
+                              CompletionStage<Done> futureSaved = saveOrder(order);
+                              return onSuccess(futureSaved, done -> complete("order created"));
+                            }))));
   }
 
   private static class Item {
@@ -91,8 +102,7 @@ public class JacksonExampleTest extends AllDirectives {
     final long id;
 
     @JsonCreator
-    Item(@JsonProperty("name") String name,
-         @JsonProperty("id") long id) {
+    Item(@JsonProperty("name") String name, @JsonProperty("id") long id) {
       this.name = name;
       this.id = id;
     }
@@ -120,4 +130,4 @@ public class JacksonExampleTest extends AllDirectives {
     }
   }
 }
-//#second-jackson-example
+// #second-jackson-example

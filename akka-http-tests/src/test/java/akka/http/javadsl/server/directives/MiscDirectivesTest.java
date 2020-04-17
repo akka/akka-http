@@ -33,23 +33,20 @@ public class MiscDirectivesTest extends JUnitRouteTest {
 
   @Test
   public void testValidateUri() {
-    TestRoute route = testRoute(
-      extractUri(uri ->
-        validate(() -> hasShortPath(uri), "Path too long!",
-          () -> complete("OK!")
-        )
-      )
-    );
+    TestRoute route =
+        testRoute(
+            extractUri(
+                uri -> validate(() -> hasShortPath(uri), "Path too long!", () -> complete("OK!"))));
 
     route
-      .run(HttpRequest.create().withUri(Uri.create("/abc")))
-      .assertStatusCode(StatusCodes.OK)
-      .assertEntity("OK!");
+        .run(HttpRequest.create().withUri(Uri.create("/abc")))
+        .assertStatusCode(StatusCodes.OK)
+        .assertEntity("OK!");
 
     route
-      .run(HttpRequest.create().withUri(Uri.create("/abcdefghijkl")))
-      .assertStatusCode(StatusCodes.BAD_REQUEST)
-      .assertEntity("Path too long!");
+        .run(HttpRequest.create().withUri(Uri.create("/abcdefghijkl")))
+        .assertStatusCode(StatusCodes.BAD_REQUEST)
+        .assertEntity("Path too long!");
   }
 
   @Test
@@ -57,39 +54,43 @@ public class MiscDirectivesTest extends JUnitRouteTest {
     TestRoute route = testRoute(extractClientIP(ip -> complete(ip.toString())));
 
     route
-      .run(HttpRequest.create().addHeader(XForwardedFor.create(RemoteAddress.create(InetAddress.getByName("127.0.0.2")))))
-      .assertStatusCode(StatusCodes.OK)
-      .assertEntity("127.0.0.2");
+        .run(
+            HttpRequest.create()
+                .addHeader(
+                    XForwardedFor.create(RemoteAddress.create(InetAddress.getByName("127.0.0.2")))))
+        .assertStatusCode(StatusCodes.OK)
+        .assertEntity("127.0.0.2");
 
     route
-      .run(HttpRequest.create().addHeader(akka.http.javadsl.model.headers.RemoteAddress.create(RemoteAddress.create(InetAddress.getByName("127.0.0.3")))))
-      .assertStatusCode(StatusCodes.OK)
-      .assertEntity("127.0.0.3");
+        .run(
+            HttpRequest.create()
+                .addHeader(
+                    akka.http.javadsl.model.headers.RemoteAddress.create(
+                        RemoteAddress.create(InetAddress.getByName("127.0.0.3")))))
+        .assertStatusCode(StatusCodes.OK)
+        .assertEntity("127.0.0.3");
 
     route
-      .run(HttpRequest.create().addHeader(XRealIp.create(RemoteAddress.create(InetAddress.getByName("127.0.0.4")))))
-      .assertStatusCode(StatusCodes.OK)
-      .assertEntity("127.0.0.4");
+        .run(
+            HttpRequest.create()
+                .addHeader(
+                    XRealIp.create(RemoteAddress.create(InetAddress.getByName("127.0.0.4")))))
+        .assertStatusCode(StatusCodes.OK)
+        .assertEntity("127.0.0.4");
 
-    route
-      .run(HttpRequest.create())
-      .assertStatusCode(StatusCodes.OK);
+    route.run(HttpRequest.create()).assertStatusCode(StatusCodes.OK);
   }
 
   @Test
   public void testWithSizeLimit() {
-    TestRoute route = testRoute(withSizeLimit(500, () ->
-      entity(Unmarshaller.entityToString(), (entity) -> complete("ok"))
-    ));
+    TestRoute route =
+        testRoute(
+            withSizeLimit(
+                500, () -> entity(Unmarshaller.entityToString(), (entity) -> complete("ok"))));
 
-    route
-      .run(withEntityOfSize(500))
-      .assertStatusCode(StatusCodes.OK);
+    route.run(withEntityOfSize(500)).assertStatusCode(StatusCodes.OK);
 
-    route
-      .run(withEntityOfSize(501))
-      .assertStatusCode(StatusCodes.PAYLOAD_TOO_LARGE);
-
+    route.run(withEntityOfSize(501)).assertStatusCode(StatusCodes.PAYLOAD_TOO_LARGE);
   }
 
   private HttpRequest withEntityOfSize(int sizeLimit) {
@@ -97,5 +98,4 @@ public class MiscDirectivesTest extends JUnitRouteTest {
     Arrays.fill(charArray, '0');
     return HttpRequest.POST("/").withEntity(new String(charArray));
   }
-
 }

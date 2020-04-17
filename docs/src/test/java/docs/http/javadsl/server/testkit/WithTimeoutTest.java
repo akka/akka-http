@@ -11,15 +11,13 @@ import scala.concurrent.duration.FiniteDuration;
 import java.util.concurrent.TimeUnit;
 
 public class WithTimeoutTest extends JUnitRouteTest {
-    //#timeout-setting
-    @Override
-    public FiniteDuration awaitDuration() {
-        return FiniteDuration.create(5, TimeUnit.SECONDS);
-    }
-    //#timeout-setting
+  // #timeout-setting
+  @Override
+  public FiniteDuration awaitDuration() {
+    return FiniteDuration.create(5, TimeUnit.SECONDS);
+  }
+  // #timeout-setting
 
-    @Test
-    public void dummy() {
-
-    }
+  @Test
+  public void dummy() {}
 }

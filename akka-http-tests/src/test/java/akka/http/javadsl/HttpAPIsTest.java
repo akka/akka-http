@@ -48,7 +48,10 @@ public class HttpAPIsTest extends JUnitRouteTest {
     final Flow<HttpRequest, HttpResponse, ?> handler = null;
     http.bindAndHandle(handler, toHost("127.0.0.1", 8080), materializer());
     http.bindAndHandle(handler, toHost("127.0.0.1", 8080), materializer());
-    http.bindAndHandle(handler, toHostHttps("127.0.0.1", 8080).withCustomHttpsContext(httpsContext), materializer());
+    http.bindAndHandle(
+        handler,
+        toHostHttps("127.0.0.1", 8080).withCustomHttpsContext(httpsContext),
+        materializer());
 
     final Function<HttpRequest, CompletionStage<HttpResponse>> handler1 = null;
     http.bindAndHandleAsync(handler1, toHost("127.0.0.1", 8080), materializer());
@@ -72,28 +75,37 @@ public class HttpAPIsTest extends JUnitRouteTest {
     http.outgoingConnection(toHost("akka.io", 8080));
     http.outgoingConnection(toHost("https://akka.io"));
     http.outgoingConnection(toHostHttps("akka.io")); // default ssl context (ssl-config)
-    http.outgoingConnection(toHostHttps("ssh://akka.io")); // throws, we explicitly require https or ""
+    http.outgoingConnection(
+        toHostHttps("ssh://akka.io")); // throws, we explicitly require https or ""
     http.outgoingConnection(toHostHttps("akka.io", 8081).withCustomHttpsContext(httpsContext));
-    http.outgoingConnection(toHostHttps("akka.io", 8081).withCustomHttpsContext(httpsContext).withDefaultHttpsContext());
-    http.outgoingConnection(toHostHttps("akka.io", 8081).withCustomHttpsContext(httpsContext).withDefaultHttpsContext());
+    http.outgoingConnection(
+        toHostHttps("akka.io", 8081)
+            .withCustomHttpsContext(httpsContext)
+            .withDefaultHttpsContext());
+    http.outgoingConnection(
+        toHostHttps("akka.io", 8081)
+            .withCustomHttpsContext(httpsContext)
+            .withDefaultHttpsContext());
 
-    // in future we can add modify(context -> Context) to "keep ssl-config defaults, but tweak them in code)
+    // in future we can add modify(context -> Context) to "keep ssl-config defaults, but tweak them
+    // in code)
 
     http.newHostConnectionPool("akka.io", materializer());
     http.newHostConnectionPool("https://akka.io", materializer());
     http.newHostConnectionPool("https://akka.io:8080", materializer());
     http.newHostConnectionPool(toHost("akka.io"), materializer());
-    http.newHostConnectionPool(toHostHttps("ftp://akka.io"), materializer()); // throws, we explicitly require https or ""
+    http.newHostConnectionPool(
+        toHostHttps("ftp://akka.io"), materializer()); // throws, we explicitly require https or ""
     http.newHostConnectionPool(toHostHttps("https://akka.io:2222"), materializer());
     http.newHostConnectionPool(toHostHttps("akka.io"), materializer());
     http.newHostConnectionPool(toHost(""), conSettings, log, materializer());
-
 
     http.cachedHostConnectionPool("akka.io", materializer());
     http.cachedHostConnectionPool("https://akka.io", materializer());
     http.cachedHostConnectionPool("https://akka.io:8080", materializer());
     http.cachedHostConnectionPool(toHost("akka.io"), materializer());
-    http.cachedHostConnectionPool(toHostHttps("smtp://akka.io"), materializer()); // throws, we explicitly require https or ""
+    http.cachedHostConnectionPool(
+        toHostHttps("smtp://akka.io"), materializer()); // throws, we explicitly require https or ""
     http.cachedHostConnectionPool(toHostHttps("https://akka.io:2222"), materializer());
     http.cachedHostConnectionPool(toHostHttps("akka.io"), materializer());
     http.cachedHostConnectionPool(toHost("akka.io"), conSettings, log, materializer());
@@ -102,8 +114,10 @@ public class HttpAPIsTest extends JUnitRouteTest {
     http.superPool(conSettings, log, materializer());
     http.superPool(conSettings, httpsContext, log, materializer());
 
-    final ConnectWithHttps connect = toHostHttps("akka.io", 8081).withCustomHttpsContext(httpsContext).withDefaultHttpsContext();
-    connect.effectiveHttpsConnectionContext(http.defaultClientHttpsContext()); // usage by us internally
+    final ConnectWithHttps connect =
+        toHostHttps("akka.io", 8081).withCustomHttpsContext(httpsContext).withDefaultHttpsContext();
+    connect.effectiveHttpsConnectionContext(
+        http.defaultClientHttpsContext()); // usage by us internally
   }
 
   @SuppressWarnings("unused")
@@ -118,7 +132,9 @@ public class HttpAPIsTest extends JUnitRouteTest {
     http.bind(toHost("https://127.0.0.1", 9090), materializer()); // HTTPS 9090
 
     http.bind(toHostHttps("127.0.0.1"), materializer()); // HTTPS 443
-    http.bind(toHostHttps("127.0.0.1").withCustomHttpsContext(httpsConnectionContext), materializer()); // custom HTTPS 443
+    http.bind(
+        toHostHttps("127.0.0.1").withCustomHttpsContext(httpsConnectionContext),
+        materializer()); // custom HTTPS 443
 
     http.bind(toHostHttps("http://127.0.0.1"), materializer()); // throws
   }

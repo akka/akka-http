@@ -23,321 +23,334 @@ import akka.japi.JavaPartialFunction;
 import akka.http.javadsl.testkit.TestRoute;
 import scala.PartialFunction;
 
-
 import static akka.http.javadsl.common.PartialApplication.*;
 
-//#headerValue
+// #headerValue
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.headerValue;
 
-//#headerValue
-//#headerValue-with-default
+// #headerValue
+// #headerValue-with-default
 import akka.http.javadsl.server.Directives;
 
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.anyOf;
-//#headerValue-with-default
-//#headerValueByName
+// #headerValue-with-default
+// #headerValueByName
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.headerValueByName;
 
-//#headerValueByName
-//#headerValueByType
+// #headerValueByName
+// #headerValueByType
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.headerValueByType;
 
-//#headerValueByType
-//#headerValuePF
+// #headerValueByType
+// #headerValuePF
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.headerValuePF;
 
-//#headerValuePF
-//#optionalHeaderValue
+// #headerValuePF
+// #optionalHeaderValue
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.optionalHeaderValue;
 
-//#optionalHeaderValue
-//#optionalHeaderValueByName
+// #optionalHeaderValue
+// #optionalHeaderValueByName
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.optionalHeaderValueByName;
 
-//#optionalHeaderValueByName
-//#optionalHeaderValueByType
+// #optionalHeaderValueByName
+// #optionalHeaderValueByType
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.optionalHeaderValueByType;
 
-//#optionalHeaderValueByType
-//#optionalHeaderValuePF
+// #optionalHeaderValueByType
+// #optionalHeaderValuePF
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.optionalHeaderValuePF;
 
-//#optionalHeaderValuePF
-//#checkSameOrigin
+// #optionalHeaderValuePF
+// #checkSameOrigin
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.checkSameOrigin;
 
-//#checkSameOrigin
+// #checkSameOrigin
 
 public class HeaderDirectivesExamplesTest extends JUnitRouteTest {
 
   @Test
   public void testHeaderValue() {
-    //#headerValue
-    final Function<HttpHeader, Optional<Host>> extractHostPort = header -> {
-      if (header instanceof Host) {
-        return Optional.of((Host) header);
-      } else {
-        return Optional.empty();
-      }
-    };
+    // #headerValue
+    final Function<HttpHeader, Optional<Host>> extractHostPort =
+        header -> {
+          if (header instanceof Host) {
+            return Optional.of((Host) header);
+          } else {
+            return Optional.empty();
+          }
+        };
 
-    final Route route = headerValue(extractHostPort, host ->
-      complete("The port was " + host.port())
-    );
+    final Route route =
+        headerValue(extractHostPort, host -> complete("The port was " + host.port()));
 
     // tests:
-    testRoute(route).run(HttpRequest.GET("/").addHeader(Host.create("example.com", 5043)))
-      .assertEntity("The port was 5043");
+    testRoute(route)
+        .run(HttpRequest.GET("/").addHeader(Host.create("example.com", 5043)))
+        .assertEntity("The port was 5043");
 
-    testRoute(route).run(HttpRequest.GET("/"))
-      .assertStatusCode(StatusCodes.NOT_FOUND)
-      .assertEntity("The requested resource could not be found.");
-    //#headerValue
+    testRoute(route)
+        .run(HttpRequest.GET("/"))
+        .assertStatusCode(StatusCodes.NOT_FOUND)
+        .assertEntity("The requested resource could not be found.");
+    // #headerValue
   }
 
   @Test
   public void testHeaderValueWithDefault() {
-    //#headerValue-with-default
-    final Function<HttpHeader, Optional<String>> extractExampleHeader = header -> {
-      if (header.is("x-example-header")) {
-        return Optional.of(header.value());
-      } else {
-        return Optional.empty();
-      }
-    };
+    // #headerValue-with-default
+    final Function<HttpHeader, Optional<String>> extractExampleHeader =
+        header -> {
+          if (header.is("x-example-header")) {
+            return Optional.of(header.value());
+          } else {
+            return Optional.empty();
+          }
+        };
 
-    final Route route = anyOf(
-      bindParameter(Directives::headerValue, extractExampleHeader),
-      bindParameter(Directives::provide, "newValue"),
-      (String value) -> complete("header is " + value));
+    final Route route =
+        anyOf(
+            bindParameter(Directives::headerValue, extractExampleHeader),
+            bindParameter(Directives::provide, "newValue"),
+            (String value) -> complete("header is " + value));
 
     // tests:
     final RawHeader exampleHeader = RawHeader.create("X-Example-Header", "theHeaderValue");
-    testRoute(route).run(HttpRequest.GET("/").addHeader(exampleHeader))
-      .assertEntity("header is theHeaderValue");
+    testRoute(route)
+        .run(HttpRequest.GET("/").addHeader(exampleHeader))
+        .assertEntity("header is theHeaderValue");
 
-    testRoute(route).run(HttpRequest.GET("/"))
-      .assertEntity("header is newValue");
-    //#headerValue-with-default
+    testRoute(route).run(HttpRequest.GET("/")).assertEntity("header is newValue");
+    // #headerValue-with-default
   }
 
   @Test
   public void testHeaderValueByName() {
-    //#headerValueByName
-    final Route route = headerValueByName("X-User-Id", userId ->
-      complete("The user is " + userId)
-    );
+    // #headerValueByName
+    final Route route = headerValueByName("X-User-Id", userId -> complete("The user is " + userId));
 
     // tests:
     final RawHeader header = RawHeader.create("X-User-Id", "Joe42");
-    testRoute(route).run(HttpRequest.GET("/").addHeader(header))
-      .assertEntity("The user is Joe42");
+    testRoute(route).run(HttpRequest.GET("/").addHeader(header)).assertEntity("The user is Joe42");
 
-    testRoute(route).run(HttpRequest.GET("/"))
-      .assertStatusCode(StatusCodes.BAD_REQUEST)
-      .assertEntity("Request is missing required HTTP header 'X-User-Id'");
-    //#headerValueByName
+    testRoute(route)
+        .run(HttpRequest.GET("/"))
+        .assertStatusCode(StatusCodes.BAD_REQUEST)
+        .assertEntity("Request is missing required HTTP header 'X-User-Id'");
+    // #headerValueByName
   }
 
   @Test
   public void testHeaderValueByType() {
-    //#headerValueByType
-    final Route route = headerValueByType(Origin.class, origin ->
-      complete("The first origin was " + origin.getOrigins().iterator().next())
-    );
+    // #headerValueByType
+    final Route route =
+        headerValueByType(
+            Origin.class,
+            origin -> complete("The first origin was " + origin.getOrigins().iterator().next()));
 
     // tests:
     final Host host = Host.create("localhost", 8080);
     final Origin originHeader = Origin.create(HttpOrigin.create("http", host));
 
-    testRoute(route).run(HttpRequest.GET("abc").addHeader(originHeader))
-      .assertEntity("The first origin was http://localhost:8080");
+    testRoute(route)
+        .run(HttpRequest.GET("abc").addHeader(originHeader))
+        .assertEntity("The first origin was http://localhost:8080");
 
-    testRoute(route).run(HttpRequest.GET("abc"))
-      .assertStatusCode(StatusCodes.BAD_REQUEST)
-      .assertEntity("Request is missing required HTTP header 'Origin'");
-    //#headerValueByType
+    testRoute(route)
+        .run(HttpRequest.GET("abc"))
+        .assertStatusCode(StatusCodes.BAD_REQUEST)
+        .assertEntity("Request is missing required HTTP header 'Origin'");
+    // #headerValueByType
   }
 
   @Test
   public void testHeaderValuePF() {
-    //#headerValuePF
+    // #headerValuePF
     final PartialFunction<HttpHeader, Integer> extractHostPort =
-      new JavaPartialFunction<HttpHeader, Integer>() {
-        @Override
-        public Integer apply(HttpHeader x, boolean isCheck) throws Exception {
-          if (x instanceof Host) {
-            if (isCheck) {
-              return null;
+        new JavaPartialFunction<HttpHeader, Integer>() {
+          @Override
+          public Integer apply(HttpHeader x, boolean isCheck) throws Exception {
+            if (x instanceof Host) {
+              if (isCheck) {
+                return null;
+              } else {
+                return ((Host) x).port();
+              }
             } else {
-              return ((Host) x).port();
+              throw noMatch();
             }
-          } else {
-            throw noMatch();
           }
-        }
-      };
+        };
 
-    final Route route = headerValuePF(extractHostPort, port ->
-      complete("The port was " + port)
-    );
+    final Route route = headerValuePF(extractHostPort, port -> complete("The port was " + port));
 
     // tests:
-    testRoute(route).run(HttpRequest.GET("/").addHeader(Host.create("example.com", 5043)))
-      .assertEntity("The port was 5043");
+    testRoute(route)
+        .run(HttpRequest.GET("/").addHeader(Host.create("example.com", 5043)))
+        .assertEntity("The port was 5043");
 
-    testRoute(route).run(HttpRequest.GET("/"))
-      .assertStatusCode(StatusCodes.NOT_FOUND)
-      .assertEntity("The requested resource could not be found.");
-    //#headerValuePF
+    testRoute(route)
+        .run(HttpRequest.GET("/"))
+        .assertStatusCode(StatusCodes.NOT_FOUND)
+        .assertEntity("The requested resource could not be found.");
+    // #headerValuePF
   }
 
   @Test
   public void testOptionalHeaderValue() {
-    //#optionalHeaderValue
-    final Function<HttpHeader, Optional<Integer>> extractHostPort = header -> {
-      if (header instanceof Host) {
-        return Optional.of(((Host) header).port());
-      } else {
-        return Optional.empty();
-      }
-    };
+    // #optionalHeaderValue
+    final Function<HttpHeader, Optional<Integer>> extractHostPort =
+        header -> {
+          if (header instanceof Host) {
+            return Optional.of(((Host) header).port());
+          } else {
+            return Optional.empty();
+          }
+        };
 
-    final Route route = optionalHeaderValue(extractHostPort, port -> {
-      if (port.isPresent()) {
-        return complete("The port was " + port.get());
-      } else {
-        return complete("The port was not provided explicitly");
-      }
-    });
+    final Route route =
+        optionalHeaderValue(
+            extractHostPort,
+            port -> {
+              if (port.isPresent()) {
+                return complete("The port was " + port.get());
+              } else {
+                return complete("The port was not provided explicitly");
+              }
+            });
 
     // tests:
-    testRoute(route).run(HttpRequest.GET("/").addHeader(Host.create("example.com", 5043)))
-      .assertEntity("The port was 5043");
+    testRoute(route)
+        .run(HttpRequest.GET("/").addHeader(Host.create("example.com", 5043)))
+        .assertEntity("The port was 5043");
 
-    testRoute(route).run(HttpRequest.GET("/"))
-      .assertEntity("The port was not provided explicitly");
-    //#optionalHeaderValue
+    testRoute(route).run(HttpRequest.GET("/")).assertEntity("The port was not provided explicitly");
+    // #optionalHeaderValue
   }
 
   @Test
   public void testOptionalHeaderValueByName() {
-    //#optionalHeaderValueByName
-    final Route route = optionalHeaderValueByName("X-User-Id", userId -> {
-      if (userId.isPresent()) {
-        return complete("The user is " + userId.get());
-      } else {
-        return complete("No user was provided");
-      }
-    });
+    // #optionalHeaderValueByName
+    final Route route =
+        optionalHeaderValueByName(
+            "X-User-Id",
+            userId -> {
+              if (userId.isPresent()) {
+                return complete("The user is " + userId.get());
+              } else {
+                return complete("No user was provided");
+              }
+            });
 
     // tests:
     final RawHeader header = RawHeader.create("X-User-Id", "Joe42");
-    testRoute(route).run(HttpRequest.GET("/").addHeader(header))
-      .assertEntity("The user is Joe42");
+    testRoute(route).run(HttpRequest.GET("/").addHeader(header)).assertEntity("The user is Joe42");
 
     testRoute(route).run(HttpRequest.GET("/")).assertEntity("No user was provided");
-    //#optionalHeaderValueByName
+    // #optionalHeaderValueByName
   }
 
   @Test
   public void testOptionalHeaderValueByType() {
-    //#optionalHeaderValueByType
-    final Route route = optionalHeaderValueByType(Origin.class, origin -> {
-      if (origin.isPresent()) {
-        return complete("The first origin was " + origin.get().getOrigins().iterator().next());
-      } else {
-        return complete("No Origin header found.");
-      }
-    });
+    // #optionalHeaderValueByType
+    final Route route =
+        optionalHeaderValueByType(
+            Origin.class,
+            origin -> {
+              if (origin.isPresent()) {
+                return complete(
+                    "The first origin was " + origin.get().getOrigins().iterator().next());
+              } else {
+                return complete("No Origin header found.");
+              }
+            });
 
     // tests:
 
     // extract Some(header) if the type is matching
     Host host = Host.create("localhost", 8080);
     Origin originHeader = Origin.create(HttpOrigin.create("http", host));
-    testRoute(route).run(HttpRequest.GET("abc").addHeader(originHeader))
-      .assertEntity("The first origin was http://localhost:8080");
+    testRoute(route)
+        .run(HttpRequest.GET("abc").addHeader(originHeader))
+        .assertEntity("The first origin was http://localhost:8080");
 
     // extract None if no header of the given type is present
     testRoute(route).run(HttpRequest.GET("abc")).assertEntity("No Origin header found.");
 
-    //#optionalHeaderValueByType
+    // #optionalHeaderValueByType
   }
 
   @Test
   public void testOptionalHeaderValuePF() {
-    //#optionalHeaderValuePF
+    // #optionalHeaderValuePF
     final PartialFunction<HttpHeader, Integer> extractHostPort =
-      new JavaPartialFunction<HttpHeader, Integer>() {
-        @Override
-        public Integer apply(HttpHeader x, boolean isCheck) throws Exception {
-          if (x instanceof Host) {
-            if (isCheck) {
-              return null;
+        new JavaPartialFunction<HttpHeader, Integer>() {
+          @Override
+          public Integer apply(HttpHeader x, boolean isCheck) throws Exception {
+            if (x instanceof Host) {
+              if (isCheck) {
+                return null;
+              } else {
+                return ((Host) x).port();
+              }
             } else {
-              return ((Host) x).port();
+              throw noMatch();
             }
-          } else {
-            throw noMatch();
           }
-        }
-      };
+        };
 
-    final Route route = optionalHeaderValuePF(extractHostPort, port -> {
-      if (port.isPresent()) {
-        return complete("The port was " + port.get());
-      } else {
-        return complete("The port was not provided explicitly");
-      }
-    });
+    final Route route =
+        optionalHeaderValuePF(
+            extractHostPort,
+            port -> {
+              if (port.isPresent()) {
+                return complete("The port was " + port.get());
+              } else {
+                return complete("The port was not provided explicitly");
+              }
+            });
 
     // tests:
-    testRoute(route).run(HttpRequest.GET("/").addHeader(Host.create("example.com", 5043)))
-      .assertEntity("The port was 5043");
+    testRoute(route)
+        .run(HttpRequest.GET("/").addHeader(Host.create("example.com", 5043)))
+        .assertEntity("The port was 5043");
 
-    testRoute(route).run(HttpRequest.GET("/"))
-      .assertEntity("The port was not provided explicitly");
-    //#optionalHeaderValuePF
+    testRoute(route).run(HttpRequest.GET("/")).assertEntity("The port was not provided explicitly");
+    // #optionalHeaderValuePF
   }
 
   @Test
   public void testCheckSameOrigin() {
-    //#checkSameOrigin
-    final HttpOrigin validOriginHeader =
-      HttpOrigin.create("http://localhost", Host.create("8080"));
+    // #checkSameOrigin
+    final HttpOrigin validOriginHeader = HttpOrigin.create("http://localhost", Host.create("8080"));
 
     final HttpOriginRange validOriginRange = HttpOriginRange.create(validOriginHeader);
 
-    final TestRoute route = testRoute(
-      checkSameOrigin(validOriginRange,
-        () -> complete("Result")));
+    final TestRoute route = testRoute(checkSameOrigin(validOriginRange, () -> complete("Result")));
 
     route
-      .run(HttpRequest.create().addHeader(Origin.create(validOriginHeader)))
-      .assertStatusCode(StatusCodes.OK)
-      .assertEntity("Result");
+        .run(HttpRequest.create().addHeader(Origin.create(validOriginHeader)))
+        .assertStatusCode(StatusCodes.OK)
+        .assertEntity("Result");
 
-    route
-      .run(HttpRequest.create())
-      .assertStatusCode(StatusCodes.BAD_REQUEST);
+    route.run(HttpRequest.create()).assertStatusCode(StatusCodes.BAD_REQUEST);
 
     final HttpOrigin invalidOriginHeader =
-      HttpOrigin.create("http://invalid.com", Host.create("8080"));
+        HttpOrigin.create("http://invalid.com", Host.create("8080"));
 
     route
-      .run(HttpRequest.create().addHeader(Origin.create(invalidOriginHeader)))
-      .assertStatusCode(StatusCodes.FORBIDDEN);
-    //#checkSameOrigin
+        .run(HttpRequest.create().addHeader(Origin.create(invalidOriginHeader)))
+        .assertStatusCode(StatusCodes.FORBIDDEN);
+    // #checkSameOrigin
   }
 }

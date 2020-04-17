@@ -12,10 +12,10 @@ import org.scalatestplus.junit.JUnitSuite;
 
 public class RoutingSettingsTest extends JUnitSuite {
 
-    @Test
-    public void testCreateWithActorSystem() {
-        Config config = ConfigFactory.load().resolve();
-        ActorSystem sys = ActorSystem.create("test", config);
-        RoutingSettings settings = RoutingSettings.create(sys);
-    }
+  @Test
+  public void testCreateWithActorSystem() {
+    Config config = ConfigFactory.load().resolve();
+    ActorSystem sys = ActorSystem.create("test", config);
+    RoutingSettings settings = RoutingSettings.create(sys);
+  }
 }

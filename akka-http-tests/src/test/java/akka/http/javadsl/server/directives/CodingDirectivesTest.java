@@ -25,104 +25,84 @@ public class CodingDirectivesTest extends JUnitRouteTest {
 
   @Test
   public void testAutomaticEncodingWhenNoEncodingRequested() throws Exception {
-    TestRoute route =
-      testRoute(
-        encodeResponse(() ->
-          complete("TestString")
-        )
-      );
+    TestRoute route = testRoute(encodeResponse(() -> complete("TestString")));
 
     TestRouteResult response = route.run(HttpRequest.create());
-    response
-      .assertStatusCode(200);
+    response.assertStatusCode(200);
 
     Assert.assertEquals("TestString", response.entityBytes().utf8String());
   }
 
   @Test
   public void testAutomaticEncodingWhenDeflateRequested() throws Exception {
-    TestRoute route =
-      testRoute(
-        encodeResponse(() ->
-          complete("tester")
-        )
-      );
+    TestRoute route = testRoute(encodeResponse(() -> complete("tester")));
 
-    HttpRequest request = HttpRequest.create().addHeader(AcceptEncoding.create(HttpEncodings.DEFLATE));
+    HttpRequest request =
+        HttpRequest.create().addHeader(AcceptEncoding.create(HttpEncodings.DEFLATE));
     TestRouteResult response = route.run(request);
     response
-      .assertStatusCode(200)
-      .assertHeaderExists(ContentEncoding.create(HttpEncodings.DEFLATE));
+        .assertStatusCode(200)
+        .assertHeaderExists(ContentEncoding.create(HttpEncodings.DEFLATE));
 
     ByteString decompressed =
-      Coder.Deflate.decode(response.entityBytes(), materializer()).toCompletableFuture().get(3, TimeUnit.SECONDS);
+        Coder.Deflate.decode(response.entityBytes(), materializer())
+            .toCompletableFuture()
+            .get(3, TimeUnit.SECONDS);
     Assert.assertEquals("tester", decompressed.utf8String());
   }
 
   @Test
   public void testEncodingWhenDeflateRequestedAndGzipSupported() {
     TestRoute route =
-      testRoute(
-        encodeResponseWith(Arrays.asList(Coder.Gzip), () ->
-          complete("tester")
-        )
-      );
+        testRoute(encodeResponseWith(Arrays.asList(Coder.Gzip), () -> complete("tester")));
 
-    HttpRequest request = HttpRequest.create().addHeader(AcceptEncoding.create(HttpEncodings.DEFLATE));
-    route.run(request)
-      .assertStatusCode(406)
-      .assertEntity("Resource representation is only available with these Content-Encodings:\ngzip");
+    HttpRequest request =
+        HttpRequest.create().addHeader(AcceptEncoding.create(HttpEncodings.DEFLATE));
+    route
+        .run(request)
+        .assertStatusCode(406)
+        .assertEntity(
+            "Resource representation is only available with these Content-Encodings:\ngzip");
   }
 
   @Test
   public void testAutomaticDecoding() {
-    TestRoute route =
-      testRoute(
-        decodeRequest(() ->
-          extractEntity(entity -> complete(entity))
-        )
-      );
+    TestRoute route = testRoute(decodeRequest(() -> extractEntity(entity -> complete(entity))));
 
     HttpRequest deflateRequest =
-      HttpRequest.POST("/")
-        .addHeader(ContentEncoding.create(HttpEncodings.DEFLATE))
-        .withEntity(Coder.Deflate.encode(ByteString.fromString("abcdef")));
-    route.run(deflateRequest)
-      .assertStatusCode(200)
-      .assertEntity("abcdef");
+        HttpRequest.POST("/")
+            .addHeader(ContentEncoding.create(HttpEncodings.DEFLATE))
+            .withEntity(Coder.Deflate.encode(ByteString.fromString("abcdef")));
+    route.run(deflateRequest).assertStatusCode(200).assertEntity("abcdef");
 
     HttpRequest gzipRequest =
-      HttpRequest.POST("/")
-        .addHeader(ContentEncoding.create(HttpEncodings.GZIP))
-        .withEntity(Coder.Gzip.encode(ByteString.fromString("hijklmnopq")));
-    route.run(gzipRequest)
-      .assertStatusCode(200)
-      .assertEntity("hijklmnopq");
+        HttpRequest.POST("/")
+            .addHeader(ContentEncoding.create(HttpEncodings.GZIP))
+            .withEntity(Coder.Gzip.encode(ByteString.fromString("hijklmnopq")));
+    route.run(gzipRequest).assertStatusCode(200).assertEntity("hijklmnopq");
   }
 
   @Test
   public void testGzipDecoding() {
     TestRoute route =
-      testRoute(
-        decodeRequestWith(Collections.singleton(Coder.Gzip), () ->
-          extractEntity(entity -> complete(entity))
-        )
-      );
+        testRoute(
+            decodeRequestWith(
+                Collections.singleton(Coder.Gzip),
+                () -> extractEntity(entity -> complete(entity))));
 
     HttpRequest gzipRequest =
-      HttpRequest.POST("/")
-        .addHeader(ContentEncoding.create(HttpEncodings.GZIP))
-        .withEntity(Coder.Gzip.encode(ByteString.fromString("hijklmnopq")));
-    route.run(gzipRequest)
-      .assertStatusCode(200)
-      .assertEntity("hijklmnopq");
+        HttpRequest.POST("/")
+            .addHeader(ContentEncoding.create(HttpEncodings.GZIP))
+            .withEntity(Coder.Gzip.encode(ByteString.fromString("hijklmnopq")));
+    route.run(gzipRequest).assertStatusCode(200).assertEntity("hijklmnopq");
 
     HttpRequest deflateRequest =
-      HttpRequest.POST("/")
-        .addHeader(ContentEncoding.create(HttpEncodings.DEFLATE))
-        .withEntity(Coder.Deflate.encode(ByteString.fromString("abcdef")));
-    route.run(deflateRequest)
-      .assertStatusCode(400)
-      .assertEntity("The request's Content-Encoding is not supported. Expected:\ngzip");
+        HttpRequest.POST("/")
+            .addHeader(ContentEncoding.create(HttpEncodings.DEFLATE))
+            .withEntity(Coder.Deflate.encode(ByteString.fromString("abcdef")));
+    route
+        .run(deflateRequest)
+        .assertStatusCode(400)
+        .assertEntity("The request's Content-Encoding is not supported. Expected:\ngzip");
   }
 }

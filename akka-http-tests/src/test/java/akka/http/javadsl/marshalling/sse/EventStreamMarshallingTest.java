@@ -33,21 +33,22 @@ import static akka.util.ByteString.emptyByteString;
 
 public class EventStreamMarshallingTest extends JUnitRouteTest {
 
-    @Test
-    public void testToEventStream() {
-        //#event-stream-marshalling-example
-        final List<ServerSentEvent> events = new ArrayList<>();
-        events.add(ServerSentEvent.create("1"));
-        events.add(ServerSentEvent.create("2"));
-        final Route route = completeOK(Source.from(events), EventStreamMarshalling.toEventStream());
-        //#event-stream-marshalling-example
+  @Test
+  public void testToEventStream() {
+    // #event-stream-marshalling-example
+    final List<ServerSentEvent> events = new ArrayList<>();
+    events.add(ServerSentEvent.create("1"));
+    events.add(ServerSentEvent.create("2"));
+    final Route route = completeOK(Source.from(events), EventStreamMarshalling.toEventStream());
+    // #event-stream-marshalling-example
 
-        final ByteString expectedEntity = events
-                .stream()
-                .map(e -> ((akka.http.scaladsl.model.sse.ServerSentEvent) e).encode())
-                .reduce(emptyByteString(), ByteString::concat);
-        final TestRouteResult routeResult = testRoute(route).run(GET("/"));
-        routeResult.assertMediaType(TEXT_EVENT_STREAM);
-        routeResult.assertEquals(expectedEntity, routeResult.entityBytes(), "Entity should carry events!");
-    }
+    final ByteString expectedEntity =
+        events.stream()
+            .map(e -> ((akka.http.scaladsl.model.sse.ServerSentEvent) e).encode())
+            .reduce(emptyByteString(), ByteString::concat);
+    final TestRouteResult routeResult = testRoute(route).run(GET("/"));
+    routeResult.assertMediaType(TEXT_EVENT_STREAM);
+    routeResult.assertEquals(
+        expectedEntity, routeResult.entityBytes(), "Entity should carry events!");
+  }
 }

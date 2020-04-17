@@ -5,7 +5,8 @@
 package akka.http.javadsl.model.headers;
 
 public final class HttpEncodingRanges {
-    private HttpEncodingRanges() { }
+  private HttpEncodingRanges() {}
 
-    public static final HttpEncodingRange ALL = akka.http.scaladsl.model.headers.HttpEncodingRange.$times$.MODULE$;
+  public static final HttpEncodingRange ALL =
+      akka.http.scaladsl.model.headers.HttpEncodingRange.$times$.MODULE$;
 }

@@ -12,189 +12,188 @@ import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 
-//#delete
+// #delete
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.delete;
 
-//#delete
-//#head
+// #delete
+// #head
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.head;
 
-//#head
-//#options
+// #head
+// #options
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.options;
 
-//#options
-//#patch
+// #options
+// #patch
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.patch;
 
-//#patch
-//#post
+// #patch
+// #post
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.post;
 
-//#post
-//#put
+// #post
+// #put
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.put;
 
-//#put
-//#method-example
+// #put
+// #method-example
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.method;
 
-//#method-example
-//#extractMethod
+// #method-example
+// #extractMethod
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.get;
 import static akka.http.javadsl.server.Directives.extractMethod;
 
-//#extractMethod
-//#overrideMethodWithParameter
+// #extractMethod
+// #overrideMethodWithParameter
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.get;
 import static akka.http.javadsl.server.Directives.post;
 import static akka.http.javadsl.server.Directives.route;
 import static akka.http.javadsl.server.Directives.overrideMethodWithParameter;
 
-//#overrideMethodWithParameter
+// #overrideMethodWithParameter
 
 public class MethodDirectivesExamplesTest extends JUnitRouteTest {
   @Test
   public void testDelete() {
-    //#delete
+    // #delete
     final Route route = delete(() -> complete("This is a DELETE request."));
 
-    testRoute(route).run(HttpRequest.DELETE("/")).assertEntity(
-        "This is a DELETE request.");
-    //#delete
+    testRoute(route).run(HttpRequest.DELETE("/")).assertEntity("This is a DELETE request.");
+    // #delete
   }
 
   @Test
   public void testGet() {
-    //#get
+    // #get
     final Route route = get(() -> complete("This is a GET request."));
 
-    testRoute(route).run(HttpRequest.GET("/")).assertEntity(
-        "This is a GET request.");
-    //#get
+    testRoute(route).run(HttpRequest.GET("/")).assertEntity("This is a GET request.");
+    // #get
   }
 
   @Test
   public void testHead() {
-    //#head
+    // #head
     final Route route = head(() -> complete("This is a HEAD request."));
 
-    testRoute(route).run(HttpRequest.HEAD("/")).assertEntity(
-        "This is a HEAD request.");
-    //#head
+    testRoute(route).run(HttpRequest.HEAD("/")).assertEntity("This is a HEAD request.");
+    // #head
   }
 
   @Test
   public void testOptions() {
-    //#options
+    // #options
     final Route route = options(() -> complete("This is a OPTIONS request."));
 
-    testRoute(route).run(HttpRequest.OPTIONS("/")).assertEntity(
-        "This is a OPTIONS request.");
-    //#options
+    testRoute(route).run(HttpRequest.OPTIONS("/")).assertEntity("This is a OPTIONS request.");
+    // #options
   }
 
   @Test
   public void testPatch() {
-    //#patch
+    // #patch
     final Route route = patch(() -> complete("This is a PATCH request."));
 
-    testRoute(route).run(HttpRequest.PATCH("/").withEntity("patch content"))
+    testRoute(route)
+        .run(HttpRequest.PATCH("/").withEntity("patch content"))
         .assertEntity("This is a PATCH request.");
-    //#patch
+    // #patch
   }
 
   @Test
   public void testPost() {
-    //#post
+    // #post
     final Route route = post(() -> complete("This is a POST request."));
 
-    testRoute(route).run(HttpRequest.POST("/").withEntity("post content"))
+    testRoute(route)
+        .run(HttpRequest.POST("/").withEntity("post content"))
         .assertEntity("This is a POST request.");
-    //#post
+    // #post
   }
 
   @Test
   public void testPut() {
-    //#put
+    // #put
     final Route route = put(() -> complete("This is a PUT request."));
 
-    testRoute(route).run(HttpRequest.PUT("/").withEntity("put content"))
+    testRoute(route)
+        .run(HttpRequest.PUT("/").withEntity("put content"))
         .assertEntity("This is a PUT request.");
-    //#put
+    // #put
   }
 
   @Test
   public void testMethodExample() {
-    //#method-example
-    final Route route = method(HttpMethods.PUT,
-        () -> complete("This is a PUT request."));
+    // #method-example
+    final Route route = method(HttpMethods.PUT, () -> complete("This is a PUT request."));
 
-    testRoute(route).run(HttpRequest.PUT("/").withEntity("put content"))
+    testRoute(route)
+        .run(HttpRequest.PUT("/").withEntity("put content"))
         .assertEntity("This is a PUT request.");
 
-    testRoute(route).run(HttpRequest.GET("/")).assertStatusCode(
-        StatusCodes.METHOD_NOT_ALLOWED);
-    //#method-example
+    testRoute(route).run(HttpRequest.GET("/")).assertStatusCode(StatusCodes.METHOD_NOT_ALLOWED);
+    // #method-example
   }
 
   @Test
   public void testExtractMethodExample() {
-    //#extractMethod
+    // #extractMethod
 
-    final Route route = concat(
-        get(() -> 
-            complete("This is a GET request.")
-        ),
-        extractMethod(method ->
-            complete("This " + method.value() + " request, clearly is not a GET!")
-        )
-    );
+    final Route route =
+        concat(
+            get(() -> complete("This is a GET request.")),
+            extractMethod(
+                method -> complete("This " + method.value() + " request, clearly is not a GET!")));
 
-    testRoute(route).run(HttpRequest.GET("/")).assertEntity(
-        "This is a GET request.");
+    testRoute(route).run(HttpRequest.GET("/")).assertEntity("This is a GET request.");
 
-    testRoute(route).run(HttpRequest.PUT("/").withEntity("put content"))
+    testRoute(route)
+        .run(HttpRequest.PUT("/").withEntity("put content"))
         .assertEntity("This PUT request, clearly is not a GET!");
 
-    testRoute(route).run(HttpRequest.HEAD("/")).assertEntity(
-        "This HEAD request, clearly is not a GET!");
-    //#extractMethod
+    testRoute(route)
+        .run(HttpRequest.HEAD("/"))
+        .assertEntity("This HEAD request, clearly is not a GET!");
+    // #extractMethod
   }
-  
+
   @Test
   public void testOverrideMethodWithParameter() {
-    //#overrideMethodWithParameter
+    // #overrideMethodWithParameter
 
-    final Route route = concat(
-        overrideMethodWithParameter("method", () -> 
-          concat(
-            get(() -> complete("This looks like a GET request.")),
-            post(() -> complete("This looks like a POST request."))
-          )
-        )
-    );
+    final Route route =
+        concat(
+            overrideMethodWithParameter(
+                "method",
+                () ->
+                    concat(
+                        get(() -> complete("This looks like a GET request.")),
+                        post(() -> complete("This looks like a POST request.")))));
 
-    
     // tests:
-    testRoute(route).run(HttpRequest.GET("/?method=POST")).assertEntity(
-        "This looks like a POST request.");
+    testRoute(route)
+        .run(HttpRequest.GET("/?method=POST"))
+        .assertEntity("This looks like a POST request.");
 
-    testRoute(route).run(HttpRequest.POST("/?method=get"))
+    testRoute(route)
+        .run(HttpRequest.POST("/?method=get"))
         .assertEntity("This looks like a GET request.");
 
-    testRoute(route).run(HttpRequest.GET("/?method=hallo")).assertEntity(
-        "The server either does not recognize the request method, or it lacks the ability to fulfill the request.");
-    
-    //#overrideMethodWithParameter
+    testRoute(route)
+        .run(HttpRequest.GET("/?method=hallo"))
+        .assertEntity(
+            "The server either does not recognize the request method, or it lacks the ability to fulfill the request.");
+
+    // #overrideMethodWithParameter
   }
 }

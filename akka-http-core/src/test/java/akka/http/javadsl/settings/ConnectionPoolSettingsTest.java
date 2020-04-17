@@ -10,9 +10,9 @@ import org.scalatestplus.junit.JUnitSuite;
 
 public class ConnectionPoolSettingsTest extends JUnitSuite {
 
-    @Test
-    public void testCreateWithActorSystem() {
-        ActorSystem sys = ActorSystem.create("test");
-        ConnectionPoolSettings settings = ConnectionPoolSettings.create(sys);
-    }
+  @Test
+  public void testCreateWithActorSystem() {
+    ActorSystem sys = ActorSystem.create("test");
+    ConnectionPoolSettings settings = ConnectionPoolSettings.create(sys);
+  }
 }
