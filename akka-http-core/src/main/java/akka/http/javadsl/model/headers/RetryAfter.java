@@ -1,4 +1,5 @@
 /** Copyright 2009-2020 Lightbend Inc. <http://www.lightbend.com> */
+
 package akka.http.javadsl.model.headers;
 
 import java.util.Optional;
