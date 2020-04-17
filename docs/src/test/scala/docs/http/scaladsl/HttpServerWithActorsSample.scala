@@ -76,8 +76,6 @@ object HttpServerWithActorsSample {
     }
 
     implicit val jobFormat = jsonFormat4(Job)
-
-    implicit val jobsFormat = jsonFormat1(Jobs)
   }
   //#akka-typed-json
 
