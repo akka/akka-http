@@ -1,11 +1,7 @@
 # parameters
 
-@@@ div { .group-java }
-
 This page explains how to extract multiple *query* parameter values from the request, or parameters that might or might 
 not be present.
-
-@@@
 
 @@@ div { .group-scala }
 ## Signature
@@ -29,7 +25,7 @@ The signature shown is simplified and written in pseudo-syntax, the real signatu
 The parameters directive filters on the existence of several query parameters and extract their values.
 
 Query parameters can be either extracted as a String or can be converted to another type. The parameter name
-can be supplied either as a String or as a Symbol. Parameter extraction can be modified to mark a query parameter
+is supplied as a String. Parameter extraction can be modified to mark a query parameter
 as required, optional, or repeated, or to filter requests where a parameter has a certain value:
 
 `"color"`
@@ -49,7 +45,7 @@ as required, optional, or repeated, or to filter requests where a parameter has 
 (see also @ref[Unmarshalling](../../../common/unmarshalling.md))
 
 `"amount".as(deserializer)`
-: extract value of parameter "amount" with an explicit @apidoc[Unmarshaller]
+: extract value of parameter "amount" with an explicit @apidoc[Unmarshaller] as described in @ref[Unmarshalling](../../../common/unmarshalling.md)
 
 `"distance".*`
 : extract multiple occurrences of parameter "distance" as `Iterable[String]`
@@ -59,7 +55,7 @@ as required, optional, or repeated, or to filter requests where a parameter has 
 (see also @ref[Unmarshalling](../../../common/unmarshalling.md))
 
 `"distance".as(deserializer).*`
-: extract multiple occurrences of parameter "distance" with an explicit @apidoc[Unmarshaller]
+: extract multiple occurrences of parameter "distance" with an explicit @apidoc[Unmarshaller] as described in @ref[Unmarshalling](../../../common/unmarshalling.md)
 
 You can use @scala[@ref[Case Class Extraction](../../case-class-extraction.md)] to group several extracted values together into a case-class
 instance.
@@ -69,7 +65,7 @@ instance.
 @@@ div { .group-java }
 In order to filter on the existence of several query parameters, you need to nest as many @ref[parameter](parameter.md) directives as desired.
 
-Query parameters can be either extracted as a String or can be converted to another type. Different methods must be used
+Query parameters can be either extracted as a `String` or can be converted to another type. Different methods must be used
 when the desired parameter is required, optional or repeated.
 
 @@@
@@ -81,8 +77,8 @@ if the unmarshaller threw an `Unmarshaller.NoContentException` or a @apidoc[Malf
 (see also @ref[Rejections](../../../routing-dsl/rejections.md))
 
 @@@ div { .group-scala }
-There's also a singular version, @ref[parameter](parameter.md). Form fields can be handled in a similar way, see `formFields`. If
-you want unified handling for both query parameters and form fields, see `anyParams`.
+There's also a singular version, @ref[parameter](parameter.md). Form fields can be handled in a similar way, see @ref[`formFields`](../form-field-directives/index.md). If
+you want unified handling for both query parameters and form fields, see `anyParams`<!-- TODO: Does it exist? -->.
 
 @@@
 
