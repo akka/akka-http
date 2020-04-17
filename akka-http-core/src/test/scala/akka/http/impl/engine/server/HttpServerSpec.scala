@@ -6,8 +6,11 @@ package akka.http.impl.engine.server
 
 import java.net.{ InetAddress, InetSocketAddress }
 
+import akka.event.LoggingAdapter
+import akka.http.ParsingErrorHandler
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util._
+import akka.http.javadsl.model
 import akka.http.scaladsl.Http.ServerLayer
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model.HttpMethods._
@@ -32,6 +35,11 @@ import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.Random
+
+object TestParsingErrorHandler extends ParsingErrorHandler {
+  override def handle(status: StatusCode, error: ErrorInfo, log: LoggingAdapter, settings: ServerSettings): HttpResponse =
+    HttpResponse(StatusCodes.ImATeapot, entity = HttpEntity("Tea hea"))
+}
 
 class HttpServerSpec extends AkkaSpec(
   """akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
@@ -1517,6 +1525,29 @@ class HttpServerSpec extends AkkaSpec(
       netOut.expectComplete()
     })
 
+    "allow overriding the URI parsing error response" in assertAllStagesStopped(new TestSetup {
+      override def settings: ServerSettings = super.settings.withParsingErrorHandler("akka.http.impl.engine.server.TestParsingErrorHandler$")
+
+      send("""GET http://www.example.com/unparsable HTTP/1.1
+             |Host: www.example.net
+             |
+             |""")
+
+      requests.request(1)
+
+      expectResponseWithWipedDate(
+        """|HTTP/1.1 418 I'm a teapot
+           |Server: akka-http/test
+           |Date: XXXX
+           |Connection: close
+           |Content-Type: text/plain; charset=UTF-8
+           |Content-Length: 7
+           |
+           |Tea hea""")
+
+      netIn.sendComplete()
+      netOut.expectComplete()
+    })
   }
   class TestSetup(maxContentLength: Int = -1) extends HttpServerTestSetupBase {
     implicit def system = spec.system

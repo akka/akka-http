@@ -51,6 +51,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def defaultHttpPort: Int
   def defaultHttpsPort: Int
   def terminationDeadlineExceededResponse: HttpResponse
+  def parsingErrorHandler: String
 
   /* Java APIs */
 
@@ -77,6 +78,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   override def getDefaultHttpsPort: Int = defaultHttpsPort
   override def getTerminationDeadlineExceededResponse: akka.http.javadsl.model.HttpResponse =
     terminationDeadlineExceededResponse
+  override def getParsingErrorHandler: String = parsingErrorHandler
   // ---
 
   // override for more specific return type
@@ -99,6 +101,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   override def withDefaultHttpsPort(newValue: Int): ServerSettings = self.copy(defaultHttpsPort = newValue)
   override def withTerminationDeadlineExceededResponse(response: akka.http.javadsl.model.HttpResponse): ServerSettings =
     self.copy(terminationDeadlineExceededResponse = response.asScala)
+  override def withParsingErrorHandler(newValue: String) = self.copy(parsingErrorHandler = newValue)
 
   // overloads for Scala idiomatic use
   def withTimeouts(newValue: ServerSettings.Timeouts): ServerSettings = self.copy(timeouts = newValue)
