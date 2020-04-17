@@ -72,7 +72,7 @@ the Routing DSL will look like:
 
 ## Compared with Play framework routes
 
-If you have been using Play framework's routes file notation before this @ref[Play! comparison](play-comparison.md) may help you to get started with Akka HTTP routing.
+If you have been using Play framework's routes file notation before this @ref[Play comparison](play-comparison.md) may help you to get started with Akka HTTP routing.
 
 <a name="interaction-with-akka-typed">
 ## Interaction with Actors

@@ -8,7 +8,7 @@ Both Play and Akka HTTP choose the first matching route within the routes file/r
 
 ### Static path
 
-For example, to exactly match incoming `GET /clients/all` requests, you can define this route in Play!.
+For example, to exactly match incoming `GET /clients/all` requests, you can define this route in Play.
 
 ```
 GET   /clients/all          controllers.Clients.list()

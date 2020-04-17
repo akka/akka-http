@@ -26,6 +26,7 @@ public class PlayRoutesComparisonTest extends JUnitRouteTest {
         static String list() {
             return "clientA,clientB,clientC";
         }
+
         static String get(long id) {
             return "clientB";
         }
@@ -52,45 +53,66 @@ public class PlayRoutesComparisonTest extends JUnitRouteTest {
         Route clientsAll() {
             return
                     // #fixed
-                    get(() -> path(segment("clients").slash("all"), () -> complete(Clients.list())));
+                    get(() ->
+                            path(segment("clients").slash("all"), () ->
+                                    complete(Clients.list())
+                            )
+                    );
             // #fixed
         }
 
         Route clientById() {
             return
                     // #long
-                    get(() -> path(segment("client").slash(longSegment()), id -> complete(Clients.get(id))));
+                    get(() ->
+                            path(segment("client").slash(longSegment()), id ->
+                                    complete(Clients.get(id))
+                            )
+                    );
             // #long
         }
 
         Route files() {
             return
                     // #segments
-                    get(() -> path(segment("files").slash(segments()),
-                            names -> complete(download(names))));
+                    get(() ->
+                            path(segment("files").slash(segments()),
+                                    names -> complete(download(names))
+                            )
+                    );
             // #segments
         }
 
         Route pageParameter() {
             return
                     // #mandatory-parameter
-                    get(() -> parameter("page", page -> complete(getPage(page))));
+                    get(() ->
+                            parameter("page", page ->
+                                    complete(getPage(page))
+                            )
+                    );
             // #mandatory-parameter
         }
 
         Route apiListWithVersion() {
             return
                     // #optional-parameter
-                    get(() -> path(segment("api").slash("list"), () ->
-                            parameterOptional("version", version -> complete(apiList(version)))));
+                    get(() ->
+                            path(segment("api").slash("list"), () ->
+                                    parameterOptional("version", version -> complete(apiList(version)))
+                            )
+                    );
             // #optional-parameter
         }
 
         Route apiListItems() {
             return
                     // #parameter-list
-                    get(() -> path(segment("api").slash("list-items"), () ->
-                            parameterList("item", items -> complete(apiItems(items)))));
+                    get(() ->
+                            path(segment("api").slash("list-items"), () ->
+                                    parameterList("item", items -> complete(apiItems(items)))
+                            )
+                    );
             // #parameter-list
         }
     }

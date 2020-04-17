@@ -114,14 +114,8 @@ class PlayRoutesComparisonSpec extends AnyWordSpec with Matchers with ScalatestR
 
       val itemParameterList: Route =
         // #parameter-list
-        // TODO:
-        // Note that implicit conversions are not applicable because they are ambiguous:
-        //  both method augmentString in object Predef of type (x: String)scala.collection.immutable.StringOps
-        //  and method _string2NR in trait ToNameReceptacleEnhancements of type (string: String)akka.http.scaladsl.common.NameReceptacle[String]
-        //  are possible conversion functions from String("item") to ?{def *: ?}
-        //         path("api" / "list-items")(parameters("item".*) { items =>
         get {
-          path("api" / "list-items")(parameters(ToNameReceptacleEnhancements._string2NR("item").*) { items =>
+          path("api" / "list-items")(parameters('item.*) { items =>
             complete(listItems(items))
           })
         }
