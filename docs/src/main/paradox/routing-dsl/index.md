@@ -83,25 +83,37 @@ strictly needed for our sample, but just to have an actual actor to interact wit
 Scala
 :  @@snip [HttpServerWithActorsSample.scala]($test$/scala/docs/http/scaladsl/HttpServerWithActorsSample.scala) { #akka-typed-behavior }
 
+Java
+:  @@snip [JobRepository.scala](/docs/src/test/java/docs/http/javadsl/JobRepository.java) { #akka-typed-behavior }
+
+@@@ div { .group-scala }
 
 Then, let's define the JSON marshaller and unmarshallers for the HTTP routes:
 
 Scala
 :  @@snip [HttpServerWithActorsSample.scala]($test$/scala/docs/http/scaladsl/HttpServerWithActorsSample.scala) { #akka-typed-json }
 
+@@@
 
-Next step is to define the @apidoc[Route$] that will communicate with the previously defined behavior
+Next step is to define the
+@scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]
+@java[@javadoc[Route](akka.http.scaladsl.server.Route)]
+that will communicate with the previously defined behavior
 and handle all its possible responses:
 
 Scala
 :  @@snip [HttpServerWithActorsSample.scala]($test$/scala/docs/http/scaladsl/HttpServerWithActorsSample.scala) { #akka-typed-route }
 
+Java
+:  @@snip [JobRoutes.scala](/docs/src/test/java/docs/http/javadsl/JobRoutes.java) { #route }
 
 Finally, we create a @apidoc[Behavior] that bootstraps the web server and use it as the root behavior of our actor system:
 
 Scala
 :  @@snip [HttpServerWithActorsSample.scala]($test$/scala/docs/http/scaladsl/HttpServerWithActorsSample.scala) { #akka-typed-bootstrap }
 
+Java
+:  @@snip [HttpServerWithActorsSample.java](/docs/src/test/java/docs/http/javadsl/HttpServerWithActorsSample.java) { #bootstrap }
 
 ## Dynamic Routing Example
 
