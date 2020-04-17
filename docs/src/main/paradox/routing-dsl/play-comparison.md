@@ -1,0 +1,162 @@
+# Compared with Play routes
+
+If you have been using @scala[[Play's routes file syntax](https://www.playframework.com/documentation/2.8.x/ScalaRouting#The-routes-file-syntax)]@java[[Play's routes file syntax](https://www.playframework.com/documentation/2.8.x/JavaRouting#The-routes-file-syntax)] earlier, this page may help you to use the Akka HTTP routing DSL.
+
+Where Play routes require to specify the HTTP method for every entry, in Akka HTTP it may be specified on different levels of the `Route`.
+
+Both Play and Akka HTTP choose the first matching route within the routes file/routes definition. In Play routes are listed with one route per line, in Akka HTTP multiple routes must be concatenated with the `concat` method.
+
+### Static path
+
+For example, to exactly match incoming `GET /clients/all` requests, you can define this route in Play!.
+
+```
+GET   /clients/all          controllers.Clients.list()
+```
+
+In Akka HTTP every path segment is specified as a separate `String` @scala[concatenated with the `/` method]@java[concatenated by the `slash` method on `segment`].
+
+Scala
+:   @@snip [snip](/docs/src/test/scala/docs/http/scaladsl/server/PlayRoutesComparisonSpec.scala) { #fixed }
+
+Scala test
+:   @@snip [snip](/docs/src/test/scala/docs/http/scaladsl/server/PlayRoutesComparisonSpec.scala) { #fixed-test }
+
+Java
+:   @@snip [snip](/docs/src/test/java/docs/http/javadsl/server/testkit/PlayRoutesComparisonTest.java) { #fixed }
+
+Java test
+:   @@snip [snip](/docs/src/test/java/docs/http/javadsl/server/testkit/PlayRoutesComparisonTest.java) { #fixed-test }
+
+
+### Dynamic parts
+
+If you want to define a route that retrieves a client by ID, you’ll need to add a dynamic part.
+
+```
+GET   /clients/:id          controllers.Clients.show(id: Long)
+```
+
+Akka HTTP uses @ref[path matchers](path-matchers.md#basic-pathmatchers) which match certain data types and pass their data on.
+
+Scala
+:   @@snip [snip](/docs/src/test/scala/docs/http/scaladsl/server/PlayRoutesComparisonSpec.scala) { #long }
+
+Scala test
+:   @@snip [snip](/docs/src/test/scala/docs/http/scaladsl/server/PlayRoutesComparisonSpec.scala) { #long-test }
+
+Java
+:   @@snip [snip](/docs/src/test/java/docs/http/javadsl/server/testkit/PlayRoutesComparisonTest.java) { #long }
+
+Java test
+:   @@snip [snip](/docs/src/test/java/docs/http/javadsl/server/testkit/PlayRoutesComparisonTest.java) { #long-test }
+
+
+### Dynamic parts spanning several /
+
+You may want to capture a dynamic part of more than one URI path segment, separated by forward slashes.
+
+```
+GET   /files/*name          controllers.Application.download(name)
+```
+
+The Akka HTTP directive @scala[`Segments`]@java[segments()] makes a list of the segments to be passed.
+
+Scala
+:   @@snip [snip](/docs/src/test/scala/docs/http/scaladsl/server/PlayRoutesComparisonSpec.scala) { #segments }
+
+Scala test
+:   @@snip [snip](/docs/src/test/scala/docs/http/scaladsl/server/PlayRoutesComparisonSpec.scala) { #segments-test }
+
+Java
+:   @@snip [snip](/docs/src/test/java/docs/http/javadsl/server/testkit/PlayRoutesComparisonTest.java) { #segments }
+
+Java test
+:   @@snip [snip](/docs/src/test/java/docs/http/javadsl/server/testkit/PlayRoutesComparisonTest.java) { #segments-test }
+
+
+### Access parameters
+
+The @ref[Parameter directives](directives/parameter-directives/index.md) give access to parameters passed on the URL.
+
+#### Mandatory parameters
+
+By default parameters are expected to be of type `String`. To make Akka HTTP convert a parameter to a different type, specify an @ref[unmarshaller](directives/parameter-directives/parameters.md#deserialized-parameter).
+
+```
+# Extract the page parameter from the query string.
+# i.e. http://myserver.com/?page=index
+GET   /                     controllers.Application.show(page)
+```
+
+Scala
+:   @@snip [snip](/docs/src/test/scala/docs/http/scaladsl/server/PlayRoutesComparisonSpec.scala) { #mandatory-parameter }
+
+Scala test
+:   @@snip [snip](/docs/src/test/scala/docs/http/scaladsl/server/PlayRoutesComparisonSpec.scala) { #mandatory-parameter-test }
+
+Java
+:   @@snip [snip](/docs/src/test/java/docs/http/javadsl/server/testkit/PlayRoutesComparisonTest.java) { #mandatory-parameter }
+
+Java test
+:   @@snip [snip](/docs/src/test/java/docs/http/javadsl/server/testkit/PlayRoutesComparisonTest.java) { #mandatory-parameter-test }
+
+
+#### Optional parameters
+```
+# The version parameter is optional. E.g. /api/list-all?version=3.0
+GET   /api/list-all         controllers.Api.list(version: Option[String])
+```
+
+@@@ div { .group-scala }
+The parameter name may be decorated with a `?` to mark it as optional (for other variants see @ref[other parameter extractors](directives/parameter-directives/parameters.md#description)).]
+@@@
+@@@ div { .group-java }
+The `parameterOptional` directive passes the parameter as `Optional<String>`. 
+
+The directive `parameterRequiredValue` makes the route match only if the parameter contains the specified value.
+
+See @ref[parameter extractors](directives/parameter-directives/parameters.md).
+@@@
+
+Scala
+:   @@snip [snip](/docs/src/test/scala/docs/http/scaladsl/server/PlayRoutesComparisonSpec.scala) { #optional-parameter }
+
+Scala test
+:   @@snip [snip](/docs/src/test/scala/docs/http/scaladsl/server/PlayRoutesComparisonSpec.scala) { #optional-parameter-test }
+
+Java
+:   @@snip [snip](/docs/src/test/java/docs/http/javadsl/server/testkit/PlayRoutesComparisonTest.java) { #optional-parameter }
+
+Java test
+:   @@snip [snip](/docs/src/test/java/docs/http/javadsl/server/testkit/PlayRoutesComparisonTest.java) { #optional-parameter-test }
+
+
+#### List parameters
+
+This shows how a repeated URL parameter is captured.
+
+```
+# The item parameter is a list.
+# E.g. /api/list-items?item=red&item=new&item=slippers
+GET   /api/list-items      controllers.Api.listItems(item: List[String])
+```
+
+@@@ div { .group-scala }
+Decorating the parameter name with a `*` makes Akka HTTP pass all values of that parameter as an `Iterable[String]`].
+@@@
+@@@ div { .group-java }
+The `parameterList` directive may take a parameter name to specify a single parameter name to pass on as a `List<String>`.]
+@@@
+
+Scala
+:   @@snip [snip](/docs/src/test/scala/docs/http/scaladsl/server/PlayRoutesComparisonSpec.scala) { #parameter-list }
+
+Scala test
+:   @@snip [snip](/docs/src/test/scala/docs/http/scaladsl/server/PlayRoutesComparisonSpec.scala) { #parameter-list-test }
+
+Java
+:   @@snip [snip](/docs/src/test/java/docs/http/javadsl/server/testkit/PlayRoutesComparisonTest.java) { #parameter-list }
+
+Java test
+:   @@snip [snip](/docs/src/test/java/docs/http/javadsl/server/testkit/PlayRoutesComparisonTest.java) { #parameter-list-test }

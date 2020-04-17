@@ -117,6 +117,9 @@ Java
 
 ### Parameter with required value
 
+@java[The `!` decorator makes the route match only if the parameter contains the specified value.]
+@java[The directive `parameterRequiredValue` makes the route match only if the parameter contains the specified value.]
+
 Scala
 :   @@snip [ParameterDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/ParameterDirectivesExamplesSpec.scala) { #required-value }
 

@@ -88,8 +88,8 @@ of either the incoming request, the outgoing response or both
  * Route filtering, which only lets requests satisfying a given filter condition pass and rejects all others
  * Route chaining, which tries a second route if a given first one was rejected
 
-The last point is achieved with the concatenation operator `~`, which is an extension method that becomes available
-when you `import akka.http.scaladsl.server.Directives._`.
+@scala[The last point is achieved with the concatenation operator `~` (or the `concat` method), which is an extension method that becomes available
+when you `import akka.http.scaladsl.server.Directives._`.]
 The first two points are provided by so-called @ref[Directives](directives/index.md#directives) of which a large number is already predefined by Akka
 HTTP and which you can also easily create yourself.
 @ref[Directives](directives/index.md#directives) deliver most of Akka HTTP's power and flexibility.
@@ -173,7 +173,7 @@ A sealed route has these properties:
 As described in @ref[Rejections](rejections.md) and @ref[Exception Handling](exception-handling.md),
 there are generally two ways to handle rejections and exceptions.
 
- * Bring rejection/exception handlers @scala[`into implicit scope at the top-level`]@java[`seal()` method of the @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@apidoc[Route]]]
+ * Bring rejection/exception handlers @scala[into `implicit` scope at the top-level]@java[`seal()` method of the @apidoc[Route]]
  * Supply handlers as arguments to @ref[handleRejections](directives/execution-directives/handleRejections.md#handlerejections) and @ref[handleExceptions](directives/execution-directives/handleExceptions.md#handleexceptions) directives 
 
 In the first case your handlers will be "sealed", (which means that it will receive the default handler as a fallback for all cases your handler doesn't handle itself) 
@@ -184,7 +184,7 @@ and used for all rejections/exceptions that are not handled within the route str
 In application code, unlike @ref[test code](testkit.md#testing-sealed-routes), you don't need to use the `Route.seal()` method to seal a route.
 As long as you bring implicit rejection and/or exception handlers to the top-level scope, your route is sealed. 
 
-However, you can use `Route.seal()` to perform modification on HttpResponse from the route.
+However, you can use `Route.seal()` to perform modification on @apidoc[HttpResponse$] from the route.
 For example, if you want to add a special header, but still use the default rejection handler, then you can do the following.
 In the below case, the special header is added to rejected responses which did not match the route, as well as successful responses which matched the route.
 
