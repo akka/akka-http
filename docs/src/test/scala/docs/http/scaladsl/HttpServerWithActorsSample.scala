@@ -4,7 +4,7 @@
 
 package docs.http.scaladsl
 
-object HttpServerWithTypedSample {
+object HttpServerWithActorsSample {
 
   //#akka-typed-behavior
   import akka.actor.typed.{ ActorRef, Behavior }
