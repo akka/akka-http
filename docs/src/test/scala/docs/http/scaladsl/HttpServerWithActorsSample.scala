@@ -4,7 +4,7 @@
 
 package docs.http.scaladsl
 
-object HttpServerWithTypedSample {
+object HttpServerWithActorsSample {
 
   //#akka-typed-behavior
   import akka.actor.typed.{ ActorRef, Behavior }
@@ -96,14 +96,12 @@ object HttpServerWithTypedSample {
 
   class JobRoutes(buildJobRepository: ActorRef[JobRepository.Command])(implicit system: ActorSystem[_]) extends JsonSupport {
 
+    import akka.actor.typed.scaladsl.AskPattern.schedulerFromActorSystem
     import akka.actor.typed.scaladsl.AskPattern.Askable
 
     // asking someone requires a timeout and a scheduler, if the timeout hits without response
     // the ask is failed with a TimeoutException
     implicit val timeout: Timeout = 3.seconds
-    // implicit scheduler only needed in 2.5
-    // in 2.6 having an implicit typed ActorSystem in scope is enough if you import AskPattern.schedulerFromActorSystem
-    implicit val scheduler = system.scheduler
 
     lazy val theJobRoutes: Route =
       pathPrefix("jobs") {
@@ -146,10 +144,7 @@ object HttpServerWithTypedSample {
   import akka.actor.typed.PostStop
   import akka.http.scaladsl.Http.ServerBinding
   import akka.http.scaladsl.Http
-  import akka.stream.SystemMaterializer
-  import akka.stream.Materializer
 
-  import scala.concurrent.ExecutionContextExecutor
   import scala.util.{ Success, Failure }
 
   object Server {
@@ -162,7 +157,6 @@ object HttpServerWithTypedSample {
     def apply(host: String, port: Int): Behavior[Message] = Behaviors.setup { ctx =>
 
       implicit val system = ctx.system
-      implicit val ec: ExecutionContextExecutor = ctx.system.executionContext
 
       val buildJobRepository = ctx.spawn(JobRepository(), "JobRepository")
       val routes = new JobRoutes(buildJobRepository)

@@ -325,6 +325,9 @@ lazy val docs = project("docs")
   .settings(
     name := "akka-http-docs",
     resolvers += Resolver.jcenterRepo,
+    // In docs adding an unused variable can be helpful, for example
+    // to show its type
+    scalacOptions += "-Xlint:-unused",
     paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     paradoxProperties in Compile ++= Map(
       "project.name" -> "Akka HTTP",
