@@ -360,7 +360,7 @@ Also the number of extractions and their types have to match up:
 Scala
 :  ```scala
 val route = path("order" / IntNumber) | path("order" / DoubleNumber)   // doesn't compile
-val route = path("order" / IntNumber) | parameter('order.as[Int])      // ok
+val route = path("order" / IntNumber) | parameter("order".as[Int])     // ok
 ```
 
 Java
@@ -383,7 +383,7 @@ When you combine directives producing extractions with the @scala[`&` operator]@
 
 Scala
 :  ```scala
-val order = path("order" / IntNumber) & parameters('oem, 'expired ?)
+val order = path("order" / IntNumber) & parameters("oem", "expired".optional)
 val route =
   order { (orderId, oem, expired) =>
     ...
