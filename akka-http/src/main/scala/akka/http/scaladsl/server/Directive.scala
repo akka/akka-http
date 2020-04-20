@@ -29,15 +29,30 @@ abstract class Directive[L](implicit val ev: Tuple[L]) {
   //#basic
   /**
    * Joins two directives into one which runs the second directive if the first one rejects.
+   *
+   * Alias for [[or]].
    */
-  def |[R >: L](that: Directive[R]): Directive[R] =
+  def |[R >: L](that: Directive[R]): Directive[R] = or(that)
+
+  /**
+   * Joins two directives into one which runs the second directive if the first one rejects.
+   */
+  def or[R >: L](that: Directive[R]): Directive[R] =
     recover(rejections => directives.BasicDirectives.mapRejections(rejections ++ _) & that)(that.ev)
 
   /**
    * Joins two directives into one which extracts the concatenation of its base directive extractions.
    * NOTE: Extraction joining is an O(N) operation with N being the number of extractions on the right-side.
+   *
+   * Alias for [[and]].
    */
   def &(magnet: ConjunctionMagnet[L]): magnet.Out = magnet(this)
+
+  /**
+   * Joins two directives into one which extracts the concatenation of its base directive extractions.
+   * NOTE: Extraction joining is an O(N) operation with N being the number of extractions on the right-side.
+   */
+  def and(magnet: ConjunctionMagnet[L]): magnet.Out = magnet(this)
 
   /**
    * Converts this directive into one which, instead of a tuple of type `L`, creates an
