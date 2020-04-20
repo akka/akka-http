@@ -20,25 +20,35 @@ import akka.http.impl.util._
 abstract class PathMatcher[L](implicit val ev: Tuple[L]) extends (Path => PathMatcher.Matching[L]) { self =>
   import PathMatcher._
 
-  def / : PathMatcher[L] = this ~ PathMatchers.Slash
+  /** Alias for [[slash]]. */
+  def / : PathMatcher[L] = slash
 
-  def /[R](other: PathMatcher[R])(implicit join: Join[L, R]): PathMatcher[join.Out] =
+  def slash: PathMatcher[L] = this ~ PathMatchers.Slash
+
+  /** Alias for [[slash]]. */
+  def /[R](other: PathMatcher[R])(implicit join: Join[L, R]): PathMatcher[join.Out] = slash(other)
+
+  def slash[R](other: PathMatcher[R])(implicit join: Join[L, R]): PathMatcher[join.Out] =
     this ~ PathMatchers.Slash ~ other
 
-  def |[R >: L: Tuple](other: PathMatcher[_ <: R]): PathMatcher[R] =
+  /** Alias for [[or]]. */
+  def |[R >: L: Tuple](other: PathMatcher[_ <: R]): PathMatcher[R] = or(other)
+
+  def or[R >: L: Tuple](other: PathMatcher[_ <: R]): PathMatcher[R] =
     new PathMatcher[R] {
       def apply(path: Path) = self(path) orElse other(path)
     }
 
-  def ~[R](other: PathMatcher[R])(implicit join: Join[L, R]): PathMatcher[join.Out] = {
+  /** Alias for [[append]]. */
+  def ~[R](other: PathMatcher[R])(implicit join: Join[L, R]): PathMatcher[join.Out] = append(other)
+
+  def append[R](other: PathMatcher[R])(implicit join: Join[L, R]): PathMatcher[join.Out] = {
     implicit val joinProducesTuple = Tuple.yes[join.Out]
     transform(_.andThen((restL, valuesL) => other(restL).map(join(valuesL, _))))
   }
 
-  def unary_!(): PathMatcher0 =
-    new PathMatcher[Unit] {
-      def apply(path: Path) = if (self(path) eq Unmatched) Matched(path, ()) else Unmatched
-    }
+  /** Operator alternative to [[PathMatchers.not]] */
+  def unary_!(): PathMatcher0 = PathMatchers.not(self)
 
   def transform[R: Tuple](f: Matching[L] => Matching[R]): PathMatcher[R] =
     new PathMatcher[R] { def apply(path: Path) = f(self(path)) }
@@ -160,13 +170,14 @@ object PathMatcher extends ImplicitPathMatcherConstruction {
   }
 
   implicit class EnhancedPathMatcher[L](underlying: PathMatcher[L]) {
-    def ?(implicit lift: PathMatcher.Lift[L, Option]): PathMatcher[lift.Out] =
+    def optional(implicit lift: PathMatcher.Lift[L, Option]): PathMatcher[lift.Out] =
       new PathMatcher[lift.Out]()(lift.OutIsTuple) {
         def apply(path: Path) = underlying(path) match {
           case Matched(rest, extractions) => Matched(rest, lift(extractions))
           case Unmatched                  => Matched(path, lift())
         }
       }
+    def ?(implicit lift: PathMatcher.Lift[L, Option]): PathMatcher[lift.Out] = optional(lift)
   }
 
   sealed trait Lift[L, M[+_]] {
@@ -320,6 +331,11 @@ trait ImplicitPathMatcherConstruction {
  */
 trait PathMatchers {
   import PathMatcher._
+
+  def not(self: PathMatcher[_]): PathMatcher0 =
+    new PathMatcher[Unit] {
+      def apply(path: Path) = if (self(path) eq Unmatched) Matched(path, ()) else Unmatched
+    }
 
   /**
    * Converts a path string containing slashes into a PathMatcher that interprets slashes as
