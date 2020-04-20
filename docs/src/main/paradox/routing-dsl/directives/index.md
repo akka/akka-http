@@ -244,7 +244,7 @@ Instead of extracting the composed directives to its own method, we can also use
 
 What you can't see from this snippet is that directives are not implemented as simple methods but rather as stand-alone
 objects of type `Directive`. This gives you more flexibility when composing directives. For example you can
-also use the `|` operator on directives. Here is yet another way to write the example:
+also use the `|` operator (or the `or` method) on directives. Here is yet another way to write the example:
 
 @@@
 
@@ -267,7 +267,7 @@ out like this:
 
 Note that, because `getOrPut` doesn't take any parameters, it can be a `val` here.
 
-As an alternative to nesting you can also use the `&` operator:
+As an alternative to nesting you can also use the `&` operator (or the `and` method):
 
 @@snip [DirectiveExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/DirectiveExamplesSpec.scala) { #example-6 }
 
