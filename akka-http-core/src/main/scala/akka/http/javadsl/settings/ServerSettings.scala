@@ -48,6 +48,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
   def getDefaultHttpsPort: Int
   def getTerminationDeadlineExceededResponse: akka.http.javadsl.model.HttpResponse
   def getParsingErrorHandler: String
+  def getStreamCancellationDelay: FiniteDuration
 
   // ---
 
@@ -77,6 +78,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
   def withTerminationDeadlineExceededResponse(response: akka.http.javadsl.model.HttpResponse): ServerSettings =
     self.copy(terminationDeadlineExceededResponse = response.asScala)
   def withParsingErrorHandler(newValue: String): ServerSettings = self.copy(parsingErrorHandler = parsingErrorHandler)
+  def withStreamCancellationDelay(newValue: FiniteDuration): ServerSettings = self.copy(streamCancellationDelay = newValue)
 }
 
 object ServerSettings extends SettingsCompanion[ServerSettings] {

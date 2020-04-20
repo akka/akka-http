@@ -16,6 +16,7 @@ import scala.util.{ Success, Try }
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.event.Logging.LogEvent
+import akka.http.impl.engine.HttpIdleTimeoutException
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util._
 import akka.http.scaladsl.Http.ServerBinding
@@ -397,7 +398,6 @@ class ClientServerSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll 
       "stop stages on failure" in Utils.assertAllStagesStopped {
         val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
         val stageCounter = new AtomicLong(0)
-        val cancelCounter = new AtomicLong(0)
         val stage: GraphStage[FlowShape[HttpRequest, HttpResponse]] = new GraphStage[FlowShape[HttpRequest, HttpResponse]] {
           val in = Inlet[HttpRequest]("request.in")
           val out = Outlet[HttpResponse]("response.out")
@@ -409,7 +409,6 @@ class ClientServerSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll 
             override def postStop(): Unit = stageCounter.decrementAndGet()
             override def onPush(): Unit = push(out, HttpResponse(entity = stageCounter.get().toString))
             override def onPull(): Unit = pull(in)
-            override def onDownstreamFinish(): Unit = cancelCounter.incrementAndGet()
 
             setHandlers(in, out, this)
           }
@@ -427,23 +426,23 @@ class ClientServerSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll 
 
         def performValidRequest() = Http().outgoingConnection(hostname, port).runWith(Source.single(HttpRequest()), Sink.ignore)
 
-        def assertCounters(stage: Int, cancel: Int) = eventually(timeout(1.second.dilated)) {
-          stageCounter.get shouldEqual stage
-          cancelCounter.get shouldEqual cancel
-        }
+        def assertCounters(stage: Int) =
+          eventually(timeout(3.second.dilated)) {
+            stageCounter.get shouldEqual stage
+          }
 
         val bind = Await.result(Http().bindAndHandle(Flow.fromGraph(stage), hostname, port)(materializer2), 1.seconds.dilated)
 
         performValidRequest()
-        assertCounters(0, 1)
+        assertCounters(0)
 
         EventFilter.warning(pattern = "Illegal HTTP message start", occurrences = 1) intercept {
           performFaultyRequest()
-          assertCounters(0, 2)
+          assertCounters(0)
         }
 
         performValidRequest()
-        assertCounters(0, 3)
+        assertCounters(0)
 
         Await.result(bind.unbind(), 1.second.dilated)
       }(materializer2)
@@ -784,6 +783,29 @@ Host: example.com
         // Test with a POST so auto-retry isn't triggered:
         Await.ready(Http().singleRequest(HttpRequest(uri = uri, method = HttpMethods.POST)), 30.seconds)
       }
+
+      Await.result(binding.unbind(), 10.seconds)
+    }
+
+    "report idle timeout on request entity stream for stalled client" in Utils.assertAllStagesStopped {
+      val dataProbe = ByteStringSinkProbe()
+
+      def handler(request: HttpRequest): Future[HttpResponse] = {
+        request.entity.dataBytes.runWith(dataProbe.sink)
+        Promise[HttpResponse].future // just let it hanging until idle timeout triggers
+      }
+
+      val settings = ServerSettings(system).mapTimeouts(_.withIdleTimeout(1.second))
+      val binding = Http().bindAndHandleAsync(handler, "127.0.0.1", port = 0, settings = settings).futureValue
+      val uri = "http://" + binding.localAddress.getHostString + ":" + binding.localAddress.getPort
+
+      val dataOutProbe = TestPublisher.probe[ByteString]()
+      Http().singleRequest(HttpRequest(uri = uri, entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(dataOutProbe))))
+
+      dataProbe.ensureSubscription()
+      dataOutProbe.sendNext(ByteString("test"))
+      dataProbe.expectUtf8EncodedString("test")
+      dataProbe.expectError() should be(an[HttpIdleTimeoutException])
 
       Await.result(binding.unbind(), 10.seconds)
     }
