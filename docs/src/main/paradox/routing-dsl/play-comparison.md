@@ -117,7 +117,7 @@ GET   /api/list-all         controllers.Api.list(version: Option[String])
 ```
 
 @@@ div { .group-scala }
-The parameter name may be decorated with a `?` to mark it as optional (for other variants see @ref[other parameter extractors](directives/parameter-directives/parameters.md#description)).]
+The parameter name may be decorated with a `?` to mark it as optional (for other variants see @ref[other parameter extractors](directives/parameter-directives/parameters.md#description)).
 @@@
 @@@ div { .group-java }
 The `parameterOptional` directive passes the parameter as `Optional<String>`. 
