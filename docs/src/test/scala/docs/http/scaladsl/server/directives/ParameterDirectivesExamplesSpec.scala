@@ -49,7 +49,7 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec w
   "optional" in {
     //#optional
     val route =
-      parameters("color", "backgroundColor".?) { (color, backgroundColor) =>
+      parameters("color", "backgroundColor".optional) { (color, backgroundColor) =>
         val backgroundStr = backgroundColor.getOrElse("<undefined>")
         complete(s"The color is '$color' and the background is '$backgroundStr'")
       }
@@ -66,7 +66,7 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec w
   "optional-with-default" in {
     //#optional-with-default
     val route =
-      parameters("color", "backgroundColor" ? "white") { (color, backgroundColor) =>
+      parameters("color", "backgroundColor".withDefault("white")) { (color, backgroundColor) =>
         complete(s"The color is '$color' and the background is '$backgroundColor'")
       }
 
@@ -82,7 +82,7 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec w
   "required-value" in {
     //#required-value
     val route =
-      parameters("color", "action" ! "true") { (color) =>
+      parameters("color", "action".requiredValue("true")) { (color) =>
         complete(s"The color is '$color'.")
       }
 
@@ -119,8 +119,7 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec w
   "repeated" in {
     //#repeated
     val route =
-      // TODO https://github.com/akka/akka-http/issues/3081
-      parameters("color", _string2NR("city").*) { (color, cities) =>
+      parameters("color", "city".repeated) { (color, cities) =>
         cities.toList match {
           case Nil         => complete(s"The color is '$color' and there are no cities.")
           case city :: Nil => complete(s"The color is '$color' and the city is $city.")
@@ -145,7 +144,7 @@ class ParameterDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec w
   "mapped-repeated" in {
     //#mapped-repeated
     val route =
-      parameters("color", "distance".as[Int].*) { (color, distances) =>
+      parameters("color", "distance".as[Int].repeated) { (color, distances) =>
         distances.toList match {
           case Nil             => complete(s"The color is '$color' and there are no distances.")
           case distance :: Nil => complete(s"The color is '$color' and the distance is $distance.")

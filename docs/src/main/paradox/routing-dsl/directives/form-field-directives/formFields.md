@@ -31,14 +31,14 @@ as required, optional, or repeated, or to filter requests where a form field has
 `"color"`
 : extract value of field "color" as `String`
 
-`"color".?`
-: extract optional value of field "color" as `Option[String]`
+`"color".optional`
+: extract optional value of field "color" as `Option[String]` (symbolic notation `"color".?`)
 
-`"color" ? "red"`
-: extract optional value of field "color" as `String` with default value `"red"`
+`"color".withDefault("red")`
+: extract optional value of field "color" as `String` with default value `"red"` (symbolic notation `"color" ? "red"`)
 
-`"color" ! "blue"`
-: require value of field "color" to be `"blue"` and extract nothing
+`"color".requiredValue("blue")`
+: require value of field "color" to be `"blue"` and extract nothing (symbolic notation `"color" ! "blue"`)
 
 `"amount".as[Int]`
 : extract value of field "amount" as `Int`, you need a matching implicit @apidoc[Unmarshaller] in scope for that to work
@@ -47,14 +47,14 @@ as required, optional, or repeated, or to filter requests where a form field has
 `"amount".as(unmarshaller)`
 : extract value of field "amount" with an explicit @apidoc[Unmarshaller]
 
-`"distance".*`
+`"distance".repeated`
 : extract multiple occurrences of field "distance" as `Iterable[String]`
 
-`"distance".as[Int].*`
+`"distance".as[Int].repeated`
 : extract multiple occurrences of field "distance" as `Iterable[Int]`, you need a matching implicit @apidoc[Unmarshaller] in scope for that to work
 (see also @ref[Unmarshalling](../../../common/unmarshalling.md))
 
-`"distance".as(unmarshaller).*`
+`"distance".as(unmarshaller).repeated`
 : extract multiple occurrences of field "distance" with an explicit @apidoc[Unmarshaller]
 
 

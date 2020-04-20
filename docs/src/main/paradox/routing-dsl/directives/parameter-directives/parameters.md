@@ -31,14 +31,14 @@ as required, optional, or repeated, or to filter requests where a parameter has 
 `"color"`
 : extract value of parameter "color" as `String`
 
-`"color".?`
-: extract optional value of parameter "color" as `Option[String]`
+`"color".optional`
+: extract optional value of parameter "color" as `Option[String]` (symbolic notation `"color".?`)
 
-`"color" ? "red"`
-: extract optional value of parameter "color" as `String` with default value `"red"`
+`"color".withDefault("red")`
+: extract optional value of parameter "color" as `String` with default value `"red"` (symbolic notation `"color" ? "red"`)
 
-`"color" ! "blue"`
-: require value of parameter "color" to be `"blue"` and extract nothing
+`"color".requiredValue("blue")`
+: require value of parameter "color" to be `"blue"` and extract nothing (symbolic notation `"color" ! "blue"`)
 
 `"amount".as[Int]`
 : extract value of parameter "amount" as `Int`, you need a matching @apidoc[Unmarshaller] in scope for that to work
@@ -47,17 +47,17 @@ as required, optional, or repeated, or to filter requests where a parameter has 
 `"amount".as(deserializer)`
 : extract value of parameter "amount" with an explicit @apidoc[Unmarshaller] as described in @ref[Unmarshalling](../../../common/unmarshalling.md)
 
-`"distance".*`
+`"distance".repeated`
 : extract multiple occurrences of parameter "distance" as `Iterable[String]`
 
-`"distance".as[Int].*`
+`"distance".as[Int].repeated`
 : extract multiple occurrences of parameter "distance" as `Iterable[Int]`, you need a matching @apidoc[Unmarshaller] in scope for that to work
 (see also @ref[Unmarshalling](../../../common/unmarshalling.md))
 
-`"distance".as(deserializer).*`
+`"distance".as(unmarshaller).repeated`
 : extract multiple occurrences of parameter "distance" with an explicit @apidoc[Unmarshaller] as described in @ref[Unmarshalling](../../../common/unmarshalling.md)
 
-You can use @scala[@ref[Case Class Extraction](../../case-class-extraction.md)] to group several extracted values together into a case-class
+You can use @ref[Case Class Extraction](../../case-class-extraction.md) to group several extracted values together into a case-class
 instance.
 
 @@@
