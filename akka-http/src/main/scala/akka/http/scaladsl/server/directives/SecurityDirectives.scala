@@ -147,7 +147,7 @@ trait SecurityDirectives {
     extractExecutionContext.flatMap { implicit ec =>
       def extractAccessTokenParameterAsBearerToken = {
         import akka.http.scaladsl.server.Directives._
-        parameter('access_token.?).map(_.map(OAuth2BearerToken))
+        parameter("access_token".optional).map(_.map(OAuth2BearerToken))
       }
       val extractCreds: Directive1[Option[OAuth2BearerToken]] =
         extractCredentials.flatMap {

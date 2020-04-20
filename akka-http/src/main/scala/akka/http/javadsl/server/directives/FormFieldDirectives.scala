@@ -30,13 +30,13 @@ abstract class FormFieldDirectives extends FileUploadDirectives {
 
   @CorrespondsTo("formField")
   def formFieldOptional(name: String, inner: JFunction[Optional[String], Route]): Route = RouteAdapter(
-    D.formField(name.?) { value =>
+    D.formField(name.optional) { value =>
       inner.apply(value.asJava).delegate
     })
 
   @CorrespondsTo("formFieldSeq")
   def formFieldList(name: String, inner: JFunction[java.util.List[String], Route]): Route = RouteAdapter(
-    D.formField(_string2NR(name).*) { values =>
+    D.formField(name.repeated) { values =>
       inner.apply(values.toSeq.asJava).delegate
     })
 
@@ -52,7 +52,7 @@ abstract class FormFieldDirectives extends FileUploadDirectives {
   def formFieldOptional[T](t: Unmarshaller[String, T], name: String, inner: JFunction[Optional[T], Route]): Route = {
     import t.asScala
     RouteAdapter(
-      D.formField(name.as[T].?) { value =>
+      D.formField(name.as[T].optional) { value =>
         inner.apply(OptionConverters.toJava(value)).delegate
       })
   }
@@ -61,7 +61,7 @@ abstract class FormFieldDirectives extends FileUploadDirectives {
   def formFieldList[T](t: Unmarshaller[String, T], name: String, inner: JFunction[java.util.List[T], Route]): Route = {
     import t.asScala
     RouteAdapter(
-      D.formField(name.as[T].*) { values =>
+      D.formField(name.as[T].optional) { values =>
         inner.apply(values.toSeq.asJava).delegate
       })
   }

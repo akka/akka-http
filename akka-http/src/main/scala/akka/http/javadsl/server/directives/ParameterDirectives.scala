@@ -25,7 +25,7 @@ abstract class ParameterDirectives extends MiscDirectives {
 
   @CorrespondsTo("parameter")
   def parameterOptional(name: String, inner: java.util.function.Function[Optional[String], Route]): Route = RouteAdapter(
-    D.parameter(name.?) { value =>
+    D.parameter(name.optional) { value =>
       inner.apply(value.asJava).delegate
     })
 
@@ -33,13 +33,13 @@ abstract class ParameterDirectives extends MiscDirectives {
   def parameterRequiredValue[T](t: Unmarshaller[String, T], requiredValue: T, name: String, inner: java.util.function.Supplier[Route]): Route = {
     import t.asScala
     RouteAdapter(
-      D.parameter(name.as[T].!(requiredValue)) { inner.get.delegate }
+      D.parameter(name.as[T].requiredValue(requiredValue)) { inner.get.delegate }
     )
   }
 
   @CorrespondsTo("parameterSeq")
   def parameterList(name: String, inner: java.util.function.Function[java.util.List[String], Route]): Route = RouteAdapter(
-    D.parameter(_string2NR(name).*) { values =>
+    D.parameter(name.repeated) { values =>
       inner.apply(values.toSeq.asJava).delegate
     })
 
@@ -55,7 +55,7 @@ abstract class ParameterDirectives extends MiscDirectives {
   def parameterOptional[T](t: Unmarshaller[String, T], name: String, inner: java.util.function.Function[Optional[T], Route]): Route = {
     import t.asScala
     RouteAdapter(
-      D.parameter(name.as[T].?) { value =>
+      D.parameter(name.as[T].optional) { value =>
         inner.apply(value.asJava).delegate
       })
   }
@@ -64,7 +64,7 @@ abstract class ParameterDirectives extends MiscDirectives {
   def parameterOrDefault[T](t: Unmarshaller[String, T], defaultValue: T, name: String, inner: java.util.function.Function[T, Route]): Route = {
     import t.asScala
     RouteAdapter(
-      D.parameter(name.as[T].?(defaultValue)) { value =>
+      D.parameter(name.as[T].withDefault(defaultValue)) { value =>
         inner.apply(value).delegate
       })
   }
@@ -73,7 +73,7 @@ abstract class ParameterDirectives extends MiscDirectives {
   def parameterList[T](t: Unmarshaller[String, T], name: String, inner: java.util.function.Function[java.util.List[T], Route]): Route = {
     import t.asScala
     RouteAdapter(
-      D.parameter(name.as[T].*) { values =>
+      D.parameter(name.as[T].repeated) { values =>
         inner.apply(values.toSeq.asJava).delegate
       })
   }
