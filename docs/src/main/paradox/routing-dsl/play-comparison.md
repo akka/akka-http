@@ -2,9 +2,17 @@
 
 If you have been using @scala[[Play's routes file syntax](https://www.playframework.com/documentation/2.8.x/ScalaRouting#The-routes-file-syntax)]@java[[Play's routes file syntax](https://www.playframework.com/documentation/2.8.x/JavaRouting#The-routes-file-syntax)] earlier, this page may help you to use the Akka HTTP routing DSL.
 
-Where Play routes require to specify the HTTP method for every entry, in Akka HTTP it may be specified on different levels of the `Route`.
+## Conceptual differences
+
+The most apparent difference is Play's use of special purpose syntax implemented as an [external DSL](https://en.wikipedia.org/wiki/Domain-specific_language#External_and_Embedded_Domain_Specific_Languages), whereas Akka HTTP routes are described in @scala[Scala source code]@java[Java source code] with regular methods and values (as "embedded DSL"). Both are crafted to make the reader "grasp the codes intention".
+
+The Akka HTTP DSL uses @ref[Directives](directives/index.md) to describe how incoming requests translate to functionality in the server. Play allows splitting the routes definitions in multiple routes files. The Akka HTTP DSL is very flexible and allows for composition so that different concerns can be properly split and organized as other source could would be.
 
 Both Play and Akka HTTP choose the first matching route within the routes file/routes definition. In Play routes are listed with one route per line, in Akka HTTP multiple routes must be concatenated with the `concat` method.
+
+## Side-by-side
+
+These examples are a non-comprehensive list of how Play routes could be written in Akka HTTP. They try to mimic the structure which Play uses, to aid understanding, even though it might not be the most Akka HTTP-idiomatic notation. 
 
 ### Static path
 
@@ -60,19 +68,19 @@ You may want to capture a dynamic part of more than one URI path segment, separa
 GET   /files/*name          controllers.Application.download(name)
 ```
 
-The Akka HTTP directive @scala[`Segments`]@java[segments()] makes a list of the segments to be passed.
+The Akka HTTP directive @scala[`Remaining`]@java[remaining()] makes a list of the segments to be passed. (See @ref[Path Matchers](path-matchers.md#basic-pathmatchers) for other ways to extract the path.)
 
 Scala
-:   @@snip [snip](/docs/src/test/scala/docs/http/scaladsl/server/PlayRoutesComparisonSpec.scala) { #segments }
+:   @@snip [snip](/docs/src/test/scala/docs/http/scaladsl/server/PlayRoutesComparisonSpec.scala) { #remaining }
 
 Scala test
-:   @@snip [snip](/docs/src/test/scala/docs/http/scaladsl/server/PlayRoutesComparisonSpec.scala) { #segments-test }
+:   @@snip [snip](/docs/src/test/scala/docs/http/scaladsl/server/PlayRoutesComparisonSpec.scala) { #remaining-test }
 
 Java
-:   @@snip [snip](/docs/src/test/java/docs/http/javadsl/server/testkit/PlayRoutesComparisonTest.java) { #segments }
+:   @@snip [snip](/docs/src/test/java/docs/http/javadsl/server/testkit/PlayRoutesComparisonTest.java) { #remaining }
 
 Java test
-:   @@snip [snip](/docs/src/test/java/docs/http/javadsl/server/testkit/PlayRoutesComparisonTest.java) { #segments-test }
+:   @@snip [snip](/docs/src/test/java/docs/http/javadsl/server/testkit/PlayRoutesComparisonTest.java) { #remaining-test }
 
 
 ### Access parameters

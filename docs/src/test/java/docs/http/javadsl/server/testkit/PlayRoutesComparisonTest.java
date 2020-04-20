@@ -32,7 +32,7 @@ public class PlayRoutesComparisonTest extends JUnitRouteTest {
         }
     }
 
-    static String download(List<String> names) {
+    static String download(String names) {
         return "images/logo.png: file contents";
     }
 
@@ -74,13 +74,13 @@ public class PlayRoutesComparisonTest extends JUnitRouteTest {
 
         Route files() {
             return
-                    // #segments
+                    // #remaining
                     get(() ->
-                            path(segment("files").slash(segments()),
-                                    names -> complete(download(names))
+                            path(segment("files").slash(remaining()), names ->
+                                    complete(download(names))
                             )
                     );
-            // #segments
+            // #remaining
         }
 
         Route pageParameter() {
@@ -99,7 +99,8 @@ public class PlayRoutesComparisonTest extends JUnitRouteTest {
                     // #optional-parameter
                     get(() ->
                             path(segment("api").slash("list"), () ->
-                                    parameterOptional("version", version -> complete(apiList(version)))
+                                    parameterOptional("version", version ->
+                                            complete(apiList(version)))
                             )
                     );
             // #optional-parameter
@@ -110,7 +111,8 @@ public class PlayRoutesComparisonTest extends JUnitRouteTest {
                     // #parameter-list
                     get(() ->
                             path(segment("api").slash("list-items"), () ->
-                                    parameterList("item", items -> complete(apiItems(items)))
+                                    parameterList("item", items ->
+                                            complete(apiItems(items)))
                             )
                     );
             // #parameter-list
@@ -138,13 +140,13 @@ public class PlayRoutesComparisonTest extends JUnitRouteTest {
     }
 
     @Test
-    public void showSegments() {
-        // #segments-test
+    public void showRemaining() {
+        // #remaining-test
         TestRoute route = testRoute(new Routes().files());
         route.run(HttpRequest.GET("/files/images/logo.png"))
                 .assertStatusCode(StatusCodes.OK)
                 .assertEntity("images/logo.png: file contents");
-        // #segments-test
+        // #remaining-test
     }
 
     @Test

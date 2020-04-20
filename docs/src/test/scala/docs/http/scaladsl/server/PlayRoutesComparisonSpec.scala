@@ -40,7 +40,7 @@ class PlayRoutesComparisonSpec extends AnyWordSpec with Matchers with ScalatestR
     "show reading a long" in {
       val clientById: Route =
         // #long
-        (get & pathPrefix("client" / LongNumber)) { id =>
+        (get & path("client" / LongNumber)) { id =>
           complete(Clients.get(id))
         }
       // #long
@@ -56,18 +56,17 @@ class PlayRoutesComparisonSpec extends AnyWordSpec with Matchers with ScalatestR
       def download(name: String) = s"$name: file contents"
 
       val files: Route =
-        // #segments
-        (get & pathPrefix("files" / Segments)) { names =>
-          val name = names.mkString("/")
+        // #remaining
+        (get & path("files" / Remaining)) { name =>
           complete(download(name))
         }
-      // #segments
+      // #remaining
 
-      // #segments-test
+      // #remaining-test
       Get("/files/images/logo.png") ~> files ~> check {
         responseAs[String] shouldEqual "images/logo.png: file contents"
       }
-      // #segments-test
+      // #remaining-test
     }
 
     "require a parameter" in {
@@ -93,9 +92,9 @@ class PlayRoutesComparisonSpec extends AnyWordSpec with Matchers with ScalatestR
       val optionalPageParameter: Route =
         // #optional-parameter
         get {
-          path("api" / "list-all")(parameter("version".?) { version =>
+          (path("api" / "list-all") & parameter("version".?)) { version =>
             complete(listAll(version))
-          })
+          }
         }
       // #optional-parameter
 
@@ -115,9 +114,9 @@ class PlayRoutesComparisonSpec extends AnyWordSpec with Matchers with ScalatestR
       val itemParameterList: Route =
         // #parameter-list
         get {
-          path("api" / "list-items")(parameters('item.*) { items =>
+          (path("api" / "list-items") & parameters('item.*)) { items =>
             complete(listItems(items))
-          })
+          }
         }
       // #parameter-list
 
