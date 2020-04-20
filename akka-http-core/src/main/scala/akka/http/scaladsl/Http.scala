@@ -13,7 +13,6 @@ import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.{ Logging, LoggingAdapter }
-import akka.http.ParsingErrorHandler
 import akka.http.impl.engine.Http2Shadow
 import akka.http.impl.engine.HttpConnectionIdleTimeoutBidi
 import akka.http.impl.engine.client.PoolMasterActor.{ PoolSize, ShutdownAll }
@@ -361,8 +360,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     remoteAddress:      Option[InetSocketAddress] = None,
     log:                LoggingAdapter            = system.log,
     isSecureConnection: Boolean                   = false): ServerLayer = {
-    val parsingErrorHandler = system.dynamicAccess.createInstanceFor[ParsingErrorHandler](settings.parsingErrorHandler, Nil).get
-    val server = HttpServerBluePrint(settings, parsingErrorHandler, log, isSecureConnection)
+    val server = HttpServerBluePrint(settings, log, isSecureConnection)
       .addAttributes(HttpAttributes.remoteAddress(remoteAddress))
 
     server atop delayCancellationStage(settings)

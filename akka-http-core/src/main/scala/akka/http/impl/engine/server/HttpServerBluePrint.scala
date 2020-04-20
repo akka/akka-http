@@ -60,11 +60,11 @@ import scala.util.Failure
  */
 @InternalApi
 private[http] object HttpServerBluePrint {
-  def apply(settings: ServerSettings, parsingErrorHandler: ParsingErrorHandler, log: LoggingAdapter, isSecureConnection: Boolean): Http.ServerLayer =
+  def apply(settings: ServerSettings, log: LoggingAdapter, isSecureConnection: Boolean): Http.ServerLayer =
     userHandlerGuard(settings.pipeliningLimit) atop
       requestTimeoutSupport(settings.timeouts.requestTimeout, log) atop
       requestPreparation(settings) atop
-      controller(settings, parsingErrorHandler, log) atop
+      controller(settings, log) atop
       parsingRendering(settings, log, isSecureConnection) atop
       websocketSupport(settings, log) atop
       tlsSupport atop
@@ -79,8 +79,8 @@ private[http] object HttpServerBluePrint {
   def parsingRendering(settings: ServerSettings, log: LoggingAdapter, isSecureConnection: Boolean): BidiFlow[ResponseRenderingContext, ResponseRenderingOutput, SessionBytes, RequestOutput, NotUsed] =
     BidiFlow.fromFlows(rendering(settings, log), parsing(settings, log, isSecureConnection))
 
-  def controller(settings: ServerSettings, parsingErrorHandler: ParsingErrorHandler, log: LoggingAdapter): BidiFlow[HttpResponse, ResponseRenderingContext, RequestOutput, RequestOutput, NotUsed] =
-    BidiFlow.fromGraph(new ControllerStage(settings, parsingErrorHandler, log)).reversed
+  def controller(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, ResponseRenderingContext, RequestOutput, RequestOutput, NotUsed] =
+    BidiFlow.fromGraph(new ControllerStage(settings, log)).reversed
 
   def requestPreparation(settings: ServerSettings): BidiFlow[HttpResponse, HttpResponse, RequestOutput, HttpRequest, NotUsed] =
     BidiFlow.fromFlows(Flow[HttpResponse], new PrepareRequests(settings))
@@ -371,7 +371,7 @@ private[http] object HttpServerBluePrint {
     def timeout = currentTimeout
   }
 
-  class ControllerStage(settings: ServerSettings, parsingErrorHandler: ParsingErrorHandler, log: LoggingAdapter)
+  class ControllerStage(settings: ServerSettings, log: LoggingAdapter)
     extends GraphStage[BidiShape[RequestOutput, RequestOutput, HttpResponse, ResponseRenderingContext]] {
     private val requestParsingIn = Inlet[RequestOutput]("ControllerStage.requestParsingIn")
     private val requestPrepOut = Outlet[RequestOutput]("ControllerStage.requestPrepOut")
@@ -382,7 +382,8 @@ private[http] object HttpServerBluePrint {
 
     val shape = new BidiShape(requestParsingIn, requestPrepOut, httpResponseIn, responseCtxOut)
 
-    def createLogic(effectiveAttributes: Attributes) = new GraphStageLogic(shape) {
+    override private[akka] def createLogicAndMaterializedValue(inheritedAttributes: Attributes, materializer: Materializer) = new GraphStageLogic(shape) {
+      val parsingErrorHandler: ParsingErrorHandler = settings.parsingErrorHandlerInstance(ActorMaterializerHelper.downcast(materializer).system)
       val pullHttpResponseIn = () => tryPull(httpResponseIn)
       var openRequests = immutable.Queue[RequestStart]()
       var oneHundredContinueResponsePending = false
@@ -583,7 +584,9 @@ private[http] object HttpServerBluePrint {
             _.via(OneHundredContinueStage.asInstanceOf[GraphStage[FlowShape[T, T]]])
           }
         }
-    }
+    } -> NotUsed
+
+    def createLogic(effectiveAttributes: Attributes): GraphStageLogic = throw new IllegalStateException("unexpected invocation")
   }
 
   /**

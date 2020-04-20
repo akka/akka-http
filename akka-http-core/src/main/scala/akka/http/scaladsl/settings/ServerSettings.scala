@@ -7,7 +7,9 @@ package akka.http.scaladsl.settings
 import java.util.Random
 import java.util.function.Supplier
 
-import akka.annotation.DoNotInherit
+import akka.actor.ActorSystem
+import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.http.ParsingErrorHandler
 import akka.http.impl.settings.ServerSettingsImpl
 import akka.http.impl.util._
 import akka.http.impl.util.JavaMapping.Implicits._
@@ -122,6 +124,14 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def mapPreviewServerSettings(f: PreviewServerSettings => PreviewServerSettings): ServerSettings = withPreviewServerSettings(f(previewServerSettings))
   def mapWebsocketSettings(f: WebSocketSettings => WebSocketSettings): ServerSettings = withWebsocketSettings(f(websocketSettings))
   def mapTimeouts(f: ServerSettings.Timeouts => ServerSettings.Timeouts): ServerSettings = withTimeouts(f(timeouts))
+
+  /**
+   * INTERNAL API
+   *
+   * Returns an instance of the ParsingErrorHandler as specified by `parsingErrorHandler`
+   */
+  @InternalApi
+  private[http] def parsingErrorHandlerInstance(system: ActorSystem): ParsingErrorHandler
 }
 
 object ServerSettings extends SettingsCompanion[ServerSettings] {

@@ -1,6 +1,8 @@
 # Not for user extension or pattern-matching
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ServerSettings.getParsingErrorHandler")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ServerSettings.parsingErrorHandler")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ServerSettings.parsingErrorHandlerInstance")
+
 # Internal
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ServerSettingsImpl.apply")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.ServerSettingsImpl.copy")
@@ -11,3 +13,5 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.server
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.server.HttpServerBluePrint.apply")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.server.HttpServerBluePrint.apply")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.server.HttpServerBluePrint.controller")
+
+
