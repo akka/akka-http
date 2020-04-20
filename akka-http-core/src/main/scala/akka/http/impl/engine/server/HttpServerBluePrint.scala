@@ -382,8 +382,8 @@ private[http] object HttpServerBluePrint {
 
     val shape = new BidiShape(requestParsingIn, requestPrepOut, httpResponseIn, responseCtxOut)
 
-    override private[akka] def createLogicAndMaterializedValue(inheritedAttributes: Attributes, materializer: Materializer) = new GraphStageLogic(shape) {
-      val parsingErrorHandler: ParsingErrorHandler = settings.parsingErrorHandlerInstance(ActorMaterializerHelper.downcast(materializer).system)
+    override private[akka] def createLogicAndMaterializedValue(inheritedAttributes: Attributes, outerMaterializer: Materializer) = new GraphStageLogic(shape) {
+      val parsingErrorHandler: ParsingErrorHandler = settings.parsingErrorHandlerInstance(ActorMaterializerHelper.downcast(outerMaterializer).system)
       val pullHttpResponseIn = () => tryPull(httpResponseIn)
       var openRequests = immutable.Queue[RequestStart]()
       var oneHundredContinueResponsePending = false
