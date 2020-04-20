@@ -77,8 +77,7 @@ if the unmarshaller threw an `Unmarshaller.NoContentException` or a @apidoc[Malf
 (see also @ref[Rejections](../../../routing-dsl/rejections.md))
 
 @@@ div { .group-scala }
-There's also a singular version, @ref[parameter](parameter.md). Form fields can be handled in a similar way, see @ref[`formFields`](../form-field-directives/index.md). If
-you want unified handling for both query parameters and form fields, see `anyParams`<!-- TODO: Does it exist? -->.
+There's also a singular version, @ref[parameter](parameter.md). Form fields can be handled in a similar way, see @ref[`formFields`](../form-field-directives/index.md).
 
 @@@
 
