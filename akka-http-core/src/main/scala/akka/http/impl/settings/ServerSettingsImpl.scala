@@ -14,7 +14,9 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import akka.http.javadsl.{ settings => js }
 import akka.ConfigurationException
+import akka.actor.{ ActorSystem, ExtendedActorSystem }
 import akka.annotation.InternalApi
+import akka.http.ParsingErrorHandler
 import akka.io.Inet.SocketOption
 import akka.http.impl.util._
 import akka.http.scaladsl.model.{ HttpHeader, HttpResponse, StatusCodes }
@@ -58,6 +60,8 @@ private[akka] final case class ServerSettingsImpl(
 
   override def productPrefix = "ServerSettings"
 
+  private[http] def parsingErrorHandlerInstance(system: ActorSystem): ParsingErrorHandler =
+    system.asInstanceOf[ExtendedActorSystem].dynamicAccess.createInstanceFor[ParsingErrorHandler](parsingErrorHandler, Nil).get
 }
 
 /** INTERNAL API */
