@@ -4,7 +4,7 @@ import java.util.concurrent.CountDownLatch
 
 import akka.actor.ActorSystem
 import akka.event.NoLogging
-import akka.http.CommonBenchmark
+import akka.http.{ CommonBenchmark, DefaultParsingErrorHandler }
 import akka.http.impl.engine.server.HttpServerBluePrint
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
@@ -51,7 +51,7 @@ class ServerProcessingBenchmark extends CommonBenchmark {
     mat = ActorMaterializer()
     httpFlow =
       Flow[HttpRequest].map(_ => response) join
-        (HttpServerBluePrint(ServerSettings(system), NoLogging, false) atop
+        (HttpServerBluePrint(ServerSettings(system), DefaultParsingErrorHandler, NoLogging, false) atop
           TLSPlacebo())
   }
 
