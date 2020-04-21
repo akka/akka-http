@@ -95,7 +95,7 @@ will be sent back as a HTTP OK with the string as response body.
 
 The
 @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]
-@java[@javadoc[Route](akka.http.scaladsl.server.Route)]
+@java[@javadoc[Route](akka.http.javadsl.server.Route)]
 created using the Route DSL is then "bound" to a port to start serving HTTP requests:
 
 Scala
