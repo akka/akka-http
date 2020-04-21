@@ -13,7 +13,7 @@ import akka.http.scaladsl.server._
 import akka.http.scaladsl.settings.RoutingSettings
 import akka.http.scaladsl.unmarshalling._
 import akka.http.scaladsl.util.FastFuture._
-import akka.stream.{ Materializer, SystemMaterializer }
+import akka.stream.SystemMaterializer
 import akka.testkit.TestKit
 import akka.util.ConstantFun
 import com.typesafe.config.{ Config, ConfigFactory }
