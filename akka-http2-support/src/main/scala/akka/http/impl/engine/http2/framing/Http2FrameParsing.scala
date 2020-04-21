@@ -9,7 +9,6 @@ import scala.collection.immutable
 import akka.stream.Attributes
 import akka.stream.impl.io.ByteStringParser
 import akka.stream.stage.GraphStageLogic
-import Http2Protocol.FrameType._
 import Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
 import akka.annotation.InternalApi
 import FrameEvent._
@@ -25,7 +24,7 @@ private[http] object Http2FrameParsing {
       if (payload.hasRemaining) {
         val id = payload.readShortBE()
         val value = payload.readIntBE()
-        if (isKnownId(id)) readSettings(Setting(SettingIdentifier.byId(id), value) :: read)
+        if (SettingIdentifier.isKnownId(id)) readSettings(Setting(SettingIdentifier.byId(id), value) :: read)
         else readSettings(read)
       } else read.reverse
 
@@ -75,11 +74,11 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteS
       def parseFrame(tpe: FrameType, flags: ByteFlag, streamId: Int, payload: ByteReader): FrameEvent = {
         // TODO: add @switch? seems non-trivial for now
         tpe match {
-          case GOAWAY =>
+          case FrameType.GOAWAY =>
             Http2Compliance.requireZeroStreamId(streamId)
             GoAwayFrame(payload.readIntBE(), ErrorCode.byId(payload.readIntBE()), payload.takeAll())
 
-          case HEADERS =>
+          case FrameType.HEADERS =>
             val pad = Flags.PADDED.isSet(flags)
             val endStream = Flags.END_STREAM.isSet(flags)
             val endHeaders = Flags.END_HEADERS.isSet(flags)
@@ -103,7 +102,7 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteS
 
             HeadersFrame(streamId, endStream, endHeaders, payload.take(payload.remainingSize - paddingLength), priorityInfo)
 
-          case DATA =>
+          case FrameType.DATA =>
             val pad = Flags.PADDED.isSet(flags)
             val endStream = Flags.END_STREAM.isSet(flags)
 
@@ -113,7 +112,7 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteS
 
             DataFrame(streamId, endStream, payload.take(payload.remainingSize - paddingLength))
 
-          case SETTINGS =>
+          case FrameType.SETTINGS =>
             val ack = Flags.ACK.isSet(flags)
             Http2Compliance.requireZeroStreamId(streamId)
 
@@ -129,7 +128,7 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteS
               SettingsFrame(readSettings(payload))
             }
 
-          case WINDOW_UPDATE =>
+          case FrameType.WINDOW_UPDATE =>
             // TODO: check frame size
             // TODO: check flags
             val increment = payload.readIntBE()
@@ -137,24 +136,24 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteS
 
             WindowUpdateFrame(streamId, increment)
 
-          case CONTINUATION =>
+          case FrameType.CONTINUATION =>
             val endHeaders = Flags.END_HEADERS.isSet(flags)
 
             ContinuationFrame(streamId, endHeaders, payload.remainingData)
 
-          case PING =>
+          case FrameType.PING =>
             // see 6.7
             Http2Compliance.requireFrameSize(payload.remainingSize, 8)
             Http2Compliance.requireZeroStreamId(streamId)
             val ack = Flags.ACK.isSet(flags)
             PingFrame(ack, payload.remainingData)
 
-          case RST_STREAM =>
+          case FrameType.RST_STREAM =>
             Http2Compliance.requireFrameSize(payload.remainingSize, 4)
             Http2Compliance.requireNonZeroStreamId(streamId)
             RstStreamFrame(streamId, ErrorCode.byId(payload.readIntBE()))
 
-          case PRIORITY =>
+          case FrameType.PRIORITY =>
             Http2Compliance.requireFrameSize(payload.remainingSize, 5)
             val streamDependency = payload.readIntBE() // whole word
             val exclusiveFlag = (streamDependency >>> 31) == 1 // most significant bit for exclusive flag
@@ -163,7 +162,7 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteS
             Http2Compliance.requireNoSelfDependency(streamId, dependencyId)
             PriorityFrame(streamId, exclusiveFlag, dependencyId, priority)
 
-          case PUSH_PROMISE =>
+          case FrameType.PUSH_PROMISE =>
             val pad = Flags.PADDED.isSet(flags)
             val endHeaders = Flags.END_HEADERS.isSet(flags)
 
