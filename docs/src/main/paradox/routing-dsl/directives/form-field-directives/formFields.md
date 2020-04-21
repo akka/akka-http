@@ -29,32 +29,39 @@ can be supplied either as a String or as a Symbol. Form field extraction can be 
 as required, optional, or repeated, or to filter requests where a form field has a certain value:
 
 `"color"`
-: extract value of field "color" as `String`
+: extract the value of field "color" as `String`
+: reject if the field is missing
 
-`"color".?`
-: extract optional value of field "color" as `Option[String]`
+`"color".optional`
+: (symbolic notation `"color".?`)
+: extract the optional value of field "color" as `Option[String]`
 
-`"color" ? "red"`
-: extract optional value of field "color" as `String` with default value `"red"`
+`"color".withDefault("red")`
+: (symbolic notation `"color" ? "red"`)
+: extract the optional value of field "color" as `String` with default value `"red"`
 
-`"color" ! "blue"`
-: require value of field "color" to be `"blue"` and extract nothing
+`"color".requiredValue("blue")`
+: (symbolic notation `"color" ! "blue"`)
+: require the value of field "color" to be `"blue"` and extract nothing
+: reject if the field is missing or can't be unmarshalled to the given type
 
 `"amount".as[Int]`
-: extract value of field "amount" as `Int`, you need a matching implicit @apidoc[Unmarshaller] in scope for that to work
+: extract the value of field "amount" as `Int`, you need a matching implicit @apidoc[Unmarshaller] in scope for that to work
 (see also @ref[Unmarshalling](../../../common/unmarshalling.md))
+: reject if the field is missing or can't be unmarshalled to the given type
 
 `"amount".as(unmarshaller)`
-: extract value of field "amount" with an explicit @apidoc[Unmarshaller]
+: extract the value of field "amount" with an explicit @apidoc[Unmarshaller]
+: reject if the field is missing or can't be unmarshalled to the given type
 
-`"distance".*`
+`"distance".repeated`
 : extract multiple occurrences of field "distance" as `Iterable[String]`
 
-`"distance".as[Int].*`
+`"distance".as[Int].repeated`
 : extract multiple occurrences of field "distance" as `Iterable[Int]`, you need a matching implicit @apidoc[Unmarshaller] in scope for that to work
 (see also @ref[Unmarshalling](../../../common/unmarshalling.md))
 
-`"distance".as(unmarshaller).*`
+`"distance".as(unmarshaller).repeated`
 : extract multiple occurrences of field "distance" with an explicit @apidoc[Unmarshaller]
 
 

@@ -1,11 +1,7 @@
 # parameters
 
-@@@ div { .group-java }
-
 This page explains how to extract multiple *query* parameter values from the request, or parameters that might or might 
 not be present.
-
-@@@
 
 @@@ div { .group-scala }
 ## Signature
@@ -29,39 +25,46 @@ The signature shown is simplified and written in pseudo-syntax, the real signatu
 The parameters directive filters on the existence of several query parameters and extract their values.
 
 Query parameters can be either extracted as a String or can be converted to another type. The parameter name
-can be supplied either as a String or as a Symbol. Parameter extraction can be modified to mark a query parameter
+is supplied as a String. Parameter extraction can be modified to mark a query parameter
 as required, optional, or repeated, or to filter requests where a parameter has a certain value:
 
 `"color"`
-: extract value of parameter "color" as `String`
+: extract the value of parameter "color" as `String`
+: reject if the parameter is missing
 
-`"color".?`
-: extract optional value of parameter "color" as `Option[String]`
+`"color".optional`
+: (symbolic notation `"color".?`)
+: extract the optional value of parameter "color" as `Option[String]`
 
-`"color" ? "red"`
-: extract optional value of parameter "color" as `String` with default value `"red"`
+`"color".withDefault("red")`
+: (symbolic notation `"color" ? "red"`)
+: extract the optional value of parameter "color" as `String` with default value `"red"`
 
-`"color" ! "blue"`
-: require value of parameter "color" to be `"blue"` and extract nothing
+`"color".requiredValue("blue")`
+: (symbolic notation `"color" ! "blue"`)
+: require the value of parameter "color" to be `"blue"` and extract nothing
+: reject if the parameter is missing or has a different value
 
 `"amount".as[Int]`
-: extract value of parameter "amount" as `Int`, you need a matching @apidoc[Unmarshaller] in scope for that to work
+: extract the value of parameter "amount" as `Int`, you need a matching @apidoc[Unmarshaller] in scope for that to work
 (see also @ref[Unmarshalling](../../../common/unmarshalling.md))
+: reject if the parameter is missing or can't be unmarshalled to the given type
 
-`"amount".as(deserializer)`
-: extract value of parameter "amount" with an explicit @apidoc[Unmarshaller]
+`"amount".as(unmarshaller)`
+: extract the value of parameter "amount" with an explicit @apidoc[Unmarshaller] as described in @ref[Unmarshalling](../../../common/unmarshalling.md)
+: reject if the parameter is missing or can't be unmarshalled to the given type
 
-`"distance".*`
+`"distance".repeated`
 : extract multiple occurrences of parameter "distance" as `Iterable[String]`
 
-`"distance".as[Int].*`
+`"distance".as[Int].repeated`
 : extract multiple occurrences of parameter "distance" as `Iterable[Int]`, you need a matching @apidoc[Unmarshaller] in scope for that to work
 (see also @ref[Unmarshalling](../../../common/unmarshalling.md))
 
-`"distance".as(deserializer).*`
-: extract multiple occurrences of parameter "distance" with an explicit @apidoc[Unmarshaller]
+`"distance".as(unmarshaller).repeated`
+: extract multiple occurrences of parameter "distance" with an explicit @apidoc[Unmarshaller] as described in @ref[Unmarshalling](../../../common/unmarshalling.md)
 
-You can use @scala[@ref[Case Class Extraction](../../case-class-extraction.md)] to group several extracted values together into a case-class
+You can use @ref[Case Class Extraction](../../case-class-extraction.md) to group several extracted values together into a case-class
 instance.
 
 @@@
@@ -69,7 +72,7 @@ instance.
 @@@ div { .group-java }
 In order to filter on the existence of several query parameters, you need to nest as many @ref[parameter](parameter.md) directives as desired.
 
-Query parameters can be either extracted as a String or can be converted to another type. Different methods must be used
+Query parameters can be either extracted as a `String` or can be converted to another type. Different methods must be used
 when the desired parameter is required, optional or repeated.
 
 @@@
@@ -81,8 +84,7 @@ if the unmarshaller threw an `Unmarshaller.NoContentException` or a @apidoc[Malf
 (see also @ref[Rejections](../../../routing-dsl/rejections.md))
 
 @@@ div { .group-scala }
-There's also a singular version, @ref[parameter](parameter.md). Form fields can be handled in a similar way, see `formFields`. If
-you want unified handling for both query parameters and form fields, see `anyParams`.
+There's also a singular version, @ref[parameter](parameter.md). Form fields can be handled in a similar way, see @ref[`formFields`](../form-field-directives/index.md).
 
 @@@
 
