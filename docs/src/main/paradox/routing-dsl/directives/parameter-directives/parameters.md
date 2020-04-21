@@ -29,23 +29,30 @@ is supplied as a String. Parameter extraction can be modified to mark a query pa
 as required, optional, or repeated, or to filter requests where a parameter has a certain value:
 
 `"color"`
-: extract value of parameter "color" as `String`
+: extract the value of parameter "color" as `String`
+: reject if the parameter is missing
 
 `"color".optional`
-: extract optional value of parameter "color" as `Option[String]` (symbolic notation `"color".?`)
+: (symbolic notation `"color".?`)
+: extract the optional value of parameter "color" as `Option[String]`
 
 `"color".withDefault("red")`
-: extract optional value of parameter "color" as `String` with default value `"red"` (symbolic notation `"color" ? "red"`)
+: (symbolic notation `"color" ? "red"`)
+: extract the optional value of parameter "color" as `String` with default value `"red"`
 
 `"color".requiredValue("blue")`
-: require value of parameter "color" to be `"blue"` and extract nothing (symbolic notation `"color" ! "blue"`)
+: (symbolic notation `"color" ! "blue"`)
+: require the value of parameter "color" to be `"blue"` and extract nothing
+: reject if the parameter is missing or has a different value
 
 `"amount".as[Int]`
-: extract value of parameter "amount" as `Int`, you need a matching @apidoc[Unmarshaller] in scope for that to work
+: extract the value of parameter "amount" as `Int`, you need a matching @apidoc[Unmarshaller] in scope for that to work
 (see also @ref[Unmarshalling](../../../common/unmarshalling.md))
+: reject if the parameter is missing or can't be unmarshalled to the given type
 
-`"amount".as(deserializer)`
-: extract value of parameter "amount" with an explicit @apidoc[Unmarshaller] as described in @ref[Unmarshalling](../../../common/unmarshalling.md)
+`"amount".as(unmarshaller)`
+: extract the value of parameter "amount" with an explicit @apidoc[Unmarshaller] as described in @ref[Unmarshalling](../../../common/unmarshalling.md)
+: reject if the parameter is missing or can't be unmarshalled to the given type
 
 `"distance".repeated`
 : extract multiple occurrences of parameter "distance" as `Iterable[String]`
