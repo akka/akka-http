@@ -4,8 +4,6 @@
 
 package docs.http.scaladsl.server
 
-import akka.http.scaladsl.common.ToNameReceptacleEnhancements
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
@@ -74,7 +72,7 @@ class PlayRoutesComparisonSpec extends AnyWordSpec with Matchers with ScalatestR
 
       val pageParameter: Route =
         // #mandatory-parameter
-        (get & parameter("page")) { page =>
+        (get & path("") & parameter("page")) { page =>
           complete(getPage(page))
         }
       // #mandatory-parameter
@@ -91,10 +89,8 @@ class PlayRoutesComparisonSpec extends AnyWordSpec with Matchers with ScalatestR
 
       val optionalPageParameter: Route =
         // #optional-parameter
-        get {
-          (path("api" / "list-all") & parameter("version".optional)) { version =>
-            complete(listAll(version))
-          }
+        (get & path("api" / "list-all") & parameter("version".optional)) { version =>
+          complete(listAll(version))
         }
       // #optional-parameter
 
@@ -113,10 +109,8 @@ class PlayRoutesComparisonSpec extends AnyWordSpec with Matchers with ScalatestR
 
       val itemParameterList: Route =
         // #parameter-list
-        get {
-          (path("api" / "list-items") & parameters("item".repeated)) { items =>
-            complete(listItems(items))
-          }
+        (get & path("api" / "list-items") & parameters("item".repeated)) { items =>
+          complete(listItems(items))
         }
       // #parameter-list
 
