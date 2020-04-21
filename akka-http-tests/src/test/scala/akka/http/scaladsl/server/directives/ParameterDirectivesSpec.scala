@@ -168,7 +168,7 @@ class ParameterDirectivesSpec extends AnyFreeSpec with GenericRoutingSpec with I
   "The 'parameters' extraction directive should" - {
     "extract the value of given parameters" in {
       Get("/?name=Parsons&FirstName=Ellen") ~> {
-        parameters("name", 'FirstName) { (name, firstName) =>
+        parameters("name", "FirstName") { (name, firstName) =>
           complete(firstName + name)
         }
       } ~> check { responseAs[String] shouldEqual "EllenParsons" }
@@ -179,14 +179,14 @@ class ParameterDirectivesSpec extends AnyFreeSpec with GenericRoutingSpec with I
     }
     "ignore additional parameters" in {
       Get("/?name=Parsons&FirstName=Ellen&age=29") ~> {
-        parameters("name", 'FirstName) { (name, firstName) =>
+        parameters("name", "FirstName") { (name, firstName) =>
           complete(firstName + name)
         }
       } ~> check { responseAs[String] shouldEqual "EllenParsons" }
     }
     "reject the request with a MissingQueryParamRejection if a required parameter is missing" in {
       Get("/?name=Parsons&sex=female") ~> {
-        parameters('name, 'FirstName, 'age) { (name, firstName, age) =>
+        parameters("name", "FirstName", "age") { (name, firstName, age) =>
           completeOk
         }
       } ~> check { rejection shouldEqual MissingQueryParamRejection("FirstName") }
@@ -203,17 +203,17 @@ class ParameterDirectivesSpec extends AnyFreeSpec with GenericRoutingSpec with I
   "The 'parameter' requirement directive should" - {
     "reject the request with a MissingQueryParamRejection if request do not contain the required parameter" in {
       Get("/person?age=19") ~> {
-        parameter("node".requiredValue("large")) { completeOk }
+        parameter("nose".requiredValue("large")) { completeOk }
       } ~> check { rejection shouldEqual MissingQueryParamRejection("nose") }
     }
     "reject the request with a InvalidRequiredValueForQueryParamRejection if the required parameter has an unmatching value" in {
       Get("/person?age=19&nose=small") ~> {
-        parameter("node".requiredValue("large")) { completeOk }
+        parameter("nose".requiredValue("large")) { completeOk }
       } ~> check { rejection shouldEqual InvalidRequiredValueForQueryParamRejection("nose", "large", "small") }
     }
     "let requests pass that contain the required parameter with its required value" in {
       Get("/person?nose=large&eyes=blue") ~> {
-        parameter("node".requiredValue("large")) { completeOk }
+        parameter("nose".requiredValue("large")) { completeOk }
       } ~> check { response shouldEqual Ok }
     }
     "be useable for method tunneling" in {
