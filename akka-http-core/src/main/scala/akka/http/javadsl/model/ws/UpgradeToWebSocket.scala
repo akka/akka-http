@@ -10,7 +10,6 @@ import akka.http.scaladsl.{ model => sm }
 import akka.annotation.DoNotInherit
 import akka.http.javadsl.model._
 import akka.stream._
-import akka.stream.javadsl.CoupledTerminationFlow
 
 /**
  * A virtual header that WebSocket requests will contain. Use [[UpgradeToWebSocket.handleMessagesWith]] to

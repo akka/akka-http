@@ -10,7 +10,7 @@ import akka.Done
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.model._
 import akka.stream.{ Materializer, javadsl }
-import akka.stream.javadsl.{ CoupledTerminationFlow, Flow, Sink, Source }
+import akka.stream.javadsl.{ Flow, Sink, Source }
 import akka.stream.scaladsl.Keep
 
 import scala.compat.java8.FutureConverters._
@@ -42,7 +42,7 @@ object WebSocket {
    * If the request wasn't a WebSocket request a response with status code 400 is returned.
    */
   def handleWebSocketRequestWithSource(request: HttpRequest, source: Source[Message, _], mat: Materializer): HttpResponse =
-    handleWebSocketRequestWith(request, CoupledTerminationFlow.fromSinkAndSource(ignoreSink(mat), source))
+    handleWebSocketRequestWith(request, Flow.fromSinkAndSourceCoupled(ignoreSink(mat), source))
 
   /**
    * If a given request is a WebSocket request a response accepting the request is returned using the given sink to
@@ -53,7 +53,7 @@ object WebSocket {
    * If the request wasn't a WebSocket request a response with status code 400 is returned.
    */
   def handleWebSocketRequestWithSink(request: HttpRequest, sink: Sink[Message, _]): HttpResponse =
-    handleWebSocketRequestWith(request, CoupledTerminationFlow.fromSinkAndSource(sink, Source.maybe[Message]))
+    handleWebSocketRequestWith(request, Flow.fromSinkAndSourceCoupled(sink, Source.maybe[Message]))
 
   /**
    * When attempting to ignore incoming messages from the client-side on a WebSocket connection,

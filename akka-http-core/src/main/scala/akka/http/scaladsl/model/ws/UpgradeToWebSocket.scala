@@ -11,10 +11,9 @@ import akka.NotUsed
 import akka.annotation.DoNotInherit
 import akka.stream._
 import akka.http.impl.util.JavaMapping
-import akka.http.javadsl.model.ws
 import akka.http.javadsl.{ model => jm }
 import akka.http.scaladsl.model.HttpResponse
-import akka.stream.scaladsl.{ Flow, Sink, Source }
+import akka.stream.scaladsl.{ Sink, Source }
 
 /**
  * A custom header that will be added to an WebSocket upgrade HttpRequest that
@@ -105,7 +104,7 @@ trait UpgradeToWebSocket extends jm.ws.UpgradeToWebSocket {
   }
 
   private[this] def createScalaCoupledFlow(inSink: Graph[SinkShape[jm.ws.Message], _ <: Any], outSource: Graph[SourceShape[jm.ws.Message], _ <: Any]): Graph[FlowShape[Message, Message], NotUsed] = {
-    val graph: Graph[FlowShape[jm.ws.Message, jm.ws.Message], NotUsed] = scaladsl.CoupledTerminationFlow.fromSinkAndSource(Sink.fromGraph(inSink), Source.fromGraph(outSource)).mapMaterializedValue(_ => NotUsed)
+    val graph: Graph[FlowShape[jm.ws.Message, jm.ws.Message], NotUsed] = scaladsl.Flow.fromSinkAndSourceCoupledMat(Sink.fromGraph(inSink), Source.fromGraph(outSource))(scaladsl.Keep.none)
     JavaMapping.toScala(graph)
   }
 }
