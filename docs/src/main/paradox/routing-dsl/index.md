@@ -84,7 +84,7 @@ Scala
 :  @@snip [HttpServerWithActorsSample.scala]($test$/scala/docs/http/scaladsl/HttpServerWithActorsSample.scala) { #akka-typed-behavior }
 
 Java
-:  @@snip [JobRepository.scala](/docs/src/test/java/docs/http/javadsl/JobRepository.java) { #akka-typed-behavior }
+:  @@snip [JobRepository.scala](/docs/src/test/java/docs/http/javadsl/JobRepository.java) { #behavior }
 
 @@@ div { .group-scala }
 

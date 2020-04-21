@@ -4,7 +4,7 @@
 
 package docs.http.javadsl;
 
-//#akka-typed-bootstrap
+//#bootstrap
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
@@ -103,4 +103,4 @@ public class HttpServerWithActorsSample {
             HttpServerWithActorsSample.create("localhost", 8080), "BuildJobsServer");
   }
 }
-//#akka-typed-bootstrap
+//#bootstrap
