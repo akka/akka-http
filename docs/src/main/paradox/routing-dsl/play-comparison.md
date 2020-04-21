@@ -117,7 +117,7 @@ GET   /api/list-all         controllers.Api.list(version: Option[String])
 ```
 
 @@@ div { .group-scala }
-The parameter name may be decorated with a `?` to mark it as optional (for other variants see @ref[other parameter extractors](directives/parameter-directives/parameters.md#description)).
+The parameter name may be decorated with `.optional` to mark it as optional (for other variants see @ref[other parameter extractors](directives/parameter-directives/parameters.md#description)).
 @@@
 @@@ div { .group-java }
 The `parameterOptional` directive passes the parameter as `Optional<String>`. 
@@ -151,7 +151,7 @@ GET   /api/list-items      controllers.Api.listItems(item: List[String])
 ```
 
 @@@ div { .group-scala }
-Decorating the parameter name with a `*` makes Akka HTTP pass all values of that parameter as an `Iterable[String]`].
+Decorating the parameter name with a `.repeated` makes Akka HTTP pass all values of that parameter as an `Iterable[String]`].
 @@@
 @@@ div { .group-java }
 The `parameterList` directive may take a parameter name to specify a single parameter name to pass on as a `List<String>`.]

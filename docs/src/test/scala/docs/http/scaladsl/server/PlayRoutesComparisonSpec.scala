@@ -92,7 +92,7 @@ class PlayRoutesComparisonSpec extends AnyWordSpec with Matchers with ScalatestR
       val optionalPageParameter: Route =
         // #optional-parameter
         get {
-          (path("api" / "list-all") & parameter("version".?)) { version =>
+          (path("api" / "list-all") & parameter("version".optional)) { version =>
             complete(listAll(version))
           }
         }
@@ -114,7 +114,7 @@ class PlayRoutesComparisonSpec extends AnyWordSpec with Matchers with ScalatestR
       val itemParameterList: Route =
         // #parameter-list
         get {
-          (path("api" / "list-items") & parameters('item.*)) { items =>
+          (path("api" / "list-items") & parameters("item".repeated)) { items =>
             complete(listItems(items))
           }
         }
