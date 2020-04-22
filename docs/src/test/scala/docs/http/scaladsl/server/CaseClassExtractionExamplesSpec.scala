@@ -32,7 +32,7 @@ class CaseClassExtractionExamplesSpec extends RoutingSpec with Inside {
 
     val route =
       path("color") {
-        parameters("red".as[Int], "green".as[Int], "blue".as[Int]).as(Color.apply) { color =>
+        parameters("red".as[Int], "green".as[Int], "blue".as[Int]).as(Color.apply _) { color =>
           // ... route working with the `color` instance
           doSomethingWith(color) // #hide
         }
@@ -48,7 +48,7 @@ class CaseClassExtractionExamplesSpec extends RoutingSpec with Inside {
 
     val route =
       (path("color" / Segment) & parameters("r".as[Int], "g".as[Int], "b".as[Int]))
-        .as(Color.apply) { color =>
+        .as(Color.apply _) { color =>
           // ... route working with the `color` instance
           doSomethingWith(color) // #hide
         }
