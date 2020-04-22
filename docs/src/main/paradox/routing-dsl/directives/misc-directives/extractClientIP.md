@@ -10,10 +10,10 @@
 
 ## Description
 
-Provides the value of `X-Forwarded-For`, `Remote-Address`, `X-Real-IP` headers or `Attributes.remoteAddress` attribute as an instance of `RemoteAddress` in that order. If the value in the header first seen is an invalid IP address and the attribute is absent, this extractor will return `RemoteAddress.Unknown`.
+Provides the value of `X-Forwarded-For`, `Remote-Address`, `X-Real-IP` headers or `AttributeKeys.remoteAddress` attribute as an instance of `RemoteAddress` in that order. If the value in the header first seen is an invalid IP address and the attribute is absent, this extractor will return `RemoteAddress.Unknown`.
 
 The akka-http server engine adds the `Remote-Address` header to every request automatically if the respective
-setting `akka.http.server.remote-address-header` is set to `on`, and adds the `Attributes.remoteAddress` attribute if the
+setting `akka.http.server.remote-address-header` is set to `on`, and adds the `AttributeKeys.remoteAddress` attribute if the
 setting `akka.http.server.remote-address-attribute` is set to `on`. Per default both are set to `off`.
 
 @@@ note

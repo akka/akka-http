@@ -29,7 +29,8 @@ abstract class MiscDirectives extends MethodDirectives {
   }
 
   /**
-   * Extracts the client's IP from either the X-Forwarded-For, Remote-Address or X-Real-IP header
+   * Extracts the client's IP from either the X-Forwarded-For, Remote-Address, X-Real-IP header
+   * or [[akka.http.javadsl.model.AttributeKeys.remoteAddress]] attribute
    * (in that order of priority).
    */
   def extractClientIP(inner: JFunction[RemoteAddress, Route]): Route = RouteAdapter {

@@ -27,7 +27,8 @@ trait MiscDirectives {
     Directive { inner => if (check) inner(()) else reject(ValidationRejection(errorMsg)) }
 
   /**
-   * Extracts the client's IP from either the X-Forwarded-For, Remote-Address or X-Real-IP header
+   * Extracts the client's IP from either the X-Forwarded-For, Remote-Address, X-Real-IP header
+   * or [[akka.http.scaladsl.model.AttributeKeys.remoteAddress]] attribute
    * (in that order of priority).
    *
    * @group misc
