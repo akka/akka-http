@@ -12,13 +12,12 @@ import akka.actor.ActorSystem
 import akka.http.impl.util.JavaMapping.Implicits.AddAsScala
 import akka.http.javadsl.model.HttpRequest
 import akka.http.javadsl.model.headers.Host
-import akka.http.javadsl.server.AllDirectives
-import akka.http.javadsl.server.Directives
-import akka.http.javadsl.server.Route
-import akka.http.javadsl.server.RouteResult
+import akka.http.javadsl.server.{ AllDirectives, Directives, Route, RouteResult, RouteResults }
 import akka.http.scaladsl.server
 import akka.http.scaladsl.server.{ ExceptionHandler, Route => ScalaRoute }
 import akka.http.scaladsl.settings.RoutingSettings
+import akka.http.scaladsl.settings.ServerSettings
+import akka.http.scaladsl
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.testkit.TestDuration
@@ -44,6 +43,11 @@ abstract class RouteTest extends AllDirectives with WSTestRequestBuilding {
 
   def runRoute(route: Route, request: HttpRequest, defaultHostInfo: DefaultHostInfo): TestRouteResult =
     runScalaRoute(route.seal().delegate, request, defaultHostInfo)
+
+  def runRouteClientServer(route: Route, request: HttpRequest): TestRouteResult = {
+    val response = scaladsl.testkit.RouteTest.runRouteClientServer(request.asScala, route.delegate, ServerSettings(system))
+    createTestRouteResultAsync(request, response.map(scalaResponse => RouteResults.complete(scalaResponse)))
+  }
 
   def runRouteUnSealed(route: Route, request: HttpRequest): TestRouteResult =
     runRouteUnSealed(route, request, defaultHostInfo)
@@ -77,6 +81,7 @@ abstract class RouteTest extends AllDirectives with WSTestRequestBuilding {
 
       def run(request: HttpRequest): TestRouteResult = runRoute(underlying, request)
       def runWithRejections(request: HttpRequest): TestRouteResult = runRouteUnSealed(underlying, request)
+      def runClientServer(request: HttpRequest): TestRouteResult = runRouteClientServer(underlying, request)
     }
 
   protected def createTestRouteResult(request: HttpRequest, result: RouteResult): TestRouteResult =

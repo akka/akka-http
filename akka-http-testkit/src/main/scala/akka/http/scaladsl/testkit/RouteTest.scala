@@ -6,11 +6,13 @@ package akka.http.scaladsl.testkit
 
 import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ Host, Upgrade, `Sec-WebSocket-Protocol` }
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.settings.RoutingSettings
+import akka.http.scaladsl.settings.ServerSettings
 import akka.http.scaladsl.unmarshalling._
 import akka.http.scaladsl.util.FastFuture._
 import akka.stream.{ Materializer, SystemMaterializer }
@@ -123,6 +125,16 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
      * Apply request to given routes for further inspection in `check { }` block.
      */
     def ~>[A, B](f: A => B)(implicit ta: TildeArrow[A, B]): ta.Out = ta(request, f)
+
+    /**
+     * Evaluate request against routes run in server mode for further
+     * inspection in `check { }` block.
+     *
+     * Compared to [[~>]], the given routes are run in a fully fledged
+     * server, which allows more types of directives to be tested at the
+     * cost of additional overhead related with server setup.
+     */
+    def ~!>[A, B](f: A => B)(implicit tba: TildeBangArrow[A, B]): tba.Out = tba(request, f)
   }
 
   abstract class TildeArrow[A, B] {
@@ -142,7 +154,7 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
     implicit def injectIntoRoute(implicit
       timeout: RouteTestTimeout,
                                  defaultHostInfo: DefaultHostInfo,
-                                 system:          ClassicActorSystemProvider) =
+                                 system:          ClassicActorSystemProvider): TildeArrow[RequestContext, Future[RouteResult]] { type Out = RouteTestResult } =
       new TildeArrow[RequestContext, Future[RouteResult]] {
         type Out = RouteTestResult
         def apply(request: HttpRequest, route: Route): Out = {
@@ -166,5 +178,43 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
           routeTestResult
         }
       }
+  }
+
+  abstract class TildeBangArrow[A, B] {
+    type Out
+    def apply(request: HttpRequest, f: A => B): Out
+  }
+
+  object TildeBangArrow {
+    implicit def injectIntoRoute(implicit
+      timeout: RouteTestTimeout,
+                                 serverSettings: ServerSettings,
+                                 materializer:   Materializer
+    ): TildeBangArrow[RequestContext, Future[RouteResult]] { type Out = RouteTestResult } =
+      new TildeBangArrow[RequestContext, Future[RouteResult]] {
+        type Out = RouteTestResult
+        def apply(request: HttpRequest, route: Route): Out = {
+          val routeTestResult = new RouteTestResult(timeout.duration)
+          val responseF = RouteTest.runRouteClientServer(request, route, serverSettings)
+          val response = Await.result(responseF, timeout.duration)
+          routeTestResult.handleResponse(response)
+          routeTestResult
+        }
+      }
+  }
+}
+private[http] object RouteTest {
+  def runRouteClientServer(request: HttpRequest, route: Route, serverSettings: ServerSettings)(implicit system: ActorSystem, mat: Materializer): Future[HttpResponse] = {
+    import system.dispatcher
+    for {
+      binding <- Http().bindAndHandle(route, "127.0.0.1", 0, settings = serverSettings)
+      port = binding.localAddress.getPort
+      targetUri = request.uri.withHost("127.0.0.1").withPort(port).withScheme("http")
+
+      response <- Http().singleRequest(request.withUri(targetUri))
+    } yield {
+      binding.unbind()
+      response
+    }
   }
 }

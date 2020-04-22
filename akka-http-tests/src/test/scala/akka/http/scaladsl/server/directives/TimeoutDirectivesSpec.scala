@@ -4,14 +4,17 @@
 
 package akka.http.scaladsl.server.directives
 
+import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
-import akka.http.scaladsl.server.IntegrationRoutingSpec
+import akka.http.scaladsl.server.RoutingSpec
 import akka.testkit._
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
 
-class TimeoutDirectivesSpec extends IntegrationRoutingSpec {
+class TimeoutDirectivesSpec extends RoutingSpec {
+
+  implicit val routeTestTimeout = RouteTestTimeout(5.seconds.dilated)
 
   "Request Timeout" should {
     "be configurable in routing layer" in {
@@ -23,9 +26,7 @@ class TimeoutDirectivesSpec extends IntegrationRoutingSpec {
         }
       }
 
-      Get("/timeout") ~!> route ~!> { response =>
-        import response._
-
+      Get("/timeout") ~!> route ~> check {
         status should ===(StatusCodes.ServiceUnavailable)
       }
     }
@@ -54,13 +55,11 @@ class TimeoutDirectivesSpec extends IntegrationRoutingSpec {
           }
         }
 
-    Get("/timeout") ~!> route ~!> { response =>
-      import response._
+    Get("/timeout") ~!> route ~> check {
       status should ===(StatusCodes.EnhanceYourCalm)
     }
 
-    Get("/equivalent") ~!> route ~!> { response =>
-      import response._
+    Get("/equivalent") ~!> route ~> check {
       status should ===(StatusCodes.EnhanceYourCalm)
     }
   }

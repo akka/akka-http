@@ -222,6 +222,23 @@ Java
 
 Remember to configure the timeout using `dilated` if you want to account for slow test systems.
 
+## Integration Testing Routes
+
+Use `~!>` to test a route running in full HTTP server mode:
+```
+REQUEST ~!> ROUTE ~> check {
+  ASSERTIONS
+}
+```
+
+Certain routes can only be tested with `~!>`, for example routes that use
+the `withRequestTimeout` directive.
+
+@@@ note
+Using `~!>` adds considerable extra overhead since each test will start
+a server and bind to a port so use it only when necessary.
+@@@
+
 ## Examples
 
 A great pool of examples are the tests for all the predefined directives in Akka HTTP.
