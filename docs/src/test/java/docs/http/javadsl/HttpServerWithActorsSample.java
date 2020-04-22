@@ -21,8 +21,7 @@ import java.util.concurrent.CompletionStage;
 
 public class HttpServerWithActorsSample {
 
-  interface Message {
-  }
+  interface Message {}
 
   private static final class StartFailed implements Message {
     final Throwable ex;
@@ -40,14 +39,13 @@ public class HttpServerWithActorsSample {
     }
   }
 
-  private static final class Stop implements Message {
-  }
+  private static final class Stop implements Message {}
 
   public static Behavior<Message> create(String host, Integer port) {
     return Behaviors.setup(ctx -> {
       ActorSystem<Void> system = ctx.getSystem();
       ActorRef<JobRepository.Command> buildJobRepository = ctx.spawn(JobRepository.create(), "JobRepository");
-      Route routes = JobRoutes.jobRoutes(buildJobRepository, ctx.getSystem());
+      Route routes = new JobRoutes(buildJobRepository, ctx.getSystem()).jobRoutes();
 
       CompletionStage<ServerBinding> serverBinding =
               Http.get(ctx.getSystem()).bindAndHandle(
@@ -56,7 +54,7 @@ public class HttpServerWithActorsSample {
                       SystemMaterializer.get(system).materializer()
               );
       ctx.pipeToSelf(serverBinding, (binding, failure) -> {
-        if (binding instanceof ServerBinding) return new Started((ServerBinding) binding);
+        if (binding != null) return new Started(binding);
         else return new StartFailed(failure);
       });
 

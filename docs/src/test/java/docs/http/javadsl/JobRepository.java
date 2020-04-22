@@ -5,33 +5,39 @@
 package docs.http.javadsl;
 
 //#behavior
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.*;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Actor for use with the HttpServerWithActorsSample
  */
 public class JobRepository extends AbstractBehavior<JobRepository.Command> {
   // Definition of the a build job and its possible status values
-  interface Status {
-  }
+  interface Status {}
 
-  public static final class Successful implements Status {
-  }
+  public static final class Successful implements Status {}
 
-  public static final class Failed implements Status {
-  }
+  public static final class Failed implements Status {}
 
+  @JsonFormat
   public static final class Job {
     final Long id;
     final String projectName;
     final Status status;
     final Long duration;
 
+    @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+    public Job(@JsonProperty("id") Long id, @JsonProperty("projectName") String projectName, @JsonProperty("duration") Long duration) {
+      this(id, projectName, new Successful(), duration);
+    }
     public Job(Long id, String projectName, Status status, Long duration) {
       this.id = id;
       this.projectName = projectName;
@@ -41,14 +47,12 @@ public class JobRepository extends AbstractBehavior<JobRepository.Command> {
   }
 
   // Successful and failure responses
-  interface Response {
-  }
+  interface Response {}
 
   public static final class OK implements Response {
     private static OK INSTANCE = new OK();
 
-    private OK() {
-    }
+    private OK() {}
 
     public static OK getInstance() {
       return INSTANCE;
@@ -64,8 +68,7 @@ public class JobRepository extends AbstractBehavior<JobRepository.Command> {
   }
 
   // All possible messages that can be sent to this Behavior
-  interface Command {
-  }
+  interface Command {}
 
   public static final class AddJob implements Command {
     final Job job;
@@ -79,9 +82,9 @@ public class JobRepository extends AbstractBehavior<JobRepository.Command> {
 
   public static final class GetJobById implements Command {
     final Long id;
-    final ActorRef<Job> replyTo;
+    final ActorRef<Optional<Job>> replyTo;
 
-    public GetJobById(Long id, ActorRef<Job> replyTo) {
+    public GetJobById(Long id, ActorRef<Optional<Job>> replyTo) {
       this.id = id;
       this.replyTo = replyTo;
     }
@@ -96,7 +99,7 @@ public class JobRepository extends AbstractBehavior<JobRepository.Command> {
   }
 
   public static Behavior<Command> create() {
-    return create(Collections.emptyMap());
+    return create(new HashMap<Long, Job>());
   }
 
   public static Behavior<Command> create(Map<Long, Job> jobs) {
@@ -124,14 +127,18 @@ public class JobRepository extends AbstractBehavior<JobRepository.Command> {
     if (jobs.containsKey(msg.job.id))
       msg.replyTo.tell(new KO("Job already exists"));
     else {
-      msg.replyTo.tell(OK.getInstance());
       jobs.put(msg.job.id, msg.job);
+      msg.replyTo.tell(OK.getInstance());
     }
     return Behaviors.same();
   }
 
   private Behavior<Command> getJobById(GetJobById msg) {
-    msg.replyTo.tell(jobs.get(msg.id));
+    if (jobs.containsKey(msg.id)) {
+      msg.replyTo.tell(Optional.of(jobs.get(msg.id)));
+    } else {
+      msg.replyTo.tell(Optional.empty());
+    }
     return Behaviors.same();
   }
 
