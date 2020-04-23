@@ -26,7 +26,7 @@ package object parsing {
     case x                              => x.toString
   }
 
-  private[http] def byteChar(input: ByteString, ix: Int): Char = byteAt(input, ix).toChar
+  private[http] def byteChar(input: ByteString, ix: Int): Char = (byteAt(input, ix) & 0xff).toChar
 
   private[http] def byteAt(input: ByteString, ix: Int): Byte =
     if (ix < input.length) input(ix) else throw NotEnoughDataException
