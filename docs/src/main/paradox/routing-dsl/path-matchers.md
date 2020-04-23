@@ -216,16 +216,16 @@ Path matchers can be combined with these combinators to form higher-level constr
 
 Tilde Operator (`~`)
 : The tilde is the most basic combinator. It simply concatenates two matchers into one, i.e if the first one matched
-(and consumed) the second one is tried. The extractions of both matchers are combined type-safely.
+(and consumed) the second one is tried. The extractions of both matchers are combined type-safely. This is an alias for the `append` method.
 For example: `"foo" ~ "bar"` yields a matcher that is identical to `"foobar"`.
 
 Slash Operator (`/`)
-: This operator concatenates two matchers and inserts a `Slash` matcher in between them.
+: This operator concatenates two matchers and inserts a `Slash` matcher in between them. This is an alias for the `slash` method.
 For example: `"foo" / "bar"` is identical to `"foo" ~ Slash ~ "bar"`.
 
 Pipe Operator (`|`)
 : This operator combines two matcher alternatives in that the second one is only tried if the first one did *not* match.
-The two sub-matchers must have compatible types.
+The two sub-matchers must have compatible types. This is an alias for the `or` method.
 For example: `"foo" | "bar"` will match either "foo" *or* "bar".
 When combining an alternative expressed using this operator with an `/` operator, make sure to surround the alternative with parentheses, like so: `("foo" | "bar") / "bom"`. Otherwise, the `/` operator takes precedence and would only apply to the right-hand side of the alternative.
 
@@ -235,12 +235,12 @@ Path matcher instances can be transformed with these modifier methods:
 
 /
 : The slash operator cannot only be used as combinator for combining two matcher instances, it can also be used as
-a postfix call. `matcher /` is identical to `matcher ~ Slash` but shorter and easier to read.
+a postfix call. `matcher /` is identical to `matcher ~ Slash` but shorter and easier to read. This is an alias for the `slash` method.
 
 ?
 :
 By postfixing a matcher with `?` you can turn any `PathMatcher` into one that always matches, optionally consumes
-and potentially extracts an `Option` of the underlying matchers extraction. The result type depends on the type
+and potentially extracts an `Option` of the underlying matchers extraction. This is an alias for the `optional` method. The result type depends on the type
 of the underlying matcher:
 
 |If a `matcher` is of type | then `matcher.?` is of type|
@@ -263,7 +263,7 @@ extractions. The result type depends on the type of the underlying matcher:
 
 unary_!
 : By prefixing a matcher with `!` it can be turned into a `PathMatcher0` that only matches if the underlying matcher
-does *not* match and vice versa.
+does *not* match and vice versa. This is the operator alternative to the `not` method.
 
 transform / (h)flatMap / (h)map
 : These modifiers allow you to append your own "post-application" logic to another matcher in order to form a custom
