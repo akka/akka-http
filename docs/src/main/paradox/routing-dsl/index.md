@@ -23,6 +23,7 @@ from a background with non-"streaming first" HTTP Servers.
 * [path-matchers](path-matchers.md)
 * [case-class-extraction](case-class-extraction.md)
 * [source-streaming-support](source-streaming-support.md)
+* [style](style-guide.md)
 * [testkit](testkit.md)
 * [http-app](HttpApp.md)
 
