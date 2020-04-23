@@ -5,6 +5,6 @@ if [ -z $VERSION ]
 then
   echo specify the version name to be released, eg. 1.0.0
 else
-  sed -e 's/\$VERSION\$/'$VERSION'/g' notes/release-train-issue-template.md > /tmp/release-$VERSION.md
+  sed -e 's/\$VERSION\$/'$VERSION'/g' scripts/release-train-issue-template.md > /tmp/release-$VERSION.md
   echo Created $(hub issue create -F /tmp/release-$VERSION.md -M $VERSION --browse)
 fi
