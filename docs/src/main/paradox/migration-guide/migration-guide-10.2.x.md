@@ -4,7 +4,15 @@
 
 See the general @ref[compatibility guidelines](../compatibility-guidelines.md).
 
-## Akka HTTP 10.1.11 - > 10.2.0
+## Akka HTTP 10.1.11 -> 10.2.0
+
+### Scalatest dependency upgraded to 3.1.0
+
+The Scalatest dependency for akka-http-testkit was upgraded to version 3.1.0. This version is incompatible with previous
+versions. This is relevant for user code if it uses methods from @scaladoc[ScalatestUtils](akka.http.scaladsl.testkit.ScalatestUtils)
+(which are in scope if your test extends from @scaladoc[ScalaTestRouteTest](akka.http.scaladsl.testkit.ScalaTestRouteTest)).
+In this case, the project itself needs to update to use Scalatest >= 3.1.0.
+
 
 ### Providing route settings, exception and rejection handling
 
