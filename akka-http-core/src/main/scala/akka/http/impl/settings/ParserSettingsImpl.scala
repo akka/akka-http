@@ -56,7 +56,11 @@ private[akka] final case class ParserSettingsImpl(
   override def headerValueCacheLimit(headerName: String): Int =
     headerValueCacheLimits.getOrElse(headerName, defaultHeaderValueCacheLimit)
 
-  override def maxContentLength: Long = maxContentLengthSetting.get
+  override def maxContentLength: Long =
+    maxContentLengthSetting.getOrElse(
+      throw new IllegalStateException("Generic ParserSettings were created missing a server/client specific max-content-length setting. " +
+        "Adapt settings in the config file or use ParserSettings.forClient or ParserSetting.forServer instead of ParserSettings.apply / ParserSettings.create.")
+    )
 
   override def productPrefix = "ParserSettings"
 }

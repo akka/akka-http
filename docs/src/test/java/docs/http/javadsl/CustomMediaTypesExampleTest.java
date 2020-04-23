@@ -53,7 +53,7 @@ public class CustomMediaTypesExampleTest extends JUnitRouteTest {
         false); // No arbitrary subtypes are allowed
 
     // Add custom media type to parser settings:
-    final ParserSettings parserSettings = ParserSettings.create(system)
+    final ParserSettings parserSettings = ParserSettings.forServer(system)
       .withCustomMediaTypes(applicationCustom);
     final ServerSettings serverSettings = ServerSettings.create(system)
       .withParserSettings(parserSettings);

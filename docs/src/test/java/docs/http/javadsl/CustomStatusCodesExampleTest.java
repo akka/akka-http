@@ -53,7 +53,7 @@ public class CustomStatusCodesExampleTest extends JUnitRouteTest {
       false);// Does not allow entities
 
     // Add custom method to parser settings:
-    final ParserSettings parserSettings = ParserSettings.create(system)
+    final ParserSettings parserSettings = ParserSettings.forServer(system)
       .withCustomStatusCodes(leetCode);
     final ServerSettings serverSettings = ServerSettings.create(system)
       .withParserSettings(parserSettings);

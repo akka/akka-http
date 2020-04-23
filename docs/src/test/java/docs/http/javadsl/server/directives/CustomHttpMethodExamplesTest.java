@@ -54,7 +54,7 @@ public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
 
     // add custom method to parser settings:
     final ParserSettings parserSettings =
-      ParserSettings.create(system).withCustomMethods(BOLT);
+      ParserSettings.forServer(system).withCustomMethods(BOLT);
     final ServerSettings serverSettings =
       ServerSettings.create(system).withParserSettings(parserSettings);
 
