@@ -183,6 +183,16 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
         RawHeader("4-UTF8-Bytes", "Surrogate pairs: \uD801\uDC1B\uD801\uDC04\uD801\uDC1B!")
     }
 
+    "parse multiple header lines subsequently with UTF-8 characters one after another without crashing" in new TestSetup {
+      parseLine(s"""Content-Disposition: form-data; name="test"; filename="λ"${newLine}x""")
+      // The failing parsing line is one that must share a prefix with the utf-8 line up to the non-ascii char. The next character
+      // doesn't even have to be a non-ascii char.
+      parseLine(s"""Content-Disposition: form-data; name="test"; filename="test"${newLine}x""")
+      // But it could be
+      parseLine(s"""Content-Disposition: form-data; name="test"; filename="Б"${newLine}x""")
+
+    }
+
     "produce an error message for lines with an illegal header name" in new TestSetup() {
       the[ParsingException] thrownBy parseLine(s" Connection: close${newLine}x") should have message "Illegal character ' ' in header name"
       the[ParsingException] thrownBy parseLine(s"Connection : close${newLine}x") should have message "Illegal character ' ' in header name"
