@@ -4,9 +4,9 @@ If you have been using @scala[[Play's routes file syntax](https://www.playframew
 
 ## Conceptual differences
 
-The most apparent difference is Play's use of special purpose syntax implemented as an [external DSL](https://en.wikipedia.org/wiki/Domain-specific_language#External_and_Embedded_Domain_Specific_Languages), whereas Akka HTTP routes are described in @scala[Scala source code]@java[Java source code] with regular methods and values (as "embedded DSL"). Both are crafted to make the reader "grasp the codes intention".
+The most apparent difference is Play's use of special purpose syntax implemented as an [external DSL](https://en.wikipedia.org/wiki/Domain-specific_language#External_and_Embedded_Domain_Specific_Languages), whereas Akka HTTP routes are described in @scala[Scala source code]@java[Java source code] with regular methods and values (as "embedded DSL"). Both are crafted to make the reader "grasp the code's intention".
 
-The Akka HTTP DSL uses @ref[Directives](directives/index.md) to describe how incoming requests translate to functionality in the server. Play allows splitting the routes definitions in multiple routes files. The Akka HTTP DSL is very flexible and allows for composition so that different concerns can be properly split and organized as other source could would be.
+The Akka HTTP DSL uses @ref[Directives](directives/index.md) to describe how incoming requests translate to functionality in the server. Play allows splitting the routes definitions in multiple routes files. The Akka HTTP DSL is very flexible and allows for composition so that different concerns can be properly split and organized as other source code would be.
 
 Both Play and Akka HTTP choose the first matching route within the routes file/routes definition. In Play routes are listed with one route per line, in Akka HTTP multiple routes must be concatenated with the `concat` method.
 
