@@ -6,6 +6,7 @@ package akka.http.impl.engine.http2
 package framing
 
 import scala.collection.immutable
+import akka.event.LoggingAdapter
 import akka.stream.Attributes
 import akka.stream.impl.io.ByteStringParser
 import akka.stream.stage.GraphStageLogic
@@ -19,12 +20,15 @@ import scala.annotation.tailrec
 @InternalApi
 private[http] object Http2FrameParsing {
 
-  def readSettings(payload: ByteStringParser.ByteReader): immutable.Seq[Setting] = {
+  def readSettings(payload: ByteStringParser.ByteReader, log: LoggingAdapter): immutable.Seq[Setting] = {
     @tailrec def readSettings(read: List[Setting]): immutable.Seq[Setting] =
       if (payload.hasRemaining) {
         val id = payload.readShortBE()
         val value = payload.readIntBE()
-        val read0 = SettingIdentifier.byId(id).map(s => Setting(s, value) :: read).getOrElse(read)
+        val read0 = SettingIdentifier.byId(id).map(s => Setting(s, value) :: read).getOrElse {
+          log.debug("Ignoring unknown setting identifier {}", id)
+          read
+        }
         readSettings(read0)
       } else read.reverse
 
@@ -35,7 +39,7 @@ private[http] object Http2FrameParsing {
 
 /** INTERNAL API */
 @InternalApi
-private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteStringParser[FrameEvent] {
+private[http2] class Http2FrameParsing(shouldReadPreface: Boolean, log: LoggingAdapter) extends ByteStringParser[FrameEvent] {
   import ByteStringParser._
   import Http2FrameParsing._
 
@@ -66,7 +70,7 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteS
           // TODO: assert that reserved bit is 0 by checking if streamId > 0
           val payload = reader.take(length)
           val maybeframe = FrameType.byId(tpe).map(parseFrame(_, flags, streamId, new ByteReader(payload)))
-
+          if (maybeframe.isEmpty) log.debug("Ignoring unknown frame type {}", tpe)
           ParseResult(maybeframe, ReadFrame, acceptUpstreamFinish = true)
         }
       }
@@ -125,7 +129,7 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteS
             } else {
 
               if (payload.remainingSize % 6 != 0) throw new Http2Compliance.IllegalPayloadLengthInSettingsFrame(payload.remainingSize, "SETTINGS payload MUST be a multiple of multiple of 6 octets")
-              SettingsFrame(readSettings(payload))
+              SettingsFrame(readSettings(payload, log))
             }
 
           case FrameType.WINDOW_UPDATE =>

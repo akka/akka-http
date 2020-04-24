@@ -65,17 +65,17 @@ private[http] object Http2Blueprint {
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
       hpackCoding() atop {
         settings.idleTimeout match {
-          case f: FiniteDuration => framing() atop HttpConnectionIdleTimeoutBidi(f, None)
-          case _ => framing()
+          case f: FiniteDuration => framing(log) atop HttpConnectionIdleTimeoutBidi(f, None)
+          case _ => framing(log)
         }
       }
   // LogByteStringTools.logToStringBidi("framing") atop // enable for debugging
   // format: ON
 
-  def framing(): BidiFlow[FrameEvent, ByteString, ByteString, FrameEvent, NotUsed] =
+  def framing(log: LoggingAdapter): BidiFlow[FrameEvent, ByteString, ByteString, FrameEvent, NotUsed] =
     BidiFlow.fromFlows(
       Flow[FrameEvent].via(new Http2FrameRendering),
-      Flow[ByteString].via(new Http2FrameParsing(shouldReadPreface = true)))
+      Flow[ByteString].via(new Http2FrameParsing(shouldReadPreface = true, log)))
 
   /**
    * Runs hpack encoding and decoding. Incoming frames that are processed are HEADERS and CONTINUATION.
