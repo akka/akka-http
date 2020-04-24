@@ -24,8 +24,8 @@ private[http] object Http2FrameParsing {
       if (payload.hasRemaining) {
         val id = payload.readShortBE()
         val value = payload.readIntBE()
-        if (SettingIdentifier.isKnownId(id)) readSettings(Setting(SettingIdentifier.byId(id), value) :: read)
-        else readSettings(read)
+        val read0 = SettingIdentifier.byId(id).map(s => Setting(s, value) :: read).getOrElse(read)
+        readSettings(read0)
       } else read.reverse
 
     readSettings(Nil)
@@ -60,14 +60,14 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteS
       object ReadFrame extends Step {
         override def parse(reader: ByteReader): ParseResult[FrameEvent] = {
           val length = reader.readShortBE() << 8 | reader.readByte()
-          val tpe = reader.readByte() // TODO: make sure it's valid
+          val tpe = reader.readByte()
           val flags = new ByteFlag(reader.readByte())
           val streamId = reader.readIntBE()
           // TODO: assert that reserved bit is 0 by checking if streamId > 0
           val payload = reader.take(length)
-          val frame = parseFrame(FrameType.byId(tpe), flags, streamId, new ByteReader(payload))
+          val maybeframe = FrameType.byId(tpe).map(parseFrame(_, flags, streamId, new ByteReader(payload)))
 
-          ParseResult(Some(frame), ReadFrame, acceptUpstreamFinish = true)
+          ParseResult(maybeframe, ReadFrame, acceptUpstreamFinish = true)
         }
       }
 

@@ -127,10 +127,10 @@ private[http] object Http2Protocol {
         CONTINUATION).toSeq
 
     // make sure that lookup works and `All` ordering isn't broken
-    All.foreach(f => require(f == byId(f.id), s"FrameType $f with id ${f.id} must be found"))
+    All.foreach(f => require(Some(f) == byId(f.id), s"FrameType $f with id ${f.id} must be found"))
 
-    def isKnownId(id: Int): Boolean = id < All.size
-    def byId(id: Int): FrameType = All(id)
+    def byId(id: Int): Option[FrameType] =
+      if (id < All.size) Some(All(id)) else None
   }
 
   sealed abstract class SettingIdentifier(val id: Int) extends Product
@@ -227,10 +227,10 @@ private[http] object Http2Protocol {
         SETTINGS_MAX_HEADER_LIST_SIZE).toSeq
 
     // make sure that lookup works and `All` ordering isn't broken
-    All.foreach(f => require(f == byId(f.id) && isKnownId(f.id), s"SettingIdentifier $f with id ${f.id} must be found"))
+    All.foreach(f => require(Some(f) == byId(f.id), s"SettingIdentifier $f with id ${f.id} must be found"))
 
-    def isKnownId(id: Int): Boolean = id > 0 && id <= All.size
-    def byId(id: Int): SettingIdentifier = All(id - 1)
+    def byId(id: Int): Option[SettingIdentifier] =
+      if (id > 0 && id <= All.size) Some(All(id - 1)) else None
   }
 
   sealed abstract class ErrorCode(val id: Int) extends Product
@@ -323,6 +323,8 @@ private[http] object Http2Protocol {
      */
     case object HTTP_1_1_REQUIRED extends ErrorCode(0xd)
 
+    case class Unknown private (override val id: Int) extends ErrorCode(id)
+
     val All =
       Array( // must start with id = 0 and don't have holes between ids
         NO_ERROR,
@@ -344,8 +346,8 @@ private[http] object Http2Protocol {
     // make sure that lookup works and `All` ordering isn't broken
     All.foreach(f => require(f == byId(f.id), s"ErrorCode $f with id ${f.id} must be found"))
 
-    def isKnownId(id: Int): Boolean = id < All.size
-    def byId(id: Int): ErrorCode = All(id)
+    def byId(id: Int): ErrorCode =
+      if (id < All.size) All(id) else Unknown(id)
   }
 
   /**

@@ -178,7 +178,7 @@ object Http2FrameProbe extends Matchers {
 
         val reader = new ByteReader(headerBytes)
         val length = reader.readShortBE() << 8 | reader.readByte()
-        val tpe = Http2Protocol.FrameType.byId(reader.readByte())
+        val tpe = Http2Protocol.FrameType.byId(reader.readByte()).get
         val flags = new ByteFlag(reader.readByte())
         val streamId = reader.readIntBE()
 
