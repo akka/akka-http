@@ -10,6 +10,7 @@ import akka.event.LoggingAdapter
 import akka.stream.Attributes
 import akka.stream.impl.io.ByteStringParser
 import akka.stream.stage.GraphStageLogic
+import akka.util.OptionVal
 import Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
 import akka.annotation.InternalApi
 import FrameEvent._
@@ -25,9 +26,12 @@ private[http] object Http2FrameParsing {
       if (payload.hasRemaining) {
         val id = payload.readShortBE()
         val value = payload.readIntBE()
-        val read0 = SettingIdentifier.byId(id).map(s => Setting(s, value) :: read).getOrElse {
-          log.debug("Ignoring unknown setting identifier {}", id)
-          read
+        val read0 = SettingIdentifier.byId(id) match {
+          case OptionVal.Some(s) =>
+            Setting(s, value) :: read
+          case OptionVal.None =>
+            log.debug("Ignoring unknown setting identifier {}", id)
+            read
         }
         readSettings(read0)
       } else read.reverse
@@ -69,8 +73,13 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean, log: LoggingA
           val streamId = reader.readIntBE()
           // TODO: assert that reserved bit is 0 by checking if streamId > 0
           val payload = reader.take(length)
-          val maybeframe = FrameType.byId(tpe).map(parseFrame(_, flags, streamId, new ByteReader(payload)))
-          if (maybeframe.isEmpty) log.debug("Ignoring unknown frame type {}", tpe)
+          val maybeframe = FrameType.byId(tpe) match {
+            case OptionVal.Some(ft) =>
+              Some(parseFrame(ft, flags, streamId, new ByteReader(payload)))
+            case OptionVal.None =>
+              log.debug("Ignoring unknown frame type {}", tpe)
+              None
+          }
           ParseResult(maybeframe, ReadFrame, acceptUpstreamFinish = true)
         }
       }
