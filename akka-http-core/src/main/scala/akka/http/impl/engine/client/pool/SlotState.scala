@@ -311,7 +311,7 @@ private[pool] object SlotState {
 
     override def onTimeout(ctx: SlotContext): SlotState = {
       val msg =
-        s"Response entity was not subscribed after $stateTimeout. Make sure to read the response entity body or call `discardBytes()` on it. " +
+        s"Response entity was not subscribed after $stateTimeout. Make sure to read the response `entity` body or call `entity.discardBytes()` on it -- in case you deal with `HttpResponse`, use the shortcut `response.discardEntityBytes()`. " +
           s"${ongoingRequest.request.debugString} -> ${ongoingResponse.debugString}"
       ctx.warning(msg) // FIXME: should still warn here?
       Failed(new TimeoutException(msg))
