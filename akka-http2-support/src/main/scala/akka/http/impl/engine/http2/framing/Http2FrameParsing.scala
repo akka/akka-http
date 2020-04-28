@@ -6,9 +6,11 @@ package akka.http.impl.engine.http2
 package framing
 
 import scala.collection.immutable
+import akka.event.LoggingAdapter
 import akka.stream.Attributes
 import akka.stream.impl.io.ByteStringParser
 import akka.stream.stage.GraphStageLogic
+import akka.util.OptionVal
 import Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
 import akka.annotation.InternalApi
 import FrameEvent._
@@ -19,13 +21,19 @@ import scala.annotation.tailrec
 @InternalApi
 private[http] object Http2FrameParsing {
 
-  def readSettings(payload: ByteStringParser.ByteReader): immutable.Seq[Setting] = {
+  def readSettings(payload: ByteStringParser.ByteReader, log: LoggingAdapter): immutable.Seq[Setting] = {
     @tailrec def readSettings(read: List[Setting]): immutable.Seq[Setting] =
       if (payload.hasRemaining) {
         val id = payload.readShortBE()
         val value = payload.readIntBE()
-        if (SettingIdentifier.isKnownId(id)) readSettings(Setting(SettingIdentifier.byId(id), value) :: read)
-        else readSettings(read)
+        val read0 = SettingIdentifier.byId(id) match {
+          case OptionVal.Some(s) =>
+            Setting(s, value) :: read
+          case OptionVal.None =>
+            log.debug("Ignoring unknown setting identifier {}", id)
+            read
+        }
+        readSettings(read0)
       } else read.reverse
 
     readSettings(Nil)
@@ -35,7 +43,7 @@ private[http] object Http2FrameParsing {
 
 /** INTERNAL API */
 @InternalApi
-private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteStringParser[FrameEvent] {
+private[http2] class Http2FrameParsing(shouldReadPreface: Boolean, log: LoggingAdapter) extends ByteStringParser[FrameEvent] {
   import ByteStringParser._
   import Http2FrameParsing._
 
@@ -60,14 +68,19 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteS
       object ReadFrame extends Step {
         override def parse(reader: ByteReader): ParseResult[FrameEvent] = {
           val length = reader.readShortBE() << 8 | reader.readByte()
-          val tpe = reader.readByte() // TODO: make sure it's valid
+          val tpe = reader.readByte()
           val flags = new ByteFlag(reader.readByte())
           val streamId = reader.readIntBE()
           // TODO: assert that reserved bit is 0 by checking if streamId > 0
           val payload = reader.take(length)
-          val frame = parseFrame(FrameType.byId(tpe), flags, streamId, new ByteReader(payload))
-
-          ParseResult(Some(frame), ReadFrame, acceptUpstreamFinish = true)
+          val maybeframe = FrameType.byId(tpe) match {
+            case OptionVal.Some(ft) =>
+              Some(parseFrame(ft, flags, streamId, new ByteReader(payload)))
+            case OptionVal.None =>
+              log.debug("Ignoring unknown frame type {}", tpe)
+              None
+          }
+          ParseResult(maybeframe, ReadFrame, acceptUpstreamFinish = true)
         }
       }
 
@@ -125,7 +138,7 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean) extends ByteS
             } else {
 
               if (payload.remainingSize % 6 != 0) throw new Http2Compliance.IllegalPayloadLengthInSettingsFrame(payload.remainingSize, "SETTINGS payload MUST be a multiple of multiple of 6 octets")
-              SettingsFrame(readSettings(payload))
+              SettingsFrame(readSettings(payload, log))
             }
 
           case FrameType.WINDOW_UPDATE =>

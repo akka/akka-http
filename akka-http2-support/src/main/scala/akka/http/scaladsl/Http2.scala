@@ -103,7 +103,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
         // https://http2.github.io/http2-spec/#Http2SettingsHeader 3.2.1 HTTP2-Settings Header Field
         val upgradeSettings = req.headers.collect {
           case raw: RawHeader if raw.lowercaseName == Http2SettingsHeader.name =>
-            Http2SettingsHeader.parse(raw.value)
+            Http2SettingsHeader.parse(raw.value, log)
         }
 
         upgradeSettings match {

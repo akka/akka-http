@@ -5,6 +5,7 @@
 package akka.http.scaladsl.model.http2
 
 import akka.annotation.InternalApi
+import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.framing.Http2FrameParsing
 import akka.http.impl.engine.http2.FrameEvent.Setting
 import akka.http.impl.model.parser.Base64Parsing
@@ -24,11 +25,11 @@ private[akka] object Http2SettingsHeader {
   def headerValueToBinary(value: String): ByteString =
     ByteString(Base64Parsing.base64UrlStringDecoder(value.toCharArray))
 
-  def parse(value: String): Try[immutable.Seq[Setting]] = Try {
+  def parse(value: String, log: LoggingAdapter): Try[immutable.Seq[Setting]] = Try {
     // settings are a base64url encoded Http2 settings frame
     // https://httpwg.org/specs/rfc7540.html#rfc.section.3.2.1
     val bytes = headerValueToBinary(value)
     val reader = new io.ByteStringParser.ByteReader(bytes)
-    Http2FrameParsing.readSettings(reader)
+    Http2FrameParsing.readSettings(reader, log)
   }
 }
