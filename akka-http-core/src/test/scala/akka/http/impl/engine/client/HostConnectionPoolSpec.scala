@@ -219,7 +219,7 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
         val streamResult = chunks.runWith(Sink.ignore)
         Await.ready(streamResult, 3.seconds)
         streamResult.value.get.failed.get.getMessage shouldEqual
-          "Response entity was not subscribed after 1 second. Make sure to read the response entity body or call `discardBytes()` on it. GET /1 Empty -> 200 OK Chunked"
+          "Response entity was not subscribed after 1 second. Make sure to read the response `entity` body or call `entity.discardBytes()` on it -- in case you deal with `HttpResponse`, use the shortcut `response.discardEntityBytes()`. GET /1 Empty -> 200 OK Chunked"
         conn1.expectError()
       }
       "time out when a connection was unused for a long time" in pending

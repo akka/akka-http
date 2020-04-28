@@ -54,7 +54,7 @@ Failing to account for this behavior can result in seemingly non-deterministic f
 between http and stream buffering. This manifests as errors such as the following:
 
 ```
-Response entity was not subscribed after 1 second. Make sure to read the response entity body or call `discardBytes()` on it.
+Response entity was not subscribed after 1 second. Make sure to read the response `entity` body or call `entity.discardBytes()` on it -- in case you deal with `HttpResponse`, use the shortcut `response.discardEntityBytes()`.
 ```
 
 This error indicates that the http response has been available for too long without being consumed. It can be 
