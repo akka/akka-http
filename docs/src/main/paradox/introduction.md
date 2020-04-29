@@ -28,48 +28,22 @@ On the other hand, if you prefer to build your applications with the guidance of
 ## Using Akka HTTP
 
 Akka HTTP is provided as independent modules from Akka itself under its own release cycle. Akka HTTP is @ref[compatible](compatibility-guidelines.md)
-with Akka 2.5 and any later 2.x versions released during the lifetime of Akka HTTP 10.1.x. The modules, however, do *not* depend on `akka-actor` or `akka-stream`, so the user is required to
+with Akka 2.5, Akka 2.6 and  any later 2.x versions released during the lifetime of Akka HTTP 10.2.x. The modules, however, do *not* depend on `akka-actor` or `akka-stream`, so the user is required to
 choose an Akka version to run against and add a manual dependency to `akka-stream` of the chosen version.
 
-sbt
-:   @@@vars
-    ```
-    "com.typesafe.akka" %% "akka-http"   % "$project.version$" $crossString$
-    "com.typesafe.akka" %% "akka-stream" % "$akka.version$" // or whatever the latest version is
-    ```
-    @@@
-
-Gradle
-:   @@@vars
-    ```
-    compile group: 'com.typesafe.akka', name: 'akka-http_$scala.binary_version$',   version: '$project.version$'
-    compile group: 'com.typesafe.akka', name: 'akka-stream_$scala.binary_version$', version: '$akka.version$'
-    ```
-    @@@
-
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-http_$scala.binary_version$</artifactId>
-      <version>$project.version$</version>
-    </dependency>
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-stream_$scala.binary_version$</artifactId>
-      <version>$akka.version$</version> <!-- Or whatever the latest version is -->
-    </dependency>
-    ```
-    @@@
-
+@@dependency [sbt,Gradle,Maven] {
+  symbol1=AkkaVersion
+  value1=$akka.version$
+  group1="com.typesafe.akka" artifact1="akka-stream_$scala.binary.version$" version1=AkkaVersion
+  group2="com.typesafe.akka" artifact2="akka-http_$scala.binary.version$" version2="$project.version$"
+}
 
 Alternatively, you can bootstrap a new sbt project with Akka HTTP already
 configured using the [Giter8](http://www.foundweekends.org/giter8/) template:
 
 @@@ div { .group-scala }
 ```sh
-sbt -Dsbt.version=0.13.15 new https://github.com/akka/akka-http-quickstart-scala.g8
+sbt -Dsbt.version=1.2.8 new https://github.com/akka/akka-http-quickstart-scala.g8
 ```
 @@@
 @@@ div { .group-java }
