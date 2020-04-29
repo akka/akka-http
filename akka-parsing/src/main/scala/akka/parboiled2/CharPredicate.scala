@@ -16,10 +16,15 @@
 
 package akka.parboiled2
 
+import akka.annotation.InternalApi
+
 import scala.annotation.tailrec
 import scala.collection.immutable.NumericRange
 
-sealed abstract class CharPredicate extends (Char => Boolean) {
+@InternalApi
+private[akka] sealed abstract class CharPredicate {
+  def apply(char: Char): Boolean
+
   import CharPredicate._
 
   /**
@@ -88,15 +93,16 @@ sealed abstract class CharPredicate extends (Char => Boolean) {
       case ix => Some(string charAt ix)
     }
 
-  protected def or(that: Char => Boolean): CharPredicate =
-    from(if (this == Empty) that else c => this(c) || that(c))
-  protected def and(that: Char => Boolean): CharPredicate =
+  protected def or(that: CharPredicate): CharPredicate =
+    if (this == Empty) that else from(c => this(c) || that(c))
+  protected def and(that: CharPredicate): CharPredicate =
     if (this == Empty) Empty else from(c => this(c) && that(c))
-  protected def andNot(that: Char => Boolean): CharPredicate =
-    from(if (this == Empty) c => !that(c) else c => this(c) && !that(c))
+  protected def andNot(that: CharPredicate): CharPredicate =
+    if (this == Empty) from(c => !that(c)) else from(c => this(c) && !that(c))
 }
 
-object CharPredicate {
+@InternalApi
+private[akka] object CharPredicate {
   val Empty: CharPredicate = MaskBased(0L, 0L)
   val All: CharPredicate = from(_ => true)
   val LowerAlpha = CharPredicate('a' to 'z')
@@ -112,17 +118,14 @@ object CharPredicate {
   val Visible = CharPredicate('\u0021' to '\u007e')
   val Printable = Visible ++ ' '
 
-  def from(predicate: Char => Boolean): CharPredicate =
-    predicate match {
-      case x: CharPredicate => x
-      case x                => General(x)
-    }
+  def from(predicate: Char => Boolean): CharPredicate = General(predicate)
 
   def apply(magnets: ApplyMagnet*): CharPredicate = magnets.foldLeft(Empty) { (a, m) => a ++ m.predicate }
 
   class ApplyMagnet(val predicate: CharPredicate)
   object ApplyMagnet {
     implicit def fromPredicate(predicate: Char => Boolean): ApplyMagnet = new ApplyMagnet(from(predicate))
+    implicit def fromPredicate(predicate: CharPredicate): ApplyMagnet = new ApplyMagnet(predicate)
     implicit def fromChar(c: Char): ApplyMagnet = fromChars(c :: Nil)
     implicit def fromCharArray(array: Array[Char]): ApplyMagnet = fromChars(array.toIndexedSeq)
     implicit def fromString(chars: String): ApplyMagnet = fromChars(chars)
@@ -274,7 +277,7 @@ object CharPredicate {
   }
 
   case class General private[CharPredicate] (predicate: Char => Boolean) extends CharPredicate {
-    def apply(c: Char) = predicate(c)
+    def apply(c: Char): Boolean = predicate(c)
 
     def ++(that: CharPredicate): CharPredicate = that match {
       case Empty                  => this
