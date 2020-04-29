@@ -197,13 +197,6 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
       }
   }
 
-  @deprecated("Binary compatibility method. Use the new `bind` method without the implicit materializer instead.", "10.0.11")
-  private[http] def bind(interface: String, port: Int,
-                         connectionContext: ConnectionContext,
-                         settings:          ServerSettings,
-                         log:               LoggingAdapter, fm: Materializer): Source[Http.IncomingConnection, Future[ServerBinding]] =
-    bindImpl(interface, port, connectionContext, settings, log)
-
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
    * [[akka.stream.scaladsl.Flow]] for processing all incoming connections.
@@ -362,26 +355,6 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
 
     server
   }
-
-  @deprecated("Binary compatibility method. Use the new `serverLayer` method without the implicit materializer instead.", "10.0.11")
-  private[http] def serverLayer(mat: Materializer): ServerLayer =
-    serverLayerImpl()
-
-  @deprecated("Binary compatibility method. Use the new `serverLayer` method without the implicit materializer instead.", "10.0.11")
-  private[http] def serverLayer(
-    settings:           ServerSettings,
-    remoteAddress:      Option[InetSocketAddress],
-    log:                LoggingAdapter,
-    isSecureConnection: Boolean, mat: Materializer): ServerLayer =
-    serverLayerImpl(settings, remoteAddress, log, isSecureConnection)
-
-  // for binary-compatibility, since 10.0.0
-  @deprecated("Binary compatibility method. Invocations should (automatically) use overloaded variant with default parameters.", "10.0.11")
-  private[http] def serverLayer(
-    settings:      ServerSettings,
-    remoteAddress: Option[InetSocketAddress],
-    log:           LoggingAdapter, mat: Materializer): ServerLayer =
-    serverLayerImpl(settings, remoteAddress, log)
 
   // ** CLIENT ** //
 
@@ -593,12 +566,6 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     cachedHostConnectionPool(setup)
   }
 
-  @deprecated("Deprecated in favor of method without implicit materializer", "10.0.11")
-  private[http] def cachedHostConnectionPool[T](host: String, port: Int,
-                                                settings: ConnectionPoolSettings,
-                                                log:      LoggingAdapter, fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
-    cachedHostConnectionPoolImpl(host, port, settings, log)
-
   /**
    * Same as [[#cachedHostConnectionPool]] but for encrypted (HTTPS) connections.
    *
@@ -622,12 +589,6 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     val setup = HostConnectionPoolSetup(host, port, cps)
     cachedHostConnectionPool(setup)
   }
-  @deprecated("Deprecated in favor of method without implicit materializer", "10.0.11")
-  private[http] def cachedHostConnectionPoolHttps[T](host: String, port: Int,
-                                                     connectionContext: HttpsConnectionContext,
-                                                     settings:          ConnectionPoolSettings,
-                                                     log:               LoggingAdapter, fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
-    cachedHostConnectionPoolHttpsImpl(host, port, connectionContext, settings, log)
 
   /**
    * Returns a [[akka.stream.scaladsl.Flow]] which dispatches incoming HTTP requests to the per-ActorSystem pool of outgoing
@@ -679,13 +640,6 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     log:               LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] =
     clientFlow[T](settings) { request => request -> sharedGateway(request, settings, connectionContext, log) }
 
-  @deprecated("Deprecated in favor of method without implicit materializer", "10.0.11") // kept as `private[http]` for binary compatibility
-  private[http] def superPool[T](
-    connectionContext: HttpsConnectionContext,
-    settings:          ConnectionPoolSettings,
-    log:               LoggingAdapter, fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] =
-    superPoolImpl(connectionContext, settings, log)
-
   /**
    * Fires a single [[akka.http.scaladsl.model.HttpRequest]] across the (cached) host connection pool for the request's
    * effective URI to produce a response future.
@@ -717,14 +671,6 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     } catch {
       case e: IllegalUriException => FastFuture.failed(e)
     }
-
-  @deprecated("Deprecated in favor of method without implicit materializer", "10.0.11") // kept as `private[http]` for binary compatibility
-  private[http] def singleRequest(
-    request:           HttpRequest,
-    connectionContext: HttpsConnectionContext,
-    settings:          ConnectionPoolSettings,
-    log:               LoggingAdapter, fm: Materializer): Future[HttpResponse] =
-    singleRequestImpl(request, connectionContext, settings, log)
 
   /**
    * Constructs a [[akka.http.scaladsl.Http.WebSocketClientLayer]] stage using the configured default [[akka.http.scaladsl.settings.ClientConnectionSettings]],
