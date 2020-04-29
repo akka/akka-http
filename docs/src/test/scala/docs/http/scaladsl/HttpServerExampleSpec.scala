@@ -247,7 +247,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
             concat(
               (put | parameter("method".requiredValue("put"))) {
                 // form extraction from multipart or www-url-encoded forms
-                formFields(("email", "total".as[Money])).as(Order) { order =>
+                formFields("email", "total".as[Money]).as(Order) { order =>
                   complete {
                     // complete with serialized Future result
                     (myDbActor ? Update(order)).mapTo[TransactionResult]
