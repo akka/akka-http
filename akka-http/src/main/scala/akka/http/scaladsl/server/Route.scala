@@ -57,7 +57,7 @@ object Route {
    * This conversion is also implicitly available whereever a `Route` is used through [[RouteResult#routeToFlow]].
    */
   def toFlow(route: Route)(implicit system: ClassicActorSystemProvider): Flow[HttpRequest, HttpResponse, NotUsed] =
-    Flow[HttpRequest].mapAsync(1)(asyncHandler(route, RoutingSettings(system), ParserSettings.forServer))
+    Flow[HttpRequest].mapAsync(1)(toFunction(route))
 
   /**
    * Turns a `Route` into a server flow.
@@ -73,8 +73,10 @@ object Route {
                                 exceptionHandler: ExceptionHandler         = null): Flow[HttpRequest, HttpResponse, NotUsed] =
     Flow[HttpRequest].mapAsync(1)(asyncHandler(route))
 
-  def asyncHandler(route: Route, routingSettings: RoutingSettings, parserSettings: ParserSettings)(implicit system: ClassicActorSystemProvider): HttpRequest => Future[HttpResponse] = {
+  def toFunction(route: Route)(implicit system: ClassicActorSystemProvider): HttpRequest => Future[HttpResponse] = {
     val routingLog = RoutingLog(system.classicSystem.log)
+    val routingSettings = RoutingSettings(system)
+    val parserSettings = ParserSettings.forServer
 
     // This is essentially the same as `seal(route)` but a bit more efficient because we know we have no inherited settings:
     val sealedRoute = {

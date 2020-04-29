@@ -34,6 +34,7 @@ object Http2Spec {
   {
     val asyncHandler: HttpRequest => Future[HttpResponse] = _ => Future.successful(HttpResponse(status = StatusCodes.ImATeapot))
     val httpsServerContext: HttpsConnectionContext = ExampleHttpContexts.exampleServerContext
+
     //#bindAndHandleSecure
     Http().bindAndHandleAsync(
       asyncHandler,
@@ -47,11 +48,11 @@ object Http2Spec {
     import akka.http.scaladsl.server.Route
     import akka.http.scaladsl.server.directives.RouteDirectives.complete
 
-    val asyncHandler: HttpRequest => Future[HttpResponse] =
-      Route.asyncHandler(complete(StatusCodes.ImATeapot))
+    val handler: HttpRequest => Future[HttpResponse] =
+      Route.toFunction(complete(StatusCodes.ImATeapot))
     //#bindAndHandlePlain
     Http().bindAndHandleAsync(
-      asyncHandler,
+      handler,
       interface = "localhost",
       port = 8080,
       connectionContext = HttpConnectionContext())
