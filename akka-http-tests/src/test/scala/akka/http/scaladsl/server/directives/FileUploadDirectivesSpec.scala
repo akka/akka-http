@@ -23,38 +23,6 @@ class FileUploadDirectivesSpec extends RoutingSpec with Eventually {
   // tests touches filesystem, so reqs may take longer than the default of 1.second to complete
   implicit val routeTimeout = RouteTestTimeout(3.seconds.dilated)
 
-  "the uploadedFile directive" should {
-
-    "write a posted file to a temporary file on disk" in {
-
-      val xml = "<int>42</int>"
-
-      val simpleMultipartUpload =
-        Multipart.FormData(Multipart.FormData.BodyPart.Strict(
-          "fieldName",
-          HttpEntity(ContentTypes.`text/xml(UTF-8)`, xml),
-          Map("filename" -> "age.xml")))
-
-      @volatile var file: Option[File] = None
-
-      try {
-        Post("/", simpleMultipartUpload) ~> {
-          uploadedFile("fieldName") {
-            case (info, tmpFile) =>
-              file = Some(tmpFile)
-              complete(info.toString)
-          }
-        } ~> check {
-          file.isDefined shouldEqual true
-          responseAs[String] shouldEqual FileInfo("fieldName", "age.xml", ContentTypes.`text/xml(UTF-8)`).toString
-          read(file.get) shouldEqual xml
-        }
-      } finally {
-        file.foreach(_.delete())
-      }
-    }
-  }
-
   "the storeUploadedFile directive" should {
     val data = s"<int>${"42" * 1000000}</int>" // ~2MB of data
 

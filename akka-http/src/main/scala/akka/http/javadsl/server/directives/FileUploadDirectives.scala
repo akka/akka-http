@@ -20,19 +20,6 @@ import akka.util.ByteString
 
 abstract class FileUploadDirectives extends FileAndResourceDirectives {
   /**
-   * Streams the bytes of the file submitted using multipart with the given file name into a temporary file on disk.
-   * If there is an error writing to disk the request will be failed with the thrown exception, if there is no such
-   * field the request will be rejected, if there are multiple file parts with the same name, the first one will be
-   * used and the subsequent ones ignored.
-   *
-   * @deprecated in favor of storeUploadedFile which allows to specify a file to store the upload in
-   */
-  @Deprecated
-  def uploadedFile(fieldName: String, inner: BiFunction[FileInfo, File, Route]): Route = RouteAdapter {
-    D.uploadedFile(fieldName) { case (info, file) => inner.apply(info, file).delegate }
-  }
-
-  /**
    * Streams the bytes of the file submitted using multipart with the given file name into a designated file on disk.
    * If there is an error writing to disk the request will be failed with the thrown exception, if there is no such
    * field the request will be rejected, if there are multiple file parts with the same name, the first one will be

@@ -32,11 +32,6 @@ import java.util.function.Function;
 
 import static scala.compat.java8.JFunction.func;
 
-//#uploadedFile
-import static akka.http.javadsl.server.Directives.complete;
-import static akka.http.javadsl.server.Directives.uploadedFile;
-
-//#uploadedFile
 //#storeUploadedFile
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.storeUploadedFile;
