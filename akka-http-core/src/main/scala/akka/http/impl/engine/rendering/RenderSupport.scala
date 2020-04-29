@@ -23,12 +23,14 @@ import akka.stream.scaladsl.{ Flow, Sink, Source }
  * INTERNAL API
  */
 @InternalApi
-private[rendering] object RenderSupport {
+private[http] object RenderSupport {
   val DefaultStatusLineBytes = "HTTP/1.1 200 OK\r\n".asciiBytes
   val StatusLineStartBytes = "HTTP/1.1 ".asciiBytes
   val ChunkedBytes = "chunked".asciiBytes
   val KeepAliveBytes = "Keep-Alive".asciiBytes
   val CloseBytes = "close".asciiBytes
+  val CrLf = "\r\n".asciiBytes
+  val ContentLengthBytes = "Content-Length: ".asciiBytes
 
   private def preRenderContentType(ct: ContentType): Array[Byte] =
     (new ByteArrayRendering(32) ~~ headers.`Content-Type` ~~ ct ~~ CrLf).get
@@ -39,9 +41,7 @@ private[rendering] object RenderSupport {
   private val TextHtmlContentType = preRenderContentType(`text/html(UTF-8)`)
   private val TextCsvContentType = preRenderContentType(`text/csv(UTF-8)`)
 
-  def CrLf = Rendering.CrLf
-
-  implicit val trailerRenderer = Renderer.genericSeqRenderer[Renderable, HttpHeader](CrLf, Rendering.Empty)
+  implicit val trailerRenderer = Renderer.genericSeqRenderer[Renderable, HttpHeader](Rendering.CrLf, Rendering.Empty)
 
   val defaultLastChunkBytes: ByteString = renderChunk(HttpEntity.LastChunk)
 
