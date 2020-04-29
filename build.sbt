@@ -325,9 +325,23 @@ lazy val docs = project("docs")
   .settings(
     name := "akka-http-docs",
     resolvers += Resolver.jcenterRepo,
-    // In docs adding an unused variable can be helpful, for example
-    // to show its type
-    scalacOptions += "-Xlint:-unused",
+    scalacOptions ++= Seq(
+      // Make sure we don't accidentally keep documenting deprecated calls
+      "-Xfatal-warnings",
+      // In docs adding an unused variable can be helpful, for example
+      // to show its type
+      "-Xlint:-unused",
+      // We use this for `complete`
+      "-Xlint:-adapted-args",
+      // TODO avoid this deprecation
+      "-P:silencer:globalFilters=Adaptation of argument list",
+      // Does not appear to lead to problems
+      "-P:silencer:globalFilters=The outer reference in this type test cannot be checked at run time",
+    ),
+    scalacOptions --= Seq(
+      // Code after ??? can be considered 'dead',  but still useful for docs
+      "-Ywarn-dead-code",
+    ),
     paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     paradoxProperties in Compile ++= Map(
       "project.name" -> "Akka HTTP",

@@ -4,6 +4,7 @@
 
 package docs.http.scaladsl.server.directives
 
+import com.github.ghik.silencer.silent
 import org.scalatest.wordspec.AnyWordSpec
 
 class JsonStreamingFullExamples extends AnyWordSpec {

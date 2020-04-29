@@ -6,11 +6,14 @@ package docs.http.scaladsl
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
+import com.github.ghik.silencer.silent
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import docs.CompileOnlySpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+// TODO https://github.com/akka/akka-http/issues/2845
+@silent("deprecated")
 class HttpsExamplesSpec extends AnyWordSpec with Matchers with CompileOnlySpec {
 
   "disable SNI for connection" in compileOnlySpec {

@@ -4,10 +4,12 @@
 
 package docs.http.scaladsl
 
+import com.github.ghik.silencer.silent
 import docs.CompileOnlySpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+@silent("will not be a runnable program")
 class WebSocketClientExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpec {
 
   "singleWebSocket-request-example" in compileOnlySpec {
@@ -31,6 +33,8 @@ class WebSocketClientExampleSpec extends AnyWordSpec with Matchers with CompileO
           Sink.foreach {
             case message: TextMessage.Strict =>
               println(message.text)
+            case _ =>
+            // ignore other message types
           }
 
         val helloSource: Source[Message, NotUsed] =
@@ -198,6 +202,8 @@ class WebSocketClientExampleSpec extends AnyWordSpec with Matchers with CompileO
           Sink.foreach[Message] {
             case message: TextMessage.Strict =>
               println(message.text)
+            case _ =>
+            // ignore other message types
           }
 
         // send this as a message over the WebSocket
