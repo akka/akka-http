@@ -16,6 +16,7 @@ import org.eclipse.jetty.alpn.ALPN
 import org.eclipse.jetty.alpn.ALPN.ServerProvider
 
 import scala.language.reflectiveCalls
+import scala.util.Try
 
 /**
  * INTERNAL API
@@ -36,7 +37,16 @@ private[http] object Http2AlpnSupport {
 
   def isAlpnSupportedByJDK: Boolean =
     // ALPN is supported starting with JDK 9
-    JavaVersion.majorVersion >= 9
+    JavaVersion.majorVersion >= 9 ||
+      (classOf[SSLEngine].getMethods.exists(_.getName == "setHandshakeApplicationProtocolSelector")
+        && {
+          // This method only exists in the jetty-alpn provided implementation. If it exists an old version of the jetty-alpn-agent is active which is not supported
+          // on JDK>= 8u252. When running on such a JVM, you can either just remove the agent or (if you want to support older JVMs with the same command line),
+          // use jetty-alpn-agent >= 2.0.10
+          val jettyAlpnClassesAvailable = Try(Class.forName("sun.security.ssl.ALPNExtension")).toOption.exists(_.getDeclaredMethods.exists(_.getName == "init"))
+          if (jettyAlpnClassesAvailable) throw new RuntimeException("On JDK >= 8u252 you need to either remove jetty-alpn-agent or use version 2.0.10 (which is a noop)")
+          else true
+        })
 
   private type JDK9SSLEngine = {
     def setHandshakeApplicationProtocolSelector(selector: BiFunction[SSLEngine, ju.List[String], String]): Unit
