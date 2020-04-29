@@ -39,6 +39,9 @@ class HttpClientDecodingExampleSpec extends AkkaSpec with CompileOnlySpec with S
           Deflate
         case HttpEncodings.identity =>
           NoCoding
+        case other =>
+          log.warning(s"Unknown encoding [$other], not decoding")
+          NoCoding
       }
 
       decoder.decodeMessage(response)

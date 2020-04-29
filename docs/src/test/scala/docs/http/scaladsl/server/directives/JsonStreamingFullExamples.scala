@@ -4,8 +4,10 @@
 
 package docs.http.scaladsl.server.directives
 
+import com.github.ghik.silencer.silent
 import org.scalatest.wordspec.AnyWordSpec
 
+@silent("The outer reference in this type test cannot be checked at run time")
 class JsonStreamingFullExamples extends AnyWordSpec {
 
   "compile only spec" in {}

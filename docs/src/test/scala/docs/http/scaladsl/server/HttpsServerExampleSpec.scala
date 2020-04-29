@@ -6,12 +6,13 @@ package docs.http.scaladsl.server
 
 //#imports
 import java.io.InputStream
-import java.security.{ SecureRandom, KeyStore }
-import javax.net.ssl.{ SSLContext, TrustManagerFactory, KeyManagerFactory }
+import java.security.{ KeyStore, SecureRandom }
 
+import javax.net.ssl.{ KeyManagerFactory, SSLContext, TrustManagerFactory }
 import akka.actor.ActorSystem
-import akka.http.scaladsl.server.{ Route, Directives }
-import akka.http.scaladsl.{ ConnectionContext, HttpsConnectionContext, Http }
+import akka.http.scaladsl.server.{ Directives, Route }
+import akka.http.scaladsl.{ ConnectionContext, Http, HttpsConnectionContext }
+import com.github.ghik.silencer.silent
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 //#imports
 
@@ -19,6 +20,8 @@ import docs.CompileOnlySpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+// TODO https://github.com/akka/akka-http/issues/2845
+@silent("AkkaSSLConfig in package akka is deprecated")
 abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
   with Directives with CompileOnlySpec {
 

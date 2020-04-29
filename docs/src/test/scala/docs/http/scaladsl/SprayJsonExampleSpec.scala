@@ -4,9 +4,11 @@
 
 package docs.http.scaladsl
 
+import com.github.ghik.silencer.silent
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+@silent("will not be a runnable program")
 class SprayJsonExampleSpec extends AnyWordSpec with Matchers {
 
   def compileOnlySpec(body: => Unit) = ()

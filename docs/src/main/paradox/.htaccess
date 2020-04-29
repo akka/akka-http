@@ -13,3 +13,5 @@ RedirectMatch 301 ^(.*)/release-notes.html$ $1/release-notes/
 
 RedirectMatch 301 ^(.*)/scala/http/(.*)$ $1/$2?language=scala
 RedirectMatch 301 ^(.*)/java/http/(.*)$ $1/$2?language=java
+
+RedirectMatch 301 ^(.*)/routing-dsl/directives/file-upload-directives/uploadedFile.html$ $1/routing-dsl/directives/file-upload-directives/storeUploadedFile.html

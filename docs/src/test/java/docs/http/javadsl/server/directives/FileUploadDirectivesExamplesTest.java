@@ -68,34 +68,6 @@ public class FileUploadDirectivesExamplesTest extends JUnitRouteTest {
   }
 
   @Test
-  public void testUploadedFile() {
-    //#uploadedFile
-    final Route route = uploadedFile("csv", (info, file) -> {
-      // do something with the file and file metadata ...
-      if (file.delete())
-        return complete(StatusCodes.OK);
-      else
-        return complete(StatusCodes.INTERNAL_SERVER_ERROR);
-    });
-
-    Map<String, String> filenameMapping = new HashMap<>();
-    filenameMapping.put("filename", "primes.csv");
-
-    akka.http.javadsl.model.Multipart.FormData multipartForm =
-      Multiparts.createStrictFormDataFromParts(Multiparts.createFormDataBodyPartStrict("csv",
-        HttpEntities.create(ContentTypes.TEXT_PLAIN_UTF8,
-          "2,3,5\n7,11,13,17,23\n29,31,37\n"), filenameMapping));
-
-    // test:
-    testRoute(route).run(HttpRequest.POST("/")
-      .withEntity(
-        multipartForm.toEntity(BodyPartRenderer
-		  .randomBoundaryWithDefaults())))
-      .assertStatusCode(StatusCodes.OK);
-    //#uploadedFile
-  }
-
-  @Test
   public void testStoreUploadedFile() {
     //#storeUploadedFile
     final Function<FileInfo, File> temporaryDestination = (info) -> {
