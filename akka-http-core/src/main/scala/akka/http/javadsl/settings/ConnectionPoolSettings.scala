@@ -49,7 +49,7 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
 
   def withMaxConnections(n: Int): ConnectionPoolSettings = self.copyDeep(_.withMaxConnections(n), maxConnections = n)
   def withMinConnections(n: Int): ConnectionPoolSettings = self.copyDeep(_.withMinConnections(n), minConnections = n)
-  def withMaxRetries(n: Int): ConnectionPoolSettings
+  def withMaxRetries(n: Int): ConnectionPoolSettings = self.copyDeep(_.withMaxRetries(n), maxRetries = n)
   def withMaxOpenRequests(newValue: Int): ConnectionPoolSettings = self.copyDeep(_.withMaxOpenRequests(newValue), maxOpenRequests = newValue)
   /** Client-side pipelining is not currently supported, see https://github.com/akka/akka-http/issues/32 */
   def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copyDeep(_.withPipeliningLimit(newValue), pipeliningLimit = newValue)
