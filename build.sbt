@@ -335,6 +335,8 @@ lazy val docs = project("docs")
       "-Xlint:-adapted-args",
       // TODO avoid this deprecation
       "-P:silencer:globalFilters=Adaptation of argument list",
+      // Does not appear to lead to problems
+      "-P:silencer:globalFilters=The outer reference in this type test cannot be checked at run time",
     ),
     scalacOptions --= Seq(
       // Code after ??? can be considered 'dead',  but still useful for docs
