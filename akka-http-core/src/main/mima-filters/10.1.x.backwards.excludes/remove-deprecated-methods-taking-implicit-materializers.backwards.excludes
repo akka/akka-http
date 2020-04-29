@@ -1,0 +1,8 @@
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpExt.bind")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpExt.cachedHostConnectionPool")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpExt.cachedHostConnectionPoolHttps")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpExt.superPool")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpExt.singleRequest")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpExt.serverLayer")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.HttpExt.serverLayer")
