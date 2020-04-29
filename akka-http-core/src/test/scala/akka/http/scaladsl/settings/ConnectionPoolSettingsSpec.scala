@@ -76,7 +76,7 @@ class ConnectionPoolSettingsSpec extends AkkaSpec {
           |}
         """.stripMargin
 
-      val settings = ConnectionPoolSettings.withOverrides(
+      val settings = ConnectionPoolSettings(
         ConfigFactory.parseString(settingsString)
           .withFallback(ConfigFactory.defaultReference(getClass.getClassLoader)))
 
@@ -93,15 +93,9 @@ class ConnectionPoolSettingsSpec extends AkkaSpec {
       settings.forHost("scala-lang.org").maxConnections shouldEqual 36
       settings.forHost("ww.scala-lang.org").maxConnections shouldEqual 7
       settings.forHost("scala-lang.com").maxConnections shouldEqual 36
-
-      // Make sure calls to .apply instead of .withOverrides don't get overridden by config
-      ConnectionPoolSettings(
-        ConfigFactory.parseString(settingsString)
-          .withFallback(ConfigFactory.defaultReference(getClass.getClassLoader))).forHost("akka.io").maxConnections shouldEqual 7
-
     }
 
-    "disregard per host overrides when not created via forDefault method" in {
+    "allow overriding values from code" in {
       val settingsString =
         """
           |akka.http.host-connection-pool {
@@ -117,10 +111,13 @@ class ConnectionPoolSettingsSpec extends AkkaSpec {
           |}
         """.stripMargin
 
-      ConnectionPoolSettings(
-        ConfigFactory.parseString(settingsString)
-          .withFallback(ConfigFactory.defaultReference(getClass.getClassLoader))).forHost("akka.io").maxConnections shouldEqual 7
+      val settings = ConnectionPoolSettings(ConfigFactory.parseString(settingsString).withFallback(ConfigFactory.defaultReference(getClass.getClassLoader)))
+      settings.forHost("akka.io").maxConnections shouldEqual 47
+      settings.maxConnections shouldEqual 7
 
+      val settingsWithCodeOverrides = settings.withMaxConnections(42)
+      settingsWithCodeOverrides.forHost("akka.io").maxConnections shouldEqual 42
+      settingsWithCodeOverrides.maxConnections shouldEqual 42
     }
 
     def expectError(configString: String): String = Try(config(configString)) match {

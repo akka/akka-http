@@ -4,8 +4,7 @@
 
 package akka.http.scaladsl.settings
 
-import akka.actor.ActorSystem
-import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
+import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
 import akka.http.javadsl.{ settings => js }
 import akka.http.scaladsl.ClientTransport
@@ -34,12 +33,11 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   private[akka] def hostOverrides: immutable.Seq[(Regex, ConnectionPoolSettings)]
 
   /**
-   * This checks to see if there's a matching host override. `hostMap` will only ever be populated
-   * by the default connection pool in the Http extension, so user supplied connection pools will
-   * never have any overrides, so will always use the object passed explicitly
+   * This checks to see if there's a matching host override. Only one pattern should match,
+   * if there are multiple matches an arbitrary set of overrides is selected.
    */
   private[akka] def forHost(host: String): ConnectionPoolSettings =
-    hostOverrides.find(_._1.pattern.matcher(host).matches()).map(_._2).getOrElse(this)
+    hostOverrides.collectFirst { case (regex, overrides) if regex.pattern.matcher(host).matches() => overrides }.getOrElse(this)
 
   /**
    * The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used.
@@ -85,46 +83,18 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
 
 object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] {
 
-  override def apply(config: Config) = ConnectionPoolSettingsImpl(config)
-
-  /**
-   * Builds `ConnectionPoolSettings` that have the host specific overrides populated from config
-   *
-   * This is the ONLY place that a connection pool object can be created that has the ability to be configured per
-   * host, and it's ONLY used by `HttpExt.defaultConnectionPoolSettings`. The intent is NOT to let users define or use
-   * this, or even for akka internally to use this. Think of this more like a placeholder for the
-   * `defaultConnectionPoolSettings` provided in the `HttpExt.singleRequest` and other client methods instead of breaking
-   * binary compatibility by making those calls take an `Option[_]` or using `null`
-   *
-   */
-  @ApiMayChange
-  def withOverrides(system: ActorSystem): ConnectionPoolSettings = {
-    withOverrides(system.settings.config)
-  }
-
-  /**
-   * Builds `ConnectionPoolSettings` that have the host specific overrides populated from config
-   *
-   * This is the ONLY place that a connection pool object can be created that has the ability to be configured per
-   * host, and it's ONLY used by `HttpExt.defaultConnectionPoolSettings`. The intent is NOT to let users define or use
-   * this, or even for akka internally to use this. Think of this more like a placeholder for the
-   * `defaultConnectionPoolSettings` provided in the `HttpExt.singleRequest` and other client methods instead of breaking
-   * binary compatibility by making those calls take an `Option[_]` or using `null`
-   *
-   */
-  @ApiMayChange
-  def withOverrides(config: Config): ConnectionPoolSettings = {
+  override def apply(config: Config): ConnectionPoolSettingsImpl = {
     import scala.collection.JavaConverters._
 
-    val configOverrides = config.getConfigList("akka.http.host-connection-pool.per-host-override").asScala.toList.flatMap { cfg =>
+    val hostOverrides = config.getConfigList("akka.http.host-connection-pool.per-host-override").asScala.toList.flatMap { cfg =>
       cfg.root.entrySet().asScala.map { entry =>
         ConnectionPoolSettingsImpl.hostRegex(entry.getKey) ->
           ConnectionPoolSettingsImpl(entry.getValue.atPath("akka.http.host-connection-pool").withFallback(config))
       }
     }
 
-    ConnectionPoolSettingsImpl(config).copy(hostOverrides = configOverrides)
+    ConnectionPoolSettingsImpl(config).copy(hostOverrides = hostOverrides)
   }
 
-  override def apply(configOverrides: String) = ConnectionPoolSettingsImpl(configOverrides)
+  override def apply(configOverrides: String): ConnectionPoolSettingsImpl = ConnectionPoolSettingsImpl(configOverrides)
 }
