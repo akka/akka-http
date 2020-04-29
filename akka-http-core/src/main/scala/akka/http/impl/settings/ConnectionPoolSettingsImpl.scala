@@ -44,6 +44,7 @@ private[akka] final case class ConnectionPoolSettingsImpl(
     minConnections == 0 || (baseConnectionBackoff.toMillis > 0 && maxConnectionBackoff.toMillis > 10),
     "If min-connections > 0, you need to set a base-connection-backoff must be > 0 and max-connection-backoff must be > 10 millis " +
       "to avoid client pools excessively trying to open up new connections.")
+  require(hostOverrides.isEmpty || hostOverrides.forall(_._2.hostOverrides.isEmpty), "host-overrides should not be nested")
 
   override def productPrefix = "ConnectionPoolSettings"
 
@@ -93,6 +94,23 @@ private[akka] final case class ConnectionPoolSettingsImpl(
 @InternalApi
 private[akka] object ConnectionPoolSettingsImpl extends SettingsCompanionImpl[ConnectionPoolSettingsImpl]("akka.http.host-connection-pool") {
 
+  def fromSubConfig(root: Config, c: Config): ConnectionPoolSettingsImpl = {
+    new ConnectionPoolSettingsImpl(
+      c.getInt("max-connections"),
+      c.getInt("min-connections"),
+      c.getInt("max-retries"),
+      c.getInt("max-open-requests"),
+      c.getInt("pipelining-limit"),
+      c.getPotentiallyInfiniteDuration("max-connection-lifetime"),
+      c.getFiniteDuration("base-connection-backoff"),
+      c.getFiniteDuration("max-connection-backoff"),
+      c.getPotentiallyInfiniteDuration("idle-timeout"),
+      ClientConnectionSettingsImpl.fromSubConfig(root, c.getConfig("client")),
+      c getPotentiallyInfiniteDuration "response-entity-subscription-timeout",
+      List.empty
+    )
+  }
+
   private[akka] def hostRegex(pattern: String): Regex = {
     val regexPattern = if (pattern.startsWith("regex:")) {
       pattern.stripPrefix("regex:")
@@ -117,23 +135,6 @@ private[akka] object ConnectionPoolSettingsImpl extends SettingsCompanionImpl[Co
 
     p.r
 
-  }
-
-  def fromSubConfig(root: Config, c: Config): ConnectionPoolSettingsImpl = {
-    new ConnectionPoolSettingsImpl(
-      c.getInt("max-connections"),
-      c.getInt("min-connections"),
-      c.getInt("max-retries"),
-      c.getInt("max-open-requests"),
-      c.getInt("pipelining-limit"),
-      c.getPotentiallyInfiniteDuration("max-connection-lifetime"),
-      c.getFiniteDuration("base-connection-backoff"),
-      c.getFiniteDuration("max-connection-backoff"),
-      c.getPotentiallyInfiniteDuration("idle-timeout"),
-      ClientConnectionSettingsImpl.fromSubConfig(root, c.getConfig("client")),
-      c getPotentiallyInfiniteDuration "response-entity-subscription-timeout",
-      List.empty
-    )
   }
 
 }
