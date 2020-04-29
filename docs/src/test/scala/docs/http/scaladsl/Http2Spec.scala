@@ -29,23 +29,32 @@ import akka.actor.ActorSystem
 import akka.stream.Materializer
 
 object Http2Spec {
-  val asyncHandler: HttpRequest => Future[HttpResponse] = _ => Future.successful(HttpResponse(status = StatusCodes.ImATeapot))
-  val httpsServerContext: HttpsConnectionContext = ExampleHttpContexts.exampleServerContext
   implicit val system: ActorSystem = ActorSystem()
 
-  //#bindAndHandleSecure
-  Http().bindAndHandleAsync(
-    asyncHandler,
-    interface = "localhost",
-    port = 8443,
-    httpsServerContext)
-  //#bindAndHandleSecure
+  {
+    val asyncHandler: HttpRequest => Future[HttpResponse] = _ => Future.successful(HttpResponse(status = StatusCodes.ImATeapot))
+    val httpsServerContext: HttpsConnectionContext = ExampleHttpContexts.exampleServerContext
+    //#bindAndHandleSecure
+    Http().bindAndHandleAsync(
+      asyncHandler,
+      interface = "localhost",
+      port = 8443,
+      httpsServerContext)
+    //#bindAndHandleSecure
+  }
 
-  //#bindAndHandlePlain
-  Http().bindAndHandleAsync(
-    asyncHandler,
-    interface = "localhost",
-    port = 8080,
-    connectionContext = HttpConnectionContext())
-  //#bindAndHandlePlain
+  {
+    import akka.http.scaladsl.server.Route
+    import akka.http.scaladsl.server.directives.RouteDirectives.complete
+
+    val asyncHandler: HttpRequest => Future[HttpResponse] =
+      Route.asyncHandler(complete(StatusCodes.ImATeapot))
+    //#bindAndHandlePlain
+    Http().bindAndHandleAsync(
+      asyncHandler,
+      interface = "localhost",
+      port = 8080,
+      connectionContext = HttpConnectionContext())
+    //#bindAndHandlePlain
+  }
 }
