@@ -1,7 +1,7 @@
 # Routing DSL Overview
 
 The Akka HTTP @ref[Core Server API](../server-side/low-level-api.md) provides a @apidoc[Flow]- or `Function`-level interface that allows
-an application to respond to incoming HTTP requests by simply mapping requests to responses
+an application to respond to incoming HTTP requests by mapping requests to responses
 (excerpt from @ref[Low-level server side example](../server-side/low-level-api.md#http-low-level-server-side-example)):
 
 Scala
