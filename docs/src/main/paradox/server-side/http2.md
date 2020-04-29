@@ -130,7 +130,8 @@ This shows `curl` declaring it is ready to speak `h2` (the shorthand name of HTT
 
 [Application-Layer Protocol Negotiation (ALPN)](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation) is used to negotiate whether both client and server support HTTP/2.
 
-ALPN support comes with the JVM starting from version 9. If you're on a previous version of the JVM, you'll have to load a Java Agent to provide this functionality. We recommend the agent from the [Jetty](http://www.eclipse.org/jetty/) project, `jetty-alpn-agent`.
+ALPN support comes with the JVM starting from version 9 and in version 8 from update 252. If you're on a previous version of the JVM, you'll have to load a Java Agent to provide this functionality.
+We recommend to use a JVM >= 8u252. If you need to run from an older JVM, you need to use the agent from the [Jetty](https://www.eclipse.org/jetty/) project, `jetty-alpn-agent`, >= 2.0.10.
 
 ### manually
 
