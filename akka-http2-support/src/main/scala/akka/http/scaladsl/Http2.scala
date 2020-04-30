@@ -15,7 +15,7 @@ import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.TLSProtocol.{ SslTlsInbound, SslTlsOutbound }
-import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Sink, Source, TLS, TLSPlacebo, Tcp }
+import akka.stream.scaladsl.{ Flow, Keep, Sink, Source, TLS, TLSPlacebo, Tcp }
 import akka.http.scaladsl.model.headers.{ Connection, RawHeader, Upgrade, UpgradeProtocol }
 import akka.http.scaladsl.model.http2.{ Http2SettingsHeader, Http2StreamIdHeader }
 import akka.stream.{ IgnoreComplete, Materializer }
@@ -177,21 +177,8 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
     }
     val tls = TLS(() => createEngine, _ => Success(()), IgnoreComplete)
 
-    val removeEngineOnTerminate: BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] = {
-      implicit val ec = fm.executionContext
-      BidiFlow.fromFlows(
-        Flow[ByteString],
-        Flow[ByteString]
-          .watchTermination()((n, fd) => {
-            fd.onComplete(_ => eng.foreach(Http2AlpnSupport.cleanupForServer))
-            n
-          })
-      )
-    }
-
     ProtocolSwitch(_ => getChosenProtocol(), http1, http2) join
-      tls join
-      removeEngineOnTerminate
+      tls
   }
 }
 

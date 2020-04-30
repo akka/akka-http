@@ -12,13 +12,17 @@ If you find an unexpected incompatibility please let us know, so we can check wh
 
 ## Akka HTTP 10.1.11 -> 10.2.0
 
+### Jetty ALPN agent not supported any more for HTTP/2
+
+JVM support for ALPN has been backported to JDK 8u252 which is now widely available. Support for using the Jetty ALPN
+agent has been dropped in 10.2.0. HTTP/2 support therefore now requires to be run on JVM >= 8u252.
+
 ### Scalatest dependency upgraded to 3.1.0
 
 The Scalatest dependency for akka-http-testkit was upgraded to version 3.1.0. This version is incompatible with previous
 versions. This is relevant for user code if it uses methods from @scaladoc[ScalatestUtils](akka.http.scaladsl.testkit.ScalatestUtils)
 (which are in scope if your test extends from @scaladoc[ScalaTestRouteTest](akka.http.scaladsl.testkit.ScalaTestRouteTest)).
 In this case, the project itself needs to be updated to use Scalatest >= 3.1.0.
-
 
 ### Providing route settings, exception and rejection handling
 

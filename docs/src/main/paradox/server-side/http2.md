@@ -17,6 +17,10 @@ To use Akka HTTP2 Support, add the module to your project:
   version="$project.version$"
 }
 
+HTTP/2 needs support in TLS for [Application-Layer Protocol Negotiation (ALPN)](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation)
+to negotiate whether both client and server support HTTP/2. The JVM provides ALPN support starting from JDK 8u252.
+Make sure you run a JVM greater than that.
+
 ## Enable HTTP/2 support
 
 HTTP/2 can then be enabled through configuration:
@@ -125,90 +129,3 @@ $ curl -k -v https://localhost:8443
 ```
 
 This shows `curl` declaring it is ready to speak `h2` (the shorthand name of HTTP/2), but could not determine whether the server is ready to, so it fell back to HTTP/1.1. To make this negotiation work you'll have to configure ALPN as described below.
-
-## Application-Layer Protocol Negotiation (ALPN)
-
-[Application-Layer Protocol Negotiation (ALPN)](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation) is used to negotiate whether both client and server support HTTP/2.
-
-ALPN support comes with the JVM starting from version 9 and in version 8 from update 252. If you're on a previous version of the JVM, you'll have to load a Java Agent to provide this functionality.
-We recommend to use a JVM >= 8u252. If you need to run from an older JVM, you need to use the agent from the [Jetty](https://www.eclipse.org/jetty/) project, `jetty-alpn-agent`, >= 2.0.10.
-
-### manually
-
-This agent can be loaded with the `-javaagent` JVM option:
-
-@@@vars
-```
-  java -javaagent:/path/to/jetty-alpn-agent-$alpn-agent.version$.jar -jar app.jar
-```
-@@@
-
-### sbt
-
-sbt can be configured to load the agent with the [sbt-javaagent plugin](https://github.com/sbt/sbt-javaagent):
-
-@@@vars
-```
-  .enablePlugins(JavaAgent)
-  .settings(
-    javaAgents += "org.mortbay.jetty.alpn" % "jetty-alpn-agent" % "$alpn-agent.version$" % "runtime"
-  )
-```
-@@@
-
-This should automatically load the agent when running, testing, or even in distributions made with [sbt-native-package](https://github.com/sbt/sbt-native-packager).
-
-@@@ div { .group-java}
-
-### maven
-
-To configure maven to load the agent when running `mvn exec:exec`, add it as a 'runtime' dependency:
-
-@@@@vars
-```
-<dependency>
-    <groupId>org.mortbay.jetty.alpn</groupId>
-    <artifactId>jetty-alpn-agent</artifactId>
-    <version>$alpn-agent.version$</version>
-    <scope>runtime</scope>
-</dependency>
-```
-@@@@
-
-and use the `maven-dependency-plugin`:
-
-```
-<plugin>
-    <artifactId>maven-dependency-plugin</artifactId>
-    <version>2.5.1</version>
-    <executions>
-        <execution>
-            <id>getClasspathFilenames</id>
-            <goals>
-                <goal>properties</goal>
-            </goals>
-        </execution>
-     </executions>
-</plugin>
-```
-
-to add it to the `exec-maven-plugin` arguments:
-
-```
-<plugin>
-    <groupId>org.codehaus.mojo</groupId>
-    <artifactId>exec-maven-plugin</artifactId>
-    <version>1.6.0</version>
-    <configuration>
-        <executable>java</executable>
-        <arguments>
-            <argument>-javaagent:${org.mortbay.jetty.alpn:jetty-alpn-agent:jar}</argument>
-            <argument>-classpath</argument>
-            <classpath />
-            <argument>com.example.HttpServer</argument>
-        </arguments>
-    </configuration>
-</plugin>
-```
-
-@@@

@@ -17,7 +17,6 @@ object Dependencies {
   val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
   val h2specExe = "h2spec" + DependencyHelpers.exeIfWindows
   val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.zip"
-  val alpnAgentVersion = "2.0.10"
   val silencerVersion = "1.6.0"
 
   lazy val scalaTestVersion = settingKey[String]("The version of ScalaTest to use.")
@@ -52,8 +51,6 @@ object Dependencies {
 
     val hpack       = "com.twitter"                   % "hpack"                        % "1.0.2"       // ApacheV2
 
-    val alpnApi     = "org.eclipse.jetty.alpn"        % "alpn-api"                     % "1.1.3.v20160715" // ApacheV2
-
     val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.8.2"
 
     object Docs {
@@ -74,7 +71,6 @@ object Dependencies {
       val sprayJson    = Compile.sprayJson                                                                   % "test" // ApacheV2
 
       // HTTP/2
-      val alpnAgent    = "org.mortbay.jetty.alpn"      % "jetty-alpn-agent"             % alpnAgentVersion  % "test" // ApacheV2
       val h2spec       = "io.github.summerwind"        % h2specName                     % h2specVersion      % "test" from(h2specUrl) // MIT
     }
   }
@@ -102,7 +98,7 @@ object Dependencies {
 
   lazy val http = Seq()
 
-  lazy val http2 = l ++= Seq(hpack, alpnApi)
+  lazy val http2 = l ++= Seq(hpack)
 
   lazy val http2Support = l ++= Seq(Test.h2spec)
 
