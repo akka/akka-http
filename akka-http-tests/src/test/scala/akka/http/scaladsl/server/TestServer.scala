@@ -14,10 +14,89 @@ import akka.stream._
 import akka.stream.scaladsl._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.common.EntityStreamingSupport
+import akka.http.scaladsl.model.headers.{ HttpOrigin, `Access-Control-Allow-Methods`, `Access-Control-Allow-Origin` }
+import akka.http.scaladsl.server.util.ApplyConverter
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.io.StdIn
+
+object SwaggerRoute {
+  import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+
+  import spray.json.DefaultJsonProtocol._
+
+  case class ParameterSpec(
+    name: String,
+    in:   String
+  )
+  case class ResponseSpec(
+    summary: String
+  )
+  case class OperationSpec(
+    summary:    String,
+    parameters: Seq[ParameterSpec]        = Vector.empty,
+    responses:  Map[String, ResponseSpec] = Map.empty
+  )
+  case class PathSpec(
+    get:  Option[OperationSpec] = None,
+    post: Option[OperationSpec] = None,
+    put:  Option[OperationSpec] = None
+  )
+
+  case class OpenApi(
+    title:   String,
+    openapi: String,
+    paths:   Map[String, PathSpec]
+  )
+  object OpenApi {
+    implicit val paramaterSpecFormat = jsonFormat2(ParameterSpec.apply _)
+    implicit val responseSpecFormat = jsonFormat1(ResponseSpec.apply _)
+    implicit val operationSpecFormat = jsonFormat3(OperationSpec.apply _)
+    implicit val pathSpecFormat = jsonFormat3(PathSpec.apply _)
+    implicit val openApiFormat = jsonFormat3(OpenApi.apply _)
+  }
+
+  import Directives._
+  def route(forRoute: Route): Route =
+    complete(apiDescForRoute(forRoute))
+
+  private def apiDescForRoute(route: Route): OpenApi = {
+    case class RoutePath(segments: Seq[DirectiveRoute], last: Route) {
+      override def toString: String = segments.map(_.directiveName).mkString(" -> ") + " -> " + last.getClass.toString
+    }
+    def leaves(route: Route, prefix: Seq[DirectiveRoute]): Seq[RoutePath] = route match {
+      case AlternativeRoutes(alternatives) =>
+        alternatives.flatMap(leaves(_, prefix))
+      case dr: DirectiveRoute => leaves(dr.child, prefix :+ dr)
+      case last               => Vector(RoutePath(prefix, last))
+    }
+    leaves(route, Vector.empty).foreach(println)
+
+    // This is a static working example for the sample API. Ultimately, it should be possible to generate that directly from
+    // inspecting the routes
+    OpenApi(
+      "Test API",
+      "3.0.3",
+      Map(
+        "/pet" ->
+          PathSpec(
+            post = Some(OperationSpec("Add a new pet", responses = Map("200" -> ResponseSpec("Successfully added pet")))),
+            put = Some(OperationSpec("Update an existing pet", responses = Map("200" -> ResponseSpec("Successfully updated pet"))))
+          ),
+        "/pet/{petId}" ->
+          PathSpec(
+            get = Some(
+              OperationSpec(
+                "Lookup a pet by id",
+                parameters = Vector(ParameterSpec("petId", in = "path")),
+                responses = Map("200" -> ResponseSpec("Successfully found pet")))
+            )
+          )
+      )
+    )
+  }
+}
 
 object TestServer extends App {
   val testConf: Config = ConfigFactory.parseString("""
@@ -45,7 +124,7 @@ object TestServer extends App {
   }
 
   // format: OFF
-  val routes = {
+  val mainRoutes = {
     get {
       path("") {
         withRequestTimeout(1.milli, _ => HttpResponse(
@@ -94,6 +173,53 @@ object TestServer extends App {
     pathPrefix("inner")(getFromResourceDirectory("someDir"))
   }
   // format: ON
+
+  val petStoreRoutes = {
+    import DirectiveRoute._
+    import DynamicDirective.dynamic
+
+    pathPrefix("pet") {
+      concat(
+        pathEnd {
+          concat(
+            post {
+              complete("posted")
+            },
+            put {
+              complete("put")
+            }
+          )
+        },
+        path(IntNumber) { petId =>
+          concat(
+            get {
+              dynamic { implicit ctx =>
+                complete(s"Got [${petId}]")
+              }
+            },
+            delete {
+              dynamic { implicit ctx =>
+                complete(s"Deleted [${petId.value}]")
+              }
+            }
+          )
+        }
+      )
+    }
+  }
+
+  val routes = /*mainRoutes ~ */
+    respondWithHeader(`Access-Control-Allow-Origin`(HttpOrigin("http://localhost"))) {
+      petStoreRoutes ~ path("openapi") {
+        SwaggerRoute.route(petStoreRoutes)
+      } ~ options {
+        import akka.http.scaladsl.model.HttpMethods._
+        complete(HttpResponse(
+          status = 204,
+          headers = `Access-Control-Allow-Methods`(POST, PUT, DELETE, GET) :: Nil
+        ))
+      }
+    }
 
   val bindingFuture = Http().bindAndHandle(routes, interface = "0.0.0.0", port = 8080)
 
