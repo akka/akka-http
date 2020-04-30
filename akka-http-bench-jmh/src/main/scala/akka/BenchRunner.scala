@@ -6,7 +6,7 @@ import org.openjdk.jmh.runner.options.CommandLineOptions
 
 object BenchRunner {
 
-  def main(args: Array[String]) = {
+  def main(args: Array[String]): Unit = {
     import scala.collection.JavaConverters._
 
     // @formatter:off
