@@ -52,7 +52,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     import scala.concurrent.Future
 
     object WebServer {
-      def main(args: Array[String]) = {
+      def main(args: Array[String]): Unit = {
         implicit val system = ActorSystem()
         // needed for the future foreach in the end
         implicit val executionContext = system.dispatcher
@@ -223,7 +223,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
 
     object WebServer {
 
-      def main(args: Array[String]) = {
+      def main(args: Array[String]): Unit = {
         implicit val system = ActorSystem()
         // needed for the future map/flatmap in the end
         implicit val executionContext = system.dispatcher
@@ -266,7 +266,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     import scala.io.StdIn
 
     object WebServer {
-      def main(args: Array[String]) = {
+      def main(args: Array[String]): Unit = {
         implicit val system = ActorSystem()
         // needed for the future flatMap/onComplete in the end
         implicit val executionContext = system.dispatcher
@@ -307,7 +307,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     import scala.io.StdIn
 
     object WebServer {
-      def main(args: Array[String]) = {
+      def main(args: Array[String]): Unit = {
 
         implicit val system = ActorSystem("my-system")
         // needed for the future flatMap/onComplete in the end
@@ -456,7 +456,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
 
     object WebServer {
 
-      def main(args: Array[String]) = {
+      def main(args: Array[String]): Unit = {
 
         implicit val system = ActorSystem()
         // needed for the future flatMap/onComplete in the end
@@ -526,7 +526,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
       implicit val bidFormat = jsonFormat2(Bid)
       implicit val bidsFormat = jsonFormat1(Bids)
 
-      def main(args: Array[String]) = {
+      def main(args: Array[String]): Unit = {
         implicit val system = ActorSystem()
         // needed for the future flatMap/onComplete in the end
         implicit val executionContext = system.dispatcher

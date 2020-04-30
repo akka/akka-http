@@ -24,7 +24,7 @@ class WebSocketClientExampleSpec extends AnyWordSpec with Matchers with CompileO
     import scala.concurrent.Future
 
     object SingleWebSocketRequest {
-      def main(args: Array[String]) = {
+      def main(args: Array[String]): Unit = {
         implicit val system = ActorSystem()
         import system.dispatcher
 
@@ -192,7 +192,7 @@ class WebSocketClientExampleSpec extends AnyWordSpec with Matchers with CompileO
     import scala.concurrent.Future
 
     object WebSocketClientFlow {
-      def main(args: Array[String]) = {
+      def main(args: Array[String]): Unit = {
         implicit val system = ActorSystem()
         import system.dispatcher
 
