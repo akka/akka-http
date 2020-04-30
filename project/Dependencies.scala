@@ -25,7 +25,7 @@ object Dependencies {
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.12.10", "2.13.1"),
+    crossScalaVersions := Seq("2.13.1", "2.12.10"),
     scalaVersion := crossScalaVersions.value.head,
     scalaCheckVersion := System.getProperty("akka.build.scalaCheckVersion", "1.14.3"),
     scalaTestVersion := "3.1.1",
