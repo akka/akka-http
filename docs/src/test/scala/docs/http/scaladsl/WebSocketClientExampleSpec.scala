@@ -4,71 +4,11 @@
 
 package docs.http.scaladsl
 
-import com.github.ghik.silencer.silent
 import docs.CompileOnlySpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-@silent("will not be a runnable program")
 class WebSocketClientExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpec {
-
-  "singleWebSocket-request-example" in compileOnlySpec {
-    //#single-WebSocket-request
-    import akka.actor.ActorSystem
-    import akka.{ Done, NotUsed }
-    import akka.http.scaladsl.Http
-    import akka.stream.scaladsl._
-    import akka.http.scaladsl.model._
-    import akka.http.scaladsl.model.ws._
-
-    import scala.concurrent.Future
-
-    object SingleWebSocketRequest {
-      def main(args: Array[String]): Unit = {
-        implicit val system = ActorSystem()
-        import system.dispatcher
-
-        // print each incoming strict text message
-        val printSink: Sink[Message, Future[Done]] =
-          Sink.foreach {
-            case message: TextMessage.Strict =>
-              println(message.text)
-            case _ =>
-            // ignore other message types
-          }
-
-        val helloSource: Source[Message, NotUsed] =
-          Source.single(TextMessage("hello world!"))
-
-        // the Future[Done] is the materialized value of Sink.foreach
-        // and it is completed when the stream completes
-        val flow: Flow[Message, Message, Future[Done]] =
-          Flow.fromSinkAndSourceMat(printSink, helloSource)(Keep.left)
-
-        // upgradeResponse is a Future[WebSocketUpgradeResponse] that
-        // completes or fails when the connection succeeds or fails
-        // and closed is a Future[Done] representing the stream completion from above
-        val (upgradeResponse, closed) =
-          Http().singleWebSocketRequest(WebSocketRequest("ws://echo.websocket.org"), flow)
-
-        val connected = upgradeResponse.map { upgrade =>
-          // just like a regular http request we can access response status which is available via upgrade.response.status
-          // status code 101 (Switching Protocols) indicates that server support WebSockets
-          if (upgrade.response.status == StatusCodes.SwitchingProtocols) {
-            Done
-          } else {
-            throw new RuntimeException(s"Connection failed: ${upgrade.response.status}")
-          }
-        }
-
-        // in a real application you would not side effect here
-        // and handle errors more carefully
-        connected.onComplete(println)
-        closed.foreach(_ => println("closed"))
-      }
-    }
-    //#single-WebSocket-request
-  }
 
   "half-closed-WebSocket-closing-example" in compileOnlySpec {
     import akka.actor.ActorSystem
@@ -178,66 +118,6 @@ class WebSocketClientExampleSpec extends AnyWordSpec with Matchers with CompileO
             BasicHttpCredentials("johan", "correcthorsebatterystaple")))),
         flow)
     //#authorized-single-WebSocket-request
-  }
-
-  "WebSocketClient-flow-example" in compileOnlySpec {
-    //#WebSocket-client-flow
-    import akka.actor.ActorSystem
-    import akka.Done
-    import akka.http.scaladsl.Http
-    import akka.stream.scaladsl._
-    import akka.http.scaladsl.model._
-    import akka.http.scaladsl.model.ws._
-
-    import scala.concurrent.Future
-
-    object WebSocketClientFlow {
-      def main(args: Array[String]): Unit = {
-        implicit val system = ActorSystem()
-        import system.dispatcher
-
-        // Future[Done] is the materialized value of Sink.foreach,
-        // emitted when the stream completes
-        val incoming: Sink[Message, Future[Done]] =
-          Sink.foreach[Message] {
-            case message: TextMessage.Strict =>
-              println(message.text)
-            case _ =>
-            // ignore other message types
-          }
-
-        // send this as a message over the WebSocket
-        val outgoing = Source.single(TextMessage("hello world!"))
-
-        // flow to use (note: not re-usable!)
-        val webSocketFlow = Http().webSocketClientFlow(WebSocketRequest("ws://echo.websocket.org"))
-
-        // the materialized value is a tuple with
-        // upgradeResponse is a Future[WebSocketUpgradeResponse] that
-        // completes or fails when the connection succeeds or fails
-        // and closed is a Future[Done] with the stream completion from the incoming sink
-        val (upgradeResponse, closed) =
-          outgoing
-            .viaMat(webSocketFlow)(Keep.right) // keep the materialized Future[WebSocketUpgradeResponse]
-            .toMat(incoming)(Keep.both) // also keep the Future[Done]
-            .run()
-
-        // just like a regular http request we can access response status which is available via upgrade.response.status
-        // status code 101 (Switching Protocols) indicates that server support WebSockets
-        val connected = upgradeResponse.flatMap { upgrade =>
-          if (upgrade.response.status == StatusCodes.SwitchingProtocols) {
-            Future.successful(Done)
-          } else {
-            throw new RuntimeException(s"Connection failed: ${upgrade.response.status}")
-          }
-        }
-
-        // in a real application you would not side effect here
-        connected.onComplete(println)
-        closed.foreach(_ => println("closed"))
-      }
-    }
-    //#WebSocket-client-flow
   }
 
   "https-proxy-singleWebSocket-request-example" in compileOnlySpec {

@@ -5,7 +5,7 @@ an application to respond to incoming HTTP requests by mapping requests to respo
 (excerpt from @ref[Low-level server side example](../server-side/low-level-api.md#http-low-level-server-side-example)):
 
 Scala
-:  @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #low-level-server-example }
+:  @@snip [HttpServerLowLevel.scala]($test$/scala/docs/http/scaladsl/HttpServerLowLevel.scala)
 
 Java
 :  @@snip [HttpServerExampleDocTest.java]($test$/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #request-handler }
@@ -25,7 +25,7 @@ using `Route.handlerFlow` or, otherwise, the conversion is also provided implici
 Here's the complete example rewritten using the composable high-level API:
 
 Scala
-:   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #high-level-server-example }
+:   @@snip [HttpServerHighLevel.scala]($test$/scala/docs/http/scaladsl/HttpServerHighLevel.scala)
 
 Java
 :   @@snip [HighLevelServerExample.java]($test$/java/docs/http/javadsl/server/HighLevelServerExample.java) { #high-level-server-example }

@@ -73,7 +73,7 @@ The
 created using the Route DSL is then "bound" to a port to start serving HTTP requests:
 
 Scala
-:   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #minimal-routing-example }
+:   @@snip [HttpServerRoutingMinimal.scala]($test$/scala/docs/http/scaladsl/HttpServerRoutingMinimal.scala)
 
 Java
 :   @@snip [HttpServerMinimalExampleTest.java]($test$/java/docs/http/javadsl/HttpServerMinimalExampleTest.java) { #minimal-routing-example }
@@ -118,7 +118,7 @@ this case shown by two separate routes. The first route queries an asynchronous 
 saves it to the database and replies with an OK when done.
 
 Scala
-:   @@snip [SprayJsonExampleSpec.scala]($test$/scala/docs/http/scaladsl/SprayJsonExampleSpec.scala) { #second-spray-json-example }
+:   @@snip [SprayJsonExample2.scala]($test$/scala/docs/http/scaladsl/SprayJsonExample2.scala)
 
 Java
 :   @@snip [JacksonExampleTest.java]($test$/java/docs/http/javadsl/JacksonExampleTest.java) { #second-jackson-example }
@@ -140,7 +140,7 @@ body.
 Example that streams random numbers as long as the client accepts them:
 
 Scala
-:   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #stream-random-numbers }
+:   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerStreamingRandomNumbers.scala)
 
 Java
 :   @@snip [HttpServerStreamRandomNumbersTest.java]($test$/java/docs/http/javadsl/HttpServerStreamRandomNumbersTest.java) { #stream-random-numbers }
@@ -154,7 +154,7 @@ style while the second route contains a request-response interaction with an act
 as json and returned when the response arrives from the actor.
 
 Scala
-:   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #actor-interaction }
+:   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerWithActorInteraction.scala)
 
 Java
 :   @@snip [HttpServerActorInteractionExample.java]($test$/java/docs/http/javadsl/HttpServerActorInteractionExample.java) { #actor-interaction }
@@ -173,7 +173,7 @@ which is included automatically when you depend on `akka-http` but can also be u
 APIs for handling such request-responses as function calls and as a @apidoc[Flow[HttpRequest, HttpResponse, \_]] are available.
 
 Scala
-:   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #low-level-server-example }
+:   @@snip [HttpServerLowLevel.scala]($test$/scala/docs/http/scaladsl/HttpServerLowLevel.scala)
 
 Java
 :   @@snip [HttpServerLowLevelExample.java]($test$/java/docs/http/javadsl/HttpServerLowLevelExample.java) { #low-level-server-example }
@@ -189,7 +189,7 @@ handled more performantly by re-using TCP connections to the server.
 Example simple request:
 
 Scala
-:   @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #single-request-example }
+:   @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientSingleRequest.scala)
 
 Java
 :   @@snip [ClientSingleRequestExample.java]($test$/java/docs/http/javadsl/ClientSingleRequestExample.java) { #single-request-example }

@@ -47,7 +47,7 @@ HTTP response, or fail if the connection fails with an exception.
 Simple example sending a message and printing any incoming message:
 
 Scala
-:   @@snip [WebSocketClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala) { #single-WebSocket-request }
+:   @@snip [WebSocketClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/SingleWebSocketRequest.scala)
 
 Java
 :   @@snip [WebSocketClientExampleTest.java]($test$/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #single-WebSocket-request }
@@ -75,7 +75,7 @@ flow must be acquired by calling the method again.
 Simple example sending a message and printing any incoming message:
 
 Scala
-:   @@snip [WebSocketClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/WebSocketClientExampleSpec.scala) { #WebSocket-client-flow }
+:   @@snip [WebSocketClientFlow.scala]($test$/scala/docs/http/scaladsl/WebSocketClientFlow.scala)
 
 Java
 :   @@snip [WebSocketClientExampleTest.java]($test$/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #WebSocket-client-flow }

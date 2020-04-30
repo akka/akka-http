@@ -32,7 +32,7 @@ Just like in the case of the super-pool flow described above the request must ha
 ### Example
 
 Scala
-:   @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #single-request-example }
+:   @@snip [HttpClientSingleRequest.scala]($test$/scala/docs/http/scaladsl/HttpClientSingleRequest.scala)
 
 Java
 :   @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #single-request-example }
@@ -89,7 +89,7 @@ For a super-pool flow this is not the case. All requests to a super-pool must ei
 Sometimes we would like to get only headers of specific type which are sent from a server. In order to collect headers in a type safe way Akka HTTP API provides a type for each HTTP header. Here is an example for getting all cookies set by a server (`Set-Cookie` header):
 
 Scala
-:   @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #collecting-headers-example }
+:   @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientCollectingHeaders.scala)
 
 Java
 :   @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #collecting-headers-example }
