@@ -346,7 +346,7 @@ lazy val docs = project("docs")
     paradoxProperties in Compile ++= Map(
       "project.name" -> "Akka HTTP",
       "canonical.base_url" -> "https://doc.akka.io/docs/akka-http/current",
-      "akka.version" -> AkkaDependency.docs.link,
+      "akka.version" -> AkkaDependency.docs.version,
       "alpn-agent.version" -> Dependencies.alpnAgentVersion,
       "scala.binary_version" -> scalaBinaryVersion.value, // to be consistent with Akka build
       "scala.binaryVersion" -> scalaBinaryVersion.value,
@@ -356,7 +356,7 @@ lazy val docs = project("docs")
         case _                  => "cross CrossVersion.full"
       }),
       "jackson.version" -> Dependencies.jacksonVersion,
-      "extref.akka-docs.base_url" -> s"https://doc.akka.io/docs/akka/${AkkaDependency.akkaVersion}/%s",
+      "extref.akka-docs.base_url" -> s"https://doc.akka.io/docs/akka/${AkkaDependency.docs.link}/%s",
       "javadoc.akka.http.base_url" -> {
         val v = if (isSnapshot.value) "current" else version.value
         s"https://doc.akka.io/japi/akka-http/$v"

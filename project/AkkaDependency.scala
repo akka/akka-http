@@ -10,6 +10,7 @@ import Keys._
 object AkkaDependency {
 
   sealed trait Akka {
+    def version: String
     // The version to use in api/japi/docs links,
     // so 'x.y', 'x.y.z', 'current' or 'snapshot'
     def link: String
@@ -17,7 +18,9 @@ object AkkaDependency {
   case class Artifact(version: String, isSnapshot: Boolean = false) extends Akka {
     override def link = VersionNumber(version) match { case VersionNumber(Seq(x, y, _*), _, _) => s"$x.$y" }
   }
-  case class Sources(uri: String, link: String = "current") extends Akka
+  case class Sources(uri: String, link: String = "current") extends Akka {
+    def version = link
+  }
 
   def akkaDependency(defaultVersion: String): Akka = {
     Option(System.getProperty("akka.sources")) match {
