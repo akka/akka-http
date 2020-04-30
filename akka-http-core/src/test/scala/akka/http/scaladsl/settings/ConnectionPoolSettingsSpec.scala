@@ -101,9 +101,9 @@ class ConnectionPoolSettingsSpec extends AkkaSpec {
           |akka.http.host-connection-pool {
           |  max-connections = 7
           |
-          |  per-host-override : [
+          |  per-host-override = [
           |    {
-          |      "akka.io" = { # can use same things as in global `host-connection-pool` section
+          |      "akka.io" : { # can use same things as in global `host-connection-pool` section
           |        max-connections = 47
           |      }
           |    }
@@ -118,6 +118,66 @@ class ConnectionPoolSettingsSpec extends AkkaSpec {
       val settingsWithCodeOverrides = settings.withMaxConnections(42)
       settingsWithCodeOverrides.forHost("akka.io").maxConnections shouldEqual 42
       settingsWithCodeOverrides.maxConnections shouldEqual 42
+    }
+
+    "choose the first matching override when there are multiple" in {
+      val settingsString =
+        """
+          |akka.http.host-connection-pool {
+          |  min-connections = 2
+          |  max-connections = 7
+          |
+          |  per-host-override = [
+          |    {
+          |      "akka.io" : { # can use same things as in global `host-connection-pool` section
+          |        max-connections = 27
+          |      }
+          |    },
+          |    {
+          |      "*.io" : { # can use same things as in global `host-connection-pool` section
+          |        min-connections = 22
+          |        max-connections = 47
+          |      }
+          |    }
+          |  ]
+          |}
+        """.stripMargin
+
+      val settings = ConnectionPoolSettings(ConfigFactory.parseString(settingsString).withFallback(ConfigFactory.defaultReference(getClass.getClassLoader)))
+      settings.forHost("akka.io").maxConnections shouldEqual 27
+      settings.forHost("other.io").maxConnections shouldEqual 47
+      settings.forHost("akka.com").maxConnections shouldEqual 7
+      settings.maxConnections shouldEqual 7
+
+      // the '*.io' overrides are not selected, because akka.io occurs earlier:
+      settings.forHost("akka.io").minConnections shouldEqual 2
+      settings.forHost("other.io").minConnections shouldEqual 22
+      settings.forHost("akka.com").minConnections shouldEqual 2
+      settings.minConnections shouldEqual 2
+    }
+
+    "throw an error when combining multiple keys in one config object" in {
+      val settingsString =
+        """
+          |akka.http.host-connection-pool {
+          |  max-connections = 7
+          |
+          |  per-host-override = [
+          |    {
+          |      "akka.io" : { # can use same things as in global `host-connection-pool` section
+          |        max-connections = 27
+          |      }
+          |      "*.io" : { # can use same things as in global `host-connection-pool` section
+          |        max-connections = 47
+          |      }
+          |    }
+          |  ]
+          |}
+        """.stripMargin
+
+      an[IllegalArgumentException] should be thrownBy {
+        ConnectionPoolSettings(ConfigFactory.parseString(settingsString).withFallback(ConfigFactory.defaultReference(getClass.getClassLoader)))
+      }
     }
 
     def expectError(configString: String): String = Try(config(configString)) match {

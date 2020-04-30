@@ -33,8 +33,8 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   private[akka] def hostOverrides: immutable.Seq[(Regex, ConnectionPoolSettings)]
 
   /**
-   * This checks to see if there's a matching host override. Only one pattern should match,
-   * if there are multiple matches an arbitrary set of overrides is selected.
+   * This checks to see if there's a matching host override. When multiple patterns match,
+   * the first matching set of overrides is selected.
    */
   private[akka] def forHost(host: String): ConnectionPoolSettings =
     hostOverrides.collectFirst { case (regex, overrides) if regex.pattern.matcher(host).matches() => overrides }.getOrElse(this)
@@ -87,7 +87,9 @@ object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] 
     import scala.collection.JavaConverters._
 
     val hostOverrides = config.getConfigList("akka.http.host-connection-pool.per-host-override").asScala.toList.flatMap { cfg =>
-      cfg.root.entrySet().asScala.map { entry =>
+      val entries = cfg.root.entrySet().asScala
+      require(entries.size < 2, "Please specify each per-host-override in its own object. This is needed to preserve the order.")
+      entries.map { entry =>
         ConnectionPoolSettingsImpl.hostRegex(entry.getKey) ->
           ConnectionPoolSettingsImpl(entry.getValue.atPath("akka.http.host-connection-pool").withFallback(config))
       }
