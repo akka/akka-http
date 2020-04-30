@@ -48,16 +48,28 @@ sealed trait DirectiveRoute extends InspectableRoute {
 
 object DirectiveRoute {
   def wrap(implementation: Route, child: Route, directiveName: String): DirectiveRoute = implementation match {
-    case i: Impl =>
-      i.copy(child = child, directiveName = directiveName)
-    case x => Impl(x, child, directiveName)
+    case i: Impl => i.copy(child = child, directiveName = directiveName)
+    case x       => Impl(x, child, directiveName)
   }
 
   implicit def addByNameNullaryApply(directive: Directive0): Route => Route =
     inner => {
       val impl = directive.tapply(_ => inner)
-      wrap(impl, inner, directive.metaInformation.fold("<unknown>")(_.name))
+      wrap(impl, inner, directive.metaInformation.fold(s"<unknown (${directive.getClass})>")(_.name))
     }
+
+  // for some reason these seem to take precendence before Directive.addDirectiveApply
+  implicit def addDirective1Apply[T](directive: Directive1[T]): (ExtractionToken[T] => Route) => Route =
+    { innerCons =>
+      val tok = ExtractionToken.create[T]
+      val inner = innerCons(tok)
+      val real = directive.tapply {
+        case Tuple1(t) => ctx =>
+          inner(ctx.addTokenValue(tok, t))
+      }
+      DirectiveRoute.wrap(real, inner, directive.metaInformation.fold("<unknown>")(_.name))
+    }
+  // TODO: add for more parameters with sbt-boilerplate
 
   private final case class Impl(
     implementation: Route,
@@ -65,28 +77,30 @@ object DirectiveRoute {
     directiveName:  String) extends DirectiveRoute
 }
 
-sealed trait ExtractionToken[+T]
+sealed trait ExtractionToken[+T] {
+  def value(implicit ctx: ExtractionContext): T = ctx.extract(this)
+}
 object ExtractionToken {
   // syntax sugar
   implicit def autoExtract[T](token: ExtractionToken[T])(implicit ctx: ExtractionContext): T = ctx.extract(token)
+
+  def create[T]: ExtractionToken[T] = new ExtractionToken[T] {}
 }
 sealed trait ExtractionContext {
   def extract[T](token: ExtractionToken[T]): T
 }
 object DynamicDirective {
-  import Directives._
-  def dynamic: Directive1[ExtractionContext] = extractRequestContext.flatMap { ctx =>
-    provide {
+  def dynamic: (ExtractionContext => Route) => Route =
+    inner => ctx => inner {
       new ExtractionContext {
         override def extract[T](token: ExtractionToken[T]): T = ctx.tokenValue(token)
       }
-    }
-  }
+    }(ctx)
 
   implicit class AddStatic[T](d: Directive1[T]) {
     def static: Directive1[ExtractionToken[T]] =
       Directive { innerCons =>
-        val tok = new ExtractionToken[T] {}
+        val tok = ExtractionToken.create[T]
         val inner = innerCons(Tuple1(tok))
         val real = d { t => ctx =>
           inner(ctx.addTokenValue(tok, t))
