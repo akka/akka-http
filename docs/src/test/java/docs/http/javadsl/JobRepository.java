@@ -12,33 +12,29 @@ import java.util.Optional;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.*;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.*;
 
 /**
  * Actor for use with the HttpServerWithActorsSample
  */
 public class JobRepository extends AbstractBehavior<JobRepository.Command> {
-  // Definition of the a build job and its possible status values
-  interface Status {}
-
-  public static final class Successful implements Status {}
-
-  public static final class Failed implements Status {}
 
   @JsonFormat
   public static final class Job {
+    @JsonProperty("id")
     final Long id;
+    @JsonProperty("project-name")
     final String projectName;
-    final Status status;
+    @JsonProperty("status")
+    final String status;
+    @JsonProperty("duration")
     final Long duration;
 
     @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-    public Job(@JsonProperty("id") Long id, @JsonProperty("projectName") String projectName, @JsonProperty("duration") Long duration) {
-      this(id, projectName, new Successful(), duration);
+    public Job(@JsonProperty("id") Long id, @JsonProperty("project-name") String projectName, @JsonProperty("duration") Long duration) {
+      this(id, projectName, "Success", duration);
     }
-    public Job(Long id, String projectName, Status status, Long duration) {
+    public Job(Long id, String projectName, String status, Long duration) {
       this.id = id;
       this.projectName = projectName;
       this.status = status;

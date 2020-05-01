@@ -4,6 +4,13 @@
 
 package docs.http.javadsl;
 
+// Run with:
+// sbt "docs/test:runMain docs.http.javadsl.HttpServerWithActorsSample"
+
+// Example commands:
+// curl -X POST -H "Content-Type: application/json" -d "{ \"id\": 42 }" localhost:8080/jobs
+// curl localhost:8080/jobs/42
+
 //#bootstrap
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
