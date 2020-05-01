@@ -18,7 +18,6 @@ object HttpServerWithActorsSample {
     object Failed extends Status
 
     final case class Job(id: Long, projectName: String, status: Status, duration: Long)
-    final case class Jobs(jobs: Seq[Job])
 
     // Trait defining successful and failure responses
     sealed trait Response
@@ -29,7 +28,6 @@ object HttpServerWithActorsSample {
     sealed trait Command
     final case class AddJob(job: Job, replyTo: ActorRef[Response]) extends Command
     final case class GetJobById(id: Long, replyTo: ActorRef[Option[Job]]) extends Command
-    final case class GetJobByStatus(status: Status, replyTo: ActorRef[Seq[Job]]) extends Command
     final case class ClearJobs(replyTo: ActorRef[Response]) extends Command
 
     // This behavior handles all possible incoming messages and keeps the state in the function parameter
@@ -78,8 +76,6 @@ object HttpServerWithActorsSample {
     }
 
     implicit val jobFormat = jsonFormat4(Job)
-
-    implicit val jobsFormat = jsonFormat1(Jobs)
   }
   //#akka-typed-json
 
