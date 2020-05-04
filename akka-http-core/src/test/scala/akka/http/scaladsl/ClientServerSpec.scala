@@ -35,30 +35,21 @@ import akka.util.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import com.typesafe.sslconfig.ssl.{ SSLConfigSettings, SSLLooseConfig }
-import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.concurrent.Eventually.eventually
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
-class ClientServerSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with WithLogCapturing {
-  val testConf: Config = ConfigFactory.parseString("""
-    akka.loglevel = DEBUG
-    akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
-    akka.stdout-loglevel = ERROR
-    windows-connection-abort-workaround-enabled = auto
-    akka.http.server.request-timeout = infinite
-    akka.http.server.log-unencrypted-network-bytes = 200
-    akka.http.client.log-unencrypted-network-bytes = 200
-                                                   """)
-  implicit val system = ActorSystem(getClass.getSimpleName, testConf)
+class ClientServerSpec extends AkkaSpecWithMaterializer(
+  """
+     akka.http.server.request-timeout = infinite
+     akka.http.server.log-unencrypted-network-bytes = 200
+     akka.http.client.log-unencrypted-network-bytes = 200
+  """
+) with ScalaFutures {
   import system.dispatcher
-  implicit val materializer = ActorMaterializer()
-  implicit val patience = PatienceConfig(3.seconds.dilated)
 
   val testConf2: Config =
     ConfigFactory.parseString("akka.stream.materializer.subscription-timeout.timeout = 1 s")
-      .withFallback(testConf)
+      .withFallback(system.settings.config)
   val system2 = ActorSystem(getClass.getSimpleName, testConf2)
   val materializer2 = SystemMaterializer(system2).materializer
 
@@ -811,8 +802,7 @@ Host: example.com
     }
   }
 
-  override def afterAll() = {
-    TestKit.shutdownActorSystem(system)
+  override def beforeTermination() = {
     TestKit.shutdownActorSystem(system2)
   }
 
