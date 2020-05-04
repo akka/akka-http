@@ -34,7 +34,7 @@ from a background with non-"streaming first" HTTP Servers.
 This is a complete, very basic Akka HTTP application relying on the Routing DSL:
 
 Scala
-:  @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #minimal-routing-example }
+:  @@snip [HttpServerRoutingMinimal.scala]($test$/scala/docs/http/scaladsl/HttpServerRoutingMinimal.scala)
 
 Java
 :  @@snip [HttpServerMinimalExampleTest.java]($test$/java/docs/http/javadsl/HttpServerMinimalExampleTest.java) { #minimal-routing-example }
@@ -166,7 +166,7 @@ is already taken by another application, or if the port is privileged (i.e. only
 In this case the "binding future" will fail immediately, and we can react to it by listening on the @scala[`Future`]@java[`CompletionStage`]'s completion:
 
 Scala
-:  @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #binding-failure-high-level-example }
+:  @@snip [HttpServerBindingFailure.scala]($test$/scala/docs/http/scaladsl/HttpServerBindingFailure.scala)
 
 Java
 :  @@snip [HighLevelServerBindFailureExample.java]($test$/java/docs/http/javadsl/server/HighLevelServerBindFailureExample.java) { #binding-failure-high-level-example }

@@ -17,7 +17,7 @@ returned by the @scala[`Http().outgoingConnection(...)`]@java[`Http.get(system).
 Here is an example:
 
 Scala
-:  @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #outgoing-connection-example }
+:  @@snip [HttpClientOutgoingConnection.scala]($test$/scala/docs/http/scaladsl/HttpClientOutgoingConnection.scala)
 
 Java
 :  @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #outgoing-connection-example }

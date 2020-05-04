@@ -153,53 +153,6 @@ class HttpClientExampleSpec extends AnyWordSpec with Matchers with CompileOnlySp
     //#manual-entity-discard-example-2
   }
 
-  "outgoing-connection-example" in compileOnlySpec {
-    //#outgoing-connection-example
-    import akka.actor.ActorSystem
-    import akka.http.scaladsl.Http
-    import akka.http.scaladsl.model._
-    import akka.stream.scaladsl._
-
-    import scala.concurrent.Future
-    import scala.util.{ Failure, Success }
-
-    object WebClient {
-      def main(args: Array[String]): Unit = {
-        implicit val system = ActorSystem()
-        implicit val executionContext = system.dispatcher
-
-        val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
-          Http().outgoingConnection("akka.io")
-
-        def dispatchRequest(request: HttpRequest): Future[HttpResponse] =
-          // This is actually a bad idea in general. Even if the `connectionFlow` was instantiated only once above,
-          // a new connection is opened every single time, `runWith` is called. Materialization (the `runWith` call)
-          // and opening up a new connection is slow.
-          //
-          // The `outgoingConnection` API is very low-level. Use it only if you already have a `Source[HttpRequest, _]`
-          // (other than Source.single) available that you want to use to run requests on a single persistent HTTP
-          // connection.
-          //
-          // Unfortunately, this case is so uncommon, that we couldn't come up with a good example.
-          //
-          // In almost all cases it is better to use the `Http().singleRequest()` API instead.
-          Source.single(request)
-            .via(connectionFlow)
-            .runWith(Sink.head)
-
-        val responseFuture: Future[HttpResponse] = dispatchRequest(HttpRequest(uri = "/"))
-
-        responseFuture.andThen {
-          case Success(_) => println("request succeeded")
-          case Failure(_) => println("request failed")
-        }.andThen {
-          case _ => system.terminate()
-        }
-      }
-    }
-    //#outgoing-connection-example
-  }
-
   "host-level-queue-example" in compileOnlySpec {
     //#host-level-queue-example
     import scala.util.{ Failure, Success }
@@ -310,31 +263,9 @@ class HttpClientExampleSpec extends AnyWordSpec with Matchers with CompileOnlySp
   }
 
   "single-request-example" in compileOnlySpec {
-    //#single-request-example
-    import akka.actor.ActorSystem
-    import akka.http.scaladsl.Http
-    import akka.http.scaladsl.model._
-
     import scala.concurrent.Future
-    import scala.util.{ Failure, Success }
-
-    object Client {
-      def main(args: Array[String]): Unit = {
-        implicit val system = ActorSystem()
-        // needed for the future flatMap/onComplete in the end
-        implicit val executionContext = system.dispatcher
-
-        val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = "http://akka.io"))
-
-        responseFuture
-          .onComplete {
-            case Success(res) => println(res)
-            case Failure(_)   => sys.error("something wrong")
-          }
-      }
-    }
-    //#single-request-example
-
+    import akka.actor.ActorSystem
+    import akka.http.scaladsl.model._
     //#create-simple-request
     HttpRequest(uri = "https://akka.io")
 
@@ -452,32 +383,4 @@ class HttpClientExampleSpec extends AnyWordSpec with Matchers with CompileOnlySp
     //#auth-https-proxy-example-single-request
   }
 
-  "collecting_headers-example-for-single-request" in compileOnlySpec {
-    //#collecting-headers-example
-    import akka.actor.ActorSystem
-    import akka.http.scaladsl.Http
-    import akka.http.scaladsl.model.headers.`Set-Cookie`
-    import akka.http.scaladsl.model._
-
-    import scala.concurrent.ExecutionContextExecutor
-    import scala.concurrent.Future
-
-    object Client {
-      def main(args: Array[String]): Unit = {
-        implicit val system: ActorSystem = ActorSystem()
-        implicit val executionContext: ExecutionContextExecutor = system.dispatcher
-
-        val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = "http://akka.io"))
-
-        responseFuture.map {
-          case response @ HttpResponse(StatusCodes.OK, _, _, _) =>
-            val setCookies = response.headers[`Set-Cookie`]
-            println(s"Cookies set by a server: $setCookies")
-            response.discardEntityBytes()
-          case _ => sys.error("something wrong")
-        }
-      }
-    }
-    //#collecting-headers-example
-  }
 }

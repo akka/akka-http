@@ -334,9 +334,11 @@ lazy val docs = project("docs")
       // We use this for `complete`
       "-Xlint:-adapted-args",
       // TODO avoid this deprecation
-      "-P:silencer:globalFilters=Adaptation of argument list:adaptation of an empty argument list",
+      "-P:silencer:globalFilters=Adaptation of argument list;adaptation of an empty argument list",
       // Does not appear to lead to problems
       "-P:silencer:globalFilters=The outer reference in this type test cannot be checked at run time",
+      // Can be removed when we drop support for Scala 2.12
+      "-P:silencer:globalFilters=object JavaConverters in package collection is deprecated"
     ),
     scalacOptions --= Seq(
       // Code after ??? can be considered 'dead',  but still useful for docs
