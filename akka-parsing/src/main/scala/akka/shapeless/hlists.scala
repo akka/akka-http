@@ -29,7 +29,7 @@ sealed trait HList
  * @author Miles Sabin
  */
 final case class ::[+H, +T <: HList](head: H, tail: T) extends HList {
-  override def toString = head + " :: " + tail.toString
+  override def toString = head.toString + " :: " + tail.toString
 }
 
 /**

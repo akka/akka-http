@@ -40,7 +40,7 @@ sealed trait TextMessage extends akka.http.javadsl.model.ws.TextMessage with Mes
       case TextMessage.Strict(text) => Future.successful(TextMessage.Strict(text))
       case TextMessage.Streamed(textStream) => textStream
         .completionTimeout(timeout)
-        .runFold(StringBuilder.newBuilder)((b, s) => b.append(s))
+        .runFold(new StringBuilder())((b, s) => b.append(s))
         .map(b => b.toString)(fm.executionContext)
         .map(text => TextMessage.Strict(text))(fm.executionContext)
     }
