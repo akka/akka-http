@@ -24,8 +24,8 @@ import akka.util.ByteString
  */
 @InternalApi
 final private[http] class ByteStringParserInput(bytes: ByteString) extends DefaultParserInput {
+  val length: Int = bytes.size
   override def charAt(ix: Int): Char = (bytes(ix) & 0xFF).toChar
-  override def length: Int = bytes.size
   override def sliceString(start: Int, end: Int): String = bytes.slice(start, end).decodeString(StandardCharsets.ISO_8859_1)
   override def sliceCharArray(start: Int, end: Int): Array[Char] =
     StandardCharsets.ISO_8859_1.decode(bytes.slice(start, end).asByteBuffer).array()
