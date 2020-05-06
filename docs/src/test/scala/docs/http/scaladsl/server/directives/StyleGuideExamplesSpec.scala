@@ -57,6 +57,7 @@ class StyleGuideExamplesSpec extends RoutingSpec with CompileOnlySpec {
     "split" in {
       // #path-compose
       // prefer
+      // 1. First, create partial matchers (with a relative path)
       val itemRoutes: Route =
         concat(
           path("listing") {
@@ -79,6 +80,7 @@ class StyleGuideExamplesSpec extends RoutingSpec with CompileOnlySpec {
         // ...
         )
 
+      // 2. Then compose the relative routes under their corresponding path prefix
       val prefer: Route =
         concat(
           pathPrefix("item")(itemRoutes),

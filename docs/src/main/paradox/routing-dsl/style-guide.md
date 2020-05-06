@@ -2,7 +2,7 @@
 
 Akka HTTP's routing DSL is at the center of most Akka HTTP-based servers. It's where the incoming requests diverge into the different parts of the implemented services.
 
-Keeping all routing in one big structure will easily become hard to grasp and maintain. This page is tries to give a few hints for how you may want to break down the routing logic.
+Keeping all routing in one big structure will easily become hard to grasp and maintain. This page gives a few hints for how you may want to break down the routing logic.
 
 Main recommendations
 
@@ -29,7 +29,7 @@ Group routes with a `pathPrefix` where possible, use `path` for the last bit.
 Scala
 :   @@snip[snip](/docs/src/test/scala/docs/http/scaladsl/server/directives/StyleGuideExamplesSpec.scala) { #path-prefix }
 
-Create "sub-routes" independently and stich them together with their prefixes.
+Create "sub-routes" independently and stitch them together with their prefixes.
 
 Scala
 :   @@snip[snip](/docs/src/test/scala/docs/http/scaladsl/server/directives/StyleGuideExamplesSpec.scala) { #path-compose }
@@ -37,7 +37,7 @@ Scala
 
 ### Directives
 
-If you find yourself repeating certain directives in combination at lot, combine them to a new directive. Directives that extract values, always produce a tuple.
+If you find yourself repeating certain directives in combination at lot, combine them to a new directive. Directives that extract values always produce a tuple.
 
 Scala
 :   @@snip[snip](/docs/src/test/scala/docs/http/scaladsl/server/directives/StyleGuideExamplesSpec.scala) { #directives-combine }
