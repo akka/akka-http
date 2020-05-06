@@ -24,15 +24,24 @@ Keep the most static part of a route outermost (eg. the fixed path segments), en
 Scala
 :   @@snip[snip](/docs/src/test/scala/docs/http/scaladsl/server/directives/StyleGuideExamplesSpec.scala) { #path-outermost }
 
+Java
+:   @@snip[snip](/docs/src/test/java/docs/http/javadsl/server/directives/StyleGuideExamplesTest.java) { #imports #path-outermost }
+
 Group routes with a `pathPrefix` where possible, use `path` for the last bit.
 
 Scala
 :   @@snip[snip](/docs/src/test/scala/docs/http/scaladsl/server/directives/StyleGuideExamplesSpec.scala) { #path-prefix }
 
+Java
+:   @@snip[snip](/docs/src/test/java/docs/http/javadsl/server/directives/StyleGuideExamplesTest.java) { #imports #path-prefix }
+
 Create "sub-routes" independently and stitch them together with their prefixes.
 
 Scala
 :   @@snip[snip](/docs/src/test/scala/docs/http/scaladsl/server/directives/StyleGuideExamplesSpec.scala) { #path-compose }
+
+Java
+:   @@snip[snip](/docs/src/test/java/docs/http/javadsl/server/directives/StyleGuideExamplesTest.java) { #imports #path-compose }
 
 
 ### Directives
@@ -41,5 +50,8 @@ If you find yourself repeating certain directives in combination at lot, combine
 
 Scala
 :   @@snip[snip](/docs/src/test/scala/docs/http/scaladsl/server/directives/StyleGuideExamplesSpec.scala) { #directives-combine }
+
+Java
+:   @@snip[snip](/docs/src/test/java/docs/http/javadsl/server/directives/StyleGuideExamplesTest.java) { #imports-directives #directives-combine }
 
 
