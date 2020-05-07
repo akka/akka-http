@@ -208,7 +208,6 @@ lazy val http2Support = project("akka-http2-support")
     )
   }
   .enablePlugins(JavaAgent, BootstrapGenjavadoc)
-  .disablePlugins(MimaPlugin) // experimental module still
 
 lazy val httpTestkit = project("akka-http-testkit")
   .settings(commonSettings)
