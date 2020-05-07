@@ -12,7 +12,7 @@ If you find an unexpected incompatibility please let us know, so we can check wh
 
 ## Akka HTTP 10.1.11 -> 10.2.0
 
-### Jetty ALPN agent not supported any more for HTTP/2
+### HTTP/2 support requires JDK 8 update 252 or later
 
 JVM support for ALPN has been backported to JDK 8u252 which is now widely available. Support for using the Jetty ALPN
 agent has been dropped in 10.2.0. HTTP/2 support therefore now requires to be run on JVM >= 8u252.
