@@ -182,7 +182,6 @@ lazy val http2Support = project("akka-http2-support")
       (target in Test).value / h2specName / h2specExe
     }
     Seq(
-      javaAgents += Dependencies.Compile.Test.alpnAgent,
       fork in run in Test := true,
       fork in Test := true,
       sbt.Keys.connectInput in run in Test := true,
@@ -349,7 +348,6 @@ lazy val docs = project("docs")
       "project.name" -> "Akka HTTP",
       "canonical.base_url" -> "https://doc.akka.io/docs/akka-http/current",
       "akka.version" -> AkkaDependency.docs.version,
-      "alpn-agent.version" -> Dependencies.alpnAgentVersion,
       "scala.binary_version" -> scalaBinaryVersion.value, // to be consistent with Akka build
       "scala.binaryVersion" -> scalaBinaryVersion.value,
       "scaladoc.version" -> scalaVersion.value,

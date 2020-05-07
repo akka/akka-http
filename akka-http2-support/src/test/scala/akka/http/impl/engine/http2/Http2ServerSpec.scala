@@ -305,9 +305,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
       // Reproducing https://github.com/akka/akka-http/issues/2957
       "close the stream when we receive a RST after we have half-closed ourselves as well" in new WaitingForRequestData {
-        import akka.http.scaladsl.client.RequestBuilding._
         // Client sends the request, but doesn't close the stream yet. This is a bit weird, but it's whet grpcurl does ;)
-        val post = Post("/grpc.reflection.v1alpha.ServerReflection/ServerReflectionInfo")
         sendHEADERS(streamId = 1, endStream = false, endHeaders = true, encodeRequestHeaders(request))
         sendDATA(streamId = 1, endStream = false, ByteString(0, 0, 0, 0, 0x10, 0x22, 0x0e) ++ ByteString.fromString("GreeterService"))
 
