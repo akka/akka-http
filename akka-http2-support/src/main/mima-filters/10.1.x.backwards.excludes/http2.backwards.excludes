@@ -1,0 +1,17 @@
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.http2.Http2SettingsHeader.parse")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.http2.Http2AlpnSupport.cleanupForServer")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.http2.Http2AlpnSupport.jettyAlpnSupport")
+
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.impl.engine.http2.Http2StreamHandling#ReceivingData.onReset")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.http2.Http2Blueprint.framing")
+
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.engine.http2.Http2Protocol#FrameType.byId")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.engine.http2.Http2Protocol#SettingIdentifier.byId")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.http2.Http2Protocol#FrameType.isKnownId")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.http2.Http2Protocol#SettingIdentifier.isKnownId")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.http2.Http2Protocol#ErrorCode.isKnownId")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.http2.framing.Http2FrameParsing.readSettings")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.http2.framing.Http2FrameParsing.this")

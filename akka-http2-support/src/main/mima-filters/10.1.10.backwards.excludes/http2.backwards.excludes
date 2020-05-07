@@ -1,0 +1,3 @@
+# The module was experimental, so we're not interested in changes to versions before
+# 10.1.11
+ProblemFilters.exclude[Problem]("*")
