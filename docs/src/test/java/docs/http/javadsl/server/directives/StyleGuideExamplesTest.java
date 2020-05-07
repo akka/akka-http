@@ -1,7 +1,6 @@
 package docs.http.javadsl.server.directives;
 
 // #imports
-
 import static akka.http.javadsl.server.PathMatchers.*;
 import static akka.http.javadsl.server.Directives.*;
 
@@ -13,7 +12,6 @@ import akka.http.javadsl.server.Route;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import akka.http.javadsl.unmarshalling.StringUnmarshaller;
 import akka.http.javadsl.unmarshalling.StringUnmarshallers;
 
 // #imports-directives
@@ -24,18 +22,18 @@ public class StyleGuideExamplesTest {
         // #path-outermost
         // prefer
         Route prefer =
-                path(segment("item").slash("listing"), () ->
-                        get(() ->
-                                complete("")
-                        )
-                );
+            path(segment("item").slash("listing"), () ->
+                get(() ->
+                    complete("")
+                )
+            );
         // over
         Route over =
-                get(() ->
-                        path(segment("item").slash("listing"), () ->
-                                complete("")
-                        )
-                );
+            get(() ->
+                path(segment("item").slash("listing"), () ->
+                    complete("")
+                )
+            );
         // #path-outermost
     }
 
@@ -43,31 +41,31 @@ public class StyleGuideExamplesTest {
         // #path-prefix
         // prefer
         Route prefer =
-                pathPrefix("item", () ->
-                        concat(
-                                path("listing", () ->
-                                        get(() ->
-                                                complete("")
-                                        )
-                                ),
-                                path(segment("show").slash(segment()), itemId ->
-                                        get(() ->
-                                                complete("")
-                                        )
-                                )
+            pathPrefix("item", () ->
+                concat(
+                    path("listing", () ->
+                        get(() ->
+                            complete("")
                         )
-                );
+                    ),
+                    path(segment("show").slash(segment()), itemId ->
+                        get(() ->
+                            complete("")
+                        )
+                    )
+                )
+            );
         // over
         Route over = concat(
-                path(segment("item").slash("listing"), () ->
-                        get(() ->
-                                complete("")
-                        )),
-                path(segment("item").slash("show").slash(segment()), itemId ->
-                        get(() ->
-                                complete("")
-                        )
+            path(segment("item").slash("listing"), () ->
+                get(() ->
+                    complete("")
+                )),
+            path(segment("item").slash("show").slash(segment()), itemId ->
+                get(() ->
+                    complete("")
                 )
+            )
         );
         // #path-prefix
     }
@@ -77,58 +75,58 @@ public class StyleGuideExamplesTest {
         // prefer
         // 1. First, create partial matchers (with a relative path)
         Route itemRoutes =
-                concat(
-                        path("listing", () ->
-                                get(() ->
-                                        complete("")
-                                )
-                        ),
-                        path(segment("show").slash(segment()), itemId ->
-                                get(() ->
-                                        complete("")
-                                )
-                        )
-                );
+            concat(
+                path("listing", () ->
+                    get(() ->
+                        complete("")
+                    )
+                ),
+                path(segment("show").slash(segment()), itemId ->
+                    get(() ->
+                        complete("")
+                    )
+                )
+            );
 
         Route customerRoutes =
-                concat(
-                        path(segment("customer").slash(integerSegment()), customerId ->
-                                complete("")
-                        )
-                        // ...
-                );
+            concat(
+                path(integerSegment(), customerId ->
+                    complete("")
+                )
+                // ...
+            );
 
         // 2. Then compose the relative routes under their corresponding path prefix
         Route prefer =
-                concat(
-                        pathPrefix("item", () -> itemRoutes),
-                        pathPrefix("customer", () -> customerRoutes)
-                );
+            concat(
+                pathPrefix("item", () -> itemRoutes),
+                pathPrefix("customer", () -> customerRoutes)
+            );
 
         // over
         Route over = concat(
-                pathPrefix("item", () ->
-                        concat(
-                                path("listing", () ->
-                                        get(() ->
-                                                complete("")
-                                        )
-                                ),
-                                path(segment("show").slash(segment()), itemId ->
-                                        get(() ->
-                                                complete("")
-                                        )
-                                )
+            pathPrefix("item", () ->
+                concat(
+                    path("listing", () ->
+                        get(() ->
+                            complete("")
                         )
-                ),
-                pathPrefix("customer", () ->
-                        concat(
-                                path(segment("customer").slash(integerSegment()), cosumerId ->
-                                        complete("")
-                                )
-                                // ...
+                    ),
+                    path(segment("show").slash(segment()), itemId ->
+                        get(() ->
+                            complete("")
                         )
+                    )
                 )
+            ),
+            pathPrefix("customer", () ->
+                concat(
+                    path(integerSegment(), customerId ->
+                        complete("")
+                    )
+                    // ...
+                )
+            )
         );
         // #path-compose
     }
@@ -137,11 +135,11 @@ public class StyleGuideExamplesTest {
     // prefer
     Route getOrPost(Supplier<Route> inner) {
         return get(inner)
-                .orElse(post(inner));
+            .orElse(post(inner));
     }
 
-    Route withClientId(Function<Long, Route> useClientId) {
-        return parameter(StringUnmarshallers.LONG, "clientId", useClientId);
+    Route withCustomerId(Function<Long, Route> useCustomerId) {
+        return parameter(StringUnmarshallers.LONG, "customerId", useCustomerId);
     }
 
     // #directives-combine
@@ -152,71 +150,66 @@ public class StyleGuideExamplesTest {
         Supplier<Route> completeWithResponse = () -> complete("");
 
         Route prefer =
-                concat(
-                        pathPrefix("data", () ->
-                                concat(
-                                        path("customer", () ->
-                                                withClientId(
-                                                        useCustomerIdForResponse
-                                                ))
-                                        ,
-                                        path("engagement", () ->
-                                                withClientId(
-                                                        useCustomerIdForResponse
-                                                )
-                                        )
-                                )
+            concat(
+                pathPrefix("data", () ->
+                    concat(
+                        path("customer", () ->
+                            withCustomerId(useCustomerIdForResponse)
                         ),
-                        pathPrefix("pages", () ->
-                                concat(
-                                        path("page1", () ->
-                                                getOrPost(
-                                                        completeWithResponse
-                                                )
-                                        ),
-                                        path("page2", () ->
-                                                getOrPost(
-                                                        completeWithResponse
-                                                )
-                                        )
-                                )
+                        path("engagement", () ->
+                            withCustomerId(useCustomerIdForResponse)
                         )
-                );
+                    )
+                ),
+                pathPrefix("pages", () ->
+                    concat(
+                        path("page1", () ->
+                            getOrPost(completeWithResponse)
+                        ),
+                        path("page2", () ->
+                            getOrPost(completeWithResponse)
+                        )
+                    )
+                )
+            );
         // over
         Route over =
-                concat(
-                        pathPrefix("data", () ->
-                                concat(
-                                        pathPrefix("customer", () -> parameter(StringUnmarshallers.LONG, "clientId", clientId ->
-                                                complete(clientId.toString())
-                                        )),
-                                        pathPrefix("engagement", () -> parameter(StringUnmarshallers.LONG, "clientId", clientId ->
-                                                        complete(clientId.toString())
-                                                )
-                                        )
-                                )
+            concat(
+                pathPrefix("data", () ->
+                    concat(
+                        pathPrefix("customer", () ->
+                            parameter(StringUnmarshallers.LONG, "customerId", customerId ->
+                                complete(customerId.toString())
+                            )
                         ),
-                        pathPrefix("pages", () ->
-                                concat(
-                                        path("page1", () ->
-                                                concat(
-                                                        get(() ->
-                                                                complete("")
-                                                        ),
-                                                        post(() ->
-                                                                complete("")
-                                                        )
-                                                )
-                                        ),
-                                        path("page2", () ->
-                                                get(() ->
-                                                        complete("")
-                                                ).orElse(post(() ->
-                                                        complete("")))
-                                        )
-                                )
+                        pathPrefix("engagement", () ->
+                            parameter(StringUnmarshallers.LONG, "customerId", customerId ->
+                                complete(customerId.toString())
+                            )
                         )
-                );
+                    )
+                ),
+                pathPrefix("pages", () ->
+                    concat(
+                        path("page1", () ->
+                            concat(
+                                get(() ->
+                                    complete("")
+                                ),
+                                post(() ->
+                                    complete("")
+                                )
+                            )
+                        ),
+                        path("page2", () ->
+                            get(() ->
+                                complete("")
+                            ).orElse(post(() ->
+                                complete("")))
+                        )
+                    )
+                )
+            );
         // #directives-combine
     }
 }

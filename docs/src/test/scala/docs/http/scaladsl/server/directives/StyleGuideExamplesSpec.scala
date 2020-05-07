@@ -39,18 +39,19 @@ class StyleGuideExamplesSpec extends RoutingSpec with CompileOnlySpec {
           )
         }
       // over
-      val over = concat(
-        path("item" / "listing") {
-          get {
-            complete("")
+      val over: Route =
+        concat(
+          path("item" / "listing") {
+            get {
+              complete("")
+            }
+          },
+          path("item" / "show" / Segment) { itemId =>
+            get {
+              complete("")
+            }
           }
-        },
-        path("item" / "show" / Segment) { itemId =>
-          get {
-            complete("")
-          }
-        }
-      )
+        )
       // #path-prefix
     }
 
@@ -77,7 +78,7 @@ class StyleGuideExamplesSpec extends RoutingSpec with CompileOnlySpec {
           path("customer" / IntNumber) { customerId =>
             complete("")
           }
-        // ...
+          // ...
         )
 
       // 2. Then compose the relative routes under their corresponding path prefix
@@ -88,84 +89,79 @@ class StyleGuideExamplesSpec extends RoutingSpec with CompileOnlySpec {
         )
 
       // over
-      val over: Route = concat(
-        pathPrefix("item") {
-          concat(
-            path("listing") {
-              get {
+      val over: Route =
+        concat(
+          pathPrefix("item") {
+            concat(
+              path("listing") {
+                get {
+                  complete("")
+                }
+              },
+              path("show" / Segment) { itemId =>
+                get {
+                  complete("")
+                }
+              }
+            )
+          },
+          pathPrefix("customer") {
+            concat(
+              path("customer" / IntNumber) { cosumerId =>
                 complete("")
               }
-            },
-            path("show" / Segment) { itemId =>
-              get {
-                complete("")
-              }
-            }
-          )
-        },
-        pathPrefix("customer") {
-          concat(
-            path("customer" / IntNumber) { cosumerId =>
-              complete("")
-            }
-          // ...
-          )
-        }
-      )
+              // ...
+            )
+          }
+        )
       // #path-compose
     }
   }
 
   "directives" should {
     "be combined" in {
-      def completeWithReply() = complete("")
 
       // #directives-combine
+      val useCustomerIdForResponse: Long => Route = (customerId) => complete(customerId.toString)
+      val completeWithResponse: Route = complete("")
+
       // prefer
       val getOrPost: Directive0 = get | post
-      val withClientId: Directive1[(Long)] =
-        parameter("clientId".as[Long])
+      val withCustomerId: Directive1[(Long)] =
+        parameter("customerId".as[Long])
 
-      val prefer =
+      val prefer: Route =
         concat(
           pathPrefix("data") {
             concat(
               path("customer") {
-                withClientId { clientId =>
-                  completeWithReply()
-                }
+                withCustomerId(useCustomerIdForResponse)
               },
               path("engagement") {
-                withClientId { clientId =>
-                  completeWithReply()
-                }
+                withCustomerId(useCustomerIdForResponse)
               })
           },
           pathPrefix("pages") {
             concat(
               path("page1") {
-                getOrPost {
-                  completeWithReply()
-                }
+                getOrPost(completeWithResponse)
               },
               path("page2") {
-                getOrPost {
-                  completeWithReply()
-                }
+                getOrPost(completeWithResponse)
               }
             )
           }
         )
       // over
-      val over =
+      val over: Route =
         concat(
           pathPrefix("data") {
             concat(
-              (pathPrefix("customer") & parameter("clientId".as[Long])) { clientId =>
-                completeWithReply()
+              (pathPrefix("customer") & parameter("customerId".as[Long])) { customerId =>
+                useCustomerIdForResponse(customerId)
               },
-              (pathPrefix("engagement") & parameter("clientId".as[Long])) { clientId =>
-                completeWithReply()
+              (pathPrefix("engagement") & parameter("customerId".as[Long])) { customerId =>
+                useCustomerIdForResponse(customerId)
               }
             )
           },
