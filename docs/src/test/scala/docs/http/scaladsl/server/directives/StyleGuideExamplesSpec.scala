@@ -78,7 +78,7 @@ class StyleGuideExamplesSpec extends RoutingSpec with CompileOnlySpec {
           path("customer" / IntNumber) { customerId =>
             complete("")
           }
-          // ...
+        // ...
         )
 
       // 2. Then compose the relative routes under their corresponding path prefix
@@ -110,7 +110,7 @@ class StyleGuideExamplesSpec extends RoutingSpec with CompileOnlySpec {
               path("customer" / IntNumber) { cosumerId =>
                 complete("")
               }
-              // ...
+            // ...
             )
           }
         )
