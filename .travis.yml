@@ -1,3 +1,6 @@
+version: ~> 1.0
+import: scala/scala-dev:travis/default.yml
+
 language: scala
 
 scala:
@@ -11,9 +14,6 @@ git:
 before_install:
   # make comparing to origin/master work
   - git remote set-branches --add origin master && git fetch
-  # using jabba for custom jdk management
-  - curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.1/install.sh | bash && . ~/.jabba/jabba.sh
-  - jabba install adopt@1.8-0
 
 addons:
   apt:
@@ -28,11 +28,9 @@ cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt/boot
-    - $HOME/.jabba/jdk
     - $HOME/.cache/coursier
 
 script:
-  - jabba use "adopt@1.8-0"
   - java -version
   - sbt -jvm-opts .jvmopts-travis "$CMD"
 
@@ -56,6 +54,7 @@ stages:
 
 env:
   global:
+    - ADOPTOPENJDK=8
     # encrypt with: travis encrypt WHITESOURCE_PASSWORD=...
     - secure: "O3bUB/B1CusDUGTcGaMndQK2nPw+XK5GMrecQ9awLCtnX6bkqSdX18pK9l2XP8r7yR+DYyFoyknf1rJ6JiybsBrc3udNpSBBTTG+4EMAMK12kxiQmy82JEepZrD/BkGtmMhzD6X41s+J2tY0XDa6p/Xqbr2Hb+oTQ7+WXdhfwyfdrszUcEL/t1IrdI2jgh37NJlBMuoHUWOXanpVv6KR7Kfjahd34k79bbfEK/8sX4kv7YU7uZWe/UxJse1b767sbijAqInFm+3n3lxv8eqnbbaAcdTuZBYkwkf5uZcXmV/Px1xupPBt1C6k49vfogT148KxJ7CzYawAC3oZq10m8I/6NREPUpoLN6ie+K9g3P+FcvCbKju8sxaoYmxNW+V+r6B/I+mXrbpD5YHT7WpvfF9gZt3HJk3V6/+Cu9vvgrnTGkUYymTWymEGRRq5TB2Q+/IDR7Qq8XTwkzA7UwcQ3WBotVY7TQKMEp9LvILTBnP0GZiUfeq+OXzLUN7sjsaEevD1dV0ZkIeILAFDwEmzPXKlmV70+IIM+Km8uCZ4XJ6GOklnEar+zltwBdFPrcvC6Pcb77O02DeMz773Uu9PxXgdUcjsW06v0wUO+5KXB9Y+6+9SJtW0gs5BtaiUnY7d38YPoXWq9Gm+sNUnJe5NH/nBdjF/O8xqAhUgs0OPApE="
     # encrypt with: travis encrypt BINTRAY_USER=...
