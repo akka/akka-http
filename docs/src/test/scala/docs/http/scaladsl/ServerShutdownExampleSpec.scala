@@ -5,39 +5,21 @@
 package docs.http.scaladsl
 
 import akka.Done
-import akka.actor.{ClassicActorSystemProvider, CoordinatedShutdown}
+import akka.actor.CoordinatedShutdown
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.server.Directives._
 import docs.CompileOnlySpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.concurrent.duration._
 import scala.concurrent._
+import scala.concurrent.duration._
 import scala.io.StdIn
 
 class ServerShutdownExampleSpec extends AnyWordSpec with Matchers
   with CompileOnlySpec {
-
-  // #suggested
-  def addToCoordinatedShutdown(terminationGracePeriod: FiniteDuration)(binding: ServerBinding)(implicit system: ClassicActorSystemProvider): ServerBinding = {
-    val shutdown = CoordinatedShutdown(system)
-    implicit val ec = system.classicSystem.dispatcher
-    shutdown.addTask(CoordinatedShutdown.PhaseServiceUnbind, s"http-unbind-${binding.localAddress}") { () =>
-      binding.unbind()
-    }
-    shutdown.addTask(CoordinatedShutdown.PhaseServiceRequestsDone, s"http-terminate-${binding.localAddress}") { () =>
-      binding.terminate(terminationGracePeriod).map(_ => Done)
-    }
-    shutdown.addTask(CoordinatedShutdown.PhaseServiceStop, s"http-shutdown-${binding.localAddress}") { () =>
-      Http()(system).shutdownAllConnectionPools().map(_ => Done)
-    }
-    binding
-  }
-  // #suggested
 
   "mount coordinated shutdown" in compileOnlySpec {
     import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
@@ -54,12 +36,9 @@ class ServerShutdownExampleSpec extends AnyWordSpec with Matchers
       }
 
     // #suggested
-
-    // ...
-
     val bindingFuture = Http()
       .bindAndHandle(handler = routes, interface = "localhost", port = 8080)
-      .map(addToCoordinatedShutdown(terminationGracePeriod = 10.seconds))
+      .map(_.addToCoordinatedShutdown(hardTerminationDeadline = 10.seconds))
     // #suggested
 
     bindingFuture.failed.foreach { cause =>

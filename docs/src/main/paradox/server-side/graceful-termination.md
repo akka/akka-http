@@ -11,7 +11,7 @@ Akka HTTP shutdown consists mainly of three steps:
 1. close open connections (@apidoc[ServerBinding.terminat](ServerBinding))
 1. shut down connection pools (@apidoc[Http.shutdownConnectionPools](Http))
 
-These steps can be added to Akka's coordinated shutdown like this:
+This recommended sequence can be added to Akka's coordinated shutdown via @[ServerBinding.addToCoordinatedShutdown](ServerBinding) like this:
 
 Scala
 : @@snip[snip](/docs/src/test/scala/docs/http/scaladsl/ServerShutdownExampleSpec.scala) { #suggested }

@@ -999,6 +999,25 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
     def whenTerminated: Future[HttpTerminated] =
       _whenTerminated.future
 
+    /**
+     * Adds this `ServerBinding` to the actor system's coordinated shutdown, so that [[unbind]] and [[terminate]] get
+     * called appropriately before the connection pools are shut down.
+     *
+     * @param hardTerminationDeadline timeout after which all requests and connections shall be forcefully terminated
+     */
+    def addToCoordinatedShutdown(hardTerminationDeadline: FiniteDuration)(implicit system: ClassicActorSystemProvider): ServerBinding = {
+      val shutdown = CoordinatedShutdown(system)
+      shutdown.addTask(CoordinatedShutdown.PhaseServiceUnbind, s"http-unbind-${localAddress}") { () =>
+        unbind()
+      }
+      shutdown.addTask(CoordinatedShutdown.PhaseServiceRequestsDone, s"http-terminate-${localAddress}") { () =>
+        terminate(hardTerminationDeadline).map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)
+      }
+      shutdown.addTask(CoordinatedShutdown.PhaseServiceStop, s"http-shutdown-${localAddress}") { () =>
+        Http()(system).shutdownAllConnectionPools().map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)
+      }
+      this
+    }
   }
 
   /** Type used to carry meaningful information when server termination has completed successfully. */
