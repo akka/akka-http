@@ -120,13 +120,13 @@ private[http] final class BodyPartParser(
             val ix = eolConfiguration.boundaryLength
             if (eolConfiguration.isEndOfLine(input, ix)) parseHeaderLines(input, ix + eolConfiguration.eolLength)
             else if (doubleDash(input, ix)) setShouldTerminate()
-            else parsePreamble(input, 0)
-          } else parsePreamble(input, 0)
+            else parsePreamble(input)
+          } else parsePreamble(input)
         } catch {
           case NotEnoughDataException => continue(input, 0)((newInput, _) => tryParseInitialBoundary(newInput))
         }
 
-      def parsePreamble(input: ByteString, offset: Int): StateResult =
+      def parsePreamble(input: ByteString): StateResult =
         try {
           @tailrec def rec(index: Int): StateResult = {
             val needleEnd = eolConfiguration.boyerMoore.nextIndex(input, index) + eolConfiguration.needle.length
@@ -135,9 +135,9 @@ private[http] final class BodyPartParser(
             else rec(needleEnd)
           }
           eolConfiguration = eolConfiguration.defineOnce(input)
-          rec(offset)
+          rec(0)
         } catch {
-          case NotEnoughDataException => continue(input.takeRight(eolConfiguration.needle.length + eolConfiguration.eolLength), 0)(parsePreamble)
+          case NotEnoughDataException => continue(input, 0)((newInput, _) => parsePreamble(newInput))
         }
 
       @tailrec def parseHeaderLines(input: ByteString, lineStart: Int, headers: ListBuffer[HttpHeader] = ListBuffer[HttpHeader](),
@@ -340,10 +340,10 @@ private[http] object BodyPartParser {
 
     override def defineOnce(byteString: ByteString): EndOfLineConfiguration = {
       // Hypothesis: There is either CRLF or LF as EOL, no mix possible
-      val cr = '\r'.toByte
-      val lf = '\n'.toByte
-      if (byteString.contains(cr)) DefinedEndOfLineConfiguration("\r\n", boundary)
-      else if (byteString.contains(lf)) DefinedEndOfLineConfiguration("\n", boundary)
+      val crLfNeedle = ByteString(s"$boundary\r\n")
+      val lfNeedle = ByteString(s"$boundary\n")
+      if (byteString.containsSlice(crLfNeedle)) DefinedEndOfLineConfiguration("\r\n", boundary)
+      else if (byteString.containsSlice(lfNeedle)) DefinedEndOfLineConfiguration("\n", boundary)
       else this
     }
   }
