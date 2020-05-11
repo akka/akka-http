@@ -186,11 +186,7 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
   }
 
   object TildeBangArrow {
-    implicit def injectIntoRoute(implicit
-      timeout: RouteTestTimeout,
-                                 serverSettings: ServerSettings,
-                                 materializer:   Materializer
-    ): TildeBangArrow[RequestContext, Future[RouteResult]] { type Out = RouteTestResult } =
+    implicit def injectIntoRoute(implicit timeout: RouteTestTimeout, serverSettings: ServerSettings): TildeBangArrow[RequestContext, Future[RouteResult]] { type Out = RouteTestResult } =
       new TildeBangArrow[RequestContext, Future[RouteResult]] {
         type Out = RouteTestResult
         def apply(request: HttpRequest, route: Route): Out = {
@@ -204,7 +200,7 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
   }
 }
 private[http] object RouteTest {
-  def runRouteClientServer(request: HttpRequest, route: Route, serverSettings: ServerSettings)(implicit system: ActorSystem, mat: Materializer): Future[HttpResponse] = {
+  def runRouteClientServer(request: HttpRequest, route: Route, serverSettings: ServerSettings)(implicit system: ActorSystem): Future[HttpResponse] = {
     import system.dispatcher
     for {
       binding <- Http().bindAndHandle(route, "127.0.0.1", 0, settings = serverSettings)
