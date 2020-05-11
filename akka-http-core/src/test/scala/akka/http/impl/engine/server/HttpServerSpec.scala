@@ -10,6 +10,7 @@ import akka.event.LoggingAdapter
 import akka.http.ParsingErrorHandler
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util._
+import akka.http.javadsl.model
 import akka.http.scaladsl.Http.ServerLayer
 import akka.http.scaladsl.model.HttpEntity._
 import akka.http.scaladsl.model.HttpMethods._
