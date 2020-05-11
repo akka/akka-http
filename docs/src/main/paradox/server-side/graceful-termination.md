@@ -1,5 +1,33 @@
 # Graceful termination
 
+## Akka Coordinated Shutdown
+
+Coordinated shutdown is Akka's managed way of shutting down multiple modules / sub-systems (persistence, cluster, http etc)
+in a predictable and ordered fashion. For example, in a typical Akka application you will want to stop accepting new HTTP connections, and then shut down the cluster etc.
+
+Akka HTTP shutdown consists mainly of three steps:
+
+1. stop accepting new connections (@apidoc[ServerBinding.unbind](ServerBinding))
+1. close open connections (@apidoc[ServerBinding.terminat](ServerBinding))
+1. shut down connection pools (@apidoc[Http.shutdownConnectionPools](Http))
+
+These steps can be added to Akka's coordinated shutdown like this:
+
+Scala
+: @@snip[snip](/docs/src/test/scala/docs/http/scaladsl/ServerShutdownExampleSpec.scala) { #suggested }
+
+Java
+: @@snip[snip](/docs/src/test/java/docs/http/javadsl/ServerShutdownExampleTest.java) { #suggested }
+
+You may initiate the Akka shutdown via
+
+Scala
+: @@snip[snip](/docs/src/test/scala/docs/http/scaladsl/ServerShutdownExampleSpec.scala) { #shutdown }
+
+Java
+: @@snip[snip](/docs/src/test/java/docs/http/javadsl/ServerShutdownExampleTest.java) { #shutdown }
+
+
 ## Graceful termination using `ServerTerminator`
 
 Akka HTTP provides two APIs to "stop" the server, either of them are available via the
@@ -61,17 +89,3 @@ Scala
 Java
 :   @@snip [HttpServerExampleDocTest.java]($test$/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #graceful-termination }
 
-## Akka Coordinated Shutdown
-
-@@@ note
-  
-  NOT IMPLEMENTED YET.
-  
-  Coordinated shutdown support is not yet implemented in Akka HTTP; 
-  The goal is for it to invoke the graceful termination process as described above automatically when shutdown is requested.
-  See the issue [#1210](https://github.com/akka/akka-http/issues/1210) for more details.
-
-@@@
-
-Coordinated shutdown is Akka's managed way of shutting down multiple modules / sub-systems (persistence, cluster, http etc)
-in a predictable and ordered fashion. For example, in a typical Akka application you will want to stop accepting new HTTP connections, and then shut down the cluster etc. 
