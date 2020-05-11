@@ -78,7 +78,9 @@ class GracefulTerminationSpec
     }
 
     "fail chunked response streams" in new TestSetup {
-      val r1 = makeRequest()
+      val clientSystem = ActorSystem("client")
+      val r1 =
+        Http()(clientSystem).singleRequest(nextRequest, connectionContext = clientConnectionContext, settings = basePoolSettings)
 
       // reply with an infinite entity stream
       val chunks = Source
@@ -92,30 +94,34 @@ class GracefulTerminationSpec
         .runWith(TestSink.probe[ByteString])
       response.requestNext().utf8String should ===("reply1")
 
-      val termination = serverBinding.terminate(hardDeadline = 50.millis)
-      response.request(20)
-      // local testing shows the stream fails long after the 50 ms deadline
-      response.expectNext().utf8String should ===("reply2")
-      response.expectNext().utf8String should ===("reply3")
-      response.expectNext().utf8String should ===("reply4")
-      response.expectNext().utf8String should ===("reply5")
-      val e1 = response.expectEvent()
-      if (e1.isInstanceOf[OnNext[_]]) {
-        val e2 = response.expectEvent()
-        if (e2.isInstanceOf[OnNext[_]]) {
-          val e3 = response.expectEvent()
-          if (e3.isInstanceOf[OnNext[_]]) {
-            fail("the chunked entity stream is expected to fail")
-          } else if (!e3.isInstanceOf[OnError]) {
-            fail(s"the chunked entity stream is expected to fail, got $e3")
+      try {
+        val termination = serverBinding.terminate(hardDeadline = 50.millis)
+        response.request(20)
+        // local testing shows the stream fails long after the 50 ms deadline
+        response.expectNext().utf8String should ===("reply2")
+        response.expectNext().utf8String should ===("reply3")
+        response.expectNext().utf8String should ===("reply4")
+        response.expectNext().utf8String should ===("reply5")
+        val e1 = response.expectEvent()
+        if (e1.isInstanceOf[OnNext[_]]) {
+          val e2 = response.expectEvent()
+          if (e2.isInstanceOf[OnNext[_]]) {
+            val e3 = response.expectEvent()
+            if (e3.isInstanceOf[OnNext[_]]) {
+              fail("the chunked entity stream is expected to fail")
+            } else if (!e3.isInstanceOf[OnError]) {
+              fail(s"the chunked entity stream is expected to fail, got $e3")
+            }
+          } else if (!e2.isInstanceOf[OnError]) {
+            fail(s"the chunked entity stream is expected to fail, got $e2")
           }
-        } else if (!e2.isInstanceOf[OnError]) {
-          fail(s"the chunked entity stream is expected to fail, got $e2")
+        } else if (!e1.isInstanceOf[OnError]) {
+          fail(s"the chunked entity stream is expected to fail, got $e1")
         }
-      } else if (!e1.isInstanceOf[OnError]) {
-        fail(s"the chunked entity stream is expected to fail, got $e1")
+        termination.futureValue shouldBe Http.HttpServerTerminated
+      } finally {
+        TestKit.shutdownActorSystem(clientSystem)
       }
-      termination.futureValue shouldBe Http.HttpServerTerminated
     }
 
     "provide whenTerminated future that completes once server has completed termination (no connections)" in new TestSetup {
