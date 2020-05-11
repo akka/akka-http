@@ -113,7 +113,7 @@ private[http] final class PoolMasterActor extends Actor with ActorLogging {
       def track(remaining: Iterator[Future[Done]]): Unit =
         if (remaining.hasNext) remaining.next().onComplete(_ => track(remaining))
         else shutdownCompletedPromise.trySuccess(Done)
-      track(poolStatus.keys.map(_.shutdown()).toIterator)
+      track(poolStatus.keys.map(_.shutdown()).iterator)
 
     case HasBeenShutdown(pool, reason) =>
       poolInterfaces.get(pool).foreach { gateway =>
