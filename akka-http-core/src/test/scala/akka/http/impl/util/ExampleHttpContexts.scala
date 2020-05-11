@@ -5,19 +5,12 @@
 package akka.http.impl.util
 
 import java.io.InputStream
-import java.net.InetSocketAddress
-import java.security.{ KeyStore, SecureRandom }
-import java.security.cert.{ Certificate, CertificateFactory }
+import java.security.{ SecureRandom, KeyStore }
+import java.security.cert.{ CertificateFactory, Certificate }
+import javax.net.ssl.{ SSLParameters, SSLContext, TrustManagerFactory, KeyManagerFactory }
 
-import akka.actor.ActorSystem
-import javax.net.ssl.{ KeyManagerFactory, SSLContext, SSLParameters, TrustManagerFactory }
-import akka.http.scaladsl.{ ClientTransport, Http, HttpsConnectionContext }
+import akka.http.scaladsl.HttpsConnectionContext
 import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.scaladsl.settings.ClientConnectionSettings
-import akka.stream.scaladsl.Flow
-import akka.util.ByteString
-
-import scala.concurrent.Future
 
 /**
  * These are HTTPS example configurations that take key material from the resources/key folder.
@@ -69,14 +62,4 @@ object ExampleHttpContexts {
 
   def loadX509Certificate(resourceName: String): Certificate =
     CertificateFactory.getInstance("X.509").generateCertificate(resourceStream(resourceName))
-
-  /**
-   * A client transport that will rewrite the target address to a fixed address. This can be used
-   * to pretend to connect to akka.example.org which is required to connect to the example server certificate.
-   */
-  def proxyTransport(realAddress: InetSocketAddress): ClientTransport =
-    new ClientTransport {
-      override def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[Http.OutgoingConnection]] =
-        ClientTransport.TCP.connectTo(realAddress.getHostString, realAddress.getPort, settings)
-    }
 }
