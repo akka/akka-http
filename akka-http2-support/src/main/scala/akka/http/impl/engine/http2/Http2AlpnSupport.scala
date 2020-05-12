@@ -4,6 +4,7 @@
 
 package akka.http.impl.engine.http2
 
+import java.util.function.BiFunction
 import java.{ util => ju }
 
 import javax.net.ssl.SSLEngine
@@ -44,8 +45,11 @@ private[http] object Http2AlpnSupport {
           else true
         })
 
+  private type SSLEngineWithALPNSupport = {
+    def setHandshakeApplicationProtocolSelector(selector: BiFunction[SSLEngine, ju.List[String], String]): Unit
+  }
   def jdkAlpnSupport(engine: SSLEngine, setChosenProtocol: String => Unit): SSLEngine = {
-    engine.setHandshakeApplicationProtocolSelector { (engine: SSLEngine, protocols: ju.List[String]) =>
+    engine.asInstanceOf[SSLEngineWithALPNSupport].setHandshakeApplicationProtocolSelector { (engine: SSLEngine, protocols: ju.List[String]) =>
       val chosen = chooseProtocol(protocols)
       chosen.foreach(setChosenProtocol)
 
