@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package docs.http.scaladsl
+package docs.http.scaladsl.server
 
 import akka.Done
 import akka.actor.CoordinatedShutdown

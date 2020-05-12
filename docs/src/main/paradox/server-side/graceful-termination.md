@@ -7,25 +7,25 @@ in a predictable and ordered fashion. For example, in a typical Akka application
 
 Akka HTTP shutdown consists mainly of three steps:
 
-1. stop accepting new connections (@apidoc[ServerBinding.unbind](ServerBinding))
-1. close open connections (@apidoc[ServerBinding.terminat](ServerBinding))
-1. shut down connection pools (@apidoc[Http.shutdownConnectionPools](Http))
+1. stop accepting new connections (@scala[@scaladoc[ServerBinding.unbind](akka.http.scaladsl.Http.ServerBinding)]@java[@javadoc[ServerBinding.unbind](akka.http.javadsl.ServerBinding)])
+1. close open connections (@scala[@scaladoc[ServerBinding.terminate](akka.http.scaladsl.Http.ServerBinding)]@java[@javadoc[ServerBinding.terminate](akka.http.javadsl.ServerBinding)])
+1. shut down connection pools (@scala[@scaladoc[Http.shutdownAllConnectionPools](akka.http.scaladsl.HttpExt)]@java[@javadoc[Http.shutdownAllConnectionPools](akka.http.javadsl.Http)])
 
-This recommended sequence can be added to Akka's coordinated shutdown via @[ServerBinding.addToCoordinatedShutdown](ServerBinding) like this:
+This recommended sequence can be added to Akka's coordinated shutdown via @scala[@scaladoc[ServerBinding.addToCoordinatedShutdown](akka.http.scaladsl.Http.ServerBinding)]@java[@javadoc[ServerBinding.addToCoordinatedShutdown](akka.http.javadsl.ServerBinding)] like this:
 
 Scala
-: @@snip[snip](/docs/src/test/scala/docs/http/scaladsl/ServerShutdownExampleSpec.scala) { #suggested }
+: @@snip[snip](/docs/src/test/scala/docs/http/scaladsl/server/ServerShutdownExampleSpec.scala) { #suggested }
 
 Java
-: @@snip[snip](/docs/src/test/java/docs/http/javadsl/ServerShutdownExampleTest.java) { #suggested }
+: @@snip[snip](/docs/src/test/java/docs/http/javadsl/server/ServerShutdownExampleTest.java) { #suggested }
 
 You may initiate the Akka shutdown via
 
 Scala
-: @@snip[snip](/docs/src/test/scala/docs/http/scaladsl/ServerShutdownExampleSpec.scala) { #shutdown }
+: @@snip[snip](/docs/src/test/scala/docs/http/scaladsl/server/ServerShutdownExampleSpec.scala) { #shutdown }
 
 Java
-: @@snip[snip](/docs/src/test/java/docs/http/javadsl/ServerShutdownExampleTest.java) { #shutdown }
+: @@snip[snip](/docs/src/test/java/docs/http/javadsl/server/ServerShutdownExampleTest.java) { #shutdown }
 
 
 ## Graceful termination using `ServerTerminator`
