@@ -581,6 +581,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
       try {
         (1 to 10).foreach(runOnce)
       } finally server.foreach(_.unbind())
+      Http().shutdownAllConnectionPools().futureValue
     }
 
     "complete a request/response when the request side immediately closes the connection after sending the request" in Utils.assertAllStagesStopped {
@@ -639,7 +640,8 @@ Host: example.com
         .futureValue
         .entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue.utf8String shouldEqual entity
 
-      serverBinding.unbind()
+      serverBinding.unbind().futureValue
+      Http().shutdownAllConnectionPools().futureValue
     }
 
     class CloseDelimitedTLSSetup {
@@ -776,6 +778,7 @@ Host: example.com
       }
 
       Await.result(binding.unbind(), 10.seconds)
+      Http().shutdownAllConnectionPools().futureValue
     }
 
     "report idle timeout on request entity stream for stalled client" in Utils.assertAllStagesStopped {
@@ -798,7 +801,8 @@ Host: example.com
       dataProbe.expectUtf8EncodedString("test")
       dataProbe.expectError() should be(an[HttpIdleTimeoutException])
 
-      Await.result(binding.unbind(), 10.seconds)
+      binding.unbind().futureValue
+      Http().shutdownAllConnectionPools().futureValue
     }
   }
 
