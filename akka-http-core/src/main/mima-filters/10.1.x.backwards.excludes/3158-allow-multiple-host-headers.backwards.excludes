@@ -1,0 +1,3 @@
+# internal API
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.parsing.HttpResponseParser.parseHeaderLines")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.parsing.HttpMessageParser.parseHeaderLines")
