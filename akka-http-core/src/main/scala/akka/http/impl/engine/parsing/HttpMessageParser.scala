@@ -155,9 +155,9 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
           parseEntity(headers.toList, protocol, input, lineEnd, clh, cth, teh, e100c, hh, close)
 
         case h: `Content-Length` => clh match {
-          case None => parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, Some(h), cth, teh, e100c, hh)
+          case None      => parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, Some(h), cth, teh, e100c, hh)
           case Some(`h`) => parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, teh, e100c, hh)
-          case _    => failMessageStart("HTTP message must not contain more than one Content-Length header")
+          case _         => failMessageStart("HTTP message must not contain more than one Content-Length header")
         }
         case h: `Content-Type` => cth match {
           case None      => parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, clh, Some(h), teh, e100c, hh)
