@@ -132,7 +132,11 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
    * @param e100c expect 100 continue
    * @param hh host header seen
    */
-  @tailrec protected final def parseHeaderLines(input: ByteString, lineStart: Int, headers: ListBuffer[HttpHeader] = initialHeaderBuffer, headerCount: Int = 0, ch: Option[Connection] = None, clh: Option[`Content-Length`] = None, cth: Option[`Content-Type`] = None, teh: Option[`Transfer-Encoding`] = None, e100c: Boolean = false, hh: Boolean = false): StateResult =
+  @tailrec protected final def parseHeaderLines(input: ByteString, lineStart: Int, headers: ListBuffer[HttpHeader] = initialHeaderBuffer,
+                                                headerCount: Int = 0, ch: Option[Connection] = None,
+                                                clh: Option[`Content-Length`] = None, cth: Option[`Content-Type`] = None,
+                                                teh: Option[`Transfer-Encoding`] = None, e100c: Boolean = false,
+                                                hh: Boolean = false): StateResult =
     if (headerCount < settings.maxHeaderCount) {
       var lineEnd = 0
       val resultHeader =
@@ -152,7 +156,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
 
         case h: `Content-Length` => clh match {
           case None => parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, Some(h), cth, teh, e100c, hh)
-          //          case Some(`h`) => parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, teh, e100c, hh, resp)
+          case Some(`h`) => parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, teh, e100c, hh)
           case _    => failMessageStart("HTTP message must not contain more than one Content-Length header")
         }
         case h: `Content-Type` => cth match {
