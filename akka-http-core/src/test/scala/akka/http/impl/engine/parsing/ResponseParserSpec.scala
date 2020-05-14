@@ -131,6 +131,15 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends AnyFree
         closeAfterResponseCompletion shouldEqual Seq(true)
       }
 
+      "a response with duplicate host headers" in new Test {
+        """HTTP/1.0 404 Not Found
+          |Host: api.example.com
+          |Host: akka.io
+          |
+          |Foobs""" should parseTo(HttpResponse(NotFound, List(Host("api.example.com"), Host("akka.io")), "Foobs".getBytes, `HTTP/1.0`))
+        closeAfterResponseCompletion shouldEqual Seq(true)
+      }
+
       "a response with one header, no body, and no Content-Length header" in new Test {
         """HTTP/1.0 404 Not Found
           |Host: api.example.com

@@ -29,6 +29,8 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
   private[this] var contextForCurrentResponse: Option[ResponseContext] = None
   private[this] var statusCode: StatusCode = StatusCodes.OK
 
+  final override val isResponseParser = true
+
   final def createShallowCopy(): HttpResponseParser = new HttpResponseParser(settings, headerParser.createShallowCopy())
 
   final def setContextForNextResponse(responseContext: ResponseContext): Unit =

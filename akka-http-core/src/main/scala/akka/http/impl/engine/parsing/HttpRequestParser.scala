@@ -49,6 +49,7 @@ private[http] final class HttpRequestParser(
 
     override val settings = self.settings
     override val headerParser = self.headerParser.createShallowCopy()
+    override val isResponseParser = false
 
     private[this] var method: HttpMethod = _
     private[this] var uri: Uri = _

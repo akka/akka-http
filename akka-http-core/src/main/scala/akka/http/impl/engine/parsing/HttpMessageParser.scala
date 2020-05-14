@@ -45,6 +45,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
 
   protected def settings: ParserSettings
   protected def headerParser: HttpHeaderParser
+  protected def isResponseParser: Boolean
   /** invoked if the specified protocol is unknown */
   protected def onBadProtocol(): Nothing
   protected def parseMessage(input: ByteString, offset: Int): HttpMessageParser.StateResult
@@ -123,6 +124,14 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
     } else onBadProtocol
   }
 
+  /**
+   * @param ch connection header
+   * @param clh content-length
+   * @param cth content-type
+   * @param teh transfer-encoding
+   * @param e100c expect 100 continue
+   * @param hh host header seen
+   */
   @tailrec protected final def parseHeaderLines(input: ByteString, lineStart: Int, headers: ListBuffer[HttpHeader] = initialHeaderBuffer,
                                                 headerCount: Int = 0, ch: Option[Connection] = None,
                                                 clh: Option[`Content-Length`] = None, cth: Option[`Content-Type`] = None,
@@ -164,7 +173,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
           case Some(x) => parseHeaderLines(input, lineEnd, headers, headerCount, Some(x append h.tokens), clh, cth, teh, e100c, hh)
         }
         case h: Host =>
-          if (!hh) parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, teh, e100c, hh = true)
+          if (!hh || isResponseParser) parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, teh, e100c, hh = true)
           else failMessageStart("HTTP message must not contain more than one Host header")
 
         case h: Expect => parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, teh, e100c = true, hh)

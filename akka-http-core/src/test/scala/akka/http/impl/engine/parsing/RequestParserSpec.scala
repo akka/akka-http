@@ -538,6 +538,16 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeS
           ErrorInfo("HTTP message must not contain more than one Content-Length header"))
       }
 
+      "two Host headers" in new Test {
+        """GET / HTTP/1.1
+          |Host: api.example.com
+          |Host: akka.io
+          |
+          |foo""" should parseToError(
+          BadRequest,
+          ErrorInfo("HTTP message must not contain more than one Host header"))
+      }
+
       "a too-long URI" in new Test {
         "GET /2345678901234567890123456789012345678901 HTTP/1.1" should parseToError(
           UriTooLong,
