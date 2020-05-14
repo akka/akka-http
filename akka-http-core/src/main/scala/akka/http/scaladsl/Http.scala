@@ -40,7 +40,7 @@ import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
 import com.typesafe.sslconfig.ssl.ConfigSSLContextBuilder
 
 import scala.concurrent._
-import scala.util.Try
+import scala.util.{ Success, Try }
 import scala.util.control.NonFatal
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.duration.{ Duration, FiniteDuration }
@@ -511,19 +511,6 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
 
   /**
    * INTERNAL API
-   *
-   * Starts a new connection pool to the given host and configuration and returns a [[akka.stream.scaladsl.Flow]] which dispatches
-   * the requests from all its materializations across this pool.
-   * While the started host connection pool internally shuts itself down automatically after the configured idle
-   * timeout it will spin itself up again if more requests arrive from an existing or a new client flow
-   * materialization. The returned flow therefore remains usable for the full lifetime of the application.
-   *
-   * Since the underlying transport usually comprises more than a single connection the produced flow might generate
-   * responses in an order that doesn't directly match the consumed requests.
-   * For example, if two requests A and B enter the flow in that order the response for B might be produced before the
-   * response for A.
-   * In order to allow for easy response-to-request association the flow takes in a custom, opaque context
-   * object of type `T` from the application which is emitted together with the corresponding response.
    */
   @InternalApi
   private[akka] def newHostConnectionPool[T](setup: HostConnectionPoolSetup)(
@@ -555,12 +542,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    */
   def cachedHostConnectionPool[T](host: String, port: Int = 80,
                                   settings: ConnectionPoolSettings = defaultConnectionPoolSettings,
-                                  log:      LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
-    cachedHostConnectionPoolImpl(host, port, settings, log)
-
-  private[http] def cachedHostConnectionPoolImpl[T](host: String, port: Int = 80,
-                                                    settings: ConnectionPoolSettings = defaultConnectionPoolSettings,
-                                                    log:      LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
+                                  log:      LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
     val cps = ConnectionPoolSetup(settings, ConnectionContext.noEncryption(), log)
     val setup = HostConnectionPoolSetup(host, port, cps)
     cachedHostConnectionPool(setup)
@@ -578,13 +560,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   def cachedHostConnectionPoolHttps[T](host: String, port: Int = 443,
                                        connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
                                        settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
-                                       log:               LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
-    cachedHostConnectionPoolHttpsImpl(host, port, connectionContext, settings, log)
-
-  private[http] def cachedHostConnectionPoolHttpsImpl[T](host: String, port: Int = 443,
-                                                         connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
-                                                         settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
-                                                         log:               LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
+                                       log:               LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
     val cps = ConnectionPoolSetup(settings, connectionContext, log)
     val setup = HostConnectionPoolSetup(host, port, cps)
     cachedHostConnectionPool(setup)
@@ -632,13 +608,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
     settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
     log:               LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] =
-    superPoolImpl(connectionContext, settings, log)
-
-  private[http] def superPoolImpl[T](
-    connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
-    settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
-    log:               LoggingAdapter         = system.log): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] =
-    clientFlow[T](settings) { request => request -> sharedGateway(request, settings, connectionContext, log) }
+    clientFlow[T](settings)(singleRequest(_, connectionContext, settings, log))
 
   /**
    * Fires a single [[akka.http.scaladsl.model.HttpRequest]] across the (cached) host connection pool for the request's
@@ -654,21 +624,8 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
     settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
     log:               LoggingAdapter         = system.log): Future[HttpResponse] =
-    singleRequestImpl(request, connectionContext, settings, log)
-
-  /**
-   *  Dummy method to disambiguate internal usages of new singleRequest. Implementation can be moved to
-   * `singleRequest` when deprecated singleRequest method(s) are removed.
-   */
-  private[http] def singleRequestImpl(
-    request:           HttpRequest,
-    connectionContext: HttpsConnectionContext = defaultClientHttpsContext,
-    settings:          ConnectionPoolSettings = defaultConnectionPoolSettings,
-    log:               LoggingAdapter         = system.log): Future[HttpResponse] =
-    try {
-      val gateway = sharedGateway(request, settings, connectionContext, log)
-      gateway(request)
-    } catch {
+    try sharedGateway(request, settings, connectionContext, log)(request)
+    catch {
       case e: IllegalUriException => FastFuture.failed(e)
     }
 
@@ -806,18 +763,16 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   private def gatewayClientFlow[T](
     hcps:    HostConnectionPoolSetup,
     gateway: PoolGateway): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] =
-    clientFlow[T](hcps.setup.settings)(_ -> gateway)
+    clientFlow[T](hcps.setup.settings)(request => gateway(request))
       .mapMaterializedValue(_ => HostConnectionPool(hcps)(gateway))
 
-  private def clientFlow[T](settings: ConnectionPoolSettings)(f: HttpRequest => (HttpRequest, PoolGateway)): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] = {
+  private def clientFlow[T](settings: ConnectionPoolSettings)(poolInterface: HttpRequest => Future[HttpResponse]): Flow[(HttpRequest, T), (Try[HttpResponse], T), NotUsed] = {
     // a connection pool can never have more than pipeliningLimit * maxConnections requests in flight at any point
+    // FIXME: that statement is wrong since this method is used for the superPool as well which can comprise any number of target host pools.
+    // The user should keep control over how much parallelism is required.
     val parallelism = settings.pipeliningLimit * settings.maxConnections
     Flow[(HttpRequest, T)].mapAsyncUnordered(parallelism) {
-      case (request, userContext) =>
-        val (effectiveRequest, gateway) = f(request)
-        val result = Promise[(Try[HttpResponse], T)]() // TODO: simplify to `transformWith` when on Scala 2.12
-        gateway(effectiveRequest).onComplete(responseTry => result.success(responseTry -> userContext))(ExecutionContexts.sameThreadExecutionContext)
-        result.future
+      case (request, userContext) => poolInterface(request).transform(response => Success(response -> userContext))(ExecutionContexts.sameThreadExecutionContext)
     }
   }
 
