@@ -77,9 +77,9 @@ private[http] final class HttpRequestParser(
         cursor = parseRequestTarget(input, cursor)
         cursor = parseProtocol(input, cursor)
         if (byteChar(input, cursor) == '\r' && byteChar(input, cursor + 1) == '\n')
-          parseHeaderLines(input, cursor + 2)
+          parseHeaderLines(input, cursor + 2, resp = false)
         else if (byteChar(input, cursor) == '\n')
-          parseHeaderLines(input, cursor + 1)
+          parseHeaderLines(input, cursor + 1, resp = false)
         else onBadProtocol()
       } else
         // Without HTTP pipelining it's likely that buffer is exhausted after reading one message,

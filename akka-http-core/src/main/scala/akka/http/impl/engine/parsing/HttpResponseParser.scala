@@ -48,7 +48,7 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
       var cursor = parseProtocol(input, offset)
       if (byteChar(input, cursor) == ' ') {
         cursor = parseStatus(input, cursor + 1)
-        parseHeaderLines(input, cursor)
+        parseHeaderLines(input, cursor, resp = true)
       } else onBadProtocol()
     } else {
       emit(NeedNextRequestMethod)

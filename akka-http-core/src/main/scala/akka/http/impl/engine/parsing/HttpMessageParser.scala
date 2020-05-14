@@ -123,11 +123,21 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
     } else onBadProtocol
   }
 
+  /**
+   * @param ch connection header
+   * @param clh content-length
+   * @param cth content-type
+   * @param teh transfer-encoding
+   * @param e100c expect 100 continue
+   * @param hh host header seen
+   * @param resp parsing response headers
+   * @return
+   */
   @tailrec protected final def parseHeaderLines(input: ByteString, lineStart: Int, headers: ListBuffer[HttpHeader] = initialHeaderBuffer,
                                                 headerCount: Int = 0, ch: Option[Connection] = None,
                                                 clh: Option[`Content-Length`] = None, cth: Option[`Content-Type`] = None,
                                                 teh: Option[`Transfer-Encoding`] = None, e100c: Boolean = false,
-                                                hh: Boolean = false): StateResult =
+                                                hh: Boolean = false, resp: Boolean): StateResult =
     if (headerCount < settings.maxHeaderCount) {
       var lineEnd = 0
       val resultHeader =
@@ -138,7 +148,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
           case NotEnoughDataException => null
         }
       resultHeader match {
-        case null => continue(input, lineStart)(parseHeaderLinesAux(headers, headerCount, ch, clh, cth, teh, e100c, hh))
+        case null => continue(input, lineStart)(parseHeaderLinesAux(headers, headerCount, ch, clh, cth, teh, e100c, hh, resp))
 
         case EmptyHeader =>
           val close = HttpMessage.connectionCloseExpected(protocol, ch)
@@ -146,38 +156,38 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
           parseEntity(headers.toList, protocol, input, lineEnd, clh, cth, teh, e100c, hh, close)
 
         case h: `Content-Length` => clh match {
-          case None      => parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, Some(h), cth, teh, e100c, hh)
-          case Some(`h`) => parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, teh, e100c, hh)
-          case _         => failMessageStart("HTTP message must not contain more than one Content-Length header")
+          case None => parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, Some(h), cth, teh, e100c, hh, resp)
+          //          case Some(`h`) => parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, teh, e100c, hh, resp)
+          case _    => failMessageStart("HTTP message must not contain more than one Content-Length header")
         }
         case h: `Content-Type` => cth match {
-          case None      => parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, clh, Some(h), teh, e100c, hh)
-          case Some(`h`) => parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, teh, e100c, hh)
+          case None      => parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, clh, Some(h), teh, e100c, hh, resp)
+          case Some(`h`) => parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, teh, e100c, hh, resp)
           case _         => failMessageStart("HTTP message must not contain more than one Content-Type header")
         }
         case h: `Transfer-Encoding` => teh match {
-          case None    => parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, clh, cth, Some(h), e100c, hh)
-          case Some(x) => parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, Some(x append h.encodings), e100c, hh)
+          case None    => parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, clh, cth, Some(h), e100c, hh, resp)
+          case Some(x) => parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, Some(x append h.encodings), e100c, hh, resp)
         }
         case h: Connection => ch match {
-          case None    => parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, Some(h), clh, cth, teh, e100c, hh)
-          case Some(x) => parseHeaderLines(input, lineEnd, headers, headerCount, Some(x append h.tokens), clh, cth, teh, e100c, hh)
+          case None    => parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, Some(h), clh, cth, teh, e100c, hh, resp)
+          case Some(x) => parseHeaderLines(input, lineEnd, headers, headerCount, Some(x append h.tokens), clh, cth, teh, e100c, hh, resp)
         }
         case h: Host =>
-          if (!hh) parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, teh, e100c, hh = true)
+          if (!hh || resp) parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, teh, e100c, hh = true, resp)
           else failMessageStart("HTTP message must not contain more than one Host header")
 
-        case h: Expect => parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, teh, e100c = true, hh)
+        case h: Expect => parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, teh, e100c = true, hh, resp)
 
-        case h         => parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, teh, e100c, hh)
+        case h         => parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, teh, e100c, hh, resp)
       }
     } else failMessageStart(s"HTTP message contains more than the configured limit of ${settings.maxHeaderCount} headers")
 
   // work-around for compiler complaining about non-tail-recursion if we inline this method
   private def parseHeaderLinesAux(headers: ListBuffer[HttpHeader], headerCount: Int, ch: Option[Connection],
                                   clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
-                                  e100c: Boolean, hh: Boolean)(input: ByteString, lineStart: Int): StateResult =
-    parseHeaderLines(input, lineStart, headers, headerCount, ch, clh, cth, teh, e100c, hh)
+                                  e100c: Boolean, hh: Boolean, response: Boolean)(input: ByteString, lineStart: Int): StateResult =
+    parseHeaderLines(input, lineStart, headers, headerCount, ch, clh, cth, teh, e100c, hh, response)
 
   protected final def parseFixedLengthBody(
     remainingBodyBytes: Long,
