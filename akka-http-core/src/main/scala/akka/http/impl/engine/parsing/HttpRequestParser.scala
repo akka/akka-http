@@ -49,6 +49,7 @@ private[http] final class HttpRequestParser(
 
     override val settings = self.settings
     override val headerParser = self.headerParser.createShallowCopy()
+    override val isResponseParser = false
 
     private[this] var method: HttpMethod = _
     private[this] var uri: Uri = _
@@ -77,9 +78,9 @@ private[http] final class HttpRequestParser(
         cursor = parseRequestTarget(input, cursor)
         cursor = parseProtocol(input, cursor)
         if (byteChar(input, cursor) == '\r' && byteChar(input, cursor + 1) == '\n')
-          parseHeaderLines(input, cursor + 2, resp = false)
+          parseHeaderLines(input, cursor + 2)
         else if (byteChar(input, cursor) == '\n')
-          parseHeaderLines(input, cursor + 1, resp = false)
+          parseHeaderLines(input, cursor + 1)
         else onBadProtocol()
       } else
         // Without HTTP pipelining it's likely that buffer is exhausted after reading one message,
