@@ -34,6 +34,10 @@ public class ServerShutdownExampleTest {
         });
 
         // #shutdown
+        // shut down with `ActorSystemTerminateReason`
+        system.terminate();
+
+        // or define a specific reason
         final class UserInitiatedShutdown implements CoordinatedShutdown.Reason {
             @Override
             public String toString() {

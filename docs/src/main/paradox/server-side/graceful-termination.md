@@ -19,7 +19,7 @@ Scala
 Java
 : @@snip[snip](/docs/src/test/java/docs/http/javadsl/server/ServerShutdownExampleTest.java) { #suggested }
 
-You may initiate the Akka shutdown via
+You may initiate the Akka shutdown via `ActorSystem.terminate()`, or @scala[`run`] @java[`runAll`] on the `CoordinatedShutdown` extension and pass it a class implementing @apidoc[CoordinatedShutdown.Reason] for informational purposes
 
 Scala
 : @@snip[snip](/docs/src/test/scala/docs/http/scaladsl/server/ServerShutdownExampleSpec.scala) { #shutdown }
