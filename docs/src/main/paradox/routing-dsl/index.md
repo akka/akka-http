@@ -26,7 +26,6 @@ from a background with non-"streaming first" HTTP Servers.
 * [source-streaming-support](source-streaming-support.md)
 * [style](style-guide.md)
 * [testkit](testkit.md)
-* [http-app](HttpApp.md)
 
 @@@
 
@@ -57,8 +56,6 @@ Scala
 Java
 :  @@snip [HttpAppExampleTest.java]($test$/java/docs/http/javadsl/server/HttpAppExampleTest.java) { #minimal-routing-example }
 
-See @ref[HttpApp Bootstrap](HttpApp.md) for more details about setting up a server using this approach.
-
 @@@ div { .group-scala }
 
 ## Longer Example
@@ -70,6 +67,10 @@ the Routing DSL will look like:
 @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #long-routing-example }
 
 @@@
+
+## Getting started
+
+The project template in @scala[[Akka HTTP Quickstart for Scala](https://developer.lightbend.com/guides/akka-http-quickstart-scala/)]@java[[Akka HTTP Quickstart for Java](https://developer.lightbend.com/guides/akka-http-quickstart-java/)] will help you to get a working Akka HTTP server running.
 
 ## Compared with Play framework routes
 
