@@ -102,21 +102,9 @@ class GracefulTerminationSpec
         response.expectNext().utf8String should ===("reply3")
         response.expectNext().utf8String should ===("reply4")
         response.expectNext().utf8String should ===("reply5")
-        val e1 = response.expectEvent()
-        if (e1.isInstanceOf[OnNext[_]]) {
-          val e2 = response.expectEvent()
-          if (e2.isInstanceOf[OnNext[_]]) {
-            val e3 = response.expectEvent()
-            if (e3.isInstanceOf[OnNext[_]]) {
-              fail("the chunked entity stream is expected to fail")
-            } else if (!e3.isInstanceOf[OnError]) {
-              fail(s"the chunked entity stream is expected to fail, got $e3")
-            }
-          } else if (!e2.isInstanceOf[OnError]) {
-            fail(s"the chunked entity stream is expected to fail, got $e2")
-          }
-        } else if (!e1.isInstanceOf[OnError]) {
-          fail(s"the chunked entity stream is expected to fail, got $e1")
+
+        eventually {
+          response.expectEvent() shouldBe a[OnError]
         }
         termination.futureValue shouldBe Http.HttpServerTerminated
       } finally {
