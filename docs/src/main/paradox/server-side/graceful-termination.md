@@ -2,7 +2,7 @@
 
 ## Akka Coordinated Shutdown
 
-Coordinated shutdown is Akka's managed way of shutting down multiple modules / sub-systems (persistence, cluster, http etc)
+@extref[Coordinated shutdown](akka-docs:coordinated-shutdown.html) is Akka's managed way of shutting down multiple modules / sub-systems (persistence, cluster, http etc)
 in a predictable and ordered fashion. For example, in a typical Akka application you will want to stop accepting new HTTP connections, and then shut down the cluster etc.
 
 The recommended Akka HTTP server shutdown consists of two steps:

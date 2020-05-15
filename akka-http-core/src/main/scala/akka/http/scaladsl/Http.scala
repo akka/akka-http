@@ -745,6 +745,17 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   }
 
   /**
+   * Adds the connection pools to the actor system's coordinated shutdown, so that [[shutdownAllConnectionPools]] gets
+   * called before the actor system finally terminates.
+   */
+  def addClientPoolsToCoordinatedShutdown(): Unit = {
+    val shutdown = CoordinatedShutdown(system)
+    shutdown.addTask(CoordinatedShutdown.PhaseServiceRequestsDone, s"http-shutdownAllConnectionPools") { () =>
+      shutdownAllConnectionPools().map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)
+    }
+  }
+
+  /**
    * Gets the current default server-side [[ConnectionContext]] – defaults to plain HTTP.
    * Can be modified using [[setDefaultServerHttpContext]], and will then apply for servers bound after that call has completed.
    */
