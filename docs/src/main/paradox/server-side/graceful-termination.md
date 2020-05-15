@@ -5,11 +5,10 @@
 Coordinated shutdown is Akka's managed way of shutting down multiple modules / sub-systems (persistence, cluster, http etc)
 in a predictable and ordered fashion. For example, in a typical Akka application you will want to stop accepting new HTTP connections, and then shut down the cluster etc.
 
-Akka HTTP shutdown consists mainly of three steps:
+The recommended Akka HTTP server shutdown consists of two steps:
 
 1. stop accepting new connections (@scala[@scaladoc[ServerBinding.unbind](akka.http.scaladsl.Http.ServerBinding)]@java[@javadoc[ServerBinding.unbind](akka.http.javadsl.ServerBinding)])
 1. close open connections (@scala[@scaladoc[ServerBinding.terminate](akka.http.scaladsl.Http.ServerBinding)]@java[@javadoc[ServerBinding.terminate](akka.http.javadsl.ServerBinding)])
-1. shut down connection pools (@scala[@scaladoc[Http.shutdownAllConnectionPools](akka.http.scaladsl.HttpExt)]@java[@javadoc[Http.shutdownAllConnectionPools](akka.http.javadsl.Http)])
 
 This recommended sequence can be added to Akka's coordinated shutdown via @scala[@scaladoc[ServerBinding.addToCoordinatedShutdown](akka.http.scaladsl.Http.ServerBinding)]@java[@javadoc[ServerBinding.addToCoordinatedShutdown](akka.http.javadsl.ServerBinding)] like this:
 
