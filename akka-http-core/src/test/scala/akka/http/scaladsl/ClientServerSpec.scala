@@ -767,6 +767,8 @@ Host: example.com
     }
 
     "produce a useful error message when connecting to a HTTP endpoint over HTTPS" in Utils.assertAllStagesStopped {
+      // FIXME: it would be better if this wouldn't be necessary, see https://github.com/akka/akka-http/issues/3159#issuecomment-628605844
+      val settings = ConnectionPoolSettings(system).withUpdatedConnectionSettings(_.withIdleTimeout(100.millis))
       val dummyFlow = Flow[HttpRequest].map(_ => ???)
 
       val binding = Http().bindAndHandle(dummyFlow, "127.0.0.1", port = 0).futureValue
@@ -774,7 +776,7 @@ Host: example.com
 
       EventFilter.warning(pattern = "Perhaps this was an HTTPS request sent to an HTTP endpoint", occurrences = 1) intercept {
         // Test with a POST so auto-retry isn't triggered:
-        Await.ready(Http().singleRequest(HttpRequest(uri = uri, method = HttpMethods.POST)), 30.seconds)
+        Await.ready(Http().singleRequest(HttpRequest(uri = uri, method = HttpMethods.POST), settings = settings), 30.seconds)
       }
 
       Await.result(binding.unbind(), 10.seconds)
