@@ -6,3 +6,6 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.Conn
 ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.settings.ConnectionPoolSettingsImpl.unapply")
 # ConnectionPoolSettings should not be overridden
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.hostOverrides")
+# Can be abstract since this class is not for user extension
+ProblemFilters.exclude[ReversedAbstractMethodProblem]("akka.http.javadsl.settings.ConnectionPoolSettings.with*")
+ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.http.javadsl.settings.ConnectionPoolSettings.with*")

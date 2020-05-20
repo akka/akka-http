@@ -47,20 +47,20 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   @ApiMayChange
   def appendHostOverride(hostPattern: String, settings: ConnectionPoolSettings): ConnectionPoolSettings = self.copy(hostOverrides = hostOverrides :+ (ConnectionPoolSettingsImpl.hostRegex(hostPattern) -> settings.asScala))
 
-  def withMaxConnections(n: Int): ConnectionPoolSettings = self.copyDeep(_.withMaxConnections(n), maxConnections = n)
-  def withMinConnections(n: Int): ConnectionPoolSettings = self.copyDeep(_.withMinConnections(n), minConnections = n)
-  def withMaxRetries(n: Int): ConnectionPoolSettings = self.copyDeep(_.withMaxRetries(n), maxRetries = n)
-  def withMaxOpenRequests(newValue: Int): ConnectionPoolSettings = self.copyDeep(_.withMaxOpenRequests(newValue), maxOpenRequests = newValue)
+  def withMaxConnections(n: Int): ConnectionPoolSettings
+  def withMinConnections(n: Int): ConnectionPoolSettings
+  def withMaxRetries(n: Int): ConnectionPoolSettings
+  def withMaxOpenRequests(newValue: Int): ConnectionPoolSettings
   /** Client-side pipelining is not currently supported, see https://github.com/akka/akka-http/issues/32 */
-  def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copyDeep(_.withPipeliningLimit(newValue), pipeliningLimit = newValue)
-  def withBaseConnectionBackoff(newValue: FiniteDuration): ConnectionPoolSettings = self.copyDeep(_.withBaseConnectionBackoff(newValue), baseConnectionBackoff = newValue)
-  def withMaxConnectionBackoff(newValue: FiniteDuration): ConnectionPoolSettings = self.copyDeep(_.withMaxConnectionBackoff(newValue), maxConnectionBackoff = newValue)
-  def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copyDeep(_.withIdleTimeout(newValue), idleTimeout = newValue)
-  def withMaxConnectionLifetime(newValue: Duration): ConnectionPoolSettings = self.copyDeep(_.withMaxConnectionLifetime(newValue), maxConnectionLifetime = newValue)
+  def withPipeliningLimit(newValue: Int): ConnectionPoolSettings
+  def withBaseConnectionBackoff(newValue: FiniteDuration): ConnectionPoolSettings
+  def withMaxConnectionBackoff(newValue: FiniteDuration): ConnectionPoolSettings
+  def withIdleTimeout(newValue: Duration): ConnectionPoolSettings
+  def withMaxConnectionLifetime(newValue: Duration): ConnectionPoolSettings
   def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copyDeep(_.withConnectionSettings(newValue.asScala), connectionSettings = newValue.asScala)
 
   @ApiMayChange
-  def withResponseEntitySubscriptionTimeout(newValue: Duration): ConnectionPoolSettings = self.copyDeep(_.withResponseEntitySubscriptionTimeout(newValue), responseEntitySubscriptionTimeout = newValue)
+  def withResponseEntitySubscriptionTimeout(newValue: Duration): ConnectionPoolSettings
 
   def withTransport(newValue: ClientTransport): ConnectionPoolSettings = withUpdatedConnectionSettings(_.withTransport(newValue.asScala))
 }
