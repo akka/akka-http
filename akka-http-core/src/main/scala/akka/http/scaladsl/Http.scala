@@ -34,6 +34,7 @@ import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import akka.util.ManifestInfo
+import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 import com.typesafe.sslconfig.akka._
 import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
@@ -1030,6 +1031,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   def createExtension(system: ExtendedActorSystem): HttpExt =
     new HttpExt(system.settings.config getConfig "akka.http")(system)
 
+  @silent("use remote-address-attribute instead")
   @InternalApi
   private[akka] def prepareAttributes(settings: ServerSettings, incoming: Tcp.IncomingConnection) =
     if (settings.remoteAddressHeader || settings.remoteAddressAttribute) HttpAttributes.remoteAddress(incoming.remoteAddress)

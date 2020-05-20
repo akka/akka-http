@@ -35,6 +35,7 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def timeouts: ServerSettings.Timeouts
   def maxConnections: Int
   def pipeliningLimit: Int
+  @deprecated("use remote-address-attribute instead", since = "10.2.0")
   def remoteAddressHeader: Boolean
   def remoteAddressAttribute: Boolean
   def rawRequestUriHeader: Boolean

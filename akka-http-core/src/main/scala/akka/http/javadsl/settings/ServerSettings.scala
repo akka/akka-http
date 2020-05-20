@@ -30,6 +30,11 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
   def getTimeouts: ServerSettings.Timeouts
   def getMaxConnections: Int
   def getPipeliningLimit: Int
+
+  /**
+   * Deprecated since 10.2.0, use remoteAddressAttribute instead
+   */
+  @Deprecated
   def getRemoteAddressHeader: Boolean
   def getRemoteAddressAttribute: Boolean
   def getRawRequestUriHeader: Boolean

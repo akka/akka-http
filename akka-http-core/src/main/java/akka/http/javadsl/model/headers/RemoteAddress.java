@@ -7,7 +7,10 @@ package akka.http.javadsl.model.headers;
 /**
  *  Model for the `Remote-Address` header.
  *  Custom header we use for optionally transporting the peer's IP in an HTTP header.
+ *
+ *  Deprecated since 10.2.0: use the remote-header-attribute instead.
  */
+@Deprecated
 public abstract class RemoteAddress extends akka.http.scaladsl.model.HttpHeader {
     public abstract akka.http.javadsl.model.RemoteAddress address();
 
