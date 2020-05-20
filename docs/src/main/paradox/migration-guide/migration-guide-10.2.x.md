@@ -54,3 +54,13 @@ Prior to 10.2.0, when a client would perform a `HEAD` request, by default Akka H
 This can save bandwidth in some cases, but is also counter-intuitive when you actually want to explicitly handle `HEAD` requests,
  and may increase resource usage in cases where the logic behind the `GET` request is heavy. For this reason we have changed
  the default value of `akka.http.server.transparent-head-requests` to `off`, making this feature opt-in.
+
+### X-Real-Ip now takes precedence over Remote-Address in extractClientIP
+
+The @ref[extractClientIP](../routing-dsl/directives/misc-directives/extractClientIP.md) now returns the value of the
+`X-Real-Ip` header when both an`X-Real-Ip` and a `Remote-Address` header is available. This directive provides a
+'best guess' of the client IP, but in a way that allows any client to provide this address in the header. For this reason
+you should never trust this value for security purposes.
+
+When you need a secure way to get the client IP, use the @apidoc[AttributeKeys.remoteAddress](AttributeKeys) @ref[attribute](../common/http-model.md#attributes),
+or use the specific headers which are known to be set correctly by the infrastructure you do trust.

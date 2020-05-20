@@ -10,19 +10,16 @@
 
 ## Description
 
-Provides the value of `X-Forwarded-For`, `Remote-Address`, `X-Real-IP` headers or `AttributeKeys.remoteAddress` attribute as an instance of `RemoteAddress` in that order. If the value in the header first seen is an invalid IP address and the attribute is absent, this extractor will return `RemoteAddress.Unknown`.
+Provides the value of the `X-Forwarded-For` or `X-Real-IP` header.
+If neither of those is found it will fall back to the value of the synthetic `RemoteAddress` header (`akka.http.server.remote-address-header` setting is `on`)
+or the value of the @apidoc[AttributeKeys.remoteAddress](AttributeKeys) @ref[attribute](../../../common/http-model.md#attributes)  (if the `akka.http.server.remote-address-attribute` setting is `on`)
 
-The akka-http server engine adds the `Remote-Address` header to every request automatically if the respective
-setting `akka.http.server.remote-address-header` is set to `on`, and adds the `AttributeKeys.remoteAddress` attribute if the
-setting `akka.http.server.remote-address-attribute` is set to `on`. Per default both are set to `off`.
-
-@@@ note
-The setting `akka.http.server.remote-address-header` will be deprecated because the producing `Remote-Address` header is synthetic and confused,
-and will cover a real `Remote-Address` header passed by the client. If you want a direct http client IP address, please use `akka.http.server.remote-address-attribute` instead.
-@@@
+If no valid IP address is encountered, this extractor will return RemoteAddress.Unknown`.
 
 @@@ warning
-Clients can send any values in these headers. If the client is not a trusted upstream, the IP address can be malicious and by pass your security rules.
+Clients can send any values in these headers. If the client is not a trusted upstream, the IP address can be malicious.
+For sensitive operations use the @apidoc[AttributeKeys.remoteAddress](AttributeKeys) @ref[attribute](../../../common/http-model.md#attributes),
+or use the specific headers which are known to be set correctly by the infrastructure you do trust.
 @@@
 
 ## Example

@@ -22,13 +22,18 @@ class MiscDirectivesSpec extends RoutingSpec {
         extractClientIP { echoComplete }
       } ~> check { responseAs[String] shouldEqual "2.3.4.5" }
     }
-    "extract from a Remote-Address header" in {
-      Get() ~> addHeaders(`X-Real-Ip`(remoteAddress("1.2.3.4")), `Remote-Address`(remoteAddress("5.6.7.8"))) ~> {
+    "extract from a (synthetic) Remote-Address header" in {
+      Get() ~> addHeader(`Remote-Address`(remoteAddress("1.2.3.4"))) ~> {
         extractClientIP { echoComplete }
-      } ~> check { responseAs[String] shouldEqual "5.6.7.8" }
+      } ~> check { responseAs[String] shouldEqual "1.2.3.4" }
     }
     "extract from a X-Real-IP header" in {
       Get() ~> addHeader(`X-Real-Ip`(remoteAddress("1.2.3.4"))) ~> {
+        extractClientIP { echoComplete }
+      } ~> check { responseAs[String] shouldEqual "1.2.3.4" }
+    }
+    "select X-Real-Ip when both X-Real-Ip and Remote-Address headers are present" in {
+      Get() ~> addHeaders(`X-Real-Ip`(remoteAddress("1.2.3.4")), `Remote-Address`(remoteAddress("5.6.7.8"))) ~> {
         extractClientIP { echoComplete }
       } ~> check { responseAs[String] shouldEqual "1.2.3.4" }
     }
