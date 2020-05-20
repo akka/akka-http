@@ -745,17 +745,6 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   }
 
   /**
-   * Adds the connection pools to the actor system's coordinated shutdown, so that [[shutdownAllConnectionPools]] gets
-   * called before the actor system finally terminates.
-   */
-  def addClientPoolsToCoordinatedShutdown(): Unit = {
-    val shutdown = CoordinatedShutdown(system)
-    shutdown.addTask(CoordinatedShutdown.PhaseServiceRequestsDone, s"http-shutdownAllConnectionPools") { () =>
-      shutdownAllConnectionPools().map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)
-    }
-  }
-
-  /**
    * Gets the current default server-side [[ConnectionContext]] – defaults to plain HTTP.
    * Can be modified using [[setDefaultServerHttpContext]], and will then apply for servers bound after that call has completed.
    */
@@ -931,7 +920,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
      *
      * The produced [[scala.concurrent.Future]] is fulfilled when the unbinding has been completed.
      *
-     * Note: Use [[addToCoordinatedShutdown]] to add this server binding to Akka's coordinated shutdown.
+     * Note: rather than unbinding explicitly you can also use [[addToCoordinatedShutdown]] to add this task to Akka's coordinated shutdown.
      */
     def unbind(): Future[Done] =
       unbindAction().map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)
@@ -974,7 +963,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
      * Note that the termination response is configurable in [[akka.http.javadsl.settings.ServerSettings]], and by default is an `503 Service Unavailable`,
      * with an empty response entity.
      *
-     * Note: Use [[addToCoordinatedShutdown]] to add this server binding to Akka's coordinated shutdown.
+     * Note: rather than terminating explicitly you can also use [[addToCoordinatedShutdown]] to add this task to Akka's coordinated shutdown.
      *
      * @param hardDeadline timeout after which all requests and connections shall be forcefully terminated
      * @return future which completes successfully with a marker object once all connections have been terminated
@@ -1013,7 +1002,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
 
     /**
      * Adds this `ServerBinding` to the actor system's coordinated shutdown, so that [[unbind]] and [[terminate]] get
-     * called appropriately.
+     * called appropriately before the system is shut down.
      *
      * @param hardTerminationDeadline timeout after which all requests and connections shall be forcefully terminated
      */

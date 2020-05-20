@@ -114,7 +114,7 @@ class ServerBinding private[http] (delegate: akka.http.scaladsl.Http.ServerBindi
 
   /**
    * Adds this `ServerBinding` to the actor system's coordinated shutdown, so that [[unbind]] and [[terminate]] get
-   * called appropriately before the connection pools are shut down.
+   * called appropriately before the system is shut down.
    *
    * @param hardTerminationDeadline timeout after which all requests and connections shall be forcefully terminated
    */
