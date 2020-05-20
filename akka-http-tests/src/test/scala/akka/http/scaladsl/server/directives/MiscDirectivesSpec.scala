@@ -12,8 +12,11 @@ import akka.http.scaladsl.model._
 import akka.testkit._
 import headers._
 import java.net.InetAddress
-import akka.http.scaladsl.server.util.VarArgsFunction1
 
+import akka.http.scaladsl.server.util.VarArgsFunction1
+import com.github.ghik.silencer.silent
+
+@silent("use remote-address-attribute instead")
 class MiscDirectivesSpec extends RoutingSpec {
 
   "the extractClientIP directive" should {
