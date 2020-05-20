@@ -64,3 +64,10 @@ you should never trust this value for security purposes.
 
 When you need a secure way to get the client IP, use the @apidoc[AttributeKeys.remoteAddress](AttributeKeys) @ref[attribute](../common/http-model.md#attributes),
 or use the specific headers which are known to be set correctly by the infrastructure you do trust.
+
+### max-content-length
+
+The `max-content-length` setting can no longer be set on `akka.http.parsing`, and instead
+must now be set explicitly on `akka.http.client.parsing` and/or `akka.http.server.parsing`.
+The default for `akka.http.client.parsing.max-content-length` has been changed from `8m`
+to `infinite`.
