@@ -405,7 +405,7 @@ final class HttpRequest(
     case _ => false
   }
 
-  override def toString = s"""HttpRequest(${_1},${_2},${redactedHeaders},${_4},${_5})"""
+  override def toString = s"""HttpRequest(${_1},${_2},${_3},${_4},${_5})"""
 
   // name-based unapply accessors
   def _1 = method
@@ -413,8 +413,6 @@ final class HttpRequest(
   def _3 = headers
   def _4 = entity
   def _5 = protocol
-
-  private def redactedHeaders = headers.map(_.safeToString)
 
 }
 
@@ -572,15 +570,13 @@ final class HttpResponse(
     result
   }
 
-  override def toString = s"""HttpResponse(${_1},${redactedHeaders},${_3},${_4})"""
+  override def toString = s"""HttpResponse(${_1},${_2},${_3},${_4})"""
 
   // name-based unapply accessors
   def _1 = this.status
   def _2 = this.headers
   def _3 = this.entity
   def _4 = this.protocol
-
-  private def redactedHeaders = headers.map(_.safeToString)
 
 }
 

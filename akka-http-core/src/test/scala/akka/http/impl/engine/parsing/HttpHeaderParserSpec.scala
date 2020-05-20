@@ -229,7 +229,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
           port = nextRandomInt(1000, 10000))
       }
       randomHostHeaders.take(300).foldLeft(0) {
-        case (acc, header) => acc + parseAndCache(header.toString + s"${newLine}x", header)
+        case (acc, header) => acc + parseAndCache(header.unsafeToString + s"${newLine}x", header)
       } should be < 300 // number of cache hits is smaller headers successfully parsed
     }
 

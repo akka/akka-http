@@ -57,7 +57,7 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
       "Accept-Charset: latin1, UTf-16; q=0, *;q=0.8" =!=
         `Accept-Charset`(`ISO-8859-1`, `UTF-16` withQValue 0, HttpCharsetRange.`*` withQValue 0.8).renderedTo(
           "ISO-8859-1, UTF-16;q=0.0, *;q=0.8")
-      `Accept-Charset`(`UTF-16` withQValue 0.234567).toString shouldEqual "Accept-Charset: UTF-16;q=0.235"
+      `Accept-Charset`(`UTF-16` withQValue 0.234567).unsafeToString shouldEqual "Accept-Charset: UTF-16;q=0.235"
       "Accept-Charset: UTF-16, unsupported42" =!= `Accept-Charset`(`UTF-16`, HttpCharset.custom("unsupported42"))
     }
 
@@ -778,7 +778,7 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
         val headerParserSettings = HeaderParser.Settings(customMediaTypes = customMediaTypes)
         val header = `Content-Type`(contentType)
         HttpHeader.parse("content-type", headerValue, headerParserSettings) shouldEqual ParsingResult.Ok(header, Nil)
-        header.toString shouldEqual s"Content-Type: $headerValue"
+        header.unsafeToString shouldEqual s"Content-Type: $headerValue"
       }
 
       checkContentType("application/json", ContentType.WithMissingCharset(openJson))
@@ -789,12 +789,12 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
   implicit class TestLine(line: String) {
     def =!=(testHeader: TestExample) = testHeader(line)
     def <=!=(header: HttpHeader) = {
-      header.toString shouldEqual line
+      header.unsafeToString shouldEqual line
     }
     def =!=>(expectedRendering: String) = {
       val Array(name, value) = line.split(": ", 2)
       val HttpHeader.ParsingResult.Ok(header, Nil) = HttpHeader.parse(name, value)
-      header.toString shouldEqual header.renderedTo(expectedRendering).rendering("")
+      header.unsafeToString shouldEqual header.renderedTo(expectedRendering).rendering("")
     }
   }
   sealed trait TestExample extends (String => Unit)
@@ -806,7 +806,7 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
       val HttpHeader.ParsingResult.Ok(parsedHeader, Nil) = parseResult
       try parsedHeader should equal(header)
       catch {
-        case e: TestFailedException if parsedHeader.toString == header.toString =>
+        case e: TestFailedException if parsedHeader.toString == header.unsafeToString =>
           def className[T](t: T): String = scala.reflect.NameTransformer.decode(t.getClass.getName)
           throw new AssertionError(s"Test equals failed with equal toString. parsedHeader class was ${className(parsedHeader)}, " +
             s"header class was ${className(header)}", e)
@@ -845,8 +845,8 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
     Matcher {
       case HttpHeader.ParsingResult.Ok(h, Nil) =>
         MatchResult(
-          h.toString === header.rendering(line),
-          s"doesn't render to '${header.rendering(line)}' but '${h.toString}'", "XXX")
+          h.unsafeToString === header.rendering(line),
+          s"doesn't render to '${header.rendering(line)}' but '${h.unsafeToString}'", "XXX")
       case result =>
         val info = result.errors.head
         fail(s"Input `${header.header}` failed to parse:\n${info.summary}\n${info.detail}")

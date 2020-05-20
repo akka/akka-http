@@ -40,7 +40,7 @@ class HttpRequestDetailedStringExampleSpec extends AkkaSpec {
     )
 
     // ... while default `toString` doesn't.
-    assert(!s"$httpRequestWithHeadersAndBody".contains(piiHeader.toString))
+    assert(!s"$httpRequestWithHeadersAndBody".contains(piiHeader.unsafeToString))
     assert(!s"$httpRequestWithHeadersAndBody".contains(piiBody.data.utf8String))
   }
 

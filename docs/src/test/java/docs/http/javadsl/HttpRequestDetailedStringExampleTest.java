@@ -43,7 +43,7 @@ public class HttpRequestDetailedStringExampleTest {
         assertTrue(toDetailedString(httpRequestWithHeadersAndBody).contains(piiBody.toString()));
 
         // ... while default `toString` doesn't.
-        assertFalse(httpRequestWithHeadersAndBody.toString().contains(piiHeader.toString()));
+        assertFalse(httpRequestWithHeadersAndBody.toString().contains(piiHeader.unsafeToString()));
         assertFalse(httpRequestWithHeadersAndBody.toString().contains(piiBody.getData().utf8String()));
 
     }
