@@ -17,6 +17,19 @@ import akka.util.OptionVal
 import scala.collection.immutable
 
 /**
+ * Marker trait for headers which contain portentially secret / sensitive information.
+ *
+ * Mixing this trait will make `toString` to return the name of the header thus avoiding any
+ * detail leak.
+ */
+trait SensitiveHttpHeader {
+  this: HttpHeader =>
+
+  // This header is tagged as potentially containing personal sensitive information
+  override def toString: String = name
+}
+
+/**
  * The model of an HTTP header. In its most basic form headers are simple name-value pairs. Header names
  * are compared in a case-insensitive way.
  */
@@ -26,6 +39,8 @@ abstract class HttpHeader extends jm.HttpHeader with ToStringRenderable {
   def lowercaseName: String
   def is(nameInLowerCase: String): Boolean = lowercaseName == nameInLowerCase
   def isNot(nameInLowerCase: String): Boolean = lowercaseName != nameInLowerCase
+
+  def unsafeToString: String = super.toString
 }
 
 object HttpHeader {

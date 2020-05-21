@@ -54,7 +54,7 @@ class HttpsProxyGraphStageSpec extends AkkaSpecWithMaterializer {
         connectMsg.utf8String should startWith(
           new EnhancedString(s"""CONNECT $targetHostName:$targetPort HTTP/1.1
             |Host: $targetHostName
-            |Proxy-Authorization: Basic dGVzdFVzZXJuYW1lOnRlc3RQYXNzd29yZA==
+            |Proxy-Authorization
             |
             |""").stripMarginWithNewline("\r\n"))
         flowOutProbe.sendNext(ByteString("HTTP/1.0 200 Connection established\r\n\r\n"))

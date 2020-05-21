@@ -378,7 +378,8 @@ final case class Allow(methods: immutable.Seq[HttpMethod]) extends jm.headers.Al
 
 // http://tools.ietf.org/html/rfc7235#section-4.2
 object Authorization extends ModeledCompanion[Authorization]
-final case class Authorization(credentials: HttpCredentials) extends jm.headers.Authorization with RequestHeader {
+final case class Authorization(credentials: HttpCredentials) extends jm.headers.Authorization with RequestHeader
+  with SensitiveHttpHeader {
   def renderValue[R <: Rendering](r: R): r.type = r ~~ credentials
   protected def companion = Authorization
 }
@@ -517,7 +518,8 @@ object Cookie extends ModeledCompanion[Cookie] {
   def apply(first: (String, String), more: (String, String)*): Cookie = apply((first +: more).map(HttpCookiePair(_)))
   implicit val cookiePairsRenderer = Renderer.seqRenderer[HttpCookiePair](separator = "; ") // cache
 }
-final case class Cookie(cookies: immutable.Seq[HttpCookiePair]) extends jm.headers.Cookie with RequestHeader {
+final case class Cookie(cookies: immutable.Seq[HttpCookiePair]) extends jm.headers.Cookie with RequestHeader
+  with SensitiveHttpHeader {
   require(cookies.nonEmpty, "cookies must not be empty")
   import Cookie.cookiePairsRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ cookies
@@ -582,7 +584,8 @@ object Host extends ModeledCompanion[Host] {
   def apply(host: String, port: Int): Host = apply(Uri.Host(host), port)
   val empty = Host("")
 }
-final case class Host(host: Uri.Host, port: Int = 0) extends jm.headers.Host with RequestHeader {
+final case class Host(host: Uri.Host, port: Int = 0) extends jm.headers.Host with RequestHeader
+  with SensitiveHttpHeader {
   import UriRendering.HostRenderer
   require((port >> 16) == 0, "Illegal port: " + port)
   def isEmpty = host.isEmpty
@@ -691,7 +694,9 @@ object Origin extends ModeledCompanion[Origin] {
   @since213
   def apply(firstOrigin: HttpOrigin, otherOrigins: HttpOrigin*): Origin = apply(firstOrigin +: otherOrigins)
 }
-final case class Origin(origins: immutable.Seq[HttpOrigin]) extends jm.headers.Origin with RequestHeader {
+final case class Origin(origins: immutable.Seq[HttpOrigin]) extends jm.headers.Origin with RequestHeader
+  with SensitiveHttpHeader {
+
   def renderValue[R <: Rendering](r: R): r.type = if (origins.isEmpty) r ~~ "null" else r ~~ origins
   protected def companion = Origin
 
@@ -718,7 +723,7 @@ final case class `Proxy-Authenticate`(challenges: immutable.Seq[HttpChallenge]) 
 // http://tools.ietf.org/html/rfc7235#section-4.4
 object `Proxy-Authorization` extends ModeledCompanion[`Proxy-Authorization`]
 final case class `Proxy-Authorization`(credentials: HttpCredentials) extends jm.headers.ProxyAuthorization
-  with RequestHeader {
+  with RequestHeader with SensitiveHttpHeader {
   def renderValue[R <: Rendering](r: R): r.type = r ~~ credentials
   protected def companion = `Proxy-Authorization`
 }
@@ -762,14 +767,15 @@ final case class `Raw-Request-URI`(uri: String) extends jm.headers.RawRequestURI
 @deprecated("use remote-address-attribute instead", since = "10.2.0")
 object `Remote-Address` extends ModeledCompanion[`Remote-Address`]
 @deprecated("use remote-address-attribute instead", since = "10.2.0")
-final case class `Remote-Address`(address: RemoteAddress) extends jm.headers.RemoteAddress with SyntheticHeader {
+final case class `Remote-Address`(address: RemoteAddress) extends jm.headers.RemoteAddress with SyntheticHeader
+  with SensitiveHttpHeader {
   def renderValue[R <: Rendering](r: R): r.type = r ~~ address
   protected def companion = `Remote-Address`
 }
 
 // http://tools.ietf.org/html/rfc7231#section-5.5.2
 object Referer extends ModeledCompanion[Referer]
-final case class Referer(uri: Uri) extends jm.headers.Referer with RequestHeader {
+final case class Referer(uri: Uri) extends jm.headers.Referer with RequestHeader with SensitiveHttpHeader {
   require(uri.fragment.isEmpty, "Referer header URI must not contain a fragment")
   require(uri.authority.userinfo.isEmpty, "Referer header URI must not contain a userinfo component")
 
@@ -1077,7 +1083,7 @@ object `X-Forwarded-For` extends ModeledCompanion[`X-Forwarded-For`] {
   }
 }
 final case class `X-Forwarded-For`(addresses: immutable.Seq[RemoteAddress]) extends jm.headers.XForwardedFor
-  with RequestHeader {
+  with RequestHeader with SensitiveHttpHeader {
   require(addresses.nonEmpty, "addresses must not be empty")
   import `X-Forwarded-For`.addressesRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ addresses
@@ -1096,7 +1102,7 @@ object `X-Forwarded-Host` extends ModeledCompanion[`X-Forwarded-Host`] {
  */
 @ApiMayChange
 final case class `X-Forwarded-Host`(host: Uri.Host) extends jm.headers.XForwardedHost
-  with RequestHeader {
+  with RequestHeader with SensitiveHttpHeader {
   import `X-Forwarded-Host`.hostRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ host
   protected def companion = `X-Forwarded-Host`
@@ -1125,7 +1131,7 @@ object `X-Real-Ip` extends ModeledCompanion[`X-Real-Ip`] {
   implicit val addressRenderer = RemoteAddress.renderWithoutPort // cache
 }
 final case class `X-Real-Ip`(address: RemoteAddress) extends jm.headers.XRealIp
-  with RequestHeader {
+  with RequestHeader with SensitiveHttpHeader {
   import `X-Real-Ip`.addressRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ address
   protected def companion = `X-Real-Ip`

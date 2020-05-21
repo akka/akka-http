@@ -67,6 +67,22 @@ simplify creating requests for common cases. Also, to aid readability, there are
 named after HTTP methods to create a request with a given method and URI directly.
 @@@
 
+@@@ note { title='String representation' }
+
+There are certain environments where it is easy to inadvertently print, write or log entries built out of string representations of @apidoc[HttpRequest] instances. On the other hand, it is not uncommon for HTTP headers and entities to contain _Personal Identifying Information (PII)_ or _Sensitive Personal Information (SPI)_ . 
+
+To avoid accidentally leaking such information, these fields are omitted from @apidoc[HttpRequest] `toString` output. 
+
+If needed, it is possible to define a custom string representation including all fields as shown in the following example:
+
+Scala
+:   @@snip [HttpRequestDetailedStringExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpRequestDetailedStringExampleSpec.scala) 
+
+Java
+:   @@snip [HttpRequestDetailedStringExampleTest.java]($test$/java/docs/http/javadsl/HttpRequestDetailedStringExampleTest.java) 
+
+@@@
+
 <a id="synthetic-headers"></a>
 ### Synthetic Headers
 
@@ -107,6 +123,22 @@ Java
 In addition to the simple @scala[@apidoc[HttpEntity] constructors]@java[`HttpEntities.create` methods] which create an entity from a fixed `String` or @apidoc[akka.util.ByteString]
 as shown here the Akka HTTP model defines a number of subclasses of @apidoc[HttpEntity] which allow body data to be specified as a
 stream of bytes. @java[All of these types can be created using the method on `HttpEntites`.]
+
+@@@ note { title='String representation' }
+
+There are certain environments where it is easy to inadvertently print, write or log entries built out of string representations of @apidoc[HttpResponse] instances. On the other hand, it is not uncommon for HTTP headers and entities to contain _Personal Identifying Information (PII)_ or _Sensitive Personal Information (SPI)_ . 
+
+To avoid accidentally leaking such information, these fields are omitted from @apidoc[HttpResponse] `toString` output. 
+
+If needed, it is possible to define a custom string representation including all fields as shown in the following example:
+
+Scala
+:   @@snip [HttpResponseDetailedStringExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpResponseDetailedStringExampleSpec.scala) 
+
+Java
+:   @@snip [HttpResponseDetailedStringExampleTest.java]($test$/java/docs/http/javadsl/HttpResponseDetailedStringExampleTest.java) 
+
+@@@
 
 <a id="httpentity"></a>
 ## HttpEntity
