@@ -20,7 +20,7 @@ class MiscDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     }
 
     // tests:
-    Get("/").withHeaders(`Remote-Address`(RemoteAddress(InetAddress.getByName("192.168.3.12")))) ~> route ~> check {
+    Get("/").withHeaders(`X-Forwarded-For`(RemoteAddress(InetAddress.getByName("192.168.3.12")))) ~> route ~> check {
       responseAs[String] shouldEqual "Client's ip is 192.168.3.12"
     }
     //#extractClientIP-example

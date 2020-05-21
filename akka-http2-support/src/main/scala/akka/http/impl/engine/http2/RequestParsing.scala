@@ -17,6 +17,7 @@ import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.Attributes
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import com.github.ghik.silencer.silent
 
 import scala.annotation.tailrec
 import scala.collection.immutable.VectorBuilder
@@ -27,6 +28,7 @@ import scala.collection.immutable.VectorBuilder
 @InternalApi
 private[http2] object RequestParsing {
 
+  @silent("use remote-address-attribute instead")
   def parseRequest(httpHeaderParser: HttpHeaderParser, serverSettings: ServerSettings, attributes: Attributes): Http2SubStream => HttpRequest = {
     val remoteAddressHeader: Option[`Remote-Address`] =
       if (serverSettings.remoteAddressHeader) {

@@ -6,10 +6,7 @@ package docs.http.javadsl.server.directives;
 
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.StatusCodes;
-import akka.http.javadsl.model.headers.AcceptLanguage;
-import akka.http.javadsl.model.headers.Language;
-import akka.http.javadsl.model.headers.LanguageRanges;
-import akka.http.javadsl.model.headers.RemoteAddress;
+import akka.http.javadsl.model.headers.*;
 import akka.http.javadsl.server.PathMatchers;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.testkit.JUnitRouteTest;
@@ -150,11 +147,11 @@ public class MiscDirectivesExamplesTest extends JUnitRouteTest {
 
     // tests:
     final String ip = "192.168.1.2";
-    final akka.http.javadsl.model.RemoteAddress remoteAddress = 
+    final akka.http.javadsl.model.RemoteAddress remoteAddress =
       akka.http.javadsl.model.RemoteAddress.create(InetAddress.getByName(ip));
     
     final HttpRequest request = HttpRequest.GET("/")
-      .addHeader(RemoteAddress.create(remoteAddress)); // 
+      .addHeader(XForwardedFor.create(remoteAddress)); //
     
     testRoute(route).run(request)
       .assertEntity("Client's IP is " + ip);
