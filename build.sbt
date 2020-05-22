@@ -131,6 +131,7 @@ lazy val parsing = project("akka-parsing")
   )
   .settings(scalaMacroSupport)
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
+  .enablePlugins(ReproducibleBuildsPlugin)
   .disablePlugins(MimaPlugin)
 
 lazy val httpCore = project("akka-http-core")
@@ -149,6 +150,7 @@ lazy val httpCore = project("akka-http-core")
   .settings(VersionGenerator.versionSettings)
   .settings(scalaMacroSupport)
   .enablePlugins(BootstrapGenjavadoc)
+  .enablePlugins(ReproducibleBuildsPlugin)
 
 lazy val http = project("akka-http")
   .settings(commonSettings)
@@ -161,6 +163,7 @@ lazy val http = project("akka-http")
   )
   .settings(scalaMacroSupport)
   .enablePlugins(BootstrapGenjavadoc, BoilerplatePlugin)
+  .enablePlugins(ReproducibleBuildsPlugin)
 
 def gustavDir(kind: String) = Def.task {
   val ver =
@@ -208,6 +211,7 @@ lazy val http2Support = project("akka-http2-support")
     )
   }
   .enablePlugins(JavaAgent, BootstrapGenjavadoc)
+  .enablePlugins(ReproducibleBuildsPlugin)
   .disablePlugins(MimaPlugin) // experimental module still
 
 lazy val httpTestkit = project("akka-http-testkit")
@@ -224,6 +228,7 @@ lazy val httpTestkit = project("akka-http-testkit")
     mainClass in run in Test := Some("akka.http.javadsl.SimpleServerApp")
   )
   .enablePlugins(BootstrapGenjavadoc, MultiNodeScalaTest, ScaladocNoVerificationOfDiagrams)
+  .enablePlugins(ReproducibleBuildsPlugin)
   .disablePlugins(MimaPlugin) // testkit, no bin compat guaranteed
 
 lazy val httpTests = project("akka-http-tests")
@@ -299,6 +304,7 @@ def httpMarshallersScalaSubproject(name: String) =
   .dependsOn(http)
   .settings(commonSettings)
   .enablePlugins(BootstrapGenjavadoc)
+  .enablePlugins(ReproducibleBuildsPlugin)
 
 def httpMarshallersJavaSubproject(name: String) =
   Project(
@@ -308,6 +314,7 @@ def httpMarshallersJavaSubproject(name: String) =
   .dependsOn(http)
   .settings(commonSettings)
   .enablePlugins(BootstrapGenjavadoc)
+  .enablePlugins(ReproducibleBuildsPlugin)
 
 lazy val docs = project("docs")
   .enablePlugins(AkkaParadoxPlugin, NoPublish, DeployRsync)
