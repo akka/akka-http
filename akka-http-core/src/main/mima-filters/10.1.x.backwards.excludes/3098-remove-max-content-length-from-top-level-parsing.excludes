@@ -1,0 +1,8 @@
+# changes to internal classes
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.settings.ParserSettingsImpl.apply")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.settings.ParserSettingsImpl.unapply")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.impl.settings.ParserSettingsImpl.unapply")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.settings.ParserSettingsImpl.apply")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.settings.ParserSettingsImpl.copy")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.impl.settings.ParserSettingsImpl.copy$default$7")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.impl.settings.ParserSettingsImpl.this")

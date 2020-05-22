@@ -6,18 +6,18 @@ package akka.http.impl.engine.client
 
 import akka.http.impl.engine.client.OutgoingConnectionBlueprint.PrepareResponse
 import akka.http.impl.engine.parsing.ParserOutput
-import akka.http.impl.engine.parsing.ParserOutput.{ StrictEntityCreator, EntityStreamError, EntityChunk, StreamedEntityCreator }
+import akka.http.impl.engine.parsing.ParserOutput.{ EntityChunk, EntityStreamError, StreamedEntityCreator, StrictEntityCreator }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ParserSettings
 import akka.stream.{ ActorMaterializer, Attributes }
 import akka.stream.scaladsl.{ Sink, Source }
-import akka.stream.testkit.{ TestSubscriber, TestPublisher }
+import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.util.ByteString
 import akka.testkit.AkkaSpec
 
 class PrepareResponseSpec extends AkkaSpec {
 
-  val parserSettings = ParserSettings(system)
+  val parserSettings = ParserSettings.forServer(system)
 
   val chunkedStart = ParserOutput.ResponseStart(
     StatusCodes.OK,

@@ -30,7 +30,7 @@ class CustomHttpMethodSpec extends AkkaSpec with ScalaFutures
         idempotent = true, requestEntityAcceptance = Expected)
 
       // add custom method to parser settings:
-      val parserSettings = ParserSettings(system).withCustomMethods(BOLT)
+      val parserSettings = ParserSettings.forServer(system).withCustomMethods(BOLT)
       val serverSettings = ServerSettings(system).withParserSettings(parserSettings)
 
       val routes = extractMethod { method =>

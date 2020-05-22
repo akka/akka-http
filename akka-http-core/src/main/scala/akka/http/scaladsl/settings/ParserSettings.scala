@@ -87,7 +87,8 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   override def withMaxHeaderNameLength(newValue: Int): ParserSettings = self.copy(maxHeaderNameLength = newValue)
   override def withMaxHeaderValueLength(newValue: Int): ParserSettings = self.copy(maxHeaderValueLength = newValue)
   override def withMaxHeaderCount(newValue: Int): ParserSettings = self.copy(maxHeaderCount = newValue)
-  override def withMaxContentLength(newValue: Long): ParserSettings = self.copy(maxContentLength = newValue)
+  override def withMaxContentLength(newValue: Long): ParserSettings = self.copy(maxContentLengthSetting = Some(newValue))
+  def withMaxContentLength(newValue: Option[Long]): ParserSettings = self.copy(maxContentLengthSetting = newValue)
   override def withMaxToStrictBytes(newValue: Long): ParserSettings = self.copy(maxToStrictBytes = newValue)
   override def withMaxChunkExtLength(newValue: Int): ParserSettings = self.copy(maxChunkExtLength = newValue)
   override def withMaxChunkSize(newValue: Int): ParserSettings = self.copy(maxChunkSize = newValue)
@@ -159,8 +160,13 @@ object ParserSettings extends SettingsCompanion[ParserSettings] {
       }
   }
 
+  @deprecated("Use forServer or forClient instead", "10.2.0")
   override def apply(config: Config): ParserSettings = ParserSettingsImpl(config)
+  @deprecated("Use forServer or forClient instead", "10.2.0")
   override def apply(configOverrides: String): ParserSettings = ParserSettingsImpl(configOverrides)
 
-  def forServer(implicit system: ClassicActorSystemProvider): ParserSettings = ParserSettingsImpl.forServer(system.classicSystem.settings.config)
+  def forServer(implicit system: ClassicActorSystemProvider): ParserSettings =
+    ParserSettingsImpl.forServer(system.classicSystem.settings.config)
+  def forClient(implicit system: ClassicActorSystemProvider): ParserSettings =
+    ParserSettingsImpl.fromSubConfig(system.classicSystem.settings.config, system.classicSystem.settings.config.getConfig("akka.http.client.parsing"))
 }

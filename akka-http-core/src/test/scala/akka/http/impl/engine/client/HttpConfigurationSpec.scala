@@ -5,7 +5,7 @@
 package akka.http.impl.engine.client
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, HttpsProxySettings, ServerSettings }
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, HttpsProxySettings, ParserSettings, ServerSettings }
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 
@@ -15,11 +15,13 @@ class HttpConfigurationSpec extends AkkaSpec {
   val Off = false
 
   "Reference configurations" should {
-    "have default client and server `parsing` settings" in {
-      ServerSettings(system).parserSettings.toString should ===(ClientConnectionSettings(system).parserSettings.toString)
+    "have default server `parsing` settings" in {
+      // max-content-length defined specially for server
+      ServerSettings(system).parserSettings.toString shouldEqual ParserSettings(system).withMaxContentLength(8 * 1024 * 1024).toString
     }
-    "have default client and pool `parsing` settings" in {
-      ServerSettings(system).parserSettings.toString should ===(ConnectionPoolSettings(system).connectionSettings.parserSettings.toString)
+    "have default client `parsing` settings" in {
+      // max-content-length defined specially for client
+      ClientConnectionSettings(system).parserSettings.toString shouldEqual ParserSettings(system).withMaxContentLength(Long.MaxValue).toString
     }
     "have default client and pool `client` settings" in {
       ClientConnectionSettings(system).toString should ===(ConnectionPoolSettings(system).connectionSettings.toString)

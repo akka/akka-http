@@ -51,7 +51,7 @@ class CustomMediaTypesSpec extends AkkaSpec with ScalaFutures
         MediaType.customWithFixedCharset("application", "custom", utf8)
 
       // add custom media type to parser settings:
-      val parserSettings = ParserSettings(system).withCustomMediaTypes(`application/custom`)
+      val parserSettings = ParserSettings.forServer(system).withCustomMediaTypes(`application/custom`)
       val serverSettings = ServerSettings(system).withParserSettings(parserSettings)
 
       val routes = extractRequest { r =>

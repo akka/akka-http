@@ -36,7 +36,7 @@ class SizeLimitSpec extends AnyWordSpec with Matchers with RequestBuilding with 
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.loglevel = ERROR
     akka.stdout-loglevel = ERROR
-    akka.http.parsing.max-content-length = $maxContentLength
+    akka.http.server.parsing.max-content-length = $maxContentLength
     akka.http.routing.decode-max-size = $decodeMaxSize
     """)
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)

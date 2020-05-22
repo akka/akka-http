@@ -6,7 +6,7 @@ package akka.http.javadsl.settings
 
 import java.util.Optional
 
-import akka.actor.ActorSystem
+import akka.actor.{ ActorSystem, ClassicActorSystemProvider }
 import akka.http.impl.engine.parsing.BodyPartParser
 import akka.http.impl.settings.ParserSettingsImpl
 import java.{ util => ju }
@@ -56,7 +56,7 @@ abstract class ParserSettings private[akka] () extends BodyPartParser.Settings {
   def withMaxHeaderNameLength(newValue: Int): ParserSettings = self.copy(maxHeaderNameLength = newValue)
   def withMaxHeaderValueLength(newValue: Int): ParserSettings = self.copy(maxHeaderValueLength = newValue)
   def withMaxHeaderCount(newValue: Int): ParserSettings = self.copy(maxHeaderCount = newValue)
-  def withMaxContentLength(newValue: Long): ParserSettings = self.copy(maxContentLength = newValue)
+  def withMaxContentLength(newValue: Long): ParserSettings = self.copy(maxContentLengthSetting = Some(newValue))
   def withMaxToStrictBytes(newValue: Long): ParserSettings = self.copy(maxToStrictBytes = newValue)
   def withMaxChunkExtLength(newValue: Int): ParserSettings = self.copy(maxChunkExtLength = newValue)
   def withMaxChunkSize(newValue: Int): ParserSettings = self.copy(maxChunkSize = newValue)
@@ -94,7 +94,22 @@ object ParserSettings extends SettingsCompanion[ParserSettings] {
   trait ErrorLoggingVerbosity
   trait IllegalResponseHeaderValueProcessingMode
 
+  /**
+   * @deprecated Use forServer or forClient instead.
+   */
+  @Deprecated
   override def create(config: Config): ParserSettings = ParserSettingsImpl(config)
+  /**
+   * @deprecated Use forServer or forClient instead.
+   */
+  @Deprecated
   override def create(configOverrides: String): ParserSettings = ParserSettingsImpl(configOverrides)
+  /**
+   * @deprecated Use forServer or forClient instead.
+   */
+  @Deprecated
   override def create(system: ActorSystem): ParserSettings = create(system.settings.config)
+
+  def forServer(system: ClassicActorSystemProvider): ParserSettings = akka.http.scaladsl.settings.ParserSettings.forServer(system)
+  def forClient(system: ClassicActorSystemProvider): ParserSettings = akka.http.scaladsl.settings.ParserSettings.forClient(system)
 }

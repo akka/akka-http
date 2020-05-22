@@ -31,7 +31,7 @@ class CustomStatusCodesSpec extends AkkaSpec with ScalaFutures
       val LeetCode = StatusCodes.custom(777, "LeetCode", "Some reason", isSuccess = true, allowsEntity = false)
 
       // add custom method to parser settings:
-      val parserSettings = ParserSettings(system).withCustomStatusCodes(LeetCode)
+      val parserSettings = ParserSettings.forServer(system).withCustomStatusCodes(LeetCode)
       val serverSettings = ServerSettings(system).withParserSettings(parserSettings)
 
       val clientConSettings = ClientConnectionSettings(system).withParserSettings(parserSettings)
