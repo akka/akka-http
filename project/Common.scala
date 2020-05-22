@@ -19,11 +19,8 @@ object Common extends AutoPlugin {
       "-target:jvm-1.8",
       "-unchecked",
       "-Xlint",
-      // "-Yno-adapted-args", //akka-http heavily depends on adapted args and => Unit implicits break otherwise
       "-Ywarn-dead-code",
       // "-Xfuture" // breaks => Unit implicits
-      // TODO https://github.com/akka/akka-http/issues/2738
-      "-P:silencer:globalFilters=(Adapting\\ argument\\ list\\ by\\ creating|Adaptation\\ of\\ argument\\ list\\ by\\ inserting)"
     ),
     // '-release' parameter is restricted to 'Compile, compile' scope because
     // otherwise `sbt akka-http-xml/compile:doc` fails with it on Scala 2.12.9
