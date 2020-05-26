@@ -1,2 +1,0 @@
-# This affects a sealed trait which, therefore can't be extended by third party code
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.model.headers.ModeledHeader.safeToString")
