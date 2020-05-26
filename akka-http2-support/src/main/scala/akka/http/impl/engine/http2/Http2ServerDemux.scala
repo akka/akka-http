@@ -165,7 +165,8 @@ private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings, initia
                 multiplexer.pushControlFrame(SettingsAckFrame(settings))
               }
 
-            case PingFrame(true, _) =>
+            case SettingsAckFrame(Nil) => // This should be the ack to the initial settings frame
+            case PingFrame(true, _)    =>
             // ignore for now (we don't send any pings)
             case PingFrame(false, data) =>
               multiplexer.pushControlFrame(PingFrame(ack = true, data))
