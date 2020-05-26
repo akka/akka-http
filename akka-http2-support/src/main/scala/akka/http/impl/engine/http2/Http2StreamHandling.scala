@@ -67,10 +67,13 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
     updateState(streamId, _.handleOutgoingEnded())
   }
   private def updateState(streamId: Int, handle: IncomingStreamState => IncomingStreamState): Unit = {
-    handle(streamFor(streamId)) match {
+    val oldState = streamFor(streamId)
+    val newState = handle(oldState)
+    newState match {
       case Closed   => incomingStreams -= streamId
       case newState => incomingStreams += streamId -> newState
     }
+    log.debug(s"Incoming stream state updated for [$streamId] ${oldState.stateName} -> ${oldState.stateName}")
   }
   /** Called to cleanup any state when the connection is torn down */
   def shutdownStreamHandling(): Unit = incomingStreams.keys.foreach(id => updateState(id, _.shutdown()))
