@@ -5,9 +5,10 @@
 @extref[Coordinated shutdown](akka-docs:coordinated-shutdown.html) is Akka's managed way of shutting down multiple modules / sub-systems (persistence, cluster, http etc)
 in a predictable and ordered fashion. For example, in a typical Akka application you will want to stop accepting new HTTP connections, and then shut down the cluster etc.
 
-The recommended Akka HTTP server shutdown consists of two steps:
+The recommended Akka HTTP server shutdown consists of three steps:
 
 1. stop accepting new connections (@scala[@scaladoc[ServerBinding.unbind](akka.http.scaladsl.Http.ServerBinding)]@java[@javadoc[ServerBinding.unbind](akka.http.javadsl.ServerBinding)])
+1. try to finish handling of ongoing requests until the `hardTerminationDeadline` hits (see below for details)
 1. close open connections (@scala[@scaladoc[ServerBinding.terminate](akka.http.scaladsl.Http.ServerBinding)]@java[@javadoc[ServerBinding.terminate](akka.http.javadsl.ServerBinding)])
 
 This recommended sequence can be added to Akka's coordinated shutdown via @scala[@scaladoc[ServerBinding.addToCoordinatedShutdown](akka.http.scaladsl.Http.ServerBinding)]@java[@javadoc[ServerBinding.addToCoordinatedShutdown](akka.http.javadsl.ServerBinding)] like this:
@@ -87,4 +88,3 @@ Scala
 
 Java
 :   @@snip [HttpServerExampleDocTest.java]($test$/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #graceful-termination }
-
