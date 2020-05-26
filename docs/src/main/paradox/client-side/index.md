@@ -7,7 +7,7 @@ It is recommended to first read the @ref[Implications of the streaming nature of
 as it explains the underlying full-stack streaming concepts, which may be unexpected when coming
 from a background with non-"streaming first" HTTP Clients.
 
-All of the API's deal with @ref[`HttpRequest` and `HttpResponse`](request-and-response.md) objects.
+All of the APIs deal with @ref[`HttpRequest` and `HttpResponse`](request-and-response.md) objects.
 
 Depending on your application's specific needs you can choose from three different API levels:
 

@@ -875,6 +875,8 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
      * some level of gracefully replying with
      *
      * The produced [[scala.concurrent.Future]] is fulfilled when the unbinding has been completed.
+     *
+     * Note: rather than unbinding explicitly you can also use [[addToCoordinatedShutdown]] to add this task to Akka's coordinated shutdown.
      */
     def unbind(): Future[Done] =
       unbindAction().map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)
@@ -917,6 +919,8 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
      * Note that the termination response is configurable in [[akka.http.javadsl.settings.ServerSettings]], and by default is an `503 Service Unavailable`,
      * with an empty response entity.
      *
+     * Note: rather than terminating explicitly you can also use [[addToCoordinatedShutdown]] to add this task to Akka's coordinated shutdown.
+     *
      * @param hardDeadline timeout after which all requests and connections shall be forcefully terminated
      * @return future which completes successfully with a marker object once all connections have been terminated
      */
@@ -946,15 +950,28 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
      *
      * This signal can for example be used to safely terminate the underlying ActorSystem.
      *
-     * Note: This mechanism is currently NOT hooked into the Coordinated Shutdown mechanisms of Akka.
-     *       TODO: This feature request is tracked by: https://github.com/akka/akka-http/issues/1210
-     *
      * Note that this signal may be used for Coordinated Shutdown to proceed to next steps in the shutdown.
      * You may also explicitly depend on this future to perform your next shutting down steps.
      */
     def whenTerminated: Future[HttpTerminated] =
       _whenTerminated.future
 
+    /**
+     * Adds this `ServerBinding` to the actor system's coordinated shutdown, so that [[unbind]] and [[terminate]] get
+     * called appropriately before the system is shut down.
+     *
+     * @param hardTerminationDeadline timeout after which all requests and connections shall be forcefully terminated
+     */
+    def addToCoordinatedShutdown(hardTerminationDeadline: FiniteDuration)(implicit system: ClassicActorSystemProvider): ServerBinding = {
+      val shutdown = CoordinatedShutdown(system)
+      shutdown.addTask(CoordinatedShutdown.PhaseServiceUnbind, s"http-unbind-${localAddress}") { () =>
+        unbind()
+      }
+      shutdown.addTask(CoordinatedShutdown.PhaseServiceRequestsDone, s"http-terminate-${localAddress}") { () =>
+        terminate(hardTerminationDeadline).map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)
+      }
+      this
+    }
   }
 
   /** Type used to carry meaningful information when server termination has completed successfully. */
