@@ -32,7 +32,7 @@ public final class FormData {
    * @deprecated FormData always uses charset UTF-8 without appending the charset to
    *             'Content-Type: application/x-www-form-urlencoded', use toEntity() instead.
    */
-  @Deprecated
+  @Deprecated // since 10.1.8
   public RequestEntity toEntity(HttpCharset charset) {
     return HttpEntities.create(ContentTypes.APPLICATION_X_WWW_FORM_URLENCODED, fields.render(charset));
   }
