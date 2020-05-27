@@ -71,3 +71,11 @@ The `max-content-length` setting can no longer be set on `akka.http.parsing`, an
 must now be set explicitly on `akka.http.client.parsing` and/or `akka.http.server.parsing`.
 The default for `akka.http.client.parsing.max-content-length` has been changed from `8m`
 to `infinite`.
+
+### Removal of legacy host connection pool
+
+The legacy host connection pool is the original client pool implementation from the beginnings of Akka HTTP backing
+`Http().singleRequest` and other client APIs. During the 10.0.x development the pool was reimplemented and could be
+used in an opt-in fashion. Since 10.1.0, this new pool implementation has been the default. With 10.2.0 we took the
+opportunity to remove the old pool implementation. The setting `akka.http.host-connection-pool.pool-implementation`
+has been removed as well as its code representation in `ConnectionPoolSettings`.
