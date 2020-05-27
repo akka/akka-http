@@ -17,7 +17,8 @@ import scala.collection.immutable
 import scala.compat.java8.OptionConverters._
 
 trait ConnectionContext extends akka.http.javadsl.ConnectionContext {
-  final def defaultPort = getDefaultPort
+  @deprecated("Internal method, left for binary compatibility", since = "10.2.0")
+  protected[http] def defaultPort: Int
 }
 
 object ConnectionContext {
@@ -53,6 +54,7 @@ final class HttpsConnectionContext(
   val clientAuth:          Option[TLSClientAuth]         = None,
   val sslParameters:       Option[SSLParameters]         = None)
   extends akka.http.javadsl.HttpsConnectionContext with ConnectionContext {
+  protected[http] override final def defaultPort: Int = 443
 
   @deprecated("for binary-compatibility", since = "2.4.7")
   def this(
@@ -72,7 +74,9 @@ final class HttpsConnectionContext(
   override def getSslParameters: Optional[SSLParameters] = sslParameters.asJava
 }
 
-sealed class HttpConnectionContext extends akka.http.javadsl.HttpConnectionContext with ConnectionContext
+sealed class HttpConnectionContext extends akka.http.javadsl.HttpConnectionContext with ConnectionContext {
+  protected[http] override final def defaultPort: Int = 80
+}
 
 final object HttpConnectionContext extends HttpConnectionContext {
   /** Java API */
