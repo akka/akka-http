@@ -84,43 +84,6 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     adaptServerLayer(delegate.serverLayerImpl(settings.asScala, remoteAddress.asScala, log))
 
   /**
-   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
-   */
-  @Deprecated
-  def serverLayer(materializer: Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
-    adaptServerLayer(delegate.serverLayerImpl())
-
-  /**
-   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
-   */
-  @Deprecated
-  def serverLayer(
-    settings:     ServerSettings,
-    materializer: Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
-    adaptServerLayer(delegate.serverLayerImpl(settings.asScala))
-
-  /**
-   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
-   */
-  @Deprecated
-  def serverLayer(
-    settings:      ServerSettings,
-    remoteAddress: Optional[InetSocketAddress],
-    materializer:  Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
-    adaptServerLayer(delegate.serverLayerImpl(settings.asScala, remoteAddress.asScala))
-
-  /**
-   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
-   */
-  @Deprecated
-  def serverLayer(
-    settings:      ServerSettings,
-    remoteAddress: Optional[InetSocketAddress],
-    log:           LoggingAdapter,
-    materializer:  Materializer): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
-    adaptServerLayer(delegate.serverLayerImpl(settings.asScala, remoteAddress.asScala, log))
-
-  /**
    * Creates a [[akka.stream.javadsl.Source]] of [[IncomingConnection]] instances which represents a prospective HTTP server binding
    * on the given `endpoint`.
    *
@@ -191,33 +154,6 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
       .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
   }
 
-  /**
-   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
-   */
-  @Deprecated
-  def bind(connect: ConnectHttp, materializer: Materializer): Source[IncomingConnection, CompletionStage[ServerBinding]] =
-    bind(connect)
-
-  /**
-   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
-   */
-  @Deprecated
-  def bind(
-    connect:      ConnectHttp,
-    settings:     ServerSettings,
-    materializer: Materializer): Source[IncomingConnection, CompletionStage[ServerBinding]] =
-    bind(connect, settings)
-
-  /**
-   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
-   */
-  @Deprecated
-  def bind(
-    connect:      ConnectHttp,
-    settings:     ServerSettings,
-    log:          LoggingAdapter,
-    materializer: Materializer): Source[IncomingConnection, CompletionStage[ServerBinding]] =
-    bind(connect, settings, log)
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
    * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
@@ -556,30 +492,6 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
       .mapMaterializedValue(_.toJava))
 
   /**
-   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
-   */
-  @Deprecated
-  def cachedHostConnectionPool[T](host: String, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
-    cachedHostConnectionPool(host)
-
-  /**
-   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
-   */
-  @Deprecated
-  def cachedHostConnectionPool[T](to: ConnectHttp, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
-    cachedHostConnectionPool(to)
-
-  /**
-   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
-   */
-  @Deprecated
-  def cachedHostConnectionPool[T](
-    to:       ConnectHttp,
-    settings: ConnectionPoolSettings,
-    log:      LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], HostConnectionPool] =
-    cachedHostConnectionPool(to, settings, log)
-
-  /**
    * Creates a new "super connection pool flow", which routes incoming requests to a (cached) host connection pool
    * depending on their respective effective URIs. Note that incoming requests must have either an absolute URI or
    * a valid `Host` header.
@@ -634,57 +546,6 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     settings: ConnectionPoolSettings,
     log:      LoggingAdapter): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], NotUsed] =
     adaptTupleFlow(delegate.superPool[T](defaultClientHttpsContext.asScala, settings.asScala, log))
-
-  /**
-   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
-   */
-  @Deprecated
-  def superPool[T](materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], NotUsed] =
-    superPool()
-
-  /**
-   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
-   */
-  @Deprecated
-  def superPool[T](
-    settings: ConnectionPoolSettings,
-    log:      LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], NotUsed] =
-    superPool(settings, log)
-
-  /**
-   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
-   */
-  @Deprecated
-  def superPool[T](
-    settings:          ConnectionPoolSettings,
-    connectionContext: HttpsConnectionContext,
-    log:               LoggingAdapter, materializer: Materializer): Flow[Pair[HttpRequest, T], Pair[Try[HttpResponse], T], NotUsed] =
-    superPool(settings, connectionContext, log)
-
-  /**
-   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
-   */
-  @Deprecated
-  def singleRequest(request: HttpRequest, materializer: Materializer): CompletionStage[HttpResponse] =
-    delegate.singleRequest(request.asScala).toJava
-
-  /**
-   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
-   */
-  @Deprecated
-  def singleRequest(request: HttpRequest, connectionContext: HttpsConnectionContext, materializer: Materializer): CompletionStage[HttpResponse] =
-    delegate.singleRequest(request.asScala, connectionContext.asScala).toJava
-
-  /**
-   * @deprecated in favor of method that doesn't require materializer. You can just remove the materializer argument.
-   */
-  @Deprecated
-  def singleRequest(
-    request:           HttpRequest,
-    connectionContext: HttpsConnectionContext,
-    settings:          ConnectionPoolSettings,
-    log:               LoggingAdapter, materializer: Materializer): CompletionStage[HttpResponse] =
-    delegate.singleRequest(request.asScala, connectionContext.asScala, settings.asScala, log).toJava
 
   /**
    * Fires a single [[HttpRequest]] across the (cached) host connection pool for the request's

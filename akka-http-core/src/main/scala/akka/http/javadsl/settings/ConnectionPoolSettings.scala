@@ -42,13 +42,6 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   @ApiMayChange
   def getResponseEntitySubscriptionTimeout: Duration = responseEntitySubscriptionTimeout
 
-  /**
-   * The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used.
-   */
-  @deprecated("Deprecated in favor of getConnectionSettings.getTransport.", "10.1.0")
-  @Deprecated
-  def getTransport: ClientTransport = transport.asJava
-
   // ---
 
   def withMaxConnections(n: Int): ConnectionPoolSettings = self.copy(maxConnections = n)
