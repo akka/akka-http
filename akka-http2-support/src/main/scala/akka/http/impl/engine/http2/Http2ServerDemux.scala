@@ -165,7 +165,13 @@ private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings, initia
                 multiplexer.pushControlFrame(SettingsAckFrame(settings))
               }
 
-            case SettingsAckFrame(Nil) => // This should be the ack to the initial settings frame
+            case SettingsAckFrame(Nil) =>
+            // Currently, we only expect an ack for the initial (currently empty) settings frame, sent
+            // above in preStart. Since, it was empty, there's nothing to do here.
+            // If we want to support setting and enforcing settings, we'll need to act here to commit
+            // to the settings we sent out before.
+            // https://github.com/akka/akka-http/issues/3185
+
             case PingFrame(true, _)    =>
             // ignore for now (we don't send any pings)
             case PingFrame(false, data) =>
