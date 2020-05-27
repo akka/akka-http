@@ -26,7 +26,7 @@ trait SensitiveHttpHeader {
   this: HttpHeader =>
 
   // This header is tagged as potentially containing personal sensitive information
-  override def toString: String = name
+  final override def toString: String = name
 }
 
 /**
