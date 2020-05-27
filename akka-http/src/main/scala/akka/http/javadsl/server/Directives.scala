@@ -23,10 +23,6 @@ object Directives extends AllDirectives {
   // These are repeated here since sometimes (?) the Scala compiler won't actually generate java-compatible
   // signatures for varargs methods, making them show up as Seq<Object> instead of T... in Java.
 
-  @Deprecated
-  @varargs override def route(alternatives: Route*): Route =
-    super.route(alternatives: _*)
-
   @varargs override def getFromBrowseableDirectories(directories: String*): Route =
     super.getFromBrowseableDirectories(directories: _*)
 

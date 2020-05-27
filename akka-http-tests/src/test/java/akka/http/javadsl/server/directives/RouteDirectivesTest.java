@@ -94,9 +94,4 @@ public class RouteDirectivesTest extends JUnitRouteTest {
 	      "a decoder limit (set via `akka.http.routing.decode-max-size`), " +
               "or a custom limit set with `withSizeLimit`.");
   }
-
-  @Test(expected = IllegalArgumentException.class)
-  public void testEmptyRoutesConcatenation() {
-    route();
-  }
 }
