@@ -1027,9 +1027,6 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   final case class HostConnectionPool private[http] (setup: HostConnectionPoolSetup)(
     private[http] val gateway: PoolGateway) { // enable test access
 
-    @deprecated("In favor of method that takes no execution context.", since = "10.1.0")
-    private[http] def shutdown(ec: ExecutionContextExecutor): Future[Done] = shutdown()
-
     /**
      * Asynchronously triggers the shutdown of the host connection pool.
      *

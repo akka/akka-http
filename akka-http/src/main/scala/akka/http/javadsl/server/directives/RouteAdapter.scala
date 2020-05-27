@@ -35,31 +35,14 @@ final class RouteAdapter(val delegate: akka.http.scaladsl.server.Route) extends 
         RouteAdapter(delegate ~ adapt.delegate)
     }
 
-  override def seal(system: ActorSystem, materializer: Materializer): Route = {
-    seal()
-  }
+  override def seal(): Route = RouteAdapter(scaladsl.server.Route.seal(delegate))
 
-  override def seal(): Route = {
-    RouteAdapter(scaladsl.server.Route.seal(delegate))
-
-  }
-
-  override def seal(routingSettings: RoutingSettings, parserSettings: ParserSettings, rejectionHandler: RejectionHandler, exceptionHandler: ExceptionHandler, system: ActorSystem, materializer: Materializer): Route = {
-    seal(routingSettings, parserSettings, rejectionHandler, exceptionHandler)
-  }
-
-  override def seal(routingSettings: RoutingSettings, parserSettings: ParserSettings, rejectionHandler: RejectionHandler, exceptionHandler: ExceptionHandler): Route = {
-    seal(rejectionHandler, exceptionHandler)
-  }
-
-  override def seal(rejectionHandler: RejectionHandler, exceptionHandler: ExceptionHandler): Route = {
+  override def seal(rejectionHandler: RejectionHandler, exceptionHandler: ExceptionHandler): Route =
     RouteAdapter(scaladsl.server.Route.seal(delegate)(
       rejectionHandler = rejectionHandler.asScala,
       exceptionHandler = exceptionHandler.asScala))
-  }
 
   override def toString = s"akka.http.javadsl.server.Route($delegate)"
-
 }
 
 object RouteAdapter {
