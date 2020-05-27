@@ -31,7 +31,6 @@ import static akka.http.javadsl.model.RequestEntityAcceptances.Expected;
 
 //#customHttpMethod
 import static akka.http.javadsl.server.Directives.complete;
-import static akka.http.javadsl.server.Directives.route;
 import static akka.http.javadsl.server.Directives.extractMethod;
 
 //#customHttpMethod
@@ -78,7 +77,7 @@ public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
       .withMethod(BOLT)
       .withProtocol(HTTP_1_1);
 
-    CompletionStage<HttpResponse> response = http.singleRequest(request, materializer);
+    CompletionStage<HttpResponse> response = http.singleRequest(request);
     //#customHttpMethod
 
     assertEquals(StatusCodes.OK, response.toCompletableFuture().get(3, TimeUnit.SECONDS).status());

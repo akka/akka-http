@@ -43,7 +43,7 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
             + "akka.http.server.request-timeout = 1000s");
     // large timeout - 1000s (please note - setting to infinite will disable Timeout-Access header
     // and withRequestTimeout will not work)
-    
+
     private final ActorSystem system = ActorSystem.create("TimeoutDirectivesExamplesTest", testConf);
 
     private final ActorMaterializer materializer = ActorMaterializer.create(system);
@@ -73,7 +73,7 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
         final Flow<HttpRequest, HttpResponse, NotUsed> routeFlow = route.flow(system, materializer);
         final CompletionStage<ServerBinding> binding = http.bindAndHandle(routeFlow, ConnectHttp.toHost(hostAndPort._1(), hostAndPort._2()), materializer);
 
-        final CompletionStage<HttpResponse> responseCompletionStage = http.singleRequest(HttpRequest.create("http://" + hostAndPort._1() + ":" + hostAndPort._2() + "/" + routePath), materializer);
+        final CompletionStage<HttpResponse> responseCompletionStage = http.singleRequest(HttpRequest.create("http://" + hostAndPort._1() + ":" + hostAndPort._2() + "/" + routePath));
 
         CompletableFuture<HttpResponse> responseFuture = responseCompletionStage.toCompletableFuture();
 
