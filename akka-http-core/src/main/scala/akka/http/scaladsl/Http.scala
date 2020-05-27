@@ -408,25 +408,6 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     log:               LoggingAdapter           = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
     _outgoingConnection(host, port, settings, connectionContext, log)
 
-  /**
-   * Similar to `outgoingConnection` but allows to specify a user-defined transport layer to run the connection on.
-   *
-   * Depending on the kind of `ConnectionContext` the implementation will add TLS between the given transport and the HTTP
-   * implementation
-   *
-   * To configure additional settings for requests made using this method,
-   * use the `akka.http.client` config section or pass in a [[akka.http.scaladsl.settings.ClientConnectionSettings]] explicitly.
-   */
-  @deprecated("Deprecated in favor of method outgoingConnectionUsingContext (transport retrieved from ClientConnectionSettings)", "10.1.0")
-  private[http] def outgoingConnectionUsingTransport( // kept as private[http] for binary compatibility
-    host:              String,
-    port:              Int,
-    transport:         ClientTransport,
-    connectionContext: ConnectionContext,
-    settings:          ClientConnectionSettings = ClientConnectionSettings(system),
-    log:               LoggingAdapter           = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
-    _outgoingConnection(host, port, settings.withTransport(transport), connectionContext, log)
-
   private def _outgoingConnection(
     host:              String,
     port:              Int,
