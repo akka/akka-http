@@ -4,6 +4,9 @@
 
 package akka.http.scaladsl.settings
 
+import java.util.Random
+import java.util.function.Supplier
+
 import akka.actor.ActorSystem
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.http.ParsingErrorHandler
@@ -42,6 +45,8 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def backlog: Int
   def socketOptions: immutable.Seq[SocketOption]
   def defaultHostHeader: Host
+  @Deprecated @deprecated("Kept for binary compatibility; Use websocketSettings.randomFactory instead", since = "10.1.1")
+  def websocketRandomFactory: () => Random
   def websocketSettings: WebSocketSettings
   def parserSettings: ParserSettings
   def logUnencryptedNetworkBytes: Option[Int]
@@ -70,6 +75,10 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   override def getRemoteAddressHeader = remoteAddressHeader
   override def getRemoteAddressAttribute: Boolean = remoteAddressAttribute
   override def getLogUnencryptedNetworkBytes = OptionConverters.toJava(logUnencryptedNetworkBytes)
+  @Deprecated @deprecated("Kept for binary compatibility; Use websocketSettings.getRandomFactory instead", since = "10.2.0")
+  override def getWebsocketRandomFactory = new Supplier[Random] {
+    override def get(): Random = websocketRandomFactory()
+  }
   override def getDefaultHttpPort: Int = defaultHttpPort
   override def getDefaultHttpsPort: Int = defaultHttpsPort
   override def getTerminationDeadlineExceededResponse: akka.http.javadsl.model.HttpResponse =
@@ -90,6 +99,10 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   override def withResponseHeaderSizeHint(newValue: Int): ServerSettings = self.copy(responseHeaderSizeHint = newValue)
   override def withBacklog(newValue: Int): ServerSettings = self.copy(backlog = newValue)
   override def withSocketOptions(newValue: java.lang.Iterable[SocketOption]): ServerSettings = self.copy(socketOptions = newValue.asScala.toList)
+  @Deprecated @deprecated("Kept for binary compatibility; Use websocketSettings.withRandomFactoryFactory instead", since = "10.2.0")
+  override def withWebsocketRandomFactory(newValue: java.util.function.Supplier[Random]): ServerSettings = self.copy(websocketSettings = websocketSettings.withRandomFactoryFactory(new Supplier[Random] {
+    override def get(): Random = newValue.get()
+  }))
   override def getWebsocketSettings: WebSocketSettings = self.websocketSettings
   override def withDefaultHttpPort(newValue: Int): ServerSettings = self.copy(defaultHttpPort = newValue)
   override def withDefaultHttpsPort(newValue: Int): ServerSettings = self.copy(defaultHttpsPort = newValue)
@@ -104,6 +117,10 @@ abstract class ServerSettings private[akka] () extends akka.http.javadsl.setting
   def withLogUnencryptedNetworkBytes(newValue: Option[Int]): ServerSettings = self.copy(logUnencryptedNetworkBytes = newValue)
   def withDefaultHostHeader(newValue: Host): ServerSettings = self.copy(defaultHostHeader = newValue)
   def withParserSettings(newValue: ParserSettings): ServerSettings = self.copy(parserSettings = newValue)
+  @Deprecated @deprecated("Kept for binary compatibility; Use websocketSettings.withRandomFactoryFactory instead", since = "10.2.0")
+  def withWebsocketRandomFactory(newValue: () => Random): ServerSettings = self.copy(websocketSettings = websocketSettings.withRandomFactoryFactory(new Supplier[Random] {
+    override def get(): Random = newValue()
+  }))
   def withWebsocketSettings(newValue: WebSocketSettings): ServerSettings = self.copy(websocketSettings = newValue)
   def withSocketOptions(newValue: immutable.Seq[SocketOption]): ServerSettings = self.copy(socketOptions = newValue)
   def withHttp2Settings(newValue: Http2ServerSettings): ServerSettings = copy(http2Settings = newValue)
