@@ -13,14 +13,6 @@ import com.typesafe.config.Config
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
 
-@ApiMayChange
-sealed trait PoolImplementation extends js.PoolImplementation
-@ApiMayChange
-object PoolImplementation {
-  case object Legacy extends PoolImplementation
-  case object New extends PoolImplementation
-}
-
 /**
  * Public API but not intended for subclassing
  */
@@ -43,9 +35,6 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
   @deprecated("Deprecated in favor of connectionSettings.transport", "10.1.0")
   def transport: ClientTransport = connectionSettings.transport
 
-  @ApiMayChange
-  def poolImplementation: PoolImplementation
-
   /** The time after which the pool will drop an entity automatically if it wasn't read or discarded */
   @ApiMayChange
   def responseEntitySubscriptionTimeout: Duration
@@ -66,9 +55,6 @@ abstract class ConnectionPoolSettings extends js.ConnectionPoolSettings { self: 
 
   // overloads for idiomatic Scala use
   def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue)
-
-  @ApiMayChange
-  def withPoolImplementation(newValue: PoolImplementation): ConnectionPoolSettings = self.copy(poolImplementation = newValue)
 
   @ApiMayChange
   override def withResponseEntitySubscriptionTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(responseEntitySubscriptionTimeout = newValue)

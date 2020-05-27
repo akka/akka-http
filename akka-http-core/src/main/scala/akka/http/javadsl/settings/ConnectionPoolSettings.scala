@@ -13,14 +13,6 @@ import com.typesafe.config.Config
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
-@ApiMayChange
-trait PoolImplementation
-@ApiMayChange
-object PoolImplementation {
-  def Legacy: PoolImplementation = akka.http.scaladsl.settings.PoolImplementation.Legacy
-  def New: PoolImplementation = akka.http.scaladsl.settings.PoolImplementation.New
-}
-
 /**
  * Public API but not intended for subclassing
  */
@@ -35,9 +27,6 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   def getMaxConnectionBackoff: FiniteDuration = maxConnectionBackoff
   def getIdleTimeout: Duration = idleTimeout
   def getConnectionSettings: ClientConnectionSettings = connectionSettings
-
-  @ApiMayChange
-  def getPoolImplementation: PoolImplementation = poolImplementation
 
   @ApiMayChange
   def getResponseEntitySubscriptionTimeout: Duration = responseEntitySubscriptionTimeout
@@ -62,9 +51,6 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue)
   def withMaxConnectionLifetime(newValue: Duration): ConnectionPoolSettings = self.copy(maxConnectionLifetime = newValue)
   def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue.asScala)
-
-  @ApiMayChange
-  def withPoolImplementation(newValue: PoolImplementation): ConnectionPoolSettings = self.copy(poolImplementation = newValue.asScala)
 
   @ApiMayChange
   def withResponseEntitySubscriptionTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(responseEntitySubscriptionTimeout = newValue)

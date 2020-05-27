@@ -1,0 +1,16 @@
+# Removal of @ApiMayChange methods
+ProblemFilters.exclude[MissingClassProblem]("akka.http.javadsl.settings.PoolImplementation$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.settings.ConnectionPoolSettings.getPoolImplementation")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.settings.ConnectionPoolSettings.withPoolImplementation")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.javadsl.settings.PoolImplementation")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.settings.PoolImplementation$")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.settings.PoolImplementation$New$")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.settings.PoolImplementation$Legacy$")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.settings.PoolImplementation")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.poolImplementation")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.ConnectionPoolSettings.withPoolImplementation")
+
+# changes to internal classes
+ProblemFilters.exclude[Problem]("akka.http.impl.engine.client.*")
+ProblemFilters.exclude[Problem]("akka.http.impl.settings.*")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.impl.util.JavaMapping$PoolImplementationT$")
