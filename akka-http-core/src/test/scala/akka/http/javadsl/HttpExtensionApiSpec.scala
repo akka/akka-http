@@ -227,7 +227,7 @@ class HttpExtensionApiSpec extends AkkaSpecWithMaterializer(
           .run(materializer)
 
       waitFor(pair.second).first.get.status() should be(StatusCodes.OK)
-      pair.first.shutdown(system.dispatcher)
+      pair.first.shutdown()
       waitFor(binding.unbind())
     }
 
@@ -247,7 +247,7 @@ class HttpExtensionApiSpec extends AkkaSpecWithMaterializer(
           .run(materializer)
 
       waitFor(pair.second).first.get.status() should be(StatusCodes.OK)
-      pair.first.shutdown(system.dispatcher)
+      pair.first.shutdown()
       waitFor(binding.unbind())
     }
 
@@ -265,7 +265,7 @@ class HttpExtensionApiSpec extends AkkaSpecWithMaterializer(
           .run(materializer)
 
       waitFor(pair.second).first.get.status() should be(StatusCodes.OK)
-      pair.first.shutdown(system.dispatcher)
+      pair.first.shutdown()
       waitFor(binding.unbind())
     }
 

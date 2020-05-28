@@ -33,15 +33,6 @@ object ConnectionContext {
     new HttpsConnectionContext(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
   //#https-context-creation
 
-  @deprecated("for binary-compatibility", "2.4.7")
-  def https(
-    sslContext:          SSLContext,
-    enabledCipherSuites: Option[immutable.Seq[String]],
-    enabledProtocols:    Option[immutable.Seq[String]],
-    clientAuth:          Option[TLSClientAuth],
-    sslParameters:       Option[SSLParameters]) =
-    new HttpsConnectionContext(sslContext, sslConfig = None, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
-
   def noEncryption() = HttpConnectionContext
 }
 
@@ -53,15 +44,6 @@ final class HttpsConnectionContext(
   val clientAuth:          Option[TLSClientAuth]         = None,
   val sslParameters:       Option[SSLParameters]         = None)
   extends akka.http.javadsl.HttpsConnectionContext with ConnectionContext {
-
-  @deprecated("for binary-compatibility", since = "2.4.7")
-  def this(
-    sslContext:          SSLContext,
-    enabledCipherSuites: Option[immutable.Seq[String]],
-    enabledProtocols:    Option[immutable.Seq[String]],
-    clientAuth:          Option[TLSClientAuth],
-    sslParameters:       Option[SSLParameters]) =
-    this(sslContext, sslConfig = None, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
 
   def firstSession = NegotiateNewSession(enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
 
