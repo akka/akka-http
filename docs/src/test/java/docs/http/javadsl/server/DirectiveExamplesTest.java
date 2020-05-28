@@ -27,8 +27,6 @@ import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.get;
 import static akka.http.javadsl.server.Directives.path;
 import static akka.http.javadsl.server.Directives.put;
-import static akka.http.javadsl.server.Directives.route;
-
 import static akka.http.javadsl.server.PathMatchers.integerSegment;
 import static akka.http.javadsl.server.PathMatchers.segment;
 
@@ -39,8 +37,6 @@ import static akka.http.javadsl.server.Directives.get;
 import static akka.http.javadsl.server.Directives.head;
 import static akka.http.javadsl.server.Directives.path;
 import static akka.http.javadsl.server.Directives.put;
-import static akka.http.javadsl.server.Directives.route;
-
 import static akka.http.javadsl.server.PathMatchers.integerSegment;
 import static akka.http.javadsl.server.PathMatchers.segment;
 
@@ -52,8 +48,6 @@ import static akka.http.javadsl.server.Directives.extractMethod;
 import static akka.http.javadsl.server.Directives.get;
 import static akka.http.javadsl.server.Directives.path;
 import static akka.http.javadsl.server.Directives.put;
-import static akka.http.javadsl.server.Directives.route;
-
 import static akka.http.javadsl.server.PathMatchers.integerSegment;
 import static akka.http.javadsl.server.PathMatchers.segment;
 

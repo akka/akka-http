@@ -31,7 +31,6 @@ import static akka.http.javadsl.model.RequestEntityAcceptances.Expected;
 
 //#customHttpMethod
 import static akka.http.javadsl.server.Directives.complete;
-import static akka.http.javadsl.server.Directives.route;
 import static akka.http.javadsl.server.Directives.extractMethod;
 
 //#customHttpMethod

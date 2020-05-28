@@ -1,0 +1,3 @@
+# Deprecated
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.server.Directives.route")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.server.directives.RouteDirectives.route")

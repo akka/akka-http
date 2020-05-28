@@ -50,84 +50,60 @@ import static akka.http.javadsl.server.Directives.path;
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.pathPrefix;
 import static akka.http.javadsl.server.Directives.pathEnd;
-import static akka.http.javadsl.server.Directives.route;
-
 //#pathPrefix
 
 //#path-end-or-single-slash
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.path;
 import static akka.http.javadsl.server.Directives.pathEndOrSingleSlash;
-import static akka.http.javadsl.server.Directives.route;
-
 //#path-end-or-single-slash
 //#path-prefix
 import static akka.http.javadsl.server.Directives.path;
 import static akka.http.javadsl.server.Directives.pathEnd;
 import static akka.http.javadsl.server.Directives.pathPrefix;
-import static akka.http.javadsl.server.Directives.route;
-
 //#path-prefix
 //#path-prefix-test
 import static akka.http.javadsl.server.Directives.path;
 import static akka.http.javadsl.server.Directives.pathEnd;
 import static akka.http.javadsl.server.Directives.pathPrefix;
 import static akka.http.javadsl.server.Directives.pathPrefixTest;
-import static akka.http.javadsl.server.Directives.route;
-
 //#path-prefix-test
 //#path-single-slash
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.path;
 import static akka.http.javadsl.server.Directives.pathPrefix;
 import static akka.http.javadsl.server.Directives.pathSingleSlash;
-import static akka.http.javadsl.server.Directives.route;
-
 //#path-single-slash
 //#path-suffix
 import static akka.http.javadsl.server.Directives.pathPrefix;
 import static akka.http.javadsl.server.Directives.pathSuffix;
-import static akka.http.javadsl.server.Directives.route;
-
 //#path-suffix
 //#path-suffix-test
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.pathSuffixTest;
-import static akka.http.javadsl.server.Directives.route;
-
 //#path-suffix-test
 //#raw-path-prefix
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.rawPathPrefix;
-import static akka.http.javadsl.server.Directives.route;
-
 //#raw-path-prefix
 //#raw-path-prefix-test
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.rawPathPrefixTest;
-import static akka.http.javadsl.server.Directives.route;
-
 //#raw-path-prefix-test
 //#redirect-notrailing-slash-missing
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.path;
 import static akka.http.javadsl.server.Directives.redirectToTrailingSlashIfMissing;
-import static akka.http.javadsl.server.Directives.route;
-
 //#redirect-notrailing-slash-missing
 //#redirect-notrailing-slash-present
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.path;
 import static akka.http.javadsl.server.Directives.redirectToNoTrailingSlashIfPresent;
-import static akka.http.javadsl.server.Directives.route;
-
 //#redirect-notrailing-slash-present
 //#ignoreTrailingSlash
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.path;
 import static akka.http.javadsl.server.Directives.ignoreTrailingSlash;
-import static akka.http.javadsl.server.Directives.route;
-
 //#ignoreTrailingSlash
 
 public class PathDirectivesExamplesTest extends JUnitRouteTest {

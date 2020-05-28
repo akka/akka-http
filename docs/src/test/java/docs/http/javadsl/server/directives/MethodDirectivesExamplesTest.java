@@ -57,7 +57,6 @@ import static akka.http.javadsl.server.Directives.extractMethod;
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.get;
 import static akka.http.javadsl.server.Directives.post;
-import static akka.http.javadsl.server.Directives.route;
 import static akka.http.javadsl.server.Directives.overrideMethodWithParameter;
 
 //#overrideMethodWithParameter

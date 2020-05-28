@@ -21,7 +21,6 @@ import static akka.http.javadsl.server.Directives.extractScheme;
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.extract;
 import static akka.http.javadsl.server.Directives.redirect;
-import static akka.http.javadsl.server.Directives.route;
 import static akka.http.javadsl.server.Directives.scheme;
 
 //#scheme

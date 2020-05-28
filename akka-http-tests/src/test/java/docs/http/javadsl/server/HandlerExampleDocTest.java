@@ -24,7 +24,6 @@ import akka.http.javadsl.testkit.TestRoute;
 
 //#simple-handler-example-full
 import static akka.http.javadsl.server.Directives.get;
-import static akka.http.javadsl.server.Directives.route;
 import static akka.http.javadsl.server.Directives.path;
 import static akka.http.javadsl.server.Directives.post;
 //#simple-handler
