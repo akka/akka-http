@@ -78,7 +78,7 @@ public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
       .withMethod(BOLT)
       .withProtocol(HTTP_1_1);
 
-    CompletionStage<HttpResponse> response = http.singleRequest(request, materializer);
+    CompletionStage<HttpResponse> response = http.singleRequest(request);
     //#customHttpMethod
 
     assertEquals(StatusCodes.OK, response.toCompletableFuture().get(3, TimeUnit.SECONDS).status());

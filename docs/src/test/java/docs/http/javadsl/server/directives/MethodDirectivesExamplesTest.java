@@ -152,7 +152,7 @@ public class MethodDirectivesExamplesTest extends JUnitRouteTest {
     //#extractMethod
 
     final Route route = concat(
-        get(() -> 
+        get(() ->
             complete("This is a GET request.")
         ),
         extractMethod(method ->
@@ -170,13 +170,13 @@ public class MethodDirectivesExamplesTest extends JUnitRouteTest {
         "This HEAD request, clearly is not a GET!");
     //#extractMethod
   }
-  
+
   @Test
   public void testOverrideMethodWithParameter() {
     //#overrideMethodWithParameter
 
     final Route route = concat(
-        overrideMethodWithParameter("method", () -> 
+        overrideMethodWithParameter("method", () ->
           concat(
             get(() -> complete("This looks like a GET request.")),
             post(() -> complete("This looks like a POST request."))
@@ -184,7 +184,7 @@ public class MethodDirectivesExamplesTest extends JUnitRouteTest {
         )
     );
 
-    
+
     // tests:
     testRoute(route).run(HttpRequest.GET("/?method=POST")).assertEntity(
         "This looks like a POST request.");
@@ -194,7 +194,7 @@ public class MethodDirectivesExamplesTest extends JUnitRouteTest {
 
     testRoute(route).run(HttpRequest.GET("/?method=hallo")).assertEntity(
         "The server either does not recognize the request method, or it lacks the ability to fulfill the request.");
-    
+
     //#overrideMethodWithParameter
   }
 }
