@@ -27,15 +27,6 @@ public final class HttpMethods {
 
     /**
      * Create a custom method type.
-     * @deprecated Use {@link #custom} instead. Will be removed in Akka HTTP 11.0.
-     */
-    @Deprecated
-    public static HttpMethod createCustom(String value, boolean safe, boolean idempotent, akka.http.javadsl.model.RequestEntityAcceptance requestEntityAcceptance) {
-        return custom(value, safe, idempotent, requestEntityAcceptance);
-    }
-
-    /**
-     * Create a custom method type.
      */
     public static HttpMethod custom(String value, boolean safe, boolean idempotent, akka.http.javadsl.model.RequestEntityAcceptance requestEntityAcceptance) {
         //This cast is safe as implementation of RequestEntityAcceptance only exists in Scala

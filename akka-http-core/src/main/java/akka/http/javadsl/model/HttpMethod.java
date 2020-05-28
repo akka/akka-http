@@ -44,11 +44,4 @@ public abstract class HttpMethod {
      * Returns the entity acceptance level for this method.
      */
     public abstract akka.http.javadsl.model.RequestEntityAcceptance requestEntityAcceptance();
-
-    /**
-     * Java API: Returns the entity acceptance level for this method.
-     * @deprecated Use {@link #requestEntityAcceptance} instead. Will be removed in Akka HTTP 11.0.
-     */
-    @Deprecated
-    public abstract akka.http.javadsl.model.RequestEntityAcceptance getRequestEntityAcceptance();
 }
