@@ -1,0 +1,5 @@
+# Removal of deprecated methods
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.server.Route.seal")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.javadsl.server.Route.seal")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.javadsl.server.directives.RouteAdapter.seal")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.server.directives.RouteAdapter.seal")
