@@ -1,0 +1,7 @@
+# Removal of deprecated methods
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.settings.RoutingSettings.getFileIODispatcher")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.settings.RoutingSettings.withFileIODispatcher")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.RoutingSettings.fileIODispatcher")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.RoutingSettings.getFileIODispatcher")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.RoutingSettings.withFileIODispatcher")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.settings.RoutingSettingsImpl.fileIODispatcher")

@@ -19,9 +19,6 @@ private[http] final case class RoutingSettingsImpl(
   decodeMaxBytesPerChunk:   Int,
   decodeMaxSize:            Long) extends akka.http.scaladsl.settings.RoutingSettings {
 
-  @deprecated("binary compatibility method. Use `akka.stream.materializer.blocking-io-dispatcher` to configure the dispatcher", since = "10.1.6")
-  override def fileIODispatcher: String = ""
-
   override def productPrefix = "RoutingSettings"
 }
 
