@@ -433,7 +433,12 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     settings:          ClientConnectionSettings,
     connectionContext: ConnectionContext,
     log:               LoggingAdapter): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
-    val hostHeader = if (port == connectionContext.defaultPort) Host(host) else Host(host, port)
+    val hostHeader = port match {
+      case 0                                 => Host(host)
+      case 80 if !connectionContext.isSecure => Host(host)
+      case 443 if connectionContext.isSecure => Host(host)
+      case _                                 => Host(host, port)
+    }
     val layer = clientLayer(hostHeader, settings, log)
     layer.joinMat(_outgoingTlsConnectionLayer(host, port, settings, connectionContext, log))(Keep.right)
       // already added in clientLayer but needed here again to also include transport layer
