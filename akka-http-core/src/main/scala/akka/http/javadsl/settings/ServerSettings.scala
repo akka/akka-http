@@ -32,9 +32,10 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
   def getPipeliningLimit: Int
 
   /**
-   * Deprecated since 10.2.0, use remoteAddressAttribute instead
+   * @deprecated since 10.2.0, use remoteAddressAttribute instead
    */
   @Deprecated
+  @deprecated("Use remoteAddressAttribute instead", since = "10.2.0")
   def getRemoteAddressHeader: Boolean
   def getRemoteAddressAttribute: Boolean
   def getRawRequestUriHeader: Boolean
