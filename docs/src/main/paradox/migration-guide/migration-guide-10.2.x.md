@@ -12,6 +12,12 @@ If you find an unexpected incompatibility please let us know, so we can check wh
 
 ## Akka HTTP 10.1.11 -> 10.2.0
 
+### Removal of deprecated methods
+
+Several methods that have been deprecated in 10.1.x (or before) have been removed. If you are migrating from old versions
+of Akka HTTP, try migrating to the latest 10.1.x first, so you get the benefit of deprecation messages guiding you towards
+the newer usages.
+
 ### HTTP/2 support requires JDK 8 update 252 or later
 
 JVM support for ALPN has been backported to JDK 8u252 which is now widely available. Support for using the Jetty ALPN
