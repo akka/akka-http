@@ -1,0 +1,13 @@
+# Overloads taking a materializer have been deprecated for a while and are now removed
+# These exclusions over-exclude, so we need to be a bit careful not to introduce further accidental
+# incompatibilities.
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.Http.serverLayer")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.Http.bind")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.Http.cachedHostConnectionPool")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.Http.superPool")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.Http.singleRequest")
+
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.javadsl.Http.serverLayer")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.javadsl.Http.bind")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.javadsl.Http.superPool")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.javadsl.Http.singleRequest")

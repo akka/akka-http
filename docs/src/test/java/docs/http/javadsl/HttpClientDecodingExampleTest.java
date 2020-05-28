@@ -54,7 +54,7 @@ public class HttpClientDecodingExampleTest {
     };
 
     List<CompletableFuture<HttpResponse>> futureResponses = httpRequests.stream()
-      .map(req -> http.singleRequest(req, materializer)
+      .map(req -> http.singleRequest(req)
         .thenApply(decodeResponse))
       .map(CompletionStage::toCompletableFuture)
       .collect(Collectors.toList());

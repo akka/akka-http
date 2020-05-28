@@ -85,8 +85,7 @@ public class CustomStatusCodesExampleTest extends JUnitRouteTest {
         .GET("http://" + host + ":" + port + "/"),
         ConnectionContext.https(SSLContext.getDefault()),
         clientSettings,
-        system.log(),
-        materializer)
+        system.log())
       .toCompletableFuture()
       .get();
 
