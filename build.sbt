@@ -157,6 +157,7 @@ lazy val http = project("akka-http")
   .settings(AutomaticModuleName.settings("akka.http"))
   .dependsOn(httpCore)
   .addAkkaModuleDependency("akka-stream", "provided")
+  .addAkkaModuleDependency("akka-discovery", "provided")
   .settings(Dependencies.http)
   .settings(
     scalacOptions in Compile += "-language:_"
