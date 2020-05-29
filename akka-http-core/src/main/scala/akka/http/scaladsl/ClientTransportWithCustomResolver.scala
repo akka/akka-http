@@ -10,10 +10,10 @@ import akka.actor.ActorSystem
 import akka.annotation.ApiMayChange
 import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.settings.ClientConnectionSettings
-import akka.stream.scaladsl.{Flow, Tcp}
+import akka.stream.scaladsl.{ Flow, Tcp }
 import akka.util.ByteString
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 @ApiMayChange
 trait ClientTransportWithCustomResolver extends ClientTransport {
@@ -27,7 +27,6 @@ trait ClientTransportWithCustomResolver extends ClientTransport {
       }
     ).mapMaterializedValue(_.flatten)
   }
-
 
   protected def inetSocketAddress(host: String, port: Int, settings: ClientConnectionSettings)(implicit ec: ExecutionContext): Future[InetSocketAddress]
 
