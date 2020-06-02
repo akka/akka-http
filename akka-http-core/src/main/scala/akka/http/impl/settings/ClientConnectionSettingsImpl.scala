@@ -18,6 +18,7 @@ import com.typesafe.config.Config
 
 import scala.collection.immutable
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.util.Try
 
 /** INTERNAL API */
 @InternalApi
@@ -37,7 +38,10 @@ private[akka] final case class ClientConnectionSettingsImpl(
 
   require(connectingTimeout >= Duration.Zero, "connectingTimeout must be >= 0")
   require(requestHeaderSizeHint > 0, "request-size-hint must be > 0")
-
+  require(
+    Try { parserSettings.maxContentLength }.isSuccess,
+    "The provided ParserSettings is a generic object that does not contain the client-specific settings."
+  )
   override def productPrefix = "ClientConnectionSettings"
 
   override def websocketRandomFactory: () => Random = websocketSettings.randomFactory
