@@ -86,13 +86,9 @@ object ConnectionPoolSettings extends SettingsCompanion[ConnectionPoolSettings] 
   override def apply(config: Config): ConnectionPoolSettingsImpl = {
     import scala.collection.JavaConverters._
 
-    val hostOverrides = config.getConfigList("akka.http.host-connection-pool.per-host-override").asScala.toList.flatMap { cfg =>
-      val entries = cfg.root.entrySet().asScala
-      require(entries.size < 2, "Please specify each per-host-override in its own object. This is needed to preserve the order.")
-      entries.map { entry =>
-        ConnectionPoolSettingsImpl.hostRegex(entry.getKey) ->
-          ConnectionPoolSettingsImpl(entry.getValue.atPath("akka.http.host-connection-pool").withFallback(config))
-      }
+    val hostOverrides = config.getConfigList("akka.http.host-connection-pool.per-host-override").asScala.toList.map { cfg =>
+      ConnectionPoolSettingsImpl.hostRegex(cfg.getString("host-pattern")) ->
+        ConnectionPoolSettingsImpl(cfg.atPath("akka.http.host-connection-pool").withFallback(config))
     }
 
     ConnectionPoolSettingsImpl(config).copy(hostOverrides = hostOverrides)

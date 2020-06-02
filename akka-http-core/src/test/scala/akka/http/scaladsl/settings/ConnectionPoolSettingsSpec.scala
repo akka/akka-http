@@ -50,27 +50,22 @@ class ConnectionPoolSettingsSpec extends AkkaSpec {
           |
           |  per-host-override : [
           |    {
-          |      "akka.io" : { # can use same things as in global `host-connection-pool` section
-          |        max-connections = 47
-          |      }
+          |      host-pattern = "akka.io"
+          |      # can use same things as in global `host-connection-pool` section
+          |      max-connections = 47
           |    },
-          |
           |   {
-          |     "*.example.com" : { # allow `*` to apply overrides for all subdomains
-          |       max-connections = 34
-          |     }
+          |     host-pattern = "*.example.com"
+          |     # allow `*` to apply overrides for all subdomains
+          |     max-connections = 34
           |   },
-          |
           |   {
-          |     "glob:*example2.com" : {
-          |       max-connections = 39
-          |     }
+          |     host-pattern = "glob:*example2.com"
+          |     max-connections = 39
           |   },
-          |
           |   {
-          |     "regex:((w{3})?\\.)?scala-lang\\.(com|org)" : {
-          |       max-connections = 36
-          |     }
+          |     host-pattern = "regex:((w{3})?\\.)?scala-lang\\.(com|org)"
+          |     max-connections = 36
           |   }
           |  ]
           |}
@@ -103,9 +98,9 @@ class ConnectionPoolSettingsSpec extends AkkaSpec {
           |
           |  per-host-override = [
           |    {
-          |      "akka.io" : { # can use same things as in global `host-connection-pool` section
-          |        max-connections = 47
-          |      }
+          |      host-pattern = "akka.io"
+          |      # can use same things as in global `host-connection-pool` section
+          |      max-connections = 47
           |    }
           |  ]
           |}
@@ -129,15 +124,15 @@ class ConnectionPoolSettingsSpec extends AkkaSpec {
           |
           |  per-host-override = [
           |    {
-          |      "akka.io" : { # can use same things as in global `host-connection-pool` section
-          |        max-connections = 27
-          |      }
+          |      host-pattern = "akka.io"
+          |      # can use same things as in global `host-connection-pool` section
+          |      max-connections = 27
           |    },
           |    {
-          |      "*.io" : { # can use same things as in global `host-connection-pool` section
-          |        min-connections = 22
-          |        max-connections = 47
-          |      }
+          |      host-pattern = "*.io"
+          |      # can use same things as in global `host-connection-pool` section
+          |      min-connections = 22
+          |      max-connections = 47
           |    }
           |  ]
           |}
@@ -154,30 +149,6 @@ class ConnectionPoolSettingsSpec extends AkkaSpec {
       settings.forHost("other.io").minConnections shouldEqual 22
       settings.forHost("akka.com").minConnections shouldEqual 2
       settings.minConnections shouldEqual 2
-    }
-
-    "throw an error when combining multiple keys in one config object" in {
-      val settingsString =
-        """
-          |akka.http.host-connection-pool {
-          |  max-connections = 7
-          |
-          |  per-host-override = [
-          |    {
-          |      "akka.io" : { # can use same things as in global `host-connection-pool` section
-          |        max-connections = 27
-          |      }
-          |      "*.io" : { # can use same things as in global `host-connection-pool` section
-          |        max-connections = 47
-          |      }
-          |    }
-          |  ]
-          |}
-        """.stripMargin
-
-      an[IllegalArgumentException] should be thrownBy {
-        ConnectionPoolSettings(ConfigFactory.parseString(settingsString).withFallback(ConfigFactory.defaultReference(getClass.getClassLoader)))
-      }
     }
 
     def expectError(configString: String): String = Try(config(configString)) match {
