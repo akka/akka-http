@@ -19,7 +19,7 @@ import akka.http.scaladsl.Http.{ HttpServerTerminated, HttpTerminated, OutgoingC
 import akka.http.scaladsl.model.HttpEntity.{ Chunk, ChunkStreamPart, Chunked, LastChunk }
 import akka.http.scaladsl.model.{ HttpEntity, _ }
 import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, PoolImplementation, ServerSettings }
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
 import akka.http.scaladsl.{ ClientTransport, ConnectionContext, Http }
 import akka.stream.Attributes
 import akka.stream.{ OverflowStrategy, QueueOfferResult }
@@ -36,8 +36,7 @@ import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
-abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
-  extends AkkaSpecWithMaterializer("""
+class NewConnectionPoolSpec extends AkkaSpecWithMaterializer("""
     akka.io.tcp.windows-connection-abort-workaround-enabled = auto
     akka.io.tcp.trace-logging = off
     akka.test.single-expect-default = 5000 # timeout for checks, adjust as necessary, set here to 5s
@@ -128,7 +127,6 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
     }
 
     "automatically open a new connection after configured max-connection-lifetime elapsed" in new TestSetup(autoAccept = true) {
-      if (poolImplementation == PoolImplementation.Legacy) { testSuite.cancel("Not implemented for legacy pool") }
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int](
         maxConnections = 1,
         minConnections = 1,
@@ -278,10 +276,6 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
     }
 
     "respect the configured `maxRetries` value" in new TestSetup(autoAccept = true) {
-      // The legacy implementation is known to sometimes retry only 2 times instead of 4 in this test...
-      if (poolImplementation == PoolImplementation.Legacy)
-        pending
-
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int](maxRetries = 4)
 
       requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
@@ -497,9 +491,6 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
      * of the request entity.
      */
     "support receiving a response entity even when the request already failed" ignore new TestSetup(ServerSettings(system).withRawRequestUriHeader(true), autoAccept = true) {
-      if (poolImplementation == PoolImplementation.Legacy)
-        pending
-
       val responseSourceQueuePromise = Promise[SourceQueueWithComplete[ChunkStreamPart]]()
 
       override def testServerHandler(connNr: Int): HttpRequest => HttpResponse = {
@@ -698,7 +689,6 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
           .withIdleTimeout(idleTimeout.dilated)
           .withMaxConnectionLifetime(maxConnectionLifetime)
           .withConnectionSettings(ccSettings)
-          .withPoolImplementation(poolImplementation)
 
       flowTestBench(
         Http().cachedHostConnectionPool[T](serverHostName, serverPort, settings))
@@ -722,7 +712,6 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
           .withPipeliningLimit(pipeliningLimit)
           .withIdleTimeout(idleTimeout.dilated)
           .withConnectionSettings(ccSettings)
-          .withPoolImplementation(poolImplementation)
       flowTestBench(Http().superPool[T](settings = settings))
     }
 
@@ -791,7 +780,6 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
     val poolSettings =
       ConnectionPoolSettings(system)
         .withConnectionSettings(ClientConnectionSettings(system).withIdleTimeout(CustomIdleTimeout).withTransport(transport))
-        .withPoolImplementation(poolImplementation)
 
     val responseFuture = issueRequest(HttpRequest(uri = "http://example.org/test"), settings = poolSettings)
 
@@ -812,6 +800,3 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
     response.entity.dataBytes.utf8String.awaitResult(10.seconds) should ===("Hello World!")
   }
 }
-
-class LegacyConnectionPoolSpec extends ConnectionPoolSpec(PoolImplementation.Legacy)
-class NewConnectionPoolSpec extends ConnectionPoolSpec(PoolImplementation.New)

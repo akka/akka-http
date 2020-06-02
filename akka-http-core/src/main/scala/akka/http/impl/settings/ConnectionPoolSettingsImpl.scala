@@ -6,7 +6,7 @@ package akka.http.impl.settings
 
 import akka.annotation.InternalApi
 import akka.http.impl.util._
-import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, PoolImplementation }
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings }
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.Duration
@@ -25,7 +25,6 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   maxConnectionBackoff:              FiniteDuration,
   idleTimeout:                       Duration,
   connectionSettings:                ClientConnectionSettings,
-  poolImplementation:                PoolImplementation,
   responseEntitySubscriptionTimeout: Duration)
   extends ConnectionPoolSettings {
 
@@ -37,9 +36,6 @@ private[akka] final case class ConnectionPoolSettingsImpl(
   require((maxOpenRequests & (maxOpenRequests - 1)) == 0, "max-open-requests must be a power of 2. " + suggestPowerOfTwo(maxOpenRequests))
   require(pipeliningLimit > 0, "pipelining-limit must be > 0")
   require(maxConnectionLifetime > Duration.Zero, "max-connection-lifetime must be > 0")
-  require(
-    maxConnectionLifetime == Duration.Inf || poolImplementation == PoolImplementation.New,
-    "max-connection-lifetime does not taking effect with legacy pool implementation")
   require(idleTimeout >= Duration.Zero, "idle-timeout must be >= 0")
   require(
     minConnections == 0 || (baseConnectionBackoff.toMillis > 0 && maxConnectionBackoff.toMillis > 10),
@@ -76,10 +72,6 @@ private[akka] object ConnectionPoolSettingsImpl extends SettingsCompanionImpl[Co
       c.getFiniteDuration("max-connection-backoff"),
       c.getPotentiallyInfiniteDuration("idle-timeout"),
       ClientConnectionSettingsImpl.fromSubConfig(root, c.getConfig("client")),
-      c.getString("pool-implementation").toLowerCase match {
-        case "legacy" => PoolImplementation.Legacy
-        case "new"    => PoolImplementation.New
-      },
       c.getPotentiallyInfiniteDuration("response-entity-subscription-timeout")
     )
   }

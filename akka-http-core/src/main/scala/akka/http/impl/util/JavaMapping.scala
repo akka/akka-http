@@ -198,7 +198,6 @@ private[http] object JavaMapping {
   implicit object PreviewServerSettings extends Inherited[js.PreviewServerSettings, akka.http.scaladsl.settings.PreviewServerSettings]
   implicit object ServerSettingsT extends Inherited[js.ServerSettings.Timeouts, akka.http.scaladsl.settings.ServerSettings.Timeouts]
   implicit object Http2ServerSettingT extends Inherited[js.Http2ServerSettings, akka.http.scaladsl.settings.Http2ServerSettings]
-  implicit object PoolImplementationT extends Inherited[js.PoolImplementation, akka.http.scaladsl.settings.PoolImplementation]
   implicit object WebsocketSettings extends Inherited[js.WebSocketSettings, akka.http.scaladsl.settings.WebSocketSettings]
 
   implicit object OutgoingConnection extends JavaMapping[jdsl.OutgoingConnection, sdsl.Http.OutgoingConnection] {
