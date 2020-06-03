@@ -181,7 +181,6 @@ private[http] object JavaMapping {
     def toJava(scalaObject: S): J = scalaObject
     def toScala(javaObject: J): S = cast[S](javaObject)
 
-    import scala.language.higherKinds
     def downcast[F[+_]](f: F[J]): F[S] = f.asInstanceOf[F[S]]
   }
 
