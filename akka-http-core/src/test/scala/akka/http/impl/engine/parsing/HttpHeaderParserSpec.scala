@@ -7,11 +7,9 @@ package akka.http.impl.engine.parsing
 import java.lang.{ StringBuilder => JStringBuilder }
 
 import akka.http.scaladsl.settings.ParserSettings
-import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.annotation.tailrec
 import scala.util.Random
-import org.scalatest.BeforeAndAfterAll
 import akka.util.ByteString
 import akka.actor.ActorSystem
 import akka.http.HashCodeCollider
@@ -20,20 +18,15 @@ import akka.http.scaladsl.model.headers._
 import akka.http.impl.model.parser.CharacterClasses
 import akka.http.impl.util._
 import akka.http.scaladsl.settings.ParserSettings.IllegalResponseHeaderValueProcessingMode
-import akka.testkit.{ EventFilter, TestKit }
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import akka.testkit.EventFilter
 
-abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWordSpec with Matchers with BeforeAndAfterAll {
-
-  val testConf: Config = ConfigFactory.parseString("""
-    akka.event-handlers = ["akka.testkit.TestEventListener"]
-    akka.loglevel = WARNING
+abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AkkaSpecWithMaterializer(
+  """
     akka.http.parsing.max-header-name-length = 60
     akka.http.parsing.max-header-value-length = 1000
-    akka.http.parsing.header-cache.Host = 300""")
-  implicit val system = ActorSystem(getClass.getSimpleName, testConf)
-
+    akka.http.parsing.header-cache.Host = 300
+  """
+) {
   s"The HttpHeaderParser (mode: $mode)" should {
     "insert the 1st value" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
       insert("Hello", 'Hello)
@@ -321,8 +314,6 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
       BenchUtils.nanoRace(regular, colliding) should be < 3.0 // speed must be in same order of magnitude
     }
   }
-
-  override def afterAll() = TestKit.shutdownActorSystem(system)
 
   def check(pair: (String, String)) = {
     val (expected, actual) = pair
