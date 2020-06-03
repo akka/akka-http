@@ -25,7 +25,9 @@ object Common extends AutoPlugin {
       // Can be removed when we drop support for Scala 2.12:
       "-P:silencer:globalFilters=object JavaConverters in package collection is deprecated",
       // TODO https://github.com/akka/akka-http/issues/2738
-      "-P:silencer:globalFilters=(Adapting\\ argument\\ list\\ by\\ creating|Adaptation\\ of\\ argument\\ list\\ by\\ inserting)"
+      "-P:silencer:globalFilters=(Adapting\\ argument\\ list\\ by\\ creating|Adaptation\\ of\\ argument\\ list\\ by\\ inserting)",
+      // we cannot fix (most?) of them until 2.12 support is dropped
+      "-P:silencer:globalFilters=is deprecated \\(since 2\\.13\\."
     ),
     // '-release' parameter is restricted to 'Compile, compile' scope because
     // otherwise `sbt akka-http-xml/compile:doc` fails with it on Scala 2.12.9
