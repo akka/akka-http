@@ -4,14 +4,18 @@
 
 package akka.http.javadsl.settings
 
+import java.time.{ Duration => JDuration }
+
+import com.typesafe.config.Config
+
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+
 import akka.actor.ActorSystem
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.http.impl.settings.ConnectionPoolSettingsImpl
 import akka.http.impl.util.JavaMapping.Implicits._
 import akka.http.javadsl.ClientTransport
-import com.typesafe.config.Config
-
-import scala.concurrent.duration.{ Duration, FiniteDuration }
+import akka.util.JavaDurationConverters._
 
 /**
  * Public API but not intended for subclassing
@@ -23,6 +27,7 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
   def getMaxRetries: Int = maxRetries
   def getMaxOpenRequests: Int = maxOpenRequests
   def getPipeliningLimit: Int = pipeliningLimit
+  def getMaxConnectionLifetime: JDuration = maxConnectionLifetime.asJava
   def getBaseConnectionBackoff: FiniteDuration = baseConnectionBackoff
   def getMaxConnectionBackoff: FiniteDuration = maxConnectionBackoff
   def getIdleTimeout: Duration = idleTimeout
@@ -33,20 +38,29 @@ abstract class ConnectionPoolSettings private[akka] () { self: ConnectionPoolSet
 
   // ---
 
-  def withMaxConnections(n: Int): ConnectionPoolSettings = self.copy(maxConnections = n)
-  def withMinConnections(n: Int): ConnectionPoolSettings = self.copy(minConnections = n)
-  def withMaxRetries(n: Int): ConnectionPoolSettings = self.copy(maxRetries = n)
-  def withMaxOpenRequests(newValue: Int): ConnectionPoolSettings = self.copy(maxOpenRequests = newValue)
-  /** Client-side pipelining is not currently supported, see https://github.com/akka/akka-http/issues/32 */
-  def withPipeliningLimit(newValue: Int): ConnectionPoolSettings = self.copy(pipeliningLimit = newValue)
-  def withBaseConnectionBackoff(newValue: FiniteDuration): ConnectionPoolSettings = self.copy(baseConnectionBackoff = newValue)
-  def withMaxConnectionBackoff(newValue: FiniteDuration): ConnectionPoolSettings = self.copy(maxConnectionBackoff = newValue)
-  def withIdleTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(idleTimeout = newValue)
-  def withMaxConnectionLifetime(newValue: Duration): ConnectionPoolSettings = self.copy(maxConnectionLifetime = newValue)
-  def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copy(connectionSettings = newValue.asScala)
+  @ApiMayChange
+  def withHostOverrides(hostOverrides: java.util.List[(String, ConnectionPoolSettings)]): ConnectionPoolSettings = {
+    import scala.collection.JavaConverters._
+    self.copy(hostOverrides = hostOverrides.asScala.toList.map { case (h, s) => ConnectionPoolSettingsImpl.hostRegex(h) -> s.asScala })
+  }
 
   @ApiMayChange
-  def withResponseEntitySubscriptionTimeout(newValue: Duration): ConnectionPoolSettings = self.copy(responseEntitySubscriptionTimeout = newValue)
+  def appendHostOverride(hostPattern: String, settings: ConnectionPoolSettings): ConnectionPoolSettings = self.copy(hostOverrides = hostOverrides :+ (ConnectionPoolSettingsImpl.hostRegex(hostPattern) -> settings.asScala))
+
+  def withMaxConnections(n: Int): ConnectionPoolSettings
+  def withMinConnections(n: Int): ConnectionPoolSettings
+  def withMaxRetries(n: Int): ConnectionPoolSettings
+  def withMaxOpenRequests(newValue: Int): ConnectionPoolSettings
+  /** Client-side pipelining is not currently supported, see https://github.com/akka/akka-http/issues/32 */
+  def withPipeliningLimit(newValue: Int): ConnectionPoolSettings
+  def withBaseConnectionBackoff(newValue: FiniteDuration): ConnectionPoolSettings
+  def withMaxConnectionBackoff(newValue: FiniteDuration): ConnectionPoolSettings
+  def withIdleTimeout(newValue: Duration): ConnectionPoolSettings
+  def withMaxConnectionLifetime(newValue: Duration): ConnectionPoolSettings
+  def withConnectionSettings(newValue: ClientConnectionSettings): ConnectionPoolSettings = self.copyDeep(_.withConnectionSettings(newValue.asScala), connectionSettings = newValue.asScala)
+
+  @ApiMayChange
+  def withResponseEntitySubscriptionTimeout(newValue: Duration): ConnectionPoolSettings
 
   def withTransport(newValue: ClientTransport): ConnectionPoolSettings = withUpdatedConnectionSettings(_.withTransport(newValue.asScala))
 }

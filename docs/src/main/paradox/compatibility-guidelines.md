@@ -64,10 +64,14 @@ Scala
     akka.http.scaladsl.settings.PoolImplementation
     akka.http.scaladsl.settings.ClientConnectionSettings#transport
     akka.http.scaladsl.settings.ClientConnectionSettings#withTransport
+    akka.http.scaladsl.settings.ConnectionPoolSettings#appendHostOverride
     akka.http.scaladsl.settings.ConnectionPoolSettings#poolImplementation
     akka.http.scaladsl.settings.ConnectionPoolSettings#responseEntitySubscriptionTimeout
+    akka.http.scaladsl.settings.ConnectionPoolSettings#withHostOverrides
+    akka.http.scaladsl.settings.ConnectionPoolSettings#withOverrides
     akka.http.scaladsl.settings.ConnectionPoolSettings#withPoolImplementation
     akka.http.scaladsl.settings.ConnectionPoolSettings#withResponseEntitySubscriptionTimeout
+    akka.http.scaladsl.settings.HostOverride
     akka.http.scaladsl.settings.Http2ServerSettings
     akka.http.scaladsl.settings.PreviewServerSettings
     akka.http.scaladsl.settings.ServerSentEventSettings
@@ -81,8 +85,10 @@ Java
     akka.http.javadsl.ClientTransport
     akka.http.javadsl.settings.ClientConnectionSettings#getTransport
     akka.http.javadsl.settings.ClientConnectionSettings#withTransport
+    akka.http.javadsl.settings.ConnectionPoolSettings#appendHostOverride
     akka.http.javadsl.settings.ConnectionPoolSettings#getPoolImplementation
     akka.http.javadsl.settings.ConnectionPoolSettings#getResponseEntitySubscriptionTimeout
+    akka.http.javadsl.settings.ConnectionPoolSettings#withHostOverrides
     akka.http.javadsl.settings.ConnectionPoolSettings#withPoolImplementation
     akka.http.javadsl.settings.ConnectionPoolSettings#withResponseEntitySubscriptionTimeout
     akka.http.javadsl.settings.PoolImplementation
