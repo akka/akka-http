@@ -212,7 +212,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
     }
 
     "continue parsing raw headers even if the overall cache value capacity is reached" in new TestSetup() {
-      val randomHeaders = Stream.continually {
+      val randomHeaders = Iterator.continually {
         val name = nextRandomString(nextRandomAlphaNumChar _, nextRandomInt(4, 16))
         val value = nextRandomString(() => nextRandomPrintableChar, nextRandomInt(4, 16))
         RawHeader(name, value)
@@ -223,7 +223,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
     }
 
     "continue parsing modelled headers even if the overall cache value capacity is reached" in new TestSetup() {
-      val randomHostHeaders = Stream.continually {
+      val randomHostHeaders = Iterator.continually {
         Host(
           host = nextRandomString(nextRandomAlphaNumChar _, nextRandomInt(4, 8)),
           port = nextRandomInt(1000, 10000))
@@ -234,7 +234,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
     }
 
     "continue parsing headers even if the overall cache node capacity is reached" in new TestSetup() {
-      val randomHostHeaders = Stream.continually {
+      val randomHostHeaders = Iterator.continually {
         RawHeader(
           name = nextRandomString(nextRandomAlphaNumChar _, 60),
           value = nextRandomString(nextRandomAlphaNumChar _, 1000))
@@ -245,7 +245,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
     }
 
     "continue parsing raw headers even if the header-specific cache capacity is reached" in new TestSetup() {
-      val randomHeaders = Stream.continually {
+      val randomHeaders = Iterator.continually {
         val value = nextRandomString(() => nextRandomPrintableChar, nextRandomInt(4, 16))
         RawHeader("Fancy", value)
       }
@@ -255,7 +255,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
     }
 
     "continue parsing modelled headers even if the header-specific cache capacity is reached" in new TestSetup() {
-      val randomHeaders = Stream.continually {
+      val randomHeaders = Iterator.continually {
         `User-Agent`(nextRandomString(nextRandomAlphaNumChar _, nextRandomInt(4, 16)))
       }
       randomHeaders.take(40).foldLeft(0) {
