@@ -134,9 +134,6 @@ class GracefulTerminationSpec
         response.request(20)
         // local testing shows the stream fails long after the 50 ms deadline
         response.expectNext().utf8String should ===("reply2")
-        response.expectNext().utf8String should ===("reply3")
-        response.expectNext().utf8String should ===("reply4")
-        response.expectNext().utf8String should ===("reply5")
 
         eventually {
           response.expectEvent() shouldBe a[OnError]
