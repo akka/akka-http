@@ -11,7 +11,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ws._
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ServerSettings }
-import akka.stream.scaladsl.{ CoupledTerminationFlow, Flow, Sink }
+import akka.stream.scaladsl.{ Flow, Sink }
 import akka.util.ByteString
 import docs.CompileOnlySpec
 
@@ -52,8 +52,8 @@ class WebSocketExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpe
     //#websocket-handler
 
     //#websocket-sink-source
-    val wsHandler: Flow[Message, Message, (Future[Done], NotUsed)] =
-      CoupledTerminationFlow.fromSinkAndSource(
+    val wsHandler: Flow[Message, Message, NotUsed] =
+      Flow.fromSinkAndSourceCoupled(
         WebSocket.ignoreSink,
         Source.repeat("Hello").map(TextMessage(_))
       )
