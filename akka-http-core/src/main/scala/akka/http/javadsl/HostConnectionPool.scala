@@ -10,8 +10,6 @@ import akka.Done
 import akka.annotation.DoNotInherit
 import akka.http.impl.settings.HostConnectionPoolSetup
 
-import scala.concurrent.ExecutionContextExecutor
-
 @DoNotInherit
 abstract class HostConnectionPool private[http] {
   def setup: HostConnectionPoolSetup

@@ -39,7 +39,7 @@ inThisBuild(Def.settings(
   onLoad in Global := {
     sLog.value.info(s"Building Akka HTTP ${version.value} against Akka ${AkkaDependency.akkaVersion}")
     (onLoad in Global).value
-  }
+  },
 ))
 
 lazy val root = Project(

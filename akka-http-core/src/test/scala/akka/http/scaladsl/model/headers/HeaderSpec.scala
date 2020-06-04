@@ -164,7 +164,7 @@ class HeaderSpec extends AnyFreeSpec with Matchers {
         `X-Real-Ip`(RemoteAddress(InetAddress.getByName("192.168.1.1"))))
 
       requestHeaders.foreach { header =>
-        header shouldBe 'renderInRequests
+        header shouldBe Symbol("renderInRequests")
       }
     }
   }
@@ -207,7 +207,7 @@ class HeaderSpec extends AnyFreeSpec with Matchers {
         `Retry-After`(120))
 
       responseHeaders.foreach { header =>
-        header shouldBe 'renderInResponses
+        header shouldBe Symbol("renderInResponses")
       }
     }
   }
