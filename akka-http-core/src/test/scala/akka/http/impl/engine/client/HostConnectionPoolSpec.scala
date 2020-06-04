@@ -708,7 +708,7 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
     def failsHandlerInputWhenHandlerOutputFails: Boolean = false
 
     override def get(connectionKillSwitch: SharedKillSwitch): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, Future[Http.OutgoingConnection]] =
-      Http().serverLayerImpl() atop
+      Http().serverLayer() atop
         TLSPlacebo() atop
         BidiFlow.fromFlows(connectionKillSwitch.flow[ByteString], connectionKillSwitch.flow[ByteString]) atop
         TLSPlacebo().reversed atop

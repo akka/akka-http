@@ -678,7 +678,7 @@ Host: example.com
       val clientSideTls = Http().sslTlsStage(ExampleHttpContexts.exampleClientContext, akka.stream.Client, Some("akka.example.org" -> 8080))
 
       val server: Flow[ByteString, ByteString, Any] =
-        Http().serverLayerImpl()
+        Http().serverLayer()
           .atop(serverSideTls)
           .reversed
           .join(Flow[HttpRequest].map(handler))

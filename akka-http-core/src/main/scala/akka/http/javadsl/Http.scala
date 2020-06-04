@@ -53,14 +53,14 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * reusable and can only be materialized once.
    */
   def serverLayer(): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
-    adaptServerLayer(delegate.serverLayerImpl())
+    adaptServerLayer(delegate.serverLayer())
 
   /**
    * Constructs a server layer stage using the given [[akka.http.javadsl.settings.ServerSettings]]. The returned [[akka.stream.javadsl.BidiFlow]] isn't reusable and
    * can only be materialized once.
    */
   def serverLayer(settings: ServerSettings): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
-    adaptServerLayer(delegate.serverLayerImpl(settings.asScala))
+    adaptServerLayer(delegate.serverLayer(settings.asScala))
 
   /**
    * Constructs a server layer stage using the given [[akka.http.javadsl.settings.ServerSettings]]. The returned [[akka.stream.javadsl.BidiFlow]] isn't reusable and
@@ -70,7 +70,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   def serverLayer(
     settings:      ServerSettings,
     remoteAddress: Optional[InetSocketAddress]): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
-    adaptServerLayer(delegate.serverLayerImpl(settings.asScala, remoteAddress.asScala))
+    adaptServerLayer(delegate.serverLayer(settings.asScala, remoteAddress.asScala))
 
   /**
    * Constructs a server layer stage using the given [[ServerSettings]]. The returned [[akka.stream.javadsl.BidiFlow]] isn't reusable and
@@ -81,7 +81,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     settings:      ServerSettings,
     remoteAddress: Optional[InetSocketAddress],
     log:           LoggingAdapter): BidiFlow[HttpResponse, SslTlsOutbound, SslTlsInbound, HttpRequest, NotUsed] =
-    adaptServerLayer(delegate.serverLayerImpl(settings.asScala, remoteAddress.asScala, log))
+    adaptServerLayer(delegate.serverLayer(settings.asScala, remoteAddress.asScala, log))
 
   /**
    * Creates a [[akka.stream.javadsl.Source]] of [[IncomingConnection]] instances which represents a prospective HTTP server binding
@@ -100,7 +100,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    */
   def bind(connect: ConnectHttp): Source[IncomingConnection, CompletionStage[ServerBinding]] = {
     val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    new Source(delegate.bindImpl(connect.host, connect.port, connectionContext)
+    new Source(delegate.bind(connect.host, connect.port, connectionContext)
       .map(new IncomingConnection(_))
       .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
   }
@@ -124,7 +124,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     connect:  ConnectHttp,
     settings: ServerSettings): Source[IncomingConnection, CompletionStage[ServerBinding]] = {
     val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    new Source(delegate.bindImpl(connect.host, connect.port, settings = settings.asScala, connectionContext = connectionContext)
+    new Source(delegate.bind(connect.host, connect.port, settings = settings.asScala, connectionContext = connectionContext)
       .map(new IncomingConnection(_))
       .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
   }
@@ -149,7 +149,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     settings: ServerSettings,
     log:      LoggingAdapter): Source[IncomingConnection, CompletionStage[ServerBinding]] = {
     val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    new Source(delegate.bindImpl(connect.host, connect.port, connectionContext, settings.asScala, log)
+    new Source(delegate.bind(connect.host, connect.port, connectionContext, settings.asScala, log)
       .map(new IncomingConnection(_))
       .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
   }
