@@ -1,7 +1,7 @@
 language: scala
 
 scala:
-  - "2.12.10" # not used for anything but still needed to have sbt available
+  - "2.12.11" # not used for anything but still needed to have sbt available
 
 sudo: false
 
