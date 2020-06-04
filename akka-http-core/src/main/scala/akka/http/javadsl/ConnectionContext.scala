@@ -41,8 +41,12 @@ object ConnectionContext {
       OptionConverters.toScala(clientAuth),
       OptionConverters.toScala(sslParameters))
 
-  /** Used to serve HTTPS traffic. */
-  // for binary-compatibility, since 2.4.7
+  /**
+   * Used to serve HTTPS traffic.
+   *
+   * @deprecated since 2.4.7
+   */
+  @Deprecated
   def https(
     sslContext:          SSLContext,
     enabledCipherSuites: Optional[JCollection[String]],
