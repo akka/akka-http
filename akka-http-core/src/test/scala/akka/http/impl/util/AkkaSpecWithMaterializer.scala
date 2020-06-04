@@ -11,17 +11,17 @@ import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter
 import com.typesafe.config.ConfigFactory
 
-abstract class AkkaSpecWithMaterializer(s: String)
+abstract class AkkaSpecWithMaterializer(configOverrides: String)
   extends AkkaSpec(
     ActorSystem(
-      AkkaSpecWithMaterializer.getCallerName(getClass),
+      AkkaSpecWithMaterializer.callerName(),
       ConfigFactory.load(ConfigFactory.parseString(
-        s +
+        configOverrides +
           """
-       akka.loglevel = DEBUG
-       akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]"""
-      ).withFallback(AkkaSpec.testConf)))
-  ) with WithLogCapturing {
+            akka.loglevel = DEBUG
+            akka.loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
+          """).withFallback(AkkaSpec.testConf))
+    )) with WithLogCapturing {
 
   def this() = this("")
 
@@ -41,13 +41,8 @@ abstract class AkkaSpecWithMaterializer(s: String)
 }
 object AkkaSpecWithMaterializer {
   // adapted version of AkkaSpec.getCallerName that also works for `AkkaSpecWithMaterializer`
-  def getCallerName(clazz: Class[_]): String = {
-    val s = (Thread.currentThread.getStackTrace map (_.getClassName) drop 1)
+  def callerName(): String =
+    (Thread.currentThread.getStackTrace map (_.getClassName) drop 1)
       .dropWhile(_ matches "(java.lang.Thread|.*AkkaSpecWithMaterializer.?$|.*StreamSpec.?$)")
-    val reduced = s.lastIndexWhere(_ == clazz.getName) match {
-      case -1 => s
-      case z  => s drop (z + 1)
-    }
-    reduced.head.replaceFirst(""".*\.""", "").replaceAll("[^a-zA-Z_0-9]", "_")
-  }
+      .head.replaceFirst(""".*\.""", "").replaceAll("[^a-zA-Z_0-9]", "_")
 }
