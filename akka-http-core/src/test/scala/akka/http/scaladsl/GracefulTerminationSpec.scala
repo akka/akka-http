@@ -21,8 +21,6 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ Server => _, _ }
 import akka.testkit._
 import akka.util.ByteString
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
-import com.typesafe.sslconfig.ssl.{ SSLConfigSettings, SSLLooseConfig }
 import org.scalactic.Tolerance
 import org.scalatest.concurrent.Eventually
 import org.scalatest.Assertion
@@ -80,7 +78,7 @@ class GracefulTerminationSpec
     "fail chunked response streams" in new TestSetup {
       val clientSystem = ActorSystem("client")
       val r1 =
-        Http()(clientSystem).singleRequest(nextRequest, connectionContext = clientConnectionContext, settings = basePoolSettings)
+        Http()(clientSystem).singleRequest(nextRequest(), connectionContext = clientConnectionContext, settings = basePoolSettings)
 
       // reply with an infinite entity stream
       val chunks = Source
@@ -199,7 +197,7 @@ class GracefulTerminationSpec
         super.basePoolSettings
           .withTransport(new ClientTransport {
             override def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[Http.OutgoingConnection]] = {
-              ClientTransport.TCP.connectTo(host, port, settings)
+              ClientTransport.TCP.connectTo(serverBinding.localAddress.getHostName, serverBinding.localAddress.getPort, settings)
                 .mapMaterializedValue { conn =>
                   val result = Promise[Http.OutgoingConnection]()
                   conn.onComplete {
@@ -283,17 +281,13 @@ class GracefulTerminationSpec
     (the[StreamTcpException] thrownBy Await.result(r, 1.second)).getMessage should endWith("Connection refused")
 
   class TestSetup(overrideResponse: Option[HttpResponse] = None) {
-    val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
     val counter = new AtomicInteger()
     var idleTimeoutBaseForUniqueness = 10
 
-    def nextRequest = HttpRequest(uri = s"https://$hostname:$port/${counter.incrementAndGet()}", entity = "hello-from-client")
+    def nextRequest() = HttpRequest(uri = s"https://akka.example.org/${counter.incrementAndGet()}", entity = "hello-from-client")
 
     val serverConnectionContext = ExampleHttpContexts.exampleServerContext
-    // Disable hostname verification as ExampleHttpContexts.exampleClientContext sets hostname as akka.example.org
-    val sslConfigSettings = SSLConfigSettings().withLoose(SSLLooseConfig().withDisableHostnameVerification(true))
-    val sslConfig = AkkaSSLConfig().withSettings(sslConfigSettings)
-    val clientConnectionContext = ConnectionContext.https(ExampleHttpContexts.exampleClientContext.sslContext, Some(sslConfig))
+    val clientConnectionContext = ConnectionContext.https(ExampleHttpContexts.exampleClientContext.sslContext)
 
     val serverQueue = new ArrayBlockingQueue[(HttpRequest, Promise[HttpResponse])](16)
 
@@ -331,10 +325,12 @@ class GracefulTerminationSpec
     val routes: Flow[HttpRequest, HttpResponse, Any] = Flow[HttpRequest].mapAsync(1)(handler)
     val serverBinding =
       Http()
-        .bindAndHandle(routes, hostname, port, connectionContext = serverConnectionContext, settings = serverSettings)
+        .bindAndHandle(routes, "localhost", 0, connectionContext = serverConnectionContext, settings = serverSettings)
         .futureValue
 
-    def basePoolSettings = ConnectionPoolSettings(system).withBaseConnectionBackoff(Duration.Zero)
+    def basePoolSettings = ConnectionPoolSettings(system)
+      .withBaseConnectionBackoff(Duration.Zero)
+      .withTransport(ExampleHttpContexts.proxyTransport(serverBinding.localAddress))
 
     def makeRequest(ensureNewConnection: Boolean = false): Future[HttpResponse] = {
       if (ensureNewConnection) {
@@ -342,9 +338,9 @@ class GracefulTerminationSpec
         idleTimeoutBaseForUniqueness += 1
         val clientSettings = basePoolSettings.withIdleTimeout(idleTimeoutBaseForUniqueness.seconds)
 
-        Http().singleRequest(nextRequest, connectionContext = clientConnectionContext, settings = clientSettings)
+        Http().singleRequest(nextRequest(), connectionContext = clientConnectionContext, settings = clientSettings)
       } else {
-        Http().singleRequest(nextRequest, connectionContext = clientConnectionContext, settings = basePoolSettings)
+        Http().singleRequest(nextRequest(), connectionContext = clientConnectionContext, settings = basePoolSettings)
       }
     }
   }
