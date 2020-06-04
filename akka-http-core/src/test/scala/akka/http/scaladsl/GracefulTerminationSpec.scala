@@ -32,7 +32,6 @@ import scala.util.Success
 
 class GracefulTerminationSpec
   extends AkkaSpecWithMaterializer("""
-    akka.loglevel = debug
     windows-connection-abort-workaround-enabled = auto
     akka.http.server.request-timeout = infinite
     akka.http.server.log-unencrypted-network-bytes = 200
@@ -198,8 +197,7 @@ class GracefulTerminationSpec
         super.basePoolSettings
           .withTransport(new ClientTransport {
             override def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[Http.OutgoingConnection]] = {
-              ExampleHttpContexts.proxyTransport(serverBinding.localAddress)
-                .connectTo(host, port, settings)
+              ClientTransport.TCP.connectTo(serverBinding.localAddress.getHostName, serverBinding.localAddress.getPort, settings)
                 .mapMaterializedValue { conn =>
                   val result = Promise[Http.OutgoingConnection]()
                   conn.onComplete {
