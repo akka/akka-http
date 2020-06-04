@@ -23,6 +23,8 @@ import akka.http.scaladsl.model.{ HttpHeader, HttpResponse, StatusCodes }
 import akka.http.scaladsl.model.headers.{ Host, Server }
 import akka.http.scaladsl.settings.ServerSettings.LogUnencryptedNetworkBytes
 
+import scala.util.Try
+
 /** INTERNAL API */
 @InternalApi
 private[akka] final case class ServerSettingsImpl(
@@ -55,6 +57,10 @@ private[akka] final case class ServerSettingsImpl(
   require(0 < pipeliningLimit && pipeliningLimit <= 1024, "pipelining-limit must be > 0 and <= 1024")
   require(0 < responseHeaderSizeHint, "response-size-hint must be > 0")
   require(0 < backlog, "backlog must be > 0")
+  require(
+    Try { parserSettings.maxContentLength }.isSuccess,
+    "The provided ParserSettings is a generic object that does not contain the server-specific settings."
+  )
 
   override def websocketRandomFactory: () => Random = websocketSettings.randomFactory
 
