@@ -4,18 +4,12 @@
 
 package akka.http.scaladsl
 
-import akka.actor.ActorSystem
 import akka.event.Logging
-import akka.testkit.{ EventFilter, TestKit, TestProbe }
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import akka.http.impl.util.AkkaSpecWithMaterializer
+import akka.testkit.{ EventFilter, TestProbe }
 
-class SslConfigWarningsSpec extends AnyWordSpec with Matchers {
-  val testConf: Config = ConfigFactory.parseString("""
-    akka.loglevel = INFO
-    akka.stdout-loglevel = INFO
-    akka.log-dead-letters = OFF
+class SslConfigWarningsSpec extends AkkaSpecWithMaterializer(
+  """
     akka.http.server.request-timeout = infinite
 
     akka.ssl-config {
@@ -24,42 +18,26 @@ class SslConfigWarningsSpec extends AnyWordSpec with Matchers {
         disableHostnameVerification = true
       }
     }
-    """)
+  """) {
 
   "ssl-config loose options should cause warnings to be logged" should {
 
-    "warn if SNI is disabled globally" in {
-      implicit val system = ActorSystem(getClass.getSimpleName, testConf)
-
+    "warn if SNI is disabled globally and if hostname verification is disabled globally" in {
       val p = TestProbe()
       system.eventStream.subscribe(p.ref, classOf[Logging.LogEvent])
 
       EventFilter.warning(start = "Detected that Server Name Indication (SNI) is disabled globally ", occurrences = 1) intercept {
-        Http()(system)
+        EventFilter.warning(start = "Detected that Hostname Verification is disabled globally ", occurrences = 1) intercept {
+          Http()(system)
+        }
       }
 
       // the very big warning shall be logged only once per actor system (extension)
       EventFilter.warning(start = "Detected that Server Name Indication (SNI) is disabled globally ", occurrences = 0) intercept {
-        Http()(system)
+        EventFilter.warning(start = "Detected that Hostname Verification is disabled globally ", occurrences = 0) intercept {
+          Http()(system)
+        }
       }
-
-      TestKit.shutdownActorSystem(system)
-    }
-
-    "warn if hostname verification is disabled globally" in {
-      implicit val system = ActorSystem(getClass.getSimpleName, testConf)
-
-      val p = TestProbe()
-      system.eventStream.subscribe(p.ref, classOf[Logging.LogEvent])
-
-      val msgStart = "Detected that Hostname Verification is disabled globally "
-
-      EventFilter.warning(start = msgStart, occurrences = 1) intercept { Http()(system) }
-
-      // the very big warning shall be logged only once per actor system (extension)
-      EventFilter.warning(start = msgStart, occurrences = 0) intercept { Http()(system) }
-
-      TestKit.shutdownActorSystem(system)
     }
   }
 }
