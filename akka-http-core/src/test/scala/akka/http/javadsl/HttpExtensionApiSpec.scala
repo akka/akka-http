@@ -60,7 +60,7 @@ class HttpExtensionApiSpec extends AkkaSpecWithMaterializer(
     // all four bind method overloads
     "properly bind a server (with three parameters)" in {
       val probe = TestSubscriber.manualProbe[IncomingConnection]()
-      val binding = http.bind(toHost("127.0.0.1", 0), materializer)
+      val binding = http.bind(toHost("127.0.0.1", 0))
         .toMat(Sink.fromSubscriber(probe), Keep.left)
         .run(materializer)
       val sub = probe.expectSubscription()
@@ -70,7 +70,7 @@ class HttpExtensionApiSpec extends AkkaSpecWithMaterializer(
 
     "properly bind a server (with four parameters)" in {
       val probe = TestSubscriber.manualProbe[IncomingConnection]()
-      val binding = http.bind(toHost("127.0.0.1", 0), materializer)
+      val binding = http.bind(toHost("127.0.0.1", 0))
         .toMat(Sink.fromSubscriber(probe), Keep.left)
         .run(materializer)
       val sub = probe.expectSubscription()
@@ -80,7 +80,7 @@ class HttpExtensionApiSpec extends AkkaSpecWithMaterializer(
 
     "properly bind a server (with five parameters)" in {
       val probe = TestSubscriber.manualProbe[IncomingConnection]()
-      val binding = http.bind(toHost("127.0.0.1", 0), serverSettings, materializer)
+      val binding = http.bind(toHost("127.0.0.1", 0), serverSettings)
         .toMat(Sink.fromSubscriber(probe), Keep.left)
         .run(materializer)
       val sub = probe.expectSubscription()
@@ -90,7 +90,7 @@ class HttpExtensionApiSpec extends AkkaSpecWithMaterializer(
 
     "properly bind a server (with six parameters)" in {
       val probe = TestSubscriber.manualProbe[IncomingConnection]()
-      val binding = http.bind(toHost("127.0.0.1", 0), serverSettings, loggingAdapter, materializer)
+      val binding = http.bind(toHost("127.0.0.1", 0), serverSettings, loggingAdapter)
         .toMat(Sink.fromSubscriber(probe), Keep.left)
         .run(materializer)
       val sub = probe.expectSubscription()
@@ -145,23 +145,23 @@ class HttpExtensionApiSpec extends AkkaSpecWithMaterializer(
       // TODO actually cover these with runtime tests, compile only for now
       pending
 
-      http.serverLayer(materializer)
+      http.serverLayer()
 
       val serverSettings = ServerSettings.create(system)
-      http.serverLayer(serverSettings, materializer)
+      http.serverLayer(serverSettings)
 
       val remoteAddress = Optional.empty[InetSocketAddress]()
-      http.serverLayer(serverSettings, remoteAddress, materializer)
+      http.serverLayer(serverSettings, remoteAddress)
 
       val loggingAdapter = NoLogging
-      http.serverLayer(serverSettings, remoteAddress, loggingAdapter, materializer)
+      http.serverLayer(serverSettings, remoteAddress, loggingAdapter)
     }
 
     "create a cached connection pool (with a ConnectToHttp and a materializer)" in {
       val (host, port, binding) = runServer()
 
       val poolFlow: Flow[Pair[HttpRequest, NotUsed], Pair[Try[HttpResponse], NotUsed], HostConnectionPool] =
-        http.cachedHostConnectionPool[NotUsed](toHost(host, port), materializer)
+        http.cachedHostConnectionPool[NotUsed](toHost(host, port))
 
       val pair: Pair[HostConnectionPool, CompletionStage[Pair[Try[HttpResponse], NotUsed]]] =
         Source.single(new Pair(HttpRequest.GET(s"http://$host:$port/"), NotUsed.getInstance()))
@@ -181,7 +181,7 @@ class HttpExtensionApiSpec extends AkkaSpecWithMaterializer(
       val (host, port, binding) = runServer()
 
       val poolFlow: Flow[Pair[HttpRequest, NotUsed], Pair[Try[HttpResponse], NotUsed], HostConnectionPool] =
-        http.cachedHostConnectionPool[NotUsed](toHost(host, port), poolSettings, loggingAdapter, materializer)
+        http.cachedHostConnectionPool[NotUsed](toHost(host, port), poolSettings, loggingAdapter)
 
       val pair: Pair[HostConnectionPool, CompletionStage[Pair[Try[HttpResponse], NotUsed]]] =
         Source.single(new Pair(HttpRequest.GET(s"http://$host:$port/"), NotUsed.getInstance()))
@@ -199,7 +199,7 @@ class HttpExtensionApiSpec extends AkkaSpecWithMaterializer(
       val (host, port, binding) = runServer()
 
       val poolFlow: Flow[Pair[HttpRequest, NotUsed], Pair[Try[HttpResponse], NotUsed], HostConnectionPool] =
-        http.cachedHostConnectionPool[NotUsed](s"http://$host:$port", materializer)
+        http.cachedHostConnectionPool[NotUsed](s"http://$host:$port")
 
       val pair: Pair[HostConnectionPool, CompletionStage[Pair[Try[HttpResponse], NotUsed]]] =
         Source.single(new Pair(HttpRequest.GET(s"http://$host:$port/"), NotUsed.getInstance()))
@@ -227,7 +227,7 @@ class HttpExtensionApiSpec extends AkkaSpecWithMaterializer(
           .run(materializer)
 
       waitFor(pair.second).first.get.status() should be(StatusCodes.OK)
-      pair.first.shutdown(system.dispatcher)
+      pair.first.shutdown()
       waitFor(binding.unbind())
     }
 
@@ -247,7 +247,7 @@ class HttpExtensionApiSpec extends AkkaSpecWithMaterializer(
           .run(materializer)
 
       waitFor(pair.second).first.get.status() should be(StatusCodes.OK)
-      pair.first.shutdown(system.dispatcher)
+      pair.first.shutdown()
       waitFor(binding.unbind())
     }
 
@@ -265,7 +265,7 @@ class HttpExtensionApiSpec extends AkkaSpecWithMaterializer(
           .run(materializer)
 
       waitFor(pair.second).first.get.status() should be(StatusCodes.OK)
-      pair.first.shutdown(system.dispatcher)
+      pair.first.shutdown()
       waitFor(binding.unbind())
     }
 
@@ -324,7 +324,7 @@ class HttpExtensionApiSpec extends AkkaSpecWithMaterializer(
 
     "allow a single request (with two parameters)" in {
       val (host, port, binding) = runServer()
-      val response = http.singleRequest(HttpRequest.GET(s"http://$host:$port/"), materializer)
+      val response = http.singleRequest(HttpRequest.GET(s"http://$host:$port/"))
 
       waitFor(response).status() should be(StatusCodes.OK)
       waitFor(binding.unbind())
@@ -332,7 +332,7 @@ class HttpExtensionApiSpec extends AkkaSpecWithMaterializer(
 
     "allow a single request (with three parameters)" in {
       val (host, port, binding) = runServer()
-      val response = http.singleRequest(HttpRequest.GET(s"http://$host:$port/"), http.defaultClientHttpsContext, materializer)
+      val response = http.singleRequest(HttpRequest.GET(s"http://$host:$port/"), http.defaultClientHttpsContext)
 
       waitFor(response).status() should be(StatusCodes.OK)
       waitFor(binding.unbind())
@@ -340,7 +340,7 @@ class HttpExtensionApiSpec extends AkkaSpecWithMaterializer(
 
     "allow a single request (with five parameters)" in {
       val (host, port, binding) = runServer()
-      val response = http.singleRequest(HttpRequest.GET(s"http://$host:$port/"), http.defaultClientHttpsContext, poolSettings, loggingAdapter, materializer)
+      val response = http.singleRequest(HttpRequest.GET(s"http://$host:$port/"), http.defaultClientHttpsContext, poolSettings, loggingAdapter)
 
       waitFor(response).status() should be(StatusCodes.OK)
       waitFor(binding.unbind())

@@ -48,7 +48,7 @@ object Dependencies {
 
     val hpack       = "com.twitter"                   % "hpack"                        % "1.0.2"       // ApacheV2
 
-    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.8.3"
+    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.8.4"
 
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"

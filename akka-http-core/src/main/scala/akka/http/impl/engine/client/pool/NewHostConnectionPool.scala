@@ -140,8 +140,8 @@ private[client] object NewHostConnectionPool {
         def onConnectionAttemptSucceeded(): Unit = _connectionEmbargo = Duration.Zero
         def currentEmbargo: FiniteDuration = _connectionEmbargo
 
-        final case class Event[T](name: String, transition: (SlotState, Slot, T) => SlotState) {
-          def preApply(t: T): Event[Unit] = Event(name, (state, slot, _) => transition(state, slot, t))
+        class Event[T](val name: String, val transition: (SlotState, Slot, T) => SlotState) {
+          def preApply(t: T): Event[Unit] = new Event(name, (state, slot, _) => transition(state, slot, t))
           override def toString: String = s"Event($name)"
         }
         object Event {

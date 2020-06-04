@@ -45,7 +45,7 @@ public class HttpServerExampleDocTest {
     Materializer materializer = ActorMaterializer.create(system);
 
     Source<IncomingConnection, CompletionStage<ServerBinding>> serverSource =
-      Http.get(system).bind(ConnectHttp.toHost("localhost", 8080), materializer);
+      Http.get(system).bind(ConnectHttp.toHost("localhost", 8080));
 
     CompletionStage<ServerBinding> serverBindingFuture =
       serverSource.to(Sink.foreach(connection -> {
@@ -63,7 +63,7 @@ public class HttpServerExampleDocTest {
     Materializer materializer = ActorMaterializer.create(system);
 
     Source<IncomingConnection, CompletionStage<ServerBinding>> serverSource =
-      Http.get(system).bind(ConnectHttp.toHost("localhost", 80), materializer);
+      Http.get(system).bind(ConnectHttp.toHost("localhost", 80));
 
     CompletionStage<ServerBinding> serverBindingFuture =
       serverSource.to(Sink.foreach(connection -> {
@@ -85,7 +85,7 @@ public class HttpServerExampleDocTest {
     Materializer materializer = ActorMaterializer.create(system);
 
     Source<IncomingConnection, CompletionStage<ServerBinding>> serverSource =
-      Http.get(system).bind(ConnectHttp.toHost("localhost", 8080), materializer);
+      Http.get(system).bind(ConnectHttp.toHost("localhost", 8080));
 
     Flow<IncomingConnection, IncomingConnection, NotUsed> failureDetection =
       Flow.of(IncomingConnection.class).watchTermination((notUsed, termination) -> {
@@ -115,7 +115,7 @@ public class HttpServerExampleDocTest {
     Materializer materializer = ActorMaterializer.create(system);
 
     Source<IncomingConnection, CompletionStage<ServerBinding>> serverSource =
-      Http.get(system).bind(ConnectHttp.toHost("localhost", 8080), materializer);
+      Http.get(system).bind(ConnectHttp.toHost("localhost", 8080));
 
     Flow<HttpRequest, HttpRequest, NotUsed> failureDetection =
       Flow.of(HttpRequest.class)
@@ -158,7 +158,7 @@ public class HttpServerExampleDocTest {
       final Materializer materializer = ActorMaterializer.create(system);
 
       Source<IncomingConnection, CompletionStage<ServerBinding>> serverSource =
-        Http.get(system).bind(ConnectHttp.toHost("localhost", 8080), materializer);
+        Http.get(system).bind(ConnectHttp.toHost("localhost", 8080));
 
       //#request-handler
       final Function<HttpRequest, HttpResponse> requestHandler =

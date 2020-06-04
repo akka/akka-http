@@ -80,12 +80,6 @@ trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImp
         }
     })
 
-  // The null ClassTag being passed to fromEntityStreamingSupportAndByteStringMarshaller is safe,
-  // as it is handled gracefully by NoStrictlyCompatibleElementMarshallingAvailableException.
-  @deprecated("This method exists only for the purpose of binary compatibility, it used to be implicit.", "10.1.0")
-  private[akka] def fromEntityStreamingSupportAndByteStringMarshaller[T, M](s: EntityStreamingSupport, m: ToByteStringMarshaller[T]): ToResponseMarshaller[Source[T, M]] =
-    fromEntityStreamingSupportAndByteStringMarshaller(null, s, m)
-
   implicit def fromEntityStreamingSupportAndByteStringMarshaller[T: ClassTag, M](implicit s: EntityStreamingSupport, m: ToByteStringMarshaller[T]): ToResponseMarshaller[Source[T, M]] =
     fromEntityStreamingSupportAndByteStringSourceMarshaller(s, m.map(Source.single))
 }

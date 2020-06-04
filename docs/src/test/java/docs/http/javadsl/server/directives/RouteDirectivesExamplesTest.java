@@ -30,8 +30,6 @@ import akka.http.javadsl.server.Directives;
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.path;
 import static akka.http.javadsl.server.Directives.reject;
-import static akka.http.javadsl.server.Directives.route;
-
 //#reject
 //#redirect
 import static akka.http.javadsl.server.Directives.complete;
@@ -39,8 +37,6 @@ import static akka.http.javadsl.server.Directives.pathEnd;
 import static akka.http.javadsl.server.Directives.pathPrefix;
 import static akka.http.javadsl.server.Directives.pathSingleSlash;
 import static akka.http.javadsl.server.Directives.redirect;
-import static akka.http.javadsl.server.Directives.route;
-
 //#redirect
 //#failWith
 import static akka.http.javadsl.server.Directives.failWith;

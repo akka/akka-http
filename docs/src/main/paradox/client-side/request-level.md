@@ -19,14 +19,14 @@ or an extra pool just for the long-running connection instead.
 
 ## Future-Based Variant
 
-Most often, your HTTP client needs are very basic. You simply need the HTTP response for a certain request and don't
+Most often, your HTTP client needs are very basic. You need the HTTP response for a certain request and don't
 want to bother with setting up a full-blown streaming infrastructure.
 
-For these cases Akka HTTP offers the @scala[`Http().singleRequest(...)`]@java[`Http.get(system).singleRequest(...)`] method, which simply turns an @apidoc[HttpRequest] instance
+For these cases Akka HTTP offers the @scala[`Http().singleRequest(...)`]@java[`Http.get(system).singleRequest(...)`] method, which turns an @apidoc[HttpRequest] instance
 into @scala[`Future[HttpResponse]`]@java[`CompletionStage<HttpResponse>`]. Internally the request is dispatched across the (cached) host connection pool for the
 request's effective URI.
 
-Just like in the case of the super-pool flow described above the request must have either an absolute URI or a valid
+The request must have either an absolute URI or a valid
 `Host` header, otherwise the returned future will be completed with an error.
 
 ### Example
@@ -39,7 +39,7 @@ Java
 
 ### Using the Future-Based API in Actors
 
-When using the @scala[`Future`]@java[`CompletionStage`] based API from inside an @apidoc[Actor], all the usual caveats apply to how one should deal
+When using the @scala[`Future`]@java[`CompletionStage`] based API from inside a classic Akka @apidoc[Actor], all the usual caveats apply to how one should deal
 with the futures completion. For example you should not access the actor's state from within the @scala[`Future`]@java[`CompletionStage`]'s callbacks
 (such as `map`, `onComplete`, ...) and instead you should use the @scala[`pipeTo`]@java[`pipe`] pattern to pipe the result back
 to the actor as a message:
@@ -61,8 +61,7 @@ This is a feature of Akka HTTP that allows consuming entities (and pulling them 
 a streaming fashion, and only *on demand* when the client is ready to consume the bytes -
 it may be a bit surprising at first though.
 
-There are tickets open about automatically dropping entities if not consumed ([#183](https://github.com/akka/akka-http/issues/183) and [#117](https://github.com/akka/akka-http/issues/117)),
-so these may be implemented in the near future.
+When response entities are not subscribed to within `akka.http.host-connection-pool.response-entity-subscription-timeout`, the stream will fail with a `TimeoutException: Response entity was not subscribed after ...`.
 
 @@@
 

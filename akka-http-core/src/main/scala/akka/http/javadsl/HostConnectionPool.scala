@@ -10,17 +10,9 @@ import akka.Done
 import akka.annotation.DoNotInherit
 import akka.http.impl.settings.HostConnectionPoolSetup
 
-import scala.concurrent.ExecutionContextExecutor
-
 @DoNotInherit
 abstract class HostConnectionPool private[http] {
   def setup: HostConnectionPoolSetup
-
-  /**
-   * @deprecated In favor of shutdown method that takes no executor.
-   */
-  @Deprecated
-  def shutdown(ec: ExecutionContextExecutor): CompletionStage[Done] = shutdown()
 
   /**
    * Asynchronously triggers the shutdown of the host connection pool.

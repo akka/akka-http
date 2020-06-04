@@ -14,7 +14,6 @@ import akka.http.impl.engine.client.pool.NewHostConnectionPool
 import akka.http.impl.util._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.settings.PoolImplementation
 import akka.stream.ActorMaterializer
 import akka.stream.Attributes
 import akka.stream.FlowShape
@@ -67,14 +66,7 @@ private[http] object PoolInterface {
     val connectionFlow =
       Http().outgoingConnectionUsingContext(host, port, connectionContext, settings.connectionSettings, setup.log)
 
-    val poolFlow =
-      settings.poolImplementation match {
-        case PoolImplementation.Legacy =>
-          log.warning("Legacy pool implementation is deprecated and will be removed in the future. " +
-            "Please start using `akka.http.host-connection-pool.pool-implementation = new`, instead.")
-          PoolFlow(connectionFlow, settings, log).named("PoolFlow")
-        case PoolImplementation.New => NewHostConnectionPool(connectionFlow, settings, log).named("PoolFlow")
-      }
+    val poolFlow = NewHostConnectionPool(connectionFlow, settings, log).named("PoolFlow")
 
     val bufferIfNeeded: Flow[RequestContext, RequestContext, NotUsed] = {
       val targetBufferSize = settings.maxOpenRequests - settings.maxConnections

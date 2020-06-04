@@ -36,7 +36,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
 
   s"The HttpHeaderParser (mode: $mode)" should {
     "insert the 1st value" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
-      insert("Hello", 'Hello)
+      insert("Hello", Symbol("Hello"))
       check {
         """nodes: 0/H, 0/e, 0/l, 0/l, 0/o, 1/Ω
           |branchData:\u0020
@@ -49,8 +49,8 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
     }
 
     "insert a new branch underneath a simple node" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
-      insert("Hello", 'Hello)
-      insert("Hallo", 'Hallo)
+      insert("Hello", Symbol("Hello"))
+      insert("Hallo", Symbol("Hallo"))
       check {
         """nodes: 0/H, 1/e, 0/l, 0/l, 0/o, 1/Ω, 0/a, 0/l, 0/l, 0/o, 2/Ω
           |branchData: 6/2/0
@@ -64,9 +64,9 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
     }
 
     "insert a new branch underneath the root" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
-      insert("Hello", 'Hello)
-      insert("Hallo", 'Hallo)
-      insert("Yeah", 'Yeah)
+      insert("Hello", Symbol("Hello"))
+      insert("Hallo", Symbol("Hallo"))
+      insert("Yeah", Symbol("Yeah"))
       check {
         """nodes: 2/H, 1/e, 0/l, 0/l, 0/o, 1/Ω, 0/a, 0/l, 0/l, 0/o, 2/Ω, 0/Y, 0/e, 0/a, 0/h, 3/Ω
           |branchData: 6/2/0, 0/1/11
@@ -81,10 +81,10 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
     }
 
     "insert a new branch underneath an existing branch node" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
-      insert("Hello", 'Hello)
-      insert("Hallo", 'Hallo)
-      insert("Yeah", 'Yeah)
-      insert("Hoo", 'Hoo)
+      insert("Hello", Symbol("Hello"))
+      insert("Hallo", Symbol("Hallo"))
+      insert("Yeah", Symbol("Yeah"))
+      insert("Hoo", Symbol("Hoo"))
       check {
         """nodes: 2/H, 1/e, 0/l, 0/l, 0/o, 1/Ω, 0/a, 0/l, 0/l, 0/o, 2/Ω, 0/Y, 0/e, 0/a, 0/h, 3/Ω, 0/o, 0/o, 4/Ω
           |branchData: 6/2/16, 0/1/11
@@ -100,11 +100,11 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
     }
 
     "support overriding of previously inserted values" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
-      insert("Hello", 'Hello)
-      insert("Hallo", 'Hallo)
-      insert("Yeah", 'Yeah)
-      insert("Hoo", 'Hoo)
-      insert("Hoo", 'Foo)
+      insert("Hello", Symbol("Hello"))
+      insert("Hallo", Symbol("Hallo"))
+      insert("Yeah", Symbol("Yeah"))
+      insert("Hoo", Symbol("Hoo"))
+      insert("Hoo", Symbol("Foo"))
       check {
         """   ┌─a-l-l-o- 'Hallo
           |-H-e-l-l-o- 'Hello
@@ -148,7 +148,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
     }
 
     "parse and cache a raw header" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
-      insert("hello: bob", 'Hello)
+      insert("hello: bob", Symbol("Hello"))
       val (ixA, headerA) = parseLine(s"Fancy-Pants: foo${newLine}x")
       val (ixB, headerB) = parseLine(s"Fancy-pants: foo${newLine}x")
       val newLineWithHyphen = if (newLine == "\r\n") """\r-\n""" else """\n"""
@@ -212,7 +212,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
     }
 
     "continue parsing raw headers even if the overall cache value capacity is reached" in new TestSetup() {
-      val randomHeaders = Stream.continually {
+      val randomHeaders = Iterator.continually {
         val name = nextRandomString(nextRandomAlphaNumChar _, nextRandomInt(4, 16))
         val value = nextRandomString(() => nextRandomPrintableChar, nextRandomInt(4, 16))
         RawHeader(name, value)
@@ -223,7 +223,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
     }
 
     "continue parsing modelled headers even if the overall cache value capacity is reached" in new TestSetup() {
-      val randomHostHeaders = Stream.continually {
+      val randomHostHeaders = Iterator.continually {
         Host(
           host = nextRandomString(nextRandomAlphaNumChar _, nextRandomInt(4, 8)),
           port = nextRandomInt(1000, 10000))
@@ -234,7 +234,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
     }
 
     "continue parsing headers even if the overall cache node capacity is reached" in new TestSetup() {
-      val randomHostHeaders = Stream.continually {
+      val randomHostHeaders = Iterator.continually {
         RawHeader(
           name = nextRandomString(nextRandomAlphaNumChar _, 60),
           value = nextRandomString(nextRandomAlphaNumChar _, 1000))
@@ -245,7 +245,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
     }
 
     "continue parsing raw headers even if the header-specific cache capacity is reached" in new TestSetup() {
-      val randomHeaders = Stream.continually {
+      val randomHeaders = Iterator.continually {
         val value = nextRandomString(() => nextRandomPrintableChar, nextRandomInt(4, 16))
         RawHeader("Fancy", value)
       }
@@ -255,7 +255,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
     }
 
     "continue parsing modelled headers even if the header-specific cache capacity is reached" in new TestSetup() {
-      val randomHeaders = Stream.continually {
+      val randomHeaders = Iterator.continually {
         `User-Agent`(nextRandomString(nextRandomAlphaNumChar _, nextRandomInt(4, 16)))
       }
       randomHeaders.take(40).foldLeft(0) {

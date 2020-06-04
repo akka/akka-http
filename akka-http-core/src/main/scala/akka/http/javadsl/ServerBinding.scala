@@ -10,12 +10,11 @@ import java.util.concurrent.{ CompletionStage, TimeUnit }
 import akka.Done
 import akka.annotation.DoNotInherit
 import akka.dispatch.ExecutionContexts
-import akka.util.JavaDurationConverters
+import akka.util.JavaDurationConverters._
 
 import scala.compat.java8.FutureConverters._
-import scala.compat.java8.FutureConverters._
 import scala.concurrent.duration.FiniteDuration
-import JavaDurationConverters._
+import akka.actor.ClassicActorSystemProvider
 
 /**
  * Represents a prospective HTTP server binding.
@@ -112,6 +111,18 @@ class ServerBinding private[http] (delegate: akka.http.scaladsl.Http.ServerBindi
     delegate.whenTerminated
       .map(_.asInstanceOf[HttpTerminated])(ExecutionContexts.sameThreadExecutionContext)
       .toJava
+
+  /**
+   * Adds this `ServerBinding` to the actor system's coordinated shutdown, so that [[unbind]] and [[terminate]] get
+   * called appropriately before the system is shut down.
+   *
+   * @param hardTerminationDeadline timeout after which all requests and connections shall be forcefully terminated
+   */
+  def addToCoordinatedShutdown(hardTerminationDeadline: java.time.Duration, system: ClassicActorSystemProvider): ServerBinding = {
+    import akka.util.JavaDurationConverters._
+    delegate.addToCoordinatedShutdown(hardTerminationDeadline.asScala)(system)
+    this
+  }
 }
 
 /** Type used to carry meaningful information when server termination has completed successfully. */

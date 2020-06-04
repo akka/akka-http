@@ -1,5 +1,33 @@
 # Graceful termination
 
+## Akka Coordinated Shutdown
+
+@extref[Coordinated shutdown](akka-docs:coordinated-shutdown.html) is Akka's managed way of shutting down multiple modules / sub-systems (persistence, cluster, http etc)
+in a predictable and ordered fashion. For example, in a typical Akka application you will want to stop accepting new HTTP connections, and then shut down the cluster etc.
+
+The recommended Akka HTTP server shutdown consists of three steps:
+
+1. stop accepting new connections (@scala[@scaladoc[ServerBinding.unbind](akka.http.scaladsl.Http.ServerBinding)]@java[@javadoc[ServerBinding.unbind](akka.http.javadsl.ServerBinding)])
+1. try to finish handling of ongoing requests until the `hardTerminationDeadline` hits (see below for details)
+1. close open connections (@scala[@scaladoc[ServerBinding.terminate](akka.http.scaladsl.Http.ServerBinding)]@java[@javadoc[ServerBinding.terminate](akka.http.javadsl.ServerBinding)])
+
+This recommended sequence can be added to Akka's coordinated shutdown via @scala[@scaladoc[ServerBinding.addToCoordinatedShutdown](akka.http.scaladsl.Http.ServerBinding)]@java[@javadoc[ServerBinding.addToCoordinatedShutdown](akka.http.javadsl.ServerBinding)] like this:
+
+Scala
+: @@snip[snip](/docs/src/test/scala/docs/http/scaladsl/server/ServerShutdownExampleSpec.scala) { #suggested }
+
+Java
+: @@snip[snip](/docs/src/test/java/docs/http/javadsl/server/ServerShutdownExampleTest.java) { #suggested }
+
+You may initiate the Akka shutdown via `ActorSystem.terminate()`, or @scala[`run`] @java[`runAll`] on the `CoordinatedShutdown` extension and pass it a class implementing @apidoc[CoordinatedShutdown.Reason] for informational purposes
+
+Scala
+: @@snip[snip](/docs/src/test/scala/docs/http/scaladsl/server/ServerShutdownExampleSpec.scala) { #shutdown }
+
+Java
+: @@snip[snip](/docs/src/test/java/docs/http/javadsl/server/ServerShutdownExampleTest.java) { #shutdown }
+
+
 ## Graceful termination using `ServerTerminator`
 
 Akka HTTP provides two APIs to "stop" the server, either of them are available via the
@@ -60,18 +88,3 @@ Scala
 
 Java
 :   @@snip [HttpServerExampleDocTest.java]($test$/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #graceful-termination }
-
-## Akka Coordinated Shutdown
-
-@@@ note
-  
-  NOT IMPLEMENTED YET.
-  
-  Coordinated shutdown support is not yet implemented in Akka HTTP; 
-  The goal is for it to invoke the graceful termination process as described above automatically when shutdown is requested.
-  See the issue [#1210](https://github.com/akka/akka-http/issues/1210) for more details.
-
-@@@
-
-Coordinated shutdown is Akka's managed way of shutting down multiple modules / sub-systems (persistence, cluster, http etc)
-in a predictable and ordered fashion. For example, in a typical Akka application you will want to stop accepting new HTTP connections, and then shut down the cluster etc. 

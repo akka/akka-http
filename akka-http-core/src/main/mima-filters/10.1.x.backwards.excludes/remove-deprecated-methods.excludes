@@ -1,0 +1,10 @@
+# Removal of deprecated methods
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.HostConnectionPool.shutdown")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.model.HttpMethod.getRequestEntityAcceptance")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.model.HttpMethods.createCustom")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.settings.ConnectionPoolSettings.getTransport")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.Http#HostConnectionPool.shutdown")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpExt.outgoingConnectionUsingTransport")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpExt.outgoingConnectionUsingTransport$default$5")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpExt.outgoingConnectionUsingTransport$default$6")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.model.HttpMethod.getRequestEntityAcceptance")

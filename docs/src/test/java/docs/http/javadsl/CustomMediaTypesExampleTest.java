@@ -78,7 +78,7 @@ public class CustomMediaTypesExampleTest extends JUnitRouteTest {
     final HttpResponse response = Http.get(system)
       .singleRequest(HttpRequest
         .GET("http://" + host + ":" + port + "/")
-        .withEntity(applicationCustom.toContentType(), "~~example~=~value~~"), materializer)
+        .withEntity(applicationCustom.toContentType(), "~~example~=~value~~"))
       .toCompletableFuture()
       .get();
 

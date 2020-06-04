@@ -1,0 +1,8 @@
+# Removal of deprecated methods
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.HttpsConnectionContext.getDefaultPort")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.HttpConnectionContext.getDefaultPort")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.ConnectionContext.getDefaultPort")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.ConnectionContext.$init$")
+
+# Added to @DoNotInherit
+ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.http.scaladsl.ConnectionContext.defaultPort")
