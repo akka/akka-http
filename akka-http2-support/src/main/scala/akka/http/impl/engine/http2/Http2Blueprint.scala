@@ -9,6 +9,7 @@ import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.HttpConnectionIdleTimeoutBidi
 import akka.http.impl.engine.http2.FrameEvent._
+import akka.http.impl.engine.http2.client.{ RequestRendering, ResponseParsing }
 import akka.http.impl.engine.http2.framing.{ Http2FrameParsing, Http2FrameRendering }
 import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompression }
 import akka.http.impl.engine.parsing.HttpHeaderParser
@@ -16,13 +17,12 @@ import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.http2.Http2StreamIdHeader
-import akka.http.scaladsl.settings.{ Http2ServerSettings, ParserSettings, ServerSettings }
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, Http2CommonSettings, ParserSettings, ServerSettings }
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl.{ BidiFlow, Flow, Source }
 import akka.util.ByteString
 
-import scala.concurrent.duration.{ FiniteDuration }
-
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.collection.immutable
 
@@ -32,18 +32,39 @@ import scala.collection.immutable
 private[http2] sealed trait Http2SubStream {
   val initialHeaders: ParsedHeadersFrame
   val data: Source[Any, Any]
+  val correlationAttributes: Map[AttributeKey[_], _]
   def streamId: Int = initialHeaders.streamId
+
+  def withCorrelationAttributes(attributes: Map[AttributeKey[_], _]): Http2SubStream
+
+  def createEntity(contentLength: Long, contentType: ContentType): RequestEntity =
+    this match {
+      case s if s.data == Source.empty || contentLength == 0 => HttpEntity.Empty
+      case s: ByteHttp2SubStream =>
+        if (contentLength > 0) HttpEntity.Default(contentType, contentLength, s.data)
+        else HttpEntity.Chunked.fromData(contentType, s.data)
+      /* contentLength undefined */
+      case c: ChunkedHttp2SubStream => HttpEntity.Chunked(contentType, c.data)
+    }
 }
 
 private[http2] final case class ByteHttp2SubStream(
-  initialHeaders: ParsedHeadersFrame,
-  data:           Source[ByteString, Any]
-) extends Http2SubStream
+  initialHeaders:        ParsedHeadersFrame,
+  data:                  Source[ByteString, Any],
+  correlationAttributes: Map[AttributeKey[_], _] = Map.empty
+) extends Http2SubStream {
+  override def withCorrelationAttributes(attributes: Map[AttributeKey[_], _]): Http2SubStream =
+    copy(correlationAttributes = attributes)
+}
 
 private[http2] final case class ChunkedHttp2SubStream(
-  initialHeaders: ParsedHeadersFrame,
-  data:           Source[HttpEntity.ChunkStreamPart, Any]
-) extends Http2SubStream
+  initialHeaders:        ParsedHeadersFrame,
+  data:                  Source[HttpEntity.ChunkStreamPart, Any],
+  correlationAttributes: Map[AttributeKey[_], _]                 = Map.empty
+) extends Http2SubStream {
+  override def withCorrelationAttributes(attributes: Map[AttributeKey[_], _]): Http2SubStream =
+    copy(correlationAttributes = attributes)
+}
 
 /** INTERNAL API */
 @InternalApi
@@ -61,21 +82,54 @@ private[http] object Http2Blueprint {
       initialDemuxerSettings: immutable.Seq[Setting] = Nil,
       upgraded: Boolean = false): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
     httpLayer(settings, log) atop
-      demux(settings.http2Settings, initialDemuxerSettings, upgraded) atop
+      demux(settings.http2Settings, initialDemuxerSettings, upgraded, isServer = true) atop
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
-      hpackCoding() atop {
-        settings.idleTimeout match {
-          case f: FiniteDuration => framing(log) atop HttpConnectionIdleTimeoutBidi(f, None)
-          case _ => framing(log)
-        }
-      }
+      hpackCoding() atop
+      framing(log) atop
+      idleTimeoutIfConfigured(settings.idleTimeout)
   // LogByteStringTools.logToStringBidi("framing") atop // enable for debugging
   // format: ON
+
+  def clientStack(settings: ClientConnectionSettings, log: LoggingAdapter): BidiFlow[HttpRequest, ByteString, ByteString, HttpResponse, NotUsed] =
+    httpLayerClient(settings, log) atop
+      demux(settings.http2Settings, Nil, upgraded = false, isServer = false) atop
+      FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
+      hpackCoding() atop
+      framingClient(log) atop
+      idleTimeoutIfConfigured(settings.idleTimeout)
+
+  def httpLayerClient(settings: ClientConnectionSettings, log: LoggingAdapter): BidiFlow[HttpRequest, Http2SubStream, Http2SubStream, HttpResponse, NotUsed] = {
+    // This is master header parser, every other usage should do .createShallowCopy()
+    // HttpHeaderParser is not thread safe and should not be called concurrently,
+    // the internal trie, however, has built-in protection and will do copy-on-write
+    val masterHttpHeaderParser = HttpHeaderParser(settings.parserSettings, log)
+    BidiFlow.fromFlows(
+      Flow[HttpRequest].statefulMapConcat { () =>
+        val renderer = RequestRendering.createRenderer(log)
+        request => renderer(request) :: Nil
+      },
+      Flow[Http2SubStream].statefulMapConcat { () =>
+        val headerParser = masterHttpHeaderParser.createShallowCopy()
+        stream => ResponseParsing.parseResponse(headerParser)(stream) :: Nil
+      }
+    )
+  }
+
+  def idleTimeoutIfConfigured(timeout: Duration): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
+    timeout match {
+      case f: FiniteDuration => HttpConnectionIdleTimeoutBidi(f, None)
+      case _                 => BidiFlow.identity[ByteString, ByteString]
+    }
 
   def framing(log: LoggingAdapter): BidiFlow[FrameEvent, ByteString, ByteString, FrameEvent, NotUsed] =
     BidiFlow.fromFlows(
       Flow[FrameEvent].via(new Http2FrameRendering),
       Flow[ByteString].via(new Http2FrameParsing(shouldReadPreface = true, log)))
+
+  def framingClient(log: LoggingAdapter): BidiFlow[FrameEvent, ByteString, ByteString, FrameEvent, NotUsed] =
+    BidiFlow.fromFlows(
+      Flow[FrameEvent].via(new Http2FrameRendering).prepend(Source.single(Http2Protocol.ClientConnectionPreface)),
+      Flow[ByteString].via(new Http2FrameParsing(shouldReadPreface = false, log)))
 
   /**
    * Runs hpack encoding and decoding. Incoming frames that are processed are HEADERS and CONTINUATION.
@@ -95,8 +149,8 @@ private[http] object Http2Blueprint {
    * Creates substreams for every stream and manages stream state machines
    * and handles priorization (TODO: later)
    */
-  def demux(settings: Http2ServerSettings, initialDemuxerSettings: immutable.Seq[Setting], upgraded: Boolean): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
-    BidiFlow.fromGraph(new Http2ServerDemux(settings, initialDemuxerSettings, upgraded))
+  def demux(settings: Http2CommonSettings, initialDemuxerSettings: immutable.Seq[Setting], upgraded: Boolean, isServer: Boolean): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
+    BidiFlow.fromGraph(new Http2ServerDemux(settings, initialDemuxerSettings, upgraded, isServer))
 
   /**
    * Translation between substream frames and Http messages (both directions)
@@ -143,7 +197,7 @@ private[http] object Http2Blueprint {
       case ParserSettings.ErrorLoggingVerbosity.Full   => log.warning(info.formatPretty)
     }
 
-  private[http2] val unwrapTls: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, ByteString, NotUsed] =
+  private[http] val unwrapTls: BidiFlow[ByteString, SslTlsOutbound, SslTlsInbound, ByteString, NotUsed] =
     BidiFlow.fromFlows(Flow[ByteString].map(SendBytes), Flow[SslTlsInbound].collect {
       case SessionBytes(_, bytes) => bytes
     })
