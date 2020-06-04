@@ -19,13 +19,10 @@ object Common extends AutoPlugin {
       "-target:jvm-1.8",
       "-unchecked",
       "-Xlint",
-      // "-Yno-adapted-args", //akka-http heavily depends on adapted args and => Unit implicits break otherwise
       "-Ywarn-dead-code",
       // "-Xfuture" // breaks => Unit implicits
       // Can be removed when we drop support for Scala 2.12:
       "-P:silencer:globalFilters=object JavaConverters in package collection is deprecated",
-      // TODO https://github.com/akka/akka-http/issues/2738
-      "-P:silencer:globalFilters=(Adapting\\ argument\\ list\\ by\\ creating|Adaptation\\ of\\ argument\\ list\\ by\\ inserting)",
       // we cannot fix (most?) of them until 2.12 support is dropped
       "-P:silencer:globalFilters=is deprecated \\(since 2\\.13\\."
     ),
