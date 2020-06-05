@@ -100,7 +100,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     settings:          ServerSettings,
     connectionContext: ConnectionContext,
     log:               LoggingAdapter): ServerLayerBidiFlow = {
-    val httpLayer = serverLayerImpl(settings, None, log, connectionContext.isSecure)
+    val httpLayer = serverLayer(settings, None, log, connectionContext.isSecure)
     val tlsStage = sslTlsStage(connectionContext, Server)
 
     val serverBidiFlow =
@@ -167,17 +167,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   def bind(interface: String, port: Int = DefaultPortForProtocol,
            connectionContext: ConnectionContext = defaultServerHttpContext,
            settings:          ServerSettings    = ServerSettings(system),
-           log:               LoggingAdapter    = system.log): Source[Http.IncomingConnection, Future[ServerBinding]] =
-    bindImpl(interface, port, connectionContext, settings, log)
-
-  /**
-   *  Dummy method to disambiguate internal usages of `bind`. Implementation can be moved to
-   * `bind` when deprecated bind method(s) are removed.
-   */
-  private[http] def bindImpl(interface: String, port: Int = DefaultPortForProtocol,
-                             connectionContext: ConnectionContext = defaultServerHttpContext,
-                             settings:          ServerSettings    = ServerSettings(system),
-                             log:               LoggingAdapter    = system.log): Source[Http.IncomingConnection, Future[ServerBinding]] = {
+           log:               LoggingAdapter    = system.log): Source[Http.IncomingConnection, Future[ServerBinding]] = {
     val fullLayer: ServerLayerBidiFlow = fuseServerBidiFlow(settings, connectionContext, log)
 
     val masterTerminator = new MasterServerTerminator(log)
@@ -335,17 +325,6 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    * this layer produces if the `akka.http.server.remote-address-header` configuration option is enabled.
    */
   def serverLayer(
-    settings:           ServerSettings            = ServerSettings(system),
-    remoteAddress:      Option[InetSocketAddress] = None,
-    log:                LoggingAdapter            = system.log,
-    isSecureConnection: Boolean                   = false): ServerLayer =
-    serverLayerImpl(settings, remoteAddress, log, isSecureConnection)
-
-  /**
-   *  Dummy method to disambiguate internal usages of serverLayer. Implementation can be moved to
-   * `serverLayer` when deprecated serverLayer method(s) are removed.
-   */
-  private[http] def serverLayerImpl(
     settings:           ServerSettings            = ServerSettings(system),
     remoteAddress:      Option[InetSocketAddress] = None,
     log:                LoggingAdapter            = system.log,
