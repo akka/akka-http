@@ -17,7 +17,7 @@ import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.TLSProtocol.{ SslTlsInbound, SslTlsOutbound }
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source, TLS, TLSPlacebo, Tcp }
 import akka.http.scaladsl.model.headers.{ Connection, RawHeader, Upgrade, UpgradeProtocol }
-import akka.http.scaladsl.model.http2.{ Http2SettingsHeader, Http2StreamIdHeader }
+import akka.http.scaladsl.model.http2.Http2SettingsHeader
 import akka.stream.{ IgnoreComplete, Materializer }
 import akka.util.ByteString
 import com.typesafe.config.Config
@@ -111,7 +111,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
           case immutable.Seq(Success(settingsFromHeader)) =>
             // inject the actual upgrade request with a stream identifier of 1
             // https://http2.github.io/http2-spec/#rfc.section.3.2
-            val injectedRequest = Source.single(req.addHeader(Http2StreamIdHeader(1)))
+            val injectedRequest = Source.single(req.addAttribute(Http2.streamId, 1))
 
             val serverLayer: Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(
               Flow[HttpRequest]
@@ -183,6 +183,8 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
 }
 
 object Http2 extends ExtensionId[Http2Ext] with ExtensionIdProvider {
+  val streamId = AttributeKey[Int]("x-http2-stream-id")
+
   override def get(system: ActorSystem): Http2Ext = super.get(system)
   override def get(system: ClassicActorSystemProvider): Http2Ext = super.get(system)
   def apply()(implicit system: ClassicActorSystemProvider): Http2Ext = super.apply(system)

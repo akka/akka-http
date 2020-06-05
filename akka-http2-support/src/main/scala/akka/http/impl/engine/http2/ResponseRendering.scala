@@ -8,13 +8,12 @@ import akka.event.LoggingAdapter
 import akka.http.impl.util.StringRendering
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Date
-import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.http.scaladsl.settings.ServerSettings
 
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
-
 import FrameEvent.ParsedHeadersFrame
+import akka.http.scaladsl.Http2
 
 private[http2] object ResponseRendering {
 
@@ -41,7 +40,7 @@ private[http2] object ResponseRendering {
     val serverHeader = settings.serverHeader.map(h => h.lowercaseName -> h.value)
 
     { (response: HttpResponse) =>
-      val streamId = response.header[Http2StreamIdHeader].getOrElse(failBecauseOfMissingHeader).streamId
+      val streamId = response.attribute(Http2.streamId).getOrElse(failBecauseOfMissingHeader)
       val headerPairs = new VectorBuilder[(String, String)]()
 
       // From https://tools.ietf.org/html/rfc7540#section-8.1.2.4:

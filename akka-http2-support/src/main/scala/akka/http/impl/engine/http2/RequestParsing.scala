@@ -9,10 +9,9 @@ import java.lang.StringBuilder
 import akka.annotation.InternalApi
 import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.impl.engine.server.HttpAttributes
-import akka.http.scaladsl.model
+import akka.http.scaladsl.{ Http2, model }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ `Remote-Address`, `Tls-Session-Info` }
-import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.Attributes
 import akka.stream.scaladsl.Source
@@ -62,7 +61,6 @@ private[http2] object RequestParsing {
           checkRequiredPseudoHeader(":method", method)
           checkRequiredPseudoHeader(":path", pathAndRawQuery)
 
-          headers += Http2StreamIdHeader(subStream.streamId)
           if (cookies != null) {
             // Compress 'cookie' headers if present
             headers += parseHeaderPair(httpHeaderParser, "cookie", cookies.toString)
@@ -84,7 +82,7 @@ private[http2] object RequestParsing {
           val uri = Uri(scheme, authorityOrDefault, path, rawQueryString)
           HttpRequest(
             method, uri, headers.result(), entity, HttpProtocols.`HTTP/2.0`
-          )
+          ).addAttribute(Http2.streamId, subStream.streamId)
         } else remainingHeaders.head match {
           case (":scheme", value) =>
             checkUniquePseudoHeader(":scheme", scheme)

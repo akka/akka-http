@@ -14,15 +14,14 @@ import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompressio
 import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.impl.util.StreamUtils
+import akka.http.scaladsl.Http2
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.http.scaladsl.settings.{ Http2ServerSettings, ParserSettings, ServerSettings }
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl.{ BidiFlow, Flow, Source }
 import akka.util.ByteString
 
-import scala.concurrent.duration.{ FiniteDuration }
-
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.collection.immutable
 
@@ -129,8 +128,8 @@ private[http] object Http2Blueprint {
       .mapAsyncUnordered(parallelism) { req =>
         val response = handler(req)
 
-        req.header[Http2StreamIdHeader] match {
-          case Some(streamIdHeader) => response.map(_.addHeader(streamIdHeader)) // add stream id header when request had it
+        req.attribute(Http2.streamId) match {
+          case Some(streamIdHeader) => response.map(_.addAttribute(Http2.streamId, streamIdHeader)) // add stream id attribute when request had it
           case None                 => response
         }
       }
