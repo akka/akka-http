@@ -6,9 +6,9 @@ package docs.http.javadsl;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 import akka.actor.ActorSystem;
-import akka.japi.Function;
 import akka.http.javadsl.HttpsConnectionContext;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
@@ -38,7 +38,7 @@ class Http2Test {
       .bindAndHandleAsync(
         asyncHandler,
         toHostHttps("127.0.0.1", 8443).withCustomHttpsContext(httpsConnectionContext),
-        materializer);
+        system);
     //#bindAndHandleSecure
 
     //#bindAndHandlePlain
@@ -46,7 +46,7 @@ class Http2Test {
       .bindAndHandleAsync(
         asyncHandler,
         toHost("127.0.0.1", 8080),
-        materializer);
+        system);
     //#bindAndHandlePlain
   }
 }

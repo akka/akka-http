@@ -5,17 +5,16 @@
 package akka.http.javadsl;
 
 import akka.event.LoggingAdapter;
-import akka.http.javadsl.*;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.scaladsl.settings.ConnectionPoolSettings;
-import akka.japi.Function;
 import akka.stream.javadsl.Flow;
 import org.junit.Test;
 
 import javax.net.ssl.SSLContext;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 import static akka.http.javadsl.ConnectHttp.toHost;
 import static akka.http.javadsl.ConnectHttp.toHostHttps;
@@ -46,17 +45,17 @@ public class HttpAPIsTest extends JUnitRouteTest {
     http.bind(toHostHttps("127.0.0.1", 8080));
 
     final Flow<HttpRequest, HttpResponse, ?> handler = null;
-    http.bindAndHandle(handler, toHost("127.0.0.1", 8080), materializer());
-    http.bindAndHandle(handler, toHost("127.0.0.1", 8080), materializer());
-    http.bindAndHandle(handler, toHostHttps("127.0.0.1", 8080).withCustomHttpsContext(httpsContext), materializer());
+    http.bindAndHandle(handler, toHost("127.0.0.1", 8080), system());
+    http.bindAndHandle(handler, toHost("127.0.0.1", 8080), system());
+    http.bindAndHandle(handler, toHostHttps("127.0.0.1", 8080).withCustomHttpsContext(httpsContext), system());
 
     final Function<HttpRequest, CompletionStage<HttpResponse>> handler1 = null;
-    http.bindAndHandleAsync(handler1, toHost("127.0.0.1", 8080), materializer());
-    http.bindAndHandleAsync(handler1, toHostHttps("127.0.0.1", 8080), materializer());
+    http.bindAndHandleAsync(handler1, toHost("127.0.0.1", 8080), system());
+    http.bindAndHandleAsync(handler1, toHostHttps("127.0.0.1", 8080), system());
 
     final Function<HttpRequest, HttpResponse> handler2 = null;
-    http.bindAndHandleSync(handler2, toHost("127.0.0.1", 8080), materializer());
-    http.bindAndHandleSync(handler2, toHostHttps("127.0.0.1", 8080), materializer());
+    http.bindAndHandleSync(handler2, toHost("127.0.0.1", 8080), system());
+    http.bindAndHandleSync(handler2, toHostHttps("127.0.0.1", 8080), system());
 
     final HttpRequest handler3 = null;
     http.singleRequest(handler3);

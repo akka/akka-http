@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import akka.NotUsed;
 import akka.http.impl.util.JavaMapping;
@@ -21,7 +22,6 @@ import akka.http.javadsl.model.ws.WebSocketRequest;
 import akka.http.javadsl.settings.ClientConnectionSettings;
 import akka.http.javadsl.settings.ServerSettings;
 import akka.http.javadsl.settings.WebSocketSettings;
-import akka.japi.Function;
 import akka.japi.JavaPartialFunction;
 
 import akka.stream.ActorMaterializer;
@@ -64,7 +64,7 @@ public class WebSocketCoreExample {
       final Function<HttpRequest, HttpResponse> handler = request -> handleRequest(request);
       CompletionStage<ServerBinding> serverBindingFuture =
         Http.get(system).bindAndHandleSync(
-          handler, ConnectHttp.toHost("localhost", 8080), materializer);
+          handler, ConnectHttp.toHost("localhost", 8080), system);
 
       // will throw if binding fails
       serverBindingFuture.toCompletableFuture().get(1, TimeUnit.SECONDS);
