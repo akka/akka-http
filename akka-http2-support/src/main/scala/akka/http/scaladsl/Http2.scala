@@ -38,6 +38,23 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
 
   val http = Http(system)
 
+  def bindAndHandle(
+    handler:   Flow[HttpRequest, HttpResponse, Any],
+    interface: String, port: Int = DefaultPortForProtocol,
+    connectionContext: ConnectionContext = http.defaultServerHttpContext,
+    settings:          ServerSettings    = ServerSettings(system),
+    parallelism:       Int               = 1,
+    log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
+    bindAndHandleImpl(
+      Http2Blueprint.handleWithStreamIdHeader(handler),
+      interface,
+      port,
+      connectionContext,
+      settings,
+      parallelism,
+      log)
+  }
+
   // TODO: split up similarly to what `Http` does into `serverLayer`, `bindAndHandle`, etc.
   def bindAndHandleAsync(
     handler:   HttpRequest => Future[HttpResponse],
@@ -46,7 +63,25 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
     settings:          ServerSettings    = ServerSettings(system),
     parallelism:       Int               = 1,
     log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
+    bindAndHandleImpl(
+      Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher),
+      interface,
+      port,
+      connectionContext,
+      settings,
+      parallelism,
+      log
+    )
+  }
 
+  private def bindAndHandleImpl(
+    handler:           Flow[HttpRequest, HttpResponse, Any],
+    interface:         String,
+    port:              Int,
+    connectionContext: ConnectionContext,
+    settings:          ServerSettings,
+    parallelism:       Int,
+    log:               LoggingAdapter)(implicit fm: Materializer): Future[ServerBinding] = {
     val httpPlusSwitching: HttpPlusSwitching =
       if (connectionContext.isSecure) httpsWithAlpn(connectionContext.asInstanceOf[HttpsConnectionContext], fm)
       else priorKnowledge
@@ -57,7 +92,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
       else settings.defaultHttpPort
 
     val http1 = Flow[HttpRequest].mapAsync(parallelism)(handleUpgradeRequests(handler, settings, parallelism, log)).join(http.serverLayer(settings, log = log))
-    val http2 = Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher).join(Http2Blueprint.serverStackTls(settings, log))
+    val http2 = handler.join(Http2Blueprint.serverStackTls(settings, log))
 
     val masterTerminator = new MasterServerTerminator(log)
 
@@ -90,7 +125,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
   }
 
   private def handleUpgradeRequests(
-    handler:     HttpRequest => Future[HttpResponse],
+    handler:     Flow[HttpRequest, HttpResponse, Any],
     settings:    ServerSettings,
     parallelism: Int,
     log:         LoggingAdapter
@@ -117,9 +152,9 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
               Flow[HttpRequest]
                 .watchTermination()(Keep.right)
                 .prepend(injectedRequest)
-                .via(Http2Blueprint.handleWithStreamIdHeader(parallelism)(handler)(system.dispatcher))
+                .via(handler)
                 // the settings from the header are injected into the blueprint as initial demuxer settings
-                .joinMat(Http2Blueprint.serverStack(settings, log, settingsFromHeader, true))(Keep.left))
+                .joinMat(Http2Blueprint.serverStack(settings, log, settingsFromHeader, upgraded = true))(Keep.left))
 
             Future.successful(
               HttpResponse(
@@ -133,29 +168,29 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
             )
           case immutable.Seq(Failure(e)) =>
             log.warning("Failed to parse http2-settings header in upgrade [{}], continuing with HTTP/1.1", e.getMessage)
-            handler(req)
+            Source.single(req).via(handler).runWith(Sink.head)
           // A server MUST NOT upgrade the connection to HTTP/2 if this header field
           // is not present or if more than one is present
           case _ =>
             log.debug("Invalid upgrade request (http2-settings header missing or repeated)")
-            handler(req)
+            Source.single(req).via(handler).runWith(Sink.head)
         }
 
       case _ =>
-        handler(req)
+        Source.single(req).via(handler).runWith(Sink.head)
     }
   }
   val ConnectionUpgradeHeader = Connection(List("upgrade"))
   val UpgradeHeader = Upgrade(List(UpgradeProtocol("h2c")))
 
-  type HttpImplementation = Flow[SslTlsInbound, SslTlsOutbound, NotUsed]
-  type HttpPlusSwitching = (HttpImplementation, HttpImplementation) => Flow[ByteString, ByteString, NotUsed]
+  type HttpImplementation = Flow[SslTlsInbound, SslTlsOutbound, Any]
+  type HttpPlusSwitching = (HttpImplementation, HttpImplementation) => Flow[ByteString, ByteString, Any]
 
   def priorKnowledge(http1: HttpImplementation, http2: HttpImplementation): Flow[ByteString, ByteString, NotUsed] =
     TLSPlacebo().reversed join
       ProtocolSwitch.byPreface(http1, http2)
 
-  def httpsWithAlpn(httpsContext: HttpsConnectionContext, fm: Materializer)(http1: HttpImplementation, http2: HttpImplementation): Flow[ByteString, ByteString, NotUsed] = {
+  private def httpsWithAlpn(httpsContext: HttpsConnectionContext, fm: Materializer)(http1: HttpImplementation, http2: HttpImplementation): Flow[ByteString, ByteString, Any] = {
     // Mutable cell to transport the chosen protocol from the SSLEngine to
     // the switch stage.
     // Doesn't need to be volatile because there's a happens-before relationship (enforced by memory barriers)

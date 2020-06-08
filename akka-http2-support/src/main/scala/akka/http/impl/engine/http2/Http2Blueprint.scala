@@ -120,6 +120,13 @@ private[http] object Http2Blueprint {
   }
 
   /**
+   * Returns a flow that automatically keeps track of the
+   * streamId attribute between request and responses.
+   */
+  def handleWithStreamIdHeader(handler: Flow[HttpRequest, HttpResponse, Any]): Flow[HttpRequest, HttpResponse, NotUsed] =
+    StreamIdBidiFlow().join(handler)
+
+  /**
    * Returns a flow that handles `parallelism` requests in parallel, automatically keeping track of the
    * Http2StreamIdHeader between request and responses.
    */

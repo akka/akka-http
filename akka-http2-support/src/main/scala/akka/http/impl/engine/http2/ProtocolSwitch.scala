@@ -4,7 +4,6 @@
 
 package akka.http.impl.engine.http2
 
-import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.http.impl.engine.server.HttpAttributes
 import akka.stream.TLSProtocol.{ SessionBytes, SessionTruncated, SslTlsInbound, SslTlsOutbound }
@@ -16,7 +15,7 @@ import javax.net.ssl.SSLException
 /** INTERNAL API */
 @InternalApi
 private[http] object ProtocolSwitch {
-  type HttpServerFlow = Flow[SslTlsInbound, SslTlsOutbound, NotUsed]
+  type HttpServerFlow = Flow[SslTlsInbound, SslTlsOutbound, Any]
 
   def apply(
     chosenProtocolAccessor: SessionBytes => String,
