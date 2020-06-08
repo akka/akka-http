@@ -135,4 +135,7 @@ trait RequestContext {
    * Removes a potentially existing Accept header from the request headers.
    */
   def withAcceptAll: RequestContext
+
+  def tokenValue[T](token: ExtractionToken[T]): T
+  def addTokenValue[T](token: ExtractionToken[T], value: T): RequestContext
 }
