@@ -29,10 +29,10 @@ trait ConnectionContext extends akka.http.javadsl.ConnectionContext {
 object ConnectionContext {
   // ConnectionContext
   //#https-context-creation
-  def https(createSSLEngine: Option[(String, Int)] => () => SSLEngine) =
+  def https(createSSLEngine: Option[(String, Int)] => () => SSLEngine): HttpsConnectionContext =
     new HttpsConnectionContext(Right(o => Engine(createSSLEngine(o))))
 
-  def httpsServer(sslContext: SSLContext) =
+  def httpsServer(sslContext: SSLContext): HttpsConnectionContext =
     new HttpsConnectionContext(Right({
       case None => Engine(() => {
         val engine = sslContext.createSSLEngine()
@@ -46,7 +46,7 @@ object ConnectionContext {
       })
     }))
 
-  def httpsClient(context: SSLContext)(implicit system: ActorSystem) = {
+  def httpsClient(context: SSLContext)(implicit system: ActorSystem): HttpsConnectionContext = {
     val verifier = new DefaultHostnameVerifier(new AkkaLoggerFactory(system))
 
     new HttpsConnectionContext(Right {
