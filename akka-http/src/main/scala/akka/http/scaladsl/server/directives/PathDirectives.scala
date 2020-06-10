@@ -29,7 +29,7 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    *
    * @group path
    */
-  def path[L](pm: PathMatcher[L]): Directive[L] = pathPrefix(pm ~ PathEnd).named(s"path($pm)")
+  def path[L](pm: PathMatcher[L]): Directive[L] = pathPrefix(pm ~ PathEnd).named(s"path")
 
   /**
    * Applies the given [[PathMatcher]] to a prefix of the remaining unmatched path after consuming a leading slash.
@@ -38,7 +38,7 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    *
    * @group path
    */
-  def pathPrefix[L](pm: PathMatcher[L]): Directive[L] = rawPathPrefix(Slash ~ pm).named(s"pathPrefix($pm)")
+  def pathPrefix[L](pm: PathMatcher[L]): Directive[L] = rawPathPrefix(Slash ~ pm).named(s"pathPrefix")
 
   /**
    * Applies the given matcher directly to a prefix of the unmatched path of the
@@ -54,7 +54,7 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
       case Matched(rest, values) => tprovide(values) & mapRequestContext(_ withUnmatchedPath rest)
       case Unmatched             => reject
     }
-  }
+  }.info(pm)
 
   /**
    * Checks whether the unmatchedPath of the [[RequestContext]] has a prefix matched by the

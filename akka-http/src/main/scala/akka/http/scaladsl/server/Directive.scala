@@ -13,7 +13,7 @@ import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
 import akka.http.impl.util._
 
-final case class DirectiveMetaInformation(name: String)
+final case class DirectiveMetaInformation(name: String, info: Option[AnyRef])
 
 // FIXME: in the best case we can move that into Directive.apply for less indirection
 private class DirectiveWithChangedMetaInformation[L](original: Directive[L], _metaInformation: DirectiveMetaInformation)(implicit ev: Tuple[L]) extends Directive[L] {
@@ -40,7 +40,10 @@ abstract class Directive[L](implicit val ev: Tuple[L]) {
   def metaInformation: Option[DirectiveMetaInformation] = None
   def withMetaInformation(newInformation: DirectiveMetaInformation): Directive[L] =
     new DirectiveWithChangedMetaInformation[L](this, newInformation)
-  def named(name: String): Directive[L] = withMetaInformation(DirectiveMetaInformation(name))
+  def named(name: String): Directive[L] = mapMetaInformation(_.copy(name = name))
+  def info(info: AnyRef): Directive[L] = mapMetaInformation(_.copy(info = Some(info)))
+  def mapMetaInformation(f: DirectiveMetaInformation => DirectiveMetaInformation): Directive[L] =
+    withMetaInformation(f(metaInformation.getOrElse(DirectiveMetaInformation("<anon>", None))))
 
   /**
    * Joins two directives into one which runs the second directive if the first one rejects.

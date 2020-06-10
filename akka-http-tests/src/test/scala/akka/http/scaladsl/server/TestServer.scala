@@ -63,7 +63,7 @@ object SwaggerRoute {
 
   private def apiDescForRoute(route: Route): OpenApi = {
     case class RoutePath(segments: Seq[DirectiveRoute], last: Route) {
-      override def toString: String = segments.map(_.directiveName).mkString(" -> ") + " -> " + last.getClass.toString
+      override def toString: String = segments.map(s => s"${s.directiveName}${s.directiveInfo.fold("")(i => s"($i)")}").mkString(" -> ") + " -> " + last.getClass.toString
     }
     def leaves(route: Route, prefix: Seq[DirectiveRoute]): Seq[RoutePath] = route match {
       case AlternativeRoutes(alternatives) =>
