@@ -4,10 +4,12 @@
 
 package docs.http.scaladsl
 
+import com.github.ghik.silencer.silent
 import docs.CompileOnlySpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+@silent("deprecated")
 class HttpAppExampleSpec extends AnyWordSpec with Matchers
   with CompileOnlySpec {
 
