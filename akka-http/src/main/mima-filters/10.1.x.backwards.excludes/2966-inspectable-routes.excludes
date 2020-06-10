@@ -1,0 +1,16 @@
+# New API in @DoNotInherit class
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.RequestContext.tokenValue")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.RequestContext.addTokenValue")
+
+# Internal API
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.server.RequestContextImpl.this")
+
+# FIXME: need to check if that's a real problem
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.server.directives.ParameterDirectives#ParamMagnet.apply")
+
+# FIXME: unclear
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.server.PathMatcher.compose")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.server.PathMatcher.andThen")
+
+# Addition to @DoNotExtend
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.PathMatchers.Append")

@@ -62,8 +62,14 @@ object SwaggerRoute {
     complete(apiDescForRoute(forRoute))
 
   private def apiDescForRoute(route: Route): OpenApi = {
+    def formatInfo(info: Any): String = info match {
+      case p: Product =>
+        s"${p.productPrefix}${if (p.productArity > 0) s"(${(0 until p.productArity).map(idx => formatInfo(p.productElement(idx))).mkString(" ,")})}" else ""}"
+      case x => x.toString
+    }
+
     case class RoutePath(segments: Seq[DirectiveRoute], last: Route) {
-      override def toString: String = segments.map(s => s"${s.directiveName}${s.directiveInfo.fold("")(i => s"($i)")}").mkString(" -> ") + " -> " + last.getClass.toString
+      override def toString: String = segments.map(s => s"${s.directiveName}${s.directiveInfo.fold("")(i => s"(${formatInfo(i)})")}").mkString(" -> ") + " -> " + last.getClass.toString
     }
     def leaves(route: Route, prefix: Seq[DirectiveRoute]): Seq[RoutePath] = route match {
       case AlternativeRoutes(alternatives) =>

@@ -42,10 +42,8 @@ abstract class PathMatcher[L](implicit val ev: Tuple[L]) extends (Path => PathMa
   /** Alias for [[append]]. */
   def ~[R](other: PathMatcher[R])(implicit join: Join[L, R]): PathMatcher[join.Out] = append(other)
 
-  def append[R](other: PathMatcher[R])(implicit join: Join[L, R]): PathMatcher[join.Out] = {
-    implicit val joinProducesTuple = Tuple.yes[join.Out]
-    transform(_.andThen((restL, valuesL) => other(restL).map(join(valuesL, _))))
-  }
+  def append[R](other: PathMatcher[R])(implicit join: Join[L, R]): PathMatcher[join.Out] =
+    PathMatchers.Append(self, other)(join, Tuple.yes[join.Out])
 
   /** Operator alternative to [[PathMatchers.not]] */
   def unary_!(): PathMatcher0 = PathMatchers.not(self)
@@ -154,11 +152,13 @@ object PathMatcher extends ImplicitPathMatcherConstruction {
    */
   def apply[L: Tuple](prefix: Path, extractions: L): PathMatcher[L] =
     if (prefix.isEmpty) provide(extractions)
-    else new PathMatcher[L] {
-      def apply(path: Path) =
-        if (path startsWith prefix) Matched(path dropChars prefix.charCount, extractions)(ev)
-        else Unmatched
-    }
+    else Prefix(prefix, extractions)
+
+  case class Prefix[L: Tuple](prefix: Path, extractions: L) extends PathMatcher[L] {
+    def apply(path: Path) =
+      if (path startsWith prefix) Matched(path dropChars prefix.charCount, extractions)(ev)
+      else Unmatched
+  }
 
   /** Provoke implicit conversions to PathMatcher to be applied */
   def apply[L](magnet: PathMatcher[L]): PathMatcher[L] = magnet
@@ -358,7 +358,7 @@ trait PathMatchers {
    *
    * @group pathmatcher
    */
-  object Slash extends PathMatcher0 {
+  case object Slash extends PathMatcher0 {
     def apply(path: Path) = path match {
       case Path.Slash(tail) => Matched(tail, ())
       case _                => Unmatched
@@ -370,7 +370,7 @@ trait PathMatchers {
    *
    * @group pathmatcher
    */
-  object PathEnd extends PathMatcher0 {
+  case object PathEnd extends PathMatcher0 {
     def apply(path: Path) = path match {
       case Path.Empty => Matched.Empty
       case _          => Unmatched
@@ -385,7 +385,7 @@ trait PathMatchers {
    *
    * @group pathmatcher
    */
-  object Remaining extends PathMatcher1[String] {
+  case object Remaining extends PathMatcher1[String] {
     def apply(path: Path) = Matched(Path.Empty, Tuple1(path.toString))
   }
 
@@ -395,7 +395,7 @@ trait PathMatchers {
    *
    * @group pathmatcher
    */
-  object RemainingPath extends PathMatcher1[Path] {
+  case object RemainingPath extends PathMatcher1[Path] {
     def apply(path: Path) = Matched(Path.Empty, Tuple1(path))
   }
 
@@ -406,7 +406,7 @@ trait PathMatchers {
    *
    * @group pathmatcher
    */
-  object IntNumber extends NumberMatcher[Int](Int.MaxValue, 10) {
+  case object IntNumber extends NumberMatcher[Int](Int.MaxValue, 10) {
     def fromChar(c: Char) = fromDecimalChar(c)
   }
 
@@ -417,7 +417,7 @@ trait PathMatchers {
    *
    * @group pathmatcher
    */
-  object LongNumber extends NumberMatcher[Long](Long.MaxValue, 10) {
+  case object LongNumber extends NumberMatcher[Long](Long.MaxValue, 10) {
     def fromChar(c: Char) = fromDecimalChar(c)
   }
 
@@ -428,7 +428,7 @@ trait PathMatchers {
    *
    * @group pathmatcher
    */
-  object HexIntNumber extends NumberMatcher[Int](Int.MaxValue, 16) {
+  case object HexIntNumber extends NumberMatcher[Int](Int.MaxValue, 16) {
     def fromChar(c: Char) = fromHexChar(c)
   }
 
@@ -439,7 +439,7 @@ trait PathMatchers {
    *
    * @group pathmatcher
    */
-  object HexLongNumber extends NumberMatcher[Long](Long.MaxValue, 16) {
+  case object HexLongNumber extends NumberMatcher[Long](Long.MaxValue, 16) {
     def fromChar(c: Char) = fromHexChar(c)
   }
 
@@ -562,6 +562,23 @@ trait PathMatchers {
     new PathMatcher[L] {
       def apply(p: Path) = Unmatched
     }
+
+  /*
+  def append[R](other: PathMatcher[R])(implicit join: Join[L, R]): PathMatcher[join.Out] = {
+    implicit val joinProducesTuple = Tuple.yes[join.Out]
+    transform(_.andThen((restL, valuesL) => other(restL).map(join(valuesL, _))))
+  }
+
+  /** Operator alternative to [[PathMatchers.not]] */
+  def unary_!(): PathMatcher0 = PathMatchers.not(self)
+
+  def transform[R: Tuple](f: Matching[L] => Matching[R]): PathMatcher[R] =
+    new PathMatcher[R] { def apply(path: Path) = f(self(path)) }
+   */
+  case class Append[L, R, O](self: PathMatcher[L], other: PathMatcher[R])(implicit join: Join[L, R] { type Out = O }, tuple: Tuple[O]) extends PathMatcher[O]()(tuple) {
+    def apply(path: Path): Matching[O] =
+      self(path).andThen((restL, valuesL) => other(restL).map(join(valuesL, _)))
+  }
 }
 
 object PathMatchers extends PathMatchers
