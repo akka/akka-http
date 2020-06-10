@@ -6,32 +6,32 @@ package akka.http.javadsl
 
 import java.net.InetSocketAddress
 import java.util.Optional
-import java.util.function.Function
-
-import akka.http.impl.util.JavaMapping
-import akka.http.impl.util.JavaMapping.HttpsConnectionContext
-import akka.http.javadsl.model.ws._
-import akka.http.javadsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
-import akka.{ NotUsed, stream }
-import akka.stream.TLSProtocol._
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
+import java.util.concurrent.CompletionStage
 
 import scala.concurrent.Future
+import scala.compat.java8.FutureConverters._
+import scala.compat.java8.OptionConverters._
 import scala.util.Try
-import akka.stream.scaladsl.Keep
-import akka.japi.{ Function => AFunction, Pair }
+
+import com.typesafe.sslconfig.akka.AkkaSSLConfig
+
+import akka.{ NotUsed, stream }
 import akka.actor.{ ActorSystem, ClassicActorSystemProvider, ExtendedActorSystem, ExtensionId, ExtensionIdProvider }
 import akka.event.LoggingAdapter
+import akka.http._
+import akka.http.impl.util.JavaMapping
+import akka.http.impl.util.JavaMapping.HttpsConnectionContext
+import akka.http.impl.util.JavaMapping.Implicits._
+import akka.http.javadsl.model._
+import akka.http.scaladsl.{ model => sm }
+import akka.http.javadsl.model.ws._
+import akka.http.javadsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
+import akka.japi.{ Function => AFunction, Pair }
+import akka.japi.function.Function
+import akka.stream.TLSProtocol._
 import akka.stream.Materializer
 import akka.stream.javadsl.{ BidiFlow, Flow, Source }
-import akka.http.impl.util.JavaMapping.Implicits._
-import akka.http.scaladsl.{ model => sm }
-import akka.http.javadsl.model._
-import akka.http._
-
-import scala.compat.java8.OptionConverters._
-import scala.compat.java8.FutureConverters._
-import java.util.concurrent.CompletionStage
+import akka.stream.scaladsl.Keep
 
 object Http extends ExtensionId[Http] with ExtensionIdProvider {
   override def get(system: ActorSystem): Http = super.get(system)
@@ -234,7 +234,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
    *
-   * Deprecated since 10.2.0: Use the method taking a java.util.function.Function and system instead
+   * Deprecated since 10.2.0: Use the method taking a akka.japi.function.Function and system instead
    */
   @Deprecated
   def bindAndHandleSync(
@@ -277,7 +277,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
    *
-   * Deprecated since 10.2.0: Use the method taking a java.util.function.Function and system instead
+   * Deprecated since 10.2.0: Use the method taking a akka.japi.function.Function and system instead
    */
   @Deprecated
   def bindAndHandleSync(
@@ -328,7 +328,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
    *
-   * Deprecated since 10.2.0: Use the method taking a java.util.function.Function and system instead
+   * Deprecated since 10.2.0: Use the method taking a akka.japi.function.Function and system instead
    */
   @Deprecated
   def bindAndHandleAsync(
@@ -371,7 +371,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
    *
-   * Deprecated since 10.2.0: Use the method taking a java.util.function.Function and system instead
+   * Deprecated since 10.2.0: Use the method taking a akka.japi.function.Function and system instead
    */
   @Deprecated
   def bindAndHandleAsync(
