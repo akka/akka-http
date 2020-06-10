@@ -13,21 +13,24 @@ import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.scaladsl.{Flow, Tcp}
 import akka.util.ByteString
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 
 @ApiMayChange
 trait ClientTransportWithCustomResolver extends ClientTransport {
-  override def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[Http.OutgoingConnection]] = {
-    implicit val ec = system.dispatcher
-    futureFlow(
-      inetSocketAddress(host, port, settings).map { address =>
-        Tcp().outgoingConnection(address, settings.localAddress,
-          settings.socketOptions, halfClose = true, settings.connectingTimeout, settings.idleTimeout)
-          .mapMaterializedValue(_.map(tcpConn => OutgoingConnection(tcpConn.localAddress, tcpConn.remoteAddress))(system.dispatcher))
+  override def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit unused: ActorSystem): Flow[ByteString, ByteString, Future[Http.OutgoingConnection]] = {
+    // delay hostname resolution until stream materialization
+    Flow.setup { (mat, _) =>
+      implicit val ec: ExecutionContext = mat.executionContext
+      futureFlow {
+        implicit val system: ActorSystem = mat.system
+        inetSocketAddress(host, port, settings).map { address =>
+          Tcp().outgoingConnection(address, settings.localAddress,
+            settings.socketOptions, halfClose = true, settings.connectingTimeout, settings.idleTimeout)
+            .mapMaterializedValue(_.map(tcpConn => OutgoingConnection(tcpConn.localAddress, tcpConn.remoteAddress)))
+        }
       }
-    ).mapMaterializedValue(_.flatten)
+    }.mapMaterializedValue(_.flatten.flatten)
   }
-
 
   protected def inetSocketAddress(host: String, port: Int, settings: ClientConnectionSettings)(implicit ec: ExecutionContext): Future[InetSocketAddress]
 
