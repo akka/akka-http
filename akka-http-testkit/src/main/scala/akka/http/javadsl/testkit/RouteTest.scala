@@ -15,6 +15,7 @@ import akka.http.javadsl.model.headers.Host
 import akka.http.javadsl.server.{ AllDirectives, Directives, Route, RouteResult, RouteResults }
 import akka.http.scaladsl.server
 import akka.http.scaladsl.server.{ ExceptionHandler, Route => ScalaRoute }
+import akka.http.scaladsl.settings.ParserSettings
 import akka.http.scaladsl.settings.RoutingSettings
 import akka.http.scaladsl.settings.ServerSettings
 import akka.http.scaladsl
@@ -67,7 +68,7 @@ abstract class RouteTest extends AllDirectives with WSTestRequestBuilding {
     val semiSealedRoute = // sealed for exceptions but not for rejections
       akka.http.scaladsl.server.Directives.handleExceptions(sealedExceptionHandler)(scalaRoute)
 
-    val result = semiSealedRoute(new server.RequestContextImpl(effectiveRequest, system.log, RoutingSettings(system)))
+    val result = semiSealedRoute(new server.RequestContextImpl(effectiveRequest, system.log, RoutingSettings(system), ParserSettings.forServer(system)))
     createTestRouteResultAsync(request, result)
   }
 
