@@ -11,7 +11,7 @@ import akka.discovery.ServiceDiscovery
 import akka.http.scaladsl.ClientTransportWithCustomResolver
 import akka.http.scaladsl.settings.ClientConnectionSettings
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 @ApiMayChange
 class DiscoveryClientTransport(discovery: ServiceDiscovery) extends ClientTransportWithCustomResolver {

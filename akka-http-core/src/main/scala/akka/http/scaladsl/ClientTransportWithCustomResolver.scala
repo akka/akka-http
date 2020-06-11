@@ -13,7 +13,7 @@ import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.scaladsl.{ Flow, Tcp }
 import akka.util.ByteString
 
-import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future }
+import scala.concurrent.{ ExecutionContext, Future }
 
 @ApiMayChange
 trait ClientTransportWithCustomResolver extends ClientTransport {
