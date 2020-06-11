@@ -4,18 +4,20 @@
 
 package akka.http.javadsl.server
 
+import java.util.concurrent.CompletionStage
+
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.http.javadsl.model.HttpRequest
 import akka.http.javadsl.model.HttpResponse
-import akka.http.javadsl.settings.{ ParserSettings, RoutingSettings }
 import akka.http.scaladsl
 import akka.http.scaladsl.server
 import akka.stream.Materializer
 import akka.stream.SystemMaterializer
 import akka.stream.javadsl.Flow
+import akka.japi.function.Function
 
 /**
  * In the Java DSL, a Route can only consist of combinations of the built-in directives. A Route can not be
@@ -51,6 +53,8 @@ trait Route {
 
   def flow(system: ClassicActorSystemProvider): Flow[HttpRequest, HttpResponse, NotUsed] =
     flow(system.classicSystem, SystemMaterializer(system).materializer)
+
+  def function(system: ClassicActorSystemProvider): Function[HttpRequest, CompletionStage[HttpResponse]]
 
   /**
    * Seals a route by wrapping it with default exception handling and rejection conversion.
