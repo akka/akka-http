@@ -6,12 +6,12 @@ package docs.http.javadsl;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 
 import akka.actor.ActorSystem;
 import akka.http.javadsl.HttpsConnectionContext;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
+import akka.japi.function.Function;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 

@@ -12,7 +12,6 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 
 import akka.NotUsed;
 import akka.http.impl.util.JavaMapping;
@@ -23,6 +22,7 @@ import akka.http.javadsl.settings.ClientConnectionSettings;
 import akka.http.javadsl.settings.ServerSettings;
 import akka.http.javadsl.settings.WebSocketSettings;
 import akka.japi.JavaPartialFunction;
+import akka.japi.function.Function;
 
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
