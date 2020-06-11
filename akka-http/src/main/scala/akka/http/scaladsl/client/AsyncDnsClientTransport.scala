@@ -4,9 +4,9 @@
 
 package akka.http.scaladsl.client
 
-import java.net.{InetAddress, InetSocketAddress}
+import java.net.{ InetAddress, InetSocketAddress }
 
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.{ ActorRef, ActorSystem }
 import akka.annotation.ApiMayChange
 
 import scala.collection.immutable
@@ -16,16 +16,16 @@ import akka.dispatch.MessageDispatcher
 import akka.event.Logging
 import akka.http.scaladsl.ClientTransportWithCustomResolver
 import akka.http.scaladsl.settings.ClientConnectionSettings
-import akka.io.{Dns, IO, SimpleDnsCache}
-import akka.io.dns.{AAAARecord, ARecord, DnsProtocol}
-import akka.io.dns.DnsProtocol.{Ip, Srv}
+import akka.io.{ Dns, IO, SimpleDnsCache }
+import akka.io.dns.{ AAAARecord, ARecord, DnsProtocol }
+import akka.io.dns.DnsProtocol.{ Ip, Srv }
 import akka.io.dns.internal.AsyncDnsManager
 import akka.pattern.AskTimeoutException
-import akka.util.{OptionVal, Timeout}
+import akka.util.{ OptionVal, Timeout }
 
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.{ Failure, Success }
 import akka.pattern.ask
 import scala.concurrent.duration._
 
@@ -34,12 +34,12 @@ class AsyncDnsClientTransport()(implicit system: ActorSystem) extends ClientTran
 
   protected def inetSocketAddress(host: String, port: Int, settings: ClientConnectionSettings)(implicit ec: ExecutionContext): Future[InetSocketAddress] = {
     lookupIp(host, settings.connectingTimeout).map {
-        case Seq() =>
-          throw new IllegalStateException(s"No addresses looking up [$host]")
-        case addresses =>
-          // TODO take an arbitrary address? Or use some strategy?
-          val inetAddress = addresses.head
-          new InetSocketAddress(inetAddress, port)
+      case Seq() =>
+        throw new IllegalStateException(s"No addresses looking up [$host]")
+      case addresses =>
+        // TODO take an arbitrary address? Or use some strategy?
+        val inetAddress = addresses.head
+        new InetSocketAddress(inetAddress, port)
     }
   }
 
@@ -90,7 +90,7 @@ class AsyncDnsClientTransport()(implicit system: ActorSystem) extends ClientTran
     }
 
     def legacyDnsToResolved(resolved: Dns.Resolved): immutable.Seq[InetAddress] = {
-       resolved.ipv4 ++ resolved.ipv6
+      resolved.ipv4 ++ resolved.ipv6
     }
 
     def askResolve(): Future[immutable.Seq[InetAddress]] = {
