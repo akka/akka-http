@@ -26,7 +26,7 @@ import akka.http.javadsl.model._
 import akka.http.scaladsl.{ model => sm }
 import akka.http.javadsl.model.ws._
 import akka.http.javadsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
-import akka.japi.{ Function => AFunction, Pair }
+import akka.japi.Pair
 import akka.japi.function.Function
 import akka.stream.TLSProtocol._
 import akka.stream.Materializer
@@ -238,7 +238,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    */
   @Deprecated
   def bindAndHandleSync(
-    handler:      AFunction[HttpRequest, HttpResponse],
+    handler:      akka.japi.Function[HttpRequest, HttpResponse],
     connect:      ConnectHttp,
     materializer: Materializer): CompletionStage[ServerBinding] = {
     val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
@@ -281,7 +281,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    */
   @Deprecated
   def bindAndHandleSync(
-    handler:      AFunction[HttpRequest, HttpResponse],
+    handler:      akka.japi.Function[HttpRequest, HttpResponse],
     connect:      ConnectHttp,
     settings:     ServerSettings,
     log:          LoggingAdapter,
@@ -332,7 +332,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    */
   @Deprecated
   def bindAndHandleAsync(
-    handler:      AFunction[HttpRequest, CompletionStage[HttpResponse]],
+    handler:      akka.japi.Function[HttpRequest, CompletionStage[HttpResponse]],
     connect:      ConnectHttp,
     materializer: Materializer): CompletionStage[ServerBinding] = {
     val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
@@ -375,7 +375,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    */
   @Deprecated
   def bindAndHandleAsync(
-    handler:     AFunction[HttpRequest, CompletionStage[HttpResponse]],
+    handler:     akka.japi.Function[HttpRequest, CompletionStage[HttpResponse]],
     connect:     ConnectHttp,
     settings:    ServerSettings,
     parallelism: Int, log: LoggingAdapter,
