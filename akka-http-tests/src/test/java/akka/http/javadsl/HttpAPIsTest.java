@@ -9,12 +9,12 @@ import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.scaladsl.settings.ConnectionPoolSettings;
+import akka.japi.function.Function;
 import akka.stream.javadsl.Flow;
 import org.junit.Test;
 
 import javax.net.ssl.SSLContext;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 
 import static akka.http.javadsl.ConnectHttp.toHost;
 import static akka.http.javadsl.ConnectHttp.toHostHttps;

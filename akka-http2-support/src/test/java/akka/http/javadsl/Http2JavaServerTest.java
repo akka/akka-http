@@ -9,6 +9,7 @@ import akka.http.impl.util.ExampleHttpContexts;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.HttpsConnectionContext;
+import akka.japi.function.Function;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import com.typesafe.config.Config;
@@ -16,7 +17,6 @@ import com.typesafe.config.ConfigFactory;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 
 public class Http2JavaServerTest {
   public static void main(String[] args) {
