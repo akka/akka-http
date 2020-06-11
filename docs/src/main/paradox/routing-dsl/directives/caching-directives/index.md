@@ -11,9 +11,11 @@ caching support works.
 To use Akka HTTP Caching, add the module to your project:
 
 @@dependency[sbt,Gradle,Maven] {
+  symbol="AkkaHttpVersion"
+  value="$project.version$"
   group="com.typesafe.akka"
   artifact="akka-http-caching_$scala.binary.version$"
-  version="$project.version$"
+  version="AkkaHttpVersion"
 }
 
 ## Imports

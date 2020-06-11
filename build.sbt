@@ -355,6 +355,8 @@ lazy val docs = project("docs")
       "project.name" -> "Akka HTTP",
       "canonical.base_url" -> "https://doc.akka.io/docs/akka-http/current",
       "akka.version" -> AkkaDependency.docs.version,
+      "akka.minimum.version25" -> AkkaDependency.minimumExpectedAkkaVersion,
+      "akka.minimum.version26" -> AkkaDependency.minimumExpectedAkka26Version,
       "scala.binary_version" -> scalaBinaryVersion.value, // to be consistent with Akka build
       "scala.binaryVersion" -> scalaBinaryVersion.value,
       "scaladoc.version" -> scalaVersion.value,
