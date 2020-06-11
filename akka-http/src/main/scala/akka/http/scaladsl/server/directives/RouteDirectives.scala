@@ -9,6 +9,8 @@ import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.model._
 import StatusCodes._
 
+import scala.concurrent.{ ExecutionContext, Future }
+
 /**
  * @groupname route Route directives
  * @groupprio route 200
@@ -54,6 +56,14 @@ trait RouteDirectives {
    */
   def failWith(error: Throwable): StandardRoute =
     StandardRoute(_.fail(error))
+
+  /**
+   *
+   * @group route
+   */
+  def fromFunction(handler: HttpRequest => Future[HttpResponse]): StandardRoute =
+    { ctx => handler(ctx.request).map(RouteResult.Complete)(ctx.executionContext) }
+
 }
 
 object RouteDirectives extends RouteDirectives {
