@@ -10,10 +10,10 @@ import akka.actor.ActorSystem
 import akka.annotation.ApiMayChange
 import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.settings.ClientConnectionSettings
-import akka.stream.scaladsl.{Flow, Tcp}
+import akka.stream.scaladsl.{ Flow, Tcp }
 import akka.util.ByteString
 
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
+import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future }
 
 @ApiMayChange
 trait ClientTransportWithCustomResolver extends ClientTransport {
@@ -22,9 +22,8 @@ trait ClientTransportWithCustomResolver extends ClientTransport {
     Flow.setup { (mat, _) =>
       implicit val ec: ExecutionContext = mat.executionContext
       futureFlow {
-        implicit val system: ActorSystem = mat.system
         inetSocketAddress(host, port, settings).map { address =>
-          Tcp().outgoingConnection(address, settings.localAddress,
+          Tcp()(mat.system).outgoingConnection(address, settings.localAddress,
             settings.socketOptions, halfClose = true, settings.connectingTimeout, settings.idleTimeout)
             .mapMaterializedValue(_.map(tcpConn => OutgoingConnection(tcpConn.localAddress, tcpConn.remoteAddress)))
         }
@@ -32,6 +31,10 @@ trait ClientTransportWithCustomResolver extends ClientTransport {
     }.mapMaterializedValue(_.flatten.flatten)
   }
 
+  /**
+   * Return an address to which the requests for this connection should be directed.
+   * Called when a new connection is to be established.
+   */
   protected def inetSocketAddress(host: String, port: Int, settings: ClientConnectionSettings)(implicit ec: ExecutionContext): Future[InetSocketAddress]
 
   private def futureFlow[I, O, M](flow: Future[Flow[I, O, M]]): Flow[I, O, Future[M]] =

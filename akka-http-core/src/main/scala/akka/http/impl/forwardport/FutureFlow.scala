@@ -6,14 +6,14 @@ package akka.http.impl.forwardport
 
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
-import akka.stream.scaladsl.{Flow, Keep, Source}
-import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler}
+import akka.stream.scaladsl.{ Flow, Keep, Source }
+import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler }
 import akka.stream._
 import akka.util.OptionVal
 
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 /**
  * This is a forward-port of `akka.stream.impl.fusing.FutureFlow` from Akka 2.6
@@ -21,7 +21,7 @@ import scala.util.{Failure, Success, Try}
  * TODO #3069 remove this and use the upstream value instead
  */
 @InternalApi private[http] final class FutureFlow[In, Out, M](futureFlow: Future[Flow[In, Out, M]])
-    extends GraphStageWithMaterializedValue[FlowShape[In, Out], Future[M]] {
+  extends GraphStageWithMaterializedValue[FlowShape[In, Out], Future[M]] {
   val in = Inlet[In](s"${this}.in")
   val out = Outlet[Out](s"${this}.out")
   override val shape: FlowShape[In, Out] = FlowShape(in, out)
@@ -89,7 +89,7 @@ import scala.util.{Failure, Success, Try}
           subSource.setHandler {
             new OutHandler {
               override def onPull(): Unit = if (!isClosed(in)) tryPull(in)
-              override def onDownstreamFinish(cause: Throwable): Unit = if (!isClosed(in)) cancel(in, cause)
+              override def onDownstreamFinish(): Unit = if (!isClosed(in)) cancel(in)
             }
           }
           subSink.setHandler {
@@ -117,7 +117,7 @@ import scala.util.{Failure, Success, Try}
             }
             setHandlers(in, out, new InHandler with OutHandler {
               override def onPull(): Unit = subSink.pull()
-              override def onDownstreamFinish(cause: Throwable): Unit = subSink.cancel(cause)
+              override def onDownstreamFinish(): Unit = subSink.cancel()
               override def onPush(): Unit = subSource.push(grab(in))
               override def onUpstreamFinish(): Unit = subSource.complete()
               override def onUpstreamFailure(ex: Throwable): Unit = subSource.fail(ex)
