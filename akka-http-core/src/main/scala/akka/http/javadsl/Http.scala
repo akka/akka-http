@@ -234,7 +234,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
    *
-   * Deprecated since 10.2.0: Use the method taking a akka.japi.function.Function and system instead
+   * @deprecated since 10.2.0: Use the method taking a akka.japi.function.Function and system instead
    */
   @Deprecated
   def bindAndHandleSync(
@@ -277,7 +277,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
    *
-   * Deprecated since 10.2.0: Use the method taking a akka.japi.function.Function and system instead
+   * @deprecated since 10.2.0: Use the method taking a akka.japi.function.Function and system instead
    */
   @Deprecated
   def bindAndHandleSync(
@@ -328,7 +328,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
    *
-   * Deprecated since 10.2.0: Use the method taking a akka.japi.function.Function and system instead
+   * @deprecated since 10.2.0: Use the method taking a akka.japi.function.Function and system instead
    */
   @Deprecated
   def bindAndHandleAsync(
@@ -371,7 +371,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
    *
-   * Deprecated since 10.2.0: Use the method taking a akka.japi.function.Function and system instead
+   * @deprecated since 10.2.0: Use the method taking a akka.japi.function.Function and system instead
    */
   @Deprecated
   def bindAndHandleAsync(
