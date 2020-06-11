@@ -5,13 +5,15 @@
 package docs.http.javadsl;
 
 //#actor-interaction
+
 import akka.NotUsed;
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.actor.Props;
-import akka.actor.AbstractActor;
-import akka.event.Logging;
-import akka.event.LoggingAdapter;
+import akka.actor.typed.ActorRef;
+import akka.actor.typed.ActorSystem;
+import akka.actor.typed.Behavior;
+import akka.actor.typed.javadsl.AbstractBehavior;
+import akka.actor.typed.javadsl.ActorContext;
+import akka.actor.typed.javadsl.Behaviors;
+import akka.actor.typed.javadsl.Receive;
 import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.ServerBinding;
@@ -22,35 +24,32 @@ import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.AllDirectives;
 import akka.http.javadsl.server.Route;
 import akka.http.javadsl.unmarshalling.StringUnmarshallers;
-import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Flow;
-import akka.util.Timeout;
-import scala.concurrent.duration.FiniteDuration;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 
-import static akka.pattern.PatternsCS.ask;
+import static akka.actor.typed.javadsl.AskPattern.ask;
 
 public class HttpServerActorInteractionExample extends AllDirectives {
 
-  private final ActorRef auction;
+  private final ActorSystem<Auction.Message> system;
+  private final ActorRef<Auction.Message> auction;
 
   public static void main(String[] args) throws Exception {
     // boot up server using the route as defined below
-    ActorSystem system = ActorSystem.create("routes");
+    ActorSystem<Auction.Message> system = ActorSystem.create(Auction.create(), "routes");
 
     final Http http = Http.get(system);
-    final ActorMaterializer materializer = ActorMaterializer.create(system);
 
     //In order to access all directives we need an instance where the routes are define.
     HttpServerActorInteractionExample app = new HttpServerActorInteractionExample(system);
 
-    final Flow<HttpRequest, HttpResponse, NotUsed> routeFlow = app.createRoute().flow(system, materializer);
+    final Flow<HttpRequest, HttpResponse, NotUsed> routeFlow = app.createRoute().flow(system);
     final CompletionStage<ServerBinding> binding = http.bindAndHandle(routeFlow,
-      ConnectHttp.toHost("localhost", 8080), materializer);
+      ConnectHttp.toHost("localhost", 8080), system);
 
     System.out.println("Server online at http://localhost:8080/\nPress RETURN to stop...");
     System.in.read(); // let it run until user presses return
@@ -60,8 +59,9 @@ public class HttpServerActorInteractionExample extends AllDirectives {
       .thenAccept(unbound -> system.terminate()); // and shutdown when done
   }
 
-  private HttpServerActorInteractionExample(final ActorSystem system) {
-    auction = system.actorOf(Auction.props(), "auction");
+  private HttpServerActorInteractionExample(final ActorSystem<Auction.Message> system) {
+    this.system = system;
+    this.auction = system;
   }
 
   private Route createRoute() {
@@ -71,62 +71,73 @@ public class HttpServerActorInteractionExample extends AllDirectives {
           parameter(StringUnmarshallers.INTEGER, "bid", bid ->
             parameter("user", user -> {
               // place a bid, fire-and-forget
-              auction.tell(new Bid(user, bid), ActorRef.noSender());
+              auction.tell(new Auction.Bid(user, bid));
               return complete(StatusCodes.ACCEPTED, "bid placed");
             })
           )),
         get(() -> {
-          final Timeout timeout = Timeout.durationToTimeout(FiniteDuration.apply(5, TimeUnit.SECONDS));
           // query the actor for the current auction state
-          CompletionStage<Bids> bids = ask(auction, new GetBids(), timeout).thenApply((Bids.class::cast));
+          CompletionStage<Auction.Bids> bids = ask(auction, Auction.GetBids::new, Duration.ofSeconds(5), system.scheduler());
           return completeOKWithFuture(bids, Jackson.marshaller());
         }))));
   }
 
-  static class Bid {
-    final String userId;
-    final int offer;
+  static class Auction extends AbstractBehavior<Auction.Message> {
+    interface Message {}
 
-    Bid(String userId, int offer) {
-      this.userId = userId;
-      this.offer = offer;
+    static class Bid implements Message {
+      final String userId;
+      final int offer;
+
+      Bid(String userId, int offer) {
+        this.userId = userId;
+        this.offer = offer;
+      }
     }
-  }
 
-  static class GetBids {
+    static class GetBids implements Message {
+      final ActorRef<Bids> replyTo;
 
-  }
-
-  static class Bids {
-    public final List<Bid> bids;
-
-    Bids(List<Bid> bids) {
-      this.bids = bids;
+      GetBids(ActorRef<Bids> replyTo) {
+        this.replyTo = replyTo;
+      }
     }
-  }
 
-  static class Auction extends AbstractActor {
+    static class Bids {
+      public final List<Bid> bids;
 
-    private final LoggingAdapter log = Logging.getLogger(context().system(), this);
+      Bids(List<Bid> bids) {
+        this.bids = bids;
+      }
+    }
 
-    List<HttpServerActorInteractionExample.Bid> bids = new ArrayList<>();
+    public Auction(ActorContext<Message> context) {
+      super(context);
+    }
 
-    static Props props() {
-      return Props.create(Auction.class);
+    private List<Bid> bids = new ArrayList<>();
+
+    public static Behavior<Message> create() {
+      return Behaviors.setup(Auction::new);
     }
 
     @Override
-    public Receive createReceive() {
-      return receiveBuilder()
-        .match(HttpServerActorInteractionExample.Bid.class, bid -> {
-          bids.add(bid);
-          log.info("Bid complete: {}, {}", bid.userId, bid.offer);
-        })
-        .match(HttpServerActorInteractionExample.GetBids.class, m -> {
-          sender().tell(new HttpServerActorInteractionExample.Bids(bids), self());
-        })
-        .matchAny(o -> log.info("Invalid message"))
+    public Receive<Message> createReceive() {
+      return newReceiveBuilder()
+        .onMessage(Bid.class, this::onBid)
+        .onMessage(GetBids.class, this::onGetBids)
         .build();
+    }
+
+    private Behavior<Message> onBid(Bid bid) {
+      bids.add(bid);
+      getContext().getLog().info("Bid complete: {}, {}", bid.userId, bid.offer);
+      return this;
+    }
+
+    private Behavior<Message> onGetBids(GetBids getBids) {
+      getBids.replyTo.tell(new Bids(bids));
+      return this;
     }
   }
 }

@@ -4,18 +4,21 @@
 
 package docs.http.scaladsl
 
-import akka.actor.ActorSystem
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model._
+
+import scala.concurrent.ExecutionContext
 import scala.io.StdIn
 
 object HttpServerLowLevel {
 
   def main(args: Array[String]): Unit = {
-    implicit val system = ActorSystem()
+    implicit val system = ActorSystem(Behaviors.empty, "lowlevel")
     // needed for the future map/flatmap in the end
-    implicit val executionContext = system.dispatcher
+    implicit val executionContext: ExecutionContext = system.executionContext
 
     val requestHandler: HttpRequest => HttpResponse = {
       case HttpRequest(GET, Uri.Path("/"), _, _, _) =>

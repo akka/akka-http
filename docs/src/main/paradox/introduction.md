@@ -44,14 +44,16 @@ Alternatively, you can bootstrap a new sbt project with Akka HTTP already
 configured using the [Giter8](http://www.foundweekends.org/giter8/) template:
 
 @@@ div { .group-scala }
-```sh
-sbt -Dsbt.version=1.2.8 new https://github.com/akka/akka-http-quickstart-scala.g8
-```
+For Scala (sbt)
+:  ```sh
+    sbt -Dsbt.version=1.3.12 new akka/akka-http-quickstart-scala.g8
+    ```
 @@@
 @@@ div { .group-java }
-```sh
-sbt -Dsbt.version=0.13.15 new https://github.com/akka/akka-http-quickstart-java.g8
-```
+For Java (Maven or Gradle)
+:  ```sh
+    sbt -Dsbt.version=1.3.12 new akka/akka-http-quickstart-java.g8
+    ```
 From there on the prepared project can be built using Gradle or Maven.
 @@@
 
