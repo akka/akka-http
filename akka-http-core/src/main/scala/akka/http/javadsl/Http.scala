@@ -225,7 +225,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
-   * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
+   * function for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
    * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
@@ -248,7 +248,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
-   * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
+   * function for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
    * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
@@ -268,7 +268,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
-   * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
+   * function for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
    * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
@@ -295,7 +295,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
-   * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
+   * function for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
    * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
@@ -319,7 +319,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
-   * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
+   * function for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
    * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
@@ -342,7 +342,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
-   * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
+   * function for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
    * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
@@ -362,7 +362,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
-   * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
+   * function for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
    * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
@@ -389,7 +389,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
-   * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
+   * function for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
    * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
