@@ -4,9 +4,7 @@
 
 package akka.http.javadsl.server.directives;
 
-import akka.http.javadsl.model.HttpRequest;
-import akka.http.javadsl.model.StatusCodes;
-import akka.http.javadsl.model.Uri;
+import akka.http.javadsl.model.*;
 import akka.http.javadsl.model.headers.Location;
 import akka.http.javadsl.server.Directives;
 import akka.http.javadsl.testkit.JUnitRouteTest;
@@ -14,6 +12,9 @@ import akka.http.javadsl.testkit.TestRoute;
 import akka.stream.javadsl.Sink;
 import akka.util.ByteString;
 import org.junit.Test;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 public class RouteDirectivesTest extends JUnitRouteTest {
 
@@ -98,5 +99,43 @@ public class RouteDirectivesTest extends JUnitRouteTest {
   @Test(expected = IllegalArgumentException.class)
   public void testEmptyRoutesConcatenation() {
     route();
+  }
+
+  @Test
+  public void testRouteFromFunction() {
+    TestRoute route = testRoute(
+      fromFunction(req ->
+        // CompletableFuture.completedStage isn't available until Java 9
+        CompletableFuture.supplyAsync(() -> HttpResponse.create().withEntity(HttpEntities.create(req.getUri().toString())))
+      )
+    );
+
+    route.run(HttpRequest.create("/foo"))
+      .assertEntity("http://example.com/foo");
+  }
+
+  @Test
+  public void testRouteFromFailingFunction() {
+    TestRoute route = testRoute(
+      fromFunction(req ->
+        // CompletableFuture.failedStage/failedFuture aren't available until Java 9
+        CompletableFuture.supplyAsync(() -> { throw new IllegalStateException("x"); })
+      ),
+      complete(StatusCodes.IM_A_TEAPOT)
+    );
+
+    route.run(HttpRequest.create("/foo"))
+      .assertEntity("There was an internal server error.");
+  }
+
+  @Test
+  public void testRouteWhenLambdaThrows() {
+    TestRoute route = testRoute(
+      fromFunction(req -> { throw new IllegalStateException("x"); }),
+      complete(StatusCodes.IM_A_TEAPOT)
+    );
+
+    route.run(HttpRequest.create("/foo"))
+      .assertEntity("There was an internal server error.");
   }
 }

@@ -6,6 +6,7 @@ package akka.http.scaladsl.server.directives
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.marshallers.xml.ScalaXmlSupport
+
 import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
 import akka.testkit.EventFilter
@@ -15,11 +16,11 @@ import akka.http.scaladsl.server._
 import akka.http.scaladsl.model._
 import headers._
 import StatusCodes._
-import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.wordspec.AnyWordSpec
 
-class RouteDirectivesSpec extends AnyFreeSpec with GenericRoutingSpec {
+class RouteDirectivesSpec extends AnyWordSpec with GenericRoutingSpec {
 
-  "The `complete` directive should" - {
+  "The `complete` directive" should {
     "by chainable with the `&` operator" in {
       Get() ~> (get & complete("yeah")) ~> check { responseAs[String] shouldEqual "yeah" }
     }
@@ -34,7 +35,7 @@ class RouteDirectivesSpec extends AnyFreeSpec with GenericRoutingSpec {
         i shouldEqual 1
       }
     }
-    "support completion from response futures" - {
+    "support completion from response futures" should {
       "simple case without marshaller" in {
         Get() ~> {
           get & complete(Promise.successful(HttpResponse(entity = "yup")).future)
@@ -136,7 +137,7 @@ class RouteDirectivesSpec extends AnyFreeSpec with GenericRoutingSpec {
     }
   }
 
-  "the redirect directive should" - {
+  "the redirect directive" should {
     "produce proper 'Found' redirections" in {
       Get() ~> {
         redirect("/foo", Found)
@@ -154,6 +155,30 @@ class RouteDirectivesSpec extends AnyFreeSpec with GenericRoutingSpec {
       Get() ~> {
         redirect("/foo", NotModified)
       } ~> check { response shouldEqual HttpResponse(304, headers = Location("/foo") :: Nil) }
+    }
+  }
+
+  "the fromFunction directive" should {
+    "use a function to complete a request" in {
+      Get(Uri("https://akka.io/foo")) ~> {
+        fromFunction(req => Future.successful(HttpResponse(OK, entity = req.uri.toString)))
+      } ~> check { response shouldEqual HttpResponse(200, entity = "https://akka.io/foo") }
+    }
+    "reject the request when the future fails" in {
+      Get(Uri("https://akka.io/foo")) ~> {
+        concat(
+          fromFunction(req => Future.failed(new IllegalStateException("Some error"))),
+          complete(ImATeapot)
+        )
+      } ~> check { response shouldEqual HttpResponse(500, entity = "There was an internal server error.") }
+    }
+    "reject the request when the function throws fails" in {
+      Get(Uri("https://akka.io/foo")) ~> {
+        concat(
+          fromFunction(req => throw new IllegalStateException("Some error")),
+          complete(ImATeapot)
+        )
+      } ~> check { response shouldEqual HttpResponse(500, entity = "There was an internal server error.") }
     }
   }
 
