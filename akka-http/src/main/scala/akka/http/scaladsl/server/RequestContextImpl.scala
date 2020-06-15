@@ -32,9 +32,6 @@ private[http] class RequestContextImpl(
   def this(request: HttpRequest, log: LoggingAdapter, settings: RoutingSettings, parserSettings: ParserSettings)(implicit ec: ExecutionContextExecutor, materializer: Materializer) =
     this(request, request.uri.path, ec, materializer, log, settings, parserSettings)
 
-  def this(request: HttpRequest, log: LoggingAdapter, settings: RoutingSettings)(implicit ec: ExecutionContextExecutor, materializer: Materializer) =
-    this(request, request.uri.path, ec, materializer, log, settings, ParserSettings(ActorMaterializerHelper.downcast(materializer).system))
-
   def reconfigure(executionContext: ExecutionContextExecutor, materializer: Materializer, log: LoggingAdapter, settings: RoutingSettings): RequestContext =
     copy(executionContext = executionContext, materializer = materializer, log = log, routingSettings = settings)
 

@@ -12,9 +12,11 @@ This means it is ready to be evaluated, but the APIs and behavior are likely to 
 To use Akka HTTP2 Support, add the module to your project:
 
 @@dependency [sbt,Gradle,Maven] {
+  symbol="AkkaHttpVersion"
+  value="$project.version$"
   group="com.typesafe.akka"
   artifact="akka-http2-support_$scala.binary.version$"
-  version="$project.version$"
+  version="AkkaHttpVersion"
 }
 
 HTTP/2 needs support in TLS for [Application-Layer Protocol Negotiation (ALPN)](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation)

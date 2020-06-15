@@ -5,12 +5,12 @@
 package akka.http.scaladsl.testkit
 
 import akka.actor.ActorSystem
-import akka.actor.ClassicActorSystemProvider
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ Host, Upgrade, `Sec-WebSocket-Protocol` }
 import akka.http.scaladsl.server._
+import akka.http.scaladsl.settings.ParserSettings
 import akka.http.scaladsl.settings.RoutingSettings
 import akka.http.scaladsl.settings.ServerSettings
 import akka.http.scaladsl.unmarshalling._
@@ -164,7 +164,8 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
             request.withEffectiveUri(
               securedConnection = defaultHostInfo.securedConnection,
               defaultHostHeader = defaultHostInfo.host)
-          val ctx = new RequestContextImpl(effectiveRequest, routingLog.requestLog(effectiveRequest), routingSettings)
+          val parserSettings = ParserSettings.forServer(system)
+          val ctx = new RequestContextImpl(effectiveRequest, routingLog.requestLog(effectiveRequest), routingSettings, parserSettings)
 
           val sealedExceptionHandler = ExceptionHandler.seal(testExceptionHandler)
 

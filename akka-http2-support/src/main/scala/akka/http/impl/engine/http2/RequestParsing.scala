@@ -4,8 +4,6 @@
 
 package akka.http.impl.engine.http2
 
-import java.lang.StringBuilder
-
 import akka.annotation.InternalApi
 import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.impl.engine.server.HttpAttributes
@@ -14,7 +12,6 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ `Remote-Address`, `Tls-Session-Info` }
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.Attributes
-import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import com.github.ghik.silencer.silent
 
@@ -56,7 +53,7 @@ private[http2] object RequestParsing {
         headers:           VectorBuilder[HttpHeader]  = new VectorBuilder[HttpHeader]
       ): HttpRequest =
         if (remainingHeaders.isEmpty) {
-          // 8.1.2.3: these pseudo header fields are mandatory for a request
+          // https://httpwg.org/specs/rfc7540.html#rfc.section.8.1.2.3: these pseudo header fields are mandatory for a request
           checkRequiredPseudoHeader(":scheme", scheme)
           checkRequiredPseudoHeader(":method", method)
           checkRequiredPseudoHeader(":path", pathAndRawQuery)
@@ -69,14 +66,7 @@ private[http2] object RequestParsing {
 
           if (tlsSessionInfoHeader.isDefined) headers += tlsSessionInfoHeader.get
 
-          val entity = subStream match {
-            case s if s.data == Source.empty || contentLength == 0 => HttpEntity.Empty
-            case ByteHttp2SubStream(_, data) if contentLength > 0  => HttpEntity.Default(contentType, contentLength, data)
-            /* contentLength undefined */
-            case ByteHttp2SubStream(_, data)                       => HttpEntity.Chunked.fromData(contentType, data)
-            case ChunkedHttp2SubStream(_, data)                    => HttpEntity.Chunked(contentType, data)
-          }
-
+          val entity = subStream.createEntity(contentLength, contentType)
           val (path, rawQueryString) = pathAndRawQuery
           val authorityOrDefault: Uri.Authority = if (authority == null) Uri.Authority.Empty else authority
           val uri = Uri(scheme, authorityOrDefault, path, rawQueryString)
@@ -141,7 +131,7 @@ private[http2] object RequestParsing {
     }
   }
 
-  private def parseHeaderPair(httpHeaderParser: HttpHeaderParser, name: String, value: String): HttpHeader = {
+  private[http2] def parseHeaderPair(httpHeaderParser: HttpHeaderParser, name: String, value: String): HttpHeader = {
     // FIXME: later modify by adding HttpHeaderParser.parseHttp2Header that would use (name, value) pair directly
     //        or use a separate, simpler, parser for Http2
     // FIXME: add correctness checks (e.g. duplicated content-length) modeled after ones in HttpMessageParser
@@ -153,12 +143,12 @@ private[http2] object RequestParsing {
     httpHeaderParser.resultHeader
   }
 
-  def checkRequiredPseudoHeader(name: String, value: AnyRef): Unit =
+  private[http2] def checkRequiredPseudoHeader(name: String, value: AnyRef): Unit =
     if (value eq null) malformedRequest(s"Mandatory pseudo-header '$name' missing")
-  private def checkUniquePseudoHeader(name: String, value: AnyRef): Unit =
+  private[http2] def checkUniquePseudoHeader(name: String, value: AnyRef): Unit =
     if (value ne null) malformedRequest(s"Pseudo-header '$name' must not occur more than once")
-  private def checkNoRegularHeadersBeforePseudoHeader(name: String, seenRegularHeader: Boolean): Unit =
+  private[http2] def checkNoRegularHeadersBeforePseudoHeader(name: String, seenRegularHeader: Boolean): Unit =
     if (seenRegularHeader) malformedRequest(s"Pseudo-header field '$name' must not appear after a regular header")
-  def malformedRequest(msg: String): Nothing =
+  private[http2] def malformedRequest(msg: String): Nothing =
     throw new RuntimeException(s"Malformed request: $msg")
 }

@@ -7,7 +7,7 @@ package akka.http.impl.engine.http2
 import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.FLOW_CONTROL_ERROR
-import akka.http.scaladsl.settings.Http2ServerSettings
+import akka.http.scaladsl.settings.Http2CommonSettings
 import akka.stream.Attributes
 import akka.stream.BidiShape
 import akka.stream.Inlet
@@ -18,8 +18,11 @@ import akka.util.ByteString
 
 import scala.collection.immutable
 import scala.util.control.NonFatal
-
 import FrameEvent._
+
+/** Currently only used as log source */
+@InternalApi
+private[http2] sealed abstract class Http2ClientDemux
 
 /**
  * INTERNAL API
@@ -69,7 +72,7 @@ import FrameEvent._
  * only available in this stage.
  */
 @InternalApi
-private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings, initialDemuxerSettings: immutable.Seq[Setting], upgraded: Boolean) extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] {
+private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initialDemuxerSettings: immutable.Seq[Setting], upgraded: Boolean, isServer: Boolean) extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] { stage =>
   val frameIn = Inlet[FrameEvent]("Demux.frameIn")
   val frameOut = Outlet[FrameEvent]("Demux.frameOut")
 
@@ -83,10 +86,11 @@ private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings, initia
     new GraphStageLogic(shape) with Http2MultiplexerSupport with Http2StreamHandling with GenericOutletSupport with StageLogging {
       logic =>
 
-      override def settings: Http2ServerSettings = http2Settings
+      override def isServer: Boolean = stage.isServer
+      override def settings: Http2CommonSettings = http2Settings
       override def isUpgraded: Boolean = upgraded
 
-      override protected def logSource: Class[_] = classOf[Http2ServerDemux]
+      override protected def logSource: Class[_] = if (isServer) classOf[Http2ServerDemux] else classOf[Http2ClientDemux]
 
       val multiplexer = createMultiplexer(frameOut, StreamPrioritizer.first())
 
@@ -99,7 +103,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings, initia
         pullFrameIn()
         pull(substreamIn)
 
-        multiplexer.pushControlFrame(SettingsFrame(Nil)) // server side connection preface
+        multiplexer.pushControlFrame(SettingsFrame(Nil)) // both client and server must send an settings frame as first frame
       }
 
       /**
@@ -221,6 +225,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2ServerSettings, initia
           val sub = grab(substreamIn)
           pull(substreamIn)
           multiplexer.registerSubStream(sub)
+          handleOutgoingCreated(sub)
         }
       })
 

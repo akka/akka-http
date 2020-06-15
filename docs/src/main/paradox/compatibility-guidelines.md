@@ -73,6 +73,7 @@ Scala
     akka.http.scaladsl.settings.ConnectionPoolSettings#withResponseEntitySubscriptionTimeout
     akka.http.scaladsl.settings.HostOverride
     akka.http.scaladsl.settings.Http2ServerSettings
+    akka.http.scaladsl.settings.Http2ClientSettings
     akka.http.scaladsl.settings.PreviewServerSettings
     akka.http.scaladsl.settings.ServerSentEventSettings
     akka.http.scaladsl.model.headers.CacheDirectives.immutableDirective
@@ -117,69 +118,20 @@ of your libraries: `Detected java.lang.NoSuchMethodError error, which MAY be cau
 
 ### Compatibility with Akka
 
-Akka HTTP 10.1.x is (binary) compatible with Akka >= 2.5.11
-and future Akka 2.x versions that are released during the lifetime of Akka HTTP 10.1.x.
+Akka HTTP 10.2.x is (binary) compatible with Akka >= $akka.minimum.version25$ and Akka >= $akka.minimum.version26$ and future Akka 2.x versions that are released during the lifetime of Akka HTTP 10.2.x.
 To facilitate supporting multiple minor versions of Akka we do not depend on `akka-stream`
 explicitly but mark it as a `provided` dependency in our build. That means that you will *always* have to add
 a manual dependency to `akka-stream`.
 
-sbt
-:   @@@vars
-    ```
-    val akkaVersion = "$akka.version$"
-    val akkaHttpVersion = "$project.version$"
-    libraryDependencies += "com.typesafe.akka" %% "akka-http"   % akkaHttpVersion
-    libraryDependencies += "com.typesafe.akka" %% "akka-actor"  % akkaVersion
-    libraryDependencies += "com.typesafe.akka" %% "akka-stream" % akkaVersion
-    // If testkit used, explicitly declare dependency on akka-streams-testkit in same version as akka-actor
-    libraryDependencies += "com.typesafe.akka" %% "akka-http-testkit"   % akkaHttpVersion % Test
-    libraryDependencies += "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion     % Test
-    ```
-    @@@
+The same goes for `akka-http-testkit`: If the testkit is used, explicitly declare the dependency on `akka-stream-testkit` of same Akka version as `akka-stream`.
 
-Gradle
-:   @@@vars
-    ```
-    compile group: 'com.typesafe.akka', name: 'akka-http_$scala.binary_version$',   version: '$project.version$'
-    compile group: 'com.typesafe.akka', name: 'akka-actor_$scala.binary_version$',  version: '$akka.version$'
-    compile group: 'com.typesafe.akka', name: 'akka-stream_$scala.binary_version$', version: '$akka.version$'
-    // If testkit used, explicitly declare dependency on akka-streams-testkit in same version as akka-actor
-    testCompile group: 'com.typesafe.akka', name: 'akka-http-testkit_$scala.binary_version$',   version: '$project.version$'
-    testCompile group: 'com.typesafe.akka', name: 'akka-stream-testkit_$scala.binary_version$', version: '$akka.version$'
-    ```
-    @@@
-    
-Maven
-:   @@@vars
-    ```
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-actor_$scala.binary_version$</artifactId>
-      <version>$akka.version$</version>
-    </dependency>
-    <!-- Explicitly depend on akka-streams in same version as akka-actor-->
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-stream_$scala.binary_version$</artifactId>
-      <version>$akka.version$</version>
-    </dependency>
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-http_$scala.binary_version$</artifactId>
-      <version>$project.version$</version>
-    </dependency>
-    <!-- If testkit used, explicitly declare dependency on akka-streams-testkit in same version as akka-actor-->
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-http-testkit_$scala.binary_version$</artifactId>
-      <version>$project.version$</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-stream-testkit_$scala.binary_version$</artifactId>
-      <version>$akka.version$</version>
-      <scope>test</scope>
-    </dependency>
-    ```
-    @@@
+@@dependency [sbt,Gradle,Maven] {
+  symbol1=AkkaVersion
+  value1=$akka.version$
+  symbol2="AkkaHttpVersion"
+  value2="$project.version$"
+  group1="com.typesafe.akka" artifact1="akka-http_$scala.binary.version$" version1="AkkaHttpVersion"
+  group2="com.typesafe.akka" artifact2="akka-stream_$scala.binary.version$" version2=AkkaVersion
+  group3="com.typesafe.akka" artifact3="akka-http-testkit_$scala.binary.version$" version3=AkkaHttpVersion scope3=Test
+  group4="com.typesafe.akka" artifact4="akka-stream-testkit_$scala.binary.version$" version4=AkkaVersion scope4=Test
+}
