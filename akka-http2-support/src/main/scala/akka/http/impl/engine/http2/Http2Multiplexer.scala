@@ -13,7 +13,7 @@ import scala.collection.immutable
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler, StageLogging }
 import akka.util.ByteString
 import FrameEvent._
-import akka.http.scaladsl.settings.Http2ServerSettings
+import akka.http.scaladsl.settings.Http2CommonSettings
 
 /**
  * INTERNAL API
@@ -49,7 +49,8 @@ private[http2] trait Http2Multiplexer {
  */
 @InternalApi
 private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with StageLogging =>
-  def settings: Http2ServerSettings
+  def isServer: Boolean
+  def settings: Http2CommonSettings
 
   /**
    * Signal an outgoing stream has ended, so when the incoming side is also finished it can be cleaned up.
@@ -147,7 +148,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
             case newData: ByteString          => buffer ++= newData
             case HttpEntity.Chunk(newData, _) => buffer ++= newData
             case HttpEntity.LastChunk(_, headers) =>
-              trailer = Some(ParsedHeadersFrame(streamId, endStream = true, ResponseRendering.renderHeaders(headers, log), None))
+              trailer = Some(ParsedHeadersFrame(streamId, endStream = true, ResponseRendering.renderHeaders(headers, log, isServer), None))
           }
 
           maybePull()

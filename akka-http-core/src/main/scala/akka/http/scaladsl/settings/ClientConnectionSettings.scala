@@ -36,6 +36,7 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   def logUnencryptedNetworkBytes: Option[Int]
   def streamCancellationDelay: FiniteDuration
   def localAddress: Option[InetSocketAddress]
+  def http2Settings: Http2ClientSettings
 
   /** The underlying transport used to connect to hosts. By default [[ClientTransport.TCP]] is used. */
   @ApiMayChange

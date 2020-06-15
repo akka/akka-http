@@ -73,6 +73,7 @@ Scala
     akka.http.scaladsl.settings.ConnectionPoolSettings#withResponseEntitySubscriptionTimeout
     akka.http.scaladsl.settings.HostOverride
     akka.http.scaladsl.settings.Http2ServerSettings
+    akka.http.scaladsl.settings.Http2ClientSettings
     akka.http.scaladsl.settings.PreviewServerSettings
     akka.http.scaladsl.settings.ServerSentEventSettings
     akka.http.scaladsl.model.headers.CacheDirectives.immutableDirective
