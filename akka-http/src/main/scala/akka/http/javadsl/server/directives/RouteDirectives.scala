@@ -296,7 +296,7 @@ abstract class RouteDirectives extends RespondWithDirectives {
 
   def fromFunction(handler: akka.japi.function.Function[HttpRequest, CompletionStage[HttpResponse]]): Route = {
     import akka.http.impl.util.JavaMapping._
-    RouteAdapter { ctx => handler(ctx.request).asScala.map(response => RouteResult.Complete(response.asScala)) }
+    RouteAdapter { ctx => handler(ctx.request).asScala.fast.map(response => RouteResult.Complete(response.asScala)) }
   }
 
   // TODO: This might need to be raised as an issue to scala-java8-compat instead.

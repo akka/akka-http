@@ -62,7 +62,7 @@ trait RouteDirectives {
    * @group route
    */
   def fromFunction(handler: HttpRequest => Future[HttpResponse]): StandardRoute =
-    { ctx => handler(ctx.request).map(RouteResult.Complete)(ctx.executionContext) }
+    { ctx => handler(ctx.request).fast.map(RouteResult.Complete)(ctx.executionContext) }
 
 }
 
