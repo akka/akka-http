@@ -5,11 +5,12 @@
 package akka.http.scaladsl.server
 package directives
 
+import scala.concurrent.Future
+
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.model._
 import StatusCodes._
-
-import scala.concurrent.{ ExecutionContext, Future }
+import akka.http.scaladsl.util.FastFuture._
 
 /**
  * @groupname route Route directives
