@@ -51,7 +51,7 @@ object RouteResult {
    * is in that type means this implicit conversion come into scope whereever
    * a `Route` is given but a `Function[HttpRequest, Future[HttpResponse]` is expected.
    */
-  implicit def routeToFunction(route: Route)(implicit system: ClassicActorSystemProvider): Function[HttpRequest, Future[HttpResponse]] =
+  implicit def routeToFunction(route: Route)(implicit system: ClassicActorSystemProvider): HttpRequest => Future[HttpResponse] =
     Route.toFunction(route)
 
   @deprecated("Replaced by routeToFlow", "10.2.0")
