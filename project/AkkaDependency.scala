@@ -44,7 +44,8 @@ object AkkaDependency {
   // Default version updated only when needed, https://doc.akka.io//docs/akka/current/project/downstream-upgrade-strategy.html
   val minimumExpectedAkkaVersion = "2.5.31"
   val default = akkaDependency(defaultVersion = minimumExpectedAkkaVersion)
-  val docs = akkaDependency(defaultVersion = "2.6.4")
+  val minimumExpectedAkka26Version = "2.6.4"
+  val docs = akkaDependency(defaultVersion = minimumExpectedAkka26Version)
 
   val akkaVersion: String = default match {
     case Artifact(version, _) => version

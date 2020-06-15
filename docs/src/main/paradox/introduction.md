@@ -34,8 +34,10 @@ choose an Akka version to run against and add a manual dependency to `akka-strea
 @@dependency [sbt,Gradle,Maven] {
   symbol1=AkkaVersion
   value1=$akka.version$
+  symbol2="AkkaHttpVersion"
+  value2="$project.version$"
   group1="com.typesafe.akka" artifact1="akka-stream_$scala.binary.version$" version1=AkkaVersion
-  group2="com.typesafe.akka" artifact2="akka-http_$scala.binary.version$" version2="$project.version$"
+  group2="com.typesafe.akka" artifact2="akka-http_$scala.binary.version$" version2="AkkaHttpVersion"
 }
 
 Alternatively, you can bootstrap a new sbt project with Akka HTTP already
@@ -94,9 +96,11 @@ for JSON. An additional module provides JSON serialization using the spray-json 
 for details):
 
 @@dependency [sbt,Gradle,Maven] {
+  symbol="AkkaHttpVersion"
+  value="$project.version$"
   group="com.typesafe.akka"
   artifact="akka-http-spray-json_$scala.binary.version$"
-  version="$project.version$"
+  version="AkkaHttpVersion"
 }
 
 @@@
@@ -105,9 +109,11 @@ JSON support is possible in `akka-http` by the use of Jackson, an external artif
 for details):
 
 @@dependency [sbt,Gradle,Maven] {
+  symbol="AkkaHttpVersion"
+  value="$project.version$"
   group="com.typesafe.akka"
   artifact="akka-http-jackson_$scala.binary.version$"
-  version="$project.version$"
+  version="AkkaHttpVersion"
 }
 
 @@@
