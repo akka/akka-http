@@ -17,19 +17,19 @@ public class HttpsExamplesDocTest {
   // compile only test
   public void testConstructRequest() {
     String unsafeHost = "example.com";
-    //#disable-sni-connection
+    //#disable-hostname-verification-connection
     final ActorSystem system = ActorSystem.create();
     final ActorMaterializer mat = ActorMaterializer.create(system);
     final Http http = Http.get(system);
 
-    // WARNING: disabling SNI is a very bad idea, please don't unless you have a very good reason to.
+    // WARNING: disabling hostname verification is a very bad idea, please don't unless you have a very good reason to.
     final AkkaSSLConfig defaultSSLConfig = AkkaSSLConfig.get(system);
     final AkkaSSLConfig badSslConfig = defaultSSLConfig
-      .convertSettings(s -> s.withLoose(s.loose().withDisableSNI(true)));
+      .convertSettings(s -> s.withLoose(s.loose().withDisableHostnameVerification(true)));
     final HttpsConnectionContext badCtx = http.createClientHttpsContext(badSslConfig);
 
     http.outgoingConnection(ConnectHttp.toHostHttps(unsafeHost).withCustomHttpsContext(badCtx));
-    //#disable-sni-connection
+    //#disable-hostname-verification-connection
   }
 
 }

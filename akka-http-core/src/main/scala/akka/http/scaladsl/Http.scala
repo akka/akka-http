@@ -1051,8 +1051,7 @@ trait DefaultSSLContextCreation {
         WarningAboutGlobalLoose)
 
     if (sslConfig.config.loose.disableSNI) {
-      log.warning("Detected that Server Name Indication (SNI) is disabled globally (via ssl-config's akka.ssl-config.loose.disableSNI) for the Http extension! " +
-        WarningAboutGlobalLoose)
+      log.warning("Detected that Server Name Indication (SNI) is disabled globally (via ssl-config's akka.ssl-config.loose.disableSNI) for the Http extension!")
 
     }
   }
