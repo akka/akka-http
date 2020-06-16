@@ -16,7 +16,7 @@ import org.scalatest.wordspec.AnyWordSpec
 @silent("deprecated")
 class HttpsExamplesSpec extends AnyWordSpec with Matchers with CompileOnlySpec {
 
-  "disable SNI for connection" in compileOnlySpec {
+  "disable hostname verification for connection" in compileOnlySpec {
     val unsafeHost = "example.com"
     //#disable-hostname-verification-connection
     implicit val system = ActorSystem()
