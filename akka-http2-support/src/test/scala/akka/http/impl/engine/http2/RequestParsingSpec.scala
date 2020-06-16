@@ -7,15 +7,14 @@ package akka.http.impl.engine.http2
 import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ Accept, Cookie, Host }
-import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.Attributes
 import akka.stream.scaladsl.Source
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
 import org.scalatest.{ Inside, Inspectors }
-
 import FrameEvent._
+import akka.http.scaladsl.Http2
 
 class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
 
@@ -483,8 +482,8 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
         request.uri.path should ===(Uri.Path./("resource"))
         request.uri.authority.port should ===(0)
         request.uri.authority.userinfo should ===("")
+        request.attribute(Http2.streamId) should be(Some(1))
         request.headers should contain theSameElementsAs Vector(
-          Http2StreamIdHeader(1),
           Host(Uri.Host("example.org")),
           Accept(MediaRange(MediaTypes.`image/jpeg`))
         )
@@ -511,8 +510,8 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
         request.uri.path should ===(Uri.Path./("resource"))
         request.uri.authority.port should ===(0)
         request.uri.authority.userinfo should ===("")
+        request.attribute(Http2.streamId) should be(Some(1))
         request.headers should contain theSameElementsAs Vector(
-          Http2StreamIdHeader(1),
           Host(Uri.Host("example.org"))
         )
         inside(request.entity) {
@@ -541,9 +540,8 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
       request.uri.authority.host should ===(Uri.Host("localhost"))
       request.uri.authority.port should ===(8000)
       request.uri.authority.userinfo should ===("")
-      request.headers should contain theSameElementsAs Vector(
-        Http2StreamIdHeader(1)
-      )
+      request.attribute(Http2.streamId) should be(Some(1))
+      request.headers shouldBe empty
       request.entity should ===(HttpEntity.Empty)
       request.protocol should ===(HttpProtocols.`HTTP/2.0`)
     }

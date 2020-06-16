@@ -17,7 +17,6 @@ import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.StringRendering
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ CacheDirectives, RawHeader }
-import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.impl.io.ByteStringParser.ByteReader
 import akka.stream.scaladsl.{ BidiFlow, Flow, Sink, Source, SourceQueueWithComplete }
@@ -37,8 +36,10 @@ import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import FrameEvent._
 import akka.http.impl.util.AkkaSpecWithMaterializer
+import akka.http.scaladsl.Http2
 import akka.stream.Attributes
 import akka.stream.testkit.scaladsl.StreamTestKit
+import com.github.ghik.silencer.silent
 
 class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     akka.http.server.remote-address-header = on
@@ -58,7 +59,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
           sendHEADERS(streamId, endStream = true, endHeaders = true, requestHeaderBlock)
           expectRequest() shouldBe expectedRequest
 
-          responseOut.sendNext(response.addHeader(Http2StreamIdHeader(streamId)))
+          responseOut.sendNext(response.addAttribute(Http2.streamId, streamId))
           val headerPayload = expectHeaderBlock(streamId)
           headerPayload shouldBe expectedResponseHeaderBlock
         }
@@ -76,7 +77,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
       "GOAWAY when invalid headers frame" in new TestSetup with RequestResponseProbes {
         override def handlerFlow: Flow[HttpRequest, HttpResponse, NotUsed] =
           Flow[HttpRequest].map { req =>
-            HttpResponse(entity = req.entity).addHeader(req.header[Http2StreamIdHeader].get)
+            HttpResponse(entity = req.entity).addAttribute(Http2.streamId, req.attribute(Http2.streamId).get)
           }
 
         val headerBlock = hex"00 00 01 01 05 00 00 00 01 40"
@@ -150,8 +151,8 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         request.method shouldBe HttpMethods.GET
         request.uri shouldBe Uri("http://www.example.com/")
 
-        val streamIdHeader = request.header[Http2StreamIdHeader].getOrElse(Http2Compliance.missingHttpIdHeaderException)
-        responseOut.sendNext(HPackSpecExamples.FirstResponse.addHeader(streamIdHeader))
+        val streamId = request.attribute(Http2.streamId).getOrElse(Http2Compliance.missingHttpIdHeaderException)
+        responseOut.sendNext(HPackSpecExamples.FirstResponse.addAttribute(Http2.streamId, streamId))
         val headerPayload = expectHeaderBlock(1)
         headerPayload shouldBe HPackSpecExamples.C61FirstResponseWithHuffman
       }
@@ -172,8 +173,8 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         request.method shouldBe HttpMethods.GET
         request.uri shouldBe Uri("http://www.example.com/")
 
-        val streamIdHeader = request.header[Http2StreamIdHeader].getOrElse(Http2Compliance.missingHttpIdHeaderException)
-        responseOut.sendNext(HPackSpecExamples.FirstResponse.addHeader(streamIdHeader))
+        val streamId = request.attribute(Http2.streamId).getOrElse(Http2Compliance.missingHttpIdHeaderException)
+        responseOut.sendNext(HPackSpecExamples.FirstResponse.addAttribute(Http2.streamId, streamId))
         val headerPayload = expectHeaderBlock(1)
         headerPayload shouldBe HPackSpecExamples.C61FirstResponseWithHuffman
       }
@@ -217,8 +218,8 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         request.method shouldBe HttpMethods.GET
         request.uri shouldBe Uri("http://www.example.com/")
 
-        val streamIdHeader = request.header[Http2StreamIdHeader].getOrElse(Http2Compliance.missingHttpIdHeaderException)
-        responseOut.sendNext(HPackSpecExamples.FirstResponse.addHeader(streamIdHeader))
+        val streamId = request.attribute(Http2.streamId).getOrElse(Http2Compliance.missingHttpIdHeaderException)
+        responseOut.sendNext(HPackSpecExamples.FirstResponse.addAttribute(Http2.streamId, streamId))
         val headerPayload = expectHeaderBlock(1)
 
         // Dynamic Table Size Update (https://tools.ietf.org/html/rfc7541#section-6.3) is
@@ -991,6 +992,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         requestIn.ensureSubscription()
 
         val request = expectRequestRaw()
+        @silent("deprecated")
         val remoteAddressHeader = request.header[headers.`Remote-Address`].get
         remoteAddressHeader.address.getAddress.get().toString shouldBe ("/" + theAddress)
         remoteAddressHeader.address.getPort shouldBe thePort
@@ -1227,10 +1229,10 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     def handlerFlow: Flow[HttpRequest, HttpResponse, NotUsed] =
       Flow.fromSinkAndSource(Sink.fromSubscriber(requestIn), Source.fromPublisher(responseOut))
 
-    def expectRequest(): HttpRequest = requestIn.requestNext().removeHeader("x-http2-stream-id")
+    def expectRequest(): HttpRequest = requestIn.requestNext().removeAttribute(Http2.streamId)
     def expectRequestRaw(): HttpRequest = requestIn.requestNext() // TODO, make it so that internal headers are not listed in `headers` etc?
     def emitResponse(streamId: Int, response: HttpResponse): Unit =
-      responseOut.sendNext(response.addHeader(Http2StreamIdHeader(streamId)))
+      responseOut.sendNext(response.addAttribute(Http2.streamId, streamId))
 
     def expectGracefulCompletion(): Unit = {
       toNet.expectComplete()

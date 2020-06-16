@@ -8,7 +8,7 @@ import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.{ AkkaSpecWithMaterializer, ExampleHttpContexts }
 import akka.http.scaladsl.model.headers
 import akka.http.scaladsl.model.headers.HttpEncodings
-import akka.http.scaladsl.model.http2.{ Http2StreamIdHeader, RequestResponseAssociation }
+import akka.http.scaladsl.model.http2.RequestResponseAssociation
 import akka.http.scaladsl.model.{ AttributeKey, ContentTypes, HttpEntity, HttpHeader, HttpMethod, HttpMethods, HttpRequest, HttpResponse, StatusCode, StatusCodes, Uri }
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
@@ -44,7 +44,7 @@ class Http2ClientServerSpec extends AkkaSpecWithMaterializer(
       )
 
       val serverRequest = expectServerRequest()
-      serverRequest.request.header[Http2StreamIdHeader] shouldBe Symbol("nonEmpty")
+      serverRequest.request.attribute(Http2.streamId) shouldBe Symbol("nonEmpty")
       serverRequest.request.method shouldBe HttpMethods.POST
       serverRequest.request.header[headers.`Accept-Encoding`] should not be empty
       Unmarshal(serverRequest.request.entity).to[String].futureValue shouldBe "ping"
@@ -58,7 +58,7 @@ class Http2ClientServerSpec extends AkkaSpecWithMaterializer(
       val reqPub1 = sendClientRequestWithEntityStream("request-1")
 
       val serverRequest1 = expectServerRequest()
-      serverRequest1.request.header[Http2StreamIdHeader] shouldBe Symbol("nonEmpty")
+      serverRequest1.request.attribute(Http2.streamId) shouldBe Symbol("nonEmpty")
       serverRequest1.request.method shouldBe HttpMethods.POST
 
       val reqSub1 = serverRequest1.expectRequestEntityStream()
@@ -67,7 +67,7 @@ class Http2ClientServerSpec extends AkkaSpecWithMaterializer(
 
       val reqPub2 = sendClientRequestWithEntityStream("request-2")
       val serverRequest2 = expectServerRequest()
-      serverRequest2.request.header[Http2StreamIdHeader] shouldBe Symbol("nonEmpty")
+      serverRequest2.request.attribute(Http2.streamId) shouldBe Symbol("nonEmpty")
       serverRequest2.request.method shouldBe HttpMethods.POST
       val reqSub2 = serverRequest2.expectRequestEntityStream()
       reqPub2.sendNext(ByteString("blub"))
@@ -91,7 +91,7 @@ class Http2ClientServerSpec extends AkkaSpecWithMaterializer(
 
   case class ServerRequest(request: HttpRequest, promise: Promise[HttpResponse]) {
     def sendResponse(response: HttpResponse): Unit =
-      promise.success(response.addHeader(request.header[Http2StreamIdHeader].get))
+      promise.success(response.addAttribute(Http2.streamId, request.attribute(Http2.streamId).get))
 
     def sendResponseWithEntityStream(
       status:  StatusCode                = StatusCodes.OK,
