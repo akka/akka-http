@@ -191,9 +191,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
       val engine = connectionContext.sslContext.createSSLEngine(host, port)
       engine.setUseClientMode(true)
       Http2AlpnSupport.applySessionParameters(engine, connectionContext.firstSession)
-      val params = engine.getSSLParameters
-      params.setApplicationProtocols(Array("h2"))
-      engine.setSSLParameters(params)
+      Http2AlpnSupport.clientSetApplicationProtocols(engine, Array("h2"))
       engine
     }
 
