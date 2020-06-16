@@ -59,10 +59,11 @@ trait RouteDirectives {
     StandardRoute(_.fail(error))
 
   /**
+   * Handle the request using a function.
    *
    * @group route
    */
-  def fromFunction(handler: HttpRequest => Future[HttpResponse]): StandardRoute =
+  def handle(handler: HttpRequest => Future[HttpResponse]): StandardRoute =
     { ctx => handler(ctx.request).fast.map(RouteResult.Complete)(ctx.executionContext) }
 
 }

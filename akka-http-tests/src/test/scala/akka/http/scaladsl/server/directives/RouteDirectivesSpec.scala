@@ -158,16 +158,16 @@ class RouteDirectivesSpec extends AnyWordSpec with GenericRoutingSpec {
     }
   }
 
-  "the fromFunction directive" should {
+  "the handle directive" should {
     "use a function to complete a request" in {
       Get(Uri("https://akka.io/foo")) ~> {
-        fromFunction(req => Future.successful(HttpResponse(OK, entity = req.uri.toString)))
+        handle(req => Future.successful(HttpResponse(OK, entity = req.uri.toString)))
       } ~> check { response shouldEqual HttpResponse(200, entity = "https://akka.io/foo") }
     }
     "fail the request when the future fails" in {
       Get(Uri("https://akka.io/foo")) ~> {
         concat(
-          fromFunction(req => Future.failed(new IllegalStateException("Some error"))),
+          handle(req => Future.failed(new IllegalStateException("Some error"))),
           complete(ImATeapot)
         )
       } ~> check { response shouldEqual HttpResponse(500, entity = "There was an internal server error.") }
@@ -175,7 +175,7 @@ class RouteDirectivesSpec extends AnyWordSpec with GenericRoutingSpec {
     "fail the request when the function throws" in {
       Get(Uri("https://akka.io/foo")) ~> {
         concat(
-          fromFunction(req => throw new IllegalStateException("Some error")),
+          handle(req => throw new IllegalStateException("Some error")),
           complete(ImATeapot)
         )
       } ~> check { response shouldEqual HttpResponse(500, entity = "There was an internal server error.") }

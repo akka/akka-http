@@ -294,7 +294,10 @@ abstract class RouteDirectives extends RespondWithDirectives {
     D.complete(value.asScala.fast.map(v => ToResponseMarshallable(v)(marshaller)).recover(unwrapCompletionException))
   }
 
-  def fromFunction(handler: akka.japi.function.Function[HttpRequest, CompletionStage[HttpResponse]]): Route = {
+  /**
+   * Handle the request using a function.
+   */
+  def handle(handler: akka.japi.function.Function[HttpRequest, CompletionStage[HttpResponse]]): Route = {
     import akka.http.impl.util.JavaMapping._
     RouteAdapter { ctx => handler(ctx.request).asScala.fast.map(response => RouteResult.Complete(response.asScala)) }
   }

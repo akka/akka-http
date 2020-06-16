@@ -104,7 +104,7 @@ public class RouteDirectivesTest extends JUnitRouteTest {
   @Test
   public void testRouteFromFunction() {
     TestRoute route = testRoute(
-      fromFunction(req ->
+      handle(req ->
         // CompletableFuture.completedStage isn't available until Java 9
         CompletableFuture.supplyAsync(() -> HttpResponse.create().withEntity(HttpEntities.create(req.getUri().toString())))
       )
@@ -117,7 +117,7 @@ public class RouteDirectivesTest extends JUnitRouteTest {
   @Test
   public void testRouteFromFailingFunction() {
     TestRoute route = testRoute(
-      fromFunction(req ->
+      handle(req ->
         // CompletableFuture.failedStage/failedFuture aren't available until Java 9
         CompletableFuture.supplyAsync(() -> { throw new IllegalStateException("x"); })
       ),
@@ -131,7 +131,7 @@ public class RouteDirectivesTest extends JUnitRouteTest {
   @Test
   public void testRouteWhenLambdaThrows() {
     TestRoute route = testRoute(
-      fromFunction(req -> { throw new IllegalStateException("x"); }),
+      handle(req -> { throw new IllegalStateException("x"); }),
       complete(StatusCodes.IM_A_TEAPOT)
     );
 
