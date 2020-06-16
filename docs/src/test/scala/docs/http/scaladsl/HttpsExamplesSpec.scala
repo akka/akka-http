@@ -18,13 +18,13 @@ class HttpsExamplesSpec extends AnyWordSpec with Matchers with CompileOnlySpec {
 
   "disable SNI for connection" in compileOnlySpec {
     val unsafeHost = "example.com"
-    //#disable-sni-connection
+    //#disable-hostname-verification-connection
     implicit val system = ActorSystem()
 
-    // WARNING: disabling SNI is a very bad idea, please don't unless you have a very good reason to.
-    val badSslConfig = AkkaSSLConfig().mapSettings(s => s.withLoose(s.loose.withDisableSNI(true)))
+    // WARNING: disabling host name verification is a very bad idea, please don't unless you have a very good reason to.
+    val badSslConfig = AkkaSSLConfig().mapSettings(s => s.withLoose(s.loose.withDisableHostnameVerification(true)))
     val badCtx = Http().createClientHttpsContext(badSslConfig)
     Http().outgoingConnectionHttps(unsafeHost, connectionContext = badCtx)
-    //#disable-sni-connection
+    //#disable-hostname-verification-connection
   }
 }
