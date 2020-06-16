@@ -164,7 +164,7 @@ class RouteDirectivesSpec extends AnyWordSpec with GenericRoutingSpec {
         fromFunction(req => Future.successful(HttpResponse(OK, entity = req.uri.toString)))
       } ~> check { response shouldEqual HttpResponse(200, entity = "https://akka.io/foo") }
     }
-    "reject the request when the future fails" in {
+    "fail the request when the future fails" in {
       Get(Uri("https://akka.io/foo")) ~> {
         concat(
           fromFunction(req => Future.failed(new IllegalStateException("Some error"))),
@@ -172,7 +172,7 @@ class RouteDirectivesSpec extends AnyWordSpec with GenericRoutingSpec {
         )
       } ~> check { response shouldEqual HttpResponse(500, entity = "There was an internal server error.") }
     }
-    "reject the request when the function throws fails" in {
+    "fail the request when the function throws" in {
       Get(Uri("https://akka.io/foo")) ~> {
         concat(
           fromFunction(req => throw new IllegalStateException("Some error")),
