@@ -105,7 +105,7 @@ private[http] final class BodyPartParser(
       private var trampoline: () => StateResult = null
       def trampoline(continue: => StateResult): StateResult = {
         require(trampoline eq null)
-        trampoline = continue _
+        trampoline = () => continue
         done()
       }
 
@@ -164,7 +164,7 @@ private[http] final class BodyPartParser(
           case BoundaryHeader =>
             emit(BodyPartStart(headers.toList, _ => HttpEntity.empty(contentType)))
             val ix = lineStart + eolConfiguration.boundaryLength
-            if (eolConfiguration.isEndOfLine(input, ix)) parseHeaderLines(input, ix + eolConfiguration.eolLength)
+            if (eolConfiguration.isEndOfLine(input, ix)) parseHeaderLines(input, ix + eolConfiguration.eolLength, headers, headerCount, None)
             else if (doubleDash(input, ix)) setShouldTerminate()
             else fail("Illegal multipart boundary in message content")
 

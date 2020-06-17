@@ -252,7 +252,7 @@ class NewConnectionPoolSpec extends AkkaSpecWithMaterializer("""
       // now respond to request 2
       handlerSetter(req => Future.successful(HttpResponse()))
 
-      val (Success(_), _) = responseOut.expectNext()
+      { val (Success(_), _) = responseOut.expectNext() } // extra braces to avoid warning that TestSetup grows fields
     }
 
     "retry failed requests" in new TestSetup(autoAccept = true) {
@@ -349,7 +349,8 @@ class NewConnectionPoolSpec extends AkkaSpecWithMaterializer("""
 
       responseOutSub.request(1)
       acceptIncomingConnection()
-      val (Success(_), 42) = responseOut.expectNext()
+
+      { val (Success(_), 42) = responseOut.expectNext() } // extra braces to avoid warning that TestSetup grows fields
     }
 
     "don't drop requests during idle-timeout shutdown" in new TestSetup(autoAccept = true) {
