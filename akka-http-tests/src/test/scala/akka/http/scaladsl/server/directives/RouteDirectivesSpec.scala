@@ -21,7 +21,7 @@ import org.scalatest.wordspec.AnyWordSpec
 class RouteDirectivesSpec extends AnyWordSpec with GenericRoutingSpec {
 
   "The `complete` directive" should {
-    "by chainable with the `&` operator" in {
+    "be chainable with the `&` operator" in {
       Get() ~> (get & complete("yeah")) ~> check { responseAs[String] shouldEqual "yeah" }
     }
     "be lazy in its argument evaluation, independently of application style" in {
