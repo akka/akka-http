@@ -20,19 +20,23 @@ trait Encoder {
 
   def encodeMessage(message: HttpMessage): message.Self =
     if (messageFilter(message) && !message.headers.exists(Encoder.isContentEncodingHeader))
-      message.transformEntityDataBytes(encoderFlow).withHeaders(`Content-Encoding`(encoding) +: message.headers)
+      message.transformEntityDataBytes(singleUseEncoderFlow()).withHeaders(`Content-Encoding`(encoding) +: message.headers)
     else message.self
 
   def encodeData[T](t: T)(implicit mapper: DataMapper[T]): T =
-    mapper.transformDataBytes(t, Flow[ByteString].via(newEncodeTransformer))
+    mapper.transformDataBytes(t, Flow.fromGraph(singleUseEncoderFlow()))
+
+  def encoderFlow: Flow[ByteString, ByteString, NotUsed] =
+    Flow.setup { (_, _) => Flow.fromGraph(singleUseEncoderFlow()) }
+      .mapMaterializedValue(_ => NotUsed)
 
   def encode(input: ByteString): ByteString = newCompressor.compressAndFinish(input)
 
-  def encoderFlow: Flow[ByteString, ByteString, NotUsed] = Flow[ByteString].via(newEncodeTransformer)
-
   def newCompressor: Compressor
 
-  def newEncodeTransformer(): GraphStage[FlowShape[ByteString, ByteString]] = {
+  def newEncodeTransformer(): GraphStage[FlowShape[ByteString, ByteString]] = singleUseEncoderFlow()
+
+  private def singleUseEncoderFlow(): GraphStage[FlowShape[ByteString, ByteString]] = {
     val compressor = newCompressor
 
     def encodeChunk(bytes: ByteString): ByteString = compressor.compressAndFlush(bytes)
