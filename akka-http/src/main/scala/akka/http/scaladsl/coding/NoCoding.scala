@@ -4,6 +4,7 @@
 
 package akka.http.scaladsl.coding
 
+import akka.annotation.InternalApi
 import akka.http.scaladsl.model._
 import akka.http.impl.util.StreamUtils
 import akka.stream.FlowShape
@@ -28,6 +29,9 @@ object NoCoding extends Coder with StreamDecoder {
     () => StreamUtils.limitByteChunksStage(maxBytesPerChunk)
 }
 
+/** Internal API */
+@InternalApi
+@deprecated("NoCodingCompressor is internal API and will be moved or removed in the future", since = "10.2.0")
 object NoCodingCompressor extends Compressor {
   def compress(input: ByteString): ByteString = input
   def flush() = ByteString.empty

@@ -5,6 +5,7 @@
 package akka.http.scaladsl.coding
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.http.scaladsl.model._
 import akka.http.impl.util.StreamUtils
 import akka.stream.FlowShape
@@ -30,10 +31,16 @@ trait Encoder {
     Flow.setup { (_, _) => Flow.fromGraph(singleUseEncoderFlow()) }
       .mapMaterializedValue(_ => NotUsed)
 
+  @InternalApi
+  @deprecated("synchronous compression with `encode` is not supported in the future any more", since = "10.2.0")
   def encode(input: ByteString): ByteString = newCompressor.compressAndFinish(input)
 
+  @InternalApi
+  @deprecated("newCompressor is internal API", since = "10.2.0")
   def newCompressor: Compressor
 
+  @InternalApi
+  @deprecated("newEncodeTransformer is internal API", since = "10.2.0")
   def newEncodeTransformer(): GraphStage[FlowShape[ByteString, ByteString]] = singleUseEncoderFlow()
 
   private def singleUseEncoderFlow(): GraphStage[FlowShape[ByteString, ByteString]] = {
@@ -58,6 +65,8 @@ object Encoder {
 }
 
 /** A stateful object representing ongoing compression. */
+@InternalApi
+@deprecated("Compressor is internal API and will be moved or removed in the future.", since = "10.2.0")
 abstract class Compressor {
   /**
    * Compresses the given input and returns compressed data. The implementation

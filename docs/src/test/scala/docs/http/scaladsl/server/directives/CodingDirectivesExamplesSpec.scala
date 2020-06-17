@@ -11,6 +11,7 @@ import akka.http.scaladsl.model.headers.HttpEncodings._
 import akka.http.scaladsl.model.MediaTypes._
 import akka.http.scaladsl.server._
 import akka.util.ByteString
+import com.github.ghik.silencer.silent
 import docs.CompileOnlySpec
 import org.scalatest.matchers.Matcher
 
@@ -157,5 +158,6 @@ class CodingDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   def haveContentEncoding(encoding: HttpEncoding): Matcher[HttpResponse] =
     be(encoding) compose { (_: HttpResponse).header[`Content-Encoding`].map(_.encodings.head).getOrElse(HttpEncodings.identity) }
 
+  @silent("encode in trait Encoder is deprecated")
   def compress(input: String, encoder: Encoder): ByteString = encoder.encode(ByteString(input))
 }
