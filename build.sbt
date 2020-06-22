@@ -281,6 +281,8 @@ lazy val httpJackson =
   httpMarshallersJavaSubproject("jackson")
     .settings(AutomaticModuleName.settings("akka.http.marshallers.jackson"))
     .addAkkaModuleDependency("akka-stream", "provided")
+    .addAkkaModuleDependency("akka-stream-testkit", "test")
+    .dependsOn(httpTestkit % "test")
     .settings(Dependencies.httpJackson)
     .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
