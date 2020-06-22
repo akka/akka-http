@@ -143,7 +143,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
         sendHEADERS(1, endStream = true, endHeaders = false, fragment1)
         requestIn.ensureSubscription()
-        requestIn.expectNoMessage(remainingOrDefault)
+        requestIn.expectNoMessage(100.millis)
         sendCONTINUATION(1, endHeaders = true, fragment2)
 
         val request = expectRequestRaw()
@@ -164,7 +164,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
         sendHEADERS(1, endStream = true, endHeaders = false, fragment1)
         requestIn.ensureSubscription()
-        requestIn.expectNoMessage(remainingOrDefault)
+        requestIn.expectNoMessage(100.millis)
         sendCONTINUATION(1, endHeaders = false, fragment2)
         sendCONTINUATION(1, endHeaders = true, fragment3)
 
@@ -211,7 +211,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
         sendHEADERS(1, endStream = true, endHeaders = true, headerBlock)
         requestIn.ensureSubscription()
-        requestIn.expectNoMessage(remainingOrDefault)
+        requestIn.expectNoMessage(100.millis)
 
         val request = expectRequestRaw()
 
@@ -326,12 +326,12 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         sendRST_STREAM(TheStreamId, ErrorCode.STREAM_CLOSED)
         val error = entityDataIn.expectError()
         error.getMessage shouldBe "Stream with ID [1] was closed by peer with code STREAM_CLOSED(0x05)"
-        expectNoBytes()
+        expectNoBytes(100.millis)
 
         // https://http2.github.io/http2-spec/#StreamStates
         // Endpoints MUST ignore WINDOW_UPDATE or RST_STREAM frames received in this state,
         sendRST_STREAM(TheStreamId, ErrorCode.STREAM_CLOSED)
-        expectNoBytes()
+        expectNoBytes(100.millis)
       }
       "send RST_STREAM if entity stream is canceled" in new WaitingForRequestData {
         val data1 = ByteString("abcdef")
@@ -441,7 +441,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         sendRST_STREAM(TheStreamId, ErrorCode.CANCEL)
 
         entityDataOut.expectCancellation()
-        toNet.expectNoBytes() // the whole stage failed with bug #2236
+        toNet.expectNoBytes(100.millis) // the whole stage failed with bug #2236
       }
 
       "handle RST_STREAM while waiting for a window update" in new WaitingForResponseDataSetup {
@@ -451,17 +451,17 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         expectDATA(TheStreamId, false, Http2Protocol.InitialWindowSize)
 
         // enough stream-level WINDOW, but too little connection-level WINDOW
-        expectNoBytes()
+        expectNoBytes(100.millis)
 
         // now the demuxer is in the WaitingForConnectionWindow state, cancel the connection
         sendRST_STREAM(TheStreamId, ErrorCode.CANCEL)
 
         entityDataOut.expectCancellation()
-        expectNoBytes()
+        expectNoBytes(100.millis)
 
         // now increase connection-level window again and see if everything still works
         sendWINDOW_UPDATE(0, 10000)
-        expectNoBytes() // don't expect anything, stream has been cancelled in the meantime
+        expectNoBytes(100.millis) // don't expect anything, stream has been cancelled in the meantime
       }
 
       "cancel entity data source when peer sends RST_STREAM before entity is subscribed" in new TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
@@ -474,7 +474,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         val entityDataOut = TestPublisher.probe[ByteString]()
         val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entityDataOut)))
         emitResponse(1, response)
-        expectNoBytes() // don't expect response on closed connection
+        expectNoBytes(100.millis) // don't expect response on closed connection
         entityDataOut.expectCancellation()
       }
 
@@ -495,7 +495,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         entityDataOut.sendNext(bytes(70000, 0x23)) // 70000 > Http2Protocol.InitialWindowSize
         expectDATA(TheStreamId, false, Http2Protocol.InitialWindowSize)
 
-        expectNoBytes()
+        expectNoBytes(100.millis)
 
         sendWINDOW_UPDATE(TheStreamId, 10000) // > than the remaining bytes (70000 - InitialWindowSize)
         sendWINDOW_UPDATE(0, 10000)
@@ -955,7 +955,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
       "ignore mid-stream HEADERS with endStream = true (potential trailers)" in new SimpleRequestResponseRoundtripSetup {
         sendHEADERS(1, endStream = false, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
         sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
-        expectNoBytes()
+        expectNoBytes(100.millis)
       }
 
       "reject HEADERS for already closed streams" in new SimpleRequestResponseRoundtripSetup {
