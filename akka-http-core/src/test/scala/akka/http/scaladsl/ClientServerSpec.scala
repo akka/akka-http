@@ -32,6 +32,7 @@ import akka.stream.testkit._
 import akka.stream._
 import akka.testkit._
 import akka.util.ByteString
+import com.github.ghik.silencer.silent
 import com.typesafe.config.{ Config, ConfigFactory }
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import com.typesafe.sslconfig.ssl.{ SSLConfigSettings, SSLLooseConfig }
@@ -171,6 +172,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
     }
 
     "Remote-Address header" should {
+      @silent("Remote-Address in package headers is deprecated")
       def handler(req: HttpRequest): HttpResponse = {
         val entity = req.header[headers.`Remote-Address`].flatMap(_.address.toIP).flatMap(_.port).toString
         HttpResponse(entity = entity)

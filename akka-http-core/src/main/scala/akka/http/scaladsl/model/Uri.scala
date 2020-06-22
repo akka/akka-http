@@ -540,7 +540,7 @@ object Uri {
         path match {
           case Path.Empty               => lastSegment.endsWith(suffix)
           case Path.Slash(Path.Empty)   => ignoreTrailingSlash && lastSegment.endsWith(suffix)
-          case Path.Slash(tail)         => rec(tail)
+          case Path.Slash(tail)         => rec(tail, "")
           case Path.Segment(head, tail) => rec(tail, head)
         }
       rec(this)
@@ -571,8 +571,8 @@ object Uri {
       @tailrec def build(path: Path = Empty, ix: Int = string.length - 1, segmentEnd: Int = 0): Path =
         if (ix >= 0)
           if (string.charAt(ix) == '/')
-            if (segmentEnd == 0) build(Slash(path), ix - 1)
-            else build(Slash(decode(string.substring(ix + 1, segmentEnd), charset) :: path), ix - 1)
+            if (segmentEnd == 0) build(Slash(path), ix - 1, 0)
+            else build(Slash(decode(string.substring(ix + 1, segmentEnd), charset) :: path), ix - 1, 0)
           else if (segmentEnd == 0) build(path, ix - 1, ix + 1)
           else build(path, ix - 1, segmentEnd)
         else if (segmentEnd == 0) path else decode(string.substring(0, segmentEnd), charset) :: path
@@ -981,13 +981,14 @@ object UriRendering {
       case _             => if (path.isEmpty || path.startsWithSlash) r ~~ '/' ~~ '/' else r
     }
 
+  @tailrec
   def renderPath[R <: Rendering](r: R, path: Path, charset: Charset, encodeFirstSegmentColons: Boolean = false): r.type =
     path match {
       case Path.Empty       => r
-      case Path.Slash(tail) => renderPath(r ~~ '/', tail, charset)
+      case Path.Slash(tail) => renderPath(r ~~ '/', tail, charset, false)
       case Path.Segment(head, tail) =>
         val keep = if (encodeFirstSegmentColons) `pchar-base-nc` else `pchar-base`
-        renderPath(encode(r, head, charset, keep), tail, charset)
+        renderPath(encode(r, head, charset, keep), tail, charset, false)
     }
 
   def renderQuery[R <: Rendering](r: R, query: Query, charset: Charset,

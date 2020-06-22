@@ -31,9 +31,9 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AkkaS
     "insert the 1st value" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
       insert("Hello", Symbol("Hello"))
       check {
-        """nodes: 0/H, 0/e, 0/l, 0/l, 0/o, 1/Ω
-          |branchData:\u0020
-          |values: 'Hello""" -> parser.formatRawTrie
+        s"""nodes: 0/H, 0/e, 0/l, 0/l, 0/o, 1/Ω
+           |branchData:${" " /* explicit trailing space */ }
+           |values: 'Hello""" -> parser.formatRawTrie
       }
       check {
         """-H-e-l-l-o- 'Hello
