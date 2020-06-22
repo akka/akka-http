@@ -14,7 +14,7 @@ import akka.http.impl.engine.http2.Http2Protocol.{ ErrorCode, Flags, FrameType, 
 import akka.http.impl.engine.http2.framing.FrameRenderer
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.engine.ws.ByteStringSinkProbe
-import akka.http.impl.util.StringRendering
+import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools, StringRendering }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ CacheDirectives, RawHeader }
 import akka.http.scaladsl.settings.ServerSettings
@@ -33,11 +33,11 @@ import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 import FrameEvent._
-import akka.http.impl.util.AkkaSpecWithMaterializer
+import akka.event.Logging
 import akka.http.scaladsl.Http2
 import akka.stream.Attributes
+import akka.stream.Attributes.LogLevels
 import akka.stream.testkit.scaladsl.StreamTestKit
 import com.github.ghik.silencer.silent
 
@@ -46,6 +46,8 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     akka.http.server.http2.log-frames = on
   """)
   with WithInPendingUntilFixed with Eventually {
+  override def failOnSevereMessages: Boolean = true
+
   "The Http/2 server implementation" should {
     "support simple round-trips" should {
       abstract class SimpleRequestResponseRoundtripSetup extends TestSetup with RequestResponseProbes {
@@ -307,20 +309,16 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
       // Reproducing https://github.com/akka/akka-http/issues/2957
       "close the stream when we receive a RST after we have half-closed ourselves as well" in new WaitingForRequestData {
         // Client sends the request, but doesn't close the stream yet. This is a bit weird, but it's whet grpcurl does ;)
-        sendHEADERS(streamId = 1, endStream = false, endHeaders = true, encodeRequestHeaders(request))
-        sendDATA(streamId = 1, endStream = false, ByteString(0, 0, 0, 0, 0x10, 0x22, 0x0e) ++ ByteString.fromString("GreeterService"))
+        sendDATA(streamId = TheStreamId, endStream = false, ByteString(0, 0, 0, 0, 0x10, 0x22, 0x0e) ++ ByteString.fromString("GreeterService"))
 
         // We emit a 404 response, half-closing the stream.
-        emitResponse(streamId = 1, HttpResponse(StatusCodes.NotFound))
+        emitResponse(streamId = TheStreamId, HttpResponse(StatusCodes.NotFound))
 
-        // We don't want to see warnings (which we used to see)
-        EventFilter.warning(occurrences = 0).intercept {
-          // The client closes the stream with a protocol error. This is somewhat questionable but it's what grpc-go does
-          sendRST_STREAM(streamId = 1, ErrorCode.PROTOCOL_ERROR)
-          entityDataIn.expectError()
-          // Wait to give the warning (that we hope not to see) time to pop up.
-          Thread.sleep(3000)
-        }
+        // The client closes the stream with a protocol error. This is somewhat questionable but it's what grpc-go does
+        sendRST_STREAM(streamId = TheStreamId, ErrorCode.PROTOCOL_ERROR)
+        entityDataIn.expectError()
+        // Wait to give the warning (that we hope not to see) time to pop up.
+        Thread.sleep(100)
       }
       "not fail the whole connection when one stream is RST twice" in new WaitingForRequestData {
         sendRST_STREAM(TheStreamId, ErrorCode.STREAM_CLOSED)
@@ -483,8 +481,12 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         entityDataOut.sendNext(data1)
         expectDATA(TheStreamId, endStream = false, data1)
 
-        entityDataOut.sendError(new RuntimeException with NoStackTrace)
-        expectRST_STREAM(1, ErrorCode.INTERNAL_ERROR)
+        class MyProblem extends RuntimeException
+
+        EventFilter[MyProblem](pattern = "Substream 1 failed with .*", occurrences = 1).intercept {
+          entityDataOut.sendError(new MyProblem)
+          expectRST_STREAM(1, ErrorCode.INTERNAL_ERROR)
+        }
       }
       "fail if advertised content-length doesn't match" in pending
 
@@ -1039,6 +1041,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
     final def theServer: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
       modifyServer(Http2Blueprint.serverStack(settings, system.log))
+        .atop(LogByteStringTools.logByteStringBidi("network-plain-text").addAttributes(Attributes(LogLevels(Logging.DebugLevel, Logging.DebugLevel, Logging.DebugLevel))))
 
     handlerFlow
       .join(theServer)

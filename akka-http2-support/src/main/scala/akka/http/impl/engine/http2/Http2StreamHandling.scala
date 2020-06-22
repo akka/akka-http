@@ -134,9 +134,15 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
     def shutdown(): IncomingStreamState
   }
   case object Idle extends IncomingStreamState {
-    def handle(event: StreamFrameEvent): IncomingStreamState = expectIncomingStream(event, HalfClosedRemote, Open)
+    def handle(event: StreamFrameEvent): IncomingStreamState = expectIncomingStream(event, HalfClosedRemote, ReceivingDataFirst)
     override def handleOutgoingCreated(stream: Http2SubStream): IncomingStreamState = SendingData(stream)
     override def shutdown(): IncomingStreamState = Closed
+  }
+  case class ReceivingDataFirst(buffer: IncomingStreamBuffer) extends ReceivingData(HalfClosedRemote) {
+    override def handleOutgoingCreated(stream: Http2SubStream): IncomingStreamState = Open(buffer)
+    override def handleOutgoingEnded(): IncomingStreamState = Closed
+
+    override protected def onReset(streamId: Int): Unit = multiplexer.cancelSubStream(streamId)
   }
   case class SendingData(outgoingStream: Http2SubStream) extends IncomingStreamState {
     override def handle(event: StreamFrameEvent): IncomingStreamState = expectIncomingStream(event, HalfClosedRemote, Open, _.withCorrelationAttributes(outgoingStream.correlationAttributes))
@@ -229,6 +235,10 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
     override def shutdown(): IncomingStreamState = Closed
   }
   case object Closed extends IncomingStreamState {
+
+    override def handleOutgoingCreated(stream: Http2SubStream): IncomingStreamState = this
+    override def handleOutgoingEnded(): IncomingStreamState = this
+
     def handle(event: StreamFrameEvent): IncomingStreamState = event match {
       // https://http2.github.io/http2-spec/#StreamStates
       // Endpoints MUST ignore WINDOW_UPDATE or RST_STREAM frames received in this state,

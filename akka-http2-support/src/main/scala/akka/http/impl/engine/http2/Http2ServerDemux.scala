@@ -224,8 +224,8 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
         def onPush(): Unit = {
           val sub = grab(substreamIn)
           pull(substreamIn)
-          multiplexer.registerSubStream(sub)
           handleOutgoingCreated(sub)
+          multiplexer.registerSubStream(sub)
         }
       })
 
