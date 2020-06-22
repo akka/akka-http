@@ -5,6 +5,7 @@
 package akka.http.scaladsl.coding
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.http.scaladsl.model._
 import akka.http.impl.util.StreamUtils
 import akka.stream.FlowShape
@@ -20,19 +21,29 @@ trait Encoder {
 
   def encodeMessage(message: HttpMessage): message.Self =
     if (messageFilter(message) && !message.headers.exists(Encoder.isContentEncodingHeader))
-      message.transformEntityDataBytes(encoderFlow).withHeaders(`Content-Encoding`(encoding) +: message.headers)
+      message.transformEntityDataBytes(singleUseEncoderFlow()).withHeaders(`Content-Encoding`(encoding) +: message.headers)
     else message.self
 
   def encodeData[T](t: T)(implicit mapper: DataMapper[T]): T =
-    mapper.transformDataBytes(t, Flow[ByteString].via(newEncodeTransformer))
+    mapper.transformDataBytes(t, Flow.fromGraph(singleUseEncoderFlow()))
 
+  def encoderFlow: Flow[ByteString, ByteString, NotUsed] =
+    Flow.setup { (_, _) => Flow.fromGraph(singleUseEncoderFlow()) }
+      .mapMaterializedValue(_ => NotUsed)
+
+  @InternalApi
+  @deprecated("synchronous compression with `encode` is not supported in the future any more", since = "10.2.0")
   def encode(input: ByteString): ByteString = newCompressor.compressAndFinish(input)
 
-  def encoderFlow: Flow[ByteString, ByteString, NotUsed] = Flow[ByteString].via(newEncodeTransformer)
-
+  @InternalApi
+  @deprecated("newCompressor is internal API", since = "10.2.0")
   def newCompressor: Compressor
 
-  def newEncodeTransformer(): GraphStage[FlowShape[ByteString, ByteString]] = {
+  @InternalApi
+  @deprecated("newEncodeTransformer is internal API", since = "10.2.0")
+  def newEncodeTransformer(): GraphStage[FlowShape[ByteString, ByteString]] = singleUseEncoderFlow()
+
+  private def singleUseEncoderFlow(): GraphStage[FlowShape[ByteString, ByteString]] = {
     val compressor = newCompressor
 
     def encodeChunk(bytes: ByteString): ByteString = compressor.compressAndFlush(bytes)
@@ -54,6 +65,8 @@ object Encoder {
 }
 
 /** A stateful object representing ongoing compression. */
+@InternalApi
+@deprecated("Compressor is internal API and will be moved or removed in the future.", since = "10.2.0")
 abstract class Compressor {
   /**
    * Compresses the given input and returns compressed data. The implementation
