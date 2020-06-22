@@ -10,8 +10,10 @@ import akka.stream.scaladsl.{ BidiFlow, Flow }
 import akka.util.ByteString
 
 import scala.collection.immutable.Seq
-
 import FrameEvent._
+import akka.event.Logging
+import akka.stream.Attributes
+import akka.stream.Attributes.LogLevels
 
 /**
  * INTERNAL API
@@ -28,6 +30,7 @@ private[http2] object FrameLogger {
     BidiFlow.fromFlows(
       Flow[FrameEvent].log(s"${Console.RED}DOWN${Console.RESET}", FrameLogger.logEvent),
       Flow[FrameEvent].log(s"${Console.GREEN} UP ${Console.RESET}", FrameLogger.logEvent))
+      .addAttributes(Attributes(LogLevels(Logging.DebugLevel, Logging.DebugLevel, Logging.DebugLevel)))
 
   def logEvent(frameEvent: FrameEvent): String = {
     case class LogEntry(
