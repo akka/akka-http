@@ -5,9 +5,12 @@
 package akka.http.scaladsl.server
 package directives
 
+import scala.concurrent.Future
+
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.model._
 import StatusCodes._
+import akka.http.scaladsl.util.FastFuture._
 
 /**
  * @groupname route Route directives
@@ -54,6 +57,15 @@ trait RouteDirectives {
    */
   def failWith(error: Throwable): StandardRoute =
     StandardRoute(_.fail(error))
+
+  /**
+   * Handle the request using a function.
+   *
+   * @group route
+   */
+  def handle(handler: HttpRequest => Future[HttpResponse]): StandardRoute =
+    { ctx => handler(ctx.request).fast.map(RouteResult.Complete)(ctx.executionContext) }
+
 }
 
 object RouteDirectives extends RouteDirectives {

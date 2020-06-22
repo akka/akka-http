@@ -12,7 +12,6 @@ import akka.http.scaladsl.model.MessageEntity
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
 import akka.util.ByteString
-import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import spray.json.{ JsArray, JsString, JsValue }
 import org.scalatest.matchers.should.Matchers
