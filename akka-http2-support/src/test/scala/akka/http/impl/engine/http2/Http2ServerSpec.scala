@@ -318,7 +318,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         sendRST_STREAM(streamId = TheStreamId, ErrorCode.PROTOCOL_ERROR)
         entityDataIn.expectError()
         // Wait to give the warning (that we hope not to see) time to pop up.
-        Thread.sleep(3000)
+        Thread.sleep(100)
       }
       "not fail the whole connection when one stream is RST twice" in new WaitingForRequestData {
         sendRST_STREAM(TheStreamId, ErrorCode.STREAM_CLOSED)

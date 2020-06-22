@@ -195,7 +195,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
             sub.data.runWith(subIn.sink)(subFusingMaterializer)
           }
         } else {
-          // stream was cancelled before it we got the response stream
+          // stream was cancelled before we got the response
           sub.data.runWith(Sink.cancelled)(subFusingMaterializer)
           outStreams.remove(sub.streamId)
         }
