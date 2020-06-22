@@ -14,7 +14,7 @@ import akka.stream.scaladsl.Flow
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor }
+import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future }
 
 /**
  * The result of handling a request.
@@ -42,6 +42,17 @@ object RouteResult {
    */
   implicit def routeToFlow(route: Route)(implicit system: ClassicActorSystemProvider): Flow[HttpRequest, HttpResponse, NotUsed] =
     Route.toFlow(route)
+
+  /**
+   * Turns a `Route` into a server function.
+   *
+   * This implicit conversion is defined here because `Route` is an alias for
+   * `RequestContext => Future[RouteResult]`, and the fact that `RouteResult`
+   * is in that type means this implicit conversion come into scope whereever
+   * a `Route` is given but a `Function[HttpRequest, Future[HttpResponse]` is expected.
+   */
+  implicit def routeToFunction(route: Route)(implicit system: ClassicActorSystemProvider): HttpRequest => Future[HttpResponse] =
+    Route.toFunction(route)
 
   @deprecated("Replaced by routeToFlow", "10.2.0")
   def route2HandlerFlow(route: Route)(
