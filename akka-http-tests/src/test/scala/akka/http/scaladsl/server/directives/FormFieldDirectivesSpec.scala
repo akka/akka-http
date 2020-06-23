@@ -62,7 +62,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
     }
     "extract StrictForm.FileData from a multipart part" in {
       Post("/", multipartFormWithFile) ~> {
-        formFields('file.as[StrictForm.FileData]) {
+        formFields("file".as[StrictForm.FileData]) {
           case StrictForm.FileData(name, HttpEntity.Strict(ct, data)) =>
             complete(s"type ${ct.mediaType} length ${data.length} filename ${name.get}")
         }
@@ -70,7 +70,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
     }
     "reject the request with a MissingFormFieldRejection if a required form field is missing" in {
       Post("/", urlEncodedForm) ~> {
-        formFields("firstName", "age", 'sex, "VIP".withDefault(false)) { (firstName, age, sex, vip) =>
+        formFields("firstName", "age", "sex", "VIP".withDefault(false)) { (firstName, age, sex, vip) =>
           complete(firstName + age + sex + vip)
         }
       } ~> check { rejection shouldEqual MissingFormFieldRejection("sex") }
@@ -110,7 +110,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
           .transformEntityDataBytes(AllowMaterializationOnlyOnce())
 
       request.entity.contentType shouldEqual ContentTypes.`application/x-www-form-urlencoded`
-      request.entity shouldNot be('strict)
+      request.entity.isStrict should be(false)
 
       request ~> {
         formFields("firstName", "age".as[Int], "sex".optional, "VIP".withDefault(false)) { (firstName, age, sex, vip) =>
@@ -126,7 +126,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
           .transformEntityDataBytes(AllowMaterializationOnlyOnce())
 
       request.entity.contentType shouldEqual ContentTypes.`application/x-www-form-urlencoded`
-      request.entity shouldNot be('strict)
+      request.entity.isStrict should be(false)
 
       request ~> {
         formFields("firstName") { firstName =>
@@ -146,7 +146,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
           .transformEntityDataBytes(AllowMaterializationOnlyOnce())
 
       request.entity.contentType shouldEqual ContentTypes.`application/x-www-form-urlencoded`
-      request.entity shouldNot be('strict)
+      request.entity.isStrict should be(false)
 
       request ~> {
         concat(
