@@ -10,18 +10,19 @@ import akka.http.javadsl.marshallers.jackson.Jackson;
 //#unmarshall-response-body
 
 //#single-request-example
-import akka.actor.ActorSystem;
+import akka.actor.typed.ActorSystem;
+import akka.actor.typed.javadsl.Behaviors;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.model.*;
 import akka.http.javadsl.server.examples.petstore.Pet;
-import akka.stream.Materializer;
+import akka.stream.SystemMaterializer;
 
 import java.util.concurrent.CompletionStage;
 
 public class ClientSingleRequestExample {
 
   public static void main(String[] args) {
-    final ActorSystem system = ActorSystem.create();
+    final ActorSystem<Void> system = ActorSystem.create(Behaviors.empty(), "SingleRequest");
 
     final CompletionStage<HttpResponse> responseFuture =
       Http.get(system)
@@ -45,10 +46,11 @@ class OtherRequestResponseExamples {
   }
 
   public void response() {
-    Materializer materializer = null;
+    ActorSystem<Void> system = null;
     HttpResponse response = null;
+    // TODO https://github.com/akka/akka-http/issues/3240
     //#unmarshal-response-body
-    CompletionStage<Pet> pet = Jackson.unmarshaller(Pet.class).unmarshal(response.entity(), materializer);
+    CompletionStage<Pet> pet = Jackson.unmarshaller(Pet.class).unmarshal(response.entity(), SystemMaterializer.get(system).materializer());
     //#unmarshal-response-body
   }
 }

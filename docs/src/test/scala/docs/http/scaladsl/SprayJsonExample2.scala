@@ -4,7 +4,8 @@
 
 package docs.http.scaladsl
 
-import akka.actor.ActorSystem
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.Done
 import akka.http.scaladsl.server.Route
@@ -22,9 +23,9 @@ import scala.concurrent.Future
 object SprayJsonExample2 {
 
   // needed to run the route
-  implicit val system = ActorSystem()
+  implicit val system = ActorSystem(Behaviors.empty, "SprayExample")
   // needed for the future map/flatmap in the end and future in fetchItem and saveOrder
-  implicit val executionContext = system.dispatcher
+  implicit val executionContext = system.executionContext
 
   var orders: List[Item] = Nil
 

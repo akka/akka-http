@@ -4,7 +4,8 @@
 
 package docs.http.scaladsl
 
-import akka.actor.ActorSystem
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 
@@ -13,9 +14,9 @@ import scala.util.{ Failure, Success }
 
 object HttpClientSingleRequest {
   def main(args: Array[String]): Unit = {
-    implicit val system = ActorSystem()
+    implicit val system = ActorSystem(Behaviors.empty, "SingleRequest")
     // needed for the future flatMap/onComplete in the end
-    implicit val executionContext = system.dispatcher
+    implicit val executionContext = system.executionContext
 
     val responseFuture: Future[HttpResponse] = Http().singleRequest(HttpRequest(uri = "http://akka.io"))
 
