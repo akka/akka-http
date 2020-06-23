@@ -151,7 +151,6 @@ class FormFieldDirectivesSpec extends RoutingSpec {
       request ~> {
         concat(
           formFields("firstName", "age".as[Int]) { (firstName, age) =>
-            println("firstName", age)
             reject
           },
           formFields("firstName", "age".as[Int]) { (firstName, age) =>
