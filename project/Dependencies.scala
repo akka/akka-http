@@ -19,7 +19,7 @@ object Dependencies {
   val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.zip"
   val silencerVersion = "1.7.0"
 
-  val scalaTestVersion = "3.1.2"
+  val scalaTestVersion = "3.2.0"
   val specs2Version = "4.10.0"
   val scalaCheckVersion = "1.14.3"
 
