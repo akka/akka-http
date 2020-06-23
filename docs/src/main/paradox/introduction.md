@@ -40,19 +40,22 @@ choose an Akka version to run against and add a manual dependency to `akka-strea
   group2="com.typesafe.akka" artifact2="akka-http_$scala.binary.version$" version2="AkkaHttpVersion"
 }
 
-Alternatively, you can bootstrap a new sbt project with Akka HTTP already
-configured using the [Giter8](http://www.foundweekends.org/giter8/) template:
+You may download a packaged version of this project by clicking "Create a project for me!" on the
+@scala[[Lightbend Getting Started page](https://developer.lightbend.com/start/?group=akka&project=akka-http-quickstart-scala)]
+@java[[Lightbend Getting Started page](https://developer.lightbend.com/start/?group=akka&project=akka-http-quickstart-java)].
+
+Alternatively, you can bootstrap a new project with Akka HTTP already configured using the [Giter8](http://www.foundweekends.org/giter8/) template directly via sbt:
 
 @@@ div { .group-scala }
 For Scala (sbt)
 :  ```sh
-    sbt -Dsbt.version=1.3.12 new akka/akka-http-quickstart-scala.g8
+    sbt new akka/akka-http-quickstart-scala.g8
     ```
 @@@
 @@@ div { .group-java }
 For Java (Maven or Gradle)
 :  ```sh
-    sbt -Dsbt.version=1.3.12 new akka/akka-http-quickstart-java.g8
+    sbt new akka/akka-http-quickstart-java.g8
     ```
 From there on the prepared project can be built using Gradle or Maven.
 @@@
