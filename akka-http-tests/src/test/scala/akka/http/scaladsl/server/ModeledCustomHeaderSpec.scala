@@ -110,7 +110,7 @@ class ModeledCustomHeaderSpec extends RoutingSpec {
     }
 
     "be able to extract in routing DSL via headerValueByType" in {
-      val routes = headerValueByType[ApiTokenHeader]() { token =>
+      val routes = headerValueByType(ApiTokenHeader) { token =>
         complete(s"extracted> $token")
       }
 
