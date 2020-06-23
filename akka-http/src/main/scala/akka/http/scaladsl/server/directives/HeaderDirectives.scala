@@ -176,7 +176,7 @@ object HeaderMagnet extends LowPriorityHeaderMagnetImplicits {
   implicit def fromCompanionForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]](companion: ModeledCustomHeaderCompanion[T])(implicit tag: ClassTag[T]): HeaderMagnet[T] =
     fromClassTagForModeledCustomHeader[T, H](tag, companion)
 
-  @deprecated("Pass the companion object to headerValueByType as a parameter instead, e.g. `headerValueByType(Origin)` instead of `headerValuebyType[Origin](())`", since = "10.2.0")
+  @deprecated("Pass the companion object to headerValueByType as a parameter instead, e.g. `headerValueByType(Origin)` instead of `headerValueByType[Origin](())`", since = "10.2.0")
   implicit def fromUnitForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]](u: Unit)(implicit tag: ClassTag[T], companion: ModeledCustomHeaderCompanion[T]): HeaderMagnet[T] =
     fromClassTagForModeledCustomHeader[T, H](tag, companion)
 
