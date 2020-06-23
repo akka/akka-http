@@ -126,7 +126,7 @@ is a WebSocket request. Otherwise, the directive rejects the request.
 Let's look at how the above example can be rewritten using the high-level routing DSL.
 
 Instead of writing the request handler manually, the routing behavior of the app is defined by a route that
-uses the `handleWebSocketRequests` directive in place of the `WebSocket.handleWebSocketRequestWith`:
+uses the @ref[handleWebSocketMessages](../routing-dsl/directives/websocket-directives/handleWebSocketMessages.md) directive instead of `WebSocket.handleWebSocketRequestWith`:
 
 Scala
 :  @@snip [WebSocketDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/WebSocketDirectivesExamplesSpec.scala) { #greeter-service }
