@@ -54,12 +54,12 @@ private[http] object PoolInterface {
     case object IdleTimeout extends ShutdownReason
   }
 
-  def apply(gateway: PoolGateway, parent: ActorRefFactory)(implicit fm: Materializer): PoolInterface = {
-    import gateway.hcps
+  def apply(poolId: PoolId, parent: ActorRefFactory, master: PoolMaster)(implicit fm: Materializer): PoolInterface = {
+    import poolId.hcps
     import hcps._
     import setup.{ connectionContext, settings }
     implicit val system = fm.asInstanceOf[ActorMaterializer].system
-    val log: LoggingAdapter = Logging(system, gateway)(GatewayLogSource)
+    val log: LoggingAdapter = Logging(system, poolId)(PoolLogSource)
 
     log.debug("Creating pool.")
 
@@ -74,7 +74,7 @@ private[http] object PoolInterface {
       else Flow[RequestContext]
     }
 
-    Flow.fromGraph(new PoolInterfaceStage(gateway, log))
+    Flow.fromGraph(new PoolInterfaceStage(poolId, master, log))
       .via(bufferIfNeeded)
       .join(poolFlow)
       .run()
@@ -82,7 +82,7 @@ private[http] object PoolInterface {
 
   private val IdleTimeout = "idle-timeout"
 
-  class PoolInterfaceStage(gateway: PoolGateway, log: LoggingAdapter) extends GraphStageWithMaterializedValue[FlowShape[ResponseContext, RequestContext], PoolInterface] {
+  class PoolInterfaceStage(poolId: PoolId, master: PoolMaster, log: LoggingAdapter) extends GraphStageWithMaterializedValue[FlowShape[ResponseContext, RequestContext], PoolInterface] {
     private val requestOut = Outlet[RequestContext]("PoolInterface.requestOut")
     private val responseIn = Inlet[ResponseContext]("PoolInterface.responseIn")
     override def shape = FlowShape(responseIn, requestOut)
@@ -91,21 +91,21 @@ private[http] object PoolInterface {
       throw new IllegalStateException("Should not be called")
     override def createLogicAndMaterializedValue(inheritedAttributes: Attributes, _materializer: Materializer): (GraphStageLogic, PoolInterface) = {
       import _materializer.executionContext
-      val logic = new Logic(gateway, shape, requestOut, responseIn, log)
+      val logic = new Logic(poolId, shape, master, requestOut, responseIn, log)
       (logic, logic)
     }
   }
 
   @InternalStableApi // name `Logic` and annotated methods
-  private class Logic(gateway: PoolGateway, shape: FlowShape[ResponseContext, RequestContext], requestOut: Outlet[RequestContext], responseIn: Inlet[ResponseContext],
+  private class Logic(poolId: PoolId, shape: FlowShape[ResponseContext, RequestContext], master: PoolMaster, requestOut: Outlet[RequestContext], responseIn: Inlet[ResponseContext],
                       log: LoggingAdapter)(implicit executionContext: ExecutionContext) extends TimerGraphStageLogic(shape) with PoolInterface with InHandler with OutHandler {
     private[this] val PoolOverflowException = new BufferOverflowException( // stack trace cannot be prevented here because `BufferOverflowException` is final
-      s"Exceeded configured max-open-requests value of [${gateway.hcps.setup.settings.maxOpenRequests}]. This means that the request queue of this pool (${gateway.hcps}) " +
+      s"Exceeded configured max-open-requests value of [${poolId.hcps.setup.settings.maxOpenRequests}]. This means that the request queue of this pool (${poolId.hcps}) " +
         s"has completely filled up because the pool currently does not process requests fast enough to handle the incoming request load. " +
         "Please retry the request later. See http://doc.akka.io/docs/akka-http/current/scala/http/client-side/pool-overflow.html for " +
         "more information.")
 
-    val hcps = gateway.hcps
+    val hcps = poolId.hcps
     val idleTimeout = hcps.setup.settings.idleTimeout
 
     val shutdownPromise = Promise[ShutdownReason]()
@@ -116,7 +116,7 @@ private[http] object PoolInterface {
     setHandlers(responseIn, requestOut, this)
 
     override def preStart(): Unit = {
-      onInit(gateway)
+      onInit(poolId)
       pull(responseIn)
       resetIdleTimer()
     }
@@ -208,8 +208,8 @@ private[http] object PoolInterface {
     // PoolInterface implementations
     override def request(request: HttpRequest, responsePromise: Promise[HttpResponse]): Unit =
       requestCallback.invokeWithFeedback((request, responsePromise)).failed.foreach { _ =>
-        log.debug("Request was sent to pool which was already closed, retrying through the gateway to create new pool instance")
-        responsePromise.tryCompleteWith(gateway(request))
+        log.debug("Request was sent to pool which was already closed, retrying through the master to create new pool instance")
+        responsePromise.tryCompleteWith(master.dispatchRequest(poolId, request)(materializer))
       }
     override def shutdown()(implicit ec: ExecutionContext): Future[ShutdownReason] = {
       shutdownCallback.invoke(())
@@ -218,7 +218,7 @@ private[http] object PoolInterface {
     override def whenShutdown: Future[ShutdownReason] = shutdownPromise.future
 
     @InternalStableApi
-    def onInit(gateway: PoolGateway): Unit = ()
+    def onInit(poolId: PoolId): Unit = ()
     @InternalStableApi
     def onDispatch(request: HttpRequest): HttpRequest = request
     @InternalStableApi
@@ -228,19 +228,19 @@ private[http] object PoolInterface {
   }
 
   /**
-   * LogSource for PoolGateway instances
+   * LogSource for pool instances
    *
-   * Using this LogSource allows us to set the log class to `PoolGateway` and the log source string
+   * Using this LogSource allows us to set the log class to `PoolId` and the log source string
    * to a descriptive name that describes a particular pool instance.
    */
-  private[http] val GatewayLogSource: LogSource[PoolGateway] =
-    new LogSource[PoolGateway] {
-      def genString(gateway: PoolGateway): String = {
-        val scheme = if (gateway.hcps.setup.connectionContext.isSecure) "https" else "http"
-        s"Pool(${gateway.gatewayId.name}->$scheme://${gateway.hcps.host}:${gateway.hcps.port})"
+  private[http] val PoolLogSource: LogSource[PoolId] =
+    new LogSource[PoolId] {
+      def genString(poolId: PoolId): String = {
+        val scheme = if (poolId.hcps.setup.connectionContext.isSecure) "https" else "http"
+        s"Pool(${poolId.usage.name}->$scheme://${poolId.hcps.host}:${poolId.hcps.port})"
       }
-      override def genString(gateway: PoolGateway, system: ActorSystem): String = s"${system.name}/${genString(gateway)}"
+      override def genString(poolId: PoolId, system: ActorSystem): String = s"${system.name}/${genString(poolId)}"
 
-      override def getClazz(t: PoolGateway): Class[_] = classOf[PoolGateway]
+      override def getClazz(t: PoolId): Class[_] = classOf[PoolId]
     }
 }

@@ -11,11 +11,11 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorSystem
 import akka.event.Logging
-import akka.http.impl.engine.client.PoolMasterActor.PoolInterfaceRunning
+import akka.http.impl.engine.client.PoolMasterActor.{ PoolInterfaceRunning, PoolInterfaceStatus, PoolStatus }
 import akka.http.impl.engine.server.ServerTerminator
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util._
-import akka.http.scaladsl.Http.{ HttpServerTerminated, HttpTerminated, OutgoingConnection }
+import akka.http.scaladsl.Http.{ HostConnectionPool, HostConnectionPoolImpl, HttpServerTerminated, HttpTerminated, OutgoingConnection }
 import akka.http.scaladsl.model.HttpEntity.{ Chunk, ChunkStreamPart, Chunked, LastChunk }
 import akka.http.scaladsl.model.{ HttpEntity, _ }
 import akka.http.scaladsl.model.headers._
@@ -43,6 +43,17 @@ class NewConnectionPoolSpec extends AkkaSpecWithMaterializer("""
     akka.scheduler.tick-duration = 1ms     # to make race conditions in Pool idle-timeout more likely
     akka.http.client.log-unencrypted-network-bytes = 200
                                           """) { testSuite =>
+
+  implicit class WithPoolStatus(val poolId: PoolId) {
+    def poolStatus(): Future[Option[PoolInterfaceStatus]] = {
+      val statusPromise = Promise[Option[PoolInterfaceStatus]]()
+      Http().poolMaster.ref ! PoolStatus(poolId, statusPromise)
+      statusPromise.future
+    }
+  }
+  implicit class WithPoolId(val hcp: HostConnectionPool) {
+    def poolId: PoolId = hcp.asInstanceOf[HostConnectionPoolImpl].poolId
+  }
 
   // FIXME: Extract into proper util class to be reusable
   lazy val ConnectionResetByPeerMessage: String = {
@@ -298,13 +309,13 @@ class NewConnectionPoolSpec extends AkkaSpecWithMaterializer("""
 
     "automatically shutdown after configured timeout periods" in new TestSetup() {
       val (_, _, _, hcp) = cachedHostConnectionPool[Int](idleTimeout = 1.second)
-      val gateway = hcp.gateway
+      val gateway = hcp.poolId
       Await.result(gateway.poolStatus(), 1500.millis.dilated).get shouldBe a[PoolInterfaceRunning]
       awaitCond({ Await.result(gateway.poolStatus(), 1500.millis.dilated).isEmpty }, 2000.millis.dilated)
     }
     "automatically shutdown after configured timeout periods but only after streaming response is finished" in new TestSetup() {
       val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int](idleTimeout = 200.millis)
-      val gateway = hcp.gateway
+      val gateway = hcp.poolId
 
       lazy val responseEntityPub = TestPublisher.probe[ByteString]()
 
@@ -341,7 +352,7 @@ class NewConnectionPoolSpec extends AkkaSpecWithMaterializer("""
     "transparently restart after idle shutdown" in new TestSetup() {
       val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int](idleTimeout = 1.second)
 
-      val gateway = hcp.gateway
+      val gateway = hcp.poolId
       Await.result(gateway.poolStatus(), 1500.millis.dilated).get shouldBe a[PoolInterfaceRunning]
       awaitCond({ Await.result(gateway.poolStatus(), 1500.millis.dilated).isEmpty }, 2000.millis.dilated)
 
@@ -377,7 +388,7 @@ class NewConnectionPoolSpec extends AkkaSpecWithMaterializer("""
       val minConnection = 1
       val (requestIn, responseOut, responseOutSub, hcpMinConnection) =
         cachedHostConnectionPool[Int](idleTimeout = 100.millis, minConnections = minConnection)
-      val gatewayConnection = hcpMinConnection.gateway
+      val gatewayConnection = hcpMinConnection.poolId
 
       acceptIncomingConnection()
       requestIn.sendNext(HttpRequest(uri = "/minimumslots/1", headers = immutable.Seq(close)) -> 42)
@@ -407,7 +418,7 @@ class NewConnectionPoolSpec extends AkkaSpecWithMaterializer("""
         responseOut.expectNextN(minConnections)
       }
 
-      val gatewayConnections = hcpMinConnection.gateway
+      val gatewayConnections = hcpMinConnection.poolId
       condHolds(1000.millis.dilated) { () =>
         val status = gatewayConnections.poolStatus()
         Await.result(status, 100.millis.dilated).get shouldBe a[PoolInterfaceRunning]
@@ -416,7 +427,7 @@ class NewConnectionPoolSpec extends AkkaSpecWithMaterializer("""
 
     "shutdown if idle and min connection has been set to 0" in new TestSetup() {
       val (_, _, _, hcp) = cachedHostConnectionPool[Int](idleTimeout = 1.second, minConnections = 0)
-      val gateway = hcp.gateway
+      val gateway = hcp.poolId
       Await.result(gateway.poolStatus(), 1500.millis.dilated).get shouldBe a[PoolInterfaceRunning]
       awaitCond({ Await.result(gateway.poolStatus(), 1500.millis.dilated).isEmpty }, 2000.millis.dilated)
     }

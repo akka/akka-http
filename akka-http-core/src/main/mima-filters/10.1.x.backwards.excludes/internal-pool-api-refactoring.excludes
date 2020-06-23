@@ -1,0 +1,34 @@
+# Converted Http.HostConnectionPool from case class to @DoNotInherit abstract class
+# See runtime tests in HostConnectionPoolCompat for a risk assessment
+ProblemFilters.exclude[AbstractClassProblem]("akka.http.scaladsl.Http$HostConnectionPool")
+ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.http.scaladsl.Http#HostConnectionPool.setup")
+ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.http.scaladsl.Http#HostConnectionPool.shutdown")
+ProblemFilters.exclude[ReversedAbstractMethodProblem]("akka.http.scaladsl.Http#HostConnectionPool.setup")
+ProblemFilters.exclude[ReversedAbstractMethodProblem]("akka.http.scaladsl.Http#HostConnectionPool.shutdown")
+
+# 2.12 only problem, shouldn't be a problem for a @DoNotInherit class
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.Http#HostConnectionPool.shutdown")
+
+# HostConnectionPool still derives from Product, so the methods should still be accessible?
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.Http#HostConnectionPool.productArity")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.Http#HostConnectionPool.productElement")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.Http#HostConnectionPool.canEqual")
+
+# These methods are gone but usage required access to internals even before
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.Http#HostConnectionPool.gateway")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.Http#HostConnectionPool.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.Http#HostConnectionPool.copy$default$1")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.Http#HostConnectionPool.this")
+
+# The companion object wasn't particularly useful as the constructor already was `private[http]`
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.scaladsl.Http$HostConnectionPool$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.Http#HostConnectionPool.apply")
+# The unapply method could be called manually before but is not used for pattern matches
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.Http#HostConnectionPool.unapply")
+
+# removed deprecated method
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.Http#HostConnectionPool.shutdown")
+
+
+# Internal API changes
+ProblemFilters.exclude[Problem]("akka.http.impl.*")
