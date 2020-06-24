@@ -41,21 +41,6 @@ Java
 
 It starts an HTTP Server on localhost and replies to GET requests to `/hello` with a simple response.
 
-@@@ warning { title="API may change" }
-The following example uses an experimental feature and its API is subjected to change in future releases of Akka HTTP.
-For further information about this marker, see @extref:[The @DoNotInherit and @ApiMayChange markers](akka-docs:common/binary-compatibility-rules.html#the-donotinherit-and-apimaychange-markers)
-in the Akka documentation.
-@@@
-
-To help start a server Akka HTTP provides an experimental helper class called @apidoc[HttpApp].
-This is the same example as before rewritten using @apidoc[HttpApp]:
-
-Scala
-:  @@snip [HttpAppExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpAppExampleSpec.scala) { #minimal-routing-example }
-
-Java
-:  @@snip [HttpAppExampleTest.java]($test$/java/docs/http/javadsl/server/HttpAppExampleTest.java) { #minimal-routing-example }
-
 @@@ div { .group-scala }
 
 ## Longer Example
