@@ -8,11 +8,13 @@ import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.http.scaladsl.model._
 import akka.http.impl.util.StreamUtils
-import akka.stream.FlowShape
+import akka.stream.{ FlowShape, Materializer }
 import akka.stream.stage.GraphStage
 import akka.util.ByteString
 import headers._
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{ Flow, Sink, Source }
+
+import scala.concurrent.Future
 
 trait Encoder {
   def encoding: HttpEncoding
@@ -32,8 +34,11 @@ trait Encoder {
       .mapMaterializedValue(_ => NotUsed)
 
   @InternalApi
-  @deprecated("synchronous compression with `encode` is not supported in the future any more", since = "10.2.0")
+  @deprecated("synchronous compression with `encode` is not supported in the future any more, use `encodeAsync` instead", since = "10.2.0")
   def encode(input: ByteString): ByteString = newCompressor.compressAndFinish(input)
+
+  def encodeAsync(input: ByteString)(implicit mat: Materializer): Future[ByteString] =
+    Source.single(input).via(singleUseEncoderFlow()).runWith(Sink.fold(ByteString.empty)(_ ++ _))
 
   @InternalApi
   @deprecated("newCompressor is internal API", since = "10.2.0")

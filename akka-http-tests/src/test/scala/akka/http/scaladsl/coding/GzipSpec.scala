@@ -5,12 +5,13 @@
 package akka.http.scaladsl.coding
 
 import akka.http.impl.util._
-
 import java.io.{ InputStream, OutputStream }
-import java.util.zip.{ ZipException, GZIPInputStream, GZIPOutputStream }
+import java.util.zip.{ GZIPInputStream, GZIPOutputStream, ZipException }
 
 import akka.util.ByteString
+import com.github.ghik.silencer.silent
 
+@silent("deprecated .* is internal API")
 class GzipSpec extends CoderSpec {
   protected def Coder: Coder with StreamDecoder = Gzip.withLevel(9)
 

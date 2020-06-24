@@ -13,10 +13,12 @@ import akka.http.scaladsl.model.{ HttpEntity, HttpRequest }
 import akka.http.impl.util._
 import akka.http.scaladsl.model.headers.{ HttpEncodings, `Content-Encoding` }
 import akka.testkit._
+import com.github.ghik.silencer.silent
 
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
+@silent("deprecated .* is internal API")
 class DeflateSpec extends CoderSpec {
   protected def Coder: Coder with StreamDecoder = Deflate
 
