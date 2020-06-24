@@ -37,7 +37,7 @@ class BasicRouteSpecs extends RoutingSpec {
     }
     "clear rejections that have already been 'overcome' by previous directives" in {
       Put() ~> {
-        put { parameter('yeah) { echoComplete } } ~
+        put { parameter("yeah") { echoComplete } } ~
           get { completeOk }
       } ~> check { rejection shouldEqual MissingQueryParamRejection("yeah") }
     }
@@ -73,7 +73,7 @@ class BasicRouteSpecs extends RoutingSpec {
     "clear rejections that have already been 'overcome' by previous directives" in {
       Put() ~> {
         concat(
-          put { parameter('yeah) { echoComplete } },
+          put { parameter("yeah") { echoComplete } },
           get { completeOk })
       } ~> check { rejection shouldEqual MissingQueryParamRejection("yeah") }
     }

@@ -69,7 +69,7 @@ object TestServer extends App {
       path("tweet") {
         complete(Tweet("Hello, world!"))
       } ~
-      (path("tweets") & parameter('n.as[Int])) { n =>
+      (path("tweets") & parameter("n".as[Int])) { n =>
         get {
           val tweets = Source.repeat(Tweet("Hello, world!")).take(n)
           complete(tweets)

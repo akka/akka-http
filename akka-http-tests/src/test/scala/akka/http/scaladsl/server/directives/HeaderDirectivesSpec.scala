@@ -91,7 +91,7 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
 
     "extract a header with Symbol name" in {
       lazy val symbolRoute =
-        headerValueByName('Referer) { referer =>
+        headerValueByName(Symbol("Referer")) { referer =>
           complete(s"The symbol referer was $referer")
         }
 
@@ -123,7 +123,7 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
 
     "extract a header with Symbol name" in {
       lazy val symbolRoute =
-        optionalHeaderValueByName('Referer) { referer =>
+        optionalHeaderValueByName(Symbol("Referer")) { referer =>
           complete(s"The symbol referer was $referer")
         }
 
