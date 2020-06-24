@@ -201,7 +201,7 @@ private[http] object RouteTest {
   def runRouteClientServer(request: HttpRequest, route: Route, serverSettings: ServerSettings)(implicit system: ActorSystem): Future[HttpResponse] = {
     import system.dispatcher
     for {
-      binding <- Http().bindAndHandle(route, "127.0.0.1", 0, settings = serverSettings)
+      binding <- Http().bindServer(route, "127.0.0.1", 0, settings = serverSettings)
       port = binding.localAddress.getPort
       targetUri = request.uri.withHost("127.0.0.1").withPort(port).withScheme("http")
 

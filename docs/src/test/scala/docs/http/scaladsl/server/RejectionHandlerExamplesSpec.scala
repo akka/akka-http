@@ -47,7 +47,7 @@ object MyRejectionHandler {
       // ... some route structure
       null // #hide
 
-    Http().bindAndHandle(route, "localhost", 8080)
+    Http().bindServer(route, "localhost", 8080)
   }
   //#custom-handler-example
 }

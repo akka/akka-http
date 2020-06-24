@@ -105,7 +105,7 @@ class WebSocketExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpe
       }
     //#websocket-routing
 
-    val bindingFuture = Http().bindAndHandle(route, "localhost", 8080)
+    val bindingFuture = Http().bindServer(route, "localhost", 8080)
 
     println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
     StdIn.readLine()
@@ -130,7 +130,7 @@ class WebSocketExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpe
     val customServerSettings =
       defaultSettings.withWebsocketSettings(customWebsocketSettings)
 
-    Http().bindAndHandle(route, "127.0.0.1", settings = customServerSettings)
+    Http().bindServer(route, "127.0.0.1", settings = customServerSettings)
     //#websocket-ping-payload-server
   }
 

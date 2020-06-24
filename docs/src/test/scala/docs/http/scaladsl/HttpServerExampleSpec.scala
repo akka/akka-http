@@ -464,7 +464,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     }
 
     val binding: Future[Http.ServerBinding] =
-      Http().bindAndHandle(routes, "127.0.0.1", 8080)
+      Http().bindServer(routes, "127.0.0.1", 8080)
 
     // ...
     // once ready to terminate the server, invoke terminate:

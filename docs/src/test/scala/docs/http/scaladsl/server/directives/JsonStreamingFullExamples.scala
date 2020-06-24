@@ -66,7 +66,7 @@ class JsonStreamingFullExamples extends AnyWordSpec {
         }
       }
 
-    val bindingFuture = Http().bindAndHandle(route, "localhost", 8080)
+    val bindingFuture = Http().bindServer(route, "localhost", 8080)
 
     println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
     StdIn.readLine()

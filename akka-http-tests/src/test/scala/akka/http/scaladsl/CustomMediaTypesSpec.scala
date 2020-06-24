@@ -57,7 +57,7 @@ class CustomMediaTypesSpec extends AkkaSpec with ScalaFutures
       val routes = extractRequest { r =>
         complete(r.entity.contentType.toString + " = " + r.entity.contentType.getClass)
       }
-      Http().bindAndHandle(routes, host, port, settings = serverSettings)
+      Http().bindServer(routes, host, port, settings = serverSettings)
       //#application-custom
 
       val request = Get(s"http://$host:$port/").withEntity(HttpEntity(`application/custom`, "~~example~=~value~~"))

@@ -61,8 +61,8 @@ abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
     //#both-https-and-http
     // you can run both HTTP and HTTPS in the same application as follows:
     val commonRoutes: Route = get { complete("Hello world!") }
-    Http().bindAndHandle(commonRoutes, "127.0.0.1", 443, connectionContext = https)
-    Http().bindAndHandle(commonRoutes, "127.0.0.1", 80)
+    Http().bindServer(commonRoutes, "127.0.0.1", 443, connectionContext = https)
+    Http().bindServer(commonRoutes, "127.0.0.1", 80)
     //#both-https-and-http
 
     //#bind-low-level-context
@@ -70,13 +70,13 @@ abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
 
     // or using the high level routing DSL:
     val routes: Route = get { complete("Hello world!") }
-    Http().bindAndHandle(routes, "127.0.0.1", 8080, connectionContext = https)
+    Http().bindServer(routes, "127.0.0.1", 8080, connectionContext = https)
     //#bind-low-level-context
 
     //#set-low-level-context-default
     // sets default context to HTTPS – all Http() bound servers for this ActorSystem will use HTTPS from now on
     Http().setDefaultServerHttpContext(https)
-    Http().bindAndHandle(routes, "127.0.0.1", 9090, connectionContext = https)
+    Http().bindServer(routes, "127.0.0.1", 9090, connectionContext = https)
     //#set-low-level-context-default
 
     system.terminate()

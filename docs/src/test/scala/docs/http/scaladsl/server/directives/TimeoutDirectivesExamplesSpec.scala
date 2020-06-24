@@ -36,7 +36,7 @@ class TimeoutDirectivesExamplesSpec extends AkkaSpec(TimeoutDirectivesInfiniteTi
 
   def runRoute(route: Route, routePath: String): HttpResponse = {
     val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-    val binding = Http().bindAndHandle(route, hostname, port)
+    val binding = Http().bindServer(route, hostname, port)
 
     val response = Http().singleRequest(HttpRequest(uri = s"http://$hostname:$port/$routePath")).futureValue
 
@@ -165,7 +165,7 @@ class TimeoutDirectivesFiniteTimeoutExamplesSpec extends AkkaSpec(TimeoutDirecti
 
   def runRoute(route: Route, routePath: String): HttpResponse = {
     val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-    val binding = Http().bindAndHandle(route, hostname, port)
+    val binding = Http().bindServer(route, hostname, port)
 
     val response = Http().singleRequest(HttpRequest(uri = s"http://$hostname:$port/$routePath")).futureValue
 

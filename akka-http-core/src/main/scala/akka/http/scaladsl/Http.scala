@@ -272,7 +272,36 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     connectionContext: ConnectionContext = defaultServerHttpContext,
     settings:          ServerSettings    = ServerSettings(system),
     log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] =
-    bindAndHandle(Flow[HttpRequest].map(handler), interface, port, connectionContext, settings, log)
+    bindServer(req => FastFuture.successful(handler(req)), interface = interface, port = port, connectionContext = connectionContext, settings = settings, log = log)
+
+  /**
+   * Alias for [[bindAndHandleAsync]].
+   *
+   * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
+   * [[akka.stream.scaladsl.Flow]] for processing all incoming connections.
+   *
+   * The number of concurrently accepted connections can be configured by overriding
+   * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
+   * information about what kind of guarantees to expect.
+   *
+   * To configure additional settings for a server started using this method,
+   * use the `akka.http.server` config section or pass in a [[akka.http.scaladsl.settings.ServerSettings]] explicitly.
+   *
+   * Parameter `parallelism` specifies how many requests are attempted to be handled concurrently per connection. In HTTP/1
+   * this makes only sense if HTTP pipelining is enabled (which is not recommended). The default value of `0` means that
+   * the value is taken from the `akka.http.server.pipelining-limit` setting from the configuration. In HTTP/2,
+   * the default value is taken from `akka.http.server.http2.max-concurrent-streams`.
+   *
+   * Any other value for `parallelism` overrides the setting.
+   */
+  def bindServer(
+    handler:   HttpRequest => Future[HttpResponse],
+    interface: String, port: Int = DefaultPortForProtocol,
+    connectionContext: ConnectionContext = defaultServerHttpContext,
+    settings:          ServerSettings    = ServerSettings(system),
+    parallelism:       Int               = 0,
+    log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] =
+    bindAndHandleAsync(handler, interface, port, connectionContext, settings, parallelism, log)(fm)
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
