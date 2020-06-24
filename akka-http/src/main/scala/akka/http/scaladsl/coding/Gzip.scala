@@ -26,7 +26,7 @@ class Gzip private (compressionLevel: Int, val messageFilter: HttpMessage => Boo
  * An encoder and decoder for the HTTP 'gzip' encoding.
  */
 @InternalApi
-@deprecated("Actual implementation of Gzip is internal, use Coders.Gzip instead", since = "10.2.0")
+@deprecated("Actual implementation of Gzip is internal API, use Coders.Gzip instead", since = "10.2.0")
 object Gzip extends Gzip(Encoder.DefaultFilter) {
   def apply(messageFilter: HttpMessage => Boolean) = new Gzip(messageFilter)
 }
