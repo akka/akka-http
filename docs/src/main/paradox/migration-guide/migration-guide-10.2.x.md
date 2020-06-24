@@ -79,3 +79,13 @@ The legacy host connection pool is the original client pool implementation from 
 used in an opt-in fashion. Since 10.1.0, this new pool implementation has been the default. With 10.2.0 we took the
 opportunity to remove the old pool implementation. The setting `akka.http.host-connection-pool.pool-implementation`
 has been removed as well as its code representation in `ConnectionPoolSettings`.
+
+### headerValueByType (scaladsl)
+
+When using the Scala DSL, invoking
+@ref[headerValueByType](../routing-dsl/directives/header-directives/headerValueByType.md)
+and @ref[optionalHeaderValueByType](../routing-dsl/directives/header-directives/optionalHeaderValueByType.md) by just its generic parameter, like `headerValueByType[Origin]()`, uses a Scala feature called 'argument adaptation' that is planned to
+[go away](https://github.com/scala/scala/pull/3260) in a future value of Scala.
+While you could earlier work around this by writing `headerValueByType[Origin](())`,
+we have now deprecated this as well and you are encouraged to use the companion object instead: `headerValueByType(Origin)`.
+For headers that do not have a companion object, you can `headerValueByType(classOf[UpgradeToWebSocket])`.
