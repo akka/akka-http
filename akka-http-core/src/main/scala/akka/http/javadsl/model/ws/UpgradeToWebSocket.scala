@@ -13,7 +13,13 @@ import akka.stream._
 /**
  * A virtual header that WebSocket requests will contain. Use [[UpgradeToWebSocket.handleMessagesWith]] to
  * create a WebSocket handshake response and handle the WebSocket message stream with the given handler.
+ *
+ * This low-level API is expected to be replaced by an Attribute in the future.
+ *
+ * In any case, you might want to use `handleWebSocketMessages` instead as documented
+ * at https://doc.akka.io/docs/akka-http/current/server-side/websocket-support.html#routing-support
  */
+@deprecated("This low-level API is expected to be replaced by an attribute.", since = "10.2.0")
 trait UpgradeToWebSocket extends sm.HttpHeader {
   /**
    * Returns the sequence of protocols the client accepts.
