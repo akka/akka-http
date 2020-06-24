@@ -7,6 +7,7 @@ package akka.http.scaladsl.server.directives
 import akka.http.scaladsl.model._
 import headers._
 import akka.http.scaladsl.server._
+import com.github.ghik.silencer.silent
 import directives.HeaderDirectivesSpec.XCustomHeader
 
 import org.scalatest.Inside
@@ -90,6 +91,7 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
     }
 
     "extract a header with Symbol name" in {
+      @silent("deprecated")
       lazy val symbolRoute =
         headerValueByName(Symbol("Referer")) { referer =>
           complete(s"The symbol referer was $referer")
@@ -122,6 +124,7 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
     }
 
     "extract a header with Symbol name" in {
+      @silent("deprecated")
       lazy val symbolRoute =
         optionalHeaderValueByName(Symbol("Referer")) { referer =>
           complete(s"The symbol referer was $referer")
