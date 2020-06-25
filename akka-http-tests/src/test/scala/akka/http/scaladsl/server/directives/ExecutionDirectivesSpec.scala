@@ -5,10 +5,11 @@
 package akka.http.scaladsl.server
 package directives
 
-import akka.http.scaladsl.coding.Gzip
+import akka.http.scaladsl.coding.Coders
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.HttpEncodings._
 import akka.http.scaladsl.model.headers._
+
 import scala.concurrent.Future
 import akka.testkit.EventFilter
 import org.scalatest.matchers.Matcher
@@ -112,7 +113,7 @@ class ExecutionDirectivesSpec extends RoutingSpec {
     "handle encodeResponse inside RejectionHandler for non-success responses" in {
       val rejectionHandler: RejectionHandler = RejectionHandler.newBuilder()
         .handleNotFound {
-          encodeResponseWith(Gzip) {
+          encodeResponseWith(Coders.Gzip) {
             complete((404, "Not here!"))
           }
         }.result()
@@ -120,7 +121,7 @@ class ExecutionDirectivesSpec extends RoutingSpec {
       Get("/hell0") ~>
         get {
           handleRejections(rejectionHandler) {
-            encodeResponseWith(Gzip) {
+            encodeResponseWith(Coders.Gzip) {
               path("hello") {
                 get {
                   complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, "world"))

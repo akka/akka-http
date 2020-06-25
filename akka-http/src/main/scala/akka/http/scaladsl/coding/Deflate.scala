@@ -9,7 +9,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.HttpEncodings
 
 @InternalApi
-@deprecated("Actual implementation of Deflate is internal, use Coders.Deflate instead", since = "10.2.0")
+@deprecated("Actual implementation of Deflate is internal API, use Coders.Deflate instead", since = "10.2.0")
 class Deflate private[http] (compressionLevel: Int, val messageFilter: HttpMessage => Boolean) extends Coder with StreamDecoder {
   def this(messageFilter: HttpMessage => Boolean) = {
     this(DeflateCompressor.DefaultCompressionLevel, messageFilter)
