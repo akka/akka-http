@@ -17,12 +17,14 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.{ HttpRequest, StatusCodes }
 import akka.testkit.EventFilter
+import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ Await, Future }
 
+@silent("deprecated")
 class HttpAppSpec extends AkkaSpecWithMaterializer with RequestBuilding with Eventually {
   import system.dispatcher
 
