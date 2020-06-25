@@ -20,7 +20,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 @silent("deprecated .* is internal API")
 class DeflateSpec extends CoderSpec {
-  protected def Coder: Coder with StreamDecoder = Deflate
+  protected def Coder: Coder = Deflate
 
   protected def newDecodedInputStream(underlying: InputStream): InputStream =
     new InflaterInputStream(underlying)

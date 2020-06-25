@@ -10,7 +10,7 @@ import akka.http.scaladsl.model.headers.HttpEncodings
 
 @InternalApi
 @deprecated("Actual implementation of Gzip is internal, use Coders.Gzip instead", since = "10.2.0")
-class Gzip private (compressionLevel: Int, val messageFilter: HttpMessage => Boolean) extends Coder with StreamDecoder {
+class Gzip private[http] (compressionLevel: Int, val messageFilter: HttpMessage => Boolean) extends Coder with StreamDecoder {
   def this(messageFilter: HttpMessage => Boolean) = {
     this(GzipCompressor.DefaultCompressionLevel, messageFilter)
   }
@@ -19,6 +19,7 @@ class Gzip private (compressionLevel: Int, val messageFilter: HttpMessage => Boo
   def newCompressor = new GzipCompressor(compressionLevel)
   def newDecompressorStage(maxBytesPerChunk: Int) = () => new GzipDecompressor(maxBytesPerChunk)
 
+  @deprecated("Use Coders.Gzip(compressionLevel = ...) instead", since = "10.2.0")
   def withLevel(level: Int): Gzip = new Gzip(level, messageFilter)
 }
 

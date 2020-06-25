@@ -28,7 +28,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 @silent("deprecated .* is internal API")
 abstract class CoderSpec extends AnyWordSpec with CodecSpecSupport with Inspectors {
-  protected def Coder: Coder with StreamDecoder
+  protected def Coder: Coder
   protected def newDecodedInputStream(underlying: InputStream): InputStream
   protected def newEncodedOutputStream(underlying: OutputStream): OutputStream
 
@@ -169,7 +169,10 @@ abstract class CoderSpec extends AnyWordSpec with CodecSpecSupport with Inspecto
 
   def streamEncode(bytes: ByteString): ByteString = {
     val output = new ByteArrayOutputStream()
-    val gos = newEncodedOutputStream(output); gos.write(bytes.toArray); gos.close()
+    val gos = newEncodedOutputStream(output)
+    gos.write(bytes.toArray)
+    gos.flush()
+    gos.close()
     ByteString(output.toByteArray)
   }
 
