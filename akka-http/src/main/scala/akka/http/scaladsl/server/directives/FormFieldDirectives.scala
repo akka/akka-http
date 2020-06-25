@@ -182,7 +182,7 @@ object FormFieldDirectives extends FormFieldDirectives {
     private def forNameRepeated[T](name: String, fsu: FSFFU[T]): FieldSpec.Aux[Iterable[T]] = FieldSpec(repeatedFilter(name, fsu))
   }
 
-  @deprecated("Use new `parameters` overloads with FieldSpec parameters. Kept for binary compatibility", since = "10.2.0")
+  @deprecated("Use new `formField` overloads with FieldSpec parameters. Kept for binary compatibility", since = "10.2.0")
   sealed trait FieldMagnet {
     type U
     def apply(): Directive[U]
@@ -195,7 +195,7 @@ object FormFieldDirectives extends FormFieldDirectives {
     def convert(d: Directive[U]): Out
   }
 
-  @deprecated("Use new `parameters` overloads with FieldSpec parameters. Kept for binary compatibility", since = "10.2.0")
+  @deprecated("Use new `formField` overloads with FieldSpec parameters. Kept for binary compatibility", since = "10.2.0")
   object FieldMagnet {
     implicit def apply[T](value: T)(implicit fdef: FieldDef[T]): FieldMagnet { type U = fdef.U; type Out = Directive[fdef.U] } =
       new FieldMagnet {
@@ -207,15 +207,15 @@ object FormFieldDirectives extends FormFieldDirectives {
       }
   }
 
-  @deprecated("Use new `parameters` overloads with FieldSpec parameters. Kept for binary compatibility", since = "10.2.0")
+  @deprecated("Use new `formFields` overloads with FieldSpec parameters. Kept for binary compatibility", since = "10.2.0")
   type FieldDefAux[A, B] = FieldDef[A] { type U = B }
 
-  @deprecated("Use new `parameters` overloads with FieldSpec parameters. Kept for binary compatibility", since = "10.2.0")
+  @deprecated("Use new `formFields` overloads with FieldSpec parameters. Kept for binary compatibility", since = "10.2.0")
   sealed trait FieldDef[T] {
     type U
     def apply(value: T): Directive[U]
   }
-  @deprecated("Use new `parameters` overloads with FieldSpec parameters. Kept for binary compatibility", since = "10.2.0")
+  @deprecated("Use new `formFields` overloads with FieldSpec parameters. Kept for binary compatibility", since = "10.2.0")
   object FieldDef {
     protected def fieldDef[A, B](f: A => Directive[B]): FieldDefAux[A, B] =
       new FieldDef[A] {
