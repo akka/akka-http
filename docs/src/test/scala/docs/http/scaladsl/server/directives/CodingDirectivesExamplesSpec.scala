@@ -66,8 +66,7 @@ class CodingDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     }
 
     // with custom compression level:
-    @silent("internal API") // TODO
-    val routeWithLevel9 = encodeResponseWith(Gzip.withLevel(9)) { complete("content") }
+    val routeWithLevel9 = encodeResponseWith(Coders.Gzip(compressionLevel = 9)) { complete("content") }
     Get("/") ~> routeWithLevel9 ~> check {
       response should haveContentEncoding(gzip)
     }
