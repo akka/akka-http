@@ -12,6 +12,7 @@ import akka.http.scaladsl.model.ws.{ BinaryMessage, Message, WebSocketRequest }
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ServerSettings }
 import akka.stream.scaladsl.{ Flow, Sink }
 import akka.util.ByteString
+import com.github.ghik.silencer.silent
 import docs.CompileOnlySpec
 
 import scala.io.StdIn
@@ -49,9 +50,10 @@ class WebSocketExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpe
         }
     //#websocket-handler
 
-    //#websocket-request-handling
+    @silent("expected to be replaced by an attribute") //#websocket-request-handling
     val requestHandler: HttpRequest => HttpResponse = {
       case req @ HttpRequest(GET, Uri.Path("/greeter"), _, _, _) =>
+        // See https://github.com/akka/akka-http/issues/3278 about deprecation
         req.header[UpgradeToWebSocket] match {
           case Some(upgrade) => upgrade.handleMessages(greeterWebSocketService)
           case None          => HttpResponse(400, entity = "Not a valid websocket request!")
