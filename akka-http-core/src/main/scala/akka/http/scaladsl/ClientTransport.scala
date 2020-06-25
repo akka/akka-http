@@ -15,7 +15,7 @@ import akka.http.scaladsl.settings.{ ClientConnectionSettings, HttpsProxySetting
 import akka.stream.scaladsl.{ Flow, Keep, Tcp }
 import akka.util.ByteString
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 
 /**
  * Abstraction to allow the creation of alternative transports to run HTTP on.
@@ -42,9 +42,13 @@ object ClientTransport {
       // not attempt DNS resolution if the InetSocketAddress is already resolved. That behavior is problematic when it comes to
       // connection pools since it means that new connections opened by the pool in the future can end up using a stale IP address.
       // By passing an unresolved InetSocketAddress instead, we ensure that DNS resolution is performed for every new connection.
-      Tcp().outgoingConnection(InetSocketAddress.createUnresolved(host, port), settings.localAddress,
-        settings.socketOptions, halfClose = true, settings.connectingTimeout, settings.idleTimeout)
-        .mapMaterializedValue(_.map(tcpConn => OutgoingConnection(tcpConn.localAddress, tcpConn.remoteAddress))(system.dispatcher))
+      connectToAddress(InetSocketAddress.createUnresolved(host, port), settings)
+  }
+
+  private def connectToAddress(address: InetSocketAddress, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
+    Tcp().outgoingConnection(address, settings.localAddress,
+      settings.socketOptions, halfClose = true, settings.connectingTimeout, settings.idleTimeout)
+      .mapMaterializedValue(_.map(tcpConn => OutgoingConnection(tcpConn.localAddress, tcpConn.remoteAddress))(system.dispatcher))
   }
 
   /**
@@ -102,4 +106,25 @@ object ClientTransport {
         // on the HTTP level we want to see the final remote address in the `OutgoingConnection`
         .mapMaterializedValue(_.map(_.copy(remoteAddress = InetSocketAddress.createUnresolved(host, port)))(system.dispatcher))
   }
+
+  def withCustomResolver(lookup: (String, Int) => Future[InetSocketAddress]): ClientTransport = ClientTransportWithCustomResolver(lookup)
+
+  private case class ClientTransportWithCustomResolver(lookup: (String, Int) => Future[InetSocketAddress]) extends ClientTransport {
+    override def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[Http.OutgoingConnection]] = {
+      implicit val ec: ExecutionContext = system.dispatcher
+      // delay hostname resolution until stream materialization
+      Flow.setup { (_, _) =>
+        futureFlow {
+          lookup(host, port).map { address =>
+            connectToAddress(address, settings)
+          }
+        }
+      }.mapMaterializedValue(_.flatten.flatten)
+    }
+
+    private def futureFlow[I, O, M](flow: Future[Flow[I, O, M]]): Flow[I, O, Future[M]] =
+      Flow.fromGraph(new akka.http.impl.forwardport.FutureFlow(flow))
+
+  }
+
 }

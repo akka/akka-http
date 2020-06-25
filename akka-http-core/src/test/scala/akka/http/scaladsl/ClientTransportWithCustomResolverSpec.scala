@@ -16,12 +16,12 @@ import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{ Keep, Sink, Source }
 import akka.testkit._
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.{ BeforeAndAfterAll, OptionValues }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.{ BeforeAndAfterAll, OptionValues }
 
-import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.concurrent.duration._
+import scala.concurrent.{ Await, Future, Promise }
 
 class ClientTransportWithCustomResolverSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with OptionValues {
   val testConf: Config = ConfigFactory.parseString("""
@@ -44,13 +44,11 @@ class ClientTransportWithCustomResolverSpec extends AnyWordSpec with Matchers wi
       val bindingFuture = Http().bindAndHandleSync(_ => HttpResponse(), hostnameToUse, portToUse)
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
 
-      val otherHostAndPortTransport: ClientTransport = new ClientTransportWithCustomResolver {
-        override protected def inetSocketAddress(host: String, port: Int, settings: ClientConnectionSettings)(implicit ec: ExecutionContext): Future[InetSocketAddress] = {
-          host shouldBe hostnameToFind
-          port shouldBe portToFind
-          Future.successful(new InetSocketAddress(hostnameToUse, portToUse))
-        }
-      }
+      val otherHostAndPortTransport: ClientTransport = ClientTransport.withCustomResolver((host, port) => {
+        host shouldBe hostnameToFind
+        port shouldBe portToFind
+        Future.successful(new InetSocketAddress(hostnameToUse, portToUse))
+      })
 
       val customResolverPool =
         ConnectionPoolSettings(system)
@@ -72,14 +70,12 @@ class ClientTransportWithCustomResolverSpec extends AnyWordSpec with Matchers wi
 
       val resolverCalled = Promise[Done]
 
-      val otherHostAndPortTransport: ClientTransport = new ClientTransportWithCustomResolver {
-        override protected def inetSocketAddress(host: String, port: Int, settings: ClientConnectionSettings)(implicit ec: ExecutionContext): Future[InetSocketAddress] = {
-          host shouldBe hostnameToFind
-          port shouldBe portToFind
-          resolverCalled.success(Done)
-          Future.successful(new InetSocketAddress(hostnameToUse, portToUse))
-        }
-      }
+      val otherHostAndPortTransport: ClientTransport = ClientTransport.withCustomResolver((host, port) => {
+        host shouldBe hostnameToFind
+        port shouldBe portToFind
+        resolverCalled.success(Done)
+        Future.successful(new InetSocketAddress(hostnameToUse, portToUse))
+      })
 
       val customResolverPool =
         ConnectionPoolSettings(system)
