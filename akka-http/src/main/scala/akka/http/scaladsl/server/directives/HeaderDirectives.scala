@@ -70,6 +70,7 @@ trait HeaderDirectives {
    *
    * @group header
    */
+  @deprecated("Use string argument version or `headerValueByType`, e.g. instead of `headerValueByName('Referer)` use `headerValueByType(Referer)`", since = "10.2.0")
   def headerValueByName(headerName: Symbol): Directive1[String] = headerValueByName(headerName.name)
 
   /**
@@ -122,6 +123,7 @@ trait HeaderDirectives {
    *
    * @group header
    */
+  @deprecated("Use string argument version or `headerValueByType`, e.g. instead of `optionalHeaderValueByName('Referer)` use `optionalHeaderValueByType(Referer)`", since = "10.2.0")
   def optionalHeaderValueByName(headerName: Symbol): Directive1[Option[String]] =
     optionalHeaderValueByName(headerName.name)
 

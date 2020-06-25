@@ -12,7 +12,7 @@
 
 Extracts the value of the HTTP request header with the given name.
 
-@scala[The name can be given as a `String` or as a `Symbol`. ]If no header with a matching name is found the request
+If no header with a matching name is found the request
 is rejected with a @apidoc[MissingHeaderRejection].
 
 If the header is expected to be missing in some cases or to customize
