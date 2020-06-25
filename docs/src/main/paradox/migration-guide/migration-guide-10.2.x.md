@@ -90,21 +90,22 @@ While you could earlier work around this by writing `headerValueByType[Origin]((
 we have now deprecated this as well and you are encouraged to use the companion object instead: `headerValueByType(Origin)`.
 For headers that do not have a companion object, you can `headerValueByType(classOf[UpgradeToWebSocket])`.
 
-### parameters (scaladsl)
+### parameters / formFields (scaladsl)
 
-The @ref[parameters](../routing-dsl/directives/parameter-directives/parameter.md) directive
+The @ref[parameters](../routing-dsl/directives/parameter-directives/parameter.md) and the
+@ref[formFields](../routing-dsl/directives/form-field-directives/formFields.md) directives
 used to rely on the 'magnet pattern'. Unfortunately, for the case where you would match
 multiple parameters, the pattern relied on a Scala feature called 'argument adaptation'
-that is planned to [go away](https://github.com/scala/scala/pull/3260) in a future version of Scala.
+which is planned to [go away](https://github.com/scala/scala/pull/3260) in a future version of Scala.
 
-Earlier, you would have to work around this by including double parenthesis, like this:
+Earlier, you would have to work around this by including double parentheses, like this (same for `formFields`):
 
     parameters(("a".as[Int], "b".as[Int]))
 
-We have changed the implementation of the directive in a way that is binary compatible
-and source compatible, with one exception: previously, `requiredValue` would match
-a parameter, but not include it in the output of the directive. From 10.2.0 forward it will
-be included in the directive's output even when it is required.
+We have changed the implementation of the directives in a way that is binary compatible
+and source compatible, with one exception: previously, `<name>.requiredValue` would match and check
+a parameter, but it would not be extracted by the directive. From 10.2.0 forward it will
+be extracted by the directive even when it is required.
 
 This means when in the past you had:
 
