@@ -57,7 +57,7 @@ handshake are hidden from the application and don't need to be managed manually.
 
 @@@ note
 
-The current implementation with a synthetic headers will be replaced with using request attributes (see [issue #3278](https://github.com/akka/akka-http/issues/3278)).
+Prefer using the @ref[Routing Support](#routing-support) as this implementation with a synthetic headers will be replaced with using request attributes (see [issue #3278](https://github.com/akka/akka-http/issues/3278)). 
 
 @@@
 
