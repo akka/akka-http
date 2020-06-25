@@ -47,7 +47,7 @@ class CustomDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   "tmap-1" in {
     //#tmap-1
     val twoIntParameters: Directive[(Int, Int)] =
-      parameters(("a".as[Int], "b".as[Int]))
+      parameters("a".as[Int], "b".as[Int])
 
     val myDirective: Directive1[String] =
       twoIntParameters.tmap {

@@ -90,6 +90,40 @@ While you could earlier work around this by writing `headerValueByType[Origin]((
 we have now deprecated this as well and you are encouraged to use the companion object instead: `headerValueByType(Origin)`.
 For headers that do not have a companion object, you can `headerValueByType(classOf[UpgradeToWebSocket])`.
 
+### parameters (scaladsl)
+
+The @ref[parameters](../routing-dsl/directives/parameter-directives/parameter.md) directive
+used to rely on the 'magnet pattern'. Unfortunately, for the case where you would match
+multiple parameters, the pattern relied on a Scala feature called 'argument adaptation'
+that is planned to [go away](https://github.com/scala/scala/pull/3260) in a future version of Scala.
+
+Earlier, you would have to work around this by including double parenthesis, like this:
+
+    parameters(("a".as[Int], "b".as[Int]))
+
+We have changed the implementation of the directive in a way that is binary compatible
+and source compatible, with one exception: previously, `requiredValue` would match
+a parameter, but not include it in the output of the directive. From 10.2.0 forward it will
+be included in the directive's output even when it is required.
+
+This means when in the past you had:
+
+    parameter("nose".requiredValue("large")) { complete("Ok!") }
+
+You would now have
+
+    parameter("nose".requiredValue("large")) { _ => complete("Ok!") }
+
+This is especially relevant when you were combining parameters directives with other
+directives using `|`: since the output types of the directives on both 'sides' of the `|` need to be equal, where you previously might have had:
+
+    (post | parameter("method".requiredValue("post"))) { complete("POST") }
+
+You will now have to explicitly discard the parameter value:
+
+    (post | parameter("method".requiredValue("post")).tmap(_ => ())) { complete("POST") }
+
+
 ### Coding infrastructure is now internal
 
 Previously, the coding infrastructure has been mostly public, exposing API that was never intended to be public.

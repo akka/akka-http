@@ -8,6 +8,7 @@ import java.util.function.{ BiFunction, Function, Supplier }
 
 import akka.annotation.ApiMayChange
 import akka.http.javadsl.server.directives.FramedEntityStreamingDirectives
+import com.github.ghik.silencer.silent
 
 import scala.annotation.varargs
 
@@ -24,7 +25,9 @@ object Directives extends AllDirectives {
   // signatures for varargs methods, making them show up as Seq<Object> instead of T... in Java.
 
   @Deprecated
-  @varargs override def route(alternatives: Route*): Route =
+  @varargs
+  @silent("route in class RouteDirectives is deprecated")
+  override def route(alternatives: Route*): Route =
     super.route(alternatives: _*)
 
   @varargs override def getFromBrowseableDirectories(directories: String*): Route =

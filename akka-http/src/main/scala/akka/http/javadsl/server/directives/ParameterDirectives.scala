@@ -33,7 +33,7 @@ abstract class ParameterDirectives extends MiscDirectives {
   def parameterRequiredValue[T](t: Unmarshaller[String, T], requiredValue: T, name: String, inner: java.util.function.Supplier[Route]): Route = {
     import t.asScala
     RouteAdapter(
-      D.parameter(name.as[T].requiredValue(requiredValue)) { inner.get.delegate }
+      D.parameter(name.as[T].requiredValue(requiredValue)) { _ => inner.get.delegate }
     )
   }
 

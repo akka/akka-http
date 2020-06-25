@@ -245,7 +245,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
         concat(
           pathEnd {
             concat(
-              (put | parameter("method".requiredValue("put"))) {
+              put {
                 // form extraction from multipart or www-url-encoded forms
                 formFields(("email", "total".as[Money])).as(Order) { order =>
                   complete {
@@ -268,7 +268,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
           path("items") {
             get {
               // parameters to case class extraction
-              parameters(("size".as[Int], "color".optional, "dangerous".withDefault("no")))
+              parameters("size".as[Int], "color".optional, "dangerous".withDefault("no"))
                 .as(OrderItem) { orderItem =>
                   // ... route using case class instance created from
                   // required and optional query parameters
