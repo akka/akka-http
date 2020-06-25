@@ -1,0 +1,3 @@
+# Removed @InternalApi / @DoNotInherit intermediate class LowLevelFieldDefImplicits with deprecated compatibility implicits
+ProblemFilters.exclude[MissingTypesProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives$FieldDef$")
+ProblemFilters.exclude[MissingClassProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives$LowLevelFieldDefImplicits")
