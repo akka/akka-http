@@ -14,7 +14,7 @@ object Coders {
   def Gzip: Coder = akka.http.scaladsl.coding.Gzip
   def Gzip(messageFilter: HttpMessage => Boolean): Coder = new Gzip(messageFilter)
 
-  def Deflate: Coder = akka.http.scaladsl.coding.Gzip
+  def Deflate: Coder = akka.http.scaladsl.coding.Deflate
   def Deflate(messageFilter: HttpMessage => Boolean): Coder = new Deflate(messageFilter)
 
   def NoCoding: Coder = akka.http.scaladsl.coding.NoCoding
