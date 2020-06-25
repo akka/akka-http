@@ -1,0 +1,28 @@
+/*
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
+package akka.http.scaladsl.server
+package directives
+
+trait ParameterDirectivesInstances {
+  import ParameterDirectives.ParamSpec
+
+  [#/**
+   * Extracts query parameter values from the request.
+   * Rejects the request if the defined query parameter matcher(s) don't match.
+   *
+   * @group param
+   */
+  def parameter([#pdef1: ParamSpec#]): Directive[Tuple1[[#pdef1.Out#]]] = [#pdef1.get# & ]
+
+  /**
+   * Extracts query parameter values from the request.
+   * Rejects the request if the defined query parameter matcher(s) don't match.
+   *
+   * @group param
+   */
+  def parameters([#pdef1: ParamSpec#]): Directive[Tuple1[[#pdef1.Out#]]] = [#pdef1.get# & ]
+  #
+  ]
+}
