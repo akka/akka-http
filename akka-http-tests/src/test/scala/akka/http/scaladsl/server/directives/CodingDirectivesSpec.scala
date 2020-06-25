@@ -11,7 +11,8 @@ import akka.util.ByteString
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.http.impl.util._
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.coding._
+import akka.http.scaladsl.coding.Encoder
+import akka.http.scaladsl.coding.Coders._
 import akka.testkit._
 import headers._
 import HttpEntity.{ Chunk, ChunkStreamPart }
@@ -547,10 +548,7 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
     }
   }
 
-  def compress(input: String, encoder: Encoder): ByteString = {
-    val compressor = encoder.newCompressor
-    compressor.compressAndFlush(ByteString(input)) ++ compressor.finish()
-  }
+  def compress(input: String, encoder: Encoder): ByteString = encoder.encodeAsync(ByteString(input)).awaitResult(3.seconds.dilated)
 
   def hexDump(bytes: Array[Byte]) = bytes.map("%02x" format _).mkString
   def fromHexDump(dump: String) = dump.grouped(2).toArray.map(chars => Integer.parseInt(new String(chars), 16).toByte)

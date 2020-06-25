@@ -184,7 +184,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
   "long-routing-example" in compileOnlySpec {
     //#long-routing-example
     import akka.actor.{ ActorRef, ActorSystem }
-    import akka.http.scaladsl.coding.Deflate
+    import akka.http.scaladsl.coding.Coders
     import akka.http.scaladsl.marshalling.ToResponseMarshaller
     import akka.http.scaladsl.model.StatusCodes.MovedPermanently
     import akka.http.scaladsl.server.Directives._
@@ -219,7 +219,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
         authenticateBasic(realm = "admin area", myAuthenticator) { user =>
           concat(
             get {
-              encodeResponseWith(Deflate) {
+              encodeResponseWith(Coders.Deflate) {
                 complete {
                   // marshal custom object with in-scope marshaller
                   retrieveOrdersFromDB

@@ -122,3 +122,15 @@ directives using `|`: since the output types of the directives on both 'sides' o
 You will now have to explicitly discard the parameter value:
 
     (post | parameter("method".requiredValue("post")).tmap(_ => ())) { complete("POST") }
+
+
+### Coding infrastructure is now internal
+
+Previously, the coding infrastructure has been mostly public, exposing API that was never intended to be public.
+Most of the existing classes have now been marked as internal and deprecated. This will allow us to remove the
+coding infrastructure from akka-http itself in the future and use implementations provided by akka-stream directly.
+
+Only parts of `Encoder`, `Decoder`, and `Coder` are still public. Predefined coders that have been available as
+e.g. `akka.http.scaladsl.coding.Gzip` are now available as `scaladsl.coding.Coders.Gzip`, `Coders.Deflate`, and
+`Coders.NoCoding`. Coding directives that use the default coding setup, like `encodeResponse` and `decodeRequest`
+continue to work without changes necessary. 

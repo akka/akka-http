@@ -4,8 +4,9 @@
 
 package akka.http.scaladsl.coding
 
-import java.io.{ OutputStream, InputStream, ByteArrayInputStream, ByteArrayOutputStream }
+import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream }
 import java.util.zip.DataFormatException
+
 import akka.NotUsed
 
 import scala.annotation.tailrec
@@ -13,6 +14,7 @@ import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import java.util.concurrent.ThreadLocalRandom
+
 import scala.util.control.NoStackTrace
 import org.scalatest.Inspectors
 import akka.util.ByteString
@@ -21,10 +23,12 @@ import akka.http.scaladsl.model.{ HttpEntity, HttpRequest }
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.impl.util._
 import akka.testkit._
+import com.github.ghik.silencer.silent
 import org.scalatest.wordspec.AnyWordSpec
 
+@silent("deprecated .* is internal API")
 abstract class CoderSpec extends AnyWordSpec with CodecSpecSupport with Inspectors {
-  protected def Coder: Coder with StreamDecoder
+  protected def Coder: Coder
   protected def newDecodedInputStream(underlying: InputStream): InputStream
   protected def newEncodedOutputStream(underlying: OutputStream): OutputStream
 
@@ -154,7 +158,7 @@ abstract class CoderSpec extends AnyWordSpec with CodecSpecSupport with Inspecto
   }
 
   def encode(s: String) = ourEncode(ByteString(s, "UTF8"))
-  def ourEncode(bytes: ByteString): ByteString = Coder.encode(bytes)
+  def ourEncode(bytes: ByteString): ByteString = Coder.encodeAsync(bytes).awaitResult(3.seconds.dilated)
   def ourDecode(bytes: ByteString): ByteString = Coder.decode(bytes).awaitResult(3.seconds.dilated)
 
   lazy val corruptContent = {
@@ -165,7 +169,10 @@ abstract class CoderSpec extends AnyWordSpec with CodecSpecSupport with Inspecto
 
   def streamEncode(bytes: ByteString): ByteString = {
     val output = new ByteArrayOutputStream()
-    val gos = newEncodedOutputStream(output); gos.write(bytes.toArray); gos.close()
+    val gos = newEncodedOutputStream(output)
+    gos.write(bytes.toArray)
+    gos.flush()
+    gos.close()
     ByteString(output.toByteArray)
   }
 

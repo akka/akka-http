@@ -15,6 +15,7 @@ import akka.http.impl.util._
 import akka.testkit._
 import headers._
 import HttpMethods.POST
+import com.github.ghik.silencer.silent
 import org.scalatest.wordspec.AnyWordSpec
 
 class DecoderSpec extends AnyWordSpec with CodecSpecSupport {
@@ -35,6 +36,7 @@ class DecoderSpec extends AnyWordSpec with CodecSpecSupport {
   def dummyDecompress(s: String): String = dummyDecompress(ByteString(s, "UTF8")).decodeString("UTF8")
   def dummyDecompress(bytes: ByteString): ByteString = DummyDecoder.decode(bytes).awaitResult(3.seconds.dilated)
 
+  @silent("is internal API")
   case object DummyDecoder extends StreamDecoder {
     val encoding = HttpEncodings.compress
 
