@@ -46,7 +46,7 @@ lazy val root = Project(
     id = "akka-http-root",
     base = file(".")
   )
-  .enablePlugins(UnidocRoot, NoPublish, DeployRsync, AggregatePRValidation)
+  .enablePlugins(UnidocRoot, NoPublish, PublishRsyncPlugin, AggregatePRValidation)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .settings(
     // Unidoc doesn't like macro definitions
@@ -54,7 +54,7 @@ lazy val root = Project(
     // Support applying macros in unidoc:
     scalaMacroSupport,
     unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get,
-    deployRsyncArtifact := {
+    publishRsyncArtifacts := {
       val unidocArtifacts = (unidoc in Compile).value
       // unidoc returns a Seq[File] which contains directories of generated API docs, one for
       // Java, one for Scala. It's not specified which is which, though.
@@ -68,7 +68,7 @@ lazy val root = Project(
       Seq(
         scala -> gustavDir("api").value,
         java -> gustavDir("japi").value)
-    }
+    },
   )
   .aggregate(
     // When this is or other aggregates are updated the set of modules in HttpExt.allModules should also be updated
@@ -319,7 +319,7 @@ def httpMarshallersJavaSubproject(name: String) =
   .enablePlugins(ReproducibleBuildsPlugin)
 
 lazy val docs = project("docs")
-  .enablePlugins(AkkaParadoxPlugin, NoPublish, DeployRsync)
+  .enablePlugins(AkkaParadoxPlugin, NoPublish, PublishRsyncPlugin)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .addAkkaModuleDependency("akka-stream", "provided", AkkaDependency.docs)
   .addAkkaModuleDependency("akka-actor-typed", "provided", AkkaDependency.docs)
@@ -392,7 +392,7 @@ lazy val docs = project("docs")
     apidocRootPackage := "akka",
     Formatting.docFormatSettings,
     additionalTasks in ValidatePR += paradox in Compile,
-    deployRsyncArtifact := List((paradox in Compile).value -> gustavDir("docs").value),
+    publishRsyncArtifacts := List((paradox in Compile).value -> gustavDir("docs").value),
   )
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
 
