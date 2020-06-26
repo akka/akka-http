@@ -33,10 +33,10 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AkkaS
       check {
         s"""nodes: 0/H, 0/e, 0/l, 0/l, 0/o, 1/Ω
            |branchData:${" " /* explicit trailing space */ }
-           |values: 'Hello""" -> parser.formatRawTrie
+           |values: Symbol(Hello)""" -> parser.formatRawTrie
       }
       check {
-        """-H-e-l-l-o- 'Hello
+        """-H-e-l-l-o- Symbol(Hello)
           |""" -> parser.formatTrie
       }
     }
@@ -47,11 +47,11 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AkkaS
       check {
         """nodes: 0/H, 1/e, 0/l, 0/l, 0/o, 1/Ω, 0/a, 0/l, 0/l, 0/o, 2/Ω
           |branchData: 6/2/0
-          |values: 'Hello, 'Hallo""" -> parser.formatRawTrie
+          |values: Symbol(Hello), Symbol(Hallo)""" -> parser.formatRawTrie
       }
       check {
-        """   ┌─a-l-l-o- 'Hallo
-          |-H-e-l-l-o- 'Hello
+        """   ┌─a-l-l-o- Symbol(Hallo)
+          |-H-e-l-l-o- Symbol(Hello)
           |""" -> parser.formatTrie
       }
     }
@@ -63,12 +63,12 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AkkaS
       check {
         """nodes: 2/H, 1/e, 0/l, 0/l, 0/o, 1/Ω, 0/a, 0/l, 0/l, 0/o, 2/Ω, 0/Y, 0/e, 0/a, 0/h, 3/Ω
           |branchData: 6/2/0, 0/1/11
-          |values: 'Hello, 'Hallo, 'Yeah""" -> parser.formatRawTrie
+          |values: Symbol(Hello), Symbol(Hallo), Symbol(Yeah)""" -> parser.formatRawTrie
       }
       check {
-        """   ┌─a-l-l-o- 'Hallo
-          |-H-e-l-l-o- 'Hello
-          | └─Y-e-a-h- 'Yeah
+        """   ┌─a-l-l-o- Symbol(Hallo)
+          |-H-e-l-l-o- Symbol(Hello)
+          | └─Y-e-a-h- Symbol(Yeah)
           |""" -> parser.formatTrie
       }
     }
@@ -81,13 +81,13 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AkkaS
       check {
         """nodes: 2/H, 1/e, 0/l, 0/l, 0/o, 1/Ω, 0/a, 0/l, 0/l, 0/o, 2/Ω, 0/Y, 0/e, 0/a, 0/h, 3/Ω, 0/o, 0/o, 4/Ω
           |branchData: 6/2/16, 0/1/11
-          |values: 'Hello, 'Hallo, 'Yeah, 'Hoo""" -> parser.formatRawTrie
+          |values: Symbol(Hello), Symbol(Hallo), Symbol(Yeah), Symbol(Hoo)""" -> parser.formatRawTrie
       }
       check {
-        """   ┌─a-l-l-o- 'Hallo
-          |-H-e-l-l-o- 'Hello
-          | | └─o-o- 'Hoo
-          | └─Y-e-a-h- 'Yeah
+        """   ┌─a-l-l-o- Symbol(Hallo)
+          |-H-e-l-l-o- Symbol(Hello)
+          | | └─o-o- Symbol(Hoo)
+          | └─Y-e-a-h- Symbol(Yeah)
           |""" -> parser.formatTrie
       }
     }
@@ -99,10 +99,10 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AkkaS
       insert("Hoo", Symbol("Hoo"))
       insert("Hoo", Symbol("Foo"))
       check {
-        """   ┌─a-l-l-o- 'Hallo
-          |-H-e-l-l-o- 'Hello
-          | | └─o-o- 'Foo
-          | └─Y-e-a-h- 'Yeah
+        """   ┌─a-l-l-o- Symbol(Hallo)
+          |-H-e-l-l-o- Symbol(Hello)
+          | | └─o-o- Symbol(Foo)
+          | └─Y-e-a-h- Symbol(Yeah)
           |""" -> parser.formatTrie
       }
     }
@@ -147,7 +147,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AkkaS
       val newLineWithHyphen = if (newLine == "\r\n") """\r-\n""" else """\n"""
       check {
         s""" ┌─f-a-n-c-y---p-a-n-t-s-:-(Fancy-Pants)- -f-o-o-${newLineWithHyphen}- *Fancy-Pants: foo
-           |-h-e-l-l-o-:- -b-o-b- 'Hello
+           |-h-e-l-l-o-:- -b-o-b- Symbol(Hello)
            |""" -> parser.formatTrie
       }
       ixA shouldEqual ixB
