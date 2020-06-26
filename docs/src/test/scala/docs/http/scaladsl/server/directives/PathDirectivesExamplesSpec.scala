@@ -52,7 +52,7 @@ class PathDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   path(Map("red" -> 1, "green" -> 2, "blue" -> 3))
 
   // matches anything starting with "/foo" except for /foobar
-  pathPrefix("foo" ~ !"bar")
+  pathPrefix("foo" ~ not("bar"))
   //#path-dsl
 
   //#completeWithUnmatchedPath
