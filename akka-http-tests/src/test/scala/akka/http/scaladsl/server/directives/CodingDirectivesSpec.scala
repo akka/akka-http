@@ -38,7 +38,7 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
   lazy val helloGzipped = compress("Hello", Gzip)
   lazy val helloDeflated = compress("Hello", Deflate)
 
-  val nope = complete((404, "Nope!"))
+  val nope = complete(404, "Nope!")
   lazy val nopeGzipped = compress("Nope!", Gzip)
   lazy val nopeDeflated = compress("Nope!", Deflate)
 
@@ -205,7 +205,7 @@ class CodingDirectivesSpec extends RoutingSpec with Inside {
     }
     "not encode the response content with Deflate if the response is of status not allowing entity" in {
       Post() ~> {
-        encodeResponseWith(Deflate) { complete((100, "Let's continue!")) }
+        encodeResponseWith(Deflate) { complete(100, "Let's continue!") }
       } ~> check {
         response should haveNoContentEncoding
         response shouldEqual HttpResponse(StatusCodes.Continue, entity = HttpEntity.Empty)

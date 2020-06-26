@@ -6,8 +6,7 @@ package akka.http.scaladsl.server
 package directives
 
 import scala.concurrent.Future
-
-import akka.http.scaladsl.marshalling.ToResponseMarshallable
+import akka.http.scaladsl.marshalling.{ ToEntityMarshaller, ToResponseMarshallable }
 import akka.http.scaladsl.model._
 import StatusCodes._
 import akka.http.scaladsl.util.FastFuture._
@@ -48,6 +47,14 @@ trait RouteDirectives {
    */
   def complete(m: => ToResponseMarshallable): StandardRoute =
     StandardRoute(_.complete(m))
+
+  /**
+   * Completes the request using the given arguments.
+   *
+   * @group route
+   */
+  def complete[T](status: StatusCode, v: T)(implicit m: ToEntityMarshaller[T]): StandardRoute =
+    complete((status, v))
 
   /**
    * Bubbles the given error up the response chain, where it is dealt with by the closest `handleExceptions`

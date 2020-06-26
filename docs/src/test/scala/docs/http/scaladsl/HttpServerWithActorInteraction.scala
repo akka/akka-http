@@ -59,11 +59,10 @@ object HttpServerWithActorInteraction {
       path("auction") {
         concat(
           put {
-            // TODO https://github.com/akka/akka-http/pull/2971
             parameters("bid".as[Int], "user") { (bid, user) =>
               // place a bid, fire-and-forget
               auction ! Bid(user, bid)
-              complete((StatusCodes.Accepted, "bid placed"))
+              complete(StatusCodes.Accepted, "bid placed")
             }
           },
           get {

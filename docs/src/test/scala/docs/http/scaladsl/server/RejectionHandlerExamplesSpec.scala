@@ -28,15 +28,15 @@ object MyRejectionHandler {
         }
         .handle {
           case AuthorizationFailedRejection =>
-            complete((Forbidden, "You're out of your depth!"))
+            complete(Forbidden, "You're out of your depth!")
         }
         .handle {
           case ValidationRejection(msg, _) =>
-            complete((InternalServerError, "That wasn't valid! " + msg))
+            complete(InternalServerError, "That wasn't valid! " + msg)
         }
         .handleAll[MethodRejection] { methodRejections =>
           val names = methodRejections.map(_.supported.name)
-          complete((MethodNotAllowed, s"Can't do that! Supported: ${names mkString " or "}!"))
+          complete(MethodNotAllowed, s"Can't do that! Supported: ${names mkString " or "}!")
         }
         .handleNotFound { complete((NotFound, "Not here!")) }
         .result()
@@ -63,7 +63,7 @@ object HandleNotFoundWithThePath {
     RejectionHandler.newBuilder()
       .handleNotFound {
         extractUnmatchedPath { p =>
-          complete((NotFound, s"The path you requested [${p}] does not exist."))
+          complete(NotFound, s"The path you requested [${p}] does not exist.")
         }
       }
       .result()
