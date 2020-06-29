@@ -6,7 +6,6 @@ package akka
 
 import scala.language.postfixOps
 import sbt._, Keys._
-import com.lightbend.sbt.publishrsync.PublishRsyncPlugin.autoImport.publishRsyncHost
 
 /**
  * For projects that are not published.
@@ -32,7 +31,6 @@ object Publish extends AutoPlugin {
   override def projectSettings = Seq(
     bintrayOrganization := Some("akka"),
     bintrayPackage := "akka-http",
-    bintrayRepository := (if (isSnapshot.value) "snapshots" else "maven"),
-    publishRsyncHost in ThisBuild := "akkarepo@gustav.akka.io"
+    bintrayRepository := (if (isSnapshot.value) "snapshots" else "maven")
   )
 }

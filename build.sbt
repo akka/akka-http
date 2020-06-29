@@ -68,7 +68,7 @@ lazy val root = Project(
       Seq(
         scala -> gustavDir("api").value,
         java -> gustavDir("japi").value)
-    },
+    }
   )
   .aggregate(
     // When this is or other aggregates are updated the set of modules in HttpExt.allModules should also be updated
@@ -392,6 +392,7 @@ lazy val docs = project("docs")
     apidocRootPackage := "akka",
     Formatting.docFormatSettings,
     additionalTasks in ValidatePR += paradox in Compile,
+    publishRsyncHost in ThisBuild := "akkarepo@gustav.akka.io",
     publishRsyncArtifacts := List((paradox in Compile).value -> gustavDir("docs").value),
   )
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
