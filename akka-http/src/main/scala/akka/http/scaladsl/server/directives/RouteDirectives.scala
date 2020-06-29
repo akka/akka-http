@@ -54,8 +54,8 @@ trait RouteDirectives {
    *
    * @group route
    */
-  def complete[T](status: StatusCode, v: T)(implicit m: ToEntityMarshaller[T]): StandardRoute =
-    complete((status, v))
+  def complete[T](status: StatusCode, v: => T)(implicit m: ToEntityMarshaller[T]): StandardRoute =
+    StandardRoute(_.complete((status, v)))
 
   /**
    * Completes the request using the given arguments.
