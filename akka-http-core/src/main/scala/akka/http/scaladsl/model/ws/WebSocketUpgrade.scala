@@ -13,7 +13,7 @@ import akka.http.javadsl.{ model => jm }
 import akka.http.scaladsl.model.HttpResponse
 
 /**
- * A custom header that will be added to an WebSocket upgrade HttpRequest that
+ * An attribute that will be added to an WebSocket upgrade HttpRequest that
  * enables a request handler to upgrade this connection to a WebSocket connection and
  * registers a WebSocket handler.
  *
