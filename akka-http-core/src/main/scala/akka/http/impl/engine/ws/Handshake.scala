@@ -69,7 +69,7 @@ private[http] object Handshake {
      *        to speak.  The interpretation of this header field is discussed
      *        in Section 9.1.
      */
-    def websocketUpgrade(headers: List[HttpHeader], hostHeaderPresent: Boolean, settings: WebSocketSettings, log: LoggingAdapter): OptionVal[UpgradeToWebSocket] = {
+    def websocketUpgrade(headers: List[HttpHeader], hostHeaderPresent: Boolean, settings: WebSocketSettings, log: LoggingAdapter): OptionVal[UpgradeToWebSocketLowLevel] = {
 
       // notes on Headers that re REQUIRE to be present here:
       // - Host header is validated in general HTTP logic

@@ -15,7 +15,7 @@ object WebSocket {
    * returned.
    */
   def handleWebSocketRequestWith(request: HttpRequest, handler: Flow[Message, Message, _]): HttpResponse =
-    request.asScala.header[UpgradeToWebSocket] match {
+    request.asScala.attribute(AttributeKeys.webSocketUpgrade) match {
       case Some(header) => header.handleMessagesWith(handler)
       case None         => HttpResponse.create().withStatus(StatusCodes.BAD_REQUEST).withEntity("Expected WebSocket request")
     }
