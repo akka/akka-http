@@ -180,15 +180,17 @@ private[http] final class HttpRequestParser(
             if (rawRequestUriHeader) `Raw-Request-URI`(uriBytes.decodeString(HttpCharsets.`US-ASCII`.nioCharset)) :: headers
             else headers
 
-          val allHeaders =
+          val requestStart =
             if (method == HttpMethods.GET) {
               Handshake.Server.websocketUpgrade(headers, hostHeaderPresent, websocketSettings, headerParser.log) match {
-                case OptionVal.Some(upgrade) => upgrade :: allHeaders0
-                case OptionVal.None          => allHeaders0
+                case OptionVal.Some(upgrade) =>
+                  RequestStart(method, uri, protocol, Map(AttributeKeys.webSocketUpgrade -> upgrade), upgrade :: allHeaders0, createEntity, expect100continue, closeAfterResponseCompletion)
+                case OptionVal.None =>
+                  RequestStart(method, uri, protocol, Map.empty, allHeaders0, createEntity, expect100continue, closeAfterResponseCompletion)
               }
-            } else allHeaders0
+            } else RequestStart(method, uri, protocol, Map.empty, allHeaders0, createEntity, expect100continue, closeAfterResponseCompletion)
 
-          emit(RequestStart(method, uri, protocol, allHeaders, createEntity, expect100continue, closeAfterResponseCompletion))
+          emit(requestStart)
         }
 
         teh match {

@@ -672,7 +672,7 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeS
         .splitWhen(x => x.isInstanceOf[MessageStart] || x.isInstanceOf[EntityStreamError])
         .prefixAndTail(1)
         .collect {
-          case (Seq(RequestStart(method, uri, protocol, headers, createEntity, _, close)), entityParts) =>
+          case (Seq(RequestStart(method, uri, protocol, attrs, headers, createEntity, _, close)), entityParts) =>
             closeAfterResponseCompletion :+= close
             Right(HttpRequest(method, uri, headers, createEntity(entityParts), protocol))
           case (Seq(x @ (MessageStartError(_, _) | EntityStreamError(_))), rest) =>

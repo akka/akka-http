@@ -32,6 +32,7 @@ private[http] object ParserOutput {
     method:            HttpMethod,
     uri:               Uri,
     protocol:          HttpProtocol,
+    attributes:        Map[AttributeKey[_], _],
     headers:           List[HttpHeader],
     createEntity:      EntityCreator[RequestOutput, RequestEntity],
     expect100Continue: Boolean,

@@ -16,15 +16,17 @@ import akka.http.scaladsl.model.HttpResponse
  * A custom header that will be added to an WebSocket upgrade HttpRequest that
  * enables a request handler to upgrade this connection to a WebSocket connection and
  * registers a WebSocket handler.
+ *
+ * This is a low-level API. You might want to use `handleWebSocketMessages` instead as documented
+ * at https://doc.akka.io/docs/akka-http/current/server-side/websocket-support.html#routing-support
  */
-@deprecated("This low-level API is expected to be replaced by an attribute.", since = "10.2.0")
-trait UpgradeToWebSocket extends jm.ws.UpgradeToWebSocket with WebSocketUpgrade {
+trait WebSocketUpgrade extends jm.ws.WebSocketUpgrade {
   /**
    * A sequence of protocols the client accepts.
    *
    * See http://tools.ietf.org/html/rfc6455#section-1.9
    */
-  override def requestedProtocols: immutable.Seq[String]
+  def requestedProtocols: immutable.Seq[String]
 
   /**
    * The high-level interface to create a WebSocket server based on "messages".
@@ -35,7 +37,7 @@ trait UpgradeToWebSocket extends jm.ws.UpgradeToWebSocket with WebSocketUpgrade 
    *
    * Optionally, a subprotocol out of the ones requested by the client can be chosen.
    */
-  override def handleMessages(
+  def handleMessages(
     handlerFlow: Graph[FlowShape[Message, Message], Any],
     subprotocol: Option[String]                          = None): HttpResponse
 
@@ -49,7 +51,7 @@ trait UpgradeToWebSocket extends jm.ws.UpgradeToWebSocket with WebSocketUpgrade 
    *
    * Optionally, a subprotocol out of the ones requested by the client can be chosen.
    */
-  override def handleMessagesWithSinkSource(
+  def handleMessagesWithSinkSource(
     inSink:      Graph[SinkShape[Message], Any],
     outSource:   Graph[SourceShape[Message], Any],
     subprotocol: Option[String]                   = None): HttpResponse =
@@ -60,30 +62,30 @@ trait UpgradeToWebSocket extends jm.ws.UpgradeToWebSocket with WebSocketUpgrade 
   /**
    * Java API
    */
-  override def getRequestedProtocols(): Iterable[String] = requestedProtocols.asJava
+  def getRequestedProtocols(): Iterable[String] = requestedProtocols.asJava
 
   /**
    * Java API
    */
-  override def handleMessagesWith(handlerFlow: Graph[FlowShape[jm.ws.Message, jm.ws.Message], _ <: Any]): HttpResponse =
+  def handleMessagesWith(handlerFlow: Graph[FlowShape[jm.ws.Message, jm.ws.Message], _ <: Any]): HttpResponse =
     handleMessages(JavaMapping.toScala(handlerFlow))
 
   /**
    * Java API
    */
-  override def handleMessagesWith(handlerFlow: Graph[FlowShape[jm.ws.Message, jm.ws.Message], _ <: Any], subprotocol: String): HttpResponse =
+  def handleMessagesWith(handlerFlow: Graph[FlowShape[jm.ws.Message, jm.ws.Message], _ <: Any], subprotocol: String): HttpResponse =
     handleMessages(JavaMapping.toScala(handlerFlow), subprotocol = Some(subprotocol))
 
   /**
    * Java API
    */
-  override def handleMessagesWith(inSink: Graph[SinkShape[jm.ws.Message], _ <: Any], outSource: Graph[SourceShape[jm.ws.Message], _ <: Any]): HttpResponse =
+  def handleMessagesWith(inSink: Graph[SinkShape[jm.ws.Message], _ <: Any], outSource: Graph[SourceShape[jm.ws.Message], _ <: Any]): HttpResponse =
     handleMessages(createScalaFlow(inSink, outSource))
 
   /**
    * Java API
    */
-  override def handleMessagesWith(
+  def handleMessagesWith(
     inSink:      Graph[SinkShape[jm.ws.Message], _ <: Any],
     outSource:   Graph[SourceShape[jm.ws.Message], _ <: Any],
     subprotocol: String): HttpResponse =
