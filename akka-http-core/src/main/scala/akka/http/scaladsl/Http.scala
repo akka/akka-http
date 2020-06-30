@@ -134,7 +134,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     )
 
   private def tcpBind(interface: String, port: Int, settings: ServerSettings): Source[Tcp.IncomingConnection, Future[Tcp.ServerBinding]] =
-    Tcp()
+    StandaloneTcp
       .bind(
         interface,
         port,
