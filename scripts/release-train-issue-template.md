@@ -50,7 +50,7 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 - [ ] Notify Telemetry / Play team to check against staged artifacts
 - [ ] Run a test against the staging repository to make sure the release went well, for example by using https://github.com/akka/akka-http-quickstart-scala.g8 and adding the sonatype staging repo with `resolvers += "Staging Repo" at "https://oss.sonatype.org/content/repositories/staging"`
 - [ ] Release the staging repository to Maven Central.
-- [ ] Checkout the newly created tag and run `sbt -Dakka.genjavadoc.enabled=true ++2.12.9 "deployRsync akkarepo@gustav.akka.io"` to deploy API and reference documentation.
+- [ ] Checkout the newly created tag and run `sbt -Dakka.genjavadoc.enabled=true ++2.12.9 publishRsync` to deploy API and reference documentation.
 
 ### Check availability
 - [ ] Check release on sonatype: https://oss.sonatype.org/content/repositories/releases/com/typesafe/akka/akka-http-core_2.13/
