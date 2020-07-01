@@ -89,7 +89,7 @@ object WebSocketHandlerExamples {
   implicit def mat: Materializer = ???
   val handler: Flow[Message, Message, Any] =
     Flow[Message]
-      .mapAsync[Seq[Message]](1) {
+      .mapAsync[immutable.Seq[Message]](1) {
         case tm: TextMessage =>
           tm.toStrict(WebSocketHandler.defaultSettings.perMessageTimeout)
             // FIXME: also check maxMessageSize here (or better in toStrict)
