@@ -5,26 +5,38 @@
 package akka.http.javadsl
 
 import java.util.{ Optional, Collection => JCollection }
+import javax.net.ssl.{ SSLContext, SSLParameters }
 
+import com.typesafe.sslconfig.akka.AkkaSSLConfig
+
+import akka.actor.ClassicActorSystemProvider
 import akka.annotation.DoNotInherit
 import akka.http.scaladsl
 import akka.japi.Util
 import akka.stream.TLSClientAuth
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
-import javax.net.ssl.{ SSLContext, SSLParameters }
 
 import scala.compat.java8.OptionConverters
 
 object ConnectionContext {
   //#https-context-creation
+  def httpsClient(sslContext: SSLContext, system: ClassicActorSystemProvider): HttpsConnectionContext = // ...
+    //#https-context-creation
+    scaladsl.ConnectionContext.httpsClient(sslContext)(system)
+
+  //#https-context-creation
+  def httpsServer(sslContext: SSLContext): HttpsConnectionContext = // ...
+    //#https-context-creation
+    scaladsl.ConnectionContext.httpsServer(sslContext)
+
   // ConnectionContext
   /** Used to serve HTTPS traffic. */
+  @Deprecated @deprecated("use httpsServer, httpsClient or the method that takes a custom factory", since = "10.2.0")
   def https(sslContext: SSLContext): HttpsConnectionContext = // ...
     //#https-context-creation
     scaladsl.ConnectionContext.https(sslContext)
-  //#https-context-creation
 
   /** Used to serve HTTPS traffic. */
+  @Deprecated @deprecated("use httpsServer, httpsClient or the method that takes a custom factory", since = "10.2.0")
   def https(
     sslContext:          SSLContext,
     sslConfig:           Optional[AkkaSSLConfig],
@@ -42,7 +54,7 @@ object ConnectionContext {
       OptionConverters.toScala(sslParameters))
 
   /** Used to serve HTTPS traffic. */
-  // for binary-compatibility, since 2.4.7
+  @Deprecated @deprecated("use httpsServer, httpsClient or the method that takes a custom factory", since = "10.2.0")
   def https(
     sslContext:          SSLContext,
     enabledCipherSuites: Optional[JCollection[String]],

@@ -4,22 +4,22 @@
 
 package akka.http.scaladsl
 
-import akka.stream.{ ConnectionException, TLSClientAuth }
-import akka.stream.TLSProtocol._
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
-
-import scala.collection.JavaConverters._
 import java.util.{ Collections, Optional, Collection => JCollection }
-
-import akka.actor.ActorSystem
-import akka.annotation.InternalApi
-import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
-import com.typesafe.sslconfig.ssl.DefaultHostnameVerifier
 import javax.net.ssl._
 
+import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.compat.java8.OptionConverters._
 import scala.util.{ Failure, Success, Try }
+
+import com.typesafe.sslconfig.akka.AkkaSSLConfig
+import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
+import com.typesafe.sslconfig.ssl.DefaultHostnameVerifier
+
+import akka.actor.ClassicActorSystemProvider
+import akka.annotation.InternalApi
+import akka.stream.{ ConnectionException, TLSClientAuth }
+import akka.stream.TLSProtocol._
 
 trait ConnectionContext extends akka.http.javadsl.ConnectionContext {
   @deprecated("Internal method, left for binary compatibility", since = "10.2.0")
@@ -46,8 +46,8 @@ object ConnectionContext {
       })
     }))
 
-  def httpsClient(context: SSLContext)(implicit system: ActorSystem): HttpsConnectionContext = {
-    val verifier = new DefaultHostnameVerifier(new AkkaLoggerFactory(system))
+  def httpsClient(context: SSLContext)(implicit system: ClassicActorSystemProvider): HttpsConnectionContext = {
+    val verifier = new DefaultHostnameVerifier(new AkkaLoggerFactory(system.classicSystem))
 
     new HttpsConnectionContext(Right {
       case None =>
