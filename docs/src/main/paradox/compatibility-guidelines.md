@@ -79,6 +79,7 @@ Scala
     akka.http.scaladsl.model.headers.CacheDirectives.immutableDirective
     akka.http.scaladsl.model.headers.X-Forwarded-Host
     akka.http.scaladsl.model.headers.X-Forwarded-Proto
+    akka.http.scaladsl.model.ws.WebSocketHandler
     ```
 
 Java
