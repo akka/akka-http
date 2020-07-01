@@ -32,7 +32,7 @@ class TimeoutDirectivesExamplesSpec extends AkkaSpec(TimeoutDirectivesInfiniteTi
   //#testSetup
   implicit val ec: ExecutionContext = system.dispatcher
 
-  def slowFuture(): Future[String] = Promise[String].future // TODO: move to Future.never in Scala 2.12
+  def slowFuture(): Future[String] = Future.never
 
   def runRoute(route: Route, routePath: String): HttpResponse = {
     val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
@@ -161,7 +161,7 @@ class TimeoutDirectivesFiniteTimeoutExamplesSpec extends AkkaSpec(TimeoutDirecti
   with ScalaFutures with CompileOnlySpec {
   implicit val ec: ExecutionContext = system.dispatcher
 
-  def slowFuture(): Future[String] = Promise[String].future // TODO: move to Future.never in Scala 2.12
+  def slowFuture(): Future[String] = Future.never
 
   def runRoute(route: Route, routePath: String): HttpResponse = {
     val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()

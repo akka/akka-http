@@ -24,7 +24,7 @@ object Dependencies {
   val scalaCheckVersion = "1.14.3"
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.13.2", "2.12.11"),
+    crossScalaVersions := Seq("2.13.3", "2.12.11"),
     scalaVersion := crossScalaVersions.value.head,
   )
 
