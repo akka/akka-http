@@ -9,6 +9,7 @@ import akka.parboiled2.CharUtils
 import akka.stream.{ Attributes, SourceShape }
 import akka.util.ByteString
 import akka.event.LoggingAdapter
+import akka.http.impl.engine.rendering.HttpRequestRendererFactory.RequestRenderingOutput
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.scaladsl._
 import akka.stream.stage._
@@ -156,4 +157,62 @@ private[http] object RenderSupport {
   def suppressionWarning(log: LoggingAdapter, h: HttpHeader,
                          msg: String = "the akka-http-core layer sets this header automatically!"): Unit =
     log.warning("Explicitly set HTTP header '{}' is ignored, {}", h, msg)
+
+  def concatRenderOutput: Flow[RequestRenderingOutput, ByteString, Any] =
+    Flow.fromGraph(new ConcatRenderOutput)
+
+  private class ConcatRenderOutput extends GraphStage[FlowShape[RequestRenderingOutput, ByteString]] {
+    val in = Inlet[RequestRenderingOutput]("concatRenderOutput.in")
+    val out = Outlet[ByteString]("concatRenderOutput.out")
+    val shape: FlowShape[RequestRenderingOutput, ByteString] = FlowShape(in, out)
+
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+      new GraphStageLogic(shape) {
+        logic =>
+        setHandlers(in, out, PassThrough)
+
+        object PassThrough extends InHandler with OutHandler {
+          override def onPush(): Unit = grab(in) match {
+            case RequestRenderingOutput.Strict(bytes)        => push(out, bytes)
+            case RequestRenderingOutput.Streamed(byteStream) => new Stream(byteStream).connect()
+          }
+          override def onPull(): Unit = pull(in)
+        }
+        class Stream(byteStream: Source[ByteString, Any]) extends InHandler with OutHandler {
+          val subSinkInlet = new SubSinkInlet[ByteString]("concatRenderOut.subIn")
+
+          def connect(): Unit = {
+            subSinkInlet.pull()
+            subSinkInlet.setHandler(new InHandler {
+              override def onPush(): Unit = push(out, subSinkInlet.grab())
+
+              override def onUpstreamFinish(): Unit = {
+                setHandlers(in, out, PassThrough)
+                if (isClosed(in)) completeStage()
+                else if (isAvailable(out)) pull(in)
+              }
+
+              override def onUpstreamFailure(ex: Throwable): Unit = failStage(ex)
+            })
+            byteStream.runWith(subSinkInlet.sink)(subFusingMaterializer)
+
+            setHandlers(in, out, this)
+          }
+
+          override def onPush(): Unit = throw new IllegalStateException("shouldn't have been pulled")
+
+          override def onPull(): Unit = subSinkInlet.pull()
+          override def onDownstreamFinish(): Unit = {
+            subSinkInlet.cancel()
+            super.onDownstreamFinish()
+          }
+          override def onUpstreamFinish(): Unit = () // no-op
+
+          override def onUpstreamFailure(ex: Throwable): Unit = {
+            subSinkInlet.cancel()
+            failStage(ex)
+          }
+        }
+      }
+  }
 }

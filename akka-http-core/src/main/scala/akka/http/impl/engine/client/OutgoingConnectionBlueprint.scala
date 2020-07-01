@@ -20,7 +20,7 @@ import akka.stream.scaladsl._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, IllegalResponseException, ResponseEntity }
-import akka.http.impl.engine.rendering.{ HttpRequestRendererFactory, RequestRenderingContext }
+import akka.http.impl.engine.rendering.{ HttpRequestRendererFactory, RenderSupport, RequestRenderingContext }
 import akka.http.impl.engine.parsing._
 import akka.http.impl.util._
 import akka.stream.stage.GraphStage
@@ -76,7 +76,10 @@ private[http] object OutgoingConnectionBlueprint {
 
       val requestRendering: Flow[RequestRenderingContext, ByteString, NotUsed] = {
         val requestRendererFactory = new HttpRequestRendererFactory(userAgentHeader, requestHeaderSizeHint, log)
-        Flow[RequestRenderingContext].flatMapConcat(requestRendererFactory.renderToSource).named("renderer")
+        Flow[RequestRenderingContext]
+          .map(requestRendererFactory.render)
+          .via(RenderSupport.concatRenderOutput)
+          .named("renderer")
       }
 
       val bypass = Flow[RequestRenderingContext] map { ctx =>
