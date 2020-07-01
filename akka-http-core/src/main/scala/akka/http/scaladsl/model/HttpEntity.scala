@@ -114,7 +114,8 @@ sealed trait HttpEntity extends jm.HttpEntity {
    * In future versions, more automatic ways to warn or resolve these situations may be introduced, see issue #18716.
    */
   override def discardBytes(mat: Materializer): HttpMessage.DiscardedEntity =
-    new HttpMessage.DiscardedEntity(dataBytes.runWith(Sink.ignore)(mat))
+    if (isStrict) HttpMessage.AlreadyDiscardedEntity
+    else new HttpMessage.DiscardedEntity(dataBytes.runWith(Sink.ignore)(mat))
 
   /**
    * Returns a copy of the given entity with the ByteString chunks of this entity transformed by the given transformer.
