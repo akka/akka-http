@@ -6,10 +6,10 @@ The central vehicle for configuring encryption is the @apidoc[HttpsConnectionCon
 the static method `ConnectionContext.https` which is defined like this:
 
 Scala
-:  @@snip [ConnectionContext.scala]($akka-http$/akka-http-core/src/main/scala/akka/http/scaladsl/ConnectionContext.scala) { #https-context-creation }
+:  @@snip [ConnectionContext.scala](/akka-http-core/src/main/scala/akka/http/scaladsl/ConnectionContext.scala) { #https-context-creation }
 
 Java
-:  @@snip [ConnectionContext.scala]($akka-http$/akka-http-core/src/main/scala/akka/http/javadsl/ConnectionContext.scala) { #https-context-creation }
+:  @@snip [ConnectionContext.scala](/akka-http-core/src/main/scala/akka/http/javadsl/ConnectionContext.scala) { #https-context-creation }
 
 On the server-side the `bind`, and `bindAndHandleXXX` methods of the @scala[@scaladoc[Http](akka.http.scaladsl.Http$)]@java[@javadoc[Http](akka.http.javadsl.Http)] extension define an
 optional `httpsContext` parameter, which can receive the HTTPS configuration in the form of an `HttpsContext`
@@ -44,7 +44,7 @@ Scala
 :  @@snip [HttpsServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #imports #low-level-default }
 
 Java
-:  @@snip [SimpleServerApp.java]($akka-http$/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/simple/SimpleServerApp.java) { #https-http-config }
+:  @@snip [SimpleServerApp.java](/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/simple/SimpleServerApp.java) { #https-http-config }
 
 @scala[Once you configured the HTTPS context, you can set it as default:]
 @java[Then pass it to the `akka.http.javadsl.Http` class's `setDefaultServerHttpContext` method, like in the below `main` method.]
@@ -53,7 +53,7 @@ Scala
 :  @@snip [HttpsServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #set-low-level-context-default }
 
 Java
-: @@snip [SimpleServerApp.java]($akka-http$/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/simple/SimpleServerApp.java) { #https-http-app }
+: @@snip [SimpleServerApp.java](/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/simple/SimpleServerApp.java) { #https-http-app }
 
 @@@ div { .group-scala }
 
@@ -74,7 +74,7 @@ Scala
 :  @@snip [HttpsServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #low-level-default }
 
 Java
-:  @@snip [SimpleServerApp.java]($akka-http$/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/simple/SimpleServerApp.java) { #https-http-config }
+:  @@snip [SimpleServerApp.java](/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/simple/SimpleServerApp.java) { #https-http-config }
 
 Then, call `bind...` methods twice like below.
 @scala[The passed `https` context is from the above code snippet.]
@@ -84,7 +84,7 @@ Scala
 :  @@snip [HttpsServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #both-https-and-http }
 
 Java
-:  @@snip [SimpleServerHttpHttpsApp.java]($akka-http$/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/simple/SimpleServerHttpHttpsApp.java) { #both-https-and-http }
+:  @@snip [SimpleServerHttpHttpsApp.java](/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/simple/SimpleServerHttpHttpsApp.java) { #both-https-and-http }
 
 ## Mutual authentication
 

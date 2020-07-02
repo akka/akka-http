@@ -6,10 +6,10 @@ The central vehicle for configuring encryption is the @apidoc[HttpsConnectionCon
 the static method `ConnectionContext.https` which is defined like this:
 
 Scala
-:  @@snip[ConnectionContext.scala]($akka-http$/akka-http-core/src/main/scala/akka/http/scaladsl/ConnectionContext.scala) { #https-context-creation }
+:  @@snip[ConnectionContext.scala](/akka-http-core/src/main/scala/akka/http/scaladsl/ConnectionContext.scala) { #https-context-creation }
 
 Java
-:  @@snip [ConnectionContext.scala]($akka-http$/akka-http-core/src/main/scala/akka/http/javadsl/ConnectionContext.scala) { #https-context-creation }
+:  @@snip [ConnectionContext.scala](/akka-http-core/src/main/scala/akka/http/javadsl/ConnectionContext.scala) { #https-context-creation }
 
 In addition to the `outgoingConnection`, `newHostConnectionPool` and `cachedHostConnectionPool` methods the
 @scala[@scaladoc[akka.http.scaladsl.Http](akka.http.scaladsl.Http$)]@java[@javadoc[akka.http.javadsl.Http](akka.http.javadsl.Http)]
@@ -26,8 +26,8 @@ following logic:
  1. If the optional `httpsContext` method parameter is defined it contains the configuration to be used (and thus
 takes precedence over any potentially set default client-side `HttpsContext`).
  2. If the optional `httpsContext` method parameter is undefined (which is the default) the default client-side
-`HttpsContext` is used, which can be set via the `setDefaultClientHttpsContext` on the @scala[@apidoc[Http$]]@java[@apidoc[Http]] extension.
- 3. If no default client-side `HttpsContext` has been set via the `setDefaultClientHttpsContext` on the @scala[@apidoc[Http$]]@java[@apidoc[Http]]
+`HttpsContext` is used, which can be set via the `setDefaultClientHttpsContext` on the @apidoc[Http$] extension.
+ 3. If no default client-side `HttpsContext` has been set via the `setDefaultClientHttpsContext` on the @apidoc[Http$]
 extension the default system configuration is used.
 
 Usually the process is, if the default system TLS configuration is not good enough for your application's needs,

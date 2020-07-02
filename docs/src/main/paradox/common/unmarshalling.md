@@ -14,7 +14,7 @@ Unmarshalling of instances of type `A` into instances of type `B` is performed b
 @@@ div { .group-scala }
 Akka HTTP also predefines a number of helpful aliases for the types of unmarshallers that you'll likely work with most:
 
-@@snip [package.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/package.scala) { #unmarshaller-aliases }
+@@snip [package.scala](/akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/package.scala) { #unmarshaller-aliases }
 
 @@@
 
@@ -80,10 +80,10 @@ Rather, it should be possible to use one of the convenience construction helpers
 @scala[the @apidoc[Unmarshaller] companion]@java[@apidoc[Unmarshaller]]:
 
 Scala
-:  @@snip [Unmarshaller.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/Unmarshaller.scala) { #unmarshaller-creation }
+:  @@snip [Unmarshaller.scala](/akka-http/src/main/scala/akka/http/scaladsl/unmarshalling/Unmarshaller.scala) { #unmarshaller-creation }
 
 Java
-:  @@snip [Unmarshallers.scala]($akka-http$/akka-http/src/main/java/akka/http/javadsl/unmarshalling/Unmarshallers.java) { #unmarshaller-creation }
+:  @@snip [Unmarshallers.scala](/akka-http/src/main/java/akka/http/javadsl/unmarshalling/Unmarshallers.java) { #unmarshaller-creation }
 
 @@@ note
 To avoid unnecessary memory pressure, unmarshallers should make sure to either fully consume the incoming entity data stream, or make sure it is properly cancelled on error.

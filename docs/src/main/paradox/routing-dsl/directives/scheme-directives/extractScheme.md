@@ -4,7 +4,7 @@
 
 ## Signature
 
-@@signature [SchemeDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/SchemeDirectives.scala) { #extractScheme }
+@@signature [SchemeDirectives.scala](/akka-http/src/main/scala/akka/http/scaladsl/server/directives/SchemeDirectives.scala) { #extractScheme }
 
 @@@
 

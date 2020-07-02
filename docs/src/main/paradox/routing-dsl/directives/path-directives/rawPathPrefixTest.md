@@ -4,7 +4,7 @@
 
 ## Signature
 
-@@signature [PathDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #rawPathPrefixTest }
+@@signature [PathDirectives.scala](/akka-http/src/main/scala/akka/http/scaladsl/server/directives/PathDirectives.scala) { #rawPathPrefixTest }
 
 @@@
 

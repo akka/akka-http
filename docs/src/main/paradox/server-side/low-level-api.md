@@ -128,7 +128,7 @@ some other source. Potential scenarios where this might be useful include tests,
 @@@ div { .group-scala }
 On the server-side the stand-alone HTTP layer forms a @apidoc[BidiFlow] that is defined like this:
 
-@@snip [Http.scala]($akka-http$/akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala) { #server-layer }
+@@snip [Http.scala](/akka-http-core/src/main/scala/akka/http/scaladsl/Http.scala) { #server-layer }
 
 You create an instance of `Http.ServerLayer` by calling one of the two overloads of the `Http().serverLayer` method,
 which also allows for varying degrees of configuration.

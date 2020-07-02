@@ -6,7 +6,7 @@ Matches requests with HTTP method `HEAD`.
 
 ## Signature
 
-@@signature [MethodDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala) { #head }
+@@signature [MethodDirectives.scala](/akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala) { #head }
 
 @@@
 

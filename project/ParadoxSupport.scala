@@ -35,14 +35,7 @@ object ParadoxSupport {
           case direct: DirectiveNode.Source.Direct => direct.value
           case _                                   => sys.error("Source references are not supported")
         }
-        val file =
-          if (source startsWith "$") {
-            val baseKey = source.drop(1).takeWhile(_ != '$')
-            val base = new File(PropertyUrl(s"signature.$baseKey.base_dir", variables.get).base.trim)
-            val effectiveBase = if (base.isAbsolute) base else new File(page.file.getParentFile, base.toString)
-            new File(effectiveBase, source.drop(baseKey.length + 2))
-          } else new File(page.file.getParentFile, source)
-
+        val file = SourceDirective.resolveFile("signature", source, page.file, variables)
         val Signature = """\s*((def|val|type) (\w+)(?=[:(\[]).*)(\s+\=.*)""".r // stupid approximation to match a signature
         //println(s"Looking for signature regex '$Signature'")
         val text =

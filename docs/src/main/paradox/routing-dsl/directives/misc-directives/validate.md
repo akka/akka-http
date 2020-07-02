@@ -6,7 +6,7 @@ Allows validating a precondition before handling a route.
 
 ## Signature
 
-@@signature [MiscDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/MiscDirectives.scala) { #validate }
+@@signature [MiscDirectives.scala](/akka-http/src/main/scala/akka/http/scaladsl/server/directives/MiscDirectives.scala) { #validate }
 
 @@@
 

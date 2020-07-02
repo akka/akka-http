@@ -6,7 +6,7 @@ Matches requests with HTTP method `DELETE`.
 
 ## Signature
 
-@@signature [MethodDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala) { #delete }
+@@signature [MethodDirectives.scala](/akka-http/src/main/scala/akka/http/scaladsl/server/directives/MethodDirectives.scala) { #delete }
 
 @@@
 
