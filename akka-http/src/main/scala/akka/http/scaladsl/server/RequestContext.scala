@@ -4,15 +4,16 @@
 
 package akka.http.scaladsl.server
 
-import akka.annotation.DoNotInherit
-
+import scala.collection.immutable
 import scala.concurrent.{ ExecutionContextExecutor, Future }
-import akka.stream.Materializer
+
+import akka.annotation.DoNotInherit
 import akka.event.LoggingAdapter
-import akka.http.scaladsl.marshalling.ToResponseMarshallable
+import akka.http.scaladsl.marshalling.{ ToEntityMarshaller, ToResponseMarshallable }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
+import akka.stream.Materializer
 
 /**
  * This class is not meant to be extended by user code.
@@ -67,6 +68,18 @@ trait RequestContext {
    * Completes the request with the given ToResponseMarshallable.
    */
   def complete(obj: ToResponseMarshallable): Future[RouteResult]
+
+  /**
+   * Completes the request using the given arguments.
+   */
+  def complete[T](status: StatusCode, v: T)(implicit m: ToEntityMarshaller[T]): Future[RouteResult] =
+    complete((status, v))
+
+  /**
+   * Completes the request using the given arguments.
+   */
+  def complete[T](status: StatusCode, headers: immutable.Seq[HttpHeader], v: T)(implicit m: ToEntityMarshaller[T]): Future[RouteResult] =
+    complete((status, headers, v))
 
   /**
    * Rejects the request with the given rejections.
