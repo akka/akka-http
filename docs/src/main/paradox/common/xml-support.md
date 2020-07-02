@@ -36,9 +36,11 @@ In order to enable support for (un)marshalling from and to XML with [Scala XML][
 the following dependency:
 
 @@dependency [sbt,Gradle,Maven] {
+  symbol="AkkaHttpVersion"
+  value="$project.version$"
   group="com.typesafe.akka"
   artifact="akka-http-xml_$scala.binary.version$"
-  version="$project.version$"
+  version="AkkaHttpVersion"
 }
 
 Once you have done this (un)marshalling between XML and `NodeSeq` instances should work nicely and transparently,

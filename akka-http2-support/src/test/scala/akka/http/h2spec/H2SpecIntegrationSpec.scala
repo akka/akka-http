@@ -8,11 +8,11 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.http.impl.util.{ ExampleHttpContexts, WithLogCapturing }
-import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse }
 import akka.http.scaladsl.server.Directives
 import akka.http.scaladsl.Http2
 import akka.stream.ActorMaterializer
 import akka.testkit._
+import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.ExecutionContext
@@ -39,10 +39,8 @@ class H2SpecIntegrationSpec extends AkkaSpec(
 
   override def expectedTestDuration = 5.minutes // because slow jenkins, generally finishes below 1 or 2 minutes
 
-  val echo = (req: HttpRequest) => {
-    req.entity.toStrict(5.second.dilated).map { entity =>
-      HttpResponse().withEntity(HttpEntity(entity.data))
-    }
+  val echo = entity(as[ByteString]) { data =>
+    complete(data)
   }
 
   val binding = Http2().bindAndHandleAsync(echo, "127.0.0.1", 0, ExampleHttpContexts.exampleServerContext).futureValue

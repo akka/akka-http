@@ -4,30 +4,30 @@
 
 package akka.http.scaladsl
 
-import akka.{ Done, NotUsed }
 import akka.actor.{ ActorSystem, ClassicActorSystemProvider, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.{ Http2AlpnSupport, Http2Blueprint, ProtocolSwitch }
-import akka.http.impl.engine.server.MasterServerTerminator
-import akka.http.impl.engine.server.UpgradeToOtherProtocolResponseHeader
+import akka.http.impl.engine.server.{ MasterServerTerminator, UpgradeToOtherProtocolResponseHeader }
+import akka.http.impl.util.LogByteStringTools
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.settings.ServerSettings
+import akka.http.scaladsl.model.headers.{ Connection, RawHeader, Upgrade, UpgradeProtocol }
+import akka.http.scaladsl.model.http2.Http2SettingsHeader
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, ServerSettings }
 import akka.stream.TLSProtocol.{ SslTlsInbound, SslTlsOutbound }
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source, TLS, TLSPlacebo, Tcp }
-import akka.http.scaladsl.model.headers.{ Connection, RawHeader, Upgrade, UpgradeProtocol }
-import akka.http.scaladsl.model.http2.{ Http2SettingsHeader, Http2StreamIdHeader }
-import akka.stream.{ IgnoreComplete, Materializer }
+import akka.stream.{ IgnoreComplete, Materializer, TLSClosing }
 import akka.util.ByteString
+import akka.{ Done, NotUsed }
 import com.typesafe.config.Config
 import javax.net.ssl.SSLEngine
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.Future
 import scala.collection.immutable
-import scala.util.{ Failure, Success }
+import scala.concurrent.Future
+import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
+import scala.util.{ Failure, Success }
 
 /** Entry point for Http/2 server */
 final class Http2Ext(private val config: Config)(implicit val system: ActorSystem)
@@ -111,7 +111,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
           case immutable.Seq(Success(settingsFromHeader)) =>
             // inject the actual upgrade request with a stream identifier of 1
             // https://http2.github.io/http2-spec/#rfc.section.3.2
-            val injectedRequest = Source.single(req.addHeader(Http2StreamIdHeader(1)))
+            val injectedRequest = Source.single(req.addAttribute(Http2.streamId, 1))
 
             val serverLayer: Flow[ByteString, ByteString, Future[Done]] = Flow.fromGraph(
               Flow[HttpRequest]
@@ -180,9 +180,32 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
     ProtocolSwitch(_ => getChosenProtocol(), http1, http2) join
       tls
   }
+
+  def outgoingConnection(
+    host:              String,
+    port:              Int                      = 443,
+    settings:          ClientConnectionSettings = ClientConnectionSettings(system),
+    connectionContext: HttpsConnectionContext   = Http().defaultClientHttpsContext,
+    log:               LoggingAdapter           = system.log): Flow[HttpRequest, HttpResponse, Any] = {
+    def createEngine(): SSLEngine = {
+      val engine = connectionContext.sslContext.createSSLEngine(host, port)
+      engine.setUseClientMode(true)
+      Http2AlpnSupport.applySessionParameters(engine, connectionContext.firstSession)
+      Http2AlpnSupport.clientSetApplicationProtocols(engine, Array("h2"))
+      engine
+    }
+
+    Http2Blueprint.clientStack(settings, log) atop
+      Http2Blueprint.unwrapTls atop
+      LogByteStringTools.logTLSBidiBySetting("client-plain-text", settings.logUnencryptedNetworkBytes) atop
+      TLS(createEngine _, closing = TLSClosing.eagerClose) join
+      settings.transport.connectTo(host, port, settings)
+  }
 }
 
 object Http2 extends ExtensionId[Http2Ext] with ExtensionIdProvider {
+  val streamId = AttributeKey[Int]("x-http2-stream-id")
+
   override def get(system: ActorSystem): Http2Ext = super.get(system)
   override def get(system: ClassicActorSystemProvider): Http2Ext = super.get(system)
   def apply()(implicit system: ClassicActorSystemProvider): Http2Ext = super.apply(system)

@@ -8,13 +8,12 @@ import akka.event.LoggingAdapter
 import akka.http.impl.util.StringRendering
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Date
-import akka.http.scaladsl.model.http2.Http2StreamIdHeader
 import akka.http.scaladsl.settings.ServerSettings
 
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
-
 import FrameEvent.ParsedHeadersFrame
+import akka.http.scaladsl.Http2
 
 private[http2] object ResponseRendering {
 
@@ -33,15 +32,15 @@ private[http2] object ResponseRendering {
   }
 
   def renderResponse(settings: ServerSettings, log: LoggingAdapter): HttpResponse => Http2SubStream = {
-    def failBecauseOfMissingHeader: Nothing =
-      // header is missing, shutting down because we will most likely otherwise miss a response and leak a substream
+    def failBecauseOfMissingAttribute: Nothing =
+      // attribute is missing, shutting down because we will most likely otherwise miss a response and leak a substream
       // TODO: optionally a less drastic measure would be only resetting all the active substreams
-      throw new RuntimeException("Received response for HTTP/2 request without Http2StreamIdHeader. Failing connection.")
+      throw new RuntimeException("Received response for HTTP/2 request without x-http2-stream-id attribute. Failing connection.")
 
     val serverHeader = settings.serverHeader.map(h => h.lowercaseName -> h.value)
 
     { (response: HttpResponse) =>
-      val streamId = response.header[Http2StreamIdHeader].getOrElse(failBecauseOfMissingHeader).streamId
+      val streamId = response.attribute(Http2.streamId).getOrElse(failBecauseOfMissingAttribute)
       val headerPairs = new VectorBuilder[(String, String)]()
 
       // From https://tools.ietf.org/html/rfc7540#section-8.1.2.4:
@@ -54,7 +53,7 @@ private[http2] object ResponseRendering {
 
       response.entity.contentLengthOption.foreach(headerPairs += "content-length" -> _.toString)
 
-      renderHeaders(response.headers, headerPairs, serverHeader, log)
+      renderHeaders(response.headers, headerPairs, serverHeader, log, isServer = true)
 
       val headers = ParsedHeadersFrame(streamId, endStream = response.entity.isKnownEmpty, headerPairs.result(), None)
 
@@ -69,11 +68,12 @@ private[http2] object ResponseRendering {
   }
 
   private[http2] def renderHeaders(
-    headers: immutable.Seq[HttpHeader],
-    log:     LoggingAdapter
+    headers:  immutable.Seq[HttpHeader],
+    log:      LoggingAdapter,
+    isServer: Boolean
   ): Seq[(String, String)] = {
     val headerPairs = new VectorBuilder[(String, String)]()
-    renderHeaders(headers, headerPairs, None, log)
+    renderHeaders(headers, headerPairs, None, log, isServer)
     headerPairs.result()
   }
 
@@ -81,23 +81,20 @@ private[http2] object ResponseRendering {
     headersSeq:   immutable.Seq[HttpHeader],
     headerPairs:  VectorBuilder[(String, String)],
     serverHeader: Option[(String, String)],
-    log:          LoggingAdapter
+    log:          LoggingAdapter,
+    isServer:     Boolean
   ): Unit = {
     def suppressionWarning(h: HttpHeader, msg: String): Unit =
       log.warning("Explicitly set HTTP header '{}' is ignored, {}", h, msg)
 
-    // optimized, as it is done for every response
-    val headers = headersSeq.toArray
+    val it = headersSeq.iterator
     var serverSeen, dateSeen = false
-    var idx = 0
-    def addHeader(h: HttpHeader): Unit = {
-      headerPairs += h.lowercaseName -> h.value
-    }
+    def addHeader(h: HttpHeader): Unit = headerPairs += h.lowercaseName -> h.value
 
-    while (idx < headers.length) {
+    while (it.hasNext) {
       import akka.http.scaladsl.model.headers._
-      val header = headers(idx)
-      if (header.renderInResponses) {
+      val header = it.next()
+      if ((header.renderInResponses && isServer) || (header.renderInRequests && !isServer)) {
         header match {
           case x: Server =>
             addHeader(x)
@@ -130,7 +127,6 @@ private[http2] object ResponseRendering {
             addHeader(x)
         }
       }
-      idx += 1
     }
 
     if (!dateSeen) {

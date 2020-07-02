@@ -7,7 +7,7 @@ package akka.http.impl.engine.http2
 import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.scaladsl.model.http2.PeerClosedStreamException
-import akka.http.scaladsl.settings.Http2ServerSettings
+import akka.http.scaladsl.settings.Http2CommonSettings
 import akka.stream.scaladsl.Source
 import akka.stream.stage.{ GraphStageLogic, OutHandler, StageLogging }
 import akka.util.ByteString
@@ -30,7 +30,7 @@ import scala.util.control.NoStackTrace
 private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLogging =>
   // required API from demux
   def multiplexer: Http2Multiplexer
-  def settings: Http2ServerSettings
+  def settings: Http2CommonSettings
   def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit
   def dispatchSubstream(sub: Http2SubStream): Unit
   def isUpgraded: Boolean
@@ -62,10 +62,15 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
   def handleStreamEvent(e: StreamFrameEvent): Unit = {
     updateState(e.streamId, _.handle(e))
   }
+
+  def handleOutgoingCreated(stream: Http2SubStream): Unit =
+    updateState(stream.streamId, _.handleOutgoingCreated(stream))
+
   // Called by the outgoing stream multiplexer when that side of the stream is ended.
   def handleOutgoingEnded(streamId: Int): Unit = {
     updateState(streamId, _.handleOutgoingEnded())
   }
+
   private def updateState(streamId: Int, handle: IncomingStreamState => IncomingStreamState): Unit = {
     val oldState = streamFor(streamId)
     val newState = handle(oldState)
@@ -89,6 +94,10 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
     def handle(event: StreamFrameEvent): IncomingStreamState
 
     def stateName: String = productPrefix
+    def handleOutgoingCreated(stream: Http2SubStream): IncomingStreamState = {
+      log.warning(s"handleOutgoingCreated received unexpectedly in state $stateName. This indicates a bug in Akka HTTP, please report it to the issue tracker.")
+      this
+    }
     def handleOutgoingEnded(): IncomingStreamState = {
       log.warning(s"handleOutgoingEnded received unexpectedly in state $stateName. This indicates a bug in Akka HTTP, please report it to the issue tracker.")
       this
@@ -98,28 +107,50 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
       Closed
     }
 
+    protected def expectIncomingStream(
+      event:           StreamFrameEvent,
+      nextStateEmpty:  IncomingStreamState,
+      nextStateStream: IncomingStreamBuffer => IncomingStreamState,
+      mapStream:       Http2SubStream => Http2SubStream            = identity): IncomingStreamState =
+      event match {
+        case frame @ ParsedHeadersFrame(streamId, endStream, _, _) =>
+          val (data, nextState) =
+            if (endStream)
+              (Source.empty, nextStateEmpty)
+            else {
+              val subSource = new SubSourceOutlet[ByteString](s"substream-out-$streamId")
+              (Source.fromGraph(subSource.source), nextStateStream(new IncomingStreamBuffer(streamId, subSource)))
+            }
+
+          // FIXME: after multiplexer PR is merged
+          // prioInfo.foreach(multiplexer.updatePriority)
+          dispatchSubstream(mapStream(ByteHttp2SubStream(frame, data)))
+          nextState
+
+        case x => receivedUnexpectedFrame(x)
+      }
+
     /** Called to cleanup any state when the connection is torn down */
     def shutdown(): IncomingStreamState
   }
   case object Idle extends IncomingStreamState {
-    def handle(event: StreamFrameEvent): IncomingStreamState = event match {
-      case frame @ ParsedHeadersFrame(streamId, endStream, headers, prioInfo) =>
-        val (data, nextState) =
-          if (endStream)
-            (Source.empty, HalfClosedRemote)
-          else {
-            val subSource = new SubSourceOutlet[ByteString](s"substream-out-$streamId")
-            (Source.fromGraph(subSource.source), Open(new IncomingStreamBuffer(streamId, subSource)))
-          }
+    def handle(event: StreamFrameEvent): IncomingStreamState = expectIncomingStream(event, HalfClosedRemote, ReceivingDataFirst)
+    override def handleOutgoingCreated(stream: Http2SubStream): IncomingStreamState = SendingData(stream)
+    override def shutdown(): IncomingStreamState = Closed
+  }
+  case class ReceivingDataFirst(buffer: IncomingStreamBuffer) extends ReceivingData(HalfClosedRemote) {
+    override def handleOutgoingCreated(stream: Http2SubStream): IncomingStreamState = Open(buffer)
+    override def handleOutgoingEnded(): IncomingStreamState = Closed
 
-        // FIXME: after multiplexer PR is merged
-        // prioInfo.foreach(multiplexer.updatePriority)
-        dispatchSubstream(ByteHttp2SubStream(frame, data))
-        nextState
-
-      case x => receivedUnexpectedFrame(x)
-    }
-
+    override protected def onReset(streamId: Int): Unit = multiplexer.cancelSubStream(streamId)
+  }
+  case class SendingData(outgoingStream: Http2SubStream) extends IncomingStreamState {
+    override def handle(event: StreamFrameEvent): IncomingStreamState = expectIncomingStream(event, HalfClosedRemote, Open, _.withCorrelationAttributes(outgoingStream.correlationAttributes))
+    override def handleOutgoingEnded(): IncomingStreamState = SendingDataHalfClosedLocal(outgoingStream)
+    override def shutdown(): IncomingStreamState = Closed
+  }
+  case class SendingDataHalfClosedLocal(outgoingStream: Http2SubStream) extends IncomingStreamState {
+    override def handle(event: StreamFrameEvent): IncomingStreamState = expectIncomingStream(event, Closed, HalfClosedLocal, _.withCorrelationAttributes(outgoingStream.correlationAttributes))
     override def shutdown(): IncomingStreamState = Closed
   }
   sealed abstract class ReceivingData(afterEndStreamReceived: IncomingStreamState) extends IncomingStreamState { _: Product =>
@@ -196,10 +227,18 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
         Closed
       case _ => receivedUnexpectedFrame(event)
     }
+
+    override def handleOutgoingCreated(stream: Http2SubStream): IncomingStreamState =
+      // other side has sent its complete message and now we use the channel for the response
+      this
     override def handleOutgoingEnded(): IncomingStreamState = Closed
     override def shutdown(): IncomingStreamState = Closed
   }
   case object Closed extends IncomingStreamState {
+
+    override def handleOutgoingCreated(stream: Http2SubStream): IncomingStreamState = this
+    override def handleOutgoingEnded(): IncomingStreamState = this
+
     def handle(event: StreamFrameEvent): IncomingStreamState = event match {
       // https://http2.github.io/http2-spec/#StreamStates
       // Endpoints MUST ignore WINDOW_UPDATE or RST_STREAM frames received in this state,

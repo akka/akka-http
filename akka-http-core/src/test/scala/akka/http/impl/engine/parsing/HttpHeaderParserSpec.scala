@@ -7,11 +7,9 @@ package akka.http.impl.engine.parsing
 import java.lang.{ StringBuilder => JStringBuilder }
 
 import akka.http.scaladsl.settings.ParserSettings
-import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.annotation.tailrec
 import scala.util.Random
-import org.scalatest.BeforeAndAfterAll
 import akka.util.ByteString
 import akka.actor.ActorSystem
 import akka.http.HashCodeCollider
@@ -20,96 +18,91 @@ import akka.http.scaladsl.model.headers._
 import akka.http.impl.model.parser.CharacterClasses
 import akka.http.impl.util._
 import akka.http.scaladsl.settings.ParserSettings.IllegalResponseHeaderValueProcessingMode
-import akka.testkit.{ EventFilter, TestKit }
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import akka.testkit.EventFilter
 
-abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWordSpec with Matchers with BeforeAndAfterAll {
-
-  val testConf: Config = ConfigFactory.parseString("""
-    akka.event-handlers = ["akka.testkit.TestEventListener"]
-    akka.loglevel = WARNING
+abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AkkaSpecWithMaterializer(
+  """
     akka.http.parsing.max-header-name-length = 60
     akka.http.parsing.max-header-value-length = 1000
-    akka.http.parsing.header-cache.Host = 300""")
-  implicit val system = ActorSystem(getClass.getSimpleName, testConf)
-
+    akka.http.parsing.header-cache.Host = 300
+  """
+) {
   s"The HttpHeaderParser (mode: $mode)" should {
     "insert the 1st value" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
-      insert("Hello", 'Hello)
+      insert("Hello", "Hello")
       check {
-        """nodes: 0/H, 0/e, 0/l, 0/l, 0/o, 1/Ω
-          |branchData:\u0020
-          |values: 'Hello""" -> parser.formatRawTrie
+        s"""nodes: 0/H, 0/e, 0/l, 0/l, 0/o, 1/Ω
+           |branchData:${" " /* explicit trailing space */ }
+           |values: Hello""" -> parser.formatRawTrie
       }
       check {
-        """-H-e-l-l-o- 'Hello
+        """-H-e-l-l-o- Hello
           |""" -> parser.formatTrie
       }
     }
 
     "insert a new branch underneath a simple node" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
-      insert("Hello", 'Hello)
-      insert("Hallo", 'Hallo)
+      insert("Hello", "Hello")
+      insert("Hallo", "Hallo")
       check {
         """nodes: 0/H, 1/e, 0/l, 0/l, 0/o, 1/Ω, 0/a, 0/l, 0/l, 0/o, 2/Ω
           |branchData: 6/2/0
-          |values: 'Hello, 'Hallo""" -> parser.formatRawTrie
+          |values: Hello, Hallo""" -> parser.formatRawTrie
       }
       check {
-        """   ┌─a-l-l-o- 'Hallo
-          |-H-e-l-l-o- 'Hello
+        """   ┌─a-l-l-o- Hallo
+          |-H-e-l-l-o- Hello
           |""" -> parser.formatTrie
       }
     }
 
     "insert a new branch underneath the root" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
-      insert("Hello", 'Hello)
-      insert("Hallo", 'Hallo)
-      insert("Yeah", 'Yeah)
+      insert("Hello", "Hello")
+      insert("Hallo", "Hallo")
+      insert("Yeah", "Yeah")
       check {
         """nodes: 2/H, 1/e, 0/l, 0/l, 0/o, 1/Ω, 0/a, 0/l, 0/l, 0/o, 2/Ω, 0/Y, 0/e, 0/a, 0/h, 3/Ω
           |branchData: 6/2/0, 0/1/11
-          |values: 'Hello, 'Hallo, 'Yeah""" -> parser.formatRawTrie
+          |values: Hello, Hallo, Yeah""" -> parser.formatRawTrie
       }
       check {
-        """   ┌─a-l-l-o- 'Hallo
-          |-H-e-l-l-o- 'Hello
-          | └─Y-e-a-h- 'Yeah
+        """   ┌─a-l-l-o- Hallo
+          |-H-e-l-l-o- Hello
+          | └─Y-e-a-h- Yeah
           |""" -> parser.formatTrie
       }
     }
 
     "insert a new branch underneath an existing branch node" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
-      insert("Hello", 'Hello)
-      insert("Hallo", 'Hallo)
-      insert("Yeah", 'Yeah)
-      insert("Hoo", 'Hoo)
+      insert("Hello", "Hello")
+      insert("Hallo", "Hallo")
+      insert("Yeah", "Yeah")
+      insert("Hoo", "Hoo")
       check {
         """nodes: 2/H, 1/e, 0/l, 0/l, 0/o, 1/Ω, 0/a, 0/l, 0/l, 0/o, 2/Ω, 0/Y, 0/e, 0/a, 0/h, 3/Ω, 0/o, 0/o, 4/Ω
           |branchData: 6/2/16, 0/1/11
-          |values: 'Hello, 'Hallo, 'Yeah, 'Hoo""" -> parser.formatRawTrie
+          |values: Hello, Hallo, Yeah, Hoo""" -> parser.formatRawTrie
       }
       check {
-        """   ┌─a-l-l-o- 'Hallo
-          |-H-e-l-l-o- 'Hello
-          | | └─o-o- 'Hoo
-          | └─Y-e-a-h- 'Yeah
+        """   ┌─a-l-l-o- Hallo
+          |-H-e-l-l-o- Hello
+          | | └─o-o- Hoo
+          | └─Y-e-a-h- Yeah
           |""" -> parser.formatTrie
       }
     }
 
     "support overriding of previously inserted values" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
-      insert("Hello", 'Hello)
-      insert("Hallo", 'Hallo)
-      insert("Yeah", 'Yeah)
-      insert("Hoo", 'Hoo)
-      insert("Hoo", 'Foo)
+      insert("Hello", "Hello")
+      insert("Hallo", "Hallo")
+      insert("Yeah", "Yeah")
+      insert("Hoo", "Hoo")
+      insert("Hoo", "Foo")
       check {
-        """   ┌─a-l-l-o- 'Hallo
-          |-H-e-l-l-o- 'Hello
-          | | └─o-o- 'Foo
-          | └─Y-e-a-h- 'Yeah
+        """   ┌─a-l-l-o- Hallo
+          |-H-e-l-l-o- Hello
+          | | └─o-o- Foo
+          | └─Y-e-a-h- Yeah
           |""" -> parser.formatTrie
       }
     }
@@ -148,13 +141,13 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
     }
 
     "parse and cache a raw header" in new TestSetup(testSetupMode = TestSetupMode.Unprimed) {
-      insert("hello: bob", 'Hello)
+      insert("hello: bob", "Hello")
       val (ixA, headerA) = parseLine(s"Fancy-Pants: foo${newLine}x")
       val (ixB, headerB) = parseLine(s"Fancy-pants: foo${newLine}x")
       val newLineWithHyphen = if (newLine == "\r\n") """\r-\n""" else """\n"""
       check {
         s""" ┌─f-a-n-c-y---p-a-n-t-s-:-(Fancy-Pants)- -f-o-o-${newLineWithHyphen}- *Fancy-Pants: foo
-           |-h-e-l-l-o-:- -b-o-b- 'Hello
+           |-h-e-l-l-o-:- -b-o-b- Hello
            |""" -> parser.formatTrie
       }
       ixA shouldEqual ixB
@@ -212,7 +205,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
     }
 
     "continue parsing raw headers even if the overall cache value capacity is reached" in new TestSetup() {
-      val randomHeaders = Stream.continually {
+      val randomHeaders = Iterator.continually {
         val name = nextRandomString(nextRandomAlphaNumChar _, nextRandomInt(4, 16))
         val value = nextRandomString(() => nextRandomPrintableChar, nextRandomInt(4, 16))
         RawHeader(name, value)
@@ -223,7 +216,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
     }
 
     "continue parsing modelled headers even if the overall cache value capacity is reached" in new TestSetup() {
-      val randomHostHeaders = Stream.continually {
+      val randomHostHeaders = Iterator.continually {
         Host(
           host = nextRandomString(nextRandomAlphaNumChar _, nextRandomInt(4, 8)),
           port = nextRandomInt(1000, 10000))
@@ -234,7 +227,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
     }
 
     "continue parsing headers even if the overall cache node capacity is reached" in new TestSetup() {
-      val randomHostHeaders = Stream.continually {
+      val randomHostHeaders = Iterator.continually {
         RawHeader(
           name = nextRandomString(nextRandomAlphaNumChar _, 60),
           value = nextRandomString(nextRandomAlphaNumChar _, 1000))
@@ -245,7 +238,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
     }
 
     "continue parsing raw headers even if the header-specific cache capacity is reached" in new TestSetup() {
-      val randomHeaders = Stream.continually {
+      val randomHeaders = Iterator.continually {
         val value = nextRandomString(() => nextRandomPrintableChar, nextRandomInt(4, 16))
         RawHeader("Fancy", value)
       }
@@ -255,7 +248,7 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
     }
 
     "continue parsing modelled headers even if the header-specific cache capacity is reached" in new TestSetup() {
-      val randomHeaders = Stream.continually {
+      val randomHeaders = Iterator.continually {
         `User-Agent`(nextRandomString(nextRandomAlphaNumChar _, nextRandomInt(4, 16)))
       }
       randomHeaders.take(40).foldLeft(0) {
@@ -321,8 +314,6 @@ abstract class HttpHeaderParserSpec(mode: String, newLine: String) extends AnyWo
       BenchUtils.nanoRace(regular, colliding) should be < 3.0 // speed must be in same order of magnitude
     }
   }
-
-  override def afterAll() = TestKit.shutdownActorSystem(system)
 
   def check(pair: (String, String)) = {
     val (expected, actual) = pair

@@ -7,6 +7,7 @@ package akka.http.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ ArrayBlockingQueue, TimeUnit }
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.http.impl.util._
 import akka.http.scaladsl.model.HttpEntity._
@@ -15,11 +16,11 @@ import akka.http.scaladsl.model.headers.Connection
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.settings.{ ConnectionPoolSettings, ServerSettings }
 import akka.stream.scaladsl._
+import akka.stream.testkit.TestSubscriber.OnError
+import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.{ Server => _, _ }
 import akka.testkit._
 import akka.util.ByteString
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
-import com.typesafe.sslconfig.ssl.{ SSLConfigSettings, SSLLooseConfig }
 import org.scalactic.Tolerance
 import org.scalatest.concurrent.Eventually
 import org.scalatest.Assertion
@@ -41,6 +42,20 @@ class GracefulTerminationSpec
 
   implicit override val patience = PatienceConfig(5.seconds.dilated(system), 200.millis)
 
+  "Unbinding" should {
+    "not allow new connections" in new TestSetup {
+      Await.result(serverBinding.unbind(), 1.second) should ===(Done)
+
+      // immediately trying a new connection should cause `Connection refused` since we unbind immediately:
+      val r = makeRequest(ensureNewConnection = true)
+      val ex = intercept[StreamTcpException] {
+        Await.result(r, 2.seconds)
+      }
+      ex.getMessage should include("Connection refused")
+      serverBinding.terminate(hardDeadline = 2.seconds)
+    }
+  }
+
   "Graceful termination" should {
 
     "stop accepting new connections" in new TestSetup {
@@ -58,6 +73,68 @@ class GracefulTerminationSpec
         Await.result(r3, 2.seconds)
       }
       ex.getMessage should include("Connection refused")
+    }
+
+    "fail chunked response streams" in new TestSetup {
+      val clientSystem = ActorSystem("client")
+      val r1 =
+        Http()(clientSystem).singleRequest(nextRequest(), connectionContext = clientConnectionContext, settings = basePoolSettings)
+
+      // reply with an infinite entity stream
+      val chunks = Source
+        .fromIterator(() => Iterator.from(1).map(v => ChunkStreamPart(s"reply$v,")))
+        .throttle(1, 300.millis)
+      reply(_ => HttpResponse(entity = HttpEntity.Chunked(ContentTypes.`text/plain(UTF-8)`, chunks)))
+
+      // start reading the response
+      val response = r1.futureValue.entity.dataBytes
+        .via(Framing.delimiter(ByteString(","), 20))
+        .runWith(TestSink.probe[ByteString])
+      response.requestNext().utf8String should ===("reply1")
+
+      try {
+        val termination = serverBinding.terminate(hardDeadline = 50.millis)
+        response.request(20)
+        // local testing shows the stream fails long after the 50 ms deadline
+        response.expectNext().utf8String should ===("reply2")
+        eventually {
+          response.expectEvent() shouldBe a[OnError]
+        }
+        termination.futureValue shouldBe Http.HttpServerTerminated
+      } finally {
+        TestKit.shutdownActorSystem(clientSystem)
+      }
+    }
+
+    "fail close delimited response streams" ignore new TestSetup {
+      val clientSystem = ActorSystem("client")
+      val r1 =
+        Http()(clientSystem).singleRequest(nextRequest, connectionContext = clientConnectionContext, settings = basePoolSettings)
+
+      // reply with an infinite entity stream
+      val chunks = Source
+        .fromIterator(() => Iterator.from(1).map(v => ByteString(s"reply$v,")))
+        .throttle(1, 300.millis)
+      reply(_ => HttpResponse(entity = HttpEntity.CloseDelimited(ContentTypes.`text/plain(UTF-8)`, chunks)))
+
+      // start reading the response
+      val response = r1.futureValue.entity.dataBytes
+        .via(Framing.delimiter(ByteString(","), 20))
+        .runWith(TestSink.probe[ByteString])
+      response.requestNext().utf8String should ===("reply1")
+
+      try {
+        val termination = serverBinding.terminate(hardDeadline = 50.millis)
+        response.request(20)
+        // local testing shows the stream fails long after the 50 ms deadline
+        response.expectNext().utf8String should ===("reply2")
+        eventually {
+          response.expectEvent() shouldBe a[OnError]
+        }
+        termination.futureValue shouldBe Http.HttpServerTerminated
+      } finally {
+        TestKit.shutdownActorSystem(clientSystem)
+      }
     }
 
     "provide whenTerminated future that completes once server has completed termination (no connections)" in new TestSetup {
@@ -120,7 +197,7 @@ class GracefulTerminationSpec
         super.basePoolSettings
           .withTransport(new ClientTransport {
             override def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[Http.OutgoingConnection]] = {
-              ClientTransport.TCP.connectTo(host, port, settings)
+              ClientTransport.TCP.connectTo(serverBinding.localAddress.getHostName, serverBinding.localAddress.getPort, settings)
                 .mapMaterializedValue { conn =>
                   val result = Promise[Http.OutgoingConnection]()
                   conn.onComplete {
@@ -204,17 +281,13 @@ class GracefulTerminationSpec
     (the[StreamTcpException] thrownBy Await.result(r, 1.second)).getMessage should endWith("Connection refused")
 
   class TestSetup(overrideResponse: Option[HttpResponse] = None) {
-    val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
     val counter = new AtomicInteger()
     var idleTimeoutBaseForUniqueness = 10
 
-    def nextRequest = HttpRequest(uri = s"https://$hostname:$port/${counter.incrementAndGet()}", entity = "hello-from-client")
+    def nextRequest() = HttpRequest(uri = s"https://akka.example.org/${counter.incrementAndGet()}", entity = "hello-from-client")
 
     val serverConnectionContext = ExampleHttpContexts.exampleServerContext
-    // Disable hostname verification as ExampleHttpContexts.exampleClientContext sets hostname as akka.example.org
-    val sslConfigSettings = SSLConfigSettings().withLoose(SSLLooseConfig().withDisableHostnameVerification(true))
-    val sslConfig = AkkaSSLConfig().withSettings(sslConfigSettings)
-    val clientConnectionContext = ConnectionContext.https(ExampleHttpContexts.exampleClientContext.sslContext, Some(sslConfig))
+    val clientConnectionContext = ConnectionContext.https(ExampleHttpContexts.exampleClientContext.sslContext)
 
     val serverQueue = new ArrayBlockingQueue[(HttpRequest, Promise[HttpResponse])](16)
 
@@ -252,10 +325,12 @@ class GracefulTerminationSpec
     val routes: Flow[HttpRequest, HttpResponse, Any] = Flow[HttpRequest].mapAsync(1)(handler)
     val serverBinding =
       Http()
-        .bindAndHandle(routes, hostname, port, connectionContext = serverConnectionContext, settings = serverSettings)
+        .bindAndHandle(routes, "localhost", 0, connectionContext = serverConnectionContext, settings = serverSettings)
         .futureValue
 
-    def basePoolSettings = ConnectionPoolSettings(system).withBaseConnectionBackoff(Duration.Zero)
+    def basePoolSettings = ConnectionPoolSettings(system)
+      .withBaseConnectionBackoff(Duration.Zero)
+      .withTransport(ExampleHttpContexts.proxyTransport(serverBinding.localAddress))
 
     def makeRequest(ensureNewConnection: Boolean = false): Future[HttpResponse] = {
       if (ensureNewConnection) {
@@ -263,9 +338,9 @@ class GracefulTerminationSpec
         idleTimeoutBaseForUniqueness += 1
         val clientSettings = basePoolSettings.withIdleTimeout(idleTimeoutBaseForUniqueness.seconds)
 
-        Http().singleRequest(nextRequest, connectionContext = clientConnectionContext, settings = clientSettings)
+        Http().singleRequest(nextRequest(), connectionContext = clientConnectionContext, settings = clientSettings)
       } else {
-        Http().singleRequest(nextRequest, connectionContext = clientConnectionContext, settings = basePoolSettings)
+        Http().singleRequest(nextRequest(), connectionContext = clientConnectionContext, settings = basePoolSettings)
       }
     }
   }

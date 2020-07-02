@@ -10,7 +10,6 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.Done
 import akka.actor.ActorSystem
 import akka.http.impl.util._
-import akka.event.LoggingAdapter
 import akka.http.impl.engine.client.PoolFlow.{ RequestContext, ResponseContext }
 import akka.http.impl.engine.client.pool.NewHostConnectionPool
 import akka.http.impl.engine.ws.ByteStringSinkProbe
@@ -57,9 +56,6 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
     ConnectionPoolSettings(system)
       .withMaxConnections(1)
 
-  trait PoolImplementation {
-    def get: (Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]], ConnectionPoolSettings, LoggingAdapter) => Flow[RequestContext, ResponseContext, Any]
-  }
   trait ClientServerImplementation {
     /** Returns a client / server implementation that include the kill switch flow in the middle */
     def get(connectionKillSwitch: SharedKillSwitch): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, Future[Http.OutgoingConnection]]
@@ -73,18 +69,13 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
     def failsHandlerInputWhenHandlerOutputFails: Boolean
   }
 
-  testSet(poolImplementation = NewPoolImplementation, clientServerImplementation = PassThrough)
-  testSet(poolImplementation = NewPoolImplementation, clientServerImplementation = AkkaHttpEngineNoNetwork)
-  testSet(poolImplementation = NewPoolImplementation, clientServerImplementation = AkkaHttpEngineTCP)
+  testSet(clientServerImplementation = PassThrough)
+  testSet(clientServerImplementation = AkkaHttpEngineNoNetwork)
+  testSet(clientServerImplementation = AkkaHttpEngineTCP)
   //testSet(poolImplementation = NewPoolImplementation, clientServerImplementation = AkkaHttpEngineTLS)
 
-  //testSet(poolImplementation = LegacyPoolImplementation, clientServerImplementation = PassThrough)
-  //testSet(poolImplementation = LegacyPoolImplementation, clientServerImplementation = AkkaHttpEngineNoNetwork)
-  //testSet(poolImplementation = LegacyPoolImplementation, clientServerImplementation = AkkaHttpEngineTCP)
-  //testSet(poolImplementation = OldPoolImplementation, clientServerImplementation = AkkaHttpEngineTLS)
-
-  def testSet(poolImplementation: PoolImplementation, clientServerImplementation: ClientServerImplementation) =
-    s"$poolImplementation on $clientServerImplementation" should {
+  def testSet(clientServerImplementation: ClientServerImplementation) =
+    s"NewPoolImplementation on $clientServerImplementation" should {
       implicit class EnhancedIn(name: String) {
         def inWithShutdown(body: => TestSetup): Unit = name in {
           val res = body
@@ -200,7 +191,6 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
         conn1.expectRequestToPath("/2")
       }
       "time out quickly when response entity stream is not subscribed fast enough" inWithShutdown new SetupWithServerProbes {
-        pendingIn(targetImpl = LegacyPoolImplementation) // not implemented in legacy
         pendingIn(targetTrans = PassThrough) // infra seems to be missing something
 
         // FIXME: set subscription timeout to value relating to below `expectNoMessage`
@@ -301,7 +291,6 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
         // client already received response, no need to report error another time
       }
       "create a new connection when previous one was closed regularly between requests" inWithShutdown new SetupWithServerProbes {
-        pendingIn(targetImpl = LegacyPoolImplementation) // flaky test, no reason to debug old client pool issues for now
         pushRequest(HttpRequest(uri = "/simple"))
 
         val conn1 = expectNextConnection()
@@ -317,7 +306,6 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
         expectResponseEntityAsString() shouldEqual "response"
       }
       "create a new connection when previous one was closed regularly between requests without sending a `Connection: close` header first" inWithShutdown new SetupWithServerProbes {
-        pendingIn(targetImpl = LegacyPoolImplementation) // flaky test, no reason to debug old client pool issues for now
         pushRequest(HttpRequest(uri = "/simple"))
 
         val conn1 = expectNextConnection()
@@ -339,7 +327,6 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
         expectResponseEntityAsString() shouldEqual "response"
       }
       "create a new connection when previous one failed between requests" inWithShutdown new SetupWithServerProbes {
-        pendingIn(targetImpl = LegacyPoolImplementation) // flaky test, no reason to debug old client pool issues for now
         pushRequest(HttpRequest(uri = "/simple"))
 
         val conn1 = expectNextConnection()
@@ -364,7 +351,6 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
         conn1.expectRequest()
       }
       "re-establish min-connections when number of open connections falls below threshold" inWithShutdown new SetupWithServerProbes(_.withMaxConnections(2).withMinConnections(1)) {
-        pendingIn(targetImpl = LegacyPoolImplementation) // has failed a few times but I didn't check why exactly
 
         // expect a new connection immediately
         val conn1 = expectNextConnection()
@@ -481,9 +467,8 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
         }
       }
 
-      def pendingIn(targetImpl: PoolImplementation = null, targetTrans: ClientServerImplementation = null): Unit =
-        if ((targetImpl == null || poolImplementation == targetImpl) &&
-          (targetTrans == null || clientServerImplementation == targetTrans))
+      def pendingIn(targetTrans: ClientServerImplementation): Unit =
+        if (clientServerImplementation == targetTrans)
           pending
 
       abstract class TestSetup {
@@ -494,11 +479,7 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
 
         protected def settings: ConnectionPoolSettings
 
-        lazy val impl = poolImplementation.get(
-          server,
-          settings,
-          system.log
-        )
+        lazy val impl = NewHostConnectionPool(server, settings, system.log)
         val stream =
           Source.fromPublisher(requestIn)
             .via(impl)
@@ -664,13 +645,6 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
       }
     }
 
-  case object LegacyPoolImplementation extends PoolImplementation {
-    override def get = PoolFlow(_, _, _)
-  }
-  case object NewPoolImplementation extends PoolImplementation {
-    override def get = NewHostConnectionPool(_, _, _)
-  }
-
   /** Transport that just passes through requests / responses */
   case object PassThrough extends ClientServerImplementation {
     def failsHandlerInputWhenHandlerOutputFails: Boolean = true
@@ -734,7 +708,7 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
     def failsHandlerInputWhenHandlerOutputFails: Boolean = false
 
     override def get(connectionKillSwitch: SharedKillSwitch): BidiFlow[HttpResponse, HttpResponse, HttpRequest, HttpRequest, Future[Http.OutgoingConnection]] =
-      Http().serverLayerImpl() atop
+      Http().serverLayer() atop
         TLSPlacebo() atop
         BidiFlow.fromFlows(connectionKillSwitch.flow[ByteString], connectionKillSwitch.flow[ByteString]) atop
         TLSPlacebo().reversed atop

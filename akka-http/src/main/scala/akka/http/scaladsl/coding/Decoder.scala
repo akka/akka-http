@@ -5,6 +5,7 @@
 package akka.http.scaladsl.coding
 
 import akka.NotUsed
+import akka.annotation.InternalApi
 import akka.http.scaladsl.model._
 import akka.stream.{ FlowShape, Materializer }
 import akka.stream.stage.GraphStage
@@ -37,7 +38,13 @@ object Decoder {
   val MaxBytesPerChunkDefault: Int = 65536
 }
 
-/** A decoder that is implemented in terms of a [[Stage]] */
+/**
+ * Internal API
+ *
+ * A decoder that is implemented in terms of a [[Stage]]
+ */
+@InternalApi
+@deprecated("StreamDecoder is internal API and will be moved or removed in the future", since = "10.2.0")
 trait StreamDecoder extends Decoder { outer =>
   protected def newDecompressorStage(maxBytesPerChunk: Int): () => GraphStage[FlowShape[ByteString, ByteString]]
 

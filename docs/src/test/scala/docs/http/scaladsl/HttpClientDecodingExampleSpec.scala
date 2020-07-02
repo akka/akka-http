@@ -15,7 +15,7 @@ class HttpClientDecodingExampleSpec extends AkkaSpec with CompileOnlySpec with S
     //#single-request-decoding-example
     import akka.actor.ActorSystem
     import akka.http.scaladsl.Http
-    import akka.http.scaladsl.coding.{ Gzip, Deflate, NoCoding }
+    import akka.http.scaladsl.coding.Coders
     import akka.http.scaladsl.model._, headers.HttpEncodings
 
     import scala.concurrent.Future
@@ -34,14 +34,14 @@ class HttpClientDecodingExampleSpec extends AkkaSpec with CompileOnlySpec with S
     def decodeResponse(response: HttpResponse): HttpResponse = {
       val decoder = response.encoding match {
         case HttpEncodings.gzip =>
-          Gzip
+          Coders.Gzip
         case HttpEncodings.deflate =>
-          Deflate
+          Coders.Deflate
         case HttpEncodings.identity =>
-          NoCoding
+          Coders.NoCoding
         case other =>
           log.warning(s"Unknown encoding [$other], not decoding")
-          NoCoding
+          Coders.NoCoding
       }
 
       decoder.decodeMessage(response)

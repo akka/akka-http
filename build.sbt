@@ -39,22 +39,22 @@ inThisBuild(Def.settings(
   onLoad in Global := {
     sLog.value.info(s"Building Akka HTTP ${version.value} against Akka ${AkkaDependency.akkaVersion}")
     (onLoad in Global).value
-  }
+  },
 ))
 
 lazy val root = Project(
     id = "akka-http-root",
     base = file(".")
   )
-  .enablePlugins(UnidocRoot, NoPublish, DeployRsync, AggregatePRValidation)
+  .enablePlugins(UnidocRoot, NoPublish, PublishRsyncPlugin, AggregatePRValidation)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .settings(
     // Unidoc doesn't like macro definitions
-    unidocProjectExcludes := Seq(parsing),
+    unidocProjectExcludes := Seq(parsing, compatibilityTests, docs, httpTests, httpJmhBench),
     // Support applying macros in unidoc:
     scalaMacroSupport,
     unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get,
-    deployRsyncArtifact := {
+    publishRsyncArtifacts := {
       val unidocArtifacts = (unidoc in Compile).value
       // unidoc returns a Seq[File] which contains directories of generated API docs, one for
       // Java, one for Scala. It's not specified which is which, though.
@@ -281,6 +281,8 @@ lazy val httpJackson =
   httpMarshallersJavaSubproject("jackson")
     .settings(AutomaticModuleName.settings("akka.http.marshallers.jackson"))
     .addAkkaModuleDependency("akka-stream", "provided")
+    .addAkkaModuleDependency("akka-stream-testkit", "test")
+    .dependsOn(httpTestkit % "test")
     .settings(Dependencies.httpJackson)
     .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
@@ -317,7 +319,7 @@ def httpMarshallersJavaSubproject(name: String) =
   .enablePlugins(ReproducibleBuildsPlugin)
 
 lazy val docs = project("docs")
-  .enablePlugins(AkkaParadoxPlugin, NoPublish, DeployRsync)
+  .enablePlugins(AkkaParadoxPlugin, NoPublish, PublishRsyncPlugin)
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .addAkkaModuleDependency("akka-stream", "provided", AkkaDependency.docs)
   .addAkkaModuleDependency("akka-actor-typed", "provided", AkkaDependency.docs)
@@ -355,6 +357,8 @@ lazy val docs = project("docs")
       "project.name" -> "Akka HTTP",
       "canonical.base_url" -> "https://doc.akka.io/docs/akka-http/current",
       "akka.version" -> AkkaDependency.docs.version,
+      "akka.minimum.version25" -> AkkaDependency.minimumExpectedAkkaVersion,
+      "akka.minimum.version26" -> AkkaDependency.minimumExpectedAkka26Version,
       "scala.binary_version" -> scalaBinaryVersion.value, // to be consistent with Akka build
       "scala.binaryVersion" -> scalaBinaryVersion.value,
       "scaladoc.version" -> scalaVersion.value,
@@ -388,7 +392,8 @@ lazy val docs = project("docs")
     apidocRootPackage := "akka",
     Formatting.docFormatSettings,
     additionalTasks in ValidatePR += paradox in Compile,
-    deployRsyncArtifact := List((paradox in Compile).value -> gustavDir("docs").value),
+    publishRsyncHost in ThisBuild := "akkarepo@gustav.akka.io",
+    publishRsyncArtifacts := List((paradox in Compile).value -> gustavDir("docs").value),
   )
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
 

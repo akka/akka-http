@@ -4,7 +4,8 @@
 
 package docs.http.scaladsl
 
-import akka.actor.ActorSystem
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
@@ -14,9 +15,9 @@ object HttpServerRoutingMinimal {
 
   def main(args: Array[String]): Unit = {
 
-    implicit val system = ActorSystem("my-system")
+    implicit val system = ActorSystem(Behaviors.empty, "my-system")
     // needed for the future flatMap/onComplete in the end
-    implicit val executionContext = system.dispatcher
+    implicit val executionContext = system.executionContext
 
     val route =
       path("hello") {

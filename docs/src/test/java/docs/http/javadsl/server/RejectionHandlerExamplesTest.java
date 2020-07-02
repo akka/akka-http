@@ -26,8 +26,6 @@ import static akka.http.javadsl.server.Directives.decodeRequestWith;
 import static akka.http.javadsl.server.Directives.get;
 import static akka.http.javadsl.server.Directives.path;
 import static akka.http.javadsl.server.Directives.post;
-import static akka.http.javadsl.server.Directives.route;
-
 //#example1
 //#custom-handler-example-java
 import static akka.http.javadsl.server.Directives.complete;

@@ -262,9 +262,9 @@ abstract class RequestParserSpec(mode: String, newLine: String) extends AnyFreeS
       "with incorrect but harmless whitespace after chunk size" in new Test {
         Seq(
           start,
-          """|0\u0020\u0020
-             |
-             |""") should generalMultiParseTo(
+          s"""|0${"  " /* explicit trailing spaces */ }
+              |
+              |""") should generalMultiParseTo(
             Right(baseRequest.withEntity(Chunked(`application/pdf`, source(LastChunk)))))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }

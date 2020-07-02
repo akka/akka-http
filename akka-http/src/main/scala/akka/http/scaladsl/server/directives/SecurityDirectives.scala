@@ -73,7 +73,7 @@ trait SecurityDirectives {
    * @group security
    */
   def extractCredentials: Directive1[Option[HttpCredentials]] =
-    optionalHeaderValueByType[Authorization](()).map(_.map(_.credentials))
+    optionalHeaderValueByType(Authorization).map(_.map(_.credentials))
 
   /**
    * Wraps the inner route with Http Basic authentication support using a given `Authenticator[T]`.

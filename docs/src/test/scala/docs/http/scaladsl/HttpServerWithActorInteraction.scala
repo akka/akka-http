@@ -4,54 +4,65 @@
 
 package docs.http.scaladsl
 
-import akka.actor.{ Actor, ActorSystem, Props, ActorLogging }
+import akka.actor.typed.scaladsl.AskPattern._
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ ActorRef, ActorSystem }
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
-import akka.pattern.ask
 import akka.util.Timeout
 import spray.json.DefaultJsonProtocol._
-import scala.concurrent.Future
+
 import scala.concurrent.duration._
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.io.StdIn
 
 object HttpServerWithActorInteraction {
 
-  case class Bid(userId: String, offer: Int)
-  case object GetBids
-  case class Bids(bids: List[Bid])
+  object Auction {
 
-  class Auction extends Actor with ActorLogging {
-    var bids = List.empty[Bid]
-    def receive = {
-      case bid @ Bid(userId, offer) =>
-        bids = bids :+ bid
-        log.info(s"Bid complete: $userId, $offer")
-      case GetBids => sender() ! Bids(bids)
-      case _       => log.info("Invalid message")
+    sealed trait Message
+
+    case class Bid(userId: String, offer: Int) extends Message
+
+    case class GetBids(replyTo: ActorRef[Bids]) extends Message
+
+    case class Bids(bids: List[Bid])
+
+    def apply: Behaviors.Receive[Message] = apply(List.empty)
+
+    def apply(bids: List[Bid]): Behaviors.Receive[Message] = Behaviors.receive {
+      case (ctx, bid @ Bid(userId, offer)) =>
+        ctx.log.info(s"Bid complete: $userId, $offer")
+        apply(bids :+ bid)
+      case (_, GetBids(replyTo)) =>
+        replyTo ! Bids(bids)
+        Behaviors.same
     }
+
   }
 
   // these are from spray-json
-  implicit val bidFormat = jsonFormat2(Bid)
-  implicit val bidsFormat = jsonFormat1(Bids)
+  implicit val bidFormat = jsonFormat2(Auction.Bid)
+  implicit val bidsFormat = jsonFormat1(Auction.Bids)
 
   def main(args: Array[String]): Unit = {
-    implicit val system = ActorSystem()
+    implicit val system: ActorSystem[Auction.Message] = ActorSystem(Auction.apply, "auction")
     // needed for the future flatMap/onComplete in the end
-    implicit val executionContext = system.dispatcher
+    implicit val executionContext: ExecutionContext = system.executionContext
 
-    val auction = system.actorOf(Props[Auction], "auction")
+    val auction: ActorRef[Auction.Message] = system
+    import Auction._
 
     val route =
       path("auction") {
         concat(
           put {
-            parameter("bid".as[Int], "user") { (bid, user) =>
+            parameters("bid".as[Int], "user") { (bid, user) =>
               // place a bid, fire-and-forget
               auction ! Bid(user, bid)
-              complete((StatusCodes.Accepted, "bid placed"))
+              complete(StatusCodes.Accepted, "bid placed")
             }
           },
           get {

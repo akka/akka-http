@@ -11,15 +11,15 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorSystem
 import akka.event.Logging
-import akka.http.impl.engine.client.PoolMasterActor.PoolInterfaceRunning
+import akka.http.impl.engine.client.PoolMasterActor.{ PoolInterfaceRunning, PoolInterfaceStatus, PoolStatus }
 import akka.http.impl.engine.server.ServerTerminator
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util._
-import akka.http.scaladsl.Http.{ HttpServerTerminated, HttpTerminated, OutgoingConnection }
+import akka.http.scaladsl.Http.{ HostConnectionPool, HostConnectionPoolImpl, HttpServerTerminated, HttpTerminated, OutgoingConnection }
 import akka.http.scaladsl.model.HttpEntity.{ Chunk, ChunkStreamPart, Chunked, LastChunk }
 import akka.http.scaladsl.model.{ HttpEntity, _ }
 import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, PoolImplementation, ServerSettings }
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
 import akka.http.scaladsl.{ ClientTransport, ConnectionContext, Http }
 import akka.stream.Attributes
 import akka.stream.{ OverflowStrategy, QueueOfferResult }
@@ -36,14 +36,24 @@ import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
-abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
-  extends AkkaSpecWithMaterializer("""
+class NewConnectionPoolSpec extends AkkaSpecWithMaterializer("""
     akka.io.tcp.windows-connection-abort-workaround-enabled = auto
     akka.io.tcp.trace-logging = off
     akka.test.single-expect-default = 5000 # timeout for checks, adjust as necessary, set here to 5s
     akka.scheduler.tick-duration = 1ms     # to make race conditions in Pool idle-timeout more likely
     akka.http.client.log-unencrypted-network-bytes = 200
                                           """) { testSuite =>
+
+  implicit class WithPoolStatus(val poolId: PoolId) {
+    def poolStatus(): Future[Option[PoolInterfaceStatus]] = {
+      val statusPromise = Promise[Option[PoolInterfaceStatus]]()
+      Http().poolMaster.ref ! PoolStatus(poolId, statusPromise)
+      statusPromise.future
+    }
+  }
+  implicit class WithPoolId(val hcp: HostConnectionPool) {
+    def poolId: PoolId = hcp.asInstanceOf[HostConnectionPoolImpl].poolId
+  }
 
   // FIXME: Extract into proper util class to be reusable
   lazy val ConnectionResetByPeerMessage: String = {
@@ -128,7 +138,6 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
     }
 
     "automatically open a new connection after configured max-connection-lifetime elapsed" in new TestSetup(autoAccept = true) {
-      if (poolImplementation == PoolImplementation.Legacy) { testSuite.cancel("Not implemented for legacy pool") }
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int](
         maxConnections = 1,
         minConnections = 1,
@@ -254,7 +263,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
       // now respond to request 2
       handlerSetter(req => Future.successful(HttpResponse()))
 
-      val (Success(_), _) = responseOut.expectNext()
+      { val (Success(_), _) = responseOut.expectNext() } // extra braces to avoid warning that TestSetup grows fields
     }
 
     "retry failed requests" in new TestSetup(autoAccept = true) {
@@ -278,10 +287,6 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
     }
 
     "respect the configured `maxRetries` value" in new TestSetup(autoAccept = true) {
-      // The legacy implementation is known to sometimes retry only 2 times instead of 4 in this test...
-      if (poolImplementation == PoolImplementation.Legacy)
-        pending
-
       val (requestIn, responseOut, responseOutSub, _) = cachedHostConnectionPool[Int](maxRetries = 4)
 
       requestIn.sendNext(HttpRequest(uri = "/a") -> 42)
@@ -304,13 +309,13 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
 
     "automatically shutdown after configured timeout periods" in new TestSetup() {
       val (_, _, _, hcp) = cachedHostConnectionPool[Int](idleTimeout = 1.second)
-      val gateway = hcp.gateway
+      val gateway = hcp.poolId
       Await.result(gateway.poolStatus(), 1500.millis.dilated).get shouldBe a[PoolInterfaceRunning]
       awaitCond({ Await.result(gateway.poolStatus(), 1500.millis.dilated).isEmpty }, 2000.millis.dilated)
     }
     "automatically shutdown after configured timeout periods but only after streaming response is finished" in new TestSetup() {
       val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int](idleTimeout = 200.millis)
-      val gateway = hcp.gateway
+      val gateway = hcp.poolId
 
       lazy val responseEntityPub = TestPublisher.probe[ByteString]()
 
@@ -347,7 +352,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
     "transparently restart after idle shutdown" in new TestSetup() {
       val (requestIn, responseOut, responseOutSub, hcp) = cachedHostConnectionPool[Int](idleTimeout = 1.second)
 
-      val gateway = hcp.gateway
+      val gateway = hcp.poolId
       Await.result(gateway.poolStatus(), 1500.millis.dilated).get shouldBe a[PoolInterfaceRunning]
       awaitCond({ Await.result(gateway.poolStatus(), 1500.millis.dilated).isEmpty }, 2000.millis.dilated)
 
@@ -355,7 +360,8 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
 
       responseOutSub.request(1)
       acceptIncomingConnection()
-      val (Success(_), 42) = responseOut.expectNext()
+
+      { val (Success(_), 42) = responseOut.expectNext() } // extra braces to avoid warning that TestSetup grows fields
     }
 
     "don't drop requests during idle-timeout shutdown" in new TestSetup(autoAccept = true) {
@@ -382,7 +388,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
       val minConnection = 1
       val (requestIn, responseOut, responseOutSub, hcpMinConnection) =
         cachedHostConnectionPool[Int](idleTimeout = 100.millis, minConnections = minConnection)
-      val gatewayConnection = hcpMinConnection.gateway
+      val gatewayConnection = hcpMinConnection.poolId
 
       acceptIncomingConnection()
       requestIn.sendNext(HttpRequest(uri = "/minimumslots/1", headers = immutable.Seq(close)) -> 42)
@@ -412,7 +418,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
         responseOut.expectNextN(minConnections)
       }
 
-      val gatewayConnections = hcpMinConnection.gateway
+      val gatewayConnections = hcpMinConnection.poolId
       condHolds(1000.millis.dilated) { () =>
         val status = gatewayConnections.poolStatus()
         Await.result(status, 100.millis.dilated).get shouldBe a[PoolInterfaceRunning]
@@ -421,7 +427,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
 
     "shutdown if idle and min connection has been set to 0" in new TestSetup() {
       val (_, _, _, hcp) = cachedHostConnectionPool[Int](idleTimeout = 1.second, minConnections = 0)
-      val gateway = hcp.gateway
+      val gateway = hcp.poolId
       Await.result(gateway.poolStatus(), 1500.millis.dilated).get shouldBe a[PoolInterfaceRunning]
       awaitCond({ Await.result(gateway.poolStatus(), 1500.millis.dilated).isEmpty }, 2000.millis.dilated)
     }
@@ -497,9 +503,6 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
      * of the request entity.
      */
     "support receiving a response entity even when the request already failed" ignore new TestSetup(ServerSettings(system).withRawRequestUriHeader(true), autoAccept = true) {
-      if (poolImplementation == PoolImplementation.Legacy)
-        pending
-
       val responseSourceQueuePromise = Promise[SourceQueueWithComplete[ChunkStreamPart]]()
 
       override def testServerHandler(connNr: Int): HttpRequest => HttpResponse = {
@@ -698,7 +701,6 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
           .withIdleTimeout(idleTimeout.dilated)
           .withMaxConnectionLifetime(maxConnectionLifetime)
           .withConnectionSettings(ccSettings)
-          .withPoolImplementation(poolImplementation)
 
       flowTestBench(
         Http().cachedHostConnectionPool[T](serverHostName, serverPort, settings))
@@ -722,7 +724,6 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
           .withPipeliningLimit(pipeliningLimit)
           .withIdleTimeout(idleTimeout.dilated)
           .withConnectionSettings(ccSettings)
-          .withPoolImplementation(poolImplementation)
       flowTestBench(Http().superPool[T](settings = settings))
     }
 
@@ -791,7 +792,6 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
     val poolSettings =
       ConnectionPoolSettings(system)
         .withConnectionSettings(ClientConnectionSettings(system).withIdleTimeout(CustomIdleTimeout).withTransport(transport))
-        .withPoolImplementation(poolImplementation)
 
     val responseFuture = issueRequest(HttpRequest(uri = "http://example.org/test"), settings = poolSettings)
 
@@ -812,6 +812,3 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
     response.entity.dataBytes.utf8String.awaitResult(10.seconds) should ===("Hello World!")
   }
 }
-
-class LegacyConnectionPoolSpec extends ConnectionPoolSpec(PoolImplementation.Legacy)
-class NewConnectionPoolSpec extends ConnectionPoolSpec(PoolImplementation.New)

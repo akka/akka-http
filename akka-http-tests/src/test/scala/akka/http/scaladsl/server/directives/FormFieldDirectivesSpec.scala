@@ -62,7 +62,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
     }
     "extract StrictForm.FileData from a multipart part" in {
       Post("/", multipartFormWithFile) ~> {
-        formFields('file.as[StrictForm.FileData]) {
+        formFields("file".as[StrictForm.FileData]) {
           case StrictForm.FileData(name, HttpEntity.Strict(ct, data)) =>
             complete(s"type ${ct.mediaType} length ${data.length} filename ${name.get}")
         }
@@ -70,7 +70,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
     }
     "reject the request with a MissingFormFieldRejection if a required form field is missing" in {
       Post("/", urlEncodedForm) ~> {
-        formFields("firstName", "age", 'sex, "VIP".withDefault(false)) { (firstName, age, sex, vip) =>
+        formFields("firstName", "age", "sex", "VIP".withDefault(false)) { (firstName, age, sex, vip) =>
           complete(firstName + age + sex + vip)
         }
       } ~> check { rejection shouldEqual MissingFormFieldRejection("sex") }
@@ -87,7 +87,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
       }
     "work even if only a FromStringUnmarshaller is available for a multipart field with custom Content-Type" in {
       Post("/", multipartFormWithTextHtml) ~> {
-        formFields(("firstName", "age", "super".withDefault(false))) { (firstName, age, vip) =>
+        formFields("firstName", "age", "super".withDefault(false)) { (firstName, age, vip) =>
           complete(firstName + age + vip)
         }
       } ~> check {
@@ -110,7 +110,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
           .transformEntityDataBytes(AllowMaterializationOnlyOnce())
 
       request.entity.contentType shouldEqual ContentTypes.`application/x-www-form-urlencoded`
-      request.entity shouldNot be('strict)
+      request.entity.isStrict should be(false)
 
       request ~> {
         formFields("firstName", "age".as[Int], "sex".optional, "VIP".withDefault(false)) { (firstName, age, sex, vip) =>
@@ -126,7 +126,7 @@ class FormFieldDirectivesSpec extends RoutingSpec {
           .transformEntityDataBytes(AllowMaterializationOnlyOnce())
 
       request.entity.contentType shouldEqual ContentTypes.`application/x-www-form-urlencoded`
-      request.entity shouldNot be('strict)
+      request.entity.isStrict should be(false)
 
       request ~> {
         formFields("firstName") { firstName =>
@@ -146,12 +146,11 @@ class FormFieldDirectivesSpec extends RoutingSpec {
           .transformEntityDataBytes(AllowMaterializationOnlyOnce())
 
       request.entity.contentType shouldEqual ContentTypes.`application/x-www-form-urlencoded`
-      request.entity shouldNot be('strict)
+      request.entity.isStrict should be(false)
 
       request ~> {
         concat(
           formFields("firstName", "age".as[Int]) { (firstName, age) =>
-            println("firstName", age)
             reject
           },
           formFields("firstName", "age".as[Int]) { (firstName, age) =>
@@ -168,17 +167,17 @@ class FormFieldDirectivesSpec extends RoutingSpec {
   "The 'formField' requirement directive" should {
     "block requests that do not contain the required formField" in {
       Post("/", urlEncodedForm) ~> {
-        formField("name".requiredValue("Mr. Mike")) { completeOk }
+        formField("name".requiredValue("Mr. Mike")) { _ => completeOk }
       } ~> check { handled shouldEqual false }
     }
     "block requests that contain the required parameter but with an unmatching value" in {
       Post("/", urlEncodedForm) ~> {
-        formField("firstName".requiredValue("Pete")) { completeOk }
+        formField("firstName".requiredValue("Pete")) { _ => completeOk }
       } ~> check { handled shouldEqual false }
     }
     "let requests pass that contain the required parameter with its required value" in {
       Post("/", urlEncodedForm) ~> {
-        formField("firstName".requiredValue("Mike")) { completeOk }
+        formField("firstName".requiredValue("Mike")) { _ => completeOk }
       } ~> check { response shouldEqual Ok }
     }
   }
@@ -186,17 +185,17 @@ class FormFieldDirectivesSpec extends RoutingSpec {
   "The 'formField' requirement with explicit unmarshaller directive" should {
     "block requests that do not contain the required formField" in {
       Post("/", urlEncodedForm) ~> {
-        formField("oldAge".as(HexInt).requiredValue(78)) { completeOk }
+        formField("oldAge".as(HexInt).requiredValue(78)) { _ => completeOk }
       } ~> check { handled shouldEqual false }
     }
     "block requests that contain the required parameter but with an unmatching value" in {
       Post("/", urlEncodedForm) ~> {
-        formField("age".as(HexInt).requiredValue(78)) { completeOk }
+        formField("age".as(HexInt).requiredValue(78)) { _ => completeOk }
       } ~> check { handled shouldEqual false }
     }
     "let requests pass that contain the required parameter with its required value" in {
       Post("/", urlEncodedForm) ~> {
-        formField("age".as(HexInt).requiredValue(66) /* hex! */ ) { completeOk }
+        formField("age".as(HexInt).requiredValue(66) /* hex! */ ) { _ => completeOk }
       } ~> check { response shouldEqual Ok }
     }
   }

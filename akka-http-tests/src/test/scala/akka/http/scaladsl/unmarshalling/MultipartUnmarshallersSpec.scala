@@ -4,37 +4,27 @@
 
 package akka.http.scaladsl.unmarshalling
 
+import akka.http.impl.util._
+import akka.http.scaladsl.model.MediaTypes._
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers._
+import akka.http.scaladsl.util.FastFuture._
+import akka.stream.scaladsl._
+import akka.testkit._
+import akka.util.ByteString
+import org.scalatest.matchers.Matcher
+
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext, Future }
-import org.scalatest.matchers.Matcher
-import org.scalatest.BeforeAndAfterAll
-import akka.http.scaladsl.testkit.ScalatestUtils
-import akka.util.ByteString
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl._
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.util.FastFuture._
-import akka.http.impl.util._
-import akka.http.scaladsl.model.headers._
-import MediaTypes._
-import akka.testkit._
-import com.typesafe.config.ConfigFactory
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
 
-trait MultipartUnmarshallersSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll with ScalatestUtils {
-  implicit val system = ActorSystem(getClass.getSimpleName)
-  implicit val materializer = ActorMaterializer()
+trait MultipartUnmarshallersSpec extends AkkaSpecWithMaterializer {
   implicit val ec: ExecutionContext = system.dispatcher
 
   def lineFeed: String
 
-  override val testConfig = ConfigFactory.load()
+  "The MultipartUnmarshallers." should {
 
-  "The MultipartUnmarshallers." - {
-
-    "multipartGeneralUnmarshaller should correctly unmarshal 'multipart/*' content with" - {
+    "multipartGeneralUnmarshaller should correctly unmarshal 'multipart/*' content with" should {
       "an empty part" in {
         val entity = HttpEntity(
           `multipart/mixed` withBoundary "XYZABC",
@@ -226,7 +216,7 @@ trait MultipartUnmarshallersSpec extends AnyFreeSpec with Matchers with BeforeAn
       }
     }
 
-    "multipartGeneralUnmarshaller should reject illegal multipart content with" - {
+    "multipartGeneralUnmarshaller should reject illegal multipart content with" should {
       "an empty entity" in {
         Await.result(Unmarshal(HttpEntity(`multipart/mixed` withBoundary "XYZABC", ByteString.empty))
           .to[Multipart.General].failed, 1.second.dilated).getMessage shouldEqual "Unexpected end of multipart entity"
@@ -314,7 +304,7 @@ trait MultipartUnmarshallersSpec extends AnyFreeSpec with Matchers with BeforeAn
         Multipart.ByteRanges.BodyPart.Strict(ContentRange(23, 25, 26), HttpEntity(ContentTypes.`text/plain(UTF-8)`, "XYZ")))
     }
 
-    "multipartFormDataUnmarshaller should correctly unmarshal 'multipart/form-data' content" - {
+    "multipartFormDataUnmarshaller should correctly unmarshal 'multipart/form-data' content" should {
       "with one element and no explicit content-type" in {
         Unmarshal(HttpEntity(
           `multipart/form-data` withBoundary "XYZABC",
@@ -400,8 +390,6 @@ trait MultipartUnmarshallersSpec extends AnyFreeSpec with Matchers with BeforeAn
       //      }
     }
   }
-
-  override def afterAll() = TestKit.shutdownActorSystem(system)
 
   def haveParts[T <: Multipart](parts: Multipart.BodyPart.Strict*): Matcher[Future[T]] =
     equal(parts).matcher[Seq[Multipart.BodyPart.Strict]] compose { x =>

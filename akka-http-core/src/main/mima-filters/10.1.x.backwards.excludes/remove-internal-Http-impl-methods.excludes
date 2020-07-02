@@ -16,3 +16,5 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpExt.s
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpExt.singleRequestImpl$default$2")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpExt.singleRequestImpl$default$3")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpExt.singleRequestImpl$default$4")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpExt.bindImpl*")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.HttpExt.serverLayerImpl*")

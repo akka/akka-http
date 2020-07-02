@@ -4,7 +4,8 @@
 
 package docs.http.scaladsl
 
-import akka.actor.ActorSystem
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import akka.http.scaladsl.Http
@@ -17,9 +18,9 @@ object HttpServerStreamingRandomNumbers {
 
   def main(args: Array[String]): Unit = {
 
-    implicit val system = ActorSystem()
+    implicit val system = ActorSystem(Behaviors.empty, "RandomNumbers")
     // needed for the future flatMap/onComplete in the end
-    implicit val executionContext = system.dispatcher
+    implicit val executionContext = system.executionContext
 
     // streams are re-usable so we can define it here
     // and use it for every request

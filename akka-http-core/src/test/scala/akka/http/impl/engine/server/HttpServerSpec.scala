@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.server
 
+import com.github.ghik.silencer.silent
+
 import java.net.{ InetAddress, InetSocketAddress }
 
 import akka.event.LoggingAdapter
@@ -1019,7 +1021,8 @@ class HttpServerSpec extends AkkaSpec(
              |""".stripMarginWithNewline("\r\n"))
 
       val request = expectRequest()
-      request.headers should contain(`Remote-Address`(RemoteAddress(theAddress, Some(8080))))
+
+      request.headers should contain(`Remote-Address`(RemoteAddress(theAddress, Some(8080)))): @silent("Remote-Address in package headers is deprecated")
 
       shutdownBlueprint()
     })

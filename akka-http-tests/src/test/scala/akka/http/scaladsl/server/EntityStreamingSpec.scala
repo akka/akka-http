@@ -373,7 +373,7 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
     val jsonStreamingSupport: JsonEntityStreamingSupport = EntityStreamingSupport.json()
 
     implicit val toResponseMarshaller: ToResponseMarshaller[Source[String, NotUsed]] =
-      PredefinedToResponseMarshallers.fromEntityStreamingSupportAndByteStringMarshaller[String, NotUsed](jsonStreamingSupport, csvStringMarshaller)
+      PredefinedToResponseMarshallers.fromEntityStreamingSupportAndByteStringMarshaller[String, NotUsed](scala.reflect.classTag[String], jsonStreamingSupport, csvStringMarshaller)
 
     val route =
       get {
@@ -393,8 +393,8 @@ class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
       case ex: java.lang.RuntimeException if ex.getCause != null =>
         val cause = ex.getCause
         cause.getClass should ===(classOf[akka.http.scaladsl.marshalling.NoStrictlyCompatibleElementMarshallingAvailableException[_]])
-        cause.getMessage should include("Please provide an implicit `Marshaller[T, HttpEntity]")
-        cause.getMessage should include("that can render as [application/json]")
+        cause.getMessage should include("Please provide an implicit `Marshaller[java.lang.String, HttpEntity]")
+        cause.getMessage should include("that can render java.lang.String as [application/json]")
     }
   }
 }

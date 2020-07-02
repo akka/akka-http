@@ -67,4 +67,14 @@ private[http] object Http2AlpnSupport {
     else None
 
   def applySessionParameters(engine: SSLEngine, sessionParameters: NegotiateNewSession): Unit = TlsUtils.applySessionParameters(engine, sessionParameters)
+
+  private type SSLParametersWithALPNSupport = {
+    def setApplicationProtocols(protocols: Array[String]): Unit
+  }
+  def clientSetApplicationProtocols(engine: SSLEngine, protocols: Array[String]): Unit = {
+    val params = engine.getSSLParameters
+    params.asInstanceOf[SSLParametersWithALPNSupport].setApplicationProtocols(Array("h2"))
+    engine.setSSLParameters(params)
+  }
+
 }

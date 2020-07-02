@@ -29,7 +29,7 @@ trait HeaderDirectives {
    * @group header
    */
   def checkSameOrigin(allowed: HttpOriginRange.Default): Directive0 = {
-    headerValueByType[Origin](()).flatMap { origin =>
+    headerValueByType(Origin).flatMap { origin =>
       if (origin.origins.exists(allowed.matches)) pass
       else reject(InvalidOriginRejection(allowed.origins))
     }
@@ -70,6 +70,7 @@ trait HeaderDirectives {
    *
    * @group header
    */
+  @deprecated("Use string argument version or `headerValueByType`, e.g. instead of `headerValueByName('Referer)` use `headerValueByType(Referer)`", since = "10.2.0")
   def headerValueByName(headerName: Symbol): Directive1[String] = headerValueByName(headerName.name)
 
   /**
@@ -122,6 +123,7 @@ trait HeaderDirectives {
    *
    * @group header
    */
+  @deprecated("Use string argument version or `headerValueByType`, e.g. instead of `optionalHeaderValueByName('Referer)` use `optionalHeaderValueByType(Referer)`", since = "10.2.0")
   def optionalHeaderValueByName(headerName: Symbol): Directive1[Option[String]] =
     optionalHeaderValueByName(headerName.name)
 
@@ -171,8 +173,12 @@ object HeaderMagnet extends LowPriorityHeaderMagnetImplicits {
 
   /**
    * If possible we want to apply the special logic for [[ModeledCustomHeader]] to extract custom headers by type,
-   * otherwise the default `fromUnit` is good enough (for headers that the parser emits in the right type already).
+   * otherwise the default `fromCompanion` is good enough (for headers that the parser emits in the right type already).
    */
+  implicit def fromCompanionForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]](companion: ModeledCustomHeaderCompanion[T])(implicit tag: ClassTag[T]): HeaderMagnet[T] =
+    fromClassTagForModeledCustomHeader[T, H](tag, companion)
+
+  @deprecated("Pass the companion object to headerValueByType as a parameter instead, e.g. `headerValueByType(Origin)` instead of `headerValueByType[Origin](())`", since = "10.2.0")
   implicit def fromUnitForModeledCustomHeader[T <: ModeledCustomHeader[T], H <: ModeledCustomHeaderCompanion[T]](u: Unit)(implicit tag: ClassTag[T], companion: ModeledCustomHeaderCompanion[T]): HeaderMagnet[T] =
     fromClassTagForModeledCustomHeader[T, H](tag, companion)
 
@@ -205,6 +211,10 @@ trait LowPriorityHeaderMagnetImplicits {
       }
     }
 
+  implicit def fromCompanionNormalHeader[T <: HttpHeader](companion: ModeledCompanion[T])(implicit tag: ClassTag[T]): HeaderMagnet[T] =
+    fromClassTagNormalHeader(tag)
+
+  @deprecated("Pass the companion object to headerValueByType as a parameter instead, e.g. `headerValueByType(Origin)` instead of `headerValueByType[Origin](())`", since = "10.2.0")
   implicit def fromUnitNormalHeader[T <: HttpHeader](u: Unit)(implicit tag: ClassTag[T]): HeaderMagnet[T] =
     fromClassTagNormalHeader(tag)
 

@@ -39,6 +39,10 @@ public enum Coder {
         return (HttpRequest) underlying.encodeMessage((akka.http.scaladsl.model.HttpMessage) message);
     }
 
+    /**
+     * @deprecated Synchronous encoding is deprecated since 10.2.0
+     */
+    @Deprecated
     public ByteString encode(ByteString input) {
         return underlying.encode(input);
     }

@@ -6,25 +6,24 @@ package akka.http.javadsl.server.directives
 
 import java.util.concurrent.{ CompletionException, CompletionStage }
 
+import akka.actor.ClassicActorSystemProvider
 import akka.dispatch.ExecutionContexts
 import akka.http.javadsl.marshalling.Marshaller
 
 import scala.annotation.varargs
 import akka.http.impl.model.JavaUri
-import akka.http.javadsl.model.HttpHeader
-import akka.http.javadsl.model.HttpResponse
-import akka.http.javadsl.model.RequestEntity
-import akka.http.javadsl.model.ResponseEntity
-import akka.http.javadsl.model.StatusCode
-import akka.http.javadsl.model.Uri
+import akka.http.javadsl.model.{ HttpHeader, HttpRequest, HttpResponse, RequestEntity, ResponseEntity, StatusCode, Uri }
 import akka.http.javadsl.server.{ Rejection, Route, RoutingJavaMapping }
 import akka.http.scaladsl
 import akka.http.scaladsl.marshalling.Marshaller._
 import akka.http.scaladsl.marshalling.ToResponseMarshallable
 import akka.http.scaladsl.model.StatusCodes.Redirection
 import akka.http.javadsl.server.RoutingJavaMapping._
+import akka.http.scaladsl.server.RouteResult
 import akka.http.scaladsl.server.directives.{ RouteDirectives => D }
 import akka.http.scaladsl.util.FastFuture._
+
+import scala.concurrent.ExecutionContext
 
 abstract class RouteDirectives extends RespondWithDirectives {
   import RoutingJavaMapping.Implicits._
@@ -293,6 +292,14 @@ abstract class RouteDirectives extends RespondWithDirectives {
   @CorrespondsTo("complete")
   def completeWithFuture[T](value: CompletionStage[T], marshaller: Marshaller[T, HttpResponse]) = RouteAdapter {
     D.complete(value.asScala.fast.map(v => ToResponseMarshallable(v)(marshaller)).recover(unwrapCompletionException))
+  }
+
+  /**
+   * Handle the request using a function.
+   */
+  def handle(handler: akka.japi.function.Function[HttpRequest, CompletionStage[HttpResponse]]): Route = {
+    import akka.http.impl.util.JavaMapping._
+    RouteAdapter { ctx => handler(ctx.request).asScala.fast.map(response => RouteResult.Complete(response.asScala)) }
   }
 
   // TODO: This might need to be raised as an issue to scala-java8-compat instead.

@@ -39,7 +39,7 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
 
   "The headerValueByType directive" should {
     val route =
-      headerValueByType[Origin]() { origin =>
+      headerValueByType(Origin) { origin =>
         complete(s"The first origin was ${origin.origins.head}")
       }
     "extract a header if the type is matching" in {
@@ -56,7 +56,7 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
       }
     }
     "reject a request for missing header, and format it properly when header included special characters (e.g. `-`)" in {
-      val route = headerValueByType[`User-Agent`]() { agent =>
+      val route = headerValueByType(`User-Agent`) { agent =>
         complete(s"Agent: ${agent}")
       }
       Get("abc") ~> route ~> check {
@@ -66,7 +66,7 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
       }
     }
     "reject a request if no header matches a custom one, and use the custom header's name for the rejection " in {
-      val route = headerValueByType[XCustomHeader]() { customValue =>
+      val route = headerValueByType(XCustomHeader) { customValue =>
         complete(s"Custom-Value: $customValue")
       }
       Get("abc") ~> route ~> check {
@@ -91,7 +91,7 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
 
     "extract a header with Symbol name" in {
       lazy val symbolRoute =
-        headerValueByName('Referer) { referer =>
+        headerValueByName(Symbol("Referer")) { referer =>
           complete(s"The symbol referer was $referer")
         }
 
@@ -123,7 +123,7 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
 
     "extract a header with Symbol name" in {
       lazy val symbolRoute =
-        optionalHeaderValueByName('Referer) { referer =>
+        optionalHeaderValueByName(Symbol("Referer")) { referer =>
           complete(s"The symbol referer was $referer")
         }
 
@@ -167,7 +167,7 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
 
   "The optionalHeaderValueByType directive" should {
     val route =
-      optionalHeaderValueByType[Origin]() {
+      optionalHeaderValueByType(Origin) {
         case Some(origin) => complete(s"The first origin was ${origin.origins.head}")
         case None         => complete("No Origin header found.")
       }
@@ -219,8 +219,8 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
 
   "The HeaderMagnet" should {
     "get the header name from the ModeledCustomHeaderCompanion" in {
-      val unitMagnet: HeaderMagnet[XCustomHeader] = {}
-      unitMagnet.headerName shouldEqual "X-Custom-Header"
+      val companionMagnet: HeaderMagnet[XCustomHeader] = XCustomHeader
+      companionMagnet.headerName shouldEqual "X-Custom-Header"
 
       val classMagnet = HeaderMagnet.fromClassForModeledCustomHeader(classOf[XCustomHeader], XCustomHeader)
       classMagnet.headerName shouldEqual "X-Custom-Header"

@@ -188,10 +188,10 @@ RejectionHandler
 .handle {
   case AuthenticationFailedRejection(cause, challengeHeaders) =>
     logger.error(s"Request is rejected with cause: $cause")
-    complete((Unauthorized, mapErrorToRootObject(unauthenticatedError)))
+    complete(Unauthorized, mapErrorToRootObject(unauthenticatedError))
 .handleNotFound { ctx =>
   logger.error("Route: {} does not exist.", ctx.request.uri.toString())
-  ctx.complete((NotFound, mapErrorToRootObject(notFoundError)))
+  ctx.complete(NotFound, mapErrorToRootObject(notFoundError))
 }
 .result()
 .withFallback(RejectionHandler.default)

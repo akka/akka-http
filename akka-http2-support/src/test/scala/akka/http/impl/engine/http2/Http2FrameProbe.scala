@@ -17,6 +17,8 @@ import akka.util.ByteString
 import scala.annotation.tailrec
 import org.scalatest.matchers.should.Matchers
 
+import scala.concurrent.duration.FiniteDuration
+
 trait Http2FrameProbe {
   def sink: Sink[ByteString, Any]
   def plainDataProbe: ByteStringSinkProbe
@@ -24,6 +26,7 @@ trait Http2FrameProbe {
   def expectBytes(bytes: ByteString): Unit
   def expectBytes(num: Int): ByteString
   def expectNoBytes(): Unit
+  def expectNoBytes(timeout: FiniteDuration): Unit
 
   def expectDATAFrame(streamId: Int): (Boolean, ByteString)
   def expectDATA(streamId: Int, endStream: Boolean, numBytes: Int): ByteString
@@ -67,6 +70,7 @@ trait Http2FrameProbeDelegator extends Http2FrameProbe {
   def expectBytes(bytes: ByteString): Unit = frameProbeDelegate.expectBytes(bytes)
   def expectBytes(num: Int): ByteString = frameProbeDelegate.expectBytes(num)
   def expectNoBytes(): Unit = frameProbeDelegate.expectNoBytes()
+  def expectNoBytes(timeout: FiniteDuration): Unit = frameProbeDelegate.expectNoBytes(timeout)
   def expectDATAFrame(streamId: Int): (Boolean, ByteString) = frameProbeDelegate.expectDATAFrame(streamId)
   def expectDATA(streamId: Int, endStream: Boolean, numBytes: Int): ByteString = frameProbeDelegate.expectDATA(streamId, endStream, numBytes)
   def expectDATA(streamId: Int, endStream: Boolean, data: ByteString): Unit = frameProbeDelegate.expectDATA(streamId, endStream, data)
@@ -100,6 +104,7 @@ object Http2FrameProbe extends Matchers {
       def expectBytes(bytes: ByteString): Unit = probe.expectBytes(bytes)
       def expectBytes(num: Int): ByteString = probe.expectBytes(num)
       def expectNoBytes(): Unit = probe.expectNoBytes()
+      def expectNoBytes(timeout: FiniteDuration): Unit = probe.expectNoBytes(timeout)
 
       def expectDATAFrame(streamId: Int): (Boolean, ByteString) = {
         val (flags, payload) = expectFrameFlagsAndPayload(FrameType.DATA, streamId)

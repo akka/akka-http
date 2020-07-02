@@ -32,6 +32,7 @@ import akka.stream.testkit._
 import akka.stream._
 import akka.testkit._
 import akka.util.ByteString
+import com.github.ghik.silencer.silent
 import com.typesafe.config.{ Config, ConfigFactory }
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import com.typesafe.sslconfig.ssl.{ SSLConfigSettings, SSLLooseConfig }
@@ -171,6 +172,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
     }
 
     "Remote-Address header" should {
+      @silent("Remote-Address in package headers is deprecated")
       def handler(req: HttpRequest): HttpResponse = {
         val entity = req.header[headers.`Remote-Address`].flatMap(_.address.toIP).flatMap(_.port).toString
         HttpResponse(entity = entity)
@@ -612,21 +614,38 @@ Host: example.com
       }
     }
 
-    "complete a request/response over https when request has `Connection: close` set" in Utils.assertAllStagesStopped {
-      // akka/akka-http#1219
-      val serverToClientNetworkBufferSize = 1000
-      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-      val request = HttpRequest(uri = s"https://$hostname:$port", headers = headers.Connection("close") :: Nil)
-
-      // settings adapting network buffer sizes
-      val serverSettings = ServerSettings(system).withSocketOptions(SO.SendBufferSize(serverToClientNetworkBufferSize) :: Nil)
-      val clientSettings = ConnectionPoolSettings(system).withConnectionSettings(ClientConnectionSettings(system).withSocketOptions(SO.ReceiveBufferSize(serverToClientNetworkBufferSize) :: Nil))
-
+    "complete a request/response over https, disabling hostname verification with SSLConfigSettings" in Utils.assertAllStagesStopped {
       val serverConnectionContext = ExampleHttpContexts.exampleServerContext
+      val routes: Flow[HttpRequest, HttpResponse, Any] = Flow[HttpRequest].map { _ => HttpResponse(entity = "Okay") }
+      val serverBinding =
+        Http()
+          .bindAndHandle(routes, "localhost", 0, connectionContext = serverConnectionContext)
+          .futureValue
+
       // Disable hostname verification as ExampleHttpContexts.exampleClientContext sets hostname as akka.example.org
       val sslConfigSettings = SSLConfigSettings().withLoose(SSLLooseConfig().withDisableHostnameVerification(true))
       val sslConfig = AkkaSSLConfig().withSettings(sslConfigSettings)
       val clientConnectionContext = ConnectionContext.https(ExampleHttpContexts.exampleClientContext.sslContext, Some(sslConfig))
+
+      val request = HttpRequest(uri = s"https:/${serverBinding.localAddress}")
+      Http()
+        .singleRequest(request, connectionContext = clientConnectionContext)
+        .futureValue
+        .entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue.utf8String shouldEqual "Okay"
+
+      serverBinding.unbind().futureValue
+      Http().shutdownAllConnectionPools().futureValue
+    }
+
+    "complete a request/response over https when request has `Connection: close` set" in Utils.assertAllStagesStopped {
+      // akka/akka-http#1219
+      val serverToClientNetworkBufferSize = 1000
+      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
+      val request = HttpRequest(uri = s"https://akka.example.org", headers = headers.Connection("close") :: Nil)
+
+      // settings adapting network buffer sizes
+      val serverSettings = ServerSettings(system).withSocketOptions(SO.SendBufferSize(serverToClientNetworkBufferSize) :: Nil)
+      val serverConnectionContext = ExampleHttpContexts.exampleServerContext
 
       val entity = Array.fill[Char](999999)('0').mkString + "x"
       val routes: Flow[HttpRequest, HttpResponse, Any] = Flow[HttpRequest].map { _ => HttpResponse(entity = entity) }
@@ -634,6 +653,13 @@ Host: example.com
         Http()
           .bindAndHandle(routes, hostname, port, connectionContext = serverConnectionContext, settings = serverSettings)
           .futureValue
+
+      // settings adapting network buffer sizes, and connecting to the spun-up server regardless of the URI address
+      val clientSettings = ConnectionPoolSettings(system)
+        .withConnectionSettings(ClientConnectionSettings(system)
+          .withSocketOptions(SO.ReceiveBufferSize(serverToClientNetworkBufferSize) :: Nil))
+        .withTransport(ExampleHttpContexts.proxyTransport(serverBinding.localAddress))
+      val clientConnectionContext = ConnectionContext.https(ExampleHttpContexts.exampleClientContext.sslContext)
 
       Http()
         .singleRequest(request, connectionContext = clientConnectionContext, settings = clientSettings)
@@ -654,7 +680,7 @@ Host: example.com
       val clientSideTls = Http().sslTlsStage(ExampleHttpContexts.exampleClientContext, akka.stream.Client, Some("akka.example.org" -> 8080))
 
       val server: Flow[ByteString, ByteString, Any] =
-        Http().serverLayerImpl()
+        Http().serverLayer()
           .atop(serverSideTls)
           .reversed
           .join(Flow[HttpRequest].map(handler))

@@ -9,7 +9,7 @@ import akka.http.impl.util.ExampleHttpContexts;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.HttpsConnectionContext;
-import akka.japi.Function;
+import akka.japi.function.Function;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 import com.typesafe.config.Config;
@@ -42,7 +42,7 @@ public class Http2JavaServerTest {
       handler,
       ConnectWithHttps.toHostHttps("localhost", 9001)
         .withCustomHttpsContext(httpsConnectionContext),
-      materializer);
+      system);
 
     // TODO what about unencrypted http2?
   }

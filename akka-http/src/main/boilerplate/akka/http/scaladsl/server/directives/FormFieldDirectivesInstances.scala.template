@@ -1,0 +1,28 @@
+/*
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
+package akka.http.scaladsl.server
+package directives
+
+trait FormFieldDirectivesInstances {
+  import FormFieldDirectives.FieldSpec
+
+  [#/**
+   * Extracts query parameter values from the request.
+   * Rejects the request if the defined query parameter matcher(s) don't match.
+   *
+   * @group param
+   */
+  def formField([#pdef1: FieldSpec#]): Directive[Tuple1[[#pdef1.Out#]]] = [#pdef1.get# & ]
+
+  /**
+   * Extracts query parameter values from the request.
+   * Rejects the request if the defined query parameter matcher(s) don't match.
+   *
+   * @group param
+   */
+  def formFields([#pdef1: FieldSpec#]): Directive[Tuple1[[#pdef1.Out#]]] = [#pdef1.get# & ]
+  #
+  ]
+}

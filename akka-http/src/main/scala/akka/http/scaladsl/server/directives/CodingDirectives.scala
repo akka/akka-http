@@ -77,7 +77,7 @@ trait CodingDirectives {
    */
   def decodeRequestWith(decoder: Decoder): Directive0 = {
     def applyDecoder: Directive0 =
-      if (decoder == NoCoding) pass
+      if (decoder == Coders.NoCoding) pass
       else
         extractSettings flatMap { settings =>
           val effectiveDecoder = decoder.withMaxBytesPerChunk(settings.decodeMaxBytesPerChunk)
@@ -144,9 +144,10 @@ trait CodingDirectives {
 }
 
 object CodingDirectives extends CodingDirectives {
-  val DefaultCoders: immutable.Seq[Coder] = immutable.Seq(Gzip, Deflate, NoCoding)
+  def DefaultCoders: immutable.Seq[Coder] = Coders.DefaultCoders
 
-  private[http] val DefaultEncodeResponseEncoders = immutable.Seq(NoCoding, Gzip, Deflate)
+  // same entries as DefaultCoders but in different order
+  private[http] val DefaultEncodeResponseEncoders = immutable.Seq(Coders.NoCoding, Coders.Gzip, Coders.Deflate)
 
   def theseOrDefault[T >: Coder](these: Seq[T]): Seq[T] = if (these.isEmpty) DefaultCoders else these
 
@@ -161,7 +162,7 @@ object CodingDirectives extends CodingDirectives {
       bestEncoder match {
         case Some(encoder) => mapResponse(encoder.encodeMessage(_))
         case _ =>
-          if (encoders.contains(NoCoding) && !negotiator.hasMatchingFor(HttpEncodings.identity)) pass
+          if (encoders.contains(Coders.NoCoding) && !negotiator.hasMatchingFor(HttpEncodings.identity)) pass
           else reject(UnacceptedResponseEncodingRejection(encodings.toSet))
       }
     }

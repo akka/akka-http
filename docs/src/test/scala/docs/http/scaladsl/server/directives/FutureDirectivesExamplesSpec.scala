@@ -23,7 +23,7 @@ class FutureDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
   implicit val myExceptionHandler =
     ExceptionHandler {
       case TestException => ctx =>
-        ctx.complete((InternalServerError, "Unsuccessful future!"))
+        ctx.complete(InternalServerError, "Unsuccessful future!")
     }
 
   implicit val responseTimeout = Timeout(2, TimeUnit.SECONDS)
@@ -38,7 +38,7 @@ class FutureDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
       path("divide" / IntNumber / IntNumber) { (a, b) =>
         onComplete(divide(a, b)) {
           case Success(value) => complete(s"The result was $value")
-          case Failure(ex)    => complete((InternalServerError, s"An error occurred: ${ex.getMessage}"))
+          case Failure(ex)    => complete(InternalServerError, s"An error occurred: ${ex.getMessage}")
         }
       }
 
@@ -72,7 +72,7 @@ class FutureDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
       path("divide" / IntNumber / IntNumber) { (a, b) =>
         onCompleteWithBreaker(breaker)(divide(a, b)) {
           case Success(value) => complete(s"The result was $value")
-          case Failure(ex)    => complete((InternalServerError, s"An error occurred: ${ex.getMessage}"))
+          case Failure(ex)    => complete(InternalServerError, s"An error occurred: ${ex.getMessage}")
         }
       }
 

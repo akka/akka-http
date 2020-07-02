@@ -1,7 +1,7 @@
 language: scala
 
 scala:
-  - "2.12.10" # not used for anything but still needed to have sbt available
+  - "2.12.11" # not used for anything but still needed to have sbt available
 
 sudo: false
 
@@ -14,6 +14,8 @@ before_install:
   # using jabba for custom jdk management
   - curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.1/install.sh | bash && . ~/.jabba/jabba.sh
   - jabba install adopt@1.8-0
+  - jabba use "adopt@1.8-0"
+  - java -version
 
 addons:
   apt:
@@ -32,8 +34,6 @@ cache:
     - $HOME/.cache/coursier
 
 script:
-  - jabba use "adopt@1.8-0"
-  - java -version
   - sbt -jvm-opts .jvmopts-travis "$CMD"
 
 jobs:
@@ -44,6 +44,9 @@ jobs:
       script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate
     - stage: publish
       env: CMD="+publish"
+      name: artifacts to bintray
+    - script: eval "$(ssh-agent -s)" && echo $SCP_SECRET | base64 -d > /tmp/id_rsa && chmod 600 /tmp/id_rsa && ssh-add /tmp/id_rsa && sbt -jvm-opts .jvmopts-travis -Dakka.genjavadoc.enabled=true publishRsync
+      name: paradox and api docs to gustav
 
 stages:
   - name: mima

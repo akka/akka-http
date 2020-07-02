@@ -21,7 +21,7 @@ class FutureDirectivesSpec extends RoutingSpec with Inside with TestKitBase {
   def throwTestException[T](msgPrefix: String): T => Nothing = t => throw new TestException(msgPrefix + t)
 
   val showEx = handleExceptions(ExceptionHandler {
-    case e: TestException => complete((StatusCodes.InternalServerError, "Oops. " + e))
+    case e: TestException => complete(StatusCodes.InternalServerError, "Oops. " + e)
   })
 
   trait TestWithCircuitBreaker {

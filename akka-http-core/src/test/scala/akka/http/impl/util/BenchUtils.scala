@@ -26,8 +26,8 @@ private[akka] object BenchUtils {
     }
 
     def oneAttempt(): Double = {
-      val f1Time = nanoTime(f1 _)
-      val f2Time = nanoTime(f2 _)
+      val f1Time = nanoTime(() => f1)
+      val f2Time = nanoTime(() => f2)
       val factor = f1Time.toDouble / f2Time
       factor
     }

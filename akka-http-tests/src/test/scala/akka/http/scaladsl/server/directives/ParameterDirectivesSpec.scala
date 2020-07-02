@@ -203,22 +203,22 @@ class ParameterDirectivesSpec extends AnyFreeSpec with GenericRoutingSpec with I
   "The 'parameter' requirement directive should" - {
     "reject the request with a MissingQueryParamRejection if request do not contain the required parameter" in {
       Get("/person?age=19") ~> {
-        parameter("nose".requiredValue("large")) { completeOk }
+        parameter("nose".requiredValue("large")) { _ => completeOk }
       } ~> check { rejection shouldEqual MissingQueryParamRejection("nose") }
     }
     "reject the request with a InvalidRequiredValueForQueryParamRejection if the required parameter has an unmatching value" in {
       Get("/person?age=19&nose=small") ~> {
-        parameter("nose".requiredValue("large")) { completeOk }
+        parameter("nose".requiredValue("large")) { _ => completeOk }
       } ~> check { rejection shouldEqual InvalidRequiredValueForQueryParamRejection("nose", "large", "small") }
     }
     "let requests pass that contain the required parameter with its required value" in {
       Get("/person?nose=large&eyes=blue") ~> {
-        parameter("nose".requiredValue("large")) { completeOk }
+        parameter("nose".requiredValue("large")) { _ => completeOk }
       } ~> check { response shouldEqual Ok }
     }
     "be useable for method tunneling" in {
       val route = {
-        (post | parameter("method".requiredValue("post"))) { complete("POST") } ~
+        (post | parameter("method".requiredValue("post")).tmap(_ => ())) { complete("POST") } ~
           get { complete("GET") }
       }
       Get("/?method=post") ~> route ~> check { responseAs[String] shouldEqual "POST" }
@@ -273,7 +273,7 @@ class ParameterDirectivesSpec extends AnyFreeSpec with GenericRoutingSpec with I
     "extract a parameter value as Case Class" in {
       case class Color(red: Int, green: Int, blue: Int)
       Get("/?red=90&green=50&blue=0") ~> {
-        parameter("red".as[Int], "green".as[Int], "blue".as[Int]).as(Color) { color =>
+        parameters("red".as[Int], "green".as[Int], "blue".as[Int]).as(Color) { color =>
           complete(s"${color.red} ${color.green} ${color.blue}")
         }
       } ~> check { responseAs[String] shouldEqual "90 50 0" }
@@ -285,7 +285,7 @@ class ParameterDirectivesSpec extends AnyFreeSpec with GenericRoutingSpec with I
         require(0 <= blue && blue <= 255)
       }
       Get("/?red=500&green=0&blue=0") ~> {
-        parameter("red".as[Int], "green".as[Int], "blue".as[Int]).as(Color) { color =>
+        parameters("red".as[Int], "green".as[Int], "blue".as[Int]).as(Color) { color =>
           complete(s"${color.red} ${color.green} ${color.blue}")
         }
       } ~> check {
@@ -299,7 +299,7 @@ class ParameterDirectivesSpec extends AnyFreeSpec with GenericRoutingSpec with I
         require(0 <= blue && blue <= 255)
       }
       Get("/?red=0&green=0&blue=0") ~> {
-        parameter("red".as[Int], "green".as[Int], "blue".as[Int]).as(Color) { _ =>
+        parameters("red".as[Int], "green".as[Int], "blue".as[Int]).as(Color) { _ =>
           throw new IllegalArgumentException
         }
       } ~> check {

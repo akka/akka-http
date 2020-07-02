@@ -184,7 +184,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
   "long-routing-example" in compileOnlySpec {
     //#long-routing-example
     import akka.actor.{ ActorRef, ActorSystem }
-    import akka.http.scaladsl.coding.Deflate
+    import akka.http.scaladsl.coding.Coders
     import akka.http.scaladsl.marshalling.ToResponseMarshaller
     import akka.http.scaladsl.model.StatusCodes.MovedPermanently
     import akka.http.scaladsl.server.Directives._
@@ -219,7 +219,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
         authenticateBasic(realm = "admin area", myAuthenticator) { user =>
           concat(
             get {
-              encodeResponseWith(Deflate) {
+              encodeResponseWith(Coders.Deflate) {
                 complete {
                   // marshal custom object with in-scope marshaller
                   retrieveOrdersFromDB
@@ -245,9 +245,9 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
         concat(
           pathEnd {
             concat(
-              (put | parameter("method".requiredValue("put"))) {
+              put {
                 // form extraction from multipart or www-url-encoded forms
-                formFields(("email", "total".as[Money])).as(Order) { order =>
+                formFields("email", "total".as[Money]).as(Order) { order =>
                   complete {
                     // complete with serialized Future result
                     (myDbActor ? Update(order)).mapTo[TransactionResult]
@@ -268,7 +268,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
           path("items") {
             get {
               // parameters to case class extraction
-              parameters(("size".as[Int], "color".optional, "dangerous".withDefault("no")))
+              parameters("size".as[Int], "color".optional, "dangerous".withDefault("no"))
                 .as(OrderItem) { orderItem =>
                   // ... route using case class instance created from
                   // required and optional query parameters

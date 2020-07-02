@@ -89,13 +89,6 @@ and used by Akka since Java 7, and on Java 6 the verification is implemented by 
 
 For further recommended reading we would like to highlight the [fixing hostname verification blog post](https://tersesystems.com/2014/03/23/fixing-hostname-verification/) by blog post by Will Sargent.
 
-### Server Name Indication (SNI)
-
-SNI is an TLS extension which aims to guard against man-in-the-middle attacks. It does so by having the client send the
-name of the virtual domain it is expecting to talk to as part of the TLS handshake.
-
-It is specified as part of [RFC 6066](https://tools.ietf.org/html/rfc6066#page-6).
-
 ### Disabling TLS security features, at your own risk
 
 @@@ warning
@@ -111,13 +104,13 @@ instead of globally configuring it via `application.conf`.
 
 @@@
 
-The following shows an example of disabling SNI for a given connection:
+The following shows an example of disabling hostname verification for a given connection:
 
 Scala
-:  @@snip [HttpsExamplesSpec.scala]($test$/scala/docs/http/scaladsl/HttpsExamplesSpec.scala) { #disable-sni-connection }
+:  @@snip [HttpsExamplesSpec.scala]($test$/scala/docs/http/scaladsl/HttpsExamplesSpec.scala) { #disable-hostname-verification-connection }
 
 Java
-:  @@snip [HttpsExamplesDocTest.java]($test$/java/docs/http/javadsl/HttpsExamplesDocTest.java) { #disable-sni-connection }
+:  @@snip [HttpsExamplesDocTest.java]($test$/java/docs/http/javadsl/HttpsExamplesDocTest.java) { #disable-hostname-verification-connection }
 
-The `badSslConfig` is a copy of the default `AkkaSSLConfig` with the slightly changed configuration to disable SNI.
+The `badSslConfig` is a copy of the default `AkkaSSLConfig` with the slightly changed configuration to disable hostname verification.
 This value can be cached and used for connections which should indeed not use this feature.

@@ -7,7 +7,7 @@ package akka.http.javadsl;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
-import akka.japi.Function;
+import akka.japi.function.Function;
 import akka.stream.ActorMaterializer;
 import akka.stream.Materializer;
 
@@ -23,10 +23,9 @@ public class GracefulTerminationCompileTest {
 
         Http http = Http.get(system);
 
-        Function<HttpRequest, CompletionStage<HttpResponse>> handle = (req) -> {
-            return CompletableFuture.completedFuture(HttpResponse.create());
-        };
-        CompletionStage<ServerBinding> bound = http.bindAndHandleAsync(handle, ConnectHttp.toHost("127.0.0.1"), materializer);
+        Function<HttpRequest, CompletionStage<HttpResponse>> handle =
+                (req) -> CompletableFuture.completedFuture(HttpResponse.create());
+        CompletionStage<ServerBinding> bound = http.bindAndHandleAsync(handle, ConnectHttp.toHost("127.0.0.1"), system);
 
         ServerBinding serverBinding = bound.toCompletableFuture().get();
         CompletionStage<HttpTerminated> terminate = serverBinding.terminate(Duration.ofSeconds(1));

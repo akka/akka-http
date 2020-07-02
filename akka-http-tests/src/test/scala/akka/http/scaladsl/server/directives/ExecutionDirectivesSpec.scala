@@ -5,10 +5,11 @@
 package akka.http.scaladsl.server
 package directives
 
-import akka.http.scaladsl.coding.Gzip
+import akka.http.scaladsl.coding.Coders
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.HttpEncodings._
 import akka.http.scaladsl.model.headers._
+
 import scala.concurrent.Future
 import akka.testkit.EventFilter
 import org.scalatest.matchers.Matcher
@@ -17,7 +18,7 @@ class ExecutionDirectivesSpec extends RoutingSpec {
   object MyException extends RuntimeException("Boom")
   val handler =
     ExceptionHandler {
-      case MyException => complete((500, "Pling! Plong! Something went wrong!!!"))
+      case MyException => complete(500, "Pling! Plong! Something went wrong!!!")
     }
 
   "The `handleExceptions` directive" should {
@@ -112,15 +113,15 @@ class ExecutionDirectivesSpec extends RoutingSpec {
     "handle encodeResponse inside RejectionHandler for non-success responses" in {
       val rejectionHandler: RejectionHandler = RejectionHandler.newBuilder()
         .handleNotFound {
-          encodeResponseWith(Gzip) {
-            complete((404, "Not here!"))
+          encodeResponseWith(Coders.Gzip) {
+            complete(404, "Not here!")
           }
         }.result()
 
       Get("/hell0") ~>
         get {
           handleRejections(rejectionHandler) {
-            encodeResponseWith(Gzip) {
+            encodeResponseWith(Coders.Gzip) {
               path("hello") {
                 get {
                   complete(HttpEntity(ContentTypes.`text/plain(UTF-8)`, "world"))

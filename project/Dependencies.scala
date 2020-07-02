@@ -17,14 +17,14 @@ object Dependencies {
   val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
   val h2specExe = "h2spec" + DependencyHelpers.exeIfWindows
   val h2specUrl = s"https://github.com/summerwind/h2spec/releases/download/v${h2specVersion}/${h2specName}.zip"
-  val silencerVersion = "1.6.0"
+  val silencerVersion = "1.7.0"
 
   val scalaTestVersion = "3.1.2"
-  val specs2Version = "4.9.4"
+  val specs2Version = "4.10.0"
   val scalaCheckVersion = "1.14.3"
 
   val Versions = Seq(
-    crossScalaVersions := Seq("2.13.1", "2.12.10"),
+    crossScalaVersions := Seq("2.13.3", "2.12.11"),
     scalaVersion := crossScalaVersions.value.head,
   )
 
@@ -48,7 +48,7 @@ object Dependencies {
 
     val hpack       = "com.twitter"                   % "hpack"                        % "1.0.2"       // ApacheV2
 
-    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.8.4"
+    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.8.5"
 
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
@@ -118,7 +118,7 @@ object Dependencies {
     libraryDependencies += Test.scalatest
   )
 
-  lazy val httpJackson = l ++= Seq(jacksonDatabind, Test.scalatestplusJUnit, Test.junit)
+  lazy val httpJackson = l ++= Seq(jacksonDatabind, Test.scalatestplusJUnit, Test.junit, Test.junitIntf)
 
   lazy val docs = l ++= Seq(Docs.sprayJson, Docs.gson, Docs.jacksonXml, Docs.reflections)
 }

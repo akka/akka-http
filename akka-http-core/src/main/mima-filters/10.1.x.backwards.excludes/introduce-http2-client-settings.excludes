@@ -1,0 +1,10 @@
+# Introduction of new setting to @DoNotInherit
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ClientConnectionSettings.http2Settings")
+
+# Changes to internal class
+ProblemFilters.exclude[Problem]("akka.http.impl.settings.ClientConnectionSettingsImpl.*")
+
+# Changed hierarchy of @DoNotInherit settings classes
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.logFrames")
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.outgoingControlFrameBufferSize")
+ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.maxConcurrentStreams")

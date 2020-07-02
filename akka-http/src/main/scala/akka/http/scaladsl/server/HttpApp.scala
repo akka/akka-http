@@ -7,7 +7,6 @@ package akka.http.scaladsl.server
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.Done
-import akka.annotation.ApiMayChange
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.http.scaladsl.Http
@@ -22,11 +21,12 @@ import scala.io.StdIn
 import scala.util.{ Failure, Success, Try }
 
 /**
- * API MAY CHANGE - EXPERIMENTAL
+ * DEPRECATED, consider https://developer.lightbend.com/guides/akka-http-quickstart-scala/ instead
+ *
  * Bootstrap trait for Http Server. It helps booting up an akka-http server by only defining the desired routes.
  * It offers additional hooks to modify the default behavior.
  */
-@ApiMayChange
+@deprecated("HttpApp this doesn't reflect the latest Akka APIs", "10.2.0")
 abstract class HttpApp extends Directives {
 
   private val serverBinding = new AtomicReference[ServerBinding]()

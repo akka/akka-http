@@ -15,8 +15,6 @@ import static akka.http.javadsl.server.Directives.path;
 import static akka.http.javadsl.server.Directives.pathEnd;
 import static akka.http.javadsl.server.Directives.pathPrefix;
 import static akka.http.javadsl.server.Directives.pathSingleSlash;
-import static akka.http.javadsl.server.Directives.route;
-
 //#path-examples
 
 public class PathDirectiveExampleTest extends JUnitRouteTest {
