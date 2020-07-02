@@ -62,7 +62,7 @@ trait RouteDirectives {
    *
    * @group route
    */
-  def complete[T](status: StatusCode, headers: immutable.Seq[HttpHeader], v: T)(implicit m: ToEntityMarshaller[T]): StandardRoute =
+  def complete[T](status: StatusCode, headers: immutable.Seq[HttpHeader], v: => T)(implicit m: ToEntityMarshaller[T]): StandardRoute =
     complete((status, headers, v))
 
   /**
