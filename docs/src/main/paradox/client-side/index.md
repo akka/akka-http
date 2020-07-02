@@ -30,6 +30,7 @@ Akka HTTP will happily handle many thousand concurrent connections to a single o
 
 @@@ index
 
+* [configuration](configuration.md)
 * [request-and-response](request-and-response.md)
 * [request-level](request-level.md)
 * [host-level](host-level.md)
