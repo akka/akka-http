@@ -18,7 +18,7 @@ class ExecutionDirectivesSpec extends RoutingSpec {
   object MyException extends RuntimeException("Boom")
   val handler =
     ExceptionHandler {
-      case MyException => complete((500, "Pling! Plong! Something went wrong!!!"))
+      case MyException => complete(500, "Pling! Plong! Something went wrong!!!")
     }
 
   "The `handleExceptions` directive" should {
@@ -114,7 +114,7 @@ class ExecutionDirectivesSpec extends RoutingSpec {
       val rejectionHandler: RejectionHandler = RejectionHandler.newBuilder()
         .handleNotFound {
           encodeResponseWith(Coders.Gzip) {
-            complete((404, "Not here!"))
+            complete(404, "Not here!")
           }
         }.result()
 

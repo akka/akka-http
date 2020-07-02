@@ -35,6 +35,17 @@ class RouteDirectivesSpec extends AnyWordSpec with GenericRoutingSpec {
         i shouldEqual 1
       }
     }
+    "be lazy in its argument evaluation even when passing in a status code" in {
+      var i = 0
+      Put() ~> {
+        get { complete(OK, { i += 1; "get" }) } ~
+          put { complete(OK, { i += 1; "put" }) } ~
+          (post & complete(OK, { i += 1; "post" }))
+      } ~> check {
+        responseAs[String] shouldEqual "put"
+        i shouldEqual 1
+      }
+    }
     "support completion from response futures" should {
       "simple case without marshaller" in {
         Get() ~> {
