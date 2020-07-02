@@ -104,6 +104,18 @@ Java
 :  @@snip [WebSocketClientExampleTest.java]($test$/java/docs/http/javadsl/WebSocketClientExampleTest.java) { #auth-https-proxy-singleWebSocket-request-example }
 
 
+## Custom Host Name Resolution Transport
+
+You can use `ClientTransport.withCustomResolver` to customize host name resolution. The given resolution function will be called for every connection attempt to resolve
+a hostname / port combination (potentially asynchronously) to an `InetSocketAddress`.
+
+As a backend to implement the resolution function you can use Akka's [Async DNS Resolution](https://doc.akka.io/docs/akka/current/io-dns.html#dns-extension).
+
+Potential use cases:
+
+ * in a managed setting this can be used to query for `SRV` DNS records that contain both address and port for a service.
+ * if the DNS server returns multiple addresses, you can implement a load balancing algorithm to select different target address for each connection      
+
 ## Implementing Custom Transports
 
 Implement `ClientTransport.connectTo` to implement a custom client transport.

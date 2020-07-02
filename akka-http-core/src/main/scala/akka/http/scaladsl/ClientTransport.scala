@@ -97,6 +97,14 @@ object ClientTransport {
     httpsProxy(InetSocketAddress.createUnresolved(settings.host, settings.port), proxyCredentials)
   }
 
+  /**
+   * Returns a [[ClientTransport]] that allows to customize host name resolution.
+   * @param lookup A function that will be called with hostname and port and that should (potentially asynchronously resolve the given host/port
+   *               to an [[InetSocketAddress]]
+   */
+  def withCustomResolver(lookup: (String, Int) => Future[InetSocketAddress]): ClientTransport =
+    ClientTransportWithCustomResolver(lookup)
+
   private case class HttpsProxyTransport(proxyAddress: InetSocketAddress, underlyingTransport: ClientTransport = TCP, proxyCredentials: Option[HttpCredentials] = None) extends ClientTransport {
     def this(proxyAddress: InetSocketAddress, underlyingTransport: ClientTransport) = this(proxyAddress, underlyingTransport, None)
 
@@ -106,8 +114,6 @@ object ClientTransport {
         // on the HTTP level we want to see the final remote address in the `OutgoingConnection`
         .mapMaterializedValue(_.map(_.copy(remoteAddress = InetSocketAddress.createUnresolved(host, port)))(system.dispatcher))
   }
-
-  def withCustomResolver(lookup: (String, Int) => Future[InetSocketAddress]): ClientTransport = ClientTransportWithCustomResolver(lookup)
 
   private case class ClientTransportWithCustomResolver(lookup: (String, Int) => Future[InetSocketAddress]) extends ClientTransport {
     override def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[Http.OutgoingConnection]] = {
@@ -124,7 +130,5 @@ object ClientTransport {
 
     private def futureFlow[I, O, M](flow: Future[Flow[I, O, M]]): Flow[I, O, Future[M]] =
       Flow.fromGraph(new akka.http.impl.forwardport.FutureFlow(flow))
-
   }
-
 }

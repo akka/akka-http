@@ -28,6 +28,11 @@ and @ref[Client Websocket Support](client-side/websocket-support.md) for more in
 Akka HTTP provides server-side HTTP/2 support currently in a preview version. See @ref[Server HTTP/2 Support](server-side/http2.md)
 for more information.
 
+## DNS
+
+Akka HTTP provides pluggable client transport which can be used to @ref[customize host name resolution](client-side/client-transport.md#custom-host-name-resolution-transport)
+on the client side.
+
 ## Multipart
 
 Akka HTTP has modeled multipart/* payloads. It provides streaming multipart parsers and renderers e.g. for parsing
@@ -46,7 +51,6 @@ Java. See @ref[JSON Support](common/json-support.md) for more information.
 ## XML
 
 Marshalling to and from XML is supported Scala XML literals. See @ref[XML Support](common/xml-support.md) for more information.
-
 
 ## Gzip and Deflate Content-Encoding
 
