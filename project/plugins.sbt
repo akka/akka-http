@@ -1,6 +1,6 @@
 resolvers += Classpaths.sbtPluginReleases
 resolvers += Classpaths.typesafeReleases
-resolvers += Resolver.sonatypeRepo("releases") // to more quickly obtain paradox rigth after release
+resolvers += Resolver.sonatypeRepo("releases") // to more quickly obtain paradox right after release
 
 // need this to resolve https://jcenter.bintray.com/org/jenkins-ci/jenkins/1.26/
 // which is used by plugin "org.kohsuke" % "github-api" % "1.68"
@@ -27,3 +27,6 @@ libraryDependencies += "org.kohsuke" % "github-api" % "1.106"
 
 // used for @unidoc directive
 libraryDependencies += "io.github.lukehutch" % "fast-classpath-scanner" % "3.1.15"
+
+// pull up sbt-assembly to 0.15.0 to stay compatible with akka master
+addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.15.0")
