@@ -233,6 +233,7 @@ object HttpMessage {
      */
     def completionStage: CompletionStage[Done] = FutureConverters.toJava(f)
   }
+  val AlreadyDiscardedEntity = new DiscardedEntity(Future.successful(Done))
 
   /** Adds Scala DSL idiomatic methods to [[HttpMessage]], e.g. versions of methods with an implicit [[Materializer]]. */
   implicit final class HttpMessageScalaDSLSugar(val httpMessage: HttpMessage) extends AnyVal {
