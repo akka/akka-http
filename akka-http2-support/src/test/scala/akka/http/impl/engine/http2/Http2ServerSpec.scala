@@ -788,7 +788,9 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         sendDATA(1, false, ByteString("ping"))
         reqProbe.expectUtf8EncodedString("ping")
 
-        pollForWindowUpdates(10.millis)
+        // default settings will schedule a connection and a stream-level window update
+        expectWindowUpdate()
+        expectWindowUpdate()
 
         // check data flow for response entity
         responseEntityProbe.sendNext(ByteString("pong"))
