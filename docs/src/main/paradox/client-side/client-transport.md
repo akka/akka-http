@@ -5,10 +5,10 @@ transport is represented by an instance of
 @scala[@scaladoc[akka.http.scaladsl.ClientTransport](akka.http.scaladsl.ClientTransport)]@java[@javadoc[akka.http.javadsl.ClientTransport](akka.http.javadsl.ClientTransport)]:
 
 Scala
-:  @@snip [ClientTransport.scala]($akka-http$/akka-http-core/src/main/scala/akka/http/scaladsl/ClientTransport.scala) { #client-transport-definition }
+:  @@snip [ClientTransport.scala](/akka-http-core/src/main/scala/akka/http/scaladsl/ClientTransport.scala) { #client-transport-definition }
 
 Java
-:  @@snip [ClientTransport.scala]($akka-http$/akka-http-core/src/main/scala/akka/http/javadsl/ClientTransport.scala) { #client-transport-definition }
+:  @@snip [ClientTransport.scala](/akka-http-core/src/main/scala/akka/http/javadsl/ClientTransport.scala) { #client-transport-definition }
 
 A transport implementation defines how the client infrastructure should communicate with a given host.
 
@@ -24,7 +24,7 @@ transport layer itself.
 A @apidoc[ClientTransport] can be configured in the @apidoc[ClientConnectionSettings]. Right now, this is not possible
 through config files but only by code. First, use `ClientConnectionSettings.withTransport` to configure a transport,
 then use `ConnectionPoolSettings.withConnectionSettings`. @apidoc[ClientConnectionSettings] can be passed to all
-client-side entry points in @scala[@apidoc[Http$]]@java[@apidoc[Http]].
+client-side entry points in @apidoc[Http$].
 
 ## Predefined Transports
 

@@ -41,11 +41,11 @@ delaying the actual construction of the marshalling target instance to the very 
 
 This is how `Marshalling` is defined:
 
-@@snip [Marshaller.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/marshalling/Marshaller.scala) { #marshalling }
+@@snip [Marshaller.scala](/akka-http/src/main/scala/akka/http/scaladsl/marshalling/Marshaller.scala) { #marshalling }
 
 Akka HTTP also defines a number of helpful aliases for the types of marshallers that you'll likely work with most:
 
-@@snip [package.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/marshalling/package.scala) { #marshaller-aliases }
+@@snip [package.scala](/akka-http/src/main/scala/akka/http/scaladsl/marshalling/package.scala) { #marshaller-aliases }
 
 @@@
 
@@ -137,7 +137,7 @@ For writing your own marshallers you won't have to "manually" implement the @api
 Rather, it should be possible to use one of the convenience construction helpers defined on the @apidoc[Marshaller]
 companion:
 
-@@snip [Marshaller.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/marshalling/Marshaller.scala) { #marshaller-creation }
+@@snip [Marshaller.scala](/akka-http/src/main/scala/akka/http/scaladsl/marshalling/Marshaller.scala) { #marshaller-creation }
 
 @@@
 
@@ -182,6 +182,6 @@ The best entry point for this is the @scaladoc[Marshal](akka.http.scaladsl.marsh
 
 However, many directives dealing with @ref[marshalling](../routing-dsl/directives/marshalling-directives/index.md) also  require that you pass a marshaller explicitly. The following example shows how to marshal Java bean classes to JSON using the @ref:[Jackson JSON support](json-support.md#jackson-support):
 
-@@snip [PetStoreExample.java]($akka-http$/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/petstore/PetStoreExample.java) { #imports #marshall }
+@@snip [PetStoreExample.java](/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/petstore/PetStoreExample.java) { #imports #marshall }
 
 @@@

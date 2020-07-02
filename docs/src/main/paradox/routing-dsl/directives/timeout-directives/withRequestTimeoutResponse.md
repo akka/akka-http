@@ -4,7 +4,7 @@
 
 ## Signature
 
-@@signature [TimeoutDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/TimeoutDirectives.scala) { #withRequestTimeoutResponse }
+@@signature [TimeoutDirectives.scala](/akka-http/src/main/scala/akka/http/scaladsl/server/directives/TimeoutDirectives.scala) { #withRequestTimeoutResponse }
 
 @@@
 

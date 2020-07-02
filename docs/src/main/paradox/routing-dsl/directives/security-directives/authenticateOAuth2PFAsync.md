@@ -3,9 +3,9 @@
 @@@ div { .group-scala }
 ## Signature
 
-@@signature [SecurityDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #AsyncAuthenticatorPF }
+@@signature [SecurityDirectives.scala](/akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #AsyncAuthenticatorPF }
 
-@@signature [SecurityDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #authenticateOAuth2PFAsync }
+@@signature [SecurityDirectives.scala](/akka-http/src/main/scala/akka/http/scaladsl/server/directives/SecurityDirectives.scala) { #authenticateOAuth2PFAsync }
 
 @@@
 

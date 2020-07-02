@@ -44,7 +44,7 @@ Scala
 :  @@snip [ServerSentEventsExampleSpec.scala]($test$/scala/docs/http/scaladsl/ServerSentEventsExampleSpec.scala) { #event-stream-marshalling-example }
 
 Java
-:  @@snip [EventStreamMarshallingTest.java]($akka-http$/akka-http-tests/src/test/java/akka/http/javadsl/marshalling/sse/EventStreamMarshallingTest.java) { #event-stream-marshalling-example }
+:  @@snip [EventStreamMarshallingTest.java](/akka-http-tests/src/test/java/akka/http/javadsl/marshalling/sse/EventStreamMarshallingTest.java) { #event-stream-marshalling-example }
 
 ## Client-side usage: unmarshalling
 
@@ -54,7 +54,7 @@ Scala
 :  @@snip [ServerSentEventsExampleSpec.scala]($test$/scala/docs/http/scaladsl/ServerSentEventsExampleSpec.scala) { #event-stream-unmarshalling-example }
 
 Java
-:  @@snip [EventStreamMarshallingTest.java]($akka-http$/akka-http-tests/src/test/java/akka/http/javadsl/unmarshalling/sse/EventStreamUnmarshallingTest.java) { #event-stream-unmarshalling-example }
+:  @@snip [EventStreamMarshallingTest.java](/akka-http-tests/src/test/java/akka/http/javadsl/unmarshalling/sse/EventStreamUnmarshallingTest.java) { #event-stream-unmarshalling-example }
 
 Notice that if you are looking for a resilient way to permanently subscribe to an event stream,
 Alpakka provides the [EventSource](https://doc.akka.io/docs/alpakka/current/sse.html)

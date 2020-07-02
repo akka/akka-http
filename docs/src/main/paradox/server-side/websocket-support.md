@@ -20,10 +20,10 @@ contains `isText` and `isBinary` methods to distinguish a message and `asBinaryM
 Take the API of @apidoc[TextMessage] as an example (@apidoc[BinaryMessage] is very similar with `String` replaced by @apidoc[akka.util.ByteString]):
 
 Scala
-:  @@snip [Message.scala]($akka-http$/akka-http-core/src/main/scala/akka/http/scaladsl/model/ws/Message.scala) { #message-model }
+:  @@snip [Message.scala](/akka-http-core/src/main/scala/akka/http/scaladsl/model/ws/Message.scala) { #message-model }
 
 Java
-:  @@snip [Message.scala]($akka-http$/akka-http-core/src/main/scala/akka/http/javadsl/model/ws/Message.scala) { #message-model }
+:  @@snip [Message.scala](/akka-http-core/src/main/scala/akka/http/javadsl/model/ws/Message.scala) { #message-model }
 
 The data of a message is provided as a stream because WebSocket messages do not have a predefined size and could
 (in theory) be infinitely long. However, only one message can be open per direction of the WebSocket connection,

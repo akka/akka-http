@@ -4,7 +4,7 @@
 
 ## Signature
 
-@@signature [CookieDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/CookieDirectives.scala) { #optionalCookie }
+@@signature [CookieDirectives.scala](/akka-http/src/main/scala/akka/http/scaladsl/server/directives/CookieDirectives.scala) { #optionalCookie }
 
 @@@
 

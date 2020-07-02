@@ -4,7 +4,7 @@
 
 ## Signature
 
-@@signature [CodingDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/CodingDirectives.scala) { #decodeRequestWith }
+@@signature [CodingDirectives.scala](/akka-http/src/main/scala/akka/http/scaladsl/server/directives/CodingDirectives.scala) { #decodeRequestWith }
 
 @@@
 

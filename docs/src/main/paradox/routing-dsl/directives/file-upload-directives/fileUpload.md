@@ -4,7 +4,7 @@
 
 ## Signature
 
-@@signature [FileUploadDirectives.scala]($akka-http$/akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileUploadDirectives.scala) { #fileUpload }
+@@signature [FileUploadDirectives.scala](/akka-http/src/main/scala/akka/http/scaladsl/server/directives/FileUploadDirectives.scala) { #fileUpload }
 
 @@@
 
