@@ -37,7 +37,7 @@ inThisBuild(Def.settings(
   shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
   concurrentRestrictions in Global += Tags.limit(Tags.Test, 1),
   onLoad in Global := {
-    sLog.value.info(s"Building Akka HTTP ${version.value} against Akka ${AkkaDependency.akkaVersion}")
+    sLog.value.info(s"Building Akka HTTP ${version.value} against Akka ${AkkaDependency.akkaVersion} on Scala ${(scalaVersion in httpCore).value}")
     (onLoad in Global).value
   },
 ))
