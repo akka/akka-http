@@ -28,7 +28,7 @@ class ResponseParsingMergeSpec extends AkkaSpec {
 
       val inBypassProbe = TestPublisher.manualProbe[OutgoingConnectionBlueprint.BypassData]()
       val inSessionBytesProbe = TestPublisher.manualProbe[SessionBytes]()
-      val responseProbe = TestSubscriber.manualProbe[List[ParserOutput.ResponseOutput]]
+      val responseProbe = TestSubscriber.manualProbe[List[ParserOutput.ResponseOutput]]()
 
       val responseParsingMerge: ResponseParsingMerge = {
         val rootParser = new HttpResponseParser(parserSettings, HttpHeaderParser(parserSettings, log))

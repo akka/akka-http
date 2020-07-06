@@ -814,7 +814,7 @@ Host: example.com
 
       def handler(request: HttpRequest): Future[HttpResponse] = {
         request.entity.dataBytes.runWith(dataProbe.sink)
-        Promise[HttpResponse].future // just let it hanging until idle timeout triggers
+        Promise[HttpResponse]().future // just let it hanging until idle timeout triggers
       }
 
       val settings = ServerSettings(system).mapTimeouts(_.withIdleTimeout(1.second))
@@ -846,7 +846,7 @@ Host: example.com
     val (connSource, binding: Future[ServerBinding]) = {
       val settings = configOverrides.toOption.fold(ServerSettings(system))(ServerSettings(_))
       val connections = Http().bind(hostname, port, settings = settings)
-      val probe = TestSubscriber.manualProbe[Http.IncomingConnection]
+      val probe = TestSubscriber.manualProbe[Http.IncomingConnection]()
       val binding = connections.to(Sink.fromSubscriber(probe)).run()
       (probe, binding)
     }

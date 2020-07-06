@@ -17,10 +17,10 @@ package object http2 {
     def hex(args: Any*): ByteString = {
       val strings = sc.parts.iterator
       val expressions = args.iterator
-      val buf = new StringBuffer(strings.next)
+      val buf = new StringBuffer(strings.next())
       while (strings.hasNext) {
-        buf append expressions.next
-        buf append strings.next
+        buf append expressions.next()
+        buf append strings.next()
       }
       buf.toString.parseHexByteString
     }

@@ -642,7 +642,7 @@ class NewConnectionPoolSpec extends AkkaSpecWithMaterializer("""
     def mapServerSideOutboundRawBytes(bytes: ByteString): ByteString = bytes
 
     val incomingConnectionCounter = new AtomicInteger
-    val incomingConnections = TestSubscriber.manualProbe[Http.IncomingConnection]
+    val incomingConnections = TestSubscriber.manualProbe[Http.IncomingConnection]()
     val (incomingConnectionsSub, serverHostName: String, serverPort: Int) = {
       val rawBytesInjection = BidiFlow.fromFlows(
         Flow[SslTlsOutbound].collect[ByteString] { case SendBytes(x) => mapServerSideOutboundRawBytes(x) }
@@ -729,7 +729,7 @@ class NewConnectionPoolSpec extends AkkaSpecWithMaterializer("""
 
     def flowTestBench[T, Mat](poolFlow: Flow[(HttpRequest, T), (Try[HttpResponse], T), Mat]) = {
       val requestIn = TestPublisher.probe[(HttpRequest, T)]()
-      val responseOut = TestSubscriber.manualProbe[(Try[HttpResponse], T)]
+      val responseOut = TestSubscriber.manualProbe[(Try[HttpResponse], T)]()
       val hcp = Source.fromPublisher(requestIn).viaMat(poolFlow)(Keep.right).to(Sink.fromSubscriber(responseOut)).run()
       val responseOutSub = responseOut.expectSubscription()
       (requestIn, responseOut, responseOutSub, hcp)

@@ -118,10 +118,10 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
       protocol = c(7) match {
         case '0' => `HTTP/1.0`
         case '1' => `HTTP/1.1`
-        case _   => onBadProtocol
+        case _   => onBadProtocol()
       }
       cursor + 8
-    } else onBadProtocol
+    } else onBadProtocol()
   }
 
   /**

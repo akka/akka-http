@@ -110,8 +110,8 @@ object Http2ServerTest extends App {
 
   def imagesBlock = {
     def one(): String =
-      s"""<img width="80" height="60" src="/image1?cachebuster=${Random.nextInt}"></img>
-         |<img width="80" height="60" src="/image2?cachebuster=${Random.nextInt}"></img>
+      s"""<img width="80" height="60" src="/image1?cachebuster=${Random.nextInt()}"></img>
+         |<img width="80" height="60" src="/image2?cachebuster=${Random.nextInt()}"></img>
          |""".stripMargin
 
     Seq.fill(20)(one()).mkString

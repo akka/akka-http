@@ -124,7 +124,7 @@ class HttpsProxyGraphStageSpec extends AkkaSpecWithMaterializer {
 
         flowOutProbe.sendNext(ByteString("HTTP/1.0 501 Some Error\r\n\r\n"))
 
-        sink.expectError match {
+        sink.expectError() match {
           case _: ProxyConnectionFailedException =>
           case e =>
             fail(s"should be ProxyConnectionFailedException, caught ${e.getClass.getName} instead")

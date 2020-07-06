@@ -71,7 +71,7 @@ class HttpServerSpec extends AkkaSpec(
 
       inside(expectRequest()) {
         case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) =>
-          val dataProbe = TestSubscriber.manualProbe[ByteString]
+          val dataProbe = TestSubscriber.manualProbe[ByteString]()
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
@@ -121,7 +121,7 @@ class HttpServerSpec extends AkkaSpec(
 
       inside(expectRequest()) {
         case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) =>
-          val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
+          val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]()
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
@@ -177,7 +177,7 @@ class HttpServerSpec extends AkkaSpec(
 
       inside(expectRequest()) {
         case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) =>
-          val dataProbe = TestSubscriber.manualProbe[ByteString]
+          val dataProbe = TestSubscriber.manualProbe[ByteString]()
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
@@ -202,7 +202,7 @@ class HttpServerSpec extends AkkaSpec(
 
       inside(expectRequest()) {
         case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) =>
-          val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
+          val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]()
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
@@ -255,7 +255,7 @@ class HttpServerSpec extends AkkaSpec(
 
       inside(expectRequest()) {
         case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) =>
-          val dataProbe = TestSubscriber.manualProbe[ByteString]
+          val dataProbe = TestSubscriber.manualProbe[ByteString]()
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
@@ -295,7 +295,7 @@ class HttpServerSpec extends AkkaSpec(
 
       inside(expectRequest()) {
         case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) =>
-          val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
+          val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]()
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
@@ -334,7 +334,7 @@ class HttpServerSpec extends AkkaSpec(
 
       inside(expectRequest()) {
         case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) =>
-          val dataProbe = TestSubscriber.manualProbe[ByteString]
+          val dataProbe = TestSubscriber.manualProbe[ByteString]()
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
@@ -358,7 +358,7 @@ class HttpServerSpec extends AkkaSpec(
 
       inside(expectRequest()) {
         case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) =>
-          val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
+          val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]()
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
@@ -390,7 +390,7 @@ class HttpServerSpec extends AkkaSpec(
 
       inside(expectRequest()) {
         case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) =>
-          val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
+          val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]()
           // but only one consumed by server
           data.take(1).to(Sink.fromSubscriber(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
@@ -432,7 +432,7 @@ class HttpServerSpec extends AkkaSpec(
              |abcdef""")
       inside(expectRequest()) {
         case HttpRequest(POST, _, _, HttpEntity.Default(_, 12, data), _) =>
-          val dataProbe = TestSubscriber.manualProbe[ByteString]
+          val dataProbe = TestSubscriber.manualProbe[ByteString]()
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
@@ -454,7 +454,7 @@ class HttpServerSpec extends AkkaSpec(
              |""")
       inside(expectRequest()) {
         case HttpRequest(POST, _, _, HttpEntity.Chunked(_, data), _) =>
-          val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
+          val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]()
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
@@ -617,7 +617,7 @@ class HttpServerSpec extends AkkaSpec(
              |""")
       inside(expectRequest()) {
         case HttpRequest(POST, _, _, Default(ContentType(`application/octet-stream`, None), 16, data), _) =>
-          val dataProbe = TestSubscriber.manualProbe[ByteString]
+          val dataProbe = TestSubscriber.manualProbe[ByteString]()
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val dataSub = dataProbe.expectSubscription()
           netOut.expectNoBytes(50.millis.dilated)
@@ -657,7 +657,7 @@ class HttpServerSpec extends AkkaSpec(
              |""")
       inside(expectRequest()) {
         case HttpRequest(POST, _, _, Chunked(ContentType(`application/octet-stream`, None), data), _) =>
-          val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
+          val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]()
           data.to(Sink.fromSubscriber(dataProbe)).run()
           val dataSub = dataProbe.expectSubscription()
           netOut.expectNoBytes(50.millis.dilated)

@@ -168,7 +168,7 @@ class FastFutureSpec extends AnyFreeSpec with Matchers {
       check(op(f.fast).value.get)
     }
     def testLazily(): Unit = {
-      val p = Promise[Int]
+      val p = Promise[Int]()
       val opped = op(p.future.fast)
       p.complete(result)
       Await.ready(opped, 500.millis)

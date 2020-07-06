@@ -109,7 +109,7 @@ class GracefulTerminationSpec
     "fail close delimited response streams" ignore new TestSetup {
       val clientSystem = ActorSystem("client")
       val r1 =
-        Http()(clientSystem).singleRequest(nextRequest, connectionContext = clientConnectionContext, settings = basePoolSettings)
+        Http()(clientSystem).singleRequest(nextRequest(), connectionContext = clientConnectionContext, settings = basePoolSettings)
 
       // reply with an infinite entity stream
       val chunks = Source

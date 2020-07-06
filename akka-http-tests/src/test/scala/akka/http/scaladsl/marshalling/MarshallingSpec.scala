@@ -106,31 +106,31 @@ class MarshallingSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll w
     "multipartMarshaller should correctly marshal multipart content with" - {
       "no parts" in {
         marshal(Multipart.General(`multipart/mixed`)) shouldEqual HttpEntity(
-          contentType = (`multipart/mixed` withBoundary randomBoundary).toContentType,
+          contentType = (`multipart/mixed` withBoundary randomBoundaryValue).toContentType,
           data = ByteString(s"""
-                      |--$randomBoundary--""".stripMarginWithNewline("\r\n")))
+                      |--$randomBoundaryValue--""".stripMarginWithNewline("\r\n")))
       }
       "one empty part" in {
         marshal(Multipart.General(`multipart/mixed`, Multipart.General.BodyPart.Strict(""))) shouldEqual HttpEntity(
-          contentType = (`multipart/mixed` withBoundary randomBoundary).toContentType,
-          data = ByteString(s"""--$randomBoundary
+          contentType = (`multipart/mixed` withBoundary randomBoundaryValue).toContentType,
+          data = ByteString(s"""--$randomBoundaryValue
                       |Content-Type: text/plain; charset=UTF-8
                       |
                       |
-                      |--$randomBoundary--""".stripMarginWithNewline("\r\n")))
+                      |--$randomBoundaryValue--""".stripMarginWithNewline("\r\n")))
       }
       "one non-empty part" in {
         marshal(Multipart.General(`multipart/alternative`, Multipart.General.BodyPart.Strict(
           entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "test@there.com"),
           headers = `Content-Disposition`(ContentDispositionTypes.`form-data`, Map("name" -> "email")) :: Nil))) shouldEqual
           HttpEntity(
-            contentType = (`multipart/alternative` withBoundary randomBoundary).toContentType,
-            data = ByteString(s"""--$randomBoundary
+            contentType = (`multipart/alternative` withBoundary randomBoundaryValue).toContentType,
+            data = ByteString(s"""--$randomBoundaryValue
                         |Content-Type: text/plain; charset=UTF-8
                         |Content-Disposition: form-data; name="email"
                         |
                         |test@there.com
-                        |--$randomBoundary--""".stripMarginWithNewline("\r\n")))
+                        |--$randomBoundaryValue--""".stripMarginWithNewline("\r\n")))
       }
       "two different parts" in {
         marshal(Multipart.General(
@@ -140,18 +140,18 @@ class MarshallingSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll w
             HttpEntity(`application/octet-stream`, ByteString("filecontent")),
             RawHeader("Content-Transfer-Encoding", "binary") :: Nil))) shouldEqual
           HttpEntity(
-            contentType = (`multipart/related` withBoundary randomBoundary).toContentType,
-            data = ByteString(s"""--$randomBoundary
+            contentType = (`multipart/related` withBoundary randomBoundaryValue).toContentType,
+            data = ByteString(s"""--$randomBoundaryValue
                       |Content-Type: text/plain; charset=US-ASCII
                       |
                       |first part, with a trailing linebreak
                       |
-                      |--$randomBoundary
+                      |--$randomBoundaryValue
                       |Content-Type: application/octet-stream
                       |Content-Transfer-Encoding: binary
                       |
                       |filecontent
-                      |--$randomBoundary--""".stripMarginWithNewline("\r\n")))
+                      |--$randomBoundaryValue--""".stripMarginWithNewline("\r\n")))
       }
     }
 
@@ -161,18 +161,18 @@ class MarshallingSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll w
           "surname" -> HttpEntity("Mike"),
           "age" -> marshal(<int>42</int>)))) shouldEqual
           HttpEntity(
-            contentType = (`multipart/form-data` withBoundary randomBoundary).toContentType,
-            data = ByteString(s"""--$randomBoundary
+            contentType = (`multipart/form-data` withBoundary randomBoundaryValue).toContentType,
+            data = ByteString(s"""--$randomBoundaryValue
                       |Content-Type: text/plain; charset=UTF-8
                       |Content-Disposition: form-data; name="surname"
                       |
                       |Mike
-                      |--$randomBoundary
+                      |--$randomBoundaryValue
                       |Content-Type: text/xml; charset=UTF-8
                       |Content-Disposition: form-data; name="age"
                       |
                       |<int>42</int>
-                      |--$randomBoundary--""".stripMarginWithNewline("\r\n")))
+                      |--$randomBoundaryValue--""".stripMarginWithNewline("\r\n")))
       }
 
       "two fields having a custom `Content-Disposition`" in {
@@ -182,21 +182,21 @@ class MarshallingSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll w
           Multipart.FormData.BodyPart("attachment[1]", HttpEntity("naice!".getBytes),
             Map("filename" -> "attachment2.csv"), List(RawHeader("Content-Transfer-Encoding", "binary"))))))) shouldEqual
           HttpEntity(
-            contentType = (`multipart/form-data` withBoundary randomBoundary).toContentType,
-            data = ByteString(s"""--$randomBoundary
+            contentType = (`multipart/form-data` withBoundary randomBoundaryValue).toContentType,
+            data = ByteString(s"""--$randomBoundaryValue
                         |Content-Type: text/csv; charset=UTF-8
                         |Content-Disposition: form-data; filename="attachment.csv"; name="attachment[0]"
                         |
                         |name,age
                         |"John Doe",20
                         |
-                        |--$randomBoundary
+                        |--$randomBoundaryValue
                         |Content-Type: application/octet-stream
                         |Content-Disposition: form-data; filename="attachment2.csv"; name="attachment[1]"
                         |Content-Transfer-Encoding: binary
                         |
                         |naice!
-                        |--$randomBoundary--""".stripMarginWithNewline("\r\n")))
+                        |--$randomBoundaryValue--""".stripMarginWithNewline("\r\n")))
       }
     }
   }
@@ -210,4 +210,5 @@ class MarshallingSpec extends AnyFreeSpec with Matchers with BeforeAndAfterAll w
     }
   }
   override protected val multipartBoundaryRandom = new FixedRandom // fix for stable value
+  val randomBoundaryValue = super.randomBoundary()
 }

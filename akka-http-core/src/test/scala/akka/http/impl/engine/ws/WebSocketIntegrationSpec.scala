@@ -78,7 +78,7 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
             FlowShape(Inlet("completeOnlySwitch.in"), Outlet("completeOnlySwitch.out"))
 
           override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Promise[Done]) = {
-            val promise = Promise[Done]
+            val promise = Promise[Done]()
 
             val logic = new GraphStageLogic(shape) with InHandler with OutHandler {
               override def onPush(): Unit = push(shape.out, grab(shape.in))
@@ -195,7 +195,7 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
     }
 
     "terminate the handler flow with an error when the connection is aborted" in Utils.assertAllStagesStopped {
-      val handlerTermination = Promise[Done]
+      val handlerTermination = Promise[Done]()
 
       val handler = Flow[Message]
         .watchTermination()(Keep.right)

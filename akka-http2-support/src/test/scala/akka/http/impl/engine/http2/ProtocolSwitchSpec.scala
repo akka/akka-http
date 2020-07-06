@@ -52,8 +52,8 @@ class ProtocolSwitchSpec extends AkkaSpec {
         http1flowMaterialized.future.futureValue
       }
       http2flowMaterialized.future.futureValue should be(Done)
-      out.pull.futureValue should be(Some(SendBytes(Http2Protocol.ClientConnectionPreface)))
-      out.pull.futureValue should be(Some(SendBytes(payload)))
+      out.pull().futureValue should be(Some(SendBytes(Http2Protocol.ClientConnectionPreface)))
+      out.pull().futureValue should be(Some(SendBytes(payload)))
     }
 
     "switch to http2 when the connection preface arrives together with the payload" in {
@@ -79,7 +79,7 @@ class ProtocolSwitchSpec extends AkkaSpec {
         http1flowMaterialized.future.futureValue
       }
       http2flowMaterialized.future.futureValue should be(Done)
-      out.pull.futureValue should be(Some(SendBytes(Http2Protocol.ClientConnectionPreface ++ payload)))
+      out.pull().futureValue should be(Some(SendBytes(Http2Protocol.ClientConnectionPreface ++ payload)))
     }
 
     "switch to http2 when the connection preface arrives in two parts" ignore {
@@ -106,8 +106,8 @@ class ProtocolSwitchSpec extends AkkaSpec {
         http1flowMaterialized.future.futureValue
       }
       http2flowMaterialized.future.futureValue should be(Done)
-      out.pull.futureValue should be(Some(SendBytes(Http2Protocol.ClientConnectionPreface)))
-      out.pull.futureValue should be(Some(SendBytes(payload)))
+      out.pull().futureValue should be(Some(SendBytes(Http2Protocol.ClientConnectionPreface)))
+      out.pull().futureValue should be(Some(SendBytes(payload)))
     }
 
     "select http1 when receiving a short http1 request" in {
@@ -132,7 +132,7 @@ class ProtocolSwitchSpec extends AkkaSpec {
         http2flowMaterialized.future.futureValue
       }
       http1flowMaterialized.future.futureValue should be(Done)
-      out.pull.futureValue should be(Some(SendBytes(payload)))
+      out.pull().futureValue should be(Some(SendBytes(payload)))
     }
   }
 }

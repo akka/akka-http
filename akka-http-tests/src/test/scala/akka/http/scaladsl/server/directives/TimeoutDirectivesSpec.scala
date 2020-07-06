@@ -64,6 +64,6 @@ class TimeoutDirectivesSpec extends RoutingSpec {
     }
   }
 
-  def slowFuture(): Future[String] = Promise[String].future
+  def slowFuture(): Future[String] = Promise[String]().future
 
 }

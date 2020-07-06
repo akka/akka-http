@@ -12,7 +12,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
-import akka.stream.{ ActorMaterializerHelper, Materializer }
+import akka.stream.Materializer
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 

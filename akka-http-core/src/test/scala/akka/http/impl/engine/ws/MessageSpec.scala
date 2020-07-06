@@ -983,7 +983,7 @@ class MessageSpec extends AkkaSpecWithMaterializer with Eventually {
 
     val netIn = TestPublisher.probe[ByteString]()
     val netOut = ByteStringSinkProbe()
-    val messageIn = TestSubscriber.probe[Message]
+    val messageIn = TestSubscriber.probe[Message]()
     val messageOut = TestPublisher.probe[Message]()
     val messageHandler: Flow[Message, Message, NotUsed] =
       Flow.fromSinkAndSource(
