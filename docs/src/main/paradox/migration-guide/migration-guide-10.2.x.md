@@ -55,6 +55,13 @@ This can save bandwidth in some cases, but is also counter-intuitive when you ac
  and may increase resource usage in cases where the logic behind the `GET` request is heavy. For this reason we have changed
  the default value of `akka.http.server.transparent-head-requests` to `off`, making this feature opt-in.
 
+### Server-side HTTP pipelining now disabled by default
+
+HTTP pipelining is now disabled by default. It is not used commonly by clients because it suffers from
+head-of-line blocking. It is recommended to use pooled connections or HTTP/2 instead.
+
+HTTP pipelining is still supported and can be re-enabled by setting `pipelining-limit = n` with a value of `n > 1`.
+
 ### X-Real-Ip now takes precedence over Remote-Address in extractClientIP
 
 The @ref[extractClientIP](../routing-dsl/directives/misc-directives/extractClientIP.md) now returns the value of the

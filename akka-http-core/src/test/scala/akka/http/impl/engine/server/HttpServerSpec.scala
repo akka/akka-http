@@ -229,6 +229,8 @@ class HttpServerSpec extends AkkaSpec(
           headers = List(Host("example.com")),
           entity = HttpEntity.Strict(ContentTypes.`application/octet-stream`, ByteString("abcdefghijkl")))
 
+      simpleResponse()
+
       send("""POST /next-strict HTTP/1.1
              |Host: example.com
              |Content-Length: 12
@@ -266,6 +268,8 @@ class HttpServerSpec extends AkkaSpec(
           dataProbe.expectNext(ByteString("kl"))
           dataProbe.expectComplete()
       }
+
+      simpleResponse()
 
       send("""POST /next-strict HTTP/1.1
              |Host: example.com
@@ -305,6 +309,8 @@ class HttpServerSpec extends AkkaSpec(
           dataProbe.expectNext(LastChunk)
           dataProbe.expectComplete()
       }
+
+      simpleResponse()
 
       send("""POST /next-strict HTTP/1.1
              |Host: example.com
@@ -412,6 +418,8 @@ class HttpServerSpec extends AkkaSpec(
 
         val whenComplete = expectRequest().entity.dataBytes.runWith(Sink.ignore)
         whenComplete.futureValue should be(akka.Done)
+
+        simpleResponse()
       }
       shutdownBlueprint()
     })
@@ -1219,7 +1227,6 @@ class HttpServerSpec extends AkkaSpec(
                 error shouldEqual EntityStreamSizeException(limit, Some(actualSize))
                 error.getMessage should include("exceeded size limit")
 
-                responses.expectRequest()
                 responses.sendError(error.asInstanceOf[Exception])
 
                 expectResponseWithWipedDate(
@@ -1244,7 +1251,6 @@ class HttpServerSpec extends AkkaSpec(
                 error shouldEqual EntityStreamSizeException(limit, None)
                 error.getMessage should include("exceeded size limit")
 
-                responses.expectRequest()
                 responses.sendError(error.asInstanceOf[Exception])
 
                 expectResponseWithWipedDate(
@@ -1264,6 +1270,8 @@ class HttpServerSpec extends AkkaSpec(
         sendStrictRequestWithLength(10)
         expectRequest().expectEntity[HttpEntity.Strict](10)
 
+        simpleResponse()
+
         // entities that would be strict but have a Content-Length > the configured maximum are delivered
         // as single element Default entities!
         sendStrictRequestWithLength(11)
@@ -1274,6 +1282,8 @@ class HttpServerSpec extends AkkaSpec(
         sendDefaultRequestWithLength(10)
         expectRequest().expectEntity[HttpEntity.Default](10)
 
+        simpleResponse()
+
         sendDefaultRequestWithLength(11)
         expectRequest().expectDefaultEntityWithSizeError(limit = 10, actualSize = 11)
       }
@@ -1281,6 +1291,8 @@ class HttpServerSpec extends AkkaSpec(
       "the config setting (chunked entity)" in new LengthVerificationTest(maxContentLength = 10) {
         sendChunkedRequestWithLength(10)
         expectRequest().expectEntity[HttpEntity.Chunked](10)
+
+        simpleResponse()
 
         sendChunkedRequestWithLength(11)
         expectRequest().expectChunkedEntityWithSizeError(limit = 10)
@@ -1290,6 +1302,7 @@ class HttpServerSpec extends AkkaSpec(
         sendStrictRequestWithLength(10)
         expectRequest().mapEntity(_ withSizeLimit 10).expectEntity[HttpEntity.Strict](10)
 
+        simpleResponse()
         // entities that would be strict but have a Content-Length > the configured maximum are delivered
         // as single element Default entities!
         sendStrictRequestWithLength(11)
@@ -1300,6 +1313,8 @@ class HttpServerSpec extends AkkaSpec(
         sendDefaultRequestWithLength(10)
         expectRequest().mapEntity(_ withSizeLimit 10).expectEntity[HttpEntity.Default](10)
 
+        simpleResponse()
+
         sendDefaultRequestWithLength(11)
         expectRequest().mapEntity(_ withSizeLimit 10).expectDefaultEntityWithSizeError(limit = 10, actualSize = 11)
       }
@@ -1307,6 +1322,8 @@ class HttpServerSpec extends AkkaSpec(
       "a smaller programmatically-set limit (chunked entity)" in new LengthVerificationTest(maxContentLength = 12) {
         sendChunkedRequestWithLength(10)
         expectRequest().mapEntity(_ withSizeLimit 10).expectEntity[HttpEntity.Chunked](10)
+
+        simpleResponse()
 
         sendChunkedRequestWithLength(11)
         expectRequest().mapEntity(_ withSizeLimit 10).expectChunkedEntityWithSizeError(limit = 10)
@@ -1318,6 +1335,8 @@ class HttpServerSpec extends AkkaSpec(
         sendStrictRequestWithLength(10)
         expectRequest().mapEntity(_ withSizeLimit 10).expectEntity[HttpEntity.Default](10)
 
+        simpleResponse()
+
         sendStrictRequestWithLength(11)
         expectRequest().mapEntity(_ withSizeLimit 10).expectDefaultEntityWithSizeError(limit = 10, actualSize = 11)
       }
@@ -1326,6 +1345,8 @@ class HttpServerSpec extends AkkaSpec(
         sendDefaultRequestWithLength(10)
         expectRequest().mapEntity(_ withSizeLimit 10).expectEntity[HttpEntity.Default](10)
 
+        simpleResponse()
+
         sendDefaultRequestWithLength(11)
         expectRequest().mapEntity(_ withSizeLimit 10).expectDefaultEntityWithSizeError(limit = 10, actualSize = 11)
       }
@@ -1333,6 +1354,8 @@ class HttpServerSpec extends AkkaSpec(
       "a larger programmatically-set limit (chunked entity)" in new LengthVerificationTest(maxContentLength = 8) {
         sendChunkedRequestWithLength(10)
         expectRequest().mapEntity(_ withSizeLimit 10).expectEntity[HttpEntity.Chunked](10)
+
+        simpleResponse()
 
         sendChunkedRequestWithLength(11)
         expectRequest().mapEntity(_ withSizeLimit 10).expectChunkedEntityWithSizeError(limit = 10)
@@ -1345,6 +1368,8 @@ class HttpServerSpec extends AkkaSpec(
         }
         sendDefaultRequestWithLength(10)
         expectRequest().mapEntity(nameDataSource("foo")).expectEntity[HttpEntity.Default](10)
+
+        simpleResponse()
 
         sendDefaultRequestWithLength(11)
         expectRequest().mapEntity(nameDataSource("foo")).expectDefaultEntityWithSizeError(limit = 10, actualSize = 11)

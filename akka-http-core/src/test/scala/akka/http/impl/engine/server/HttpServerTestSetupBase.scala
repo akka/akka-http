@@ -73,12 +73,23 @@ abstract class HttpServerTestSetupBase {
 
   def closeNetworkInput(): Unit = netIn.sendComplete()
 
+  def simpleResponse(): Unit = {
+    responses.sendNext(HttpResponse())
+    expectResponseWithWipedDate(
+      """HTTP/1.1 200 OK
+        |Server: akka-http/test
+        |Date: XXXX
+        |Content-Length: 0
+        |
+        |"""
+    )
+  }
+
   def shutdownBlueprint(): Unit = {
     netIn.sendComplete()
     requests.expectComplete()
 
     responses.sendComplete()
-    netOut.expectBytes(ByteString("HTT")) // ???
-    netOut.expectComplete()
+    netOut.cancel()
   }
 }
