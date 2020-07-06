@@ -5,7 +5,6 @@
 package akka.http.scaladsl.server
 package directives
 
-import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.http.impl.util._
 import akka.http.scaladsl.common._

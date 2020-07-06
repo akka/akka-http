@@ -48,7 +48,7 @@ abstract class PathMatcher[L](implicit val ev: Tuple[L]) extends (Path => PathMa
   }
 
   /** Operator alternative to [[PathMatchers.not]] */
-  def unary_!(): PathMatcher0 = PathMatchers.not(self)
+  def unary_! : PathMatcher0 = PathMatchers.not(self)
 
   def transform[R: Tuple](f: Matching[L] => Matching[R]): PathMatcher[R] =
     new PathMatcher[R] { def apply(path: Path) = f(self(path)) }
