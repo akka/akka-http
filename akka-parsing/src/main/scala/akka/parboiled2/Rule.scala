@@ -73,7 +73,7 @@ sealed class Rule[-I <: HList, +O <: HList] extends RuleX {
    * effects that the underlying rule might have had on the value stack.
    */
   @compileTimeOnly("Calls to `unary_!` must be inside `rule` macro")
-  def unary_!(): Rule0 = `n/a`
+  def unary_! : Rule0 = `n/a`
 
   /**
    * Attaches the given explicit name to this rule.

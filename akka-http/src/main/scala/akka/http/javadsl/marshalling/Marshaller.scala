@@ -17,7 +17,6 @@ import akka.util.ByteString
 
 import scala.concurrent.ExecutionContext
 import scala.annotation.unchecked.uncheckedVariance
-import scala.language.implicitConversions
 
 object Marshaller {
 

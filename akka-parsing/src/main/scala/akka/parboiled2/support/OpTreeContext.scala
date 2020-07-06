@@ -101,7 +101,7 @@ trait OpTreeContext[OpTreeCtx <: ParserMacros.ParserContext] {
     case q"$base.+($sep)($l)"                              => OneOrMore(OpTree(base), collector(l), Separator(OpTree(sep)))
     case q"$base.times[$a, $b]($r)($s)"                    => Times(base, OpTree(r), collector(s))
     case q"$a.this.&($arg)"                                => AndPredicate(OpTree(arg))
-    case q"$a.unary_!()"                                   => NotPredicate(OpTree(a))
+    case q"$a.unary_!"                                     => NotPredicate(OpTree(a))
     case q"$a.this.atomic[$b, $c]($arg)"                   => Atomic(OpTree(arg))
     case q"$a.this.quiet[$b, $c]($arg)"                    => Quiet(OpTree(arg))
     case q"$a.this.test($flag)"                            => SemanticPredicate(flag)
