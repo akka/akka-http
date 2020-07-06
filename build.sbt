@@ -339,10 +339,6 @@ lazy val docs = project("docs")
       // In docs adding an unused variable can be helpful, for example
       // to show its type
       "-Xlint:-unused",
-      // We use this for `complete`
-      "-Xlint:-adapted-args",
-      // TODO avoid this deprecation
-      "-P:silencer:globalFilters=Adaptation of argument list;adaptation of an empty argument list",
       // Does not appear to lead to problems
       "-P:silencer:globalFilters=The outer reference in this type test cannot be checked at run time",
       // Can be removed when we drop support for Scala 2.12
