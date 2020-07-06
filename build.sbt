@@ -15,8 +15,6 @@ inThisBuild(Def.settings(
   organizationName := "Lightbend",
   organizationHomepage := Some(url("https://www.lightbend.com")),
   homepage := Some(url("https://akka.io")),
-  // https://github.com/dwijnand/sbt-dynver/issues/23
-  isSnapshot :=  { isSnapshot.value || hasCommitsAfterTag(dynverGitDescribeOutput.value) },
   apiURL := {
     val apiVersion = if (isSnapshot.value) "current" else version.value
     Some(url(s"https://doc.akka.io/api/akka-http/$apiVersion/"))
@@ -341,8 +339,6 @@ lazy val docs = project("docs")
       "-Xlint:-unused",
       // Does not appear to lead to problems
       "-P:silencer:globalFilters=The outer reference in this type test cannot be checked at run time",
-      // Can be removed when we drop support for Scala 2.12
-      "-P:silencer:globalFilters=object JavaConverters in package collection is deprecated"
     ),
     scalacOptions --= Seq(
       // Code after ??? can be considered 'dead',  but still useful for docs
