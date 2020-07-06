@@ -8,33 +8,19 @@ import java.net.InetSocketAddress
 import java.util.concurrent.TimeoutException
 
 import akka.Done
-import akka.actor.ActorSystem
+import akka.http.impl.util.AkkaSpecWithMaterializer
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings }
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{ Keep, Sink, Source }
 import akka.testkit._
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.{ BeforeAndAfterAll, OptionValues }
+import org.scalatest.OptionValues
 
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
 
-class ClientTransportWithCustomResolverSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with OptionValues {
-  val testConf: Config = ConfigFactory.parseString("""
-    akka.loggers = ["akka.testkit.TestEventListener"]
-    akka.loglevel = ERROR
-    akka.stdout-loglevel = ERROR
-    windows-connection-abort-workaround-enabled = auto
-    akka.log-dead-letters = OFF
-    akka.http.server.request-timeout = infinite""")
-  implicit val system = ActorSystem(getClass.getSimpleName, testConf)
-
-  override def afterAll() = TestKit.shutdownActorSystem(system)
-
+class ClientTransportWithCustomResolverSpec extends AkkaSpecWithMaterializer("akka.http.server.request-timeout = infinite") with OptionValues {
   "A custom resolver" should {
 
     "change to the desired destination" in {
@@ -68,7 +54,7 @@ class ClientTransportWithCustomResolverSpec extends AnyWordSpec with Matchers wi
       val bindingFuture = Http().bindAndHandleSync(_ => HttpResponse(), hostnameToUse, portToUse)
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
 
-      val resolverCalled = Promise[Done]
+      val resolverCalled = Promise[Done]()
 
       val otherHostAndPortTransport: ClientTransport = ClientTransport.withCustomResolver((host, port) => {
         host shouldBe hostnameToFind
