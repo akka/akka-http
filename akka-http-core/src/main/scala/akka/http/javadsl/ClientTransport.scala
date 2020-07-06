@@ -4,6 +4,10 @@
 
 package akka.http.javadsl
 
+import java.net.InetSocketAddress
+import java.util.concurrent.CompletionStage
+import java.util.function.BiFunction
+
 import akka.actor.ActorSystem
 import akka.annotation.ApiMayChange
 import akka.http.impl.util.JavaMapping
@@ -14,8 +18,6 @@ import akka.http.javadsl.settings.ClientConnectionSettings
 import akka.http.{ javadsl, scaladsl }
 import akka.stream.javadsl.Flow
 import akka.util.ByteString
-import java.net.InetSocketAddress
-import java.util.concurrent.CompletionStage
 import scala.concurrent.Future
 
 /**
@@ -77,6 +79,16 @@ object ClientTransport {
    */
   def httpsProxy(proxyCredentials: HttpCredentials, system: ActorSystem): ClientTransport =
     scaladsl.ClientTransport.httpsProxy(proxyCredentials.asScala)(system).asJava
+
+  /**
+   * Returns a [[ClientTransport]] that allows to customize host name resolution.
+   * @param lookup A function that will be called with hostname and port and that should (potentially asynchronously resolve the given host/port
+   *               to an [[InetSocketAddress]]
+   */
+  def withCustomResolver(lookup: BiFunction[String, Int, CompletionStage[InetSocketAddress]]): ClientTransport = {
+    import scala.compat.java8.FutureConverters._
+    scaladsl.ClientTransport.withCustomResolver((host, port) => lookup.apply(host, port).toScala).asJava
+  }
 
   def fromScala(scalaTransport: scaladsl.ClientTransport): ClientTransport =
     scalaTransport match {
