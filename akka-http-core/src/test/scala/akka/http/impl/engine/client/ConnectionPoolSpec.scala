@@ -105,7 +105,7 @@ class NewConnectionPoolSpec extends AkkaSpecWithMaterializer("""
         case (Success(x), 43) => requestUri(x) should endWith("/b")
         case x                => fail(x.toString)
       }
-      Seq(r1, r2).map(t => connNr(t._1.get)) should contain(allOf(1, 2))
+      Seq(r1, r2).map(t => connNr(t._1.get)) should contain allOf (1, 2)
     }
 
     "open a second connection if the request on the first one is dispatch but not yet completed" in new TestSetup {
