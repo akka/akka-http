@@ -17,7 +17,7 @@ object RejectionHandler {
   /**
    * Creates a new [[RejectionHandler]] builder.
    */
-  def newBuilder = new RejectionHandlerBuilder(server.RejectionHandler.newBuilder)
+  def newBuilder = new RejectionHandlerBuilder(server.RejectionHandler.newBuilder())
 
   def defaultHandler = new RejectionHandler(server.RejectionHandler.default)
 }

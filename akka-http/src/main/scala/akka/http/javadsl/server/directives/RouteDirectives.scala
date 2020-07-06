@@ -6,7 +6,6 @@ package akka.http.javadsl.server.directives
 
 import java.util.concurrent.{ CompletionException, CompletionStage }
 
-import akka.actor.ClassicActorSystemProvider
 import akka.dispatch.ExecutionContexts
 import akka.http.javadsl.marshalling.Marshaller
 
@@ -22,8 +21,6 @@ import akka.http.javadsl.server.RoutingJavaMapping._
 import akka.http.scaladsl.server.RouteResult
 import akka.http.scaladsl.server.directives.{ RouteDirectives => D }
 import akka.http.scaladsl.util.FastFuture._
-
-import scala.concurrent.ExecutionContext
 
 abstract class RouteDirectives extends RespondWithDirectives {
   import RoutingJavaMapping.Implicits._

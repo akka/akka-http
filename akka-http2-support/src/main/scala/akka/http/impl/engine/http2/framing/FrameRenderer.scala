@@ -34,7 +34,7 @@ private[http2] object FrameRenderer {
           Http2Protocol.FrameType.GOAWAY,
           Http2Protocol.Flags.NO_FLAGS,
           Http2Protocol.NoStreamId,
-          bb.result
+          bb.result()
         )
 
       case DataFrame(streamId, endStream, payload) =>
@@ -118,7 +118,7 @@ private[http2] object FrameRenderer {
           Http2Protocol.FrameType.RST_STREAM,
           Http2Protocol.Flags.NO_FLAGS,
           streamId,
-          new ByteStringBuilder().putInt(errorCode.id).result
+          new ByteStringBuilder().putInt(errorCode.id).result()
         )
 
       case PushPromiseFrame(streamId, endHeaders, promisedStreamId, headerBlockFragment) =>
@@ -159,6 +159,6 @@ private[http2] object FrameRenderer {
   }
   def renderPriorityInfo(priorityFrame: PriorityFrame): ByteString = {
     val exclusiveBit: Int = if (priorityFrame.exclusiveFlag) 0x80000000 else 0
-    new ByteStringBuilder().putInt(exclusiveBit | priorityFrame.streamDependency).putByte(priorityFrame.weight.toByte).result
+    new ByteStringBuilder().putInt(exclusiveBit | priorityFrame.streamDependency).putByte(priorityFrame.weight.toByte).result()
   }
 }

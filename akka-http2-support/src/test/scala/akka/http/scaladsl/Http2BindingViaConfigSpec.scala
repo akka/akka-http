@@ -59,7 +59,7 @@ class Http2BindingViaConfigSpec extends AkkaSpec("""
     }
   }
 
-  private def fishForDebugMessage(a: TestProbe, messagePrefix: String, max: Duration = 3.seconds) {
+  private def fishForDebugMessage(a: TestProbe, messagePrefix: String, max: Duration = 3.seconds): Unit = {
     a.fishForMessage(max, hint = "expected debug message part: " + messagePrefix) {
       case Logging.Debug(_, _, msg: String) if msg contains messagePrefix => true
       case _ => false

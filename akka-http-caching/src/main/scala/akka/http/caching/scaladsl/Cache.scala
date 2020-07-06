@@ -99,7 +99,7 @@ abstract class Cache[K, V] extends akka.http.caching.javadsl.Cache[K, V] {
    * Returns either the cached CompletionStage for the given key or the given value as a CompletionStage
    */
   override def getOrCreateStrict(key: K, block: Creator[V]): CompletionStage[V] =
-    futureToJava(get(key, () => block.create))
+    futureToJava(get(key, () => block.create()))
 
   /**
    * Returns the upper bound for the number of currently cached entries.
