@@ -387,11 +387,12 @@ final class HttpRequest(
 
   override def hashCode(): Int = {
     var result = HashCode.SEED
-    result = HashCode.hash(result, _1)
-    result = HashCode.hash(result, _2)
-    result = HashCode.hash(result, _3)
-    result = HashCode.hash(result, _4)
-    result = HashCode.hash(result, _5)
+    result = HashCode.hash(result, method)
+    result = HashCode.hash(result, uri)
+    result = HashCode.hash(result, headers)
+    result = HashCode.hash(result, attributes)
+    result = HashCode.hash(result, entity)
+    result = HashCode.hash(result, protocol)
     result
   }
 
@@ -564,10 +565,11 @@ final class HttpResponse(
 
   override def hashCode: Int = {
     var result = HashCode.SEED
-    result = HashCode.hash(result, _1)
-    result = HashCode.hash(result, _2)
-    result = HashCode.hash(result, _3)
-    result = HashCode.hash(result, _4)
+    result = HashCode.hash(result, status)
+    result = HashCode.hash(result, headers)
+    result = HashCode.hash(result, attributes)
+    result = HashCode.hash(result, entity)
+    result = HashCode.hash(result, protocol)
     result
   }
 
