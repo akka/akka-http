@@ -359,13 +359,6 @@ lazy val docs = project("docs")
       "akka.version" -> AkkaDependency.docs.version,
       "akka.minimum.version25" -> AkkaDependency.minimumExpectedAkkaVersion,
       "akka.minimum.version26" -> AkkaDependency.minimumExpectedAkka26Version,
-      "scala.binary_version" -> scalaBinaryVersion.value, // to be consistent with Akka build
-      "scala.binaryVersion" -> scalaBinaryVersion.value,
-      "scaladoc.version" -> scalaVersion.value,
-      "crossString" -> (scalaVersion.value match {
-        case akka.Doc.BinVer(_) => ""
-        case _                  => "cross CrossVersion.full"
-      }),
       "jackson.version" -> Dependencies.jacksonVersion,
       "extref.akka-docs.base_url" -> s"https://doc.akka.io/docs/akka/${AkkaDependency.docs.link}/%s",
       "javadoc.akka.http.base_url" -> {
@@ -383,7 +376,7 @@ lazy val docs = project("docs")
       "algolia.docsearch.index_name" -> "akka-http",
       "google.analytics.account" -> "UA-21117439-1",
       "google.analytics.domain.name" -> "akka.io",
-      "github.base_url" -> GitHub.url(version.value),
+      "github.base_url" -> GitHub.url(version.value, isSnapshot.value),
       "snip.test.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
       "snip.akka-http.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
       "signature.test.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,

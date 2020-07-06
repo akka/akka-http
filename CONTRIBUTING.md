@@ -16,7 +16,8 @@ You may also check out these [other resources](https://akka.io/get-involved/).
 
 Depending on which version (or sometimes module) you want to work on, you should target a specific branch as explained below:
 
-* `master` – active development branch of akka-http 10.0-SNAPSHOT
+* `master` – active development branch of akka-http 10.2.x
+* `release-10.1` – branch for fixes to akka-http 10.1.x
 
 ## Tags
 
