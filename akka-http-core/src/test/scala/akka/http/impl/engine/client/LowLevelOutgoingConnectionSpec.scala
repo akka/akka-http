@@ -279,7 +279,7 @@ class LowLevelOutgoingConnectionSpec extends AkkaSpecWithMaterializer with Insid
 
       inside(expectResponse()) {
         case HttpResponse(StatusCodes.OK, _, HttpEntity.Chunked(_, data), _) =>
-          val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]
+          val dataProbe = TestSubscriber.manualProbe[ChunkStreamPart]()
           // but only one consumed by server
           data.take(1).to(Sink.fromSubscriber(dataProbe)).run()
           val sub = dataProbe.expectSubscription()

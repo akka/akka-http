@@ -114,7 +114,7 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
       // Status format with no reason phrase and no trailing space accepted, diverging from the spec
       // See https://github.com/akka/akka-http/pull/989
       skipNewLine(cursor + 3)
-    } else badStatusCode
+    } else badStatusCode()
   }
 
   def handleInformationalResponses: Boolean = true

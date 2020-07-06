@@ -307,7 +307,7 @@ private[http] class ByteStringRendering(sizeHint: Int) extends Rendering {
   private[this] val builder = new ByteStringBuilder
   builder.sizeHint(sizeHint)
 
-  def get: ByteString = builder.result
+  def get: ByteString = builder.result()
 
   def ~~(char: Char): this.type = {
     builder += char.toByte

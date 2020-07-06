@@ -49,7 +49,7 @@ class PrepareResponseSpec extends AkkaSpec {
       implicit val mat = ActorMaterializer()
 
       val inProbe = TestPublisher.manualProbe[ParserOutput.ResponseOutput]()
-      val responseProbe = TestSubscriber.manualProbe[HttpResponse]
+      val responseProbe = TestSubscriber.manualProbe[HttpResponse]()
 
       Source.fromPublisher(inProbe)
         .via(new PrepareResponse(parserSettings))
@@ -94,7 +94,7 @@ class PrepareResponseSpec extends AkkaSpec {
       implicit val mat = ActorMaterializer()
 
       val inProbe = TestPublisher.manualProbe[ParserOutput.ResponseOutput]()
-      val responseProbe = TestSubscriber.manualProbe[HttpResponse]
+      val responseProbe = TestSubscriber.manualProbe[HttpResponse]()
 
       Source.fromPublisher(inProbe)
         .via(new PrepareResponse(parserSettings))
@@ -130,7 +130,7 @@ class PrepareResponseSpec extends AkkaSpec {
       implicit val mat = ActorMaterializer()
 
       val inProbe = TestPublisher.manualProbe[ParserOutput.ResponseOutput]()
-      val responseProbe = TestSubscriber.manualProbe[HttpResponse]
+      val responseProbe = TestSubscriber.manualProbe[HttpResponse]()
 
       Source.fromPublisher(inProbe)
         .via(new PrepareResponse(parserSettings))
@@ -171,7 +171,7 @@ class PrepareResponseSpec extends AkkaSpec {
       implicit val mat = ActorMaterializer()
 
       val inProbe = TestPublisher.manualProbe[ParserOutput.ResponseOutput]()
-      val responseProbe = TestSubscriber.manualProbe[HttpResponse]
+      val responseProbe = TestSubscriber.manualProbe[HttpResponse]()
 
       Source.fromPublisher(inProbe)
         .via(new PrepareResponse(parserSettings))
@@ -199,7 +199,7 @@ class PrepareResponseSpec extends AkkaSpec {
       implicit val mat = ActorMaterializer()
 
       val inProbe = TestPublisher.manualProbe[ParserOutput.ResponseOutput]()
-      val responseProbe = TestSubscriber.manualProbe[HttpResponse]
+      val responseProbe = TestSubscriber.manualProbe[HttpResponse]()
 
       Source.fromPublisher(inProbe)
         .via(new PrepareResponse(parserSettings))

@@ -23,7 +23,7 @@ abstract class HttpServerTestSetupBase {
   implicit def system: ActorSystem
   implicit def materializer: Materializer
 
-  val requests = TestSubscriber.probe[HttpRequest]
+  val requests = TestSubscriber.probe[HttpRequest]()
   val responses = TestPublisher.probe[HttpResponse]()
 
   def settings = ServerSettings(system)

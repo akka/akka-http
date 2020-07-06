@@ -155,7 +155,7 @@ class HttpEntitySpec extends AkkaSpecWithMaterializer {
       }
       "Chunked with LastChunk with trailer header keep header chunk" in {
         val entity = Chunked(tpe, source(Chunk(abc), Chunk(fgh), Chunk(ijk), LastChunk("", RawHeader("Foo", "pip apo") :: Nil)))
-        val transformed = entity.transformDataBytes(duplicateBytesTransformer())
+        val transformed = entity.transformDataBytes(duplicateBytesTransformer)
         val parts = transformed.chunks.runWith(Sink.seq).awaitResult(100.millis)
 
         parts.map(_.data).reduce(_ ++ _) shouldEqual doubleChars("abcfghijk") ++ trailer
@@ -281,7 +281,7 @@ class HttpEntitySpec extends AkkaSpecWithMaterializer {
         strict.toString + " == " + expectedRendering)
     }
 
-  def duplicateBytesTransformer(): Flow[ByteString, ByteString, NotUsed] =
+  def duplicateBytesTransformer: Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString].via(StreamUtils.byteStringTransformer(doubleChars, () => trailer))
 
   def trailer: ByteString = ByteString("--dup")

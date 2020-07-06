@@ -43,11 +43,11 @@ class JavaApiSpec extends AnyFreeSpec with Matchers {
       }
       "pathSegments" in {
         Uri.create("/abc/def/ghi/jkl")
-          .pathSegments().asScala.toSeq must contain inOrderOnly ("abc", "def", "ghi", "jkl")
+          .pathSegments().asScala.toSeq must contain(inOrderOnly("abc", "def", "ghi", "jkl"))
       }
       "access parameterMap" in {
         Uri.create("/abc?name=blub&age=28")
-          .query().toMap.asScala must contain allOf ("name" -> "blub", "age" -> "28")
+          .query().toMap.asScala must contain(allOf("name" -> "blub", "age" -> "28"))
       }
       "access parameters" in {
         val mutable.Seq(param1, param2, param3) =

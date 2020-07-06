@@ -31,7 +31,7 @@ class SlotStateSpec extends AkkaSpec {
     RequestContext(
       HttpRequest(
         entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.single(ByteString("test")))),
-      Promise[HttpResponse], 0
+      Promise[HttpResponse](), 0
     )
 
   "The new connection pool slot state machine" should {

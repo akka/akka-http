@@ -481,7 +481,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   private[akka] def newHostConnectionPool[T](setup: HostConnectionPoolSetup)(
     implicit
     fm: Materializer): Flow[(HttpRequest, T), (Try[HttpResponse], T), HostConnectionPool] = {
-    val poolId = new PoolId(setup, PoolId.newUniquePool)
+    val poolId = new PoolId(setup, PoolId.newUniquePool())
     poolMaster.startPool(poolId)
     poolClientFlow(poolId)
   }

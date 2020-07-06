@@ -5,7 +5,6 @@
 package akka.http.scaladsl.model.headers
 
 import akka.http.impl.util._
-import org.scalatest._
 import java.net.InetAddress
 
 import akka.http.scaladsl.model.{ headers, _ }

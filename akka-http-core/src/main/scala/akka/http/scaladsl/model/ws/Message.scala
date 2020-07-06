@@ -99,7 +99,7 @@ sealed trait BinaryMessage extends akka.http.javadsl.model.ws.BinaryMessage with
       case BinaryMessage.Streamed(binaryStream) => binaryStream
         .completionTimeout(timeout)
         .runFold(new ByteStringBuilder())((b, e) => b.append(e))
-        .map(b => b.result)(fm.executionContext)
+        .map(b => b.result())(fm.executionContext)
         .map(binary => BinaryMessage.Strict(binary))(fm.executionContext)
     }
 

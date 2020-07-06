@@ -105,7 +105,7 @@ class NewConnectionPoolSpec extends AkkaSpecWithMaterializer("""
         case (Success(x), 43) => requestUri(x) should endWith("/b")
         case x                => fail(x.toString)
       }
-      Seq(r1, r2).map(t => connNr(t._1.get)) should contain allOf (1, 2)
+      Seq(r1, r2).map(t => connNr(t._1.get)) should contain(allOf(1, 2))
     }
 
     "open a second connection if the request on the first one is dispatch but not yet completed" in new TestSetup {
@@ -642,7 +642,7 @@ class NewConnectionPoolSpec extends AkkaSpecWithMaterializer("""
     def mapServerSideOutboundRawBytes(bytes: ByteString): ByteString = bytes
 
     val incomingConnectionCounter = new AtomicInteger
-    val incomingConnections = TestSubscriber.manualProbe[Http.IncomingConnection]
+    val incomingConnections = TestSubscriber.manualProbe[Http.IncomingConnection]()
     val (incomingConnectionsSub, serverHostName: String, serverPort: Int) = {
       val rawBytesInjection = BidiFlow.fromFlows(
         Flow[SslTlsOutbound].collect[ByteString] { case SendBytes(x) => mapServerSideOutboundRawBytes(x) }
@@ -729,7 +729,7 @@ class NewConnectionPoolSpec extends AkkaSpecWithMaterializer("""
 
     def flowTestBench[T, Mat](poolFlow: Flow[(HttpRequest, T), (Try[HttpResponse], T), Mat]) = {
       val requestIn = TestPublisher.probe[(HttpRequest, T)]()
-      val responseOut = TestSubscriber.manualProbe[(Try[HttpResponse], T)]
+      val responseOut = TestSubscriber.manualProbe[(Try[HttpResponse], T)]()
       val hcp = Source.fromPublisher(requestIn).viaMat(poolFlow)(Keep.right).to(Sink.fromSubscriber(responseOut)).run()
       val responseOutSub = responseOut.expectSubscription()
       (requestIn, responseOut, responseOutSub, hcp)
