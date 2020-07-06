@@ -17,7 +17,7 @@ class DebuggingDirectivesSpec extends RoutingSpec {
 
   // Gracefully handle prefix difference for `ByteString.ByteString1C`
   // in Scala 2.12 due to https://issues.scala-lang.org/browse/SI-9019.
-  def normalizedDebugMsg(): String =
+  def normalizedDebugMsg: String =
     debugMsg.replace("ByteString.ByteString1C(", "ByteString(")
 
   val log = new LoggingAdapter {
@@ -43,7 +43,7 @@ class DebuggingDirectivesSpec extends RoutingSpec {
       resetDebugMsg()
       Get("/hello") ~> route ~> check {
         response shouldEqual Ok
-        normalizedDebugMsg() shouldEqual "1: HttpRequest(HttpMethod(GET),http://example.com/hello,List(),HttpEntity.Strict(none/none,0 bytes total),HttpProtocol(HTTP/1.1))\n"
+        normalizedDebugMsg shouldEqual "1: HttpRequest(HttpMethod(GET),http://example.com/hello,List(),HttpEntity.Strict(none/none,0 bytes total),HttpProtocol(HTTP/1.1))\n"
       }
     }
   }
@@ -58,7 +58,7 @@ class DebuggingDirectivesSpec extends RoutingSpec {
       resetDebugMsg()
       Get("/hello") ~> route ~> check {
         response shouldEqual Ok
-        normalizedDebugMsg() shouldEqual "2: Complete(HttpResponse(200 OK,List(),HttpEntity.Strict(none/none,0 bytes total),HttpProtocol(HTTP/1.1)))\n"
+        normalizedDebugMsg shouldEqual "2: Complete(HttpResponse(200 OK,List(),HttpEntity.Strict(none/none,0 bytes total),HttpProtocol(HTTP/1.1)))\n"
       }
     }
   }
@@ -73,7 +73,7 @@ class DebuggingDirectivesSpec extends RoutingSpec {
       resetDebugMsg()
       Get("/hello") ~> route ~> check {
         response shouldEqual Ok
-        normalizedDebugMsg() shouldEqual
+        normalizedDebugMsg shouldEqual
           """|3: Response for
              |  Request : HttpRequest(HttpMethod(GET),http://example.com/hello,List(),HttpEntity.Strict(none/none,0 bytes total),HttpProtocol(HTTP/1.1))
              |  Response: Complete(HttpResponse(200 OK,List(),HttpEntity.Strict(none/none,0 bytes total),HttpProtocol(HTTP/1.1)))
@@ -94,7 +94,7 @@ class DebuggingDirectivesSpec extends RoutingSpec {
       resetDebugMsg()
       Get("/hello") ~> route ~> check {
         handled shouldBe false
-        normalizedDebugMsg() shouldEqual
+        normalizedDebugMsg shouldEqual
           """Request: HttpRequest(HttpMethod(GET),http://example.com/hello,List(),HttpEntity.Strict(none/none,0 bytes total),HttpProtocol(HTTP/1.1))
             |was rejected with rejections:
             |List(ValidationRejection(The request could not be validated,None))
