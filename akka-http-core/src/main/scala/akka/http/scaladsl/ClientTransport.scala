@@ -127,11 +127,14 @@ object ClientTransport {
       }.mapMaterializedValue(_.flatten)
     }
 
-    // TODO: replace with futureFlow when support for Akka 2.5.x is dropped
+    // TODO: replace with lazyFutureFlow when support for Akka 2.5.x is dropped
     private def initFutureFlow[M](flowFactory: () => Future[Flow[ByteString, ByteString, M]])(implicit ec: ExecutionContext): Flow[ByteString, ByteString, Future[M]] = {
       Flow[ByteString].prepend(Source.single(ByteString()))
         .viaMat(
-          Flow.lazyInitAsync(flowFactory).mapMaterializedValue(_.map(_.get)).buffer(1, OverflowStrategy.backpressure)
+          Flow.lazyInitAsync(flowFactory)
+            .mapMaterializedValue(_.map(_.get))
+            // buffer needed because HTTP client expects demand before it does request (which is reasonable for buffered TCP connections)
+            .buffer(1, OverflowStrategy.backpressure)
         )(Keep.right)
     }
   }
