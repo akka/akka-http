@@ -12,7 +12,8 @@ import akka.http.impl.engine.client.HttpsProxyGraphStage
 import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model.headers.HttpCredentials
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, HttpsProxySettings }
-import akka.stream.scaladsl.{ Flow, Keep, Tcp }
+import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.{ Flow, Keep, Source, Tcp }
 import akka.util.ByteString
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -118,17 +119,20 @@ object ClientTransport {
   private case class ClientTransportWithCustomResolver(lookup: (String, Int) => Future[InetSocketAddress]) extends ClientTransport {
     override def connectTo(host: String, port: Int, settings: ClientConnectionSettings)(implicit system: ActorSystem): Flow[ByteString, ByteString, Future[Http.OutgoingConnection]] = {
       implicit val ec: ExecutionContext = system.dispatcher
-      // delay hostname resolution until stream materialization
-      Flow.setup { (_, _) =>
-        futureFlow {
-          lookup(host, port).map { address =>
-            connectToAddress(address, settings)
-          }
+
+      initFutureFlow { () =>
+        lookup(host, port).map { address =>
+          connectToAddress(address, settings)
         }
-      }.mapMaterializedValue(_.flatten.flatten)
+      }.mapMaterializedValue(_.flatten)
     }
 
-    private def futureFlow[I, O, M](flow: Future[Flow[I, O, M]]): Flow[I, O, Future[M]] =
-      Flow.fromGraph(new akka.http.impl.forwardport.FutureFlow(flow))
+    // TODO: replace with futureFlow when support for Akka 2.5.x is dropped
+    private def initFutureFlow[M](flowFactory: () => Future[Flow[ByteString, ByteString, M]])(implicit ec: ExecutionContext): Flow[ByteString, ByteString, Future[M]] = {
+      Flow[ByteString].prepend(Source.single(ByteString()))
+        .viaMat(
+          Flow.lazyInitAsync(flowFactory).mapMaterializedValue(_.map(_.get)).buffer(1, OverflowStrategy.backpressure)
+        )(Keep.right)
+    }
   }
 }
