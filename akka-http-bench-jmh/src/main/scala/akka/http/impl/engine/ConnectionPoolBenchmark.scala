@@ -8,16 +8,16 @@ import akka.dispatch.ExecutionContexts
 import akka.http.CommonBenchmark
 import akka.http.impl.util.enhanceString_
 import akka.http.scaladsl.model.HttpRequest
-import akka.http.scaladsl.settings.{ClientConnectionSettings, ConnectionPoolSettings}
-import akka.http.scaladsl.{ClientTransport, Http}
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings }
+import akka.http.scaladsl.{ ClientTransport, Http }
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.{ Failure, Success }
 
 /**
  * A benchmark that tries to stress the pool and the client infrastructure (but nothing else)
