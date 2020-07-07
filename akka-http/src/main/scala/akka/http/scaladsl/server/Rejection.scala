@@ -92,6 +92,13 @@ final case class MissingHeaderRejection(headerName: String)
   extends jserver.MissingHeaderRejection with Rejection
 
 /**
+ * Rejection created by attribute directives.
+ * Signals that the request was rejected because a required request attribute could not be found.
+ */
+final case class MissingAttributeRejection[T](key: AttributeKey[T])
+  extends jserver.MissingAttributeRejection[T] with Rejection
+
+/**
  * Rejection created by header directives.
  * Signals that the request was rejected because a header value is malformed.
  */
