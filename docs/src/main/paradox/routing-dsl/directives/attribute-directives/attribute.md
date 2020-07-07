@@ -10,7 +10,7 @@
 
 ## Description
 
-Extracts the value of the request attribute with the given key.
+Extracts the value of the request @ref[attribute](../../../common/http-model.md#attributes) with the given key.
 
 If no attribute is found for the given key the request
 is rejected with a @apidoc[MissingAttributeRejection].

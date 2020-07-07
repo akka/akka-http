@@ -10,7 +10,7 @@
 
 ## Description
 
-Optionally extracts the value of the request attribute with the given key.
+Optionally extracts the value of the request @ref[attribute](../../../common/http-model.md#attributes) with the given key.
 
 The `optionalAttribute` directive is similar to the @ref[attribute](attribute.md) directive but always extracts
 an @scala[`Option`]@java[`Optional`] value instead of rejecting the request if no matching attribute could be found.
