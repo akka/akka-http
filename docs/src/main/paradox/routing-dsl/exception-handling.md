@@ -23,7 +23,7 @@ handle any exception.
 So, if you'd like to customize the way certain exceptions are handled you need to write a custom @apidoc[ExceptionHandler].
 Once you have defined your custom @apidoc[ExceptionHandler] you have two options for "activating" it:
 
- 1. @scala[Bring it into implicit scope at the top-level.]@java[Pass it to the `seal()` method of the @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@apidoc[Route]] class.]
+ 1. @scala[Bring it into implicit scope at the top-level.]@java[Pass it to the `seal()` method of the @javadoc[Route](akka.http.javadsl.server.Route)]
  2. Supply it as argument to the @ref[handleExceptions](directives/execution-directives/handleExceptions.md) directive.
 
 In the first case your handler will be "sealed" (which means that it will receive the default handler as a fallback for

@@ -16,7 +16,7 @@ It's a simple alias for a function turning a @apidoc[RequestContext] into a `Fut
 
 @@@ div { .group-java }
 
-A @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@apidoc[Route]] itself is a function that operates on a @apidoc[RequestContext] and returns a @apidoc[RouteResult]. The
+A @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@javadoc[Route](akka.http.javadsl.server.Route)] itself is a function that operates on a @apidoc[RequestContext] and returns a @apidoc[RouteResult]. The
 @apidoc[RequestContext] is a data structure that contains the current request and auxiliary data like the so far unmatched
 path of the request URI that gets passed through the route structure. It also contains the current `ExecutionContext`
 and @apidoc[Materializer], so that these don't have to be passed around manually.
@@ -34,15 +34,15 @@ The first case is pretty clear, by calling `complete` a given response is sent t
 request. In the second case "reject" means that the route does not want to handle the request. You'll see further down
 in the section about route composition what this is good for.
 
-A @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@apidoc[Route]] can be "sealed" using `Route.seal`, which relies on the in-scope `RejectionHandler` and @apidoc[ExceptionHandler]
+A @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@javadoc[Route](akka.http.javadsl.server.Route)] can be "sealed" using `Route.seal`, which relies on the in-scope `RejectionHandler` and @apidoc[ExceptionHandler]
 instances to convert rejections and exceptions into appropriate HTTP responses for the client.
 @ref[Sealing a Route](#sealing-a-route) is described more in detail later. 
 
 
-Using `Route.handlerFlow` or `Route.asyncHandler` a @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@apidoc[Route]] can be lifted into a handler @apidoc[Flow] or async handler
+Using `Route.handlerFlow` or `Route.asyncHandler` a @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@javadoc[Route](akka.http.javadsl.server.Route)] can be lifted into a handler @apidoc[Flow] or async handler
 function to be used with a `bindAndHandleXXX` call from the @ref[Core Server API](../server-side/low-level-api.md).
 
-Note: There is also an implicit conversion from @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@apidoc[Route]] to @apidoc[Flow[HttpRequest, HttpResponse, Unit]] defined in the
+Note: There is also an implicit conversion from @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@javadoc[Route](akka.http.javadsl.server.Route)] to @apidoc[Flow[HttpRequest, HttpResponse, Unit]] defined in the
 @apidoc[RouteResult] companion, which relies on `Route.handlerFlow`.
 
 <a id="requestcontext"></a>
@@ -59,7 +59,7 @@ modified copies.
 <a id="routeresult"></a>
 ## RouteResult
 
-@apidoc[RouteResult] is a simple algebraic data type (ADT) that models the possible non-error results of a @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@apidoc[Route]].
+@apidoc[RouteResult] is a simple algebraic data type (ADT) that models the possible non-error results of a @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@javadoc[Route](akka.http.javadsl.server.Route)].
 It is defined as such:
 
 @@@ div { .group-scala }
@@ -173,7 +173,7 @@ A sealed route has these properties:
 As described in @ref[Rejections](rejections.md) and @ref[Exception Handling](exception-handling.md),
 there are generally two ways to handle rejections and exceptions.
 
- * Bring rejection/exception handlers @scala[`into implicit scope at the top-level`]@java[`seal()` method of the @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@apidoc[Route]]]
+ * Bring rejection/exception handlers @scala[`into implicit scope at the top-level`]@java[`seal()` method of the @javadoc[Route](akka.http.javadsl.server.Route)]
  * Supply handlers as arguments to @ref[handleRejections](directives/execution-directives/handleRejections.md#handlerejections) and @ref[handleExceptions](directives/execution-directives/handleExceptions.md#handleexceptions) directives 
 
 In the first case your handlers will be "sealed", (which means that it will receive the default handler as a fallback for all cases your handler doesn't handle itself) 
