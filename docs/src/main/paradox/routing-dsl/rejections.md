@@ -120,7 +120,7 @@ This way the priority between rejections is properly defined via the order of yo
 
 Once you have defined your custom `RejectionHandler` you have two options for "activating" it:
 
- 1. @scala[Bring it into implicit scope at the top-level]@java[Pass it to the `seal()` method of the @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@javadoc[Route](akka.http.javadsl.server.Route)] class]
+ 1. @scala[Bring it into implicit scope at the top-level]@java[Pass it to the `seal()` method of the @javadoc[Route](akka.http.javadsl.server.Route) class]
  2. Supply it as an argument to the @ref[handleRejections](directives/execution-directives/handleRejections.md) directive
 
 In the first case your handler will be "sealed" (which means that it will receive the default handler as a fallback for

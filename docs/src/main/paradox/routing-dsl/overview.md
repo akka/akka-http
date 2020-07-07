@@ -18,7 +18,7 @@ service definition as [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yoursel
 As an alternative Akka HTTP provides a flexible DSL for expressing your service behavior as a structure of
 composable elements (called @ref[Directives](directives/index.md)) in a concise and readable way. Directives are assembled into a so called
 *route structure* which, at its top-level, can be used to create a handler @apidoc[Flow] or async handler function that
-can be directly supplied to a `bind` call. @scala[The conversion from @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@javadoc[Route](akka.http.javadsl.server.Route)] to flow can either be invoked explicitly
+can be directly supplied to a `bind` call. @scala[The conversion from @scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult]) to flow can either be invoked explicitly
 using `Route.handlerFlow` or, otherwise, the conversion is also provided implicitly by
 `RouteResult.route2HandlerFlow` <a id="^1" href="#1">[1]</a>.]
 
