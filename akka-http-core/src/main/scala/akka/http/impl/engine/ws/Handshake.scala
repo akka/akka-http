@@ -31,8 +31,8 @@ private[http] object Handshake {
 
   object Server {
     /**
-     *  Validates a client WebSocket handshake. Returns either `Right(UpgradeToWebSocket)` or
-     *  `Left(MessageStartError)`.
+     *  Validates a client WebSocket handshake. Returns either `OptionVal.Some(UpgradeToWebSocketLowLevel)` or
+     *  `OptionVal.None`
      *
      *  From: http://tools.ietf.org/html/rfc6455#section-4.2.1
      *

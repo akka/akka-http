@@ -37,9 +37,9 @@ import static akka.http.javadsl.server.Directives.handleWebSocketMessagesForProt
 
 //#handleWebSocketMessagesForProtocol
 //#extractUpgradeToWebSocket
+import akka.http.javadsl.model.AttributeKeys;
 import static akka.http.javadsl.server.Directives.complete;
 import static akka.http.javadsl.server.Directives.extractUpgradeToWebSocket;
-
 
 //#extractUpgradeToWebSocket
 //#extractOfferedWsProtocols
@@ -141,13 +141,13 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
   }
 
   @Test
-  public void testExtractUpgradeToWebSocket() {
-    //#extractUpgradeToWebSocket
+  public void webSocketUpgradeAttribute() {
+    //#webSocketUpgradeAttribute
     final Flow<Message, Message, NotUsed> echoService = Flow.of(Message.class).buffer(1, OverflowStrategy.backpressure());
 
     final Route websocketRoute = path("services", () ->
       concat(
-        extractUpgradeToWebSocket(upgrade ->
+        attribute(AttributeKeys.webSocketUpgrade, upgrade ->
           complete(upgrade.handleMessagesWith(echoService, "echo"))
         )
       )
@@ -167,7 +167,7 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
 
     wsClient.sendCompletion();
     wsClient.expectCompletion();
-    //#extractUpgradeToWebSocket
+    //#webSocketUpgradeAttribute
   }
 
   @Test

@@ -105,8 +105,10 @@ class WebSocketDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     //#handle-multiple-protocols
   }
 
-  "extractUpgradeToWebSocket" in {
-    //#extractUpgradeToWebSocket
+  "webSocketUpgradeAttribute" in {
+    //#webSocketUpgradeAttribute
+    import akka.http.scaladsl.model.AttributeKeys.webSocketUpgrade
+
     def echoService: Flow[Message, Message, Any] =
       Flow[Message]
         // needed because a noop flow hasn't any buffer that would start processing in tests
@@ -114,7 +116,7 @@ class WebSocketDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
     def route =
       path("services") {
-        extractUpgradeToWebSocket { upgrade =>
+        attribute(webSocketUpgrade) { upgrade =>
           complete(upgrade.handleMessages(echoService, Some("echo")))
         }
       }
@@ -132,7 +134,7 @@ class WebSocketDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
         wsClient.expectCompletion()
       }
     }
-    //#extractUpgradeToWebSocket
+    //#webSocketUpgradeAttribute
   }
 
   "extractOfferedWsProtocols" in {

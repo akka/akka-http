@@ -7,6 +7,7 @@ package directives
 
 import scala.collection.immutable
 
+import akka.http.scaladsl.model.AttributeKeys.webSocketUpgrade
 import akka.http.scaladsl.model.ws.{ UpgradeToWebSocket, Message }
 import akka.stream.scaladsl.Flow
 
@@ -15,6 +16,7 @@ import akka.stream.scaladsl.Flow
  * @groupprio websocket 230
  */
 trait WebSocketDirectives {
+  import AttributeDirectives._
   import BasicDirectives._
   import HeaderDirectives._
   import RouteDirectives._
@@ -24,6 +26,7 @@ trait WebSocketDirectives {
    *
    * @group websocket
    */
+  @deprecated("use attribute(AttributeKeys.webSocketUpgrade) instead", since = "10.2.0")
   def extractUpgradeToWebSocket: Directive1[UpgradeToWebSocket] =
     optionalHeaderValueByType(classOf[UpgradeToWebSocket]).flatMap {
       case Some(upgrade) => provide(upgrade)
@@ -36,7 +39,11 @@ trait WebSocketDirectives {
    *
    * @group websocket
    */
-  def extractOfferedWsProtocols: Directive1[immutable.Seq[String]] = extractUpgradeToWebSocket.map(_.requestedProtocols)
+  def extractOfferedWsProtocols: Directive1[immutable.Seq[String]] =
+    optionalAttribute(webSocketUpgrade).flatMap {
+      case Some(upgrade) => provide(upgrade.requestedProtocols)
+      case None          => reject(ExpectedWebSocketRequestRejection)
+    }
 
   /**
    * Handles WebSocket requests with the given handler and rejects other requests with an
@@ -70,10 +77,13 @@ trait WebSocketDirectives {
    * @group websocket
    */
   def handleWebSocketMessagesForOptionalProtocol(handler: Flow[Message, Message, Any], subprotocol: Option[String]): Route =
-    extractUpgradeToWebSocket { upgrade =>
-      if (subprotocol.forall(sub => upgrade.requestedProtocols.exists(_ equalsIgnoreCase sub)))
-        complete(upgrade.handleMessages(handler, subprotocol))
-      else
-        reject(UnsupportedWebSocketSubprotocolRejection(subprotocol.get)) // None.forall == true
+    optionalAttribute(webSocketUpgrade) {
+      case None =>
+        reject(ExpectedWebSocketRequestRejection)
+      case Some(upgrade) =>
+        if (subprotocol.forall(sub => upgrade.requestedProtocols.exists(_ equalsIgnoreCase sub)))
+          complete(upgrade.handleMessages(handler, subprotocol))
+        else
+          reject(UnsupportedWebSocketSubprotocolRejection(subprotocol.get)) // None.forall == true
     }
 }
