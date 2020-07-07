@@ -11,6 +11,9 @@ All predefined directives are organized into traits that form one part of the ov
 @ref[HeaderDirectives](header-directives/index.md)
 :   Filter and extract based on request headers.
 
+@ref[AttributeDirectives](attribute-directives/index.md)
+:   Filter and extract based on request attributes.
+
 @ref[PathDirectives](path-directives/index.md)
 :   Filter and extract from the request URI path.
 
@@ -80,6 +83,7 @@ All predefined directives are organized into traits that form one part of the ov
 
 @@@ index
 
+* [attribute-directives/index](attribute-directives/index.md)
 * [basic-directives/index](basic-directives/index.md)
 * [cache-condition-directives/index](cache-condition-directives/index.md)
 * [caching-directives/index](caching-directives/index.md)
