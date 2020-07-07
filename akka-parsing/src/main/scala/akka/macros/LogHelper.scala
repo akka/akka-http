@@ -20,7 +20,7 @@ private[akka] trait LogHelper {
   def log: LoggingAdapter
 
   /** Override to prefix every log message with a user-defined context string */
-  protected def prefixString: String = ""
+  def prefixString: String = ""
 
   def debug(msg: String): Unit = macro LogHelper.debugMacro
   def info(msg: String): Unit = macro LogHelper.infoMacro
