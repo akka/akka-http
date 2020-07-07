@@ -156,7 +156,8 @@ class SlotStateSpec extends AkkaSpec {
     }
   }
 
-  class MockSlotContext(log: LoggingAdapter, val settings: ConnectionPoolSettings = ConnectionPoolSettings("")) extends SlotContext {
+  class MockSlotContext(_log: LoggingAdapter, val settings: ConnectionPoolSettings = ConnectionPoolSettings("")) extends SlotContext {
+    override def log: LoggingAdapter = _log
 
     var connectionClosed = true
     var connectionOpenRequested = false
@@ -175,24 +176,6 @@ class SlotStateSpec extends AkkaSpec {
 
     override def willCloseAfter(response: HttpResponse): Boolean =
       response.header[headers.Connection].exists(_.hasClose)
-
-    override def debug(message: String): Unit =
-      log.debug(message)
-
-    override def debug(message: String, arg1: AnyRef): Unit =
-      log.debug(message, arg1)
-
-    override def debug(message: String, arg1: AnyRef, arg2: AnyRef): Unit =
-      log.debug(message, arg1, arg2)
-
-    override def debug(message: String, arg1: AnyRef, arg2: AnyRef, arg3: AnyRef): Unit =
-      log.debug(message, arg1, arg2, arg3)
-
-    override def warning(message: String): Unit =
-      log.warning(message)
-
-    override def warning(message: String, arg1: AnyRef): Unit =
-      log.warning(message, arg1)
 
     def expectOpenConnection[T](cb: => T) = {
       connectionClosed should be(true)

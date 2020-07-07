@@ -136,7 +136,7 @@ private[client] object NewHostConnectionPool {
           val slot = idleSlots.first()
           idleSlots.remove(slot)
 
-          slot.debug("Dispatching request [{}]", req.request.debugString)
+          slot.debug(s"Dispatching request [${req.request.debugString}]")
           slot.onNewRequest(req)
         }
 
@@ -372,29 +372,8 @@ private[client] object NewHostConnectionPool {
             loop(event, arg, 10)
           }
 
-          def debug(msg: String): Unit =
-            if (log.isDebugEnabled)
-              log.debug("[{} ({})] {}", slotId, state.productPrefix, msg)
-
-          def debug(msg: String, arg1: AnyRef): Unit =
-            if (log.isDebugEnabled)
-              log.debug(s"[{} ({})] $msg", slotId, state.productPrefix, arg1)
-
-          def debug(msg: String, arg1: AnyRef, arg2: AnyRef): Unit =
-            if (log.isDebugEnabled)
-              log.debug(s"[{} ({})] $msg", slotId, state.productPrefix, arg1, arg2)
-
-          def debug(msg: String, arg1: AnyRef, arg2: AnyRef, arg3: AnyRef): Unit =
-            if (log.isDebugEnabled)
-              log.debug(log.format(s"[{} ({})] $msg", slotId, state.productPrefix, arg1, arg2, arg3))
-
-          def warning(msg: String): Unit =
-            if (log.isWarningEnabled)
-              log.warning("[{} ({})] {}", slotId, state.productPrefix, msg)
-
-          def warning(msg: String, arg1: AnyRef): Unit =
-            if (log.isWarningEnabled)
-              log.warning(s"[{} ({})] $msg", slotId, state.productPrefix, arg1)
+          override def log: LoggingAdapter = _log
+          override def prefixString: String = s"[$slotId (${state.productPrefix})]"
 
           def error(cause: Throwable, msg: String): Unit =
             if (log.isErrorEnabled)
@@ -590,7 +569,7 @@ private[client] object NewHostConnectionPool {
               }
             case Failure(cause) =>
               slotCon.withSlot { sl =>
-                slot.debug("Connection attempt failed with {}", cause.getMessage)
+                slot.debug(s"Connection attempt failed with ${cause.getMessage}")
                 onConnectionAttemptFailed(currentEmbargoLevel)
                 sl.onConnectionAttemptFailed(cause)
               }
