@@ -502,6 +502,45 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
       }
     }
 
+    "properly complete a two request/response cycles using Http.singleRequest" in Utils.assertAllStagesStopped {
+      new TestSetup {
+        // make sure no log message above DEBUG are printed by that exchange
+        EventFilter.custom({ case l: LogEvent if l.level != Logging.DebugLevel => true }, 0).intercept {
+          val settings = ConnectionPoolSettings(system).withIdleTimeout(500.millis)
+
+          val request = HttpRequest(uri = s"http://$hostname:$port/abc?test=12")
+
+          val responseFut = Http().singleRequest(request, settings = settings)
+          val (serverIn, serverOut) = acceptConnection()
+
+          val serverInSub = serverIn.expectSubscription()
+          serverInSub.request(1)
+          serverIn.expectNext().uri shouldEqual Uri(s"http://$hostname:$port/abc?test=12")
+
+          val serverOutSub = serverOut.expectSubscription()
+          serverOutSub.expectRequest()
+          serverOutSub.sendNext(HttpResponse(entity = "yeah"))
+
+          val response = responseFut.awaitResult(1.second.dilated)
+          toStrict(response.entity) shouldEqual HttpEntity("yeah")
+
+          val request2 = HttpRequest(uri = s"http://$hostname:$port/abc")
+          val responseFut2 = Http().singleRequest(request2, settings = settings)
+          serverInSub.request(1)
+          serverIn.expectNext().uri shouldEqual Uri(s"http://$hostname:$port/abc")
+
+          serverOutSub.sendNext(HttpResponse(entity = "yeah"))
+          val response2 = responseFut.awaitResult(1.second.dilated)
+          toStrict(response2.entity) shouldEqual HttpEntity("yeah")
+
+          serverIn.expectComplete()
+          serverOutSub.expectCancellation()
+
+          binding.foreach(_.unbind())
+        }
+      }
+    }
+
     "properly complete a chunked request/response cycle" in Utils.assertAllStagesStopped {
       new TestSetup {
         val (clientOut, clientIn) = openNewClientConnection()

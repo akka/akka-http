@@ -21,12 +21,14 @@ import akka.annotation.InternalApi
  */
 @InternalApi
 private[http] final class UriParser(
-  var input:             ParserInput,
-  val uriParsingCharset: Charset,
-  val uriParsingMode:    Uri.ParsingMode,
-  val maxValueStackSize: Int) extends Parser(maxValueStackSize)
+  private[this] var _input: ParserInput,
+  val uriParsingCharset:    Charset,
+  val uriParsingMode:       Uri.ParsingMode,
+  val maxValueStackSize:    Int) extends Parser(maxValueStackSize)
   with IpAddressParsing with StringBuilding {
   import CharacterClasses._
+
+  override def input: ParserInput = _input
 
   def this(
     input:             ParserInput,
@@ -126,6 +128,7 @@ private[http] final class UriParser(
     case _                      => `relaxed-fragment-char`
   }
 
+  // New vars need to be reset in `reset` below
   private[this] var _scheme = ""
   private[this] var _userinfo = ""
   private[this] var _host: Host = Host.Empty
@@ -137,6 +140,19 @@ private[http] final class UriParser(
    */
   private[this] var _rawQueryString: Option[String] = None
   private[this] var _fragment: Option[String] = None
+
+  /** Allows to reuse this parser. */
+  def reset(newInput: ParserInput): Unit = {
+    _input = newInput
+    _scheme = ""
+    _userinfo = ""
+    _host = Host.Empty
+    _port = 0
+    _path = Path.Empty
+    _rawQueryString = None
+    _fragment = None
+    _firstPercentIx = -1
+  }
 
   private[this] def setScheme(scheme: String): Unit = _scheme = scheme
   private[this] def setUserInfo(userinfo: String): Unit = _userinfo = userinfo
@@ -272,7 +288,7 @@ private[http] final class UriParser(
 
   def `pct-encoded` = rule {
     '%' ~ HEXDIG ~ HEXDIG ~ run {
-      if (firstPercentIx == -1) firstPercentIx = sb.length()
+      if (_firstPercentIx == -1) _firstPercentIx = sb.length()
       sb.append('%').append(charAt(-2)).append(lastChar)
     }
   }
@@ -333,15 +349,15 @@ private[http] final class UriParser(
 
   private def savePath() = rule { run(setPath(Path(sb.toString, uriParsingCharset))) }
 
-  private[this] var firstPercentIx = -1
+  private[this] var _firstPercentIx = -1
 
-  private def clearSBForDecoding(): Rule0 = rule { run { sb.setLength(0); firstPercentIx = -1 } }
+  private def clearSBForDecoding(): Rule0 = rule { run { sb.setLength(0); _firstPercentIx = -1 } }
 
   private def getDecodedString(charset: Charset = uriParsingCharset) =
-    if (firstPercentIx >= 0) decode(sb.toString, charset, firstPercentIx)() else sb.toString
+    if (_firstPercentIx >= 0) decode(sb.toString, charset, _firstPercentIx)() else sb.toString
 
   private def getDecodedStringAndLowerIfEncoded(charset: Charset) =
-    if (firstPercentIx >= 0) decode(sb.toString, charset, firstPercentIx)().toRootLowerCase else sb.toString
+    if (_firstPercentIx >= 0) decode(sb.toString, charset, _firstPercentIx)().toRootLowerCase else sb.toString
 
   private def createUriReference(): Uri = {
     val path = if (_scheme.isEmpty) _path else collapseDotSegments(_path)

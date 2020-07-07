@@ -158,7 +158,7 @@ private[http] final class HttpRequestParser(
       val uriEnd = findUriEnd()
       try {
         uriBytes = input.slice(uriStart, uriEnd)
-        uriParser.input = new ByteStringParserInput(uriBytes)
+        uriParser.reset(new ByteStringParserInput(uriBytes))
         uri = uriParser.parseHttpRequestTarget()
       } catch {
         case IllegalUriException(info) => throw new ParsingException(BadRequest, info)
