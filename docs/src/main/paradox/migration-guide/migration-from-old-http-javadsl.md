@@ -47,7 +47,7 @@ final Route route =
 
 ## All of ScalaDSL routing has corresponding JavaDSL
 
-Both @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@apidoc[Route]], @apidoc[RouteResult] and other important core concepts such as `Rejections` are now modeled 1:1 with Scala,
+Both @scala[@scaladoc[Route](akka.http.scaladsl.server.index#Route=akka.http.scaladsl.server.RequestContext=%3Escala.concurrent.Future[akka.http.scaladsl.server.RouteResult])]@java[@javadoc[Route](akka.http.javadsl.server.Route)], @apidoc[RouteResult] and other important core concepts such as `Rejections` are now modeled 1:1 with Scala,
 making is much simpler to understand one API based on the other one – tremendously useful when learning about some nice
 pattern from blogs which used Scala, yet need to apply it in Java and the other way around.
 

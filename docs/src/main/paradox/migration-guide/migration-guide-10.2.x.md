@@ -69,7 +69,7 @@ The @ref[extractClientIP](../routing-dsl/directives/misc-directives/extractClien
 'best guess' of the client IP, but in a way that allows any client to provide this address in the header. For this reason
 you should never trust this value for security purposes.
 
-When you need a secure way to get the client IP, use the @apidoc[AttributeKeys.remoteAddress](AttributeKeys) @ref[attribute](../common/http-model.md#attributes),
+When you need a secure way to get the client IP, use the @apidoc[AttributeKeys.remoteAddress](AttributeKeys$) @ref[attribute](../common/http-model.md#attributes),
 or use the specific headers which are known to be set correctly by the infrastructure you do trust.
 
 ### max-content-length
