@@ -16,7 +16,7 @@ import scala.collection.JavaConverters._
 import akka.http.javadsl.common.RegexConverters.toScala
 import akka.http.scaladsl.server.{ Directives => D }
 
-abstract class HostDirectives extends HeaderDirectives {
+abstract class HostDirectives extends AttributeDirectives {
   /**
    * Extracts the hostname part of the Host request header value.
    */
