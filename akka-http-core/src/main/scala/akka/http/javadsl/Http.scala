@@ -12,9 +12,7 @@ import scala.concurrent.Future
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import scala.util.Try
-
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
-
 import akka.{ NotUsed, stream }
 import akka.actor.{ ActorSystem, ClassicActorSystemProvider, ExtendedActorSystem, ExtensionId, ExtensionIdProvider }
 import akka.event.LoggingAdapter
@@ -29,7 +27,7 @@ import akka.http.javadsl.settings.{ ClientConnectionSettings, ConnectionPoolSett
 import akka.japi.Pair
 import akka.japi.function.Function
 import akka.stream.TLSProtocol._
-import akka.stream.Materializer
+import akka.stream.{ Materializer, SystemMaterializer }
 import akka.stream.javadsl.{ BidiFlow, Flow, Source }
 import akka.stream.scaladsl.Keep
 
@@ -220,6 +218,30 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     delegate.bindAndHandle(
       handler.asInstanceOf[Flow[sm.HttpRequest, sm.HttpResponse, _]].asScala,
       connect.host, connect.port, connectionContext, settings.asScala, log)(materializer)
+      .map(new ServerBinding(_))(ec).toJava
+  }
+
+  /**
+   * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
+   * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
+   *
+   * The number of concurrently accepted connections can be configured by overriding
+   * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
+   * information about what kind of guarantees to expect.
+   *
+   * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
+   * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
+   */
+  def bindAndHandle(
+    handler:  Flow[HttpRequest, HttpResponse, _],
+    connect:  ConnectHttp,
+    settings: ServerSettings,
+    log:      LoggingAdapter,
+    system:   ClassicActorSystemProvider): CompletionStage[ServerBinding] = {
+    val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
+    delegate.bindAndHandle(
+      handler.asInstanceOf[Flow[sm.HttpRequest, sm.HttpResponse, _]].asScala,
+      connect.host, connect.port, connectionContext, settings.asScala, log)(SystemMaterializer(system).materializer)
       .map(new ServerBinding(_))(ec).toJava
   }
 
