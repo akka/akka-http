@@ -546,12 +546,12 @@ final class HttpResponse(
 
   @deprecated("Use the `withXYZ` methods instead", "10.2.0")
   def copy(
-            status:     StatusCode                = status,
-            headers:    immutable.Seq[HttpHeader] = headers,
-            entity:     ResponseEntity            = entity,
-            protocol:   HttpProtocol              = protocol,
-            attributes: Map[AttributeKey[_], _]   = attributes
-          ) = new HttpResponse(status, headers, attributes, entity, protocol)
+    status:     StatusCode                = status,
+    headers:    immutable.Seq[HttpHeader] = headers,
+    entity:     ResponseEntity            = entity,
+    protocol:   HttpProtocol              = protocol,
+    attributes: Map[AttributeKey[_], _]   = attributes
+  ) = new HttpResponse(status, headers, attributes, entity, protocol)
 
   override def equals(obj: scala.Any): Boolean = obj match {
     case response @ HttpResponse(_status, _headers, _entity, _protocol) =>
