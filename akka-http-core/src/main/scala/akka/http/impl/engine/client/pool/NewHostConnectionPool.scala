@@ -23,10 +23,10 @@ import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 import akka.util.OptionVal
 
+import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
-import scala.util.control.NonFatal
+import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.util.{ Failure, Random, Success, Try }
 
 /**
@@ -71,6 +71,19 @@ private[client] object NewHostConnectionPool {
 
         val slots = Vector.tabulate(_settings.maxConnections)(new Slot(_))
         val slotsWaitingForDispatch: util.Deque[Slot] = new util.ArrayDeque[Slot]
+        // To find idle slots fast we need a datastructure which supports
+        //   * quick add and remove
+        //   * ordering by slot id.
+        //
+        // The second requirement is a somewhat arbitrary historic decision. But it actually also makes sense because it makes the pool behavior
+        // more deterministic: Done like that, the lower-numbered slots will be preferred over higher-numbered ones which will make it more likely
+        // that higher-numbered slots will idle out if they are not used, so that the dynamic pool size will adapt itself automatically.
+        // The downside is that there's less distribution over different slots/connections when the pool is not fully saturated.
+        val idleSlots: util.TreeSet[Slot] = {
+          val res = new util.TreeSet[Slot]((o1: Slot, o2: Slot) => java.lang.Integer.compare(o1.slotId, o2.slotId))
+          res.addAll(slots.asJava)
+          res
+        } // fast set to track idle slots
         val retryBuffer: util.Deque[RequestContext] = new util.ArrayDeque[RequestContext]
         var _connectionEmbargo: FiniteDuration = Duration.Zero
         def baseEmbargo: FiniteDuration = _settings.baseConnectionBackoff
@@ -102,9 +115,15 @@ private[client] object NewHostConnectionPool {
             } else if (!hasBeenPulled(requestsIn))
               pull(requestsIn)
 
-        def hasIdleSlots: Boolean =
-          // TODO: optimize by keeping track of idle connections?
-          slots.exists(_.isIdle)
+        def hasIdleSlots: Boolean = {
+          if (log.isDebugEnabled) { // somewhat sneaky way of enabling extra assertions in "debug-mode"
+            // Helps debugging if you suspect that idleSlots are not consistent with actual state any more
+            val idle = idleSlots.asScala.map(_.slotId).toSet
+            val idleAll = slots.filter(_.isIdle).map(_.slotId).toSet
+            require(idle == idleAll, s"Managed idle [${idle.mkString(", ")}] != real idle [${idleAll.mkString(", ")}]")
+          }
+          !idleSlots.isEmpty
+        }
 
         def dispatchResponseResult(req: RequestContext, result: Try[HttpResponse]): Unit =
           if (result.isFailure && req.canBeRetried) {
@@ -114,9 +133,8 @@ private[client] object NewHostConnectionPool {
             push(responsesOut, ResponseContext(req, result))
 
         def dispatchRequest(req: RequestContext): Unit = {
-          val slot =
-            slots.find(_.isIdle)
-              .getOrElse(throw new IllegalStateException("Tried to dispatch request when no slot is idle"))
+          val slot = idleSlots.first()
+          idleSlots.remove(slot)
 
           slot.debug("Dispatching request [{}]", req.request.debugString)
           slot.onNewRequest(req)
@@ -282,8 +300,10 @@ private[client] object NewHostConnectionPool {
 
                 if (!previousState.isIdle && state.isIdle && !(state == Unconnected && currentEmbargo != Duration.Zero)) {
                   debug("Slot became idle... Trying to pull")
+                  idleSlots.add(this)
                   pullIfNeeded()
-                }
+                } else if (previousState.isIdle && !state.isIdle)
+                  idleSlots.remove(this)
 
                 state match {
                   case PushingRequestToConnection(ctx) =>
@@ -325,12 +345,13 @@ private[client] object NewHostConnectionPool {
                     cancelCurrentTimeout()
                     closeConnection(Some(ex))
                     state.onShutdown(this)
-                    logic.slotsWaitingForDispatch.remove(this)
                     OptionVal.None
                   } catch {
                     case NonFatal(ex) =>
                       error(ex, "Shutting down slot after error failed.")
                   }
+                  logic.slotsWaitingForDispatch.remove(this)
+                  idleSlots.add(this)
                   state = Unconnected
                   OptionVal.Some(Event.onPreConnect)
               }
