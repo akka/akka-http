@@ -23,7 +23,6 @@ import static akka.util.ByteString.emptyByteString;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -32,7 +31,6 @@ import java.io.File;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Framing;
 import akka.http.javadsl.model.*;
 import scala.concurrent.duration.FiniteDuration;
@@ -40,15 +38,8 @@ import scala.concurrent.duration.FiniteDuration;
 
 //#single-request-in-actor-example
 import akka.actor.AbstractActor;
-import akka.http.javadsl.Http;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
-import scala.concurrent.ExecutionContextExecutor;
-
-import java.util.concurrent.CompletionStage;
-
 import static akka.pattern.PatternsCS.pipe;
 
 //#single-request-in-actor-example
@@ -65,7 +56,6 @@ public class HttpClientExampleDocTest {
 
     final ActorSystem system = ActorSystem.create();
     final ExecutionContextExecutor dispatcher = system.dispatcher();
-    final ActorMaterializer materializer = ActorMaterializer.create(system);
 
     final HttpResponse response = responseFromSomewhere();
 
@@ -76,7 +66,7 @@ public class HttpClientExampleDocTest {
     response.entity().getDataBytes()
       .via(Framing.delimiter(ByteString.fromString("\n"), maximumFrameLength, FramingTruncation.ALLOW))
       .map(transformEachLine::apply)
-      .runWith(FileIO.toPath(new File("/tmp/example.out").toPath()), materializer);
+      .runWith(FileIO.toPath(new File("/tmp/example.out").toPath()), system);
     //#manual-entity-consume-example-1
     system.terminate();
   }
@@ -94,13 +84,12 @@ public class HttpClientExampleDocTest {
 
     final ActorSystem system = ActorSystem.create();
     final ExecutionContextExecutor dispatcher = system.dispatcher();
-    final ActorMaterializer materializer = ActorMaterializer.create(system);
 
     final HttpResponse response = responseFromSomewhere();
 
     // toStrict to enforce all data be loaded into memory from the connection
     final CompletionStage<HttpEntity.Strict> strictEntity = response.entity()
-        .toStrict(FiniteDuration.create(3, TimeUnit.SECONDS).toMillis(), materializer);
+        .toStrict(FiniteDuration.create(3, TimeUnit.SECONDS).toMillis(), system);
 
     // while API remains the same to consume dataBytes, now they're in memory already:
 
@@ -108,7 +97,7 @@ public class HttpClientExampleDocTest {
       strictEntity
         .thenCompose(strict ->
           strict.getDataBytes()
-            .runFold(emptyByteString(), (acc, b) -> acc.concat(b), materializer)
+            .runFold(emptyByteString(), (acc, b) -> acc.concat(b), system)
             .thenApply(this::parse)
         );
     //#manual-entity-consume-example-2
@@ -127,7 +116,6 @@ public class HttpClientExampleDocTest {
 
     final ActorSystem system = ActorSystem.create();
     final ExecutionContextExecutor dispatcher = system.dispatcher();
-    final ActorMaterializer materializer = ActorMaterializer.create(system);
 
     // run a single request, consuming it completely in a single stream
     public CompletionStage<ExamplePerson> runRequest(HttpRequest request) {
@@ -135,7 +123,7 @@ public class HttpClientExampleDocTest {
         .singleRequest(request)
         .thenCompose(response ->
           response.entity().getDataBytes()
-            .runReduce((a, b) -> a.concat(b), materializer)
+            .runReduce((a, b) -> a.concat(b), system)
             .thenApply(this::parse)
         );
     }
@@ -149,7 +137,7 @@ public class HttpClientExampleDocTest {
             .from(requests)
             .mapAsync(1, this::runRequest)
             .via(exampleProcessingFlow)
-            .runWith(Sink.ignore(), materializer);
+            .runWith(Sink.ignore(), system);
 
     //#manual-entity-consume-example-3
   }
@@ -174,11 +162,10 @@ public class HttpClientExampleDocTest {
     //#manual-entity-discard-example-2
     final ActorSystem system = ActorSystem.create();
     final ExecutionContextExecutor dispatcher = system.dispatcher();
-    final ActorMaterializer materializer = ActorMaterializer.create(system);
 
     final HttpResponse response = responseFromSomewhere();
 
-    final CompletionStage<Done> discardingComplete = response.entity().getDataBytes().runWith(Sink.ignore(), materializer);
+    final CompletionStage<Done> discardingComplete = response.entity().getDataBytes().runWith(Sink.ignore(), system);
 
     discardingComplete.whenComplete((done, ex) -> {
       System.out.println("Entity discarded completely!");
@@ -193,7 +180,6 @@ public class HttpClientExampleDocTest {
     //#outgoing-connection-example
 
     final ActorSystem system = ActorSystem.create();
-    final ActorMaterializer materializer = ActorMaterializer.create(system);
 
     final Flow<HttpRequest, HttpResponse, CompletionStage<OutgoingConnection>> connectionFlow =
             Http.get(system).outgoingConnection(toHost("akka.io", 80));
@@ -211,7 +197,7 @@ public class HttpClientExampleDocTest {
             // In almost all cases it is better to use the `Http().singleRequest()` API instead.
             Source.single(HttpRequest.create("/"))
                     .via(connectionFlow)
-                    .runWith(Sink.<HttpResponse>head(), materializer);
+                    .runWith(Sink.<HttpResponse>head(), system);
     //#outgoing-connection-example
     system.terminate();
   }
@@ -234,7 +220,6 @@ public class HttpClientExampleDocTest {
     class SingleRequestInActorExample extends AbstractActor {
       final Http http = Http.get(context().system());
       final ExecutionContextExecutor dispatcher = context().dispatcher();
-      final Materializer materializer = ActorMaterializer.create(context());
 
       @Override
       public Receive createReceive() {

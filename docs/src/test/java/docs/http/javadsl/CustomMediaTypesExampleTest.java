@@ -18,8 +18,6 @@ import akka.http.javadsl.server.Route;
 import akka.http.javadsl.settings.ParserSettings;
 import akka.http.javadsl.settings.ServerSettings;
 import akka.http.javadsl.testkit.JUnitRouteTest;
-import akka.stream.Materializer;
-import akka.util.ByteString;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -41,7 +39,6 @@ public class CustomMediaTypesExampleTest extends JUnitRouteTest {
   public void customMediaTypes() throws ExecutionException, InterruptedException {
 
     final ActorSystem system = system();
-    final Materializer materializer = materializer();
     final String host = "127.0.0.1";
 
     //#application-custom-java
@@ -64,11 +61,11 @@ public class CustomMediaTypesExampleTest extends JUnitRouteTest {
     );
 
     final CompletionStage<ServerBinding> binding = Http.get(system)
-      .bindAndHandle(route.flow(system, materializer),
+      .bindAndHandle(route.flow(system),
         ConnectHttp.toHost(host, 0),
         serverSettings,
         system.log(),
-        materializer);
+        system);
 
     //#application-custom-java
     final ServerBinding serverBinding = binding.toCompletableFuture().get();
@@ -83,8 +80,8 @@ public class CustomMediaTypesExampleTest extends JUnitRouteTest {
       .get();
 
     assertEquals(StatusCodes.OK, response.status());
-    final String body = response.entity().toStrict(1000, materializer).toCompletableFuture().get()
-      .getDataBytes().runFold(emptyByteString(), (a, b) -> a.$plus$plus(b), materializer)
+    final String body = response.entity().toStrict(1000, system).toCompletableFuture().get()
+      .getDataBytes().runFold(emptyByteString(), (a, b) -> a.$plus$plus(b), system)
       .toCompletableFuture().get().utf8String();
     assertEquals("application/custom = class akka.http.scaladsl.model.ContentType$WithFixedCharset", body); // it's the Scala DSL package because it's the only instance of the Java DSL
   }
