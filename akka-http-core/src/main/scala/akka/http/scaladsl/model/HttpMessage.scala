@@ -306,7 +306,7 @@ final class HttpRequest(
     "HTTP/1.0 requests must not have a chunked entity")
 
   type Self = HttpRequest
-  def self = this
+  def self: Self = this
 
   override def isRequest = true
   override def isResponse = false
@@ -377,7 +377,8 @@ final class HttpRequest(
     entity:   RequestEntity,
     protocol: HttpProtocol) = new HttpRequest(method, uri, headers, attributes, entity, protocol)
 
-  private[model] def copy(
+  @deprecated("Use the `withXYZ` methods instead", "10.2.0")
+  def copy(
     method:     HttpMethod                = method,
     uri:        Uri                       = uri,
     headers:    immutable.Seq[HttpHeader] = headers,
@@ -536,21 +537,21 @@ final class HttpResponse(
   def transformEntityDataBytes[T](transformer: Graph[FlowShape[ByteString, ByteString], T]): HttpResponse = copy(entity = entity.transformDataBytes(Flow.fromGraph(transformer)))
 
   /* Manual Case Class things, to ease bin-compat */
-
-  private[model] def copy(
-    status:     StatusCode                = status,
-    headers:    immutable.Seq[HttpHeader] = headers,
-    entity:     ResponseEntity            = entity,
-    protocol:   HttpProtocol              = protocol,
-    attributes: Map[AttributeKey[_], _]   = attributes
-  ) = new HttpResponse(status, headers, attributes, entity, protocol)
-
   @deprecated("use the method that includes an attributes parameter instead", "10.2.0")
   private[model] def copy(
     status:   StatusCode,
     headers:  immutable.Seq[HttpHeader],
     entity:   ResponseEntity,
     protocol: HttpProtocol) = new HttpResponse(status, headers, attributes, entity, protocol)
+
+  @deprecated("Use the `withXYZ` methods instead", "10.2.0")
+  def copy(
+    status:     StatusCode                = status,
+    headers:    immutable.Seq[HttpHeader] = headers,
+    entity:     ResponseEntity            = entity,
+    protocol:   HttpProtocol              = protocol,
+    attributes: Map[AttributeKey[_], _]   = attributes
+  ) = new HttpResponse(status, headers, attributes, entity, protocol)
 
   override def equals(obj: scala.Any): Boolean = obj match {
     case response @ HttpResponse(_status, _headers, _entity, _protocol) =>
