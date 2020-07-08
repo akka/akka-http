@@ -208,6 +208,10 @@ object RejectionHandler {
           rejectRequestEntityAndComplete((BadRequest, "Request is missing required HTTP header '" + headerName + '\''))
       }
       .handle {
+        case MissingAttributeRejection(_) =>
+          rejectRequestEntityAndComplete((InternalServerError, InternalServerError.defaultMessage))
+      }
+      .handle {
         case InvalidOriginRejection(allowedOrigins) =>
           rejectRequestEntityAndComplete((Forbidden, s"Allowed `Origin` header values: ${allowedOrigins.mkString(", ")}"))
       }

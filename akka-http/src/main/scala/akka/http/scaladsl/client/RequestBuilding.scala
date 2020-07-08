@@ -87,6 +87,9 @@ trait RequestBuilding extends TransformerPipelineSupport {
   def removeHeaders(names: String*): RequestTransformer =
     _ mapHeaders (_ filterNot (header => names exists (_ equalsIgnoreCase header.name)))
 
+  def addAttribute[T](key: AttributeKey[T], value: T): RequestTransformer =
+    _.addAttribute(key, value)
+
   def addCredentials(credentials: HttpCredentials) = addHeader(headers.Authorization(credentials))
 
   def logRequest(log: LoggingAdapter, level: Logging.LogLevel = Logging.DebugLevel) = logValue[HttpRequest](log, level)

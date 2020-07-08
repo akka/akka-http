@@ -113,6 +113,15 @@ trait MissingHeaderRejection extends Rejection {
 }
 
 /**
+ * Rejection created by attribute directives.
+ * Signals that the request was rejected because a required request attribute could not be found.
+ */
+@DoNotInherit
+trait MissingAttributeRejection[T] extends Rejection {
+  def key: AttributeKey[T]
+}
+
+/**
  * Rejection created by header directives.
  * Signals that the request was rejected because a header value is malformed.
  */
