@@ -239,5 +239,28 @@ public interface HttpMessage {
          * is likely to take a long time.
          */
         CompletionStage<? extends Self> toStrict(long timeoutMillis, long maxBytes, Executor ec, Materializer materializer);
+
+        /**
+         * Returns a CompletionStage of Self message with strict entity that contains the same data as this entity
+         * which is only completed when the complete entity has been collected. As the
+         * duration of receiving the complete entity cannot be predicted, a timeout needs to
+         * be specified to guard the process against running and keeping resources infinitely.
+         *
+         * Use getEntity().getDataBytes and stream processing instead if the expected data is big or
+         * is likely to take a long time.
+         */
+        CompletionStage<? extends Self> toStrict(long timeoutMillis, ClassicActorSystemProvider system);
+
+        /**
+         * Returns a CompletionStage of Self message with strict entity that contains the same data as this entity
+         * which is only completed when the complete entity has been collected. As the
+         * duration of receiving the complete entity cannot be predicted, a timeout needs to
+         * be specified to guard the process against running and keeping resources infinitely.
+         *
+         * Use getEntity().getDataBytes and stream processing instead if the expected data is big or
+         * is likely to take a long time.
+         */
+        CompletionStage<? extends Self> toStrict(long timeoutMillis, long maxBytes, ClassicActorSystemProvider system);
+
     }
 }

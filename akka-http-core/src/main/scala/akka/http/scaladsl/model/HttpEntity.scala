@@ -29,6 +29,7 @@ import scala.compat.java8.OptionConverters._
 import scala.compat.java8.FutureConverters._
 import java.util.concurrent.CompletionStage
 
+import akka.actor.ClassicActorSystemProvider
 import akka.annotation.{ DoNotInherit, InternalApi }
 
 import scala.compat.java8.FutureConverters
@@ -196,6 +197,14 @@ sealed trait HttpEntity extends jm.HttpEntity {
   /** Java API */
   override def toStrict(timeoutMillis: Long, maxBytes: Long, materializer: Materializer): CompletionStage[jm.HttpEntity.Strict] =
     toStrict(timeoutMillis.millis, maxBytes)(materializer).toJava
+
+  /** Java API */
+  override def toStrict(timeoutMillis: Long, system: ClassicActorSystemProvider): CompletionStage[jm.HttpEntity.Strict] =
+    toStrict(timeoutMillis.millis)(SystemMaterializer(system).materializer).toJava
+
+  /** Java API */
+  override def toStrict(timeoutMillis: Long, maxBytes: Long, system: ClassicActorSystemProvider): CompletionStage[jm.HttpEntity.Strict] =
+    toStrict(timeoutMillis.millis, maxBytes)(SystemMaterializer(system).materializer).toJava
 
   /** Java API */
   override def withContentType(contentType: jm.ContentType): HttpEntity = {

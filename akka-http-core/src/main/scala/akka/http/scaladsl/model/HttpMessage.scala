@@ -234,6 +234,14 @@ sealed trait HttpMessage extends jm.HttpMessage {
     val ex = ExecutionContext.fromExecutor(ec)
     toStrict(timeoutMillis.millis, maxBytes)(ex, materializer).toJava
   }
+
+  /** Java API */
+  def toStrict(timeoutMillis: Long, system: ClassicActorSystemProvider): CompletionStage[Self] =
+    toStrict(timeoutMillis.millis)(system.classicSystem.dispatcher, SystemMaterializer(system).materializer).toJava
+
+  /** Java API */
+  def toStrict(timeoutMillis: Long, maxBytes: Long, system: ClassicActorSystemProvider): CompletionStage[Self] =
+    toStrict(timeoutMillis.millis, maxBytes)(system.classicSystem.dispatcher, SystemMaterializer(system).materializer).toJava
 }
 
 object HttpMessage {
