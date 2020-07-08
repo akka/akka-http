@@ -54,7 +54,7 @@ public class JacksonTest extends JUnitRouteTest {
     ActorSystem sys = ActorSystem.create("test");
     try {
       Materializer materializer = ActorMaterializer.create(sys);
-      CompletionStage<SomeData> unmarshalled = Jackson.unmarshaller(SomeData.class).unmarshal(invalidEntity, materializer);
+      CompletionStage<SomeData> unmarshalled = Jackson.unmarshaller(SomeData.class).unmarshal(invalidEntity, system());
 
 
         SomeData result = unmarshalled.toCompletableFuture().get(3, TimeUnit.SECONDS);

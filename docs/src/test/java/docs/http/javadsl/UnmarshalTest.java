@@ -29,26 +29,24 @@ import java.util.concurrent.TimeUnit;
   public void useUnmarshal() throws Exception {
     //#use-unmarshal
     CompletionStage<Integer> integerStage =
-      StringUnmarshallers.INTEGER.unmarshal("42", system().dispatcher(), materializer());
+      StringUnmarshallers.INTEGER.unmarshal("42", system());
     int integer = integerStage.toCompletableFuture().get(1, TimeUnit.SECONDS); // don't block in non-test code!
     assertEquals(integer, 42);
 
     CompletionStage<Boolean> boolStage =
-      StringUnmarshallers.BOOLEAN.unmarshal("off", system().dispatcher(), materializer());
+      StringUnmarshallers.BOOLEAN.unmarshal("off", system());
     boolean bool = boolStage.toCompletableFuture().get(1, TimeUnit.SECONDS); // don't block in non-test code!
     assertEquals(bool, false);
     //#use-unmarshal
   }
 
   @Test
-  public void useUnmarshalWithoutExecutionContext() throws Exception {
-    final Materializer materializer = ActorMaterializer.create(system());
-
-    CompletionStage<Integer> integerStage = StringUnmarshallers.INTEGER.unmarshal("42", materializer);
+  public void useUnmarshalWithExecutionContext() throws Exception {
+    CompletionStage<Integer> integerStage = StringUnmarshallers.INTEGER.unmarshal("42", system().dispatcher(), system());
     int integer = integerStage.toCompletableFuture().get(1, TimeUnit.SECONDS); // don't block in non-test code!
     assertEquals(integer, 42);
 
-    CompletionStage<Boolean> boolStage = StringUnmarshallers.BOOLEAN.unmarshal("off", materializer);
+    CompletionStage<Boolean> boolStage = StringUnmarshallers.BOOLEAN.unmarshal("off", system().dispatcher(), system());
     boolean bool = boolStage.toCompletableFuture().get(1, TimeUnit.SECONDS); // don't block in non-test code!
     assertEquals(bool, false);
   }

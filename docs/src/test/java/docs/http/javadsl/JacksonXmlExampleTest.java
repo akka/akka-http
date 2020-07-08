@@ -65,8 +65,7 @@ public class JacksonXmlExampleTest extends JUnitRouteTest {
       CompletionStage<Point> resultStage =
         JacksonXmlSupport.unmarshaller(Point.class).unmarshal(
           HttpEntities.create(ContentTypes.TEXT_XML_UTF8, xml),
-          system().dispatcher(),
-          materializer());
+          system());
 
       assertEquals(point, resultStage.toCompletableFuture().get(3, TimeUnit.SECONDS));
     }
@@ -75,8 +74,7 @@ public class JacksonXmlExampleTest extends JUnitRouteTest {
       CompletionStage<Point> resultStage =
         JacksonXmlSupport.unmarshaller(Point.class).unmarshal(
           HttpEntities.create(ContentTypes.create(MediaTypes.APPLICATION_XML, HttpCharsets.UTF_8), xml),
-          system().dispatcher(),
-          materializer());
+          system());
 
       assertEquals(point, resultStage.toCompletableFuture().get(3, TimeUnit.SECONDS));
     }

@@ -147,7 +147,7 @@ public class JsonStreamingExamplesTest extends JUnitRouteTest {
         response.entity().getDataBytes()
         .via(support.framingDecoder()) // apply JSON framing
         .mapAsync(1, // unmarshal each element
-            bs -> unmarshal.unmarshal(bs, materializer())
+            bs -> unmarshal.unmarshal(bs, system())
         );
 
     //#json-streaming-client-example-raw
@@ -248,6 +248,6 @@ public class JsonStreamingExamplesTest extends JUnitRouteTest {
       return value;
     }
   }
-  
+
   //#measurement-model
 }

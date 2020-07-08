@@ -48,9 +48,8 @@ class OtherRequestResponseExamples {
   public void response() {
     ActorSystem<Void> system = null;
     HttpResponse response = null;
-    // TODO https://github.com/akka/akka-http/issues/3240
     //#unmarshal-response-body
-    CompletionStage<Pet> pet = Jackson.unmarshaller(Pet.class).unmarshal(response.entity(), SystemMaterializer.get(system).materializer());
+    CompletionStage<Pet> pet = Jackson.unmarshaller(Pet.class).unmarshal(response.entity(), system);
     //#unmarshal-response-body
   }
 }

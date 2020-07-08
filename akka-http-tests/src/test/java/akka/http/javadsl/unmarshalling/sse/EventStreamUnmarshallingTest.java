@@ -44,7 +44,7 @@ public class EventStreamUnmarshallingTest extends JUnitSuite {
             //#event-stream-unmarshalling-example
             List<ServerSentEvent> unmarshalledEvents =
                     EventStreamUnmarshalling.fromEventsStream(system)
-                            .unmarshal(entity, system.dispatcher(), mat)
+                            .unmarshal(entity, system)
                             .thenCompose(source -> source.runWith(Sink.seq(), mat))
                             .toCompletableFuture()
                             .get(3000, TimeUnit.SECONDS);

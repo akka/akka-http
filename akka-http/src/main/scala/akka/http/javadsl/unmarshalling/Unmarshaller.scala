@@ -6,6 +6,7 @@ package akka.http.javadsl.unmarshalling
 
 import java.util.concurrent.CompletionStage
 
+import akka.actor.ClassicActorSystemProvider
 import akka.annotation.InternalApi
 import akka.http.impl.model.JavaQuery
 import akka.http.impl.util.JavaMapping
@@ -16,13 +17,13 @@ import akka.http.scaladsl.unmarshalling
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.http.scaladsl.unmarshalling.Unmarshaller.{ EnhancedFromEntityUnmarshaller, UnsupportedContentTypeException }
 import akka.http.scaladsl.util.FastFuture
-import akka.stream.Materializer
+import akka.stream.{ Materializer, SystemMaterializer }
 import akka.util.ByteString
+import com.github.ghik.silencer.silent
 
 import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.ExecutionContext
-import scala.language.implicitConversions
 
 object Unmarshaller extends akka.http.javadsl.unmarshalling.Unmarshallers {
   implicit def fromScala[A, B](scalaUnmarshaller: unmarshalling.Unmarshaller[A, B]): Unmarshaller[A, B] =
@@ -100,6 +101,7 @@ object Unmarshaller extends akka.http.javadsl.unmarshalling.Unmarshallers {
     unmarshalling.Unmarshaller.firstOf(u1.asScala, u2.asScala, u3.asScala, u4.asScala, u5.asScala)
   }
 
+  @silent("parameter value mi in method adaptInputToJava is never used")
   private implicit def adaptInputToJava[JI, SI, O](um: unmarshalling.Unmarshaller[SI, O])(implicit mi: JavaMapping[JI, SI]): unmarshalling.Unmarshaller[JI, O] =
     um.asInstanceOf[unmarshalling.Unmarshaller[JI, O]] // since guarantee provided by existence of `mi`
 
@@ -128,6 +130,17 @@ abstract class Unmarshaller[-A, B] extends UnmarshallerBase[A, B] {
    * If you expect the marshalling to be heavy, it is suggested to provide a specialized context for those operations.
    */
   def unmarshal(value: A, mat: Materializer): CompletionStage[B] = unmarshal(value, mat.executionContext, mat)
+
+  /**
+   * Apply this Unmarshaller to the given value.
+   */
+  def unmarshal(value: A, ec: ExecutionContext, system: ClassicActorSystemProvider): CompletionStage[B] = unmarshal(value, ec, SystemMaterializer(system).materializer)
+
+  /**
+   * Apply this Unmarshaller to the given value. Uses the default materializer [[ExecutionContext]].
+   * If you expect the marshalling to be heavy, it is suggested to provide a specialized context for those operations.
+   */
+  def unmarshal(value: A, system: ClassicActorSystemProvider): CompletionStage[B] = unmarshal(value, system.classicSystem.dispatcher, SystemMaterializer(system).materializer)
 
   /**
    * Transform the result `B` of this unmarshaller to a `C` producing a marshaller that turns `A`s into `C`s
