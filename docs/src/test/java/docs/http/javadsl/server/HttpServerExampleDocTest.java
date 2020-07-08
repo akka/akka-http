@@ -276,14 +276,13 @@ public class HttpServerExampleDocTest {
     //#discard-discardEntityBytes
     final ActorSystem system = ActorSystem.create();
     final ExecutionContextExecutor dispatcher = system.dispatcher();
-    final ActorMaterializer materializer = ActorMaterializer.create(system);
 
     final Route s =
       put(() ->
         path("lines", () ->
           withoutSizeLimit(() ->
             extractRequest(r -> {
-              final CompletionStage<Done> res = r.discardEntityBytes(materializer).completionStage();
+              final CompletionStage<Done> res = r.discardEntityBytes(system).completionStage();
 
               return onComplete(() -> res, done ->
                 // we only want to respond once the incoming data has been handled:

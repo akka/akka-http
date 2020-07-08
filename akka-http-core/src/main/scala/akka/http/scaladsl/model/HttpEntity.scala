@@ -117,6 +117,10 @@ sealed trait HttpEntity extends jm.HttpEntity {
     if (isStrict) HttpMessage.AlreadyDiscardedEntity
     else new HttpMessage.DiscardedEntity(dataBytes.runWith(Sink.ignore)(mat))
 
+  /** Java API */
+  def discardBytes(system: ClassicActorSystemProvider): HttpMessage.DiscardedEntity =
+    discardBytes(SystemMaterializer(system).materializer)
+
   /**
    * Returns a copy of the given entity with the ByteString chunks of this entity transformed by the given transformer.
    * For a `Chunked` entity, the chunks will be transformed one by one keeping the chunk metadata (but may introduce an

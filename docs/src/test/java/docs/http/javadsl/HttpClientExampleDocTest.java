@@ -158,11 +158,10 @@ public class HttpClientExampleDocTest {
     //#manual-entity-discard-example-1
     final ActorSystem system = ActorSystem.create();
     final ExecutionContextExecutor dispatcher = system.dispatcher();
-    final ActorMaterializer materializer = ActorMaterializer.create(system);
 
     final HttpResponse response = responseFromSomewhere();
 
-    final HttpMessage.DiscardedEntity discarded = response.discardEntityBytes(materializer);
+    final HttpMessage.DiscardedEntity discarded = response.discardEntityBytes(system);
 
     discarded.completionStage().whenComplete((done, ex) -> {
       System.out.println("Entity discarded completely!");
@@ -304,7 +303,6 @@ public class HttpClientExampleDocTest {
   public void testCollectingHeadersExample() {
 
     final ActorSystem system = ActorSystem.create();
-    final ActorMaterializer materializer = ActorMaterializer.create(system);
 
     //#collecting-headers-example
     final HttpResponse response = responseFromSomewhere();
@@ -312,7 +310,7 @@ public class HttpClientExampleDocTest {
     final Iterable<SetCookie> setCookies = response.getHeaders(SetCookie.class);
 
     System.out.println("Cookies set by a server: " + setCookies);
-    response.discardEntityBytes(materializer);
+    response.discardEntityBytes(system);
     //#collecting-headers-example
     system.terminate();
   }

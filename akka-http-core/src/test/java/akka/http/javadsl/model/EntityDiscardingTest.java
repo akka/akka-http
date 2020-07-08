@@ -25,7 +25,6 @@ import static org.junit.Assert.assertEquals;
 public class EntityDiscardingTest extends JUnitSuite {
 
   private ActorSystem sys = ActorSystem.create("test");
-  private Materializer mat = SystemMaterializer.get(sys).materializer();
   private Iterable<ByteString> testData = Arrays.asList(ByteString.fromString("abc"), ByteString.fromString("def"));
 
   @Test
@@ -37,7 +36,7 @@ public class EntityDiscardingTest extends JUnitSuite {
     RequestEntity reqEntity = HttpEntities.create(ContentTypes.TEXT_PLAIN_UTF8, s);
     HttpRequest req = HttpRequest.create().withEntity(reqEntity);
 
-    HttpMessage.DiscardedEntity de = req.discardEntityBytes(mat);
+    HttpMessage.DiscardedEntity de = req.discardEntityBytes(sys);
 
     assertEquals(Done.getInstance(), f.join());
     assertEquals(Done.getInstance(), de.completionStage().toCompletableFuture().join());
@@ -52,7 +51,7 @@ public class EntityDiscardingTest extends JUnitSuite {
     ResponseEntity respEntity = HttpEntities.create(ContentTypes.TEXT_PLAIN_UTF8, s);
     HttpResponse resp = HttpResponse.create().withEntity(respEntity);
 
-    HttpMessage.DiscardedEntity de = resp.discardEntityBytes(mat);
+    HttpMessage.DiscardedEntity de = resp.discardEntityBytes(sys);
 
     assertEquals(Done.getInstance(), f.join());
     assertEquals(Done.getInstance(), de.completionStage().toCompletableFuture().join());
