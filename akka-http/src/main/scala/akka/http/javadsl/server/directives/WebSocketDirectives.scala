@@ -14,6 +14,7 @@ import scala.collection.JavaConverters._
 import akka.http.scaladsl.model.{ ws => s }
 import akka.http.javadsl.model.ws.Message
 import akka.http.javadsl.model.ws.UpgradeToWebSocket
+import akka.http.javadsl.model.ws.WebSocketUpgrade
 import akka.http.scaladsl.server.{ Directives => D }
 import akka.stream.javadsl.Flow
 import akka.stream.scaladsl
@@ -24,12 +25,22 @@ abstract class WebSocketDirectives extends SecurityDirectives {
   /**
    * Extract the [[UpgradeToWebSocket]] header if existent. Rejects with an [[ExpectedWebSocketRequestRejection]], otherwise.
    *
-   * @deprecated use `attribute(webSocketUpgrade, ...)` instead since 10.2.0
+   * @deprecated use `webSocketUpgrade` instead since 10.2.0
    */
   @Deprecated
-  @deprecated("use `attribute(webSocketUpgrade)` instead", since = "10.2.0")
+  @deprecated("use `webSocketUpgrade` instead", since = "10.2.0")
   def extractUpgradeToWebSocket(inner: JFunction[UpgradeToWebSocket, Route]): Route = RouteAdapter {
     D.extractUpgradeToWebSocket { header =>
+      inner.apply(header).delegate
+    }
+  }
+
+  /**
+   * Extract the UpgradeToWebSocket attribute if this is a WebSocket request.
+   * Rejects with an [[ExpectedWebSocketRequestRejection]], otherwise.
+   */
+  def extractWebSocketUpgrade(inner: JFunction[WebSocketUpgrade, Route]): Route = RouteAdapter {
+    D.extractWebSocketUpgrade { header =>
       inner.apply(header).delegate
     }
   }

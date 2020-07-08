@@ -7,7 +7,6 @@ package akka.http.impl.engine.ws
 import scala.concurrent.{ Await, Promise }
 import scala.concurrent.duration.DurationInt
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri.apply
 import akka.http.scaladsl.model.AttributeKeys.webSocketUpgrade
 import akka.http.scaladsl.model.ws._
@@ -37,9 +36,7 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
     "not reset the connection when no data are flowing" in Utils.assertAllStagesStopped {
       val source = TestPublisher.probe[Message]()
       val bindingFuture = Http().bindAndHandleSync({
-        req: HttpRequest =>
-          val upgrade = req.attribute(webSocketUpgrade).get
-          upgrade.handleMessages(Flow.fromSinkAndSource(Sink.ignore, Source.fromPublisher(source)), None)
+        _.attribute(webSocketUpgrade).get.handleMessages(Flow.fromSinkAndSource(Sink.ignore, Source.fromPublisher(source)), None)
       }, interface = "localhost", port = 0)
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
       val myPort = binding.localAddress.getPort

@@ -141,13 +141,13 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
   }
 
   @Test
-  public void webSocketUpgradeAttribute() {
-    //#webSocketUpgradeAttribute
+  public void extractWebSocketUpgrade() {
+    //#extractWebSocketUpgrade
     final Flow<Message, Message, NotUsed> echoService = Flow.of(Message.class).buffer(1, OverflowStrategy.backpressure());
 
     final Route websocketRoute = path("services", () ->
       concat(
-        attribute(AttributeKeys.webSocketUpgrade, upgrade ->
+        extractWebSocketUpgrade(upgrade ->
           complete(upgrade.handleMessagesWith(echoService, "echo"))
         )
       )
@@ -167,7 +167,7 @@ public class WebSocketDirectivesExamplesTest extends JUnitRouteTest {
 
     wsClient.sendCompletion();
     wsClient.expectCompletion();
-    //#webSocketUpgradeAttribute
+    //#extractWebSocketUpgrade
   }
 
   @Test

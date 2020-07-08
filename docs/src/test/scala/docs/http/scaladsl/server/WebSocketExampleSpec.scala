@@ -50,7 +50,7 @@ class WebSocketExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpe
         }
     //#websocket-handler
 
-    @silent("expected to be replaced by an attribute") //#websocket-request-handling
+    //#websocket-request-handling
     val requestHandler: HttpRequest => HttpResponse = {
       case req @ HttpRequest(GET, Uri.Path("/greeter"), _, _, _) =>
         req.attribute(webSocketUpgrade) match {
