@@ -35,8 +35,7 @@ public class HttpServerLowLevelExample {
             else if (request.getUri().path().equals("/crash"))
               throw new RuntimeException("BOOM!");
             else {
-              // TODO https://github.com/akka/akka-http/issues/3241
-              request.discardEntityBytes(SystemMaterializer.get(system).materializer());
+              request.discardEntityBytes(system);
               return HttpResponse.create().withStatus(StatusCodes.NOT_FOUND).withEntity("Unknown resource!");
             }
           }, ConnectHttp.toHost("localhost", 8080), system);

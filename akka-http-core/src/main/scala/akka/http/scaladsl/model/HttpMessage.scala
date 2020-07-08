@@ -5,7 +5,7 @@
 package akka.http.scaladsl.model
 
 import akka.stream.scaladsl.Flow
-import akka.stream.{ FlowShape, Graph }
+import akka.stream.{ FlowShape, Graph, Materializer, SystemMaterializer }
 import java.io.File
 import java.nio.file.Path
 import java.lang.{ Iterable => JIterable }
@@ -18,8 +18,8 @@ import scala.concurrent.{ ExecutionContext, Future }
 import scala.collection.immutable
 import scala.reflect.{ ClassTag, classTag }
 import akka.Done
+import akka.actor.ClassicActorSystemProvider
 import akka.parboiled2.CharUtils
-import akka.stream.Materializer
 import akka.util.{ ByteString, HashCode, OptionVal }
 import akka.http.ccompat.{ pre213, since213 }
 import akka.http.impl.util._
@@ -67,6 +67,9 @@ sealed trait HttpMessage extends jm.HttpMessage {
    * In future versions, more automatic ways to warn or resolve these situations may be introduced, see issue #18716.
    */
   def discardEntityBytes(mat: Materializer): HttpMessage.DiscardedEntity = entity.discardBytes()(mat)
+
+  /** Java API */
+  def discardEntityBytes(system: ClassicActorSystemProvider): HttpMessage.DiscardedEntity = entity.discardBytes()(SystemMaterializer(system).materializer)
 
   /** Returns a copy of this message with the list of headers set to the given ones. */
   @pre213
@@ -231,6 +234,14 @@ sealed trait HttpMessage extends jm.HttpMessage {
     val ex = ExecutionContext.fromExecutor(ec)
     toStrict(timeoutMillis.millis, maxBytes)(ex, materializer).toJava
   }
+
+  /** Java API */
+  def toStrict(timeoutMillis: Long, system: ClassicActorSystemProvider): CompletionStage[Self] =
+    toStrict(timeoutMillis.millis)(system.classicSystem.dispatcher, SystemMaterializer(system).materializer).toJava
+
+  /** Java API */
+  def toStrict(timeoutMillis: Long, maxBytes: Long, system: ClassicActorSystemProvider): CompletionStage[Self] =
+    toStrict(timeoutMillis.millis, maxBytes)(system.classicSystem.dispatcher, SystemMaterializer(system).materializer).toJava
 }
 
 object HttpMessage {

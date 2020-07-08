@@ -20,10 +20,10 @@ public class UnmarshallerTest extends JUnitRouteTest {
 
   @Test
   public void unmarshallerWithoutExecutionContext() throws Exception {
-      CompletionStage<Integer> cafe = StringUnmarshallers.INTEGER_HEX.unmarshal("CAFE", materializer());
+      CompletionStage<Integer> cafe = StringUnmarshallers.INTEGER_HEX.unmarshal("CAFE", system());
       assertEquals(51966, cafe.toCompletableFuture().get(3, TimeUnit.SECONDS).intValue());
   }
-    
+
   @Test
   public void canChooseOneOfManyUnmarshallers() throws Exception {
     Unmarshaller<HttpEntity, String> jsonUnmarshaller =
@@ -37,8 +37,7 @@ public class UnmarshallerTest extends JUnitRouteTest {
       CompletionStage<String> resultStage =
         both.unmarshal(
           HttpEntities.create(ContentTypes.TEXT_XML_UTF8, "<suchXml/>"),
-          system().dispatcher(),
-          materializer());
+          system());
 
       assertEquals("xml", resultStage.toCompletableFuture().get(3, TimeUnit.SECONDS));
     }
@@ -48,8 +47,7 @@ public class UnmarshallerTest extends JUnitRouteTest {
       CompletionStage<String> resultStage =
         both.unmarshal(
           HttpEntities.create(ContentTypes.APPLICATION_JSON, "{}"),
-          system().dispatcher(),
-          materializer());
+          system());
 
       assertEquals("json", resultStage.toCompletableFuture().get(3, TimeUnit.SECONDS));
     }
@@ -66,8 +64,7 @@ public class UnmarshallerTest extends JUnitRouteTest {
       CompletionStage<String> resultStage =
         xmlUnmarshaller.unmarshal(
           HttpEntities.create(ContentTypes.TEXT_XML_UTF8, "<suchXml/>"),
-          system().dispatcher(),
-          materializer());
+          system());
 
       assertEquals("xml", resultStage.toCompletableFuture().get(3, TimeUnit.SECONDS));
     }
@@ -76,8 +73,7 @@ public class UnmarshallerTest extends JUnitRouteTest {
       CompletionStage<String> resultStage =
         xmlUnmarshaller.unmarshal(
           HttpEntities.create(ContentTypes.create(MediaTypes.APPLICATION_XML, HttpCharsets.UTF_8), "<suchXml/>"),
-          system().dispatcher(),
-          materializer());
+          system());
 
       assertEquals("xml", resultStage.toCompletableFuture().get(3, TimeUnit.SECONDS));
     }
