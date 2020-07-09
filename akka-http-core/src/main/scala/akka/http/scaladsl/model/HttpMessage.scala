@@ -341,7 +341,7 @@ final class HttpRequest(
    * http://tools.ietf.org/html/rfc7230#section-5.5
    */
   def withEffectiveUri(securedConnection: Boolean, defaultHostHeader: Host = Host.empty): HttpRequest =
-    copy(uri = effectiveUri(securedConnection, defaultHostHeader))
+    copyImpl(uri = effectiveUri(securedConnection, defaultHostHeader))
 
   /**
    * All cookies provided by the client in one or more `Cookie` headers.
@@ -354,48 +354,48 @@ final class HttpRequest(
   def canBeRetried = method.isIdempotent
 
   override def withHeaders(headers: immutable.Seq[HttpHeader]): HttpRequest =
-    if (headers eq this.headers) this else copy(headers = headers)
+    if (headers eq this.headers) this else copyImpl(headers = headers)
 
   override def withAttributes(attributes: Map[AttributeKey[_], _]): HttpRequest =
-    if (attributes eq this.attributes) this else copy(attributes = attributes)
+    if (attributes eq this.attributes) this else copyImpl(attributes = attributes)
 
-  override def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: RequestEntity): HttpRequest = copy(headers = headers, entity = entity)
-  override def withEntity(entity: jm.RequestEntity): HttpRequest = copy(entity = entity.asInstanceOf[RequestEntity])
-  override def withEntity(entity: MessageEntity): HttpRequest = copy(entity = entity)
+  override def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: RequestEntity): HttpRequest = copyImpl(headers = headers, entity = entity)
+  override def withEntity(entity: jm.RequestEntity): HttpRequest = copyImpl(entity = entity.asInstanceOf[RequestEntity])
+  override def withEntity(entity: MessageEntity): HttpRequest = copyImpl(entity = entity)
 
   def mapEntity(f: RequestEntity => RequestEntity): HttpRequest = withEntity(f(entity))
 
-  override def withMethod(method: akka.http.javadsl.model.HttpMethod): HttpRequest = copy(method = method.asInstanceOf[HttpMethod])
-  override def withProtocol(protocol: akka.http.javadsl.model.HttpProtocol): HttpRequest = copy(protocol = protocol.asInstanceOf[HttpProtocol])
+  override def withMethod(method: akka.http.javadsl.model.HttpMethod): HttpRequest = copyImpl(method = method.asInstanceOf[HttpMethod])
+  override def withProtocol(protocol: akka.http.javadsl.model.HttpProtocol): HttpRequest = copyImpl(protocol = protocol.asInstanceOf[HttpProtocol])
   override def withUri(path: String): HttpRequest = withUri(Uri(path))
-  def withUri(uri: Uri): HttpRequest = copy(uri = uri)
+  def withUri(uri: Uri): HttpRequest = copyImpl(uri = uri)
 
-  def transformEntityDataBytes[M](transformer: Graph[FlowShape[ByteString, ByteString], M]): HttpRequest = copy(entity = entity.transformDataBytes(Flow.fromGraph(transformer)))
+  def transformEntityDataBytes[M](transformer: Graph[FlowShape[ByteString, ByteString], M]): HttpRequest = copyImpl(entity = entity.transformDataBytes(Flow.fromGraph(transformer)))
 
   import JavaMapping.Implicits._
   /** Java API */
   override def getUri: jm.Uri = uri.asJava
   /** Java API */
-  override def withUri(uri: jm.Uri): HttpRequest = copy(uri = uri.asScala)
+  override def withUri(uri: jm.Uri): HttpRequest = copyImpl(uri = uri.asScala)
 
   /* Manual Case Class things, to easen bin-compat */
 
-  @deprecated("use the method that includes an attributes parameter instead", "10.2.0")
-  private[model] def copy(
-    method:   HttpMethod,
-    uri:      Uri,
-    headers:  immutable.Seq[HttpHeader],
-    entity:   RequestEntity,
-    protocol: HttpProtocol) = new HttpRequest(method, uri, headers, attributes, entity, protocol)
-
-  @deprecated("Use the `withXYZ` methods instead", "10.2.0")
+  @deprecated("Use the `withXYZ` methods instead. Kept for binary compatibility", "10.2.0")
   def copy(
+    method:   HttpMethod                = method,
+    uri:      Uri                       = uri,
+    headers:  immutable.Seq[HttpHeader] = headers,
+    entity:   RequestEntity             = entity,
+    protocol: HttpProtocol              = protocol) = copyImpl(method, uri, headers, entity = entity, protocol = protocol)
+
+  private def copyImpl(
     method:     HttpMethod                = method,
     uri:        Uri                       = uri,
     headers:    immutable.Seq[HttpHeader] = headers,
+    attributes: Map[AttributeKey[_], _]   = attributes,
     entity:     RequestEntity             = entity,
-    protocol:   HttpProtocol              = protocol,
-    attributes: Map[AttributeKey[_], _]   = attributes) = new HttpRequest(method, uri, headers, attributes, entity, protocol)
+    protocol:   HttpProtocol              = protocol
+  ) = new HttpRequest(method, uri, headers, attributes, entity, protocol)
 
   override def hashCode(): Int = {
     var result = HashCode.SEED
@@ -527,41 +527,40 @@ final class HttpResponse(
     this(status, headers, Map.empty, entity, protocol)
 
   override def withHeaders(headers: immutable.Seq[HttpHeader]): HttpResponse =
-    if (headers eq this.headers) this else copy(headers = headers)
+    if (headers eq this.headers) this else copyImpl(headers = headers)
 
   def withAttributes(attributes: Map[AttributeKey[_], _]): HttpResponse =
-    if (attributes eq this.attributes) this else copy(attributes = attributes)
+    if (attributes eq this.attributes) this else copyImpl(attributes = attributes)
 
   override def withProtocol(protocol: akka.http.javadsl.model.HttpProtocol): akka.http.javadsl.model.HttpResponse = withProtocol(protocol.asInstanceOf[HttpProtocol])
-  def withProtocol(protocol: HttpProtocol): HttpResponse = copy(protocol = protocol)
-  override def withStatus(statusCode: Int): HttpResponse = copy(status = statusCode)
-  override def withStatus(statusCode: akka.http.javadsl.model.StatusCode): HttpResponse = copy(status = statusCode.asInstanceOf[StatusCode])
+  def withProtocol(protocol: HttpProtocol): HttpResponse = copyImpl(protocol = protocol)
+  override def withStatus(statusCode: Int): HttpResponse = copyImpl(status = statusCode)
+  override def withStatus(statusCode: akka.http.javadsl.model.StatusCode): HttpResponse = copyImpl(status = statusCode.asInstanceOf[StatusCode])
 
   override def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: MessageEntity): HttpResponse = withHeadersAndEntity(headers, entity: ResponseEntity)
-  def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: ResponseEntity): HttpResponse = copy(headers = headers, entity = entity)
-  override def withEntity(entity: jm.ResponseEntity): HttpResponse = copy(entity = entity.asInstanceOf[ResponseEntity])
-  override def withEntity(entity: MessageEntity): HttpResponse = copy(entity = entity)
+  def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: ResponseEntity): HttpResponse = copyImpl(headers = headers, entity = entity)
+  override def withEntity(entity: jm.ResponseEntity): HttpResponse = copyImpl(entity = entity.asInstanceOf[ResponseEntity])
+  override def withEntity(entity: MessageEntity): HttpResponse = copyImpl(entity = entity)
   override def withEntity(entity: jm.RequestEntity): HttpResponse = withEntity(entity: jm.ResponseEntity)
 
   def mapEntity(f: ResponseEntity => ResponseEntity): HttpResponse = withEntity(f(entity))
 
-  def transformEntityDataBytes[T](transformer: Graph[FlowShape[ByteString, ByteString], T]): HttpResponse = copy(entity = entity.transformDataBytes(Flow.fromGraph(transformer)))
+  def transformEntityDataBytes[T](transformer: Graph[FlowShape[ByteString, ByteString], T]): HttpResponse = copyImpl(entity = entity.transformDataBytes(Flow.fromGraph(transformer)))
 
   /* Manual Case Class things, to ease bin-compat */
-  @deprecated("use the method that includes an attributes parameter instead", "10.2.0")
-  private[model] def copy(
-    status:   StatusCode,
-    headers:  immutable.Seq[HttpHeader],
-    entity:   ResponseEntity,
-    protocol: HttpProtocol) = new HttpResponse(status, headers, attributes, entity, protocol)
-
   @deprecated("Use the `withXYZ` methods instead", "10.2.0")
   def copy(
+    status:   StatusCode                = status,
+    headers:  immutable.Seq[HttpHeader] = headers,
+    entity:   ResponseEntity            = entity,
+    protocol: HttpProtocol              = protocol) = copyImpl(status, headers, entity = entity, protocol = protocol)
+
+  private def copyImpl(
     status:     StatusCode                = status,
     headers:    immutable.Seq[HttpHeader] = headers,
+    attributes: Map[AttributeKey[_], _]   = attributes,
     entity:     ResponseEntity            = entity,
-    protocol:   HttpProtocol              = protocol,
-    attributes: Map[AttributeKey[_], _]   = attributes
+    protocol:   HttpProtocol              = protocol
   ) = new HttpResponse(status, headers, attributes, entity, protocol)
 
   override def equals(obj: scala.Any): Boolean = obj match {
