@@ -28,7 +28,7 @@ abstract class WebSocketDirectives extends SecurityDirectives {
    * @deprecated use `webSocketUpgrade` instead since 10.2.0
    */
   @Deprecated
-  @deprecated("use `webSocketUpgrade` instead", since = "10.2.0")
+  @deprecated("use `extractWebSocketUpgrade` instead", since = "10.2.0")
   def extractUpgradeToWebSocket(inner: JFunction[UpgradeToWebSocket, Route]): Route = RouteAdapter {
     D.extractUpgradeToWebSocket { header =>
       inner.apply(header).delegate

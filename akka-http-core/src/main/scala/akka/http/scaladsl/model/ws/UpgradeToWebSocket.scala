@@ -17,7 +17,7 @@ import akka.http.scaladsl.model.HttpResponse
  * enables a request handler to upgrade this connection to a WebSocket connection and
  * registers a WebSocket handler.
  */
-@deprecated("This low-level API is expected to be replaced by an attribute.", since = "10.2.0")
+@deprecated("This low-level API has been replaced by an attribute.", since = "10.2.0")
 trait UpgradeToWebSocket extends jm.ws.UpgradeToWebSocket with WebSocketUpgrade {
   /**
    * A sequence of protocols the client accepts.
