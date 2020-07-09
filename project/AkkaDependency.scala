@@ -45,7 +45,7 @@ object AkkaDependency {
   // Needs https://github.com/akka/akka/pull/29148
   val minimumExpectedAkkaVersion = "2.5-20200529-210210"
   val default = akkaDependency(defaultVersion = minimumExpectedAkkaVersion)
-  val minimumExpectedAkka26Version = "2.6.5+106-33d64f9d"
+  val minimumExpectedAkka26Version = "2.6.6"
   val docs = akkaDependency(defaultVersion = minimumExpectedAkka26Version)
 
   val akkaVersion: String = default match {
