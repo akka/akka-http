@@ -358,7 +358,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     connect:      ConnectHttp,
     materializer: Materializer): CompletionStage[ServerBinding] = {
     val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    delegate.bindAndHandleAsync(handler.apply(_).toScala, connect.host, connect.port, connectionContext)(materializer)
+    delegate.bindServer(handler.apply(_).toScala, connect.host, connect.port, connectionContext)(materializer)
       .map(new ServerBinding(_))(ec).toJava
   }
 
@@ -378,7 +378,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     connect: ConnectHttp,
     system:  ClassicActorSystemProvider): CompletionStage[ServerBinding] = {
     val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    delegate.bindAndHandleAsync(handler.apply(_).toScala, connect.host, connect.port, connectionContext)(Materializer.matFromSystem(system))
+    delegate.bindServer(handler.apply(_).toScala, connect.host, connect.port, connectionContext)(Materializer.matFromSystem(system))
       .map(new ServerBinding(_))(ec).toJava
   }
 
@@ -403,7 +403,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     parallelism: Int, log: LoggingAdapter,
     materializer: Materializer): CompletionStage[ServerBinding] = {
     val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    delegate.bindAndHandleAsync(
+    delegate.bindAndHandleAsyncImpl(
       handler.apply(_).toScala,
       connect.host, connect.port, connectionContext, settings.asScala, parallelism, log)(materializer)
       .map(new ServerBinding(_))(ec).toJava
@@ -421,15 +421,15 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
    */
   def bindAndHandleAsync(
-    handler:     Function[HttpRequest, CompletionStage[HttpResponse]],
-    connect:     ConnectHttp,
-    settings:    ServerSettings,
-    parallelism: Int, log: LoggingAdapter,
-    system: ClassicActorSystemProvider): CompletionStage[ServerBinding] = {
+    handler:  Function[HttpRequest, CompletionStage[HttpResponse]],
+    connect:  ConnectHttp,
+    settings: ServerSettings,
+    log:      LoggingAdapter,
+    system:   ClassicActorSystemProvider): CompletionStage[ServerBinding] = {
     val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    delegate.bindAndHandleAsync(
+    delegate.bindAndHandleAsyncImpl(
       handler.apply(_).toScala,
-      connect.host, connect.port, connectionContext, settings.asScala, parallelism, log)(Materializer.matFromSystem(system))
+      connect.host, connect.port, connectionContext, settings.asScala, parallelism = 0, log)(Materializer.matFromSystem(system))
       .map(new ServerBinding(_))(ec).toJava
   }
 

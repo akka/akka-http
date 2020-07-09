@@ -275,8 +275,6 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     bindServer(req => FastFuture.successful(handler(req)), interface = interface, port = port, connectionContext = connectionContext, settings = settings, log = log)
 
   /**
-   * Alias for [[bindAndHandleAsync]].
-   *
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
    * [[akka.stream.scaladsl.Flow]] for processing all incoming connections.
    *
@@ -299,9 +297,8 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     interface: String, port: Int = DefaultPortForProtocol,
     connectionContext: ConnectionContext = defaultServerHttpContext,
     settings:          ServerSettings    = ServerSettings(system),
-    parallelism:       Int               = 0,
     log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] =
-    bindAndHandleAsync(handler, interface, port, connectionContext, settings, parallelism, log)(fm)
+    bindAndHandleAsyncImpl(handler, interface, port, connectionContext, parallelism = 0, settings = settings, log = log)(fm)
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
@@ -321,13 +318,23 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    *
    * Any other value for `parallelism` overrides the setting.
    */
+  @deprecated("Use bindServer instead.", since = "10.2.0")
   def bindAndHandleAsync(
     handler:   HttpRequest => Future[HttpResponse],
     interface: String, port: Int = DefaultPortForProtocol,
     connectionContext: ConnectionContext = defaultServerHttpContext,
     settings:          ServerSettings    = ServerSettings(system),
     parallelism:       Int               = 0,
-    log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
+    log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] =
+    bindAndHandleAsyncImpl(handler, interface, port, connectionContext, settings, parallelism, log)(fm)
+
+  private[http] def bindAndHandleAsyncImpl(
+    handler:   HttpRequest => Future[HttpResponse],
+    interface: String, port: Int,
+    connectionContext: ConnectionContext,
+    settings:          ServerSettings,
+    parallelism:       Int,
+    log:               LoggingAdapter)(implicit fm: Materializer): Future[ServerBinding] = {
     if (settings.previewServerSettings.enableHttp2) {
       log.debug("Binding server using HTTP/2")
 

@@ -324,7 +324,7 @@ class GracefulTerminationSpec
 
     val serverBinding =
       Http()
-        .bindServer(handler, interface = "localhost", port = 0, parallelism = 1, connectionContext = serverConnectionContext, settings = serverSettings)
+        .bindServer(handler, interface = "localhost", port = 0, connectionContext = serverConnectionContext, settings = serverSettings)
         .futureValue
 
     def basePoolSettings = ConnectionPoolSettings(system)

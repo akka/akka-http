@@ -525,7 +525,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
           toStrict(response.entity) shouldEqual HttpEntity("yeah")
 
           val request2 = HttpRequest(uri = s"http://$hostname:$port/abc")
-          val responseFut2 = Http().singleRequest(request2, settings = settings)
+          Http().singleRequest(request2, settings = settings)
           serverInSub.request(1)
           serverIn.expectNext().uri shouldEqual Uri(s"http://$hostname:$port/abc")
 
