@@ -55,7 +55,8 @@ class Http2BindingViaConfigSpec extends AkkaSpec("""
       val ext: Http2Ext = Http2()
       // the Shadow is a structural type, so this assignment only works
       // if all the methods it requires exist on the real class
-      val _: akka.http.impl.engine.Http2Shadow.ShadowHttp2Ext = ext
+      val typed: akka.http.impl.engine.Http2Shadow.ShadowHttp2Ext = ext
+      val _ = typed.bindAndHandleAsync _ // to avoid not-used warnings
     }
   }
 

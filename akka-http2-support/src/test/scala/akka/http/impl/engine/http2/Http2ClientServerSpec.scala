@@ -27,6 +27,8 @@ class Http2ClientServerSpec extends AkkaSpecWithMaterializer(
      akka.http.server.http2.log-frames = on
      akka.http.server.log-unencrypted-network-bytes = 100
      akka.http.server.preview.enable-http2 = on
+     akka.http.client.http2.log-frames = on
+     akka.http.client.log-unencrypted-network-bytes = 100
      akka.actor.serialize-messages = false
   """) with ScalaFutures {
   case class RequestId(id: String) extends RequestResponseAssociation

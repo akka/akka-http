@@ -19,7 +19,7 @@ import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration.FiniteDuration
 
-trait Http2FrameProbe {
+private[http] trait Http2FrameProbe {
   def sink: Sink[ByteString, Any]
   def plainDataProbe: ByteStringSinkProbe
 
@@ -62,7 +62,7 @@ trait Http2FrameProbe {
  * Allows to get all of the probe's methods into scope, delegating to the actual probe. Nice when using the `TestSetup`
  * approach.
  */
-trait Http2FrameProbeDelegator extends Http2FrameProbe {
+private[http] trait Http2FrameProbeDelegator extends Http2FrameProbe {
   def frameProbeDelegate: Http2FrameProbe
 
   def sink: Sink[ByteString, Any] = frameProbeDelegate.sink
@@ -92,7 +92,7 @@ trait Http2FrameProbeDelegator extends Http2FrameProbe {
   def expectComplete(): Unit = frameProbeDelegate.expectComplete()
 }
 
-object Http2FrameProbe extends Matchers {
+private[http] object Http2FrameProbe extends Matchers {
   case class FrameHeader(frameType: FrameType, flags: ByteFlag, streamId: Int, payloadLength: Int)
 
   def apply()(implicit system: ActorSystem): Http2FrameProbe =
