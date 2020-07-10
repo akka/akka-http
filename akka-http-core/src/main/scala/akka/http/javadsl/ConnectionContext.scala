@@ -77,6 +77,8 @@ object ConnectionContext {
 @DoNotInherit
 abstract class ConnectionContext {
   def isSecure: Boolean
+  @Deprecated
+  @deprecated("Not always avaialble", since = "10.2.0")
   def sslConfig: Option[AkkaSSLConfig]
 }
 
