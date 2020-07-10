@@ -96,7 +96,7 @@ object ConnectionContext {
     enabledProtocols:    Option[immutable.Seq[String]] = None,
     clientAuth:          Option[TLSClientAuth]         = None,
     sslParameters:       Option[SSLParameters]         = None) =
-    new HttpsConnectionContext(Left(sslContext), sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
+    new HttpsConnectionContext(Left((sslContext, sslConfig)), sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
 
   def noEncryption() = HttpConnectionContext
 }
@@ -110,12 +110,12 @@ private[http] case class Engine(create: () => SSLEngine, validate: SSLSession =>
  */
 @InternalApi
 final class HttpsConnectionContext(
-  val sslContextData:      Either[SSLContext, Option[(String, Int)] => Engine],
-  val sslConfig:           Option[AkkaSSLConfig]                               = None,
-  val enabledCipherSuites: Option[immutable.Seq[String]]                       = None,
-  val enabledProtocols:    Option[immutable.Seq[String]]                       = None,
-  val clientAuth:          Option[TLSClientAuth]                               = None,
-  val sslParameters:       Option[SSLParameters]                               = None)
+  val sslContextData:      Either[(SSLContext, Option[AkkaSSLConfig]), Option[(String, Int)] => Engine],
+  sslConfig:               Option[AkkaSSLConfig]                                                        = None,
+  val enabledCipherSuites: Option[immutable.Seq[String]]                                                = None,
+  val enabledProtocols:    Option[immutable.Seq[String]]                                                = None,
+  val clientAuth:          Option[TLSClientAuth]                                                        = None,
+  val sslParameters:       Option[SSLParameters]                                                        = None)
   extends akka.http.javadsl.HttpsConnectionContext with ConnectionContext {
   protected[http] override final def defaultPort: Int = 443
 
@@ -127,10 +127,13 @@ final class HttpsConnectionContext(
     enabledProtocols:    Option[immutable.Seq[String]],
     clientAuth:          Option[TLSClientAuth],
     sslParameters:       Option[SSLParameters]
-  ) = this(Left(sslContext), sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
+  ) = this(Left((sslContext, sslConfig)), sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
 
   @deprecated("not always available", "10.2.0")
-  def sslContext: SSLContext = sslContextData.left.getOrElse(???)
+  def sslContext: SSLContext = sslContextData.left.getOrElse(???)._1
+
+  @deprecated("not always available", "10.2.0")
+  def sslConfig: Option[AkkaSSLConfig] = sslContextData.left.getOrElse(???)._2
 
   def firstSession = NegotiateNewSession(enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
 

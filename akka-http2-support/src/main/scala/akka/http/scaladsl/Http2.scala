@@ -165,8 +165,8 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
     var eng: Option[SSLEngine] = None
     def createEngine(): SSLEngine = {
       val engine = httpsContext.sslContextData match {
-        case Left(context) => context.createSSLEngine()
-        case Right(e)      => e(None).create()
+        case Left((context, _)) => context.createSSLEngine()
+        case Right(e)           => e(None).create()
       }
       eng = Some(engine)
       engine.setUseClientMode(false)
@@ -187,8 +187,9 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
     log:               LoggingAdapter           = system.log): Flow[HttpRequest, HttpResponse, Any] = {
     def createEngine(): SSLEngine = {
       val engine = connectionContext.sslContextData match {
-        case Left(context) => context.createSSLEngine()
-        case Right(e)      => e(Some((host, port))).create()
+        // TODO FIXME don't we need to enable hostname verification here?
+        case Left((context, _)) => context.createSSLEngine(host, port)
+        case Right(e)           => e(Some((host, port))).create()
       }
       engine.setUseClientMode(true)
       Http2AlpnSupport.applySessionParameters(engine, connectionContext.firstSession)

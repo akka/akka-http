@@ -792,8 +792,8 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     connectionContext match {
       case hctx: HttpsConnectionContext =>
         hctx.sslContextData match {
-          case Left(sslContext) =>
-            TLS(sslContext, connectionContext.sslConfig, hctx.firstSession, role, hostInfo = hostInfo, closing = TLSClosing.eagerClose)
+          case Left((sslContext, sslConfig)) =>
+            TLS(sslContext, sslConfig, hctx.firstSession, role, hostInfo = hostInfo, closing = TLSClosing.eagerClose)
           case Right(engineCreator) =>
             val engine = engineCreator(hostInfo)
             TLS(engine.create, engine.validate, TLSClosing.eagerClose)
@@ -1129,14 +1129,14 @@ trait DefaultSSLContextCreation {
   def createDefaultClientHttpsContext(): HttpsConnectionContext =
     createClientHttpsContext(sslConfig)
 
-  // TODO: currently the same configuration as client by default, however we should tune this for server-side apropriately (!)
-  // https://github.com/akka/akka-http/issues/55
+  @deprecated("use ConnectionContext.httpServer(sslContext) instead", since = "10.2.0")
   def createServerHttpsContext(sslConfig: AkkaSSLConfig): HttpsConnectionContext = {
     log.warning("Automatic server-side configuration is not supported yet, will attempt to use client-side settings. " +
       "Instead it is recommended to construct the Servers HttpsConnectionContext manually (via SSLContext).")
     createClientHttpsContext(sslConfig)
   }
 
+  @deprecated("use ConnectionContext.httpClient(sslContext) instead", since = "10.2.0")
   def createClientHttpsContext(sslConfig: AkkaSSLConfig): HttpsConnectionContext = {
     val config = sslConfig.config
 
@@ -1181,7 +1181,7 @@ trait DefaultSSLContextCreation {
     }
 
     new HttpsConnectionContext(
-      Left(sslContext),
+      Left(sslContext, Some(sslConfig)),
       Some(sslConfig),
       Some(cipherSuites.toList),
       Some(defaultProtocols.toList),
