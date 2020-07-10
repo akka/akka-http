@@ -25,7 +25,7 @@ class WebSocketExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpe
     import akka.actor.ActorSystem
     import akka.stream.scaladsl.{ Source, Flow }
     import akka.http.scaladsl.Http
-    import akka.http.scaladsl.model.ws.UpgradeToWebSocket
+    import akka.http.scaladsl.model.AttributeKeys.webSocketUpgrade
     import akka.http.scaladsl.model.ws.{ TextMessage, Message }
     import akka.http.scaladsl.model.{ HttpResponse, Uri, HttpRequest }
     import akka.http.scaladsl.model.HttpMethods._
@@ -50,11 +50,10 @@ class WebSocketExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpe
         }
     //#websocket-handler
 
-    @silent("expected to be replaced by an attribute") //#websocket-request-handling
+    //#websocket-request-handling
     val requestHandler: HttpRequest => HttpResponse = {
       case req @ HttpRequest(GET, Uri.Path("/greeter"), _, _, _) =>
-        // See https://github.com/akka/akka-http/issues/3278 about deprecation
-        req.header[UpgradeToWebSocket] match {
+        req.attribute(webSocketUpgrade) match {
           case Some(upgrade) => upgrade.handleMessages(greeterWebSocketService)
           case None          => HttpResponse(400, entity = "Not a valid websocket request!")
         }

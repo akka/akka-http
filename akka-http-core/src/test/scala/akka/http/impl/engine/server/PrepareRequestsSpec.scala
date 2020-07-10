@@ -23,6 +23,7 @@ class PrepareRequestsSpec extends AkkaSpec {
       HttpMethods.GET,
       Uri("http://example.com/"),
       HttpProtocols.`HTTP/1.1`,
+      Map.empty,
       List(),
       StreamedEntityCreator[ParserOutput, RequestEntity] { entityChunks =>
         val chunks = entityChunks.collect {
@@ -45,6 +46,7 @@ class PrepareRequestsSpec extends AkkaSpec {
       HttpMethods.GET,
       Uri("http://example.com/"),
       HttpProtocols.`HTTP/1.1`,
+      Map.empty,
       List(),
       StrictEntityCreator(HttpEntity.Strict(ContentTypes.`application/octet-stream`, ByteString("body"))),
       true,

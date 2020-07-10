@@ -4,16 +4,19 @@
 
 package akka.http.scaladsl
 
-import akka.NotUsed
-
 import scala.concurrent.duration._
 import scala.concurrent.Await
+
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.AttributeKeys.webSocketUpgrade
 import akka.http.scaladsl.model.ws._
 import akka.stream._
 import akka.stream.scaladsl.{ Flow, Source }
+
 import com.typesafe.config.{ Config, ConfigFactory }
+
 import HttpMethods._
 
 import scala.io.StdIn
@@ -36,16 +39,15 @@ object TestServer extends App {
   implicit val fm = ActorMaterializer(settings)
   try {
     val binding = Http().bindAndHandleSync({
-      case req @ HttpRequest(GET, Uri.Path("/"), _, _, _) if req.header[UpgradeToWebSocket].isDefined =>
-        req.header[UpgradeToWebSocket] match {
+      case req @ HttpRequest(GET, Uri.Path("/"), _, _, _) =>
+        req.attribute(webSocketUpgrade) match {
           case Some(upgrade) => upgrade.handleMessages(echoWebSocketService) // needed for running the autobahn test suite
-          case None          => HttpResponse(400, entity = "Not a valid websocket request!")
+          case None          => index
         }
-      case HttpRequest(GET, Uri.Path("/"), _, _, _)      => index
       case HttpRequest(GET, Uri.Path("/ping"), _, _, _)  => HttpResponse(entity = "PONG!")
       case HttpRequest(GET, Uri.Path("/crash"), _, _, _) => sys.error("BOOM!")
       case req @ HttpRequest(GET, Uri.Path("/ws-greeter"), _, _, _) =>
-        req.header[UpgradeToWebSocket] match {
+        req.attribute(webSocketUpgrade) match {
           case Some(upgrade) => upgrade.handleMessages(greeterWebSocketService)
           case None          => HttpResponse(400, entity = "Not a valid websocket request!")
         }

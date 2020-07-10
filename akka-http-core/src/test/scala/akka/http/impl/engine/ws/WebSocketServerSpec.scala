@@ -5,6 +5,7 @@
 package akka.http.impl.engine.ws
 
 import akka.http.scaladsl.model.ws._
+import akka.http.scaladsl.model.AttributeKeys.webSocketUpgrade
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import akka.stream.testkit.Utils
 import akka.util.ByteString
@@ -31,7 +32,7 @@ class WebSocketServerSpec extends AkkaSpecWithMaterializer { spec =>
               |""")
 
           val request = expectRequest()
-          val upgrade = request.header[UpgradeToWebSocket]
+          val upgrade = request.attribute(webSocketUpgrade)
           upgrade.isDefined shouldBe true
 
           val source =
@@ -77,7 +78,7 @@ class WebSocketServerSpec extends AkkaSpecWithMaterializer { spec =>
               |""")
 
           val request = expectRequest()
-          val upgrade = request.header[UpgradeToWebSocket]
+          val upgrade = request.attribute(webSocketUpgrade)
           upgrade.isDefined shouldBe true
 
           val response = upgrade.get.handleMessages(Flow[Message]) // simple echoing
@@ -136,7 +137,7 @@ class WebSocketServerSpec extends AkkaSpecWithMaterializer { spec =>
               |""")
 
           val request = expectRequest()
-          val upgrade = request.header[UpgradeToWebSocket]
+          val upgrade = request.attribute(webSocketUpgrade)
 
           val handler = Flow.fromSinkAndSourceCoupled(Sink.ignore, Source.maybe[Message])
 

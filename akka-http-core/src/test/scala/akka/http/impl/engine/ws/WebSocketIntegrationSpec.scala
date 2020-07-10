@@ -7,8 +7,8 @@ package akka.http.impl.engine.ws
 import scala.concurrent.{ Await, Promise }
 import scala.concurrent.duration.DurationInt
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri.apply
+import akka.http.scaladsl.model.AttributeKeys.webSocketUpgrade
 import akka.http.scaladsl.model.ws._
 import akka.stream._
 import akka.stream.scaladsl._
@@ -36,9 +36,7 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
     "not reset the connection when no data are flowing" in Utils.assertAllStagesStopped {
       val source = TestPublisher.probe[Message]()
       val bindingFuture = Http().bindAndHandleSync({
-        case HttpRequest(_, _, headers, _, _) =>
-          val upgrade = headers.collectFirst { case u: UpgradeToWebSocket => u }.get
-          upgrade.handleMessages(Flow.fromSinkAndSource(Sink.ignore, Source.fromPublisher(source)), None)
+        _.attribute(webSocketUpgrade).get.handleMessages(Flow.fromSinkAndSource(Sink.ignore, Source.fromPublisher(source)), None)
       }, interface = "localhost", port = 0)
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
       val myPort = binding.localAddress.getPort
@@ -65,9 +63,7 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
     "not reset the connection when no data are flowing and the connection is closed from the client" in Utils.assertAllStagesStopped {
       val source = TestPublisher.probe[Message]()
       val bindingFuture = Http().bindAndHandleSync({
-        case HttpRequest(_, _, headers, _, _) =>
-          val upgrade = headers.collectFirst { case u: UpgradeToWebSocket => u }.get
-          upgrade.handleMessages(Flow.fromSinkAndSource(Sink.ignore, Source.fromPublisher(source)), None)
+        _.attribute(webSocketUpgrade).get.handleMessages(Flow.fromSinkAndSource(Sink.ignore, Source.fromPublisher(source)), None)
       }, interface = "localhost", port = 0)
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
       val myPort = binding.localAddress.getPort
@@ -126,9 +122,7 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
     "echo 100 elements and then shut down without error" in Utils.assertAllStagesStopped {
 
       val bindingFuture = Http().bindAndHandleSync({
-        case HttpRequest(_, _, headers, _, _) =>
-          val upgrade = headers.collectFirst { case u: UpgradeToWebSocket => u }.get
-          upgrade.handleMessages(Flow.apply, None)
+        _.attribute(webSocketUpgrade).get.handleMessages(Flow.apply, None)
       }, interface = "localhost", port = 0)
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
       val myPort = binding.localAddress.getPort
@@ -167,9 +161,7 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
       })
 
       val bindingFuture = Http().bindAndHandleSync({
-        case HttpRequest(_, _, headers, _, _) =>
-          val upgrade = headers.collectFirst { case u: UpgradeToWebSocket => u }.get
-          upgrade.handleMessages(handler, None)
+        _.attribute(webSocketUpgrade).get.handleMessages(handler, None)
       }, interface = "localhost", port = 0)
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
       val myPort = binding.localAddress.getPort
@@ -203,7 +195,7 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
         .map(m => TextMessage.Strict(s"Echo [$m]"))
 
       val bindingFuture = Http().bindAndHandleSync(
-        _.header[UpgradeToWebSocket].get.handleMessages(handler, None),
+        _.attribute(webSocketUpgrade).get.handleMessages(handler, None),
         interface = "localhost",
         port = 0)
       val binding = Await.result(bindingFuture, 3.seconds.dilated)

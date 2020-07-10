@@ -4,7 +4,10 @@
 
 package akka.http.scaladsl.model
 
+import akka.http.scaladsl.model.ws.WebSocketUpgrade
+
 object AttributeKeys {
-  lazy val remoteAddress = AttributeKey[RemoteAddress]("remote-address")
+  val remoteAddress = AttributeKey[RemoteAddress]("remote-address")
+  val webSocketUpgrade = AttributeKey[WebSocketUpgrade](name = "upgrade-to-websocket")
 }
 

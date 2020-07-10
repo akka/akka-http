@@ -123,7 +123,7 @@ private[http] object HttpServerBluePrint {
       }
 
       override def onPush(): Unit = grab(in) match {
-        case RequestStart(method, uri, protocol, hdrs, entityCreator, _, _) =>
+        case RequestStart(method, uri, protocol, attrs, hdrs, entityCreator, _, _) =>
           val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
 
           @silent("use remote-address-attribute instead")
@@ -134,6 +134,7 @@ private[http] object HttpServerBluePrint {
 
           val entity = createEntity(entityCreator) withSizeLimit settings.parserSettings.maxContentLength
           val httpRequest = HttpRequest(effectiveMethod, uri, effectiveHeaders, entity, protocol)
+            .withAttributes(attrs)
 
           val effectiveHttpRequest = if (settings.remoteAddressAttribute) {
             remoteAddressOpt.fold(httpRequest) { remoteAddress =>
