@@ -16,6 +16,7 @@ import akka.http.scaladsl.model.headers.{ Connection, RawHeader, Upgrade, Upgrad
 import akka.http.scaladsl.model.http2.Http2SettingsHeader
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ServerSettings }
 import akka.stream.TLSProtocol.{ SslTlsInbound, SslTlsOutbound }
+import akka.stream.impl.io.TlsUtils
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source, TLS, TLSPlacebo, Tcp }
 import akka.stream.{ IgnoreComplete, Materializer, TLSClosing }
 import akka.util.ByteString
@@ -165,12 +166,14 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
     var eng: Option[SSLEngine] = None
     def createEngine(): SSLEngine = {
       val engine = httpsContext.sslContextData match {
-        case Left((context, _)) => context.createSSLEngine()
-        case Right(e)           => e(None).create()
+        case Left(ssl) =>
+          val e = ssl.sslContext.createSSLEngine()
+          TlsUtils.applySessionParameters(e, ssl.firstSession)
+          e
+        case Right(e) => e(None).create()
       }
       eng = Some(engine)
       engine.setUseClientMode(false)
-      Http2AlpnSupport.applySessionParameters(engine, httpsContext.firstSession)
       Http2AlpnSupport.enableForServer(engine, setChosenProtocol)
     }
     val tls = TLS(() => createEngine(), _ => Success(()), IgnoreComplete)
@@ -187,12 +190,14 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
     log:               LoggingAdapter           = system.log): Flow[HttpRequest, HttpResponse, Any] = {
     def createEngine(): SSLEngine = {
       val engine = connectionContext.sslContextData match {
-        // TODO FIXME don't we need to enable hostname verification here?
-        case Left((context, _)) => context.createSSLEngine(host, port)
-        case Right(e)           => e(Some((host, port))).create()
+        // TODO FIXME configure hostname verification for this case
+        case Left(ssl) =>
+          val e = ssl.sslContext.createSSLEngine(host, port)
+          TlsUtils.applySessionParameters(e, ssl.firstSession)
+          e
+        case Right(e) => e(Some((host, port))).create()
       }
       engine.setUseClientMode(true)
-      Http2AlpnSupport.applySessionParameters(engine, connectionContext.firstSession)
       Http2AlpnSupport.clientSetApplicationProtocols(engine, Array("h2"))
       engine
     }

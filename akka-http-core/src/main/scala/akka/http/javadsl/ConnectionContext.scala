@@ -93,14 +93,19 @@ abstract class HttpsConnectionContext extends akka.http.javadsl.ConnectionContex
   override final def isSecure = true
 
   /** Java API */
+  @Deprecated @deprecated("here for binary compatibility", since = "10.2.0")
   def getEnabledCipherSuites: Optional[JCollection[String]]
   /** Java API */
+  @Deprecated @deprecated("here for binary compatibility", since = "10.2.0")
   def getEnabledProtocols: Optional[JCollection[String]]
   /** Java API */
+  @Deprecated @deprecated("here for binary compatibility", since = "10.2.0")
   def getClientAuth: Optional[TLSClientAuth]
 
   /** Java API */
+  @Deprecated @deprecated("here for binary compatibility, not always available", since = "10.2.0")
   def getSslContext: SSLContext
   /** Java API */
+  @Deprecated @deprecated("here for binary compatibility", since = "10.2.0")
   def getSslParameters: Optional[SSLParameters]
 }

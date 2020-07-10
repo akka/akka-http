@@ -792,8 +792,8 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     connectionContext match {
       case hctx: HttpsConnectionContext =>
         hctx.sslContextData match {
-          case Left((sslContext, sslConfig)) =>
-            TLS(sslContext, sslConfig, hctx.firstSession, role, hostInfo = hostInfo, closing = TLSClosing.eagerClose)
+          case Left(ssl) =>
+            TLS(ssl.sslContext, ssl.sslConfig, ssl.firstSession, role, hostInfo = hostInfo, closing = TLSClosing.eagerClose)
           case Right(engineCreator) =>
             val engine = engineCreator(hostInfo)
             TLS(engine.create, engine.validate, TLSClosing.eagerClose)
@@ -1181,7 +1181,7 @@ trait DefaultSSLContextCreation {
     }
 
     new HttpsConnectionContext(
-      Left(sslContext, Some(sslConfig)),
+      sslContext,
       Some(sslConfig),
       Some(cipherSuites.toList),
       Some(defaultProtocols.toList),
