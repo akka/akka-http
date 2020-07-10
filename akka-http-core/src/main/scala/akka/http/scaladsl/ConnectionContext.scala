@@ -5,19 +5,18 @@
 package akka.http.scaladsl
 
 import java.util.{ Collections, Optional, Collection => JCollection }
+
 import javax.net.ssl._
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.compat.java8.OptionConverters._
 import scala.util.{ Failure, Success, Try }
-
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
 import com.typesafe.sslconfig.ssl.DefaultHostnameVerifier
-
 import akka.actor.ClassicActorSystemProvider
-import akka.annotation.InternalApi
+import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.stream.{ ConnectionException, TLSClientAuth }
 import akka.stream.TLSProtocol._
 
@@ -27,12 +26,22 @@ trait ConnectionContext extends akka.http.javadsl.ConnectionContext {
 }
 
 object ConnectionContext {
-  // ConnectionContext
-  //#https-context-creation
-  def https(createSSLEngine: Option[(String, Int)] => () => SSLEngine): HttpsConnectionContext =
+  /**
+   *  If you want complete control over how to create the SSLEngine you can use this method:
+   *
+   *  Note that this means it is up to you to make sure features like SNI and Hostname Verification
+   *  are enabled as needed.
+   */
+  @ApiMayChange
+  def https(createSSLEngine: Option[(String, Int)] => () => SSLEngine): HttpsConnectionContext = // ...
     new HttpsConnectionContext(Right(o => Engine(createSSLEngine(o))))
 
-  def httpsServer(sslContext: SSLContext): HttpsConnectionContext =
+  //#https-context-creation
+  /**
+   *  Use this sslContext to create a HttpsConnectionContext for server-side use.
+   */
+  def httpsServer(sslContext: SSLContext): HttpsConnectionContext = // ...
+    //#https-context-creation
     new HttpsConnectionContext(Right({
       case None => Engine(() => {
         val engine = sslContext.createSSLEngine()
@@ -46,33 +55,38 @@ object ConnectionContext {
       })
     }))
 
-  def httpsClient(context: SSLContext)(implicit system: ClassicActorSystemProvider): HttpsConnectionContext = {
-    val verifier = new DefaultHostnameVerifier(new AkkaLoggerFactory(system.classicSystem))
+  //#https-context-creation
+  /**
+   *  Use this sslContext to create a HttpsConnectionContext for client-side use.
+   */
+  def httpsClient(context: SSLContext)(implicit system: ClassicActorSystemProvider): HttpsConnectionContext = // ...
+    //#https-context-creation
+    {
+      val verifier = new DefaultHostnameVerifier(new AkkaLoggerFactory(system.classicSystem))
 
-    new HttpsConnectionContext(Right {
-      case None =>
-        Engine(() => {
-          val engine = context.createSSLEngine()
-          engine.getSSLParameters.setEndpointIdentificationAlgorithm("https")
-          engine.setUseClientMode(true)
-          engine
-        })
-      case Some((host, port)) =>
-        Engine(
-          () => {
-            val engine = context.createSSLEngine(host, port)
+      new HttpsConnectionContext(Right {
+        case None =>
+          Engine(() => {
+            val engine = context.createSSLEngine()
             engine.getSSLParameters.setEndpointIdentificationAlgorithm("https")
-            engine.getSSLParameters.setServerNames(Collections.singletonList(new SNIHostName(host)))
             engine.setUseClientMode(true)
             engine
-          },
-          sslSession => {
-            if (verifier.verify(host, sslSession)) Success(())
-            else Failure(new ConnectionException(s"Hostname verification failed! Expected session to be for $host"))
           })
-    })
-  }
-  //#https-context-creation
+        case Some((host, port)) =>
+          Engine(
+            () => {
+              val engine = context.createSSLEngine(host, port)
+              engine.getSSLParameters.setEndpointIdentificationAlgorithm("https")
+              engine.getSSLParameters.setServerNames(Collections.singletonList(new SNIHostName(host)))
+              engine.setUseClientMode(true)
+              engine
+            },
+            sslSession => {
+              if (verifier.verify(host, sslSession)) Success(())
+              else Failure(new ConnectionException(s"Hostname verification failed! Expected session to be for $host"))
+            })
+      })
+    }
 
   @deprecated("use httpsClient, httpsServer, or the lower-level SSLEngine-based constructor", "10.2.0")
   def https(
