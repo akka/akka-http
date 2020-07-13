@@ -48,11 +48,8 @@ object ConnectionContext {
         engine.setUseClientMode(false)
         engine
       })
-      case Some((host, port)) => Engine(() => {
-        val engine = sslContext.createSSLEngine(host, port)
-        engine.setUseClientMode(false)
-        engine
-      })
+      case Some((host, port)) =>
+        throw new IllegalArgumentException("host and port supplied for connection based on server connection context")
     }))
 
   //#https-context-creation
@@ -64,18 +61,7 @@ object ConnectionContext {
     {
       new HttpsConnectionContext(Right {
         case None =>
-          Engine(() => {
-            val engine = context.createSSLEngine()
-            engine.setUseClientMode(true)
-
-            engine.setSSLParameters({
-              val params = engine.getSSLParameters
-              params.setEndpointIdentificationAlgorithm("https")
-              params
-            })
-
-            engine
-          })
+          throw new IllegalArgumentException("host and port missing for connection based on client connection context")
         case Some((host, port)) =>
           Engine(
             () => {
