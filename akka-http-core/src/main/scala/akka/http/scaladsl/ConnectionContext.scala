@@ -59,32 +59,39 @@ object ConnectionContext {
   /**
    *  Use this sslContext to create a HttpsConnectionContext for client-side use.
    */
-  def httpsClient(context: SSLContext)(implicit system: ClassicActorSystemProvider): HttpsConnectionContext = // ...
+  def httpsClient(context: SSLContext): HttpsConnectionContext = // ...
     //#https-context-creation
     {
-      val verifier = new DefaultHostnameVerifier(new AkkaLoggerFactory(system.classicSystem))
-
       new HttpsConnectionContext(Right {
         case None =>
           Engine(() => {
             val engine = context.createSSLEngine()
-            engine.getSSLParameters.setEndpointIdentificationAlgorithm("https")
             engine.setUseClientMode(true)
+
+            engine.setSSLParameters({
+              val params = engine.getSSLParameters
+              params.setEndpointIdentificationAlgorithm("https")
+              params
+            })
+
             engine
           })
         case Some((host, port)) =>
           Engine(
             () => {
               val engine = context.createSSLEngine(host, port)
-              engine.getSSLParameters.setEndpointIdentificationAlgorithm("https")
-              engine.getSSLParameters.setServerNames(Collections.singletonList(new SNIHostName(host)))
               engine.setUseClientMode(true)
+
+              engine.setSSLParameters({
+                val params = engine.getSSLParameters
+                params.setEndpointIdentificationAlgorithm("https")
+                params
+              })
+
               engine
             },
-            sslSession => {
-              if (verifier.verify(host, sslSession)) Success(())
-              else Failure(new ConnectionException(s"Hostname verification failed! Expected session to be for $host"))
-            })
+            sslSession => Success(())
+          )
       })
     }
 

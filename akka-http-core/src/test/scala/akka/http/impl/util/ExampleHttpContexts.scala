@@ -42,10 +42,7 @@ object ExampleHttpContexts {
     ConnectionContext.httpsServer(context)
   }
 
-  def exampleClientContext(implicit system: ActorSystem) =
-    ConnectionContext.httpsClient(exampleClientSSLContext)
-
-  val exampleClientSSLContext = {
+  val exampleClientContext = {
     val certStore = KeyStore.getInstance(KeyStore.getDefaultType)
     certStore.load(null, null)
     // only do this if you want to accept a custom root CA. Understand what you are doing!
@@ -56,7 +53,7 @@ object ExampleHttpContexts {
 
     val context = SSLContext.getInstance("TLSv1.2")
     context.init(null, certManagerFactory.getTrustManagers, new SecureRandom)
-    context
+    ConnectionContext.httpsClient(context)
   }
 
   def resourceStream(resourceName: String): InputStream = {

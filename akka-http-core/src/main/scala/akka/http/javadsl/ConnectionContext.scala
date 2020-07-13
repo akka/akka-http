@@ -19,9 +19,9 @@ import scala.compat.java8.OptionConverters
 
 object ConnectionContext {
   //#https-context-creation
-  def httpsClient(sslContext: SSLContext, system: ClassicActorSystemProvider): HttpsConnectionContext = // ...
+  def httpsClient(sslContext: SSLContext): HttpsConnectionContext = // ...
     //#https-context-creation
-    scaladsl.ConnectionContext.httpsClient(sslContext)(system)
+    scaladsl.ConnectionContext.httpsClient(sslContext)
 
   //#https-context-creation
   def httpsServer(sslContext: SSLContext): HttpsConnectionContext = // ...
