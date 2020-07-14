@@ -185,7 +185,7 @@ class RouteDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
     val route =
       concat(
-        handlePFSync(handler),
+        handlePF(handler),
         complete("fallback")
       )
 

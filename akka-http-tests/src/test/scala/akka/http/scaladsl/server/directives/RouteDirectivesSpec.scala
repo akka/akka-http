@@ -193,6 +193,72 @@ class RouteDirectivesSpec extends AnyWordSpec with GenericRoutingSpec {
     }
   }
 
+  "the handlePF directive" should {
+    val handler: PartialFunction[HttpRequest, Future[HttpResponse]] = {
+      case HttpRequest(HttpMethods.GET, Uri.Path("/value"), _, _, _) =>
+        Future.successful(HttpResponse(entity = "23"))
+      case HttpRequest(HttpMethods.GET, Uri.Path("/fail"), _, _, _) =>
+        Future.failed(new RuntimeException("failure!"))
+      case HttpRequest(HttpMethods.GET, Uri.Path("/throw"), _, _, _) =>
+        throw new RuntimeException("oops")
+    }
+    val theRejection = MethodRejection(HttpMethods.POST)
+    val route = handlePF(handler, theRejection :: Nil)
+
+    "use a PartialFunction to complete a request" in {
+      Get("/value") ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        responseAs[String] shouldEqual "23"
+      }
+    }
+    "reject if the function is not defined for the request" in {
+      Get("/other") ~> route ~> check {
+        rejection shouldEqual theRejection
+      }
+    }
+
+    "fail if the function returns a failure" in EventFilter[RuntimeException](occurrences = 1).intercept {
+      Get("/fail") ~> route ~> check {
+        status.intValue shouldBe 500
+      }
+    }
+
+    "fail if the function throws" in EventFilter[RuntimeException](occurrences = 1).intercept {
+      Get("/throw") ~> route ~> check {
+        status.intValue shouldBe 500
+      }
+    }
+  }
+
+  "the handlePFSync directive" should {
+    val handler: PartialFunction[HttpRequest, HttpResponse] = {
+      case HttpRequest(HttpMethods.GET, Uri.Path("/value"), _, _, _) =>
+        HttpResponse(entity = "23")
+      case HttpRequest(HttpMethods.GET, Uri.Path("/throw"), _, _, _) =>
+        throw new RuntimeException("oops")
+    }
+    val theRejection = MethodRejection(HttpMethods.POST)
+    val route = handlePFSync(handler, theRejection :: Nil)
+
+    "use a PartialFunction to complete a request" in {
+      Get("/value") ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+        responseAs[String] shouldEqual "23"
+      }
+    }
+    "reject if the function is not defined for the request" in {
+      Get("/other") ~> route ~> check {
+        rejection shouldEqual theRejection
+      }
+    }
+
+    "fail if the function throws" in EventFilter[RuntimeException](occurrences = 1).intercept {
+      Get("/throw") ~> route ~> check {
+        status.intValue shouldBe 500
+      }
+    }
+  }
+
   case class Data(name: String, age: Int)
   object Data {
     import spray.json.DefaultJsonProtocol._
