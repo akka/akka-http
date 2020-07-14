@@ -82,6 +82,24 @@ class ProtocolSwitchSpec extends AkkaSpec {
       out.pull().futureValue should be(Some(SendBytes(Http2Protocol.ClientConnectionPreface ++ payload)))
     }
 
+    "don't close the stage when the request is done but the initial element is still buffered" in {
+      val identityFlow = Flow[SslTlsInbound].collect { case SessionBytes(_, bytes) => SendBytes(bytes) }
+      val (in, out) = Source.queue(100, OverflowStrategy.fail)
+        .viaMat(ProtocolSwitch.byPreface(identityFlow, identityFlow))(Keep.left)
+        .toMat(Sink.queue())(Keep.both)
+        .run()
+
+      val payload = ByteString("dfadfasdfa")
+      in.offer(SessionBytes(TLSPlacebo.dummySession, Http2Protocol.ClientConnectionPreface ++ payload)).futureValue should be(Enqueued)
+      in.complete()
+
+      out.pull().futureValue should be(Some(SendBytes(Http2Protocol.ClientConnectionPreface ++ payload)))
+    }
+
+    "don't close the stage when the request is done but the response is still flowing" ignore {
+      // I suspect we still have a problem here
+    }
+
     "switch to http2 when the connection preface arrives in two parts" ignore {
       val payload = ByteString("dfadfasdfa")
       val http1flowMaterialized = Promise[Done]()

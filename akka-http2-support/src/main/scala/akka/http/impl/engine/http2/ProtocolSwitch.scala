@@ -26,8 +26,8 @@ private[http] object ProtocolSwitch {
       new GraphStage[FlowShape[SslTlsInbound, SslTlsOutbound]] {
 
         // --- outer ports ---
-        val netIn = Inlet[SslTlsInbound]("AlpnSwitch.netIn")
-        val netOut = Outlet[SslTlsOutbound]("AlpnSwitch.netOut")
+        val netIn = Inlet[SslTlsInbound]("ProtocolSwitch.netIn")
+        val netOut = Outlet[SslTlsOutbound]("ProtocolSwitch.netOut")
         // --- end of outer ports ---
 
         val shape: FlowShape[SslTlsInbound, SslTlsOutbound] =
@@ -35,10 +35,9 @@ private[http] object ProtocolSwitch {
 
         def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
           logic =>
-
           // --- inner ports, bound to actual server in install call ---
-          val serverDataIn = new SubSinkInlet[SslTlsOutbound]("ServerImpl.netIn")
-          val serverDataOut = new SubSourceOutlet[SslTlsInbound]("ServerImpl.netOut")
+          val serverDataOut = new SubSourceOutlet[SslTlsInbound]("ProtocolSwitch.serverOut")
+          val serverDataIn = new SubSinkInlet[SslTlsOutbound]("ProtocolSwitch.serverIn")
           // --- end of inner ports ---
 
           override def preStart(): Unit = pull(netIn)
@@ -63,7 +62,7 @@ private[http] object ProtocolSwitch {
           def install(serverImplementation: HttpServerFlow, firstElement: SslTlsInbound): Unit = {
             val networkSide = Flow.fromSinkAndSource(serverDataIn.sink, serverDataOut.source)
 
-            connect(netIn, serverDataOut, Some(firstElement))
+            connect(netIn, serverDataOut, firstElement)
 
             connect(serverDataIn, netOut)
 
@@ -74,25 +73,30 @@ private[http] object ProtocolSwitch {
           }
 
           // helpers to connect inlets and outlets also binding completion signals of given ports
-          def connect[T](in: Inlet[T], out: SubSourceOutlet[T], initialElement: Option[T]): Unit = {
+          def connect[T](in: Inlet[T], out: SubSourceOutlet[T], initialElement: T): Unit = {
             val propagatePull =
               new OutHandler {
                 override def onPull(): Unit = pull(in)
               }
 
+            // We initially have a 1-element buffer, which we clear once downstream pulls for the first time
+            var bufferEmpty = out.isAvailable
             val firstHandler =
-              initialElement match {
-                case Some(ele) if out.isAvailable =>
-                  out.push(ele)
-                  propagatePull
-                case Some(ele) =>
-                  new OutHandler {
-                    override def onPull(): Unit = {
-                      out.push(initialElement.get)
+              if (bufferEmpty) {
+                out.push(initialElement)
+                propagatePull
+              } else {
+                new OutHandler {
+                  override def onPull(): Unit = {
+                    bufferEmpty = true
+                    out.push(initialElement)
+                    if (isClosed(in)) {
+                      out.complete()
+                    } else {
                       out.setHandler(propagatePull)
                     }
                   }
-                case None => propagatePull
+                }
               }
 
             out.setHandler(firstHandler)
@@ -100,8 +104,10 @@ private[http] object ProtocolSwitch {
               override def onPush(): Unit = out.push(grab(in))
 
               override def onUpstreamFinish(): Unit = {
-                out.complete()
-                super.onUpstreamFinish()
+                if (bufferEmpty) {
+                  out.complete()
+                  super.onUpstreamFinish()
+                }
               }
 
               override def onUpstreamFailure(ex: Throwable): Unit = {
@@ -115,6 +121,10 @@ private[http] object ProtocolSwitch {
           def connect[T](in: SubSinkInlet[T], out: Outlet[T]): Unit = {
             val handler = new InHandler {
               override def onPush(): Unit = push(out, in.grab())
+
+              override def onUpstreamFinish(): Unit = {
+                super.onUpstreamFinish()
+              }
             }
 
             val outHandler = new OutHandler {
