@@ -104,8 +104,9 @@ trait RouteDirectives {
    */
   def handlePF(handler: PartialFunction[HttpRequest, Future[HttpResponse]], rejections: Seq[Rejection] = Nil): StandardRoute =
     { ctx =>
-      if (handler.isDefinedAt(ctx.request)) handler(ctx.request).fast.map(RouteResult.Complete)(ctx.executionContext)
-      else ctx.reject(rejections: _*)
+      handler
+        .andThen(_.fast.map(RouteResult.Complete)(ctx.executionContext))
+        .applyOrElse[HttpRequest, Future[RouteResult]](ctx.request, _ => ctx.reject(rejections: _*))
     }
 
   /**
@@ -121,8 +122,9 @@ trait RouteDirectives {
    */
   def handlePFSync(handler: PartialFunction[HttpRequest, HttpResponse], rejections: Seq[Rejection] = Nil): StandardRoute =
     { ctx =>
-      if (handler.isDefinedAt(ctx.request)) FastFuture.successful(RouteResult.Complete(handler(ctx.request)))
-      else ctx.reject(rejections: _*)
+      handler
+        .andThen(res => FastFuture.successful(RouteResult.Complete(res)))
+        .applyOrElse[HttpRequest, Future[RouteResult]](ctx.request, _ => ctx.reject(rejections: _*))
     }
 }
 
