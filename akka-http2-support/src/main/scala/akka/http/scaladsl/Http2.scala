@@ -34,6 +34,8 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
   extends akka.actor.Extension {
   // FIXME: won't having the same package as top-level break osgi?
 
+  import Http2._
+
   private[this] final val DefaultPortForProtocol = -1 // any negative value
 
   val http = Http(system)
@@ -148,13 +150,6 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
   val ConnectionUpgradeHeader = Connection(List("upgrade"))
   val UpgradeHeader = Upgrade(List(UpgradeProtocol("h2c")))
 
-  type HttpImplementation = Flow[SslTlsInbound, SslTlsOutbound, NotUsed]
-  type HttpPlusSwitching = (HttpImplementation, HttpImplementation) => Flow[ByteString, ByteString, NotUsed]
-
-  def priorKnowledge(http1: HttpImplementation, http2: HttpImplementation): Flow[ByteString, ByteString, NotUsed] =
-    TLSPlacebo().reversed join
-      ProtocolSwitch.byPreface(http1, http2)
-
   def httpsWithAlpn(httpsContext: HttpsConnectionContext, fm: Materializer)(http1: HttpImplementation, http2: HttpImplementation): Flow[ByteString, ByteString, NotUsed] = {
     // Mutable cell to transport the chosen protocol from the SSLEngine to
     // the switch stage.
@@ -213,4 +208,11 @@ object Http2 extends ExtensionId[Http2Ext] with ExtensionIdProvider {
   def lookup(): ExtensionId[_ <: Extension] = Http2
   def createExtension(system: ExtendedActorSystem): Http2Ext =
     new Http2Ext(system.settings.config getConfig "akka.http")(system)
+
+  private[http] type HttpImplementation = Flow[SslTlsInbound, SslTlsOutbound, NotUsed]
+  private[http] type HttpPlusSwitching = (HttpImplementation, HttpImplementation) => Flow[ByteString, ByteString, NotUsed]
+
+  private[http] def priorKnowledge(http1: HttpImplementation, http2: HttpImplementation): Flow[ByteString, ByteString, NotUsed] =
+    TLSPlacebo().reversed join
+      ProtocolSwitch.byPreface(http1, http2)
 }
