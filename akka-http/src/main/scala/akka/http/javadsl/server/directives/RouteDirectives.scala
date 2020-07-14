@@ -20,6 +20,7 @@ import akka.http.scaladsl.model.StatusCodes.Redirection
 import akka.http.javadsl.server.RoutingJavaMapping._
 import akka.http.scaladsl.server.RouteResult
 import akka.http.scaladsl.server.directives.{ RouteDirectives => D }
+import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
 
 abstract class RouteDirectives extends RespondWithDirectives {
@@ -297,6 +298,14 @@ abstract class RouteDirectives extends RespondWithDirectives {
   def handle(handler: akka.japi.function.Function[HttpRequest, CompletionStage[HttpResponse]]): Route = {
     import akka.http.impl.util.JavaMapping._
     RouteAdapter { ctx => handler(ctx.request).asScala.fast.map(response => RouteResult.Complete(response.asScala)) }
+  }
+
+  /**
+   * Handle the request using a function.
+   */
+  def handleSync(handler: akka.japi.function.Function[HttpRequest, HttpResponse]): Route = {
+    import akka.http.impl.util.JavaMapping._
+    RouteAdapter { ctx => FastFuture.successful(RouteResult.Complete(handler(ctx.request).asScala)) }
   }
 
   // TODO: This might need to be raised as an issue to scala-java8-compat instead.
