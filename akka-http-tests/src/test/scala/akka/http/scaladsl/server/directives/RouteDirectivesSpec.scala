@@ -193,7 +193,7 @@ class RouteDirectivesSpec extends AnyWordSpec with GenericRoutingSpec {
     }
   }
 
-  "the handlePF directive" should {
+  "the handle directive with PartialFunction" should {
     val handler: PartialFunction[HttpRequest, Future[HttpResponse]] = {
       case HttpRequest(HttpMethods.GET, Uri.Path("/value"), _, _, _) =>
         Future.successful(HttpResponse(entity = "23"))
@@ -203,7 +203,7 @@ class RouteDirectivesSpec extends AnyWordSpec with GenericRoutingSpec {
         throw new RuntimeException("oops")
     }
     val theRejection = MethodRejection(HttpMethods.POST)
-    val route = handlePF(handler, theRejection :: Nil)
+    val route = handle(handler, theRejection :: Nil)
 
     "use a PartialFunction to complete a request" in {
       Get("/value") ~> route ~> check {
@@ -230,7 +230,7 @@ class RouteDirectivesSpec extends AnyWordSpec with GenericRoutingSpec {
     }
   }
 
-  "the handlePFSync directive" should {
+  "the handleSync directive with PartialFunction" should {
     val handler: PartialFunction[HttpRequest, HttpResponse] = {
       case HttpRequest(HttpMethods.GET, Uri.Path("/value"), _, _, _) =>
         HttpResponse(entity = "23")
@@ -238,7 +238,7 @@ class RouteDirectivesSpec extends AnyWordSpec with GenericRoutingSpec {
         throw new RuntimeException("oops")
     }
     val theRejection = MethodRejection(HttpMethods.POST)
-    val route = handlePFSync(handler, theRejection :: Nil)
+    val route = handleSync(handler, theRejection :: Nil)
 
     "use a PartialFunction to complete a request" in {
       Get("/value") ~> route ~> check {

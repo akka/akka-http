@@ -102,7 +102,7 @@ trait RouteDirectives {
    *
    * @group route
    */
-  def handlePF(handler: PartialFunction[HttpRequest, Future[HttpResponse]], rejections: Seq[Rejection] = Nil): StandardRoute =
+  def handle(handler: PartialFunction[HttpRequest, Future[HttpResponse]], rejections: Seq[Rejection] = Nil): StandardRoute =
     { ctx =>
       handler
         .andThen(_.fast.map(RouteResult.Complete)(ctx.executionContext))
@@ -120,7 +120,7 @@ trait RouteDirectives {
    *
    * @group route
    */
-  def handlePFSync(handler: PartialFunction[HttpRequest, HttpResponse], rejections: Seq[Rejection] = Nil): StandardRoute =
+  def handleSync(handler: PartialFunction[HttpRequest, HttpResponse], rejections: Seq[Rejection] = Nil): StandardRoute =
     { ctx =>
       handler
         .andThen(res => FastFuture.successful(RouteResult.Complete(res)))

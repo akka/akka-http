@@ -176,8 +176,8 @@ class RouteDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     //#failwith-examples
   }
 
-  "handlePF-examples" in {
-    //#handlePF-examples
+  "handle-examples-with-PF" in {
+    //#handle-examples-with-PF
     val handler: PartialFunction[HttpRequest, Future[HttpResponse]] = {
       case HttpRequest(HttpMethods.GET, Uri.Path("/value"), _, _, _) =>
         Future.successful(HttpResponse(entity = "23"))
@@ -185,7 +185,7 @@ class RouteDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
     val route =
       concat(
-        handlePF(handler),
+        handle(handler),
         complete("fallback")
       )
 
@@ -201,18 +201,18 @@ class RouteDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
       status shouldEqual StatusCodes.OK
       responseAs[String] shouldEqual "fallback"
     }
-    //#handlePF-examples
+    //#handle-examples-with-PF
   }
 
-  "handlePFSync-examples" in {
-    //#handlePFSync-examples
+  "handleSync-examples-with-PF" in {
+    //#handleSync-examples-with-PF
     val handler: PartialFunction[HttpRequest, HttpResponse] = {
       case HttpRequest(HttpMethods.GET, Uri.Path("/value"), _, _, _) => HttpResponse(entity = "23")
     }
 
     val route =
       concat(
-        handlePFSync(handler),
+        handleSync(handler),
         complete("fallback")
       )
 
@@ -228,6 +228,6 @@ class RouteDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
       status shouldEqual StatusCodes.OK
       responseAs[String] shouldEqual "fallback"
     }
-    //#handlePFSync-examples
+    //#handleSync-examples-with-PF
   }
 }
