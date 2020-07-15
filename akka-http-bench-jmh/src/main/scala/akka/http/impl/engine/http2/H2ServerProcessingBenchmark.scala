@@ -82,7 +82,7 @@ class H2ServerProcessingBenchmark extends CommonBenchmark {
     })
     val http2 =
       Http2Blueprint.handleWithStreamIdHeader(1)(req => {
-        req.entity.dataBytes.runWith(Sink.ignore).map(_ => response)
+        req.discardEntityBytes().future.map(_ => response)
       })(system.dispatcher)
         .join(Http2Blueprint.serverStackTls(settings, log))
     httpFlow = Http2.priorKnowledge(http1, http2)
