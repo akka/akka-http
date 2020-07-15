@@ -97,12 +97,25 @@ trait RouteDirectives {
    * This directive can be used to include external components request processing components defined as PartialFunction
    * (like those provided by akka-grpc) into a routing tree defined as routes.
    *
-   * @param rejections The list of rejections to reject with if the handler is not defined for a request. By default a request
-   *                   is rejected with an empty list of rejections in that case, which is interpreted as "Not Found".
+   * When the partial function is not defined for a request, the request is rejected with an empty list of rejections
+   * which is equivalent to a "Not Found" rejection.
    *
    * @group route
    */
-  def handle(handler: PartialFunction[HttpRequest, Future[HttpResponse]], rejections: Seq[Rejection] = Nil): StandardRoute =
+  def handle(handler: PartialFunction[HttpRequest, Future[HttpResponse]]): StandardRoute =
+    handle(handler, Nil)
+
+  /**
+   * Handle the request using an asynchronous partial function.
+   *
+   * This directive can be used to include external components request processing components defined as PartialFunction
+   * (like those provided by akka-grpc) into a routing tree defined as routes.
+   *
+   * @param rejections The list of rejections to reject with if the handler is not defined for a request.
+   *
+   * @group route
+   */
+  def handle(handler: PartialFunction[HttpRequest, Future[HttpResponse]], rejections: Seq[Rejection]): StandardRoute =
     { ctx =>
       handler
         .andThen(_.fast.map(RouteResult.Complete)(ctx.executionContext))
@@ -115,12 +128,25 @@ trait RouteDirectives {
    * This directive can be used to include external components request processing components defined as PartialFunction
    * (like those provided by akka-grpc) into a routing tree defined as routes.
    *
-   * @param rejections The list of rejections to reject with if the handler is not defined for a request. By default a request
-   *                   is rejected with an empty list of rejections in that case, which is interpreted as "Not Found".
+   * When the partial function is not defined for a request, the request is rejected with an empty list of rejections
+   * which is equivalent to a "Not Found" rejection.
    *
    * @group route
    */
-  def handleSync(handler: PartialFunction[HttpRequest, HttpResponse], rejections: Seq[Rejection] = Nil): StandardRoute =
+  def handleSync(handler: PartialFunction[HttpRequest, HttpResponse]): StandardRoute =
+    handleSync(handler, Nil)
+
+  /**
+   * Handle the request using a synchronous partial function.
+   *
+   * This directive can be used to include external components request processing components defined as PartialFunction
+   * (like those provided by akka-grpc) into a routing tree defined as routes.
+   *
+   * @param rejections The list of rejections to reject with if the handler is not defined for a request.
+   *
+   * @group route
+   */
+  def handleSync(handler: PartialFunction[HttpRequest, HttpResponse], rejections: Seq[Rejection]): StandardRoute =
     { ctx =>
       handler
         .andThen(res => FastFuture.successful(RouteResult.Complete(res)))
