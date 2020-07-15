@@ -12,7 +12,7 @@ import akka.http.impl.engine.http2.framing.FrameRenderer
 import akka.http.scaladsl.Http2
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.settings.ServerSettings
-import akka.stream.{ ActorMaterializer, OverflowStrategy }
+import akka.stream.ActorMaterializer
 import akka.stream.TLSProtocol.{ SslTlsInbound, SslTlsOutbound }
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import akka.util.ByteString
@@ -38,8 +38,12 @@ class H2ServerProcessingBenchmark extends CommonBenchmark {
     val numRequests = 10000
     val latch = new CountDownLatch(numRequests)
 
+    val requests =
+      Source(Http2Protocol.ClientConnectionPreface +: Range(0, numRequests).map(i => request(1 + 2 * i)))
+        .concatMat(Source.maybe)(Keep.right)
+
     val (in, done) =
-      Source.queue(numRequests, OverflowStrategy.fail)
+      requests
         .viaMat(httpFlow)(Keep.left)
         .toMat(Sink.foreach(res => {
           // Skip headers/settings frames etc
@@ -50,15 +54,9 @@ class H2ServerProcessingBenchmark extends CommonBenchmark {
         }))(Keep.both)
         .run()
 
-    in.offer(Http2Protocol.ClientConnectionPreface)
-
-    for (n <- Range(0, numRequests)) {
-      in.offer(request(1 + 2 * n))
-    }
-
     latch.await()
 
-    in.complete()
+    in.success(None)
     Await.result(done, 1.hour)
   }
 
