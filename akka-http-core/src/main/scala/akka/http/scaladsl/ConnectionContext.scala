@@ -124,7 +124,7 @@ final class HttpsConnectionContext(
   extends akka.http.javadsl.HttpsConnectionContext with ConnectionContext {
   protected[http] override final def defaultPort: Int = 443
 
-  @deprecated("prefer ConnectionContext.https", "10.2.0")
+  @deprecated("prefer ConnectionContext.httpsClient, ConnectionContext.httpsServer or ConnectionContext.https", "10.2.0")
   def this(
     sslContext:          SSLContext,
     sslConfig:           Option[AkkaSSLConfig],
