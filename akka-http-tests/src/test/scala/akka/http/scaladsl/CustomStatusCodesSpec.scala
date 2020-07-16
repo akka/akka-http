@@ -4,25 +4,18 @@
 
 package akka.http.scaladsl
 
+import akka.http.impl.util.AkkaSpecWithMaterializer
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives
-import akka.http.scaladsl.settings.ClientConnectionSettings
-import akka.http.scaladsl.settings.ConnectionPoolSettings
-import akka.stream.ActorMaterializer
-import akka.testkit.{ AkkaSpec, SocketUtil }
+import akka.http.scaladsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings }
 import org.scalatest.concurrent.ScalaFutures
 
-class CustomStatusCodesSpec extends AkkaSpec with ScalaFutures
+class CustomStatusCodesSpec extends AkkaSpecWithMaterializer with ScalaFutures
   with Directives with RequestBuilding {
-
-  implicit val mat = ActorMaterializer()
 
   "Http" should {
     "allow registering custom status code" in {
-      import system.dispatcher
-      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
-
       //#application-custom
       // similarly in Java: `akka.http.javadsl.settings.[...]`
       import akka.http.scaladsl.settings.{ ParserSettings, ServerSettings }
@@ -41,16 +34,16 @@ class CustomStatusCodesSpec extends AkkaSpec with ScalaFutures
         complete(HttpResponse(status = LeetCode))
 
       // use serverSettings in server:
-      val binding = Http().bindAndHandle(routes, host, port, settings = serverSettings)
+      val binding = Http().bindAndHandle(routes, "127.0.0.1", 0, settings = serverSettings).futureValue
 
       // use clientSettings in client:
-      val request = HttpRequest(uri = s"http://$host:$port/")
+      val request = HttpRequest(uri = s"http://127.0.0.1:${binding.localAddress.getPort}/")
       val response = Http().singleRequest(request, settings = clientSettings)
 
       // futureValue is a ScalaTest helper:
       response.futureValue.status should ===(LeetCode)
       //#application-custom
-      binding.foreach(_.unbind())
+      binding.unbind()
     }
   }
 
