@@ -245,7 +245,7 @@ lazy val httpTests = project("akka-http-tests")
 
 lazy val httpJmhBench = project("akka-http-bench-jmh")
   .settings(commonSettings)
-  .dependsOn(http)
+  .dependsOn(http, http2Support % "compile->compile,test")
   .addAkkaModuleDependency("akka-stream")
   .enablePlugins(JmhPlugin)
   .enablePlugins(NoPublish).disablePlugins(BintrayPlugin) // don't release benchs

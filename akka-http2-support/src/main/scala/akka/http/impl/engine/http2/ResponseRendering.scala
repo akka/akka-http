@@ -56,7 +56,6 @@ private[http2] object ResponseRendering {
       renderHeaders(response.headers, headerPairs, serverHeader, log, isServer = true)
 
       val headers = ParsedHeadersFrame(streamId, endStream = response.entity.isKnownEmpty, headerPairs.result(), None)
-
       response.entity match {
         case HttpEntity.Chunked(_, chunks) =>
           ChunkedHttp2SubStream(headers, chunks)
