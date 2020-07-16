@@ -13,6 +13,7 @@ import akka.http.impl.util._
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.settings.ConnectionPoolSettings
+import akka.macros.LogHelper
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
@@ -24,21 +25,13 @@ import scala.util.{ Failure, Success, Try }
  * Interface between slot states and the actual slot.
  */
 @InternalApi
-private[pool] abstract class SlotContext {
+private[pool] abstract class SlotContext extends LogHelper {
   def openConnection(): Unit
   def isConnectionClosed: Boolean
 
   def dispatchResponseResult(req: RequestContext, result: Try[HttpResponse]): Unit
 
   def willCloseAfter(res: HttpResponse): Boolean
-
-  def debug(msg: String): Unit
-  def debug(msg: String, arg1: AnyRef): Unit
-  def debug(msg: String, arg1: AnyRef, arg2: AnyRef): Unit
-  def debug(msg: String, arg1: AnyRef, arg2: AnyRef, arg3: AnyRef): Unit
-
-  def warning(msg: String): Unit
-  def warning(msg: String, arg1: AnyRef): Unit
 
   def settings: ConnectionPoolSettings
 }
@@ -123,7 +116,7 @@ private[pool] object SlotState {
       // We would like to dispatch a failure here but responseOut might not be ready (or also already shutting down)
       // so we cannot do more than logging the problem here.
 
-      ctx.warning(s"Ongoing request [{}] was dropped because pool is shutting down", ongoingRequest.request.debugString)
+      ctx.warning(s"Ongoing request [${ongoingRequest.request.debugString}] was dropped because pool is shutting down")
 
       super.onShutdown(ctx)
     }
@@ -141,7 +134,7 @@ private[pool] object SlotState {
     override def onConnectionFailed(ctx: SlotContext, cause: Throwable): SlotState = failOngoingRequest(ctx, "connection failure", cause)
 
     private def failOngoingRequest(ctx: SlotContext, signal: String, cause: Throwable): SlotState = {
-      ctx.debug("Ongoing request [{}] is failed because of [{}]: [{}]", ongoingRequest.request.debugString, signal, cause.getMessage)
+      ctx.debug(s"Ongoing request [${ongoingRequest.request.debugString}] is failed because of [$signal]: [${cause.getMessage}]")
       if (ongoingRequest.canBeRetried) { // push directly because it will be buffered internally
         ctx.dispatchResponseResult(ongoingRequest, Failure(cause))
         if (waitingForEndOfRequestEntity) WaitingForEndOfRequestEntity
@@ -238,7 +231,7 @@ private[pool] object SlotState {
       )
 
     private def onConnectionFailure(ctx: SlotContext, signal: String, cause: Throwable): SlotState = {
-      ctx.debug("Connection was closed by [{}] while preconnecting because of [{}].", signal, cause.getMessage)
+      ctx.debug(s"Connection was closed by [$signal] while preconnecting because of [${cause.getMessage}].")
       Failed(cause)
     }
   }
@@ -286,7 +279,7 @@ private[pool] object SlotState {
 
   private[pool] /* to avoid warnings */ trait BusyWithResultAlreadyDetermined extends ConnectedState with BusyState {
     override def onResponseEntityFailed(ctx: SlotContext, cause: Throwable): SlotState = {
-      ctx.debug(s"Response entity for request [{}] failed with [{}]", ongoingRequest.request.debugString, cause.getMessage)
+      ctx.debug(s"Response entity for request [${ongoingRequest.request.debugString}] failed with [${cause.getMessage}]")
       // response must have already been dispatched, so don't try to dispatch a response
       Failed(cause)
     }
