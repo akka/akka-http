@@ -176,4 +176,58 @@ class RouteDirectivesExamplesSpec extends RoutingSpec with CompileOnlySpec {
     //#failwith-examples
   }
 
+  "handle-examples-with-PF" in {
+    //#handle-examples-with-PF
+    val handler: PartialFunction[HttpRequest, Future[HttpResponse]] = {
+      case HttpRequest(HttpMethods.GET, Uri.Path("/value"), _, _, _) =>
+        Future.successful(HttpResponse(entity = "23"))
+    }
+
+    val route =
+      concat(
+        handle(handler),
+        complete("fallback")
+      )
+
+    // tests:
+    Get("/value") ~> route ~> check {
+      status shouldEqual StatusCodes.OK
+      responseAs[String] shouldEqual "23"
+    }
+
+    // Uri doesn't match so function is never invoked and the request is rejected and the
+    // fallback completes the request.
+    Get("/other") ~> route ~> check {
+      status shouldEqual StatusCodes.OK
+      responseAs[String] shouldEqual "fallback"
+    }
+    //#handle-examples-with-PF
+  }
+
+  "handleSync-examples-with-PF" in {
+    //#handleSync-examples-with-PF
+    val handler: PartialFunction[HttpRequest, HttpResponse] = {
+      case HttpRequest(HttpMethods.GET, Uri.Path("/value"), _, _, _) => HttpResponse(entity = "23")
+    }
+
+    val route =
+      concat(
+        handleSync(handler),
+        complete("fallback")
+      )
+
+    // tests:
+    Get("/value") ~> route ~> check {
+      status shouldEqual StatusCodes.OK
+      responseAs[String] shouldEqual "23"
+    }
+
+    // Uri doesn't match so function is never invoked and the request is rejected and the
+    // fallback completes the request.
+    Get("/other") ~> route ~> check {
+      status shouldEqual StatusCodes.OK
+      responseAs[String] shouldEqual "fallback"
+    }
+    //#handleSync-examples-with-PF
+  }
 }

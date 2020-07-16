@@ -16,6 +16,7 @@ So in most cases the inner-most element of a route structure branch is one of th
 * [complete](complete.md)
 * [failWith](failWith.md)
 * [handle](handle.md)
+* [handleSync](handleSync.md)
 * [redirect](redirect.md)
 * [reject](reject.md)
 
