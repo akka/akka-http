@@ -19,32 +19,28 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpecWithMaterializer {
   "The connection-level client implementation" should {
 
     "be able to handle 100 requests across one connection" in Utils.assertAllStagesStopped {
-      val (serverHostName, serverPort) = SocketUtil.temporaryServerHostnameAndPort()
-
       val binding = Http().bindAndHandleSync(
         r => HttpResponse(entity = r.uri.toString.reverse.takeWhile(Character.isDigit).reverse),
-        serverHostName, serverPort)
+        "127.0.0.1", 0).futureValue
 
       val N = 100
       val result = Source.fromIterator(() => Iterator.from(1))
         .take(N)
         .map(id => HttpRequest(uri = s"/r$id"))
-        .via(Http().outgoingConnection(serverHostName, serverPort))
+        .via(Http().outgoingConnection("127.0.0.1", binding.localAddress.getPort))
         .mapAsync(4)(_.entity.toStrict(1.second.dilated))
         .map { r => val s = r.data.utf8String; log.debug(s); s.toInt }
         .runFold(0)(_ + _)
       result.futureValue(Timeout(10.seconds.dilated)) should ===(N * (N + 1) / 2)
-      binding.futureValue.unbind()
+      binding.unbind()
     }
 
     "be able to handle 100 requests across 4 connections (client-flow is reusable)" in Utils.assertAllStagesStopped {
-      val (serverHostName, serverPort) = SocketUtil.temporaryServerHostnameAndPort()
-
       val binding = Http().bindAndHandleSync(
         r => HttpResponse(entity = r.uri.toString.reverse.takeWhile(Character.isDigit).reverse),
-        serverHostName, serverPort)
+        "127.0.0.1", 0).futureValue
 
-      val connFlow = Http().outgoingConnection(serverHostName, serverPort)
+      val connFlow = Http().outgoingConnection("127.0.0.1", binding.localAddress.getPort)
 
       val C = 4
       val doubleConnection = Flow.fromGraph(GraphDSL.create() { implicit b =>
@@ -68,7 +64,7 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpecWithMaterializer {
         .runFold(0)(_ + _)
 
       result.futureValue(Timeout(10.seconds.dilated)) should ===(C * N * (N + 1) / 2)
-      binding.futureValue.unbind()
+      binding.unbind()
     }
 
   }
