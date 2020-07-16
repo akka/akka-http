@@ -30,7 +30,7 @@ for more information.
 
 ## DNS
 
-Akka HTTP provides pluggable client transport which can be used to @ref[customize host name resolution](client-side/client-transport.md#custom-host-name-resolution-transport)
+Akka HTTP provides a pluggable client transport which can be used to @ref[customize host name resolution](client-side/client-transport.md#custom-host-name-resolution-transport)
 on the client side.
 
 ## Multipart

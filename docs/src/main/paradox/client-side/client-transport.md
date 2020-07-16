@@ -114,7 +114,7 @@ As a backend to implement the resolution function you can use Akka's [Async DNS 
 Potential use cases:
 
  * in a managed setting this can be used to query for `SRV` DNS records that contain both address and port for a service.
- * if the DNS server returns multiple addresses, you can implement a load balancing algorithm to select different target address for each connection      
+ * if the DNS server returns multiple addresses, you can implement a load balancing algorithm to select a different target address for each connection      
 
 ## Implementing Custom Transports
 
