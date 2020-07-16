@@ -106,7 +106,7 @@ Java
 
 ## Custom Host Name Resolution Transport
 
-You can use `ClientTransport.withCustomResolver` to customize host name resolution. The given resolution function will be called for every connection attempt to resolve
+You can use @apidoc[ClientTransport.withCustomResolver](ClientTransport) to customize host name resolution. The given resolution function will be called for every connection attempt to resolve
 a hostname / port combination (potentially asynchronously) to an `InetSocketAddress`.
 
 As a backend to implement the resolution function you can use Akka's [Async DNS Resolution](https://doc.akka.io/docs/akka/current/io-dns.html#dns-extension).
@@ -124,4 +124,3 @@ Here are some ideas for custom (or future predefined) transports:
 
  * SSH tunnel transport: connects to the target host through an SSH tunnel
  * Per-host configurable transport: allows choosing transports per target host
-
