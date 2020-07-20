@@ -74,7 +74,7 @@ class TlsEndpointVerificationSpec extends AkkaSpecWithMaterializer("""
         engine.setUseClientMode(true)
         engine
       }
-      val clientConnectionContext = ConnectionContext.https(_ => insecureSslEngineFactory)
+      val clientConnectionContext = ConnectionContext.httpsClient((host, port) => insecureSslEngineFactory)
 
       // We try to connect to 'hijack.de', and even though this connection is hijacked by a suspicious server
       // identifying as akka.example.org we want to connect anyway

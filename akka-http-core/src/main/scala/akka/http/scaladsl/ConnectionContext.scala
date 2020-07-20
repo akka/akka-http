@@ -26,6 +26,18 @@ trait ConnectionContext extends akka.http.javadsl.ConnectionContext {
 }
 
 object ConnectionContext {
+  //#https-context-creation
+  /**
+   *  Use this sslContext to create a HttpsConnectionContext for server-side use.
+   */
+  def httpsServer(sslContext: SSLContext): HttpsConnectionContext = // ...
+    //#https-context-creation
+    httpsServer(() => {
+      val engine = sslContext.createSSLEngine()
+      engine.setUseClientMode(false)
+      engine
+    })
+
   /**
    *  If you want complete control over how to create the SSLEngine you can use this method:
    *
@@ -33,22 +45,11 @@ object ConnectionContext {
    *  are enabled as needed.
    */
   @ApiMayChange
-  def https(createSSLEngine: Option[(String, Int)] => () => SSLEngine): HttpsConnectionContext = // ...
-    new HttpsConnectionContext(Right(o => Engine(createSSLEngine(o))))
-
-  //#https-context-creation
-  /**
-   *  Use this sslContext to create a HttpsConnectionContext for server-side use.
-   */
-  def httpsServer(sslContext: SSLContext): HttpsConnectionContext = // ...
-    //#https-context-creation
+  def httpsServer(createSSLEngine: () => SSLEngine): HttpsConnectionContext =
     new HttpsConnectionContext(Right({
-      case None => Engine(() => {
-        val engine = sslContext.createSSLEngine()
-        engine.setUseClientMode(false)
-        engine
-      })
-      case Some((host, port)) =>
+      case None =>
+        Engine(createSSLEngine)
+      case Some(_) =>
         throw new IllegalArgumentException("host and port supplied for connection based on server connection context")
     }))
 
@@ -58,28 +59,33 @@ object ConnectionContext {
    */
   def httpsClient(context: SSLContext): HttpsConnectionContext = // ...
     //#https-context-creation
-    {
-      new HttpsConnectionContext(Right {
-        case None =>
-          throw new IllegalArgumentException("host and port missing for connection based on client connection context")
-        case Some((host, port)) =>
-          Engine(
-            () => {
-              val engine = context.createSSLEngine(host, port)
-              engine.setUseClientMode(true)
+    httpsClient((host, port) => () => {
+      val engine = context.createSSLEngine(host, port)
+      engine.setUseClientMode(true)
 
-              engine.setSSLParameters({
-                val params = engine.getSSLParameters
-                params.setEndpointIdentificationAlgorithm("https")
-                params
-              })
-
-              engine
-            },
-            sslSession => Success(())
-          )
+      engine.setSSLParameters({
+        val params = engine.getSSLParameters
+        params.setEndpointIdentificationAlgorithm("https")
+        params
       })
-    }
+
+      engine
+    })
+
+  /**
+   *  If you want complete control over how to create the SSLEngine you can use this method:
+   *
+   *  Note that this means it is up to you to make sure features like SNI and Hostname Verification
+   *  are enabled as needed.
+   */
+  @ApiMayChange
+  def httpsClient(createSSLEngine: (String, Int) => () => SSLEngine): HttpsConnectionContext = // ...
+    new HttpsConnectionContext(Right({
+      case None =>
+        throw new IllegalArgumentException("host and port missing for connection based on client connection context")
+      case Some((host, port)) =>
+        Engine(createSSLEngine(host, port))
+    }))
 
   @deprecated("use httpsClient, httpsServer, or the lower-level SSLEngine-based constructor", "10.2.0")
   def https(
@@ -124,7 +130,7 @@ final class HttpsConnectionContext(
   extends akka.http.javadsl.HttpsConnectionContext with ConnectionContext {
   protected[http] override final def defaultPort: Int = 443
 
-  @deprecated("prefer ConnectionContext.httpsClient, ConnectionContext.httpsServer or ConnectionContext.https", "10.2.0")
+  @deprecated("prefer ConnectionContext.httpsClient or ConnectionContext.httpsServer", "10.2.0")
   def this(
     sslContext:          SSLContext,
     sslConfig:           Option[AkkaSSLConfig],
