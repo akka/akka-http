@@ -85,15 +85,18 @@ private[http] object FrameEventParser extends ByteStringParser[FrameEvent] {
             rsv2 = isFlagSet(RSV2_MASK),
             rsv3 = isFlagSet(RSV3_MASK))
 
-        val takeNow = (header.length min reader.remainingSize).toInt
+        /*val takeNow = (header.length min reader.remainingSize).toInt
         val thisFrameData = reader.take(takeNow)
         val noMoreData = thisFrameData.length == length
 
         val nextState =
           if (noMoreData) ReadFrameHeader
-          else new ReadData(length - thisFrameData.length)
+          else new ReadData(length - thisFrameData.length)*/
+        require(length <= Int.MaxValue)
+        val thisFrameData = reader.take(length.toInt)
+        val nextState = ReadFrameHeader
 
-        ParseResult(Some(FrameStart(header, thisFrameData.compact)), nextState, true)
+        ParseResult(Some(FrameStart(header, thisFrameData.compact)), nextState, acceptUpstreamFinish = true)
       }
     }
 
