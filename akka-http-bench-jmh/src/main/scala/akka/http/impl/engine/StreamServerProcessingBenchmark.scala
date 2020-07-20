@@ -23,17 +23,19 @@ import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
 
 @Warmup(iterations = 5, time = 2, timeUnit = TimeUnit.SECONDS)
-class ServerProcessingBenchmark2 extends CommonBenchmark {
+class StreamServerProcessingBenchmark extends CommonBenchmark {
   val request = ByteString("GET / HTTP/1.1\r\nHost: localhost\r\nUser-Agent: test\r\n\r\n")
 
-  @Param(Array("100"))
-  var bytesPerChunk: String = _
+  // @Param - currently not a param
+  val totalBytes: String = "1000000"
 
   @Param(Array("10", "100", "1000"))
   var numChunks: String = _
 
-  @Param(Array("100"))
-  var numRequestsPerConnection: String = _
+  var totalExpectedBytes: Long = _
+
+  // @Param(Array("100")) -- not a param any more
+  var numRequestsPerConnection: String = "100"
 
   @Param(Array("strict", "default", "chunked"))
   var entityType: String = _
@@ -44,7 +46,6 @@ class ServerProcessingBenchmark2 extends CommonBenchmark {
   implicit var mat: ActorMaterializer = _
 
   @Benchmark
-  @OperationsPerInvocation(1)
   def benchRequestProcessing(): Unit = {
     val latch = new CountDownLatch(1)
     Source.repeat(request)
@@ -53,8 +54,7 @@ class ServerProcessingBenchmark2 extends CommonBenchmark {
       .runWith(Sink.fold(0L)(_ + _.size))
       .onComplete { res =>
         latch.countDown()
-        val expectedSize = bytesPerChunk.toLong * numChunks.toLong * numRequestsPerConnection.toInt
-        require(res.filter(_ >= expectedSize).isSuccess, s"Expected at least $expectedSize but only got $res")
+        require(res.filter(_ >= totalExpectedBytes).isSuccess, s"Expected at least $totalExpectedBytes but only got $res")
       }(system.dispatcher)
 
     latch.await()
@@ -71,8 +71,11 @@ class ServerProcessingBenchmark2 extends CommonBenchmark {
     system = ActorSystem("AkkaHttpBenchmarkSystem", config)
     mat = ActorMaterializer()
 
-    val byteChunk = ByteString(new Array[Byte](bytesPerChunk.toInt))
-    val streamedBytes = Source.repeat(byteChunk).take(numChunks.toInt) // 1MB of data
+    val bytesPerChunk = totalBytes.toInt / numChunks.toInt
+    totalExpectedBytes = numRequestsPerConnection.toInt * bytesPerChunk * numChunks.toInt
+
+    val byteChunk = ByteString(new Array[Byte](bytesPerChunk))
+    val streamedBytes = Source.repeat(byteChunk).take(numChunks.toInt)
 
     val entity = entityType match {
       case "strict" =>
