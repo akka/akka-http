@@ -35,18 +35,15 @@ class Http2Test {
 
     //#bindAndHandleSecure
     Http.get(system)
-      .bindAndHandleAsync(
-        asyncHandler,
-        toHostHttps("127.0.0.1", 8443).withCustomHttpsContext(httpsConnectionContext),
-        system);
+      .newServerAt("127.0.0.1", 8443)
+      .enableHttps(httpsConnectionContext)
+      .bind(asyncHandler);
     //#bindAndHandleSecure
 
     //#bindAndHandlePlain
     Http.get(system)
-      .bindAndHandleAsync(
-        asyncHandler,
-        toHost("127.0.0.1", 8080),
-        system);
+      .newServerAt("127.0.0.1", 8443)
+      .bind(asyncHandler);
     //#bindAndHandlePlain
   }
 }

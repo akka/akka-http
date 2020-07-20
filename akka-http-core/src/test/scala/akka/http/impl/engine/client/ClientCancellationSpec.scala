@@ -51,19 +51,13 @@ class ClientCancellationSpec extends AkkaSpecWithMaterializer {
 
   class TestSetup {
     lazy val binding = Await.result(
-      Http().bindAndHandleSync(
-        { _ => HttpResponse(headers = headers.Connection("close") :: Nil) },
-        "localhost", 0),
+      Http().newServerAt("localhost", 0).bindSync({ _ => HttpResponse(headers = headers.Connection("close") :: Nil) }),
       5.seconds
     )
     lazy val address = binding.localAddress
 
     lazy val bindingTls = Await.result(
-      Http().bindAndHandleSync(
-        { _ => HttpResponse() }, // TLS client does full-close, no need for the connection:close header
-        "localhost",
-        0,
-        connectionContext = ExampleHttpContexts.exampleServerContext),
+      Http().newServerAt("localhost", 0).enableHttps(ExampleHttpContexts.exampleServerContext).bindSync({ _ => HttpResponse() }),
       5.seconds
     )
     lazy val addressTls = bindingTls.localAddress

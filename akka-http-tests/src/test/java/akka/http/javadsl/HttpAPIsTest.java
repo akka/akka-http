@@ -40,22 +40,20 @@ public class HttpAPIsTest extends JUnitRouteTest {
     ConnectionPoolSettings conSettings = null;
     LoggingAdapter log = null;
 
-    http.bind(toHost("127.0.0.1", 8080) );
-    http.bind(toHost("127.0.0.1", 8080));
-    http.bind(toHostHttps("127.0.0.1", 8080));
+    http.newServerAt("127.0.0.1", 8080).bind();
+    http.newServerAt("127.0.0.1", 8080).enableHttps(httpsContext).bind();
 
     final Flow<HttpRequest, HttpResponse, ?> handler = null;
-    http.bindAndHandle(handler, toHost("127.0.0.1", 8080), system());
-    http.bindAndHandle(handler, toHost("127.0.0.1", 8080), system());
-    http.bindAndHandle(handler, toHostHttps("127.0.0.1", 8080).withCustomHttpsContext(httpsContext), system());
+    http.newServerAt("127.0.0.1", 8080).bindFlow(handler);
+    http.newServerAt("127.0.0.1", 8080).enableHttps(httpsContext).bindFlow(handler);
 
     final Function<HttpRequest, CompletionStage<HttpResponse>> handler1 = null;
-    http.bindAndHandleAsync(handler1, toHost("127.0.0.1", 8080), system());
-    http.bindAndHandleAsync(handler1, toHostHttps("127.0.0.1", 8080), system());
+    http.newServerAt("127.0.0.1", 8080).bind(handler1);
+    http.newServerAt("127.0.0.1", 8080).enableHttps(httpsContext).bind(handler1);
 
     final Function<HttpRequest, HttpResponse> handler2 = null;
-    http.bindAndHandleSync(handler2, toHost("127.0.0.1", 8080), system());
-    http.bindAndHandleSync(handler2, toHostHttps("127.0.0.1", 8080), system());
+    http.newServerAt("127.0.0.1", 8080).bindSync(handler2);
+    http.newServerAt("127.0.0.1", 8080).enableHttps(httpsContext).bindSync(handler2);
 
     final HttpRequest handler3 = null;
     http.singleRequest(handler3);

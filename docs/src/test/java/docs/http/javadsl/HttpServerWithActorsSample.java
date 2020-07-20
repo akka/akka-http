@@ -12,17 +12,16 @@ package docs.http.javadsl;
 // curl localhost:8080/jobs/42
 
 //#bootstrap
+
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.PostStop;
 import akka.actor.typed.javadsl.BehaviorBuilder;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.ServerBinding;
 import akka.http.javadsl.server.Route;
-import akka.stream.SystemMaterializer;
 
 import java.util.concurrent.CompletionStage;
 
@@ -55,11 +54,10 @@ public class HttpServerWithActorsSample {
       Route routes = new JobRoutes(buildJobRepository, ctx.getSystem()).jobRoutes();
 
       CompletionStage<ServerBinding> serverBinding =
-              Http.get(ctx.getSystem()).bindAndHandle(
-                      routes.flow(ctx.getSystem()),
-                      ConnectHttp.toHost(host, port),
-                      SystemMaterializer.get(system).materializer()
-              );
+              Http.get(system)
+                .newServerAt(host, port)
+                .bind(routes);
+
       ctx.pipeToSelf(serverBinding, (binding, failure) -> {
         if (binding != null) return new Started(binding);
         else return new StartFailed(failure);

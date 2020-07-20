@@ -117,7 +117,7 @@ class Http2ClientServerSpec extends AkkaSpecWithMaterializer(
       p.future
     }
     lazy val binding =
-      Http().bindAndHandleAsync(handler, "localhost", 0, connectionContext = ExampleHttpContexts.exampleServerContext).futureValue
+      Http().newServerAt("localhost", 0).enableHttps(ExampleHttpContexts.exampleServerContext).bind(handler).futureValue
 
     // FIXME: use public API
     lazy val clientFlow = {

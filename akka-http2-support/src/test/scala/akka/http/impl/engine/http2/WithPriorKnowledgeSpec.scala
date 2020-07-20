@@ -21,11 +21,7 @@ class WithPriorKnowledgeSpec extends AkkaSpecWithMaterializer("""
   """) {
 
   "An HTTP server with PriorKnowledge" should {
-    val binding = Http().bindAndHandleAsync(
-      _ => Future.successful(HttpResponse(status = StatusCodes.ImATeapot)),
-      "127.0.0.1",
-      port = 0
-    ).futureValue
+    val binding = Http().newServerAt("127.0.0.1", 0).bind(_ => Future.successful(HttpResponse(status = StatusCodes.ImATeapot))).futureValue
 
     "respond to cleartext HTTP/1.1 requests with cleartext HTTP/1.1" in {
       val (host, port) = (binding.localAddress.getHostName, binding.localAddress.getPort)

@@ -40,9 +40,10 @@ class Http2BindingViaConfigSpec extends AkkaSpec("""
         system.eventStream.subscribe(p.ref, classOf[Logging.Debug])
 
         val connectionContext = ExampleHttpContexts.exampleServerContext
-        binding = Http().bindAndHandleAsync(
-          helloWorldHandler,
-          host, port, connectionContext)
+        binding =
+          Http().newServerAt(host, port)
+            .enableHttps(connectionContext)
+            .bind(helloWorldHandler)
 
         // TODO we currently don't verify it really bound as h2, since we don't have a client lib
         fishForDebugMessage(p, "Binding server using HTTP/2")

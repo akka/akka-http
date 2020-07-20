@@ -322,10 +322,9 @@ class GracefulTerminationSpec
       }
     }
 
-    val routes: Flow[HttpRequest, HttpResponse, Any] = Flow[HttpRequest].mapAsync(1)(handler)
+    val handlerFlow: Flow[HttpRequest, HttpResponse, Any] = Flow[HttpRequest].mapAsync(1)(handler)
     val serverBinding =
-      Http()
-        .bindAndHandle(routes, "localhost", 0, connectionContext = serverConnectionContext, settings = serverSettings)
+      Http().newServerAt("localhost", 0).enableHttps(serverConnectionContext).withSettings(serverSettings).bindFlow(handlerFlow)
         .futureValue
 
     def basePoolSettings = ConnectionPoolSettings(system)

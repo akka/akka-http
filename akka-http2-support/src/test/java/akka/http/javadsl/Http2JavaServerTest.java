@@ -38,11 +38,9 @@ public class Http2JavaServerTest {
 
     HttpsConnectionContext httpsConnectionContext = ExampleHttpContexts.getExampleServerContext();
 
-    Http.get(system).bindAndHandleAsync(
-      handler,
-      ConnectWithHttps.toHostHttps("localhost", 9001)
-        .withCustomHttpsContext(httpsConnectionContext),
-      system);
+    Http.get(system).newServerAt("localhost", 9001)
+        .enableHttps(httpsConnectionContext)
+        .bind(handler);
 
     // TODO what about unencrypted http2?
   }

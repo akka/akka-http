@@ -34,7 +34,7 @@ class CustomStatusCodesSpec extends AkkaSpecWithMaterializer with ScalaFutures
         complete(HttpResponse(status = LeetCode))
 
       // use serverSettings in server:
-      val binding = Http().bindAndHandle(routes, "127.0.0.1", 0, settings = serverSettings).futureValue
+      val binding = Http().newServerAt("127.0.0.1", 0).withSettings(serverSettings).bind(routes).futureValue
 
       // use clientSettings in client:
       val request = HttpRequest(uri = s"http://127.0.0.1:${binding.localAddress.getPort}/")

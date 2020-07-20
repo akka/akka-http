@@ -39,7 +39,7 @@ object MyExplicitExceptionHandler {
         null // #hide
       }
 
-    Http().bindAndHandle(route, "localhost", 8080)
+    Http().newServerAt("localhost", 8080).bind(route)
   }
 
   //#explicit-handler-example
@@ -72,7 +72,7 @@ object MyImplicitExceptionHandler {
     // ... some route structure
       null // #hide
 
-    Http().bindAndHandle(route, "localhost", 8080)
+    Http().newServerAt("localhost", 8080).bind(route)
   }
 
   //#implicit-handler-example
@@ -152,7 +152,7 @@ object RespondWithHeaderExceptionHandlerExample {
   object MyApp extends App {
     implicit val system = ActorSystem()
 
-    Http().bindAndHandle(route, "localhost", 8080)
+    Http().newServerAt("localhost", 8080).bind(route)
   }
   //#respond-with-header-exceptionhandler-example
 }

@@ -64,7 +64,7 @@ class WebSocketExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpe
     //#websocket-request-handling
 
     val bindingFuture =
-      Http().bindAndHandleSync(requestHandler, interface = "localhost", port = 8080)
+      Http().newServerAt("localhost", 8080).bindSync(requestHandler)
 
     println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
     StdIn.readLine()
@@ -104,7 +104,7 @@ class WebSocketExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpe
       }
     //#websocket-routing
 
-    val bindingFuture = Http().bindAndHandle(route, "localhost", 8080)
+    val bindingFuture = Http().newServerAt("localhost", port = 8080).bind(route)
 
     println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
     StdIn.readLine()
@@ -122,14 +122,10 @@ class WebSocketExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpe
     val defaultSettings = ServerSettings(system)
 
     val pingCounter = new AtomicInteger()
-    val customWebsocketSettings =
-      defaultSettings.websocketSettings
-        .withPeriodicKeepAliveData(() => ByteString(s"debug-${pingCounter.incrementAndGet()}"))
 
-    val customServerSettings =
-      defaultSettings.withWebsocketSettings(customWebsocketSettings)
-
-    Http().bindAndHandle(route, "127.0.0.1", settings = customServerSettings)
+    Http().newServerAt("127.0.0.1", 0)
+      .adaptSettings(_.mapWebsocketSettings(_.withPeriodicKeepAliveData(() => ByteString(s"debug-${pingCounter.incrementAndGet()}"))))
+      .bind(route)
     //#websocket-ping-payload-server
   }
 

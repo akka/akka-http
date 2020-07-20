@@ -28,17 +28,14 @@ object WSServerAutobahnTest extends App {
   val mode = System.getProperty("akka.ws-mode", "read") // read or sleep
 
   try {
-    val binding = Http().bindAndHandleSync(
-      {
-        case req @ HttpRequest(GET, Uri.Path("/"), _, _, _) if req.attribute(webSocketUpgrade).isDefined =>
-          req.attribute(webSocketUpgrade) match {
-            case Some(upgrade) => upgrade.handleMessages(echoWebSocketService) // needed for running the autobahn test suite
-            case None          => HttpResponse(400, entity = "Not a valid websocket request!")
-          }
-        case _: HttpRequest => HttpResponse(404, entity = "Unknown resource!")
-      },
-      interface = host, // adapt to your docker host IP address if necessary
-      port = port)
+    val binding = Http().newServerAt(host, port).bindSync({
+      case req @ HttpRequest(GET, Uri.Path("/"), _, _, _) if req.attribute(webSocketUpgrade).isDefined =>
+        req.attribute(webSocketUpgrade) match {
+          case Some(upgrade) => upgrade.handleMessages(echoWebSocketService) // needed for running the autobahn test suite
+          case None          => HttpResponse(400, entity = "Not a valid websocket request!")
+        }
+      case _: HttpRequest => HttpResponse(404, entity = "Unknown resource!")
+    })
 
     Await.result(binding, 3.second) // throws if binding fails
     println(s"Server online at http://$host:$port")

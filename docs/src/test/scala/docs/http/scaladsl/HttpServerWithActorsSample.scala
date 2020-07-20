@@ -158,7 +158,7 @@ object HttpServerWithActorsSample {
       val routes = new JobRoutes(buildJobRepository)
 
       val serverBinding: Future[Http.ServerBinding] =
-        Http.apply().bindAndHandle(routes.theJobRoutes, host, port)
+        Http().newServerAt(host, port).bind(routes.theJobRoutes)
       ctx.pipeToSelf(serverBinding) {
         case Success(binding) => Started(binding)
         case Failure(ex)      => StartFailed(ex)

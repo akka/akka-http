@@ -4,18 +4,12 @@
 
 package docs.http.javadsl;
 
-import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.marshallers.jackson.Jackson;
-import akka.http.javadsl.model.HttpRequest;
-import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.AllDirectives;
 import akka.http.javadsl.server.Route;
-import akka.stream.ActorMaterializer;
-import akka.stream.javadsl.Flow;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -31,14 +25,13 @@ public class HttpServerDynamicRoutingExampleTest extends AllDirectives {
     ActorSystem system = ActorSystem.create("routes");
 
     final Http http = Http.get(system);
-    final ActorMaterializer materializer = ActorMaterializer.create(system);
 
     //In order to access all directives we need an instance where the routes are define.
     HttpServerDynamicRoutingExampleTest app = new HttpServerDynamicRoutingExampleTest();
 
-    final Flow<HttpRequest, HttpResponse, NotUsed> routeFlow = app.createRoute().flow(system, materializer);
-
-    http.bindAndHandle(routeFlow, ConnectHttp.toHost("localhost", 8080), materializer);
+    http
+      .newServerAt("localhost", 8080)
+      .bind(app.createRoute());
   }
 
   //#dynamic-routing-example

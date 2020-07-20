@@ -60,15 +60,12 @@ public class CustomHttpMethodExamplesTest extends JUnitRouteTest {
         complete( "This is a " + method.name() + " request.")
       )
     );
-    final Flow<HttpRequest, HttpResponse, NotUsed> handler = routes.flow(system);
     final Http http = Http.get(system);
     final CompletionStage<ServerBinding> binding =
-      http.bindAndHandle(
-        handler,
-        ConnectHttp.toHost(host, port),
-        serverSettings,
-        loggingAdapter,
-        system);
+      http.newServerAt(host, port)
+          .withSettings(serverSettings)
+          .logTo(loggingAdapter)
+          .bind(routes);
 
     HttpRequest request = HttpRequest.create()
       .withUri("http://" + host + ":" + Integer.toString(port))
