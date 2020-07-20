@@ -776,12 +776,15 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   def setDefaultClientHttpsContext(context: HttpsConnectionContext): Unit =
     delegate.setDefaultClientHttpsContext(context.asScala)
 
+  @deprecated("use ConnectionContext.httpsServer", since = "10.2.0")
   def createServerHttpsContext(sslConfig: AkkaSSLConfig): HttpsConnectionContext =
     delegate.createServerHttpsContext(sslConfig)
 
+  @deprecated("use ConnectionContext.httpsClient", since = "10.2.0")
   def createClientHttpsContext(sslConfig: AkkaSSLConfig): HttpsConnectionContext =
     delegate.createClientHttpsContext(sslConfig)
 
+  @deprecated("use ConnectionContext.httpsClient", since = "10.2.0")
   def createDefaultClientHttpsContext(): HttpsConnectionContext =
     delegate.createDefaultClientHttpsContext()
 

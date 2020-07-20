@@ -61,7 +61,8 @@ Java
 Scala
 :   ```scala
     akka.http.scaladsl.ClientTransport
-    akka.http.scaladsl.ConnectionContext#https
+    akka.http.scaladsl.ConnectionContext#httpsClient
+    akka.http.scaladsl.ConnectionContext#httpsServer
     akka.http.scaladsl.settings.PoolImplementation
     akka.http.scaladsl.settings.ClientConnectionSettings#transport
     akka.http.scaladsl.settings.ClientConnectionSettings#withTransport

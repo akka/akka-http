@@ -51,6 +51,7 @@ import scala.concurrent.duration._
  *
  * Use as `Http().bindAndHandle` etc. with an implicit [[ActorSystem]] in scope.
  */
+@silent("DefaultSSLContextCreation in package scaladsl is deprecated")
 @DoNotInherit
 class HttpExt private[http] (private val config: Config)(implicit val system: ExtendedActorSystem) extends akka.actor.Extension
   with DefaultSSLContextCreation {
@@ -77,9 +78,6 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   ManifestInfo(system).checkSameVersion("Akka HTTP", allModules, logWarning = true)
 
   import Http._
-
-  override val sslConfig = AkkaSSLConfig(system)
-  validateAndWarnAboutLooseSettings()
 
   private[this] val defaultConnectionPoolSettings = ConnectionPoolSettings(system)
 
@@ -736,7 +734,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     synchronized {
       _defaultClientHttpsConnectionContext match {
         case null =>
-          val ctx = createDefaultClientHttpsContext()
+          val ctx = ConnectionContext.httpsClient(SSLContext.getDefault)
           _defaultClientHttpsConnectionContext = ctx
           ctx
         case ctx => ctx
@@ -1101,35 +1099,24 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
  * The remaining four parameters configure the initial session that will
  * be negotiated, see [[akka.stream.TLSProtocol.NegotiateNewSession]] for details.
  */
+@deprecated("use ConnectionContext.httpsServer and httpsClient directly", since = "10.2.0")
 trait DefaultSSLContextCreation {
 
   protected def system: ActorSystem
-  protected def sslConfig: AkkaSSLConfig
+  def sslConfig = AkkaSSLConfig(system)
 
   // --- log warnings ---
   private[this] def log = system.log
 
-  def validateAndWarnAboutLooseSettings() = {
-    val WarningAboutGlobalLoose = "This is very dangerous and may expose you to man-in-the-middle attacks. " +
-      "If you are forced to interact with a server that is behaving such that you must disable this setting, " +
-      "please disable it for a given connection instead, by configuring a specific HttpsConnectionContext " +
-      "for use only for the trusted target that hostname verification would have blocked."
-
-    if (sslConfig.config.loose.disableHostnameVerification)
-      log.warning("Detected that Hostname Verification is disabled globally (via ssl-config's akka.ssl-config.loose.disableHostnameVerification) for the Http extension! " +
-        WarningAboutGlobalLoose)
-
-    if (sslConfig.config.loose.disableSNI) {
-      log.warning("Detected that Server Name Indication (SNI) is disabled globally (via ssl-config's akka.ssl-config.loose.disableSNI) for the Http extension!")
-
-    }
-  }
+  @deprecated("AkkaSSLConfig usage is deprecated", since = "10.2.0")
+  def validateAndWarnAboutLooseSettings() = ()
   // --- end of log warnings ---
 
+  @deprecated("use ConnectionContext.httpServer instead", since = "10.2.0")
   def createDefaultClientHttpsContext(): HttpsConnectionContext =
-    createClientHttpsContext(sslConfig)
+    createClientHttpsContext(AkkaSSLConfig(system))
 
-  @deprecated("use ConnectionContext.httpServer(sslContext) instead", since = "10.2.0")
+  @deprecated("use ConnectionContext.httpServer instead", since = "10.2.0")
   def createServerHttpsContext(sslConfig: AkkaSSLConfig): HttpsConnectionContext = {
     log.warning("Automatic server-side configuration is not supported yet, will attempt to use client-side settings. " +
       "Instead it is recommended to construct the Servers HttpsConnectionContext manually (via SSLContext).")

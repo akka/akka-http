@@ -170,6 +170,11 @@ continue to work without changes necessary.
 
 ### Configuring HTTPS connections
 
+Akka HTTP no longer uses the HTTPS configuration configured with `ssl-config`
+by default. Instead, it will use the JRE defaults for client connections. For
+server connections you should create a @apidoc[HttpsConnectionContext] with
+the relevant configuration.
+
 Previously, the SSL configuration was constructed based on the parameters
 you pass to @apidoc[HttpsConnectionContext$] and the logic and configuration
 used by the [ssl-config](https://lightbend.github.io/ssl-config/) library. This was
