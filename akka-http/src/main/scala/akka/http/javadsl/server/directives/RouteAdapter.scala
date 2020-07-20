@@ -26,7 +26,7 @@ final class RouteAdapter(val delegate: akka.http.scaladsl.server.Route) extends 
   override def flow(system: ActorSystem, materializer: Materializer): javadsl.Flow[HttpRequest, HttpResponse, NotUsed] =
     scalaFlow(system, materializer).asJava
 
-  override def function(system: ClassicActorSystemProvider): Function[HttpRequest, CompletionStage[HttpResponse]] = {
+  override def handler(system: ClassicActorSystemProvider): Function[HttpRequest, CompletionStage[HttpResponse]] = {
     import scala.compat.java8.FutureConverters.toJava
     import akka.http.impl.util.JavaMapping._
     val scalaFunction = scaladsl.server.Route.toFunction(delegate)(system)
