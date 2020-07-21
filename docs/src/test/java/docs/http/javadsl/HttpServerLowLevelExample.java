@@ -25,7 +25,7 @@ public class HttpServerLowLevelExample {
 
     try {
       CompletionStage<ServerBinding> serverBindingFuture =
-        Http.get(system).bindAndHandleSync(
+        Http.get(system).newServerAt("localhost", 8080).bindSync(
           request -> {
             if (request.getUri().path().equals("/"))
               return HttpResponse.create().withEntity(ContentTypes.TEXT_HTML_UTF8,
@@ -38,7 +38,7 @@ public class HttpServerLowLevelExample {
               request.discardEntityBytes(system);
               return HttpResponse.create().withStatus(StatusCodes.NOT_FOUND).withEntity("Unknown resource!");
             }
-          }, ConnectHttp.toHost("localhost", 8080), system);
+          });
 
       System.out.println("Server online at http://localhost:8080/\nPress RETURN to stop...");
       System.in.read(); // let it run until user presses return

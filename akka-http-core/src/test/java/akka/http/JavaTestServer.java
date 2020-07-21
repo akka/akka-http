@@ -29,20 +29,20 @@ public class JavaTestServer {
         ActorSystem system = ActorSystem.create();
 
         try {
-            final Materializer materializer = ActorMaterializer.create(system);
-
             CompletionStage<ServerBinding> serverBindingFuture =
-                    Http.get(system).bindAndHandleSync(
-                      request -> {
-                          System.out.println("Handling request to " + request.getUri());
+                    Http.get(system)
+                      .newServerAt("localhost", 8080)
+                      .bindSync(
+                          request -> {
+                              System.out.println("Handling request to " + request.getUri());
 
-                          if (request.getUri().path().equals("/"))
-                              return WebSocket.handleWebSocketRequestWith(request, echoMessages());
-                          else if (request.getUri().path().equals("/greeter"))
-                              return WebSocket.handleWebSocketRequestWith(request, greeter());
-                          else
-                              return JavaApiTestCases.handleRequest(request);
-                      }, ConnectHttp.toHost("localhost", 8080), materializer);
+                              if (request.getUri().path().equals("/"))
+                                  return WebSocket.handleWebSocketRequestWith(request, echoMessages());
+                              else if (request.getUri().path().equals("/greeter"))
+                                  return WebSocket.handleWebSocketRequestWith(request, greeter());
+                              else
+                                  return JavaApiTestCases.handleRequest(request);
+                          });
 
             serverBindingFuture.toCompletableFuture().get(1, TimeUnit.SECONDS); // will throw if binding fails
             System.out.println("Press ENTER to stop.");

@@ -10,6 +10,7 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider
 import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.http.javadsl.HandlerProvider
 import akka.http.javadsl.model.HttpRequest
 import akka.http.javadsl.model.HttpResponse
 import akka.http.scaladsl
@@ -40,7 +41,7 @@ import akka.japi.function.Function
  * is the actual String that was given as method argument.
  */
 @DoNotInherit
-trait Route {
+trait Route extends HandlerProvider {
 
   /** Converts to the Scala DSL form of an Route. */
   def asScala: server.Route = delegate
@@ -54,7 +55,8 @@ trait Route {
   def flow(system: ClassicActorSystemProvider): Flow[HttpRequest, HttpResponse, NotUsed] =
     flow(system.classicSystem, SystemMaterializer(system).materializer)
 
-  def function(system: ClassicActorSystemProvider): Function[HttpRequest, CompletionStage[HttpResponse]]
+  def function(system: ClassicActorSystemProvider): Function[HttpRequest, CompletionStage[HttpResponse]] = handler(system)
+  def handler(system: ClassicActorSystemProvider): Function[HttpRequest, CompletionStage[HttpResponse]]
 
   /**
    * Seals a route by wrapping it with default exception handling and rejection conversion.

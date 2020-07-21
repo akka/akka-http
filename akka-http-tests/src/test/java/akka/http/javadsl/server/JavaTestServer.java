@@ -6,7 +6,6 @@ package akka.http.javadsl.server;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.ServerBinding;
 import akka.http.javadsl.common.EntityStreamingSupport;
@@ -17,8 +16,6 @@ import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.directives.SecurityDirectives.ProvidedCredentials;
 import akka.http.javadsl.unmarshalling.StringUnmarshallers;
 import akka.http.javadsl.unmarshalling.Unmarshaller;
-import akka.stream.ActorMaterializer;
-import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
 import scala.concurrent.duration.Duration;
@@ -71,14 +68,14 @@ public class JavaTestServer {
 
     final Unmarshaller<ByteString, JavaTweet> JavaTweets = Jackson.byteStringUnmarshaller(JavaTweet.class);
     final Route tweets = path("tweets", () ->
-      get(() -> 
+      get(() ->
         parameter(StringUnmarshallers.INTEGER, "n", n -> {
           final Source<JavaTweet, NotUsed> tws = Source.repeat(new JavaTweet("Hello World!")).take(n);
           return completeOKWithSource(tws, Jackson.marshaller(), EntityStreamingSupport.json());
         })
       ).orElse(
       post(() ->
-        extractMaterializer(mat -> 
+        extractMaterializer(mat ->
           entityAsSourceOf(JavaTweets, null, sourceOfTweets -> {
             final CompletionStage<Integer> tweetsCount = sourceOfTweets.runFold(0, (acc, tweet) -> acc + 1, mat);
             return onComplete(tweetsCount, c -> complete("Total number of tweets: " + c));
@@ -86,7 +83,7 @@ public class JavaTestServer {
         )
       ))
     );
-    
+
     final Route inner = path("inner", () ->
       getFromResourceDirectory("someDir")
     );
@@ -142,11 +139,11 @@ public class JavaTestServer {
 
   private void run() throws InterruptedException {
     final ActorSystem system = ActorSystem.create();
-    final ActorMaterializer mat = ActorMaterializer.create(system);
 
-    final Flow<HttpRequest, HttpResponse, ?> flow = createRoute().flow(system, mat);
     final CompletionStage<ServerBinding> binding =
-      Http.get(system).bindAndHandle(flow, ConnectHttp.toHost("127.0.0.1", 8080), mat);
+      Http.get(system)
+        .newServerAt("127.0.0.1", 8080)
+        .bind(createRoute());
 
     System.console().readLine("Press [ENTER] to quit...");
     shutdown(binding);
@@ -164,7 +161,7 @@ public class JavaTestServer {
       }
     });
   }
-  
+
   private static final class JavaTweet {
     private String message;
 
@@ -179,6 +176,6 @@ public class JavaTestServer {
     public String getMessage() {
       return message;
     }
-    
+
   }
 }

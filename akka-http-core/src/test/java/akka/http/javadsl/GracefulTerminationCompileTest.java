@@ -19,13 +19,12 @@ public class GracefulTerminationCompileTest {
 
     public static void main(String[] args) throws Exception {
         ActorSystem system = ActorSystem.create();
-        Materializer materializer = ActorMaterializer.create(system);
 
         Http http = Http.get(system);
 
         Function<HttpRequest, CompletionStage<HttpResponse>> handle =
                 (req) -> CompletableFuture.completedFuture(HttpResponse.create());
-        CompletionStage<ServerBinding> bound = http.bindAndHandleAsync(handle, ConnectHttp.toHost("127.0.0.1"), system);
+        CompletionStage<ServerBinding> bound = http.newServerAt("127.0.0.1", 0).bind(handle);
 
         ServerBinding serverBinding = bound.toCompletableFuture().get();
         CompletionStage<HttpTerminated> terminate = serverBinding.terminate(Duration.ofSeconds(1));

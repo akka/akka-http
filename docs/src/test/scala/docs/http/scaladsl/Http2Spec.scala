@@ -36,11 +36,7 @@ object Http2Spec {
     val httpsServerContext: HttpsConnectionContext = ExampleHttpContexts.exampleServerContext
 
     //#bindAndHandleSecure
-    Http().bindAndHandleAsync(
-      asyncHandler,
-      interface = "localhost",
-      port = 8443,
-      httpsServerContext)
+    Http().newServerAt(interface = "localhost", port = 8443).enableHttps(httpsServerContext).bind(asyncHandler)
     //#bindAndHandleSecure
   }
 
@@ -51,11 +47,7 @@ object Http2Spec {
     val handler: HttpRequest => Future[HttpResponse] =
       Route.toFunction(complete(StatusCodes.ImATeapot))
     //#bindAndHandlePlain
-    Http().bindAndHandleAsync(
-      handler,
-      interface = "localhost",
-      port = 8080,
-      connectionContext = HttpConnectionContext())
+    Http().newServerAt("localhost", 8080).bind(handler)
     //#bindAndHandlePlain
   }
 }

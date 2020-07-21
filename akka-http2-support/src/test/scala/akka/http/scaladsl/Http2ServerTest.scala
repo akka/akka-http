@@ -72,8 +72,8 @@ object Http2ServerTest extends App {
   try {
     val bindings =
       for {
-        httpsBinding <- Http().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9000, ExampleHttpContexts.exampleServerContext)
-        plainBinding <- Http().bindAndHandleAsync(asyncHandler, interface = "localhost", port = 9002, HttpConnectionContext())
+        httpsBinding <- Http().newServerAt(interface = "localhost", port = 9000).enableHttps(ExampleHttpContexts.exampleServerContext).bind(asyncHandler)
+        plainBinding <- Http().newServerAt(interface = "localhost", port = 9002).bind(asyncHandler)
       } yield (httpsBinding, plainBinding)
 
     Await.result(bindings, 1.second) // throws if binding fails

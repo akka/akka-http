@@ -83,6 +83,14 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     adaptServerLayer(delegate.serverLayer(settings.asScala, remoteAddress.asScala, log))
 
   /**
+   * Main entry point to create a server binding.
+   *
+   * @param interface The interface to bind to.
+   * @param port The port to bind to or `0` if the port should be automatically assigned.
+   */
+  def newServerAt(interface: String, port: Int): ServerBuilder = ServerBuilder(interface, port, system)
+
+  /**
    * Creates a [[akka.stream.javadsl.Source]] of [[IncomingConnection]] instances which represents a prospective HTTP server binding
    * on the given `endpoint`.
    *
@@ -96,7 +104,11 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
+   *
+   * @deprecated since 10.2.0: Use Http.get(system).newServerAt(interface, port).bind() instead
    */
+  @Deprecated
+  @deprecated("Use newServerAt instead", since = "10.2.0")
   def bind(connect: ConnectHttp): Source[IncomingConnection, CompletionStage[ServerBinding]] = {
     val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
     new Source(delegate.bind(connect.host, connect.port, connectionContext)
@@ -118,7 +130,11 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
+   *
+   * @deprecated since 10.2.0: Use Http.get(system).newServerAt(interface, port).withSettings(settings).bind() instead
    */
+  @Deprecated
+  @deprecated("Use newServerAt instead", since = "10.2.0")
   def bind(
     connect:  ConnectHttp,
     settings: ServerSettings): Source[IncomingConnection, CompletionStage[ServerBinding]] = {
@@ -142,7 +158,11 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
+   *
+   * @deprecated since 10.2.0: Use Http.get(system).newServerAt(interface, port).withSettings(settings).logTo(log).bind() instead
    */
+  @Deprecated
+  @deprecated("Use newServerAt instead", since = "10.2.0")
   def bind(
     connect:  ConnectHttp,
     settings: ServerSettings,
@@ -163,7 +183,11 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
+   *
+   * @deprecated since 10.2.0: Use Http.get(system).newServerAt(interface, port).bindFlow(handler) instead.
    */
+  @Deprecated
+  @deprecated("Use newServerAt instead", since = "10.2.0")
   def bindAndHandle(
     handler:      Flow[HttpRequest, HttpResponse, _],
     connect:      ConnectHttp,
@@ -185,29 +209,11 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
-   */
-  def bindAndHandle(
-    handler: Flow[HttpRequest, HttpResponse, _],
-    connect: ConnectHttp,
-    system:  ClassicActorSystemProvider): CompletionStage[ServerBinding] = {
-    val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    delegate.bindAndHandle(
-      handler.asInstanceOf[Flow[sm.HttpRequest, sm.HttpResponse, _]].asScala,
-      connect.host, connect.port, connectionContext)(Materializer.matFromSystem(system))
-      .map(new ServerBinding(_))(ec).toJava
-  }
-
-  /**
-   * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
-   * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
    *
-   * The number of concurrently accepted connections can be configured by overriding
-   * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
-   * information about what kind of guarantees to expect.
-   *
-   * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
-   * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
+   * @deprecated since 10.2.0: Use Http.get(system).newServerAt(interface, port).withSettings(settings).logTo(log).bindFlow(handler) instead.
    */
+  @Deprecated
+  @deprecated("Use newServerAt instead", since = "10.2.0")
   def bindAndHandle(
     handler:      Flow[HttpRequest, HttpResponse, _],
     connect:      ConnectHttp,
@@ -223,30 +229,6 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
-   * [[akka.stream.javadsl.Flow]] for processing all incoming connections.
-   *
-   * The number of concurrently accepted connections can be configured by overriding
-   * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
-   * information about what kind of guarantees to expect.
-   *
-   * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
-   * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
-   */
-  def bindAndHandle(
-    handler:  Flow[HttpRequest, HttpResponse, _],
-    connect:  ConnectHttp,
-    settings: ServerSettings,
-    log:      LoggingAdapter,
-    system:   ClassicActorSystemProvider): CompletionStage[ServerBinding] = {
-    val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    delegate.bindAndHandle(
-      handler.asInstanceOf[Flow[sm.HttpRequest, sm.HttpResponse, _]].asScala,
-      connect.host, connect.port, connectionContext, settings.asScala, log)(SystemMaterializer(system).materializer)
-      .map(new ServerBinding(_))(ec).toJava
-  }
-
-  /**
-   * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
    * function for processing all incoming connections.
    *
    * The number of concurrently accepted connections can be configured by overriding
@@ -256,9 +238,10 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
    *
-   * @deprecated since 10.2.0: Use the method taking a akka.japi.function.Function and system instead
+   * @deprecated since 10.2.0: Use Http.get(system).newServerAt(interface, port).bindSync(handler) instead
    */
   @Deprecated
+  @deprecated("Use newServerAt instead", since = "10.2.0")
   def bindAndHandleSync(
     handler:      akka.japi.Function[HttpRequest, HttpResponse],
     connect:      ConnectHttp,
@@ -278,30 +261,11 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
-   */
-  def bindAndHandleSync(
-    handler: Function[HttpRequest, HttpResponse],
-    connect: ConnectHttp,
-    system:  ClassicActorSystemProvider): CompletionStage[ServerBinding] = {
-    val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    delegate.bindAndHandleSync(handler.apply(_).asScala, connect.host, connect.port, connectionContext)(Materializer.matFromSystem(system))
-      .map(new ServerBinding(_))(ec).toJava
-  }
-
-  /**
-   * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
-   * function for processing all incoming connections.
    *
-   * The number of concurrently accepted connections can be configured by overriding
-   * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
-   * information about what kind of guarantees to expect.
-   *
-   * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
-   * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
-   *
-   * @deprecated since 10.2.0: Use the method taking a akka.japi.function.Function and system instead
+   * @deprecated since 10.2.0: Use Http.get(system).newServerAt(interface, port).withSettings(settings).logTo(log).bindSync(handler) instead
    */
   @Deprecated
+  @deprecated("Use newServerAt instead", since = "10.2.0")
   def bindAndHandleSync(
     handler:      akka.japi.Function[HttpRequest, HttpResponse],
     connect:      ConnectHttp,
@@ -325,34 +289,11 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
-   */
-  def bindAndHandleSync(
-    handler:  Function[HttpRequest, HttpResponse],
-    connect:  ConnectHttp,
-    settings: ServerSettings,
-    log:      LoggingAdapter,
-    system:   ClassicActorSystemProvider): CompletionStage[ServerBinding] = {
-    val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    delegate.bindAndHandleSync(
-      handler.apply(_).asScala,
-      connect.host, connect.port, connectionContext, settings.asScala, log)(Materializer.matFromSystem(system))
-      .map(new ServerBinding(_))(ec).toJava
-  }
-
-  /**
-   * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
-   * function for processing all incoming connections.
    *
-   * The number of concurrently accepted connections can be configured by overriding
-   * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
-   * information about what kind of guarantees to expect.
-   *
-   * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
-   * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
-   *
-   * @deprecated since 10.2.0: Use the method taking a akka.japi.function.Function and system instead
+   * @deprecated since 10.2.0: Use Http.get(system).newServerAt(interface, port).bind(handler) instead
    */
   @Deprecated
+  @deprecated("Use newServerAt instead", since = "10.2.0")
   def bindAndHandleAsync(
     handler:      akka.japi.Function[HttpRequest, CompletionStage[HttpResponse]],
     connect:      ConnectHttp,
@@ -372,30 +313,11 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
-   */
-  def bindAndHandleAsync(
-    handler: Function[HttpRequest, CompletionStage[HttpResponse]],
-    connect: ConnectHttp,
-    system:  ClassicActorSystemProvider): CompletionStage[ServerBinding] = {
-    val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    delegate.bindAndHandleAsync(handler.apply(_).toScala, connect.host, connect.port, connectionContext)(Materializer.matFromSystem(system))
-      .map(new ServerBinding(_))(ec).toJava
-  }
-
-  /**
-   * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
-   * function for processing all incoming connections.
    *
-   * The number of concurrently accepted connections can be configured by overriding
-   * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
-   * information about what kind of guarantees to expect.
-   *
-   * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
-   * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
-   *
-   * @deprecated since 10.2.0: Use the method taking a akka.japi.function.Function and system instead
+   * @deprecated since 10.2.0: Use Http.get(system).newServerAt(interface, port).withSettings(settings).logTo(log).bind(handler) instead
    */
   @Deprecated
+  @deprecated("Use newServerAt instead", since = "10.2.0")
   def bindAndHandleAsync(
     handler:     akka.japi.Function[HttpRequest, CompletionStage[HttpResponse]],
     connect:     ConnectHttp,
@@ -406,30 +328,6 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     delegate.bindAndHandleAsync(
       handler.apply(_).toScala,
       connect.host, connect.port, connectionContext, settings.asScala, parallelism, log)(materializer)
-      .map(new ServerBinding(_))(ec).toJava
-  }
-
-  /**
-   * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
-   * function for processing all incoming connections.
-   *
-   * The number of concurrently accepted connections can be configured by overriding
-   * the `akka.http.server.max-connections` setting. Please see the documentation in the reference.conf for more
-   * information about what kind of guarantees to expect.
-   *
-   * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
-   * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
-   */
-  def bindAndHandleAsync(
-    handler:     Function[HttpRequest, CompletionStage[HttpResponse]],
-    connect:     ConnectHttp,
-    settings:    ServerSettings,
-    parallelism: Int, log: LoggingAdapter,
-    system: ClassicActorSystemProvider): CompletionStage[ServerBinding] = {
-    val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    delegate.bindAndHandleAsync(
-      handler.apply(_).toScala,
-      connect.host, connect.port, connectionContext, settings.asScala, parallelism, log)(Materializer.matFromSystem(system))
       .map(new ServerBinding(_))(ec).toJava
   }
 

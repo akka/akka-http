@@ -57,7 +57,7 @@ class SizeLimitSpec extends AnyWordSpec with Matchers with RequestBuilding with 
       }
     }
 
-    val binding = Http().bindAndHandle(route, "localhost", port = 0).futureValue
+    val binding = Http().newServerAt("localhost", port = 0).bind(route).futureValue
 
     "accept small POST requests" in {
       Http().singleRequest(Post(s"http:/${binding.localAddress}/noDirective", entityOfSize(maxContentLength)))
@@ -81,7 +81,7 @@ class SizeLimitSpec extends AnyWordSpec with Matchers with RequestBuilding with 
       }
     }
 
-    val binding = Http().bindAndHandle(route, "localhost", port = 0).futureValue
+    val binding = Http().newServerAt("localhost", port = 0).bind(route).futureValue
 
     "accept a small request" in {
       val response = Http().singleRequest(Post(s"http:/${binding.localAddress}/noDirective", entityOfSize(maxContentLength))).futureValue
@@ -119,7 +119,7 @@ class SizeLimitSpec extends AnyWordSpec with Matchers with RequestBuilding with 
       }
     }
 
-    val binding = Http().bindAndHandle(route, "localhost", port = 0).futureValue
+    val binding = Http().newServerAt("localhost", port = 0).bind(route).futureValue
 
     "reject a small request that decodes into a large chunked entity" in {
       val request = Post(s"http:/${binding.localAddress}/noDirective", "x").withHeaders(`Content-Encoding`(HttpEncoding("custom")))
@@ -141,7 +141,7 @@ class SizeLimitSpec extends AnyWordSpec with Matchers with RequestBuilding with 
       }
     }
 
-    val binding = Http().bindAndHandle(route, "localhost", port = 0).futureValue
+    val binding = Http().newServerAt("localhost", port = 0).bind(route).futureValue
 
     "reject a small request that decodes into a large non-chunked streaming entity" in {
       val request = Post(s"http:/${binding.localAddress}/noDirective", "x").withHeaders(`Content-Encoding`(HttpEncoding("custom")))
@@ -163,7 +163,7 @@ class SizeLimitSpec extends AnyWordSpec with Matchers with RequestBuilding with 
       }
     }
 
-    val binding = Http().bindAndHandle(route, "localhost", port = 0).futureValue
+    val binding = Http().newServerAt("localhost", port = 0).bind(route).futureValue
 
     "accept a small request" in {
       Http().singleRequest(Post(s"http:/${binding.localAddress}/noDirective", entityOfSize(maxContentLength)))
@@ -216,7 +216,7 @@ class SizeLimitSpec extends AnyWordSpec with Matchers with RequestBuilding with 
       }
     }
 
-    val binding = Http().bindAndHandle(route, "localhost", port = 0).futureValue
+    val binding = Http().newServerAt("localhost", port = 0).bind(route).futureValue
 
     "accept entities bigger than configured with akka.http.parsing.max-content-length" in {
       Http().singleRequest(Post(s"http:/${binding.localAddress}/withoutSizeLimit", entityOfSize(maxContentLength + 1)))

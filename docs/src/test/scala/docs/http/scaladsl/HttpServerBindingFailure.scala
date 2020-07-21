@@ -24,7 +24,7 @@ object HttpServerBindingFailure {
     // let's say the OS won't allow us to bind to 80.
     val (host, port) = ("localhost", 80)
     val bindingFuture: Future[ServerBinding] =
-      Http().bindAndHandle(handler, host, port)
+      Http().newServerAt(host, port).bindFlow(handler)
 
     bindingFuture.failed.foreach { ex =>
       system.log.error(ex, "Failed to bind to {}:{}!", host, port)

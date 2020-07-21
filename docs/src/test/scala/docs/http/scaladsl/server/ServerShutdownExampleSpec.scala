@@ -27,8 +27,7 @@ class ServerShutdownExampleSpec extends AnyWordSpec with Matchers
     val routes: Route = ???
 
     // #suggested
-    val bindingFuture = Http()
-      .bindAndHandle(handler = routes, interface = "localhost", port = 8080)
+    val bindingFuture = Http().newServerAt("localhost", 8080).bind(routes)
       .map(_.addToCoordinatedShutdown(hardTerminationDeadline = 10.seconds))
     // #suggested
 

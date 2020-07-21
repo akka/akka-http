@@ -33,7 +33,7 @@ class ClientSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
     "reuse connection pool" in {
       val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-      val bindingFuture = Http().bindAndHandleSync(_ => HttpResponse(), hostname, port)
+      val bindingFuture = Http().newServerAt(hostname, port).bindSync(_ => HttpResponse())
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
 
       val respFuture = Http().singleRequest(HttpRequest(POST, s"http://$hostname:$port/"))

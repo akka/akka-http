@@ -58,7 +58,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
 
     "properly bind a server" in {
       val probe = TestSubscriber.manualProbe[Http.IncomingConnection]()
-      val binding = Http().bind("127.0.0.1", 0).to(Sink.fromSubscriber(probe)).run()
+      val binding = Http().newServerAt("127.0.0.1", 0).bind().to(Sink.fromSubscriber(probe)).run()
       val sub = probe.expectSubscription() // if we get it we are bound
       Await.result(binding, 1.second.dilated).unbind()
       sub.cancel()
@@ -68,7 +68,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
       val probe = TestSubscriber.manualProbe[Http.IncomingConnection]()
       // not really testing anything here, problem is that it is hard to find an unused port otherwise
       val settings = ServerSettings(system).withDefaultHttpPort(0)
-      val bindingF = Http().bind("0.0.0.0", settings = settings).to(Sink.fromSubscriber(probe)).run()
+      val bindingF = Http().newServerAt("0.0.0.0", 0).withSettings(settings).bind().to(Sink.fromSubscriber(probe)).run()
       val sub = probe.expectSubscription() // if we get it we are bound
       val binding = Await.result(bindingF, 1.second.dilated)
       // though, that wouldn't probably happen because binding ports < 1024 is restricted in most environments
@@ -79,7 +79,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
 
     "report failure if bind fails" in EventFilter[BindException](occurrences = 2).intercept {
       val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-      val binding = Http().bind(hostname, port)
+      val binding = Http().newServerAt(hostname, port).bind()
       val probe1 = TestSubscriber.manualProbe[Http.IncomingConnection]()
       // Bind succeeded, we have a local address
       val b1 = Await.result(binding.to(Sink.fromSubscriber(probe1)).run(), 3.seconds.dilated)
@@ -121,7 +121,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
 
     "run with bindAndHandleSync" in {
       val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-      val binding = Http().bindAndHandleSync(_ => HttpResponse(), hostname, port)
+      val binding = Http().newServerAt(hostname, port).bindSync(_ => HttpResponse())
       val b1 = Await.result(binding, 3.seconds.dilated)
 
       val (_, f) = Http().outgoingConnection(hostname, port)
@@ -149,7 +149,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
         }
       }
 
-      val binding = Http().bindAndHandleAsync(handle, hostname, port, settings = settings)
+      val binding = Http().newServerAt(hostname, port).withSettings(settings).bind(handle _)
       val b1 = Await.result(binding, 3.seconds.dilated)
 
       def runRequest(uri: Uri): Unit =
@@ -180,7 +180,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
 
       "be added when using bind API" in new RemoteAddressTestScenario {
         def createBinding(): Future[ServerBinding] =
-          Http().bind(hostname, port, settings = settings)
+          Http().newServerAt(hostname, port).withSettings(settings).bind()
             .map(_.flow.join(Flow[HttpRequest].map(handler)).run())
             .to(Sink.ignore)
             .run()
@@ -188,12 +188,12 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
 
       "be added when using bindAndHandle API" in new RemoteAddressTestScenario {
         def createBinding(): Future[ServerBinding] =
-          Http().bindAndHandle(Flow[HttpRequest].map(handler), hostname, port, settings = settings)
+          Http().newServerAt(hostname, port).withSettings(settings).bindFlow(Flow[HttpRequest].map(handler))
       }
 
       "be added when using bindAndHandleSync API" in new RemoteAddressTestScenario {
         def createBinding(): Future[ServerBinding] =
-          Http().bindAndHandleSync(handler, hostname, port, settings = settings)
+          Http().newServerAt(hostname, port).withSettings(settings).bindSync(handler)
       }
 
       abstract class RemoteAddressTestScenario {
@@ -231,7 +231,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
           Promise().future // never complete the request with a response; we're waiting for the timeout to happen, nothing else
         }
 
-        val binding = Http().bindAndHandleAsync(handle, hostname, port, settings = settings)
+        val binding = Http().newServerAt(hostname, port).withSettings(settings).bind(handle)
         val b1 = Await.result(binding, 3.seconds.dilated)
         (receivedRequest, b1)
       }
@@ -372,7 +372,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
         pending
         val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
         val flow = Flow[HttpRequest].map(_ => HttpResponse()).mapMaterializedValue(_ => sys.error("BOOM"))
-        val binding = Http(system2).bindAndHandle(flow, hostname, port)(materializer2)
+        val binding = Http(system2).newServerAt(hostname, port).bindFlow(flow)
         val b1 = Await.result(binding, 1.seconds.dilated)
 
         EventFilter[RuntimeException](message = "BOOM", occurrences = 1).intercept {
@@ -389,7 +389,6 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
       }(materializer2)
 
       "stop stages on failure" in Utils.assertAllStagesStopped {
-        val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
         val stageCounter = new AtomicLong(0)
         val stage: GraphStage[FlowShape[HttpRequest, HttpResponse]] = new GraphStage[FlowShape[HttpRequest, HttpResponse]] {
           val in = Inlet[HttpRequest]("request.in")
@@ -407,6 +406,10 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
           }
         }
 
+        val hostname = "127.0.0.1"
+        val bind = Await.result(Http().newServerAt("127.0.0.1", 0).bindFlow(Flow.fromGraph(stage)), 1.seconds.dilated)
+        val port = bind.localAddress.getPort
+
         def performFaultyRequest() = {
           val socket = new Socket(hostname, port)
           val os = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream, "UTF8"))
@@ -423,8 +426,6 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
           eventually(timeout(3.second.dilated)) {
             stageCounter.get shouldEqual stage
           }
-
-        val bind = Await.result(Http().bindAndHandle(Flow.fromGraph(stage), hostname, port)(materializer2), 1.seconds.dilated)
 
         performValidRequest()
         assertCounters(0)
@@ -609,7 +610,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
       val serverSettings = ServerSettings(system).withSocketOptions(SO.SendBufferSize(serverToClientNetworkBufferSize) :: Nil)
       val clientSettings = ConnectionPoolSettings(system).withConnectionSettings(ClientConnectionSettings(system).withSocketOptions(SO.ReceiveBufferSize(serverToClientNetworkBufferSize) :: Nil))
 
-      val server = Http().bindAndHandleSync(response, hostname, port, settings = serverSettings)
+      val server = Http().newServerAt(hostname, port).withSettings(serverSettings).bindSync(response)
       def runOnce(i: Int) =
         Http().singleRequest(request(i), settings = clientSettings).futureValue
           .entity.dataBytes.runFold(ByteString.empty) { (prev, cur) =>
@@ -632,7 +633,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
       // settings adapting network buffer sizes
       val serverSettings = ServerSettings(system)
 
-      val server = Http().bindAndHandleAsync(_ => responsePromise.future, hostname, port, settings = serverSettings).futureValue
+      val server = Http().newServerAt(hostname, port).withSettings(serverSettings).bind(_ => responsePromise.future).futureValue
 
       try {
         val result = Source.single(ByteString(
@@ -655,10 +656,9 @@ Host: example.com
 
     "complete a request/response over https, disabling hostname verification with SSLConfigSettings" in Utils.assertAllStagesStopped {
       val serverConnectionContext = ExampleHttpContexts.exampleServerContext
-      val routes: Flow[HttpRequest, HttpResponse, Any] = Flow[HttpRequest].map { _ => HttpResponse(entity = "Okay") }
+      val handlerFlow: Flow[HttpRequest, HttpResponse, Any] = Flow[HttpRequest].map { _ => HttpResponse(entity = "Okay") }
       val serverBinding =
-        Http()
-          .bindAndHandle(routes, "localhost", 0, connectionContext = serverConnectionContext)
+        Http().newServerAt("localhost", 0).enableHttps(serverConnectionContext).bindFlow(handlerFlow)
           .futureValue
 
       // Disable hostname verification as ExampleHttpContexts.exampleClientContext sets hostname as akka.example.org
@@ -687,10 +687,9 @@ Host: example.com
       val serverConnectionContext = ExampleHttpContexts.exampleServerContext
 
       val entity = Array.fill[Char](999999)('0').mkString + "x"
-      val routes: Flow[HttpRequest, HttpResponse, Any] = Flow[HttpRequest].map { _ => HttpResponse(entity = entity) }
+      val handlerFlow: Flow[HttpRequest, HttpResponse, Any] = Flow[HttpRequest].map { _ => HttpResponse(entity = entity) }
       val serverBinding =
-        Http()
-          .bindAndHandle(routes, hostname, port, connectionContext = serverConnectionContext, settings = serverSettings)
+        Http().newServerAt(hostname, port).enableHttps(serverConnectionContext).withSettings(serverSettings).bindFlow(handlerFlow)
           .futureValue
 
       // settings adapting network buffer sizes, and connecting to the spun-up server regardless of the URI address
@@ -836,7 +835,7 @@ Host: example.com
       val settings = ConnectionPoolSettings(system).withUpdatedConnectionSettings(_.withIdleTimeout(100.millis))
       val dummyFlow = Flow[HttpRequest].map(_ => ???)
 
-      val binding = Http().bindAndHandle(dummyFlow, "127.0.0.1", port = 0).futureValue
+      val binding = Http().newServerAt("127.0.0.1", 0).bindFlow(dummyFlow).futureValue
       val uri = "https://" + binding.localAddress.getHostString + ":" + binding.localAddress.getPort
 
       EventFilter.warning(pattern = "Perhaps this was an HTTPS request sent to an HTTP endpoint", occurrences = 1) intercept {
@@ -857,7 +856,7 @@ Host: example.com
       }
 
       val settings = ServerSettings(system).mapTimeouts(_.withIdleTimeout(1.second))
-      val binding = Http().bindAndHandleAsync(handler, "127.0.0.1", port = 0, settings = settings).futureValue
+      val binding = Http().newServerAt("127.0.0.1", 0).withSettings(settings).bind(handler).futureValue
       val uri = "http://" + binding.localAddress.getHostString + ":" + binding.localAddress.getPort
 
       val dataOutProbe = TestPublisher.probe[ByteString]()
@@ -884,7 +883,7 @@ Host: example.com
     // automatically bind a server
     val (connSource, binding: Future[ServerBinding]) = {
       val settings = configOverrides.toOption.fold(ServerSettings(system))(ServerSettings(_))
-      val connections = Http().bind(hostname, port, settings = settings)
+      val connections = Http().newServerAt(hostname, port).withSettings(settings).bind()
       val probe = TestSubscriber.manualProbe[Http.IncomingConnection]()
       val binding = connections.to(Sink.fromSubscriber(probe)).run()
       (probe, binding)

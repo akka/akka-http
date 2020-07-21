@@ -35,9 +35,9 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
 
     "not reset the connection when no data are flowing" in Utils.assertAllStagesStopped {
       val source = TestPublisher.probe[Message]()
-      val bindingFuture = Http().bindAndHandleSync({
+      val bindingFuture = Http().newServerAt("localhost", 0).bindSync({
         _.attribute(webSocketUpgrade).get.handleMessages(Flow.fromSinkAndSource(Sink.ignore, Source.fromPublisher(source)), None)
-      }, interface = "localhost", port = 0)
+      })
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
       val myPort = binding.localAddress.getPort
 
@@ -62,9 +62,9 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
 
     "not reset the connection when no data are flowing and the connection is closed from the client" in Utils.assertAllStagesStopped {
       val source = TestPublisher.probe[Message]()
-      val bindingFuture = Http().bindAndHandleSync({
+      val bindingFuture = Http().newServerAt("localhost", 0).bindSync({
         _.attribute(webSocketUpgrade).get.handleMessages(Flow.fromSinkAndSource(Sink.ignore, Source.fromPublisher(source)), None)
-      }, interface = "localhost", port = 0)
+      })
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
       val myPort = binding.localAddress.getPort
 
@@ -121,9 +121,9 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
 
     "echo 100 elements and then shut down without error" in Utils.assertAllStagesStopped {
 
-      val bindingFuture = Http().bindAndHandleSync({
+      val bindingFuture = Http().newServerAt("localhost", 0).bindSync({
         _.attribute(webSocketUpgrade).get.handleMessages(Flow.apply, None)
-      }, interface = "localhost", port = 0)
+      })
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
       val myPort = binding.localAddress.getPort
 
@@ -160,9 +160,9 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
         FlowShape(mapMsgToInt.in, mapIntToMsg.out)
       })
 
-      val bindingFuture = Http().bindAndHandleSync({
+      val bindingFuture = Http().newServerAt("localhost", 0).bindSync({
         _.attribute(webSocketUpgrade).get.handleMessages(handler, None)
-      }, interface = "localhost", port = 0)
+      })
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
       val myPort = binding.localAddress.getPort
 
@@ -194,10 +194,7 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
         .mapMaterializedValue(handlerTermination.completeWith(_))
         .map(m => TextMessage.Strict(s"Echo [$m]"))
 
-      val bindingFuture = Http().bindAndHandleSync(
-        _.attribute(webSocketUpgrade).get.handleMessages(handler, None),
-        interface = "localhost",
-        port = 0)
+      val bindingFuture = Http().newServerAt("localhost", 0).bindSync(_.attribute(webSocketUpgrade).get.handleMessages(handler, None))
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
       val myPort = binding.localAddress.getPort
 

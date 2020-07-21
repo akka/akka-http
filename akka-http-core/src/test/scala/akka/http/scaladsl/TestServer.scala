@@ -38,7 +38,7 @@ object TestServer extends App {
     .withInputBuffer(128, 128)
   implicit val fm = ActorMaterializer(settings)
   try {
-    val binding = Http().bindAndHandleSync({
+    val binding = Http().newServerAt("localhost", 9001).bindSync {
       case req @ HttpRequest(GET, Uri.Path("/"), _, _, _) =>
         req.attribute(webSocketUpgrade) match {
           case Some(upgrade) => upgrade.handleMessages(echoWebSocketService) // needed for running the autobahn test suite
@@ -52,7 +52,7 @@ object TestServer extends App {
           case None          => HttpResponse(400, entity = "Not a valid websocket request!")
         }
       case _: HttpRequest => HttpResponse(404, entity = "Unknown resource!")
-    }, interface = "localhost", port = 9001)
+    }
 
     Await.result(binding, 1.second) // throws if binding fails
     println("Server online at http://localhost:9001")

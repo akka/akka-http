@@ -36,7 +36,7 @@ class TightRequestTimeoutSpec extends AnyWordSpec with Matchers with BeforeAndAf
 
     "not cause double push error caused by the late response attempting to push" in {
       val slowHandler = Flow[HttpRequest].map(_ => HttpResponse()).delay(500.millis.dilated, OverflowStrategy.backpressure)
-      val binding = Http().bindAndHandle(slowHandler, "localhost", 0).futureValue
+      val binding = Http().newServerAt("localhost", 0).bindFlow(slowHandler).futureValue
       val (hostname, port) = (binding.localAddress.getHostString, binding.localAddress.getPort)
 
       val p = TestProbe()

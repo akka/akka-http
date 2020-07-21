@@ -33,7 +33,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     implicit val executionContext = system.dispatcher
 
     val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] =
-      Http().bind(interface = "localhost", port = 8080)
+      Http().newServerAt("localhost", 8080).bind()
     val bindingFuture: Future[Http.ServerBinding] =
       serverSource.to(Sink.foreach { connection => // foreach materializes the source
         println("Accepted new connection from " + connection.remoteAddress)
@@ -62,7 +62,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
 
     // let's say the OS won't allow us to bind to 80.
     val (host, port) = ("localhost", 80)
-    val serverSource = Http().bind(host, port)
+    val serverSource = Http().newServerAt(host, port).bind()
 
     val bindingFuture: Future[ServerBinding] = serverSource
       .to(handleConnections) // Sink[Http.IncomingConnection, _]
@@ -90,7 +90,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
 
     import Http._
     val (host, port) = ("localhost", 8080)
-    val serverSource = Http().bind(host, port)
+    val serverSource = Http().newServerAt(host, port).bind()
 
     val failureMonitor: ActorRef = system.actorOf(MyExampleMonitoringActor.props)
 
@@ -117,7 +117,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     implicit val executionContext = system.dispatcher
 
     val (host, port) = ("localhost", 8080)
-    val serverSource = Http().bind(host, port)
+    val serverSource = Http().newServerAt(host, port).bind()
 
     val reactToConnectionFailure = Flow[HttpRequest]
       .recover[HttpRequest] {
@@ -151,7 +151,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     implicit val system = ActorSystem()
     implicit val executionContext = system.dispatcher
 
-    val serverSource = Http().bind(interface = "localhost", port = 8080)
+    val serverSource = Http().newServerAt("localhost", 8080).bind()
 
     val requestHandler: HttpRequest => HttpResponse = {
       case HttpRequest(GET, Uri.Path("/"), _, _, _) =>
@@ -464,7 +464,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     }
 
     val binding: Future[Http.ServerBinding] =
-      Http().bindAndHandle(routes, "127.0.0.1", 8080)
+      Http().newServerAt("127.0.0.1", 8080).bind(routes)
 
     // ...
     // once ready to terminate the server, invoke terminate:

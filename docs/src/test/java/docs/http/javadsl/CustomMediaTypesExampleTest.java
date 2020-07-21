@@ -60,12 +60,11 @@ public class CustomMediaTypesExampleTest extends JUnitRouteTest {
         + req.entity().getContentType().getClass())
     );
 
-    final CompletionStage<ServerBinding> binding = Http.get(system)
-      .bindAndHandle(route.flow(system),
-        ConnectHttp.toHost(host, 0),
-        serverSettings,
-        system.log(),
-        system);
+    final CompletionStage<ServerBinding> binding =
+      Http.get(system)
+        .newServerAt(host, 0)
+        .withSettings(serverSettings)
+        .bind(route);
 
     //#application-custom-java
     final ServerBinding serverBinding = binding.toCompletableFuture().get();

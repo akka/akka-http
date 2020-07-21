@@ -143,6 +143,14 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     else settings.defaultHttpPort
 
   /**
+   * Main entry point to create a server binding.
+   *
+   * @param interface The interface to bind to.
+   * @param port The port to bind to or `0` if the port should be automatically assigned.
+   */
+  def newServerAt(interface: String, port: Int): ServerBuilder = ServerBuilder(interface, port, system)
+
+  /**
    * Creates a [[akka.stream.scaladsl.Source]] of [[akka.http.scaladsl.Http.IncomingConnection]] instances which represents a prospective HTTP server binding
    * on the given `endpoint`.
    *
@@ -163,10 +171,17 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    * To configure additional settings for a server started using this method,
    * use the `akka.http.server` config section or pass in a [[akka.http.scaladsl.settings.ServerSettings]] explicitly.
    */
+  @deprecated("Use Http.newServerAt(...)...bind() to create server bindings.", since = "10.2.0")
   def bind(interface: String, port: Int = DefaultPortForProtocol,
            connectionContext: ConnectionContext = defaultServerHttpContext,
            settings:          ServerSettings    = ServerSettings(system),
-           log:               LoggingAdapter    = system.log): Source[Http.IncomingConnection, Future[ServerBinding]] = {
+           log:               LoggingAdapter    = system.log): Source[Http.IncomingConnection, Future[ServerBinding]] =
+    bindImpl(interface, port, connectionContext, settings, log)
+
+  private[http] def bindImpl(interface: String, port: Int,
+                             connectionContext: ConnectionContext,
+                             settings:          ServerSettings,
+                             log:               LoggingAdapter): Source[Http.IncomingConnection, Future[ServerBinding]] = {
     val fullLayer: ServerLayerBidiFlow = fuseServerBidiFlow(settings, connectionContext, log)
 
     val masterTerminator = new MasterServerTerminator(log)
@@ -198,13 +213,23 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    * To configure additional settings for a server started using this method,
    * use the `akka.http.server` config section or pass in a [[akka.http.scaladsl.settings.ServerSettings]] explicitly.
    */
+  @deprecated("Use Http.newServerAt(...)...bindFlow() to create server bindings.", since = "10.2.0")
   def bindAndHandle(
     handler:   Flow[HttpRequest, HttpResponse, Any],
     interface: String, port: Int = DefaultPortForProtocol,
     connectionContext: ConnectionContext = defaultServerHttpContext,
     settings:          ServerSettings    = ServerSettings(system),
-    log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
+    log:               LoggingAdapter    = system.log)(implicit fm: Materializer = systemMaterializer): Future[ServerBinding] =
+    bindAndHandleImpl(handler, interface, port, connectionContext, settings, log)(fm)
+
+  private[http] def bindAndHandleImpl(
+    handler:   Flow[HttpRequest, HttpResponse, Any],
+    interface: String, port: Int,
+    connectionContext: ConnectionContext,
+    settings:          ServerSettings,
+    log:               LoggingAdapter)(implicit fm: Materializer): Future[ServerBinding] = {
     val fullLayer: Flow[ByteString, ByteString, (Future[Done], ServerTerminator)] =
+
       fuseServerFlow(fuseServerBidiFlow(settings, connectionContext, log), handler)
 
     val masterTerminator = new MasterServerTerminator(log)
@@ -266,13 +291,14 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    * To configure additional settings for a server started using this method,
    * use the `akka.http.server` config section or pass in a [[akka.http.scaladsl.settings.ServerSettings]] explicitly.
    */
+  @deprecated("Use Http.newServerAt(...)...bindSync() to create server bindings.", since = "10.2.0")
   def bindAndHandleSync(
     handler:   HttpRequest => HttpResponse,
     interface: String, port: Int = DefaultPortForProtocol,
     connectionContext: ConnectionContext = defaultServerHttpContext,
     settings:          ServerSettings    = ServerSettings(system),
-    log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] =
-    bindAndHandle(Flow[HttpRequest].map(handler), interface, port, connectionContext, settings, log)
+    log:               LoggingAdapter    = system.log)(implicit fm: Materializer = systemMaterializer): Future[ServerBinding] =
+    bindAndHandleAsyncImpl(req => FastFuture.successful(handler(req)), interface, port, connectionContext, settings, parallelism = 0, log)(fm)
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
@@ -292,13 +318,23 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    *
    * Any other value for `parallelism` overrides the setting.
    */
+  @deprecated("Use Http.newServerAt(...)...bind() to create server bindings.", since = "10.2.0")
   def bindAndHandleAsync(
     handler:   HttpRequest => Future[HttpResponse],
     interface: String, port: Int = DefaultPortForProtocol,
     connectionContext: ConnectionContext = defaultServerHttpContext,
     settings:          ServerSettings    = ServerSettings(system),
     parallelism:       Int               = 0,
-    log:               LoggingAdapter    = system.log)(implicit fm: Materializer): Future[ServerBinding] = {
+    log:               LoggingAdapter    = system.log)(implicit fm: Materializer = systemMaterializer): Future[ServerBinding] =
+    bindAndHandleAsyncImpl(handler, interface, port, connectionContext, settings, parallelism, log)(fm)
+
+  private[http] def bindAndHandleAsyncImpl(
+    handler:   HttpRequest => Future[HttpResponse],
+    interface: String, port: Int,
+    connectionContext: ConnectionContext,
+    settings:          ServerSettings,
+    parallelism:       Int,
+    log:               LoggingAdapter)(implicit fm: Materializer): Future[ServerBinding] = {
     if (settings.previewServerSettings.enableHttp2) {
       log.debug("Binding server using HTTP/2")
 
@@ -312,7 +348,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
         if (parallelism > 0) parallelism
         else if (parallelism < 0) throw new IllegalArgumentException("Only positive values allowed for `parallelism`.")
         else settings.pipeliningLimit
-      bindAndHandle(Flow[HttpRequest].mapAsync(definitiveParallelism)(handler), interface, port, connectionContext, settings, log)
+      bindAndHandleImpl(Flow[HttpRequest].mapAsync(definitiveParallelism)(handler), interface, port, connectionContext, settings, log)
     }
   }
 

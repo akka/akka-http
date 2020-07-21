@@ -4,18 +4,12 @@
 
 package docs.http.javadsl;
 //#minimal-routing-example
-import akka.NotUsed;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.ServerBinding;
-import akka.http.javadsl.model.HttpRequest;
-import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.server.AllDirectives;
 import akka.http.javadsl.server.Route;
-import akka.stream.ActorMaterializer;
-import akka.stream.javadsl.Flow;
 
 import java.util.concurrent.CompletionStage;
 
@@ -30,9 +24,9 @@ public class HttpServerMinimalExampleTest extends AllDirectives {
     //In order to access all directives we need an instance where the routes are define.
     HttpServerMinimalExampleTest app = new HttpServerMinimalExampleTest();
 
-    final Flow<HttpRequest, HttpResponse, NotUsed> routeFlow = app.createRoute().flow(system);
-    final CompletionStage<ServerBinding> binding = http.bindAndHandle(routeFlow,
-        ConnectHttp.toHost("localhost", 8080), system);
+    final CompletionStage<ServerBinding> binding =
+      http.newServerAt("localhost", 8080)
+          .bind(app.createRoute());
 
     System.out.println("Server online at http://localhost:8080/\nPress RETURN to stop...");
     System.in.read(); // let it run until user presses return

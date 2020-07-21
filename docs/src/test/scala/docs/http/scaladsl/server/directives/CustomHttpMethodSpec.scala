@@ -36,7 +36,7 @@ class CustomHttpMethodSpec extends AkkaSpec with ScalaFutures
       val routes = extractMethod { method =>
         complete(s"This is a ${method.name} method request.")
       }
-      val binding = Http().bindAndHandle(routes, host, port, settings = serverSettings)
+      val binding = Http().newServerAt(host, port).withSettings(serverSettings).bind(routes)
 
       val request = HttpRequest(BOLT, s"http://$host:$port/", protocol = `HTTP/1.1`)
       //#application-custom
