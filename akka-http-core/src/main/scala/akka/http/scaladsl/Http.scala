@@ -52,6 +52,7 @@ import scala.concurrent.duration._
  * Use as `Http().bindAndHandle` etc. with an implicit [[ActorSystem]] in scope.
  */
 @silent("DefaultSSLContextCreation in package scaladsl is deprecated")
+@silent("defaultServerHttpContext")
 @DoNotInherit
 class HttpExt private[http] (private val config: Config)(implicit val system: ExtendedActorSystem) extends akka.actor.Extension
   with DefaultSSLContextCreation {
@@ -710,6 +711,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    * Gets the current default server-side [[ConnectionContext]] – defaults to plain HTTP.
    * Can be modified using [[setDefaultServerHttpContext]], and will then apply for servers bound after that call has completed.
    */
+  @deprecated("Set context explicitly when binding", since = "10.2.0")
   def defaultServerHttpContext: ConnectionContext =
     synchronized {
       if (_defaultServerConnectionContext == null)
@@ -721,6 +723,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    * Sets the default server-side [[ConnectionContext]].
    * If it is an instance of [[HttpsConnectionContext]] then the server will be bound using HTTPS.
    */
+  @deprecated("Set context explicitly when binding", since = "10.2.0")
   def setDefaultServerHttpContext(context: ConnectionContext): Unit =
     synchronized {
       _defaultServerConnectionContext = context

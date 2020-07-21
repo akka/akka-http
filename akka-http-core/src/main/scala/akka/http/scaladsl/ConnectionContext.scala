@@ -4,21 +4,19 @@
 
 package akka.http.scaladsl
 
-import java.util.{ Collections, Optional, Collection => JCollection }
+import java.util.{ Optional, Collection => JCollection }
 
+import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.stream.TLSClientAuth
+import akka.stream.TLSProtocol._
+import com.github.ghik.silencer.silent
+import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import javax.net.ssl._
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.compat.java8.OptionConverters._
-import scala.util.{ Failure, Success, Try }
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
-import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
-import com.typesafe.sslconfig.ssl.DefaultHostnameVerifier
-import akka.actor.ClassicActorSystemProvider
-import akka.annotation.{ ApiMayChange, InternalApi }
-import akka.stream.{ ConnectionException, TLSClientAuth }
-import akka.stream.TLSProtocol._
+import scala.util.{ Success, Try }
 
 trait ConnectionContext extends akka.http.javadsl.ConnectionContext {
   @deprecated("Internal method, left for binary compatibility", since = "10.2.0")
@@ -51,7 +49,7 @@ object ConnectionContext {
         Engine(createSSLEngine)
       case Some(_) =>
         throw new IllegalArgumentException("host and port supplied for connection based on server connection context")
-    }))
+    }: Option[(String, Int)] => Engine))
 
   //#https-context-creation
   /**
@@ -85,7 +83,7 @@ object ConnectionContext {
         throw new IllegalArgumentException("host and port missing for connection based on client connection context")
       case Some((host, port)) =>
         Engine(createSSLEngine(host, port))
-    }))
+    }: Option[(String, Int)] => Engine))
 
   @deprecated("use httpsClient, httpsServer, or the lower-level SSLEngine-based constructor", "10.2.0")
   def https(
@@ -95,7 +93,7 @@ object ConnectionContext {
     enabledProtocols:    Option[immutable.Seq[String]] = None,
     clientAuth:          Option[TLSClientAuth]         = None,
     sslParameters:       Option[SSLParameters]         = None) =
-    new HttpsConnectionContext(Left(DeprecatedSslContextParameters(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)), sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
+    new HttpsConnectionContext(Left(DeprecatedSslContextParameters(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)))
 
   def noEncryption() = HttpConnectionContext
 }
@@ -120,31 +118,30 @@ private[http] case class DeprecatedSslContextParameters(
  * This constructor is INTERNAL API, use ConnectionContext.https instead
  */
 @InternalApi
-final class HttpsConnectionContext(
-  val sslContextData:                                                                  Either[DeprecatedSslContextParameters, Option[(String, Int)] => Engine],
-  @deprecated("here for binary compatibility", since = "10.2.0") val sslConfig:        Option[AkkaSSLConfig]                                                   = None,
-  @deprecated("here for binary compatibility", since = "10.2.0") val enabledCipherSuites:Option[immutable.Seq[String]]                                         = None,
-  @deprecated("here for binary compatibility", since = "10.2.0") val enabledProtocols: Option[immutable.Seq[String]]                                           = None,
-  @deprecated("here for binary compatibility", since = "10.2.0") val clientAuth:       Option[TLSClientAuth]                                                   = None,
-  @deprecated("here for binary compatibility", since = "10.2.0") val sslParameters:    Option[SSLParameters]                                                   = None)
+@silent("since 10.2.0")
+final class HttpsConnectionContext private[http] (private[http] val sslContextData: Either[DeprecatedSslContextParameters, Option[(String, Int)] => Engine])
   extends akka.http.javadsl.HttpsConnectionContext with ConnectionContext {
   protected[http] override final def defaultPort: Int = 443
 
   @deprecated("prefer ConnectionContext.httpsClient or ConnectionContext.httpsServer", "10.2.0")
   def this(
     sslContext:          SSLContext,
-    sslConfig:           Option[AkkaSSLConfig],
-    enabledCipherSuites: Option[immutable.Seq[String]],
-    enabledProtocols:    Option[immutable.Seq[String]],
-    clientAuth:          Option[TLSClientAuth],
-    sslParameters:       Option[SSLParameters]
-  ) = this(Left(DeprecatedSslContextParameters(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)), sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
+    sslConfig:           Option[AkkaSSLConfig]         = None,
+    enabledCipherSuites: Option[immutable.Seq[String]] = None,
+    enabledProtocols:    Option[immutable.Seq[String]] = None,
+    clientAuth:          Option[TLSClientAuth]         = None,
+    sslParameters:       Option[SSLParameters]         = None
+  ) = this(Left(DeprecatedSslContextParameters(sslContext, sslConfig, enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)))
 
-  @deprecated("not always available", "10.2.0")
-  def sslContext: SSLContext = sslContextData.left.getOrElse(???).sslContext
+  @deprecated("not always available", "10.2.0") def sslContext: SSLContext = sslContextData.left.get.sslContext
+  @deprecated("here for binary compatibility", since = "10.2.0") def sslConfig: Option[AkkaSSLConfig] = sslContextData.left.get.sslConfig
+  @deprecated("here for binary compatibility", since = "10.2.0") def enabledCipherSuites: Option[immutable.Seq[String]] = sslContextData.left.get.enabledCipherSuites
+  @deprecated("here for binary compatibility", since = "10.2.0") def enabledProtocols: Option[immutable.Seq[String]] = sslContextData.left.get.enabledProtocols
+  @deprecated("here for binary compatibility", since = "10.2.0") def clientAuth: Option[TLSClientAuth] = sslContextData.left.get.clientAuth
+  @deprecated("here for binary compatibility", since = "10.2.0") def sslParameters: Option[SSLParameters] = sslContextData.left.get.sslParameters
 
   @deprecated("here for binary compatibility", since = "10.2.0")
-  def firstSession = NegotiateNewSession(enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
+  private[http] def firstSession = NegotiateNewSession(enabledCipherSuites, enabledProtocols, clientAuth, sslParameters)
 
   @deprecated("not always available", "10.2.0")
   override def getSslContext = sslContext
@@ -169,5 +166,5 @@ final object HttpConnectionContext extends HttpConnectionContext {
   /** Java API */
   def create() = this
 
-  def apply() = new HttpConnectionContext()
+  def apply(): HttpConnectionContext = this
 }
