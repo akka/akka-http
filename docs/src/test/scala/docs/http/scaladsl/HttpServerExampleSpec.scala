@@ -33,7 +33,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     implicit val executionContext = system.dispatcher
 
     val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] =
-      Http().newServerAt("localhost", 8080).bind()
+      Http().newServerAt("localhost", 8080).connectionSource()
     val bindingFuture: Future[Http.ServerBinding] =
       serverSource.to(Sink.foreach { connection => // foreach materializes the source
         println("Accepted new connection from " + connection.remoteAddress)
@@ -62,7 +62,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
 
     // let's say the OS won't allow us to bind to 80.
     val (host, port) = ("localhost", 80)
-    val serverSource = Http().newServerAt(host, port).bind()
+    val serverSource = Http().newServerAt(host, port).connectionSource()
 
     val bindingFuture: Future[ServerBinding] = serverSource
       .to(handleConnections) // Sink[Http.IncomingConnection, _]
@@ -90,7 +90,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
 
     import Http._
     val (host, port) = ("localhost", 8080)
-    val serverSource = Http().newServerAt(host, port).bind()
+    val serverSource = Http().newServerAt(host, port).connectionSource()
 
     val failureMonitor: ActorRef = system.actorOf(MyExampleMonitoringActor.props)
 
@@ -117,7 +117,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     implicit val executionContext = system.dispatcher
 
     val (host, port) = ("localhost", 8080)
-    val serverSource = Http().newServerAt(host, port).bind()
+    val serverSource = Http().newServerAt(host, port).connectionSource()
 
     val reactToConnectionFailure = Flow[HttpRequest]
       .recover[HttpRequest] {
@@ -151,7 +151,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
     implicit val system = ActorSystem()
     implicit val executionContext = system.dispatcher
 
-    val serverSource = Http().newServerAt("localhost", 8080).bind()
+    val serverSource = Http().newServerAt("localhost", 8080).connectionSource()
 
     val requestHandler: HttpRequest => HttpResponse = {
       case HttpRequest(GET, Uri.Path("/"), _, _, _) =>

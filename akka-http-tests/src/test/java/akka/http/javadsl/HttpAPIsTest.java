@@ -40,8 +40,8 @@ public class HttpAPIsTest extends JUnitRouteTest {
     ConnectionPoolSettings conSettings = null;
     LoggingAdapter log = null;
 
-    http.newServerAt("127.0.0.1", 8080).bind();
-    http.newServerAt("127.0.0.1", 8080).enableHttps(httpsContext).bind();
+    http.newServerAt("127.0.0.1", 8080).connectionSource();
+    http.newServerAt("127.0.0.1", 8080).enableHttps(httpsContext).connectionSource();
 
     final Flow<HttpRequest, HttpResponse, ?> handler = null;
     http.newServerAt("127.0.0.1", 8080).bindFlow(handler);

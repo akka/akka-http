@@ -86,18 +86,17 @@ trait ServerBuilder {
    * Creates a [[akka.stream.scaladsl.Source]] of [[akka.http.scaladsl.Http.IncomingConnection]] instances which represents a prospective HTTP server binding
    * on the given `endpoint`.
    *
-   * If the configured  port is 0 the resulting source can be materialized several times. Each materialization will
+   * Note that each materialization will create a new binding, so
+   *
+   *  * if the configured  port is 0 the resulting source can be materialized several times. Each materialization will
    * then be assigned a new local port by the operating system, which can then be retrieved by the materialized
    * [[akka.http.scaladsl.Http.ServerBinding]].
    *
-   * If the configured  port is non-zero subsequent materialization attempts of the produced source will immediately
+   *  * if the configured  port is non-zero subsequent materialization attempts of the produced source will immediately
    * fail, unless the first materialization has already been unbound. Unbinding can be triggered via the materialized
    * [[akka.http.scaladsl.Http.ServerBinding]].
-   *
-   * If no `port` is explicitly given (or the port value is negative) the protocol's default port will be used,
-   * which is 80 for HTTP and 443 for HTTPS.
    */
-  def bind(): Source[Http.IncomingConnection, Future[ServerBinding]]
+  def connectionSource(): Source[Http.IncomingConnection, Future[ServerBinding]]
 }
 
 /**
@@ -128,7 +127,7 @@ private[http] object ServerBuilder {
     def adaptSettings(f: ServerSettings => ServerSettings): ServerBuilder = copy(settings = f(settings))
     def enableHttps(newContext: HttpsConnectionContext): ServerBuilder = copy(context = newContext)
 
-    def bind(): Source[Http.IncomingConnection, Future[ServerBinding]] =
+    def connectionSource(): Source[Http.IncomingConnection, Future[ServerBinding]] =
       http.bindImpl(interface, port, context, settings, log)
 
     def bindFlow(handlerFlow: Flow[HttpRequest, HttpResponse, _]): Future[ServerBinding] =

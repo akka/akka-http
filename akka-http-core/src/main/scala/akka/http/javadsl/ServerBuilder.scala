@@ -14,7 +14,7 @@ import akka.http.javadsl.model.{ HttpRequest, HttpResponse }
 import akka.http.javadsl.settings.ServerSettings
 import akka.http.scaladsl
 import akka.http.scaladsl.util.FastFuture
-import akka.http.scaladsl.{ HttpExt, model => sm }
+import akka.http.scaladsl.{ model => sm }
 import akka.japi.function.Function
 import akka.stream.javadsl.Flow
 import akka.stream.scaladsl.Source
@@ -26,7 +26,7 @@ import scala.concurrent.ExecutionContext
 /**
  * Builder API to create server bindings.
  *
- * Use [[HttpExt.newServerAt()]] to create a builder, use methods to customize settings,
+ * Use [[Http.newServerAt()]] to create a builder, use methods to customize settings,
  * and then call one of the bind* methods to bind a server.
  */
 trait ServerBuilder {
@@ -106,18 +106,17 @@ trait ServerBuilder {
    * Creates a [[akka.stream.javadsl.Source]] of [[akka.http.javadsl.IncomingConnection]] instances which represents a prospective HTTP server binding
    * on the given `endpoint`.
    *
-   * If the configured  port is 0 the resulting source can be materialized several times. Each materialization will
+   * Note that each materialization will create a new binding, so
+   *
+   *  * if the configured  port is 0 the resulting source can be materialized several times. Each materialization will
    * then be assigned a new local port by the operating system, which can then be retrieved by the materialized
    * [[akka.http.javadsl.ServerBinding]].
    *
-   * If the configured  port is non-zero subsequent materialization attempts of the produced source will immediately
+   *  * if the configured  port is non-zero subsequent materialization attempts of the produced source will immediately
    * fail, unless the first materialization has already been unbound. Unbinding can be triggered via the materialized
    * [[akka.http.javadsl.ServerBinding]].
-   *
-   * If no `port` is explicitly given (or the port value is negative) the protocol's default port will be used,
-   * which is 80 for HTTP and 443 for HTTPS.
    */
-  def bind(): Source[IncomingConnection, CompletionStage[ServerBinding]]
+  def connectionSource(): Source[IncomingConnection, CompletionStage[ServerBinding]]
 }
 
 /**
@@ -172,7 +171,7 @@ object ServerBuilder {
         interface, port, context.asScala, settings.asScala, log)
         .map(new ServerBinding(_)).toJava
 
-    def bind(): Source[IncomingConnection, CompletionStage[ServerBinding]] =
+    def connectionSource(): Source[IncomingConnection, CompletionStage[ServerBinding]] =
       http.bindImpl(interface, port, context.asScala, settings.asScala, log)
         .map(new IncomingConnection(_))
         .mapMaterializedValue(_.map(new ServerBinding(_))(ExecutionContexts.sameThreadExecutionContext).toJava)
