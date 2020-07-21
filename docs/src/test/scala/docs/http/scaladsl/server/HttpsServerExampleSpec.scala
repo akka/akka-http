@@ -73,12 +73,6 @@ abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
     Http().newServerAt("127.0.0.1", 8080).enableHttps(https).bind(routes)
     //#bind-low-level-context
 
-    //#set-low-level-context-default
-    // sets default context to HTTPS – all Http() bound servers for this ActorSystem will use HTTPS from now on
-    Http().setDefaultServerHttpContext(https)
-    Http().newServerAt("127.0.0.1", 9090).enableHttps(https).bind(routes)
-    //#set-low-level-context-default
-
     system.terminate()
   }
 

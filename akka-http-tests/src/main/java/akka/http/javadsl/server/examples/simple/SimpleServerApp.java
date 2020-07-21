@@ -9,9 +9,7 @@ import akka.NotUsed;
 import static akka.http.javadsl.server.PathMatchers.segment;
 
 import akka.actor.ActorSystem;
-import akka.http.javadsl.ConnectHttp;
-import akka.http.javadsl.ConnectionContext;
-import akka.http.javadsl.Http;
+import akka.http.javadsl.*;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.server.*;
@@ -37,8 +35,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.*;
 import java.security.cert.CertificateException;
-
-import akka.http.javadsl.HttpsConnectionContext;
 
 //#https-http-config
 
@@ -110,15 +106,21 @@ public class SimpleServerApp {
     final Http http = Http.get(system);
 
     boolean useHttps = false; // pick value from anywhere
-    if ( useHttps ) {
-      HttpsConnectionContext https = useHttps(system);
-      http.setDefaultServerHttpContext(https);
-    }
 
     final SimpleServerApp app = new SimpleServerApp();
     final Flow<HttpRequest, HttpResponse, NotUsed> flow = app.createRoute().flow(system, materializer);
 
-    Http.get(system).bindAndHandle(flow, ConnectHttp.toHost("localhost", 8080), materializer);
+    if ( useHttps ) {
+      http.bindAndHandle(
+              flow,
+              ConnectHttp.toHostHttps("localhost", 8080).withCustomHttpsContext(useHttps(system)),
+              materializer);
+    } else {
+      http.bindAndHandle(
+              flow,
+              ConnectHttp.toHost("localhost", 8080),
+              materializer);
+    }
 
     System.out.println("Type RETURN to exit");
     System.in.read();

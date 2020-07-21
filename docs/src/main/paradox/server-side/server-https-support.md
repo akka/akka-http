@@ -46,22 +46,9 @@ Scala
 Java
 :  @@snip [SimpleServerApp.java](/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/simple/SimpleServerApp.java) { #https-http-config }
 
-@scala[Once you configured the HTTPS context, you can set it as default:]
-@java[Then pass it to the `akka.http.javadsl.Http` class's `setDefaultServerHttpContext` method, like in the below `main` method.]
-
-Scala
-:  @@snip [HttpsServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #set-low-level-context-default }
-
-Java
-: @@snip [SimpleServerApp.java](/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/simple/SimpleServerApp.java) { #https-http-app }
-
-@@@ div { .group-scala }
-
-It is also possible to pass in the context to specific `bind...` (or client) calls, like displayed below:
+After that you can pass it to specific `bind...` (or client) calls, like displayed below:
 
 @@snip [HttpsServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #bind-low-level-context }
-
-@@@
 
 ## Running both HTTP and HTTPS
 
