@@ -20,7 +20,7 @@ uses do not require a materializer any more at all.
 
 ### New ServerBuilder API to create server bindings
 
-To simplify binding servers (and making it more consistent between Java and Scala), a new @apidoc[ServerBuilder] API has been introduced.
+To simplify binding servers (and to make it more consistent between Java and Scala), a new @apidoc[ServerBuilder] API has been introduced.
 The most common change needed to bind a server to handle routes will be from:
 
 Scala
