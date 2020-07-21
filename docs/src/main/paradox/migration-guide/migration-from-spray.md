@@ -268,7 +268,7 @@ IO(Http)(system) ! Http.Bind(service, "0.0.0.0", port = 8080)
 needs to be changed into:
 
 ```scala
-Http().bindAndHandle(routes, "0.0.0.0", port = 8080)
+Http().newServerAt("0.0.0.0", port = 8080).bind(routes)
 ```
 
 ### Other removed features

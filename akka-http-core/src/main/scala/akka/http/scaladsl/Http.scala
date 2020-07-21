@@ -171,7 +171,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    * To configure additional settings for a server started using this method,
    * use the `akka.http.server` config section or pass in a [[akka.http.scaladsl.settings.ServerSettings]] explicitly.
    */
-  @deprecated("Use Http.newServerAt(...)...bind() to create server bindings.", since = "10.2.0")
+  @deprecated("Use Http.newServerAt(...)...connectionSource() to create a source that can be materialized to a binding.", since = "10.2.0")
   def bind(interface: String, port: Int = DefaultPortForProtocol,
            connectionContext: ConnectionContext = defaultServerHttpContext,
            settings:          ServerSettings    = ServerSettings(system),

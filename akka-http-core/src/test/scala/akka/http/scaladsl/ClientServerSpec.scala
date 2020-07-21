@@ -58,7 +58,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
 
     "properly bind a server" in {
       val probe = TestSubscriber.manualProbe[Http.IncomingConnection]()
-      val binding = Http().newServerAt("127.0.0.1", 0).bind().to(Sink.fromSubscriber(probe)).run()
+      val binding = Http().newServerAt("127.0.0.1", 0).connectionSource().to(Sink.fromSubscriber(probe)).run()
       val sub = probe.expectSubscription() // if we get it we are bound
       Await.result(binding, 1.second.dilated).unbind()
       sub.cancel()
@@ -68,7 +68,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
       val probe = TestSubscriber.manualProbe[Http.IncomingConnection]()
       // not really testing anything here, problem is that it is hard to find an unused port otherwise
       val settings = ServerSettings(system).withDefaultHttpPort(0)
-      val bindingF = Http().newServerAt("0.0.0.0", 0).withSettings(settings).bind().to(Sink.fromSubscriber(probe)).run()
+      val bindingF = Http().newServerAt("0.0.0.0", 0).withSettings(settings).connectionSource().to(Sink.fromSubscriber(probe)).run()
       val sub = probe.expectSubscription() // if we get it we are bound
       val binding = Await.result(bindingF, 1.second.dilated)
       // though, that wouldn't probably happen because binding ports < 1024 is restricted in most environments
@@ -79,7 +79,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
 
     "report failure if bind fails" in EventFilter[BindException](occurrences = 2).intercept {
       val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
-      val binding = Http().newServerAt(hostname, port).bind()
+      val binding = Http().newServerAt(hostname, port).connectionSource()
       val probe1 = TestSubscriber.manualProbe[Http.IncomingConnection]()
       // Bind succeeded, we have a local address
       val b1 = Await.result(binding.to(Sink.fromSubscriber(probe1)).run(), 3.seconds.dilated)
@@ -180,7 +180,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
 
       "be added when using bind API" in new RemoteAddressTestScenario {
         def createBinding(): Future[ServerBinding] =
-          Http().newServerAt(hostname, port).withSettings(settings).bind()
+          Http().newServerAt(hostname, port).withSettings(settings).connectionSource()
             .map(_.flow.join(Flow[HttpRequest].map(handler)).run())
             .to(Sink.ignore)
             .run()
@@ -883,7 +883,7 @@ Host: example.com
     // automatically bind a server
     val (connSource, binding: Future[ServerBinding]) = {
       val settings = configOverrides.toOption.fold(ServerSettings(system))(ServerSettings(_))
-      val connections = Http().newServerAt(hostname, port).withSettings(settings).bind()
+      val connections = Http().newServerAt(hostname, port).withSettings(settings).connectionSource()
       val probe = TestSubscriber.manualProbe[Http.IncomingConnection]()
       val binding = connections.to(Sink.fromSubscriber(probe)).run()
       (probe, binding)

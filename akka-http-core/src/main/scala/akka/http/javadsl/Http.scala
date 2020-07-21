@@ -25,9 +25,8 @@ import akka.http.scaladsl.{ model => sm }
 import akka.http.javadsl.model.ws._
 import akka.http.javadsl.settings.{ ClientConnectionSettings, ConnectionPoolSettings, ServerSettings }
 import akka.japi.Pair
-import akka.japi.function.Function
 import akka.stream.TLSProtocol._
-import akka.stream.{ Materializer, SystemMaterializer }
+import akka.stream.Materializer
 import akka.stream.javadsl.{ BidiFlow, Flow, Source }
 import akka.stream.scaladsl.Keep
 
@@ -105,7 +104,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
    *
-   * @deprecated since 10.2.0: Use Http.get(system).newServerAt(interface, port).bind() instead
+   * @deprecated since 10.2.0: Use Http.get(system).newServerAt(interface, port).connectionSource() instead
    */
   @Deprecated
   @deprecated("Use newServerAt instead", since = "10.2.0")
@@ -131,7 +130,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
    *
-   * @deprecated since 10.2.0: Use Http.get(system).newServerAt(interface, port).withSettings(settings).bind() instead
+   * @deprecated since 10.2.0: Use Http.get(system).newServerAt(interface, port).withSettings(settings).connectionSource() instead
    */
   @Deprecated
   @deprecated("Use newServerAt instead", since = "10.2.0")
@@ -159,7 +158,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * The server will be bound using HTTPS if the [[ConnectHttp]] object is configured with an [[HttpsConnectionContext]],
    * or the [[defaultServerHttpContext]] has been configured to be an [[HttpsConnectionContext]].
    *
-   * @deprecated since 10.2.0: Use Http.get(system).newServerAt(interface, port).withSettings(settings).logTo(log).bind() instead
+   * @deprecated since 10.2.0: Use Http.get(system).newServerAt(interface, port).withSettings(settings).logTo(log).connectionSource() instead
    */
   @Deprecated
   @deprecated("Use newServerAt instead", since = "10.2.0")
