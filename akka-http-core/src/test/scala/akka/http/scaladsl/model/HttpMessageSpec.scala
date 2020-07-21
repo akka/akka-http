@@ -4,6 +4,8 @@
 
 package akka.http.scaladsl.model
 
+import java.net.InetAddress
+
 import akka.util.ByteString
 import headers._
 import org.scalatest.matchers.should.Matchers
@@ -58,6 +60,23 @@ class HttpMessageSpec extends AnyWordSpec with Matchers {
     "throw IllegalUriException for empty URI" in {
       an[IllegalUriException] should be thrownBy
         HttpRequest(uri = Uri())
+    }
+
+    "take attributes into account for hashCode calculation" in {
+      val orig = HttpRequest()
+      val changed = orig.addAttribute(AttributeKeys.remoteAddress, RemoteAddress(InetAddress.getLocalHost))
+
+      orig should not equal (changed)
+      orig.hashCode() should not equal (changed.hashCode())
+    }
+  }
+  "HttpResponse" should {
+    "take attributes into account for hashCode calculation" in {
+      val orig = HttpResponse()
+      val changed = orig.addAttribute(AttributeKeys.remoteAddress, RemoteAddress(InetAddress.getLocalHost))
+
+      orig should not equal (changed)
+      orig.hashCode() should not equal (changed.hashCode())
     }
   }
 
