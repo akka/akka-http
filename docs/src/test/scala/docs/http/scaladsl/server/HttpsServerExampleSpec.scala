@@ -61,8 +61,8 @@ abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
     //#both-https-and-http
     // you can run both HTTP and HTTPS in the same application as follows:
     val commonRoutes: Route = get { complete("Hello world!") }
-    Http().newServerAt("127.0.0.1", 443).enableHttps(https).bindFlow(commonRoutes)
-    Http().newServerAt("127.0.0.1", 80).bindFlow(commonRoutes)
+    Http().newServerAt("127.0.0.1", 443).enableHttps(https).bind(commonRoutes)
+    Http().newServerAt("127.0.0.1", 80).bind(commonRoutes)
     //#both-https-and-http
 
     //#bind-low-level-context

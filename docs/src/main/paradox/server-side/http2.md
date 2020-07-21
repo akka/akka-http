@@ -31,12 +31,12 @@ HTTP/2 can then be enabled through configuration:
 akka.http.server.preview.enable-http2 = on
 ```
 
-## Use `bindAndHandleAsync` and HTTPS
+## Use `newServerAt(...).bind()` and HTTPS
 
-HTTP/2 is primarily used over a secure connection (known as "over HTTPS" or "with TLS"), which also takes care of protocol negotiation and falling back to plain HTTPS when the client does not support HTTP/2.
+HTTP/2 is primarily used over a secure HTTPS connection which takes care of protocol negotiation and falling back to HTTP/1.1 over TLS when the client does not support HTTP/2.
 See the @ref[HTTPS section](server-https-support.md) for how to set up HTTPS.
 
-You can use @scala[@scaladoc[Http().bindAndHandleAsync](akka.http.scaladsl.HttpExt)]@java[@javadoc[Http().get(system).bindAndHandleAsync()](akka.http.javadsl.HttpExt)] as long as you followed the above steps:
+You can use @scala[@scaladoc[Http().newServerAt(...).bind()](akka.http.scaladsl.ServerBuilder)]@java[@javadoc[Http().get(system).newServerAt(...).bind()](akka.http.javadsl.ServerBuilder)] as long as you followed the above steps:
 
 Scala
 :   @@snip[Http2Spec.scala]($test$/scala/docs/http/scaladsl/Http2Spec.scala) { #bindAndHandleSecure }
@@ -44,7 +44,9 @@ Scala
 Java
 :   @@snip[Http2Test.java]($test$/java/docs/http/javadsl/Http2Test.java) { #bindAndHandleSecure }
 
-Note that `bindAndHandle` currently does not support HTTP/2, you must use `bindAndHandleAsync`.
+Note that currently only `newServerAt(...).bind` and `newServerAt(...).bindSync`
+support HTTP/2 but not `bindFlow` or `connectionSource(): Source`.
+
 
 ### HTTP/2 without HTTPS
 

@@ -89,11 +89,10 @@ abstract class HttpApp extends Directives {
     implicit val materializer = ActorMaterializer()
     implicit val executionContext: ExecutionContextExecutor = theSystem.dispatcher
 
-    val bindingFuture = Http().bindAndHandle(
-      handler = routes,
-      interface = host,
-      port = port,
-      settings = settings)
+    val bindingFuture =
+      Http().newServerAt(host, port)
+        .withSettings(settings)
+        .bind(routes)
 
     bindingFuture.onComplete {
       case Success(binding) =>
