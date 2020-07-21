@@ -180,7 +180,7 @@ you pass to @apidoc[HttpsConnectionContext$] and the logic and configuration
 used by the [ssl-config](https://lightbend.github.io/ssl-config/) library. This was
 because back then the default JDK SSL configuration was a bad match for HTTP
 connections. Nowadays, however, the JDK defaults are much better and the
-introduction of  `ssl-config` makes the configuration hard to reason about.
+introduction of `ssl-config` makes the configuration hard to reason about.
 
 For this reason, we have deprecated the `ssl-config`-based API's, and now
 provide @apidoc[HttpsConnectionContext.httpsServer](HttpsConnectionContext$)
