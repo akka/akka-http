@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package docs.http.scaladsl.server
 
 import akka.actor.typed.scaladsl.Behaviors
