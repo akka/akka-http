@@ -24,7 +24,7 @@ addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.6.0")
 addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.25")
 
 // used in ValidatePullRequest to check github PR comments whether to build all subprojects
-libraryDependencies += "org.kohsuke" % "github-api" % "1.114"
+libraryDependencies += "org.kohsuke" % "github-api" % "1.115"
 
 // used for @unidoc directive
 libraryDependencies += "io.github.lukehutch" % "fast-classpath-scanner" % "3.1.15"
