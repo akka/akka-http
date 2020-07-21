@@ -12,6 +12,31 @@ If you find an unexpected incompatibility please let us know, so we can check wh
 
 ## Akka HTTP 10.1.11 -> 10.2.0
 
+### Hiding Materializer
+
+Recent Akka versions introduced a singleton system materializer that can be summoned from an ActorSystem automatically. In many cases,
+`Materializer` arguments are now optional and APIs have been simplified to require materializers in fewer places. In fact, most common
+uses do not require a materializer any more at all.
+
+### New ServerBuilder API to create server bindings
+
+To simplify binding servers (and making it more consistent between Java and Scala), a new @apidoc[ServerBuilder] API has been introduced.
+The most common change needed to bind a server to handle routes will be from:
+
+Scala
+:   @@snip [AkkaHttp1020MigrationSpec.scala]($test$/scala/docs/http/scaladsl/server/AkkaHttp1020MigrationSpec.scala) { #old-binding }
+
+Java
+:   @@snip [AkkaHttp1020MigrationExample.java]($test$/java/docs/http/javadsl/server/AkkaHttp1020MigrationExample.java) { #old-binding }
+
+to:
+
+Scala
+:   @@snip [AkkaHttp1020MigrationSpec.scala]($test$/scala/docs/http/scaladsl/server/AkkaHttp1020MigrationSpec.scala) { #new-binding }
+
+Java
+:   @@snip [AkkaHttp1020MigrationExample.java]($test$/java/docs/http/javadsl/server/AkkaHttp1020MigrationExample.java) { #new-binding }
+
 ### HTTP/2 support requires JDK 8 update 252 or later
 
 JVM support for ALPN has been backported to JDK 8u252 which is now widely available. Support for using the Jetty ALPN
