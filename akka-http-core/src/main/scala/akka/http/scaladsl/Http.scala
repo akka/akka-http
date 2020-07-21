@@ -175,13 +175,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   def bind(interface: String, port: Int = DefaultPortForProtocol,
            connectionContext: ConnectionContext = defaultServerHttpContext,
            settings:          ServerSettings    = ServerSettings(system),
-           log:               LoggingAdapter    = system.log): Source[Http.IncomingConnection, Future[ServerBinding]] =
-    bindImpl(interface, port, connectionContext, settings, log)
-
-  private[http] def bindImpl(interface: String, port: Int,
-                             connectionContext: ConnectionContext,
-                             settings:          ServerSettings,
-                             log:               LoggingAdapter): Source[Http.IncomingConnection, Future[ServerBinding]] = {
+           log:               LoggingAdapter    = system.log): Source[Http.IncomingConnection, Future[ServerBinding]] = {
     val fullLayer: ServerLayerBidiFlow = fuseServerBidiFlow(settings, connectionContext, log)
 
     val masterTerminator = new MasterServerTerminator(log)
@@ -202,6 +196,14 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
       }
   }
 
+  // forwarder to allow internal code to call deprecated method without warning
+  @silent("deprecated")
+  private[http] def bindImpl(interface: String, port: Int,
+                             connectionContext: ConnectionContext,
+                             settings:          ServerSettings,
+                             log:               LoggingAdapter): Source[Http.IncomingConnection, Future[ServerBinding]] =
+    bind(interface, port, connectionContext, settings, log)
+
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
    * [[akka.stream.scaladsl.Flow]] for processing all incoming connections.
@@ -219,15 +221,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     interface: String, port: Int = DefaultPortForProtocol,
     connectionContext: ConnectionContext = defaultServerHttpContext,
     settings:          ServerSettings    = ServerSettings(system),
-    log:               LoggingAdapter    = system.log)(implicit fm: Materializer = systemMaterializer): Future[ServerBinding] =
-    bindAndHandleImpl(handler, interface, port, connectionContext, settings, log)(fm)
-
-  private[http] def bindAndHandleImpl(
-    handler:   Flow[HttpRequest, HttpResponse, Any],
-    interface: String, port: Int,
-    connectionContext: ConnectionContext,
-    settings:          ServerSettings,
-    log:               LoggingAdapter)(implicit fm: Materializer): Future[ServerBinding] = {
+    log:               LoggingAdapter    = system.log)(implicit fm: Materializer = systemMaterializer): Future[ServerBinding] = {
     val fullLayer: Flow[ByteString, ByteString, (Future[Done], ServerTerminator)] =
 
       fuseServerFlow(fuseServerBidiFlow(settings, connectionContext, log), handler)
@@ -280,6 +274,16 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
       .run()
   }
 
+  // forwarder to allow internal code to call deprecated method without warning
+  @silent("deprecated")
+  private[http] def bindAndHandleImpl(
+    handler:   Flow[HttpRequest, HttpResponse, Any],
+    interface: String, port: Int,
+    connectionContext: ConnectionContext,
+    settings:          ServerSettings,
+    log:               LoggingAdapter)(implicit fm: Materializer): Future[ServerBinding] =
+    bindAndHandle(handler, interface, port, connectionContext, settings, log)(fm)
+
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
    * [[akka.stream.scaladsl.Flow]] for processing all incoming connections.
@@ -292,13 +296,14 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    * use the `akka.http.server` config section or pass in a [[akka.http.scaladsl.settings.ServerSettings]] explicitly.
    */
   @deprecated("Use Http.newServerAt(...)...bindSync() to create server bindings.", since = "10.2.0")
+  @silent("deprecated")
   def bindAndHandleSync(
     handler:   HttpRequest => HttpResponse,
     interface: String, port: Int = DefaultPortForProtocol,
     connectionContext: ConnectionContext = defaultServerHttpContext,
     settings:          ServerSettings    = ServerSettings(system),
     log:               LoggingAdapter    = system.log)(implicit fm: Materializer = systemMaterializer): Future[ServerBinding] =
-    bindAndHandleAsyncImpl(req => FastFuture.successful(handler(req)), interface, port, connectionContext, settings, parallelism = 0, log)(fm)
+    bindAndHandleAsync(req => FastFuture.successful(handler(req)), interface, port, connectionContext, settings, parallelism = 0, log)(fm)
 
   /**
    * Convenience method which starts a new HTTP server at the given endpoint and uses the given `handler`
@@ -325,16 +330,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     connectionContext: ConnectionContext = defaultServerHttpContext,
     settings:          ServerSettings    = ServerSettings(system),
     parallelism:       Int               = 0,
-    log:               LoggingAdapter    = system.log)(implicit fm: Materializer = systemMaterializer): Future[ServerBinding] =
-    bindAndHandleAsyncImpl(handler, interface, port, connectionContext, settings, parallelism, log)(fm)
-
-  private[http] def bindAndHandleAsyncImpl(
-    handler:   HttpRequest => Future[HttpResponse],
-    interface: String, port: Int,
-    connectionContext: ConnectionContext,
-    settings:          ServerSettings,
-    parallelism:       Int,
-    log:               LoggingAdapter)(implicit fm: Materializer): Future[ServerBinding] = {
+    log:               LoggingAdapter    = system.log)(implicit fm: Materializer = systemMaterializer): Future[ServerBinding] = {
     if (settings.previewServerSettings.enableHttp2) {
       log.debug("Binding server using HTTP/2")
 
@@ -351,6 +347,17 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
       bindAndHandleImpl(Flow[HttpRequest].mapAsync(definitiveParallelism)(handler), interface, port, connectionContext, settings, log)
     }
   }
+
+  // forwarder to allow internal code to call deprecated method without warning
+  @silent("deprecated")
+  private[http] def bindAndHandleAsyncImpl(
+    handler:   HttpRequest => Future[HttpResponse],
+    interface: String, port: Int,
+    connectionContext: ConnectionContext,
+    settings:          ServerSettings,
+    parallelism:       Int,
+    log:               LoggingAdapter)(implicit fm: Materializer): Future[ServerBinding] =
+    bindAndHandleAsync(handler, interface, port, connectionContext, settings, parallelism, log)(fm)
 
   type ServerLayer = Http.ServerLayer
 
