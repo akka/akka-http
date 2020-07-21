@@ -182,7 +182,7 @@ because back then the default JDK SSL configuration was a bad match for HTTP
 connections. Nowadays, however, the JDK defaults are much better and the
 introduction of `ssl-config` makes the configuration hard to reason about.
 
-For this reason, we have deprecated the `ssl-config`-based API's, and now
+For this reason, we have deprecated the `ssl-config`-based APIs, and now
 provide @apidoc[HttpsConnectionContext.httpsServer](HttpsConnectionContext$)
 and @apidoc[HttpsConnectionContext.httpsClient](HttpsConnectionContext$)
 that will use the JDK defaults. There is also a
