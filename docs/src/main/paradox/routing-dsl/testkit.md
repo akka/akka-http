@@ -108,7 +108,7 @@ Java
 :   @@snip [MyAppService.java]($test$/java/docs/http/javadsl/server/testkit/MyAppService.java) { #simple-app }
 
 `MyAppService` extends from `AllDirectives` which brings all of the directives into scope. We define a method called `createRoute`
-that provides the routes to serve to `bindAndHandle`.
+that provides the routes to serve to `bind`.
 
 Here's how you would test that service:
 

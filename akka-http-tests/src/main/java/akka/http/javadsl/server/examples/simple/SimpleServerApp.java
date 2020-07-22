@@ -106,7 +106,6 @@ public class SimpleServerApp {
 
   public static void main(String[] args) throws IOException {
     final ActorSystem system = ActorSystem.create("SimpleServerApp");
-    final ActorMaterializer materializer = ActorMaterializer.create(system);
     final Http http = Http.get(system);
 
     boolean useHttps = false; // pick value from anywhere
@@ -116,9 +115,8 @@ public class SimpleServerApp {
     }
 
     final SimpleServerApp app = new SimpleServerApp();
-    final Flow<HttpRequest, HttpResponse, NotUsed> flow = app.createRoute().flow(system, materializer);
 
-    Http.get(system).bindAndHandle(flow, ConnectHttp.toHost("localhost", 8080), materializer);
+    Http.get(system).newServerAt("localhost", 8080).bind(app.createRoute());
 
     System.out.println("Type RETURN to exit");
     System.in.read();

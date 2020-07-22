@@ -59,7 +59,7 @@ public class PetStoreExample {
         path("", () ->
           getFromResource("web/index.html")
         ),
-        pathPrefix("pet", () -> 
+        pathPrefix("pet", () ->
           path(INTEGER, petId -> concat(
             // demonstrates different ways of handling requests:
 
@@ -67,18 +67,18 @@ public class PetStoreExample {
             get(() -> existingPet.apply(petId)),
 
             // 2. using a method
-            put(() -> 
-              entity(Jackson.unmarshaller(Pet.class), thePet -> 
+            put(() ->
+              entity(Jackson.unmarshaller(Pet.class), thePet ->
                 putPetHandler(pets, thePet)
               )
             ),
             // 2.1. using a method, and internally handling a Future value
             path("alternate", () ->
-              put(() -> 
-                entity(Jackson.unmarshaller(Pet.class), thePet -> 
+              put(() ->
+                entity(Jackson.unmarshaller(Pet.class), thePet ->
                   putPetHandler(pets, thePet)
                 )
-              )              
+              )
             ),
 
             // 3. calling a method of a controller instance
@@ -97,11 +97,8 @@ public class PetStoreExample {
     pets.put(1, cat);
 
     final ActorSystem system = ActorSystem.create();
-    final ActorMaterializer materializer = ActorMaterializer.create(system);
 
-    final ConnectHttp host = ConnectHttp.toHost("127.0.0.1");
-
-    Http.get(system).bindAndHandle(appRoute(pets).flow(system, materializer), host, materializer);
+    Http.get(system).newServerAt("127.0.0.1", 8080).bind(appRoute(pets));
 
     System.console().readLine("Type RETURN to exit...");
     system.terminate();

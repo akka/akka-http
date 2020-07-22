@@ -119,7 +119,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
         }
     }
 
-    "run with bindAndHandleSync" in {
+    "run with bindSync" in {
       val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
       val binding = Http().newServerAt(hostname, port).bindSync(_ => HttpResponse())
       val b1 = Await.result(binding, 3.seconds.dilated)
@@ -131,7 +131,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
       Await.result(b1.unbind(), 1.second.dilated)
     }
 
-    "prevent more than the configured number of max-connections with bindAndHandle" in {
+    "prevent more than the configured number of max-connections with bind" in {
       val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
       val settings = ServerSettings(system).withMaxConnections(1)
 
@@ -149,7 +149,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
         }
       }
 
-      val binding = Http().newServerAt(hostname, port).withSettings(settings).bind(handle _)
+      val binding = Http().newServerAt(hostname, port).withSettings(settings).bind(handle)
       val b1 = Await.result(binding, 3.seconds.dilated)
 
       def runRequest(uri: Uri): Unit =
@@ -186,12 +186,12 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
             .run()
       }
 
-      "be added when using bindAndHandle API" in new RemoteAddressTestScenario {
+      "be added when using bindFlow API" in new RemoteAddressTestScenario {
         def createBinding(): Future[ServerBinding] =
           Http().newServerAt(hostname, port).withSettings(settings).bindFlow(Flow[HttpRequest].map(handler))
       }
 
-      "be added when using bindAndHandleSync API" in new RemoteAddressTestScenario {
+      "be added when using bindSync API" in new RemoteAddressTestScenario {
         def createBinding(): Future[ServerBinding] =
           Http().newServerAt(hostname, port).withSettings(settings).bindSync(handler)
       }
@@ -366,7 +366,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
       }
     }
 
-    "log materialization errors in `bindAndHandle`" which {
+    "log materialization errors in `bindFlow`" which {
       "are triggered in `mapMaterialized`" in Utils.assertAllStagesStopped {
         // FIXME racy feature, needs https://github.com/akka/akka/issues/17849 to be fixed
         pending
@@ -526,7 +526,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
           toStrict(response.entity) shouldEqual HttpEntity("yeah")
 
           val request2 = HttpRequest(uri = s"http://$hostname:$port/abc")
-          val responseFut2 = Http().singleRequest(request2, settings = settings)
+          Http().singleRequest(request2, settings = settings)
           serverInSub.request(1)
           serverIn.expectNext().uri shouldEqual Uri(s"http://$hostname:$port/abc")
 
