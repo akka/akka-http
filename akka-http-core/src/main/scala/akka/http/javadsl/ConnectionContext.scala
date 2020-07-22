@@ -17,9 +17,27 @@ import javax.net.ssl.{ SSLContext, SSLEngine, SSLParameters }
 import scala.compat.java8.OptionConverters
 
 object ConnectionContext {
-  //#https-context-creation
+  //#https-server-context-creation
+  /**
+   * Creates an HttpsConnectionContext for server-side use from the given SSLContext.
+   */
+  def httpsServer(sslContext: SSLContext): HttpsConnectionContext = // ...
+    //#https-server-context-creation
+    scaladsl.ConnectionContext.httpsServer(sslContext)
+
+  /**
+   *  If you want complete control over how to create the SSLEngine you can use this method.
+   */
+  @ApiMayChange
+  def httpsServer(createEngine: akka.japi.function.Creator[SSLEngine]): HttpsConnectionContext =
+    scaladsl.ConnectionContext.httpsServer(() => createEngine.create())
+
+  //#https-client-context-creation
+  /**
+   * Creates an HttpsConnectionContext for client-side use from the given SSLContext.
+   */
   def httpsClient(sslContext: SSLContext): HttpsConnectionContext = // ...
-    //#https-context-creation
+    //#https-client-context-creation
     scaladsl.ConnectionContext.httpsClient(sslContext)
 
   /**
@@ -31,18 +49,6 @@ object ConnectionContext {
   @ApiMayChange
   def httpsClient(createEngine: akka.japi.function.Function2[String, Int, SSLEngine]): HttpsConnectionContext =
     scaladsl.ConnectionContext.httpsClient((host, port) => createEngine(host, port))
-
-  //#https-context-creation
-  def httpsServer(sslContext: SSLContext): HttpsConnectionContext = // ...
-    //#https-context-creation
-    scaladsl.ConnectionContext.httpsServer(sslContext)
-
-  /**
-   *  If you want complete control over how to create the SSLEngine you can use this method.
-   */
-  @ApiMayChange
-  def httpsServer(createEngine: akka.japi.function.Creator[SSLEngine]): HttpsConnectionContext =
-    scaladsl.ConnectionContext.httpsServer(() => createEngine.create())
 
   // ConnectionContext
   /** Used to serve HTTPS traffic. */

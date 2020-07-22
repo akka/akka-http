@@ -33,13 +33,10 @@ public class SimpleServerHttpHttpsApp {
     http.newServerAt("localhost", 80).bind(route);
 
     //get configured HTTPS context
-    HttpsConnectionContext https = SimpleServerApp.createHttpsContext(system);
-
-    // sets default context to HTTPS – all Http() bound servers for this ActorSystem will use HTTPS from now on
-    http.setDefaultServerHttpContext(https);
+    HttpsConnectionContext httpsContext = SimpleServerApp.createHttpsContext(system);
 
     //Then run HTTPS server
-    http.newServerAt("localhost", 443).enableHttps(https).bind(route);
+    http.newServerAt("localhost", 443).enableHttps(httpsContext).bind(route);
     //#both-https-and-http
 
     System.out.println("Type RETURN to exit");

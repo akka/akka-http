@@ -104,9 +104,11 @@ public class SimpleServerApp {
     final SimpleServerApp app = new SimpleServerApp();
 
     if ( useHttps ) {
+        //#bind-low-level-context
         Http.get(system).newServerAt("localhost", 8080)
             .enableHttps(createHttpsContext(system))
             .bind(app.createRoute());
+        //#bind-low-level-context
     } else {
         Http.get(system).newServerAt("localhost", 8080)
             .bind(app.createRoute());

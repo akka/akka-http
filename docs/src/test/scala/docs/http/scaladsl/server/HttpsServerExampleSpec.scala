@@ -66,9 +66,6 @@ abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
     //#both-https-and-http
 
     //#bind-low-level-context
-    Http().newServerAt("127.0.0.1", 0).enableHttps(https).connectionSource()
-
-    // or using the high level routing DSL:
     val routes: Route = get { complete("Hello world!") }
     Http().newServerAt("127.0.0.1", 8080).enableHttps(https).bind(routes)
     //#bind-low-level-context

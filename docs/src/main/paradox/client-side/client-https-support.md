@@ -6,10 +6,10 @@ The central vehicle for configuring encryption is the @apidoc[HttpsConnectionCon
 the static methods on @apidoc[ConnectionContext]:
 
 Scala
-:  @@snip[ConnectionContext.scala](/akka-http-core/src/main/scala/akka/http/scaladsl/ConnectionContext.scala) { #https-context-creation }
+:  @@snip[ConnectionContext.scala](/akka-http-core/src/main/scala/akka/http/scaladsl/ConnectionContext.scala) { #https-client-context-creation }
 
 Java
-:  @@snip [ConnectionContext.scala](/akka-http-core/src/main/scala/akka/http/javadsl/ConnectionContext.scala) { #https-context-creation }
+:  @@snip [ConnectionContext.scala](/akka-http-core/src/main/scala/akka/http/javadsl/ConnectionContext.scala) { #https-client-context-creation }
 
 In addition to the `outgoingConnection`, `newHostConnectionPool` and `cachedHostConnectionPool` methods the
 @scala[@scaladoc[akka.http.scaladsl.Http](akka.http.scaladsl.Http$)]@java[@javadoc[akka.http.javadsl.Http](akka.http.javadsl.Http)]

@@ -23,12 +23,12 @@ trait ConnectionContext extends akka.http.javadsl.ConnectionContext {
 }
 
 object ConnectionContext {
-  //#https-context-creation
+  //#https-server-context-creation
   /**
-   *  Use this sslContext to create a HttpsConnectionContext for server-side use.
+   *  Creates an HttpsConnectionContext for server-side use from the given SSLContext.
    */
   def httpsServer(sslContext: SSLContext): HttpsConnectionContext = // ...
-    //#https-context-creation
+    //#https-server-context-creation
     httpsServer(() => {
       val engine = sslContext.createSSLEngine()
       engine.setUseClientMode(false)
@@ -45,12 +45,12 @@ object ConnectionContext {
       case Some(_) => throw new IllegalArgumentException("host and port supplied for connection based on server connection context")
     }: Option[(String, Int)] => SSLEngine))
 
-  //#https-context-creation
+  //#https-client-context-creation
   /**
-   *  Use this sslContext to create a HttpsConnectionContext for client-side use.
+   *  Creates an HttpsConnectionContext for client-side use from the given SSLContext.
    */
   def httpsClient(context: SSLContext): HttpsConnectionContext = // ...
-    //#https-context-creation
+    //#https-client-context-creation
     httpsClient((host, port) => {
       val engine = context.createSSLEngine(host, port)
       engine.setUseClientMode(true)
