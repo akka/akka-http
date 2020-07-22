@@ -78,8 +78,7 @@ object AkkaDependency {
                 else
                   "com.typesafe.akka" %% module % akkaVersion % config
               },
-              //resolvers ++= (if (akkaSnapshot) Seq("Akka Snapshots" at "https://repo.akka.io/snapshots") else Nil)
-              resolvers += "Akka Snapshots" at "https://repo.akka.io/snapshots"
+              resolvers ++= (if (akkaSnapshot) Seq("Akka Snapshots" at "https://repo.akka.io/snapshots") else Nil)
             )
         }
       }
