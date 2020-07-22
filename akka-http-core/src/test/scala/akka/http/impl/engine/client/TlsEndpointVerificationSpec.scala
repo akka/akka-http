@@ -14,7 +14,7 @@ import akka.http.impl.util._
 import akka.http.scaladsl.{ ConnectionContext, Http }
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, StatusCodes }
 import akka.http.scaladsl.model.headers.{ Host, `Tls-Session-Info` }
-import javax.net.ssl.{ SSLContext, TrustManagerFactory }
+import javax.net.ssl.{ SSLContext, SSLEngine, TrustManagerFactory }
 import org.scalatest.time.{ Seconds, Span }
 
 import scala.concurrent.Future
@@ -69,12 +69,12 @@ class TlsEndpointVerificationSpec extends AkkaSpecWithMaterializer("""
         context.init(null, certManagerFactory.getTrustManagers, new SecureRandom)
         context
       }
-      val insecureSslEngineFactory = () => {
-        val engine = context.createSSLEngine()
+      def createInsecureSslEngine(host: String, port: Int): SSLEngine = {
+        val engine = context.createSSLEngine(host, port)
         engine.setUseClientMode(true)
         engine
       }
-      val clientConnectionContext = ConnectionContext.httpsClient((host, port) => insecureSslEngineFactory)
+      val clientConnectionContext = ConnectionContext.httpsClient(createInsecureSslEngine _)
 
       // We try to connect to 'hijack.de', and even though this connection is hijacked by a suspicious server
       // identifying as akka.example.org we want to connect anyway
