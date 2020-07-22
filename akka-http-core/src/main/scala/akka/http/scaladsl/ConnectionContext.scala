@@ -16,7 +16,6 @@ import javax.net.ssl._
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.compat.java8.OptionConverters._
-import scala.util.{ Success, Try }
 
 trait ConnectionContext extends akka.http.javadsl.ConnectionContext {
   @deprecated("Internal method, left for binary compatibility", since = "10.2.0")
@@ -37,10 +36,7 @@ object ConnectionContext {
     })
 
   /**
-   *  If you want complete control over how to create the SSLEngine you can use this method:
-   *
-   *  Note that this means it is up to you to make sure features like SNI and Hostname Verification
-   *  are enabled as needed.
+   *  If you want complete control over how to create the SSLEngine you can use this method.
    */
   @ApiMayChange
   def httpsServer(createSSLEngine: () => SSLEngine): HttpsConnectionContext =
@@ -69,9 +65,9 @@ object ConnectionContext {
     })
 
   /**
-   *  If you want complete control over how to create the SSLEngine you can use this method:
+   *  If you want complete control over how to create the SSLEngine you can use this method.
    *
-   *  Note that this means it is up to you to make sure features like SNI and Hostname Verification
+   *  Note that this means it is up to you to make sure features like SNI and hostname verification
    *  are enabled as needed.
    */
   @ApiMayChange
