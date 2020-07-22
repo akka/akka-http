@@ -796,8 +796,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
           case Left(ssl) =>
             TLS(ssl.sslContext, ssl.sslConfig, ssl.firstSession, role, hostInfo = hostInfo, closing = TLSClosing.eagerClose)
           case Right(engineCreator) =>
-            val engine = engineCreator(hostInfo)
-            TLS(engine.create, engine.validate, TLSClosing.eagerClose)
+            TLS(() => engineCreator(hostInfo), TLSClosing.eagerClose)
         }
       case other =>
         TLSPlacebo() // if it's not HTTPS, we don't enable SSL/TLS

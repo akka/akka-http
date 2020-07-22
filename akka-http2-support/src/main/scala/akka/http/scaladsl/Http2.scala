@@ -170,7 +170,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
           val e = ssl.sslContext.createSSLEngine()
           TlsUtils.applySessionParameters(e, ssl.firstSession)
           e
-        case Right(e) => e(None).create()
+        case Right(e) => e(None)
       }
       eng = Some(engine)
       engine.setUseClientMode(false)
@@ -195,7 +195,7 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
           val e = ssl.sslContext.createSSLEngine(host, port)
           TlsUtils.applySessionParameters(e, ssl.firstSession)
           e
-        case Right(e) => e(Some((host, port))).create()
+        case Right(e) => e(Some((host, port)))
       }
       engine.setUseClientMode(true)
       Http2AlpnSupport.clientSetApplicationProtocols(engine, Array("h2"))

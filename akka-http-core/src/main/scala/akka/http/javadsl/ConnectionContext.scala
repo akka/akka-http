@@ -6,13 +6,13 @@ package akka.http.javadsl
 
 import java.util.{ Optional, Collection => JCollection }
 
-import akka.annotation.DoNotInherit
+import akka.annotation.{ ApiMayChange, DoNotInherit }
 import akka.http.scaladsl
 import akka.japi.Util
 import akka.stream.TLSClientAuth
 import com.github.ghik.silencer.silent
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
-import javax.net.ssl.{ SSLContext, SSLParameters }
+import javax.net.ssl.{ SSLContext, SSLEngine, SSLParameters }
 
 import scala.compat.java8.OptionConverters
 
@@ -22,10 +22,27 @@ object ConnectionContext {
     //#https-context-creation
     scaladsl.ConnectionContext.httpsClient(sslContext)
 
+  /**
+   *  If you want complete control over how to create the SSLEngine you can use this method.
+   *
+   *  Note that this means it is up to you to make sure features like SNI and hostname verification
+   *  are enabled as needed.
+   */
+  @ApiMayChange
+  def httpsClient(createEngine: akka.japi.function.Function2[String, Int, SSLEngine]): HttpsConnectionContext =
+    scaladsl.ConnectionContext.httpsClient((host, port) => createEngine(host, port))
+
   //#https-context-creation
   def httpsServer(sslContext: SSLContext): HttpsConnectionContext = // ...
     //#https-context-creation
     scaladsl.ConnectionContext.httpsServer(sslContext)
+
+  /**
+   *  If you want complete control over how to create the SSLEngine you can use this method.
+   */
+  @ApiMayChange
+  def httpsServer(createEngine: akka.japi.function.Creator[SSLEngine]): HttpsConnectionContext =
+    scaladsl.ConnectionContext.httpsServer(() => createEngine.create())
 
   // ConnectionContext
   /** Used to serve HTTPS traffic. */

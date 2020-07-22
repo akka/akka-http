@@ -16,7 +16,6 @@ import javax.net.ssl._
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.compat.java8.OptionConverters._
-import scala.util.{ Success, Try }
 
 trait ConnectionContext extends akka.http.javadsl.ConnectionContext {
   @deprecated("Internal method, left for binary compatibility", since = "10.2.0")
@@ -37,19 +36,14 @@ object ConnectionContext {
     })
 
   /**
-   *  If you want complete control over how to create the SSLEngine you can use this method:
-   *
-   *  Note that this means it is up to you to make sure features like SNI and Hostname Verification
-   *  are enabled as needed.
+   *  If you want complete control over how to create the SSLEngine you can use this method.
    */
   @ApiMayChange
   def httpsServer(createSSLEngine: () => SSLEngine): HttpsConnectionContext =
     new HttpsConnectionContext(Right({
-      case None =>
-        Engine(createSSLEngine)
-      case Some(_) =>
-        throw new IllegalArgumentException("host and port supplied for connection based on server connection context")
-    }: Option[(String, Int)] => Engine))
+      case None    => createSSLEngine()
+      case Some(_) => throw new IllegalArgumentException("host and port supplied for connection based on server connection context")
+    }: Option[(String, Int)] => SSLEngine))
 
   //#https-context-creation
   /**
@@ -57,7 +51,7 @@ object ConnectionContext {
    */
   def httpsClient(context: SSLContext): HttpsConnectionContext = // ...
     //#https-context-creation
-    httpsClient((host, port) => () => {
+    httpsClient((host, port) => {
       val engine = context.createSSLEngine(host, port)
       engine.setUseClientMode(true)
 
@@ -71,19 +65,17 @@ object ConnectionContext {
     })
 
   /**
-   *  If you want complete control over how to create the SSLEngine you can use this method:
+   *  If you want complete control over how to create the SSLEngine you can use this method.
    *
-   *  Note that this means it is up to you to make sure features like SNI and Hostname Verification
+   *  Note that this means it is up to you to make sure features like SNI and hostname verification
    *  are enabled as needed.
    */
   @ApiMayChange
-  def httpsClient(createSSLEngine: (String, Int) => () => SSLEngine): HttpsConnectionContext = // ...
+  def httpsClient(createSSLEngine: (String, Int) => SSLEngine): HttpsConnectionContext = // ...
     new HttpsConnectionContext(Right({
-      case None =>
-        throw new IllegalArgumentException("host and port missing for connection based on client connection context")
-      case Some((host, port)) =>
-        Engine(createSSLEngine(host, port))
-    }: Option[(String, Int)] => Engine))
+      case None               => throw new IllegalArgumentException("host and port missing for connection based on client connection context")
+      case Some((host, port)) => createSSLEngine(host, port)
+    }: Option[(String, Int)] => SSLEngine))
 
   @deprecated("use httpsClient, httpsServer, or the lower-level SSLEngine-based constructor", "10.2.0")
   def https(
@@ -97,8 +89,6 @@ object ConnectionContext {
 
   def noEncryption() = HttpConnectionContext
 }
-
-private[http] case class Engine(create: () => SSLEngine, validate: SSLSession => Try[Unit] = _ => Success(()))
 
 @deprecated("here to be able to keep supporting the old API", since = "10.2.0")
 private[http] case class DeprecatedSslContextParameters(
@@ -119,7 +109,7 @@ private[http] case class DeprecatedSslContextParameters(
  */
 @InternalApi
 @silent("since 10.2.0")
-final class HttpsConnectionContext private[http] (private[http] val sslContextData: Either[DeprecatedSslContextParameters, Option[(String, Int)] => Engine])
+final class HttpsConnectionContext private[http] (private[http] val sslContextData: Either[DeprecatedSslContextParameters, Option[(String, Int)] => SSLEngine])
   extends akka.http.javadsl.HttpsConnectionContext with ConnectionContext {
   protected[http] override final def defaultPort: Int = 443
 

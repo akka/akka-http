@@ -86,6 +86,8 @@ Scala
 Java
 :   ```java
     akka.http.javadsl.ClientTransport
+    akka.http.javadsl.ConnectionContext#httpsClient
+    akka.http.javadsl.ConnectionContext#httpsServer
     akka.http.javadsl.settings.ClientConnectionSettings#getTransport
     akka.http.javadsl.settings.ClientConnectionSettings#withTransport
     akka.http.javadsl.settings.ConnectionPoolSettings#appendHostOverride
