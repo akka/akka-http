@@ -16,7 +16,7 @@ import akka.japi.Pair
 import akka.event.NoLogging
 import akka.http.impl.util.AkkaSpecWithMaterializer
 import akka.http.javadsl.model._
-import akka.japi.Function
+import akka.japi.function.Function
 import akka.stream.javadsl.{ Flow, Keep, Sink, Source }
 import akka.stream.testkit.TestSubscriber
 
@@ -60,7 +60,7 @@ class HttpExtensionApiSpec extends AkkaSpecWithMaterializer(
     // all four bind method overloads
     "properly bind a server (with three parameters)" in {
       val probe = TestSubscriber.manualProbe[IncomingConnection]()
-      val binding = http.bind(toHost("127.0.0.1", 0))
+      val binding = http.newServerAt("127.0.0.1", 0).connectionSource()
         .toMat(Sink.fromSubscriber(probe), Keep.left)
         .run(materializer)
       val sub = probe.expectSubscription()
@@ -70,7 +70,7 @@ class HttpExtensionApiSpec extends AkkaSpecWithMaterializer(
 
     "properly bind a server (with four parameters)" in {
       val probe = TestSubscriber.manualProbe[IncomingConnection]()
-      val binding = http.bind(toHost("127.0.0.1", 0))
+      val binding = http.newServerAt("127.0.0.1", 0).connectionSource()
         .toMat(Sink.fromSubscriber(probe), Keep.left)
         .run(materializer)
       val sub = probe.expectSubscription()
@@ -80,7 +80,9 @@ class HttpExtensionApiSpec extends AkkaSpecWithMaterializer(
 
     "properly bind a server (with five parameters)" in {
       val probe = TestSubscriber.manualProbe[IncomingConnection]()
-      val binding = http.bind(toHost("127.0.0.1", 0), serverSettings)
+      val binding = http.newServerAt("127.0.0.1", 0)
+        .withSettings(serverSettings)
+        .connectionSource()
         .toMat(Sink.fromSubscriber(probe), Keep.left)
         .run(materializer)
       val sub = probe.expectSubscription()
@@ -90,7 +92,10 @@ class HttpExtensionApiSpec extends AkkaSpecWithMaterializer(
 
     "properly bind a server (with six parameters)" in {
       val probe = TestSubscriber.manualProbe[IncomingConnection]()
-      val binding = http.bind(toHost("127.0.0.1", 0), serverSettings, loggingAdapter)
+      val binding = http.newServerAt("127.0.0.1", 0)
+        .withSettings(serverSettings)
+        .logTo(loggingAdapter)
+        .connectionSource()
         .toMat(Sink.fromSubscriber(probe), Keep.left)
         .run(materializer)
       val sub = probe.expectSubscription()
@@ -117,28 +122,28 @@ class HttpExtensionApiSpec extends AkkaSpecWithMaterializer(
     }
 
     // this cover both bind and single request
-    "properly bind and handle a server with a flow (with three parameters)" in new TestSetup {
-      def bind() = http.bindAndHandle(flow, toHost("127.0.0.1", 0), materializer)
+    "properly bind and handle a server with a flow (simple)" in new TestSetup {
+      def bind() = http.newServerAt("127.0.0.1", 0).bindFlow(flow)
     }
 
-    "properly bind and handle a server with a flow (with 5 parameters)" in new TestSetup {
-      def bind() = http.bindAndHandle(flow, toHost("127.0.0.1", 0), materializer)
+    "properly bind and handle a server with a flow (with settings and log)" in new TestSetup {
+      def bind() = http.newServerAt("127.0.0.1", 0).withSettings(serverSettings).logTo(loggingAdapter).bindFlow(flow)
     }
 
-    "properly bind and handle a server with a synchronous function (with three parameters)" in new TestSetup {
-      def bind() = http.bindAndHandleSync(httpSuccessFunction, toHost("127.0.0.1", 0), materializer)
+    "properly bind and handle a server with a synchronous function (simple)" in new TestSetup {
+      def bind() = http.newServerAt("127.0.0.1", 0).bindSync(httpSuccessFunction)
     }
 
-    "properly bind and handle a server with a synchronous (with seven parameters)" in new TestSetup {
-      def bind() = http.bindAndHandleSync(httpSuccessFunction, toHost("127.0.0.1", 0), serverSettings, loggingAdapter, materializer)
+    "properly bind and handle a server with a synchronous (with settings and log)" in new TestSetup {
+      def bind() = http.newServerAt("127.0.0.1", 0).withSettings(serverSettings).logTo(loggingAdapter).bindSync(httpSuccessFunction)
     }
 
-    "properly bind and handle a server with an asynchronous function (with three parameters)" in new TestSetup {
-      def bind() = http.bindAndHandleAsync(asyncHttpSuccessFunction, toHost("127.0.0.1", 0), materializer)
+    "properly bind and handle a server with an asynchronous function (simple)" in new TestSetup {
+      def bind() = http.newServerAt("127.0.0.1", 0).bind(asyncHttpSuccessFunction)
     }
 
-    "properly bind and handle a server with an asynchronous function (with eight parameters)" in new TestSetup {
-      def bind() = http.bindAndHandleAsync(asyncHttpSuccessFunction, toHost("127.0.0.1", 0), serverSettings, 1, loggingAdapter, materializer)
+    "properly bind and handle a server with an asynchronous function (with settings and log)" in new TestSetup {
+      def bind() = http.newServerAt("127.0.0.1", 0).withSettings(serverSettings).logTo(loggingAdapter).bind(asyncHttpSuccessFunction)
     }
 
     "have serverLayer methods" in {
@@ -377,19 +382,16 @@ class HttpExtensionApiSpec extends AkkaSpecWithMaterializer(
   def get(host: Host, port: Port) = HttpRequest.GET("/").addHeader(headers.Host.create(host, port))
 
   def runServer(): (Host, Port, ServerBinding) = {
-    val server = http.bindAndHandleSync(httpSuccessFunction, toHost("127.0.0.1", 0), materializer)
+    val server = http.newServerAt("127.0.0.1", 0).bindSync(httpSuccessFunction)
 
     val binding = waitFor(server)
     (binding.localAddress.getHostString, binding.localAddress.getPort, binding)
   }
 
   def runWebsocketServer(): (Host, Port, ServerBinding) = {
-    val server = http.bindAndHandleSync(new Function[HttpRequest, HttpResponse] {
-
-      override def apply(request: HttpRequest): HttpResponse = {
-        WebSocket.handleWebSocketRequestWith(request, Flow.create[Message]())
-      }
-    }, toHost("127.0.0.1", 0), materializer)
+    val server = http.newServerAt("127.0.0.1", 0).bindSync(request =>
+      WebSocket.handleWebSocketRequestWith(request, Flow.create[Message]())
+    )
 
     val binding = waitFor(server)
     (binding.localAddress.getHostString, binding.localAddress.getPort, binding)

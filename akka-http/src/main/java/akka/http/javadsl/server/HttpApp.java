@@ -49,7 +49,7 @@ public abstract class HttpApp extends AllDirectives {
   /**
    * Start a server on the specified host and port, using the provided [[ActorSystem]]
    * Note that this method is blocking.
-   * 
+   *
    * @param system ActorSystem to use for starting the app,
    *   if null is passed in a new default ActorSystem will be created instead, which will
    *   be terminated when the server is stopped.
@@ -69,7 +69,7 @@ public abstract class HttpApp extends AllDirectives {
   /**
    * Start a server on the specified host and port, using the provided settings and [[ActorSystem]].
    * Note that this method is blocking.
-   * 
+   *
    * @param system ActorSystem to use for starting the app,
    *   if null is passed in a new default ActorSystem will be created instead, which will
    *   be terminated when the server is stopped.
@@ -82,8 +82,8 @@ public abstract class HttpApp extends AllDirectives {
    * Start a server on the specified host and port, using the provided settings and [[ActorSystem]] if present.
    * Note that this method is blocking.
    * This method may throw an {@link ExecutionException} or {@link InterruptedException} if the future that signals that
-   * the server should shutdown is interrupted or cancelled.   
-   * 
+   * the server should shutdown is interrupted or cancelled.
+   *
    * @param system ActorSystem to use for starting the app,
    *   if an empty Optional is passed in a new default ActorSystem will be created instead, which will
    *   be terminated when the server is stopped.
@@ -96,11 +96,9 @@ public abstract class HttpApp extends AllDirectives {
 
     CompletionStage<ServerBinding> bindingFuture = Http
       .get(theSystem)
-      .bindAndHandle(routes().flow(theSystem, materializer),
-        ConnectHttp.toHost(host, port),
-        settings,
-        theSystem.log(),
-        materializer);
+      .newServerAt(host, port)
+      .withSettings(settings)
+      .bind(routes());
 
     bindingFuture.handle((binding, exception) -> {
       if (exception != null) {

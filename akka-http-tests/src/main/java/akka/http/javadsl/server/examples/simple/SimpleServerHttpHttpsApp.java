@@ -29,15 +29,14 @@ public class SimpleServerHttpHttpsApp {
 
   public static void main(String[] args) throws IOException {
     final ActorSystem system = ActorSystem.create("SimpleServerHttpHttpsApp");
-    final ActorMaterializer materializer = ActorMaterializer.create(system);
 
     final SimpleServerApp app = new SimpleServerApp();
-    final Flow<HttpRequest, HttpResponse, NotUsed> flow = app.createRoute().flow(system, materializer);
+    final Route route = app.createRoute();
 
     //#both-https-and-http
     final Http http = Http.get(system);
     //Run HTTP server firstly
-    http.bindAndHandle(flow, ConnectHttp.toHost("localhost", 80), materializer);
+    http.newServerAt("localhost", 80).bind(route);
 
     //get configured HTTPS context
     HttpsConnectionContext https = SimpleServerApp.useHttps(system);
@@ -46,7 +45,7 @@ public class SimpleServerHttpHttpsApp {
     http.setDefaultServerHttpContext(https);
 
     //Then run HTTPS server
-    http.bindAndHandle(flow, ConnectHttp.toHost("localhost", 443), materializer);
+    http.newServerAt("localhost", 443).enableHttps(https).bind(route);
     //#both-https-and-http
 
     System.out.println("Type RETURN to exit");

@@ -16,8 +16,7 @@ import akka.http.scaladsl
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.{ model => sm }
 import akka.japi.function.Function
-import akka.stream.javadsl.Flow
-import akka.stream.scaladsl.Source
+import akka.stream.javadsl.{ Flow, Source }
 import akka.stream.{ Materializer, SystemMaterializer }
 
 import scala.compat.java8.FutureConverters._
@@ -174,6 +173,6 @@ object ServerBuilder {
     def connectionSource(): Source[IncomingConnection, CompletionStage[ServerBinding]] =
       http.bindImpl(interface, port, context.asScala, settings.asScala, log)
         .map(new IncomingConnection(_))
-        .mapMaterializedValue(_.map(new ServerBinding(_))(ExecutionContexts.sameThreadExecutionContext).toJava)
+        .mapMaterializedValue(_.map(new ServerBinding(_))(ExecutionContexts.sameThreadExecutionContext).toJava).asJava
   }
 }
