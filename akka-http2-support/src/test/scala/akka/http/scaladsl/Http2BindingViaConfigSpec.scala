@@ -8,11 +8,10 @@ import akka.event.Logging
 import akka.http.impl.util.ExampleHttpContexts
 import akka.http.scaladsl.model._
 import akka.stream._
-import akka.testkit.{ AkkaSpec, TestProbe, SocketUtil }
+import akka.testkit.{ AkkaSpec, TestProbe }
 
 import scala.concurrent.Future
-import scala.concurrent.duration.Duration
-import scala.concurrent.duration._
+import scala.concurrent.duration.{ Duration, _ }
 
 class Http2BindingViaConfigSpec extends AkkaSpec("""
     akka.http.server.preview.enable-http2 = on
@@ -23,7 +22,6 @@ class Http2BindingViaConfigSpec extends AkkaSpec("""
   implicit val mat = ActorMaterializer()
   import system.dispatcher
 
-  val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
   var binding: Future[Http.ServerBinding] = _ // initialized atStartup
 
   val helloWorldHandler: HttpRequest => Future[HttpResponse] =
@@ -41,7 +39,7 @@ class Http2BindingViaConfigSpec extends AkkaSpec("""
 
         val connectionContext = ExampleHttpContexts.exampleServerContext
         binding =
-          Http().newServerAt(host, port)
+          Http().newServerAt("localhost", 0)
             .enableHttps(connectionContext)
             .bind(helloWorldHandler)
 

@@ -4,9 +4,7 @@
 
 package docs.http.javadsl.server.directives;
 
-import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.ServerBinding;
 import akka.http.javadsl.model.HttpRequest;
@@ -15,23 +13,18 @@ import akka.http.javadsl.model.StatusCode;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.server.AllDirectives;
 import akka.http.javadsl.server.Route;
-import akka.stream.ActorMaterializer;
-import akka.stream.javadsl.Flow;
 import akka.testkit.TestKit;
-import akka.testkit.SocketUtil;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
-import scala.Tuple2;
-import scala.Tuple3;
 import scala.concurrent.duration.Duration;
-import scala.runtime.BoxedUnit;
 
-import java.net.InetSocketAddress;
 import java.util.Optional;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 public class TimeoutDirectivesExamplesTest extends AllDirectives {
     //#testSetup
@@ -46,34 +39,18 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
 
     private final ActorSystem system = ActorSystem.create("TimeoutDirectivesExamplesTest", testConf);
 
-    private final ActorMaterializer materializer = ActorMaterializer.create(system);
-
     private final Http http = Http.get(system);
 
-    private CompletionStage<Void> shutdown(CompletionStage<ServerBinding> binding) {
-        return binding.thenAccept(b -> {
-            System.out.println(String.format("Unbinding from %s", b.localAddress()));
+    private void shutdown(ServerBinding b) throws Exception {
+        System.out.println(String.format("Unbinding from %s", b.localAddress()));
 
-            final CompletionStage<?> unbound = b.unbind();
-            try {
-                unbound.toCompletableFuture().get(3, TimeUnit.SECONDS); // block...
-            } catch (TimeoutException | InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        b.unbind().toCompletableFuture().get(3, TimeUnit.SECONDS);
     }
 
-    private Optional<HttpResponse> runRoute(ActorSystem system, ActorMaterializer materializer, Route route, String routePath) {
-        final Tuple2<String, Object> inetaddrHostAndPort = SocketUtil.temporaryServerHostnameAndPort("127.0.0.1");
-        Tuple2<String, Integer> hostAndPort = new Tuple2<>(
-                inetaddrHostAndPort._1(),
-                (Integer) inetaddrHostAndPort._2()
-        );
+    private Optional<HttpResponse> runRoute(Route route, String routePath) throws Exception {
+        final ServerBinding binding = http.newServerAt("localhost", 0).bind(route).toCompletableFuture().get();
 
-        final Flow<HttpRequest, HttpResponse, NotUsed> routeFlow = route.flow(system, materializer);
-        final CompletionStage<ServerBinding> binding = http.bindAndHandle(routeFlow, ConnectHttp.toHost(hostAndPort._1(), hostAndPort._2()), materializer);
-
-        final CompletionStage<HttpResponse> responseCompletionStage = http.singleRequest(HttpRequest.create("http://" + hostAndPort._1() + ":" + hostAndPort._2() + "/" + routePath));
+        final CompletionStage<HttpResponse> responseCompletionStage = http.singleRequest(HttpRequest.create("http://localhost:" + binding.localAddress().getPort() + "/" + routePath));
 
         CompletableFuture<HttpResponse> responseFuture = responseCompletionStage.toCompletableFuture();
 
@@ -96,7 +73,7 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
     }
 
     @Test
-    public void testRequestTimeoutIsConfigurable() {
+    public void testRequestTimeoutIsConfigurable() throws Exception {
         //#withRequestTimeout-plain
         final Duration timeout = Duration.create(1, TimeUnit.SECONDS);
         CompletionStage<String> slowFuture = new CompletableFuture<>();
@@ -108,13 +85,13 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
         );
 
         // test:
-        StatusCode statusCode = runRoute(system, materializer, route, "timeout").get().status();
+        StatusCode statusCode = runRoute(route, "timeout").get().status();
         assert (StatusCodes.SERVICE_UNAVAILABLE.equals(statusCode));
         //#withRequestTimeout-plain
     }
 
     @Test
-    public void testRequestWithoutTimeoutCancelsTimeout() {
+    public void testRequestWithoutTimeoutCancelsTimeout() throws Exception {
         //#withoutRequestTimeout-1
         CompletionStage<String> slowFuture = new CompletableFuture<>();
 
@@ -125,13 +102,13 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
         );
 
         // test:
-        Boolean receivedReply = runRoute(system, materializer, route, "timeout").isPresent();
+        Boolean receivedReply = runRoute(route, "timeout").isPresent();
         assert (!receivedReply); // timed-out
         //#withoutRequestTimeout-1
     }
 
     @Test
-    public void testRequestTimeoutAllowsCustomResponse() {
+    public void testRequestTimeoutAllowsCustomResponse() throws Exception {
         //#withRequestTimeout-with-handler
         final Duration timeout = Duration.create(1, TimeUnit.MILLISECONDS);
         CompletionStage<String> slowFuture = new CompletableFuture<>();
@@ -147,7 +124,7 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
         );
 
         // test:
-        StatusCode statusCode = runRoute(system, materializer, route, "timeout").get().status();
+        StatusCode statusCode = runRoute(route, "timeout").get().status();
         assert (StatusCodes.ENHANCE_YOUR_CALM.equals(statusCode));
         //#withRequestTimeout-with-handler
     }
@@ -155,7 +132,7 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
     // make it compile only to avoid flaking in slow builds
     @Ignore("Compile only test")
     @Test
-    public void testRequestTimeoutCustomResponseCanBeAddedSeparately() {
+    public void testRequestTimeoutCustomResponseCanBeAddedSeparately() throws Exception {
         //#withRequestTimeoutResponse
         final Duration timeout = Duration.create(100, TimeUnit.MILLISECONDS);
         CompletionStage<String> slowFuture = new CompletableFuture<>();
@@ -173,13 +150,13 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
         );
 
         // test:
-        StatusCode statusCode = runRoute(system, materializer, route, "timeout").get().status();
+        StatusCode statusCode = runRoute(route, "timeout").get().status();
         assert (StatusCodes.ENHANCE_YOUR_CALM.equals(statusCode));
         //#withRequestTimeoutResponse
     }
 
     @Test
-    public void extractRequestTimeout(){
+    public void extractRequestTimeout() throws Exception {
         //#extractRequestTimeout
         Duration timeout1 = Duration.create(500, TimeUnit.MILLISECONDS);
         Duration timeout2 = Duration.create(1000, TimeUnit.MILLISECONDS);
@@ -199,7 +176,7 @@ public class TimeoutDirectivesExamplesTest extends AllDirectives {
             )
           );
         //#extractRequestTimeout
-        StatusCode statusCode = runRoute(system, materializer, route, "timeout").get().status();
+        StatusCode statusCode = runRoute(route, "timeout").get().status();
         assert (StatusCodes.OK.equals(statusCode));
     }
 }

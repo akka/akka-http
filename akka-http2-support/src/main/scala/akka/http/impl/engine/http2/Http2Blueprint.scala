@@ -157,8 +157,8 @@ private[http] object Http2Blueprint {
    *
    * To make use of parallelism requests and responses need to be associated (other than by ordering), suggestion
    * is to add a special (virtual) header containing the streamId (or any other kind of token) is added to the HttRequest
-   * that must be reproduced in an HttpResponse. This can be done automatically for the bindAndHandleAsync API but for
-   * bindAndHandle the user needs to take of this manually.
+   * that must be reproduced in an HttpResponse. This can be done automatically for the `bind`` API but for
+   * `bindFlow` the user needs to take of this manually.
    */
   def httpLayer(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, Http2SubStream, Http2SubStream, HttpRequest, NotUsed] = {
     val parserSettings = settings.parserSettings

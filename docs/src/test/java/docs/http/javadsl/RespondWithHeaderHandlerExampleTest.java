@@ -5,37 +5,30 @@
 package docs.http.javadsl;
 
 //#respond-with-header-exceptionhandler-example
-import akka.NotUsed;
+
 import akka.actor.ActorSystem;
-import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.ServerBinding;
 import akka.http.javadsl.model.HttpRequest;
-import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.model.headers.RawHeader;
 import akka.http.javadsl.server.AllDirectives;
 import akka.http.javadsl.server.ExceptionHandler;
 import akka.http.javadsl.server.Route;
-import akka.stream.ActorMaterializer;
-import akka.stream.javadsl.Flow;
+import akka.http.javadsl.testkit.JUnitRouteTest;
+import akka.http.javadsl.testkit.TestRoute;
+import akka.http.scaladsl.model.ErrorInfo;
+import akka.http.scaladsl.model.IllegalHeaderException;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.concurrent.CompletionStage;
-//#respond-with-header-exceptionhandler-example
 
-//#no-exception-details-in-response
-import static akka.http.javadsl.server.Directives.get;
-
-import akka.http.scaladsl.model.IllegalHeaderException;
-import akka.http.scaladsl.model.ErrorInfo;
-
-import akka.http.javadsl.testkit.JUnitRouteTest;
-import akka.http.javadsl.testkit.TestRoute;
 import static junit.framework.TestCase.assertTrue;
-//#no-exception-details-in-response
 
-import org.junit.Test;
+//#respond-with-header-exceptionhandler-example
+//#no-exception-details-in-response
+//#no-exception-details-in-response
 
 public class RespondWithHeaderHandlerExampleTest extends JUnitRouteTest {
 
@@ -64,13 +57,11 @@ public class RespondWithHeaderHandlerExampleTest extends JUnitRouteTest {
     class RespondWithHeaderHandlerExample extends AllDirectives {
         public static void main(String[] args) throws IOException {
             final ActorSystem system = ActorSystem.create();
-            final ActorMaterializer materializer = ActorMaterializer.create(system);
             final Http http = Http.get(system);
 
             final RespondWithHeaderHandlerExample app = new RespondWithHeaderHandlerExample();
 
-            final Flow<HttpRequest, HttpResponse, NotUsed> routeFlow = app.createRoute().flow(system, materializer);
-            final CompletionStage<ServerBinding> binding = http.bindAndHandle(routeFlow, ConnectHttp.toHost("localhost", 8080), materializer);
+            final CompletionStage<ServerBinding> binding = http.newServerAt("localhost", 8080).bind(app.createRoute());
         }
 
         public Route createRoute() {
@@ -86,7 +77,7 @@ public class RespondWithHeaderHandlerExampleTest extends JUnitRouteTest {
                             respondWithHeader(RawHeader.create("X-Inner-Header", "inner"), () -> {
                                 // Will cause Internal server error,
                                 // only ArithmeticExceptions are handled by divByZeroHandler.
-                                throw new RuntimeException("Boom!");                                                                     
+                                throw new RuntimeException("Boom!");
                             })
                     ))
             );
