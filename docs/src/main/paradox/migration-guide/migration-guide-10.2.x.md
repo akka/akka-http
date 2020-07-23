@@ -10,7 +10,7 @@ libraries should make sure not to depend on deprecated API to be compatible with
 
 If you find an unexpected incompatibility please let us know, so we can check whether the incompatibility is accidental so we might still be able to fix it.
 
-## Akka HTTP 10.1.11 -> 10.2.0
+## Akka HTTP 10.1.x -> 10.2.0
 
 ### Hiding Materializer
 
@@ -73,7 +73,7 @@ not allowed according to RFC 3986, even when `parsing.uri-parsing-mode` was
 set to the default value of `strict`. Parsing such URIs will now fail in `strict` mode.
 If you want to allow such characters in incoming URIs, set `parsing.uri-parsing-mode` to `relaxed`, in which case these characters will be percent-encoded automatically.
 
-### 'Transparent HEAD requests' now disabled by default
+### Transparent HEAD requests now disabled by default
 
 Prior to 10.2.0, when a client would perform a `HEAD` request, by default Akka HTTP would call the `GET` route but discard the body.
 This can save bandwidth in some cases, but is also counter-intuitive when you actually want to explicitly handle `HEAD` requests,
@@ -166,7 +166,7 @@ coding infrastructure from akka-http itself in the future and use implementation
 Only parts of `Encoder`, `Decoder`, and `Coder` are still public. Predefined coders that have been available as
 e.g. `akka.http.scaladsl.coding.Gzip` are now available as `scaladsl.coding.Coders.Gzip`, `Coders.Deflate`, and
 `Coders.NoCoding`. Coding directives that use the default coding setup, like `encodeResponse` and `decodeRequest`
-continue to work without changes necessary. 
+continue to work without changes necessary.
 
 ### Configuring HTTPS connections
 
