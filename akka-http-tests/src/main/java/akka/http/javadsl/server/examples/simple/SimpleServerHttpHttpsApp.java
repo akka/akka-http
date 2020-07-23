@@ -4,16 +4,10 @@
 
 package akka.http.javadsl.server.examples.simple;
 
-import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.HttpsConnectionContext;
-import akka.http.javadsl.model.HttpRequest;
-import akka.http.javadsl.model.HttpResponse;
 import akka.http.javadsl.server.Route;
-import akka.stream.ActorMaterializer;
-import akka.stream.javadsl.Flow;
 
 import static akka.http.javadsl.server.Directives.*;
 
@@ -39,13 +33,10 @@ public class SimpleServerHttpHttpsApp {
     http.newServerAt("localhost", 80).bind(route);
 
     //get configured HTTPS context
-    HttpsConnectionContext https = SimpleServerApp.useHttps(system);
-
-    // sets default context to HTTPS – all Http() bound servers for this ActorSystem will use HTTPS from now on
-    http.setDefaultServerHttpContext(https);
+    HttpsConnectionContext httpsContext = SimpleServerApp.createHttpsContext(system);
 
     //Then run HTTPS server
-    http.newServerAt("localhost", 443).enableHttps(https).bind(route);
+    http.newServerAt("localhost", 443).enableHttps(httpsContext).bind(route);
     //#both-https-and-http
 
     System.out.println("Type RETURN to exit");

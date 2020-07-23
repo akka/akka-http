@@ -5,20 +5,21 @@
 package akka.http.javadsl.server.examples.simple;
 
 
-import akka.NotUsed;
-import static akka.http.javadsl.server.PathMatchers.segment;
-
 import akka.actor.ActorSystem;
-import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.ConnectionContext;
 import akka.http.javadsl.Http;
-import akka.http.javadsl.model.HttpRequest;
-import akka.http.javadsl.model.HttpResponse;
-import akka.http.javadsl.server.*;
+import akka.http.javadsl.HttpsConnectionContext;
+import akka.http.javadsl.server.PathMatchers;
+import akka.http.javadsl.server.Route;
 import akka.http.javadsl.unmarshalling.StringUnmarshallers;
-import akka.stream.ActorMaterializer;
-import akka.stream.javadsl.Flow;
 
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.*;
+import java.security.cert.CertificateException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
@@ -30,15 +31,6 @@ import static akka.http.javadsl.server.PathMatchers.integerSegment;
 import static akka.http.javadsl.unmarshalling.Unmarshaller.entityToString;
 
 //#https-http-config
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManagerFactory;
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.*;
-import java.security.cert.CertificateException;
-
-import akka.http.javadsl.HttpsConnectionContext;
 
 //#https-http-config
 
@@ -106,17 +98,21 @@ public class SimpleServerApp {
 
   public static void main(String[] args) throws IOException {
     final ActorSystem system = ActorSystem.create("SimpleServerApp");
-    final Http http = Http.get(system);
 
     boolean useHttps = false; // pick value from anywhere
-    if ( useHttps ) {
-      HttpsConnectionContext https = useHttps(system);
-      http.setDefaultServerHttpContext(https);
-    }
 
     final SimpleServerApp app = new SimpleServerApp();
 
-    Http.get(system).newServerAt("localhost", 8080).bind(app.createRoute());
+    if ( useHttps ) {
+        //#bind-low-level-context
+        Http.get(system).newServerAt("localhost", 8080)
+            .enableHttps(createHttpsContext(system))
+            .bind(app.createRoute());
+        //#bind-low-level-context
+    } else {
+        Http.get(system).newServerAt("localhost", 8080)
+            .bind(app.createRoute());
+    }
 
     System.out.println("Type RETURN to exit");
     System.in.read();
@@ -127,8 +123,7 @@ public class SimpleServerApp {
   //#https-http-config
   // ** CONFIGURING ADDITIONAL SETTINGS ** //
 
-  public static HttpsConnectionContext useHttps(ActorSystem system) {
-      HttpsConnectionContext https = null;
+  public static HttpsConnectionContext createHttpsContext(ActorSystem system) {
       try {
         // initialise the keystore
         // !!! never put passwords into code !!!
@@ -150,15 +145,11 @@ public class SimpleServerApp {
         final SSLContext sslContext = SSLContext.getInstance("TLS");
         sslContext.init(keyManagerFactory.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
 
-        https = ConnectionContext.https(sslContext);
+        return ConnectionContext.httpsServer(sslContext);
 
-      } catch (NoSuchAlgorithmException | KeyManagementException e) {
-        system.log().error("Exception while configuring HTTPS.", e);
-      } catch (CertificateException | KeyStoreException | UnrecoverableKeyException | IOException e) {
-        system.log().error("Exception while ", e);
+      } catch (Exception e) {
+          throw new RuntimeException(e);
       }
-
-      return https;
   }
   //#https-http-config
 }

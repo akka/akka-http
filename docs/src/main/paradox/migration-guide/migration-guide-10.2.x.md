@@ -167,3 +167,27 @@ Only parts of `Encoder`, `Decoder`, and `Coder` are still public. Predefined cod
 e.g. `akka.http.scaladsl.coding.Gzip` are now available as `scaladsl.coding.Coders.Gzip`, `Coders.Deflate`, and
 `Coders.NoCoding`. Coding directives that use the default coding setup, like `encodeResponse` and `decodeRequest`
 continue to work without changes necessary. 
+
+### Configuring HTTPS connections
+
+Akka HTTP no longer uses the HTTPS configuration configured with `ssl-config`
+by default. Instead, it will use the JRE defaults for client connections. For
+server connections you should create a @apidoc[HttpsConnectionContext] with
+the relevant configuration.
+
+Previously, the SSL configuration was constructed based on the parameters
+you pass to @apidoc[HttpsConnectionContext$] and the logic and configuration
+used by the [ssl-config](https://lightbend.github.io/ssl-config/) library. This was
+because back then the default JDK SSL configuration was a bad match for HTTP
+connections. Nowadays, however, the JDK defaults are much better and the
+use of `ssl-config` makes the configuration hard to reason about.
+
+For this reason, we have deprecated the `ssl-config`-based APIs, and now
+provide @apidoc[HttpsConnectionContext.httpsServer](HttpsConnectionContext$)
+and @apidoc[HttpsConnectionContext.httpsClient](HttpsConnectionContext$)
+that will use the JDK defaults. There is also a
+@apidoc[HttpsConnectionContext.https](HttpsConnectionContext$)
+where you can provide your own logic for creating `SSLEngine` instances.
+When using this more low-level API, remember it is up to you to set the
+`SSLEngine` 'mode' (client or server), and further configuration such as
+enabling SNI and hostname verification features when needed.

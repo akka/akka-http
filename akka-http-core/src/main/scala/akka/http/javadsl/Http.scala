@@ -754,14 +754,20 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   /**
    * Gets the current default server-side [[ConnectionContext]] – defaults to plain HTTP.
    * Can be modified using [[setDefaultServerHttpContext]], and will then apply for servers bound after that call has completed.
+   *
+   * @deprecated since 10.2.0: set context explicitly when binding
    */
+  @Deprecated @deprecated("Set context explicitly when binding", since = "10.2.0")
   def defaultServerHttpContext: ConnectionContext =
     delegate.defaultServerHttpContext
 
   /**
    * Sets the default server-side [[ConnectionContext]].
    * If it is an instance of [[HttpsConnectionContext]] then the server will be bound using HTTPS.
+   *
+   * @deprecated since 10.2.0: set context explicitly when binding
    */
+  @Deprecated @deprecated("Set context explicitly when binding", since = "10.2.0")
   def setDefaultServerHttpContext(context: ConnectionContext): Unit =
     delegate.setDefaultServerHttpContext(context.asScala)
 
@@ -776,12 +782,15 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   def setDefaultClientHttpsContext(context: HttpsConnectionContext): Unit =
     delegate.setDefaultClientHttpsContext(context.asScala)
 
+  @deprecated("use ConnectionContext.httpsServer", since = "10.2.0")
   def createServerHttpsContext(sslConfig: AkkaSSLConfig): HttpsConnectionContext =
     delegate.createServerHttpsContext(sslConfig)
 
+  @deprecated("use ConnectionContext.httpsClient", since = "10.2.0")
   def createClientHttpsContext(sslConfig: AkkaSSLConfig): HttpsConnectionContext =
     delegate.createClientHttpsContext(sslConfig)
 
+  @deprecated("use ConnectionContext.httpsClient", since = "10.2.0")
   def createDefaultClientHttpsContext(): HttpsConnectionContext =
     delegate.createDefaultClientHttpsContext()
 

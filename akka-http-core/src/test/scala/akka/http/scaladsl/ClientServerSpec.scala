@@ -6,6 +6,7 @@ package akka.http.scaladsl
 
 import java.io.{ BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter }
 import java.net.{ BindException, Socket }
+import java.security.{ KeyStore, SecureRandom }
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicLong
 
@@ -13,11 +14,15 @@ import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future, Promise }
 import scala.util.{ Success, Try }
+import com.typesafe.sslconfig.akka.AkkaSSLConfig
+import com.typesafe.sslconfig.ssl.SSLConfigSettings
+import com.typesafe.sslconfig.ssl.SSLLooseConfig
 import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.event.Logging.LogEvent
 import akka.http.impl.engine.HttpIdleTimeoutException
 import akka.http.impl.engine.ws.ByteStringSinkProbe
+import akka.http.impl.util.ExampleHttpContexts.loadX509Certificate
 import akka.http.impl.util._
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model.HttpEntity._
@@ -34,8 +39,7 @@ import akka.testkit._
 import akka.util.ByteString
 import com.github.ghik.silencer.silent
 import com.typesafe.config.{ Config, ConfigFactory }
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
-import com.typesafe.sslconfig.ssl.{ SSLConfigSettings, SSLLooseConfig }
+import javax.net.ssl.{ SSLContext, TrustManagerFactory }
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.concurrent.Eventually.eventually
 
@@ -171,9 +175,11 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
       Await.result(b1.unbind(), 1.second.dilated)
     }
 
+    // The Remote-Address header is deprecated, but we still want to test it works
     "Remote-Address header" should {
       @silent("Remote-Address in package headers is deprecated")
       def handler(req: HttpRequest): HttpResponse = {
+        @silent("deprecated")
         val entity = req.header[headers.`Remote-Address`].flatMap(_.address.toIP).flatMap(_.port).toString
         HttpResponse(entity = entity)
       }
@@ -664,7 +670,23 @@ Host: example.com
       // Disable hostname verification as ExampleHttpContexts.exampleClientContext sets hostname as akka.example.org
       val sslConfigSettings = SSLConfigSettings().withLoose(SSLLooseConfig().withDisableHostnameVerification(true))
       val sslConfig = AkkaSSLConfig().withSettings(sslConfigSettings)
-      val clientConnectionContext = ConnectionContext.https(ExampleHttpContexts.exampleClientContext.sslContext, Some(sslConfig))
+      val sslContext = {
+        val certStore = KeyStore.getInstance(KeyStore.getDefaultType)
+        certStore.load(null, null)
+        // only do this if you want to accept a custom root CA. Understand what you are doing!
+        certStore.setCertificateEntry("ca", loadX509Certificate("keys/rootCA.crt"))
+
+        val certManagerFactory = TrustManagerFactory.getInstance("SunX509")
+        certManagerFactory.init(certStore)
+
+        val context = SSLContext.getInstance("TLSv1.2")
+        context.init(null, certManagerFactory.getTrustManagers, new SecureRandom)
+        context
+      }
+
+      // This approach is deprecated, but we still want to check it works
+      @silent("deprecated")
+      val clientConnectionContext = ConnectionContext.https(sslContext, Some(sslConfig))
 
       val request = HttpRequest(uri = s"https:/${serverBinding.localAddress}")
       Http()
@@ -697,7 +719,7 @@ Host: example.com
         .withConnectionSettings(ClientConnectionSettings(system)
           .withSocketOptions(SO.ReceiveBufferSize(serverToClientNetworkBufferSize) :: Nil))
         .withTransport(ExampleHttpContexts.proxyTransport(serverBinding.localAddress))
-      val clientConnectionContext = ConnectionContext.https(ExampleHttpContexts.exampleClientContext.sslContext)
+      val clientConnectionContext = ExampleHttpContexts.exampleClientContext
 
       Http()
         .singleRequest(request, connectionContext = clientConnectionContext, settings = clientSettings)
@@ -714,8 +736,8 @@ Host: example.com
       def handler(req: HttpRequest): HttpResponse =
         HttpResponse(entity = HttpEntity.CloseDelimited(ContentTypes.`application/octet-stream`, Source.fromPublisher(source)))
 
-      val serverSideTls = Http().sslTlsStage(ExampleHttpContexts.exampleServerContext, akka.stream.Server)
-      val clientSideTls = Http().sslTlsStage(ExampleHttpContexts.exampleClientContext, akka.stream.Client, Some("akka.example.org" -> 8080))
+      val serverSideTls = Http().sslTlsServerStage(ExampleHttpContexts.exampleServerContext)
+      val clientSideTls = Http().sslTlsClientStage(ExampleHttpContexts.exampleClientContext, "akka.example.org", 8080)
 
       val server: Flow[ByteString, ByteString, Any] =
         Http().serverLayer()

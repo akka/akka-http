@@ -55,7 +55,7 @@ abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
 
     val sslContext: SSLContext = SSLContext.getInstance("TLS")
     sslContext.init(keyManagerFactory.getKeyManagers, tmf.getTrustManagers, new SecureRandom)
-    val https: HttpsConnectionContext = ConnectionContext.https(sslContext)
+    val https: HttpsConnectionContext = ConnectionContext.httpsServer(sslContext)
     //#low-level-default
 
     //#both-https-and-http
@@ -66,18 +66,9 @@ abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
     //#both-https-and-http
 
     //#bind-low-level-context
-    Http().newServerAt("127.0.0.1", 0).enableHttps(https).connectionSource()
-
-    // or using the high level routing DSL:
     val routes: Route = get { complete("Hello world!") }
     Http().newServerAt("127.0.0.1", 8080).enableHttps(https).bind(routes)
     //#bind-low-level-context
-
-    //#set-low-level-context-default
-    // sets default context to HTTPS – all Http() bound servers for this ActorSystem will use HTTPS from now on
-    Http().setDefaultServerHttpContext(https)
-    Http().newServerAt("127.0.0.1", 9090).enableHttps(https).bind(routes)
-    //#set-low-level-context-default
 
     system.terminate()
   }
