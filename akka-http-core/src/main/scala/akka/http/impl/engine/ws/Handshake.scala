@@ -68,6 +68,10 @@ private[http] object Handshake {
      *        list of values indicating which extensions the client would like
      *        to speak.  The interpretation of this header field is discussed
      *        in Section 9.1.
+     *
+     *  10.   Optionally, other header fields, such as those used to send
+     *        cookies or request authentication to a server.  Unknown header
+     *        fields are ignored, as per [RFC2616].
      */
     def websocketUpgrade(headers: List[HttpHeader], hostHeaderPresent: Boolean, settings: WebSocketSettings, log: LoggingAdapter): OptionVal[UpgradeToWebSocketLowLevel] = {
 
