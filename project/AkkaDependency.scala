@@ -28,8 +28,8 @@ object AkkaDependency {
         Sources(akkaSources)
       case None =>
         Option(System.getProperty("akka.http.build.akka.version")) match {
-          case Some("master") => Artifact(determineLatestSnapshot(), true)
-          case Some("release-2.5") => 
+          case Some("master") => masterSnapshot
+          case Some("release-2.5") =>
             // Don't 'downgrade' building even if akka.sources asks for it
             // (typically for the docs that require 2.6)
             if (defaultVersion.startsWith("2.5")) Artifact(determineLatestSnapshot("2.5"), true)
@@ -47,6 +47,8 @@ object AkkaDependency {
   val minimumExpectedAkka26Version = "2.6.4"
   val docs = akkaDependency(defaultVersion = minimumExpectedAkka26Version)
 
+  lazy val masterSnapshot = Artifact(determineLatestSnapshot(), true)
+
   val akkaVersion: String = default match {
     case Artifact(version, _) => version
     case Sources(uri, _) => uri
@@ -56,33 +58,29 @@ object AkkaDependency {
     /** Adds either a source or a binary dependency, depending on whether the above settings are set */
     def addAkkaModuleDependency(module: String,
                                 config: String = "",
-                                akka: Akka = default,
-                                onlyIf: Boolean = true): Project =
-      if (onlyIf) {
-        akka match {
-          case Sources(sources, _) =>
-            // as a little hacky side effect also disable aggregation of samples
-            System.setProperty("akka.build.aggregateSamples", "false")
+                                akka: Akka = default): Project =
+      akka match {
+        case Sources(sources, _) =>
+          // as a little hacky side effect also disable aggregation of samples
+          System.setProperty("akka.build.aggregateSamples", "false")
 
-            val moduleRef = ProjectRef(uri(sources), module)
-            val withConfig: ClasspathDependency =
-              if (config == "") moduleRef
-              else moduleRef % config
+          val moduleRef = ProjectRef(uri(sources), module)
+          val withConfig: ClasspathDependency =
+            if (config == "") moduleRef
+            else moduleRef % config
 
-            project.dependsOn(withConfig)
-          case Artifact(akkaVersion, akkaSnapshot) =>
-            project.settings(
-              libraryDependencies += {
-                if (config == "")
-                  "com.typesafe.akka" %% module % akkaVersion
-                else
-                  "com.typesafe.akka" %% module % akkaVersion % config
-              },
-              resolvers ++= (if (akkaSnapshot) Seq("Akka Snapshots" at "https://repo.akka.io/snapshots") else Nil)
-            )
-        }
+          project.dependsOn(withConfig)
+        case Artifact(akkaVersion, akkaSnapshot) =>
+          project.settings(
+            libraryDependencies += {
+              if (config == "")
+                "com.typesafe.akka" %% module % akkaVersion
+              else
+                "com.typesafe.akka" %% module % akkaVersion % config
+            },
+            resolvers ++= (if (akkaSnapshot) Seq("Akka Snapshots" at "https://repo.akka.io/snapshots") else Nil)
+          )
       }
-      else project // return unchanged
   }
 
   private def determineLatestSnapshot(prefix: String = ""): String = {
