@@ -13,7 +13,7 @@
 Uses the marshaller for a given type to produce a completion function that is passed to its
 inner route.  You can use it to decouple marshaller resolution from request completion.
 
-The `completeWith` directive works in conjunction with `instanceOf` and `spray.httpx.marshalling`
+The `completeWith` directive works in conjunction with the `instanceOf` directive
 to convert higher-level (object) structure into some lower-level serialized "wire format".
 @ref[The marshalling documentation](../../../common/marshalling.md) explains this process in detail.
 This directive simplifies exposing types to clients via a route while providing some
