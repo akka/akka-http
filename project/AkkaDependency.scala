@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -8,69 +8,96 @@ import sbt._
 import Keys._
 
 object AkkaDependency {
-  // Property semantics:
-  // If akka.sources is set, then the given URI will override everything else
-  // else if akka version is "master", then a source dependency to git://github.com/akka/akka.git#master will be used
-  // else if akka version is "default", then the hard coded default will be used (jenkins doesn't allow empty values for config axis)
-  // else if akka.version is anything else, then the given version will be used
 
-  // Updated only when needed, https://github.com/akka/akka/issues/26985
-  val defaultAkkaVersion = "2.5.26"
-  val akkaVersion =
-    System.getProperty("akka.http.build.akka.version", defaultAkkaVersion) match {
-      case "default" => defaultAkkaVersion
-      case x => x
-    }
-
-  // Needs to be a URI like git://github.com/akka/akka.git#master or file:///xyz/akka
-  val akkaSourceDependencyUri = {
-    val fallback =
-      akkaVersion match {
-        case "master" => "git://github.com/akka/akka.git#master"
-        case "release-2.5" => "git://github.com/akka/akka.git#release-2.5"
-        case x => ""
-      }
-
-    System.getProperty("akka.sources", fallback)
+  sealed trait Akka {
+    def version: String
+    // The version to use in api/japi/docs links,
+    // so 'x.y', 'x.y.z', 'current' or 'snapshot'
+    def link: String
   }
-  val shouldUseSourceDependency = akkaSourceDependencyUri != ""
+  case class Artifact(version: String, isSnapshot: Boolean = false) extends Akka {
+    override def link = VersionNumber(version) match { case VersionNumber(Seq(x, y, _*), _, _) => s"$x.$y" }
+  }
+  case class Sources(uri: String, link: String = "current") extends Akka {
+    def version = link
+  }
 
-  val akkaRepository = {
-    // as a little hacky side effect also disable aggregation of samples
-    System.setProperty("akka.build.aggregateSamples", "false")
+  def akkaDependency(defaultVersion: String): Akka = {
+    Option(System.getProperty("akka.sources")) match {
+      case Some(akkaSources) =>
+        Sources(akkaSources)
+      case None =>
+        Option(System.getProperty("akka.http.build.akka.version")) match {
+          case Some("master") => latestAkkaSnapshot
+          case Some("release-2.5") =>
+            // Don't 'downgrade' building even if akka.sources asks for it
+            // (typically for the docs that require 2.6)
+            if (defaultVersion.startsWith("2.5")) Artifact(determineLatestSnapshot("2.5"), true)
+            else Artifact(defaultVersion)
+          case Some("default") => Artifact(defaultVersion)
+          case Some(other) => Artifact(other, true)
+          case None => Artifact(defaultVersion)
+        }
+    }
+  }
 
-    uri(akkaSourceDependencyUri)
+  lazy val latestAkkaSnapshot: Akka = Artifact(determineLatestSnapshot(), true)
+
+  // Default version updated only when needed, https://doc.akka.io//docs/akka/current/project/downstream-upgrade-strategy.html
+  val minimumExpectedAkkaVersion = "2.5.31"
+  val default = akkaDependency(defaultVersion = minimumExpectedAkkaVersion)
+  val minimumExpectedAkka26Version = "2.6.4"
+  val docs = akkaDependency(defaultVersion = minimumExpectedAkka26Version)
+
+  val akkaVersion: String = default match {
+    case Artifact(version, _) => version
+    case Sources(uri, _) => uri
   }
 
   implicit class RichProject(project: Project) {
     /** Adds either a source or a binary dependency, depending on whether the above settings are set */
     def addAkkaModuleDependency(module: String,
                                 config: String = "",
-                                shouldUseSourceDependency: Boolean = AkkaDependency.shouldUseSourceDependency,
-                                akkaRepository: URI = AkkaDependency.akkaRepository,
-                                onlyIf: Boolean = true,
-                                includeIfScalaVersionMatches: String => Boolean = _ => true): Project =
+                                akka: Akka = default,
+                                includeIfScalaVersionMatches: String => Boolean = _ => true,
+                                onlyIf: Boolean = true): Project =
       if (onlyIf) {
-        if (shouldUseSourceDependency) {
-          val moduleRef = ProjectRef(akkaRepository, module)
-          val withConfig: ClasspathDependency =
-            if (config == "") moduleRef
-            else moduleRef % config
+        akka match {
+          case Sources(sources, _) =>
+            // as a little hacky side effect also disable aggregation of samples
+            System.setProperty("akka.build.aggregateSamples", "false")
 
-          project.dependsOn(withConfig)
-        } else {
-          project.settings(
-            libraryDependencies ++=
-              (if (includeIfScalaVersionMatches(scalaBinaryVersion.value)) {
-                val dep = "com.typesafe.akka" %% module % akkaVersion
-                val withConfig =
-                  if (config == "") dep
-                  else dep % config
-                withConfig :: Nil
-              } else Nil)
-          )
+            val moduleRef = ProjectRef(uri(sources), module)
+            val withConfig: ClasspathDependency =
+              if (config == "") moduleRef
+              else moduleRef % config
+
+            project.dependsOn(withConfig)
+          case Artifact(akkaVersion, akkaSnapshot) =>
+            project.settings(
+              libraryDependencies ++= (
+                if (includeIfScalaVersionMatches(scalaBinaryVersion.value))
+                  Seq(
+                    if (config == "")
+                      "com.typesafe.akka" %% module % akkaVersion
+                    else
+                      "com.typesafe.akka" %% module % akkaVersion % config
+                  )
+                  else Nil),
+              resolvers ++= (if (akkaSnapshot) Seq("Akka Snapshots" at "https://repo.akka.io/snapshots") else Nil)
+            )
         }
       }
       else project // return unchanged
+  }
+
+  private def determineLatestSnapshot(prefix: String = ""): String = {
+    import sbt.librarymanagement.Http.http
+    import gigahorse.GigahorseSupport.url
+    import scala.concurrent.Await
+    import scala.concurrent.duration._
+
+    val body = Await.result(http.run(url("https://repo.akka.io/snapshots/com/typesafe/akka/akka-actor_2.12/")), 10.seconds).bodyAsString
+    """href="([^?/].*?)/"""".r.findAllMatchIn(body).map(_.group(1)).filter(_.startsWith(prefix)).toList.last
   }
 }
