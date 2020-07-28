@@ -36,9 +36,6 @@ inThisBuild(Def.settings(
   Formatting.formatSettings,
   shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
   concurrentRestrictions in Global += Tags.limit(Tags.Test, 1),
-  // with coursier the dependency resolution with this extra setting breaks leading to missing akka dependencies
-  // in the provided classpath
-  useCoursier := System.getProperty("akka.http.test-against-akka-master", "false") != "true",
 ))
 
 lazy val root = Project(
@@ -156,9 +153,7 @@ lazy val httpCore = project("akka-http-core")
   .addAkkaModuleDependency(
     "akka-stream-testkit",
     "test",
-    shouldUseSourceDependency = true,
-    uri("git://github.com/akka/akka.git#master"),
-    onlyIf = System.getProperty("akka.http.test-against-akka-master", "false") == "true"
+    akka = if (System.getProperty("akka.http.test-against-akka-master", "false") == "true") AkkaDependency.latestAkkaSnapshot else AkkaDependency.default,
   )
   .settings(Dependencies.httpCore)
   .settings(VersionGenerator.versionSettings)
