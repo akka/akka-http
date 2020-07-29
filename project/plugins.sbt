@@ -28,3 +28,8 @@ libraryDependencies += "org.kohsuke" % "github-api" % "1.115"
 
 // used for @unidoc directive
 libraryDependencies += "io.github.lukehutch" % "fast-classpath-scanner" % "3.1.15"
+
+libraryDependencies ++= Seq(
+  "com.typesafe.akka" %% "akka-http" % "10.2.0-RC2",
+  "com.typesafe.akka" %% "akka-stream" % "2.6.8"
+)
