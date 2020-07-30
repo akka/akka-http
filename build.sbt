@@ -334,7 +334,7 @@ lazy val httpScalafixTestInput =
     .dependsOn(httpTests % "compile;test->test")
     .addAkkaModuleDependency("akka-stream")
     .enablePlugins(NoPublish)
-    .disablePlugins(BintrayPlugin, MimaPlugin)
+    .disablePlugins(BintrayPlugin, MimaPlugin, HeaderPlugin /* because it gets confused about metaheader required for tests */)
     .settings(
       addCompilerPlugin(scalafixSemanticdb),
       scalacOptions ++= List(
@@ -348,7 +348,7 @@ lazy val httpScalafixTestOutput =
     .dependsOn(httpTests % "compile;test->test")
     .addAkkaModuleDependency("akka-stream")
     .enablePlugins(NoPublish)
-    .disablePlugins(BintrayPlugin, MimaPlugin)
+    .disablePlugins(BintrayPlugin, MimaPlugin, HeaderPlugin /* because it gets confused about metaheader required for tests */)
 
 lazy val httpScalafixTests =
   Project(id = "akka-http-scalafix-tests", base = file("akka-http-scalafix/scalafix-tests"))
