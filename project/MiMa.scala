@@ -23,27 +23,12 @@ object MiMa extends AutoPlugin {
   )
 
   // A fork is a branch of the project where new releases are created that are not ancestors of the current release line
-  val forks = Seq("10.0.")
-  val currentFork = "10.1."
+  val forks = Seq("10.0.", "10.1.")
+  val currentFork = "10.2."
 
   // manually maintained list of previous versions to make sure all incompatibilities are found
   // even if so far no files have been been created in this project's mima-filters directory
   val pre213Versions = Set(
-    "10.0.0",
-    "10.0.1",
-    "10.0.2",
-    "10.0.3",
-    "10.0.4",
-    "10.0.5",
-    "10.0.6",
-    "10.0.7",
-    "10.0.8",
-    "10.0.9",
-    "10.0.10",
-    "10.0.11",
-    "10.0.12",
-    "10.0.13",
-    "10.0.14",
     "10.0.15",
     "10.1.0",
     "10.1.1",
@@ -60,6 +45,7 @@ object MiMa extends AutoPlugin {
     "10.1.10",
     "10.1.11",
     "10.1.12",
+    "10.2.0",
   )
 
   lazy val latestVersion = post213Versions.max(versionOrdering)
