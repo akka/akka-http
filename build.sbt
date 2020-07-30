@@ -79,6 +79,7 @@ lazy val root = Project(
     httpTests,
     httpMarshallersScala,
     httpMarshallersJava,
+    httpScalafix,
     docs,
     compatibilityTests
   )
@@ -315,6 +316,57 @@ def httpMarshallersJavaSubproject(name: String) =
   .settings(commonSettings)
   .enablePlugins(BootstrapGenjavadoc)
   .enablePlugins(ReproducibleBuildsPlugin)
+
+lazy val httpScalafix = project("akka-http-scalafix")
+  .enablePlugins(NoPublish)
+  .disablePlugins(BintrayPlugin, MimaPlugin)
+  .aggregate(httpScalafixRules, httpScalafixTestInput, httpScalafixTestOutput, httpScalafixTests)
+
+lazy val httpScalafixRules =
+  Project(id = "akka-http-scalafix-rules", base = file("akka-http-scalafix/scalafix-rules"))
+    .settings(
+      libraryDependencies += Dependencies.Compile.scalafix
+    )
+
+lazy val httpScalafixTestInput =
+  Project(id = "akka-http-scalafix-test-input", base = file("akka-http-scalafix/scalafix-test-input"))
+    .dependsOn(httpTests % "compile;test->test")
+    .addAkkaModuleDependency("akka-stream")
+    .enablePlugins(NoPublish)
+    .disablePlugins(BintrayPlugin, MimaPlugin)
+    .settings(
+      addCompilerPlugin(scalafixSemanticdb),
+      scalacOptions ++= List(
+        "-Yrangepos",
+        "-P:semanticdb:synthetics:on"
+      )
+    )
+
+lazy val httpScalafixTestOutput =
+  Project(id = "akka-http-scalafix-test-output", base = file("akka-http-scalafix/scalafix-test-output"))
+    .dependsOn(httpTests % "compile;test->test")
+    .addAkkaModuleDependency("akka-stream")
+    .enablePlugins(NoPublish)
+    .disablePlugins(BintrayPlugin, MimaPlugin)
+
+lazy val httpScalafixTests =
+  Project(id = "akka-http-scalafix-tests", base = file("akka-http-scalafix/scalafix-tests"))
+    .enablePlugins(NoPublish)
+    .disablePlugins(BintrayPlugin, MimaPlugin)
+    .settings(
+      skip in publish := true,
+      libraryDependencies += "ch.epfl.scala" % "scalafix-testkit" % Dependencies.scalafixVersion % Test cross CrossVersion.full,
+      compile.in(Compile) :=
+        compile.in(Compile).dependsOn(compile.in(httpScalafixTestInput, Compile)).value,
+      scalafixTestkitOutputSourceDirectories :=
+        sourceDirectories.in(httpScalafixTestOutput, Compile).value,
+      scalafixTestkitInputSourceDirectories :=
+        sourceDirectories.in(httpScalafixTestInput, Compile).value,
+      scalafixTestkitInputClasspath :=
+        fullClasspath.in(httpScalafixTestInput, Compile).value,
+    )
+    .dependsOn(httpScalafixRules)
+    .enablePlugins(ScalafixTestkitPlugin)
 
 lazy val docs = project("docs")
   .enablePlugins(AkkaParadoxPlugin, NoPublish, PublishRsyncPlugin)
