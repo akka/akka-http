@@ -26,7 +26,6 @@ object MigrateToServerBuilderTest {
   def flow: Flow[HttpRequest, HttpResponse, Any] = ???
   def route: Route = ???
 
-  // fix: HttpConnectionContext
   // fix: materializer or system explicitly given
 
   Http().bindAndHandleAsync(handler, "127.0.0.1", 8080, log = log)

@@ -22,7 +22,6 @@ object MigrateToServerBuilderTest {
   def flow: Flow[HttpRequest, HttpResponse, Any] = ???
   def route: Route = ???
 
-  // fix: HttpConnectionContext
   // fix: materializer or system explicitly given
 
   Http().newServerAt("127.0.0.1", 8080).logTo(log).bind(handler)
