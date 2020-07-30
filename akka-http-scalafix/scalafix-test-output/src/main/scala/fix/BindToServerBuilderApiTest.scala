@@ -15,6 +15,7 @@ object BindToServerBuilderApiTest {
   implicit def actorSystem: ActorSystem = ???
   implicit def log: LoggingAdapter = ???
   def settings: ServerSettings = ???
+  def httpContext: HttpConnectionContext = ???
   def context: HttpsConnectionContext = ???
   def handler: HttpRequest => Future[HttpResponse] = ???
   def syncHandler: HttpRequest => HttpResponse = ???
@@ -28,6 +29,8 @@ object BindToServerBuilderApiTest {
   Http().newServerAt("127.0.0.1", 8080).logTo(log).bind(handler)
   Http().newServerAt("127.0.0.1", 0).withSettings(settings).bind(handler)
   Http().newServerAt(interface = "localhost", port = 8443).enableHttps(context).bind(handler)
+  Http().newServerAt(interface = "localhost", port = 8080).bind(handler)
+  Http().newServerAt(interface = "localhost", port = 8080).bind(handler)
   Http().newServerAt("127.0.0.1", 8080).bindFlow(flow)
   Http().newServerAt("127.0.0.1", 8080).bind(route)
   Http().newServerAt("127.0.0.1", 0).logTo(log).bindSync(syncHandler)

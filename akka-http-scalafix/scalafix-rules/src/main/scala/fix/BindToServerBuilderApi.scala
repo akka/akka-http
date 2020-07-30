@@ -47,13 +47,21 @@ class BindToServerBuilderApi extends SemanticRule("BindToServerBuilderApi") {
 
     }.asPatch
 
-  def builder(argExps: Map[String, Term]): String = {
-    def clause(name: String, exp: String => String): String =
-      if (argExps.contains(name)) s".${exp(argExps(name).toString)}"
+  def builder(argExps: Map[String, Term])(implicit doc: SemanticDocument): String = {
+    def clause(name: String, exp: String => String, onlyIf: Term => Boolean = _ => true): String =
+      if (argExps.contains(name) && onlyIf(argExps(name))) s".${exp(argExps(name).toString)}"
       else ""
 
+    // This is an approximate test if the parameter might have type `HttpConnectionContext`.
+    // Due to limitations of scalafix (https://scalacenter.github.io/scalafix/docs/developers/semantic-type.html#test-for-subtyping)
+    // we cannot do accurate type tests against `HttpConnectionContext`. This will suffice for simple expressions,
+    // for more complicated ones we will just create an `enableHttps()` clause that will fail to compile if someone
+    // has done something weird which is fine for now.
+    def isNotHttpConnectionContext(term: Term): Boolean =
+      !term.symbol.info.exists(_.signature.toString.contains("HttpConnectionContext"))
+
     val extraClauses =
-      clause("connectionContext", e => s"enableHttps($e)") + // FIXME: should be dropped if e is HttpConnectionContext
+      clause("connectionContext", e => s"enableHttps($e)", isNotHttpConnectionContext) +
         clause("settings", e => s"withSettings($e)") +
         clause("log", e => s"logTo($e)")
 

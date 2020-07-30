@@ -19,6 +19,7 @@ object BindToServerBuilderApiTest {
   implicit def actorSystem: ActorSystem = ???
   implicit def log: LoggingAdapter = ???
   def settings: ServerSettings = ???
+  def httpContext: HttpConnectionContext = ???
   def context: HttpsConnectionContext = ???
   def handler: HttpRequest => Future[HttpResponse] = ???
   def syncHandler: HttpRequest => HttpResponse = ???
@@ -36,6 +37,16 @@ object BindToServerBuilderApiTest {
     interface = "localhost",
     port = 8443,
     context)
+  Http().bindAndHandleAsync(
+    handler,
+    interface = "localhost",
+    port = 8080,
+    httpContext)
+  Http().bindAndHandleAsync(
+    handler,
+    interface = "localhost",
+    port = 8080,
+    HttpConnectionContext)
   Http().bindAndHandle(flow, "127.0.0.1", port = 8080)
   Http().bindAndHandle(route, "127.0.0.1", port = 8080)
   Http().bindAndHandleSync(syncHandler, "127.0.0.1", log = log)
