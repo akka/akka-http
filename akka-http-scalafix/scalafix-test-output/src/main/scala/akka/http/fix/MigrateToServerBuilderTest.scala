@@ -22,7 +22,7 @@ object MigrateToServerBuilderTest {
   def flow: Flow[HttpRequest, HttpResponse, Any] = ???
   def route: Route = ???
 
-  // fix: materializer or system explicitly given
+  // fix: materializer or system explicitly given, see https://github.com/akka/akka-http/issues/3410
 
   Http().newServerAt("127.0.0.1", 8080).logTo(log).bind(handler)
   Http().newServerAt("127.0.0.1", 8080).logTo(log).bind(handler)
