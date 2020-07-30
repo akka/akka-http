@@ -331,7 +331,7 @@ lazy val httpScalafixRules =
 
 lazy val httpScalafixTestInput =
   Project(id = "akka-http-scalafix-test-input", base = file("akka-http-scalafix/scalafix-test-input"))
-    .dependsOn(httpTests % "compile;test->test")
+    .dependsOn(http)
     .addAkkaModuleDependency("akka-stream")
     .enablePlugins(NoPublish)
     .disablePlugins(BintrayPlugin, MimaPlugin, HeaderPlugin /* because it gets confused about metaheader required for tests */)
@@ -340,12 +340,13 @@ lazy val httpScalafixTestInput =
       scalacOptions ++= List(
         "-Yrangepos",
         "-P:semanticdb:synthetics:on"
-      )
+      ),
+      scalacOptions -= "-deprecate", // we expect deprecated stuff in there
     )
 
 lazy val httpScalafixTestOutput =
   Project(id = "akka-http-scalafix-test-output", base = file("akka-http-scalafix/scalafix-test-output"))
-    .dependsOn(httpTests % "compile;test->test")
+    .dependsOn(http)
     .addAkkaModuleDependency("akka-stream")
     .enablePlugins(NoPublish)
     .disablePlugins(BintrayPlugin, MimaPlugin, HeaderPlugin /* because it gets confused about metaheader required for tests */)
