@@ -327,6 +327,7 @@ lazy val httpScalafixRules =
     .settings(
       libraryDependencies += Dependencies.Compile.scalafix
     )
+    .disablePlugins(MimaPlugin) // tooling, no bin compat guaranteed
 
 lazy val httpScalafixTestInput =
   Project(id = "akka-http-scalafix-test-input", base = file("akka-http-scalafix/scalafix-test-input"))
