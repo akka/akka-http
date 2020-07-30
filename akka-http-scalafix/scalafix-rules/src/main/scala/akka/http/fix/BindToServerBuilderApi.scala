@@ -2,7 +2,7 @@
  * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package fix
+package akka.http.fix
 
 import scalafix.v1._
 import scala.meta._

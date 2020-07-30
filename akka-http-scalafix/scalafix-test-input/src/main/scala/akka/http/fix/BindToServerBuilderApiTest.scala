@@ -1,4 +1,8 @@
-package fix
+/*
+rule = BindToServerBuilderApi
+*/
+
+package akka.http.fix
 
 import akka.actor._
 import akka.event.LoggingAdapter
@@ -25,15 +29,27 @@ object BindToServerBuilderApiTest {
   // fix: HttpConnectionContext
   // fix: materializer or system explicitly given
 
-  Http().newServerAt("127.0.0.1", 8080).logTo(log).bind(handler)
-  Http().newServerAt("127.0.0.1", 8080).logTo(log).bind(handler)
-  Http().newServerAt("127.0.0.1", 0).withSettings(settings).bind(handler)
-  Http().newServerAt(interface = "localhost", port = 8443).enableHttps(context).bind(handler)
-  Http().newServerAt(interface = "localhost", port = 8080).bind(handler)
-  Http().newServerAt(interface = "localhost", port = 8080).bind(handler)
-  Http().newServerAt("127.0.0.1", 8080).bindFlow(flow)
-  Http().newServerAt("127.0.0.1", 8080).bind(route)
-  Http().newServerAt("127.0.0.1", 0).logTo(log).bindSync(syncHandler)
+  Http().bindAndHandleAsync(handler, "127.0.0.1", 8080, log = log)
+  Http().bindAndHandleAsync(handler, "127.0.0.1", log = log, port = 8080)
+  Http().bindAndHandleAsync(handler, "127.0.0.1", settings = settings)
+  Http().bindAndHandleAsync(
+    handler,
+    interface = "localhost",
+    port = 8443,
+    context)
+  Http().bindAndHandleAsync(
+    handler,
+    interface = "localhost",
+    port = 8080,
+    httpContext)
+  Http().bindAndHandleAsync(
+    handler,
+    interface = "localhost",
+    port = 8080,
+    HttpConnectionContext)
+  Http().bindAndHandle(flow, "127.0.0.1", port = 8080)
+  Http().bindAndHandle(route, "127.0.0.1", port = 8080)
+  Http().bindAndHandleSync(syncHandler, "127.0.0.1", log = log)
 
-  Http().newServerAt("127.0.0.1", 0).withSettings(settings).connectionSource().runWith(Sink.ignore)
+  Http().bind("127.0.0.1", settings = settings).runWith(Sink.ignore)
 }
