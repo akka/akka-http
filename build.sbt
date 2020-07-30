@@ -38,6 +38,8 @@ inThisBuild(Def.settings(
     sLog.value.info(s"Building Akka HTTP ${version.value} against Akka ${AkkaDependency.akkaVersion} on Scala ${(scalaVersion in httpCore).value}")
     (onLoad in Global).value
   },
+
+  scalafixScalaBinaryVersion := scalaBinaryVersion.value,
 ))
 
 lazy val root = Project(
@@ -136,7 +138,7 @@ lazy val parsing = project("akka-parsing")
 lazy val httpCore = project("akka-http-core")
   .settings(commonSettings)
   .settings(AutomaticModuleName.settings("akka.http.core"))
-  .dependsOn(parsing)
+  .dependsOn(parsing, httpScalafixRules % ScalafixConfig)
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency("akka-stream-testkit", "test")
   .addAkkaModuleDependency(
@@ -234,7 +236,8 @@ lazy val httpTests = project("akka-http-tests")
   .settings(commonSettings)
   .settings(Dependencies.httpTests)
   .dependsOn(httpSprayJson, httpXml, httpJackson,
-    httpTestkit % "test", httpCore % "test->test")
+    httpTestkit % "test", httpCore % "test->test",
+    httpScalafixRules % ScalafixConfig)
   .enablePlugins(NoPublish).disablePlugins(BintrayPlugin) // don't release tests
   .enablePlugins(MultiNode)
   .disablePlugins(MimaPlugin) // this is only tests
@@ -379,7 +382,7 @@ lazy val docs = project("docs")
   .addAkkaModuleDependency("akka-stream-testkit", "provided", AkkaDependency.docs)
   .dependsOn(
     httpCore, http, httpXml, http2Support, httpMarshallersJava, httpMarshallersScala, httpCaching,
-    httpTests % "compile;test->test", httpTestkit % "compile;test->test"
+    httpTests % "compile;test->test", httpTestkit % "compile;test->test", httpScalafixRules % ScalafixConfig
   )
   .settings(Dependencies.docs)
   .settings(
