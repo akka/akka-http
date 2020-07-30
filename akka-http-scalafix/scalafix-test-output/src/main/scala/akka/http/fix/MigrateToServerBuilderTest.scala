@@ -10,7 +10,7 @@ import akka.stream.scaladsl.{ Flow, Sink }
 
 import scala.concurrent.Future
 
-object BindToServerBuilderApiTest {
+object MigrateToServerBuilderTest {
   // Add code that needs fixing here.
   implicit def actorSystem: ActorSystem = ???
   implicit def log: LoggingAdapter = ???

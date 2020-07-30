@@ -7,7 +7,7 @@ package akka.http.fix
 import scalafix.v1._
 import scala.meta._
 
-class BindToServerBuilderApi extends SemanticRule("BindToServerBuilderApi") {
+class MigrateToServerBuilder extends SemanticRule("MigrateToServerBuilder") {
 
   override def fix(implicit doc: SemanticDocument): Patch =
     doc.tree.collect {

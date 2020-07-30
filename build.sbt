@@ -341,7 +341,7 @@ lazy val httpScalafixTestInput =
         "-Yrangepos",
         "-P:semanticdb:synthetics:on"
       ),
-      scalacOptions -= "-deprecate", // we expect deprecated stuff in there
+      scalacOptions := scalacOptions.value.filterNot(Set("-deprecation", "-Xlint").contains(_)), // we expect deprecated stuff in there
     )
 
 lazy val httpScalafixTestOutput =
