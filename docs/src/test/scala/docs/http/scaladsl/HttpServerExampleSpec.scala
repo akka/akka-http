@@ -230,6 +230,7 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
         }
       )
 
+    // For bigger routes, these sub-routes can be moved to separate files
     lazy val ordersRoute: Route =
       authenticateBasic(realm = "admin area", myAuthenticator) { user =>
         concat(
