@@ -8,9 +8,37 @@ Under these guidelines, minor version updates are supposed to be binary compatib
 for former versions under the condition that user code only uses public, stable, non-deprecated API. Especially
 libraries should make sure not to depend on deprecated API to be compatible with both 10.1.x and 10.2.x.
 
-If you find an unexpected incompatibility please let us know, so we can check whether the incompatibility is accidental so we might still be able to fix it.
+If you find an unexpected incompatibility please let us know, so we can check whether the incompatibility is accidental,
+so we might still be able to fix it.
 
 ## Akka HTTP 10.1.x -> 10.2.0
+
+10.2.0 will introduce deprecation warnings to every server project because the existing `Http.bind*` methods have been deprecated and
+replaced by the [new ServerBuild API](#new-serverbuilder-api-to-create-server-bindings). To ease the migration pain, we have prepared
+scalafix rules to automatically rewrite existing code to the new API.
+
+To run those rules, first add scalafix to your `project/plugins.sbt`:
+
+@@@vars
+
+```scala
+addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "$scalafix.version$")
+```
+
+@@@
+
+The in the sbt shell of your project run:
+
+```
+scalafixEnable
+scalafixAll dependency:MigrateToServerBuilder@com.typesafe.akka:akka-http-scalafix-rules:10.2.0
+```
+
+See also scalafix's [Installation](https://scalacenter.github.io/scalafix/docs/users/installation.html) and [External Rules](https://scalacenter.github.io/scalafix/docs/rules/external-rules.html)
+documentation.
+
+If your open-source project uses [scala-steward](https://github.com/scala-steward-org/scala-steward) it might already automatically
+run those scalafix migrations and include the changes in its update PR to your repository.
 
 ### Hiding Materializer
 

@@ -409,6 +409,7 @@ lazy val docs = project("docs")
       "akka.minimum.version25" -> AkkaDependency.minimumExpectedAkkaVersion,
       "akka.minimum.version26" -> AkkaDependency.minimumExpectedAkka26Version,
       "jackson.version" -> Dependencies.jacksonVersion,
+      "scalafix.version" -> _root_.scalafix.sbt.BuildInfo.scalafixVersion, // grab from scalafix plugin directly
       "extref.akka-docs.base_url" -> s"https://doc.akka.io/docs/akka/${AkkaDependency.docs.link}/%s",
       "javadoc.akka.http.base_url" -> {
         val v = if (isSnapshot.value) "current" else version.value
