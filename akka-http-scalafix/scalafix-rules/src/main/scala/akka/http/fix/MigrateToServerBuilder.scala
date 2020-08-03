@@ -25,13 +25,17 @@ class MigrateToServerBuilder extends SemanticRule("MigrateToServerBuilder") {
         val argExps = namedArgMap(args, params)
 
         val handler = argExps("handler")
-        handler.synthetics match {
-          case ApplyTree(fun, _) :: Nil if fun.symbol.exists(_.displayName == "routeToFlow") /* FIXME: could use real symbol instead */ =>
-            // migrate bindAndHandle(route) to bindAndHandleAsync(route)
-            Patch.replaceTree(t, s"${builder(argExps)}.bind($handler)")
-          case _ =>
-            Patch.replaceTree(t, s"${builder(argExps)}.bindFlow($handler)")
-        }
+        val handlerIsRoute =
+          handler.symbol.info.exists(_.signature.toString contains "Route") || // doesn't seem to work with synthetics on
+            (handler.synthetics match { // only works with `scalacOptions += "-P:semanticdb:synthetics:on"`
+              case ApplyTree(fun, _) :: Nil => fun.symbol.exists(_.displayName == "routeToFlow") /* FIXME: could use real symbol instead */
+              case _                        => false
+            })
+
+        if (handlerIsRoute)
+          Patch.replaceTree(t, s"${builder(argExps)}.bind($handler)")
+        else
+          Patch.replaceTree(t, s"${builder(argExps)}.bindFlow($handler)")
 
       case t @ q"Http().bindAndHandleSync(..$params)" =>
         val args = Seq("handler", "interface", "port", "connectionContext", "settings", "log")

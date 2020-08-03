@@ -21,6 +21,10 @@ object MigrateToServerBuilderTest {
   def syncHandler: HttpRequest => HttpResponse = ???
   def flow: Flow[HttpRequest, HttpResponse, Any] = ???
   def route: Route = ???
+  trait ServiceRoutes {
+    def route: Route = ???
+  }
+  def service: ServiceRoutes = ???
 
   // fix: materializer or system explicitly given, see https://github.com/akka/akka-http/issues/3410
 
@@ -32,6 +36,7 @@ object MigrateToServerBuilderTest {
   Http().newServerAt(interface = "localhost", port = 8080).bind(handler)
   Http().newServerAt("127.0.0.1", 8080).bindFlow(flow)
   Http().newServerAt("127.0.0.1", 8080).bind(route)
+  Http().newServerAt("127.0.0.1", 8080).bind(service.route)
   Http().newServerAt("127.0.0.1", 0).logTo(log).bindSync(syncHandler)
 
   Http().newServerAt("127.0.0.1", 0).withSettings(settings).connectionSource().runWith(Sink.ignore)

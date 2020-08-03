@@ -31,6 +31,7 @@ The in the sbt shell of your project run:
 
 ```
 scalafixEnable
+set scalacOptions in ThisBuild += "-P:semanticdb:synthetics:on"
 scalafixAll dependency:MigrateToServerBuilder@com.typesafe.akka:akka-http-scalafix-rules:10.2.0
 ```
 
