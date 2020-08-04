@@ -70,4 +70,8 @@ object MigrateToServerBuilderTest {
   http.bindAndHandle(route, "127.0.0.1", port = 8080)
   http.bindAndHandleAsync(handler, "127.0.0.1", 8080)
   http.bindAndHandleSync(syncHandler, "127.0.0.1", 8080)
+
+  Http(actorSystem).bindAndHandle(route, "127.0.0.1", port = 8080)
+  Http(actorSystem).bindAndHandleAsync(handler, "127.0.0.1", 8080)
+  Http(actorSystem).bindAndHandleSync(syncHandler, "127.0.0.1", 8080)
 }

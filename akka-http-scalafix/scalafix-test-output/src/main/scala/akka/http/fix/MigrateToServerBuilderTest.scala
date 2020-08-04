@@ -54,4 +54,8 @@ object MigrateToServerBuilderTest {
   http.newServerAt("127.0.0.1", 8080).bind(route)
   http.newServerAt("127.0.0.1", 8080).bind(handler)
   http.newServerAt("127.0.0.1", 8080).bindSync(syncHandler)
+
+  Http(actorSystem).newServerAt("127.0.0.1", 8080).bind(route)
+  Http(actorSystem).newServerAt("127.0.0.1", 8080).bind(handler)
+  Http(actorSystem).newServerAt("127.0.0.1", 8080).bindSync(syncHandler)
 }
