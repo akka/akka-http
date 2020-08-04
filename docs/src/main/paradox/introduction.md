@@ -24,7 +24,7 @@ However, if your application is not primarily a web application because its core
 Akka HTTP was designed specifically as “not-a-framework”, not because we don’t like frameworks, but for use cases where a framework is not the right choice. Akka HTTP is made for building integration layers based on HTTP and as such tries to “stay on the sidelines”. Therefore you normally don’t build your application “on top of” Akka HTTP, but you build your application on top of whatever makes sense and use Akka HTTP merely for the HTTP integration needs.
 
 On the other hand, if you prefer to build your applications with the guidance of a framework, you should give [Play Framework](https://www.playframework.com/) or [Lagom](https://www.lagomframework.com/) a try, which both use Akka internally. If you
-come from Play and want to try Akka HTTP, we collected a @ref[side-by-side comparison](routing-dsl/play-comparison.md) of how some routing feature of Play map to Akka HTTP features.
+come from Play and want to try Akka HTTP, we collected a @ref[side-by-side comparison](routing-dsl/play-comparison.md) to show how some Play routing features map to the Akka HTTP routing DSL.
 
 ## Using Akka HTTP
 
