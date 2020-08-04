@@ -20,7 +20,7 @@ object Dependencies {
   val silencerVersion = "1.7.0"
 
   val scalaTestVersion = "3.1.2"
-  val specs2Version = "4.10.0"
+  val specs2Version = "4.10.2"
   val scalaCheckVersion = "1.14.3"
 
   val Versions = Seq(
