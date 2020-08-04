@@ -10,6 +10,7 @@ import akka.http.scaladsl._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.settings.ServerSettings
 import akka.http.scaladsl.model._
+import akka.stream.Materializer
 import akka.stream.scaladsl.{ Flow, Sink }
 
 import scala.concurrent.Future
@@ -17,6 +18,7 @@ import scala.concurrent.Future
 object MigrateToServerBuilderTest {
   // Add code that needs fixing here.
   implicit def actorSystem: ActorSystem = ???
+  def customMaterializer: Materializer = ???
   implicit def log: LoggingAdapter = ???
   def settings: ServerSettings = ???
   def httpContext: HttpConnectionContext = ???
@@ -56,4 +58,8 @@ object MigrateToServerBuilderTest {
   Http().bindAndHandleSync(syncHandler, "127.0.0.1", log = log)
 
   Http().bind("127.0.0.1", settings = settings).runWith(Sink.ignore)
+
+  Http().bindAndHandle(route, "127.0.0.1", port = 8080)(customMaterializer)
+  Http().bindAndHandleAsync(handler, "127.0.0.1", 8080)(customMaterializer)
+  Http().bindAndHandleSync(syncHandler, "127.0.0.1", 8080)(customMaterializer)
 }
