@@ -23,7 +23,8 @@ However, if your application is not primarily a web application because its core
 
 Akka HTTP was designed specifically as “not-a-framework”, not because we don’t like frameworks, but for use cases where a framework is not the right choice. Akka HTTP is made for building integration layers based on HTTP and as such tries to “stay on the sidelines”. Therefore you normally don’t build your application “on top of” Akka HTTP, but you build your application on top of whatever makes sense and use Akka HTTP merely for the HTTP integration needs.
 
-On the other hand, if you prefer to build your applications with the guidance of a framework, you should give [Play Framework](https://www.playframework.com/) or [Lagom](https://www.lagomframework.com/) a try, which both use Akka internally.
+On the other hand, if you prefer to build your applications with the guidance of a framework, you should give [Play Framework](https://www.playframework.com/) or [Lagom](https://www.lagomframework.com/) a try, which both use Akka internally. If you
+come from Play and want to try Akka HTTP, we collected a @ref[side-by-side comparison](routing-dsl/play-comparison.md) to show how some Play routing features map to the Akka HTTP routing DSL.
 
 ## Using Akka HTTP
 
@@ -129,7 +130,7 @@ this case shown by two separate routes. The first route queries an asynchronous 
 saves it to the database and replies with an OK when done.
 
 Scala
-:   @@snip [SprayJsonExample2.scala]($test$/scala/docs/http/scaladsl/SprayJsonExample2.scala)
+:   @@snip [SprayJsonExample2.scala]($test$/scala/docs/http/scaladsl/SprayJsonExample.scala)
 
 Java
 :   @@snip [JacksonExampleTest.java]($test$/java/docs/http/javadsl/JacksonExampleTest.java) { #second-jackson-example }
@@ -137,8 +138,9 @@ Java
 When you run this server, you can update the inventory via `curl -H "Content-Type: application/json" -X POST -d '{"items":[{"name":"hhgtg","id":42}]}' http://localhost:8080/create-order` on your terminal - adding an item named `"hhgtg"` and having an `id=42`; and then view the inventory either in a browser, at a url like: [http://localhost:8080/item/42](http://localhost:8080/item/42) - or on the terminal,
 via `curl http://localhost:8080/item/42`.
 
-The logic for the marshalling and unmarshalling JSON in this example is provided by the @scala["spray-json"]@java["Jackson"] library
-(details on how to use that here: @scala[@ref[JSON Support](common/json-support.md))]@java[@ref[JSON Support](common/json-support.md#jackson-support))].
+The logic for the marshalling and unmarshalling JSON in this example is provided by the @scala["spray-json"]@java["Jackson"] library.
+See @scala[@ref[JSON Support](common/json-support.md))]@java[@ref[JSON Support](common/json-support.md#jackson-support))] for more information about integration
+with this library.
 
 ## Streaming
 
@@ -191,7 +193,7 @@ Java
 
 Read more details about the low level APIs in the section @ref[Core Server API](server-side/low-level-api.md).
 
-## HTTP client API
+## HTTP Client API
 
 The client APIs provide methods for calling a HTTP server using the same @apidoc[HttpRequest] and @apidoc[HttpResponse] abstractions
 that Akka HTTP server uses but adds the concept of connection pools to allow multiple requests to the same server to be
@@ -223,6 +225,8 @@ Details can be found in sections @ref[Core Server API](server-side/low-level-api
 akka-http-testkit
 : A test harness and set of utilities for verifying server-side service implementations
 
+akka-http2-support
+: The HTTP/2 implementation to be included only if @ref[HTTP/2 support](server-side/http2.md) is needed.
 
 @@@ div { .group-scala }
 akka-http-spray-json
