@@ -43,7 +43,9 @@ object MigrateToServerBuilderTest {
 
   Http().newServerAt("127.0.0.1", 0).withSettings(settings).connectionSource().runWith(Sink.ignore)
 
+  // format: OFF
   Http().newServerAt("127.0.0.1", 8080).withMaterializer(customMaterializer).bind(route)
   Http().newServerAt("127.0.0.1", 8080).withMaterializer(customMaterializer).bind(handler)
   Http().newServerAt("127.0.0.1", 8080).withMaterializer(customMaterializer).bindSync(syncHandler)
+  // format: ON
 }

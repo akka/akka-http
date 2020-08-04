@@ -59,7 +59,9 @@ object MigrateToServerBuilderTest {
 
   Http().bind("127.0.0.1", settings = settings).runWith(Sink.ignore)
 
-  Http().bindAndHandle(route, "127.0.0.1", port = 8080)(customMaterializer)
-  Http().bindAndHandleAsync(handler, "127.0.0.1", 8080)(customMaterializer)
-  Http().bindAndHandleSync(syncHandler, "127.0.0.1", 8080)(customMaterializer)
+  // format: OFF
+  Http().bindAndHandle(route, "127.0.0.1", port = 8080)(customMaterializer)// assert: MigrateToServerBuilder.custom-materializer-warning
+  Http().bindAndHandleAsync(handler, "127.0.0.1", 8080)(customMaterializer)// assert: MigrateToServerBuilder.custom-materializer-warning
+  Http().bindAndHandleSync(syncHandler, "127.0.0.1", 8080)(customMaterializer) // assert: MigrateToServerBuilder.custom-materializer-warning
+  // format: ON
 }

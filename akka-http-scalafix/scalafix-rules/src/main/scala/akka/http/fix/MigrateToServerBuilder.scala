@@ -4,6 +4,7 @@
 
 package akka.http.fix
 
+import scalafix.lint.LintSeverity
 import scalafix.v1._
 
 import scala.meta._
@@ -21,10 +22,21 @@ class MigrateToServerBuilder extends SemanticRule("MigrateToServerBuilder") {
           (t.parent.get, t.parent.get.asInstanceOf[Term.Apply].args.head)
         }.toOption
 
+      val materializerLint: Option[Patch] = materializerAndTarget.map {
+        case (_, matArg) =>
+          Patch.lint(Diagnostic(
+            "custom-materializer-warning",
+            "Custom materializers are often not needed any more. You can often just remove custom materializers and " +
+              "just use the system materializer which is supplied automatically.",
+            matArg.pos,
+            severity = LintSeverity.Warning
+          ))
+      }
+
       val argExps = namedArgMap(args, t.asInstanceOf[Term.Apply].args) ++ materializerAndTarget.map("materializer" -> _._2).toSeq
       val targetTree = materializerAndTarget.map(_._1).getOrElse(t) // patch parent if materializer arg is found
 
-      patchTree(targetTree, argExps, targetMethod(argExps("handler")))
+      patchTree(targetTree, argExps, targetMethod(argExps("handler"))) + materializerLint
     }
 
     def patchTree(t: Tree, argExps: Map[String, Term], targetMethod: String): Patch =
