@@ -9,6 +9,7 @@ The setup of the scalafix module roughly follows the example in https://github.c
 ## Applying locally defined rules to docs examples
 
  * run `scalafixEnable` on the sbt shell (this will unfortunately require a complete rebuild afterwards)
+ * run `set scalacOptions in ThisBuild += "-P:semanticdb:synthetics:on"` to allow access to synthetics
  * e.g. run docs/scalafixAll MigrateToServerBuilder`
 
 *Note:* There's some weird stuff going on regarding cross-publishing. The `scalafixScalaBinaryVersion` line in build.sbt
