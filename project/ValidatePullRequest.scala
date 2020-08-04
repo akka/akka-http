@@ -393,7 +393,7 @@ object AggregatePRValidation extends AutoPlugin {
         def hasTests(result: Tests.Output): Boolean = result.events.exists(e => hasExecutedTests(e._2))
 
         def printTestResults(result: KeyValue[Tests.Output]): Unit = {
-          write(s"Test result for `${showKey(result.key)}``")
+          write(s"Test result for `${showKey(result.key)}`")
           write("")
           write("```")
 
