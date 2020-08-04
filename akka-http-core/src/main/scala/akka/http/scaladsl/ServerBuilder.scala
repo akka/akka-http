@@ -49,6 +49,11 @@ trait ServerBuilder {
   def enableHttps(context: HttpsConnectionContext): ServerBuilder
 
   /**
+   * Use custom [[Materializer]] for the binding
+   */
+  def withMaterializer(materializer: Materializer): ServerBuilder
+
+  /**
    * Bind a new HTTP server at the given endpoint and use the given asynchronous `handler`
    * [[akka.stream.scaladsl.Flow]] for processing all incoming connections.
    *
@@ -107,18 +112,26 @@ trait ServerBuilder {
 @InternalApi
 private[http] object ServerBuilder {
   def apply(interface: String, port: Int, system: ClassicActorSystemProvider): ServerBuilder =
-    Impl(interface, port, scaladsl.HttpConnectionContext, system.classicSystem.log, ServerSettings(system.classicSystem), system)
+    Impl(
+      interface,
+      port,
+      scaladsl.HttpConnectionContext,
+      system.classicSystem.log,
+      ServerSettings(system.classicSystem),
+      system,
+      SystemMaterializer(system).materializer
+    )
 
   private case class Impl(
-    interface: String,
-    port:      Int,
-    context:   ConnectionContext,
-    log:       LoggingAdapter,
-    settings:  ServerSettings,
-    system:    ClassicActorSystemProvider
+    interface:    String,
+    port:         Int,
+    context:      ConnectionContext,
+    log:          LoggingAdapter,
+    settings:     ServerSettings,
+    system:       ClassicActorSystemProvider,
+    materializer: Materializer
   ) extends ServerBuilder {
     private val http: scaladsl.HttpExt = scaladsl.Http(system)
-    private implicit val mat: Materializer = SystemMaterializer(system).materializer
 
     def onInterface(newInterface: String): ServerBuilder = copy(interface = newInterface)
     def onPort(newPort: Int): ServerBuilder = copy(port = newPort)
@@ -126,15 +139,16 @@ private[http] object ServerBuilder {
     def withSettings(newSettings: ServerSettings): ServerBuilder = copy(settings = newSettings)
     def adaptSettings(f: ServerSettings => ServerSettings): ServerBuilder = copy(settings = f(settings))
     def enableHttps(newContext: HttpsConnectionContext): ServerBuilder = copy(context = newContext)
+    def withMaterializer(newMaterializer: Materializer): ServerBuilder = copy(materializer = newMaterializer)
 
     def connectionSource(): Source[Http.IncomingConnection, Future[ServerBinding]] =
       http.bindImpl(interface, port, context, settings, log)
 
     def bindFlow(handlerFlow: Flow[HttpRequest, HttpResponse, _]): Future[ServerBinding] =
-      http.bindAndHandleImpl(handlerFlow, interface, port, context, settings, log)
+      http.bindAndHandleImpl(handlerFlow, interface, port, context, settings, log)(materializer)
 
     def bind(handler: HttpRequest => Future[HttpResponse]): Future[ServerBinding] =
-      http.bindAndHandleAsyncImpl(handler, interface, port, context, settings, parallelism = 0, log)
+      http.bindAndHandleAsyncImpl(handler, interface, port, context, settings, parallelism = 0, log)(materializer)
 
     def bindSync(handler: HttpRequest => HttpResponse): Future[ServerBinding] =
       bind(req => FastFuture.successful(handler(req)))
