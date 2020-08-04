@@ -15,6 +15,7 @@ object MigrateToServerBuilderTest {
   // Add code that needs fixing here.
   implicit def actorSystem: ActorSystem = ???
   def customMaterializer: Materializer = ???
+  def http: HttpExt = ???
   implicit def log: LoggingAdapter = ???
   def settings: ServerSettings = ???
   def httpContext: HttpConnectionContext = ???
@@ -49,4 +50,8 @@ object MigrateToServerBuilderTest {
   Http().newServerAt("127.0.0.1", 8080).withMaterializer(customMaterializer).bindSync(syncHandler)
   Http() // needed to appease formatter
   // format: ON
+
+  http.newServerAt("127.0.0.1", 8080).bind(route)
+  http.newServerAt("127.0.0.1", 8080).bind(handler)
+  http.newServerAt("127.0.0.1", 8080).bindSync(syncHandler)
 }

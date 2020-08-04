@@ -13,7 +13,7 @@ import scala.util.Try
 class MigrateToServerBuilder extends SemanticRule("MigrateToServerBuilder") {
 
   override def fix(implicit doc: SemanticDocument): Patch = {
-    def patch(t: Tree, targetMethod: Term => String): Patch = {
+    def patch(t: Tree, http: Term, targetMethod: Term => String): Patch = {
       val args = t.symbol.info.get.signature.asInstanceOf[MethodSignature].parameterLists.head.map(_.displayName)
       val materializerAndTarget: Option[(Tree, Term)] =
         Try {
@@ -36,11 +36,11 @@ class MigrateToServerBuilder extends SemanticRule("MigrateToServerBuilder") {
       val argExps = namedArgMap(args, t.asInstanceOf[Term.Apply].args) ++ materializerAndTarget.map("materializer" -> _._2).toSeq
       val targetTree = materializerAndTarget.map(_._1).getOrElse(t) // patch parent if materializer arg is found
 
-      patchTree(targetTree, argExps, targetMethod(argExps("handler"))) + materializerLint
+      patchTree(targetTree, http, argExps, targetMethod(argExps("handler"))) + materializerLint
     }
 
-    def patchTree(t: Tree, argExps: Map[String, Term], targetMethod: String): Patch =
-      Patch.replaceTree(t, s"${builder(argExps)}.$targetMethod(${argExps("handler")})")
+    def patchTree(t: Tree, http: Term, argExps: Map[String, Term], targetMethod: String): Patch =
+      Patch.replaceTree(t, s"${builder(http, argExps)}.$targetMethod(${argExps("handler")})")
 
     def handlerIsRoute(handler: Term): Boolean =
       handler.symbol.info.exists(_.signature.toString contains "Route") || // doesn't seem to work with synthetics on
@@ -51,7 +51,7 @@ class MigrateToServerBuilder extends SemanticRule("MigrateToServerBuilder") {
     def bindAndHandleTargetMethod(handler: Term): String =
       if (handlerIsRoute(handler)) "bind" else "bindFlow"
 
-    def builder(argExps: Map[String, Term])(implicit doc: SemanticDocument): String = {
+    def builder(http: Term, argExps: Map[String, Term])(implicit doc: SemanticDocument): String = {
       def clause(name: String, exp: String => String, onlyIf: Term => Boolean = _ => true): String =
         if (argExps.contains(name) && onlyIf(argExps(name))) s".${exp(argExps(name).toString)}"
         else ""
@@ -70,7 +70,7 @@ class MigrateToServerBuilder extends SemanticRule("MigrateToServerBuilder") {
           clause("log", e => s"logTo($e)") +
           clause("materializer", e => s"withMaterializer($e)")
 
-      s"Http().newServerAt(${argExps("interface")}, ${argExps.getOrElse("port", 0)})$extraClauses"
+      s"$http.newServerAt(${argExps("interface")}, ${argExps.getOrElse("port", 0)})$extraClauses"
     }
     def namedArgMap(names: Seq[String], exps: Seq[Term]): Map[String, Term] = {
       val idx = exps.lastIndexWhere(!_.isInstanceOf[Term.Assign])
@@ -84,20 +84,27 @@ class MigrateToServerBuilder extends SemanticRule("MigrateToServerBuilder") {
         }
       ).toMap
     }
+    // still pretty inaccurate but scala meta doesn't support proper type information of terms in public API, so hard to
+    // do it better than this
+    def isHttpExt(http: Term): Boolean = http match {
+      case q"Http()" => true
+      case x if x.symbol.info.exists(_.signature.toString contains "HttpExt") => true
+      case _ => false
+    }
 
     doc.tree.collect {
-      case t @ q"Http().bindAndHandleAsync(..$params)" =>
+      case t @ q"$http.bindAndHandleAsync(..$params)" if isHttpExt(http) =>
         // FIXME: warn about parallelism if it exists
 
-        patch(t, _ => "bind")
+        patch(t, http, _ => "bind")
 
-      case t @ q"Http().bindAndHandle(..$params)"     => patch(t, bindAndHandleTargetMethod)
-      case t @ q"Http().bindAndHandleSync(..$params)" => patch(t, _ => "bindSync")
-      case t @ q"Http().bind(..$params)" =>
+      case t @ q"$http.bindAndHandle(..$params)" if isHttpExt(http)     => patch(t, http, bindAndHandleTargetMethod)
+      case t @ q"$http.bindAndHandleSync(..$params)" if isHttpExt(http) => patch(t, http, _ => "bindSync")
+      case t @ q"$http.bind(..$params)" if isHttpExt(http) =>
         val args = Seq("interface", "port", "connectionContext", "settings", "log")
         val argExps = namedArgMap(args, params)
 
-        Patch.replaceTree(t, s"${builder(argExps)}.connectionSource()")
+        Patch.replaceTree(t, s"${builder(http, argExps)}.connectionSource()")
 
     }.asPatch
   }
