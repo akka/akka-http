@@ -50,7 +50,7 @@ lazy val root = Project(
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .settings(
     // Unidoc doesn't like macro definitions
-    unidocProjectExcludes := Seq(parsing, compatibilityTests, docs, httpTests, httpJmhBench),
+    unidocProjectExcludes := Seq(parsing, compatibilityTests, docs, httpTests, httpJmhBench, httpScalafix, httpScalafixRules, httpScalafixTestInput, httpScalafixTestOutput, httpScalafixTests),
     // Support applying macros in unidoc:
     scalaMacroSupport,
     unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get,
