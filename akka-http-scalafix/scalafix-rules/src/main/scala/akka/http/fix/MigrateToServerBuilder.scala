@@ -26,8 +26,8 @@ class MigrateToServerBuilder extends SemanticRule("MigrateToServerBuilder") {
         case (_, matArg) =>
           Patch.lint(Diagnostic(
             "custom-materializer-warning",
-            "Custom materializers are often not needed any more. You can often just remove custom materializers and " +
-              "just use the system materializer which is supplied automatically.",
+            "Custom materializers are often not needed any more. You can often remove custom materializers and " +
+              "use the system materializer which is supplied automatically.",
             matArg.pos,
             severity = LintSeverity.Warning
           ))
@@ -45,7 +45,7 @@ class MigrateToServerBuilder extends SemanticRule("MigrateToServerBuilder") {
     def handlerIsRoute(handler: Term): Boolean =
       handler.symbol.info.exists(_.signature.toString contains "Route") || // doesn't seem to work with synthetics on
         (handler.synthetics match { // only works with `scalacOptions += "-P:semanticdb:synthetics:on"`
-          case ApplyTree(fun, _) :: Nil => fun.symbol.exists(_.displayName == "routeToFlow") /* FIXME: could use real symbol instead */
+          case ApplyTree(fun, _) :: Nil => fun.symbol.exists(_.displayName == "routeToFlow") // somewhat inaccurate, but that name should be unique enough for our purposes
           case _                        => false
         })
     def bindAndHandleTargetMethod(handler: Term): String =

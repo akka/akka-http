@@ -33,8 +33,6 @@ object MigrateToServerBuilderTest {
   }
   def service: ServiceRoutes = ???
 
-  // fix: materializer or system explicitly given, see https://github.com/akka/akka-http/issues/3410
-
   Http().bindAndHandleAsync(handler, "127.0.0.1", 8080, log = log)
   Http().bindAndHandleAsync(handler, "127.0.0.1", log = log, port = 8080)
   Http().bindAndHandleAsync(handler, "127.0.0.1", settings = settings)

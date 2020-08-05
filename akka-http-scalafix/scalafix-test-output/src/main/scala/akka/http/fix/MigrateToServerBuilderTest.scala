@@ -29,8 +29,6 @@ object MigrateToServerBuilderTest {
   }
   def service: ServiceRoutes = ???
 
-  // fix: materializer or system explicitly given, see https://github.com/akka/akka-http/issues/3410
-
   Http().newServerAt("127.0.0.1", 8080).logTo(log).bind(handler)
   Http().newServerAt("127.0.0.1", 8080).logTo(log).bind(handler)
   Http().newServerAt("127.0.0.1", 0).withSettings(settings).bind(handler)
