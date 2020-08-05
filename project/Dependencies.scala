@@ -23,8 +23,13 @@ object Dependencies {
   val specs2Version = "4.10.0"
   val scalaCheckVersion = "1.14.3"
 
+  val scalafixVersion = _root_.scalafix.sbt.BuildInfo.scalafixVersion // grab from plugin
+
+  val scala212Version = "2.12.11"
+  val scala213Version = "2.13.3"
+
   val Versions = Seq(
-    crossScalaVersions := Seq("2.13.3", "2.12.11"),
+    crossScalaVersions := Seq(scala213Version, scala212Version),
     scalaVersion := crossScalaVersions.value.head,
   )
 
@@ -49,6 +54,8 @@ object Dependencies {
     val hpack       = "com.twitter"                   % "hpack"                        % "1.0.2"       // ApacheV2
 
     val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.8.5"
+
+    val scalafix    = "ch.epfl.scala"                 %% "scalafix-core"               % Dependencies.scalafixVersion // grab from plugin
 
     object Docs {
       val sprayJson   = Compile.sprayJson                                                                    % "test"
