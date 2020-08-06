@@ -259,6 +259,8 @@ scaladsl:
  * `akka.http.scaladsl.Http.createDefaultClientHttpsContext`
  * `akka.http.scaladsl.model.HttpCookie.copy`
  * `akka.http.scaladsl.model.HttpCookie.unapply`
+ * `akka.http.scaladsl.model.HttpRequest.copy`
+ * `akka.http.scaladsl.model.HttpResponse.copy`
  * `akka.http.scaladsl.model.headers.Remote-Address`
  * `akka.http.scaladsl.model.ws.UpgradeToWebSocket`
  * `akka.http.scaladsl.server.HttpApp`
@@ -275,6 +277,7 @@ scaladsl:
  * `akka.http.scaladsl.coding.Compressor`
  * `akka.http.scaladsl.coding.Gzip`
  * `akka.http.scaladsl.coding.NoCoding`
+ * `akka.http.scaladsl.server.Route.asyncHandler`
  * `akka.http.scaladsl.server.directives.FormFieldDirectives.FieldMagnet`
  * `akka.http.scaladsl.server.directives.FormFieldDirectives.FieldDef`
  * `akka.http.scaladsl.server.directives.FormFieldDirectives.FieldDefAux`
