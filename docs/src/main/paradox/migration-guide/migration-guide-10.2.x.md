@@ -90,10 +90,13 @@ Previously, the implicit conversion `route2HandlerFlow` that turns a `Route` int
 Parser settings, custom `Materializer`, `RoutingLog` or `ExecutionContext`, and
 the `RejectionHandler`/`ExceptionHandler` to use.
 
-This has been simplified to use system defaults instead:
+This has been simplified to use system defaults by default and to require explicit code if you want to change those defaults:
 
-* To set Routing or Parser settings, set them in your actor system configuration, e.g. via `application.conf`. In the rare case where you'd like to test routes with different @apidoc[RoutingSettings] within the same test, you can use the @ref[withSettings](../routing-dsl/directives/basic-directives/withSettings.md) directive.
-* To apply a custom @apidoc[http.*.RejectionHandler] or @apidoc[ExceptionHandler], use the @ref[handleRejections](../routing-dsl/directives/execution-directives/handleRejections.md) and @ref[handleExceptions](../routing-dsl/directives/execution-directives/handleExceptions.md) directives
+* To set Routing or Parser settings, set them in your actor system configuration, e.g. via `application.conf`. In the rare case where you'd like to
+  test routes with different @apidoc[RoutingSettings] within the same test, you can use the
+  @ref[withSettings](../routing-dsl/directives/basic-directives/withSettings.md) directive.
+* To apply a custom @apidoc[http.*.RejectionHandler] or @apidoc[ExceptionHandler], use the @ref[handleRejections](../routing-dsl/directives/execution-directives/handleRejections.md)
+  and @ref[handleExceptions](../routing-dsl/directives/execution-directives/handleExceptions.md) directives
 
 #### In RouteTest (scaladsl)
 
