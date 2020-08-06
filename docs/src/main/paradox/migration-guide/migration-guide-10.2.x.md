@@ -66,6 +66,11 @@ Scala
 Java
 :   @@snip [AkkaHttp1020MigrationExample.java]($test$/java/docs/http/javadsl/server/AkkaHttp1020MigrationExample.java) { #new-binding }
 
+### Scala 2.11 support dropped
+
+Almost three years after the release of Scala 2.11.12, support for Scala 2.11 has been dropped following the example of Akka 2.6.
+Akka HTTP 10.1.x which still supports Scala 2.11 will be supported for a while.
+
 ### HTTP/2 support requires JDK 8 update 252 or later
 
 JVM support for ALPN has been backported to JDK 8u252 which is now widely available. Support for using the Jetty ALPN
