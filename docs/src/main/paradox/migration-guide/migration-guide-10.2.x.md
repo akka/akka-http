@@ -220,3 +220,84 @@ where you can provide your own logic for creating `SSLEngine` instances.
 When using this more low-level API, remember it is up to you to set the
 `SSLEngine` 'mode' (client or server), and further configuration such as
 enabling SNI and hostname verification features when needed.
+
+### List of deprecated and deleted APIs
+
+#### Deprecated APIs
+
+javadsl:
+
+ * static `akka.http.javadsl.ConnectionContext.https`
+ * most getters of `akka.http.javadsl.ConnectionContext`
+ * `akka.http.javadsl.Http.bind`
+ * `akka.http.javadsl.Http.bindAndHandle`
+ * `akka.http.javadsl.Http.bindAndHandleSync`
+ * `akka.http.javadsl.Http.bindAndHandleAsync`
+ * `akka.http.javadsl.Http.defaultServerHttpContext`
+ * `akka.http.javadsl.Http.setDefaultServerHttpContext`
+ * `akka.http.javadsl.Http.createServerHttpsContext`
+ * `akka.http.javadsl.Http.createClientHttpsContext`
+ * `akka.http.javadsl.Http.createDefaultClientHttpsContext`
+ * `akka.http.javadsl.model.ws.UpgradeToWebSocket`
+ * `akka.http.javadsl.server.HttpApp`
+ * `akka.http.javadsl.settings.ParserSettings.create`
+ * `akka.http.javadsl.settings.ServerSettings.getRemoteAddressHeader`
+ * `akka.http.javadsl.settings.ServerSettings.getWebsocketRandomFactory`
+ * `akka.http.javadsl.settings.ServerSettings.withWebsocketRandomFactory`
+ * `akka.http.javadsl.server.directives.WebSocketDirectives.extractUpgradeToWebSocket`
+
+scaladsl:
+
+ * most of `akka.http.scaladsl.ConnectionContext`
+ * `akka.http.scaladsl.HttpExt.bind`
+ * `akka.http.scaladsl.HttpExt.bindAndHandle`
+ * `akka.http.scaladsl.HttpExt.bindAndHandleSync`
+ * `akka.http.scaladsl.HttpExt.bindAndHandleAsync`
+ * `akka.http.scaladsl.Http.defaultServerHttpContext`
+ * `akka.http.scaladsl.Http.setDefaultServerHttpContext`
+ * `akka.http.scaladsl.Http.createClientHttpsContext`
+ * `akka.http.scaladsl.Http.createDefaultClientHttpsContext`
+ * `akka.http.scaladsl.model.HttpCookie.copy`
+ * `akka.http.scaladsl.model.HttpCookie.unapply`
+ * `akka.http.scaladsl.model.HttpRequest.copy`
+ * `akka.http.scaladsl.model.HttpResponse.copy`
+ * `akka.http.scaladsl.model.headers.Remote-Address`
+ * `akka.http.scaladsl.model.ws.UpgradeToWebSocket`
+ * `akka.http.scaladsl.server.HttpApp`
+ * `akka.http.scaladsl.settings.ParserSettings.apply`
+ * `akka.http.scaladsl.settings.ServerSettings.remoteAddressHeader`
+ * `akka.http.scaladsl.settings.ServerSettings.getWebsocketRandomFactory`
+ * `akka.http.scaladsl.settings.ServerSettings.withWebsocketRandomFactory`
+ * `akka.http.scaladsl.coding.Deflate`
+ * `akka.http.scaladsl.coding.DeflateCompressor`
+ * `akka.http.scaladsl.coding.StreamDecoder`
+ * `akka.http.scaladsl.coding.Encoder.encode(ByteString): ByteString`
+ * `akka.http.scaladsl.coding.Encoder.newCompressor`
+ * `akka.http.scaladsl.coding.Encoder.newEncodeTransformer`
+ * `akka.http.scaladsl.coding.Compressor`
+ * `akka.http.scaladsl.coding.Gzip`
+ * `akka.http.scaladsl.coding.NoCoding`
+ * `akka.http.scaladsl.server.Route.asyncHandler`
+ * `akka.http.scaladsl.server.directives.FormFieldDirectives.FieldMagnet`
+ * `akka.http.scaladsl.server.directives.FormFieldDirectives.FieldDef`
+ * `akka.http.scaladsl.server.directives.FormFieldDirectives.FieldDefAux`
+ * `akka.http.scaladsl.server.directives.HeaderDirectives.headerValueByName`
+ * `akka.http.scaladsl.server.directives.HeaderDirectives.optionalHeaderValueByName`
+ * `akka.http.scaladsl.server.directives.HeaderDirectives.fromUnitForModeledCustomHeader`
+ * `akka.http.scaladsl.server.directives.HeaderDirectives.fromUnitNormalHeader`
+ * `akka.http.scaladsl.server.directives.WebSocketDirectives.extractUpgradeToWebSocket`
+
+#### Deleted APIs (or overloads)
+
+ * some `akka.http.javadsl.Http` method overloads with a materializer parameter (like `singleRequest`, `superPool`)
+ * `akka.http.javadsl.HostConnectionPool.shutdown`
+ * `akka.http.javadsl.model.HttpMethod.getRequestEntityAcceptance`
+ * `akka.http.javadsl.model.HttpMethods.createCustom`
+ * `akka.http.javadsl.settings.ConnectionPoolSettings.getTransport`
+ * `akka.http.javadsl.*ConnectionContext.getDefaultPort`
+
+ * some `akka.http.scaladsl.HttpExt` method overloads with a materializer parameter (like `singleRequest`, `superPool`)
+ * `akka.http.scaladsl.Http#HostConnectionPool.shutdown`
+ * `akka.http.scaladsl.HttpExt.outgoingConnectionUsingTransport`
+ * `akka.http.scaladsl.UseHttp2` and related methods in *ConnectionContext and ConnectHttp*
+ * `akka.http.scaladsl.model.HttpMethod.getRequestEntityAcceptance`
