@@ -360,7 +360,11 @@ lazy val httpScalafixTests =
     .disablePlugins(BintrayPlugin, MimaPlugin)
     .settings(
       skip in publish := true,
-      libraryDependencies += "ch.epfl.scala" % "scalafix-testkit" % Dependencies.scalafixVersion % Test cross CrossVersion.full,
+      libraryDependencies += {
+        // FIXME: temporary cludge to use old testkit until we can update to latest scala versions after 10.2.0
+        val scalafixTestkitVersion = if (scalaVersion.value == "2.12.11") "0.9.18" else Dependencies.scalafixVersion
+        "ch.epfl.scala" % "scalafix-testkit" % scalafixTestkitVersion % Test cross CrossVersion.full
+      },
       compile.in(Compile) :=
         compile.in(Compile).dependsOn(compile.in(httpScalafixTestInput, Compile)).value,
       scalafixTestkitOutputSourceDirectories :=
