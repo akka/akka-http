@@ -66,10 +66,19 @@ Scala
 Java
 :   @@snip [AkkaHttp1020MigrationExample.java]($test$/java/docs/http/javadsl/server/AkkaHttp1020MigrationExample.java) { #new-binding }
 
+
 ### Scala 2.11 support dropped
 
 Almost three years after the release of Scala 2.11.12, support for Scala 2.11 has been dropped following the example of Akka 2.6.
 Akka HTTP 10.1.x which still supports Scala 2.11 will be supported for a while.
+
+### HttpRequest.copy / HttpResponse.copy deprecated in favor of withXYZ methods
+
+HttpRequest and HttpResponse have been converted from case classes to regular classes already a while ago. This was necessary to keep
+being able to make binary compatible changes to the API. So far, we kept the `copy` methods available but, like all methods with default
+parameters, these started to become a liability as well. In 10.2.0, the `copy` methods are now deprecated in favor of the more
+explicit `withXYZ` methods. This will help us to evolve those APIs in the future (as unfortunate it is that the idiomatic Scala way
+of case classes / default arguments is not an option because of our compatibility constraints).
 
 ### HTTP/2 support requires JDK 8 update 252 or later
 
