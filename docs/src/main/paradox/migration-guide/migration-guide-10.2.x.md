@@ -239,6 +239,7 @@ javadsl:
  * `akka.http.javadsl.Http.createClientHttpsContext`
  * `akka.http.javadsl.Http.createDefaultClientHttpsContext`
  * `akka.http.javadsl.model.ws.UpgradeToWebSocket`
+ * `akka.http.javadsl.server.HttpApp`
  * `akka.http.javadsl.settings.ParserSettings.create`
  * `akka.http.javadsl.settings.ServerSettings.getRemoteAddressHeader`
  * `akka.http.javadsl.settings.ServerSettings.getWebsocketRandomFactory`
@@ -260,6 +261,7 @@ scaladsl:
  * `akka.http.scaladsl.model.HttpCookie.unapply`
  * `akka.http.scaladsl.model.headers.Remote-Address`
  * `akka.http.scaladsl.model.ws.UpgradeToWebSocket`
+ * `akka.http.scaladsl.server.HttpApp`
  * `akka.http.scaladsl.settings.ParserSettings.apply`
  * `akka.http.scaladsl.settings.ServerSettings.remoteAddressHeader`
  * `akka.http.scaladsl.settings.ServerSettings.getWebsocketRandomFactory`
