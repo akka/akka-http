@@ -1,9 +1,6 @@
 # Configuration
 
-Before configuring Akka HTTP it must be added to your project as described in
-@ref[the introduction](introduction.md#using-akka-http).
-
-Just like any other Akka module Akka HTTP is configured via [Typesafe Config](https://github.com/lightbend/config).
+Just like any other Akka module, Akka HTTP is configured via [Typesafe Config](https://github.com/lightbend/config).
 Usually this means that you provide an `application.conf` which contains all the application-specific settings that
 differ from the default ones provided by the reference configuration files from the individual Akka modules.
 

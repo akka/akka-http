@@ -20,7 +20,7 @@ import scala.io.StdIn
 
 import scala.concurrent.Future
 
-object SprayJsonExample2 {
+object SprayJsonExample {
 
   // needed to run the route
   implicit val system = ActorSystem(Behaviors.empty, "SprayExample")
@@ -50,7 +50,6 @@ object SprayJsonExample2 {
   }
 
   def main(args: Array[String]): Unit = {
-
     val route: Route =
       concat(
         get {
@@ -68,7 +67,7 @@ object SprayJsonExample2 {
           path("create-order") {
             entity(as[Order]) { order =>
               val saved: Future[Done] = saveOrder(order)
-              onComplete(saved) { done =>
+              onSuccess(saved) { _ => // we are not interested in the result value `Done` but only in the fact that it was successful
                 complete("order created")
               }
             }
@@ -82,6 +81,5 @@ object SprayJsonExample2 {
     bindingFuture
       .flatMap(_.unbind()) // trigger unbinding from the port
       .onComplete(_ => system.terminate()) // and shutdown when done
-
   }
 }

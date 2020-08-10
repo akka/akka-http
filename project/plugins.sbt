@@ -18,10 +18,11 @@ addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.1")
 addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.5.6")
 addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.5")
 addSbtPlugin("com.lightbend.sbt" % "sbt-publish-rsync" % "0.2")
-addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.34")
+addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.35")
 addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.18")
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.6.0")
 addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.25")
+addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.19")
 
 // used in ValidatePullRequest to check github PR comments whether to build all subprojects
 libraryDependencies += "org.kohsuke" % "github-api" % "1.115"

@@ -393,7 +393,7 @@ object AggregatePRValidation extends AutoPlugin {
         def hasTests(result: Tests.Output): Boolean = result.events.exists(e => hasExecutedTests(e._2))
 
         def printTestResults(result: KeyValue[Tests.Output]): Unit = {
-          write(s"Test result for '${showKey(result.key)}'")
+          write(s"Test result for `${showKey(result.key)}`")
           write("")
           write("```")
 
@@ -426,7 +426,7 @@ object AggregatePRValidation extends AutoPlugin {
           write("```")
           mimaFailures.foreach {
             case KeyValue(key, Problems(desc)) =>
-              write(s"Problems for ${key.scope.project.toOption.get.asInstanceOf[ProjectRef].project}:\n$desc")
+              write(s"Problems for `${key.scope.project.toOption.get.asInstanceOf[ProjectRef].project}`:\n$desc")
               write("")
             case KeyValue(_, NoErrors) =>
           }
@@ -453,11 +453,11 @@ object AggregatePRValidation extends AutoPlugin {
                   }
 
                   s"  $nodeName: ${message.orElse(directCause.map(_.toString)).getOrElse(s"<unknown: ($i)>")}"
-                }.mkString("\n")
+                }.mkString("```\n", "\n", "\n```\n")
 
             val problem = inc.directCause.map(_.toString).getOrElse(parseIncomplete(inc))
 
-            write(s"${showKey(key)} failed because of $problem")
+            write(s"`${showKey(key)}` failed because of $problem")
           }
           write("</details>")
         }

@@ -44,7 +44,7 @@ object AkkaDependency {
   // Default version updated only when needed, https://doc.akka.io//docs/akka/current/project/downstream-upgrade-strategy.html
   val minimumExpectedAkkaVersion = "2.5.31"
   val default = akkaDependency(defaultVersion = minimumExpectedAkkaVersion)
-  val minimumExpectedAkka26Version = "2.6.4"
+  val minimumExpectedAkka26Version = "2.6.8"
   val docs = akkaDependency(defaultVersion = minimumExpectedAkka26Version)
 
   lazy val masterSnapshot = Artifact(determineLatestSnapshot(), true)
@@ -89,7 +89,8 @@ object AkkaDependency {
     import scala.concurrent.Await
     import scala.concurrent.duration._
 
-    val body = Await.result(http.run(url("https://repo.akka.io/snapshots/com/typesafe/akka/akka-actor_2.12/")), 10.seconds).bodyAsString
+    // akka-cluster-sharding-typed_2.13 seems to be the last nightly published by `akka-publish-nightly` so if that's there then it's likely the rest also made it
+    val body = Await.result(http.run(url("https://repo.akka.io/snapshots/com/typesafe/akka/akka-cluster-sharding-typed_2.13/")), 10.seconds).bodyAsString
     """href="([^?/].*?)/"""".r.findAllMatchIn(body).map(_.group(1)).filter(_.startsWith(prefix)).toList.last
   }
 }

@@ -7,6 +7,7 @@ package docs.http.scaladsl
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.server.Route
 import akka.testkit.TestActors
 import com.github.ghik.silencer.silent
 import docs.CompileOnlySpec
@@ -210,85 +211,95 @@ class HttpServerExampleSpec extends AnyWordSpec with Matchers
 
     // backend entry points
     def myAuthenticator: Authenticator[User] = ???
-    def retrieveOrdersFromDB: Seq[Order] = ???
+    def retrieveOrdersFromDB: Future[Seq[Order]] = ???
     def myDbActor: ActorRef = ???
     def processOrderRequest(id: Int, complete: Order => Unit): Unit = ???
 
-    val route = concat(
-      path("orders") {
-        authenticateBasic(realm = "admin area", myAuthenticator) { user =>
-          concat(
-            get {
-              encodeResponseWith(Coders.Deflate) {
+    lazy val binding = Http().newServerAt("localhost", 8080).bind(topLevelRoute)
+    // ...
+
+    lazy val topLevelRoute: Route =
+      // provide top-level path structure here but delegate functionality to subroutes for readability
+      concat(
+        path("orders")(ordersRoute),
+        // extract URI path element as Int
+        pathPrefix("order" / IntNumber)(orderRoute),
+        pathPrefix("documentation")(documentationRoute),
+        path("oldApi" / Remaining) { pathRest =>
+          redirect("http://oldapi.example.com/" + pathRest, MovedPermanently)
+        }
+      )
+
+    // For bigger routes, these sub-routes can be moved to separate files
+    lazy val ordersRoute: Route =
+      authenticateBasic(realm = "admin area", myAuthenticator) { user =>
+        concat(
+          get {
+            encodeResponseWith(Coders.Deflate) {
+              complete {
+                // unpack future and marshal custom object with in-scope marshaller
+                retrieveOrdersFromDB
+              }
+            }
+          },
+          post {
+            // decompress gzipped or deflated requests if required
+            decodeRequest {
+              // unmarshal with in-scope unmarshaller
+              entity(as[Order]) { order =>
                 complete {
-                  // marshal custom object with in-scope marshaller
-                  retrieveOrdersFromDB
+                  // ... write order to DB
+                  "Order received"
+                }
+              }
+            }
+          }
+        )
+      }
+
+    def orderRoute(orderId: Int): Route =
+      concat(
+        pathEnd {
+          concat(
+            put {
+              // form extraction from multipart or www-url-encoded forms
+              formFields("email", "total".as[Money]).as(Order) { order =>
+                complete {
+                  // complete with serialized Future result
+                  (myDbActor ? Update(order)).mapTo[TransactionResult]
                 }
               }
             },
-            post {
-              // decompress gzipped or deflated requests if required
-              decodeRequest {
-                // unmarshal with in-scope unmarshaller
-                entity(as[Order]) { order =>
-                  complete {
-                    // ... write order to DB
-                    "Order received"
-                  }
+            get {
+              // debugging helper
+              logRequest("GET-ORDER") {
+                // use in-scope marshaller to create completer function
+                completeWith(instanceOf[Order]) { completer =>
+                  // custom
+                  processOrderRequest(orderId, completer)
                 }
               }
             })
-        }
-      },
-      // extract URI path element as Int
-      pathPrefix("order" / IntNumber) { orderId =>
-        concat(
-          pathEnd {
-            concat(
-              put {
-                // form extraction from multipart or www-url-encoded forms
-                formFields("email", "total".as[Money]).as(Order) { order =>
-                  complete {
-                    // complete with serialized Future result
-                    (myDbActor ? Update(order)).mapTo[TransactionResult]
-                  }
-                }
-              },
-              get {
-                // debugging helper
-                logRequest("GET-ORDER") {
-                  // use in-scope marshaller to create completer function
-                  completeWith(instanceOf[Order]) { completer =>
-                    // custom
-                    processOrderRequest(orderId, completer)
-                  }
-                }
-              })
-          },
-          path("items") {
-            get {
-              // parameters to case class extraction
-              parameters("size".as[Int], "color".optional, "dangerous".withDefault("no"))
-                .as(OrderItem) { orderItem =>
-                  // ... route using case class instance created from
-                  // required and optional query parameters
-                  complete("") // #hide
-                }
-            }
-          })
-      },
-      pathPrefix("documentation") {
-        // optionally compresses the response with Gzip or Deflate
-        // if the client accepts compressed responses
-        encodeResponse {
-          // serve up static content from a JAR resource
-          getFromResourceDirectory("docs")
-        }
-      },
-      path("oldApi" / Remaining) { pathRest =>
-        redirect("http://oldapi.example.com/" + pathRest, MovedPermanently)
+        },
+        path("items") {
+          get {
+            // parameters to case class extraction
+            parameters("size".as[Int], "color".optional, "dangerous".withDefault("no"))
+              .as(OrderItem) { orderItem =>
+                // ... route using case class instance created from
+                // required and optional query parameters
+                complete("") // #hide
+              }
+          }
+        })
+
+    lazy val documentationRoute: Route =
+      // optionally compresses the response with Gzip or Deflate
+      // if the client accepts compressed responses
+      encodeResponse {
+        // serve up static content from a JAR resource
+        getFromResourceDirectory("docs")
       }
-    )
     //#long-routing-example
   }
 

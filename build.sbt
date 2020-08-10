@@ -38,6 +38,8 @@ inThisBuild(Def.settings(
     sLog.value.info(s"Building Akka HTTP ${version.value} against Akka ${AkkaDependency.akkaVersion} on Scala ${(scalaVersion in httpCore).value}")
     (onLoad in Global).value
   },
+
+  scalafixScalaBinaryVersion := scalaBinaryVersion.value,
 ))
 
 lazy val root = Project(
@@ -48,7 +50,7 @@ lazy val root = Project(
   .disablePlugins(BintrayPlugin, MimaPlugin)
   .settings(
     // Unidoc doesn't like macro definitions
-    unidocProjectExcludes := Seq(parsing, compatibilityTests, docs, httpTests, httpJmhBench),
+    unidocProjectExcludes := Seq(parsing, compatibilityTests, docs, httpTests, httpJmhBench, httpScalafix, httpScalafixRules, httpScalafixTestInput, httpScalafixTestOutput, httpScalafixTests),
     // Support applying macros in unidoc:
     scalaMacroSupport,
     unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get,
@@ -79,6 +81,7 @@ lazy val root = Project(
     httpTests,
     httpMarshallersScala,
     httpMarshallersJava,
+    httpScalafix,
     docs,
     compatibilityTests
   )
@@ -135,7 +138,7 @@ lazy val parsing = project("akka-parsing")
 lazy val httpCore = project("akka-http-core")
   .settings(commonSettings)
   .settings(AutomaticModuleName.settings("akka.http.core"))
-  .dependsOn(parsing)
+  .dependsOn(parsing, httpScalafixRules % ScalafixConfig)
   .addAkkaModuleDependency("akka-stream", "provided")
   .addAkkaModuleDependency(
     "akka-stream-testkit",
@@ -233,7 +236,8 @@ lazy val httpTests = project("akka-http-tests")
   .settings(commonSettings)
   .settings(Dependencies.httpTests)
   .dependsOn(httpSprayJson, httpXml, httpJackson,
-    httpTestkit % "test", httpCore % "test->test")
+    httpTestkit % "test", httpCore % "test->test",
+    httpScalafixRules % ScalafixConfig)
   .enablePlugins(NoPublish).disablePlugins(BintrayPlugin) // don't release tests
   .enablePlugins(MultiNode)
   .disablePlugins(MimaPlugin) // this is only tests
@@ -316,6 +320,59 @@ def httpMarshallersJavaSubproject(name: String) =
   .enablePlugins(BootstrapGenjavadoc)
   .enablePlugins(ReproducibleBuildsPlugin)
 
+lazy val httpScalafix = project("akka-http-scalafix")
+  .enablePlugins(NoPublish)
+  .disablePlugins(BintrayPlugin, MimaPlugin)
+  .aggregate(httpScalafixRules, httpScalafixTestInput, httpScalafixTestOutput, httpScalafixTests)
+
+lazy val httpScalafixRules =
+  Project(id = "akka-http-scalafix-rules", base = file("akka-http-scalafix/scalafix-rules"))
+    .settings(
+      libraryDependencies += Dependencies.Compile.scalafix
+    )
+    .disablePlugins(MimaPlugin) // tooling, no bin compat guaranteed
+
+lazy val httpScalafixTestInput =
+  Project(id = "akka-http-scalafix-test-input", base = file("akka-http-scalafix/scalafix-test-input"))
+    .dependsOn(http)
+    .addAkkaModuleDependency("akka-stream")
+    .enablePlugins(NoPublish)
+    .disablePlugins(BintrayPlugin, MimaPlugin, HeaderPlugin /* because it gets confused about metaheader required for tests */)
+    .settings(
+      addCompilerPlugin(scalafixSemanticdb),
+      scalacOptions ++= List(
+        "-Yrangepos",
+        "-P:semanticdb:synthetics:on"
+      ),
+      scalacOptions := scalacOptions.value.filterNot(Set("-deprecation", "-Xlint").contains(_)), // we expect deprecated stuff in there
+    )
+
+lazy val httpScalafixTestOutput =
+  Project(id = "akka-http-scalafix-test-output", base = file("akka-http-scalafix/scalafix-test-output"))
+    .dependsOn(http)
+    .addAkkaModuleDependency("akka-stream")
+    .enablePlugins(NoPublish)
+    .disablePlugins(BintrayPlugin, MimaPlugin, HeaderPlugin /* because it gets confused about metaheader required for tests */)
+
+lazy val httpScalafixTests =
+  Project(id = "akka-http-scalafix-tests", base = file("akka-http-scalafix/scalafix-tests"))
+    .enablePlugins(NoPublish)
+    .disablePlugins(BintrayPlugin, MimaPlugin)
+    .settings(
+      skip in publish := true,
+      libraryDependencies += "ch.epfl.scala" % "scalafix-testkit" % Dependencies.scalafixVersion % Test cross CrossVersion.full,
+      compile.in(Compile) :=
+        compile.in(Compile).dependsOn(compile.in(httpScalafixTestInput, Compile)).value,
+      scalafixTestkitOutputSourceDirectories :=
+        sourceDirectories.in(httpScalafixTestOutput, Compile).value,
+      scalafixTestkitInputSourceDirectories :=
+        sourceDirectories.in(httpScalafixTestInput, Compile).value,
+      scalafixTestkitInputClasspath :=
+        fullClasspath.in(httpScalafixTestInput, Compile).value,
+    )
+    .dependsOn(httpScalafixRules)
+    .enablePlugins(ScalafixTestkitPlugin)
+
 lazy val docs = project("docs")
   .enablePlugins(AkkaParadoxPlugin, NoPublish, PublishRsyncPlugin)
   .disablePlugins(BintrayPlugin, MimaPlugin)
@@ -325,7 +382,7 @@ lazy val docs = project("docs")
   .addAkkaModuleDependency("akka-stream-testkit", "provided", AkkaDependency.docs)
   .dependsOn(
     httpCore, http, httpXml, http2Support, httpMarshallersJava, httpMarshallersScala, httpCaching,
-    httpTests % "compile;test->test", httpTestkit % "compile;test->test"
+    httpTests % "compile;test->test", httpTestkit % "compile;test->test", httpScalafixRules % ScalafixConfig
   )
   .settings(Dependencies.docs)
   .settings(
@@ -352,6 +409,7 @@ lazy val docs = project("docs")
       "akka.minimum.version25" -> AkkaDependency.minimumExpectedAkkaVersion,
       "akka.minimum.version26" -> AkkaDependency.minimumExpectedAkka26Version,
       "jackson.version" -> Dependencies.jacksonVersion,
+      "scalafix.version" -> _root_.scalafix.sbt.BuildInfo.scalafixVersion, // grab from scalafix plugin directly
       "extref.akka-docs.base_url" -> s"https://doc.akka.io/docs/akka/${AkkaDependency.docs.link}/%s",
       "javadoc.akka.http.base_url" -> {
         val v = if (isSnapshot.value) "current" else version.value

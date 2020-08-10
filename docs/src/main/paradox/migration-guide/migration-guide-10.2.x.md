@@ -8,9 +8,38 @@ Under these guidelines, minor version updates are supposed to be binary compatib
 for former versions under the condition that user code only uses public, stable, non-deprecated API. Especially
 libraries should make sure not to depend on deprecated API to be compatible with both 10.1.x and 10.2.x.
 
-If you find an unexpected incompatibility please let us know, so we can check whether the incompatibility is accidental so we might still be able to fix it.
+If you find an unexpected incompatibility please let us know, so we can check whether the incompatibility is accidental,
+so we might still be able to fix it.
 
 ## Akka HTTP 10.1.x -> 10.2.0
+
+10.2.0 will introduce deprecation warnings to every server project because the existing `Http.bind*` methods have been deprecated and
+replaced by the [new ServerBuild API](#new-serverbuilder-api-to-create-server-bindings). To ease the migration pain, we have prepared
+scalafix rules to automatically rewrite existing code to the new API.
+
+To run those rules, first add scalafix to your `project/plugins.sbt`:
+
+@@@vars
+
+```scala
+addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "$scalafix.version$")
+```
+
+@@@
+
+The in the sbt shell of your project run:
+
+```
+scalafixEnable
+set scalacOptions in ThisBuild += "-P:semanticdb:synthetics:on"
+scalafixAll dependency:MigrateToServerBuilder@com.typesafe.akka:akka-http-scalafix-rules:10.2.0
+```
+
+See also scalafix's [Installation](https://scalacenter.github.io/scalafix/docs/users/installation.html) and [External Rules](https://scalacenter.github.io/scalafix/docs/rules/external-rules.html)
+documentation.
+
+If your open-source project uses [scala-steward](https://github.com/scala-steward-org/scala-steward) it might already automatically
+run those scalafix migrations and include the changes in its update PR to your repository.
 
 ### Hiding Materializer
 
@@ -37,6 +66,20 @@ Scala
 Java
 :   @@snip [AkkaHttp1020MigrationExample.java]($test$/java/docs/http/javadsl/server/AkkaHttp1020MigrationExample.java) { #new-binding }
 
+
+### Scala 2.11 support dropped
+
+Almost three years after the release of Scala 2.11.12, support for Scala 2.11 has been dropped following the example of Akka 2.6.
+Akka HTTP 10.1.x which still supports Scala 2.11 will be supported for a while.
+
+### HttpRequest.copy / HttpResponse.copy deprecated in favor of withXYZ methods
+
+HttpRequest and HttpResponse have been converted from case classes to regular classes already a while ago. This was necessary to keep
+being able to make binary compatible changes to the API. So far, we kept the `copy` methods available but, like all methods with default
+parameters, these started to become a liability as well. In 10.2.0, the `copy` methods are now deprecated in favor of the more
+explicit `withXYZ` methods. This will help us to evolve those APIs in the future (as unfortunate it is that the idiomatic Scala way
+of case classes / default arguments is not an option because of our compatibility constraints).
+
 ### HTTP/2 support requires JDK 8 update 252 or later
 
 JVM support for ALPN has been backported to JDK 8u252 which is now widely available. Support for using the Jetty ALPN
@@ -56,10 +99,13 @@ Previously, the implicit conversion `route2HandlerFlow` that turns a `Route` int
 Parser settings, custom `Materializer`, `RoutingLog` or `ExecutionContext`, and
 the `RejectionHandler`/`ExceptionHandler` to use.
 
-This has been simplified to use system defaults instead:
+This has been simplified to use system defaults by default and to require explicit code if you want to change those defaults:
 
-* To set Routing or Parser settings, set them in your actor system configuration, e.g. via `application.conf`. In the rare case where you'd like to test routes with different @apidoc[RoutingSettings] within the same test, you can use the @ref[withSettings](../routing-dsl/directives/basic-directives/withSettings.md) directive.
-* To apply a custom @apidoc[http.*.RejectionHandler] or @apidoc[ExceptionHandler], use the @ref[handleRejections](../routing-dsl/directives/execution-directives/handleRejections.md) and @ref[handleExceptions](../routing-dsl/directives/execution-directives/handleExceptions.md) directives
+* To set Routing or Parser settings, set them in your actor system configuration, e.g. via `application.conf`. In the rare case where you'd like to
+  test routes with different @apidoc[RoutingSettings] within the same test, you can use the
+  @ref[withSettings](../routing-dsl/directives/basic-directives/withSettings.md) directive.
+* To apply a custom @apidoc[http.*.RejectionHandler] or @apidoc[ExceptionHandler], use the @ref[handleRejections](../routing-dsl/directives/execution-directives/handleRejections.md)
+  and @ref[handleExceptions](../routing-dsl/directives/execution-directives/handleExceptions.md) directives
 
 #### In RouteTest (scaladsl)
 
@@ -191,3 +237,84 @@ where you can provide your own logic for creating `SSLEngine` instances.
 When using this more low-level API, remember it is up to you to set the
 `SSLEngine` 'mode' (client or server), and further configuration such as
 enabling SNI and hostname verification features when needed.
+
+### List of deprecated and deleted APIs
+
+#### Deprecated APIs
+
+javadsl:
+
+ * static `akka.http.javadsl.ConnectionContext.https`
+ * most getters of `akka.http.javadsl.ConnectionContext`
+ * `akka.http.javadsl.Http.bind`
+ * `akka.http.javadsl.Http.bindAndHandle`
+ * `akka.http.javadsl.Http.bindAndHandleSync`
+ * `akka.http.javadsl.Http.bindAndHandleAsync`
+ * `akka.http.javadsl.Http.defaultServerHttpContext`
+ * `akka.http.javadsl.Http.setDefaultServerHttpContext`
+ * `akka.http.javadsl.Http.createServerHttpsContext`
+ * `akka.http.javadsl.Http.createClientHttpsContext`
+ * `akka.http.javadsl.Http.createDefaultClientHttpsContext`
+ * `akka.http.javadsl.model.ws.UpgradeToWebSocket`
+ * `akka.http.javadsl.server.HttpApp`
+ * `akka.http.javadsl.settings.ParserSettings.create`
+ * `akka.http.javadsl.settings.ServerSettings.getRemoteAddressHeader`
+ * `akka.http.javadsl.settings.ServerSettings.getWebsocketRandomFactory`
+ * `akka.http.javadsl.settings.ServerSettings.withWebsocketRandomFactory`
+ * `akka.http.javadsl.server.directives.WebSocketDirectives.extractUpgradeToWebSocket`
+
+scaladsl:
+
+ * most of `akka.http.scaladsl.ConnectionContext`
+ * `akka.http.scaladsl.HttpExt.bind`
+ * `akka.http.scaladsl.HttpExt.bindAndHandle`
+ * `akka.http.scaladsl.HttpExt.bindAndHandleSync`
+ * `akka.http.scaladsl.HttpExt.bindAndHandleAsync`
+ * `akka.http.scaladsl.Http.defaultServerHttpContext`
+ * `akka.http.scaladsl.Http.setDefaultServerHttpContext`
+ * `akka.http.scaladsl.Http.createClientHttpsContext`
+ * `akka.http.scaladsl.Http.createDefaultClientHttpsContext`
+ * `akka.http.scaladsl.model.HttpCookie.copy`
+ * `akka.http.scaladsl.model.HttpCookie.unapply`
+ * `akka.http.scaladsl.model.HttpRequest.copy`
+ * `akka.http.scaladsl.model.HttpResponse.copy`
+ * `akka.http.scaladsl.model.headers.Remote-Address`
+ * `akka.http.scaladsl.model.ws.UpgradeToWebSocket`
+ * `akka.http.scaladsl.server.HttpApp`
+ * `akka.http.scaladsl.settings.ParserSettings.apply`
+ * `akka.http.scaladsl.settings.ServerSettings.remoteAddressHeader`
+ * `akka.http.scaladsl.settings.ServerSettings.getWebsocketRandomFactory`
+ * `akka.http.scaladsl.settings.ServerSettings.withWebsocketRandomFactory`
+ * `akka.http.scaladsl.coding.Deflate`
+ * `akka.http.scaladsl.coding.DeflateCompressor`
+ * `akka.http.scaladsl.coding.StreamDecoder`
+ * `akka.http.scaladsl.coding.Encoder.encode(ByteString): ByteString`
+ * `akka.http.scaladsl.coding.Encoder.newCompressor`
+ * `akka.http.scaladsl.coding.Encoder.newEncodeTransformer`
+ * `akka.http.scaladsl.coding.Compressor`
+ * `akka.http.scaladsl.coding.Gzip`
+ * `akka.http.scaladsl.coding.NoCoding`
+ * `akka.http.scaladsl.server.Route.asyncHandler`
+ * `akka.http.scaladsl.server.directives.FormFieldDirectives.FieldMagnet`
+ * `akka.http.scaladsl.server.directives.FormFieldDirectives.FieldDef`
+ * `akka.http.scaladsl.server.directives.FormFieldDirectives.FieldDefAux`
+ * `akka.http.scaladsl.server.directives.HeaderDirectives.headerValueByName`
+ * `akka.http.scaladsl.server.directives.HeaderDirectives.optionalHeaderValueByName`
+ * `akka.http.scaladsl.server.directives.HeaderDirectives.fromUnitForModeledCustomHeader`
+ * `akka.http.scaladsl.server.directives.HeaderDirectives.fromUnitNormalHeader`
+ * `akka.http.scaladsl.server.directives.WebSocketDirectives.extractUpgradeToWebSocket`
+
+#### Deleted APIs (or overloads)
+
+ * some `akka.http.javadsl.Http` method overloads with a materializer parameter (like `singleRequest`, `superPool`)
+ * `akka.http.javadsl.HostConnectionPool.shutdown`
+ * `akka.http.javadsl.model.HttpMethod.getRequestEntityAcceptance`
+ * `akka.http.javadsl.model.HttpMethods.createCustom`
+ * `akka.http.javadsl.settings.ConnectionPoolSettings.getTransport`
+ * `akka.http.javadsl.*ConnectionContext.getDefaultPort`
+
+ * some `akka.http.scaladsl.HttpExt` method overloads with a materializer parameter (like `singleRequest`, `superPool`)
+ * `akka.http.scaladsl.Http#HostConnectionPool.shutdown`
+ * `akka.http.scaladsl.HttpExt.outgoingConnectionUsingTransport`
+ * `akka.http.scaladsl.UseHttp2` and related methods in *ConnectionContext and ConnectHttp*
+ * `akka.http.scaladsl.model.HttpMethod.getRequestEntityAcceptance`
