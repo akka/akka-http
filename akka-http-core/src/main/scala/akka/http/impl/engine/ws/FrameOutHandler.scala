@@ -9,13 +9,12 @@ import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.ws.FrameHandler.{ UserHandlerErredOut, _ }
 import akka.http.impl.engine.ws.WebSocket.Tick
-import akka.http.impl.util.Timestamp
 import akka.stream.scaladsl.Flow
 import akka.stream.stage._
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 
 import scala.annotation.tailrec
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{ Deadline, FiniteDuration }
 
 /**
  * Implements the transport connection close handling at the end of the pipeline.
@@ -30,7 +29,7 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
 
   override def shape = FlowShape(in, out)
 
-  private def closeTimeout: Timestamp = Timestamp.now + _closeTimeout
+  private def closeDeadline(): Deadline = Deadline.now + _closeTimeout
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
 
@@ -105,16 +104,18 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
     /**
      * we have sent out close frame and wait for peer to sent its close frame
      */
-    private class WaitingForPeerCloseFrame(timeout: Timestamp = closeTimeout) extends InHandler with ProcotolExceptionHandling {
+    private class WaitingForPeerCloseFrame(deadline: Deadline = closeDeadline()) extends InHandler with ProcotolExceptionHandling {
       override def onPush() =
         grab(in) match {
           case Tick =>
-            if (timeout.isPast) completeStage()
-            else pull(in)
+            if (deadline.isOverdue()) {
+              if (log.isDebugEnabled) log.debug(s"Peer did not acknowledge CLOSE frame after ${_closeTimeout}, closing underlying connection now.")
+              completeStage()
+            } else pull(in)
           case PeerClosed(code, reason) =>
             if (serverSide) completeStage()
             else {
-              setHandler(in, new WaitingForTransportClose())
+              setHandler(in, new WaitingForTransportClose(deadline))
               pull(in)
             }
           case _ => pull(in) // ignore
@@ -124,12 +125,14 @@ private[http] class FrameOutHandler(serverSide: Boolean, _closeTimeout: FiniteDu
     /**
      * Both side have sent their close frames, server should close the connection first
      */
-    private class WaitingForTransportClose(timeout: Timestamp = closeTimeout) extends InHandler with ProcotolExceptionHandling {
+    private class WaitingForTransportClose(deadline: Deadline = closeDeadline()) extends InHandler with ProcotolExceptionHandling {
       override def onPush() = {
         grab(in) match {
           case Tick =>
-            if (timeout.isPast) completeStage()
-            else pull(in)
+            if (deadline.isOverdue()) {
+              if (log.isDebugEnabled) log.debug(s"Peer did not close TCP connection after sendind CLOSE frame after ${_closeTimeout}, closing underlying connection now.")
+              completeStage()
+            } else pull(in)
           case _ => pull(in) // ignore
         }
       }

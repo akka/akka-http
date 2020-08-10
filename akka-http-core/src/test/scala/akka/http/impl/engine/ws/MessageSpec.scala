@@ -730,11 +730,13 @@ class MessageSpec extends AkkaSpecWithMaterializer with Eventually {
       "timeout if user handler closes and peer doesn't send a close frame" in new ServerTestSetup {
         override protected def closeTimeout: FiniteDuration = 100.millis.dilated
 
-        messageOut.sendComplete()
-        expectCloseCodeOnNetwork(Protocol.CloseCodes.Regular)
+        EventFilter.debug(pattern = "Peer did not acknowledge CLOSE frame after .*, closing underlying connection now.", occurrences = 1).intercept {
+          messageOut.sendComplete()
+          expectCloseCodeOnNetwork(Protocol.CloseCodes.Regular)
 
-        netOut.expectComplete()
-        netIn.expectCancellation()
+          netOut.expectComplete()
+          netIn.expectCancellation()
+        }
       }
       "timeout after we close after error and peer doesn't send a close frame" in new ServerTestSetup {
         override protected def closeTimeout: FiniteDuration = 100.millis.dilated
