@@ -140,12 +140,12 @@ lazy val httpCore = project("akka-http-core")
   .settings(AutomaticModuleName.settings("akka.http.core"))
   .dependsOn(parsing, httpScalafixRules % ScalafixConfig)
   .addAkkaModuleDependency("akka-stream", "provided")
-  .addAkkaModuleDependency("akka-stream-testkit", "test")
   .addAkkaModuleDependency(
     "akka-stream-testkit",
     "test",
-    AkkaDependency.Sources("git://github.com/akka/akka.git#master"),
-    onlyIf = System.getProperty("akka.http.test-against-akka-master", "false") == "true"
+    akka =
+      if (System.getProperty("akka.http.test-against-akka-master", "false") == "true") AkkaDependency.masterSnapshot
+      else AkkaDependency.default
   )
   .settings(Dependencies.httpCore)
   .settings(VersionGenerator.versionSettings)
