@@ -39,16 +39,22 @@ object MiMa extends AutoPlugin {
     "10.1.6",
     "10.1.7",
   )
-  val post213Versions = Set(
+
+  val `10.1-post-2.13-versions` = Set(
     "10.1.8",
     "10.1.9",
     "10.1.10",
     "10.1.11",
     "10.1.12",
+  )
+  val `10.2-versions` = Set(
     "10.2.0",
   )
 
+  val post213Versions = `10.1-post-2.13-versions` ++ `10.2-versions`
+
   lazy val latestVersion = post213Versions.max(versionOrdering)
+  lazy val latest101Version = `10.1-post-2.13-versions`.max(versionOrdering)
 
   override val projectSettings = Seq(
     mimaPreviousArtifacts := {
