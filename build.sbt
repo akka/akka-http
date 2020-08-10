@@ -6,6 +6,7 @@ import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 import java.nio.file.Files
 import java.nio.file.attribute.{ PosixFileAttributeView, PosixFilePermission }
+
 import sbtdynver.GitDescribeOutput
 import spray.boilerplate.BoilerplatePlugin
 import com.lightbend.paradox.apidoc.ApidocPlugin.autoImport.apidocRootPackage
@@ -401,6 +402,15 @@ lazy val docs = project("docs")
       // Code after ??? can be considered 'dead',  but still useful for docs
       "-Ywarn-dead-code",
     ),
+    paradoxProcessor := {
+      import scala.concurrent.duration._
+      import com.lightbend.paradox.ParadoxProcessor
+      import com.lightbend.paradox.markdown.{ Reader, Writer }
+      // FIXME: use `paradoxParsingTimeout` when https://github.com/lightbend/paradox/pull/447 has been released
+      new ParadoxProcessor(
+        reader = new Reader(maxParsingTime = 10.seconds),
+        writer = new Writer(serializerPlugins = Writer.defaultPlugins(paradoxDirectives.value)))
+    },
     paradoxGroups := Map("Language" -> Seq("Scala", "Java")),
     paradoxProperties in Compile ++= Map(
       "project.name" -> "Akka HTTP",
