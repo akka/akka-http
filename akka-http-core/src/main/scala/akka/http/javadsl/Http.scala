@@ -110,7 +110,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   @deprecated("Use newServerAt instead", since = "10.2.0")
   def bind(connect: ConnectHttp): Source[IncomingConnection, CompletionStage[ServerBinding]] = {
     val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    new Source(delegate.bind(connect.host, connect.port, connectionContext)
+    new Source(delegate.newServerAt(connect.host, connect.port).enableHttps(connectionContext).connectionSource()
       .map(new IncomingConnection(_))
       .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
   }
@@ -138,7 +138,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     connect:  ConnectHttp,
     settings: ServerSettings): Source[IncomingConnection, CompletionStage[ServerBinding]] = {
     val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    new Source(delegate.bind(connect.host, connect.port, settings = settings.asScala, connectionContext = connectionContext)
+    new Source(delegate.newServerAt(connect.host, connect.port).enableHttps(connectionContext).withSettings(settings.asScala).connectionSource()
       .map(new IncomingConnection(_))
       .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
   }
@@ -167,7 +167,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     settings: ServerSettings,
     log:      LoggingAdapter): Source[IncomingConnection, CompletionStage[ServerBinding]] = {
     val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    new Source(delegate.bind(connect.host, connect.port, connectionContext, settings.asScala, log)
+    new Source(delegate.newServerAt(connect.host, connect.port).enableHttps(connectionContext).withSettings(settings.asScala).logTo(log).connectionSource()
       .map(new IncomingConnection(_))
       .mapMaterializedValue(_.map(new ServerBinding(_))(ec).toJava))
   }
@@ -192,9 +192,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     connect:      ConnectHttp,
     materializer: Materializer): CompletionStage[ServerBinding] = {
     val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    delegate.bindAndHandle(
-      handler.asInstanceOf[Flow[sm.HttpRequest, sm.HttpResponse, _]].asScala,
-      connect.host, connect.port, connectionContext)(materializer)
+    delegate.newServerAt(connect.host, connect.port).enableHttps(connectionContext).withMaterializer(materializer).bindFlow(handler.asInstanceOf[Flow[sm.HttpRequest, sm.HttpResponse, _]].asScala)
       .map(new ServerBinding(_))(ec).toJava
   }
 
@@ -220,9 +218,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     log:          LoggingAdapter,
     materializer: Materializer): CompletionStage[ServerBinding] = {
     val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    delegate.bindAndHandle(
-      handler.asInstanceOf[Flow[sm.HttpRequest, sm.HttpResponse, _]].asScala,
-      connect.host, connect.port, connectionContext, settings.asScala, log)(materializer)
+    delegate.newServerAt(connect.host, connect.port).enableHttps(connectionContext).withSettings(settings.asScala).logTo(log).withMaterializer(materializer).bindFlow(handler.asInstanceOf[Flow[sm.HttpRequest, sm.HttpResponse, _]].asScala)
       .map(new ServerBinding(_))(ec).toJava
   }
 
@@ -246,7 +242,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     connect:      ConnectHttp,
     materializer: Materializer): CompletionStage[ServerBinding] = {
     val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    delegate.bindAndHandleSync(handler.apply(_).asScala, connect.host, connect.port, connectionContext)(materializer)
+    delegate.newServerAt(connect.host, connect.port).enableHttps(connectionContext).withMaterializer(materializer).bindSync(handler.apply(_).asScala)
       .map(new ServerBinding(_))(ec).toJava
   }
 
@@ -272,9 +268,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     log:          LoggingAdapter,
     materializer: Materializer): CompletionStage[ServerBinding] = {
     val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    delegate.bindAndHandleSync(
-      handler.apply(_).asScala,
-      connect.host, connect.port, connectionContext, settings.asScala, log)(materializer)
+    delegate.newServerAt(connect.host, connect.port).enableHttps(connectionContext).withSettings(settings.asScala).logTo(log).withMaterializer(materializer).bindSync(handler.apply(_).asScala)
       .map(new ServerBinding(_))(ec).toJava
   }
 
@@ -298,7 +292,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     connect:      ConnectHttp,
     materializer: Materializer): CompletionStage[ServerBinding] = {
     val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    delegate.bindAndHandleAsync(handler.apply(_).toScala, connect.host, connect.port, connectionContext)(materializer)
+    delegate.newServerAt(connect.host, connect.port).enableHttps(connectionContext).withMaterializer(materializer).bind(handler.apply(_).toScala)
       .map(new ServerBinding(_))(ec).toJava
   }
 
@@ -324,9 +318,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     parallelism: Int, log: LoggingAdapter,
     materializer: Materializer): CompletionStage[ServerBinding] = {
     val connectionContext = connect.effectiveConnectionContext(defaultServerHttpContext).asScala
-    delegate.bindAndHandleAsync(
-      handler.apply(_).toScala,
-      connect.host, connect.port, connectionContext, settings.asScala, parallelism, log)(materializer)
+    delegate.newServerAt(connect.host, connect.port).enableHttps(connectionContext).withSettings(settings.asScala).logTo(log).withMaterializer(materializer).bind(handler.apply(_).toScala)
       .map(new ServerBinding(_))(ec).toJava
   }
 
