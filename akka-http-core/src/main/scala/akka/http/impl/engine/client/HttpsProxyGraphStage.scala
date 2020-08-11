@@ -54,7 +54,7 @@ private final class HttpsProxyGraphStage(
 
   private val connectMsg = {
     val renderedProxyAuth = proxyAuthorization.map { httpCredentials =>
-      ByteString(s"${`Proxy-Authorization`(httpCredentials)}\r\n")
+      ByteString(s"${`Proxy-Authorization`(httpCredentials).unsafeToString}\r\n")
     } getOrElse ByteString.empty
 
     // format: OFF
