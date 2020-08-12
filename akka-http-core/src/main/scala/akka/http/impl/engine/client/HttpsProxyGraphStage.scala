@@ -9,6 +9,8 @@ import akka.annotation.InternalApi
 import akka.http.impl.engine.parsing.HttpMessageParser.StateResult
 import akka.http.impl.engine.parsing.ParserOutput.{ NeedMoreData, RemainingBytes, ResponseStart }
 import akka.http.impl.engine.parsing.{ HttpHeaderParser, HttpResponseParser, ParserOutput }
+import akka.http.impl.util.ByteStringRendering
+import akka.http.impl.util.Rendering.CrLf
 import akka.http.scaladsl.model.headers.{ HttpCredentials, `Proxy-Authorization` }
 import akka.http.scaladsl.model.{ HttpMethods, StatusCodes }
 import akka.http.scaladsl.settings.ClientConnectionSettings
@@ -53,17 +55,15 @@ private final class HttpsProxyGraphStage(
   override def shape: BidiShape[ByteString, ByteString, ByteString, ByteString] = BidiShape.apply(sslIn, bytesOut, bytesIn, sslOut)
 
   private val connectMsg = {
-    val renderedProxyAuth = proxyAuthorization.map { httpCredentials =>
-      ByteString(s"${`Proxy-Authorization`(httpCredentials)}\r\n")
-    } getOrElse ByteString.empty
+    val r = new ByteStringRendering(256)
 
-    // format: OFF
-    ByteString(
-      s"CONNECT $targetHostName:$targetPort HTTP/1.1\r\n" +
-      s"Host: $targetHostName\r\n") ++
-      renderedProxyAuth ++
-      ByteString("\r\n")
-    // format: ON
+    r ~~ "CONNECT " ~~ targetHostName ~~ ':' ~~ targetPort ~~ " HTTP/1.1" ~~ CrLf
+    r ~~ "Host: " ~~ targetHostName ~~ CrLf
+    proxyAuthorization.foreach { creds =>
+      r ~~ `Proxy-Authorization`(creds) ~~ CrLf
+    }
+    r ~~ CrLf
+    r.get
   }
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with StageLogging {
