@@ -78,13 +78,13 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
       case Closed   => incomingStreams -= streamId
       case newState => incomingStreams += streamId -> newState
     }
-    log.debug(s"Incoming stream state updated for [$streamId] ${oldState.stateName} -> ${newState.stateName}")
+    log.debug(s"Incoming side of stream [$streamId] changed state: ${oldState.stateName} -> ${newState.stateName}")
   }
   /** Called to cleanup any state when the connection is torn down */
   def shutdownStreamHandling(): Unit = incomingStreams.keys.foreach(id => updateState(id, _.shutdown()))
   def resetStream(streamId: Int, errorCode: ErrorCode): Unit = {
     incomingStreams -= streamId
-    log.debug(s"Incoming stream [$streamId] reset with code [$errorCode]")
+    log.debug(s"Incoming side of stream [$streamId]: resetting with code [$errorCode]")
     multiplexer.pushControlFrame(RstStreamFrame(streamId, errorCode))
   }
 
@@ -260,7 +260,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
 
     def onPull(): Unit = dispatchNextChunk()
     override def onDownstreamFinish(): Unit = {
-      log.debug(s"Incoming stream [$streamId] cancelled because downstream finished")
+      log.debug(s"Incoming side of stream [$streamId]: cancelling because downstream finished")
       multiplexer.pushControlFrame(RstStreamFrame(streamId, ErrorCode.CANCEL))
       incomingStreams -= streamId
     }
