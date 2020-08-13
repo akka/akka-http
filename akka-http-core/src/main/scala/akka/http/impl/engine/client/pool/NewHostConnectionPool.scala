@@ -16,7 +16,7 @@ import akka.http.impl.engine.client.PoolFlow.{ RequestContext, ResponseContext }
 import akka.http.impl.engine.client.pool.SlotState._
 import akka.http.impl.util.{ RichHttpRequest, StageLoggingWithOverride, StreamUtils }
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse, headers }
+import akka.http.scaladsl.model.{ HttpEntity, HttpMethods, HttpRequest, HttpResponse, headers }
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream._
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
@@ -305,6 +305,13 @@ private[client] object NewHostConnectionPool {
                 } else if (previousState.isIdle && !state.isIdle)
                   idleSlots.remove(this)
 
+                def hasNoEntityStream(requestContext: RequestContext, response: HttpResponse): Boolean =
+                  response.entity.isStrict ||
+                    response.entity.isKnownEmpty ||
+                    // HEAD responses get a weird HttpEntity.Default(..., non-zero-Content-Length, Source.empty) entity
+                    // and we currently have no better way to determine that there's an empty source in there.
+                    requestContext.request.method == HttpMethods.HEAD
+
                 state match {
                   case PushingRequestToConnection(ctx) =>
                     connection.pushRequest(ctx.request)
@@ -320,10 +327,10 @@ private[client] object NewHostConnectionPool {
                       OptionVal.None
                     }
 
-                  case WaitingForResponseEntitySubscription(_, HttpResponse(_, _, _: HttpEntity.Strict, _), _, _) =>
+                  case WaitingForResponseEntitySubscription(req, res, _, _) if hasNoEntityStream(req, res) =>
                     // the connection cannot drive these for a strict entity so we have to loop ourselves
                     OptionVal.Some(Event.onResponseEntitySubscribed)
-                  case WaitingForEndOfResponseEntity(_, HttpResponse(_, _, _: HttpEntity.Strict, _), _) =>
+                  case WaitingForEndOfResponseEntity(req, res, _) if hasNoEntityStream(req, res) =>
                     // the connection cannot drive these for a strict entity so we have to loop ourselves
                     OptionVal.Some(Event.onResponseEntityCompleted)
                   case Unconnected if currentEmbargo != Duration.Zero =>
