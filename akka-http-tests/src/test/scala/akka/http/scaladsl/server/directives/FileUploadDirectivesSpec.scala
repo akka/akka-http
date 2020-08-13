@@ -7,8 +7,8 @@ package akka.http.scaladsl.server.directives
 import java.io.File
 
 import akka.NotUsed
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.server.{ MissingFormFieldRejection, RoutingSpec }
+import akka.http.scaladsl.model.{ Multipart, _ }
+import akka.http.scaladsl.server.{ MissingFormFieldRejection, Route, RoutingSpec }
 import akka.http.scaladsl.testkit.RouteTestTimeout
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
@@ -27,26 +27,40 @@ class FileUploadDirectivesSpec extends RoutingSpec with Eventually {
     val data = s"<int>${"42" * 1000000}</int>" // ~2MB of data
 
     def withUpload(entityType: String, formDataUpload: Multipart.FormData) =
-      s"write a posted file to a temporary file on disk from $entityType entity" in {
-        @volatile var file: Option[File] = None
+      s"for $entityType" should {
+        s"write a posted file to a temporary file on disk from $entityType entity" in {
+          @volatile var file: Option[File] = None
 
-        def tempDest(fileInfo: FileInfo): File = {
-          val dest = File.createTempFile("akka-http-FileUploadDirectivesSpec", ".tmp")
-          file = Some(dest)
-          dest
+          def tempDest(fileInfo: FileInfo): File = {
+            val dest = File.createTempFile("akka-http-FileUploadDirectivesSpec", ".tmp")
+            file = Some(dest)
+            dest
+          }
+
+          try {
+            Post("/", formDataUpload) ~>
+              storeUploadedFile("fieldName", tempDest) { (info, tmpFile) =>
+                complete(info.toString)
+              } ~> check {
+                file.isDefined shouldEqual true
+                responseAs[String] shouldEqual FileInfo("fieldName", "age.xml", ContentTypes.`text/xml(UTF-8)`).toString
+                read(file.get) shouldEqual data
+              }
+          } finally {
+            file.foreach(_.delete())
+          }
         }
 
-        try {
-          Post("/", formDataUpload) ~>
-            storeUploadedFile("fieldName", tempDest) { (info, tmpFile) =>
+        "fail when file cannot be written" in {
+          val path = new MockFailingWritePath
+
+          val route =
+            storeUploadedFile("fieldName", _ => path.toFile) { (info, tmpFile) =>
               complete(info.toString)
-            } ~> check {
-              file.isDefined shouldEqual true
-              responseAs[String] shouldEqual FileInfo("fieldName", "age.xml", ContentTypes.`text/xml(UTF-8)`).toString
-              read(file.get) shouldEqual data
             }
-        } finally {
-          file.foreach(_.delete())
+          Post("/", formDataUpload) ~> Route.seal(route) ~> check {
+            status shouldEqual StatusCodes.InternalServerError
+          }
         }
       }
 
@@ -69,34 +83,50 @@ class FileUploadDirectivesSpec extends RoutingSpec with Eventually {
     val txt = "42" * 1000000 // ~2MB of data
     val xml = s"<int>$txt</int>" // ~2MB of data
 
-    def withUpload(entityType: String, formDataUpload: Multipart.FormData) =
-      s"write all posted files to a temporary file on disk from $entityType entity" in {
-        @volatile var files: Seq[File] = Nil
+    def withUpload(entityType: String, formDataUpload: Multipart.FormData) = {
+      s"for $entityType" should {
+        s"write all posted files to a temporary file on disk from $entityType entity" in {
+          @volatile var files: Seq[File] = Nil
 
-        def tempDest(fileInfo: FileInfo): File = {
-          val dest = File.createTempFile("akka-http-FileUploadDirectivesSpec", ".tmp")
-          files = files :+ dest
-          dest
-        }
-
-        try {
-          Post("/", formDataUpload) ~> {
-            storeUploadedFiles("fieldName", tempDest) { fields =>
-              val content = fields.foldLeft("") {
-                case (acc, (fileInfo, tmpFile)) =>
-                  acc + read(tmpFile)
-              }
-              complete(content)
-            }
-          } ~> check {
-            val response = responseAs[String]
-            response shouldEqual files.map(read).mkString
-            response shouldEqual txt + xml
+          def tempDest(fileInfo: FileInfo): File = {
+            val dest = File.createTempFile("akka-http-FileUploadDirectivesSpec", ".tmp")
+            files = files :+ dest
+            dest
           }
-        } finally {
-          files.foreach(_.delete())
+
+          try {
+            Post("/", formDataUpload) ~> {
+              storeUploadedFiles("fieldName", tempDest) { fields =>
+                val content = fields.foldLeft("") {
+                  case (acc, (fileInfo, tmpFile)) =>
+                    acc + read(tmpFile)
+                }
+                complete(content)
+              }
+            } ~> check {
+              val response = responseAs[String]
+              response shouldEqual files.map(read).mkString
+              response shouldEqual txt + xml
+            }
+          } finally {
+            files.foreach(_.delete())
+          }
         }
+
+        "fail when file cannot be written" in {
+          val path = new MockFailingWritePath
+
+          val route =
+            storeUploadedFiles("fieldName", _ => path.toFile) { infos =>
+              complete(infos.mkString(", "))
+            }
+          Post("/", formDataUpload) ~> Route.seal(route) ~> check {
+            status shouldEqual StatusCodes.InternalServerError
+          }
+        }
+
       }
+    }
 
     withUpload(
       "strict",
@@ -441,4 +471,97 @@ class FileUploadDirectivesSpec extends RoutingSpec with Eventually {
 
   private def inChunks(input: String, chunkSize: Int = 10000): Source[ByteString, NotUsed] =
     Source.fromIterator(() => input.grouped(10000).map(ByteString(_)))
+}
+
+/** Mock Path implementation that allows to create a FileChannel that fails writes */
+class MockFailingWritePath extends java.nio.file.Path { selfPath =>
+  import java.net.URI
+  import java.nio.{ ByteBuffer, MappedByteBuffer }
+  import java.nio.channels.{ FileChannel, FileLock, ReadableByteChannel, SeekableByteChannel, WritableByteChannel }
+  import java.nio.file.attribute.{ BasicFileAttributes, FileAttribute, FileAttributeView, UserPrincipalLookupService }
+  import java.nio.file.spi.FileSystemProvider
+  import java.nio.file.{ AccessMode, CopyOption, DirectoryStream, FileStore, FileSystem, LinkOption, OpenOption, Path, PathMatcher, WatchEvent, WatchKey, WatchService }
+  import java.{ lang, util }
+
+  override def getFileSystem: FileSystem =
+    new FileSystem {
+      override def provider(): FileSystemProvider = new FileSystemProvider {
+        override def getScheme: String = ???
+        override def newFileSystem(uri: URI, env: util.Map[String, _]): FileSystem = ???
+        override def getFileSystem(uri: URI): FileSystem = ???
+        override def getPath(uri: URI): Path = ???
+        override def newByteChannel(path: Path, options: util.Set[_ <: OpenOption], attrs: FileAttribute[_]*): SeekableByteChannel = ???
+        override def newDirectoryStream(dir: Path, filter: DirectoryStream.Filter[_ >: Path]): DirectoryStream[Path] = ???
+        override def createDirectory(dir: Path, attrs: FileAttribute[_]*): Unit = ???
+        override def delete(path: Path): Unit = ()
+        override def copy(source: Path, target: Path, options: CopyOption*): Unit = ???
+        override def move(source: Path, target: Path, options: CopyOption*): Unit = ???
+        override def isSameFile(path: Path, path2: Path): Boolean = ???
+        override def isHidden(path: Path): Boolean = ???
+        override def getFileStore(path: Path): FileStore = ???
+        override def checkAccess(path: Path, modes: AccessMode*): Unit = ???
+        override def getFileAttributeView[V <: FileAttributeView](path: Path, `type`: Class[V], options: LinkOption*): V = ???
+        override def readAttributes[A <: BasicFileAttributes](path: Path, `type`: Class[A], options: LinkOption*): A = ???
+        override def readAttributes(path: Path, attributes: String, options: LinkOption*): util.Map[String, AnyRef] = ???
+        override def setAttribute(path: Path, attribute: String, value: Any, options: LinkOption*): Unit = ???
+        override def newFileChannel(path: Path, options: util.Set[_ <: OpenOption], attrs: FileAttribute[_]*): FileChannel =
+          new FileChannel {
+            override def read(dst: ByteBuffer): Int = ???
+            override def read(dsts: Array[ByteBuffer], offset: Int, length: Int): Long = ???
+            override def write(src: ByteBuffer): Int = throw new RuntimeException
+            override def write(srcs: Array[ByteBuffer], offset: Int, length: Int): Long = throw new RuntimeException
+            override def position(): Long = ???
+            override def position(newPosition: Long): FileChannel = ???
+            override def size(): Long = ???
+            override def truncate(size: Long): FileChannel = ???
+            override def force(metaData: Boolean): Unit = ???
+            override def transferTo(position: Long, count: Long, target: WritableByteChannel): Long = ???
+            override def transferFrom(src: ReadableByteChannel, position: Long, count: Long): Long = ???
+            override def read(dst: ByteBuffer, position: Long): Int = ???
+            override def write(src: ByteBuffer, position: Long): Int = ???
+            override def map(mode: FileChannel.MapMode, position: Long, size: Long): MappedByteBuffer = ???
+            override def lock(position: Long, size: Long, shared: Boolean): FileLock = ???
+            override def tryLock(position: Long, size: Long, shared: Boolean): FileLock = ???
+            override def implCloseChannel(): Unit = throw new RuntimeException
+          }
+      }
+      override def close(): Unit = ???
+      override def isOpen: Boolean = ???
+      override def isReadOnly: Boolean = ???
+      override def getSeparator: String = ???
+      override def getRootDirectories: lang.Iterable[Path] = ???
+      override def getFileStores: lang.Iterable[FileStore] = ???
+      override def supportedFileAttributeViews(): util.Set[String] = ???
+      override def getPath(first: String, more: String*): Path = ???
+      override def getPathMatcher(syntaxAndPattern: String): PathMatcher = ???
+      override def getUserPrincipalLookupService: UserPrincipalLookupService = ???
+      override def newWatchService(): WatchService = ???
+    }
+  override def isAbsolute: Boolean = ???
+  override def getRoot: Path = ???
+  override def getFileName: Path = ???
+  override def getParent: Path = ???
+  override def getNameCount: Int = ???
+  override def getName(index: Int): Path = ???
+  override def subpath(beginIndex: Int, endIndex: Int): Path = ???
+  override def startsWith(other: Path): Boolean = ???
+  override def startsWith(other: String): Boolean = ???
+  override def endsWith(other: Path): Boolean = ???
+  override def endsWith(other: String): Boolean = ???
+  override def normalize(): Path = ???
+  override def resolve(other: Path): Path = ???
+  override def resolve(other: String): Path = ???
+  override def resolveSibling(other: Path): Path = ???
+  override def resolveSibling(other: String): Path = ???
+  override def relativize(other: Path): Path = ???
+  override def toUri: URI = ???
+  override def toAbsolutePath: Path = ???
+  override def toRealPath(options: LinkOption*): Path = ???
+  override def toFile: File = new File("") {
+    override def toPath: Path = selfPath
+  }
+  override def register(watcher: WatchService, events: Array[WatchEvent.Kind[_]], modifiers: WatchEvent.Modifier*): WatchKey = ???
+  override def register(watcher: WatchService, events: WatchEvent.Kind[_]*): WatchKey = ???
+  override def iterator(): util.Iterator[Path] = ???
+  override def compareTo(other: Path): Int = ???
 }

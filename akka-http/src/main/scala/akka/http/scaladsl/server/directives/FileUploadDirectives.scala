@@ -5,9 +5,11 @@
 package akka.http.scaladsl.server.directives
 
 import java.io.File
+import java.nio.file.{ Files, Path }
 
 import akka.Done
 import akka.annotation.ApiMayChange
+import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.server.{ Directive, Directive1, MissingFormFieldRejection }
 import akka.http.scaladsl.model.{ ContentType, Multipart }
 import akka.util.ByteString
@@ -17,6 +19,7 @@ import scala.concurrent.{ Future, Promise }
 import akka.stream.scaladsl._
 import akka.http.javadsl
 import akka.http.scaladsl.server.RouteResult
+import akka.http.scaladsl.util.FastFuture
 
 import scala.util.{ Failure, Success }
 
@@ -51,6 +54,7 @@ trait FileUploadDirectives {
           val uploadedF: Future[(FileInfo, File)] =
             bytes
               .runWith(FileIO.toPath(dest.toPath))
+              .flatMap(StreamUtils.handleIOResult)
               .map(_ => (fileInfo, dest))
               .recoverWith {
                 case ex =>
@@ -88,9 +92,9 @@ trait FileUploadDirectives {
             val fileInfo = FileInfo(part.name, part.filename.get, part.entity.contentType)
             val dest = destFn(fileInfo)
 
-            part.entity.dataBytes.runWith(FileIO.toPath(dest.toPath)).map { _ =>
-              (fileInfo, dest)
-            }
+            part.entity.dataBytes.runWith(FileIO.toPath(dest.toPath))
+              .flatMap(StreamUtils.handleIOResult)
+              .map(_ => (fileInfo, dest))
           }
 
         val uploadedF = uploaded.runWith(Sink.seq[(FileInfo, File)])
