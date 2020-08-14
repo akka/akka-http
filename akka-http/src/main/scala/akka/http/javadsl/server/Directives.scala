@@ -7,12 +7,12 @@ package akka.http.javadsl.server
 import java.util.function.{ BiFunction, Function, Supplier }
 
 import akka.annotation.ApiMayChange
-import akka.http.javadsl.server.directives.FramedEntityStreamingDirectives
+import akka.http.javadsl.server.directives.AroundRequestDirectives
 import com.github.ghik.silencer.silent
 
 import scala.annotation.varargs
 
-abstract class AllDirectives extends FramedEntityStreamingDirectives
+abstract class AllDirectives extends AroundRequestDirectives
 
 /**
  * Collects all default directives into one class for simple importing of static functions.

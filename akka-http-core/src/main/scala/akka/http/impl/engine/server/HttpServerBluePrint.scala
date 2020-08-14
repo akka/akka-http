@@ -29,14 +29,14 @@ import akka.http.impl.engine.rendering.ResponseRenderingContext.CloseRequested
 import akka.http.impl.engine.rendering.{ HttpResponseRendererFactory, ResponseRenderingContext, ResponseRenderingOutput }
 import akka.http.impl.util._
 import akka.http.scaladsl.util.FastFuture.EnhancedFuture
-import akka.http.scaladsl.{ Http, TimeoutAccess }
-import akka.http.scaladsl.model.headers.`Timeout-Access`
+import akka.http.scaladsl.{ Http, OnCompleteAccess, TimeoutAccess }
+import akka.http.scaladsl.model.headers.{ OnComplete, `Timeout-Access` }
 import akka.http.javadsl.model
 import akka.http.scaladsl.model._
 import akka.http.impl.util.LogByteStringTools._
 import com.github.ghik.silencer.silent
 
-import scala.util.Failure
+import scala.util.{ Failure, Success }
 
 /**
  * INTERNAL API
@@ -407,12 +407,13 @@ private[http] object HttpServerBluePrint {
         def onPush(): Unit =
           grab(requestParsingIn) match {
             case r: RequestStart =>
-              openRequests = openRequests.enqueue(r)
+              val rs0 = r.copy(headers = r.headers :+ OnComplete(OnCompleteAccess()))
+              openRequests = openRequests.enqueue(rs0)
               messageEndPending = r.createEntity.isInstanceOf[StreamedEntityCreator[_, _]]
-              val rs = if (r.expect100Continue) {
+              val rs = if (rs0.expect100Continue) {
                 oneHundredContinueResponsePending = true
-                r.copy(createEntity = with100ContinueTrigger(r.createEntity))
-              } else r
+                rs0.copy(createEntity = with100ContinueTrigger(r.createEntity))
+              } else rs0
               push(requestPrepOut, rs)
             case MessageEnd =>
               messageEndPending = false
@@ -442,19 +443,24 @@ private[http] object HttpServerBluePrint {
         def onPush(): Unit = {
           val requestStart = openRequests.head
           openRequests = openRequests.tail
+          val onComplete =
+            requestStart.headers.find(_.name.equals(OnComplete.name)).map { case header: OnComplete => header.onCompleteAccess.onComplete }
 
           val response0 = grab(httpResponseIn)
-          val response =
-            if (response0.entity.isStrict) response0 // response stream cannot fail
-            else response0.mapEntity { e =>
-              val (newEntity, fut) = HttpEntity.captureTermination(e)
-              fut.onComplete {
-                case Failure(ex) =>
-                  log.error(ex, s"Response stream for [${requestStart.debugString}] failed with '${ex.getMessage}'. Aborting connection.")
-                case _ => // ignore
-              }(ExecutionContexts.sameThreadExecutionContext)
-              newEntity
-            }
+          val response = response0 mapEntity { e =>
+            e.transformDataBytes(Flow[ByteString].watchTermination() {
+              case (mat, fut) =>
+                fut.onComplete {
+                  case Success(_) =>
+                    onComplete.foreach(_(response0))
+                  case Failure(ex) =>
+                    onComplete.foreach(_(response0))
+                    log.error(ex, s"Response stream for [${requestStart.debugString}] failed with '${ex.getMessage}'. Aborting connection.")
+
+                }(ExecutionContexts.sameThreadExecutionContext)
+                mat
+            })
+          }
 
           val isEarlyResponse = messageEndPending && openRequests.isEmpty
           if (isEarlyResponse && response.status.isSuccess)
