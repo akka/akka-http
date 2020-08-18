@@ -20,7 +20,7 @@ object Dependencies {
   val silencerVersion = "1.7.1"
 
   val scalaTestVersion = "3.1.2"
-  val specs2Version = "4.10.2"
+  val specs2Version = "4.10.3"
   val scalaCheckVersion = "1.14.3"
 
   val scalafixVersion = _root_.scalafix.sbt.BuildInfo.scalafixVersion // grab from plugin
