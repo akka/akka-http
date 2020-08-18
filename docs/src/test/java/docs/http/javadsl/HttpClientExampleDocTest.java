@@ -91,9 +91,13 @@ public class HttpClientExampleDocTest {
     final CompletionStage<HttpEntity.Strict> strictEntity = response.entity()
         .toStrict(FiniteDuration.create(3, TimeUnit.SECONDS).toMillis(), system);
 
-    // while API remains the same to consume dataBytes, now they're in memory already:
+    // You can now use ''getData" to get the data directly...
+    final CompletionStage<ExamplePerson> person1 =
+      strictEntity.thenApply(strict -> parse(strict.getData()));
 
-    final CompletionStage<ExamplePerson> person =
+    // Though it is also still possible to use the streaming API to consume dataBytes,
+    // even though now they're in memory:
+    final CompletionStage<ExamplePerson> person2 =
       strictEntity
         .thenCompose(strict ->
           strict.getDataBytes()
