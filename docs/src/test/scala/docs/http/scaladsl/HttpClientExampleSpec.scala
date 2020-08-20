@@ -59,7 +59,7 @@ class HttpClientExampleSpec extends AnyWordSpec with Matchers with CompileOnlySp
     // toStrict to enforce all data be loaded into memory from the connection
     val strictEntity: Future[HttpEntity.Strict] = response.entity.toStrict(3.seconds)
 
-    // You can now use the ''data" directly...
+    // You can now use the `data` directly...
     val person1: Future[ExamplePerson] = strictEntity.map(e => parse(e.data))
 
     // Though it is also still possible to use the streaming API to consume dataBytes,

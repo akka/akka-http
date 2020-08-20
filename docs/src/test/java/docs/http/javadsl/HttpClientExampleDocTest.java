@@ -91,7 +91,7 @@ public class HttpClientExampleDocTest {
     final CompletionStage<HttpEntity.Strict> strictEntity = response.entity()
         .toStrict(FiniteDuration.create(3, TimeUnit.SECONDS).toMillis(), system);
 
-    // You can now use ''getData" to get the data directly...
+    // You can now use `getData` to get the data directly...
     final CompletionStage<ExamplePerson> person1 =
       strictEntity.thenApply(strict -> parse(strict.getData()));
 
