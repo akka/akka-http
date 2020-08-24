@@ -75,7 +75,7 @@ class StyleGuideExamplesSpec extends RoutingSpec with CompileOnlySpec {
 
       val customerRoutes: Route =
         concat(
-          path("customer" / IntNumber) { customerId =>
+          path(IntNumber) { customerId =>
             complete("")
           }
         // ...
@@ -107,7 +107,7 @@ class StyleGuideExamplesSpec extends RoutingSpec with CompileOnlySpec {
           },
           pathPrefix("customer") {
             concat(
-              path("customer" / IntNumber) { cosumerId =>
+              path(IntNumber) { customerId =>
                 complete("")
               }
             // ...
