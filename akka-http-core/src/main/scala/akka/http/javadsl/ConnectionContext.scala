@@ -103,7 +103,7 @@ object ConnectionContext {
 abstract class ConnectionContext {
   def isSecure: Boolean
   @Deprecated
-  @deprecated("Not always avaialble", since = "10.2.0")
+  @deprecated("Not always available", since = "10.2.0")
   def sslConfig: Option[AkkaSSLConfig]
 }
 
