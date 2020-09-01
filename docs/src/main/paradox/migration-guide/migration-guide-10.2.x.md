@@ -229,10 +229,10 @@ connections. Nowadays, however, the JDK defaults are much better and the
 use of `ssl-config` makes the configuration hard to reason about.
 
 For this reason, we have deprecated the `ssl-config`-based APIs, and now
-provide @apidoc[HttpsConnectionContext.httpsServer](HttpsConnectionContext$)
-and @apidoc[HttpsConnectionContext.httpsClient](HttpsConnectionContext$)
+provide @apidoc[ConnectionContext.httpsServer](ConnectionContext$)
+and @apidoc[ConnectionContext.httpsClient](ConnectionContext$)
 that will use the JDK defaults. There is also a
-@apidoc[HttpsConnectionContext.https](HttpsConnectionContext$)
+@apidoc[ConnectionContext.https](ConnectionContext$)
 where you can provide your own logic for creating `SSLEngine` instances.
 When using this more low-level API, remember it is up to you to set the
 `SSLEngine` 'mode' (client or server), and further configuration such as
