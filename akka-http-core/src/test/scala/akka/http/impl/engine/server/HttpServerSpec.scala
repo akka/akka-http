@@ -397,7 +397,7 @@ class HttpServerSpec extends AkkaSpec(
           sub.request(1)
           dataProbe.expectNext(Chunk(ByteString("abcdef")))
           dataProbe.expectComplete()
-          netIn.expectCancellation()
+          netOut.expectError()
       }
       shutdownBlueprint()
     })
@@ -859,8 +859,8 @@ class HttpServerSpec extends AkkaSpec(
         dataOutProbe.sendError(new RuntimeException("Meteor wiped data center"))
       }
 
-      netOut.expectError()
-      netIn.expectCancellation()
+      val error = netOut.expectError()
+      netIn.sendError(error) // close loop
     })
 
     "log error and reset connection when the response stream materialization fails" in assertAllStagesStopped(new TestSetup {

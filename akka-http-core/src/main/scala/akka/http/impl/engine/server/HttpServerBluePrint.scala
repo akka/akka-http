@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.{ Deadline, Duration, FiniteDuration }
 import scala.collection.immutable
-import scala.util.control.NonFatal
+import scala.util.control.{ NoStackTrace, NonFatal }
 import akka.NotUsed
 import akka.actor.Cancellable
 import akka.annotation.InternalApi
@@ -120,6 +120,16 @@ private[http] object HttpServerBluePrint {
           entitySource.complete()
         }
         completeStage()
+      }
+
+      override def onUpstreamFinish(): Unit = super.onUpstreamFinish()
+      override def onUpstreamFailure(ex: Throwable): Unit = {
+        if (entitySource ne null) {
+          // application layer has cancelled or only partially consumed response entity:
+          // connection will be closed
+          entitySource.fail(ex)
+        }
+        super.onUpstreamFailure(ex)
       }
 
       override def onPush(): Unit = grab(in) match {
@@ -423,7 +433,9 @@ private[http] object HttpServerBluePrint {
         def onPull(): Unit =
           if (oneHundredContinueResponsePending) pullSuppressed = true
           else if (!hasBeenPulled(requestParsingIn)) pull(requestParsingIn)
-        override def onDownstreamFinish() = cancel(requestParsingIn)
+        override def onDownstreamFinish(): Unit =
+          if (openRequests.isEmpty) completeStage()
+          else failStage(new IllegalStateException("User handler flow was cancelled with ongoing request") with NoStackTrace)
       })
 
       setHandler(httpResponseIn, new InHandler {
@@ -484,10 +496,7 @@ private[http] object HttpServerBluePrint {
             case IllegalUriException(errorInfo) =>
               finishWithIllegalRequestError(StatusCodes.BadRequest, errorInfo)
 
-            case _: ServerTerminationDeadlineReached =>
-              val response = settings.terminationDeadlineExceededResponse
-              log.warning(s"Closing connection with [{}] response, termination deadline exceeded. Server is shutting down...", response.status)
-              emitErrorResponse(response)
+            case ex: ServerTerminationDeadlineReached => failStage(ex)
 
             case NonFatal(e) =>
               log.error(e, "Internal server error, sending 500 response")
