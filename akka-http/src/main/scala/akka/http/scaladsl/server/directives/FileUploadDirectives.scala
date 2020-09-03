@@ -5,7 +5,6 @@
 package akka.http.scaladsl.server.directives
 
 import java.io.File
-import java.nio.file.{ Files, Path }
 
 import akka.Done
 import akka.annotation.ApiMayChange
@@ -19,7 +18,6 @@ import scala.concurrent.{ Future, Promise }
 import akka.stream.scaladsl._
 import akka.http.javadsl
 import akka.http.scaladsl.server.RouteResult
-import akka.http.scaladsl.util.FastFuture
 
 import scala.util.{ Failure, Success }
 

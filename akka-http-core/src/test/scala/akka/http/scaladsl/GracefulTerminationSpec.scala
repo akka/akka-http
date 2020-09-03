@@ -4,8 +4,6 @@
 
 package akka.http.scaladsl
 
-import java.security.cert.CertificateFactory
-import java.security.{ KeyStore, SecureRandom }
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ ArrayBlockingQueue, TimeUnit }
 
