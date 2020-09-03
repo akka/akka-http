@@ -82,6 +82,8 @@ object SocketUtil2 {
 
         val address = hostname match {
           case RANDOM_LOOPBACK_ADDRESS =>
+            // JDK limitation? You cannot bind on addresses matching the pattern 127.x.y.255,
+            // that's why the last component must be < 255
             if (canBindOnAlternativeLoopbackAddresses) s"127.20.${Random.nextInt(256)}.${Random.nextInt(255)}"
             else "127.0.0.1"
           case other =>
