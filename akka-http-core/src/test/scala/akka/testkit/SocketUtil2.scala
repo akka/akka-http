@@ -82,7 +82,7 @@ object SocketUtil2 {
 
         val address = hostname match {
           case RANDOM_LOOPBACK_ADDRESS =>
-            if (canBindOnAlternativeLoopbackAddresses) s"127.20.${Random.nextInt(256)}.${Random.nextInt(256)}"
+            if (canBindOnAlternativeLoopbackAddresses) s"127.20.${Random.nextInt(256)}.${Random.nextInt(255)}"
             else "127.0.0.1"
           case other =>
             other
