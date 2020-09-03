@@ -15,7 +15,7 @@ import scala.util.control.NonFatal
 /**
  * Utilities to get free socket address.
  */
-object SocketUtil22 {
+object SocketUtil2 {
 
   val RANDOM_LOOPBACK_ADDRESS = "RANDOM_LOOPBACK_ADDRESS"
 
