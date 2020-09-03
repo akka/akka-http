@@ -37,7 +37,7 @@ class CustomMediaTypesSpec extends AkkaSpec with ScalaFutures
 
     "allow registering custom media type" in {
       import system.dispatcher
-      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
+      val (host, port) = SocketUtil2.temporaryServerHostnameAndPort()
 
       //#application-custom
 

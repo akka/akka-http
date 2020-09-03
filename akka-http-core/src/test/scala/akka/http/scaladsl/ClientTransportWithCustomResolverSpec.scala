@@ -26,7 +26,7 @@ class ClientTransportWithCustomResolverSpec extends AkkaSpecWithMaterializer("ak
     "change to the desired destination" in {
       val hostnameToFind = "some-name-out-there"
       val portToFind = 21345
-      val (hostnameToUse, portToUse) = SocketUtil.temporaryServerHostnameAndPort()
+      val (hostnameToUse, portToUse) = SocketUtil2.temporaryServerHostnameAndPort()
       val bindingFuture = Http().newServerAt(hostnameToUse, portToUse).bindSync(_ => HttpResponse())
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
 
@@ -50,7 +50,7 @@ class ClientTransportWithCustomResolverSpec extends AkkaSpecWithMaterializer("ak
     "resolve not before a connection is needed" in {
       val hostnameToFind = "some-name-out-there"
       val portToFind = 21345
-      val (hostnameToUse, portToUse) = SocketUtil.temporaryServerHostnameAndPort()
+      val (hostnameToUse, portToUse) = SocketUtil2.temporaryServerHostnameAndPort()
       val bindingFuture = Http().newServerAt(hostnameToUse, portToUse).bindSync(_ => HttpResponse())
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
 
