@@ -242,7 +242,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
     def handle(event: StreamFrameEvent): IncomingStreamState = event match {
       // https://http2.github.io/http2-spec/#StreamStates
       // Endpoints MUST ignore WINDOW_UPDATE or RST_STREAM frames received in this state,
-      case _: RstStreamFrame | _: WindowUpdateFrame =>
+      case _: RstStreamFrame | _: WindowUpdateFrame | _: DataFrame =>
         this
       case _ =>
         receivedUnexpectedFrame(event)
