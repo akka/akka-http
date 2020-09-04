@@ -14,7 +14,7 @@ import akka.event.LoggingAdapter
 import akka.http.impl.util._
 import akka.http.impl.engine.server.UpgradeToOtherProtocolResponseHeader
 import akka.http.scaladsl.model.headers._
-import akka.http.scaladsl.model.ws.{ Message, UpgradeToWebSocket }
+import akka.http.scaladsl.model.ws.Message
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.WebSocketSettings
 import akka.stream.{ FlowShape, Graph }
