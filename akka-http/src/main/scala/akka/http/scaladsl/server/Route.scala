@@ -54,7 +54,7 @@ object Route {
   /**
    * Turns a `Route` into a server flow.
    *
-   * This conversion is also implicitly available whereever a `Route` is used through [[RouteResult#routeToFlow]].
+   * This conversion is also implicitly available wherever a `Route` is used through [[RouteResult#routeToFlow]].
    */
   def toFlow(route: Route)(implicit system: ClassicActorSystemProvider): Flow[HttpRequest, HttpResponse, NotUsed] =
     Flow[HttpRequest].mapAsync(1)(toFunction(route))
@@ -62,7 +62,7 @@ object Route {
   /**
    * Turns a `Route` into a server flow.
    */
-  @deprecated("replaced by handlerFlow that takes a system", "10.2.0")
+  @deprecated("Replaced by `toFlow` that takes an implicit ActorSystem.", "10.2.0")
   def handlerFlow(route: Route)(implicit
     routingSettings: RoutingSettings,
                                 parserSettings:   ParserSettings,
