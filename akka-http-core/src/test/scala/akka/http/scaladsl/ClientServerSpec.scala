@@ -84,7 +84,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     }
 
     "report failure if bind fails" in EventFilter[BindException](occurrences = 2).intercept {
-      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
+      val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
       val binding = Http().bind(hostname, port)
       val probe1 = TestSubscriber.manualProbe[Http.IncomingConnection]()
       // Bind succeeded, we have a local address
@@ -126,7 +126,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     }
 
     "run with bindAndHandleSync" in {
-      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
+      val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
       val binding = Http().bindAndHandleSync(_ => HttpResponse(), hostname, port)
       val b1 = Await.result(binding, 3.seconds.dilated)
 
@@ -138,7 +138,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
     }
 
     "prevent more than the configured number of max-connections with bindAndHandle" in {
-      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
+      val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
       val settings = ServerSettings(system).withMaxConnections(1)
 
       val receivedSlow = Promise[Long]()
@@ -202,7 +202,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       }
 
       abstract class RemoteAddressTestScenario {
-        val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
+        val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
 
         val settings = ServerSettings(system).withRemoteAddressHeader(true)
         def createBinding(): Future[ServerBinding]
@@ -244,7 +244,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       "support server timeouts" should {
         "close connection with idle client after idleTimeout" in {
           val serverIdleTimeout = 300.millis
-          val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
+          val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
           val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverIdleTimeout)
 
           try {
@@ -310,7 +310,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
           val clientTimeout = 345.millis.dilated
           val clientPoolSettings = cs.withIdleTimeout(clientTimeout)
 
-          val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
+          val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
           val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverTimeout)
 
           try {
@@ -345,7 +345,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
           val clientTimeout = 345.millis.dilated
           val clientPoolSettings = cs.withIdleTimeout(clientTimeout)
 
-          val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
+          val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
           val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverTimeout)
 
           try {
@@ -375,7 +375,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       "are triggered in `mapMaterialized`" in Utils.assertAllStagesStopped {
         // FIXME racy feature, needs https://github.com/akka/akka/issues/17849 to be fixed
         pending
-        val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
+        val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
         val flow = Flow[HttpRequest].map(_ => HttpResponse()).mapMaterializedValue(_ => sys.error("BOOM"))
         val binding = Http(system2).bindAndHandle(flow, hostname, port)(materializer2)
         val b1 = Await.result(binding, 1.seconds.dilated)
@@ -394,7 +394,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       }(materializer2)
 
       "stop stages on failure" in Utils.assertAllStagesStopped {
-        val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
+        val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
         val stageCounter = new AtomicLong(0)
         val stage: GraphStage[FlowShape[HttpRequest, HttpResponse]] = new GraphStage[FlowShape[HttpRequest, HttpResponse]] {
           val in = Inlet[HttpRequest]("request.in")
@@ -567,7 +567,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll wit
       val serverToClientNetworkBufferSize = 1000
       val responseSize = 200000
 
-      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
+      val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
       def request(i: Int) = HttpRequest(uri = s"http://$hostname:$port/$i", headers = headers.Connection("close") :: Nil)
       def response(req: HttpRequest) = HttpResponse(entity = HttpEntity.Strict(ContentTypes.`text/plain(UTF-8)`, ByteString(req.uri.path.toString.takeRight(1) * responseSize)))
 
@@ -621,7 +621,7 @@ Host: example.com
     "complete a request/response over https when request has `Connection: close` set" in Utils.assertAllStagesStopped {
       // akka/akka-http#1219
       val serverToClientNetworkBufferSize = 1000
-      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
+      val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
       val request = HttpRequest(uri = s"https://$hostname:$port", headers = headers.Connection("close") :: Nil)
 
       // settings adapting network buffer sizes
@@ -815,7 +815,7 @@ Host: example.com
   }
 
   class TestSetup {
-    val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
+    val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
     def configOverrides = ""
 
     // automatically bind a server

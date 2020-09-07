@@ -56,7 +56,7 @@ class EntityDiscardingSpec extends AkkaSpec {
     // TODO consider improving this by storing a mutable "already materialized" flag somewhere
     // TODO likely this is going to inter-op with the auto-draining as described in #18716
     "should not allow draining a second time" in {
-      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
+      val (host, port) = SocketUtil2.temporaryServerHostnameAndPort()
       val bound = Http().bindAndHandleSync(
         req =>
           HttpResponse(entity = HttpEntity(

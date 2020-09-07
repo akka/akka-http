@@ -19,7 +19,7 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpecWithMaterializer {
   "The connection-level client implementation" should {
 
     "be able to handle 100 requests across one connection" in Utils.assertAllStagesStopped {
-      val (serverHostName, serverPort) = SocketUtil.temporaryServerHostnameAndPort()
+      val (serverHostName, serverPort) = SocketUtil2.temporaryServerHostnameAndPort()
 
       val binding = Http().bindAndHandleSync(
         r => HttpResponse(entity = r.uri.toString.reverse.takeWhile(Character.isDigit).reverse),
@@ -38,7 +38,7 @@ class HighLevelOutgoingConnectionSpec extends AkkaSpecWithMaterializer {
     }
 
     "be able to handle 100 requests across 4 connections (client-flow is reusable)" in Utils.assertAllStagesStopped {
-      val (serverHostName, serverPort) = SocketUtil.temporaryServerHostnameAndPort()
+      val (serverHostName, serverPort) = SocketUtil2.temporaryServerHostnameAndPort()
 
       val binding = Http().bindAndHandleSync(
         r => HttpResponse(entity = r.uri.toString.reverse.takeWhile(Character.isDigit).reverse),
