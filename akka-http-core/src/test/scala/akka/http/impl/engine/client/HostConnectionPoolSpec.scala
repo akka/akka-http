@@ -190,6 +190,19 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
 
         conn1.expectRequestToPath("/2")
       }
+      "not get stuck on HEAD requests if payload is never subscribed" inWithShutdown new SetupWithServerProbes(_.withResponseEntitySubscriptionTimeout(Duration.Inf).withMaxConnections(1)) {
+        pushRequest(HttpRequest(method = HttpMethods.HEAD, uri = "/head"))
+        pushRequest(HttpRequest(uri = "/2"))
+        val conn1 = expectNextConnection()
+        conn1.expectRequestToPath("/head")
+
+        conn1.pushResponse(HttpResponse(entity = HttpEntity.Default(ContentTypes.`application/octet-stream`, 100, Source.empty)))
+        val res = expectResponse()
+        res.entity.contentLengthOption.get shouldEqual 100
+
+        // immediately expect next request
+        conn1.expectRequestToPath("/2")
+      }
       "time out quickly when response entity stream is not subscribed fast enough" inWithShutdown new SetupWithServerProbes {
         pendingIn(targetTrans = PassThrough) // infra seems to be missing something
 
