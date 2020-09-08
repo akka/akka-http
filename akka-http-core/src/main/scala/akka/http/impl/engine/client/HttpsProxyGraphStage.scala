@@ -119,7 +119,7 @@ private final class HttpsProxyGraphStage(
             parser.parseBytes(proxyResponse) match {
               case NeedMoreData =>
                 pull(bytesIn)
-              case ResponseStart(_: StatusCodes.Success, _, _, _, _) =>
+              case ResponseStart(_: StatusCodes.Success, _, _, _, _, _) =>
                 var pushed = false
                 val parseResult = parser.onPull()
                 require(parseResult == ParserOutput.MessageEnd, s"parseResult should be MessageEnd but was $parseResult")
@@ -139,7 +139,7 @@ private final class HttpsProxyGraphStage(
                 state = Connected
                 if (isAvailable(bytesOut)) pull(sslIn)
                 if (isAvailable(sslOut)) pull(bytesIn)
-              case ResponseStart(statusCode, _, _, _, _) =>
+              case ResponseStart(statusCode, _, _, _, _, _) =>
                 failStage(new ProxyConnectionFailedException(s"The HTTP(S) proxy rejected to open a connection to $targetHostName:$targetPort with status code: $statusCode"))
               case other =>
                 throw new IllegalStateException(s"unexpected element of type $other")

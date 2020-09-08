@@ -182,9 +182,9 @@ private[http] object OutgoingConnectionBlueprint {
         else setHandlers(responseOutputIn, httpResponseOut, idle)
 
       def onPush(): Unit = grab(responseOutputIn) match {
-        case ResponseStart(statusCode, protocol, headers, entityCreator, closeRequested) =>
+        case ResponseStart(statusCode, protocol, attributes, headers, entityCreator, closeRequested) =>
           val entity = createEntity(entityCreator) withSizeLimit parserSettings.maxContentLength
-          push(httpResponseOut, HttpResponse(statusCode, headers, entity, protocol))
+          push(httpResponseOut, new HttpResponse(statusCode, headers, attributes, entity, protocol))
           completeOnMessageEnd = closeRequested
 
         case MessageStartError(_, info) =>

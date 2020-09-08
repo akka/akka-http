@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.parsing
 
+import javax.net.ssl.SSLSession
+
 import scala.annotation.tailrec
 import scala.concurrent.Promise
 import scala.util.control.{ NoStackTrace, NonFatal }
@@ -122,11 +124,17 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
   // http://tools.ietf.org/html/rfc7230#section-3.3
   protected final def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
                                   clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
-                                  expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult = {
+                                  expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean,
+                                  sslSession: SSLSession): StateResult = {
 
     def emitResponseStart(
       createEntity: EntityCreator[ResponseOutput, ResponseEntity],
       headers:      List[HttpHeader]                              = headers) = {
+
+      val attributes: Map[AttributeKey[_], Any] =
+        if (settings.includeSslSessionAttribute) Map(AttributeKeys.sslSession -> new SslSession(sslSession))
+        else Map.empty
+
       val close =
         contextForCurrentResponse.get.oneHundredContinueTrigger match {
           case None => closeAfterResponseCompletion
@@ -137,7 +145,7 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
             trigger.tryFailure(OneHundredContinueError)
             true
         }
-      emit(ResponseStart(statusCode, protocol, headers, createEntity, close))
+      emit(ResponseStart(statusCode, protocol, attributes, headers, createEntity, close))
     }
 
     def finishEmptyResponse() =
@@ -205,7 +213,7 @@ private[http] class HttpResponseParser(protected val settings: ParserSettings, p
                 parseChunk(input, bodyStart, closeAfterResponseCompletion, totalBytesRead = 0L)
               } else failMessageStart("A chunked response must not contain a Content-Length header.")
             } else parseEntity(completedHeaders, protocol, input, bodyStart, clh, cth, teh = None,
-              expect100continue, hostHeaderPresent, closeAfterResponseCompletion)
+              expect100continue, hostHeaderPresent, closeAfterResponseCompletion, sslSession)
         }
       }
     } else finishEmptyResponse()

@@ -41,6 +41,7 @@ private[http] object ParserOutput {
   final case class ResponseStart(
     statusCode:     StatusCode,
     protocol:       HttpProtocol,
+    attributes:     Map[AttributeKey[_], _],
     headers:        List[HttpHeader],
     createEntity:   EntityCreator[ResponseOutput, ResponseEntity],
     closeRequested: Boolean) extends MessageStart with ResponseOutput

@@ -51,7 +51,8 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
   protected def parseMessage(input: ByteString, offset: Int): HttpMessageParser.StateResult
   protected def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
                             clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
-                            expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): HttpMessageParser.StateResult
+                            expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean,
+                            sslSession: SSLSession): HttpMessageParser.StateResult
 
   protected final def initialHeaderBuffer: ListBuffer[HttpHeader] =
     if (settings.includeTlsSessionInfoHeader && tlsSessionInfoHeader != null) new ListBuffer() += tlsSessionInfoHeader
@@ -152,7 +153,7 @@ private[http] trait HttpMessageParser[Output >: MessageOutput <: ParserOutput] {
         case EmptyHeader =>
           val close = HttpMessage.connectionCloseExpected(protocol, ch)
           setCompletionHandling(CompletionIsEntityStreamError)
-          parseEntity(headers.toList, protocol, input, lineEnd, clh, cth, teh, e100c, hh, close)
+          parseEntity(headers.toList, protocol, input, lineEnd, clh, cth, teh, e100c, hh, close, lastSession)
 
         case h: `Content-Length` => clh match {
           case None      => parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, Some(h), cth, teh, e100c, hh)

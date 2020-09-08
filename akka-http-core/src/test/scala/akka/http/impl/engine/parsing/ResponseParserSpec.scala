@@ -352,9 +352,9 @@ abstract class ResponseParserSpec(mode: String, newLine: String) extends AnyFree
         .splitWhen(x => x.isInstanceOf[MessageStart] || x.isInstanceOf[EntityStreamError])
         .prefixAndTail(1)
         .collect {
-          case (Seq(ResponseStart(statusCode, protocol, headers, createEntity, close)), entityParts) =>
+          case (Seq(ResponseStart(statusCode, protocol, attributes, headers, createEntity, close)), entityParts) =>
             closeAfterResponseCompletion :+= close
-            Right(HttpResponse(statusCode, headers, createEntity(entityParts), protocol))
+            Right(new HttpResponse(statusCode, headers, attributes, createEntity(entityParts), protocol))
           case (Seq(x @ (MessageStartError(_, _) | EntityStreamError(_))), tail) =>
             tail.runWith(Sink.ignore)
             Left(x)

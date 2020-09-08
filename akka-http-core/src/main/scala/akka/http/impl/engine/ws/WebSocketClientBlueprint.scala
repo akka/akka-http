@@ -17,7 +17,7 @@ import akka.stream.TLSProtocol._
 import akka.stream.scaladsl._
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{ HttpMethods, HttpResponse }
+import akka.http.scaladsl.model.{ HttpEntity, HttpMethods, HttpResponse }
 import akka.http.scaladsl.model.headers.Host
 import akka.http.impl.engine.parsing.HttpMessageParser.StateResult
 import akka.http.impl.engine.parsing.ParserOutput.{ MessageStartError, NeedMoreData, RemainingBytes, ResponseStart }
@@ -100,8 +100,8 @@ private[http] object WebSocketClientBlueprint {
           override def onPush(): Unit = {
             parser.parseBytes(grab(in)) match {
               case NeedMoreData => pull(in)
-              case ResponseStart(status, protocol, headers, entity, close) =>
-                val response = HttpResponse(status, headers, protocol = protocol)
+              case ResponseStart(status, protocol, attributes, headers, entity, close) =>
+                val response = new HttpResponse(status, headers, attributes, HttpEntity.Empty, protocol)
                 Handshake.Client.validateResponse(response, subprotocols, key) match {
                   case Right(NegotiatedWebSocketSettings(protocol)) =>
                     result.success(ValidUpgrade(response, protocol))
