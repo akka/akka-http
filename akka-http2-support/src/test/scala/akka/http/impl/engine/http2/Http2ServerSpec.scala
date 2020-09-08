@@ -331,6 +331,13 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         sendRST_STREAM(TheStreamId, ErrorCode.STREAM_CLOSED)
         expectNoBytes(100.millis)
       }
+      "not fail the whole connection when data frames are received after stream was cancelled" in new WaitingForRequestData {
+        entityDataIn.cancel()
+        expectRST_STREAM(TheStreamId)
+        sendDATA(TheStreamId, endStream = false, ByteString("test"))
+        // should just be ignored, especially no GOAWAY frame should be sent in response
+        expectNoBytes(100.millis)
+      }
       "send RST_STREAM if entity stream is canceled" in new WaitingForRequestData {
         val data1 = ByteString("abcdef")
         sendDATA(TheStreamId, endStream = false, data1)
