@@ -533,7 +533,7 @@ abstract class ConnectionPoolSpec(poolImplementation: PoolImplementation)
   "The superPool client infrastructure" should {
 
     "route incoming requests to the right cached host connection pool" in new TestSetup(autoAccept = true) {
-      val (serverHostName2, serverPort2) = SocketUtil.temporaryServerHostnameAndPort()
+      val (serverHostName2, serverPort2) = SocketUtil2.temporaryServerHostnameAndPort()
       Http().bindAndHandleSync(testServerHandler(0), serverHostName2, serverPort2)
 
       val (requestIn, responseOut, responseOutSub, _) = superPool[Int]()

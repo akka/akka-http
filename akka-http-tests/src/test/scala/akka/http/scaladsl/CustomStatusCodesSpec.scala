@@ -10,7 +10,7 @@ import akka.http.scaladsl.server.Directives
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream.ActorMaterializer
-import akka.testkit.{ AkkaSpec, SocketUtil }
+import akka.testkit.{ AkkaSpec, SocketUtil2 }
 import org.scalatest.concurrent.ScalaFutures
 
 class CustomStatusCodesSpec extends AkkaSpec with ScalaFutures
@@ -21,7 +21,7 @@ class CustomStatusCodesSpec extends AkkaSpec with ScalaFutures
   "Http" should {
     "allow registering custom status code" in {
       import system.dispatcher
-      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
+      val (host, port) = SocketUtil2.temporaryServerHostnameAndPort()
 
       //#application-custom
       // similarly in Java: `akka.http.javadsl.settings.[...]`

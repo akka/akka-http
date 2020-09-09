@@ -9,7 +9,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.stream.ActorMaterializer
-import akka.testkit.{ AkkaSpec, SocketUtil, TestKit }
+import akka.testkit.{ AkkaSpec, SocketUtil2, TestKit }
 import org.scalatest.concurrent.{ IntegrationPatience, ScalaFutures }
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
 
@@ -31,7 +31,7 @@ private[akka] trait IntegrationRoutingSpec extends WordSpecLike with Matchers wi
 
   implicit class Checking(p: Prepped) {
     def ~!>(checking: HttpResponse => Unit) = {
-      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
+      val (host, port) = SocketUtil2.temporaryServerHostnameAndPort()
       val binding = Http().bindAndHandle(p.route, host, port)
 
       try {

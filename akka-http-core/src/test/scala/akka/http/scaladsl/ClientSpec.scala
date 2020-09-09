@@ -31,7 +31,7 @@ class ClientSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   "HTTP Client" should {
 
     "reuse connection pool" in {
-      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
+      val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
       val bindingFuture = Http().bindAndHandleSync(_ => HttpResponse(), hostname, port)
       val binding = Await.result(bindingFuture, 3.seconds.dilated)
 

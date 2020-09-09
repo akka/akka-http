@@ -204,7 +204,7 @@ class GracefulTerminationSpec
     (the[StreamTcpException] thrownBy Await.result(r, 1.second)).getMessage should endWith("Connection refused")
 
   class TestSetup(overrideResponse: Option[HttpResponse] = None) {
-    val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
+    val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
     val counter = new AtomicInteger()
     var idleTimeoutBaseForUniqueness = 10
 
