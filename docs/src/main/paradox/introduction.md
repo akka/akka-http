@@ -228,6 +228,7 @@ akka-http-testkit
 akka-http2-support
 : The HTTP/2 implementation to be included only if @ref[HTTP/2 support](server-side/http2.md) is needed.
 
+
 @@@ div { .group-scala }
 akka-http-spray-json
 : Predefined glue-code for (de)serializing custom types from/to JSON with [spray-json](https://github.com/spray/spray-json)
