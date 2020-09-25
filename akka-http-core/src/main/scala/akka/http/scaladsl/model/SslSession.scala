@@ -4,45 +4,25 @@
 
 package akka.http.scaladsl.model
 
-import java.security.Principal
-import java.security.cert.Certificate
+import akka.http.javadsl.{ model => jm }
+import akka.stream.scaladsl.ScalaSessionAPI
+import javax.net.ssl.SSLSession
 
-import javax.net.ssl.{ SSLPeerUnverifiedException, SSLSession }
-
-/** Value class to allow access to an SSLSession with Scala types */
-class SslSession(val session: SSLSession) extends AnyVal {
+class SslSession(val session: SSLSession) extends jm.SslSession with ScalaSessionAPI {
 
   /**
-   * Scala API: Extract the certificates that were actually used by this
-   * engine during this session’s negotiation. The list is empty if no
-   * certificates were used.
+   * Java API
    */
-  def localCertificates: List[Certificate] = Option(session.getLocalCertificates).map(_.toList).getOrElse(Nil)
+  override def getSession: SSLSession = session
 
-  /**
-   * Scala API: Extract the Principal that was actually used by this engine
-   * during this session’s negotiation.
-   */
-  def localPrincipal: Option[Principal] = Option(session.getLocalPrincipal)
+  override def equals(other: Any): Boolean = other match {
+    case SslSession(`session`) => true
+    case _                     => false
+  }
+  override def hashCode(): Int = session.hashCode()
+}
 
-  /**
-   * Scala API: Extract the certificates that were used by the peer engine
-   * during this session’s negotiation. The list is empty if no certificates
-   * were used.
-   */
-  def peerCertificates: List[Certificate] =
-    try Option(session.getPeerCertificates).map(_.toList).getOrElse(Nil)
-    catch {
-      case _: SSLPeerUnverifiedException => Nil
-    }
-
-  /**
-   * Scala API: Extract the Principal that the peer engine presented during
-   * this session’s negotiation.
-   */
-  def peerPrincipal: Option[Principal] =
-    try Option(session.getPeerPrincipal)
-    catch {
-      case _: SSLPeerUnverifiedException => None
-    }
+object SslSession {
+  def apply(session: SSLSession): SslSession = new SslSession(session)
+  def unapply(sslSession: SslSession): Option[SSLSession] = Some(sslSession.session)
 }

@@ -52,4 +52,9 @@ public class HttpMessageTest extends JUnitSuite {
 
         assert(newRequest.getAttribute(AttributeKeys.remoteAddress).get().equals(remoteAddress));
     }
+
+    @Test
+    public void testSslAttribute() {
+
+    }
 }
