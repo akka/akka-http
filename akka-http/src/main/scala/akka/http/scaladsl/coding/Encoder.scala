@@ -4,17 +4,19 @@
 
 package akka.http.scaladsl.coding
 
+import scala.concurrent.Future
+
 import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.http.scaladsl.model._
 import akka.http.impl.util.StreamUtils
 import akka.stream.{ FlowShape, Materializer }
+import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.stage.GraphStage
 import akka.util.ByteString
 import headers._
-import akka.stream.scaladsl.{ Flow, Sink, Source }
 
-import scala.concurrent.Future
+import com.github.ghik.silencer.silent
 
 trait Encoder {
   def encoding: HttpEncoding
@@ -49,6 +51,7 @@ trait Encoder {
   def newEncodeTransformer(): GraphStage[FlowShape[ByteString, ByteString]] = singleUseEncoderFlow()
 
   private def singleUseEncoderFlow(): GraphStage[FlowShape[ByteString, ByteString]] = {
+    @silent("deprecated")
     val compressor = newCompressor
 
     def encodeChunk(bytes: ByteString): ByteString = compressor.compressAndFlush(bytes)
