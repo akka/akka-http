@@ -17,6 +17,7 @@ import akka.http.impl.util.JavaMapping.Implicits._
 import scala.annotation.varargs
 import scala.collection.JavaConverters._
 import akka.http.javadsl.model.{ HttpMethod, MediaType, StatusCode, Uri }
+import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 
 /**
@@ -111,6 +112,7 @@ object ParserSettings extends SettingsCompanion[ParserSettings] {
    */
   @Deprecated
   @deprecated("Use forServer or forClient instead", since = "10.2.0")
+  @silent("create overrides concrete, non-deprecated symbol")
   override def create(system: ActorSystem): ParserSettings = create(system.settings.config)
 
   def forServer(system: ClassicActorSystemProvider): ParserSettings = akka.http.scaladsl.settings.ParserSettings.forServer(system)

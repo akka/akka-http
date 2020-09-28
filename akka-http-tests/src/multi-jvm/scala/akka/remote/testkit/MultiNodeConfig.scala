@@ -272,11 +272,11 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
     def await: T = Await.result(w, remainingOr(testConductor.Settings.QueryTimeout.duration))
   }
 
-  final override def multiNodeSpecBeforeAll: Unit = {
+  final override def multiNodeSpecBeforeAll(): Unit = {
     atStartup()
   }
 
-  final override def multiNodeSpecAfterAll: Unit = {
+  final override def multiNodeSpecAfterAll(): Unit = {
     // wait for all nodes to remove themselves before we shut the conductor down
     if (selfIndex == 0) {
       testConductor.removeNode(myself)
@@ -402,11 +402,11 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
 
   // now add deployments, if so desired
 
-  private final case class Replacement(tag: String, role: RoleName) {
+  private case class Replacement(tag: String, role: RoleName) {
     lazy val addr = node(role).address.toString
   }
 
-  private val replacements = roles map (r => Replacement("@" + r.name + "@", r))
+  private val replacements = roles map (r => new Replacement("@" + r.name + "@", r))
 
   protected def injectDeployments(sys: ActorSystem, role: RoleName): Unit = {
     val deployer = sys.asInstanceOf[ExtendedActorSystem].provider.deployer

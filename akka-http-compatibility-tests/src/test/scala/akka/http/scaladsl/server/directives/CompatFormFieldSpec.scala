@@ -5,8 +5,6 @@
 package akka.http.scaladsl.server
 package directives
 
-import akka.http.ccompat.pre213
-import akka.http.ccompat.since213
 import akka.http.scaladsl.model.FormData
 import akka.http.scaladsl.server.RoutingSpec
 

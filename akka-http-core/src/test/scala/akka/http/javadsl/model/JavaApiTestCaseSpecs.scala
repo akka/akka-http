@@ -4,13 +4,9 @@
 
 package akka.http.javadsl.model
 
-import java.util.Optional
-import javax.net.ssl.{ SSLParameters, SSLContext }
-
 import akka.http.javadsl.model.headers.Cookie
 import akka.http.scaladsl.model
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
-import akka.stream.TLSClientAuth
 
 import scala.collection.immutable
 import org.scalatest.freespec.AnyFreeSpec
@@ -60,14 +56,6 @@ class JavaApiTestCaseSpecs extends AnyFreeSpec with Matchers {
     "addSessionId" in {
       val orderId = Query.create("orderId=123")
       Uri.create("/order").query(JavaApiTestCases.addSessionId(orderId)) must be(Uri.create("/order?orderId=123&session=abcdefghijkl"))
-    }
-    "create HttpsContext" in {
-      akka.http.javadsl.ConnectionContext.https(
-        SSLContext.getDefault,
-        Optional.empty[java.util.Collection[String]],
-        Optional.empty[java.util.Collection[String]],
-        Optional.empty[TLSClientAuth],
-        Optional.empty[SSLParameters]) mustNot be(null)
     }
   }
 }

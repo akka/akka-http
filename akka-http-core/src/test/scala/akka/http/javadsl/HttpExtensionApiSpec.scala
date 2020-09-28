@@ -278,10 +278,6 @@ class HttpExtensionApiSpec extends AkkaSpecWithMaterializer(
       http.defaultClientHttpsContext.isSecure should equal(true)
     }
 
-    "allow access to the default server https context" in {
-      http.defaultServerHttpContext.isSecure should equal(false)
-    }
-
     "have client layer methods" in {
       // TODO actually cover these with runtime tests, compile only for now
       pending
