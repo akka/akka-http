@@ -1,0 +1,9 @@
+# Added methods to classes marked @DoNotInherit:
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.javadsl.settings.ParserSettings.getIncludeSslSessionAttribute")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.ParserSettings.includeSslSessionAttribute")
+
+# Changes in impl:
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.impl.engine.parsing.HttpResponseParser.parseEntity")
+ProblemFilters.exclude[Problem]("akka.http.impl.engine.parsing.ParserOutput*")
+ProblemFilters.exclude[Problem]("akka.http.impl.engine.parsing.HttpMessageParser*")
+ProblemFilters.exclude[Problem]("akka.http.impl.settings.ParserSettingsImpl*")
