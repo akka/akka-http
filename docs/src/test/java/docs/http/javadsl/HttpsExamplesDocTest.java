@@ -6,10 +6,12 @@ package docs.http.javadsl;
 
 import akka.actor.ActorSystem;
 import akka.http.javadsl.ConnectHttp;
+import akka.http.javadsl.ConnectionContext;
 import akka.http.javadsl.Http;
 import akka.http.javadsl.HttpsConnectionContext;
-import akka.stream.ActorMaterializer;
-import com.typesafe.sslconfig.akka.AkkaSSLConfig;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
 
 @SuppressWarnings("unused")
 public class HttpsExamplesDocTest {
@@ -19,14 +21,18 @@ public class HttpsExamplesDocTest {
     String unsafeHost = "example.com";
     //#disable-hostname-verification-connection
     final ActorSystem system = ActorSystem.create();
-    final ActorMaterializer mat = ActorMaterializer.create(system);
     final Http http = Http.get(system);
 
-    // WARNING: disabling hostname verification is a very bad idea, please don't unless you have a very good reason to.
-    final AkkaSSLConfig defaultSSLConfig = AkkaSSLConfig.get(system);
-    final AkkaSSLConfig badSslConfig = defaultSSLConfig
-      .convertSettings(s -> s.withLoose(s.loose().withDisableHostnameVerification(true)));
-    final HttpsConnectionContext badCtx = http.createClientHttpsContext(badSslConfig);
+    final HttpsConnectionContext badCtx = ConnectionContext.httpsClient((host, port) -> {
+      SSLEngine engine = SSLContext.getDefault().createSSLEngine(host, port);
+      engine.setUseClientMode(true);
+
+      // WARNING: this creates an SSL Engine without enabling endpoint identification/verification procedures
+      // Disabling host name verification is a very bad idea, please don't unless you have a very good reason to.
+      // When in doubt, use the `ConnectionContext.httpsClient` that takes an `SSLContext` instead.
+
+      return engine;
+    });
 
     http.outgoingConnection(ConnectHttp.toHostHttps(unsafeHost).withCustomHttpsContext(badCtx));
     //#disable-hostname-verification-connection

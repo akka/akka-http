@@ -47,7 +47,7 @@ object ConnectionContext {
    *  are enabled as needed.
    */
   @ApiMayChange
-  def httpsClient(createEngine: akka.japi.function.Function2[String, Int, SSLEngine]): HttpsConnectionContext =
+  def httpsClient(createEngine: akka.japi.function.Function2[String, Integer, SSLEngine]): HttpsConnectionContext =
     scaladsl.ConnectionContext.httpsClient((host, port) => createEngine(host, port))
 
   // ConnectionContext

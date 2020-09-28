@@ -72,6 +72,11 @@ class TlsEndpointVerificationSpec extends AkkaSpecWithMaterializer("""
       def createInsecureSslEngine(host: String, port: Int): SSLEngine = {
         val engine = context.createSSLEngine(host, port)
         engine.setUseClientMode(true)
+
+        // WARNING: this creates an SSL Engine without enabling endpoint identification/verification procedures
+        // Disabling host name verification is a very bad idea, please don't unless you have a very good reason to.
+        // When in doubt, use the `ConnectionContext.httpsClient` that takes an `SSLContext` instead.
+
         engine
       }
       val clientConnectionContext = ConnectionContext.httpsClient(createInsecureSslEngine _)
