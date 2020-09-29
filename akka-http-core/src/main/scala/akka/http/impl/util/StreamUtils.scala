@@ -14,9 +14,9 @@ import akka.stream.impl.fusing.GraphInterpreter
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.scaladsl._
 import akka.stream.stage._
-import akka.util.ByteString
+import akka.util.{ ByteString, OptionVal }
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.concurrent.{ ExecutionContext, Future, Promise }
 import scala.util.Failure
 import scala.util.Success
@@ -187,6 +187,56 @@ private[http] object StreamUtils {
 
       def source[T]: Source[T, NotUsed] = _source.asInstanceOf[Source[T, NotUsed]] // safe, because source won't generate any elements
       def open(): Unit = promise.success(())
+    }
+  }
+
+  /**
+   * INTERNAL API
+   *
+   * Returns a flow that is almost identity but delays propagation of cancellation from downstream to upstream.
+   */
+  def delayCancellation[T](cancelAfter: Duration): Flow[T, T, NotUsed] = Flow.fromGraph(new DelayCancellationStage(cancelAfter))
+  final class DelayCancellationStage[T](cancelAfter: Duration) extends SimpleLinearGraphStage[T] {
+    def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with ScheduleSupport with InHandler with OutHandler with StageLogging {
+      setHandlers(in, out, this)
+
+      def onPush(): Unit = push(out, grab(in)) // using `passAlong` was considered but it seems to need some boilerplate to make it work
+      def onPull(): Unit = pull(in)
+
+      var timeout: OptionVal[Cancellable] = OptionVal.None
+
+      override def onDownstreamFinish(): Unit = {
+        cancelAfter match {
+          case finite: FiniteDuration =>
+            log.debug(s"Delaying cancellation for $finite")
+            timeout = OptionVal.Some {
+              scheduleOnce(finite) {
+                log.debug(s"Stage was canceled after delay of $cancelAfter")
+                timeout = OptionVal.None
+                completeStage()
+              }
+            }
+          case _ => // do nothing
+        }
+
+        // don't pass cancellation to upstream but keep pulling until we get completion or failure
+        setHandler(
+          in,
+          new InHandler {
+            if (!hasBeenPulled(in)) pull(in)
+
+            def onPush(): Unit = {
+              grab(in) // ignore further elements
+              pull(in)
+            }
+          }
+        )
+      }
+
+      override def postStop(): Unit = timeout match {
+        case OptionVal.Some(x) => x.cancel()
+        case OptionVal.None    => // do nothing
+      }
     }
   }
 

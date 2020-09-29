@@ -721,15 +721,6 @@ private[http] object HttpServerBluePrint {
             override def onDownstreamFinish(): Unit = cancel(fromNet)
           })
 
-          // disable the old handlers, at this point we might still get something due to cancellation delay which we need to ignore
-          setHandlers(fromHttp, toHttp, new InHandler with OutHandler {
-            override def onPush(): Unit = ()
-            override def onPull(): Unit = ()
-            override def onUpstreamFinish(): Unit = ()
-            override def onUpstreamFailure(ex: Throwable): Unit = ()
-            override def onDownstreamFinish(): Unit = ()
-          })
-
           newFlow.runWith(sourceOut.source, sinkIn.sink)(subFusingMaterializer)
         }
       }

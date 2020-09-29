@@ -20,6 +20,7 @@ import akka.http.impl.engine.client._
 import akka.http.impl.engine.server._
 import akka.http.impl.engine.ws.WebSocketClientBlueprint
 import akka.http.impl.settings.{ ConnectionPoolSetup, HostConnectionPoolSetup }
+import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.Host
 import akka.http.scaladsl.model.ws.{ Message, WebSocketRequest, WebSocketUpgradeResponse }
@@ -110,6 +111,9 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
 
     GracefulTerminatorStage(system, settings) atop serverBidiFlow
   }
+
+  private def delayCancellationStage(settings: ServerSettings): BidiFlow[SslTlsOutbound, SslTlsOutbound, SslTlsInbound, SslTlsInbound, NotUsed] =
+    BidiFlow.fromFlows(Flow[SslTlsOutbound], StreamUtils.delayCancellation(settings.lingerTimeout))
 
   private def fuseServerFlow(
     baseFlow: ServerLayerBidiFlow,
@@ -244,7 +248,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
                 masterTerminator.registerConnection(connectionTerminator)(fm.executionContext)
                 future // drop the terminator matValue, we already registered is which is all we need to do here
             }
-            .addAttributes(cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
+
             .run()
             .recover {
               // Ignore incoming errors from the connection as they will cancel the binding.
@@ -358,9 +362,8 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     isSecureConnection: Boolean                   = false): ServerLayer = {
     val server = HttpServerBluePrint(settings, log, isSecureConnection)
       .addAttributes(HttpAttributes.remoteAddress(remoteAddress))
-      .addAttributes(cancellationStrategyAttributeForDelay(settings.streamCancellationDelay))
 
-    server
+    server atop delayCancellationStage(settings)
   }
 
   @deprecated("Binary compatibility method. Use the new `serverLayer` method without the implicit materializer instead.", "10.0.11")
