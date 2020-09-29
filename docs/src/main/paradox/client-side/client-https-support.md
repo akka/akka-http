@@ -61,7 +61,7 @@ communicate with. Without this check a man-in-the-middle attack is possible. In 
 certificate would be presented which was issued for another host name. Checking the host name in the certificate
 against the host name the connection was opened against is therefore vital.
 
-When you create your @apidoc[HttpsConnectionContext] with @apidoc[] enables hostname verification. The following shows an example of disabling hostname verification for a given connection:
+When you create your @apidoc[HttpsConnectionContext] with @apidoc[ConnectionContext.httpsClient](ConnectionContext) enables hostname verification. The following shows an example of disabling hostname verification for a given connection:
 
 Scala
 :  @@snip [HttpsExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/HttpsExamplesSpec.scala) { #disable-hostname-verification-connection }

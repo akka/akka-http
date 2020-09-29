@@ -24,7 +24,12 @@ class HttpsExamplesSpec extends AnyWordSpec with Matchers with CompileOnlySpec {
 
       // WARNING: this creates an SSL Engine without enabling endpoint identification/verification procedures
       // Disabling host name verification is a very bad idea, please don't unless you have a very good reason to.
-      // When in doubt, use the `ConnectionContext.httpsClient` that takes an `SSLContext` instead.
+      // When in doubt, use the `ConnectionContext.httpsClient` that takes an `SSLContext` instead, or enable with:
+      // engine.setSSLParameters({
+      //  val params = engine.getSSLParameters
+      //  params.setEndpointIdentificationAlgorithm("https")
+      //  params
+      // )
 
       engine
     }

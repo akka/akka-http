@@ -12,6 +12,7 @@ import akka.http.javadsl.HttpsConnectionContext;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
 
 @SuppressWarnings("unused")
 public class HttpsExamplesDocTest {
@@ -29,7 +30,11 @@ public class HttpsExamplesDocTest {
 
       // WARNING: this creates an SSL Engine without enabling endpoint identification/verification procedures
       // Disabling host name verification is a very bad idea, please don't unless you have a very good reason to.
-      // When in doubt, use the `ConnectionContext.httpsClient` that takes an `SSLContext` instead.
+      // When in doubt, use the `ConnectionContext.httpsClient` that takes an `SSLContext` instead, or enable
+      // with:
+      // SSLParameters params = engine.getSSLParameters();
+      // params.setEndpointIdentificationAlgorithm("https");
+      // engine.setSSLParameters(params);
 
       return engine;
     });
