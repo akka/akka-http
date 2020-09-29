@@ -9,7 +9,7 @@ import akka.actor.ClassicActorSystemProvider
 import akka.http.javadsl
 import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.http.scaladsl.settings.{ ParserSettings, RoutingSettings }
-import akka.stream.Materializer
+import akka.stream.{ ActorMaterializerHelper, Materializer }
 import akka.stream.scaladsl.Flow
 
 import scala.collection.JavaConverters._
@@ -24,7 +24,7 @@ import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future }
  */
 sealed trait RouteResult extends javadsl.server.RouteResult
 
-object RouteResult {
+object RouteResult extends LowerPriorityRouteResultImplicits {
   final case class Complete(response: HttpResponse) extends javadsl.server.Complete with RouteResult {
     override def getResponse = response
   }
@@ -71,4 +71,18 @@ object RouteResult {
     }
     Route.handlerFlow(route)(routingSettings, parserSettings, materializer, routingLog, ec, rejectionHandler, exceptionHandler)
   }
+}
+
+sealed abstract class LowerPriorityRouteResultImplicits {
+  /**
+   * Turns a `Route` into a server flow.
+   *
+   * This implicit conversion is defined here because `Route` is an alias for
+   * `RequestContext => Future[RouteResult]`, and the fact that `RouteResult`
+   * is in that type means this implicit conversion come into scope whereever
+   * a `Route` is given but a `Flow` is expected.
+   */
+  implicit def routeToFlowViaMaterializer(route: Route)(implicit materializer: Materializer): Flow[HttpRequest, HttpResponse, NotUsed] =
+    Route.toFlow(route)(ActorMaterializerHelper.downcast(materializer).system)
+
 }
