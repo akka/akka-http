@@ -8,11 +8,11 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.AttributeKeys
 import akka.http.scaladsl.model.ws.{ BinaryMessage, Message, WebSocketRequest }
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, ServerSettings }
 import akka.stream.scaladsl.{ Flow, Sink }
 import akka.util.ByteString
-import com.github.ghik.silencer.silent
 import docs.CompileOnlySpec
 
 import scala.io.StdIn
@@ -53,7 +53,7 @@ class WebSocketExampleSpec extends AnyWordSpec with Matchers with CompileOnlySpe
     //#websocket-request-handling
     val requestHandler: HttpRequest => HttpResponse = {
       case req @ HttpRequest(GET, Uri.Path("/greeter"), _, _, _) =>
-        req.attribute(webSocketUpgrade) match {
+        req.attribute(AttributeKeys.webSocketUpgrade) match {
           case Some(upgrade) => upgrade.handleMessages(greeterWebSocketService)
           case None          => HttpResponse(400, entity = "Not a valid websocket request!")
         }
