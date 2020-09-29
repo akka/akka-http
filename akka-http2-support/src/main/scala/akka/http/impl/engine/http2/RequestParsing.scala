@@ -82,7 +82,7 @@ private[http2] object RequestParsing {
             method, uri, headers.result(), entity, HttpProtocols.`HTTP/2.0`
           ).addAttribute(Http2.streamId, subStream.streamId)
           sslSessionAttribute match {
-            case Some(sslSession) => request.addAttribute(AttributeKeys.sslSession, new SslSession(sslSession))
+            case Some(sslSession) => request.addAttribute(AttributeKeys.sslSession, SslSessionInfo(sslSession))
             case None             => request
           }
         } else remainingHeaders.head match {

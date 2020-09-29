@@ -124,12 +124,12 @@ class HttpMessageSpec extends AnyWordSpec with Matchers {
     }
     "support ssl attribute" in {
       val request = HttpRequest()
-        .addAttribute(AttributeKeys.sslSession, new SslSession(TLSPlacebo.dummySession))
+        .addAttribute(AttributeKeys.sslSession, SslSessionInfo(TLSPlacebo.dummySession))
 
-      request.attribute(AttributeKeys.sslSession) should be(Some(SslSession(TLSPlacebo.dummySession)))
+      request.attribute(AttributeKeys.sslSession) should be(Some(SslSessionInfo(TLSPlacebo.dummySession)))
 
       val javaRequest: jm.HttpRequest = request
-      javaRequest.getAttribute(jm.AttributeKeys.sslSession).get() should be(SslSession(TLSPlacebo.dummySession))
+      javaRequest.getAttribute(jm.AttributeKeys.sslSession).get() should be(SslSessionInfo(TLSPlacebo.dummySession))
     }
   }
 

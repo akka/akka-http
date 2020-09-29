@@ -8,13 +8,13 @@ import javax.net.ssl.SSLSession
 
 import akka.http.scaladsl.{ model => sm }
 
-trait SslSession {
+trait SslSessionInfo {
 
   /**
    * Java API
    */
   def getSession: SSLSession
 }
-object SslSession {
-  def create(session: SSLSession): SslSession = sm.SslSession(session)
+object SslSessionInfo {
+  def create(session: SSLSession): SslSessionInfo = sm.SslSessionInfo(session)
 }

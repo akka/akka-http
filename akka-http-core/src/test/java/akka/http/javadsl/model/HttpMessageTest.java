@@ -61,7 +61,7 @@ public class HttpMessageTest extends JUnitSuite {
     public void testSslAttribute() throws Exception {
         SSLSession session = SSLContext.getDefault().createSSLEngine().getSession();
         HttpRequest request = HttpRequest.create()
-          .addAttribute(AttributeKeys.sslSession, SslSession.create(session));
+          .addAttribute(AttributeKeys.sslSession, SslSessionInfo.create(session));
 
         assert(request.getAttribute(AttributeKeys.sslSession).get().getSession() == session);
     }

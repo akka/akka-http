@@ -183,7 +183,7 @@ private[http] final class HttpRequestParser(
             else headers
 
           val attributes: Map[AttributeKey[_], Any] =
-            if (settings.includeSslSessionAttribute) Map(AttributeKeys.sslSession -> new SslSession(sslSession))
+            if (settings.includeSslSessionAttribute) Map(AttributeKeys.sslSession -> SslSessionInfo(sslSession))
             else Map.empty
 
           val requestStart =
