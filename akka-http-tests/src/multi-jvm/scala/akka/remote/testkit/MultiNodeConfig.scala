@@ -406,7 +406,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
     lazy val addr = node(role).address.toString
   }
 
-  private val replacements = roles map (r => new Replacement("@" + r.name + "@", r))
+  private val replacements = roles map (r => Replacement("@" + r.name + "@", r))
 
   protected def injectDeployments(sys: ActorSystem, role: RoleName): Unit = {
     val deployer = sys.asInstanceOf[ExtendedActorSystem].provider.deployer
