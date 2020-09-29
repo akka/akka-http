@@ -194,40 +194,6 @@ class WebSocketIntegrationSpec extends AkkaSpec("akka.stream.materializer.debug.
       binding.unbind()
     }
 
-    "terminate the handler flow with an error when the connection is aborted" in Utils.assertAllStagesStopped {
-      val handlerTermination = Promise[Done]
-
-      val handler = Flow[Message]
-        .watchTermination()(Keep.right)
-        .mapMaterializedValue(handlerTermination.completeWith(_))
-        .map(m => TextMessage.Strict(s"Echo [$m]"))
-
-      val bindingFuture = Http().bindAndHandleSync(
-        _.header[UpgradeToWebSocket].get.handleMessages(handler, None),
-        interface = "localhost",
-        port = 0)
-      val binding = Await.result(bindingFuture, 3.seconds.dilated)
-      val myPort = binding.localAddress.getPort
-
-      val ((switch, connection), completion) =
-        Source.maybe
-          .viaMat {
-            Http().webSocketClientLayer(WebSocketRequest("ws://localhost:" + myPort))
-              .atop(TLSPlacebo())
-              .atopMat(KillSwitches.singleBidi[ByteString, ByteString])(Keep.right)
-              .joinMat(Tcp().outgoingConnection(new InetSocketAddress("localhost", myPort), halfClose = true))(Keep.both)
-          }(Keep.right)
-          .toMat(Sink.ignore)(Keep.both)
-          .run()
-      connection.futureValue
-      switch.abort(new IllegalStateException("Connection aborted"))
-
-      // Should fail, not complete:
-      handlerTermination.future.failed.futureValue
-
-      binding.unbind()
-    }
-
   }
 
   "A websocket client" should {
