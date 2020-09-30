@@ -473,13 +473,8 @@ private[http] object HttpServerBluePrint {
               // the application has forwarded a request entity stream error to the response stream
               finishWithIllegalRequestError(StatusCodes.BadRequest, errorInfo)
 
-            case EntityStreamSizeException(limit, contentLength) =>
-              val summary = contentLength match {
-                case Some(cl) => s"Request Content-Length of $cl bytes exceeds the configured limit of $limit bytes"
-                case None     => s"Aggregated data length of request entity exceeds the configured limit of $limit bytes"
-              }
-              val info = ErrorInfo(summary, "Consider increasing the value of akka.http.server.parsing.max-content-length")
-              finishWithIllegalRequestError(StatusCodes.PayloadTooLarge, info)
+            case e: EntityStreamSizeException =>
+              finishWithIllegalRequestError(StatusCodes.PayloadTooLarge, e.info)
 
             case IllegalUriException(errorInfo) =>
               finishWithIllegalRequestError(StatusCodes.BadRequest, errorInfo)
