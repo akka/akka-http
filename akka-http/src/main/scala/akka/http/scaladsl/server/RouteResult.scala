@@ -82,6 +82,7 @@ sealed abstract class LowerPriorityRouteResultImplicits {
    * is in that type means this implicit conversion come into scope whereever
    * a `Route` is given but a `Flow` is expected.
    */
+  @deprecated("make an ActorSystem available implicitly instead", "10.2.0")
   implicit def routeToFlowViaMaterializer(route: Route)(implicit materializer: Materializer): Flow[HttpRequest, HttpResponse, NotUsed] =
     Route.toFlow(route)(ActorMaterializerHelper.downcast(materializer).system)
 

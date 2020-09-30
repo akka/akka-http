@@ -22,10 +22,11 @@ class RouteResultSpec extends AnyWordSpec with Matchers {
       TestKit.shutdownActorSystem(system, verifySystemShutdown = true)
     }
 
-    "provide a conversion from Route to Flow when a Materializer is implicitily available" in {
+    "provide a conversion from Route to Flow when a Materializer is implicitly available" in {
       val system = ActorSystem("RouteResultSpec1")
       implicit val materializer: Materializer = SystemMaterializer(system).materializer
 
+      @silent("deprecated")
       val flow: Flow[HttpRequest, HttpResponse, Any] = route
 
       TestKit.shutdownActorSystem(system, verifySystemShutdown = true)
@@ -33,7 +34,8 @@ class RouteResultSpec extends AnyWordSpec with Matchers {
 
     "provide a conversion from Route to Flow when both a Materializer and a system are implicitly  available" in {
       implicit val system = ActorSystem("RouteResultSpec1")
-      implicit val materializer: Materializer = SystemMaterializer(system).materializer
+      // implemented with ??? so it produces an error when the materializer is selected over the system
+      implicit def materializer: Materializer = ???
 
       val flow: Flow[HttpRequest, HttpResponse, Any] = route
 
