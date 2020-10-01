@@ -17,10 +17,12 @@ import akka.NotUsed;
 import akka.http.impl.util.JavaMapping;
 import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.ConnectionContext;
+import akka.http.javadsl.model.StatusCodes;
 import akka.http.javadsl.model.ws.WebSocketRequest;
 import akka.http.javadsl.settings.ClientConnectionSettings;
 import akka.http.javadsl.settings.ServerSettings;
 import akka.http.javadsl.settings.WebSocketSettings;
+import akka.http.scaladsl.model.AttributeKeys;
 import akka.japi.JavaPartialFunction;
 import akka.japi.function.Function;
 
@@ -47,8 +49,15 @@ public class WebSocketCoreExample {
     System.out.println("Handling request to " + request.getUri());
 
     if (request.getUri().path().equals("/greeter")) {
-      final Flow<Message, Message, NotUsed> greeterFlow = greeter();
-      return WebSocket.handleWebSocketRequestWith(request, greeterFlow);
+      return request.getAttribute(AttributeKeys.webSocketUpgrade())
+        .map(upgrade -> {
+          Flow<Message, Message, NotUsed> greeterFlow = greeter();
+          HttpResponse response = upgrade.handleMessagesWith(greeterFlow);
+          return response;
+        })
+        .orElse(
+          HttpResponse.create().withStatus(StatusCodes.BAD_REQUEST).withEntity("Expected WebSocket request")
+        );
     } else {
       return HttpResponse.create().withStatus(404);
     }
@@ -135,7 +144,7 @@ public class WebSocketCoreExample {
 
   {
     ActorSystem system = null;
-    ActorMaterializer materializer = null;
+    Materializer materializer = null;
     Flow<Message, Message, NotUsed> clientFlow = null;
     //#websocket-client-ping-payload
     ClientConnectionSettings defaultSettings = ClientConnectionSettings.create(system);
