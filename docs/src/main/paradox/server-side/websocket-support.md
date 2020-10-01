@@ -79,7 +79,7 @@ See the @github[full routing example](/docs/src/test/java/docs/http/javadsl/serv
 ## WebSocketUpgrade
 
 To handle websocket requests, you can either use the @apidoc[WebSocketUpgrade] attribute directly, or
-use the more high-level @ref[Routing Support](#routing-support) described below.
+use the more high-level @ref[Routing Support](#routing-support) described above.
 
 The entrypoint for the WebSocket API is the @apidoc[WebSocketUpgrade] attribute which is added to a request
 if Akka HTTP encounters a WebSocket upgrade request.
