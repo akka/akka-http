@@ -5,8 +5,12 @@
 package akka.http.javadsl.model;
 
 import akka.http.scaladsl.model.AttributeKey$;
+import akka.stream.scaladsl.TLSPlacebo;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -51,5 +55,14 @@ public class HttpMessageTest extends JUnitSuite {
         HttpRequest newRequest = request.addAttribute(AttributeKeys.remoteAddress, remoteAddress);
 
         assert(newRequest.getAttribute(AttributeKeys.remoteAddress).get().equals(remoteAddress));
+    }
+
+    @Test
+    public void testSslAttribute() throws Exception {
+        SSLSession session = SSLContext.getDefault().createSSLEngine().getSession();
+        HttpRequest request = HttpRequest.create()
+          .addAttribute(AttributeKeys.sslSession, SslSessionInfo.create(session));
+
+        assert(request.getAttribute(AttributeKeys.sslSession).get().getSession() == session);
     }
 }

@@ -5,6 +5,7 @@
 package akka.http.impl.engine.parsing
 
 import java.lang.{ StringBuilder => JStringBuilder }
+import javax.net.ssl.SSLSession
 
 import scala.annotation.{ switch, tailrec }
 import akka.http.scaladsl.settings.{ ParserSettings, WebSocketSettings }
@@ -171,7 +172,8 @@ private[http] final class HttpRequestParser(
     // http://tools.ietf.org/html/rfc7230#section-3.3
     override def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
                              clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
-                             expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult =
+                             expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean,
+                             sslSession: SSLSession): StateResult =
       if (hostHeaderPresent || protocol == HttpProtocols.`HTTP/1.0`) {
         def emitRequestStart(
           createEntity: EntityCreator[RequestOutput, RequestEntity],
@@ -180,15 +182,19 @@ private[http] final class HttpRequestParser(
             if (rawRequestUriHeader) `Raw-Request-URI`(uriBytes.decodeString(HttpCharsets.`US-ASCII`.nioCharset)) :: headers
             else headers
 
+          val attributes: Map[AttributeKey[_], Any] =
+            if (settings.includeSslSessionAttribute) Map(AttributeKeys.sslSession -> SslSessionInfo(sslSession))
+            else Map.empty
+
           val requestStart =
             if (method == HttpMethods.GET) {
               Handshake.Server.websocketUpgrade(headers, hostHeaderPresent, websocketSettings, headerParser.log) match {
                 case OptionVal.Some(upgrade) =>
-                  RequestStart(method, uri, protocol, Map(AttributeKeys.webSocketUpgrade -> upgrade), upgrade :: allHeaders0, createEntity, expect100continue, closeAfterResponseCompletion)
+                  RequestStart(method, uri, protocol, attributes.updated(AttributeKeys.webSocketUpgrade, upgrade), upgrade :: allHeaders0, createEntity, expect100continue, closeAfterResponseCompletion)
                 case OptionVal.None =>
-                  RequestStart(method, uri, protocol, Map.empty, allHeaders0, createEntity, expect100continue, closeAfterResponseCompletion)
+                  RequestStart(method, uri, protocol, attributes, allHeaders0, createEntity, expect100continue, closeAfterResponseCompletion)
               }
-            } else RequestStart(method, uri, protocol, Map.empty, allHeaders0, createEntity, expect100continue, closeAfterResponseCompletion)
+            } else RequestStart(method, uri, protocol, attributes, allHeaders0, createEntity, expect100continue, closeAfterResponseCompletion)
 
           emit(requestStart)
         }
@@ -226,7 +232,7 @@ private[http] final class HttpRequestParser(
                 parseChunk(input, bodyStart, closeAfterResponseCompletion, totalBytesRead = 0L)
               } else failMessageStart("A chunked request must not contain a Content-Length header.")
             } else parseEntity(completedHeaders, protocol, input, bodyStart, clh, cth, teh = None,
-              expect100continue, hostHeaderPresent, closeAfterResponseCompletion)
+              expect100continue, hostHeaderPresent, closeAfterResponseCompletion, sslSession)
         }
       } else failMessageStart("Request is missing required `Host` header")
 

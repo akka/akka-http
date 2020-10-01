@@ -43,6 +43,7 @@ abstract class ParserSettings private[akka] () extends BodyPartParser.Settings {
   def getIllegalResponseHeaderValueProcessingMode: ParserSettings.IllegalResponseHeaderValueProcessingMode
   def getHeaderValueCacheLimits: ju.Map[String, Int]
   def getIncludeTlsSessionInfoHeader: Boolean
+  def getIncludeSslSessionAttribute: Boolean
   def headerValueCacheLimits: Map[String, Int]
   def getCustomMethods: java.util.function.Function[String, Optional[HttpMethod]]
   def getCustomStatusCodes: java.util.function.Function[Int, Optional[StatusCode]]
@@ -67,6 +68,7 @@ abstract class ParserSettings private[akka] () extends BodyPartParser.Settings {
   def withErrorLoggingVerbosity(newValue: ParserSettings.ErrorLoggingVerbosity): ParserSettings = self.copy(errorLoggingVerbosity = newValue.asScala)
   def withHeaderValueCacheLimits(newValue: ju.Map[String, Int]): ParserSettings = self.copy(headerValueCacheLimits = newValue.asScala.toMap)
   def withIncludeTlsSessionInfoHeader(newValue: Boolean): ParserSettings = self.copy(includeTlsSessionInfoHeader = newValue)
+  def withIncludeSslSessionAttribute(newValue: Boolean): ParserSettings = self.copy(includeSslSessionAttribute = newValue)
   def withModeledHeaderParsing(newValue: Boolean): ParserSettings = self.copy(modeledHeaderParsing = newValue)
   def withIgnoreIllegalHeaderFor(newValue: List[String]): ParserSettings = self.copy(ignoreIllegalHeaderFor = newValue.map(_.toLowerCase).toSet)
 

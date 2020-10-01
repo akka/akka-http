@@ -11,4 +11,6 @@ public final class AttributeKeys {
             (AttributeKey<RemoteAddress>)(Object)akka.http.scaladsl.model.AttributeKeys.remoteAddress();
     public static final AttributeKey<WebSocketUpgrade> webSocketUpgrade =
             (AttributeKey<WebSocketUpgrade>)(Object)akka.http.scaladsl.model.AttributeKeys.webSocketUpgrade();
+    public static final AttributeKey<SslSessionInfo> sslSession =
+            (AttributeKey<SslSessionInfo>)(Object)akka.http.scaladsl.model.AttributeKeys.sslSession();
 }

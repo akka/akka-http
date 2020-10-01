@@ -22,6 +22,7 @@ class PrepareResponseSpec extends AkkaSpec {
   val chunkedStart = ParserOutput.ResponseStart(
     StatusCodes.OK,
     HttpProtocols.`HTTP/1.1`,
+    Map.empty,
     List(),
     StreamedEntityCreator[ParserOutput, ResponseEntity] { entityChunks =>
       val chunks = entityChunks.collect {
@@ -35,6 +36,7 @@ class PrepareResponseSpec extends AkkaSpec {
   val strictStart = ParserOutput.ResponseStart(
     StatusCodes.OK,
     HttpProtocols.`HTTP/1.1`,
+    Map.empty,
     List(),
     StrictEntityCreator(HttpEntity("body")),
     closeRequested = false)

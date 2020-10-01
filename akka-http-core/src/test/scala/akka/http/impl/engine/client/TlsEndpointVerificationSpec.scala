@@ -12,15 +12,15 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import akka.stream.scaladsl._
 import akka.http.impl.util._
 import akka.http.scaladsl.{ ConnectionContext, Http }
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse, StatusCodes }
-import akka.http.scaladsl.model.headers.{ Host, `Tls-Session-Info` }
+import akka.http.scaladsl.model.{ AttributeKeys, HttpRequest, HttpResponse, StatusCodes }
+import akka.http.scaladsl.model.headers.Host
 import javax.net.ssl.{ SSLContext, SSLEngine, TrustManagerFactory }
 import org.scalatest.time.{ Seconds, Span }
 
 import scala.concurrent.Future
 
 class TlsEndpointVerificationSpec extends AkkaSpecWithMaterializer("""
-    akka.http.parsing.tls-session-info-header = on
+    akka.http.parsing.ssl-session-attribute = on
   """) {
   /*
    * Useful when debugging against "what if we hit a real website"
@@ -42,7 +42,7 @@ class TlsEndpointVerificationSpec extends AkkaSpecWithMaterializer("""
 
       whenReady(pipe(HttpRequest(uri = "https://akka.example.org:8080/")), timeout) { response =>
         response.status shouldEqual StatusCodes.OK
-        val tlsInfo = response.header[`Tls-Session-Info`].get
+        val tlsInfo = response.attribute(AttributeKeys.sslSession).get
         tlsInfo.peerPrincipal.get.getName shouldEqual "CN=akka.example.org,O=Internet Widgits Pty Ltd,ST=Some-State,C=AU"
       }
     }
@@ -92,7 +92,7 @@ class TlsEndpointVerificationSpec extends AkkaSpecWithMaterializer("""
 
       whenReady(pipe(HttpRequest(uri = "https://hijack.de:8080/")), timeout) { response =>
         response.status shouldEqual StatusCodes.OK
-        val tlsInfo = response.header[`Tls-Session-Info`].get
+        val tlsInfo = response.attribute(AttributeKeys.sslSession).get
         tlsInfo.peerPrincipal.get.getName shouldEqual "CN=akka.example.org,O=Internet Widgits Pty Ltd,ST=Some-State,C=AU"
       }
     }
@@ -133,7 +133,7 @@ class TlsEndpointVerificationSpec extends AkkaSpecWithMaterializer("""
   def pipelineFlow(clientContext: ConnectionContext, hostname: String): Flow[HttpRequest, HttpResponse, NotUsed] = {
     val handler: HttpRequest => HttpResponse = { req =>
       // verify Tls-Session-Info header information
-      val name = req.header[`Tls-Session-Info`].flatMap(_.localPrincipal).map(_.getName)
+      val name = req.attribute(AttributeKeys.sslSession).flatMap(_.localPrincipal).map(_.getName)
       if (name.exists(_ == "CN=akka.example.org,O=Internet Widgits Pty Ltd,ST=Some-State,C=AU")) HttpResponse()
       else HttpResponse(StatusCodes.BadRequest, entity = "Tls-Session-Info header verification failed")
     }

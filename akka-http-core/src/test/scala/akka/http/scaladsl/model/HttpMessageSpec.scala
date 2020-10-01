@@ -11,6 +11,7 @@ import headers._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import akka.http.javadsl.{ model => jm }
+import akka.stream.scaladsl.TLSPlacebo
 
 class HttpMessageSpec extends AnyWordSpec with Matchers {
 
@@ -120,6 +121,15 @@ class HttpMessageSpec extends AnyWordSpec with Matchers {
       val smaller = request.removeAttribute(intKey)
       smaller.attribute(otherStringKey) should be(Some(otherString))
       smaller.attribute(intKey) should be(None)
+    }
+    "support ssl attribute" in {
+      val request = HttpRequest()
+        .addAttribute(AttributeKeys.sslSession, SslSessionInfo(TLSPlacebo.dummySession))
+
+      request.attribute(AttributeKeys.sslSession) should be(Some(SslSessionInfo(TLSPlacebo.dummySession)))
+
+      val javaRequest: jm.HttpRequest = request
+      javaRequest.getAttribute(jm.AttributeKeys.sslSession).get() should be(SslSessionInfo(TLSPlacebo.dummySession))
     }
   }
 

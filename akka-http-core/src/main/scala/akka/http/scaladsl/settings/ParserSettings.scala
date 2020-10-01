@@ -43,6 +43,7 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   def illegalResponseHeaderValueProcessingMode: ParserSettings.IllegalResponseHeaderValueProcessingMode
   def headerValueCacheLimits: Map[String, Int]
   def includeTlsSessionInfoHeader: Boolean
+  def includeSslSessionAttribute: Boolean
   def customMethods: String => Option[HttpMethod]
   def customStatusCodes: Int => Option[StatusCode]
   def customMediaTypes: MediaTypes.FindCustom
@@ -58,6 +59,7 @@ abstract class ParserSettings private[akka] () extends akka.http.javadsl.setting
   override def getMaxToStrictBytes = maxToStrictBytes
   override def getMaxHeaderValueLength = maxHeaderValueLength
   override def getIncludeTlsSessionInfoHeader = includeTlsSessionInfoHeader
+  override def getIncludeSslSessionAttribute = includeSslSessionAttribute
   override def getIllegalHeaderWarnings = illegalHeaderWarnings
   override def getIgnoreIllegalHeaderFor = ignoreIllegalHeaderFor
   override def getMaxHeaderNameLength = maxHeaderNameLength

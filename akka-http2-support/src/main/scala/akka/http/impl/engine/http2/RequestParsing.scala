@@ -4,6 +4,8 @@
 
 package akka.http.impl.engine.http2
 
+import javax.net.ssl.SSLSession
+
 import akka.annotation.InternalApi
 import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.impl.engine.server.HttpAttributes
@@ -38,6 +40,12 @@ private[http2] object RequestParsing {
           model.headers.`Tls-Session-Info`(sslSessionInfo.session))
       } else None
 
+    val sslSessionAttribute: Option[SSLSession] =
+      if (serverSettings.parserSettings.includeSslSessionAttribute)
+        attributes.get[HttpAttributes.TLSSessionInfo].map(_.session)
+      else
+        None
+
     { subStream =>
       @tailrec
       def rec(
@@ -70,9 +78,13 @@ private[http2] object RequestParsing {
           val (path, rawQueryString) = pathAndRawQuery
           val authorityOrDefault: Uri.Authority = if (authority == null) Uri.Authority.Empty else authority
           val uri = Uri(scheme, authorityOrDefault, path, rawQueryString)
-          HttpRequest(
+          val request = HttpRequest(
             method, uri, headers.result(), entity, HttpProtocols.`HTTP/2.0`
           ).addAttribute(Http2.streamId, subStream.streamId)
+          sslSessionAttribute match {
+            case Some(sslSession) => request.addAttribute(AttributeKeys.sslSession, SslSessionInfo(sslSession))
+            case None             => request
+          }
         } else remainingHeaders.head match {
           case (":scheme", value) =>
             checkUniquePseudoHeader(":scheme", scheme)
