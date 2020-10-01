@@ -20,17 +20,8 @@ import docs.CompileOnlySpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-// TODO https://github.com/akka/akka-http/issues/2845
-@silent("AkkaSSLConfig in package akka is deprecated")
 abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
   with Directives with CompileOnlySpec {
-
-  class HowToObtainSSLConfig {
-    //#akka-ssl-config
-    implicit val system = ActorSystem()
-    val sslConfig = AkkaSSLConfig()
-    //#akka-ssl-config
-  }
 
   "low level api" in compileOnlySpec {
     //#low-level-default
@@ -73,4 +64,18 @@ abstract class HttpsServerExampleSpec extends AnyWordSpec with Matchers
     system.terminate()
   }
 
+  "require-client-auth" in {
+    //#require-client-auth
+    val sslContext: SSLContext = ???
+    ConnectionContext.httpsServer(() => {
+      val engine = sslContext.createSSLEngine()
+      engine.setUseClientMode(false)
+
+      engine.setNeedClientAuth(true)
+      // or: engine.setWantClientAuth(true)
+
+      engine
+    })
+    //#require-client-auth
+  }
 }

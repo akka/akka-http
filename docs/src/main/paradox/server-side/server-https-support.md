@@ -57,17 +57,22 @@ If you want to run HTTP and HTTPS servers in a single application, you first cre
 and then create two server bindings for different ports, one with https enabled and one without:
 
 Scala
-:  @@snip [HttpsServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #both-https-and-http }
+:  @@snip [HttpsServerExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #both-https-and-http }
 
 Java
 :  @@snip [SimpleServerHttpHttpsApp.java](/akka-http-tests/src/main/java/akka/http/javadsl/server/examples/simple/SimpleServerHttpHttpsApp.java) { #both-https-and-http }
 
 ## Mutual authentication
 
-To require clients to authenticate themselves when connecting, pass in @scala[`Some(TLSClientAuth.Need)`]@java[`Optional.of(TLSClientAuth.need)`] as the `clientAuth` parameter of the
-@apidoc[HttpsConnectionContext]
-and make sure the truststore is populated accordingly. For further (custom) certificate checks you can use the
-@scala[@scaladoc[`Tls-Session-Info`](akka.http.scaladsl.model.headers.Tls$minusSession$minusInfo)]@java[@javadoc[`TlsSessionInfo`](akka.http.javadsl.model.headers.TlsSessionInfo)] synthetic header.
+To require clients to authenticate themselves when connecting, you must set this on the `SSLEngine`:
+
+Scala
+:  @@snip [HttpsServerExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/HttpsServerExampleSpec.scala) { #require-client-auth }
+
+Java
+:  @@snip [HttpsServerExampleTest.scala](/docs/src/test/java/docs/http/javadsl/server/HttpsServerExampleTest.java) { #require-client-auth }
+
+For further (custom) certificate checks you can use the `sslSession` attribute.
 
 At this point dynamic renegotiation of the certificates to be used is not implemented. For details see [issue #18351](https://github.com/akka/akka/issues/18351)
 and some preliminary work in [PR #19787](https://github.com/akka/akka/pull/19787).
