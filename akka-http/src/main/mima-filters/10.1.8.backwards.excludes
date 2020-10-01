@@ -11,6 +11,8 @@ ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.server
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives#FieldDef.apply")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives#FieldMagnet.convert")
 
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives.formFields")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives.formField")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives.formFields")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.server.directives.FormFieldDirectives.formField")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.server.Directives.formFields")
