@@ -72,7 +72,7 @@ Scala
 Java
 :  @@snip [HttpsServerExampleTest.scala](/docs/src/test/java/docs/http/javadsl/server/HttpsServerExampleTest.java) { #require-client-auth }
 
-For further (custom) certificate checks you can use the `sslSession` attribute.
+For further (custom) certificate checks, you can access the `javax.net.ssl.SSLSession` via the `sslSession` attribute.
 
 At this point dynamic renegotiation of the certificates to be used is not implemented. For details see [issue #18351](https://github.com/akka/akka/issues/18351)
 and some preliminary work in [PR #19787](https://github.com/akka/akka/pull/19787).
