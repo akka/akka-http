@@ -5,4 +5,4 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.javadsl.Connection
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.ConnectionContext.$init$")
 
 # Added to @DoNotInherit
-ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.http.scaladsl.ConnectionContext.defaultPort")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.ConnectionContext.defaultPort")
