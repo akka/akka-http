@@ -46,6 +46,36 @@ For sending data, you can use @scala[`TextMessage.apply(text: String)`]@java[`Te
 complete message has already been assembled. Otherwise, use @scala[`TextMessage.apply(textStream: Source[String, \_])`]@java[`TextMessage.create(Source<String, ?>)`]
 to create a streaming message from an Akka Stream source.
 
+## Routing support
+
+To handle websocket requests, you can either use the directive described in this section, or
+use the more low-level @ref[WebSocketUpgrade](#websocketupgrade) attribute described
+in the next section.
+
+The routing DSL provides the @ref[handleWebSocketMessages](../routing-dsl/directives/websocket-directives/handleWebSocketMessages.md) directive to install a WebSocket handler if a request
+is a WebSocket request. Otherwise, the directive rejects the request.
+
+Let's look at how the above example can be rewritten using the high-level routing DSL.
+
+Instead of writing the request handler manually, the routing behavior of the app is defined by a route that
+uses the @ref[handleWebSocketMessages](../routing-dsl/directives/websocket-directives/handleWebSocketMessages.md) directive:
+
+Scala
+:  @@snip [WebSocketDirectivesExamplesSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/directives/WebSocketDirectivesExamplesSpec.scala) { #greeter-service }
+
+Java
+:  @@snip [WebSocketRoutingExample.java](/docs/src/test/java/docs/http/javadsl/server/WebSocketRoutingExample.java) { #websocket-route }
+
+The handling code itself will be the same as with using the low-level API.
+
+@@@ div { .group-scala }
+The example also includes code demonstrating the testkit support for WebSocket services. It allows to create WebSocket
+requests to run against a route using *WS* which can be used to provide a mock WebSocket probe that allows manual
+testing of the WebSocket handler's behavior if the request was accepted.
+@@@
+
+See the @github[full routing example](/docs/src/test/java/docs/http/javadsl/server/WebSocketCoreExample.java).
+
 ## WebSocketUpgrade
 
 To handle websocket requests, you can either use the @apidoc[WebSocketUpgrade] attribute directly, or
@@ -108,42 +138,16 @@ In the example, the passed handler expects text messages where each message is e
 and then responds with another text message that contains a greeting:
 
 Scala
-:  @@snip [WebSocketExampleSpec.scala]($test$/scala/docs/http/scaladsl/server/WebSocketExampleSpec.scala) { #websocket-handler }
+:  @@snip [WebSocketExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/WebSocketExampleSpec.scala) { #websocket-handler }
 
 Java
-:  @@snip [WebSocketCoreExample.java]($test$/java/docs/http/javadsl/server/WebSocketCoreExample.java) { #websocket-handler }
+:  @@snip [WebSocketCoreExample.java](/docs/src/test/java/docs/http/javadsl/server/WebSocketCoreExample.java) { #websocket-handler }
 
 @@@ note
 Inactive WebSocket connections will be dropped according to the @ref[idle-timeout settings](../common/timeouts.md#idle-timeouts).
 In case you need to keep inactive connections alive, you can either tweak your idle-timeout or inject
 'keep-alive' messages regularly.
 @@@
-
-## Routing support
-
-The routing DSL provides the @ref[handleWebSocketMessages](../routing-dsl/directives/websocket-directives/handleWebSocketMessages.md) directive to install a WebSocket handler if a request
-is a WebSocket request. Otherwise, the directive rejects the request.
-
-Let's look at how the above example can be rewritten using the high-level routing DSL.
-
-Instead of writing the request handler manually, the routing behavior of the app is defined by a route that
-uses the @ref[handleWebSocketMessages](../routing-dsl/directives/websocket-directives/handleWebSocketMessages.md) directive:
-
-Scala
-:  @@snip [WebSocketDirectivesExamplesSpec.scala]($test$/scala/docs/http/scaladsl/server/directives/WebSocketDirectivesExamplesSpec.scala) { #greeter-service }
-
-Java
-:  @@snip [WebSocketRoutingExample.java]($test$/java/docs/http/javadsl/server/WebSocketRoutingExample.java) { #websocket-route }
-
-The handling code itself will be the same as with using the low-level API.
-
-@@@ div { .group-scala }
-The example also includes code demonstrating the testkit support for WebSocket services. It allows to create WebSocket
-requests to run against a route using *WS* which can be used to provide a mock WebSocket probe that allows manual
-testing of the WebSocket handler's behavior if the request was accepted.
-@@@
-
-See the @github[full routing example](/docs/src/test/java/docs/http/javadsl/server/WebSocketCoreExample.java).
 
 <a id="keep-alive-ping"></a>
 
@@ -168,10 +172,10 @@ to ensure the connection stays healthy (or detect if it was severed), however yo
 payload, to do this you can provide a function that will be asked to emit the payload for each of the ping messages generated:
 
 Scala
-:  @@snip [WebSocketExampleSpec.scala]($test$/scala/docs/http/scaladsl/server/WebSocketExampleSpec.scala) { #websocket-ping-payload-server }
+:  @@snip [WebSocketExampleSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/WebSocketExampleSpec.scala) { #websocket-ping-payload-server }
 
 Java
-:  @@snip [WebSocketCoreExample.java]($test$/java/docs/http/javadsl/server/WebSocketCoreExample.java) { #websocket-ping-payload-server }
+:  @@snip [WebSocketCoreExample.java](/docs/src/test/java/docs/http/javadsl/server/WebSocketCoreExample.java) { #websocket-ping-payload-server }
 
 ### Uni-directional Pong keep-alive
 
