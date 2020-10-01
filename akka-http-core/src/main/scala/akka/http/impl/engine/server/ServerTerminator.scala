@@ -260,8 +260,9 @@ private[http] final class GracefulTerminatorStage(settings: ServerSettings)
       })
 
       def installTerminationHandlers(deadline: Deadline): Unit = {
-        // when no inflight requests, complete stage right away
-        if (!pendingUserHandlerResponse) completeStage()
+        // when no inflight requests, fail stage right away, could probably be a complete
+        // when https://github.com/akka/akka-http/issues/3209 is fixed
+        if (!pendingUserHandlerResponse) failStage(new ServerTerminationDeadlineReached)
 
         setHandler(fromUser, new InHandler {
           override def onPush(): Unit = {

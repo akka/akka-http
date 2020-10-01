@@ -705,7 +705,10 @@ Host: example.com
       val request = HttpRequest(uri = s"https://akka.example.org", headers = headers.Connection("close") :: Nil)
 
       // settings adapting network buffer sizes
-      val serverSettings = ServerSettings(system).withSocketOptions(SO.SendBufferSize(serverToClientNetworkBufferSize) :: Nil)
+      val serverSettings =
+        ServerSettings(system)
+          .withSocketOptions(SO.SendBufferSize(serverToClientNetworkBufferSize) :: Nil)
+
       val serverConnectionContext = ExampleHttpContexts.exampleServerContext
 
       val entity = Array.fill[Char](999999)('0').mkString + "x"
@@ -716,15 +719,23 @@ Host: example.com
 
       // settings adapting network buffer sizes, and connecting to the spun-up server regardless of the URI address
       val clientSettings = ConnectionPoolSettings(system)
-        .withConnectionSettings(ClientConnectionSettings(system)
-          .withSocketOptions(SO.ReceiveBufferSize(serverToClientNetworkBufferSize) :: Nil))
+        .withConnectionSettings(
+          ClientConnectionSettings(system)
+            .withSocketOptions(SO.ReceiveBufferSize(serverToClientNetworkBufferSize) :: Nil)
+        )
         .withTransport(ExampleHttpContexts.proxyTransport(serverBinding.localAddress))
+
       val clientConnectionContext = ExampleHttpContexts.exampleClientContext
 
       Http()
         .singleRequest(request, connectionContext = clientConnectionContext, settings = clientSettings)
         .futureValue
-        .entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue.utf8String shouldEqual entity
+        .entity.dataBytes
+        .mapAsync(1) { chunk =>
+          // delay reading chunks on the client side to create more backpressure
+          // to reproduce problems more reliably
+          akka.pattern.after(10.millis, system.scheduler)(Future.successful(chunk))
+        }.runFold(ByteString.empty)(_ ++ _).futureValue.utf8String shouldEqual entity
 
       serverBinding.unbind().futureValue
       Http().shutdownAllConnectionPools().futureValue

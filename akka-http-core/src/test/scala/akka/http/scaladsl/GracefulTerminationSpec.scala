@@ -17,7 +17,7 @@ import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.settings.{ ConnectionPoolSettings, ServerSettings }
 import akka.stream.scaladsl._
 import akka.stream.testkit.TestSubscriber.OnError
-import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.scaladsl.{ StreamTestKit, TestSink }
 import akka.stream.{ Server => _, _ }
 import akka.testkit._
 import akka.util.ByteString
@@ -75,35 +75,38 @@ class GracefulTerminationSpec
       ex.getMessage should include("Connection refused")
     }
 
-    "fail chunked response streams" in new TestSetup {
+    "fail chunked response streams" in {
+      // client system created on the outside, so we simulate that client is not shut down at the same time as server
       val clientSystem = ActorSystem("client")
-      val r1 =
-        Http()(clientSystem).singleRequest(nextRequest(), connectionContext = clientConnectionContext, settings = basePoolSettings)
-
-      // reply with an infinite entity stream
-      val chunks = Source
-        .fromIterator(() => Iterator.from(1).map(v => ChunkStreamPart(s"reply$v,")))
-        .throttle(1, 300.millis)
-      reply(_ => HttpResponse(entity = HttpEntity.Chunked(ContentTypes.`text/plain(UTF-8)`, chunks)))
-
-      // start reading the response
-      val response = r1.futureValue.entity.dataBytes
-        .via(Framing.delimiter(ByteString(","), 20))
-        .runWith(TestSink.probe[ByteString])
-      response.requestNext().utf8String should ===("reply1")
-
       try {
-        val termination = serverBinding.terminate(hardDeadline = 50.millis)
-        response.request(20)
-        // local testing shows the stream fails long after the 50 ms deadline
-        response.expectNext().utf8String should ===("reply2")
-        eventually {
-          response.expectEvent() shouldBe a[OnError]
+        StreamTestKit.assertAllStagesStopped {
+          new TestSetup {
+            val r1 =
+              Http()(clientSystem).singleRequest(nextRequest(), connectionContext = clientConnectionContext, settings = basePoolSettings)
+
+            // reply with an infinite entity stream
+            val chunks = Source
+              .fromIterator(() => Iterator.from(1).map(v => ChunkStreamPart(s"reply$v,")))
+              .throttle(1, 100.millis)
+            reply(_ => HttpResponse(entity = HttpEntity.Chunked(ContentTypes.`text/plain(UTF-8)`, chunks)))
+
+            // start reading the response
+            val responseEntity = r1.futureValue.entity.dataBytes
+              .via(Framing.delimiter(ByteString(","), 20))
+              .runWith(TestSink.probe[ByteString])(SystemMaterializer(clientSystem).materializer)
+            responseEntity.requestNext().utf8String should ===("reply1")
+
+            val termination = serverBinding.terminate(hardDeadline = 1.second)
+            // Right now graceful terminate will immediately kill the connection
+            // even if a streamed response is still ongoing
+            // FIXME: https://github.com/akka/akka-http/issues/3209
+            eventually {
+              responseEntity.expectEvent() shouldBe a[OnError]
+            }
+            termination.futureValue shouldBe Http.HttpServerTerminated
+          }
         }
-        termination.futureValue shouldBe Http.HttpServerTerminated
-      } finally {
-        TestKit.shutdownActorSystem(clientSystem)
-      }
+      } finally TestKit.shutdownActorSystem(clientSystem)
     }
 
     "fail close delimited response streams" ignore new TestSetup {
