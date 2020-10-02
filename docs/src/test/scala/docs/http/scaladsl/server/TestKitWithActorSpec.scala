@@ -32,6 +32,8 @@ object RouteUnderTest {
 class TestKitWithActorSpec extends AnyWordSpec with Matchers with ScalatestRouteTest {
   import RouteUnderTest._
 
+  // This test does not use the classic APIs,
+  // so it needs to adapt the system:
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem = system.toTyped
   implicit val timeout = Timeout(500.milliseconds)

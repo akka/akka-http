@@ -224,8 +224,8 @@ Remember to configure the timeout using `dilated` if you want to account for slo
 
 ## Testing Actor integration
 
-The @scala[`ScalatestRouteTest`]@java[`JUnitRouteTest`] provides a Classic @apidoc[akka.actor.ActorSystem],
-so if you want to test integration of your route with actors using the new API's you will need to adapt it:
+The @scala[`ScalatestRouteTest`]@java[`JUnitRouteTest`] still provides a Classic @apidoc[akka.actor.ActorSystem],
+so if you are not using the Classic API you will need to adapt it:
 
 Scala
 :   @@snip [TestKitWithActorSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/TestKitWithActorSpec.scala) { #testkit-actor-integration }

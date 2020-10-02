@@ -19,7 +19,10 @@ public class TestKitWithActorTest extends JUnitRouteTest {
 
     @Test
     public void returnPongForGetPing() {
+        // This test does not use the classic APIs,
+        // so it needs to adapt the system:
         ActorSystem<Void> system = Adapter.toTyped(system());
+
         TestProbe<MyAppWithActor.Ping> probe = TestProbe.create(system);
         TestRoute testRoute = testRoute(new MyAppWithActor().createRoute(probe.getRef(), system.scheduler()));
 
