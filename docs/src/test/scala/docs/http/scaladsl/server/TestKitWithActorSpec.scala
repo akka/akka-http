@@ -24,10 +24,7 @@ object RouteUnderTest {
   // Your route under test, scheduler is only needed as ask is used
   def route(someActor: ActorRef[Ping])(implicit scheduler: Scheduler, timeout: Timeout) = get {
     path("ping") {
-      onComplete(someActor ? Ping) {
-        case Success(s) => complete(s)
-        case Failure(t) => complete(t.toString)
-      }
+      complete(someActor ? Ping)
     }
   }
 }

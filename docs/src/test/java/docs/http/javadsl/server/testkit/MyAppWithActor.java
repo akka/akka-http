@@ -26,16 +26,9 @@ public class MyAppWithActor extends AllDirectives {
       Duration timeout = Duration.ofSeconds(3);
       return
         path("ping", () ->
-          onComplete(AskPattern.ask(actorRef, Ping::new, timeout, scheduler), maybeResult ->
-            maybeResult
-              .map(success -> complete("PONG!"))
-              .recover(new PFBuilder<Throwable, Route>()
-                  .matchAny(ex ->
-                          complete(StatusCodes.InternalServerError(), "An error occurred: " + ex.getMessage())
-                  ).build()
-              )
-              .get()
-            )
+          onSuccess(AskPattern.ask(actorRef, Ping::new, timeout, scheduler), result ->
+            complete(result)
+          )
         );
     }
 
