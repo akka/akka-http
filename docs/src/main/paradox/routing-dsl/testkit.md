@@ -215,12 +215,23 @@ The default timeout when testing your routes using the testkit is @scala[1 secon
 In order to extend this default timeout, to say 5 seconds, just add the following implicit in scope:
 
 Scala
-:   @@snip [TestKitFragmentSpec.scala]($test$/scala/docs/http/scaladsl/server/TestKitFragmentSpec.scala) { #timeout-setting }
+:   @@snip [TestKitFragmentSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/TestKitFragmentSpec.scala) { #timeout-setting }
 
 Java
-:   @@snip [WithTimeoutTest.java]($test$/java/docs/http/javadsl/server/testkit/WithTimeoutTest.java) { #timeout-setting }
+:   @@snip [WithTimeoutTest.java](/docs/src/test/java/docs/http/javadsl/server/testkit/WithTimeoutTest.java) { #timeout-setting }
 
 Remember to configure the timeout using `dilated` if you want to account for slow test systems.
+
+## Testing Actor integration
+
+The @scala[`ScalatestRouteTest`]@java[`JUnitRouteTest`] provides a Classic @apidoc[akka.actor.ActorSystem],
+so if you want to test integration of your route with actors using the new API's you will need to adapt it:
+
+Scala
+:   @@snip [TestKitWithActorSpec.scala](/docs/src/test/scala/docs/http/scaladsl/server/TestKitWithActorSpec.scala) { #testkit-actor-integration }
+
+Java
+:   @@snip [TestKitWithActorTest.java](/docs/src/test/java/docs/http/javadsl/server/testkit/TestKitWithActorTest.java) { #testkit-actor-integration }
 
 ## Integration Testing Routes
 
