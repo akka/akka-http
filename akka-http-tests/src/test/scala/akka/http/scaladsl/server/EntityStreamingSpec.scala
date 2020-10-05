@@ -4,19 +4,21 @@
 
 package akka.http.scaladsl.server
 
+import scala.concurrent.Future
+import scala.concurrent.duration._
+
 import akka.NotUsed
 import akka.http.scaladsl.common.{ EntityStreamingSupport, JsonEntityStreamingSupport }
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers._
 import akka.stream.scaladsl._
-import akka.testkit.EventFilter
+import akka.testkit._
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.concurrent.Future
-
 class EntityStreamingSpec extends RoutingSpec with ScalaFutures {
+  override implicit def patienceConfig = PatienceConfig(5.seconds.dilated(system), 200.millis)
 
   //#models
   case class Tweet(uid: Int, txt: String)
