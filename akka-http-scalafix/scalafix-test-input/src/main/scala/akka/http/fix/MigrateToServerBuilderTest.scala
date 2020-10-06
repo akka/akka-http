@@ -33,43 +33,31 @@ object MigrateToServerBuilderTest {
   }
   def service: ServiceRoutes = ???
 
-  Http().bindAndHandleAsync(handler, "127.0.0.1", 8080, log = log)
-  Http().bindAndHandleAsync(handler, "127.0.0.1", log = log, port = 8080)
-  Http().bindAndHandleAsync(handler, "127.0.0.1", settings = settings)
-  Http().bindAndHandleAsync(
-    handler,
-    interface = "localhost",
-    port = 8443,
-    context)
-  Http().bindAndHandleAsync(
-    handler,
-    interface = "localhost",
-    port = 8080,
-    httpContext)
-  Http().bindAndHandleAsync(
-    handler,
-    interface = "localhost",
-    port = 8080,
-    HttpConnectionContext)
-  Http().bindAndHandle(flow, "127.0.0.1", port = 8080)
-  Http().bindAndHandle(route, "127.0.0.1", port = 8080)
-  Http().bindAndHandle(service.route, "127.0.0.1", port = 8080)
-  Http().bindAndHandleSync(syncHandler, "127.0.0.1", log = log)
+  Http().newServerAt("127.0.0.1", 8080).logTo(log).bind(handler)
+  Http().newServerAt("127.0.0.1", 8080).logTo(log).bind(handler)
+  Http().newServerAt("127.0.0.1", 0).withSettings(settings).bind(handler)
+  Http().newServerAt(interface = "localhost", port = 8443).enableHttps(context).bind(handler)
+  Http().newServerAt(interface = "localhost", port = 8080).bind(handler)
+  Http().newServerAt(interface = "localhost", port = 8080).bind(handler)
+  Http().newServerAt("127.0.0.1", 8080).bindFlow(flow)
+  Http().newServerAt("127.0.0.1", 8080).bind(route)
+  Http().newServerAt("127.0.0.1", 8080).bind(service.route)
+  Http().newServerAt("127.0.0.1", 0).logTo(log).bindSync(syncHandler)
 
-  Http().bind("127.0.0.1", settings = settings).runWith(Sink.ignore)
+  Http().newServerAt("127.0.0.1", 0).withSettings(settings).connectionSource().runWith(Sink.ignore)
 
   // format: OFF
-  Http().bindAndHandle(route, "127.0.0.1", port = 8080)(customMaterializer)// assert: MigrateToServerBuilder.custom-materializer-warning
-  Http().bindAndHandleAsync(handler, "127.0.0.1", 8080)(customMaterializer)// assert: MigrateToServerBuilder.custom-materializer-warning
-  Http().bindAndHandleSync(syncHandler, "127.0.0.1", 8080)(customMaterializer)// assert: MigrateToServerBuilder.custom-materializer-warning
+  Http().newServerAt("127.0.0.1", 8080).withMaterializer(customMaterializer).bind(route)// assert: MigrateToServerBuilder.custom-materializer-warning
+  Http().newServerAt("127.0.0.1", 8080).withMaterializer(customMaterializer).bind(handler)// assert: MigrateToServerBuilder.custom-materializer-warning
+  Http().newServerAt("127.0.0.1", 8080).withMaterializer(customMaterializer).bindSync(syncHandler)// assert: MigrateToServerBuilder.custom-materializer-warning
   Http() // needed to appease formatter
   // format: ON
 
-  http.bindAndHandle(route, "127.0.0.1", port = 8080)
-  http.bindAndHandleAsync(handler, "127.0.0.1", 8080)
-  http.bindAndHandleSync(syncHandler, "127.0.0.1", 8080)
+  http.newServerAt("127.0.0.1", 8080).bind(route)
+  http.newServerAt("127.0.0.1", 8080).bind(handler)
+  http.newServerAt("127.0.0.1", 8080).bindSync(syncHandler)
 
-  Http(actorSystem).bindAndHandle(route, "127.0.0.1", port = 8080)
-  Http(actorSystem).bindAndHandleAsync(handler, "127.0.0.1", 8080)
-  Http(actorSystem).bindAndHandleSync(syncHandler, "127.0.0.1", 8080)
+  Http(actorSystem).newServerAt("127.0.0.1", 8080).bind(route)
+  Http(actorSystem).newServerAt("127.0.0.1", 8080).bind(handler)
+  Http(actorSystem).newServerAt("127.0.0.1", 8080).bindSync(syncHandler)
 }

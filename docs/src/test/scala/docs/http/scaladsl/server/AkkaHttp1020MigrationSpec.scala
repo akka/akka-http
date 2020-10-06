@@ -24,7 +24,7 @@ class AkkaHttp1020MigrationSpec {
       get {
         complete("Hello world")
       }
-    Http().bindAndHandle(route, "localhost", 8080)
+    Http().newServerAt("localhost", 8080).bindFlow(route)
     //#old-binding
   }
 
