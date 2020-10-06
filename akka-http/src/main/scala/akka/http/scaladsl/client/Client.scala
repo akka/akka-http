@@ -4,7 +4,7 @@
 
 package akka.http.scaladsl.client
 
-import akka.actor.ActorSystem
+import akka.actor.{ ActorSystem, ClassicActorSystemProvider }
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.coding.{ Coder, Coders }
 import akka.http.scaladsl.marshalling.{ Marshal, ToRequestMarshaller }
@@ -16,21 +16,22 @@ import akka.stream.{ Materializer, SystemMaterializer }
 
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.Try
 
 object Client {
-  type ProcessingStep = HttpRequest => Future[HttpResponse]
-  type ClientDirective = ProcessingStep => ProcessingStep
+  type ClientRoute = HttpRequest => Future[HttpResponse]
+  type ClientDirective = ClientRoute => ClientRoute
 
-  def apply(request: HttpRequest)(implicit system: ActorSystem): Future[HttpResponse] =
+  def apply(request: HttpRequest)(implicit system: ClassicActorSystemProvider): Future[HttpResponse] =
     defaultPipeline.apply(request)
 
-  def defaultPipeline(implicit system: ActorSystem): ProcessingStep =
-    defaultDirectives(system.dispatcher, SystemMaterializer(system).materializer).apply(runRequest)
+  def defaultPipeline(implicit system: ClassicActorSystemProvider): ClientRoute =
+    defaultDirectives(system.classicSystem.dispatcher, SystemMaterializer(system).materializer, system).apply(runRequest)
 
-  def runRequest(implicit system: ActorSystem): ProcessingStep = Http().singleRequest(_)
+  def runRequest(implicit system: ClassicActorSystemProvider): ClientRoute = Http().singleRequest(_)
 
-  def userClient[T: ToRequestMarshaller, U: FromResponseUnmarshaller](implicit system: ActorSystem): T => Future[U] = {
-    import system.dispatcher
+  def userClient[T: ToRequestMarshaller, U: FromResponseUnmarshaller](implicit system: ClassicActorSystemProvider): T => Future[U] = {
+    implicit val ec = system.classicSystem.dispatcher
     t =>
       for {
         req <- Marshal(t).to[HttpRequest]
@@ -39,10 +40,11 @@ object Client {
       } yield u
   }
 
-  def defaultDirectives(implicit ec: ExecutionContext, mat: Materializer): ClientDirective = // FIXME: make val?
+  def defaultDirectives(implicit ec: ExecutionContext, mat: Materializer, system: ClassicActorSystemProvider): ClientDirective = // FIXME: make val?
     codingSupport() andThen
       failNonOkResponses andThen
-      redirectionSupport()
+      redirectionSupport() andThen
+      retryRequests()
 
   def redirectionSupport(maxDepth: Int = 5 /* FIXME */ )(implicit ec: ExecutionContext): ClientDirective = { inner =>
     def next(req: HttpRequest /* , remainingRedirects */ ): Future[HttpResponse] = {
@@ -104,4 +106,45 @@ object Client {
       }
     }
   }
+
+  def retryRequests(retryDecider: RetryContext => RetryResult = defaultRetry())(implicit ec: ExecutionContext, system: ClassicActorSystemProvider): ClientDirective = { inner => req =>
+    def runOne(attempts: Int): Future[HttpResponse] =
+      inner(req).transformWith { result =>
+        retryDecider(RetryContext(req, result, attempts + 1)) match {
+          case RetryResult.PropagateLastResult => Future.fromTry(result)
+          case RetryResult.RetryNow            => runOne(attempts + 1)
+          case RetryResult.RetryLater(after) =>
+            akka.pattern.after(after, system.classicSystem.scheduler) {
+              runOne(attempts + 1)
+            }
+        }
+      }
+
+    runOne(0)
+  }
+
+  sealed trait RetryContext {
+    def request: HttpRequest
+    def responseResult: Try[HttpResponse]
+    def attempts: Int
+  }
+  object RetryContext {
+    private[http] def apply(request: HttpRequest, result: Try[HttpResponse], attempts: Int): RetryContext =
+      Impl(request, result, attempts)
+
+    private[http] case class Impl(
+      request:        HttpRequest,
+      responseResult: Try[HttpResponse],
+      attempts:       Int
+    ) extends RetryContext
+  }
+  sealed trait RetryResult
+  object RetryResult {
+    case object PropagateLastResult extends RetryResult
+    case object RetryNow extends RetryResult
+    final case class RetryLater(after: FiniteDuration) extends RetryResult
+  }
+
+  def defaultRetry(maxRetries: Int = 5 /* FIXME */ )(retryContext: RetryContext): RetryResult =
+    RetryResult.PropagateLastResult // FIXME
 }
