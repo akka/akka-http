@@ -25,7 +25,7 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 
 ### 1 day before the release
 - [ ] Make sure all important / big PRs have been merged by now
-- [ ] Check that latest nightly (once we have that) / master still works with depending projects (notably Play + cinnamon)
+- [ ] Check that latest snapshot release still works with depending projects (notably Play + cinnamon)
 - [ ] Communicate that a release is about to be released in [Gitter Akka Dev Channel](https://gitter.im/akka/dev), so that no new Pull Requests are merged
 
 ### Preparing release notes in the documentation / announcement
@@ -43,9 +43,9 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 - [ ] Make sure there are no stray staging repos on sonatype
 - [ ] Wait until [master build finished](https://travis-ci.org/akka/akka-http/builds/) after merging the release notes (otherwise, the master
       build might pick up the tag and start publishing the release uhoh)
-- [ ] Create a tag for the release (e.g. `v13.3.7`) and push it.
-- [ ] Check that the Travis CI [release build](https://travis-ci.org/akka/akka-http/branches) has executed successfully
-- [ ] Go to https://bintray.com/akka/maven/akka-http and select the just released version
+- [ ] Create a tag for the release (e.g. `git tag -s -a v$VERSION$ -m "Release $VERSION$"`) and push it.
+- [ ] Check that the Travis CI [release build](https://travis-ci.org/akka/akka-http/branches) executes successfully
+- [ ] Go to https://bintray.com/akka/maven/akka-http and select the just-released version
 - [ ] Go to the Maven Central tab and sync with Sonatype. You may need to log in and switch to the 'Old Look' for this.
 - [ ] Log in to Sonatype to Close the staging repository (optional, should happen automatically if selected in Bintray)
 - [ ] Notify Telemetry / Play team to check against staged artifacts
@@ -57,7 +57,7 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
 
 ### When everything is on maven central
 
-  - [ ] Log into `gustav.akka.io` as `akkarepo`
+  - [ ] `ssh akkarepo@gustav.akka.io`
     - [ ] update the `10.1` and `current` links on `repo.akka.io` to point to the latest version with (**replace the minor appropriately**)
          ```
          ln -nsf $VERSION$ www/docs/akka-http/10.2
@@ -75,7 +75,7 @@ Wind down PR queue. There has to be enough time after the last (non-trivial) PR 
          ```
   - [ ] Merge draft news item at https://github.com/akka/akka.io
   - [ ] Wait until the release page is published
-  - [ ] Create the GitHub [release](https://github.com/akka/akka-http/releases/new) with the tag, title and release description linking to announcement, release notes and milestone.
+  - [ ] Create the GitHub [release](https://github.com/akka/akka-http/releases/tag/v$VERSION$) with the tag, title and release description linking to announcement, release notes and milestone.
 
 ### Announcements
 - [ ] Send a release notification to https://discuss.akka.io
