@@ -18,13 +18,7 @@ import scala.io.{Codec, Source}
 
 object ParadoxSupport {
   val paradoxWithCustomDirectives = Seq(
-    paradoxDirectives ++= Def.taskDyn {
-      Def.task { Seq(
-        { context: Writer.Context =>
-            new SignatureDirective(context.location.tree.label, context.properties, context)
-        },
-      )}
-    }.value
+    paradoxDirectives += ((context: Writer.Context) => new SignatureDirective(context.location.tree.label, context.properties, context))
   )
 
   class SignatureDirective(page: Page, variables: Map[String, String], ctx: Writer.Context) extends LeafBlockDirective("signature") {

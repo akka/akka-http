@@ -403,7 +403,7 @@ lazy val docs = project("docs")
       // Code after ??? can be considered 'dead',  but still useful for docs
       "-Ywarn-dead-code",
     ),
-    paradoxProcessor := {
+    (paradoxProcessor in Compile) := {
       import scala.concurrent.duration._
       import com.lightbend.paradox.ParadoxProcessor
       import com.lightbend.paradox.markdown.{ Reader, Writer }
