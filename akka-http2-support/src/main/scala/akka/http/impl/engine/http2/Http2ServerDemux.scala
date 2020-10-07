@@ -19,6 +19,7 @@ import akka.util.ByteString
 import scala.collection.immutable
 import scala.util.control.NonFatal
 import FrameEvent._
+import akka.macros.LogHelper
 
 /** Currently only used as log source */
 @InternalApi
@@ -83,7 +84,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
     BidiShape(substreamIn, frameOut, frameIn, substreamOut)
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with Http2MultiplexerSupport with Http2StreamHandling with GenericOutletSupport with StageLogging {
+    new GraphStageLogic(shape) with Http2MultiplexerSupport with Http2StreamHandling with GenericOutletSupport with StageLogging with LogHelper {
       logic =>
 
       override def isServer: Boolean = stage.isServer
@@ -96,7 +97,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
 
       override def preStart(): Unit = {
         if (initialDemuxerSettings.nonEmpty) {
-          log.debug("Applying {} initial settings!", initialDemuxerSettings.length)
+          debug(s"Applying ${initialDemuxerSettings.length} initial settings!")
           applySettings(initialDemuxerSettings)
         }
 
@@ -126,9 +127,9 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       override def allowReadingIncomingFrames(allow: Boolean): Unit = {
         if (allow != allowReadingIncomingFrames)
           if (allow) {
-            log.debug("Resume reading incoming frames")
+            debug("Resume reading incoming frames")
             if (!hasBeenPulled(frameIn)) pull(frameIn)
-          } else log.debug("Suspended reading incoming frames") // can't retract pending pull but that's ok
+          } else debug("Suspended reading incoming frames") // can't retract pending pull but that's ok
 
         allowReadingIncomingFrames = allow
       }
@@ -144,14 +145,14 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
             case s: StreamFrameEvent                    => handleStreamEvent(s)
 
             case SettingsFrame(settings) =>
-              if (settings.nonEmpty) log.debug("Got {} settings!", settings.length)
+              if (settings.nonEmpty) debug(s"Got ${settings.length} settings!")
 
               var settingsAppliedOk = true
 
               settings.foreach {
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE, value) =>
                   if (value >= 0) {
-                    log.debug("Setting initial window to {}", value)
+                    debug(s"Setting initial window to $value")
                     multiplexer.updateDefaultWindow(value)
                   } else {
                     pushGOAWAY(FLOW_CONTROL_ERROR, s"Invalid value for SETTINGS_INITIAL_WINDOW_SIZE: $value")
@@ -160,9 +161,9 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) =>
                   multiplexer.updateMaxFrameSize(value)
                 case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) =>
-                  log.debug("Setting max concurrent streams to {} (not enforced)", value)
+                  debug(s"Setting max concurrent streams to $value (not enforced)")
                 case Setting(id, value) =>
-                  log.debug("Ignoring setting {} -> {} (in Demux)", id, value)
+                  debug(s"Ignoring setting $id -> $value")
               }
 
               if (settingsAppliedOk) {
@@ -182,7 +183,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
               multiplexer.pushControlFrame(PingFrame(ack = true, data))
 
             case e =>
-              log.debug("Got unhandled event {}", e)
+              debug(s"Got unhandled event $e")
             // ignore unknown frames
           }
           pullFrameIn()
@@ -235,7 +236,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
         settings.foreach {
           case Setting(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE, value) =>
             if (value >= 0) {
-              log.debug("Setting initial window to {}", value)
+              debug(s"Setting initial window to $value")
               multiplexer.updateDefaultWindow(value)
             } else {
               pushGOAWAY(FLOW_CONTROL_ERROR, s"Invalid value for SETTINGS_INITIAL_WINDOW_SIZE: $value")
@@ -244,9 +245,9 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
           case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) =>
             multiplexer.updateMaxFrameSize(value)
           case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) =>
-            log.debug("Setting max concurrent streams to {} (not enforced)", value)
+            debug(s"Setting max concurrent streams to $value (not enforced)")
           case Setting(id, value) =>
-            log.debug("Ignoring setting {} -> {} (in Demux)", id, value)
+            debug(s"Ignoring setting $id -> $value (in Demux)")
         }
         settingsAppliedOk
       }

@@ -13,7 +13,9 @@ import scala.collection.immutable
 import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler, StageLogging }
 import akka.util.ByteString
 import FrameEvent._
+import akka.event.LoggingAdapter
 import akka.http.scaladsl.settings.Http2CommonSettings
+import akka.macros.LogHelper
 
 /**
  * INTERNAL API
@@ -63,7 +65,9 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
   def allowReadingIncomingFrames(allow: Boolean): Unit
 
   def createMultiplexer(outlet: GenericOutlet[FrameEvent], prioritizer: StreamPrioritizer): Http2Multiplexer =
-    new Http2Multiplexer with OutHandler with StateTimingSupport with LogSupport { self =>
+    new Http2Multiplexer with OutHandler with StateTimingSupport with LogHelper { self =>
+      def log: LoggingAdapter = logic.log
+
       outlet.setHandler(this)
 
       class OutStream(
@@ -385,8 +389,6 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
 
       private def maxBytesToBufferPerSubstream = 2 * currentMaxFrameSize // for now, let's buffer two frames per substream
 
-      def debug(msg: => String): Unit = log.debug(msg)
-
       def nextStateAfterPushingDataFrame(outStream: OutStream, sendableOutstreams: Set[Int]): MultiplexerState = {
         outStream.endStreamIfPossible()
           .map(finalFrame => WaitingForNetworkToSendControlFrames(Vector(finalFrame), sendableOutstreams - outStream.streamId))
@@ -401,11 +403,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
       }
     }
 
-  private trait LogSupport {
-    def debug(msg: => String): Unit
-  }
-
-  private trait StateTimingSupport { self: LogSupport =>
+  private trait StateTimingSupport { self: LogHelper =>
     var timings = Map.empty[String, Long].withDefaultValue(0L)
     var lastTimestamp = System.nanoTime()
 

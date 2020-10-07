@@ -9,11 +9,12 @@ import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.scaladsl.model.http2.PeerClosedStreamException
 import akka.http.scaladsl.settings.Http2CommonSettings
 import akka.stream.scaladsl.Source
-import akka.stream.stage.{ GraphStageLogic, OutHandler, StageLogging }
+import akka.stream.stage.{ GraphStageLogic, OutHandler }
 import akka.util.ByteString
 
 import scala.collection.immutable
 import FrameEvent._
+import akka.macros.LogHelper
 
 import scala.util.control.NoStackTrace
 
@@ -27,7 +28,7 @@ import scala.util.control.NoStackTrace
  * Mixed into the Http2ServerDemux graph logic.
  */
 @InternalApi
-private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLogging =>
+private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper =>
   // required API from demux
   def multiplexer: Http2Multiplexer
   def settings: Http2CommonSettings
@@ -78,13 +79,13 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
       case Closed   => incomingStreams -= streamId
       case newState => incomingStreams += streamId -> newState
     }
-    log.debug(s"Incoming side of stream [$streamId] changed state: ${oldState.stateName} -> ${newState.stateName}")
+    debug(s"Incoming side of stream [$streamId] changed state: ${oldState.stateName} -> ${newState.stateName}")
   }
   /** Called to cleanup any state when the connection is torn down */
   def shutdownStreamHandling(): Unit = incomingStreams.keys.foreach(id => updateState(id, _.shutdown()))
   def resetStream(streamId: Int, errorCode: ErrorCode): Unit = {
     incomingStreams -= streamId
-    log.debug(s"Incoming side of stream [$streamId]: resetting with code [$errorCode]")
+    debug(s"Incoming side of stream [$streamId]: resetting with code [$errorCode]")
     multiplexer.pushControlFrame(RstStreamFrame(streamId, errorCode))
   }
 
@@ -96,11 +97,11 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
 
     def stateName: String = productPrefix
     def handleOutgoingCreated(stream: Http2SubStream): IncomingStreamState = {
-      log.warning(s"handleOutgoingCreated received unexpectedly in state $stateName. This indicates a bug in Akka HTTP, please report it to the issue tracker.")
+      warning(s"handleOutgoingCreated received unexpectedly in state $stateName. This indicates a bug in Akka HTTP, please report it to the issue tracker.")
       this
     }
     def handleOutgoingEnded(): IncomingStreamState = {
-      log.warning(s"handleOutgoingEnded received unexpectedly in state $stateName. This indicates a bug in Akka HTTP, please report it to the issue tracker.")
+      warning(s"handleOutgoingEnded received unexpectedly in state $stateName. This indicates a bug in Akka HTTP, please report it to the issue tracker.")
       this
     }
     def receivedUnexpectedFrame(e: StreamFrameEvent): IncomingStreamState = {
@@ -184,7 +185,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
 
         if (h.endStream) {
           buffer.onDataFrame(DataFrame(h.streamId, endStream = true, ByteString.empty)) // simulate end stream by empty dataframe
-          log.debug(s"Ignored trailing HEADERS frame: $h")
+          debug(s"Ignored trailing HEADERS frame: $h")
         } else pushGOAWAY(Http2Protocol.ErrorCode.PROTOCOL_ERROR, "Got unexpected mid-stream HEADERS frame")
 
         maybeFinishStream(h.endStream)
@@ -260,7 +261,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
 
     def onPull(): Unit = dispatchNextChunk()
     override def onDownstreamFinish(): Unit = {
-      log.debug(s"Incoming side of stream [$streamId]: cancelling because downstream finished")
+      debug(s"Incoming side of stream [$streamId]: cancelling because downstream finished")
       multiplexer.pushControlFrame(RstStreamFrame(streamId, ErrorCode.CANCEL))
       incomingStreams -= streamId
     }
@@ -276,7 +277,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
         Some(Closed)
       } else {
         buffer ++= data.payload
-        log.debug(s"Received DATA ${data.sizeInWindow} for stream [$streamId], remaining window space now $outstandingStreamWindow, buffered: ${buffer.size}")
+        debug(s"Received DATA ${data.sizeInWindow} for stream [$streamId], remaining window space now $outstandingStreamWindow, buffered: ${buffer.size}")
         dispatchNextChunk()
         None // don't change state
       }
@@ -295,7 +296,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
 
         totalBufferedData -= dataSize
 
-        log.debug(s"Dispatched chunk of $dataSize for stream [$streamId], remaining window space now $outstandingStreamWindow, buffered: ${buffer.size}")
+        debug(s"Dispatched chunk of $dataSize for stream [$streamId], remaining window space now $outstandingStreamWindow, buffered: ${buffer.size}")
         updateWindows()
       }
       if (buffer.isEmpty && wasClosed) outlet.complete()
@@ -315,7 +316,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with StageLoggi
         outstandingStreamWindow += streamLevel
       }
 
-      log.debug(
+      debug(
         s"adjusting con-level window by $connectionLevel, stream-level window by $streamLevel, " +
           s"remaining window space now $outstandingStreamWindow, buffered: ${buffer.size}, " +
           s"remaining connection window space now $outstandingConnectionLevelWindow, total buffered: $totalBufferedData")
