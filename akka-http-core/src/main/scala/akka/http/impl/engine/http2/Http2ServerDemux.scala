@@ -141,11 +141,10 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       setHandler(frameIn, new InHandler {
 
         def onPush(): Unit = {
-          val in = grab(frameIn)
-          in match {
-            case WindowUpdateFrame(streamId, increment) => multiplexer.updateWindow(streamId, increment) // handled specially
-            case p: PriorityFrame                       => multiplexer.updatePriority(p)
-            case s: StreamFrameEvent                    => handleStreamEvent(s)
+          grab(frameIn) match {
+            case WindowUpdateFrame(streamId, increment) if streamId == 0 /* else fall through to StreamFrameEvent */ => multiplexer.updateConnectionLevelWindow(increment)
+            case p: PriorityFrame => multiplexer.updatePriority(p)
+            case s: StreamFrameEvent => handleStreamEvent(s)
 
             case SettingsFrame(settings) =>
               if (settings.nonEmpty) debug(s"Got ${settings.length} settings!")
@@ -212,7 +211,6 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
           val sub = grab(substreamIn)
           pull(substreamIn)
           handleOutgoingCreated(sub)
-          multiplexer.registerSubStream(sub)
         }
       })
 
@@ -263,7 +261,6 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       }
 
       override def postStop(): Unit = {
-        multiplexer.shutdown()
         shutdownStreamHandling()
       }
     }
