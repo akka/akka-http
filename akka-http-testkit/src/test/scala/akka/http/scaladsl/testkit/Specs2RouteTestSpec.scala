@@ -86,6 +86,16 @@ class Specs2RouteTestSpec extends Specification with Specs2RouteTest {
       } must throwA[org.specs2.execute.FailureException]
     }
 
+    "failing an assertion inside the route" in {
+      val route = get {
+        throw new AssertionError("test")
+      }
+
+      {
+        Get() ~> route
+      } must throwA[java.lang.AssertionError]
+    }
+
     "internal server error" in {
 
       val route = get {

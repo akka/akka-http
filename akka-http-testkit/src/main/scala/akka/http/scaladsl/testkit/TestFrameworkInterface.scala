@@ -33,6 +33,7 @@ object TestFrameworkInterface {
 
     override val testExceptionHandler = ExceptionHandler {
       case e: org.scalatest.exceptions.TestFailedException => throw e
+      case e: java.lang.AssertionError                     => throw e
     }
   }
 }
@@ -48,6 +49,7 @@ object Specs2FrameworkInterface {
 
     override val testExceptionHandler = ExceptionHandler {
       case e: org.specs2.execute.FailureException => throw e
+      case e: java.lang.AssertionError            => throw e
     }
   }
 }
