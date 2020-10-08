@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.http.scaladsl
 
 import java.net.InetAddress
@@ -6,7 +10,7 @@ import akka.annotation.DoNotInherit
 import akka.event.LoggingAdapter
 import akka.http.javadsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.Http.OutgoingConnection
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
+import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
 import akka.stream.scaladsl.Flow
 
 import scala.concurrent.Future
