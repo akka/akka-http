@@ -113,6 +113,16 @@ class ScalatestRouteTestSpec extends AnyFreeSpec with Matchers with ScalatestRou
       }
     }
 
+    "throwing an AssertionError inside the route" in {
+      val route = get {
+        throw new AssertionError("test")
+      }
+
+      assertThrows[AssertionError] {
+        Get() ~> route
+      }
+    }
+
     "internal server error" in {
 
       val route = get {
