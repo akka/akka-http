@@ -473,7 +473,8 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    *
    * @return A builder to configure more specific setup for the connection and then build a `Flow[Request, Response, Future[OutgoingConnection]]`.
    */
-  def connectionTo(host: String, port: Int): SingleConnectionBuilder
+  def connectionTo(host: String, port: Int): OutgoingConnectionBuilder =
+    OutgoingConnectionBuilder(host, port, system)
 
   type ClientLayer = Http.ClientLayer
 
