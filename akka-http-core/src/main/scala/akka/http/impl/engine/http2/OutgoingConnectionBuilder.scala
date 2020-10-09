@@ -4,16 +4,23 @@
 
 package akka.http.scaladsl
 
-import java.net.InetAddress
-
 import akka.actor.ClassicActorSystemProvider
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
+import akka.http.impl.engine.http2.Http2AlpnSupport
+import akka.http.impl.engine.http2.Http2Blueprint
+import akka.http.impl.util.LogByteStringTools
 import akka.http.scaladsl.Http.OutgoingConnection
-import akka.http.scaladsl.model.{ HttpRequest, HttpResponse }
+import akka.http.scaladsl.model.HttpRequest
+import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.settings.ClientConnectionSettings
+import akka.stream.TLSClosing
+import akka.stream.impl.io.TlsUtils
 import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl.TLS
+import javax.net.ssl.SSLEngine
 
 import scala.concurrent.Future
 
@@ -35,17 +42,10 @@ trait OutgoingConnectionBuilder {
    */
   def toPort(port: Int): OutgoingConnectionBuilder
 
-  def enableHttps(context: HttpsConnectionContext): OutgoingConnectionBuilder
-
-  /**
-   * Use a specific local host and port to create the outgoing connection from
-   */
-  def withLocalAddress(localAddress: InetAddress): OutgoingConnectionBuilder
-
   /**
    * Use a custom [[ConnectionContext]] for the connection.
    */
-  def withConnectionContext(context: ConnectionContext): OutgoingConnectionBuilder
+  def withConnectionContext(context: HttpsConnectionContext): OutgoingConnectionBuilder
 
   /**
    * Use custom [[ClientConnectionSettings]] for the connection.
@@ -78,33 +78,52 @@ private[akka] object OutgoingConnectionBuilder {
       host,
       port,
       clientConnectionSettings = ClientConnectionSettings(system),
-      connectionContext = ConnectionContext.noEncryption(),
+      connectionContext = Http(system).defaultClientHttpsContext,
       log = system.classicSystem.log,
-      localAddress = None
+      system = system
     )
 
   private case class Impl(
     host:                     String,
     port:                     Int,
     clientConnectionSettings: ClientConnectionSettings,
-    connectionContext:        ConnectionContext,
+    connectionContext:        HttpsConnectionContext,
     log:                      LoggingAdapter,
-    localAddress:             Option[InetAddress]) extends OutgoingConnectionBuilder {
+    system:                   ClassicActorSystemProvider) extends OutgoingConnectionBuilder {
 
     override def toHost(host: String): OutgoingConnectionBuilder = copy(host = host)
 
     override def toPort(port: Int): OutgoingConnectionBuilder = copy(port = port)
 
-    override def enableHttps(context: HttpsConnectionContext): OutgoingConnectionBuilder = copy(connectionContext = context)
-
-    override def withLocalAddress(localAddress: InetAddress): OutgoingConnectionBuilder = copy(localAddress = Some(localAddress))
-
-    override def withConnectionContext(context: ConnectionContext): OutgoingConnectionBuilder = copy(connectionContext = context)
+    override def withConnectionContext(context: HttpsConnectionContext): OutgoingConnectionBuilder = copy(connectionContext = context)
 
     override def withClientConnectionSettings(settings: ClientConnectionSettings): OutgoingConnectionBuilder = copy(clientConnectionSettings = settings)
 
     override def logTo(logger: LoggingAdapter): OutgoingConnectionBuilder = copy(log = logger)
 
-    override def connectionFlow(): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = ???
+    // FIXME should we make it `unorderedConnectionFlow()`?
+    override def connectionFlow(): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
+      def createEngine(): SSLEngine = {
+        val engine = connectionContext.sslContextData match {
+          // TODO FIXME configure hostname verification for this case
+          case Left(ssl) =>
+            val e = ssl.sslContext.createSSLEngine(host, port)
+            TlsUtils.applySessionParameters(e, ssl.firstSession)
+            e
+          case Right(e) => e(Some((host, port)))
+        }
+        engine.setUseClientMode(true)
+        Http2AlpnSupport.clientSetApplicationProtocols(engine, Array("h2"))
+        engine
+      }
+
+      val stack = Http2Blueprint.clientStack(clientConnectionSettings, log) atop
+        Http2Blueprint.unwrapTls atop
+        LogByteStringTools.logTLSBidiBySetting("client-plain-text", clientConnectionSettings.logUnencryptedNetworkBytes) atop
+        TLS(createEngine _, closing = TLSClosing.eagerClose)
+
+      stack.joinMat(clientConnectionSettings.transport.connectTo(host, port, clientConnectionSettings)(system.classicSystem))(Keep.right)
+    }
+
   }
 }

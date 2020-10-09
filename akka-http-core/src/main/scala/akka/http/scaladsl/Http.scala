@@ -458,24 +458,6 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
     tlsStage.joinMat(settings.transport.connectTo(host, port, settings))(Keep.right)
   }
 
-  /**
-   * Creates a builder which will create a single connection to a host every time the built flow is materialized. There
-   * is no pooling and you are yourself responsible for lifecycle management of the connection. For a more convenient
-   * Request level API see [[singleRequest()]]
-   *
-   * The responses are not guaranteed to arrive in the same order as the requests go out (In the case of a HTTP/2 server)
-   * so therefore requests needs to have a [[akka.http.scaladsl.model.http2.RequestResponseAssociation]]
-   * which Akka HTTP will carry over to the corresponding response for a request.
-   *
-   * FIXME: the association lives in the http2 model
-   * FIXME: do want something even more convenient for the normal case like `connectionTo("http://host")` and use the
-   *        protocol to figure out port + .withPort for custom cases?
-   *
-   * @return A builder to configure more specific setup for the connection and then build a `Flow[Request, Response, Future[OutgoingConnection]]`.
-   */
-  def connectionTo(host: String, port: Int): OutgoingConnectionBuilder =
-    OutgoingConnectionBuilder(host, port, system)
-
   type ClientLayer = Http.ClientLayer
 
   /**

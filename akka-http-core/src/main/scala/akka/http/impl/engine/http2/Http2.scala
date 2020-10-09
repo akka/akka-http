@@ -11,6 +11,7 @@ import akka.event.LoggingAdapter
 import akka.http.impl.engine.server.{ MasterServerTerminator, UpgradeToOtherProtocolResponseHeader }
 import akka.http.impl.util.LogByteStringTools
 import akka.http.scaladsl.{ ConnectionContext, Http, HttpsConnectionContext }
+import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ Connection, RawHeader, Upgrade, UpgradeProtocol }
@@ -186,32 +187,34 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
       tls
   }
 
+  // FIXME issue says this is internal but it's public?
   def outgoingConnection(
     host:              String,
     port:              Int                      = 443,
     settings:          ClientConnectionSettings = ClientConnectionSettings(system),
     connectionContext: HttpsConnectionContext   = Http().defaultClientHttpsContext,
-    log:               LoggingAdapter           = system.log): Flow[HttpRequest, HttpResponse, Any] = {
-    def createEngine(): SSLEngine = {
-      val engine = connectionContext.sslContextData match {
-        // TODO FIXME configure hostname verification for this case
-        case Left(ssl) =>
-          val e = ssl.sslContext.createSSLEngine(host, port)
-          TlsUtils.applySessionParameters(e, ssl.firstSession)
-          e
-        case Right(e) => e(Some((host, port)))
-      }
-      engine.setUseClientMode(true)
-      Http2AlpnSupport.clientSetApplicationProtocols(engine, Array("h2"))
-      engine
-    }
+    log:               LoggingAdapter           = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
+    connectionTo(host).toPort(port).withClientConnectionSettings(settings).withConnectionContext(connectionContext).logTo(log).connectionFlow()
 
-    Http2Blueprint.clientStack(settings, log) atop
-      Http2Blueprint.unwrapTls atop
-      LogByteStringTools.logTLSBidiBySetting("client-plain-text", settings.logUnencryptedNetworkBytes) atop
-      TLS(createEngine _, closing = TLSClosing.eagerClose) join
-      settings.transport.connectTo(host, port, settings)
-  }
+  /**
+   * Creates a builder which will create a single connection to a host every time the built flow is materialized. There
+   * is no pooling and you are yourself responsible for lifecycle management of the connection. For a more convenient
+   * Request level API see [[singleRequest()]]
+   *
+   * The responses are not guaranteed to arrive in the same order as the requests go out (In the case of a HTTP/2 server)
+   * so therefore requests needs to have a [[akka.http.scaladsl.model.http2.RequestResponseAssociation]]
+   * which Akka HTTP will carry over to the corresponding response for a request.
+   *
+   *
+   * @return A builder to configure more specific setup for the connection and then build a `Flow[Request, Response, Future[OutgoingConnection]]`.
+   */
+  /*
+   * FIXME: I think we'd want this in the HTTP extension for easy access but it cannot refer to classes in the http2-support module
+   * FIXME: for having the same entry point for HTTP/2 and HTTP/1.1 there is a mismatch with port always reasonably defaulting to 443
+   *        for HTTP/2 but not really for HTTP1/1
+   * FIXME also for same API and automatic protocol negotiation, how do we deal with explicitly saying TLS/No TLS for HTTP/1 but defaulting to TLS for HTTP/2?
+   */
+  def connectionTo(host: String): OutgoingConnectionBuilder = OutgoingConnectionBuilder(host, 443, system)
 }
 
 /** INTERNAL API */
