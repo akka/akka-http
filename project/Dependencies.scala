@@ -53,7 +53,7 @@ object Dependencies {
 
     val hpack       = "com.twitter"                   % "hpack"                        % "1.0.2"       // ApacheV2
 
-    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.8.5"
+    val caffeine    = "com.github.ben-manes.caffeine" % "caffeine"                     % "2.8.6"
 
     val scalafix    = "ch.epfl.scala"                 %% "scalafix-core"               % Dependencies.scalafixVersion // grab from plugin
 
