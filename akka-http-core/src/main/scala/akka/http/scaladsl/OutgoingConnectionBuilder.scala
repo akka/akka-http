@@ -35,8 +35,20 @@ trait OutgoingConnectionBuilder {
 
   /**
    * Switch to non TLS and port 80 from default 443 and TLS enabled.
+   *
+   * If HTTP/2 is enabled this means the protocol will be initiated as HTTP/1.1
+   * and an upgrade requested if the server supports it. If the server does
+   * not support HTTP/2 the connection will stay using HTTP/1.
    */
   def unsecure(): OutgoingConnectionBuilder
+
+  /**
+   * Switch to non TLS and port 80 from default 443 and TLS enabled. This makes the
+   * client assume that the server supports HTTP/2 and fail if it does not.
+   *
+   * If HTTP/2 support in Akka is not enabled this method will throw an exception.
+   */
+  def unsecureForcedHttp2(): OutgoingConnectionBuilder
 
   /**
    * Use a custom [[ConnectionContext]] for the connection.

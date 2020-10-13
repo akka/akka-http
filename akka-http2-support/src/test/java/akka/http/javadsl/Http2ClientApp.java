@@ -83,7 +83,11 @@ public class Http2ClientApp {
             .via(connection)
             .to(Sink.foreach(res -> {
               // FIXME Java model does not have/give us the response here so this does not currently work
-              res.getAttribute(ResponseFuture.KEY).get().future.complete(res);
+              try {
+                res.getAttribute(ResponseFuture.KEY).get().future.complete(res);
+              } catch (Exception ex) {
+                ex.printStackTrace();
+              }
             }))
         .run(SystemMaterializer.get(system).materializer());
 
