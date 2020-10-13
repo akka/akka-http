@@ -27,20 +27,12 @@ private[http2] object RequestRendering {
       headerPairs += ":authority" -> request.uri.authority.toString
       headerPairs += ":path" -> request.uri.toHttpRequestTargetOriginForm.toString
 
-      if (request.entity.contentType != ContentTypes.NoContentType)
-        headerPairs += "content-type" -> request.entity.contentType.toString
-      request.entity.contentLengthOption.foreach(headerPairs += "content-length" -> _.toString)
+      ResponseRendering.addContentHeaders(headerPairs, request.entity)
       ResponseRendering.renderHeaders(request.headers, headerPairs, None /* FIXME: render user agent */ , log, isServer = false)
 
       val headersFrame = ParsedHeadersFrame(streamId.getAndAdd(2), endStream = request.entity.isKnownEmpty, headerPairs.result(), None)
 
-      val substream =
-        request.entity match {
-          case HttpEntity.Chunked(_, chunks) =>
-            ChunkedHttp2SubStream(headersFrame, chunks)
-          case _ =>
-            ByteHttp2SubStream(headersFrame, request.entity.dataBytes)
-        }
+      val substream = ResponseRendering.substreamFor(request.entity, headersFrame)
       substream.withCorrelationAttributes(request.attributes.filter(_._2.isInstanceOf[RequestResponseAssociation]))
     }
   }
