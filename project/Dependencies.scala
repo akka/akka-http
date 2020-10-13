@@ -73,7 +73,7 @@ object Dependencies {
 
       val scalatest               = "org.scalatest"     %% "scalatest"       % scalaTestVersion          % "test" // ApacheV2
       val scalatestplusScalacheck = "org.scalatestplus" %% "scalacheck-1-14" % (scalaTestVersion + ".0") % "test"
-      val scalatestplusJUnit      = "org.scalatestplus" %% "junit-4-12"      % (scalaTestVersion + ".0") % "test"
+      val scalatestplusJUnit      = "org.scalatestplus" %% "junit-4-13"      % (scalaTestVersion + ".0") % "test"
 
       // HTTP/2
       val h2spec       = "io.github.summerwind"        % h2specName                     % h2specVersion      % "test" from(h2specUrl) // MIT
