@@ -12,7 +12,7 @@ object Dependencies {
   import DependencyHelpers._
 
   val jacksonVersion = "2.10.5"
-  val junitVersion = "4.12"
+  val junitVersion = "4.13.1"
   val h2specVersion = "1.5.0"
   val h2specName = s"h2spec_${DependencyHelpers.osName}_amd64"
   val h2specExe = "h2spec" + DependencyHelpers.exeIfWindows
@@ -73,7 +73,7 @@ object Dependencies {
 
       val scalatest               = "org.scalatest"     %% "scalatest"       % scalaTestVersion          % "test" // ApacheV2
       val scalatestplusScalacheck = "org.scalatestplus" %% "scalacheck-1-14" % (scalaTestVersion + ".0") % "test"
-      val scalatestplusJUnit      = "org.scalatestplus" %% "junit-4-12"      % (scalaTestVersion + ".0") % "test"
+      val scalatestplusJUnit      = "org.scalatestplus" %% "junit-4-13"      % (scalaTestVersion + ".0") % "test"
 
       // HTTP/2
       val h2spec       = "io.github.summerwind"        % h2specName                     % h2specVersion      % "test" from(h2specUrl) // MIT
