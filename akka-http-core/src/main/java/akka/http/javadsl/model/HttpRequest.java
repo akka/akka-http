@@ -50,8 +50,6 @@ public abstract class HttpRequest implements HttpMessage, HttpMessage.MessageTra
      */
     public abstract HttpRequest withEntity(RequestEntity entity);
 
-    public abstract <T> HttpRequest addAttribute(AttributeKey<T> key, T value);
-
     /**
      * Returns a default request to be modified using the `withX` methods.
      */
