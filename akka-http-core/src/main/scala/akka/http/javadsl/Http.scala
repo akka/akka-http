@@ -391,6 +391,21 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
     }
 
   /**
+   * Creates a builder which will create a single connection to a host every time the built flow is materialized. There
+   * is no pooling and you are yourself responsible for lifecycle management of the connection. For a more convenient
+   * Request level API see [[singleRequest()]]
+   *
+   * The responses are not guaranteed to arrive in the same order as the requests go out (In the case of a HTTP/2 server)
+   * so therefore requests needs to have a [[akka.http.scaladsl.model.http2.RequestResponseAssociation]]
+   * which Akka HTTP will carry over to the corresponding response for a request.
+   *
+   *
+   * @return A builder to configure more specific setup for the connection and then build a `Flow[Request, Response, Future[OutgoingConnection]]`.
+   */
+  def connectionTo(host: String): OutgoingConnectionBuilder =
+    delegate.connectionTo(host).toJava
+
+  /**
    * Starts a new connection pool to the given host and configuration and returns a [[akka.stream.javadsl.Flow]] which dispatches
    * the requests from all its materializations across this pool.
    * While the started host connection pool internally shuts itself down automatically after the configured idle

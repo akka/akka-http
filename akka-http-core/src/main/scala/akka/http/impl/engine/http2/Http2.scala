@@ -4,25 +4,27 @@
 
 package akka.http.impl.engine.http2
 
-import akka.actor.{ ActorSystem, ClassicActorSystemProvider, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
+import akka.actor.{ActorSystem, ClassicActorSystemProvider, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
-import akka.http.impl.engine.server.{ MasterServerTerminator, UpgradeToOtherProtocolResponseHeader }
+import akka.http.impl.engine.server.{MasterServerTerminator, UpgradeToOtherProtocolResponseHeader}
 import akka.http.impl.util.LogByteStringTools
-import akka.http.scaladsl.{ ConnectionContext, Http, HttpsConnectionContext }
+import akka.http.scaladsl.{ConnectionContext, Http, HttpsConnectionContext}
 import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.Http.ServerBinding
+import akka.http.scaladsl.Http2OutgoingConnectionBuilder
+import akka.http.scaladsl.OutgoingConnectionBuilder
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{ Connection, RawHeader, Upgrade, UpgradeProtocol }
+import akka.http.scaladsl.model.headers.{Connection, RawHeader, Upgrade, UpgradeProtocol}
 import akka.http.scaladsl.model.http2.Http2SettingsHeader
-import akka.http.scaladsl.settings.{ ClientConnectionSettings, ServerSettings }
-import akka.stream.TLSProtocol.{ SslTlsInbound, SslTlsOutbound }
+import akka.http.scaladsl.settings.{ClientConnectionSettings, ServerSettings}
+import akka.stream.TLSProtocol.{SslTlsInbound, SslTlsOutbound}
 import akka.stream.impl.io.TlsUtils
-import akka.stream.scaladsl.{ Flow, Keep, Sink, Source, TLS, TLSPlacebo, Tcp }
-import akka.stream.{ IgnoreComplete, Materializer, TLSClosing }
+import akka.stream.scaladsl.{Flow, Keep, Sink, Source, TLS, TLSPlacebo, Tcp}
+import akka.stream.{IgnoreComplete, Materializer}
 import akka.util.ByteString
-import akka.{ Done, NotUsed }
+import akka.{Done, NotUsed}
 import com.typesafe.config.Config
 import javax.net.ssl.SSLEngine
 
@@ -30,7 +32,7 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
-import scala.util.{ Failure, Success }
+import scala.util.{Failure, Success}
 
 /**
  * INTERNAL API
@@ -188,13 +190,14 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
   }
 
   // FIXME issue says this is internal but it's public?
+  // deprecate or remove? No real point in keeping since it anyways delegates to the other method
   def outgoingConnection(
     host:              String,
     port:              Int                      = 443,
     settings:          ClientConnectionSettings = ClientConnectionSettings(system),
     connectionContext: HttpsConnectionContext   = Http().defaultClientHttpsContext,
     log:               LoggingAdapter           = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
-    connectionTo(host).toPort(port).withClientConnectionSettings(settings).withConnectionContext(connectionContext).logTo(log).connectionFlow()
+    connectionTo(host).toPort(port).withClientConnectionSettings(settings).withConnectionContext(connectionContext).logTo(log).unorderedFlow()
 
   /**
    * Creates a builder which will create a single connection to a host every time the built flow is materialized. There
@@ -208,13 +211,7 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
    *
    * @return A builder to configure more specific setup for the connection and then build a `Flow[Request, Response, Future[OutgoingConnection]]`.
    */
-  /*
-   * FIXME: I think we'd want this in the HTTP extension for easy access but it cannot refer to classes in the http2-support module
-   * FIXME: for having the same entry point for HTTP/2 and HTTP/1.1 there is a mismatch with port always reasonably defaulting to 443
-   *        for HTTP/2 but not really for HTTP1/1
-   * FIXME also for same API and automatic protocol negotiation, how do we deal with explicitly saying TLS/No TLS for HTTP/1 but defaulting to TLS for HTTP/2?
-   */
-  def connectionTo(host: String): OutgoingConnectionBuilder = OutgoingConnectionBuilder(host, 443, system)
+  def connectionTo(host: String): OutgoingConnectionBuilder = Http2OutgoingConnectionBuilder(host, 443, system)
 }
 
 /** INTERNAL API */
