@@ -4,7 +4,6 @@
 
 package akka.http.scaladsl
 
-import akka.actor.ClassicActorSystemProvider
 import akka.annotation.DoNotInherit
 import akka.event.LoggingAdapter
 import akka.http.scaladsl.Http.OutgoingConnection
