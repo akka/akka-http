@@ -13,7 +13,6 @@ import akka.http.scaladsl.settings.ServerSettings
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 import FrameEvent.ParsedHeadersFrame
-import akka.http.scaladsl.Http2
 
 private[http2] object ResponseRendering {
 

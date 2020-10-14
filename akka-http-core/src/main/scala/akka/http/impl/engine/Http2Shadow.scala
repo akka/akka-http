@@ -42,7 +42,7 @@ private[akka] object Http2Shadow {
 
     try {
       val system = mat.system.asInstanceOf[ExtendedActorSystem]
-      val extensionIdClazz = system.dynamicAccess.getClassFor[ShadowHttp2]("akka.http.scaladsl.Http2").get
+      val extensionIdClazz = system.dynamicAccess.getClassFor[ShadowHttp2]("akka.http.impl.engine.http2.Http2").get
 
       val extensionInstance: ShadowHttp2Ext = extensionIdClazz.getMethod("get", Array(classOf[ActorSystem]): _*)
         .invoke(null, system).asInstanceOf[ShadowHttp2Ext]

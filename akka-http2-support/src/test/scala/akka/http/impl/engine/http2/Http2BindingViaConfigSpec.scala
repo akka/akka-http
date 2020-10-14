@@ -2,10 +2,11 @@
  * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.http.scaladsl
+package akka.http.impl.engine.http2
 
 import akka.event.Logging
 import akka.http.impl.util.ExampleHttpContexts
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.stream._
 import akka.testkit.{ AkkaSpec, TestProbe }

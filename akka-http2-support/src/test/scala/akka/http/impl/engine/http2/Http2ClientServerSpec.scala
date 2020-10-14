@@ -12,7 +12,7 @@ import akka.http.scaladsl.model.http2.RequestResponseAssociation
 import akka.http.scaladsl.model.{ AttributeKey, ContentTypes, HttpEntity, HttpHeader, HttpMethod, HttpMethods, HttpRequest, HttpResponse, StatusCode, StatusCodes, Uri }
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.http.scaladsl.{ Http, Http2 }
+import akka.http.scaladsl.Http
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.testkit.TestProbe

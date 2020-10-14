@@ -8,10 +8,7 @@ import akka.actor.ActorSystem;
 import akka.http.impl.util.ExampleHttpContexts;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
-import akka.http.javadsl.HttpsConnectionContext;
 import akka.japi.function.Function;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
@@ -31,7 +28,6 @@ public class Http2JavaServerTest {
       "akka.http.server.preview.enable-http2 = on\n"
     );
     ActorSystem system = ActorSystem.create("ServerTest", testConf);
-    Materializer materializer = ActorMaterializer.create(system);
 
     Function<HttpRequest, CompletionStage<HttpResponse>> handler =
       request -> CompletableFuture.completedFuture(HttpResponse.create().withEntity(request.entity()));

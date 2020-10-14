@@ -15,7 +15,6 @@ import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompressio
 import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.impl.util.StreamUtils
-import akka.http.scaladsl.Http2
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, Http2CommonSettings, ParserSettings, ServerSettings }
 import akka.stream.TLSProtocol._
