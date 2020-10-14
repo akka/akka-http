@@ -4,12 +4,11 @@
 
 package akka.http.impl.engine.http2
 
-import akka.http.scaladsl.model.{ ContentTypes, HttpEntity, HttpProtocols, HttpResponse, StatusCodes, headers }
+import akka.http.scaladsl.model.{ ContentTypes, HttpEntity, HttpProtocols, HttpResponse, headers }
 import akka.http.scaladsl.model.headers.CacheDirectives
 import akka.http.scaladsl.model.headers.HttpEncodings
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.stream.scaladsl.Source
-import akka.util.ByteString
 
 /**
  * Examples from the HPACK specification. See https://tools.ietf.org/html/rfc7541#appendix-C
