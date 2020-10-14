@@ -41,6 +41,15 @@ import akka.stream.Attributes.LogLevels
 import akka.stream.testkit.scaladsl.StreamTestKit
 import com.github.ghik.silencer.silent
 
+/**
+ * This tests the http2 server protocol logic.
+ *
+ * Tests typically:
+ * * provide incoming data frames
+ * * if applicable: validate the constructed incoming application-level request
+ * * if applicable: provide application-level response
+ * * validate the produced response frames
+ */
 class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     akka.http.server.remote-address-header = on
     akka.http.server.http2.log-frames = on

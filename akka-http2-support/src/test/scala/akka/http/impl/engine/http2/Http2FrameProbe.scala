@@ -5,10 +5,12 @@
 package akka.http.impl.engine.http2
 
 import akka.actor.ActorSystem
+import akka.http.impl.engine.http2.FrameEvent.SettingsFrame
 import akka.http.impl.engine.http2.Http2FrameProbe.FrameHeader
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.Flags
 import akka.http.impl.engine.http2.Http2Protocol.FrameType
+import akka.http.impl.engine.http2.framing.Http2FrameParsing
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.stream.impl.io.ByteStringParser.ByteReader
 import akka.stream.scaladsl.Sink
@@ -28,6 +30,8 @@ private[http] trait Http2FrameProbe {
   def expectNoBytes(): Unit
   def expectNoBytes(timeout: FiniteDuration): Unit
 
+  def expectFrame(): FrameEvent
+
   def expectDATAFrame(streamId: Int): (Boolean, ByteString)
   def expectDATA(streamId: Int, endStream: Boolean, numBytes: Int): ByteString
   def expectDATA(streamId: Int, endStream: Boolean, data: ByteString): Unit
@@ -36,6 +40,7 @@ private[http] trait Http2FrameProbe {
 
   def expectGOAWAY(lastStreamId: Int = -1): (Int, ErrorCode)
 
+  def expectSettingsEmpty(streamId: Int): Unit
   def expectSettingsAck(): Unit
 
   def expectFrame(frameType: FrameType, expectedFlags: ByteFlag, streamId: Int, payload: ByteString): Unit
@@ -71,12 +76,14 @@ private[http] trait Http2FrameProbeDelegator extends Http2FrameProbe {
   def expectBytes(num: Int): ByteString = frameProbeDelegate.expectBytes(num)
   def expectNoBytes(): Unit = frameProbeDelegate.expectNoBytes()
   def expectNoBytes(timeout: FiniteDuration): Unit = frameProbeDelegate.expectNoBytes(timeout)
+  def expectFrame(): FrameEvent = frameProbeDelegate.expectFrame()
   def expectDATAFrame(streamId: Int): (Boolean, ByteString) = frameProbeDelegate.expectDATAFrame(streamId)
   def expectDATA(streamId: Int, endStream: Boolean, numBytes: Int): ByteString = frameProbeDelegate.expectDATA(streamId, endStream, numBytes)
   def expectDATA(streamId: Int, endStream: Boolean, data: ByteString): Unit = frameProbeDelegate.expectDATA(streamId, endStream, data)
   def expectRST_STREAM(streamId: Int, errorCode: ErrorCode): Unit = frameProbeDelegate.expectRST_STREAM(streamId, errorCode)
   def expectRST_STREAM(streamId: Int): ErrorCode = frameProbeDelegate.expectRST_STREAM(streamId)
   def expectGOAWAY(lastStreamId: Int): (Int, ErrorCode) = frameProbeDelegate.expectGOAWAY(lastStreamId)
+  def expectSettingsEmpty(streamId: Int): Unit = frameProbeDelegate.expectSettingsEmpty(streamId)
   def expectSettingsAck(): Unit = frameProbeDelegate.expectSettingsAck()
   def expectFrame(frameType: FrameType, expectedFlags: ByteFlag, streamId: Int, payload: ByteString): Unit = frameProbeDelegate.expectFrame(frameType, expectedFlags, streamId, payload)
   def expectFramePayload(frameType: FrameType, expectedFlags: ByteFlag, streamId: Int): ByteString = frameProbeDelegate.expectFramePayload(frameType, expectedFlags, streamId)
@@ -105,6 +112,17 @@ private[http] object Http2FrameProbe extends Matchers {
       def expectBytes(num: Int): ByteString = probe.expectBytes(num)
       def expectNoBytes(): Unit = probe.expectNoBytes()
       def expectNoBytes(timeout: FiniteDuration): Unit = probe.expectNoBytes(timeout)
+
+      def expectFrame(): FrameEvent = {
+        // Not taking into account endian-ness explicitly here, and not supporting frames with a size larger than 127 for now ;)
+        probe.expectBytes(2)
+        val length = probe.expectByte()
+        val _type = FrameType.byId(probe.expectByte()).get
+        val flags = new ByteFlag(probe.expectByte())
+        val streamId = probe.expectByte()
+        val payload = probe.expectBytes(length)
+        Http2FrameParsing.parseFrame(_type, flags, streamId, new ByteReader(payload), system.log)
+      }
 
       def expectDATAFrame(streamId: Int): (Boolean, ByteString) = {
         val (flags, payload) = expectFrameFlagsAndPayload(FrameType.DATA, streamId)
@@ -156,6 +174,8 @@ private[http] object Http2FrameProbe extends Matchers {
         if (lastStreamId > 0) incomingLastStreamId should ===(lastStreamId)
         (lastStreamId, ErrorCode.byId(reader.readIntBE()))
       }
+
+      def expectSettingsEmpty(streamId: Int) = expectFrame(FrameType.SETTINGS, ByteFlag.Zero, streamId, ByteString.empty)
 
       def expectSettingsAck() = expectFrame(FrameType.SETTINGS, Flags.ACK, 0, ByteString.empty)
 
