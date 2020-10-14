@@ -91,6 +91,7 @@ object Dependencies {
   )
 
   lazy val httpCore = l ++= Seq(
+    hpack,
     Test.sprayJson, // for WS Autobahn test metadata
     Test.scalatest, Test.scalatestplusScalacheck, Test.scalatestplusJUnit, Test.junit
   )
@@ -103,7 +104,7 @@ object Dependencies {
 
   lazy val http = Seq()
 
-  lazy val http2 = l ++= Seq(hpack)
+  lazy val http2 = l ++= Seq()
 
   lazy val http2Support = l ++= Seq(Test.h2spec)
 
