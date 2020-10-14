@@ -6,8 +6,7 @@ package akka.http.impl.engine.http2
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.HttpEncodings
-import akka.http.scaladsl.model.http2.RequestResponseAssociation
-import akka.http.scaladsl.model.{ AttributeKey, HttpRequest, HttpResponse, headers }
+import akka.http.scaladsl.model.{ AttributeKey, HttpRequest, HttpResponse, RequestResponseAssociation, headers }
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 import com.typesafe.config.ConfigFactory

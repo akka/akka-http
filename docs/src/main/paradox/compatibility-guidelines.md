@@ -81,6 +81,10 @@ Scala
     akka.http.scaladsl.model.headers.CacheDirectives.immutableDirective
     akka.http.scaladsl.model.headers.X-Forwarded-Host
     akka.http.scaladsl.model.headers.X-Forwarded-Proto
+    akka.http.scaladsl.model.http2.PeerClosedStreamException
+    akka.http.scaladsl.model.http2.Http2Exception
+    akka.http.scaladsl.model.SimpleRequestResponseAttribute
+    akka.http.scaladsl.model.RequestResponseAssociation
     ```
 
 Java

@@ -6,10 +6,8 @@ package akka.http.impl.engine.http2
 
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.{ AkkaSpecWithMaterializer, ExampleHttpContexts }
-import akka.http.scaladsl.model.headers
+import akka.http.scaladsl.model.{ AttributeKey, ContentTypes, HttpEntity, HttpHeader, HttpMethod, HttpMethods, HttpRequest, HttpResponse, RequestResponseAssociation, StatusCode, StatusCodes, Uri, headers }
 import akka.http.scaladsl.model.headers.HttpEncodings
-import akka.http.scaladsl.model.http2.RequestResponseAssociation
-import akka.http.scaladsl.model.{ AttributeKey, ContentTypes, HttpEntity, HttpHeader, HttpMethod, HttpMethods, HttpRequest, HttpResponse, StatusCode, StatusCodes, Uri }
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.Http
