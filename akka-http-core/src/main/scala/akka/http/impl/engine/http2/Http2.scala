@@ -37,7 +37,7 @@ import scala.util.{ Failure, Success }
  * Internal entry points for Http/2 server
  */
 @InternalApi
-private[http2] final class Http2Ext(private val config: Config)(implicit val system: ActorSystem)
+private[http] final class Http2Ext(private val config: Config)(implicit val system: ActorSystem)
   extends akka.actor.Extension {
   // FIXME: won't having the same package as top-level break osgi?
 
@@ -218,7 +218,7 @@ private[http2] final class Http2Ext(private val config: Config)(implicit val sys
 
 /** INTERNAL API */
 @InternalApi
-private[http2] object Http2 extends ExtensionId[Http2Ext] with ExtensionIdProvider {
+private[http] object Http2 extends ExtensionId[Http2Ext] with ExtensionIdProvider {
   val streamId = AttributeKey[Int]("x-http2-stream-id")
 
   override def get(system: ActorSystem): Http2Ext = super.get(system)
