@@ -48,22 +48,25 @@ private[http2] object ResponseRendering {
       //   that is included in an HTTP/1.1 status line.
       headerPairs += ":status" -> response.status.intValue.toString
 
-      if (response.entity.contentType != ContentTypes.NoContentType)
-        headerPairs += "content-type" -> response.entity.contentType.toString
-
-      response.entity.contentLengthOption.foreach(headerPairs += "content-length" -> _.toString)
-
+      addContentHeaders(headerPairs, response.entity)
       renderHeaders(response.headers, headerPairs, serverHeader, log, isServer = true)
 
       val headers = ParsedHeadersFrame(streamId, endStream = response.entity.isKnownEmpty, headerPairs.result(), None)
-      response.entity match {
-        case HttpEntity.Chunked(_, chunks) =>
-          ChunkedHttp2SubStream(headers, chunks)
-        case _ =>
-          ByteHttp2SubStream(headers, response.entity.dataBytes)
-      }
-
+      substreamFor(response.entity, headers)
     }
+  }
+
+  private[http2] def addContentHeaders(headerPairs: VectorBuilder[(String, String)], entity: HttpEntity): Unit = {
+    if (entity.contentType != ContentTypes.NoContentType)
+      headerPairs += "content-type" -> entity.contentType.toString
+    entity.contentLengthOption.foreach(headerPairs += "content-length" -> _.toString)
+  }
+
+  private[http2] def substreamFor(entity: HttpEntity, headers: ParsedHeadersFrame): Http2SubStream = entity match {
+    case HttpEntity.Chunked(_, chunks) =>
+      ChunkedHttp2SubStream(headers, chunks)
+    case _ =>
+      ByteHttp2SubStream(headers, entity.dataBytes)
   }
 
   private[http2] def renderHeaders(
