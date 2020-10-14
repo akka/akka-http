@@ -76,6 +76,7 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
     logFrames:                         Boolean,
     internalSettings:                  Option[Http2InternalServerSettings])
     extends Http2ServerSettings {
+    require(maxConcurrentStreams >= 0, "max-concurrent-streams must be >= 0")
     require(requestEntityChunkSize > 0, "request-entity-chunk-size must be > 0")
     require(incomingConnectionLevelBufferSize > 0, "incoming-connection-level-buffer-size must be > 0")
     require(incomingStreamLevelBufferSize > 0, "incoming-stream-level-buffer-size must be > 0")
@@ -144,6 +145,7 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
     logFrames:                         Boolean,
     internalSettings:                  Option[Http2InternalClientSettings])
     extends Http2ClientSettings {
+    require(maxConcurrentStreams >= 0, "max-concurrent-streams must be >= 0")
     require(requestEntityChunkSize > 0, "request-entity-chunk-size must be > 0")
     require(incomingConnectionLevelBufferSize > 0, "incoming-connection-level-buffer-size must be > 0")
     require(incomingStreamLevelBufferSize > 0, "incoming-stream-level-buffer-size must be > 0")
