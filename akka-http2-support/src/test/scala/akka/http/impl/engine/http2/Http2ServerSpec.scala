@@ -1134,8 +1134,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
   /** Basic TestSetup that has already passed the exchange of the connection preface */
   abstract class TestSetup extends TestSetupWithoutHandshake {
     sendBytes(Http2Protocol.ClientConnectionPreface)
-    val serverPreface = expectFrameHeader()
-    serverPreface.frameType shouldBe Http2Protocol.FrameType.SETTINGS
+    expectSETTINGS()
   }
 
   /** Provides the user handler flow as `requestIn` and `responseOut` probes for manual stream interaction */

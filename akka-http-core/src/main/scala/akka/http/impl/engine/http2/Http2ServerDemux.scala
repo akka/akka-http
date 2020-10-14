@@ -19,6 +19,7 @@ import akka.util.ByteString
 import scala.collection.immutable
 import scala.util.control.NonFatal
 import FrameEvent._
+import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.macros.LogHelper
 
 /** Currently only used as log source */
@@ -104,7 +105,13 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
         pullFrameIn()
         pull(substreamIn)
 
-        multiplexer.pushControlFrame(SettingsFrame(Nil)) // both client and server must send an settings frame as first frame
+        // TODO: review order of the settings in the sequence
+        val settings = Seq(
+          Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, http2Settings.maxConcurrentStreams)
+        )
+        // both client and server must send a settings frame as first frame
+        multiplexer.pushControlFrame(SettingsFrame(settings))
+        //                multiplexer.pushControlFrame(SettingsFrame(Nil))
       }
 
       override def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit = {
