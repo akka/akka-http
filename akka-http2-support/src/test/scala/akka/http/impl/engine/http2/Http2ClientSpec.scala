@@ -1076,9 +1076,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
   /** Basic TestSetup that has already passed the exchange of the connection preface */
   abstract class TestSetup extends TestSetupWithoutHandshake with NetProbes with Http2FrameSending {
     toNet.expectBytes(Http2Protocol.ClientConnectionPreface)
-
-    // TODO this *requires* the settings to be empty, but we want to *allow* it to be empty...
-    expectSettingsEmpty(0x0)
+    expectFrame() shouldBe a[SettingsFrame]
 
     sendFrame(SettingsFrame(Nil))
     expectSettingsAck()
