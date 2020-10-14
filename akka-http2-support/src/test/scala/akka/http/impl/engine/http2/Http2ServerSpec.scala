@@ -4,17 +4,14 @@
 
 package akka.http.impl.engine.http2
 
-import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
 import java.net.InetSocketAddress
-import java.nio.ByteOrder
 
 import javax.net.ssl.SSLContext
 import akka.NotUsed
 import akka.http.impl.engine.http2.Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
-import akka.http.impl.engine.http2.framing.FrameRenderer
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.engine.ws.ByteStringSinkProbe
-import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools, StringRendering }
+import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ CacheDirectives, RawHeader }
 import akka.http.scaladsl.settings.ServerSettings
@@ -24,13 +21,11 @@ import akka.stream.testkit.TestPublisher.ManualProbe
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.stream.OverflowStrategy
 import akka.testkit._
-import akka.util.{ ByteString, ByteStringBuilder }
-import com.twitter.hpack.{ Decoder, Encoder, HeaderListener }
+import akka.util.ByteString
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.collection.immutable
-import scala.collection.immutable.VectorBuilder
 import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
 import FrameEvent._
@@ -193,7 +188,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
       "fail if Http2StreamIdHeader missing" in pending
       "automatically add `Date` header" in pending
 
-      "parse headers to modeled headers" in new TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
+      "parse headers to modeled headers" in new TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
         import CacheDirectives._
         import headers._
         val expectedRequest = HttpRequest(
@@ -252,7 +247,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     }
 
     "support stream for request entity data" should {
-      abstract class RequestEntityTestSetup extends TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
+      abstract class RequestEntityTestSetup extends TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
         val TheStreamId = 1
         protected def sendRequest(): Unit
 
@@ -397,7 +392,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     }
 
     "support stream support for sending response entity data" should {
-      abstract class WaitingForResponseSetup extends TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
+      abstract class WaitingForResponseSetup extends TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
         val TheStreamId = 1
         val theRequest = HttpRequest(protocol = HttpProtocols.`HTTP/2.0`)
         sendRequest(TheStreamId, theRequest)
@@ -478,7 +473,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         expectNoBytes(100.millis) // don't expect anything, stream has been cancelled in the meantime
       }
 
-      "cancel entity data source when peer sends RST_STREAM before entity is subscribed" in new TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
+      "cancel entity data source when peer sends RST_STREAM before entity is subscribed" in new TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
         val theRequest = HttpRequest(protocol = HttpProtocols.`HTTP/2.0`)
         sendRequest(1, theRequest)
         expectRequest() shouldBe theRequest
@@ -701,7 +696,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     }
 
     "support multiple concurrent substreams" should {
-      "receive two requests concurrently" in new TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
+      "receive two requests concurrently" in new TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
         val request1 =
           HttpRequest(
             protocol = HttpProtocols.`HTTP/2.0`,
@@ -741,7 +736,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         request1EntityProbe.expectUtf8EncodedString("ghi")
         request1EntityProbe.expectComplete()
       }
-      "send two responses concurrently" in new TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
+      "send two responses concurrently" in new TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
         val theRequest = HttpRequest(protocol = HttpProtocols.`HTTP/2.0`)
         sendRequest(1, theRequest)
         expectRequest() shouldBe theRequest
@@ -784,7 +779,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         // also complete stream 1
         sendDataAndExpectOnNet(entity1DataOut, 1, "", endStream = true)
       }
-      "close substreams when connection is shutting down" in StreamTestKit.assertAllStagesStopped(new TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
+      "close substreams when connection is shutting down" in StreamTestKit.assertAllStagesStopped(new TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
         val requestEntity = HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`)
         val request = HttpRequest(entity = requestEntity)
 
@@ -998,7 +993,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     }
 
     "expose synthetic headers" should {
-      "expose Remote-Address" in new TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
+      "expose Remote-Address" in new TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
 
         lazy val theAddress = "127.0.0.1"
         lazy val thePort = 1337
@@ -1018,7 +1013,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         remoteAddressHeader.address.getPort shouldBe thePort
       }
 
-      "expose Tls-Session-Info" in new TestSetup with RequestResponseProbes with AutomaticHpackWireSupport {
+      "expose Tls-Session-Info" in new TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
         override def settings: ServerSettings =
           super.settings.withParserSettings(super.settings.parserSettings.withIncludeTlsSessionInfoHeader(true))
 
@@ -1041,7 +1036,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     "must not swallow errors / warnings" in pending
   }
 
-  protected /* To make ByteFlag warnings go away */ abstract class TestSetupWithoutHandshake extends Http2FrameProbeDelegator {
+  protected /* To make ByteFlag warnings go away */ abstract class TestSetupWithoutHandshake extends Http2FrameProbeDelegator with Http2FrameSending {
     implicit def ec = system.dispatcher
 
     val framesOut: Http2FrameProbe = Http2FrameProbe()
@@ -1069,39 +1064,14 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
     def sendBytes(bytes: ByteString): Unit = fromNet.sendNext(bytes)
 
-    def sendFrame(frame: FrameEvent): Unit =
-      sendBytes(FrameRenderer.render(frame))
-
-    def sendFrame(frameType: FrameType, flags: ByteFlag, streamId: Int, payload: ByteString): Unit =
-      sendBytes(FrameRenderer.renderFrame(frameType, flags, streamId, payload))
-
-    def sendDATA(streamId: Int, endStream: Boolean, data: ByteString): Unit = {
+    override def sendDATA(streamId: Int, endStream: Boolean, data: ByteString): Unit = {
       updateToServerWindowForConnection(_ - data.length)
       updateToServerWindows(streamId, _ - data.length)
-      sendFrame(FrameType.DATA, Flags.END_STREAM.ifSet(endStream), streamId, data)
+      super.sendDATA(streamId, endStream, data)
     }
 
-    def sendSETTING(identifier: SettingIdentifier, value: Int): Unit =
-      sendFrame(SettingsFrame(Setting(identifier, value) :: Nil))
-
-    def sendHEADERS(streamId: Int, endStream: Boolean, endHeaders: Boolean, headerBlockFragment: ByteString): Unit =
-      sendBytes(FrameRenderer.render(HeadersFrame(streamId, endStream, endHeaders, headerBlockFragment, None)))
-
-    def sendCONTINUATION(streamId: Int, endHeaders: Boolean, headerBlockFragment: ByteString): Unit =
-      sendBytes(FrameRenderer.render(ContinuationFrame(streamId, endHeaders, headerBlockFragment)))
-
-    def sendPRIORITY(streamId: Int, exclusiveFlag: Boolean, streamDependency: Int, weight: Int): Unit =
-      sendBytes(FrameRenderer.render(PriorityFrame(streamId, exclusiveFlag, streamDependency, weight)))
-
-    def sendRST_STREAM(streamId: Int, errorCode: ErrorCode): Unit = {
-      implicit val bigEndian: ByteOrder = ByteOrder.BIG_ENDIAN
-      val bb = new ByteStringBuilder
-      bb.putInt(errorCode.id)
-      sendFrame(FrameType.RST_STREAM, ByteFlag.Zero, streamId, bb.result())
-    }
-
-    def sendWINDOW_UPDATE(streamId: Int, windowSizeIncrement: Int): Unit = {
-      sendBytes(FrameRenderer.render(WindowUpdateFrame(streamId, windowSizeIncrement)))
+    override def sendWINDOW_UPDATE(streamId: Int, windowSizeIncrement: Int): Unit = {
+      super.sendWINDOW_UPDATE(streamId, windowSizeIncrement)
       if (streamId == 0) updateFromServerWindowForConnection(_ + windowSizeIncrement)
       else updateFromServerWindows(streamId, _ + windowSizeIncrement)
     }
@@ -1155,91 +1125,6 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     sendBytes(Http2Protocol.ClientConnectionPreface)
     val serverPreface = expectFrameHeader()
     serverPreface.frameType shouldBe Http2Protocol.FrameType.SETTINGS
-  }
-
-  /** Helper that allows automatic HPACK encoding/decoding for wire sends / expectations */
-  trait AutomaticHpackWireSupport extends TestSetupWithoutHandshake {
-    def sendRequestHEADERS(streamId: Int, request: HttpRequest, endStream: Boolean): Unit =
-      sendHEADERS(streamId, endStream = endStream, endHeaders = true, encodeRequestHeaders(request))
-
-    def sendHEADERS(streamId: Int, endStream: Boolean, headers: Seq[HttpHeader]): Unit =
-      sendHEADERS(streamId, endStream = endStream, endHeaders = true, encodeHeaders(headers))
-
-    def sendRequest(streamId: Int, request: HttpRequest): Unit = {
-      val isEmpty = request.entity.isKnownEmpty
-      sendHEADERS(streamId, endStream = isEmpty, endHeaders = true, encodeRequestHeaders(request))
-
-      if (!isEmpty)
-        sendDATA(streamId, endStream = true, request.entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue)
-    }
-
-    def expectDecodedResponseHEADERS(streamId: Int, endStream: Boolean = true): HttpResponse = {
-      val headerBlockBytes = expectHeaderBlock(streamId, endStream)
-      val decoded = decodeHeadersToResponse(headerBlockBytes)
-      // filter date to make it easier to test
-      decoded.withHeaders(decoded.headers.filterNot(h => h.is("date")))
-    }
-
-    def expectDecodedResponseHEADERSPairs(streamId: Int, endStream: Boolean = true): Seq[(String, String)] = {
-      val headerBlockBytes = expectHeaderBlock(streamId, endStream)
-      decodeHeaders(headerBlockBytes)
-    }
-
-    val encoder = new Encoder(Http2Protocol.InitialMaxHeaderTableSize)
-
-    def encodeRequestHeaders(request: HttpRequest): ByteString =
-      encodeHeaderPairs(headerPairsForRequest(request))
-
-    def encodeHeaders(headers: Seq[HttpHeader]): ByteString =
-      encodeHeaderPairs(headerPairsForHeaders(headers))
-
-    def headerPairsForRequest(request: HttpRequest): Seq[(String, String)] =
-      Seq(
-        ":method" -> request.method.value,
-        ":scheme" -> request.uri.scheme.toString,
-        ":path" -> request.uri.path.toString,
-        ":authority" -> request.uri.authority.toString.drop(2),
-        "content-type" -> request.entity.contentType.render(new StringRendering).get
-      ) ++
-        request.entity.contentLengthOption.flatMap {
-          case len if len != 0 => Some("content-length" -> len.toString)
-          case _               => None
-        }.toSeq ++
-        headerPairsForHeaders(request.headers.filter(_.renderInRequests))
-
-    def headerPairsForHeaders(headers: Seq[HttpHeader]): Seq[(String, String)] =
-      headers.map(h => h.lowercaseName -> h.value)
-
-    def encodeHeaderPairs(headerPairs: Seq[(String, String)]): ByteString = {
-      val bos = new ByteArrayOutputStream()
-
-      def encode(name: String, value: String): Unit = encoder.encodeHeader(bos, name.getBytes, value.getBytes, false)
-
-      headerPairs.foreach((encode _).tupled)
-
-      ByteString(bos.toByteArray)
-    }
-
-    val decoder = new Decoder(Http2Protocol.InitialMaxHeaderListSize, Http2Protocol.InitialMaxHeaderTableSize)
-
-    def decodeHeaders(bytes: ByteString): Seq[(String, String)] = {
-      val bis = new ByteArrayInputStream(bytes.toArray)
-      val hs = new VectorBuilder[(String, String)]()
-
-      decoder.decode(bis, new HeaderListener {
-        def addHeader(name: Array[Byte], value: Array[Byte], sensitive: Boolean): Unit =
-          hs += new String(name) -> new String(value)
-      })
-      hs.result()
-    }
-    def decodeHeadersToResponse(bytes: ByteString): HttpResponse =
-      decodeHeaders(bytes).foldLeft(HttpResponse())((old, header) => header match {
-        case (":status", value)                             => old.withStatus(value.toInt)
-        case ("content-length", value) if value.toLong == 0 => old.withEntity(HttpEntity.Empty)
-        case ("content-length", value)                      => old.withEntity(HttpEntity.Default(old.entity.contentType, value.toLong, Source.empty))
-        case ("content-type", value)                        => old.withEntity(old.entity.withContentType(ContentType.parse(value).right.get))
-        case (name, value)                                  => old.addHeader(RawHeader(name, value)) // FIXME: decode to modeled headers
-      })
   }
 
   /** Provides the user handler flow as `requestIn` and `responseOut` probes for manual stream interaction */

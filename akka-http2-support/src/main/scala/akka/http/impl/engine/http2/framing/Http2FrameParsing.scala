@@ -11,7 +11,7 @@ import akka.stream.Attributes
 import akka.stream.impl.io.ByteStringParser
 import akka.stream.stage.GraphStageLogic
 import akka.util.OptionVal
-import Http2Protocol.{ErrorCode, Flags, FrameType, SettingIdentifier}
+import Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
 import akka.annotation.InternalApi
 import FrameEvent._
 import akka.stream.impl.io.ByteStringParser.ByteReader
@@ -191,7 +191,6 @@ private[http2] class Http2FrameParsing(shouldReadPreface: Boolean, log: LoggingA
           ParseResult(maybeframe, ReadFrame, acceptUpstreamFinish = true)
         }
       }
-
 
     }
 }

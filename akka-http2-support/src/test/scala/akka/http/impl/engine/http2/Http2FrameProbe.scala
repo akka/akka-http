@@ -114,11 +114,12 @@ private[http] object Http2FrameProbe extends Matchers {
       def expectNoBytes(timeout: FiniteDuration): Unit = probe.expectNoBytes(timeout)
 
       def expectFrame(): FrameEvent = {
-        // Not taking into account endian-ness explicitly here, and not supporting frames with a size larger than 127 for now ;)
-        probe.expectBytes(2)
+        // Not supporting large frames or high streamId's here for now, throw when we encounter those.
+        probe.expectBytes(2) should be(ByteString(0, 0))
         val length = probe.expectByte()
         val _type = FrameType.byId(probe.expectByte()).get
         val flags = new ByteFlag(probe.expectByte())
+        probe.expectBytes(3) should be(ByteString(0, 0, 0))
         val streamId = probe.expectByte()
         val payload = probe.expectBytes(length)
         Http2FrameParsing.parseFrame(_type, flags, streamId, new ByteReader(payload), system.log)
