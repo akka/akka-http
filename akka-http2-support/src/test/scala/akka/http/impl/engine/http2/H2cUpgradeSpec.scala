@@ -6,7 +6,7 @@ package akka.http.impl.engine.http2
 
 import akka.http.impl.util._
 import akka.http.scaladsl.model.{ HttpResponse, StatusCodes }
-import akka.http.scaladsl.{ Http2, HttpConnectionContext }
+import akka.http.scaladsl.HttpConnectionContext
 import akka.stream.scaladsl.{ Source, Tcp }
 import akka.util.ByteString
 

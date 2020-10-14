@@ -14,7 +14,6 @@ import akka.testkit.AkkaSpec
 import akka.util.ByteString
 import org.scalatest.{ Inside, Inspectors }
 import FrameEvent._
-import akka.http.scaladsl.Http2
 
 class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
 

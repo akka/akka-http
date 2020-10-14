@@ -2,14 +2,14 @@
  * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.http.h2spec
+package akka.http.impl.engine.http2
 
 import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.http.impl.util.{ ExampleHttpContexts, WithLogCapturing }
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives
-import akka.http.scaladsl.Http2
 import akka.stream.ActorMaterializer
 import akka.testkit._
 import akka.util.ByteString
@@ -25,6 +25,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
        loglevel = DEBUG
        loggers = ["akka.http.impl.util.SilenceAllTestEventListener"]
        http.server.log-unencrypted-network-bytes = off
+       http.server.preview.enable-http2 = on
        http.server.http2.log-frames = on
 
        actor.serialize-creators = off
@@ -43,7 +44,12 @@ class H2SpecIntegrationSpec extends AkkaSpec(
     complete(data)
   }
 
-  val binding = Http2().bindAndHandleAsync(echo, "127.0.0.1", 0, ExampleHttpContexts.exampleServerContext).futureValue
+  val binding =
+    Http()
+      .newServerAt("127.0.0.1", 0)
+      .enableHttps(ExampleHttpContexts.exampleServerContext)
+      .bind(echo)
+      .futureValue
   val port = binding.localAddress.getPort
 
   "H2Spec" must {

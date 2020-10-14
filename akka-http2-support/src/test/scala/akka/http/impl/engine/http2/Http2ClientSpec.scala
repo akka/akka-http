@@ -9,7 +9,6 @@ import akka.event.Logging
 import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
-import akka.http.scaladsl.Http2
 import akka.http.scaladsl.model.HttpEntity.Strict
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ClientConnectionSettings

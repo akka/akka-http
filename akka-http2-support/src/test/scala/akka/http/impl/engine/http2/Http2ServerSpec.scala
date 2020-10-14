@@ -30,7 +30,6 @@ import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
 import FrameEvent._
 import akka.event.Logging
-import akka.http.scaladsl.Http2
 import akka.stream.Attributes
 import akka.stream.Attributes.LogLevels
 import akka.stream.testkit.scaladsl.StreamTestKit

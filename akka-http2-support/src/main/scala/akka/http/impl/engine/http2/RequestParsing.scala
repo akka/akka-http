@@ -9,7 +9,7 @@ import javax.net.ssl.SSLSession
 import akka.annotation.InternalApi
 import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.impl.engine.server.HttpAttributes
-import akka.http.scaladsl.{ Http2, model }
+import akka.http.scaladsl.model
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ `Remote-Address`, `Tls-Session-Info` }
 import akka.http.scaladsl.settings.ServerSettings
