@@ -937,12 +937,24 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
         expectNoMessage(100.millis)
       }
-      "respond to invalid (not 0x0 streamId) PING with GOAWAY (spec 6_7)" in new TestSetup with RequestResponseProbes {
+      "respond to invalid (not 0x0 streamId) PING with GOAWAY PROTOCOL_ERROR (spec 6_7)" in new TestSetup with RequestResponseProbes {
         val invalidIdForPing = 1
         sendFrame(FrameType.PING, ByteFlag.Zero, invalidIdForPing, ByteString("abcd1234"))
 
         val (_, errorCode) = expectGOAWAY()
         errorCode should ===(ErrorCode.PROTOCOL_ERROR)
+      }
+      "respond to invalid (length smaller than 8) with GOAWAY FRAME_SIZE_ERROR (spec 6_7)" in new TestSetup with RequestResponseProbes {
+        sendFrame(FrameType.PING, ByteFlag.Zero, 0x0, ByteString("abcd123"))
+
+        val (_, errorCode) = expectGOAWAY()
+        errorCode should ===(ErrorCode.FRAME_SIZE_ERROR)
+      }
+      "respond to invalid (length larger than 8) with GOAWAY FRAME_SIZE_ERROR (spec 6_7)" in new TestSetup with RequestResponseProbes {
+        sendFrame(FrameType.PING, ByteFlag.Zero, 0x0, ByteString("abcd12345"))
+
+        val (_, errorCode) = expectGOAWAY()
+        errorCode should ===(ErrorCode.FRAME_SIZE_ERROR)
       }
       "respond to PING frames giving precedence over any other kind pending frame" in pending
       "acknowledge SETTINGS frames" in pending
