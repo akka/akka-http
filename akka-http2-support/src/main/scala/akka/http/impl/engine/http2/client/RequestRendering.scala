@@ -23,7 +23,7 @@ private[http2] object RequestRendering {
     { request =>
       val headerPairs = new VectorBuilder[(String, String)]()
       headerPairs += ":method" -> request.method.value
-      headerPairs += ":scheme" -> "https" // FIXME: should that be the real scheme?
+      headerPairs += ":scheme" -> request.uri.scheme
       headerPairs += ":authority" -> request.uri.authority.toString
       headerPairs += ":path" -> request.uri.toHttpRequestTargetOriginForm.toString
 
