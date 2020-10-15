@@ -2,14 +2,15 @@
  * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.http.scaladsl
+package akka.http.impl.engine.http2
 
 import akka.actor.{ ActorSystem, ClassicActorSystemProvider, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
+import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
-import akka.http.impl.engine.http2.{ Http2AlpnSupport, Http2Blueprint, ProtocolSwitch }
 import akka.http.impl.engine.server.{ MasterServerTerminator, UpgradeToOtherProtocolResponseHeader }
 import akka.http.impl.util.LogByteStringTools
+import akka.http.scaladsl.{ ConnectionContext, Http, HttpsConnectionContext }
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ Connection, RawHeader, Upgrade, UpgradeProtocol }
@@ -30,8 +31,13 @@ import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success }
 
-/** Entry point for Http/2 server */
-final class Http2Ext(private val config: Config)(implicit val system: ActorSystem)
+/**
+ * INTERNAL API
+ *
+ * Internal entry points for Http/2 server
+ */
+@InternalApi
+private[http] final class Http2Ext(private val config: Config)(implicit val system: ActorSystem)
   extends akka.actor.Extension {
   // FIXME: won't having the same package as top-level break osgi?
 
@@ -210,7 +216,9 @@ final class Http2Ext(private val config: Config)(implicit val system: ActorSyste
   }
 }
 
-object Http2 extends ExtensionId[Http2Ext] with ExtensionIdProvider {
+/** INTERNAL API */
+@InternalApi
+private[http] object Http2 extends ExtensionId[Http2Ext] with ExtensionIdProvider {
   val streamId = AttributeKey[Int]("x-http2-stream-id")
 
   override def get(system: ActorSystem): Http2Ext = super.get(system)

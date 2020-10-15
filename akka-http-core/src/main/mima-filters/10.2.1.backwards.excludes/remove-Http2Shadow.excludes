@@ -1,0 +1,2 @@
+# Removal of internal class
+ProblemFilters.exclude[Problem]("akka.http.impl.engine.Http2Shadow*")

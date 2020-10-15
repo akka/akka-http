@@ -2,21 +2,20 @@
  * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.http.scaladsl
+package akka.http.impl.engine.http2
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.headers
 import akka.http.scaladsl.model.headers.HttpEncodings
-import akka.http.scaladsl.model.http2.RequestResponseAssociation
-import akka.http.scaladsl.model.{ AttributeKey, HttpRequest, HttpResponse }
+import akka.http.scaladsl.model.{ AttributeKey, HttpRequest, HttpResponse, RequestResponseAssociation, headers }
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration._
+import scala.concurrent.{ Future, Promise }
 
 /** A small example app that shows how to use the HTTP/2 client API currently against actual internet servers */
+// needs to live in impl.engine.http2 for now as we have no public access to the internal HTTP2 client
 object Http2ClientApp extends App {
   val config =
     ConfigFactory.parseString(
@@ -30,7 +29,7 @@ object Http2ClientApp extends App {
   implicit val system = ActorSystem("Http2ClientApp", config)
   implicit val ec = system.dispatcher
 
-  val dispatch = singleRequest(Http2().outgoingConnection("doc.akka.io"))
+  val dispatch = singleRequest(Http2().outgoingConnection("doc.akka.io")) // FIXME: replace with public API
 
   dispatch(HttpRequest(uri = "https://doc.akka.io/api/akka/current/akka/actor/typed/scaladsl/index.html", headers = headers.`Accept-Encoding`(HttpEncodings.gzip) :: Nil)).onComplete { res =>
     println(s"[1] Got index.html: $res")

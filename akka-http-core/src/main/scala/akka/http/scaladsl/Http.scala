@@ -13,9 +13,9 @@ import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.{ Logging, LoggingAdapter }
-import akka.http.impl.engine.Http2Shadow
 import akka.http.impl.engine.HttpConnectionIdleTimeoutBidi
 import akka.http.impl.engine.client._
+import akka.http.impl.engine.http2.Http2
 import akka.http.impl.engine.server._
 import akka.http.impl.engine.ws.WebSocketClientBlueprint
 import akka.http.impl.settings.{ ConnectionPoolSetup, HostConnectionPoolSetup }
@@ -341,7 +341,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
         if (parallelism > 0) settings.mapHttp2Settings(_.withMaxConcurrentStreams(parallelism))
         else if (parallelism < 0) throw new IllegalArgumentException("Only positive values allowed for `parallelism`.")
         else settings
-      Http2Shadow.bindAndHandleAsync(handler, interface, port, connectionContext, definitiveSettings, definitiveSettings.http2Settings.maxConcurrentStreams, log)(fm)
+      Http2().bindAndHandleAsync(handler, interface, port, connectionContext, definitiveSettings, definitiveSettings.http2Settings.maxConcurrentStreams, log)(fm)
     } else {
       val definitiveParallelism =
         if (parallelism > 0) parallelism

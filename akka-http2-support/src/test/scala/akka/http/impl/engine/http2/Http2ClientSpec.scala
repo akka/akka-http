@@ -9,7 +9,6 @@ import akka.event.Logging
 import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
-import akka.http.scaladsl.Http2
 import akka.http.scaladsl.model.HttpEntity.Strict
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.ClientConnectionSettings
@@ -58,10 +57,9 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
       "GET request in one HEADERS frame" in new SimpleRequestResponseRoundtripSetup {
         requestResponseRoundtrip(
           streamId = 1,
-          request = HttpRequest(uri = "http://www.example.com/"),
+          request = HttpRequest(uri = "https://www.example.com/"),
           expectedHeaders = Seq(
             ":method" -> "GET",
-            // TODO check if this makes sense?
             ":scheme" -> "https",
             ":authority" -> "www.example.com",
             ":path" -> "/",
@@ -93,7 +91,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
       "GOAWAY when the response to a second request on different stream has an invalid headers frame" in new SimpleRequestResponseRoundtripSetup {
         requestResponseRoundtrip(
           streamId = 1,
-          request = HttpRequest(uri = "http://www.example.com/"),
+          request = HttpRequest(uri = "https://www.example.com/"),
           expectedHeaders = Seq(
             ":method" -> "GET",
             // TODO check if this makes sense?
@@ -111,7 +109,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
               .withEntity(Strict(ContentTypes.NoContentType, ByteString.empty))
         )
 
-        emitRequest(3, HttpRequest(uri = "http://www.example.com/"))
+        emitRequest(3, HttpRequest(uri = "https://www.example.com/"))
         expectFrame() shouldBe a[HeadersFrame]
 
         val incorrectHeaderBlock = hex"00 00 01 01 05 00 00 00 01 40"
