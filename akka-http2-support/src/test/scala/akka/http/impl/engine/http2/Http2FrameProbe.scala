@@ -9,6 +9,7 @@ import akka.http.impl.engine.http2.Http2FrameProbe.FrameHeader
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.Flags
 import akka.http.impl.engine.http2.Http2Protocol.FrameType
+import akka.http.impl.engine.http2.framing.Http2FrameParsing
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.stream.impl.io.ByteStringParser.ByteReader
 import akka.stream.scaladsl.Sink
@@ -27,6 +28,8 @@ private[http] trait Http2FrameProbe {
   def expectBytes(num: Int): ByteString
   def expectNoBytes(): Unit
   def expectNoBytes(timeout: FiniteDuration): Unit
+
+  def expectFrame(): FrameEvent
 
   def expectDATAFrame(streamId: Int): (Boolean, ByteString)
   def expectDATA(streamId: Int, endStream: Boolean, numBytes: Int): ByteString
@@ -71,6 +74,7 @@ private[http] trait Http2FrameProbeDelegator extends Http2FrameProbe {
   def expectBytes(num: Int): ByteString = frameProbeDelegate.expectBytes(num)
   def expectNoBytes(): Unit = frameProbeDelegate.expectNoBytes()
   def expectNoBytes(timeout: FiniteDuration): Unit = frameProbeDelegate.expectNoBytes(timeout)
+  def expectFrame(): FrameEvent = frameProbeDelegate.expectFrame()
   def expectDATAFrame(streamId: Int): (Boolean, ByteString) = frameProbeDelegate.expectDATAFrame(streamId)
   def expectDATA(streamId: Int, endStream: Boolean, numBytes: Int): ByteString = frameProbeDelegate.expectDATA(streamId, endStream, numBytes)
   def expectDATA(streamId: Int, endStream: Boolean, data: ByteString): Unit = frameProbeDelegate.expectDATA(streamId, endStream, data)
@@ -105,6 +109,18 @@ private[http] object Http2FrameProbe extends Matchers {
       def expectBytes(num: Int): ByteString = probe.expectBytes(num)
       def expectNoBytes(): Unit = probe.expectNoBytes()
       def expectNoBytes(timeout: FiniteDuration): Unit = probe.expectNoBytes(timeout)
+
+      def expectFrame(): FrameEvent = {
+        // Not supporting large frames or high streamId's here for now, throw when we encounter those.
+        probe.expectBytes(2) should be(ByteString(0, 0))
+        val length = probe.expectByte()
+        val _type = FrameType.byId(probe.expectByte()).get
+        val flags = new ByteFlag(probe.expectByte())
+        probe.expectBytes(3) should be(ByteString(0, 0, 0))
+        val streamId = probe.expectByte()
+        val payload = probe.expectBytes(length)
+        Http2FrameParsing.parseFrame(_type, flags, streamId, new ByteReader(payload), system.log)
+      }
 
       def expectDATAFrame(streamId: Int): (Boolean, ByteString) = {
         val (flags, payload) = expectFrameFlagsAndPayload(FrameType.DATA, streamId)

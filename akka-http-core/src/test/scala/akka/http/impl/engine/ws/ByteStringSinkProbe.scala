@@ -19,6 +19,7 @@ import scala.concurrent.duration.FiniteDuration
 private[http] trait ByteStringSinkProbe {
   def sink: Sink[ByteString, NotUsed]
 
+  def expectByte(): Int
   def expectBytes(length: Int): ByteString
   def expectBytes(expected: ByteString): Unit
 
@@ -88,6 +89,8 @@ private[http] object ByteStringSinkProbe {
 
         assert(got == expected, s"expected ${expected.length} bytes, but got ${got.length} bytes \n$details")
       }
+
+      def expectByte(): Int = expectBytes(1).head
 
       def expectUtf8EncodedString(expectedString: String): Unit = {
         val data = expectBytes(expectedString.getBytes("utf8").length).utf8String

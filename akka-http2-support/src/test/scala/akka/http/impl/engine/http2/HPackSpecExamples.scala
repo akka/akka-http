@@ -4,7 +4,7 @@
 
 package akka.http.impl.engine.http2
 
-import akka.http.scaladsl.model.{ ContentTypes, HttpEntity, HttpResponse, headers }
+import akka.http.scaladsl.model.{ ContentTypes, HttpEntity, HttpProtocols, HttpResponse, headers }
 import akka.http.scaladsl.model.headers.CacheDirectives
 import akka.http.scaladsl.model.headers.HttpEncodings
 import akka.http.scaladsl.model.headers.RawHeader
@@ -165,7 +165,9 @@ object HPackSpecExamples {
         headers.`Cache-Control`(CacheDirectives.`private`()),
         headers.Date.parseFromValueString("Mon, 21 Oct 2013 20:13:21 GMT").right.get,
         headers.Location("https://www.example.com")),
-      entity = HttpEntity.CloseDelimited(ContentTypes.NoContentType, Source.empty))
+      entity = HttpEntity.CloseDelimited(ContentTypes.NoContentType, Source.empty),
+      protocol = HttpProtocols.`HTTP/2.0`
+    )
 
   /**
    * akka-http model representation of second request (as encoded in C.5.2 and C.6.2)
