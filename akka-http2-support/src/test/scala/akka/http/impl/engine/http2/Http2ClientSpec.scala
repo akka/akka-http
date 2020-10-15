@@ -7,6 +7,7 @@ package akka.http.impl.engine.http2
 import akka.NotUsed
 import akka.event.Logging
 import akka.http.impl.engine.http2.FrameEvent._
+import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
 import akka.http.scaladsl.Http2
 import akka.http.scaladsl.model.HttpEntity.Strict
@@ -67,6 +68,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
             "content-length" -> "0"
           ),
           response = Seq(
+            // TODO shouldn't this produce an error since stream '1' is already the outgoing stream?
             HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None)
           ),
           expectedResponse =
@@ -74,34 +76,51 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
               .withEntity(Strict(ContentTypes.NoContentType, ByteString.empty))
         )
       }
-      //      "GOAWAY when invalid headers frame" in new TestSetup with RequestResponseProbes {
-      //        override def handlerFlow: Flow[HttpRequest, HttpResponse, NotUsed] =
-      //          Flow[HttpRequest].map { req =>
-      //            HttpResponse(entity = req.entity).addAttribute(Http2.streamId, req.attribute(Http2.streamId).get)
-      //          }
-      //
-      //        val headerBlock = hex"00 00 01 01 05 00 00 00 01 40"
-      //        sendHEADERS(1, endStream = false, endHeaders = true, headerBlockFragment = headerBlock)
-      //
-      //        val (_, errorCode) = expectGOAWAY(0) // since we have not processed any stream
-      //        errorCode should ===(ErrorCode.COMPRESSION_ERROR)
-      //      }
-      //      "GOAWAY when second request on different stream has invalid headers frame" in new SimpleRequestResponseRoundtripSetup {
-      //        requestResponseRoundtrip(
-      //          streamId = 1,
-      //          requestHeaderBlock = HPackSpecExamples.C41FirstRequestWithHuffman,
-      //          expectedRequest = HttpRequest(HttpMethods.GET, "http://www.example.com/", protocol = HttpProtocols.`HTTP/2.0`),
-      //          response = HPackSpecExamples.FirstResponse,
-      //          expectedResponseHeaderBlock = HPackSpecExamples.C61FirstResponseWithHuffman
-      //        )
-      //
-      //        // example from: https://github.com/summerwind/h2spec/blob/master/4_3.go#L18
-      //        val incorrectHeaderBlock = hex"00 00 01 01 05 00 00 00 01 40"
-      //        sendHEADERS(3, endStream = false, endHeaders = true, headerBlockFragment = incorrectHeaderBlock)
-      //
-      //        val (_, errorCode) = expectGOAWAY(1) // since we have successfully started processing stream `1`
-      //        errorCode should ===(ErrorCode.COMPRESSION_ERROR)
-      //      }
+      "GOAWAY when the response has an invalid headers frame" in new TestSetup with NetProbes {
+        val requestStreamId = 0x1
+        emitRequest(requestStreamId, HttpRequest(uri = "http://www.example.com/"))
+        expectFrame() shouldBe a[HeadersFrame]
+
+        val responseStreamId = 0x2
+        val headerBlock = hex"00 00 01 01 05 00 00 00 01 40"
+        sendFrame(HeadersFrame(responseStreamId, endStream = true, endHeaders = true, headerBlock, None))
+
+        val (_, error) = expectGOAWAY(1)
+        error should ===(ErrorCode.COMPRESSION_ERROR)
+
+        // TODO we'd expect an error response here I think?
+      }
+      "GOAWAY when the response to a second request on different stream has an invalid headers frame" in new SimpleRequestResponseRoundtripSetup {
+        requestResponseRoundtrip(
+          streamId = 1,
+          request = HttpRequest(uri = "http://www.example.com/"),
+          expectedHeaders = Seq(
+            ":method" -> "GET",
+            // TODO check if this makes sense?
+            ":scheme" -> "https",
+            ":authority" -> "www.example.com",
+            ":path" -> "/",
+            "content-length" -> "0"
+          ),
+          response = Seq(
+            // TODO shouldn't this produce an error since stream '1' is already the outgoing stream?
+            HeadersFrame(streamId = 2, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None)
+          ),
+          expectedResponse =
+            HPackSpecExamples.FirstResponse
+              .withEntity(Strict(ContentTypes.NoContentType, ByteString.empty))
+        )
+
+        emitRequest(3, HttpRequest(uri = "http://www.example.com/"))
+        expectFrame() shouldBe a[HeadersFrame]
+
+        val incorrectHeaderBlock = hex"00 00 01 01 05 00 00 00 01 40"
+        sendHEADERS(4, endStream = true, endHeaders = true, headerBlockFragment = incorrectHeaderBlock)
+
+        // TODO shouldn't this be '3'?
+        val (_, errorCode) = expectGOAWAY(1)
+        errorCode should ===(ErrorCode.COMPRESSION_ERROR)
+      }
       //      "Three consecutive GET requests" in new SimpleRequestResponseRoundtripSetup {
       //        import CacheDirectives._
       //        import headers.`Cache-Control`
