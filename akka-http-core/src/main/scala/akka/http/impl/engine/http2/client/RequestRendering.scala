@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.FrameEvent.ParsedHeadersFrame
-import akka.http.scaladsl.model.{ ContentTypes, HttpEntity, HttpRequest, RequestResponseAssociation }
+import akka.http.scaladsl.model.{ HttpRequest, RequestResponseAssociation }
 
 import scala.collection.immutable.VectorBuilder
 

@@ -11,8 +11,8 @@ import akka.http.impl.engine.http2.Http2Protocol.{ ErrorCode, Flags, FrameType, 
 import akka.http.impl.engine.http2.framing.FrameRenderer
 import akka.util.{ ByteString, ByteStringBuilder }
 
-trait Http2FrameSending {
-  def sendBytes(bytes: ByteString)
+private[http2] trait Http2FrameSending {
+  def sendBytes(bytes: ByteString): Unit
 
   def sendFrame(frame: FrameEvent): Unit =
     sendBytes(FrameRenderer.render(frame))
