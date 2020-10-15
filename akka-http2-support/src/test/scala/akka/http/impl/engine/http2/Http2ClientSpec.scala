@@ -94,7 +94,6 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
           request = HttpRequest(uri = "https://www.example.com/"),
           expectedHeaders = Seq(
             ":method" -> "GET",
-            // TODO check if this makes sense?
             ":scheme" -> "https",
             ":authority" -> "www.example.com",
             ":path" -> "/",
@@ -115,8 +114,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         val incorrectHeaderBlock = hex"00 00 01 01 05 00 00 00 01 40"
         sendHEADERS(4, endStream = true, endHeaders = true, headerBlockFragment = incorrectHeaderBlock)
 
-        // TODO shouldn't this be '3'?
-        val (_, errorCode) = expectGOAWAY(1)
+        val (_, errorCode) = expectGOAWAY(3)
         errorCode should ===(ErrorCode.COMPRESSION_ERROR)
       }
     }
