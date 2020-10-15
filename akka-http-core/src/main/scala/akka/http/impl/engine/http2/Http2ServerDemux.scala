@@ -5,22 +5,25 @@
 package akka.http.impl.engine.http2
 
 import akka.annotation.InternalApi
+import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.FLOW_CONTROL_ERROR
+import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.scaladsl.settings.Http2CommonSettings
+import akka.macros.LogHelper
 import akka.stream.Attributes
 import akka.stream.BidiShape
 import akka.stream.Inlet
 import akka.stream.Outlet
 import akka.stream.impl.io.ByteStringParser.ParsingException
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, StageLogging }
+import akka.stream.stage.GraphStage
+import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.InHandler
+import akka.stream.stage.StageLogging
 import akka.util.ByteString
 
 import scala.collection.immutable
 import scala.util.control.NonFatal
-import FrameEvent._
-import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
-import akka.macros.LogHelper
 
 /** Currently only used as log source */
 @InternalApi
@@ -92,9 +95,20 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       override def settings: Http2CommonSettings = http2Settings
       override def isUpgraded: Boolean = upgraded
 
+      override def maxConcurrentStreams: Int = http2Settings.maxConcurrentStreams
+
       override protected def logSource: Class[_] = if (isServer) classOf[Http2ServerDemux] else classOf[Http2ClientDemux]
 
       val multiplexer = createMultiplexer(frameOut, StreamPrioritizer.first())
+
+      // TODO: we only support the initial SETTINGS message (the only one that's compulsory)
+      //  so we're keeping the settings as a field instead of implementing SETTINGS-SETTINGS_ACK
+      //  correlation logic.
+      // TODO: the receiver of a SETTINGS frame must apply them in the order they
+      //  are received. Review order of the settings in the sequence since it's relevant.
+      val localSettings = immutable.Seq(
+        Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, maxConcurrentStreams)
+      )
 
       override def preStart(): Unit = {
         if (initialDemuxerSettings.nonEmpty) {
@@ -105,13 +119,8 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
         pullFrameIn()
         pull(substreamIn)
 
-        // TODO: review order of the settings in the sequence
-        val settings = Seq(
-          Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, http2Settings.maxConcurrentStreams)
-        )
         // both client and server must send a settings frame as first frame
-        multiplexer.pushControlFrame(SettingsFrame(settings))
-        //                multiplexer.pushControlFrame(SettingsFrame(Nil))
+        multiplexer.pushControlFrame(SettingsFrame(localSettings))
       }
 
       override def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit = {
@@ -167,13 +176,15 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
               }
 
             case SettingsAckFrame(Nil) =>
-            // Currently, we only expect an ack for the initial (currently empty) settings frame, sent
-            // above in preStart. Since, it was empty, there's nothing to do here.
-            // If we want to support setting and enforcing settings, we'll need to act here to commit
-            // to the settings we sent out before.
-            // https://github.com/akka/akka-http/issues/3185
+              // Currently, we only expect an ack for the initial settings frame, sent
+              // above in preStart. Since, only some settings are supported, and those
+              // settings are non-modifiable and known at construction time, there's not much to do here.
+              // Also, since we only expect an ack for the initial settings frame there's
+              // no need to correlate the ACK to a particular SETTINGS frame.
+              // Related: https://github.com/akka/akka-http/issues/3185
+              enforceSettings(localSettings)
 
-            case PingFrame(true, _)    =>
+            case PingFrame(true, _) =>
             // ignore for now (we don't send any pings)
             case PingFrame(false, data) =>
               multiplexer.pushControlFrame(PingFrame(ack = true, data))
@@ -226,6 +237,29 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
         }
       })
 
+      /**
+       * Tune this peer to enforce the settings configured from this peer.
+       * @return TODO: it's a Boolean but I don't think it has to be.
+       */
+      private def enforceSettings(settings: immutable.Seq[Setting]): Boolean = {
+        var settingsAppliedOk = true
+
+        settings.foreach {
+          case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) =>
+          // TODO: Http2Compliance.compliesWithMaxConcurrentStreams should only be enabled once
+          //  we get this SETTINGS_ACK.
+        }
+
+        settingsAppliedOk
+      }
+
+      /**
+       * Tune this peer to honour the settings sent from the other peer.
+       * @param settings settings sent from the other peer (or injected via the
+       *                 "HTTP2-Settings" in "h2c").
+       * @return true if settings were applied successfully, false if some ERROR
+       *         was raised (and pushed back to the peer)
+       */
       private def applySettings(settings: immutable.Seq[Setting]): Boolean = {
         var settingsAppliedOk = true
 

@@ -866,7 +866,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         val (_, error) = expectGOAWAY()
         error should ===(ErrorCode.FRAME_SIZE_ERROR)
       }
-      "received SETTINGs frame frame with a length other than a multiple of 6 octets (invalid 6_5)" in new TestSetup with RequestResponseProbes {
+      "received SETTINGS frame with a length other than a multiple of 6 octets (invalid 6_5)" in new TestSetup with RequestResponseProbes {
         val data = hex"00 00 02 04 00 00 00 00 00"
 
         sendFrame(FrameType.SETTINGS, ByteFlag.Zero, 0, data)
@@ -919,6 +919,35 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
         val (_, code) = expectGOAWAY()
         code should ===(ErrorCode.FLOW_CONTROL_ERROR)
+      }
+    }
+
+    "enforce settings" should {
+
+      "reject new substreams when exceeding SETTINGS_MAX_CONCURRENT_STREAMS" in new TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
+        // this test exceeds the server setup so we use the server config value as input for the test
+        private val maxStreams: Int = system.settings.config.getInt("akka.http.server.http2.max-concurrent-streams")
+
+        // start as many streams as max concurrent...
+        val req1 =
+          HttpRequest(
+            protocol = HttpProtocols.`HTTP/2.0`,
+            entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, ""))
+
+        private val streamIds: IndexedSeq[Int] = (0 to maxStreams).map(id => 1 + id * 2)
+        streamIds.foreach(streamId =>
+          sendRequestHEADERS(streamId, req1, endStream = false)
+        )
+
+        // ... and then send one more!
+        val lastValidStreamId = 1 + (maxStreams) * 2
+        val firstInvalidStreamId = 1 + (maxStreams + 1) * 2
+        sendRequestHEADERS(firstInvalidStreamId, req1, endStream = false)
+        // TODO: track lastStreamId more accurately
+        //  (see https://github.com/akka/akka-http/blob/5b645e9a2ffb52fb25e5984a42a794a952856291/akka-http2-support/src/main/scala/akka/http/impl/engine/http2/Http2ServerDemux.scala#L126-L133)
+        // val (_, code) = expectGOAWAY(lastValidStreamId)
+        val (_, code) = expectGOAWAY()
+        code should ===(ErrorCode.PROTOCOL_ERROR)
       }
     }
 

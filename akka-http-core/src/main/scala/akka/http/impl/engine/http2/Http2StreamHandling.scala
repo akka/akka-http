@@ -5,17 +5,17 @@
 package akka.http.impl.engine.http2
 
 import akka.annotation.InternalApi
+import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.scaladsl.model.http2.PeerClosedStreamException
 import akka.http.scaladsl.settings.Http2CommonSettings
+import akka.macros.LogHelper
 import akka.stream.scaladsl.Source
-import akka.stream.stage.{ GraphStageLogic, OutHandler }
+import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.OutHandler
 import akka.util.ByteString
 
 import scala.collection.immutable
-import FrameEvent._
-import akka.macros.LogHelper
-
 import scala.util.control.NoStackTrace
 
 /**
@@ -37,6 +37,8 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   def isUpgraded: Boolean
 
   def flowController: IncomingFlowController = IncomingFlowController.default(settings)
+
+  def maxConcurrentStreams: Int
 
   private var incomingStreams = new immutable.TreeMap[Int, IncomingStreamState]
   private var largestIncomingStreamId = 0
@@ -81,11 +83,38 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
 
   private def updateState(streamId: Int, handle: IncomingStreamState => IncomingStreamState): Unit = {
     val oldState = streamFor(streamId)
-    val newState = handle(oldState)
+    val newState: IncomingStreamState = handle(oldState)
+
+    // only validate maxConcurrentStreams compliance if we'd increment the number
+    // of streams in one of the open states. This way, when the value of SETTINGS_MAX_CONCURRNET_STREAMS
+    // decreases, inflight streams can still finish and close.
+    val needsMaxConcurrentComplianceCheck = (oldState, newState) match {
+      case (Idle, _) => true
+      case _         => false
+    }
+
+    if (needsMaxConcurrentComplianceCheck) {
+      // incomingStreams contains all the open streams and an extra one that's Idle
+      val currentConcurrentStreams = incomingStreams.size - 1
+      if (!Http2Compliance.compliesWithMaxConcurrentStreams(currentConcurrentStreams, maxConcurrentStreams)) {
+        // 5.1.2 An endpoint that receives a HEADERS frame that causes its advertised
+        // concurrent stream limit to be exceeded MUST treat this as a stream error
+        // (Section 5.4.2) of type PROTOCOL_ERROR or REFUSED_STREAM. The choice of error
+        // code determines whether the endpoint wishes to enable automatic retry
+        // (see Section 8.1.4) for details).
+        pushGOAWAY(
+          ErrorCode.PROTOCOL_ERROR,
+          s"Peer tried to open too many streams. currentConcurrentStreams=$currentConcurrentStreams, maxConcurrentStreams=$maxConcurrentStreams (see akka.http.server.http2.max-concurrent-streams or akka.http.client.http2.max-concurrent-streams). "
+        )
+      }
+
+    }
+
     newState match {
       case Closed   => incomingStreams -= streamId
       case newState => incomingStreams += streamId -> newState
     }
+
     debug(s"Incoming side of stream [$streamId] changed state: ${oldState.stateName} -> ${newState.stateName}")
   }
   /** Called to cleanup any state when the connection is torn down */
