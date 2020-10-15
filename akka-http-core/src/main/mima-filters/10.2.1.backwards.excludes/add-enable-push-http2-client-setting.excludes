@@ -1,0 +1,2 @@
+ProblemFilters.exclude[Problem]("akka.http.scaladsl.settings.Http2ClientSettings#Http2ClientSettingsImpl.*")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ClientSettings.enablePush")

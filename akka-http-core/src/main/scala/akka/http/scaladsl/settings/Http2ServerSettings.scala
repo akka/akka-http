@@ -114,6 +114,9 @@ trait Http2ClientSettings extends /*FIXME: javadsl.settings.Http2ClientSettings 
   def incomingStreamLevelBufferSize: Int
   def withIncomingStreamLevelBufferSize(newValue: Int): Http2ClientSettings = copy(incomingStreamLevelBufferSize = newValue)
 
+  def enablePush: Boolean
+  def withEnablePush(newValue: Boolean): Http2ClientSettings = copy(enablePush = newValue)
+
   def maxConcurrentStreams: Int
   def withMaxConcurrentStreams(newValue: Int): Http2ClientSettings = copy(maxConcurrentStreams = newValue)
 
@@ -137,6 +140,7 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
 
   private[http] case class Http2ClientSettingsImpl(
     maxConcurrentStreams:              Int,
+    enablePush:                        Boolean,
     requestEntityChunkSize:            Int,
     incomingConnectionLevelBufferSize: Int,
     incomingStreamLevelBufferSize:     Int,
@@ -153,6 +157,7 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
   private[http] object Http2ClientSettingsImpl extends akka.http.impl.util.SettingsCompanionImpl[Http2ClientSettingsImpl]("akka.http.client.http2") {
     def fromSubConfig(root: Config, c: Config): Http2ClientSettingsImpl = Http2ClientSettingsImpl(
       maxConcurrentStreams = c.getInt("max-concurrent-streams"),
+      enablePush = c.getBoolean("enable-push"),
       requestEntityChunkSize = c.getIntBytes("request-entity-chunk-size"),
       incomingConnectionLevelBufferSize = c.getIntBytes("incoming-connection-level-buffer-size"),
       incomingStreamLevelBufferSize = c.getIntBytes("incoming-stream-level-buffer-size"),

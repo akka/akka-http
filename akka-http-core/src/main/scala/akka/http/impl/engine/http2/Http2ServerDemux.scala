@@ -6,7 +6,7 @@ package akka.http.impl.engine.http2
 
 import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
-import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.FLOW_CONTROL_ERROR
+import akka.http.impl.engine.http2.Http2Protocol.ErrorCode._
 import akka.http.scaladsl.settings.Http2CommonSettings
 import akka.stream.Attributes
 import akka.stream.BidiShape
@@ -234,7 +234,21 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
           case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) =>
             multiplexer.updateMaxFrameSize(value)
           case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) =>
+            // TODO: respect the peer settings
             debug(s"Setting max concurrent streams to $value (not enforced)")
+          case Setting(Http2Protocol.SettingIdentifier.SETTINGS_ENABLE_PUSH, value) =>
+            // TODO: respect the peer settings
+            value match {
+              case 0 => debug(s"Peer disabled PUSH (ignored, PUSH not supported)")
+              case 1 if isServer =>
+                // Clients MUST reject any attempt to change the SETTINGS_ENABLE_PUSH setting to a
+                // value other than 0 by treating the message as a connection error (Section 5.4.1)
+                // of type PROTOCOL_ERROR.
+                debug(s"Client enabled PUSH (ignored, PUSH not supported)")
+              case _ =>
+                pushGOAWAY(PROTOCOL_ERROR, s"Invalid value for SETTINGS_ENABLE_PUSH: $value. isServer: $isServer")
+                settingsAppliedOk = false
+            }
           case Setting(id, value) =>
             debug(s"Ignoring setting $id -> $value (in Demux)")
         }
