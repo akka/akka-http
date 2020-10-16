@@ -179,7 +179,8 @@ object HPackSpecExamples {
         headers.`Cache-Control`(CacheDirectives.`private`()),
         headers.Date.parseFromValueString("Mon, 21 Oct 2013 20:13:21 GMT").right.get,
         headers.Location("https://www.example.com")),
-      entity = HttpEntity.CloseDelimited(ContentTypes.NoContentType, Source.empty))
+      entity = HttpEntity.CloseDelimited(ContentTypes.NoContentType, Source.empty),
+      protocol = HttpProtocols.`HTTP/2.0`)
 
   /**
    * akka-http model representation of second request (as encoded in C.5.3 and C.6.3)
@@ -192,7 +193,17 @@ object HPackSpecExamples {
         headers.Date.parseFromValueString("Mon, 21 Oct 2013 20:13:22 GMT").right.get,
         headers.Location("https://www.example.com"),
         headers.`Content-Encoding`(HttpEncodings.gzip),
-        // `Set-Cookie` modeled header doesn't support extra params like "version=1"
+        // The RFC example spells 'max-age' in lowercase, while the modeled `Set-Cookie` header renders it uppercase.
+        // Rendering it uppercase is consistent with https://tools.ietf.org/html/rfc6265#section-5.2.2 .
+        // https://tools.ietf.org/html/rfc7540#section-8.1.2 specifies HTTP/2 header fields ('Set-Cookie') must be
+        // converted to lowercase, but AFAICS has no such provision for header parameters.
         RawHeader("Set-Cookie", "foo=ASDJKHQKBZXOQWEOPIUAXQWEOIU; max-age=3600; version=1")),
       entity = HttpEntity.CloseDelimited(ContentTypes.NoContentType, Source.empty))
+
+  // 'Modeled' version of the 3rd response: this is how we would receive it fully parsed.
+  val ThirdResponseModeled =
+    ThirdResponse
+      .withHeaders(ThirdResponse.headers.filter(_.name != "Set-Cookie") :+
+        headers.`Set-Cookie`(headers.HttpCookie("foo", "ASDJKHQKBZXOQWEOPIUAXQWEOIU").withMaxAge(3600).withExtension("version=1")))
+      .withProtocol(HttpProtocols.`HTTP/2.0`)
 }

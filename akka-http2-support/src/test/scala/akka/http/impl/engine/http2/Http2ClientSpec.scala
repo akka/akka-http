@@ -9,8 +9,10 @@ import akka.event.Logging
 import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
-import akka.http.scaladsl.model.HttpEntity.Strict
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.HttpEntity.Strict
+import akka.http.scaladsl.model.HttpMethods.GET
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.Attributes
 import akka.stream.Attributes.LogLevels
@@ -75,18 +77,17 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         )
       }
       "GOAWAY when the response has an invalid headers frame" in new TestSetup with NetProbes {
-        val requestStreamId = 0x1
-        emitRequest(requestStreamId, HttpRequest(uri = "http://www.example.com/"))
+        val streamId = 0x1
+        emitRequest(streamId, HttpRequest(uri = "http://www.example.com/"))
         expectFrame() shouldBe a[HeadersFrame]
 
-        val responseStreamId = 0x2
         val headerBlock = hex"00 00 01 01 05 00 00 00 01 40"
-        sendFrame(HeadersFrame(responseStreamId, endStream = true, endHeaders = true, headerBlock, None))
+        sendFrame(HeadersFrame(streamId, endStream = true, endHeaders = true, headerBlock, None))
 
         val (_, error) = expectGOAWAY(1)
         error should ===(ErrorCode.COMPRESSION_ERROR)
 
-        // TODO we'd expect an error response here I think?
+        // TODO we'd expect an error response here I think? We don't get any reply though...
       }
       "GOAWAY when the response to a second request on different stream has an invalid headers frame" in new SimpleRequestResponseRoundtripSetup {
         requestResponseRoundtrip(
@@ -94,15 +95,13 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
           request = HttpRequest(uri = "https://www.example.com/"),
           expectedHeaders = Seq(
             ":method" -> "GET",
-            // TODO check if this makes sense?
             ":scheme" -> "https",
             ":authority" -> "www.example.com",
             ":path" -> "/",
             "content-length" -> "0"
           ),
           response = Seq(
-            // TODO shouldn't this produce an error since stream '1' is already the outgoing stream?
-            HeadersFrame(streamId = 2, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None)
+            HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None)
           ),
           expectedResponse =
             HPackSpecExamples.FirstResponse
@@ -113,11 +112,52 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         expectFrame() shouldBe a[HeadersFrame]
 
         val incorrectHeaderBlock = hex"00 00 01 01 05 00 00 00 01 40"
-        sendHEADERS(4, endStream = true, endHeaders = true, headerBlockFragment = incorrectHeaderBlock)
+        sendHEADERS(3, endStream = true, endHeaders = true, headerBlockFragment = incorrectHeaderBlock)
 
         // TODO shouldn't this be '3'?
         val (_, errorCode) = expectGOAWAY(1)
         errorCode should ===(ErrorCode.COMPRESSION_ERROR)
+      }
+      "Three consecutive GET requests" in new SimpleRequestResponseRoundtripSetup {
+        import akka.http.scaladsl.model.headers.CacheDirectives._
+        import headers.`Cache-Control`
+        val requestHeaders = Seq(
+          ":method" -> "GET",
+          ":scheme" -> "https",
+          ":authority" -> "www.example.com",
+          ":path" -> "/",
+          "content-length" -> "0"
+        )
+        requestResponseRoundtrip(
+          streamId = 1,
+          request = HttpRequest(GET, "https://www.example.com/"),
+          expectedHeaders = requestHeaders,
+          response = Seq(
+            HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None)
+          ),
+          expectedResponse = HPackSpecExamples.FirstResponse
+            .withEntity(Strict(ContentTypes.NoContentType, ByteString.empty))
+        )
+        requestResponseRoundtrip(
+          streamId = 3,
+          request = HttpRequest(GET, uri = "https://www.example.com/", Vector(`Cache-Control`(`no-cache`))),
+          expectedHeaders = requestHeaders :+ ("cache-control" -> "no-cache"),
+          response = Seq(
+            HeadersFrame(streamId = 3, endStream = true, endHeaders = true, HPackSpecExamples.C62SecondResponseWithHuffman, None)
+          ),
+          expectedResponse = HPackSpecExamples.SecondResponse
+            .withEntity(Strict(ContentTypes.NoContentType, ByteString.empty))
+        )
+        requestResponseRoundtrip(
+          streamId = 5,
+          request = HttpRequest(HttpMethods.GET, "https://www.example.com/", Vector(RawHeader("custom-key", "custom-value"))),
+          expectedHeaders = requestHeaders :+ ("custom-key" -> "custom-value"),
+          response = Seq(
+            HeadersFrame(streamId = 5, endStream = true, endHeaders = true, HPackSpecExamples.C63ThirdResponseWithHuffman, None)
+          ),
+          expectedResponse = HPackSpecExamples.ThirdResponseModeled
+            .withEntity(Strict(ContentTypes.NoContentType, ByteString.empty))
+        )
       }
     }
   }
