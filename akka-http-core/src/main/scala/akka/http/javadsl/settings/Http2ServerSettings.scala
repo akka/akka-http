@@ -22,6 +22,9 @@ trait Http2ServerSettings { self: scaladsl.settings.Http2ServerSettings =>
   def getMaxConcurrentStreams: Int = maxConcurrentStreams
   def withMaxConcurrentStreams(newValue: Int): Http2ServerSettings
 
+  def getMaxHeaderListSize: Int = maxHeaderListSize
+  def withMaxHeaderListSize(newValue: Int): Http2ServerSettings
+
   def getOutgoingControlFrameBufferSize: Int = outgoingControlFrameBufferSize
   def withOutgoingControlFrameBufferSize(newValue: Int): Http2ServerSettings
 

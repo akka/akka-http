@@ -96,6 +96,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       override def isUpgraded: Boolean = upgraded
 
       def maxConcurrentStreams: Int = http2Settings.maxConcurrentStreams
+      def maxHeaderListSize: Int = http2Settings.maxHeaderListSize
 
       override protected def logSource: Class[_] = if (isServer) classOf[Http2ServerDemux] else classOf[Http2ClientDemux]
 
@@ -107,7 +108,8 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       // TODO: the receiver of a SETTINGS frame must apply them in the order they
       //  are received. Review order of the settings in the sequence since it's relevant.
       val localSettings = immutable.Seq(
-        Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, maxConcurrentStreams)
+        Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, maxConcurrentStreams),
+        Setting(SettingIdentifier.SETTINGS_MAX_HEADER_LIST_SIZE, maxHeaderListSize)
       )
 
       override def preStart(): Unit = {

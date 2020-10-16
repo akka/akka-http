@@ -862,7 +862,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
       }
     }
 
-    "respect settings" should {
+    "respect client-side settings" should {
       "initial MAX_FRAME_SIZE" in pending
 
       "received non-zero length payload Settings with ACK flag (invalid 6.5)" in new TestSetup with RequestResponseProbes {
@@ -934,7 +934,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
       }
     }
 
-    "enforce settings" should {
+    "enforce server-sent settings" should {
 
       "reject new substreams when exceeding SETTINGS_MAX_CONCURRENT_STREAMS" in new TestSetup with RequestResponseProbes {
         def maxStreams: Int = 16
@@ -981,6 +981,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         code should ===(ErrorCode.PROTOCOL_ERROR)
       }
 
+      "reject new streams when exceeding SETTINGS_MAX_HEADER_LIST_SIZE" in pending
     }
 
     "support low-level features" should {

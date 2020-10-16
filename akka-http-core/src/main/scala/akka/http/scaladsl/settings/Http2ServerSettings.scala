@@ -6,6 +6,7 @@ package akka.http.scaladsl.settings
 
 import akka.annotation.DoNotInherit
 import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.http.impl.engine.http2.Http2Protocol
 import akka.http.javadsl
 import akka.http.impl.util._
 import com.typesafe.config.Config
@@ -24,6 +25,7 @@ private[http] trait Http2CommonSettings {
 
   def logFrames: Boolean
   def maxConcurrentStreams: Int
+  def maxHeaderListSize: Int
   def outgoingControlFrameBufferSize: Int
 }
 
@@ -49,6 +51,9 @@ trait Http2ServerSettings extends javadsl.settings.Http2ServerSettings with Http
   def maxConcurrentStreams: Int
   override def withMaxConcurrentStreams(newValue: Int): Http2ServerSettings = copy(maxConcurrentStreams = newValue)
 
+  def maxHeaderListSize: Int
+  override def withMaxHeaderListSize(newValue: Int): Http2ServerSettings = copy(maxHeaderListSize = newValue)
+
   def outgoingControlFrameBufferSize: Int
   override def withOutgoingControlFrameBufferSize(newValue: Int): Http2ServerSettings = copy(outgoingControlFrameBufferSize = newValue)
 
@@ -69,6 +74,7 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
 
   private[http] case class Http2ServerSettingsImpl(
     maxConcurrentStreams:              Int,
+    maxHeaderListSize:                 Int,
     requestEntityChunkSize:            Int,
     incomingConnectionLevelBufferSize: Int,
     incomingStreamLevelBufferSize:     Int,
@@ -86,6 +92,7 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
   private[http] object Http2ServerSettingsImpl extends akka.http.impl.util.SettingsCompanionImpl[Http2ServerSettingsImpl]("akka.http.server.http2") {
     def fromSubConfig(root: Config, c: Config): Http2ServerSettingsImpl = Http2ServerSettingsImpl(
       maxConcurrentStreams = c.getInt("max-concurrent-streams"),
+      maxHeaderListSize = c.getInt("max-header-list-size"),
       requestEntityChunkSize = c.getIntBytes("request-entity-chunk-size"),
       incomingConnectionLevelBufferSize = c.getIntBytes("incoming-connection-level-buffer-size"),
       incomingStreamLevelBufferSize = c.getIntBytes("incoming-stream-level-buffer-size"),
@@ -118,6 +125,9 @@ trait Http2ClientSettings extends /*FIXME: javadsl.settings.Http2ClientSettings 
   def maxConcurrentStreams: Int
   def withMaxConcurrentStreams(newValue: Int): Http2ClientSettings = copy(maxConcurrentStreams = newValue)
 
+  def maxHeaderListSize: Int
+  def withMaxHeaderListSize(newValue: Int): Http2ClientSettings = copy(maxHeaderListSize = newValue)
+
   def outgoingControlFrameBufferSize: Int
   def withOutgoingControlFrameBufferSize(newValue: Int): Http2ClientSettings = copy(outgoingControlFrameBufferSize = newValue)
 
@@ -138,6 +148,7 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
 
   private[http] case class Http2ClientSettingsImpl(
     maxConcurrentStreams:              Int,
+    maxHeaderListSize:                 Int,
     requestEntityChunkSize:            Int,
     incomingConnectionLevelBufferSize: Int,
     incomingStreamLevelBufferSize:     Int,
@@ -155,6 +166,7 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
   private[http] object Http2ClientSettingsImpl extends akka.http.impl.util.SettingsCompanionImpl[Http2ClientSettingsImpl]("akka.http.client.http2") {
     def fromSubConfig(root: Config, c: Config): Http2ClientSettingsImpl = Http2ClientSettingsImpl(
       maxConcurrentStreams = c.getInt("max-concurrent-streams"),
+      maxHeaderListSize = c.getInt("max-header-list-size"),
       requestEntityChunkSize = c.getIntBytes("request-entity-chunk-size"),
       incomingConnectionLevelBufferSize = c.getIntBytes("incoming-connection-level-buffer-size"),
       incomingStreamLevelBufferSize = c.getIntBytes("incoming-stream-level-buffer-size"),
