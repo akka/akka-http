@@ -9,6 +9,14 @@ Specifically it means that: "*lack of consumption of the HTTP Entity, is signale
 side of the connection*". This is a feature, as it allows one only to consume the entity, and back-pressure servers/clients
 from overwhelming our application, possibly causing un-necessary buffering of the entity in memory.
 
+Put another way: Streaming *all the way through* is a feature of Akka HTTP that allows consuming 
+entities (and pulling them through the network) in a streaming fashion, and only *on demand* when the client is 
+ready to consume the bytes. Therefore, you have to explicitly consume or discard the entity. 
+
+On a client, for example, if the application doesn't subscribe to the response entity within 
+`akka.http.host-connection-pool.response-entity-subscription-timeout`, the stream will fail with a 
+`TimeoutException: Response entity was not subscribed after ...`.
+
 @@@ warning
 
 Consuming (or discarding) the Entity of a request is mandatory!
