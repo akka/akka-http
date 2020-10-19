@@ -341,7 +341,7 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
         if (parallelism > 0) settings.mapHttp2Settings(_.withMaxConcurrentStreams(parallelism))
         else if (parallelism < 0) throw new IllegalArgumentException("Only positive values allowed for `parallelism`.")
         else settings
-      Http2().bindAndHandleAsync(handler, interface, port, connectionContext, definitiveSettings, definitiveSettings.http2Settings.maxConcurrentStreams, log)(fm)
+      Http2().bindAndHandleAsync(handler, interface, port, connectionContext, definitiveSettings, log)(fm)
     } else {
       val definitiveParallelism =
         if (parallelism > 0) parallelism
