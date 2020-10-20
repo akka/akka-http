@@ -95,7 +95,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       override def settings: Http2CommonSettings = http2Settings
       override def isUpgraded: Boolean = upgraded
 
-      override def maxConcurrentStreams: Int = http2Settings.maxConcurrentStreams
+      def maxConcurrentStreams: Int = http2Settings.maxConcurrentStreams
 
       override protected def logSource: Class[_] = if (isServer) classOf[Http2ServerDemux] else classOf[Http2ClientDemux]
 
@@ -251,6 +251,18 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
         }
 
         settingsAppliedOk
+      }
+
+      protected override def checkMaxConcurrentStreamsCompliance(currentConcurrentStreams: => Int): Unit = {
+        if (currentConcurrentStreams >= maxConcurrentStreams) {
+          // 5.1.2 An endpoint that receives a HEADERS frame that causes its advertised
+          // concurrent stream limit to be exceeded MUST treat this as a stream error
+          // (Section 5.4.2) of type PROTOCOL_ERROR or REFUSED_STREAM.
+          pushGOAWAY(
+            ErrorCode.PROTOCOL_ERROR,
+            s"Peer tried to open too many streams. Number of open streams=[$currentConcurrentStreams], max concurrent streams=[$maxConcurrentStreams]."
+          )
+        }
       }
 
       /**

@@ -38,8 +38,6 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
 
   def flowController: IncomingFlowController = IncomingFlowController.default(settings)
 
-  def maxConcurrentStreams: Int
-
   private var incomingStreams = new immutable.TreeMap[Int, IncomingStreamState]
   private var largestIncomingStreamId = 0
   private var outstandingConnectionLevelWindow = Http2Protocol.InitialWindowSize
@@ -62,9 +60,22 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
           Idle
         }
     }
+
   def handleStreamEvent(e: StreamFrameEvent): Unit = {
+    // only validate maxConcurrentStreams compliance if we'd increment the number
+    // of streams in one of the open states. This way, when the value of SETTINGS_MAX_CONCURRENT_STREAMS
+    // decreases, in-flight streams can still finish and close.
+    e match {
+      case _: ParsedHeadersFrame =>
+        checkMaxConcurrentStreamsCompliance(incomingStreams.size)
+      case _: PushPromiseFrame =>
+        checkMaxConcurrentStreamsCompliance(incomingStreams.size)
+      case _ =>
+    }
     updateState(e.streamId, _.handle(e))
   }
+
+  protected def checkMaxConcurrentStreamsCompliance(currentConcurrentStreams: => Int): Unit
 
   def handleOutgoingCreated(stream: Http2SubStream): Unit =
     updateState(stream.streamId, _.handleOutgoingCreated(stream))
@@ -84,35 +95,6 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   private def updateState(streamId: Int, handle: IncomingStreamState => IncomingStreamState): Unit = {
     val oldState = streamFor(streamId)
     val newState: IncomingStreamState = handle(oldState)
-
-    // only validate maxConcurrentStreams compliance if we'd increment the number
-    // of streams in one of the open states. This way, when the value of SETTINGS_MAX_CONCURRNET_STREAMS
-    // decreases, inflight streams can still finish and close.
-    val needsMaxConcurrentComplianceCheck = (oldState, newState) match {
-      case (Idle, _) => true
-      case _         => false
-    }
-
-    if (needsMaxConcurrentComplianceCheck) {
-      // If the current count exceeds the maximum we let them complete. So the verification is
-      // only meant to be used when a new stream is created (but not when the setting is updated).
-      // 5.1.2 "An endpoint that wishes to reduce the value of SETTINGS_MAX_CONCURRENT_STREAMS to a
-      // value that is below the current number of open streams can either close streams that
-      // exceed the new value or allow streams to complete."
-      val currentConcurrentStreams = incomingStreams.size
-      if (currentConcurrentStreams > maxConcurrentStreams) {
-        // 5.1.2 An endpoint that receives a HEADERS frame that causes its advertised
-        // concurrent stream limit to be exceeded MUST treat this as a stream error
-        // (Section 5.4.2) of type PROTOCOL_ERROR or REFUSED_STREAM. The choice of error
-        // code determines whether the endpoint wishes to enable automatic retry
-        // (see Section 8.1.4) for details).
-        pushGOAWAY(
-          ErrorCode.PROTOCOL_ERROR,
-          s"Peer tried to open too many streams. currentConcurrentStreams=$currentConcurrentStreams, maxConcurrentStreams=$maxConcurrentStreams (see akka.http.server.http2.max-concurrent-streams or akka.http.client.http2.max-concurrent-streams). "
-        )
-      }
-
-    }
 
     newState match {
       case Closed   => incomingStreams -= streamId
