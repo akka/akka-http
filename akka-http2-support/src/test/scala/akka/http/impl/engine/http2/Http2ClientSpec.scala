@@ -8,6 +8,7 @@ import akka.NotUsed
 import akka.event.Logging
 import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
+import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.HttpEntity.Strict
@@ -32,7 +33,7 @@ import org.scalatest.concurrent.Eventually
  */
 class Http2ClientSpec extends AkkaSpecWithMaterializer("""
     akka.http.server.remote-address-header = on
-    akka.http.server.http2.log-frames = on
+    akka.http.client.http2.log-frames = on
   """)
   with WithInPendingUntilFixed with Eventually {
   override def failOnSevereMessages: Boolean = true
@@ -76,6 +77,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
               .withEntity(Strict(ContentTypes.NoContentType, ByteString.empty))
         )
       }
+
       "GOAWAY when the response has an invalid headers frame" in new TestSetup with NetProbes {
         val streamId = 0x1
         emitRequest(streamId, HttpRequest(uri = "http://www.example.com/"))
@@ -89,6 +91,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
         // TODO we'd expect an error response here I think? We don't get any reply though...
       }
+
       "GOAWAY when the response to a second request on different stream has an invalid headers frame" in new SimpleRequestResponseRoundtripSetup {
         requestResponseRoundtrip(
           streamId = 1,
@@ -117,6 +120,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         val (_, errorCode) = expectGOAWAY(3)
         errorCode should ===(ErrorCode.COMPRESSION_ERROR)
       }
+
       "Three consecutive GET requests" in new SimpleRequestResponseRoundtripSetup {
         import akka.http.scaladsl.model.headers.CacheDirectives._
         import headers.`Cache-Control`
@@ -158,6 +162,16 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
             .withEntity(Strict(ContentTypes.NoContentType, ByteString.empty))
         )
       }
+
+    }
+
+    "send settings" should {
+      "disable SETTINGS_ENABLE_PUSH " in new TestSetupWithoutHandshake with NetProbes with Http2FrameSending {
+        toNet.expectBytes(Http2Protocol.ClientConnectionPreface)
+        private val event: FrameEvent = expectFrame()
+        event shouldBe a[SettingsFrame]
+        event.asInstanceOf[SettingsFrame].settings should contain(Setting(SettingIdentifier.SETTINGS_ENABLE_PUSH, 0))
+      }
     }
   }
 
@@ -169,10 +183,10 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
     def netFlow: Flow[ByteString, ByteString, NotUsed]
 
-    // hook to modify server, for example add attributes
+    // hook to modify client, for example add attributes
     def modifyClient(client: BidiFlow[HttpRequest, ByteString, ByteString, HttpResponse, NotUsed]) = client
 
-    // hook to modify server settings
+    // hook to modify client settings
     def settings = ClientConnectionSettings(system)
 
     final def theClient: BidiFlow[ByteString, HttpResponse, HttpRequest, ByteString, NotUsed] =
