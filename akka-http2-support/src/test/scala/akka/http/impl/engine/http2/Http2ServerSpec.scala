@@ -245,33 +245,34 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
       }
     }
 
+    abstract class RequestEntityTestSetup extends TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
+      val TheStreamId = 1
+      protected def sendRequest(): Unit
+
+      sendRequest()
+      val receivedRequest = expectRequest()
+      val entityDataIn = ByteStringSinkProbe()
+      receivedRequest.entity.dataBytes.runWith(entityDataIn.sink)
+      entityDataIn.ensureSubscription()
+    }
+
+    abstract class WaitingForRequest(request: HttpRequest) extends RequestEntityTestSetup {
+      protected def sendRequest(): Unit = sendRequest(TheStreamId, request)
+    }
+    abstract class WaitingForRequestData extends RequestEntityTestSetup {
+      lazy val request = HttpRequest(method = HttpMethods.POST, uri = "https://example.com/upload", protocol = HttpProtocols.`HTTP/2.0`)
+
+      protected def sendRequest(): Unit =
+        sendRequestHEADERS(TheStreamId, request, endStream = false)
+
+      def sendWindowFullOfData(): Int = {
+        val dataLength = remainingToServerWindowFor(TheStreamId)
+        sendDATA(TheStreamId, endStream = false, ByteString(Array.fill[Byte](dataLength)(23)))
+        dataLength
+      }
+    }
+
     "support stream for request entity data" should {
-      abstract class RequestEntityTestSetup extends TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
-        val TheStreamId = 1
-        protected def sendRequest(): Unit
-
-        sendRequest()
-        val receivedRequest = expectRequest()
-        val entityDataIn = ByteStringSinkProbe()
-        receivedRequest.entity.dataBytes.runWith(entityDataIn.sink)
-        entityDataIn.ensureSubscription()
-      }
-
-      abstract class WaitingForRequest(request: HttpRequest) extends RequestEntityTestSetup {
-        protected def sendRequest(): Unit = sendRequest(TheStreamId, request)
-      }
-      abstract class WaitingForRequestData extends RequestEntityTestSetup {
-        lazy val request = HttpRequest(method = HttpMethods.POST, uri = "https://example.com/upload", protocol = HttpProtocols.`HTTP/2.0`)
-
-        protected def sendRequest(): Unit =
-          sendRequestHEADERS(TheStreamId, request, endStream = false)
-
-        def sendWindowFullOfData(): Int = {
-          val dataLength = remainingToServerWindowFor(TheStreamId)
-          sendDATA(TheStreamId, endStream = false, ByteString(Array.fill[Byte](dataLength)(23)))
-          dataLength
-        }
-      }
       "send data frames to entity stream" in new WaitingForRequestData {
         val data1 = ByteString("abcdef")
         sendDATA(TheStreamId, endStream = false, data1)
@@ -450,6 +451,26 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
         entityDataOut.expectCancellation()
         toNet.expectNoBytes(100.millis) // the whole stage failed with bug #2236
+      }
+
+      "handle WINDOW_UPDATE correctly when received before started sending out response and while receiving request data" in new WaitingForRequestData {
+        val bytesToSend = 70000 // > Http2Protocol.InitialWindowSize
+        val missingWindow = bytesToSend - Http2Protocol.InitialWindowSize
+        require(missingWindow >= 0)
+        sendWINDOW_UPDATE(0, missingWindow)
+        sendWINDOW_UPDATE(TheStreamId, missingWindow)
+
+        val entityDataOut = TestPublisher.probe[ByteString]()
+
+        val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entityDataOut)))
+        emitResponse(TheStreamId, response)
+        expectDecodedResponseHEADERS(streamId = TheStreamId, endStream = false) shouldBe response.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
+        entityDataOut.sendNext(bytes(bytesToSend, 0x23))
+
+        expectDATA(TheStreamId, false, bytesToSend)
+
+        entityDataOut.sendComplete()
+        expectDATA(TheStreamId, true, 0)
       }
 
       "handle WINDOW_UPDATE correctly when received before started sending out response" in new WaitingForResponseSetup {
