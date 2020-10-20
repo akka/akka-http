@@ -166,11 +166,17 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
     }
 
     "send settings" should {
-      "disable SETTINGS_ENABLE_PUSH " in new TestSetupWithoutHandshake with NetProbes with Http2FrameSending {
-        toNet.expectBytes(Http2Protocol.ClientConnectionPreface)
-        private val event: FrameEvent = expectFrame()
-        event shouldBe a[SettingsFrame]
-        event.asInstanceOf[SettingsFrame].settings should contain(Setting(SettingIdentifier.SETTINGS_ENABLE_PUSH, 0))
+      abstract class SettingsSetup extends TestSetupWithoutHandshake with NetProbes with Http2FrameSending {
+        def expectSetting(expected: Setting): Unit = {
+          toNet.expectBytes(Http2Protocol.ClientConnectionPreface)
+          val event: FrameEvent = expectFrame()
+          event shouldBe a[SettingsFrame]
+          event.asInstanceOf[SettingsFrame].settings should contain(expected)
+        }
+      }
+
+      "disable Push via SETTINGS_ENABLE_PUSH" in new SettingsSetup {
+        expectSetting(Setting(SettingIdentifier.SETTINGS_ENABLE_PUSH, 0))
       }
     }
   }

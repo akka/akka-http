@@ -60,9 +60,13 @@ abstract class ClientConnectionSettings private[akka] () extends akka.http.javad
   def withSocketOptions(newValue: immutable.Seq[SocketOption]): ClientConnectionSettings = self.copy(socketOptions = newValue)
   def withParserSettings(newValue: ParserSettings): ClientConnectionSettings = self.copy(parserSettings = newValue)
   def withLocalAddress(newValue: Option[InetSocketAddress]): ClientConnectionSettings = self.copy(localAddress = newValue)
+  def withHttp2Settings(newValue: Http2ClientSettings): ClientConnectionSettings = self.copy(http2Settings = newValue)
 
   @ApiMayChange
   def withTransport(newTransport: ClientTransport): ClientConnectionSettings = self.copy(transport = newTransport)
+
+  // Scala-only lenses
+  def mapHttp2Settings(f: Http2ClientSettings => Http2ClientSettings): ClientConnectionSettings = withHttp2Settings(f(http2Settings))
 
   /**
    * Returns a new instance with the given local address set if the given override is `Some(address)`, otherwise
