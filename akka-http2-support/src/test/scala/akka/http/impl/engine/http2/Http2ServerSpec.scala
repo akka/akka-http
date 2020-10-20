@@ -452,6 +452,26 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         toNet.expectNoBytes(100.millis) // the whole stage failed with bug #2236
       }
 
+      "handle WINDOW_UPDATE correctly when received before started sending out response" in new WaitingForResponseSetup {
+        val bytesToSend = 70000 // > Http2Protocol.InitialWindowSize
+        val missingWindow = bytesToSend - Http2Protocol.InitialWindowSize
+        require(missingWindow >= 0)
+        sendWINDOW_UPDATE(0, missingWindow)
+        sendWINDOW_UPDATE(TheStreamId, missingWindow)
+
+        val entityDataOut = TestPublisher.probe[ByteString]()
+
+        val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entityDataOut)))
+        emitResponse(TheStreamId, response)
+        expectDecodedResponseHEADERS(streamId = TheStreamId, endStream = false) shouldBe response.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
+        entityDataOut.sendNext(bytes(bytesToSend, 0x23))
+
+        expectDATA(TheStreamId, false, bytesToSend)
+
+        entityDataOut.sendComplete()
+        expectDATA(TheStreamId, true, 0)
+      }
+
       "handle RST_STREAM while waiting for a window update" in new WaitingForResponseDataSetup {
         entityDataOut.sendNext(bytes(70000, 0x23)) // 70000 > Http2Protocol.InitialWindowSize
         sendWINDOW_UPDATE(TheStreamId, 10000) // enough window for the stream but not for the window
