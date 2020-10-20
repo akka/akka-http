@@ -28,13 +28,6 @@ private[http2] object Http2Compliance {
   private[akka] sealed class IllegalHttp2FrameSize(size: Int, expected: String)
     extends Http2ProtocolException(ErrorCode.FRAME_SIZE_ERROR, s"Illegal HTTP/2 frame size: [$size]. $expected!")
 
-  // If the current count exceeds the maximum we let them complete. So the verification is
-  // only meant to be used when a new stream is created (but not when the setting is updated.
-  // 5.1.2 "An endpoint that wishes to reduce the value of SETTINGS_MAX_CONCURRENT_STREAMS to a
-  // value that is below the current number of open streams can either close streams that
-  // exceed the new value or allow streams to complete."
-  final def compliesWithMaxConcurrentStreams(currentConcurrentStreams: Int, maxConcurrentStreams: Int): Boolean = currentConcurrentStreams < maxConcurrentStreams
-
   // require methods use `if` because `require` allocates
 
   /** Validate value of MAX_FRAME_SIZE setting. */

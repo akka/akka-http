@@ -94,9 +94,13 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     }
 
     if (needsMaxConcurrentComplianceCheck) {
-      // incomingStreams contains all the open streams and an extra one that's Idle
-      val currentConcurrentStreams = incomingStreams.size - 1
-      if (!Http2Compliance.compliesWithMaxConcurrentStreams(currentConcurrentStreams, maxConcurrentStreams)) {
+      // If the current count exceeds the maximum we let them complete. So the verification is
+      // only meant to be used when a new stream is created (but not when the setting is updated).
+      // 5.1.2 "An endpoint that wishes to reduce the value of SETTINGS_MAX_CONCURRENT_STREAMS to a
+      // value that is below the current number of open streams can either close streams that
+      // exceed the new value or allow streams to complete."
+      val currentConcurrentStreams = incomingStreams.size
+      if (currentConcurrentStreams > maxConcurrentStreams) {
         // 5.1.2 An endpoint that receives a HEADERS frame that causes its advertised
         // concurrent stream limit to be exceeded MUST treat this as a stream error
         // (Section 5.4.2) of type PROTOCOL_ERROR or REFUSED_STREAM. The choice of error
