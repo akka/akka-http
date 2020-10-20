@@ -937,7 +937,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     "enforce settings" should {
 
       "reject new substreams when exceeding SETTINGS_MAX_CONCURRENT_STREAMS" in new TestSetup with RequestResponseProbes {
-        def maxStreams: Int = 32
+        def maxStreams: Int = 16
         override def settings: ServerSettings = super.settings.mapHttp2Settings(_.withMaxConcurrentStreams(maxStreams))
         val requestHeaderBlock: ByteString = HPackSpecExamples.C41FirstRequestWithHuffman
 
@@ -954,10 +954,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         val lastValidStreamId = streamIds.max
         val firstInvalidStreamId = lastValidStreamId + 2
         sendHEADERS(firstInvalidStreamId, endStream = false, endHeaders = true, requestHeaderBlock)
-        // TODO: track lastStreamId more accurately
-        //  (see https://github.com/akka/akka-http/blob/5b645e9a2ffb52fb25e5984a42a794a952856291/akka-http2-support/src/main/scala/akka/http/impl/engine/http2/Http2ServerDemux.scala#L126-L133)
-        // val (_, code) = expectGOAWAY(lastValidStreamId)
-        val (_, code) = expectGOAWAY()
+        val (_, code) = expectGOAWAY(lastValidStreamId)
         code should ===(ErrorCode.PROTOCOL_ERROR)
       }
 
@@ -977,13 +974,10 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         expectNoBytes()
 
         // When we exceed the limit, though...
-        val lastValidStreamId = streamIds.max * 2
+        val lastValidStreamId = streamIds.max
         val firstInvalidStreamId = lastValidStreamId + 2
         sendHEADERS(firstInvalidStreamId, endStream = false, endHeaders = true, requestHeaderBlock)
-        // TODO: track lastStreamId more accurately
-        //  (see https://github.com/akka/akka-http/blob/5b645e9a2ffb52fb25e5984a42a794a952856291/akka-http2-support/src/main/scala/akka/http/impl/engine/http2/Http2ServerDemux.scala#L126-L133)
-        // val (_, code) = expectGOAWAY(lastValidStreamId)
-        val (_, code) = expectGOAWAY()
+        val (_, code) = expectGOAWAY(lastValidStreamId)
         code should ===(ErrorCode.PROTOCOL_ERROR)
       }
 
