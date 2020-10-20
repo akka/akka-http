@@ -107,19 +107,8 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
         multiplexer.pushControlFrame(SettingsFrame(Nil)) // both client and server must send an settings frame as first frame
       }
 
-      /**
-       * The "last peer-initiated stream that was or might be processed on the sending endpoint in this connection"
-       * @see http://httpwg.org/specs/rfc7540.html#rfc.section.6.8
-       *
-       * We currently don't support tracking that value accurately.
-       * TODO: track more accurately
-       */
-      def lastStreamId: Int = 1
-
-      def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit = {
-        // http://httpwg.org/specs/rfc7540.html#rfc.section.6.8
-        val last = lastStreamId
-        val frame = GoAwayFrame(last, errorCode, ByteString(debug))
+      override def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit = {
+        val frame = GoAwayFrame(lastStreamId(), errorCode, ByteString(debug))
         multiplexer.pushControlFrame(frame)
         // FIXME: handle the connection closing according to the specification
       }

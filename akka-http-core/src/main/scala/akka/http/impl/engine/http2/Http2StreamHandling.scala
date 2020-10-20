@@ -72,6 +72,13 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     updateState(streamId, _.handleOutgoingEnded())
   }
 
+  /**
+   * The "last peer-initiated stream that was or might be processed on the sending endpoint in this connection"
+   *
+   * @see http://httpwg.org/specs/rfc7540.html#rfc.section.6.8
+   */
+  def lastStreamId(): Int = largestIncomingStreamId
+
   private def updateState(streamId: Int, handle: IncomingStreamState => IncomingStreamState): Unit = {
     val oldState = streamFor(streamId)
     val newState = handle(oldState)

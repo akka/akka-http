@@ -114,8 +114,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         val incorrectHeaderBlock = hex"00 00 01 01 05 00 00 00 01 40"
         sendHEADERS(3, endStream = true, endHeaders = true, headerBlockFragment = incorrectHeaderBlock)
 
-        // TODO shouldn't this be '3'?
-        val (_, errorCode) = expectGOAWAY(1)
+        val (_, errorCode) = expectGOAWAY(3)
         errorCode should ===(ErrorCode.COMPRESSION_ERROR)
       }
       "Three consecutive GET requests" in new SimpleRequestResponseRoundtripSetup {
