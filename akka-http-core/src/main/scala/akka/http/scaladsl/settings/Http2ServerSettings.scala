@@ -88,7 +88,7 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
       val maxConcurrentStreams = {
         c.getString("max-concurrent-streams") match {
           case "infinite" => None
-          case str => str.toIntOption // any non-integer value is treat as 'infinite'
+          case str        => str.toIntOption // any non-integer value is treat as 'infinite'
         }
       }
       Http2ServerSettingsImpl(
