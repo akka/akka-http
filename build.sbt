@@ -84,7 +84,8 @@ lazy val root = Project(
     httpMarshallersJava,
     httpScalafix,
     docs,
-    compatibilityTests
+    compatibilityTests,
+    httpJmhBench
   )
 
 /**
