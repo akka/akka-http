@@ -23,7 +23,7 @@ private[http] trait Http2CommonSettings {
   def incomingStreamLevelBufferSize: Int
 
   def logFrames: Boolean
-  def maxConcurrentStreams: Int
+  def maxConcurrentStreams: Option[Int]
   def outgoingControlFrameBufferSize: Int
 }
 
@@ -46,7 +46,7 @@ trait Http2ServerSettings extends javadsl.settings.Http2ServerSettings with Http
   def incomingStreamLevelBufferSize: Int
   def withIncomingStreamLevelBufferSize(newValue: Int): Http2ServerSettings = copy(incomingStreamLevelBufferSize = newValue)
 
-  def maxConcurrentStreams: Int
+  def maxConcurrentStreams: Option[Int]
   override def withMaxConcurrentStreams(newValue: Int): Http2ServerSettings = copy(maxConcurrentStreams = newValue)
 
   def outgoingControlFrameBufferSize: Int
@@ -68,7 +68,7 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
   def apply(configOverrides: String): Http2ServerSettings = Http2ServerSettingsImpl(configOverrides)
 
   private[http] case class Http2ServerSettingsImpl(
-    maxConcurrentStreams:              Int,
+    maxConcurrentStreams:              Option[Int],
     requestEntityChunkSize:            Int,
     incomingConnectionLevelBufferSize: Int,
     incomingStreamLevelBufferSize:     Int,
@@ -76,7 +76,7 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
     logFrames:                         Boolean,
     internalSettings:                  Option[Http2InternalServerSettings])
     extends Http2ServerSettings {
-    require(maxConcurrentStreams >= 0, "max-concurrent-streams must be >= 0")
+    maxConcurrentStreams.foreach(value => require(value >= 0, "max-concurrent-streams must be >= 0"))
     require(requestEntityChunkSize > 0, "request-entity-chunk-size must be > 0")
     require(incomingConnectionLevelBufferSize > 0, "incoming-connection-level-buffer-size must be > 0")
     require(incomingStreamLevelBufferSize > 0, "incoming-stream-level-buffer-size must be > 0")
@@ -84,15 +84,23 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
   }
 
   private[http] object Http2ServerSettingsImpl extends akka.http.impl.util.SettingsCompanionImpl[Http2ServerSettingsImpl]("akka.http.server.http2") {
-    def fromSubConfig(root: Config, c: Config): Http2ServerSettingsImpl = Http2ServerSettingsImpl(
-      maxConcurrentStreams = c.getInt("max-concurrent-streams"),
-      requestEntityChunkSize = c.getIntBytes("request-entity-chunk-size"),
-      incomingConnectionLevelBufferSize = c.getIntBytes("incoming-connection-level-buffer-size"),
-      incomingStreamLevelBufferSize = c.getIntBytes("incoming-stream-level-buffer-size"),
-      outgoingControlFrameBufferSize = c.getIntBytes("outgoing-control-frame-buffer-size"),
-      logFrames = c.getBoolean("log-frames"),
-      None // no possibility to configure internal settings with config
-    )
+    def fromSubConfig(root: Config, c: Config): Http2ServerSettingsImpl = {
+      val maxConcurrentStreams = {
+        c.getString("max-concurrent-streams") match {
+          case "infinite" => None
+          case str => str.toIntOption // any non-integer value is treat as 'infinite'
+        }
+      }
+      Http2ServerSettingsImpl(
+        maxConcurrentStreams = maxConcurrentStreams,
+        requestEntityChunkSize = c.getIntBytes("request-entity-chunk-size"),
+        incomingConnectionLevelBufferSize = c.getIntBytes("incoming-connection-level-buffer-size"),
+        incomingStreamLevelBufferSize = c.getIntBytes("incoming-stream-level-buffer-size"),
+        outgoingControlFrameBufferSize = c.getIntBytes("outgoing-control-frame-buffer-size"),
+        logFrames = c.getBoolean("log-frames"),
+        None // no possibility to configure internal settings with config
+      )
+    }
   }
 }
 
