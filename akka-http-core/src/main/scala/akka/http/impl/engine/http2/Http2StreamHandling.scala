@@ -68,8 +68,8 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     e match {
       case _: ParsedHeadersFrame =>
         checkMaxConcurrentStreamsCompliance(incomingStreams.size)
-      case _: PushPromiseFrame =>
-        checkMaxConcurrentStreamsCompliance(incomingStreams.size)
+      // TODO: when supporting PUSH_PROMISE, invoke `checkMaxConcurrentStreamsCompliance()`
+      //  when processing `PushPromiseFrame`
       case _ =>
     }
     updateState(e.streamId, _.handle(e))
