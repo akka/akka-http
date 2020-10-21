@@ -17,7 +17,7 @@ import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future, Promise }
-import akka.testkit.{ AkkaSpec, SocketUtil2 }
+import akka.testkit.{ AkkaSpec, SocketUtil }
 
 class TimeoutDirectivesExamplesSpec extends RoutingSpec
   with ScalaFutures with CompileOnlySpec {

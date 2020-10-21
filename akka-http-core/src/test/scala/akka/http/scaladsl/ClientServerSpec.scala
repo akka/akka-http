@@ -82,7 +82,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
     }
 
     "report failure if bind fails" in EventFilter[BindException](occurrences = 2).intercept {
-      val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
+      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
       val binding = Http().newServerAt(hostname, port).connectionSource()
       val probe1 = TestSubscriber.manualProbe[Http.IncomingConnection]()
       // Bind succeeded, we have a local address
@@ -124,7 +124,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
     }
 
     "run with bindSync" in {
-      val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
+      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
       val binding = Http().newServerAt(hostname, port).bindSync(_ => HttpResponse())
       val b1 = Await.result(binding, 3.seconds.dilated)
 
@@ -136,7 +136,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
     }
 
     "prevent more than the configured number of max-connections with bind" in {
-      val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
+      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
       val settings = ServerSettings(system).withMaxConnections(1)
 
       val receivedSlow = Promise[Long]()
@@ -203,7 +203,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
       }
 
       abstract class RemoteAddressTestScenario {
-        val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
+        val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
 
         val settings = ServerSettings(system).withRemoteAddressHeader(true)
         def createBinding(): Future[ServerBinding]
@@ -245,7 +245,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
       "support server timeouts" should {
         "close connection with idle client after idleTimeout" in {
           val serverIdleTimeout = 300.millis
-          val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
+          val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
           val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverIdleTimeout)
 
           try {
@@ -311,7 +311,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
           val clientTimeout = 345.millis.dilated
           val clientPoolSettings = cs.withIdleTimeout(clientTimeout)
 
-          val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
+          val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
           val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverTimeout)
 
           try {
@@ -346,7 +346,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
           val clientTimeout = 345.millis.dilated
           val clientPoolSettings = cs.withIdleTimeout(clientTimeout)
 
-          val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
+          val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
           val (receivedRequest: Promise[Long], b1: ServerBinding) = bindServer(hostname, port, serverTimeout)
 
           try {
@@ -376,7 +376,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
       "are triggered in `mapMaterialized`" in Utils.assertAllStagesStopped {
         // FIXME racy feature, needs https://github.com/akka/akka/issues/17849 to be fixed
         pending
-        val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
+        val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
         val flow = Flow[HttpRequest].map(_ => HttpResponse()).mapMaterializedValue(_ => sys.error("BOOM"))
         val binding = Http(system2).newServerAt(hostname, port).bindFlow(flow)
         val b1 = Await.result(binding, 1.seconds.dilated)
@@ -608,7 +608,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
       val serverToClientNetworkBufferSize = 1000
       val responseSize = 200000
 
-      val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
+      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
       def request(i: Int) = HttpRequest(uri = s"http://$hostname:$port/$i", headers = headers.Connection("close") :: Nil)
       def response(req: HttpRequest) = HttpResponse(entity = HttpEntity.Strict(ContentTypes.`text/plain(UTF-8)`, ByteString(req.uri.path.toString.takeRight(1) * responseSize)))
 
@@ -701,7 +701,7 @@ Host: example.com
     "complete a request/response over https when request has `Connection: close` set" in Utils.assertAllStagesStopped {
       // akka/akka-http#1219
       val serverToClientNetworkBufferSize = 1000
-      val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
+      val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
       val request = HttpRequest(uri = s"https://akka.example.org", headers = headers.Connection("close") :: Nil)
 
       // settings adapting network buffer sizes
@@ -910,7 +910,7 @@ Host: example.com
   }
 
   class TestSetup {
-    val (hostname, port) = SocketUtil2.temporaryServerHostnameAndPort()
+    val (hostname, port) = SocketUtil.temporaryServerHostnameAndPort()
     def configOverrides = ""
 
     // automatically bind a server
