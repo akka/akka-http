@@ -47,7 +47,7 @@ private[http] trait Http2FrameProbe {
   def expectFrameFlagsAndPayload(frameType: FrameType, streamId: Int): (ByteFlag, ByteString)
   def expectFrameFlagsStreamIdAndPayload(frameType: FrameType): (ByteFlag, Int, ByteString)
 
-  def expectSETTINGS(): Unit
+  def expectSETTINGS(): FrameEvent
   def expectFrameHeader(): FrameHeader
 
   /** Collect a header block maybe spanning several frames */
@@ -175,10 +175,10 @@ private[http] object Http2FrameProbe extends Matchers {
         (lastStreamId, ErrorCode.byId(reader.readIntBE()))
       }
 
-      override def expectSETTINGS(): Unit = {
+      override def expectSETTINGS(): FrameEvent = {
         // (6.5) The stream identifier for a SETTINGS frame MUST be zero (0x0).
-        // Ignore the payload for the time being.
-        expectFramePayload(FrameType.SETTINGS, Flags.NO_FLAGS, 0)
+        val payload = expectFramePayload(FrameType.SETTINGS, Flags.NO_FLAGS, 0)
+         Http2FrameParsing.parseFrame(FrameType.SETTINGS, Flags.NO_FLAGS, 0, new ByteReader(payload), system.log)
       }
 
       def expectSettingsAck() = expectFrame(FrameType.SETTINGS, Flags.ACK, 0, ByteString.empty)
