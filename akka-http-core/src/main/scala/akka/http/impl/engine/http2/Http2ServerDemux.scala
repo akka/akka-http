@@ -103,7 +103,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
 
       // Reminder: the receiver of a SETTINGS frame must apply them in the order they
       //  are received. Place first the settings you want processed early.
-      private val initialLocalSettings = immutable.Seq.empty ++
+      private def initialLocalSettings = immutable.Seq.empty ++
         maxConcurrentStreams.toSeq.map(value => Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value))
 
       override def preStart(): Unit = {
