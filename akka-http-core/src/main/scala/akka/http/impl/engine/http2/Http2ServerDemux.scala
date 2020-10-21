@@ -101,12 +101,9 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
 
       val multiplexer = createMultiplexer(frameOut, StreamPrioritizer.first())
 
-      // TODO: we only support the initial SETTINGS message (the only one that's compulsory)
-      //  so we're keeping the settings as a field instead of implementing SETTINGS-SETTINGS_ACK
-      //  correlation logic.
-      // TODO: the receiver of a SETTINGS frame must apply them in the order they
-      //  are received. Review order of the settings in the sequence since it's relevant.
-      val localSettings = immutable.Seq(
+      // Reminder: the receiver of a SETTINGS frame must apply them in the order they
+      //  are received. Place first the settings you want processed early.
+      private val initialLocalSettings = immutable.Seq(
         Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, maxConcurrentStreams)
       )
 
@@ -120,7 +117,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
         pull(substreamIn)
 
         // both client and server must send a settings frame as first frame
-        multiplexer.pushControlFrame(SettingsFrame(localSettings))
+        multiplexer.pushControlFrame(SettingsFrame(initialLocalSettings))
       }
 
       override def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit = {
@@ -182,7 +179,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
               // Also, since we only expect an ack for the initial settings frame there's
               // no need to correlate the ACK to a particular SETTINGS frame.
               // Related: https://github.com/akka/akka-http/issues/3185
-              enforceSettings(localSettings)
+              enforceSettings(initialLocalSettings)
 
             case PingFrame(true, _) =>
             // ignore for now (we don't send any pings)
