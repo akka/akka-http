@@ -95,7 +95,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       override def settings: Http2CommonSettings = http2Settings
       override def isUpgraded: Boolean = upgraded
 
-      def maxConcurrentStreams: Option[Int] = http2Settings.maxConcurrentStreams
+      def maxConcurrentStreams: Option[Int] = if (http2Settings.maxConcurrentStreams == Int.MaxValue) None else Some(http2Settings.maxConcurrentStreams)
 
       override protected def logSource: Class[_] = if (isServer) classOf[Http2ServerDemux] else classOf[Http2ClientDemux]
 
@@ -244,8 +244,8 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
 
         settings.foreach {
           case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) =>
-            // Enforcing of SETTINGS_MAX_CONCURRENT_STREAMS is enabled even before getting the SETTINGS_ACK
-            // so there's nothing to do here. See https://github.com/akka/akka-http/issues/3551
+          // Enforcing of SETTINGS_MAX_CONCURRENT_STREAMS is enabled even before getting the SETTINGS_ACK
+          // so there's nothing to do here. See https://github.com/akka/akka-http/issues/3551
         }
 
         settingsAppliedOk
