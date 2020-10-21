@@ -177,8 +177,7 @@ private[http] object Http2FrameProbe extends Matchers {
 
       override def expectSETTINGS(): Unit = {
         // (6.5) The stream identifier for a SETTINGS frame MUST be zero (0x0).
-        // Ignore the payload for the time being. SETTINGS frames
-        // should have an empty payload anyway.
+        // Ignore the payload for the time being.
         expectFramePayload(FrameType.SETTINGS, Flags.NO_FLAGS, 0)
       }
 
