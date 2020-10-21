@@ -243,8 +243,8 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
 
         settings.foreach {
           case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) =>
-          // TODO: Http2Compliance.compliesWithMaxConcurrentStreams should only be enabled once
-          //  we get this SETTINGS_ACK.
+            // Enforcing of SETTINGS_MAX_CONCURRENT_STREAMS is enabled even before getting the SETTINGS_ACK
+            // so there's nothing to do here. See https://github.com/akka/akka-http/issues/3551
         }
 
         settingsAppliedOk
