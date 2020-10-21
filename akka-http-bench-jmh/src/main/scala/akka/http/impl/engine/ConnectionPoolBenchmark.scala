@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.http.impl.engine
 
 import java.net.InetSocketAddress
