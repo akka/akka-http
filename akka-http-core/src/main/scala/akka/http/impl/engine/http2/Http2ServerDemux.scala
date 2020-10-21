@@ -101,8 +101,9 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
 
       val multiplexer = createMultiplexer(frameOut, StreamPrioritizer.first())
 
-      // Reminder: the receiver of a SETTINGS frame must apply them in the order they
-      //  are received. Place first the settings you want processed early.
+      // Send settings initially based on our configuration. For simplicity, these settings are
+      // enforced immediately even before the acknowledgement is received.
+      // Reminder: the receiver of a SETTINGS frame must process them in the order they are received.
       private def initialLocalSettings = immutable.Seq.empty ++
         maxConcurrentStreams.toSeq.map(value => Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value))
 
