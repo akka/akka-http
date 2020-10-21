@@ -9,7 +9,6 @@ import akka.actor.ActorSystem
 import akka.http.CommonBenchmark
 import akka.http.impl.engine.http2.FrameEvent.HeadersFrame
 import akka.http.impl.engine.http2.framing.FrameRenderer
-import akka.http.scaladsl.Http2
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.ActorMaterializer
