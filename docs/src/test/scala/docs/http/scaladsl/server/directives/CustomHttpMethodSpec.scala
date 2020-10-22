@@ -9,7 +9,7 @@ import akka.http.scaladsl.model.HttpProtocols._
 import akka.http.scaladsl.model.RequestEntityAcceptance.Expected
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives
-import akka.testkit.{ AkkaSpec, SocketUtil2 }
+import akka.testkit.{ AkkaSpec, SocketUtil }
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.duration._
@@ -20,7 +20,7 @@ class CustomHttpMethodSpec extends AkkaSpec with ScalaFutures
   "Http" should {
     "allow registering custom method" in {
       import system.dispatcher
-      val (host, port) = SocketUtil2.temporaryServerHostnameAndPort()
+      val (host, port) = SocketUtil.temporaryServerHostnameAndPort()
 
       //#application-custom
       import akka.http.scaladsl.settings.{ ParserSettings, ServerSettings }
