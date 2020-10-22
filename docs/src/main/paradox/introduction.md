@@ -37,8 +37,9 @@ choose an Akka version to run against and add a manual dependency to `akka-strea
   value1=$akka.version$
   symbol2="AkkaHttpVersion"
   value2="$project.version$"
-  group1="com.typesafe.akka" artifact1="akka-stream_$scala.binary.version$" version1=AkkaVersion
-  group2="com.typesafe.akka" artifact2="akka-http_$scala.binary.version$" version2="AkkaHttpVersion"
+  group1="com.typesafe.akka" artifact1="akka-actor-typed$scala.binary.version$" version1=AkkaVersion
+  group2="com.typesafe.akka" artifact2="akka-stream_$scala.binary.version$" version2=AkkaVersion
+  group3="com.typesafe.akka" artifact3="akka-http_$scala.binary.version$" version3="AkkaHttpVersion"
 }
 
 You may download a packaged version of this project by clicking "Create a project for me!" on the
