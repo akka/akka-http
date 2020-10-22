@@ -147,7 +147,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   }
   case object Idle extends IncomingStreamState {
     def handle(event: StreamFrameEvent): IncomingStreamState = {
-      if (incomingStreams.size >= settings.maxConcurrentStreams) {
+      if (incomingStreams.size > settings.maxConcurrentStreams) {
         resetStream(event.streamId, ErrorCode.REFUSED_STREAM)
         Closed
       } else {
