@@ -95,7 +95,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       override def settings: Http2CommonSettings = http2Settings
       override def isUpgraded: Boolean = upgraded
 
-      def maxConcurrentStreams: Option[Int] = if (http2Settings.maxConcurrentStreams == Int.MaxValue) None else Some(http2Settings.maxConcurrentStreams)
+      def maxConcurrentStreams: Int = http2Settings.maxConcurrentStreams
 
       override protected def logSource: Class[_] = if (isServer) classOf[Http2ServerDemux] else classOf[Http2ClientDemux]
 
@@ -104,8 +104,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       // Send settings initially based on our configuration. For simplicity, these settings are
       // enforced immediately even before the acknowledgement is received.
       // Reminder: the receiver of a SETTINGS frame must process them in the order they are received.
-      private def initialLocalSettings = immutable.Seq.empty ++
-        maxConcurrentStreams.toSeq.map(value => Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value))
+      private def initialLocalSettings = immutable.Seq(Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value))
 
       override def preStart(): Unit = {
         if (initialDemuxerSettings.nonEmpty) {
@@ -252,14 +251,12 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       }
 
       protected override def checkMaxConcurrentStreamsCompliance(currentConcurrentStreams: => Int): Unit = {
-        maxConcurrentStreams.foreach(limit =>
-          if (currentConcurrentStreams >= limit) {
-            pushGOAWAY(
-              ErrorCode.PROTOCOL_ERROR,
-              s"Peer tried to open too many streams. Number of open streams=[$currentConcurrentStreams], max concurrent streams=[$maxConcurrentStreams]."
-            )
-          }
-        )
+        if (currentConcurrentStreams >= maxConcurrentStreams) {
+          pushGOAWAY(
+            ErrorCode.PROTOCOL_ERROR,
+            s"Peer tried to open too many streams. Number of open streams=[$currentConcurrentStreams], max concurrent streams=[$maxConcurrentStreams]."
+          )
+        }
       }
 
       /**
