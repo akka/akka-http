@@ -104,7 +104,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       // Send settings initially based on our configuration. For simplicity, these settings are
       // enforced immediately even before the acknowledgement is received.
       // Reminder: the receiver of a SETTINGS frame must process them in the order they are received.
-      private def initialLocalSettings = immutable.Seq(Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value))
+      private def initialLocalSettings = immutable.Seq(Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, maxConcurrentStreams))
 
       override def preStart(): Unit = {
         if (initialDemuxerSettings.nonEmpty) {
