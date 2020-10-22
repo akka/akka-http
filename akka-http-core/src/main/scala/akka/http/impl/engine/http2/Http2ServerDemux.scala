@@ -162,8 +162,6 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
               // above in preStart. Since, only some settings are supported, and those
               // settings are non-modifiable and known at construction time, these settings
               // are enforced from the start of the connection.
-              // Also, since we only expect an ack for the initial settings frame there's
-              // no need to correlate the ACK to a particular SETTINGS frame.
               // Related: https://github.com/akka/akka-http/issues/3185
               enforceSettings(initialLocalSettings)
 
