@@ -255,7 +255,7 @@ lazy val httpJmhBench = project("akka-http-bench-jmh")
   .addAkkaModuleDependency("akka-stream")
   .enablePlugins(JmhPlugin)
   .enablePlugins(NoPublish).disablePlugins(BintrayPlugin) // don't release benchs
-  .disablePlugins(MimaPlugin, Whitesource)
+  .disablePlugins(MimaPlugin)
 
 lazy val httpMarshallersScala = project("akka-http-marshallers-scala")
   .settings(commonSettings)
