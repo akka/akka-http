@@ -6,6 +6,7 @@ package akka
 
 import scala.language.postfixOps
 import sbt._, Keys._
+import sbtwhitesource.WhiteSourcePlugin.autoImport.whitesourceIgnore
 
 /**
  * For projects that are not published.
@@ -16,7 +17,8 @@ object NoPublish extends AutoPlugin {
   override def projectSettings = Seq(
     publishArtifact := false,
     publish := {},
-    publishLocal := {}
+    publishLocal := {},
+    whitesourceIgnore := true,
   )
 
 }
