@@ -245,33 +245,34 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
       }
     }
 
+    abstract class RequestEntityTestSetup extends TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
+      val TheStreamId = 1
+      protected def sendRequest(): Unit
+
+      sendRequest()
+      val receivedRequest = expectRequest()
+      val entityDataIn = ByteStringSinkProbe()
+      receivedRequest.entity.dataBytes.runWith(entityDataIn.sink)
+      entityDataIn.ensureSubscription()
+    }
+
+    abstract class WaitingForRequest(request: HttpRequest) extends RequestEntityTestSetup {
+      protected def sendRequest(): Unit = sendRequest(TheStreamId, request)
+    }
+    abstract class WaitingForRequestData extends RequestEntityTestSetup {
+      lazy val request = HttpRequest(method = HttpMethods.POST, uri = "https://example.com/upload", protocol = HttpProtocols.`HTTP/2.0`)
+
+      protected def sendRequest(): Unit =
+        sendRequestHEADERS(TheStreamId, request, endStream = false)
+
+      def sendWindowFullOfData(): Int = {
+        val dataLength = remainingToServerWindowFor(TheStreamId)
+        sendDATA(TheStreamId, endStream = false, ByteString(Array.fill[Byte](dataLength)(23)))
+        dataLength
+      }
+    }
+
     "support stream for request entity data" should {
-      abstract class RequestEntityTestSetup extends TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
-        val TheStreamId = 1
-        protected def sendRequest(): Unit
-
-        sendRequest()
-        val receivedRequest = expectRequest()
-        val entityDataIn = ByteStringSinkProbe()
-        receivedRequest.entity.dataBytes.runWith(entityDataIn.sink)
-        entityDataIn.ensureSubscription()
-      }
-
-      abstract class WaitingForRequest(request: HttpRequest) extends RequestEntityTestSetup {
-        protected def sendRequest(): Unit = sendRequest(TheStreamId, request)
-      }
-      abstract class WaitingForRequestData extends RequestEntityTestSetup {
-        lazy val request = HttpRequest(method = HttpMethods.POST, uri = "https://example.com/upload", protocol = HttpProtocols.`HTTP/2.0`)
-
-        protected def sendRequest(): Unit =
-          sendRequestHEADERS(TheStreamId, request, endStream = false)
-
-        def sendWindowFullOfData(): Int = {
-          val dataLength = remainingToServerWindowFor(TheStreamId)
-          sendDATA(TheStreamId, endStream = false, ByteString(Array.fill[Byte](dataLength)(23)))
-          dataLength
-        }
-      }
       "send data frames to entity stream" in new WaitingForRequestData {
         val data1 = ByteString("abcdef")
         sendDATA(TheStreamId, endStream = false, data1)
@@ -450,6 +451,71 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
         entityDataOut.expectCancellation()
         toNet.expectNoBytes(100.millis) // the whole stage failed with bug #2236
+      }
+
+      "handle WINDOW_UPDATE correctly when received before started sending out response and while receiving request data" in new WaitingForRequestData {
+        val bytesToSend = 70000 // > Http2Protocol.InitialWindowSize
+        val missingWindow = bytesToSend - Http2Protocol.InitialWindowSize
+        require(missingWindow >= 0)
+        // add missing window space immediately to both connection- and stream-level window
+        sendWINDOW_UPDATE(0, missingWindow)
+        sendWINDOW_UPDATE(TheStreamId, missingWindow)
+
+        val entityDataOut = TestPublisher.probe[ByteString]()
+
+        val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entityDataOut)))
+        emitResponse(TheStreamId, response)
+        expectDecodedResponseHEADERS(streamId = TheStreamId, endStream = false) shouldBe response.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
+        entityDataOut.sendNext(bytes(bytesToSend, 0x23))
+
+        expectDATA(TheStreamId, false, bytesToSend)
+
+        entityDataOut.sendComplete()
+        expectDATA(TheStreamId, true, 0)
+      }
+
+      "handle WINDOW_UPDATE correctly when received before started sending out response" in new WaitingForResponseSetup {
+        val bytesToSend = 70000 // > Http2Protocol.InitialWindowSize
+        val missingWindow = bytesToSend - Http2Protocol.InitialWindowSize
+        require(missingWindow >= 0)
+        // add missing window space immediately to both connection- and stream-level window
+        sendWINDOW_UPDATE(0, missingWindow)
+        sendWINDOW_UPDATE(TheStreamId, missingWindow)
+
+        val entityDataOut = TestPublisher.probe[ByteString]()
+
+        val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entityDataOut)))
+        emitResponse(TheStreamId, response)
+        expectDecodedResponseHEADERS(streamId = TheStreamId, endStream = false) shouldBe response.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
+        entityDataOut.sendNext(bytes(bytesToSend, 0x23))
+
+        expectDATA(TheStreamId, false, bytesToSend)
+
+        entityDataOut.sendComplete()
+        expectDATA(TheStreamId, true, 0)
+      }
+
+      "distribute increases to SETTINGS_INITIAL_WINDOW_SIZE to streams correctly while sending out response" in new WaitingForResponseDataSetup {
+        // changes to SETTINGS_INITIAL_WINDOW_SIZE need to be distributed to active streams: https://httpwg.org/specs/rfc7540.html#InitialWindowSize
+        val bytesToSend = 70000 // > Http2Protocol.InitialWindowSize
+        val missingWindow = bytesToSend - Http2Protocol.InitialWindowSize
+        require(missingWindow >= 0)
+        // SETTINGS_INITIAL_WINDOW_SIZE only has ab effect on stream-level window, so we give the connection-level
+        // window enough room immediately
+        sendWINDOW_UPDATE(0, missingWindow)
+
+        entityDataOut.sendNext(bytes(bytesToSend, 0x23))
+        expectDATA(TheStreamId, false, Http2Protocol.InitialWindowSize)
+        expectNoBytes(100.millis)
+
+        // now increase SETTINGS_INITIAL_WINDOW_SIZE so that all data fits into WINDOW
+        sendSETTING(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE, bytesToSend)
+        updateFromServerWindows(TheStreamId, _ + missingWindow) // test probe doesn't automatically update window
+        expectDATA(TheStreamId, false, missingWindow)
+        expectSettingsAck() // FIXME: bug: we must send ACK before making use of the new setting, see https://github.com/akka/akka-http/issues/3553
+
+        entityDataOut.sendComplete()
+        expectDATA(TheStreamId, true, 0)
       }
 
       "handle RST_STREAM while waiting for a window update" in new WaitingForResponseDataSetup {
