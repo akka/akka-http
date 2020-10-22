@@ -75,9 +75,13 @@ private[http2] sealed abstract class Http2ClientDemux
  * In the best case we could just flattenMerge the outgoing side (hoping for the best) but this will probably
  * not work because the sending decision relies on dynamic window size and settings information that will be
  * only available in this stage.
+ *
+ * @param initialRemoteSettings sequence of settings received on the initial header sent from
+ *                              the client in an ' HTTP2-Settings:' header. This parameter should only be used
+ *                              on the server end of a connection.
  */
 @InternalApi
-private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initialDemuxerSettings: immutable.Seq[Setting], upgraded: Boolean, isServer: Boolean) extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] { stage =>
+private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initialRemoteSettings: immutable.Seq[Setting], upgraded: Boolean, isServer: Boolean) extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] { stage =>
   val frameIn = Inlet[FrameEvent]("Demux.frameIn")
   val frameOut = Outlet[FrameEvent]("Demux.frameOut")
 
@@ -107,9 +111,9 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       private def initialLocalSettings = immutable.Seq(Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, maxConcurrentStreams))
 
       override def preStart(): Unit = {
-        if (initialDemuxerSettings.nonEmpty) {
-          debug(s"Applying ${initialDemuxerSettings.length} initial settings!")
-          applySettings(initialDemuxerSettings)
+        if (initialRemoteSettings.nonEmpty) {
+          debug(s"Applying ${initialRemoteSettings.length} initial settings!")
+          applyRemoteSettings(initialRemoteSettings)
         }
 
         pullFrameIn()
@@ -148,25 +152,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
             case SettingsFrame(settings) =>
               if (settings.nonEmpty) debug(s"Got ${settings.length} settings!")
 
-              var settingsAppliedOk = true
-
-              settings.foreach {
-                case Setting(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE, value) =>
-                  if (value >= 0) {
-                    debug(s"Setting initial window to $value")
-                    multiplexer.updateDefaultWindow(value)
-                  } else {
-                    pushGOAWAY(FLOW_CONTROL_ERROR, s"Invalid value for SETTINGS_INITIAL_WINDOW_SIZE: $value")
-                    settingsAppliedOk = false
-                  }
-                case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) =>
-                  multiplexer.updateMaxFrameSize(value)
-                case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) =>
-                  debug(s"Setting max concurrent streams to $value (not enforced)")
-                case Setting(id, value) =>
-                  debug(s"Ignoring setting $id -> $value")
-              }
-
+              val settingsAppliedOk = applyRemoteSettings(settings)
               if (settingsAppliedOk) {
                 multiplexer.pushControlFrame(SettingsAckFrame(settings))
               }
@@ -257,13 +243,14 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       }
 
       /**
-       * Tune this peer to honour the settings sent from the other peer.
+       * Tune this peer to the remote Settings.
        * @param settings settings sent from the other peer (or injected via the
        *                 "HTTP2-Settings" in "h2c").
        * @return true if settings were applied successfully, false if some ERROR
-       *         was raised (and pushed back to the peer)
+       *         was raised. When raising an ERROR, this method already pushes the
+       *         error back to the peer.
        */
-      private def applySettings(settings: immutable.Seq[Setting]): Boolean = {
+      private def applyRemoteSettings(settings: immutable.Seq[Setting]): Boolean = {
         var settingsAppliedOk = true
 
         settings.foreach {
@@ -278,7 +265,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
           case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) =>
             multiplexer.updateMaxFrameSize(value)
           case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) =>
-            debug(s"Setting max concurrent streams to $value (not enforced)")
+            debug(s"Setting max concurrent streams to $value (not respected)")
           case Setting(id, value) =>
             debug(s"Ignoring setting $id -> $value (in Demux)")
         }
