@@ -4,13 +4,9 @@
 
 package akka.http.javadsl.settings
 
-import java.util.Optional
-
 import akka.annotation.DoNotInherit
 import akka.http.scaladsl
 import com.typesafe.config.Config
-
-import scala.compat.java8.OptionConverters
 
 @DoNotInherit
 trait Http2ServerSettings { self: scaladsl.settings.Http2ServerSettings =>

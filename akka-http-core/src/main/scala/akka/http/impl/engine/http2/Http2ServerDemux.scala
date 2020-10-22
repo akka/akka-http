@@ -171,7 +171,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
                 multiplexer.pushControlFrame(SettingsAckFrame(settings))
               }
 
-            case SettingsAckFrame(Nil) =>
+            case SettingsAckFrame(_) =>
               // Currently, we only expect an ack for the initial settings frame, sent
               // above in preStart. Since, only some settings are supported, and those
               // settings are non-modifiable and known at construction time, these settings
@@ -252,10 +252,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
 
       protected override def checkMaxConcurrentStreamsCompliance(currentConcurrentStreams: => Int): Unit = {
         if (currentConcurrentStreams >= maxConcurrentStreams) {
-          pushGOAWAY(
-            ErrorCode.PROTOCOL_ERROR,
-            s"Peer tried to open too many streams. Number of open streams=[$currentConcurrentStreams], max concurrent streams=[$maxConcurrentStreams]."
-          )
+          resetStream(streamId, ErrorCode.REFUSED_STREAM)
         }
       }
 
