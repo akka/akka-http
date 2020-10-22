@@ -236,12 +236,6 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
         settingsAppliedOk
       }
 
-      protected override def checkMaxConcurrentStreamsCompliance(currentConcurrentStreams: => Int): Unit = {
-        if (currentConcurrentStreams >= maxConcurrentStreams) {
-          resetStream(streamId, ErrorCode.REFUSED_STREAM)
-        }
-      }
-
       /**
        * Tune this peer to the remote Settings.
        * @param settings settings sent from the other peer (or injected via the

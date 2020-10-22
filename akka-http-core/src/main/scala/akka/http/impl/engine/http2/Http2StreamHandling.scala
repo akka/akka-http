@@ -62,20 +62,8 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     }
 
   def handleStreamEvent(e: StreamFrameEvent): Unit = {
-    // only validate maxConcurrentStreams compliance if we'd increment the number
-    // of streams in one of the open states. This way, when the value of SETTINGS_MAX_CONCURRENT_STREAMS
-    // decreases, in-flight streams can still finish and close.
-    e match {
-      case _: ParsedHeadersFrame =>
-        checkMaxConcurrentStreamsCompliance(incomingStreams.size)
-      // TODO: when supporting PUSH_PROMISE, invoke `checkMaxConcurrentStreamsCompliance()`
-      //  when processing `PushPromiseFrame`
-      case _ =>
-    }
     updateState(e.streamId, _.handle(e))
   }
-
-  protected def checkMaxConcurrentStreamsCompliance(currentConcurrentStreams: => Int): Unit
 
   def handleOutgoingCreated(stream: Http2SubStream): Unit =
     updateState(stream.streamId, _.handleOutgoingCreated(stream))
@@ -158,7 +146,14 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     def shutdown(): IncomingStreamState
   }
   case object Idle extends IncomingStreamState {
-    def handle(event: StreamFrameEvent): IncomingStreamState = expectIncomingStream(event, HalfClosedRemote, ReceivingDataFirst)
+    def handle(event: StreamFrameEvent): IncomingStreamState = {
+      if (incomingStreams.size >= settings.maxConcurrentStreams) {
+        resetStream(event.streamId, ErrorCode.REFUSED_STREAM)
+        Closed
+      } else {
+        expectIncomingStream(event, HalfClosedRemote, ReceivingDataFirst)
+      }
+    }
     override def handleOutgoingCreated(stream: Http2SubStream): IncomingStreamState = SendingData(stream)
     override def shutdown(): IncomingStreamState = Closed
   }

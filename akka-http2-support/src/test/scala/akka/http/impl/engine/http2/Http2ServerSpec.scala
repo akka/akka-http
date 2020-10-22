@@ -954,8 +954,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         val lastValidStreamId = streamIds.max
         val firstInvalidStreamId = lastValidStreamId + 2
         sendHEADERS(firstInvalidStreamId, endStream = false, endHeaders = true, requestHeaderBlock)
-        val (_, code) = expectGOAWAY(lastValidStreamId)
-        code should ===(ErrorCode.PROTOCOL_ERROR)
+        expectRST_STREAM(lastValidStreamId, ErrorCode.REFUSED_STREAM)
       }
 
       "reject new substreams when exceeding SETTINGS_MAX_CONCURRENT_STREAMS (with closed streams in between)" in new TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
@@ -977,8 +976,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         val lastValidStreamId = streamIds.max
         val firstInvalidStreamId = lastValidStreamId + 2
         sendHEADERS(firstInvalidStreamId, endStream = false, endHeaders = true, requestHeaderBlock)
-        val (_, code) = expectGOAWAY(lastValidStreamId)
-        code should ===(ErrorCode.PROTOCOL_ERROR)
+        expectRST_STREAM(lastValidStreamId, ErrorCode.REFUSED_STREAM)
       }
 
     }
