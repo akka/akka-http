@@ -73,13 +73,15 @@ object ParameterDirectives extends ParameterDirectives {
   trait ParamSpec {
     type Out
     def get: Directive1[Out]
+    def name: String
   }
   object ParamSpec {
     type Aux[T] = ParamSpec { type Out = T }
-    def apply[T](directive: Directive1[T]): Aux[T] =
+    def apply[T](directive: Directive1[T], paramName: String): Aux[T] =
       new ParamSpec {
         type Out = T
         override def get: Directive1[T] = directive
+        override def name: String = paramName
       }
 
     import Impl._
@@ -103,9 +105,9 @@ object ParameterDirectives extends ParameterDirectives {
     implicit def forRVR[T](rvr: RequiredValueReceptacle[T])(implicit fsu: FSU[T]): ParamSpec.Aux[Unit] = forNameRequired(rvr.name, fsu, rvr.requiredValue)
     implicit def forRVUR[T](rvur: RequiredValueUnmarshallerReceptacle[T]): ParamSpec.Aux[Unit] = forNameRequired(rvur.name, rvur.um, rvur.requiredValue)
 
-    private def forName[T](name: String, fsu: FSOU[T]): ParamSpec.Aux[T] = ParamSpec(filter(name, fsu))
-    private def forNameRepeated[T](name: String, fsu: FSU[T]): ParamSpec.Aux[Iterable[T]] = ParamSpec(repeatedFilter(name, fsu))
-    private def forNameRequired[T](name: String, fsu: FSU[T], requiredValue: T): ParamSpec.Aux[Unit] = ParamSpec(requiredFilter(name, fsu, requiredValue).tmap(_ => Tuple1(())))
+    private def forName[T](name: String, fsu: FSOU[T]): ParamSpec.Aux[T] = ParamSpec(filter(name, fsu), name)
+    private def forNameRepeated[T](name: String, fsu: FSU[T]): ParamSpec.Aux[Iterable[T]] = ParamSpec(repeatedFilter(name, fsu), name)
+    private def forNameRequired[T](name: String, fsu: FSU[T], requiredValue: T): ParamSpec.Aux[Unit] = ParamSpec(requiredFilter(name, fsu, requiredValue).tmap(_ => Tuple1(())), name)
   }
 
   @deprecated("Use new `parameters` overloads with ParamSpec parameters. Kept for binary compatibility", "10.2.0")
