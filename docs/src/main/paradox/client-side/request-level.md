@@ -3,7 +3,7 @@
 
 The request-level API is the recommended and most convenient way of using Akka HTTP's client-side functionality. It internally builds upon the
 @ref[Host-Level Client-Side API](host-level.md) to provide you with a simple and easy-to-use way of retrieving HTTP responses from remote servers.
-Depending on your preference you can pick the [Future-Based variant](#future-based-variant) or [Flow-Based variant](#flow-based-variant).
+Depending on your preference you can pick the [Future-based variant](#future-based-variant) or [Flow-based variant](#flow-based-variant).
 
 @@@ note
 It is recommended to first read the @ref[Implications of the streaming nature of Request/Response Entities](../implications-of-streaming-http-entity.md) section,
@@ -66,7 +66,7 @@ If the application doesn't subscribe to the response entity within
 
 ## Flow-Based Variant
 
-The Flow-Based variant of the request-level client-side API is presented by the @scala[`Http().superPool(...)`]@java[`Http.get(system).superPool(...)`] method.
+The Flow-based variant of the request-level client-side API is presented by the @scala[`Http().superPool(...)`]@java[`Http.get(system).superPool(...)`] method.
 It creates a new "super connection pool flow", which routes incoming requests to a (cached) host connection pool
 depending on their respective effective URIs.
 

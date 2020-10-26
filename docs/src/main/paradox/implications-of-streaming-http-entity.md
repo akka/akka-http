@@ -30,7 +30,7 @@ A client should consume the Entity regardless of the status of the @apidoc[HttpR
 
 ### Consuming the HTTP Response Entity (Client)
 
-There's two use-cases to consume the entity of a response:
+There are two use-cases to consume the entity of a response:
 
 1. process the bytes as the response arrives from the network buffer
 2. load all the bytes in memory first, and process them afterwards
@@ -127,7 +127,7 @@ Scala
 Java
 :   @@snip [HttpServerExampleDocTest.java]($test$/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #consume-entity-directive }
 
-You can also access the raw dataBytes and run the underlying stream. For example, you could pipe the raw dataBytes into a
+You can also access the raw `dataBytes` and run the underlying stream. For example, you could pipe the raw `dataBytes` into a
 FileIO `Sink`. The FileIO `Sink` signals completion via a @scala[`Future[IoResult]`]@java[`CompletionStage<IoResult>`] 
 once all the data has been written into the file:
 
@@ -144,7 +144,7 @@ You may want to discard the uploaded entity. For example, depending on some vali
 Please note that "discarding the HTTP Request Entity" means that the entire upload will proceed, even though you are not interested in the data
 being streamed to the server. This is useful if you are simply not interested in the entity. 
 
-In order to discard the dataBytes explicitly you can invoke the `discardEntityBytes` bytes of the incoming `HttpRequest`:
+In order to discard the `dataBytes` explicitly you can invoke the `discardEntityBytes` bytes of the incoming `HttpRequest`:
 
 Scala
 :   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #discard-discardEntityBytes }
