@@ -211,6 +211,8 @@ trait BasicDirectives {
 
   /**
    * Extracts the yet unused query parameters from the RequestContext.
+   *
+   * @group basic
    */
   def extractUnusedParameters: Directive1[Set[String]] = BasicDirectives._extractUnusedParameters
 
