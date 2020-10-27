@@ -18,6 +18,24 @@ import akka.macros.LogHelper
 
 import scala.util.control.NoStackTrace
 
+class StreamGroup[T]{
+
+  def getRemoteMaxConcurrentStreams:Int = _maxConcurrentStreams
+  def setMaxConcurrentStreams(value: Int) :Unit = _maxConcurrentStreams = value
+  private var _maxConcurrentStreams = Int.MaxValue
+
+
+  private var incomingStreams = new immutable.TreeMap[Int, T]
+  def keys: Iterable[Int] = incomingStreams.keys
+
+  def get(streamId:Int): Option[T] = incomingStreams.get(streamId)
+  def add(streamId:Int, value: T): Unit = incomingStreams += streamId -> value
+  def update(streamId:Int, value: T): Unit = incomingStreams += streamId -> value
+  def remove(streamId:Int):Unit = incomingStreams -= streamId
+  def size():Int = incomingStreams.size
+
+}
+
 /**
  * INTERNAL API
  *
@@ -38,13 +56,21 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
 
   def flowController: IncomingFlowController = IncomingFlowController.default(settings)
 
-  private var incomingStreams = new immutable.TreeMap[Int, IncomingStreamState]
+  private val streamGroup = new StreamGroup[IncomingStreamState]
+  def getRemoteMaxConcurrentStreams = streamGroup.getRemoteMaxConcurrentStreams
+  def setMaxConcurrentStreams(newValue: Int) :Unit = {
+    val oldValue = streamGroup.getRemoteMaxConcurrentStreams
+    // when increasing the concurrency we should pull more SubStream's from upstream
+    // if(newValue > oldValue){ }
+    streamGroup.setMaxConcurrentStreams(newValue)
+  }
+
   private var largestIncomingStreamId = 0
   private var outstandingConnectionLevelWindow = Http2Protocol.InitialWindowSize
   private var totalBufferedData = 0
 
   private def streamFor(streamId: Int): IncomingStreamState =
-    incomingStreams.get(streamId) match {
+    streamGroup.get(streamId) match {
       case Some(state) => state
       case None =>
         if (streamId <= largestIncomingStreamId) Closed // closed streams are never put into the map
@@ -52,11 +78,11 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
           // Stream 1 is implicitly "half-closed" from the client toward the server (see Section 5.1), since the request is completed as an HTTP/1.1 request
           // https://http2.github.io/http2-spec/#discover-http
           largestIncomingStreamId = streamId
-          incomingStreams += streamId -> HalfClosedRemote
+          streamGroup.add (streamId ,HalfClosedRemote)
           HalfClosedRemote
         } else {
           largestIncomingStreamId = streamId
-          incomingStreams += streamId -> Idle
+          streamGroup.add ( streamId, Idle)
           Idle
         }
     }
@@ -72,6 +98,11 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     updateState(streamId, _.handleOutgoingEnded())
   }
 
+  def countConcurrentRemoteStreams(): Int = {
+    // should only count outgoing streams, needs a filter.
+    streamGroup.size
+  }
+
   /**
    * The "last peer-initiated stream that was or might be processed on the sending endpoint in this connection"
    *
@@ -83,15 +114,21 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     val oldState = streamFor(streamId)
     val newState = handle(oldState)
     newState match {
-      case Closed   => incomingStreams -= streamId
-      case newState => incomingStreams += streamId -> newState
+      case Closed   => streamGroup.remove( streamId)
+      case newState => streamGroup.update( streamId , newState)
     }
     debug(s"Incoming side of stream [$streamId] changed state: ${oldState.stateName} -> ${newState.stateName}")
   }
   /** Called to cleanup any state when the connection is torn down */
-  def shutdownStreamHandling(): Unit = incomingStreams.keys.foreach(id => updateState(id, _.shutdown()))
+  def shutdownStreamHandling(): Unit = {
+    // shutdown will close streams, which will remove them from the group. This method is only
+    // invoked when stopping the GraphStage so removing streams from the streamGroup should not
+    // trigger any more demand.
+    streamGroup.keys.foreach(id => updateState(id, _.shutdown()))
+  }
+
   def resetStream(streamId: Int, errorCode: ErrorCode): Unit = {
-    incomingStreams -= streamId
+    streamGroup.remove(streamId)
     debug(s"Incoming side of stream [$streamId]: resetting with code [$errorCode]")
     multiplexer.pushControlFrame(RstStreamFrame(streamId, errorCode))
   }
@@ -270,7 +307,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     override def onDownstreamFinish(): Unit = {
       debug(s"Incoming side of stream [$streamId]: cancelling because downstream finished")
       multiplexer.pushControlFrame(RstStreamFrame(streamId, ErrorCode.CANCEL))
-      incomingStreams -= streamId
+      streamGroup.remove(streamId)
     }
 
     def onDataFrame(data: DataFrame): Option[IncomingStreamState] = {
