@@ -39,7 +39,7 @@ private[http] trait Http2FrameProbe {
 
   def expectGOAWAY(lastStreamId: Int = -1): (Int, ErrorCode)
 
-  def expectSettingsAck(): Unit
+  def expectSettingsAck(): ByteString
 
   def expectFrame(frameType: FrameType, expectedFlags: ByteFlag, streamId: Int, payload: ByteString): Unit
 
@@ -81,7 +81,7 @@ private[http] trait Http2FrameProbeDelegator extends Http2FrameProbe {
   def expectRST_STREAM(streamId: Int, errorCode: ErrorCode): Unit = frameProbeDelegate.expectRST_STREAM(streamId, errorCode)
   def expectRST_STREAM(streamId: Int): ErrorCode = frameProbeDelegate.expectRST_STREAM(streamId)
   def expectGOAWAY(lastStreamId: Int): (Int, ErrorCode) = frameProbeDelegate.expectGOAWAY(lastStreamId)
-  def expectSettingsAck(): Unit = frameProbeDelegate.expectSettingsAck()
+  def expectSettingsAck(): ByteString = frameProbeDelegate.expectSettingsAck()
   def expectFrame(frameType: FrameType, expectedFlags: ByteFlag, streamId: Int, payload: ByteString): Unit = frameProbeDelegate.expectFrame(frameType, expectedFlags, streamId, payload)
   def expectFramePayload(frameType: FrameType, expectedFlags: ByteFlag, streamId: Int): ByteString = frameProbeDelegate.expectFramePayload(frameType, expectedFlags, streamId)
   def expectFrameFlagsAndPayload(frameType: FrameType, streamId: Int): (ByteFlag, ByteString) = frameProbeDelegate.expectFrameFlagsAndPayload(frameType, streamId)
@@ -173,7 +173,7 @@ private[http] object Http2FrameProbe extends Matchers {
         (lastStreamId, ErrorCode.byId(reader.readIntBE()))
       }
 
-      def expectSettingsAck() = expectFrame(FrameType.SETTINGS, Flags.ACK, 0, ByteString.empty)
+      def expectSettingsAck(): ByteString = expectFramePayload(FrameType.SETTINGS, Flags.ACK, 0)
 
       def expectFrame(frameType: FrameType, expectedFlags: ByteFlag, streamId: Int, payload: ByteString) =
         expectFramePayload(frameType, expectedFlags, streamId) should ===(payload)

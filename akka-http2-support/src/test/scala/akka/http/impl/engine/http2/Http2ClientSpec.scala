@@ -8,7 +8,10 @@ import akka.NotUsed
 import akka.event.Logging
 import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
-import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
+import akka.http.impl.engine.http2.Http2Protocol.FrameType
+import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
+import akka.http.impl.engine.ws.ByteStringSinkProbe
+import akka.http.impl.util.{AkkaSpecWithMaterializer, LogByteStringTools}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.HttpEntity.Strict
 import akka.http.scaladsl.model.HttpMethods.GET
@@ -16,10 +19,12 @@ import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.Attributes
 import akka.stream.Attributes.LogLevels
-import akka.stream.scaladsl.{ BidiFlow, Flow, Sink, Source }
-import akka.stream.testkit.{ TestPublisher, TestSubscriber }
+import akka.stream.scaladsl.{BidiFlow, Flow, Sink, Source}
+import akka.stream.testkit.{TestPublisher, TestSubscriber}
 import akka.util.ByteString
 import org.scalatest.concurrent.Eventually
+
+import scala.concurrent.duration._
 
 /**
  * This tests the http2 client protocol logic.
@@ -33,6 +38,7 @@ import org.scalatest.concurrent.Eventually
 class Http2ClientSpec extends AkkaSpecWithMaterializer("""
     akka.http.server.remote-address-header = on
     akka.http.server.http2.log-frames = on
+    akka.http.client.http2.log-frames = on
   """)
   with WithInPendingUntilFixed with Eventually {
   override def failOnSevereMessages: Boolean = true
@@ -159,6 +165,46 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         )
       }
     }
+
+    "respect settings" should {
+      "received SETTINGS_MAX_CONCURRENT_STREAMS should limit the number of outgoing streams" in new TestSetup(
+        Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 3)
+      ) with NetProbes {
+        val request = HttpRequest(uri = "https://www.example.com/")
+        // server set SETTINGS_MAX_CONCURRENT_STREAMS=5 so an attempt from the client to open 6 streams
+        // should only produce 5 frames
+        emitRequest(1, request)
+        emitRequest(3, request)
+        emitRequest(5, request)
+        emitRequest(7, request)
+        emitRequest(9, request)
+        emitRequest(11, request)
+
+        // expect frames for 1 3 and 5
+        expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (1)
+        expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (3)
+        expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (5)
+        // expect silence on the line
+        expectNoBytes(100.millis)
+
+        // close 1 and 3
+        sendFrame(HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        sendFrame(HeadersFrame(streamId = 3, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        // expect 9 and 11 on the line
+        expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (7)
+        expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (9)
+        expectNoBytes(100.millis)
+
+        // close 5 7 9
+        sendFrame(HeadersFrame(streamId = 5, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        sendFrame(HeadersFrame(streamId = 7, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        sendFrame(HeadersFrame(streamId = 9, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        // expect 11 the line
+        expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (11)
+      }
+
+    }
+
   }
 
   protected /* To make ByteFlag warnings go away */ abstract class TestSetupWithoutHandshake {
@@ -169,7 +215,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
     def netFlow: Flow[ByteString, ByteString, NotUsed]
 
-    // hook to modify server, for example add attributes
+    // hook to modify client, for example add attributes
     def modifyClient(client: BidiFlow[HttpRequest, ByteString, ByteString, HttpResponse, NotUsed]) = client
 
     // hook to modify server settings
@@ -193,11 +239,11 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
   }
 
   /** Basic TestSetup that has already passed the exchange of the connection preface */
-  abstract class TestSetup extends TestSetupWithoutHandshake with NetProbes with Http2FrameSending {
+  abstract class TestSetup(serverSettings: Setting*) extends TestSetupWithoutHandshake with NetProbes with Http2FrameSending {
     toNet.expectBytes(Http2Protocol.ClientConnectionPreface)
     expectFrame() shouldBe a[SettingsFrame]
 
-    sendFrame(SettingsFrame(Nil))
+    sendFrame(SettingsFrame(serverSettings))
     expectSettingsAck()
   }
 
@@ -205,8 +251,8 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
   trait NetProbes extends TestSetupWithoutHandshake with Http2FrameProbeDelegator {
     lazy val framesOut: Http2FrameProbe = Http2FrameProbe()
     override def frameProbeDelegate: Http2FrameProbe = framesOut
-    lazy val toNet = framesOut.plainDataProbe
-    lazy val fromNet = TestPublisher.probe[ByteString]()
+    lazy val toNet: ByteStringSinkProbe = framesOut.plainDataProbe
+    lazy val fromNet: TestPublisher.Probe[ByteString] = TestPublisher.probe[ByteString]()
 
     override def netFlow: Flow[ByteString, ByteString, NotUsed] =
       Flow.fromSinkAndSource(toNet.sink, Source.fromPublisher(fromNet))
