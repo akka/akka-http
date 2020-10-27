@@ -948,7 +948,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         )
 
         // while we don't exceed the limit, there's silence on the line
-        expectNoBytes()
+        expectNoBytes(100.millis)
 
         // When we exceed the limit, though...
         val lastValidStreamId = streamIds.max
@@ -970,7 +970,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         }
 
         // while we don't exceed the limit, there's silence on the line
-        expectNoBytes()
+        expectNoBytes(100.millis)
 
         // When we exceed the limit, though...
         val lastValidStreamId = streamIds.max
