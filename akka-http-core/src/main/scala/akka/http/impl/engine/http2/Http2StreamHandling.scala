@@ -16,25 +16,8 @@ import scala.collection.immutable
 import FrameEvent._
 import akka.macros.LogHelper
 
+import scala.collection.immutable.TreeMap
 import scala.util.control.NoStackTrace
-
-class StreamGroup[T]{
-
-  def getRemoteMaxConcurrentStreams:Int = _maxConcurrentStreams
-  def setMaxConcurrentStreams(value: Int) :Unit = _maxConcurrentStreams = value
-  private var _maxConcurrentStreams = Int.MaxValue
-
-
-  private var incomingStreams = new immutable.TreeMap[Int, T]
-  def keys: Iterable[Int] = incomingStreams.keys
-
-  def get(streamId:Int): Option[T] = incomingStreams.get(streamId)
-  def add(streamId:Int, value: T): Unit = incomingStreams += streamId -> value
-  def update(streamId:Int, value: T): Unit = incomingStreams += streamId -> value
-  def remove(streamId:Int):Unit = incomingStreams -= streamId
-  def size():Int = incomingStreams.size
-
-}
 
 /**
  * INTERNAL API
@@ -56,14 +39,36 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
 
   def flowController: IncomingFlowController = IncomingFlowController.default(settings)
 
-  private val streamGroup = new StreamGroup[IncomingStreamState]
-  def getRemoteMaxConcurrentStreams = streamGroup.getRemoteMaxConcurrentStreams
-  def setMaxConcurrentStreams(newValue: Int) :Unit = {
-    val oldValue = streamGroup.getRemoteMaxConcurrentStreams
-    // when increasing the concurrency we should pull more SubStream's from upstream
-    // if(newValue > oldValue){ }
-    streamGroup.setMaxConcurrentStreams(newValue)
+  class StreamGroup {
+    // FIXME: this uses 'size' without filtering the incomingStreams collection by state to
+    //  only account for open and halfclosed streams
+    // FIXME: when supporting PUSH_PROMISE this operation should only consider streams
+    //  initiated in this peer
+    def peerHasCapacity: Boolean = {
+      // FIXME: this off-by-one is required because we're evaluating
+      //  capacity after generating demand
+      size < getRemoteMaxConcurrentStreams - 1
+    }
+
+    def getRemoteMaxConcurrentStreams: Int = _maxConcurrentStreams
+    def setMaxConcurrentStreams(value: Int): Unit = _maxConcurrentStreams = value
+    private var _maxConcurrentStreams = Int.MaxValue
+
+    private var incomingStreams = new immutable.TreeMap[Int, IncomingStreamState]
+    def keys: Iterable[Int] = incomingStreams.keys
+
+    def get(streamId: Int): Option[IncomingStreamState] = incomingStreams.get(streamId)
+    def add(streamId: Int, value: IncomingStreamState): Unit = incomingStreams += streamId -> value
+    def update(streamId: Int, value: IncomingStreamState): Unit = incomingStreams += streamId -> value
+    def remove(streamId: Int): Unit = incomingStreams -= streamId
+    def size: Int = incomingStreams.size
+
   }
+
+  private val streamGroup = new StreamGroup
+  /** respect peer's max-concurrent-streams */
+  def peerHasCapacity: Boolean = streamGroup.peerHasCapacity
+  def setMaxConcurrentStreams(newValue: Int): Unit = streamGroup.setMaxConcurrentStreams(newValue)
 
   private var largestIncomingStreamId = 0
   private var outstandingConnectionLevelWindow = Http2Protocol.InitialWindowSize
@@ -78,11 +83,11 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
           // Stream 1 is implicitly "half-closed" from the client toward the server (see Section 5.1), since the request is completed as an HTTP/1.1 request
           // https://http2.github.io/http2-spec/#discover-http
           largestIncomingStreamId = streamId
-          streamGroup.add (streamId ,HalfClosedRemote)
+          streamGroup.add(streamId, HalfClosedRemote)
           HalfClosedRemote
         } else {
           largestIncomingStreamId = streamId
-          streamGroup.add ( streamId, Idle)
+          streamGroup.add(streamId, Idle)
           Idle
         }
     }
@@ -98,11 +103,6 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     updateState(streamId, _.handleOutgoingEnded())
   }
 
-  def countConcurrentRemoteStreams(): Int = {
-    // should only count outgoing streams, needs a filter.
-    streamGroup.size
-  }
-
   /**
    * The "last peer-initiated stream that was or might be processed on the sending endpoint in this connection"
    *
@@ -114,8 +114,8 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     val oldState = streamFor(streamId)
     val newState = handle(oldState)
     newState match {
-      case Closed   => streamGroup.remove( streamId)
-      case newState => streamGroup.update( streamId , newState)
+      case Closed   => streamGroup.remove(streamId)
+      case newState => streamGroup.update(streamId, newState)
     }
     debug(s"Incoming side of stream [$streamId] changed state: ${oldState.stateName} -> ${newState.stateName}")
   }

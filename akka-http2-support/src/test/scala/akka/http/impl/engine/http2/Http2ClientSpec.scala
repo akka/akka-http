@@ -11,7 +11,7 @@ import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.ws.ByteStringSinkProbe
-import akka.http.impl.util.{AkkaSpecWithMaterializer, LogByteStringTools}
+import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.HttpEntity.Strict
 import akka.http.scaladsl.model.HttpMethods.GET
@@ -19,8 +19,8 @@ import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.Attributes
 import akka.stream.Attributes.LogLevels
-import akka.stream.scaladsl.{BidiFlow, Flow, Sink, Source}
-import akka.stream.testkit.{TestPublisher, TestSubscriber}
+import akka.stream.scaladsl.{ BidiFlow, Flow, Sink, Source }
+import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.util.ByteString
 import org.scalatest.concurrent.Eventually
 
@@ -176,11 +176,9 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         emitRequest(1, request)
         emitRequest(3, request)
         emitRequest(5, request)
-        emitRequest(7, request)
-        emitRequest(9, request)
-        emitRequest(11, request)
+        emitRequest(7, request) // this is backpressured
 
-        // expect frames for 1 3 and 5
+        // expect frames for 1 3 5
         expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (1)
         expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (3)
         expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (5)
@@ -190,7 +188,9 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         // close 1 and 3
         sendFrame(HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
         sendFrame(HeadersFrame(streamId = 3, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
-        // expect 9 and 11 on the line
+        emitRequest(9, request)
+        emitRequest(11, request)
+        // expect 7 and 9 on the line
         expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (7)
         expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (9)
         expectNoBytes(100.millis)
@@ -199,8 +199,10 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         sendFrame(HeadersFrame(streamId = 5, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
         sendFrame(HeadersFrame(streamId = 7, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
         sendFrame(HeadersFrame(streamId = 9, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
-        // expect 11 the line
+        emitRequest(13, request)
+        // expect 11 and 13 the line
         expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (11)
+        expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (13)
       }
 
     }

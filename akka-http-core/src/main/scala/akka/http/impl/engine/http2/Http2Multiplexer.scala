@@ -65,12 +65,11 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
   def allowReadingIncomingFrames(allow: Boolean): Unit
 
   /**
-   * Allows suspending writing of outgoing data frames.
+   * Allows suspending reading outgoing data frames (that is frames produced by userland code towards the wire)
    */
-  def allowWritingOutgoingFrames(allow: Boolean): Unit
+  def allowReadingOutgoingFrames(allow: Boolean): Unit
 
-
-    def createMultiplexer(outlet: GenericOutlet[FrameEvent], prioritizer: StreamPrioritizer): Http2Multiplexer =
+  def createMultiplexer(outlet: GenericOutlet[FrameEvent], prioritizer: StreamPrioritizer): Http2Multiplexer =
     new Http2Multiplexer with OutHandler with StateTimingSupport with LogHelper { self =>
       def log: LoggingAdapter = logic.log
 
