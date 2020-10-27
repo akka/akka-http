@@ -99,8 +99,6 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       override def settings: Http2CommonSettings = http2Settings
       override def isUpgraded: Boolean = upgraded
 
-      def maxConcurrentStreams: Int = http2Settings.maxConcurrentStreams
-
       override protected def logSource: Class[_] = if (isServer) classOf[Http2ServerDemux] else classOf[Http2ClientDemux]
 
       val multiplexer = createMultiplexer(frameOut, StreamPrioritizer.first())
@@ -108,7 +106,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       // Send settings initially based on our configuration. For simplicity, these settings are
       // enforced immediately even before the acknowledgement is received.
       // Reminder: the receiver of a SETTINGS frame must process them in the order they are received.
-      private def initialLocalSettings = immutable.Seq(Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, maxConcurrentStreams))
+      private def initialLocalSettings = immutable.Seq(Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, http2Settings.maxConcurrentStreams))
 
       override def preStart(): Unit = {
         if (initialRemoteSettings.nonEmpty) {

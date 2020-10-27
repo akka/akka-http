@@ -82,7 +82,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
 
   private def updateState(streamId: Int, handle: IncomingStreamState => IncomingStreamState): Unit = {
     val oldState = streamFor(streamId)
-    val newState: IncomingStreamState = handle(oldState)
+    val newState = handle(oldState)
 
     newState match {
       case Closed   => incomingStreams -= streamId
