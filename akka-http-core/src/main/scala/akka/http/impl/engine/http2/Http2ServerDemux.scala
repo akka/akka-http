@@ -5,21 +5,25 @@
 package akka.http.impl.engine.http2
 
 import akka.annotation.InternalApi
+import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.FLOW_CONTROL_ERROR
+import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.scaladsl.settings.Http2CommonSettings
+import akka.macros.LogHelper
 import akka.stream.Attributes
 import akka.stream.BidiShape
 import akka.stream.Inlet
 import akka.stream.Outlet
 import akka.stream.impl.io.ByteStringParser.ParsingException
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, StageLogging }
+import akka.stream.stage.GraphStage
+import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.InHandler
+import akka.stream.stage.StageLogging
 import akka.util.ByteString
 
 import scala.collection.immutable
 import scala.util.control.NonFatal
-import FrameEvent._
-import akka.macros.LogHelper
 
 /** Currently only used as log source */
 @InternalApi
@@ -71,9 +75,13 @@ private[http2] sealed abstract class Http2ClientDemux
  * In the best case we could just flattenMerge the outgoing side (hoping for the best) but this will probably
  * not work because the sending decision relies on dynamic window size and settings information that will be
  * only available in this stage.
+ *
+ * @param initialRemoteSettings sequence of settings received on the initial header sent from
+ *                              the client in an ' HTTP2-Settings:' header. This parameter should only be used
+ *                              on the server end of a connection.
  */
 @InternalApi
-private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initialDemuxerSettings: immutable.Seq[Setting], upgraded: Boolean, isServer: Boolean) extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] { stage =>
+private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initialRemoteSettings: immutable.Seq[Setting], upgraded: Boolean, isServer: Boolean) extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] { stage =>
   val frameIn = Inlet[FrameEvent]("Demux.frameIn")
   val frameOut = Outlet[FrameEvent]("Demux.frameOut")
 
@@ -95,16 +103,22 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
 
       val multiplexer = createMultiplexer(frameOut, StreamPrioritizer.first())
 
+      // Send settings initially based on our configuration. For simplicity, these settings are
+      // enforced immediately even before the acknowledgement is received.
+      // Reminder: the receiver of a SETTINGS frame must process them in the order they are received.
+      private def initialLocalSettings = immutable.Seq(Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, http2Settings.maxConcurrentStreams))
+
       override def preStart(): Unit = {
-        if (initialDemuxerSettings.nonEmpty) {
-          debug(s"Applying ${initialDemuxerSettings.length} initial settings!")
-          applySettings(initialDemuxerSettings)
+        if (initialRemoteSettings.nonEmpty) {
+          debug(s"Applying ${initialRemoteSettings.length} initial settings!")
+          applyRemoteSettings(initialRemoteSettings)
         }
 
         pullFrameIn()
         pull(substreamIn)
 
-        multiplexer.pushControlFrame(SettingsFrame(Nil)) // both client and server must send an settings frame as first frame
+        // both client and server must send a settings frame as first frame
+        multiplexer.pushControlFrame(SettingsFrame(initialLocalSettings))
       }
 
       override def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit = {
@@ -136,37 +150,20 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
             case SettingsFrame(settings) =>
               if (settings.nonEmpty) debug(s"Got ${settings.length} settings!")
 
-              var settingsAppliedOk = true
-
-              settings.foreach {
-                case Setting(Http2Protocol.SettingIdentifier.SETTINGS_INITIAL_WINDOW_SIZE, value) =>
-                  if (value >= 0) {
-                    debug(s"Setting initial window to $value")
-                    multiplexer.updateDefaultWindow(value)
-                  } else {
-                    pushGOAWAY(FLOW_CONTROL_ERROR, s"Invalid value for SETTINGS_INITIAL_WINDOW_SIZE: $value")
-                    settingsAppliedOk = false
-                  }
-                case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) =>
-                  multiplexer.updateMaxFrameSize(value)
-                case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) =>
-                  debug(s"Setting max concurrent streams to $value (not enforced)")
-                case Setting(id, value) =>
-                  debug(s"Ignoring setting $id -> $value")
-              }
-
+              val settingsAppliedOk = applyRemoteSettings(settings)
               if (settingsAppliedOk) {
                 multiplexer.pushControlFrame(SettingsAckFrame(settings))
               }
 
-            case SettingsAckFrame(Nil) =>
-            // Currently, we only expect an ack for the initial (currently empty) settings frame, sent
-            // above in preStart. Since, it was empty, there's nothing to do here.
-            // If we want to support setting and enforcing settings, we'll need to act here to commit
-            // to the settings we sent out before.
-            // https://github.com/akka/akka-http/issues/3185
+            case SettingsAckFrame(_) =>
+              // Currently, we only expect an ack for the initial settings frame, sent
+              // above in preStart. Since, only some settings are supported, and those
+              // settings are non-modifiable and known at construction time, these settings
+              // are enforced from the start of the connection.
+              // Related: https://github.com/akka/akka-http/issues/3185
+              enforceSettings(initialLocalSettings)
 
-            case PingFrame(true, _)    =>
+            case PingFrame(true, _) =>
             // ignore for now (we don't send any pings)
             case PingFrame(false, data) =>
               multiplexer.pushControlFrame(PingFrame(ack = true, data))
@@ -219,7 +216,31 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
         }
       })
 
-      private def applySettings(settings: immutable.Seq[Setting]): Boolean = {
+      /**
+       * Tune this peer to enforce the settings configured from this peer.
+       * @return TODO: it's a Boolean but I don't think it has to be.
+       */
+      private def enforceSettings(settings: immutable.Seq[Setting]): Boolean = {
+        var settingsAppliedOk = true
+
+        settings.foreach {
+          case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) =>
+          // Enforcing of SETTINGS_MAX_CONCURRENT_STREAMS is enabled even before getting the SETTINGS_ACK
+          // so there's nothing to do here. See https://github.com/akka/akka-http/issues/3551
+        }
+
+        settingsAppliedOk
+      }
+
+      /**
+       * Tune this peer to the remote Settings.
+       * @param settings settings sent from the other peer (or injected via the
+       *                 "HTTP2-Settings" in "h2c").
+       * @return true if settings were applied successfully, false if some ERROR
+       *         was raised. When raising an ERROR, this method already pushes the
+       *         error back to the peer.
+       */
+      private def applyRemoteSettings(settings: immutable.Seq[Setting]): Boolean = {
         var settingsAppliedOk = true
 
         settings.foreach {
@@ -234,7 +255,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
           case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) =>
             multiplexer.updateMaxFrameSize(value)
           case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) =>
-            debug(s"Setting max concurrent streams to $value (not enforced)")
+            debug(s"Setting max concurrent streams to $value (not respected)")
           case Setting(id, value) =>
             debug(s"Ignoring setting $id -> $value (in Demux)")
         }

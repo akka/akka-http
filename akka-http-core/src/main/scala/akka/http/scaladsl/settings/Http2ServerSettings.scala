@@ -4,10 +4,11 @@
 
 package akka.http.scaladsl.settings
 
+import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
-import akka.annotation.{ ApiMayChange, InternalApi }
-import akka.http.javadsl
+import akka.annotation.InternalApi
 import akka.http.impl.util._
+import akka.http.javadsl
 import com.typesafe.config.Config
 
 /**
@@ -76,6 +77,7 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
     logFrames:                         Boolean,
     internalSettings:                  Option[Http2InternalServerSettings])
     extends Http2ServerSettings {
+    require(maxConcurrentStreams >= 0, "max-concurrent-streams must be >= 0")
     require(requestEntityChunkSize > 0, "request-entity-chunk-size must be > 0")
     require(incomingConnectionLevelBufferSize > 0, "incoming-connection-level-buffer-size must be > 0")
     require(incomingStreamLevelBufferSize > 0, "incoming-stream-level-buffer-size must be > 0")
@@ -144,6 +146,7 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
     logFrames:                         Boolean,
     internalSettings:                  Option[Http2InternalClientSettings])
     extends Http2ClientSettings {
+    require(maxConcurrentStreams >= 0, "max-concurrent-streams must be >= 0")
     require(requestEntityChunkSize > 0, "request-entity-chunk-size must be > 0")
     require(incomingConnectionLevelBufferSize > 0, "incoming-connection-level-buffer-size must be > 0")
     require(incomingStreamLevelBufferSize > 0, "incoming-stream-level-buffer-size must be > 0")

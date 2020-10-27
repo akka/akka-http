@@ -43,6 +43,10 @@ private[http] object FrameEvent {
     def sizeInWindow: Int = payload.size // FIXME: take padding size into account, #1313
   }
 
+  /**
+   * Representation of the wire-level HEADERS frame. Together with ContinuationFrame's and instance of
+   * HeadersFrame will be parsed into a logical ParsedHeadersFrame.
+   */
   final case class HeadersFrame(
     streamId:            Int,
     endStream:           Boolean,
@@ -92,6 +96,10 @@ private[http] object FrameEvent {
     streamId: Int,
     payload:  ByteString) extends StreamFrameEvent
 
+  /**
+   * Convenience (logical) representation of a parsed HEADERS frame with zero, one or
+   * many CONTINUATIONS Frames into a single, decompressed object.
+   */
   final case class ParsedHeadersFrame(
     streamId:      Int,
     endStream:     Boolean,

@@ -6,34 +6,46 @@ package akka.http.impl.engine.http2
 
 import java.net.InetSocketAddress
 
-import javax.net.ssl.SSLContext
 import akka.NotUsed
-import akka.http.impl.engine.http2.Http2Protocol.{ ErrorCode, Flags, FrameType, SettingIdentifier }
+import akka.event.Logging
+import akka.http.impl.engine.http2.FrameEvent._
+import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
+import akka.http.impl.engine.http2.Http2Protocol.Flags
+import akka.http.impl.engine.http2.Http2Protocol.FrameType
+import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.engine.ws.ByteStringSinkProbe
-import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
+import akka.http.impl.util.AkkaSpecWithMaterializer
+import akka.http.impl.util.LogByteStringTools
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{ CacheDirectives, RawHeader }
+import akka.http.scaladsl.model.headers.CacheDirectives
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.settings.ServerSettings
-import akka.stream.impl.io.ByteStringParser.ByteReader
-import akka.stream.scaladsl.{ BidiFlow, Flow, Sink, Source, SourceQueueWithComplete }
-import akka.stream.testkit.TestPublisher.ManualProbe
-import akka.stream.testkit.{ TestPublisher, TestSubscriber }
+import akka.stream.Attributes
+import akka.stream.Attributes.LogLevels
 import akka.stream.OverflowStrategy
+import akka.stream.impl.io.ByteStringParser.ByteReader
+import akka.stream.scaladsl.BidiFlow
+import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.SourceQueueWithComplete
+import akka.stream.testkit.TestPublisher.ManualProbe
+import akka.stream.testkit.scaladsl.StreamTestKit
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
 import akka.testkit._
 import akka.util.ByteString
+import com.github.ghik.silencer.silent
+import javax.net.ssl.SSLContext
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.collection.immutable
-import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
-import FrameEvent._
-import akka.event.Logging
-import akka.stream.Attributes
-import akka.stream.Attributes.LogLevels
-import akka.stream.testkit.scaladsl.StreamTestKit
-import com.github.ghik.silencer.silent
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.Promise
 
 /**
  * This tests the http2 server protocol logic.
@@ -932,7 +944,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         val (_, error) = expectGOAWAY()
         error should ===(ErrorCode.FRAME_SIZE_ERROR)
       }
-      "received SETTINGs frame frame with a length other than a multiple of 6 octets (invalid 6_5)" in new TestSetup with RequestResponseProbes {
+      "received SETTINGS frame with a length other than a multiple of 6 octets (invalid 6_5)" in new TestSetup with RequestResponseProbes {
         val data = hex"00 00 02 04 00 00 00 00 00"
 
         sendFrame(FrameType.SETTINGS, ByteFlag.Zero, 0, data)
@@ -986,6 +998,53 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         val (_, code) = expectGOAWAY()
         code should ===(ErrorCode.FLOW_CONTROL_ERROR)
       }
+    }
+
+    "enforce settings" should {
+
+      "reject new substreams when exceeding SETTINGS_MAX_CONCURRENT_STREAMS" in new TestSetup with RequestResponseProbes {
+        def maxStreams: Int = 16
+        override def settings: ServerSettings = super.settings.mapHttp2Settings(_.withMaxConcurrentStreams(maxStreams))
+        val requestHeaderBlock: ByteString = HPackSpecExamples.C41FirstRequestWithHuffman
+
+        // start as many streams as max concurrent...
+        private val streamIds: IndexedSeq[Int] = (0 until maxStreams).map(id => 1 + id * 2)
+        streamIds.foreach(streamId =>
+          sendHEADERS(streamId, endStream = false, endHeaders = true, requestHeaderBlock)
+        )
+
+        // while we don't exceed the limit, there's silence on the line
+        expectNoBytes(100.millis)
+
+        // When we exceed the limit, though...
+        val lastValidStreamId = streamIds.max
+        val firstInvalidStreamId = lastValidStreamId + 2
+        sendHEADERS(firstInvalidStreamId, endStream = false, endHeaders = true, requestHeaderBlock)
+        expectRST_STREAM(firstInvalidStreamId, ErrorCode.REFUSED_STREAM)
+      }
+
+      "reject new substreams when exceeding SETTINGS_MAX_CONCURRENT_STREAMS (with closed streams in between)" in new TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
+        def maxStreams: Int = 32
+        val requestHeaderBlock: ByteString = HPackSpecExamples.C41FirstRequestWithHuffman
+        override def settings = super.settings.mapHttp2Settings(_.withMaxConcurrentStreams(maxStreams))
+
+        // the Seq of stream ids has gaps
+        // the skipped values should be represented as automatically-closed streams
+        private val streamIds: IndexedSeq[Int] = (0 until maxStreams).map(id => 1 + id * 4)
+        streamIds.foreach { streamId =>
+          sendHEADERS(streamId, endStream = false, endHeaders = true, requestHeaderBlock)
+        }
+
+        // while we don't exceed the limit, there's silence on the line
+        expectNoBytes(100.millis)
+
+        // When we exceed the limit, though...
+        val lastValidStreamId = streamIds.max
+        val firstInvalidStreamId = lastValidStreamId + 2
+        sendHEADERS(firstInvalidStreamId, endStream = false, endHeaders = true, requestHeaderBlock)
+        expectRST_STREAM(firstInvalidStreamId, ErrorCode.REFUSED_STREAM)
+      }
+
     }
 
     "support low-level features" should {
@@ -1127,7 +1186,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     def modifyServer(server: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed]) = server
 
     // hook to modify server settings
-    def settings = ServerSettings(system).withServerHeader(None)
+    def settings: ServerSettings = ServerSettings(system).withServerHeader(None)
 
     final def theServer: BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
       modifyServer(Http2Blueprint.serverStack(settings, system.log))
@@ -1200,8 +1259,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
   /** Basic TestSetup that has already passed the exchange of the connection preface */
   abstract class TestSetup extends TestSetupWithoutHandshake {
     sendBytes(Http2Protocol.ClientConnectionPreface)
-    val serverPreface = expectFrameHeader()
-    serverPreface.frameType shouldBe Http2Protocol.FrameType.SETTINGS
+    expectSETTINGS()
   }
 
   /** Provides the user handler flow as `requestIn` and `responseOut` probes for manual stream interaction */

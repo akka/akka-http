@@ -5,17 +5,17 @@
 package akka.http.impl.engine.http2
 
 import akka.annotation.InternalApi
+import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.scaladsl.model.http2.PeerClosedStreamException
 import akka.http.scaladsl.settings.Http2CommonSettings
+import akka.macros.LogHelper
 import akka.stream.scaladsl.Source
-import akka.stream.stage.{ GraphStageLogic, OutHandler }
+import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.OutHandler
 import akka.util.ByteString
 
 import scala.collection.immutable
-import FrameEvent._
-import akka.macros.LogHelper
-
 import scala.util.control.NoStackTrace
 
 /**
@@ -60,6 +60,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
           Idle
         }
     }
+
   def handleStreamEvent(e: StreamFrameEvent): Unit = {
     updateState(e.streamId, _.handle(e))
   }
@@ -82,10 +83,12 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   private def updateState(streamId: Int, handle: IncomingStreamState => IncomingStreamState): Unit = {
     val oldState = streamFor(streamId)
     val newState = handle(oldState)
+
     newState match {
       case Closed   => incomingStreams -= streamId
       case newState => incomingStreams += streamId -> newState
     }
+
     debug(s"Incoming side of stream [$streamId] changed state: ${oldState.stateName} -> ${newState.stateName}")
   }
   /** Called to cleanup any state when the connection is torn down */
@@ -143,7 +146,15 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     def shutdown(): IncomingStreamState
   }
   case object Idle extends IncomingStreamState {
-    def handle(event: StreamFrameEvent): IncomingStreamState = expectIncomingStream(event, HalfClosedRemote, ReceivingDataFirst)
+    def handle(event: StreamFrameEvent): IncomingStreamState = {
+      if (event.isInstanceOf[ParsedHeadersFrame] && incomingStreams.size > settings.maxConcurrentStreams) {
+        // When trying to open a new Stream, if that op would exceed the maxConcurrentStreams, then refuse the op
+        resetStream(event.streamId, ErrorCode.REFUSED_STREAM)
+        Closed
+      } else {
+        expectIncomingStream(event, HalfClosedRemote, ReceivingDataFirst)
+      }
+    }
     override def handleOutgoingCreated(stream: Http2SubStream): IncomingStreamState = SendingData(stream)
     override def shutdown(): IncomingStreamState = Closed
   }

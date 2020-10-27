@@ -96,6 +96,7 @@ class H2SpecIntegrationSpec extends AkkaSpec(
       "4.3",
       "5.1",
       "5.1.1",
+      "5.1.2",
       "5.5",
       "6.1",
       "6.3",

@@ -47,6 +47,7 @@ private[http] trait Http2FrameProbe {
   def expectFrameFlagsAndPayload(frameType: FrameType, streamId: Int): (ByteFlag, ByteString)
   def expectFrameFlagsStreamIdAndPayload(frameType: FrameType): (ByteFlag, Int, ByteString)
 
+  def expectSETTINGS(): FrameEvent
   def expectFrameHeader(): FrameHeader
 
   /** Collect a header block maybe spanning several frames */
@@ -81,6 +82,7 @@ private[http] trait Http2FrameProbeDelegator extends Http2FrameProbe {
   def expectRST_STREAM(streamId: Int, errorCode: ErrorCode): Unit = frameProbeDelegate.expectRST_STREAM(streamId, errorCode)
   def expectRST_STREAM(streamId: Int): ErrorCode = frameProbeDelegate.expectRST_STREAM(streamId)
   def expectGOAWAY(lastStreamId: Int): (Int, ErrorCode) = frameProbeDelegate.expectGOAWAY(lastStreamId)
+  def expectSETTINGS(): FrameEvent = frameProbeDelegate.expectSETTINGS()
   def expectSettingsAck(): Unit = frameProbeDelegate.expectSettingsAck()
   def expectFrame(frameType: FrameType, expectedFlags: ByteFlag, streamId: Int, payload: ByteString): Unit = frameProbeDelegate.expectFrame(frameType, expectedFlags, streamId, payload)
   def expectFramePayload(frameType: FrameType, expectedFlags: ByteFlag, streamId: Int): ByteString = frameProbeDelegate.expectFramePayload(frameType, expectedFlags, streamId)
@@ -171,6 +173,12 @@ private[http] object Http2FrameProbe extends Matchers {
         val incomingLastStreamId = reader.readIntBE()
         if (lastStreamId > 0) incomingLastStreamId should ===(lastStreamId)
         (lastStreamId, ErrorCode.byId(reader.readIntBE()))
+      }
+
+      override def expectSETTINGS(): FrameEvent = {
+        // (6.5) The stream identifier for a SETTINGS frame MUST be zero (0x0).
+        val payload = expectFramePayload(FrameType.SETTINGS, Flags.NO_FLAGS, 0)
+        Http2FrameParsing.parseFrame(FrameType.SETTINGS, Flags.NO_FLAGS, 0, new ByteReader(payload), system.log)
       }
 
       def expectSettingsAck() = expectFrame(FrameType.SETTINGS, Flags.ACK, 0, ByteString.empty)
