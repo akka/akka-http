@@ -23,6 +23,7 @@ import scala.concurrent.{ ExecutionContextExecutor, Future }
 private[http] class RequestContextImpl(
   val request:          HttpRequest,
   val unmatchedPath:    Uri.Path,
+  val unusedParameters: Set[String],
   val executionContext: ExecutionContextExecutor,
   val materializer:     Materializer,
   val log:              LoggingAdapter,
@@ -30,7 +31,7 @@ private[http] class RequestContextImpl(
   val parserSettings:   ParserSettings) extends RequestContext {
 
   def this(request: HttpRequest, log: LoggingAdapter, settings: RoutingSettings, parserSettings: ParserSettings)(implicit ec: ExecutionContextExecutor, materializer: Materializer) =
-    this(request, request.uri.path, ec, materializer, log, settings, parserSettings)
+    this(request, request.uri.path, request.uri.query().toMap.keySet, ec, materializer, log, settings, parserSettings)
 
   def reconfigure(executionContext: ExecutionContextExecutor, materializer: Materializer, log: LoggingAdapter, settings: RoutingSettings): RequestContext =
     copy(executionContext = executionContext, materializer = materializer, log = log, routingSettings = settings)
@@ -90,6 +91,12 @@ private[http] class RequestContextImpl(
   override def mapUnmatchedPath(f: Uri.Path => Uri.Path): RequestContext =
     copy(unmatchedPath = f(unmatchedPath))
 
+  override def withUnusedParameters(parameters: Set[String]): RequestContext =
+    if (parameters != unusedParameters) copy(unusedParameters = parameters) else this
+
+  override def mapUnusedParameters(f: Set[String] => Set[String]): RequestContext =
+    copy(unusedParameters = f(unusedParameters))
+
   override def withAcceptAll: RequestContext = request.header[headers.Accept] match {
     case Some(accept @ headers.Accept(ranges)) if !accept.acceptsAll =>
       mapRequest(_.mapHeaders(_.map {
@@ -106,12 +113,13 @@ private[http] class RequestContextImpl(
   private def copy(
     request:          HttpRequest              = request,
     unmatchedPath:    Uri.Path                 = unmatchedPath,
+    unusedParameters: Set[String]              = unusedParameters,
     executionContext: ExecutionContextExecutor = executionContext,
     materializer:     Materializer             = materializer,
     log:              LoggingAdapter           = log,
     routingSettings:  RoutingSettings          = settings,
     parserSettings:   ParserSettings           = parserSettings) =
-    new RequestContextImpl(request, unmatchedPath, executionContext, materializer, log, routingSettings, parserSettings)
+    new RequestContextImpl(request, unmatchedPath, unusedParameters, executionContext, materializer, log, routingSettings, parserSettings)
 
   override def toString: String =
     s"""RequestContext($request, $unmatchedPath, [more settings])"""

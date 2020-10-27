@@ -209,7 +209,7 @@ object ParameterDirectives extends ParameterDirectives {
         import ctx.executionContext
         import ctx.materializer
         onComplete(fsou(ctx.request.uri.query().get(paramName))) flatMap {
-          case Success(value) if value == requiredValue => pass
+          case Success(value) if value == requiredValue => pass & mapRequestContext(_ mapUnusedParameters (_ - paramName))
           case Success(value)                           => reject(InvalidRequiredValueForQueryParamRejection(paramName, requiredValue.toString, value.toString))
           case _                                        => reject(MissingQueryParamRejection(paramName))
         }
@@ -224,7 +224,7 @@ object ParameterDirectives extends ParameterDirectives {
 
     def handleParamResult[T](paramName: String, result: Future[T]): Directive1[T] =
       onComplete(result).flatMap {
-        case Success(x)                               => provide(x)
+        case Success(x)                               => provide(x) & mapRequestContext(_ mapUnusedParameters (_ - paramName))
         case Failure(Unmarshaller.NoContentException) => reject(MissingQueryParamRejection(paramName))
         case Failure(x)                               => reject(MalformedQueryParamRejection(paramName, x.getMessage.nullAsEmpty, Option(x.getCause)))
       }

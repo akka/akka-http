@@ -210,6 +210,11 @@ trait BasicDirectives {
   def extractMatchedPath: Directive1[Uri.Path] = BasicDirectives._extractMatchedPath
 
   /**
+   * Extracts the yet unused query parameters from the RequestContext.
+   */
+  def extractUnusedParameters: Directive1[Set[String]] = BasicDirectives._extractUnusedParameters
+
+  /**
    * Extracts the current [[HttpRequest]] instance.
    *
    * @group basic
@@ -412,6 +417,7 @@ trait BasicDirectives {
 object BasicDirectives extends BasicDirectives {
   private val _extractUnmatchedPath: Directive1[Uri.Path] = extract(_.unmatchedPath)
   private val _extractMatchedPath: Directive1[Uri.Path] = extract(extractMatched)
+  private val _extractUnusedParameters: Directive1[Set[String]] = extract(_.unusedParameters)
   private val _extractRequest: Directive1[HttpRequest] = extract(_.request)
   private val _extractUri: Directive1[Uri] = extract(_.request.uri)
   private val _extractExecutionContext: Directive1[ExecutionContextExecutor] = extract(_.executionContext)
