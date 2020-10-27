@@ -44,9 +44,9 @@ private[http] object FrameEvent {
   }
 
   /**
-    * Representation of the wire-level HEADERS frame. Together with ContinuationFrame's and instance of
-    * HeadersFrame will be parsed into a logical ParsedHeadersFrame.
-    */
+   * Representation of the wire-level HEADERS frame. Together with ContinuationFrame's and instance of
+   * HeadersFrame will be parsed into a logical ParsedHeadersFrame.
+   */
   final case class HeadersFrame(
     streamId:            Int,
     endStream:           Boolean,
