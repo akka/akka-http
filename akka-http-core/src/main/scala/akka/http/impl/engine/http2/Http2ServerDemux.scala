@@ -113,7 +113,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
         // FIXME: handle the connection closing according to the specification
       }
       private[this] var allowReadingIncomingFrames: Boolean = true
-      override def allowReadingIncomingFrames(allow: Boolean): Unit = {
+      override def      allowReadingIncomingFrames(allow: Boolean): Unit = {
         if (allow != allowReadingIncomingFrames)
           if (allow) {
             debug("Resume reading incoming frames")
@@ -124,6 +124,18 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       }
       def pullFrameIn(): Unit = if (allowReadingIncomingFrames && !hasBeenPulled(frameIn)) pull(frameIn)
 
+      private[this] var allowWritingOutgoingFrames: Boolean = true
+      override def allowWritingOutgoingFrames(allow: Boolean): Unit = {
+        if (allow != allowWritingOutgoingFrames)
+          if (allow) {
+            debug("Resume writing outgoing frames")
+            if (!hasBeenPulled(substreamIn)) pull(substreamIn)
+          } else debug("Suspended writing outgoing frames") // can't retract pending pull but that's ok
+
+        allowReadingIncomingFrames = allow
+      }
+      def pullsubstreamIn(): Unit = if (allowWritingOutgoingFrames && !hasBeenPulled(substreamIn)) pull(substreamIn)
+
       setHandler(frameIn, new InHandler {
 
         def onPush(): Unit = {
@@ -131,7 +143,9 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
           in match {
             case WindowUpdateFrame(streamId, increment) => multiplexer.updateWindow(streamId, increment) // handled specially
             case p: PriorityFrame                       => multiplexer.updatePriority(p)
-            case s: StreamFrameEvent                    => handleStreamEvent(s)
+            case s: StreamFrameEvent                    =>
+              handleStreamEvent(s)
+              allowWritingOutgoingFrames(getRemoteMaxConcurrentStreams < countConcurrentRemoteStreams())
 
             case SettingsFrame(settings) =>
               if (settings.nonEmpty) debug(s"Got ${settings.length} settings!")
@@ -189,6 +203,8 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
 
             case e: Http2Compliance.Http2ProtocolStreamException =>
               resetStream(e.streamId, e.errorCode)
+              // freeing a stream, we may need to pull...
+              allowWritingOutgoingFrames(getRemoteMaxConcurrentStreams < countConcurrentRemoteStreams())
 
             case e: ParsingException =>
               e.getCause match {
@@ -213,7 +229,8 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       setHandler(substreamIn, new InHandler {
         def onPush(): Unit = {
           val sub = grab(substreamIn)
-          pull(substreamIn)
+          // don't pull if exceeding the number of concurrent streams set by the peer
+          allowWritingOutgoingFrames(getRemoteMaxConcurrentStreams < countConcurrentRemoteStreams())
           handleOutgoingCreated(sub)
           multiplexer.registerSubStream(sub)
         }
@@ -234,7 +251,8 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
           case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) =>
             multiplexer.updateMaxFrameSize(value)
           case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) =>
-            debug(s"Setting max concurrent streams to $value (not enforced)")
+            setMaxConcurrentStreams(value)
+            allowWritingOutgoingFrames(getRemoteMaxConcurrentStreams < countConcurrentRemoteStreams())
           case Setting(id, value) =>
             debug(s"Ignoring setting $id -> $value (in Demux)")
         }
