@@ -16,7 +16,7 @@ import akka.http.impl.engine.client.PoolFlow.{ RequestContext, ResponseContext }
 import akka.http.impl.engine.client.pool.SlotState._
 import akka.http.impl.util.{ RichHttpRequest, StageLoggingWithOverride, StreamUtils }
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{ HttpEntity, HttpMethods, HttpRequest, HttpResponse, headers }
+import akka.http.scaladsl.model.{ HttpEntity, HttpRequest, HttpResponse, headers }
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.stream._
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
@@ -305,13 +305,6 @@ private[client] object NewHostConnectionPool {
                 } else if (previousState.isIdle && !state.isIdle)
                   idleSlots.remove(this)
 
-                def hasNoEntityStream(requestContext: RequestContext, response: HttpResponse): Boolean =
-                  response.entity.isStrict ||
-                    response.entity.isKnownEmpty ||
-                    // HEAD responses get a weird HttpEntity.Default(..., non-zero-Content-Length, Source.empty) entity
-                    // and we currently have no better way to determine that there's an empty source in there.
-                    requestContext.request.method == HttpMethods.HEAD
-
                 state match {
                   case PushingRequestToConnection(ctx) =>
                     connection.pushRequest(ctx.request)
@@ -327,10 +320,10 @@ private[client] object NewHostConnectionPool {
                       OptionVal.None
                     }
 
-                  case WaitingForResponseEntitySubscription(req, res, _, _) if hasNoEntityStream(req, res) =>
+                  case WaitingForResponseEntitySubscription(req, res, _, _) if hasNoEntityStream(res) =>
                     // the connection cannot drive these for a strict entity so we have to loop ourselves
                     OptionVal.Some(Event.onResponseEntitySubscribed)
-                  case WaitingForEndOfResponseEntity(req, res, _) if hasNoEntityStream(req, res) =>
+                  case WaitingForEndOfResponseEntity(req, res, _) if hasNoEntityStream(res) =>
                     // the connection cannot drive these for a strict entity so we have to loop ourselves
                     OptionVal.Some(Event.onResponseEntityCompleted)
                   case Unconnected if currentEmbargo != Duration.Zero =>
@@ -427,6 +420,13 @@ private[client] object NewHostConnectionPool {
               currentTimeoutId = -1
             }
         }
+        private def hasNoEntityStream(response: HttpResponse): Boolean =
+          response.entity match {
+            case _: HttpEntity.Strict        => true
+            case HttpEntity.Default(_, _, e) => e == Source.empty
+            case e                           => e.isKnownEmpty
+          }
+
         final class SlotConnection(
           _slot:      Slot,
           requestOut: SubSourceOutlet[HttpRequest],
@@ -481,33 +481,33 @@ private[client] object NewHostConnectionPool {
 
             withSlot(_.debug("Received response")) // FIXME: add abbreviated info
 
-            response.entity match {
-              case _: HttpEntity.Strict => withSlot(_.onResponseReceived(response))
-              case e =>
-                val (newEntity, StreamUtils.StreamControl(entitySubscribed, entityComplete, entityKillSwitch)) =
-                  StreamUtils.transformEntityStream(response.entity, StreamUtils.CaptureMaterializationAndTerminationOp)
+            // if hasNoEntityStream == true, we don't expect onResponseEntity... events in the state machine above
+            if (hasNoEntityStream(response)) withSlot(_.onResponseReceived(response))
+            else {
+              val (newEntity, StreamUtils.StreamControl(entitySubscribed, entityComplete, entityKillSwitch)) =
+                StreamUtils.transformEntityStream(response.entity, StreamUtils.CaptureMaterializationAndTerminationOp)
 
-                ongoingResponseEntity = Some(e)
-                ongoingResponseEntityKillSwitch = entityKillSwitch
+              ongoingResponseEntity = Some(response.entity)
+              ongoingResponseEntityKillSwitch = entityKillSwitch
 
-                entitySubscribed.onComplete(safely {
-                  case Success(_) =>
-                    withSlot(_.onResponseEntitySubscribed())
+              entitySubscribed.onComplete(safely {
+                case Success(_) =>
+                  withSlot(_.onResponseEntitySubscribed())
 
-                    entityComplete.onComplete {
-                      safely { res =>
-                        res match {
-                          case Success(_)     => withSlot(_.onResponseEntityCompleted())
-                          case Failure(cause) => withSlot(_.onResponseEntityFailed(cause))
-                        }
-                        ongoingResponseEntity = None
-                        ongoingResponseEntityKillSwitch = None
+                  entityComplete.onComplete {
+                    safely { res =>
+                      res match {
+                        case Success(_)     => withSlot(_.onResponseEntityCompleted())
+                        case Failure(cause) => withSlot(_.onResponseEntityFailed(cause))
                       }
-                    }(ExecutionContexts.sameThreadExecutionContext)
-                  case Failure(_) => throw new IllegalStateException("Should never fail")
-                })(ExecutionContexts.sameThreadExecutionContext)
+                      ongoingResponseEntity = None
+                      ongoingResponseEntityKillSwitch = None
+                    }
+                  }(ExecutionContexts.sameThreadExecutionContext)
+                case Failure(_) => throw new IllegalStateException("Should never fail")
+              })(ExecutionContexts.sameThreadExecutionContext)
 
-                withSlot(_.onResponseReceived(response.withEntity(newEntity)))
+              withSlot(_.onResponseReceived(response.withEntity(newEntity)))
             }
 
             if (!responseIn.isClosed) responseIn.pull()

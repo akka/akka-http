@@ -190,18 +190,45 @@ class HostConnectionPoolSpec extends AkkaSpecWithMaterializer(
 
         conn1.expectRequestToPath("/2")
       }
-      "not get stuck on HEAD requests if payload is never subscribed" inWithShutdown new SetupWithServerProbes(_.withResponseEntitySubscriptionTimeout(Duration.Inf).withMaxConnections(1)) {
-        pushRequest(HttpRequest(method = HttpMethods.HEAD, uri = "/head"))
-        pushRequest(HttpRequest(uri = "/2"))
-        val conn1 = expectNextConnection()
-        conn1.expectRequestToPath("/head")
+      if (clientServerImplementation != PassThrough) {
+        // doesn't work on PassThrough as entity is decorated by test infra
+        "not get stuck on HEAD requests if payload is never subscribed" inWithShutdown new SetupWithServerProbes(_.withResponseEntitySubscriptionTimeout(Duration.Inf).withMaxConnections(1)) {
+          pushRequest(HttpRequest(method = HttpMethods.HEAD, uri = "/head"))
+          pushRequest(HttpRequest(uri = "/2"))
+          val conn1 = expectNextConnection()
+          conn1.expectRequestToPath("/head")
 
-        conn1.pushResponse(HttpResponse(entity = HttpEntity.Default(ContentTypes.`application/octet-stream`, 100, Source.empty)))
-        val res = expectResponse()
-        res.entity.contentLengthOption.get shouldEqual 100
+          conn1.pushResponse(HttpResponse(entity = HttpEntity.Default(ContentTypes.`application/octet-stream`, 100, Source.empty)))
+          val res = expectResponse()
+          res.entity.contentLengthOption.get shouldEqual 100
 
-        // immediately expect next request
-        conn1.expectRequestToPath("/2")
+          // HEAD requests do not require to consume entity
+
+          // immediately expect next request
+          conn1.expectRequestToPath("/2")
+          conn1.pushResponse()
+          expectResponse().status shouldEqual StatusCodes.OK
+        }
+        "not fail if HEAD request entity is subscribed" inWithShutdown new SetupWithServerProbes(_.withResponseEntitySubscriptionTimeout(Duration.Inf).withMaxConnections(1)) {
+          pushRequest(HttpRequest(method = HttpMethods.HEAD, uri = "/head"))
+          pushRequest(HttpRequest(uri = "/2"))
+          val conn1 = expectNextConnection()
+          conn1.expectRequestToPath("/head")
+
+          conn1.pushResponse(HttpResponse(entity = HttpEntity.Default(ContentTypes.`application/octet-stream`, 100, Source.empty)))
+          val res = expectResponse()
+          res.entity.contentLengthOption.get shouldEqual 100
+
+          // HEAD requests do not require consumption of entity but users might do anyway
+          res.entity.discardBytes()
+          // allow a bit of time for dispatching the event
+          Thread.sleep(100)
+
+          // immediately expect next request
+          conn1.expectRequestToPath("/2")
+          conn1.pushResponse()
+          expectResponse().status shouldEqual StatusCodes.OK
+        }
       }
       "time out quickly when response entity stream is not subscribed fast enough" inWithShutdown new SetupWithServerProbes {
         pendingIn(targetTrans = PassThrough) // infra seems to be missing something
