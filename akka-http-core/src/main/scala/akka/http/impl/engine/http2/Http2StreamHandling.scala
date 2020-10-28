@@ -61,7 +61,6 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
    *         state doesn't exceed MaxConcurrentStreams
    */
   def hasOutgoingCapacity: Boolean = {
-    debug(s"${streamStates.size} < $maxConcurrentStreams")
     // StreamStates only contains streams in active states (active states are any variation
     // of Open, HalfClosed) so using the `size` works fine to compute the capacity.
     streamStates.size < maxConcurrentStreams - 1

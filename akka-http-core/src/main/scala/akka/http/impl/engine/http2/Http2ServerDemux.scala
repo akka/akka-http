@@ -139,7 +139,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       def pullFrameIn(): Unit = if (allowReadingIncomingFrames && !hasBeenPulled(frameIn)) pull(frameIn)
 
       def pullOutgoingSubStreams: Unit =
-        if (hasOutgoingCapacity && !hasBeenPulled(substreamIn)) pull(substreamIn)
+        if (hasOutgoingCapacity && !hasBeenPulled(substreamIn) && !isClosed(substreamIn)) pull(substreamIn)
 
       setHandler(frameIn, new InHandler {
 
