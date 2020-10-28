@@ -989,6 +989,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         expectSettingsAck()
 
         // TODO actually apply the limiting and verify it works
+        // This test is not required until supporting PUSH_PROMISE.
       }
 
       "received SETTINGS_HEADER_TABLE_SIZE" in new TestSetup with RequestResponseProbes {
