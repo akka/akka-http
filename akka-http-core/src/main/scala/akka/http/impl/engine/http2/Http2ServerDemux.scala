@@ -138,6 +138,9 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       }
       def pullFrameIn(): Unit = if (allowReadingIncomingFrames && !hasBeenPulled(frameIn)) pull(frameIn)
 
+      def pullOutgoingSubStreams: Unit =
+        if (hasOutgoingCapacity && !hasBeenPulled(substreamIn)) pull(substreamIn)
+
       setHandler(frameIn, new InHandler {
 
         def onPush(): Unit = {
@@ -209,14 +212,15 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       setHandler(substreamIn, new InHandler {
         def onPush(): Unit = {
           val sub = grab(substreamIn)
-          pull(substreamIn)
+          // pull only if there's outgoing capacity
+          pullOutgoingSubStreams
           handleOutgoingCreated(sub)
         }
       })
 
       /**
        * Tune this peer to enforce the settings configured from this peer.
-       * @return TODO: it's a Boolean but I don't think it has to be.
+       * @return FIXME: it's a Boolean but I don't think it has to be.
        */
       private def enforceSettings(settings: immutable.Seq[Setting]): Boolean = {
         var settingsAppliedOk = true
@@ -253,7 +257,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
           case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) =>
             multiplexer.updateMaxFrameSize(value)
           case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) =>
-            debug(s"Setting max concurrent streams to $value (not respected)")
+            setMaxConcurrentStreams(value)
           case Setting(id, value) =>
             debug(s"Ignoring setting $id -> $value (in Demux)")
         }
