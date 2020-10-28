@@ -4,7 +4,7 @@
 
 package akka.http.impl.engine.http2
 
-import java.util.concurrent.CountDownLatch
+import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 import scala.concurrent.Await
 import scala.concurrent.Future
@@ -35,10 +35,11 @@ class H2ServerProcessingBenchmark extends CommonBenchmark {
 
   val packedResponse = ByteString(-62, -63, -64, -65, -66)
 
+  val numRequests = 10000
+
   @Benchmark
-  @OperationsPerInvocation(10000)
+  @OperationsPerInvocation(10000) // should be same as numRequest
   def benchRequestProcessing(): Unit = {
-    val numRequests = 10000
     val latch = new CountDownLatch(numRequests)
 
     val requests =
@@ -57,21 +58,22 @@ class H2ServerProcessingBenchmark extends CommonBenchmark {
         }))(Keep.both)
         .run()
 
-    latch.await()
+    require(latch.await(10, TimeUnit.SECONDS), "Not all responses were received in time")
 
     in.success(None)
-    Await.result(done, 1.hour)
+    Await.result(done, 10.seconds)
   }
 
   @Setup
   def setup(): Unit = {
     val config =
       ConfigFactory.parseString(
-        """
+        s"""
            #akka.loglevel = debug
            akka.actor.default-dispatcher.fork-join-executor.parallelism-max = 1
            #akka.http.server.log-unencrypted-network-bytes = 100
-        """)
+           akka.http.server.http2.max-concurrent-streams = $numRequests # needs to be >= `numRequests`
+         """)
         .withFallback(ConfigFactory.load())
     system = ActorSystem("AkkaHttpBenchmarkSystem", config)
     mat = ActorMaterializer()
