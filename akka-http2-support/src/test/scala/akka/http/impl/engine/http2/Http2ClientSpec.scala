@@ -11,7 +11,7 @@ import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.ws.ByteStringSinkProbe
-import akka.http.impl.util.{AkkaSpecWithMaterializer, LogByteStringTools}
+import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.HttpEntity.Strict
 import akka.http.scaladsl.model.HttpMethods.GET
@@ -19,8 +19,8 @@ import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.Attributes
 import akka.stream.Attributes.LogLevels
-import akka.stream.scaladsl.{BidiFlow, Flow, Sink, Source}
-import akka.stream.testkit.{TestPublisher, TestSubscriber}
+import akka.stream.scaladsl.{ BidiFlow, Flow, Sink, Source }
+import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.util.ByteString
 import org.scalatest.concurrent.Eventually
 
