@@ -850,6 +850,12 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         // now again on stream 1
         sendDataAndExpectOnNet(entity1DataOut, 1, "jklm")
 
+        // send two data bits first but only pull and expect later
+        entity1DataOut.sendNext(ByteString("hihihi"))
+        entity2DataOut.sendNext(ByteString("hohoho"))
+        expectDATA(1, endStream = false, ByteString("hihihi"))
+        expectDATA(3, endStream = false, ByteString("hohoho"))
+
         // last data of stream 2
         sendDataAndExpectOnNet(entity2DataOut, 3, "uvwx", endStream = true)
 
