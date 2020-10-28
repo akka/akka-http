@@ -75,6 +75,8 @@ object Dependencies {
       val scalatestplusScalacheck = "org.scalatestplus" %% "scalacheck-1-14" % (scalaTestVersion + ".0") % "test"
       val scalatestplusJUnit      = "org.scalatestplus" %% "junit-4-13"      % (scalaTestVersion + ".0") % "test"
 
+      val scalaParserCombinators  = "org.scala-lang.modules" %% "scala-parser-combinators" % "1.1.2" % "test"
+
       // HTTP/2
       val h2spec       = "io.github.summerwind"        % h2specName                     % h2specVersion      % "test" from(h2specUrl) // MIT
     }
@@ -104,7 +106,7 @@ object Dependencies {
 
   lazy val http = Seq()
 
-  lazy val http2 = l ++= Seq()
+  lazy val http2 = l ++= Seq(Test.scalaParserCombinators)
 
   lazy val http2Support = l ++= Seq(Test.h2spec)
 

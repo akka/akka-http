@@ -1,0 +1,7 @@
+> HEADERS 1 END_STREAM
+  :method    -> GET
+  :scheme    -> http
+  :path      -> /info
+  :authority -> www.example.com
+
+< HEADERS 1
