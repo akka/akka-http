@@ -39,8 +39,15 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
 
   def flowController: IncomingFlowController = IncomingFlowController.default(settings)
 
-  /** Generates demand of SubStreams on the inlet from the user handler.*/
-  def pullOutgoingSubStreams(): Unit
+  /**
+   * Tries to generate demand of SubStreams on the inlet from the user handler. The
+   * attemp to demand will succeed if the inlet is open and has no pending pull, and,
+   * in the case of a client, if we're not exceedingthe number of active streams.
+   * This method must be invoked any time the collection of active streams or the
+   * value of maxConcurrentStreams are modified but the invocation must happen _after_
+   * the collection or the limit are modified.
+   */
+  def tryPullSubStreams(): Unit
 
   private var streamStates = new immutable.TreeMap[Int, StreamState]
   private var largestIncomingStreamId = 0
@@ -57,8 +64,8 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   private var maxConcurrentStreams = Http2Protocol.InitialMaxConcurrentStreams
   def setMaxConcurrentStreams(newValue: Int): Unit = maxConcurrentStreams = newValue
   /**
-   * @return true is the number of outgoing streams in Open (and HalfClosedXxx)
-   *         state doesn't exceed MaxConcurrentStreams
+   * @return true if the number of outgoing Active streams (Active includes Open
+   *         and any variant of HalfClosedXxx) doesn't exceed MaxConcurrentStreams
    */
   def hasCapacityToCreateStreams: Boolean = {
     // StreamStates only contains streams in active states (active states are any variation
@@ -138,7 +145,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     newState match {
       case Closed =>
         streamStates -= streamId
-        pullOutgoingSubStreams
+        tryPullSubStreams()
       case newState => streamStates += streamId -> newState
     }
 
@@ -149,7 +156,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   def shutdownStreamHandling(): Unit = streamStates.keys.foreach(id => updateState(id, { x => x.shutdown(); Closed }))
   def resetStream(streamId: Int, errorCode: ErrorCode): Unit = {
     streamStates -= streamId
-    pullOutgoingSubStreams
+    tryPullSubStreams()
     debug(s"Incoming side of stream [$streamId]: resetting with code [$errorCode]")
     multiplexer.pushControlFrame(RstStreamFrame(streamId, errorCode))
   }

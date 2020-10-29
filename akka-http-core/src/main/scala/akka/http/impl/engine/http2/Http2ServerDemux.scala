@@ -142,7 +142,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
         if (!hasBeenPulled(substreamIn) && !isClosed(substreamIn)) {
           // While we don't support PUSH_PROMISE there's only capacity control on the client
           if (isServer) pull(substreamIn)
-          else if (hasOutgoingCapacity) pull(substreamIn)
+          else if (hasCapacityToCreateStreams) pull(substreamIn)
         }
       }
 
@@ -219,7 +219,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
           val sub = grab(substreamIn)
           handleOutgoingCreated(sub)
           // Once the incoming stream is handled, we decide if we need to pull more.
-          pullOutgoingSubStreams
+          tryPullSubStreams()
         }
       })
 
@@ -264,7 +264,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
           case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) =>
             setMaxConcurrentStreams(value)
             // once maxConcurrentStreams is updated, see if we can pull again
-            pullOutgoingSubStreams
+            tryPullSubStreams()
           case Setting(id, value) =>
             debug(s"Ignoring setting $id -> $value (in Demux)")
         }
