@@ -217,8 +217,6 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       setHandler(substreamIn, new InHandler {
         def onPush(): Unit = {
           val sub = grab(substreamIn)
-          // pull only if there's outgoing capacity
-          pullOutgoingSubStreams
           handleOutgoingCreated(sub)
         }
       })
@@ -263,6 +261,8 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
             multiplexer.updateMaxFrameSize(value)
           case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) =>
             setMaxConcurrentStreams(value)
+            // once maxConcurrentStreams is updated, see if we can pull again
+            pullOutgoingSubStreams
           case Setting(id, value) =>
             debug(s"Ignoring setting $id -> $value (in Demux)")
         }

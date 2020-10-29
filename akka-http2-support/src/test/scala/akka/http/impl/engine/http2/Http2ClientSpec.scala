@@ -204,8 +204,60 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (11)
         expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (13)
       }
-    }
+      "increasing SETTINGS_MAX_CONCURRENT_STREAMS should flush backpressured outgoing streams" in new TestSetup(
+        Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 2)
+      ) with NetProbes {
+        val request = HttpRequest(uri = "https://www.example.com/")
+        emitRequest(1, request)
+        emitRequest(3, request)
+        emitRequest(5, request) // this emit succeeds but is buffered
 
+        // expect frames for 1 and 3
+        expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (1)
+        expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (3)
+        // expect silence on the line
+        expectNoBytes(100.millis)
+
+        // Increasing the capacity...
+        sendSETTING(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 4)
+        expectSettingsAck()
+
+        // ... should let frame 5 pass
+        expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (5)
+      }
+      "decreasing SETTINGS_MAX_CONCURRENT_STREAMS should keep  backpressure outgoing streams until limit is respected" in new TestSetup(
+        Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 3)
+      ) with NetProbes {
+        val request = HttpRequest(uri = "https://www.example.com/")
+        emitRequest(1, request)
+        emitRequest(3, request)
+        emitRequest(5, request)
+        emitRequest(7, request) // this emit succeeds but is buffered
+
+        // expect frames for 1 3 and 5
+        expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (1)
+        expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (3)
+        expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (5)
+        expectNoBytes(100.millis)
+
+        // Decreasing the capacity...
+        sendSETTING(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 2)
+        expectSettingsAck()
+
+        expectNoBytes(100.millis)
+
+        sendFrame(HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        expectNoBytes(100.millis)
+
+        // Once 1 and 3 are closed, there'll be capacity for 7 to go through
+        sendFrame(HeadersFrame(streamId = 3, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (7)
+        // .. but not enough capacity for 9
+        emitRequest(9, request)
+        expectNoBytes(100.millis)
+
+      }
+    }
   }
 
   protected /* To make ByteFlag warnings go away */ abstract class TestSetupWithoutHandshake {
