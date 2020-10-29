@@ -108,13 +108,8 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       // Reminder: the receiver of a SETTINGS frame must process them in the order they are received.
       val initialLocalSettings: Seq[Setting] = immutable.Seq(
         Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, http2Settings.maxConcurrentStreams)
-      ) :++ {
-          if (isServer) {
-            Seq.empty[Setting]
-          } else {
-            immutable.Seq(Setting(SettingIdentifier.SETTINGS_ENABLE_PUSH, 0))
-          }
-        }
+      ) ++
+      Seq(Setting(SettingIdentifier.SETTINGS_ENABLE_PUSH, 0)).filter(_ => !isServer) // only on client
 
       override def preStart(): Unit = {
         if (initialRemoteSettings.nonEmpty) {
