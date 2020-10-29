@@ -1,0 +1,48 @@
+< SETTINGS
+  SETTINGS_MAX_CONCURRENT_STREAMS -> 256
+> SETTINGS ACK
+
+> SETTINGS SETTINGS_INITIAL_WINDOW_SIZE -> 100
+< SETTINGS ACK
+
+> HEADERS 1 END_STREAM
+  :method    -> GET
+  :scheme    -> http
+  :path      -> /request-toString
+  :authority -> www.example.com
+
+> HEADERS 3 END_STREAM
+  :method    -> GET
+  :scheme    -> http
+  :path      -> /unknown
+  :authority -> www.example.com
+
+> HEADERS 5 END_STREAM
+  :method    -> POST
+  :scheme    -> https
+  :path      -> /request-toString
+  :authority -> www.example2.com
+  accept-encoding -> gzip
+
+< HEADERS 1
+  :status -> 200
+  content-length -> 143
+  content-type -> text/plain; charset=UTF-8
+
+< HEADERS 3
+  :status -> 404
+  content-length -> 42
+  content-type -> text/plain; charset=UTF-8
+
+< HEADERS 5
+  :status -> 200
+  content-length -> 143
+  content-type -> text/plain; charset=UTF-8
+
+< DATA 3 | "The requested resource could not be found."
+< DATA 3 END_STREAM
+
+< DATA 5 | "HttpRequest(HttpMethod(GET),https://www.example.com/request-toString,Vector(Accept-Encoding: gzip),HttpEntity.Strict(none/none,0 bytes total),HttpProtocol(HTTP/2.0))"
+< DATA 5 END_STREAM
+
+#< DATA 1 END_STREAM

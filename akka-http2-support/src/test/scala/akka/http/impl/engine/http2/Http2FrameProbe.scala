@@ -5,19 +5,23 @@
 package akka.http.impl.engine.http2
 
 import akka.actor.ActorSystem
+import akka.http.impl.engine.http2.FrameEvent.{ HeadersFrame, ParsedHeadersFrame }
 import akka.http.impl.engine.http2.Http2FrameProbe.FrameHeader
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.Flags
 import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.http.impl.engine.http2.framing.Http2FrameParsing
+import akka.http.impl.engine.http2.hpack.ByteStringInputStream
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.stream.impl.io.ByteStringParser.ByteReader
 import akka.stream.scaladsl.Sink
 import akka.util.ByteString
+import com.twitter.hpack.HeaderListener
 
 import scala.annotation.tailrec
 import org.scalatest.matchers.should.Matchers
 
+import scala.collection.immutable.VectorBuilder
 import scala.concurrent.duration.FiniteDuration
 
 private[http] trait Http2FrameProbe {
@@ -30,6 +34,9 @@ private[http] trait Http2FrameProbe {
   def expectNoBytes(timeout: FiniteDuration): Unit
 
   def expectFrame(): FrameEvent
+
+  /** Expects a single frame or collects HEADERS and CONTINUATION to a ParsedHeaderFrame */
+  def expectFrameOrParsedHeaders(): FrameEvent
 
   def expectDATAFrame(streamId: Int): (Boolean, ByteString)
   def expectDATA(streamId: Int, endStream: Boolean, numBytes: Int): ByteString
@@ -76,6 +83,7 @@ private[http] trait Http2FrameProbeDelegator extends Http2FrameProbe {
   def expectNoBytes(): Unit = frameProbeDelegate.expectNoBytes()
   def expectNoBytes(timeout: FiniteDuration): Unit = frameProbeDelegate.expectNoBytes(timeout)
   def expectFrame(): FrameEvent = frameProbeDelegate.expectFrame()
+  def expectFrameOrParsedHeaders(): FrameEvent = frameProbeDelegate.expectFrameOrParsedHeaders()
   def expectDATAFrame(streamId: Int): (Boolean, ByteString) = frameProbeDelegate.expectDATAFrame(streamId)
   def expectDATA(streamId: Int, endStream: Boolean, numBytes: Int): ByteString = frameProbeDelegate.expectDATA(streamId, endStream, numBytes)
   def expectDATA(streamId: Int, endStream: Boolean, data: ByteString): Unit = frameProbeDelegate.expectDATA(streamId, endStream, data)
@@ -113,16 +121,36 @@ private[http] object Http2FrameProbe extends Matchers {
       def expectNoBytes(timeout: FiniteDuration): Unit = probe.expectNoBytes(timeout)
 
       def expectFrame(): FrameEvent = {
-        // Not supporting large frames or high streamId's here for now, throw when we encounter those.
-        probe.expectBytes(2) should be(ByteString(0, 0))
-        val length = probe.expectByte()
+        val length =
+          probe.expectByte() << 24 |
+            probe.expectByte() << 16 |
+            probe.expectByte()
         val _type = FrameType.byId(probe.expectByte()).get
         val flags = new ByteFlag(probe.expectByte())
+        // Not supporting high streamId's here for now, throw when we encounter those.
         probe.expectBytes(3) should be(ByteString(0, 0, 0))
         val streamId = probe.expectByte()
         val payload = probe.expectBytes(length)
         Http2FrameParsing.parseFrame(_type, flags, streamId, new ByteReader(payload), system.log)
       }
+
+      private val decoder = new com.twitter.hpack.Decoder(Http2Protocol.InitialMaxHeaderListSize, Http2Protocol.InitialMaxHeaderTableSize)
+
+      def expectFrameOrParsedHeaders(): FrameEvent =
+        expectFrame() match {
+          case HeadersFrame(streamId, endStream, true, headerBlock, prio) =>
+            val headers = new VectorBuilder[(String, String)]()
+            decoder.decode(ByteStringInputStream(headerBlock), new HeaderListener {
+              override def addHeader(name: Array[Byte], value: Array[Byte], sensitive: Boolean): Unit =
+                headers += new String(name, "utf8") -> new String(value, "utf8")
+            })
+            decoder.endHeaderBlock()
+
+            ParsedHeadersFrame(
+              streamId, endStream, headers.result(), prio
+            )
+          case x => x
+        }
 
       def expectDATAFrame(streamId: Int): (Boolean, ByteString) = {
         val (flags, payload) = expectFrameFlagsAndPayload(FrameType.DATA, streamId)

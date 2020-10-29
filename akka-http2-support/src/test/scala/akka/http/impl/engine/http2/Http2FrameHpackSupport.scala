@@ -6,6 +6,7 @@ package akka.http.impl.engine.http2
 
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
 
+import akka.http.impl.engine.http2.FrameEvent.ParsedHeadersFrame
 import akka.http.impl.util.StringRendering
 import akka.http.scaladsl.model.{ ContentType, HttpEntity, HttpHeader, HttpRequest, HttpResponse }
 import akka.http.scaladsl.model.headers.RawHeader
@@ -19,11 +20,20 @@ import scala.collection.immutable.VectorBuilder
 
 /** Helper that allows automatic HPACK encoding/decoding for wire sends / expectations */
 trait Http2FrameHpackSupport extends Http2FrameProbeDelegator with Http2FrameSending with ScalaFutures {
+  // override to provide simple support for sending ParsedHeaderFrames
+  override def sendFrame(frame: FrameEvent): Unit = frame match {
+    case ParsedHeadersFrame(streamId, endStream, kvs, None) => sendHEADERS(streamId, endStream, kvs)
+    case x => super.sendFrame(x)
+  }
+
   def sendRequestHEADERS(streamId: Int, request: HttpRequest, endStream: Boolean): Unit =
     sendHEADERS(streamId, endStream = endStream, endHeaders = true, encodeRequestHeaders(request))
 
   def sendHEADERS(streamId: Int, endStream: Boolean, headers: Seq[HttpHeader]): Unit =
     sendHEADERS(streamId, endStream = endStream, endHeaders = true, encodeHeaders(headers))
+
+  def sendHEADERS(streamId: Int, endStream: Boolean, headers: Iterable[(String, String)]): Unit =
+    sendHEADERS(streamId, endStream = endStream, endHeaders = true, encodeHeaderPairs(headers.toSeq))
 
   def sendRequest(streamId: Int, request: HttpRequest)(implicit mat: Materializer): Unit = {
     val isEmpty = request.entity.isKnownEmpty

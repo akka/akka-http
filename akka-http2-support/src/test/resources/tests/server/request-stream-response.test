@@ -1,0 +1,43 @@
+< SETTINGS
+  SETTINGS_MAX_CONCURRENT_STREAMS -> 256
+> SETTINGS ACK
+
+> SETTINGS
+< SETTINGS ACK
+
+> HEADERS 1 END_STREAM
+  :method    -> POST
+  :scheme    -> http
+  :path      -> /count-request-bytes
+  :authority -> www.example.com
+
+< HEADERS 1
+  :status -> 200
+  content-length -> 24
+  content-type -> text/plain; charset=UTF-8
+
+< DATA 1 "Entity size was: 0 bytes"
+< DATA 1 END_STREAM
+
+> HEADERS 3
+  :method    -> POST
+  :scheme    -> http
+  :path      -> /count-request-bytes
+  :authority -> www.example.com
+
+> DATA 3 | "1234567"
+
+# After first received data frame, windows are adjusted according to server settings / buffers
+< WINDOW_UPDATE 0 9934465
+< WINDOW_UPDATE 3 446472
+
+> DATA 3 | "890"
+> DATA 3 END_STREAM
+
+< HEADERS 3
+  :status -> 200
+  content-length -> 25
+  content-type -> text/plain; charset=UTF-8
+
+< DATA 3 "Entity size was: 10 bytes"
+< DATA 3 END_STREAM

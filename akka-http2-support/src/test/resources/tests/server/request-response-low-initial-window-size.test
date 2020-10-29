@@ -1,0 +1,32 @@
+< SETTINGS
+  SETTINGS_MAX_CONCURRENT_STREAMS -> 256
+> SETTINGS ACK
+
+> SETTINGS SETTINGS_INITIAL_WINDOW_SIZE -> 100
+< SETTINGS ACK
+
+> HEADERS 1 END_STREAM
+  :method    -> GET
+  :scheme    -> http
+  :path      -> /request-toString
+  :authority -> www.example.com
+
+< HEADERS 1
+  :status -> 200
+  content-length -> 143
+  content-type -> text/plain; charset=UTF-8
+
+# WINDOW is smaller than response, so only first 100 bytes are sent
+< DATA 1 (100 bytes)
+  "HttpRequest(HttpMethod(GET),http://www.example.com/request-toString,Vector(),HttpEntity.Strict(none/"
+
+# Now give a bit more window
+> WINDOW_UPDATE 1 12
+< DATA 1 (12 bytes) | "none,0 bytes"
+
+# Finally increase SETTINGS_INITIAL_WINDOW_SIZE enough to let the rest through
+> SETTINGS SETTINGS_INITIAL_WINDOW_SIZE -> 200
+< DATA 1 END_STREAM (31 bytes) | " total),HttpProtocol(HTTP/2.0))"
+
+# FIXME: acking should have come first
+< SETTINGS ACK

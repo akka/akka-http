@@ -1,0 +1,39 @@
+< SETTINGS
+  SETTINGS_MAX_CONCURRENT_STREAMS -> 256
+> SETTINGS ACK
+
+> SETTINGS
+< SETTINGS ACK
+
+> HEADERS 1 END_STREAM
+  :method    -> POST
+  :scheme    -> http
+  :path      -> /echo-request-stream
+  :authority -> www.example.com
+  content-type -> text/plain; charset=UTF-8
+
+< HEADERS 1 END_STREAM
+  :status -> 200
+  content-length -> 0
+
+> HEADERS 3
+  :method    -> POST
+  :scheme    -> http
+  :path      -> /echo-request-stream
+  :authority -> www.example.com
+  content-type -> text/plain; charset=UTF-8
+
+< HEADERS 3
+  :status -> 200
+  content-type -> text/plain; charset=UTF-8
+
+> DATA 3 "Hello"
+< WINDOW_UPDATE 0 9934465
+< WINDOW_UPDATE 3 446470
+< DATA 3 "Hello"
+
+> DATA 3 "World!"
+< DATA 3 "World!"
+
+> DATA 3 END_STREAM
+< DATA 3 END_STREAM
