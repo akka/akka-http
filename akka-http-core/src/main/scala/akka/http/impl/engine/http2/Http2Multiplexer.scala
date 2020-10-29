@@ -68,7 +68,7 @@ private[http2] trait Http2MultiplexerSupport { logic: GraphStageLogic with Stage
   def isServer: Boolean
   def settings: Http2CommonSettings
 
-  /** Allows suspending reading of incoming frames */
+  /** Allows suspending reading of frames incoming from the network */
   def allowReadingIncomingFrames(allow: Boolean): Unit
 
   /** Called by the multiplexer when ready to send a data frame */

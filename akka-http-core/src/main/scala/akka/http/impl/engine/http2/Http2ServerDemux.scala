@@ -106,10 +106,10 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       // Send initial settings based on the local application.conf. For simplicity, these settings are
       // enforced immediately even before the acknowledgement is received.
       // Reminder: the receiver of a SETTINGS frame must process them in the order they are received.
-      val initialLocalSettings: Seq[Setting] = immutable.Seq(
+      val initialLocalSettings: immutable.Seq[Setting] = immutable.Seq(
         Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, http2Settings.maxConcurrentStreams)
       ) ++
-        Seq(Setting(SettingIdentifier.SETTINGS_ENABLE_PUSH, 0)).filter(_ => !isServer) // only on client
+        immutable.Seq(Setting(SettingIdentifier.SETTINGS_ENABLE_PUSH, 0)).filter(_ => !isServer) // only on client
 
       override def preStart(): Unit = {
         if (initialRemoteSettings.nonEmpty) {
@@ -140,6 +140,14 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
         allowReadingIncomingFrames = allow
       }
       def pullFrameIn(): Unit = if (allowReadingIncomingFrames && !hasBeenPulled(frameIn)) pull(frameIn)
+
+      def tryPullSubStreams(): Unit = {
+        if (!hasBeenPulled(substreamIn) && !isClosed(substreamIn)) {
+          // While we don't support PUSH_PROMISE there's only capacity control on the client
+          if (isServer) pull(substreamIn)
+          else if (hasCapacityToCreateStreams) pull(substreamIn)
+        }
+      }
 
       setHandler(frameIn, new InHandler {
 
@@ -211,8 +219,9 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       setHandler(substreamIn, new InHandler {
         def onPush(): Unit = {
           val sub = grab(substreamIn)
-          pull(substreamIn)
           handleOutgoingCreated(sub)
+          // Once the incoming stream is handled, we decide if we need to pull more.
+          tryPullSubStreams()
         }
       })
 
@@ -239,7 +248,9 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
           case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_FRAME_SIZE, value) =>
             multiplexer.updateMaxFrameSize(value)
           case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) =>
-            debug(s"Setting max concurrent streams to $value (not respected)")
+            setMaxConcurrentStreams(value)
+            // once maxConcurrentStreams is updated, see if we can pull again
+            tryPullSubStreams()
           case Setting(id, value) =>
             debug(s"Ignoring setting $id -> $value (in Demux)")
         }

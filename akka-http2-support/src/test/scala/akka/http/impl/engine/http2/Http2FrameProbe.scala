@@ -20,8 +20,9 @@ import scala.annotation.tailrec
 import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
 
-private[http] trait Http2FrameProbe {
+private[http2] trait Http2FrameProbe {
   def sink: Sink[ByteString, Any]
   def plainDataProbe: ByteStringSinkProbe
 
@@ -30,7 +31,7 @@ private[http] trait Http2FrameProbe {
   def expectNoBytes(): Unit
   def expectNoBytes(timeout: FiniteDuration): Unit
 
-  def expectFrame(): FrameEvent
+  def expect[T <: FrameEvent]()(implicit tag: ClassTag[T]): T
 
   def expectDATAFrame(streamId: Int): (Boolean, ByteString)
   def expectDATA(streamId: Int, endStream: Boolean, numBytes: Int): ByteString
@@ -67,7 +68,7 @@ private[http] trait Http2FrameProbe {
  * Allows to get all of the probe's methods into scope, delegating to the actual probe. Nice when using the `TestSetup`
  * approach.
  */
-private[http] trait Http2FrameProbeDelegator extends Http2FrameProbe {
+private[http2] trait Http2FrameProbeDelegator extends Http2FrameProbe {
   def frameProbeDelegate: Http2FrameProbe
 
   def sink: Sink[ByteString, Any] = frameProbeDelegate.sink
@@ -76,7 +77,7 @@ private[http] trait Http2FrameProbeDelegator extends Http2FrameProbe {
   def expectBytes(num: Int): ByteString = frameProbeDelegate.expectBytes(num)
   def expectNoBytes(): Unit = frameProbeDelegate.expectNoBytes()
   def expectNoBytes(timeout: FiniteDuration): Unit = frameProbeDelegate.expectNoBytes(timeout)
-  def expectFrame(): FrameEvent = frameProbeDelegate.expectFrame()
+  def expect[T <: FrameEvent]()(implicit tag: ClassTag[T]): T = frameProbeDelegate.expect()
   def expectDATAFrame(streamId: Int): (Boolean, ByteString) = frameProbeDelegate.expectDATAFrame(streamId)
   def expectDATA(streamId: Int, endStream: Boolean, numBytes: Int): ByteString = frameProbeDelegate.expectDATA(streamId, endStream, numBytes)
   def expectDATA(streamId: Int, endStream: Boolean, data: ByteString): Unit = frameProbeDelegate.expectDATA(streamId, endStream, data)
@@ -113,7 +114,7 @@ private[http] object Http2FrameProbe extends Matchers {
       def expectNoBytes(): Unit = probe.expectNoBytes()
       def expectNoBytes(timeout: FiniteDuration): Unit = probe.expectNoBytes(timeout)
 
-      def expectFrame(): FrameEvent = {
+      def expect[T <: FrameEvent]()(implicit tag: ClassTag[T]): T = {
         // Not supporting large frames or high streamId's here for now, throw when we encounter those.
         probe.expectBytes(2) should be(ByteString(0, 0))
         val length = probe.expectByte()
@@ -122,7 +123,9 @@ private[http] object Http2FrameProbe extends Matchers {
         probe.expectBytes(3) should be(ByteString(0, 0, 0))
         val streamId = probe.expectByte()
         val payload = probe.expectBytes(length)
-        Http2FrameParsing.parseFrame(_type, flags, streamId, new ByteReader(payload), system.log)
+        val frame = Http2FrameParsing.parseFrame(_type, flags, streamId, new ByteReader(payload), system.log)
+        frame shouldBe a[T]
+        frame.asInstanceOf[T]
       }
 
       def expectDATAFrame(streamId: Int): (Boolean, ByteString) = {

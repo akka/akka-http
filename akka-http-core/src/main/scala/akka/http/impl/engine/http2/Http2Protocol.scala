@@ -5,7 +5,8 @@
 package akka.http.impl.engine.http2
 
 import akka.annotation.InternalApi
-import akka.util.{ ByteString, OptionVal }
+import akka.util.ByteString
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -17,6 +18,21 @@ import akka.util.{ ByteString, OptionVal }
 @InternalApi
 private[http] object Http2Protocol {
   // constants defined in the spec
+
+  /**
+   * Indicates the maximum number of concurrent streams that the sender will allow.
+   * This limit is directional: it applies to the number of streams that the sender
+   * permits the receiver to create. Initially, there is no limit to this value. It
+   * is recommended that this value be no smaller than 100, so as to not
+   * unnecessarily limit parallelism.
+   *
+   * A value of 0 for SETTINGS_MAX_CONCURRENT_STREAMS SHOULD NOT be treated as special
+   * by endpoints. A zero value does prevent the creation of new streams; however,
+   * this can also happen for any limit that is exhausted with active streams. Servers
+   * SHOULD only set a zero value for short durations; if a server does not wish to
+   * accept requests, closing the connection is more appropriate.
+   */
+  final val InitialMaxConcurrentStreams = Int.MaxValue
 
   /**
    * The initial window size for both new streams and the overall connection

@@ -8,7 +8,9 @@ import akka.NotUsed
 import akka.event.Logging
 import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
+import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
+import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.HttpEntity.Strict
@@ -21,6 +23,8 @@ import akka.stream.scaladsl.{ BidiFlow, Flow, Sink, Source }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.util.ByteString
 import org.scalatest.concurrent.Eventually
+
+import scala.concurrent.duration._
 
 /**
  * This tests the http2 client protocol logic.
@@ -81,7 +85,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
       "GOAWAY when the response has an invalid headers frame" in new TestSetup with NetProbes {
         val streamId = 0x1
         emitRequest(streamId, HttpRequest(uri = "http://www.example.com/"))
-        expectFrame() shouldBe a[HeadersFrame]
+        expect[HeadersFrame]()
 
         val headerBlock = hex"00 00 01 01 05 00 00 00 01 40"
         sendFrame(HeadersFrame(streamId, endStream = true, endHeaders = true, headerBlock, None))
@@ -112,7 +116,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         )
 
         emitRequest(3, HttpRequest(uri = "https://www.example.com/"))
-        expectFrame() shouldBe a[HeadersFrame]
+        expect[HeadersFrame]()
 
         val incorrectHeaderBlock = hex"00 00 01 01 05 00 00 00 01 40"
         sendHEADERS(3, endStream = true, endHeaders = true, headerBlockFragment = incorrectHeaderBlock)
@@ -177,6 +181,99 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         expectSetting(Setting(SettingIdentifier.SETTINGS_ENABLE_PUSH, 0))
       }
     }
+
+    "respect settings" should {
+      "received SETTINGS_MAX_CONCURRENT_STREAMS should limit the number of outgoing streams" in new TestSetup(
+        Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 3)
+      ) with NetProbes {
+        val request = HttpRequest(uri = "https://www.example.com/")
+        // server set a very small SETTINGS_MAX_CONCURRENT_STREAMS, so an attempt from the
+        // client to open more streams should backpressure
+        emitRequest(1, request)
+        emitRequest(3, request)
+        emitRequest(5, request)
+        emitRequest(7, request) // this emit succeeds but is buffered
+
+        // expect frames for 1 3 and 5
+        expect[HeadersFrame].streamId shouldBe (1)
+        expect[HeadersFrame].streamId shouldBe (3)
+        expect[HeadersFrame].streamId shouldBe (5)
+        // expect silence on the line
+        expectNoBytes(100.millis)
+
+        // close 1 and 3
+        sendFrame(HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        sendFrame(HeadersFrame(streamId = 3, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        emitRequest(9, request)
+        emitRequest(11, request)
+        // expect 7 and 9 on the line
+        expect[HeadersFrame].streamId shouldBe (7)
+        expect[HeadersFrame].streamId shouldBe (9)
+        expectNoBytes(100.millis)
+
+        // close 5 7 9
+        sendFrame(HeadersFrame(streamId = 5, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        sendFrame(HeadersFrame(streamId = 7, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        sendFrame(HeadersFrame(streamId = 9, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        emitRequest(13, request)
+        // expect 11 the line
+        expect[HeadersFrame].streamId shouldBe (11)
+        expect[HeadersFrame].streamId shouldBe (13)
+      }
+      "increasing SETTINGS_MAX_CONCURRENT_STREAMS should flush backpressured outgoing streams" in new TestSetup(
+        Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 2)
+      ) with NetProbes {
+        val request = HttpRequest(uri = "https://www.example.com/")
+        emitRequest(1, request)
+        emitRequest(3, request)
+        emitRequest(5, request) // this emit succeeds but is buffered
+
+        // expect frames for 1 and 3
+        expect[HeadersFrame].streamId shouldBe (1)
+        expect[HeadersFrame].streamId shouldBe (3)
+        // expect silence on the line
+        expectNoBytes(100.millis)
+
+        // Increasing the capacity...
+        sendSETTING(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 4)
+        expectSettingsAck()
+
+        // ... should let frame 5 pass
+        expect[HeadersFrame].streamId shouldBe (5)
+      }
+      "decreasing SETTINGS_MAX_CONCURRENT_STREAMS should keep backpressure outgoing streams until limit is respected" in new TestSetup(
+        Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 3)
+      ) with NetProbes {
+        val request = HttpRequest(uri = "https://www.example.com/")
+        emitRequest(1, request)
+        emitRequest(3, request)
+        emitRequest(5, request)
+        emitRequest(7, request) // this emit succeeds but is buffered
+
+        // expect frames for 1 3 and 5
+        expect[HeadersFrame].streamId shouldBe (1)
+        expect[HeadersFrame].streamId shouldBe (3)
+        expect[HeadersFrame].streamId shouldBe (5)
+        expectNoBytes(100.millis)
+
+        // Decreasing the capacity...
+        sendSETTING(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 2)
+        expectSettingsAck()
+
+        expectNoBytes(100.millis)
+
+        sendFrame(HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        expectNoBytes(100.millis)
+
+        // Once 1 and 3 are closed, there'll be capacity for 7 to go through
+        sendFrame(HeadersFrame(streamId = 3, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
+        expect[HeadersFrame].streamId shouldBe (7)
+        // .. but not enough capacity for 9
+        emitRequest(9, request)
+        expectNoBytes(100.millis)
+
+      }
+    }
   }
 
   protected /* To make ByteFlag warnings go away */ abstract class TestSetupWithoutHandshake {
@@ -187,7 +284,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
     def netFlow: Flow[ByteString, ByteString, NotUsed]
 
-    // hook to modify client, for example add attributes
+    // hook to modify client, for example to add attributes
     def modifyClient(client: BidiFlow[HttpRequest, ByteString, ByteString, HttpResponse, NotUsed]) = client
 
     // hook to modify client settings
@@ -211,11 +308,11 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
   }
 
   /** Basic TestSetup that has already passed the exchange of the connection preface */
-  abstract class TestSetup extends TestSetupWithoutHandshake with NetProbes with Http2FrameSending {
+  abstract class TestSetup(initialServerSettings: Setting*) extends TestSetupWithoutHandshake with NetProbes with Http2FrameSending {
     toNet.expectBytes(Http2Protocol.ClientConnectionPreface)
-    expectFrame() shouldBe a[SettingsFrame]
+    expectSETTINGS()
 
-    sendFrame(SettingsFrame(Nil))
+    sendFrame(SettingsFrame(initialServerSettings))
     expectSettingsAck()
   }
 
@@ -223,8 +320,8 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
   trait NetProbes extends TestSetupWithoutHandshake with Http2FrameProbeDelegator {
     lazy val framesOut: Http2FrameProbe = Http2FrameProbe()
     override def frameProbeDelegate: Http2FrameProbe = framesOut
-    lazy val toNet = framesOut.plainDataProbe
-    lazy val fromNet = TestPublisher.probe[ByteString]()
+    lazy val toNet: ByteStringSinkProbe = framesOut.plainDataProbe
+    lazy val fromNet: TestPublisher.Probe[ByteString] = TestPublisher.probe[ByteString]()
 
     override def netFlow: Flow[ByteString, ByteString, NotUsed] =
       Flow.fromSinkAndSource(toNet.sink, Source.fromPublisher(fromNet))
