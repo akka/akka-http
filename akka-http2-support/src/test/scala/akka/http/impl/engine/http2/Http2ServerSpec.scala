@@ -1014,10 +1014,10 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         responseOut.sendNext(HPackSpecExamples.FirstResponse.addAttribute(Http2.streamId, 3))
         responseOut.sendNext(HPackSpecExamples.FirstResponse.addAttribute(Http2.streamId, 5))
         responseOut.sendNext(HPackSpecExamples.FirstResponse.addAttribute(Http2.streamId, 7))
-        expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (1)
-        expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (3)
-        expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (5)
-        expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (7)
+        expect[HeadersFrame].streamId shouldBe (1)
+        expect[HeadersFrame].streamId shouldBe (3)
+        expect[HeadersFrame].streamId shouldBe (5)
+        expect[HeadersFrame].streamId shouldBe (7)
       }
 
       "received SETTINGS_HEADER_TABLE_SIZE" in new TestSetup with RequestResponseProbes {
