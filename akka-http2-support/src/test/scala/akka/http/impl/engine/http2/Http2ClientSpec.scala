@@ -37,7 +37,7 @@ import scala.concurrent.duration._
  */
 class Http2ClientSpec extends AkkaSpecWithMaterializer("""
     akka.http.server.remote-address-header = on
-    akka.http.server.http2.log-frames = on
+    akka.http.client.http2.log-frames = on
   """)
   with WithInPendingUntilFixed with Eventually {
   override def failOnSevereMessages: Boolean = true
@@ -81,6 +81,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
               .withEntity(Strict(ContentTypes.NoContentType, ByteString.empty))
         )
       }
+
       "GOAWAY when the response has an invalid headers frame" in new TestSetup with NetProbes {
         val streamId = 0x1
         emitRequest(streamId, HttpRequest(uri = "http://www.example.com/"))
@@ -94,6 +95,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
         // TODO we'd expect an error response here I think? We don't get any reply though...
       }
+
       "GOAWAY when the response to a second request on different stream has an invalid headers frame" in new SimpleRequestResponseRoundtripSetup {
         requestResponseRoundtrip(
           streamId = 1,
@@ -122,6 +124,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         val (_, errorCode) = expectGOAWAY(3)
         errorCode should ===(ErrorCode.COMPRESSION_ERROR)
       }
+
       "Three consecutive GET requests" in new SimpleRequestResponseRoundtripSetup {
         import akka.http.scaladsl.model.headers.CacheDirectives._
         import headers.`Cache-Control`
@@ -162,6 +165,20 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
           expectedResponse = HPackSpecExamples.ThirdResponseModeled
             .withEntity(Strict(ContentTypes.NoContentType, ByteString.empty))
         )
+      }
+
+    }
+
+    "send settings" should {
+      abstract class SettingsSetup extends TestSetupWithoutHandshake with NetProbes with Http2FrameSending {
+        def expectSetting(expected: Setting): Unit = {
+          toNet.expectBytes(Http2Protocol.ClientConnectionPreface)
+          expectSETTINGS().settings should contain(expected)
+        }
+      }
+
+      "disable Push via SETTINGS_ENABLE_PUSH" in new SettingsSetup {
+        expectSetting(Setting(SettingIdentifier.SETTINGS_ENABLE_PUSH, 0))
       }
     }
 
@@ -270,7 +287,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
     // hook to modify client, for example to add attributes
     def modifyClient(client: BidiFlow[HttpRequest, ByteString, ByteString, HttpResponse, NotUsed]) = client
 
-    // hook to modify server settings
+    // hook to modify client settings
     def settings = ClientConnectionSettings(system)
 
     final def theClient: BidiFlow[ByteString, HttpResponse, HttpRequest, ByteString, NotUsed] =

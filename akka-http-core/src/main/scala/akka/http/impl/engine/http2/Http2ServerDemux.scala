@@ -103,10 +103,13 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
 
       val multiplexer = createMultiplexer(frameOut, StreamPrioritizer.first())
 
-      // Send settings initially based on our configuration. For simplicity, these settings are
+      // Send initial settings based on the local application.conf. For simplicity, these settings are
       // enforced immediately even before the acknowledgement is received.
       // Reminder: the receiver of a SETTINGS frame must process them in the order they are received.
-      private def initialLocalSettings = immutable.Seq(Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, http2Settings.maxConcurrentStreams))
+      val initialLocalSettings: Seq[Setting] = immutable.Seq(
+        Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, http2Settings.maxConcurrentStreams)
+      ) ++
+        Seq(Setting(SettingIdentifier.SETTINGS_ENABLE_PUSH, 0)).filter(_ => !isServer) // only on client
 
       override def preStart(): Unit = {
         if (initialRemoteSettings.nonEmpty) {
@@ -163,14 +166,13 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
               }
 
             case SettingsAckFrame(_) =>
-              // Currently, we only expect an ack for the initial settings frame, sent
-              // above in preStart. Since, only some settings are supported, and those
-              // settings are non-modifiable and known at construction time, these settings
-              // are enforced from the start of the connection.
-              // Related: https://github.com/akka/akka-http/issues/3185
-              enforceSettings(initialLocalSettings)
+            // Currently, we only expect an ack for the initial settings frame, sent
+            // above in preStart. Since only some settings are supported, and those
+            // settings are non-modifiable and known at construction time, these settings
+            // are enforced from the start of the connection so there's no need to invoke
+            // `enforceSettings(initialLocalSettings)`
 
-            case PingFrame(true, _) =>
+            case PingFrame(true, _)  =>
             // ignore for now (we don't send any pings)
             case PingFrame(false, data) =>
               multiplexer.pushControlFrame(PingFrame(ack = true, data))
@@ -222,22 +224,6 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
           tryPullSubStreams()
         }
       })
-
-      /**
-       * Tune this peer to enforce the settings configured from this peer.
-       * @return FIXME: it's a Boolean but I don't think it has to be.
-       */
-      private def enforceSettings(settings: immutable.Seq[Setting]): Boolean = {
-        var settingsAppliedOk = true
-
-        settings.foreach {
-          case Setting(Http2Protocol.SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, value) =>
-          // Enforcing of SETTINGS_MAX_CONCURRENT_STREAMS is enabled even before getting the SETTINGS_ACK
-          // so there's nothing to do here. See https://github.com/akka/akka-http/issues/3551
-        }
-
-        settingsAppliedOk
-      }
 
       /**
        * Tune this peer to the remote Settings.
