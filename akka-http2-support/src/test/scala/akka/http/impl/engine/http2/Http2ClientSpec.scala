@@ -171,12 +171,12 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 3)
       ) with NetProbes {
         val request = HttpRequest(uri = "https://www.example.com/")
-        // server set SETTINGS_MAX_CONCURRENT_STREAMS=5 so an attempt from the client to open 6 streams
-        // should only produce 5 frames
+        // server set a very small SETTINGS_MAX_CONCURRENT_STREAMS, so an attempt from the
+        // client to open more streams should backpressure
         emitRequest(1, request)
         emitRequest(3, request)
         emitRequest(5, request)
-        emitRequest(7, request)
+        emitRequest(7, request) // this emit succeeds but is buffered
 
         // expect frames for 1 3 and 5
         expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (1)
@@ -204,7 +204,6 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (11)
         expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (13)
       }
-
     }
 
   }
@@ -243,7 +242,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
   /** Basic TestSetup that has already passed the exchange of the connection preface */
   abstract class TestSetup(initialServerSettings: Setting*) extends TestSetupWithoutHandshake with NetProbes with Http2FrameSending {
     toNet.expectBytes(Http2Protocol.ClientConnectionPreface)
-    expectFrame() shouldBe a[SettingsFrame]
+    expectSETTINGS()
 
     sendFrame(SettingsFrame(initialServerSettings))
     expectSettingsAck()
