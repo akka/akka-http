@@ -138,7 +138,7 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
       }
       def pullFrameIn(): Unit = if (allowReadingIncomingFrames && !hasBeenPulled(frameIn)) pull(frameIn)
 
-      def pullOutgoingSubStreams: Unit = {
+      def tryPullSubStreams(): Unit = {
         if (!hasBeenPulled(substreamIn) && !isClosed(substreamIn)) {
           // While we don't support PUSH_PROMISE there's only capacity control on the client
           if (isServer) pull(substreamIn)

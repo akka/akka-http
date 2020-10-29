@@ -38,7 +38,6 @@ import scala.concurrent.duration._
 class Http2ClientSpec extends AkkaSpecWithMaterializer("""
     akka.http.server.remote-address-header = on
     akka.http.server.http2.log-frames = on
-    akka.http.client.http2.log-frames = on
   """)
   with WithInPendingUntilFixed with Eventually {
   override def failOnSevereMessages: Boolean = true
@@ -225,7 +224,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         // ... should let frame 5 pass
         expectFrame().asInstanceOf[HeadersFrame].streamId shouldBe (5)
       }
-      "decreasing SETTINGS_MAX_CONCURRENT_STREAMS should keep  backpressure outgoing streams until limit is respected" in new TestSetup(
+      "decreasing SETTINGS_MAX_CONCURRENT_STREAMS should keep backpressure outgoing streams until limit is respected" in new TestSetup(
         Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 3)
       ) with NetProbes {
         val request = HttpRequest(uri = "https://www.example.com/")
@@ -268,7 +267,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
     def netFlow: Flow[ByteString, ByteString, NotUsed]
 
-    // hook to modify client, for example add attributes
+    // hook to modify client, for example to add attributes
     def modifyClient(client: BidiFlow[HttpRequest, ByteString, ByteString, HttpResponse, NotUsed]) = client
 
     // hook to modify server settings

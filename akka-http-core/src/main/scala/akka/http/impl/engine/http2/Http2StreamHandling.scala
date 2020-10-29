@@ -39,8 +39,8 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
 
   def flowController: IncomingFlowController = IncomingFlowController.default(settings)
 
-  /** Generates demand of SubStream's on the inlet from the user handler.*/
-  def pullOutgoingSubStreams: Unit
+  /** Generates demand of SubStreams on the inlet from the user handler.*/
+  def pullOutgoingSubStreams(): Unit
 
   private var streamStates = new immutable.TreeMap[Int, StreamState]
   private var largestIncomingStreamId = 0
@@ -60,7 +60,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
    * @return true is the number of outgoing streams in Open (and HalfClosedXxx)
    *         state doesn't exceed MaxConcurrentStreams
    */
-  def hasOutgoingCapacity: Boolean = {
+  def hasCapacityToCreateStreams: Boolean = {
     // StreamStates only contains streams in active states (active states are any variation
     // of Open, HalfClosed) so using the `size` works fine to compute the capacity
     streamStates.size < maxConcurrentStreams
