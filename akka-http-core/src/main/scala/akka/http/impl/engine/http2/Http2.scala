@@ -190,29 +190,40 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
 
   def outgoingConnection(
     host:              String,
-    port:              Int                      = 443,
+    port:              Int                      = -1,
     settings:          ClientConnectionSettings = ClientConnectionSettings(system),
-    connectionContext: HttpsConnectionContext   = Http().defaultClientHttpsContext,
+    connectionContext: ConnectionContext        = Http().defaultClientHttpsContext,
     log:               LoggingAdapter           = system.log): Flow[HttpRequest, HttpResponse, Any] = {
-    def createEngine(): SSLEngine = {
-      val engine = connectionContext.sslContextData match {
-        // TODO FIXME configure hostname verification for this case
-        case Left(ssl) =>
-          val e = ssl.sslContext.createSSLEngine(host, port)
-          TlsUtils.applySessionParameters(e, ssl.firstSession)
-          e
-        case Right(e) => e(Some((host, port)))
-      }
-      engine.setUseClientMode(true)
-      Http2AlpnSupport.clientSetApplicationProtocols(engine, Array("h2"))
-      engine
+    val (realPort, tls) = connectionContext match {
+      case https: HttpsConnectionContext =>
+        val realPort = if (port == -1) 443 else port
+        (
+          realPort,
+          TLS(() => createEngine(host, realPort, https), closing = TLSClosing.eagerClose)
+        )
+      case other =>
+        (if (port == -1) 80 else port, TLSPlacebo())
     }
 
     Http2Blueprint.clientStack(settings, log) atop
       Http2Blueprint.unwrapTls atop
       LogByteStringTools.logTLSBidiBySetting("client-plain-text", settings.logUnencryptedNetworkBytes) atop
-      TLS(createEngine _, closing = TLSClosing.eagerClose) join
-      settings.transport.connectTo(host, port, settings)
+      tls join
+      settings.transport.connectTo(host, realPort, settings)
+  }
+
+  private def createEngine(host: String, port: Int, connectionContext: HttpsConnectionContext): SSLEngine = {
+    val engine = connectionContext.sslContextData match {
+      // TODO FIXME configure hostname verification for this case
+      case Left(ssl) =>
+        val e = ssl.sslContext.createSSLEngine(host, port)
+        TlsUtils.applySessionParameters(e, ssl.firstSession)
+        e
+      case Right(e) => e(Some((host, port)))
+    }
+    engine.setUseClientMode(true)
+    Http2AlpnSupport.clientSetApplicationProtocols(engine, Array("h2"))
+    engine
   }
 }
 
