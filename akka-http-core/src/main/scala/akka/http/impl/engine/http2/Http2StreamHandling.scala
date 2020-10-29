@@ -105,9 +105,6 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       // stream was cancelled by peer before our response was ready
       stream.data.runWith(Sink.cancelled)(subFusingMaterializer)
 
-    // Once the incoming stream is handled, we decide if we need to pull more.
-    pullOutgoingSubStreams
-
   }
 
   // Called by the outgoing stream multiplexer when that side of the stream is ended.

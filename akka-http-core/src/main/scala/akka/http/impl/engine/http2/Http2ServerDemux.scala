@@ -218,6 +218,8 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
         def onPush(): Unit = {
           val sub = grab(substreamIn)
           handleOutgoingCreated(sub)
+          // Once the incoming stream is handled, we decide if we need to pull more.
+          pullOutgoingSubStreams
         }
       })
 
