@@ -169,9 +169,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
       abstract class SettingsSetup extends TestSetupWithoutHandshake with NetProbes with Http2FrameSending {
         def expectSetting(expected: Setting): Unit = {
           toNet.expectBytes(Http2Protocol.ClientConnectionPreface)
-          val event: FrameEvent = expectFrame()
-          event shouldBe a[SettingsFrame]
-          event.asInstanceOf[SettingsFrame].settings should contain(expected)
+          expectSETTINGS().settings should contain(expected)
         }
       }
 

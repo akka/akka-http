@@ -5,6 +5,7 @@
 package akka.http.impl.engine.http2
 
 import akka.actor.ActorSystem
+import akka.http.impl.engine.http2.FrameEvent.SettingsFrame
 import akka.http.impl.engine.http2.Http2FrameProbe.FrameHeader
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.Flags
@@ -47,7 +48,7 @@ private[http] trait Http2FrameProbe {
   def expectFrameFlagsAndPayload(frameType: FrameType, streamId: Int): (ByteFlag, ByteString)
   def expectFrameFlagsStreamIdAndPayload(frameType: FrameType): (ByteFlag, Int, ByteString)
 
-  def expectSETTINGS(): FrameEvent
+  def expectSETTINGS(): SettingsFrame
   def expectFrameHeader(): FrameHeader
 
   /** Collect a header block maybe spanning several frames */
@@ -82,7 +83,7 @@ private[http] trait Http2FrameProbeDelegator extends Http2FrameProbe {
   def expectRST_STREAM(streamId: Int, errorCode: ErrorCode): Unit = frameProbeDelegate.expectRST_STREAM(streamId, errorCode)
   def expectRST_STREAM(streamId: Int): ErrorCode = frameProbeDelegate.expectRST_STREAM(streamId)
   def expectGOAWAY(lastStreamId: Int): (Int, ErrorCode) = frameProbeDelegate.expectGOAWAY(lastStreamId)
-  def expectSETTINGS(): FrameEvent = frameProbeDelegate.expectSETTINGS()
+  def expectSETTINGS(): SettingsFrame = frameProbeDelegate.expectSETTINGS()
   def expectSettingsAck(): Unit = frameProbeDelegate.expectSettingsAck()
   def expectFrame(frameType: FrameType, expectedFlags: ByteFlag, streamId: Int, payload: ByteString): Unit = frameProbeDelegate.expectFrame(frameType, expectedFlags, streamId, payload)
   def expectFramePayload(frameType: FrameType, expectedFlags: ByteFlag, streamId: Int): ByteString = frameProbeDelegate.expectFramePayload(frameType, expectedFlags, streamId)
@@ -175,10 +176,10 @@ private[http] object Http2FrameProbe extends Matchers {
         (lastStreamId, ErrorCode.byId(reader.readIntBE()))
       }
 
-      override def expectSETTINGS(): FrameEvent = {
+      override def expectSETTINGS(): SettingsFrame = {
         // (6.5) The stream identifier for a SETTINGS frame MUST be zero (0x0).
         val payload = expectFramePayload(FrameType.SETTINGS, Flags.NO_FLAGS, 0)
-        Http2FrameParsing.parseFrame(FrameType.SETTINGS, Flags.NO_FLAGS, 0, new ByteReader(payload), system.log)
+        Http2FrameParsing.parseFrame(FrameType.SETTINGS, Flags.NO_FLAGS, 0, new ByteReader(payload), system.log).asInstanceOf[SettingsFrame]
       }
 
       def expectSettingsAck() = expectFrame(FrameType.SETTINGS, Flags.ACK, 0, ByteString.empty)
