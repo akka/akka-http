@@ -24,6 +24,7 @@ import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.util.ByteString
 import org.scalatest.concurrent.Eventually
 
+import scala.collection.immutable
 import scala.concurrent.duration._
 
 /**
@@ -312,7 +313,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
     toNet.expectBytes(Http2Protocol.ClientConnectionPreface)
     expectSETTINGS()
 
-    sendFrame(SettingsFrame(initialServerSettings))
+    sendFrame(SettingsFrame(immutable.Seq.empty ++ initialServerSettings))
     expectSettingsAck()
   }
 
