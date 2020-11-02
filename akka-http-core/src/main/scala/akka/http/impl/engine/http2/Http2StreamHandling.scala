@@ -34,7 +34,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   def multiplexer: Http2Multiplexer
   def settings: Http2CommonSettings
   def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit
-  def dispatchSubstream(sub: Http2SubStream): Unit
+  def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], correlationAttributes: Map[AttributeKey[_], _]): Unit
   def isUpgraded: Boolean
 
   def flowController: IncomingFlowController = IncomingFlowController.default(settings)
@@ -229,10 +229,10 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     }
 
     protected def expectIncomingStream(
-      event:           StreamFrameEvent,
-      nextStateEmpty:  StreamState,
-      nextStateStream: IncomingStreamBuffer => StreamState,
-      mapStream:       Http2SubStream => Http2SubStream    = identity): StreamState =
+      event:                 StreamFrameEvent,
+      nextStateEmpty:        StreamState,
+      nextStateStream:       IncomingStreamBuffer => StreamState,
+      correlationAttributes: Map[AttributeKey[_], _]             = Map.empty): StreamState =
       event match {
         case frame @ ParsedHeadersFrame(streamId, endStream, _, _) =>
           val (data, nextState) =
@@ -245,7 +245,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
 
           // FIXME: after multiplexer PR is merged
           // prioInfo.foreach(multiplexer.updatePriority)
-          dispatchSubstream(mapStream(ByteHttp2SubStream(frame, data)))
+          dispatchSubstream(frame, data, correlationAttributes)
           nextState
 
         case x => receivedUnexpectedFrame(x)
@@ -320,7 +320,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
 
   case class OpenSendingData(outStream: OutStream, correlationAttributes: Map[AttributeKey[_], _]) extends StreamState with Sending {
     override def handle(event: StreamFrameEvent): StreamState = event match {
-      case _: ParsedHeadersFrame => expectIncomingStream(event, HalfClosedRemoteSendingData(outStream), Open(_, outStream), _.withCorrelationAttributes(correlationAttributes))
+      case _: ParsedHeadersFrame => expectIncomingStream(event, HalfClosedRemoteSendingData(outStream), Open(_, outStream), correlationAttributes)
       case w: WindowUpdateFrame  => handleWindowUpdate(w)
       case _                     => receivedUnexpectedFrame(event)
     }
@@ -328,7 +328,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     override def handleOutgoingEnded(): StreamState = HalfClosedLocalWaitingForPeerStream(correlationAttributes)
   }
   case class HalfClosedLocalWaitingForPeerStream(correlationAttributes: Map[AttributeKey[_], _]) extends StreamState {
-    override def handle(event: StreamFrameEvent): StreamState = expectIncomingStream(event, Closed, HalfClosedLocal, _.withCorrelationAttributes(correlationAttributes))
+    override def handle(event: StreamFrameEvent): StreamState = expectIncomingStream(event, Closed, HalfClosedLocal, correlationAttributes)
   }
   sealed abstract class ReceivingData(afterEndStreamReceived: StreamState) extends StreamState { _: Product =>
     protected def buffer: IncomingStreamBuffer

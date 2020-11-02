@@ -74,7 +74,7 @@ private[http2] object RequestParsing {
 
           if (tlsSessionInfoHeader.isDefined) headers += tlsSessionInfoHeader.get
 
-          val entity = subStream.createEntity(contentLength, contentType)
+          val entity = subStream.createRequestEntity(contentLength, contentType)
           val (path, rawQueryString) = pathAndRawQuery
           val authorityOrDefault: Uri.Authority = if (authority == null) Uri.Authority.Empty else authority
           val uri = Uri(scheme, authorityOrDefault, path, rawQueryString)
