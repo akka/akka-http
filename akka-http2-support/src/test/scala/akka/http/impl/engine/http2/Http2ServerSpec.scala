@@ -400,6 +400,19 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         entityDataIn.expectComplete()
       }
 
+      "fail if more data is received than connection window allows" inAssertAllStagesStopped new WaitingForRequestData {
+        sendFrame(DataFrame(TheStreamId, endStream = false, ByteString("0" * 100000)))
+        val (_, errorCode) = expectGOAWAY()
+        errorCode shouldEqual ErrorCode.FLOW_CONTROL_ERROR
+      }
+      "fail if more data is received than stream-level window allows" inAssertAllStagesStopped new WaitingForRequestData {
+        // trigger a connection-level WINDOW_UPDATE
+        sendDATA(TheStreamId, endStream = false, ByteString("0000"))
+        expectWindowUpdate()
+
+        sendFrame(DataFrame(TheStreamId, endStream = false, ByteString("0" * 100000)))
+        expectRST_STREAM(TheStreamId, ErrorCode.FLOW_CONTROL_ERROR)
+      }
       "fail entity stream if advertised content-length doesn't match" in pending
     }
 

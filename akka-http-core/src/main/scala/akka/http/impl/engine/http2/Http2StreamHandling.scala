@@ -338,6 +338,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
         totalBufferedData += d.payload.size // padding can be seen as instantly discarded
 
         if (outstandingConnectionLevelWindow < 0) {
+          buffer.shutdown()
           pushGOAWAY(ErrorCode.FLOW_CONTROL_ERROR, "Received more data than connection-level window would allow")
           Closed
         } else {
@@ -478,6 +479,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
 
       outstandingStreamWindow -= data.sizeInWindow
       if (outstandingStreamWindow < 0) {
+        shutdown()
         multiplexer.pushControlFrame(RstStreamFrame(streamId, ErrorCode.FLOW_CONTROL_ERROR))
         // also close response delivery if that has already started
         multiplexer.closeStream(streamId)
