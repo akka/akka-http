@@ -1296,7 +1296,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     sendBytes(Http2Protocol.ClientConnectionPreface)
     expectSETTINGS()
 
-    sendFrame(SettingsFrame(initialClientSettings))
+    sendFrame(SettingsFrame(immutable.Seq.empty ++ initialClientSettings))
     expectSettingsAck()
   }
 
