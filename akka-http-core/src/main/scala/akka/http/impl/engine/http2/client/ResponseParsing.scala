@@ -16,7 +16,7 @@ import scala.collection.immutable.VectorBuilder
 
 @InternalApi
 private[http2] object ResponseParsing {
-  def parseResponse(httpHeaderParser: HttpHeaderParser): Http2SubStream => HttpResponse = { subStream =>
+  def parseResponse(httpHeaderParser: HttpHeaderParser): ChunkedHttp2SubStream => HttpResponse = { subStream =>
     @tailrec
     def rec(
       remainingHeaders:  Seq[(String, String)],
@@ -30,7 +30,7 @@ private[http2] object ResponseParsing {
         // https://httpwg.org/specs/rfc7540.html#rfc.section.8.1.2.4: these pseudo header fields are mandatory for a response
         checkRequiredPseudoHeader(":status", status)
 
-        val entity = subStream.createEntity(contentLength, contentType.getOrElse(ContentTypes.`application/octet-stream`))
+        val entity = subStream.createResponseEntity(contentLength, contentType.getOrElse(ContentTypes.`application/octet-stream`))
 
         HttpResponse(
           status = status,
