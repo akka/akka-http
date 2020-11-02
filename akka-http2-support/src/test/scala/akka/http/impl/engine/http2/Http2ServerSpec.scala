@@ -998,8 +998,6 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         def openStream(streamId: Int) = sendHEADERS(streamId, endStream = false, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
         def closeStream(streamId: Int) = responseOut.sendNext(HPackSpecExamples.FirstResponse.addAttribute(Http2.streamId, streamId))
 
-        val request = HttpRequest(uri = "https://www.example.com/")
-
         // client set SETTINGS_MAX_CONCURRENT_STREAMS to 1 so an attempt from the server to open more streams
         // should fail. But as long as the outgoing streams are a result of client-initiated communication
         // they should succeed.
@@ -1019,10 +1017,10 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         closeStream(3)
         closeStream(5)
         closeStream(7)
-        expect[HeadersFrame].streamId shouldBe (1)
-        expect[HeadersFrame].streamId shouldBe (3)
-        expect[HeadersFrame].streamId shouldBe (5)
-        expect[HeadersFrame].streamId shouldBe (7)
+        expect[HeadersFrame]().streamId shouldBe (1)
+        expect[HeadersFrame]().streamId shouldBe (3)
+        expect[HeadersFrame]().streamId shouldBe (5)
+        expect[HeadersFrame]().streamId shouldBe (7)
       }
 
       "received SETTINGS_HEADER_TABLE_SIZE" in new TestSetup with RequestResponseProbes {
