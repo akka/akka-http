@@ -155,9 +155,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   /** Called to cleanup any state when the connection is torn down */
   def shutdownStreamHandling(): Unit = streamStates.keys.foreach(id => updateState(id, { x => x.shutdown(); Closed }))
   def resetStream(streamId: Int, errorCode: ErrorCode): Unit = {
-    streamStates -= streamId
-    tryPullSubStreams()
-    debug(s"Incoming side of stream [$streamId]: resetting with code [$errorCode]")
+    updateState(streamId, _ => Closed) // force stream to be closed
     multiplexer.pushControlFrame(RstStreamFrame(streamId, errorCode))
   }
 
@@ -263,7 +261,8 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     def handle(event: StreamFrameEvent): StreamState =
       if (event.isInstanceOf[ParsedHeadersFrame] && streamStates.size > settings.maxConcurrentStreams) {
         // When trying to open a new Stream, if that op would exceed the maxConcurrentStreams, then refuse the op
-        resetStream(event.streamId, ErrorCode.REFUSED_STREAM)
+        debug("Peer trying to open stream that would exceed `maxConcurrentStreams`, refusing stream")
+        multiplexer.pushControlFrame(RstStreamFrame(event.streamId, ErrorCode.REFUSED_STREAM))
         Closed
       } else
         expectIncomingStream(event, HalfClosedRemoteWaitingForOutgoingStream(0), OpenReceivingDataFirst(_, 0))
