@@ -1,15 +1,19 @@
+/*
+ * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.http.impl.engine.http2
 
 import scala.concurrent.duration._
-import akka.http.impl.util.{AkkaSpecWithMaterializer, ExampleHttpContexts}
-import akka.http.scaladsl.{Http, HttpConnectionContext}
+import akka.http.impl.util.{ AkkaSpecWithMaterializer, ExampleHttpContexts }
+import akka.http.scaladsl.{ Http, HttpConnectionContext }
 import akka.http.scaladsl.client.RequestBuilding.Get
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.stream.OverflowStrategy
-import akka.stream.scaladsl.{Keep, Sink, Source}
+import akka.stream.scaladsl.{ Keep, Sink, Source }
 import akka.util.ByteString
 import org.scalatest.concurrent.ScalaFutures
 
