@@ -995,14 +995,18 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
       "not limit response streams even when the client send a SETTINGS_MAX_CONCURRENT_STREAMS" in new TestSetup(
         Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 1)
       ) with RequestResponseProbes {
+        def openStream(streamId: Int) = sendHEADERS(streamId, endStream = false, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
+        def closeStream(streamId: Int) = responseOut.sendNext(HPackSpecExamples.FirstResponse.addAttribute(Http2.streamId, streamId))
+
         val request = HttpRequest(uri = "https://www.example.com/")
+
         // client set SETTINGS_MAX_CONCURRENT_STREAMS to 1 so an attempt from the server to open more streams
         // should fail. But as long as the outgoing streams are a result of client-initiated communication
         // they should succeed.
-        sendHEADERS(1, endStream = false, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
-        sendHEADERS(3, endStream = false, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
-        sendHEADERS(5, endStream = false, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
-        sendHEADERS(7, endStream = false, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
+        openStream(1)
+        openStream(3)
+        openStream(5)
+        openStream(7)
 
         expectRequest()
         expectRequest()
@@ -1010,10 +1014,11 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         expectRequest()
         // there are 4 in-flight requests
         expectNoBytes(100.millis)
-        responseOut.sendNext(HPackSpecExamples.FirstResponse.addAttribute(Http2.streamId, 1))
-        responseOut.sendNext(HPackSpecExamples.FirstResponse.addAttribute(Http2.streamId, 3))
-        responseOut.sendNext(HPackSpecExamples.FirstResponse.addAttribute(Http2.streamId, 5))
-        responseOut.sendNext(HPackSpecExamples.FirstResponse.addAttribute(Http2.streamId, 7))
+
+        closeStream(1)
+        closeStream(3)
+        closeStream(5)
+        closeStream(7)
         expect[HeadersFrame].streamId shouldBe (1)
         expect[HeadersFrame].streamId shouldBe (3)
         expect[HeadersFrame].streamId shouldBe (5)

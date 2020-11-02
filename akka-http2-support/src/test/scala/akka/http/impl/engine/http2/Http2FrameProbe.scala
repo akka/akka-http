@@ -41,8 +41,6 @@ private[http2] trait Http2FrameProbe {
 
   def expectGOAWAY(lastStreamId: Int = -1): (Int, ErrorCode)
 
-  def expectSettingsAck(): Unit
-
   def expectFrame(frameType: FrameType, expectedFlags: ByteFlag, streamId: Int, payload: ByteString): Unit
 
   def expectFramePayload(frameType: FrameType, expectedFlags: ByteFlag, streamId: Int): ByteString
@@ -50,6 +48,9 @@ private[http2] trait Http2FrameProbe {
   def expectFrameFlagsStreamIdAndPayload(frameType: FrameType): (ByteFlag, Int, ByteString)
 
   def expectSETTINGS(): SettingsFrame
+  def expectSettingsAck(): Unit
+
+  /** expect only the header of a frame, the payload will be left on the wire */
   def expectFrameHeader(): FrameHeader
 
   /** Collect a header block maybe spanning several frames */
