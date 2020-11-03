@@ -17,6 +17,7 @@ import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.AkkaSpecWithMaterializer
 import akka.http.impl.util.LogByteStringTools
+import akka.http.scaladsl.model.HttpEntity.{ Chunked, LastChunk }
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.CacheDirectives
 import akka.http.scaladsl.model.headers.RawHeader
@@ -1154,10 +1155,12 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
       "reject all other frames while waiting for CONTINUATION frames" in pending
 
-      "ignore mid-stream HEADERS with endStream = true (potential trailers)" inAssertAllStagesStopped new SimpleRequestResponseRoundtripSetup {
+      "accept trailing request HEADERS" inAssertAllStagesStopped new SimpleRequestResponseRoundtripSetup with Http2FrameHpackSupport {
         sendHEADERS(1, endStream = false, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
-        sendHEADERS(1, endStream = true, endHeaders = true, HPackSpecExamples.C41FirstRequestWithHuffman)
-        expectNoBytes(100.millis)
+        sendHEADERS(1, endStream = true, Seq(RawHeader("grpc-status", "0")))
+
+        // On the server side we read the entity as bytes, so the trailing headers are not available.
+        expectRequest()
       }
 
       "reject HEADERS for already closed streams" inAssertAllStagesStopped new SimpleRequestResponseRoundtripSetup {

@@ -489,11 +489,10 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       }
     }
     def onTrailingHeaders(headers: ParsedHeadersFrame): Unit = {
+      trailer.success(headers)
       if (headers.endStream) {
         onDataFrame(DataFrame(headers.streamId, endStream = true, ByteString.empty)) // simulate end stream by empty dataframe
       } else pushGOAWAY(Http2Protocol.ErrorCode.PROTOCOL_ERROR, "Got unexpected mid-stream HEADERS frame")
-
-      trailer.success(headers)
     }
     def onRstStreamFrame(rst: RstStreamFrame): Unit = {
       outlet.fail(new PeerClosedStreamException(rst.streamId, rst.errorCode))
