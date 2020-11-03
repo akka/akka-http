@@ -512,7 +512,10 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
         debug(s"Dispatched chunk of $dataSize for stream [$streamId], remaining window space now $outstandingStreamWindow, buffered: ${buffer.size}")
         updateWindows()
       }
-      if (buffer.isEmpty && wasClosed) outlet.complete()
+      if (buffer.isEmpty && wasClosed) {
+        trailer.trySuccess(ParsedHeadersFrame(streamId, endStream = true, Seq.empty, None))
+        outlet.complete()
+      }
     }
 
     private def updateWindows(): Unit = {

@@ -79,7 +79,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
           ),
           expectedResponse =
             HPackSpecExamples.FirstResponse
-              .withEntity(Strict(ContentTypes.NoContentType, ByteString.empty))
+              .withEntity(Chunked(ContentTypes.`application/octet-stream`, Source.empty))
         )
       }
 
