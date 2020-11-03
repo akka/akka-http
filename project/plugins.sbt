@@ -16,7 +16,6 @@ addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.0")
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.10.0-RC1") // for advanced PR validation features
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.1")
 addSbtPlugin("org.foundweekends" % "sbt-bintray" % "0.6.1")
-addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent" % "0.1.5")
 addSbtPlugin("com.lightbend.sbt" % "sbt-publish-rsync" % "0.2")
 addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.35")
 addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.18")

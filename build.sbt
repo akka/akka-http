@@ -213,7 +213,7 @@ lazy val http2Support = project("akka-http2-support")
       }
     )
   }
-  .enablePlugins(JavaAgent, BootstrapGenjavadoc)
+  .enablePlugins(BootstrapGenjavadoc)
   .enablePlugins(ReproducibleBuildsPlugin)
   .disablePlugins(MimaPlugin) // experimental module still
 
