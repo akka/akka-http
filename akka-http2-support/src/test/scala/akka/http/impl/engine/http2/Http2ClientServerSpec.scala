@@ -120,10 +120,9 @@ class Http2ClientServerSpec extends AkkaSpecWithMaterializer(
     lazy val clientFlow = {
       val clientSettings = ClientConnectionSettings(system).withTransport(ExampleHttpContexts.proxyTransport(binding.localAddress))
       Http().connectionTo("akka.example.org")
-        .http2()
-        .withConnectionContext(ExampleHttpContexts.exampleClientContext)
+        .withCustomHttpsConnectionContext(ExampleHttpContexts.exampleClientContext)
         .withClientConnectionSettings(clientSettings)
-        .connectionFlow()
+        .http2()
     }
     lazy val clientRequestsOut = TestPublisher.probe[HttpRequest]()
     lazy val clientResponsesIn = TestSubscriber.probe[HttpResponse]()

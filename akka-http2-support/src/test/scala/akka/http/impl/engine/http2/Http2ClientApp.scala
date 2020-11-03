@@ -31,7 +31,7 @@ object Http2ClientApp extends App {
   implicit val system = ActorSystem("Http2ClientApp", config)
   implicit val ec = system.dispatcher
 
-  val dispatch = singleRequest(Http().connectionTo("doc.akka.io").http2().connectionFlow())
+  val dispatch = singleRequest(Http().connectionTo("doc.akka.io").http2())
 
   dispatch(
     HttpRequest(

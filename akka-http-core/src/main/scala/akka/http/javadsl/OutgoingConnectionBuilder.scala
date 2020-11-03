@@ -11,6 +11,7 @@ import akka.event.LoggingAdapter
 import akka.http.javadsl.model.HttpRequest
 import akka.http.javadsl.model.HttpResponse
 import akka.http.javadsl.settings.ClientConnectionSettings
+import akka.stream.javadsl
 import akka.stream.javadsl.Flow
 
 /**
@@ -27,34 +28,44 @@ trait OutgoingConnectionBuilder {
   def toHost(host: String): OutgoingConnectionBuilder
 
   /**
-   * Change with port flows built with this builder connects to
+   * Change with port flows built with this builder connects to, if not set
+   * the protocol default is used.
    */
   def toPort(port: Int): OutgoingConnectionBuilder
 
   /**
-   * Switch to HTTP/2 over TLS on port 443
+   * Create a flow that when materialized creates a single HTTP/1.1 plaintext connection with a default port 80 to the server.
    */
-  def http2(): OutgoingConnectionBuilder
+  def http(): Flow[HttpRequest, HttpResponse, CompletionStage[OutgoingConnection]]
 
   /**
-   * Switch to HTTP/1.1 over TLS on port 443
+   * Create a flow that when materialized creates a single HTTP/1.1 TLS connection with a default port 443
    */
-  def https1(): OutgoingConnectionBuilder
+  def https(): Flow[HttpRequest, HttpResponse, CompletionStage[OutgoingConnection]]
 
   /**
-   * Switch to HTTP/1.1 over a plaintext connection on port 80
+   * Create a flow that when materialized creates a single HTTP/2 TLS connection with a default port 443
+   *
+   * Note that the responses are not guaranteed to arrive in the same order as the requests go out (In the case of a HTTP/2 connection)
+   * so therefore requests needs to have a [[akka.http.scaladsl.model.RequestResponseAssociation]]
+   * which Akka HTTP will carry over to the corresponding response for a request.
    */
-  def insecureHttp1(): OutgoingConnectionBuilder
+  def http2(): Flow[HttpRequest, HttpResponse, CompletionStage[OutgoingConnection]]
 
   /**
-   * Switch to HTTP/2 with 'prior knowledge' over a plaintext connection on port 80
+   * Create a flow that when materialized creates a single HTTP/2 with 'prior knowledge' plaintext connection with a default port 80
+   *
+   * Note that the responses are not guaranteed to arrive in the same order as the requests go out (In the case of a HTTP/2 connection)
+   * so therefore requests needs to have a [[akka.http.scaladsl.model.RequestResponseAssociation]]
+   * which Akka HTTP will carry over to the corresponding response for a request.
    */
-  def insecureForcedHttp2(): OutgoingConnectionBuilder
+  def http2WithPriorKnowledge(): Flow[HttpRequest, HttpResponse, CompletionStage[OutgoingConnection]]
 
   /**
-   * Use a custom [[ConnectionContext]] for the connection.
+   * Use a custom [[HttpsConnectionContext]] for the connection.
+   * Only applicable for `https()` and `http2()`, overrides `defaultHttpsContext`
    */
-  def withConnectionContext(context: ConnectionContext): OutgoingConnectionBuilder
+  def withCustomHttpsConnectionContext(httpsConnectionContext: HttpsConnectionContext): OutgoingConnectionBuilder
 
   /**
    * Use custom [[ClientConnectionSettings]] for the connection.
@@ -66,12 +77,4 @@ trait OutgoingConnectionBuilder {
    */
   def logTo(logger: LoggingAdapter): OutgoingConnectionBuilder
 
-  /**
-   * Create flow that when materialized creates a single connection to the HTTP server.
-   *
-   * The responses are not guaranteed to arrive in the same order as the requests go out
-   * so therefore requests needs to have a [[akka.http.scaladsl.model.RequestResponseAssociation]]
-   * which Akka HTTP will carry over to the corresponding response for a request.
-   */
-  def connectionFlow(): Flow[HttpRequest, HttpResponse, CompletionStage[OutgoingConnection]]
 }
