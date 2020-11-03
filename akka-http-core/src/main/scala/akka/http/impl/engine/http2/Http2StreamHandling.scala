@@ -16,6 +16,7 @@ import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
 import akka.util.ByteString
 
 import scala.collection.immutable
+import scala.concurrent.{ Future, Promise }
 import scala.util.control.NoStackTrace
 
 /**
@@ -34,7 +35,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   def multiplexer: Http2Multiplexer
   def settings: Http2CommonSettings
   def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit
-  def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], correlationAttributes: Map[AttributeKey[_], _]): Unit
+  def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], trailingHeaders: Future[ParsedHeadersFrame], correlationAttributes: Map[AttributeKey[_], _]): Unit
   def isUpgraded: Boolean
 
   def flowController: IncomingFlowController = IncomingFlowController.default(settings)
@@ -235,17 +236,18 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       correlationAttributes: Map[AttributeKey[_], _]             = Map.empty): StreamState =
       event match {
         case frame @ ParsedHeadersFrame(streamId, endStream, _, _) =>
-          val (data, nextState) =
+          val (data, nextState, trailingHeaders) =
             if (endStream)
-              (Source.empty, nextStateEmpty)
+              (Source.empty, nextStateEmpty, Future.successful(ParsedHeadersFrame(streamId, endStream = true, Seq.empty, None)))
             else {
+              val trailingHeadersPromise = Promise[ParsedHeadersFrame]()
               val subSource = new SubSourceOutlet[ByteString](s"substream-out-$streamId")
-              (Source.fromGraph(subSource.source), nextStateStream(new IncomingStreamBuffer(streamId, subSource)))
+              (Source.fromGraph(subSource.source), nextStateStream(new IncomingStreamBuffer(streamId, subSource, trailingHeadersPromise)), trailingHeadersPromise.future)
             }
 
           // FIXME: after multiplexer PR is merged
           // prioInfo.foreach(multiplexer.updatePriority)
-          dispatchSubstream(frame, data, correlationAttributes)
+          dispatchSubstream(frame, data, trailingHeaders, correlationAttributes)
           nextState
 
         case x => receivedUnexpectedFrame(x)
@@ -357,12 +359,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
         Closed
 
       case h: ParsedHeadersFrame =>
-        buffer.onTrailingHeaders(h.keyValuePairs)
-
-        if (h.endStream) {
-          buffer.onDataFrame(DataFrame(h.streamId, endStream = true, ByteString.empty)) // simulate end stream by empty dataframe
-          debug(s"Ignored trailing HEADERS frame: $h")
-        } else pushGOAWAY(Http2Protocol.ErrorCode.PROTOCOL_ERROR, "Got unexpected mid-stream HEADERS frame")
+        buffer.onTrailingHeaders(h)
 
         maybeFinishStream(h.endStream)
 
@@ -460,7 +457,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     }
   }
 
-  class IncomingStreamBuffer(streamId: Int, outlet: SubSourceOutlet[ByteString]) extends OutHandler {
+  class IncomingStreamBuffer(streamId: Int, outlet: SubSourceOutlet[ByteString], trailer: Promise[ParsedHeadersFrame]) extends OutHandler {
     private var buffer: ByteString = ByteString.empty
     private var wasClosed: Boolean = false
     private var outstandingStreamWindow: Int = Http2Protocol.InitialWindowSize // adapt if we negotiate greater sizes by settings
@@ -490,6 +487,13 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
         dispatchNextChunk()
         None // don't change state
       }
+    }
+    def onTrailingHeaders(headers: ParsedHeadersFrame): Unit = {
+      if (headers.endStream) {
+        onDataFrame(DataFrame(headers.streamId, endStream = true, ByteString.empty)) // simulate end stream by empty dataframe
+      } else pushGOAWAY(Http2Protocol.ErrorCode.PROTOCOL_ERROR, "Got unexpected mid-stream HEADERS frame")
+
+      trailer.success(headers)
     }
     def onRstStreamFrame(rst: RstStreamFrame): Unit = {
       outlet.fail(new PeerClosedStreamException(rst.streamId, rst.errorCode))

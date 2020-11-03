@@ -63,7 +63,7 @@ private[http2] object ResponseRendering {
 
   private[http2] def substreamFor(entity: HttpEntity, headers: ParsedHeadersFrame): Http2SubStream = entity match {
     case HttpEntity.Chunked(_, chunks) =>
-      ChunkedHttp2SubStream(headers, chunks)
+      ChunkedHttp2SubStream(headers, chunks, Map.empty)
     case _ =>
       ByteHttp2SubStream(headers, entity.dataBytes)
   }
