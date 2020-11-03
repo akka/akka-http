@@ -10,7 +10,8 @@ import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.FLOW_CONTROL_ERROR
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.scaladsl.model.AttributeKey
-import akka.http.scaladsl.model.HttpEntity.ChunkStreamPart
+import akka.http.scaladsl.model.HttpEntity.{ ChunkStreamPart, LastChunk }
+import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.settings.Http2CommonSettings
 import akka.macros.LogHelper
 import akka.stream.Attributes
@@ -26,7 +27,7 @@ import akka.stream.stage.StageLogging
 import akka.util.ByteString
 
 import scala.collection.immutable
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.control.NonFatal
 
 /** Currently only used as log source */
@@ -34,14 +35,16 @@ import scala.util.control.NonFatal
 private[http2] class Http2ClientDemux(http2Settings: Http2CommonSettings, initialRemoteSettings: immutable.Seq[Setting])
   extends Http2Demux[ChunkedHttp2SubStream](http2Settings, initialRemoteSettings, upgraded = false, isServer = false) {
 
-  override def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], trailingHeaders: Future[ParsedHeadersFrame], correlationAttributes: Map[AttributeKey[_], _], ): ChunkedHttp2SubStream =
-    ChunkedHttp2SubStream(initialHeaders, data.map(ChunkStreamPart(_)), trailingHeaders, correlationAttributes)
+  override def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], trailingHeaders: Future[ParsedHeadersFrame], correlationAttributes: Map[AttributeKey[_], _])(implicit ec: ExecutionContext): ChunkedHttp2SubStream =
+    ChunkedHttp2SubStream(initialHeaders, data.map(ChunkStreamPart(_)).concat(Source.lazilyAsync(() => trailingHeaders.map(frame => LastChunk(extension = "", frame.keyValuePairs.map {
+      case (k, v) => RawHeader(k, v)
+    })))), correlationAttributes)
 }
 
 private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initialRemoteSettings: immutable.Seq[Setting], upgraded: Boolean)
   extends Http2Demux[ByteHttp2SubStream](http2Settings, initialRemoteSettings, upgraded, isServer = true) {
 
-  override def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], trailingHeaders: Future[ParsedHeadersFrame], correlationAttributes: Map[AttributeKey[_], _]): ByteHttp2SubStream =
+  override def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], trailingHeaders: Future[ParsedHeadersFrame], correlationAttributes: Map[AttributeKey[_], _])(implicit ec: ExecutionContext): ByteHttp2SubStream =
     ByteHttp2SubStream(initialHeaders, data, correlationAttributes)
 }
 
@@ -108,7 +111,7 @@ private[http2] abstract class Http2Demux[T <: Http2SubStream](http2Settings: Htt
   override val shape =
     BidiShape(substreamIn, frameOut, frameIn, substreamOut)
 
-  def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], trailingHeaders: Future[ParsedHeadersFrame], correlationAttributes: Map[AttributeKey[_], _]): T
+  def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], trailingHeaders: Future[ParsedHeadersFrame], correlationAttributes: Map[AttributeKey[_], _])(implicit ec: ExecutionContext): T
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with Http2MultiplexerSupport with Http2StreamHandling with GenericOutletSupport with StageLogging with LogHelper {
@@ -234,7 +237,7 @@ private[http2] abstract class Http2Demux[T <: Http2SubStream](http2Settings: Htt
       //        with the other side.
       val bufferedSubStreamOutput = new BufferedOutlet[T](substreamOut)
       def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], trailingHeaders: Future[ParsedHeadersFrame], correlationAttributes: Map[AttributeKey[_], _]): Unit =
-        bufferedSubStreamOutput.push(createSubstream(initialHeaders, data, trailingHeaders, correlationAttributes))
+        bufferedSubStreamOutput.push(createSubstream(initialHeaders, data, trailingHeaders, correlationAttributes)(materializer.executionContext))
 
       setHandler(substreamIn, new InHandler {
         def onPush(): Unit = {
