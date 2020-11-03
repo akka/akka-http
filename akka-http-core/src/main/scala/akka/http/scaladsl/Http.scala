@@ -404,6 +404,8 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    *
    * To configure additional settings for requests made using this method,
    * use the `akka.http.client` config section or pass in a [[akka.http.scaladsl.settings.ClientConnectionSettings]] explicitly.
+   *
+   * Prefer [[connectionTo]] over this method.
    */
   def outgoingConnection(host: String, port: Int = 80,
                          localAddress: Option[InetSocketAddress] = None,
@@ -419,6 +421,8 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    *
    * To configure additional settings for requests made using this method,
    * use the `akka.http.client` config section or pass in a [[akka.http.scaladsl.settings.ClientConnectionSettings]] explicitly.
+   *
+   * Prefer [[connectionTo]] over this method.
    */
   def outgoingConnectionHttps(host: String, port: Int = 443,
                               connectionContext: HttpsConnectionContext    = defaultClientHttpsContext,
@@ -435,6 +439,8 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    *
    * To configure additional settings for requests made using this method,
    * use the `akka.http.client` config section or pass in a [[akka.http.scaladsl.settings.ClientConnectionSettings]] explicitly.
+   *
+   * Prefer [[connectionTo]] over this method.
    */
   def outgoingConnectionUsingContext(
     host:              String,

@@ -6,6 +6,7 @@ package akka.http.impl.engine.http2
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.ResponsePromise
 import akka.http.scaladsl.model.headers.HttpEncodings
 import akka.http.scaladsl.model.{ AttributeKey, HttpRequest, HttpResponse, RequestResponseAssociation, headers }
 import akka.stream.OverflowStrategy
@@ -72,8 +73,3 @@ object Http2ClientApp extends App {
   }
 }
 
-// FIXME should we provide this out of the box perhaps?
-case class ResponsePromise(promise: Promise[HttpResponse]) extends RequestResponseAssociation
-object ResponsePromise {
-  val Key = AttributeKey[ResponsePromise]("association-handle")
-}

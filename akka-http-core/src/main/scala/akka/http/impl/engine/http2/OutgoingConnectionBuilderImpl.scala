@@ -83,10 +83,11 @@ private[akka] object OutgoingConnectionBuilderImpl {
     override private[akka] def toJava: JOutgoingConnectionBuilder = new JavaAdapter(this)
 
     // FIXME should we make it `unorderedConnectionFlow()`?
-    override def connectionFlow(): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
-      val stack = connectionContext match {
+    override def connectionFlow(): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
+      connectionContext match {
         case connectionContext: HttpsConnectionContext =>
           if (usingHttp2) {
+            // http/2 tls
             def createEngine(): SSLEngine = {
               val engine = connectionContext.sslContextData match {
                 // TODO FIXME configure hostname verification for this case
@@ -101,28 +102,30 @@ private[akka] object OutgoingConnectionBuilderImpl {
               engine
             }
 
-            Http2Blueprint.clientStack(clientConnectionSettings, log) atop
+            val stack = Http2Blueprint.clientStack(clientConnectionSettings, log) atop
               Http2Blueprint.unwrapTls atop
               LogByteStringTools.logTLSBidiBySetting("client-plain-text", clientConnectionSettings.logUnencryptedNetworkBytes) atop
               TLS(createEngine _, closing = TLSClosing.eagerClose)
+
+            stack.joinMat(clientConnectionSettings.transport.connectTo(host, port, clientConnectionSettings)(system.classicSystem))(Keep.right)
           } else {
-            // FIXME
-            throw new UnsupportedOperationException("tls http1 not implemented yet")
+            // http/1 tls
+            Http(system).outgoingConnectionHttps(host, port, connectionContext, None, clientConnectionSettings, log)
           }
-        case _ =>
+        case cc: ConnectionContext =>
           if (usingHttp2) {
-            Http2Blueprint.clientStack(clientConnectionSettings, log) atop
+            // http/2 prior knowledge plaintext
+            val stack = Http2Blueprint.clientStack(clientConnectionSettings, log) atop
               Http2Blueprint.unwrapTls atop
               LogByteStringTools.logTLSBidiBySetting("client-plain-text", clientConnectionSettings.logUnencryptedNetworkBytes) atop
               TLSPlacebo()
 
+            stack.joinMat(clientConnectionSettings.transport.connectTo(host, port, clientConnectionSettings)(system.classicSystem))(Keep.right)
           } else {
-            throw new UnsupportedOperationException("insecure http1 not implemented yet")
+            // http/1.1 plaintext
+            Http(system).outgoingConnectionUsingContext(host, port, cc, clientConnectionSettings, log)
           }
       }
-
-      stack.joinMat(clientConnectionSettings.transport.connectTo(host, port, clientConnectionSettings)(system.classicSystem))(Keep.right)
-    }
 
   }
 

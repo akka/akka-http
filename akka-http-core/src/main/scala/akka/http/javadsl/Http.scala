@@ -358,6 +358,8 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Every materialization of the produced flow will attempt to establish a new outgoing connection.
    *
    * If the hostname is given with an `https://` prefix, the default [[HttpsConnectionContext]] will be used.
+   *
+   * Prefer [[connectionTo]] over this method.
    */
   def outgoingConnection(host: String): Flow[HttpRequest, HttpResponse, CompletionStage[OutgoingConnection]] =
     outgoingConnection(ConnectHttp.toHost(host))
@@ -367,6 +369,8 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Every materialization of the produced flow will attempt to establish a new outgoing connection.
    *
    * Use the [[ConnectHttp]] DSL to configure target host and whether HTTPS should be used.
+   *
+   * Prefer [[connectionTo]] over this method.
    */
   def outgoingConnection(to: ConnectHttp): Flow[HttpRequest, HttpResponse, CompletionStage[OutgoingConnection]] =
     adaptOutgoingFlow {
@@ -377,6 +381,8 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
   /**
    * Creates a [[akka.stream.javadsl.Flow]] representing a prospective HTTP client connection to the given endpoint.
    * Every materialization of the produced flow will attempt to establish a new outgoing connection.
+   *
+   * Prefer [[connectionTo]] over this method.
    */
   def outgoingConnection(
     to:           ConnectHttp,
@@ -397,7 +403,7 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * The builder defaults to build a connection using HTTP/1.1 over a plaintext connection to port 80.
    *
-   * @return A builder to configure more specific setup for the connection and then build a `Flow&gt;Request, Response, Future&gt;OutgoingConnection>>`.
+   * @return A builder to configure more specific setup for the connection and then build a `Flow&gt;Request, Response, CompletionStage&gt;OutgoingConnection>>`.
    */
   def connectionTo(host: String): OutgoingConnectionBuilder =
     delegate.connectionTo(host).toJava

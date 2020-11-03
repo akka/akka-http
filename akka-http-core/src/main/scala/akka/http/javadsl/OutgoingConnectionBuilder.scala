@@ -70,7 +70,7 @@ trait OutgoingConnectionBuilder {
    * Create flow that when materialized creates a single connection to the HTTP server.
    *
    * The responses are not guaranteed to arrive in the same order as the requests go out
-   * so therefore requests needs to have a [[akka.http.scaladsl.model.http2.RequestResponseAssociation]]
+   * so therefore requests needs to have a [[akka.http.scaladsl.model.RequestResponseAssociation]]
    * which Akka HTTP will carry over to the corresponding response for a request.
    */
   def connectionFlow(): Flow[HttpRequest, HttpResponse, CompletionStage[OutgoingConnection]]

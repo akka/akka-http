@@ -8,6 +8,7 @@ import akka.actor.ActorSystem;
 import akka.http.javadsl.model.AttributeKey;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
+import akka.http.javadsl.model.ResponseFuture;
 import akka.http.javadsl.model.headers.AcceptEncoding;
 import akka.http.javadsl.model.headers.HttpEncodings;
 import akka.stream.Materializer;
@@ -70,21 +71,13 @@ public class Http2ClientApp {
         .thenAccept(res -> System.out.println("[4] Got favicon: " + res));
   }
 
-  // FIXME provide this out of hte box perhaps
-  public static final class ResponseFuture {
-    public static final AttributeKey<ResponseFuture> KEY =
-        AttributeKey.create("association-handle", ResponseFuture.class);
-    final CompletableFuture<HttpResponse> future = new CompletableFuture<>();
-  }
-
   private static Function<HttpRequest, CompletionStage<HttpResponse>> singleRequest(ActorSystem system, Flow<HttpRequest, HttpResponse, ?> connection) {
     SourceQueueWithComplete<HttpRequest> queue =
         Source.<HttpRequest>queue(100, OverflowStrategy.dropNew())
             .via(connection)
             .to(Sink.foreach(res -> {
-              // FIXME Java model does not have/give us the response here so this does not currently work
               try {
-                res.getAttribute(ResponseFuture.KEY).get().future.complete(res);
+                res.getAttribute(ResponseFuture.KEY()).get().future().complete(res);
               } catch (Exception ex) {
                 ex.printStackTrace();
               }
@@ -92,9 +85,10 @@ public class Http2ClientApp {
         .run(SystemMaterializer.get(system).materializer());
 
     return (HttpRequest req) -> {
-      ResponseFuture attribute = new ResponseFuture();
-      return queue.offer(req.addAttribute(ResponseFuture.KEY, attribute))
-          .thenCompose(__ -> attribute.future);
+      CompletableFuture<HttpResponse> future = new CompletableFuture<>();
+      ResponseFuture attribute = new ResponseFuture(future);
+      return queue.offer(req.addAttribute(ResponseFuture.KEY(), attribute))
+          .thenCompose(__ -> attribute.future());
     };
   }
 }
