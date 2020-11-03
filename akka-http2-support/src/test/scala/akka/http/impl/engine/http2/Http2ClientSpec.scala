@@ -10,7 +10,7 @@ import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.ws.ByteStringSinkProbe
-import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools, StringRendering }
+import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
 import akka.http.scaladsl.client.RequestBuilding.Get
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.HttpEntity.{ Chunk, Chunked, LastChunk, Strict }
@@ -298,6 +298,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         chunks(0) should be(Chunk("asdf"))
         chunks(1) should be(LastChunk(extension = "", Seq(RawHeader("grpc-status", "0"))))
       }
+
     }
   }
 
