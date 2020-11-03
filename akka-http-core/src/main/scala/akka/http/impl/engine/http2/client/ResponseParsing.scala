@@ -21,6 +21,7 @@ private[http2] object ResponseParsing {
       remainingHeaders:  Seq[(String, String)],
       status:            StatusCode                = null,
       contentType:       ContentType               = ContentTypes.`application/octet-stream`,
+      contentLength:     Long                      = -1,
       seenRegularHeader: Boolean                   = false,
       headers:           VectorBuilder[HttpHeader] = new VectorBuilder[HttpHeader]
     ): HttpResponse =
@@ -28,7 +29,7 @@ private[http2] object ResponseParsing {
         // https://httpwg.org/specs/rfc7540.html#rfc.section.8.1.2.4: these pseudo header fields are mandatory for a response
         checkRequiredPseudoHeader(":status", status)
 
-        val entity = subStream.createResponseEntity(contentType)
+        val entity = subStream.createResponseEntity(contentLength, contentType)
 
         HttpResponse(
           status = status,
@@ -40,18 +41,22 @@ private[http2] object ResponseParsing {
         case (":status", statusCodeValue) =>
           checkUniquePseudoHeader(":status", status)
           checkNoRegularHeadersBeforePseudoHeader(":status", seenRegularHeader)
-          rec(remainingHeaders.tail, statusCodeValue.toInt, contentType, seenRegularHeader, headers)
+          rec(remainingHeaders.tail, statusCodeValue.toInt, contentType, contentLength, seenRegularHeader, headers)
 
         case ("content-type", ct) =>
           val contentType = ContentType.parse(ct).right.getOrElse(malformedRequest(s"Invalid content-type: '$ct'"))
-          rec(remainingHeaders.tail, status, contentType, seenRegularHeader, headers)
+          rec(remainingHeaders.tail, status, contentType, contentLength, seenRegularHeader, headers)
+
+        case ("content-length", length) =>
+          val contentLength = length.toLong
+          rec(remainingHeaders.tail, status, contentType, contentLength, seenRegularHeader, headers)
 
         case (name, _) if name.startsWith(":") =>
           malformedRequest(s"Unexpected pseudo-header '$name' in response")
 
         case (name, value) =>
           val httpHeader = parseHeaderPair(httpHeaderParser, name, value)
-          rec(remainingHeaders.tail, status, contentType, seenRegularHeader = true, headers += httpHeader)
+          rec(remainingHeaders.tail, status, contentType, contentLength, seenRegularHeader = true, headers += httpHeader)
       }
 
     rec(subStream.initialHeaders.keyValuePairs)

@@ -15,6 +15,7 @@ import akka.http.impl.engine.http2.hpack.{ HeaderCompression, HeaderDecompressio
 import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.impl.util.StreamUtils
+import akka.http.scaladsl.model.HttpEntity.Chunk
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, Http2CommonSettings, ParserSettings, ServerSettings }
 import akka.stream.TLSProtocol._
@@ -64,8 +65,12 @@ private[http2] final case class ChunkedHttp2SubStream(
   override def withCorrelationAttributes(attributes: Map[AttributeKey[_], _]): Http2SubStream =
     copy(correlationAttributes = attributes)
 
-  def createResponseEntity(contentType: ContentType): RequestEntity =
-    HttpEntity.Chunked(contentType, data)
+  def createResponseEntity(contentLength: Long, contentType: ContentType): RequestEntity = {
+    // Ignore trailing headers when content-length is defined
+    if (contentLength == 0) HttpEntity.Empty
+    else if (contentLength > 0) HttpEntity.Default(contentType, contentLength, data.collect { case Chunk(bytes, _) => bytes })
+    else HttpEntity.Chunked(contentType, data)
+  }
 }
 
 /** INTERNAL API */
