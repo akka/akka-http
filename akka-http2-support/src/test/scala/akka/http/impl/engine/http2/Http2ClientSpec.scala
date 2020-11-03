@@ -300,7 +300,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
         val chunks = response.entity.asInstanceOf[Chunked].chunks.runWith(Sink.seq).futureValue
         chunks(0) should be(Chunk("asdf"))
-        chunks(1) should be(LastChunk(extension = "", Seq(RawHeader("grpc-status", "0"))))
+        chunks(1) should be(LastChunk(extension = "", List(RawHeader("grpc-status", "0"))))
       }
 
     }

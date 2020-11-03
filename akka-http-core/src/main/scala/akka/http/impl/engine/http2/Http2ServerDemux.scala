@@ -38,7 +38,7 @@ private[http2] class Http2ClientDemux(http2Settings: Http2CommonSettings, initia
   override def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], trailingHeaders: Future[ParsedHeadersFrame], correlationAttributes: Map[AttributeKey[_], _])(implicit ec: ExecutionContext): ChunkedHttp2SubStream =
     ChunkedHttp2SubStream(initialHeaders, data.map(ChunkStreamPart(_)).concat(Source.lazilyAsync(() => trailingHeaders.map(frame => LastChunk(extension = "", frame.keyValuePairs.map {
       case (k, v) => RawHeader(k, v)
-    })))), correlationAttributes)
+    }.toList)))), correlationAttributes)
 }
 
 private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initialRemoteSettings: immutable.Seq[Setting], upgraded: Boolean)
