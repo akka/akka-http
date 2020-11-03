@@ -33,7 +33,7 @@ trait Http2FrameHpackSupport extends Http2FrameProbeDelegator with Http2FrameSen
       sendDATA(streamId, endStream = true, request.entity.dataBytes.runFold(ByteString.empty)(_ ++ _).futureValue)
   }
 
-  def expectDecodedResponseHEADERS(streamId: Int, endStream: Boolean = true): HttpResponse = {
+  def expectDecodedHEADERS(streamId: Int, endStream: Boolean = true): HttpResponse = {
     val headerBlockBytes = expectHeaderBlock(streamId, endStream)
     val decoded = decodeHeadersToResponse(headerBlockBytes)
     // filter date to make it easier to test
@@ -53,6 +53,12 @@ trait Http2FrameHpackSupport extends Http2FrameProbeDelegator with Http2FrameSen
 
   def encodeHeaders(headers: Seq[HttpHeader]): ByteString =
     encodeHeaderPairs(headerPairsForHeaders(headers))
+
+  def headersForResponse(response: HttpResponse): Seq[HttpHeader] =
+    Seq(
+      RawHeader(":status", response.status.intValue.toString),
+      RawHeader("content-type", response.entity.contentType.render(new StringRendering).get)
+    ) ++ response.headers.filter(_.renderInResponses)
 
   def headerPairsForRequest(request: HttpRequest): Seq[(String, String)] =
     Seq(

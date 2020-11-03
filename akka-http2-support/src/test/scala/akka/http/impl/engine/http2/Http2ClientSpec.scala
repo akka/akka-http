@@ -10,9 +10,10 @@ import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.ws.ByteStringSinkProbe
-import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
+import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools, StringRendering }
+import akka.http.scaladsl.client.RequestBuilding.Get
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.HttpEntity.Strict
+import akka.http.scaladsl.model.HttpEntity.{ Chunk, Chunked, LastChunk, Strict }
 import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.settings.ClientConnectionSettings
@@ -272,6 +273,30 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         emitRequest(9, request)
         expectNoBytes(100.millis)
 
+      }
+    }
+
+    "support stream support for receiveing response entity data" should {
+      abstract class WaitingForResponseSetup extends TestSetup with NetProbes with Http2FrameHpackSupport {
+        val streamId = 0x1
+        emitRequest(streamId, Get("/"))
+        expectDecodedHEADERS(streamId, endStream = true)
+      }
+      "support trailing headers for responses" in new WaitingForResponseSetup {
+        sendHEADERS(streamId, endStream = false, Seq(
+          RawHeader(":status", "200"),
+          RawHeader("content-type", "application/octet-stream")
+        ))
+
+        val response = expectResponse()
+        response.entity shouldBe a[Chunked]
+
+        sendDATA(streamId, endStream = false, ByteString("asdf"))
+        sendHEADERS(streamId, endStream = true, Seq(RawHeader("grpc-status", "0")))
+
+        val chunks = response.entity.asInstanceOf[Chunked].chunks.runWith(Sink.seq).futureValue
+        chunks(0) should be(Chunk("asdf"))
+        chunks(1) should be(LastChunk(extension = "", Seq(RawHeader("grpc-status", "0"))))
       }
     }
   }

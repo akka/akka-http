@@ -428,7 +428,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
         val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entityDataOut)))
         emitResponse(TheStreamId, response)
-        expectDecodedResponseHEADERS(streamId = TheStreamId, endStream = false) shouldBe response.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
+        expectDecodedHEADERS(streamId = TheStreamId, endStream = false) shouldBe response.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
       }
 
       "encode Content-Length and Content-Type headers" inAssertAllStagesStopped new WaitingForResponseSetup {
@@ -490,7 +490,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
         val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entityDataOut)))
         emitResponse(TheStreamId, response)
-        expectDecodedResponseHEADERS(streamId = TheStreamId, endStream = false) shouldBe response.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
+        expectDecodedHEADERS(streamId = TheStreamId, endStream = false) shouldBe response.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
         entityDataOut.sendNext(bytes(bytesToSend, 0x23))
 
         expectDATA(TheStreamId, false, bytesToSend)
@@ -511,7 +511,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
         val response = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entityDataOut)))
         emitResponse(TheStreamId, response)
-        expectDecodedResponseHEADERS(streamId = TheStreamId, endStream = false) shouldBe response.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
+        expectDecodedHEADERS(streamId = TheStreamId, endStream = false) shouldBe response.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
         entityDataOut.sendNext(bytes(bytesToSend, 0x23))
 
         expectDATA(TheStreamId, false, bytesToSend)
@@ -686,9 +686,9 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
           ))
         ))
         emitResponse(TheStreamId, response)
-        expectDecodedResponseHEADERS(streamId = TheStreamId, endStream = false)
+        expectDecodedHEADERS(streamId = TheStreamId, endStream = false)
         expectDATA(TheStreamId, endStream = false, ByteString("foobar"))
-        expectDecodedResponseHEADERS(streamId = TheStreamId).headers should be(immutable.Seq(RawHeader("status", "grpc-status 10")))
+        expectDecodedHEADERS(streamId = TheStreamId).headers should be(immutable.Seq(RawHeader("status", "grpc-status 10")))
       }
       "include the trailing headers even when the buffer is emptied before sending the last chunk" inAssertAllStagesStopped new WaitingForResponseSetup {
         val queuePromise = Promise[SourceQueueWithComplete[HttpEntity.ChunkStreamPart]]()
@@ -704,12 +704,12 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         chunkQueue.offer(HttpEntity.Chunk("foo"))
         chunkQueue.offer(HttpEntity.Chunk("bar"))
 
-        expectDecodedResponseHEADERS(streamId = TheStreamId, endStream = false)
+        expectDecodedHEADERS(streamId = TheStreamId, endStream = false)
         expectDATA(TheStreamId, endStream = false, ByteString("foobar"))
 
         chunkQueue.offer(HttpEntity.LastChunk(trailer = immutable.Seq[HttpHeader](RawHeader("Status", "grpc-status 10"))))
         chunkQueue.complete()
-        expectDecodedResponseHEADERS(streamId = TheStreamId).headers should be(immutable.Seq(RawHeader("status", "grpc-status 10")))
+        expectDecodedHEADERS(streamId = TheStreamId).headers should be(immutable.Seq(RawHeader("status", "grpc-status 10")))
       }
       "send the trailing headers immediately, even when the stream window is depleted" inAssertAllStagesStopped new WaitingForResponseSetup {
         val queuePromise = Promise[SourceQueueWithComplete[HttpEntity.ChunkStreamPart]]()
@@ -733,12 +733,12 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
           }
         }
 
-        expectDecodedResponseHEADERS(streamId = TheStreamId, endStream = false)
+        expectDecodedHEADERS(streamId = TheStreamId, endStream = false)
         depleteWindow()
 
         chunkQueue.offer(HttpEntity.LastChunk(trailer = immutable.Seq[HttpHeader](RawHeader("grpc-status", "10"))))
         chunkQueue.complete()
-        expectDecodedResponseHEADERS(streamId = TheStreamId, endStream = true).headers should be(immutable.Seq(RawHeader("grpc-status", "10")))
+        expectDecodedHEADERS(streamId = TheStreamId, endStream = true).headers should be(immutable.Seq(RawHeader("grpc-status", "10")))
       }
       "send the trailing headers even when last data chunk was delayed by window depletion" inAssertAllStagesStopped new WaitingForResponseSetup {
         val queuePromise = Promise[SourceQueueWithComplete[HttpEntity.ChunkStreamPart]]()
@@ -762,7 +762,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
           }
         }
 
-        expectDecodedResponseHEADERS(streamId = TheStreamId, endStream = false)
+        expectDecodedHEADERS(streamId = TheStreamId, endStream = false)
         depleteWindow()
 
         val lastData = ByteString("y" * 500)
@@ -781,7 +781,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         sendWINDOW_UPDATE(0, 1000)
         expectDATA(TheStreamId, endStream = false, lastData.drop(100))
 
-        expectDecodedResponseHEADERS(streamId = TheStreamId, endStream = true).headers should be(immutable.Seq(RawHeader("grpc-status", "10")))
+        expectDecodedHEADERS(streamId = TheStreamId, endStream = true).headers should be(immutable.Seq(RawHeader("grpc-status", "10")))
       }
     }
 
@@ -834,7 +834,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         val entity1DataOut = TestPublisher.probe[ByteString]()
         val response1 = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entity1DataOut)))
         emitResponse(1, response1)
-        expectDecodedResponseHEADERS(streamId = 1, endStream = false) shouldBe response1.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
+        expectDecodedHEADERS(streamId = 1, endStream = false) shouldBe response1.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
 
         def sendDataAndExpectOnNet(outStream: TestPublisher.Probe[ByteString], streamId: Int, dataString: String, endStream: Boolean = false): Unit = {
           val data = ByteString(dataString)
@@ -852,7 +852,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         val entity2DataOut = TestPublisher.probe[ByteString]()
         val response2 = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entity2DataOut)))
         emitResponse(3, response2)
-        expectDecodedResponseHEADERS(streamId = 3, endStream = false) shouldBe response2.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
+        expectDecodedHEADERS(streamId = 3, endStream = false) shouldBe response2.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
 
         // send again on stream 1
         sendDataAndExpectOnNet(entity1DataOut, 1, "zyx")
@@ -889,7 +889,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         val response = HttpResponse(200, entity = responseEntity)
 
         emitResponse(1, response)
-        expectDecodedResponseHEADERS(1, false)
+        expectDecodedHEADERS(1, false)
 
         // check data flow for request entity
         sendDATA(1, false, ByteString("ping"))
