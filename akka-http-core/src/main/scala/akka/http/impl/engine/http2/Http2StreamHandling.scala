@@ -357,7 +357,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
         Closed
 
       case h: ParsedHeadersFrame =>
-        // ignored
+        buffer.onTrailingHeaders(h.keyValuePairs)
 
         if (h.endStream) {
           buffer.onDataFrame(DataFrame(h.streamId, endStream = true, ByteString.empty)) // simulate end stream by empty dataframe

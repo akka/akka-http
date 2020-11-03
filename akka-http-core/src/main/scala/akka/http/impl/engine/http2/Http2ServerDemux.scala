@@ -26,6 +26,7 @@ import akka.stream.stage.StageLogging
 import akka.util.ByteString
 
 import scala.collection.immutable
+import scala.concurrent.Future
 import scala.util.control.NonFatal
 
 /** Currently only used as log source */
@@ -33,14 +34,14 @@ import scala.util.control.NonFatal
 private[http2] class Http2ClientDemux(http2Settings: Http2CommonSettings, initialRemoteSettings: immutable.Seq[Setting])
   extends Http2Demux[ChunkedHttp2SubStream](http2Settings, initialRemoteSettings, upgraded = false, isServer = false) {
 
-  override def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], correlationAttributes: Map[AttributeKey[_], _]): ChunkedHttp2SubStream =
-    ChunkedHttp2SubStream(initialHeaders, data.map(ChunkStreamPart(_)), correlationAttributes)
+  override def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], trailingHeaders: Future[ParsedHeadersFrame], correlationAttributes: Map[AttributeKey[_], _], ): ChunkedHttp2SubStream =
+    ChunkedHttp2SubStream(initialHeaders, data.map(ChunkStreamPart(_)), trailingHeaders, correlationAttributes)
 }
 
 private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initialRemoteSettings: immutable.Seq[Setting], upgraded: Boolean)
   extends Http2Demux[ByteHttp2SubStream](http2Settings, initialRemoteSettings, upgraded, isServer = true) {
 
-  override def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], correlationAttributes: Map[AttributeKey[_], _]): ByteHttp2SubStream =
+  override def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], trailingHeaders: Future[ParsedHeadersFrame], correlationAttributes: Map[AttributeKey[_], _]): ByteHttp2SubStream =
     ByteHttp2SubStream(initialHeaders, data, correlationAttributes)
 }
 
@@ -107,7 +108,7 @@ private[http2] abstract class Http2Demux[T <: Http2SubStream](http2Settings: Htt
   override val shape =
     BidiShape(substreamIn, frameOut, frameIn, substreamOut)
 
-  def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], correlationAttributes: Map[AttributeKey[_], _]): T
+  def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], trailingHeaders: Future[ParsedHeadersFrame], correlationAttributes: Map[AttributeKey[_], _]): T
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with Http2MultiplexerSupport with Http2StreamHandling with GenericOutletSupport with StageLogging with LogHelper {
@@ -232,8 +233,8 @@ private[http2] abstract class Http2Demux[T <: Http2SubStream](http2Settings: Htt
       //        keep the buffer limited to the number of concurrent streams as negotiated
       //        with the other side.
       val bufferedSubStreamOutput = new BufferedOutlet[T](substreamOut)
-      def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], correlationAttributes: Map[AttributeKey[_], _]): Unit =
-        bufferedSubStreamOutput.push(createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], correlationAttributes: Map[AttributeKey[_], _]))
+      def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], trailingHeaders: Future[ParsedHeadersFrame], correlationAttributes: Map[AttributeKey[_], _]): Unit =
+        bufferedSubStreamOutput.push(createSubstream(initialHeaders, data, trailingHeaders, correlationAttributes))
 
       setHandler(substreamIn, new InHandler {
         def onPush(): Unit = {
