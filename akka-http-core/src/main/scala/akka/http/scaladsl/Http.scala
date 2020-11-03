@@ -16,6 +16,7 @@ import akka.event.{ Logging, LoggingAdapter }
 import akka.http.impl.engine.HttpConnectionIdleTimeoutBidi
 import akka.http.impl.engine.client._
 import akka.http.impl.engine.http2.Http2
+import akka.http.impl.engine.http2.OutgoingConnectionBuilderImpl
 import akka.http.impl.engine.server._
 import akka.http.impl.engine.ws.WebSocketClientBlueprint
 import akka.http.impl.settings.{ ConnectionPoolSetup, HostConnectionPoolSetup }
@@ -391,25 +392,11 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    * is no pooling and you are yourself responsible for lifecycle management of the connection. For a more convenient
    * Request level API see [[singleRequest()]]
    *
-   * The responses are not guaranteed to arrive in the same order as the requests go out (In the case of a HTTP/2 server)
-   * so therefore requests needs to have a [[akka.http.scaladsl.model.http2.RequestResponseAssociation]]
-   * which Akka HTTP will carry over to the corresponding response for a request.
-   *
+   * The builder defaults to build a connection using HTTP/1.1 over a plaintext connection to port 80.
    *
    * @return A builder to configure more specific setup for the connection and then build a `Flow[Request, Response, Future[OutgoingConnection]]`.
    */
-  /*
-   * FIXME: I think we'd want this in the HTTP extension for easy access but it cannot refer to classes in the http2-support module
-   * FIXME: for having the same entry point for HTTP/2 and HTTP/1.1 there is a mismatch with port always reasonably defaulting to 443
-   *        for HTTP/2 but not really for HTTP1/1
-   * FIXME also for same API and automatic protocol negotiation, how do we deal with explicitly saying TLS/No TLS for HTTP/1 but defaulting to TLS for HTTP/2?
-   */
-  def connectionTo(host: String): OutgoingConnectionBuilder =
-    if (true) { // FIXME add toggle setting for preview http2 like the server side?
-      Http2Shadow.connectionTo(system, host)
-    } else {
-      ??? // FIXME a separate builder impl for HTTP/1 only?
-    }
+  def connectionTo(host: String): OutgoingConnectionBuilder = OutgoingConnectionBuilderImpl(host, 80, system).insecureHttp1()
 
   /**
    * Creates a [[akka.stream.scaladsl.Flow]] representing a prospective HTTP client connection to the given endpoint.

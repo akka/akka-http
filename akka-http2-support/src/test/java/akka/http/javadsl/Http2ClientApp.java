@@ -44,7 +44,7 @@ public class Http2ClientApp {
     Materializer mat = SystemMaterializer.get(system).materializer();
 
     Function<HttpRequest, CompletionStage<HttpResponse>> dispatch =
-        singleRequest(system, Http.get(system).connectionTo("doc.akka.io").unorderedFlow());
+        singleRequest(system, Http.get(system).connectionTo("doc.akka.io").http2().connectionFlow());
 
     dispatch.apply(
         HttpRequest.create(

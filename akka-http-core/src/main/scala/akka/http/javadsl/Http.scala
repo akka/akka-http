@@ -395,12 +395,9 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * is no pooling and you are yourself responsible for lifecycle management of the connection. For a more convenient
    * Request level API see [[singleRequest()]]
    *
-   * The responses are not guaranteed to arrive in the same order as the requests go out (In the case of a HTTP/2 server)
-   * so therefore requests needs to have a [[akka.http.scaladsl.model.http2.RequestResponseAssociation]]
-   * which Akka HTTP will carry over to the corresponding response for a request.
+   * The builder defaults to build a connection using HTTP/1.1 over a plaintext connection to port 80.
    *
-   *
-   * @return A builder to configure more specific setup for the connection and then build a `Flow[Request, Response, Future[OutgoingConnection]]`.
+   * @return A builder to configure more specific setup for the connection and then build a `Flow&gt;Request, Response, Future&gt;OutgoingConnection>>`.
    */
   def connectionTo(host: String): OutgoingConnectionBuilder =
     delegate.connectionTo(host).toJava

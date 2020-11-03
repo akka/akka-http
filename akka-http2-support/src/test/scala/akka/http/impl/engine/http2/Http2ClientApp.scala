@@ -5,6 +5,7 @@
 package akka.http.impl.engine.http2
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.HttpEncodings
 import akka.http.scaladsl.model.{ AttributeKey, HttpRequest, HttpResponse, RequestResponseAssociation, headers }
 import akka.stream.OverflowStrategy
@@ -29,7 +30,7 @@ object Http2ClientApp extends App {
   implicit val system = ActorSystem("Http2ClientApp", config)
   implicit val ec = system.dispatcher
 
-  val dispatch = singleRequest(Http2().connectionTo("doc.akka.io").unorderedFlow())
+  val dispatch = singleRequest(Http().connectionTo("doc.akka.io").http2().connectionFlow())
 
   dispatch(
     HttpRequest(

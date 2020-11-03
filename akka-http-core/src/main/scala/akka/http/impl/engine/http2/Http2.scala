@@ -4,27 +4,23 @@
 
 package akka.http.impl.engine.http2
 
-import akka.actor.{ActorSystem, ClassicActorSystemProvider, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
+import akka.actor.{ ActorSystem, ClassicActorSystemProvider, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
-import akka.http.impl.engine.server.{MasterServerTerminator, UpgradeToOtherProtocolResponseHeader}
-import akka.http.impl.util.LogByteStringTools
-import akka.http.scaladsl.{ConnectionContext, Http, HttpsConnectionContext}
-import akka.http.scaladsl.Http.OutgoingConnection
+import akka.http.impl.engine.server.{ MasterServerTerminator, UpgradeToOtherProtocolResponseHeader }
+import akka.http.scaladsl.{ ConnectionContext, Http, HttpsConnectionContext }
 import akka.http.scaladsl.Http.ServerBinding
-import akka.http.scaladsl.Http2OutgoingConnectionBuilder
-import akka.http.scaladsl.OutgoingConnectionBuilder
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{Connection, RawHeader, Upgrade, UpgradeProtocol}
+import akka.http.scaladsl.model.headers.{ Connection, RawHeader, Upgrade, UpgradeProtocol }
 import akka.http.scaladsl.model.http2.Http2SettingsHeader
-import akka.http.scaladsl.settings.{ClientConnectionSettings, ServerSettings}
-import akka.stream.TLSProtocol.{SslTlsInbound, SslTlsOutbound}
+import akka.http.scaladsl.settings.ServerSettings
+import akka.stream.TLSProtocol.{ SslTlsInbound, SslTlsOutbound }
 import akka.stream.impl.io.TlsUtils
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source, TLS, TLSPlacebo, Tcp}
-import akka.stream.{IgnoreComplete, Materializer}
+import akka.stream.scaladsl.{ Flow, Keep, Sink, Source, TLS, TLSPlacebo, Tcp }
+import akka.stream.{ IgnoreComplete, Materializer }
 import akka.util.ByteString
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import com.typesafe.config.Config
 import javax.net.ssl.SSLEngine
 
@@ -32,7 +28,7 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success}
+import scala.util.{ Failure, Success }
 
 /**
  * INTERNAL API
@@ -189,29 +185,6 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
       tls
   }
 
-  // FIXME issue says this is internal but it's public?
-  // deprecate or remove? No real point in keeping since it anyways delegates to the other method
-  def outgoingConnection(
-    host:              String,
-    port:              Int                      = 443,
-    settings:          ClientConnectionSettings = ClientConnectionSettings(system),
-    connectionContext: HttpsConnectionContext   = Http().defaultClientHttpsContext,
-    log:               LoggingAdapter           = system.log): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] =
-    connectionTo(host).toPort(port).withClientConnectionSettings(settings).withConnectionContext(connectionContext).logTo(log).unorderedFlow()
-
-  /**
-   * Creates a builder which will create a single connection to a host every time the built flow is materialized. There
-   * is no pooling and you are yourself responsible for lifecycle management of the connection. For a more convenient
-   * Request level API see [[singleRequest()]]
-   *
-   * The responses are not guaranteed to arrive in the same order as the requests go out (In the case of a HTTP/2 server)
-   * so therefore requests needs to have a [[akka.http.scaladsl.model.http2.RequestResponseAssociation]]
-   * which Akka HTTP will carry over to the corresponding response for a request.
-   *
-   *
-   * @return A builder to configure more specific setup for the connection and then build a `Flow[Request, Response, Future[OutgoingConnection]]`.
-   */
-  def connectionTo(host: String): OutgoingConnectionBuilder = Http2OutgoingConnectionBuilder(host, 443, system)
 }
 
 /** INTERNAL API */
