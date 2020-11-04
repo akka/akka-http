@@ -195,12 +195,17 @@ private[http] object Http2Blueprint {
   def handleWithStreamIdHeader(parallelism: Int)(handler: HttpRequest => Future[HttpResponse])(implicit ec: ExecutionContext): Flow[HttpRequest, HttpResponse, NotUsed] =
     Flow[HttpRequest]
       .mapAsyncUnordered(parallelism) { req =>
-        val response = handler(req)
+        // The handler itself may do significant work so make sure to schedule it separately. This is especially important for HTTP/2 where it is expected that
+        // multiple requests are handled concurrently on the same connection. The complete stream including `mapAsyncUnordered` shares one GraphInterpreter, so
+        // that this extra indirection will guard the GraphInterpreter from being starved by user code.
+        Future {
+          val response = handler(req)
 
-        req.attribute(Http2.streamId) match {
-          case Some(streamIdHeader) => response.map(_.addAttribute(Http2.streamId, streamIdHeader)) // add stream id attribute when request had it
-          case None                 => response
-        }
+          req.attribute(Http2.streamId) match {
+            case Some(streamIdHeader) => response.map(_.addAttribute(Http2.streamId, streamIdHeader)) // add stream id attribute when request had it
+            case None                 => response
+          }
+        }.flatten
       }
 
   private[http2] def logParsingError(info: ErrorInfo, log: LoggingAdapter,

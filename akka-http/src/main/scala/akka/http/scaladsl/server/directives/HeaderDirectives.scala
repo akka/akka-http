@@ -135,7 +135,7 @@ trait HeaderDirectives {
   def optionalHeaderValueByName(headerName: String): Directive1[Option[String]] = {
     val lowerCaseName = headerName.toLowerCase
     extract(_.request.headers.collectFirst {
-      case HttpHeader(`lowerCaseName`, value) => value
+      case h: HttpHeader if h.is(lowerCaseName) => h.value
     })
   }
 

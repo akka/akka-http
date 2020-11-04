@@ -155,6 +155,10 @@ trait RouteTest extends RequestBuilding with WSTestRequestBuilding with RouteTes
       new TildeArrow[RequestContext, Future[RouteResult]] {
         type Out = RouteTestResult
         def apply(request: HttpRequest, route: Route): Out = {
+          if (request.method == HttpMethods.HEAD && ServerSettings(system).transparentHeadRequests)
+            failTest("`akka.http.server.transparent-head-requests = on` not supported in RouteTest using `~>`. Use `~!>` instead " +
+              "for a full-stack test, e.g. `req ~!> route ~> check {...}`")
+
           implicit val executionContext: ExecutionContext = system.classicSystem.dispatcher
           val routingSettings = RoutingSettings(system)
           val routingLog = RoutingLog(system.classicSystem.log)

@@ -23,6 +23,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class ScalatestRouteTestSpec extends AnyFreeSpec with Matchers with ScalatestRouteTest {
+  override def testConfigSource: String = "akka.http.server.transparent-head-requests = on" // see test below
 
   "The ScalatestRouteTest should support" - {
 
@@ -132,6 +133,15 @@ class ScalatestRouteTestSpec extends AnyFreeSpec with Matchers with ScalatestRou
       Get() ~> route ~> check {
         status shouldEqual InternalServerError
       }
+    }
+
+    "fail if testing a HEAD request with ~> and `transparent-head-request = on`" in {
+      def runTest(): Unit = Head() ~> complete("Ok") ~> check {}
+
+      val ex = the[Exception] thrownBy (runTest())
+      ex.getMessage shouldEqual
+        "`akka.http.server.transparent-head-requests = on` not supported in RouteTest using `~>`. " +
+        "Use `~!>` instead for a full-stack test, e.g. `req ~!> route ~> check {...}`"
     }
   }
 }
