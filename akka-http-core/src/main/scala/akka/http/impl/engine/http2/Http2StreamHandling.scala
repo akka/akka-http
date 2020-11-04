@@ -16,7 +16,6 @@ import akka.stream.stage.{ GraphStageLogic, InHandler, OutHandler }
 import akka.util.ByteString
 
 import scala.collection.immutable
-import scala.concurrent.{ Future, Promise }
 import scala.util.control.NoStackTrace
 
 /**
@@ -29,14 +28,17 @@ import scala.util.control.NoStackTrace
  * Mixed into the Http2ServerDemux graph logic.
  */
 @InternalApi
-private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper =>
+private[http2] trait Http2StreamHandling[T] { self: GraphStageLogic with LogHelper =>
   // required API from demux
   def isServer: Boolean
   def multiplexer: Http2Multiplexer
   def settings: Http2CommonSettings
   def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit
-  def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], trailingHeaders: Future[ParsedHeadersFrame], correlationAttributes: Map[AttributeKey[_], _]): Unit
+  def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[T, Any], correlationAttributes: Map[AttributeKey[_], _]): Unit
   def isUpgraded: Boolean
+
+  def wrapData(bytes: ByteString): T
+  def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[T]
 
   def flowController: IncomingFlowController = IncomingFlowController.default(settings)
 
@@ -98,7 +100,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     updateState(e.streamId, _.handle(e))
 
   /** Called by Http2ServerDemux when a stream comes in from the user-handler */
-  def handleOutgoingCreated(stream: Http2SubStream): Unit = {
+  def handleOutgoingCreated(stream: Http2SubStream[Any]): Unit = {
     stream.initialHeaders.priorityInfo.foreach(multiplexer.updatePriority)
     if (streamFor(stream.streamId) != Closed) {
       multiplexer.pushControlFrame(stream.initialHeaders)
@@ -139,7 +141,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   private def updateState(streamId: Int, handle: StreamState => StreamState): Unit =
     updateStateAndReturn(streamId, x => (handle(x), ()))
 
-  private def updateStateAndReturn[T](streamId: Int, handle: StreamState => (StreamState, T)): T = {
+  private def updateStateAndReturn[R](streamId: Int, handle: StreamState => (StreamState, R)): R = {
     val oldState = streamFor(streamId)
 
     val (newState, ret) = handle(oldState)
@@ -236,18 +238,17 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       correlationAttributes: Map[AttributeKey[_], _]             = Map.empty): StreamState =
       event match {
         case frame @ ParsedHeadersFrame(streamId, endStream, _, _) =>
-          val (data, nextState, trailingHeaders) =
+          val (data, nextState) =
             if (endStream)
-              (Source.empty, nextStateEmpty, Future.successful(ParsedHeadersFrame(streamId, endStream = true, Seq.empty, None)))
+              (Source.empty, nextStateEmpty)
             else {
-              val trailingHeadersPromise = Promise[ParsedHeadersFrame]()
-              val subSource = new SubSourceOutlet[ByteString](s"substream-out-$streamId")
-              (Source.fromGraph(subSource.source), nextStateStream(new IncomingStreamBuffer(streamId, subSource, trailingHeadersPromise)), trailingHeadersPromise.future)
+              val subSource = new SubSourceOutlet[T](s"substream-out-$streamId")
+              (Source.fromGraph(subSource.source), nextStateStream(new IncomingStreamBuffer(streamId, subSource)))
             }
 
           // FIXME: after multiplexer PR is merged
           // prioInfo.foreach(multiplexer.updatePriority)
-          dispatchSubstream(frame, data, trailingHeaders, correlationAttributes)
+          dispatchSubstream(frame, data, correlationAttributes)
           nextState
 
         case x => receivedUnexpectedFrame(x)
@@ -457,8 +458,9 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     }
   }
 
-  class IncomingStreamBuffer(streamId: Int, outlet: SubSourceOutlet[ByteString], trailer: Promise[ParsedHeadersFrame]) extends OutHandler {
+  class IncomingStreamBuffer(streamId: Int, outlet: SubSourceOutlet[T]) extends OutHandler {
     private var buffer: ByteString = ByteString.empty
+    private var trailingHeaders: Option[ParsedHeadersFrame] = None
     private var wasClosed: Boolean = false
     private var outstandingStreamWindow: Int = Http2Protocol.InitialWindowSize // adapt if we negotiate greater sizes by settings
     outlet.setHandler(this)
@@ -489,7 +491,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
       }
     }
     def onTrailingHeaders(headers: ParsedHeadersFrame): Unit = {
-      trailer.success(headers)
+      trailingHeaders = Some(headers)
       if (headers.endStream) {
         onDataFrame(DataFrame(headers.streamId, endStream = true, ByteString.empty)) // simulate end stream by empty dataframe
       } else pushGOAWAY(Http2Protocol.ErrorCode.PROTOCOL_ERROR, "Got unexpected mid-stream HEADERS frame")
@@ -497,13 +499,14 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     def onRstStreamFrame(rst: RstStreamFrame): Unit = {
       outlet.fail(new PeerClosedStreamException(rst.streamId, rst.errorCode))
       buffer = ByteString.empty
+      trailingHeaders = None
       wasClosed = true
     }
 
     private def dispatchNextChunk(): Unit = {
       if (buffer.nonEmpty && outlet.isAvailable) {
         val dataSize = buffer.size min settings.requestEntityChunkSize
-        outlet.push(buffer.take(dataSize))
+        outlet.push(wrapData(buffer.take(dataSize)))
         buffer = buffer.drop(dataSize)
 
         totalBufferedData -= dataSize
@@ -511,10 +514,13 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
         debug(s"Dispatched chunk of $dataSize for stream [$streamId], remaining window space now $outstandingStreamWindow, buffered: ${buffer.size}")
         updateWindows()
       }
-      if (buffer.isEmpty && wasClosed) {
-        trailer.trySuccess(ParsedHeadersFrame(streamId, endStream = true, Seq.empty, None))
-        outlet.complete()
+      trailingHeaders.foreach { trailer =>
+        if (outlet.isAvailable) {
+          wrapTrailingHeaders(trailer).foreach(outlet.push)
+          trailingHeaders = None
+        }
       }
+      if (buffer.isEmpty && trailingHeaders.isEmpty && wasClosed) outlet.complete()
     }
 
     private def updateWindows(): Unit = {
@@ -549,7 +555,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     def isDone: Boolean
   }
   object OutStream {
-    def apply(sub: Http2SubStream): OutStream = {
+    def apply(sub: Http2SubStream[Any]): OutStream = {
       val subIn = new SubSinkInlet[Any](s"substream-in-${sub.streamId}")
       val info = new OutStreamImpl(sub.streamId, None, multiplexer.currentInitialWindow)
       info.registerIncomingData(subIn)

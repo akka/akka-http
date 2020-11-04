@@ -37,7 +37,7 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
         data = data
       )
       // Create the parsing function
-      val parseRequest: Http2SubStream => HttpRequest = {
+      val parseRequest: Http2SubStream[ByteString] => HttpRequest = {
         val (serverSettings, parserSettings) = {
           val ss = ServerSettings(system)
           val ps = ss.parserSettings.withUriParsingMode(uriParsingMode)

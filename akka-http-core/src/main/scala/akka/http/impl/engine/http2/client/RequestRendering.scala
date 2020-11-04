@@ -11,12 +11,13 @@ import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.FrameEvent.ParsedHeadersFrame
 import akka.http.scaladsl.model.{ HttpRequest, RequestResponseAssociation }
+import akka.util.ByteString
 
 import scala.collection.immutable.VectorBuilder
 
 @InternalApi
 private[http2] object RequestRendering {
-  def createRenderer(log: LoggingAdapter): HttpRequest => Http2SubStream = {
+  def createRenderer(log: LoggingAdapter): HttpRequest => Http2SubStream[Any] = {
     val streamId = new AtomicInteger(1)
 
     { request =>
