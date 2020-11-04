@@ -5,7 +5,6 @@
 package akka.http.impl.engine.http2
 
 import javax.net.ssl.SSLSession
-
 import akka.annotation.InternalApi
 import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.impl.engine.server.HttpAttributes
@@ -15,6 +14,7 @@ import akka.http.scaladsl.model.headers.{ `Remote-Address`, `Tls-Session-Info` }
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.Attributes
 import akka.util.ByteString
+import akka.util.OptionVal
 import com.github.ghik.silencer.silent
 
 import scala.annotation.tailrec
@@ -54,7 +54,7 @@ private[http2] object RequestParsing {
         scheme:            String                     = null,
         authority:         Uri.Authority              = null,
         pathAndRawQuery:   (Uri.Path, Option[String]) = null,
-        contentType:       ContentType                = ContentTypes.`application/octet-stream`,
+        contentType:       OptionVal[ContentType]     = OptionVal.None,
         contentLength:     Long                       = -1,
         cookies:           StringBuilder              = null,
         seenRegularHeader: Boolean                    = false,
@@ -74,7 +74,7 @@ private[http2] object RequestParsing {
 
           if (tlsSessionInfoHeader.isDefined) headers += tlsSessionInfoHeader.get
 
-          val entity = subStream.createEntity(contentLength, contentType)
+          val entity = subStream.createEntity(contentLength, contentType.getOrElse(ContentTypes.`application/octet-stream`))
           val (path, rawQueryString) = pathAndRawQuery
           val authorityOrDefault: Uri.Authority = if (authority == null) Uri.Authority.Empty else authority
           val uri = Uri(scheme, authorityOrDefault, path, rawQueryString)
@@ -117,14 +117,15 @@ private[http2] object RequestParsing {
             malformedRequest("Pseudo-header ':status' is for responses only; it cannot appear in a request")
 
           case ("content-type", ct) =>
-            if (contentType eq ContentTypes.`application/octet-stream`) {
+            if (contentType.isEmpty) {
               val contentTypeValue = ContentType.parse(ct).right.getOrElse(malformedRequest(s"Invalid content-type: '$ct'"))
-              rec(remainingHeaders.tail, method, scheme, authority, pathAndRawQuery, contentTypeValue, contentLength, cookies, true, headers)
+              rec(remainingHeaders.tail, method, scheme, authority, pathAndRawQuery, OptionVal.Some(contentTypeValue), contentLength, cookies, true, headers)
             } else malformedRequest("HTTP message must not contain more than one content-type header")
 
           case ("content-length", length) =>
             if (contentLength == -1) {
               val contentLengthValue = length.toLong
+              if (contentLengthValue < 0) malformedRequest("HTTP message must not contain a negative content-length header")
               rec(remainingHeaders.tail, method, scheme, authority, pathAndRawQuery, contentType, contentLengthValue, cookies, true, headers)
             } else malformedRequest("HTTP message must not contain more than one content-length header")
 
