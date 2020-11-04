@@ -9,6 +9,7 @@ import akka.annotation.InternalApi
 import akka.http.impl.engine.http2.RequestParsing._
 import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.scaladsl.model._
+import akka.util.OptionVal
 
 import scala.annotation.tailrec
 import scala.collection.immutable.VectorBuilder
@@ -20,7 +21,7 @@ private[http2] object ResponseParsing {
     def rec(
       remainingHeaders:  Seq[(String, String)],
       status:            StatusCode                = null,
-      contentType:       ContentType               = ContentTypes.`application/octet-stream`,
+      contentType:       OptionVal[ContentType]    = OptionVal.None,
       contentLength:     Long                      = -1,
       seenRegularHeader: Boolean                   = false,
       headers:           VectorBuilder[HttpHeader] = new VectorBuilder[HttpHeader]
@@ -29,7 +30,7 @@ private[http2] object ResponseParsing {
         // https://httpwg.org/specs/rfc7540.html#rfc.section.8.1.2.4: these pseudo header fields are mandatory for a response
         checkRequiredPseudoHeader(":status", status)
 
-        val entity = subStream.createEntity(contentLength, contentType)
+        val entity = subStream.createEntity(contentLength, contentType.getOrElse(ContentTypes.`application/octet-stream`))
 
         HttpResponse(
           status = status,
@@ -44,14 +45,15 @@ private[http2] object ResponseParsing {
           rec(remainingHeaders.tail, statusCodeValue.toInt, contentType, contentLength, seenRegularHeader, headers)
 
         case ("content-type", ct) =>
-          if (contentType eq ContentTypes.`application/octet-stream`) {
+          if (contentType.isEmpty) {
             val contentTypeValue = ContentType.parse(ct).right.getOrElse(malformedRequest(s"Invalid content-type: '$ct'"))
-            rec(remainingHeaders.tail, status, contentTypeValue, contentLength, seenRegularHeader, headers)
+            rec(remainingHeaders.tail, status, OptionVal.Some(contentTypeValue), contentLength, seenRegularHeader, headers)
           } else malformedRequest("HTTP message must not contain more than one content-type header")
 
         case ("content-length", length) =>
           if (contentLength == -1) {
             val contentLengthValue = length.toLong
+            if (contentLengthValue < 0) malformedRequest("HTTP message must not contain a negative content-length header")
             rec(remainingHeaders.tail, status, contentType, contentLengthValue, seenRegularHeader, headers)
           } else malformedRequest("HTTP message must not contain more than one content-length header")
 
