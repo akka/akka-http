@@ -8,7 +8,6 @@ import akka.NotUsed
 import akka.event.Logging
 import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
-import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
@@ -196,9 +195,9 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         emitRequest(7, request) // this emit succeeds but is buffered
 
         // expect frames for 1 3 and 5
-        expect[HeadersFrame].streamId shouldBe (1)
-        expect[HeadersFrame].streamId shouldBe (3)
-        expect[HeadersFrame].streamId shouldBe (5)
+        expect[HeadersFrame]().streamId shouldBe (1)
+        expect[HeadersFrame]().streamId shouldBe (3)
+        expect[HeadersFrame]().streamId shouldBe (5)
         // expect silence on the line
         expectNoBytes(100.millis)
 
@@ -208,8 +207,8 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         emitRequest(9, request)
         emitRequest(11, request)
         // expect 7 and 9 on the line
-        expect[HeadersFrame].streamId shouldBe (7)
-        expect[HeadersFrame].streamId shouldBe (9)
+        expect[HeadersFrame]().streamId shouldBe (7)
+        expect[HeadersFrame]().streamId shouldBe (9)
         expectNoBytes(100.millis)
 
         // close 5 7 9
@@ -218,8 +217,8 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         sendFrame(HeadersFrame(streamId = 9, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
         emitRequest(13, request)
         // expect 11 the line
-        expect[HeadersFrame].streamId shouldBe (11)
-        expect[HeadersFrame].streamId shouldBe (13)
+        expect[HeadersFrame]().streamId shouldBe (11)
+        expect[HeadersFrame]().streamId shouldBe (13)
       }
       "increasing SETTINGS_MAX_CONCURRENT_STREAMS should flush backpressured outgoing streams" in new TestSetup(
         Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 2)
@@ -230,8 +229,8 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         emitRequest(5, request) // this emit succeeds but is buffered
 
         // expect frames for 1 and 3
-        expect[HeadersFrame].streamId shouldBe (1)
-        expect[HeadersFrame].streamId shouldBe (3)
+        expect[HeadersFrame]().streamId shouldBe (1)
+        expect[HeadersFrame]().streamId shouldBe (3)
         // expect silence on the line
         expectNoBytes(100.millis)
 
@@ -240,7 +239,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         expectSettingsAck()
 
         // ... should let frame 5 pass
-        expect[HeadersFrame].streamId shouldBe (5)
+        expect[HeadersFrame]().streamId shouldBe (5)
       }
       "decreasing SETTINGS_MAX_CONCURRENT_STREAMS should keep backpressure outgoing streams until limit is respected" in new TestSetup(
         Setting(SettingIdentifier.SETTINGS_MAX_CONCURRENT_STREAMS, 3)
@@ -252,9 +251,9 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         emitRequest(7, request) // this emit succeeds but is buffered
 
         // expect frames for 1 3 and 5
-        expect[HeadersFrame].streamId shouldBe (1)
-        expect[HeadersFrame].streamId shouldBe (3)
-        expect[HeadersFrame].streamId shouldBe (5)
+        expect[HeadersFrame]().streamId shouldBe (1)
+        expect[HeadersFrame]().streamId shouldBe (3)
+        expect[HeadersFrame]().streamId shouldBe (5)
         expectNoBytes(100.millis)
 
         // Decreasing the capacity...
@@ -268,7 +267,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
         // Once 1 and 3 are closed, there'll be capacity for 7 to go through
         sendFrame(HeadersFrame(streamId = 3, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None))
-        expect[HeadersFrame].streamId shouldBe (7)
+        expect[HeadersFrame]().streamId shouldBe (7)
         // .. but not enough capacity for 9
         emitRequest(9, request)
         expectNoBytes(100.millis)
