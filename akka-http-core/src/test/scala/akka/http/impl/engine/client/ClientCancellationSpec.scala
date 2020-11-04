@@ -18,7 +18,7 @@ class ClientCancellationSpec extends AkkaSpecWithMaterializer {
   "Http client connections" must {
     "support cancellation in simple outgoing connection" in Utils.assertAllStagesStopped(new TestSetup {
       testCase(
-        Http().outgoingConnection(address.getHostName, address.getPort))
+        Http().connectionTo(address.getHostName).toPort(address.getPort).http())
     })
 
     "support cancellation in pooled outgoing connection" in Utils.assertAllStagesStopped(new TestSetup {
@@ -33,7 +33,10 @@ class ClientCancellationSpec extends AkkaSpecWithMaterializer {
     "support cancellation in simple outgoing connection with TLS" in Utils.assertAllStagesStopped(new TestSetup {
       pending
       testCase(
-        Http().outgoingConnectionHttps("akka.example.org", 443, settings = settingsWithProxyTransport, connectionContext = ExampleHttpContexts.exampleClientContext)
+        Http().connectionTo("akka.example.org")
+          .withClientConnectionSettings(settingsWithProxyTransport)
+          .withCustomHttpsConnectionContext(ExampleHttpContexts.exampleClientContext)
+          .https()
       )
     })
 

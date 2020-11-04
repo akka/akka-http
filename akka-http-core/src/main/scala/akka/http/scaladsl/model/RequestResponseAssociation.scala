@@ -22,9 +22,9 @@ case class SimpleRequestResponseAttribute[T](value: T) extends RequestResponseAs
 /**
  * An association for completing a future when the response arrives.
  */
-final class ResponsePromise(val promise: Promise[HttpResponse]) extends RequestResponseAssociation
-object ResponsePromise {
-  val Key = AttributeKey[ResponsePromise]("association-promise-handle")
-  def apply(promise: Promise[HttpResponse]): ResponsePromise = new ResponsePromise(promise)
+final class ResponseFuture(val promise: Promise[HttpResponse]) extends RequestResponseAssociation
+object ResponseFuture {
+  val Key = AttributeKey[ResponseFuture]("association-future-handle")
+  def apply(promise: Promise[HttpResponse]): ResponseFuture = new ResponseFuture(promise)
 }
 

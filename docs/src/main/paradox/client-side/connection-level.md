@@ -13,7 +13,7 @@ from a background with non-"streaming first" HTTP Clients.
 ## Opening HTTP Connections
 
 With the connection-level API you open a new HTTP connection to a target endpoint by materializing a @apidoc[Flow]
-returned by the @scala[`Http().outgoingConnection(...)`]@java[`Http.get(system).outgoingConnection(...)`] method.
+returned by the builder returned by @scala[`Http().connectionTo(...)`]@java[`Http.get(system).connectionTo(...)`] method.
 Here is an example:
 
 Scala
@@ -22,10 +22,11 @@ Scala
 Java
 :  @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #outgoing-connection-example }
 
-Apart from the host name and port the @scala[`Http().outgoingConnection(...)`]@java[`Http.get(system).outgoingConnection(...)`]
-method also allows you to specify socket options and a number of configuration settings for the connection.
+In addition to the host name and port the builder @apidoc[OutgoingConnectionBuilder] returned by @scala[`Http().connectionTo(...)`]@java[`Http.get(system).connectionTo(...)`]
+method also allows you to specify additional properties and as the final step deciding which protocol to use 
+(HTTP/1, HTTP/1 over TLS, HTTP/2 over TLS or HTTP/2 with prior knowledge over a plaintext connection).
 
-Note that no connection is attempted until the returned flow is actually materialized! If the flow is materialized
+No connection is attempted until the returned flow is actually materialized! If the flow is materialized
 several times then several independent connections will be opened (one per materialization).
 If the connection attempt fails, for whatever reason, the materialized flow will be immediately terminated with a
 respective exception.
@@ -40,6 +41,25 @@ eventually be slowed down in sending requests.
 
 Any errors occurring on the underlying connection are surfaced as exceptions terminating the response stream (and
 canceling the request source).
+
+## Request-response ordering for HTTP/2
+
+For HTTP/2 connections the responses are not guaranteed to arrive in the same order that the requests were emitted to
+the server, for example a request with a quickly available response may outrun a previous request that the server is 
+slower to respond to. For HTTP/2 it is therefore often important to have a way to correlate the response with what request
+it was made for. This can be achieved through a @apidoc[RequestResponseAssociation] set on the request, Akka HTTP will pass
+such association objects on to the response.
+
+In this sample the built in @apidoc[ResponseFuture] `RequestResponseAssociation`  is used to return 
+a @scala[`Future`]@java[`CompletionStage`] for the response:
+
+Scala
+:  @@snip [HttpClientOutgoingConnection.scala]($test$scala/docs/http/scaladsl/Http2ClientApp.scala) { #response-future-association }
+
+Java
+
+:  @@snip [HttpClientExampleDocTest.java]($test$java/docs/http/javadsl/Http2ClientApp.java) { #response-future-association }
+
 
 ## Closing Connections
 

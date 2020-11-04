@@ -116,7 +116,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
       for (i <- 1 to 10)
         withClue(s"iterator $i: ") {
           Source.single(HttpRequest(HttpMethods.POST, "/test", List.empty, HttpEntity(MediaTypes.`text/plain`.withCharset(HttpCharsets.`UTF-8`), "buh")))
-            .via(Http(actorSystem).outgoingConnection("localhost", 7777))
+            .via(Http(actorSystem).connectionTo("localhost").toPort(7777).http())
             .runWith(Sink.head)
             .failed
             .futureValue shouldBe a[StreamTcpException]
@@ -128,7 +128,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
       val binding = Http().newServerAt(hostname, port).bindSync(_ => HttpResponse())
       val b1 = Await.result(binding, 3.seconds.dilated)
 
-      val (_, f) = Http().outgoingConnection(hostname, port)
+      val (_, f) = Http().connectionTo(hostname).toPort(port).http()
         .runWith(Source.single(HttpRequest(uri = "/abc")), Sink.head)
 
       Await.result(f, 1.second.dilated)
@@ -157,7 +157,7 @@ class ClientServerSpec extends AkkaSpecWithMaterializer(
       val b1 = Await.result(binding, 3.seconds.dilated)
 
       def runRequest(uri: Uri): Unit =
-        Http().outgoingConnection(hostname, port)
+        Http().connectionTo(hostname).toPort(port).http()
           .runWith(Source.single(HttpRequest(uri = uri)), Sink.head)
 
       runRequest("/slow")
