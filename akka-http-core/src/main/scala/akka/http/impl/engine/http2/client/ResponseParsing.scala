@@ -44,18 +44,23 @@ private[http2] object ResponseParsing {
           rec(remainingHeaders.tail, statusCodeValue.toInt, contentType, contentLength, seenRegularHeader, headers)
 
         case ("content-type", ct) =>
-          val contentType = ContentType.parse(ct).right.getOrElse(malformedRequest(s"Invalid content-type: '$ct'"))
-          rec(remainingHeaders.tail, status, contentType, contentLength, seenRegularHeader, headers)
+          if (contentType eq ContentTypes.`application/octet-stream`) {
+            val contentTypeValue = ContentType.parse(ct).right.getOrElse(malformedRequest(s"Invalid content-type: '$ct'"))
+            rec(remainingHeaders.tail, status, contentTypeValue, contentLength, seenRegularHeader, headers)
+          } else malformedRequest("HTTP message must not contain more than one content-type header")
 
         case ("content-length", length) =>
-          val contentLength = length.toLong
-          rec(remainingHeaders.tail, status, contentType, contentLength, seenRegularHeader, headers)
+          if (contentLength == -1) {
+            val contentLengthValue = length.toLong
+            rec(remainingHeaders.tail, status, contentType, contentLengthValue, seenRegularHeader, headers)
+          } else malformedRequest("HTTP message must not contain more than one content-length header")
 
         case (name, _) if name.startsWith(":") =>
           malformedRequest(s"Unexpected pseudo-header '$name' in response")
 
         case (name, value) =>
           val httpHeader = parseHeaderPair(httpHeaderParser, name, value)
+          validateHeader(httpHeader)
           rec(remainingHeaders.tail, status, contentType, contentLength, seenRegularHeader = true, headers += httpHeader)
       }
 

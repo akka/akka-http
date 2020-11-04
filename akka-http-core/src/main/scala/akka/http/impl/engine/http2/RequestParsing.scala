@@ -117,12 +117,16 @@ private[http2] object RequestParsing {
             malformedRequest("Pseudo-header ':status' is for responses only; it cannot appear in a request")
 
           case ("content-type", ct) =>
-            val contentType = ContentType.parse(ct).right.getOrElse(malformedRequest(s"Invalid content-type: '$ct'"))
-            rec(remainingHeaders.tail, method, scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, true, headers)
+            if (contentType eq ContentTypes.`application/octet-stream`) {
+              val contentTypeValue = ContentType.parse(ct).right.getOrElse(malformedRequest(s"Invalid content-type: '$ct'"))
+              rec(remainingHeaders.tail, method, scheme, authority, pathAndRawQuery, contentTypeValue, contentLength, cookies, true, headers)
+            } else malformedRequest("HTTP message must not contain more than one content-type header")
 
           case ("content-length", length) =>
-            val contentLength = length.toLong
-            rec(remainingHeaders.tail, method, scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, true, headers)
+            if (contentLength == -1) {
+              val contentLengthValue = length.toLong
+              rec(remainingHeaders.tail, method, scheme, authority, pathAndRawQuery, contentType, contentLengthValue, cookies, true, headers)
+            } else malformedRequest("HTTP message must not contain more than one content-length header")
 
           case ("cookie", value) =>
             // Compress cookie headers as described here https://tools.ietf.org/html/rfc7540#section-8.1.2.5
@@ -136,18 +140,20 @@ private[http2] object RequestParsing {
 
           case (name, value) =>
             val httpHeader = parseHeaderPair(httpHeaderParser, name, value)
+            validateHeader(httpHeader)
             rec(remainingHeaders.tail, method, scheme, authority, pathAndRawQuery, contentType, contentLength, cookies, true, headers += httpHeader)
         }
 
-      rec(subStream.initialHeaders.keyValuePairs)
+      val remainingHeaders = subStream.initialHeaders.keyValuePairs
+      if (remainingHeaders.size > serverSettings.parserSettings.maxHeaderCount)
+        malformedRequest(s"HTTP message contains more than the configured limit of ${serverSettings.parserSettings.maxHeaderCount} headers")
+      else rec(remainingHeaders)
     }
   }
 
   private[http2] def parseHeaderPair(httpHeaderParser: HttpHeaderParser, name: String, value: String): HttpHeader = {
     // FIXME: later modify by adding HttpHeaderParser.parseHttp2Header that would use (name, value) pair directly
     //        or use a separate, simpler, parser for Http2
-    // FIXME: add correctness checks (e.g. duplicated content-length) modeled after ones in HttpMessageParser
-
     // The odd-looking 'x' below is a by-product of how current parser and HTTP/1.1 work.
     // Without '\r\n\x' (x being any additional byte) parsing will fail. See HttpHeaderParserSpec for examples.
     val concHeaderLine = name + ": " + value + "\r\nx"
@@ -163,4 +169,17 @@ private[http2] object RequestParsing {
     if (seenRegularHeader) malformedRequest(s"Pseudo-header field '$name' must not appear after a regular header")
   private[http2] def malformedRequest(msg: String): Nothing =
     throw new RuntimeException(s"Malformed request: $msg")
+  private[http2] def validateHeader(httpHeader: HttpHeader) = httpHeader.lowercaseName match {
+    case "connection" =>
+      // https://tools.ietf.org/html/rfc7540#section-8.1.2.2
+      malformedRequest("Header 'Connection' must not be used with HTTP/2")
+    case "transfer-encoding" =>
+      // https://tools.ietf.org/html/rfc7540#section-8.1.2.2
+      malformedRequest("Header 'Transfer-Encoding' must not be used with HTTP/2")
+    case "te" =>
+      // https://tools.ietf.org/html/rfc7540#section-8.1.2.2
+      if (httpHeader.value.compareToIgnoreCase("trailers") != 0) malformedRequest(s"Header 'TE' must not contain value other than 'trailers', value was '${httpHeader.value}")
+    case _ => // ok
+  }
+
 }
