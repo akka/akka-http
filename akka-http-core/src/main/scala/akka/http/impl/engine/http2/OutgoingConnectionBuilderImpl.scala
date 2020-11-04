@@ -83,38 +83,12 @@ private[akka] object OutgoingConnectionBuilderImpl {
     override def http2(): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
       // http/2 tls
       val port = this.port.getOrElse(443)
-      def createEngine(): SSLEngine = {
-        val engine = connectionContext.getOrElse(Http(system).defaultClientHttpsContext).sslContextData match {
-          // TODO FIXME configure hostname verification for this case
-          case Left(ssl) =>
-            val e = ssl.sslContext.createSSLEngine(host, port)
-            TlsUtils.applySessionParameters(e, ssl.firstSession)
-            e
-          case Right(e) => e(Some((host, port)))
-        }
-        engine.setUseClientMode(true)
-        Http2AlpnSupport.clientSetApplicationProtocols(engine, Array("h2"))
-        engine
-      }
-
-      val stack = Http2Blueprint.clientStack(clientConnectionSettings, log) atop
-        Http2Blueprint.unwrapTls atop
-        LogByteStringTools.logTLSBidiBySetting("client-plain-text", clientConnectionSettings.logUnencryptedNetworkBytes) atop
-        TLS(createEngine _, closing = TLSClosing.eagerClose)
-
-      stack.joinMat(clientConnectionSettings.transport.connectTo(host, port, clientConnectionSettings)(system.classicSystem))(Keep.right)
+      Http2(system).outgoingConnection(host, port, connectionContext.getOrElse(Http(system).defaultClientHttpsContext), clientConnectionSettings, log)
     }
 
     override def http2WithPriorKnowledge(): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
       // http/2 prior knowledge plaintext
-      // FIXME verify this actually works
-      val port = this.port.getOrElse(80)
-      val stack = Http2Blueprint.clientStack(clientConnectionSettings, log) atop
-        Http2Blueprint.unwrapTls atop
-        LogByteStringTools.logTLSBidiBySetting("client-plain-text", clientConnectionSettings.logUnencryptedNetworkBytes) atop
-        TLSPlacebo()
-
-      stack.joinMat(clientConnectionSettings.transport.connectTo(host, port, clientConnectionSettings)(system.classicSystem))(Keep.right)
+      Http2(system).outgoingConnectionPriorKnowledge(host, port.getOrElse(80), clientConnectionSettings, log)
     }
 
     override private[akka] def toJava: JOutgoingConnectionBuilder = new JavaAdapter(this)

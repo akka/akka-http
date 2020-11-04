@@ -6,7 +6,7 @@ package docs.http.scaladsl
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.ResponseFuture
+import akka.http.scaladsl.model.ResponsePromise
 import akka.http.scaladsl.model.headers.HttpEncodings
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
@@ -71,7 +71,7 @@ object Http2ClientApp extends App {
         .via(connection)
         .to(Sink.foreach { response =>
           // complete the response promise with the response when it arrives
-          val responseAssociation = response.attribute(ResponseFuture.Key).get
+          val responseAssociation = response.attribute(ResponsePromise.Key).get
           responseAssociation.promise.trySuccess(response)
         })
         .run()
@@ -79,7 +79,7 @@ object Http2ClientApp extends App {
     req => {
       // create a promise of the response for each request and set it as an attribute on the request
       val p = Promise[HttpResponse]()
-      queue.offer(req.addAttribute(ResponseFuture.Key, ResponseFuture(p)))
+      queue.offer(req.addAttribute(ResponsePromise.Key, ResponsePromise(p)))
         // return the future response
         .flatMap(_ => p.future)
     }

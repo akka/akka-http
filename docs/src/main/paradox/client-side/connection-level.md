@@ -50,7 +50,7 @@ slower to respond to. For HTTP/2 it is therefore often important to have a way t
 it was made for. This can be achieved through a @apidoc[RequestResponseAssociation] set on the request, Akka HTTP will pass
 such association objects on to the response.
 
-In this sample the built in @apidoc[ResponseFuture] `RequestResponseAssociation`  is used to return 
+In this sample the built in @scala[`akka.http.scaladsl.model.ResponsePromise`]@java[`akka.http.javadsl.model.ResponseFuture`] `RequestResponseAssociation`  is used to return 
 a @scala[`Future`]@java[`CompletionStage`] for the response:
 
 Scala

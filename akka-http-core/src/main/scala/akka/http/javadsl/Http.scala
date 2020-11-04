@@ -401,8 +401,6 @@ class Http(system: ExtendedActorSystem) extends akka.actor.Extension {
    * is no pooling and you are yourself responsible for lifecycle management of the connection. For a more convenient
    * Request level API see [[singleRequest()]]
    *
-   * The builder defaults to build a connection using HTTP/1.1 over a plaintext connection to port 80.
-   *
    * @return A builder to configure more specific setup for the connection and then build a `Flow&gt;Request, Response, CompletionStage&gt;OutgoingConnection>>`.
    */
   def connectionTo(host: String): OutgoingConnectionBuilder =
