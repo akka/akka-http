@@ -28,7 +28,6 @@ import akka.util.ByteString
 import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.control.NonFatal
 
 /** Currently only used as log source */
@@ -36,7 +35,7 @@ import scala.util.control.NonFatal
 private[http2] class Http2ClientDemux(http2Settings: Http2CommonSettings, initialRemoteSettings: immutable.Seq[Setting])
   extends Http2Demux[ChunkStreamPart, ChunkedHttp2SubStream](http2Settings, initialRemoteSettings, upgraded = false, isServer = false) {
 
-  override def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ChunkStreamPart, Any], correlationAttributes: Map[AttributeKey[_], _])(implicit ec: ExecutionContext): ChunkedHttp2SubStream =
+  override def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ChunkStreamPart, Any], correlationAttributes: Map[AttributeKey[_], _]): ChunkedHttp2SubStream =
     ChunkedHttp2SubStream(initialHeaders, data, correlationAttributes)
 
   def wrapData(bytes: akka.util.ByteString): ChunkStreamPart = Chunk(bytes)
@@ -50,10 +49,11 @@ private[http2] class Http2ClientDemux(http2Settings: Http2CommonSettings, initia
 private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initialRemoteSettings: immutable.Seq[Setting], upgraded: Boolean)
   extends Http2Demux[ByteString, ByteHttp2SubStream](http2Settings, initialRemoteSettings, upgraded, isServer = true) {
 
-  override def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], correlationAttributes: Map[AttributeKey[_], _])(implicit ec: ExecutionContext): ByteHttp2SubStream =
+  override def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], correlationAttributes: Map[AttributeKey[_], _]): ByteHttp2SubStream =
     ByteHttp2SubStream(initialHeaders, data, correlationAttributes)
 
   def wrapData(bytes: akka.util.ByteString): ByteString = bytes
+
   // We don't provide access to incoming trailing request headers on the server side
   @silent("not used")
   def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[ByteString] = None
@@ -122,7 +122,7 @@ private[http2] abstract class Http2Demux[T, S <: Http2SubStream[T]](http2Setting
   override val shape =
     BidiShape(substreamIn, frameOut, frameIn, substreamOut)
 
-  def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[T, Any], correlationAttributes: Map[AttributeKey[_], _])(implicit ec: ExecutionContext): S
+  def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[T, Any], correlationAttributes: Map[AttributeKey[_], _]): S
   def wrapData(bytes: akka.util.ByteString): T
   def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[T]
 
@@ -252,8 +252,8 @@ private[http2] abstract class Http2Demux[T, S <: Http2SubStream[T]](http2Setting
       //        keep the buffer limited to the number of concurrent streams as negotiated
       //        with the other side.
       val bufferedSubStreamOutput = new BufferedOutlet[S](substreamOut)
-      def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[T, Any], correlationAttributes: Map[AttributeKey[_], _]): Unit =
-        bufferedSubStreamOutput.push(createSubstream(initialHeaders, data, correlationAttributes)(materializer.executionContext))
+      override def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[T, Any], correlationAttributes: Map[AttributeKey[_], _]): Unit =
+        bufferedSubStreamOutput.push(createSubstream(initialHeaders, data, correlationAttributes))
 
       setHandler(substreamIn, new InHandler {
         def onPush(): Unit = {
