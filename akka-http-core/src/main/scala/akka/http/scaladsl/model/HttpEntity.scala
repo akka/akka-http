@@ -398,8 +398,10 @@ object HttpEntity {
     def withContentType(contentType: ContentType): HttpEntity.Default =
       if (contentType == this.contentType) this else copy(contentType = contentType)
 
-    override def withSizeLimit(maxBytes: Long): HttpEntity.Default =
-      copy(data = Limitable.applyForByteStrings(data, SizeLimit(maxBytes, Some(contentLength))))
+    override def withSizeLimit(maxBytes: Long): HttpEntity.Default = {
+      if (data ne Source.empty) copy(data = Limitable.applyForByteStrings(data, SizeLimit(maxBytes, Some(contentLength))))
+      else this
+    }
 
     override def withoutSizeLimit: HttpEntity.Default =
       withSizeLimit(SizeLimit.Disabled)
