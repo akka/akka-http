@@ -514,13 +514,17 @@ private[http2] trait Http2StreamHandling[T] { self: GraphStageLogic with LogHelp
         debug(s"Dispatched chunk of $dataSize for stream [$streamId], remaining window space now $outstandingStreamWindow, buffered: ${buffer.size}")
         updateWindows()
       }
-      trailingHeaders.foreach { trailer =>
-        if (outlet.isAvailable) {
-          wrapTrailingHeaders(trailer).foreach(outlet.push)
-          trailingHeaders = None
+      if (buffer.isEmpty && wasClosed) {
+        trailingHeaders match {
+          case Some(trailer) =>
+            if (outlet.isAvailable) {
+              wrapTrailingHeaders(trailer).foreach(outlet.push)
+              trailingHeaders = None
+            }
+          case None =>
+            outlet.complete()
         }
       }
-      if (buffer.isEmpty && trailingHeaders.isEmpty && wasClosed) outlet.complete()
     }
 
     private def updateWindows(): Unit = {
