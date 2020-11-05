@@ -30,7 +30,6 @@ import com.github.ghik.silencer.silent
 import scala.collection.immutable
 import scala.util.control.NonFatal
 
-/** Currently only used as log source */
 @InternalApi
 private[http2] class Http2ClientDemux(http2Settings: Http2CommonSettings, initialRemoteSettings: immutable.Seq[Setting])
   extends Http2Demux[ChunkStreamPart, ChunkedHttp2SubStream](http2Settings, initialRemoteSettings, upgraded = false, isServer = false) {
