@@ -460,7 +460,7 @@ private[http2] trait Http2StreamHandling[T] { self: GraphStageLogic with LogHelp
 
   class IncomingStreamBuffer(streamId: Int, outlet: SubSourceOutlet[T]) extends OutHandler {
     private var buffer: ByteString = ByteString.empty
-    private var trailingHeaders: Option[ParsedHeadersFrame] = None
+    private var trailingHeaders: Option[T] = None
     private var wasClosed: Boolean = false
     private var outstandingStreamWindow: Int = Http2Protocol.InitialWindowSize // adapt if we negotiate greater sizes by settings
     outlet.setHandler(this)
@@ -491,7 +491,7 @@ private[http2] trait Http2StreamHandling[T] { self: GraphStageLogic with LogHelp
       }
     }
     def onTrailingHeaders(headers: ParsedHeadersFrame): Unit = {
-      trailingHeaders = Some(headers)
+      trailingHeaders = wrapTrailingHeaders(headers)
       if (headers.endStream) {
         onDataFrame(DataFrame(headers.streamId, endStream = true, ByteString.empty)) // simulate end stream by empty dataframe
       } else pushGOAWAY(Http2Protocol.ErrorCode.PROTOCOL_ERROR, "Got unexpected mid-stream HEADERS frame")
@@ -518,8 +518,9 @@ private[http2] trait Http2StreamHandling[T] { self: GraphStageLogic with LogHelp
         trailingHeaders match {
           case Some(trailer) =>
             if (outlet.isAvailable) {
-              wrapTrailingHeaders(trailer).foreach(outlet.push)
+              outlet.push(trailer)
               trailingHeaders = None
+              outlet.complete()
             }
           case None =>
             outlet.complete()
