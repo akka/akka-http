@@ -133,7 +133,7 @@ trait HeaderDirectives {
    * @group header
    */
   def optionalHeaderValueByName(headerName: String): Directive1[Option[String]] = {
-    val lowerCaseName = headerName.toLowerCase
+    val lowerCaseName = headerName.toRootLowerCase
     extract(_.request.headers.collectFirst {
       case h: HttpHeader if h.is(lowerCaseName) => h.value
     })
@@ -151,8 +151,8 @@ trait HeaderDirectives {
     optionalHeaderValuePF(magnet.extractPF)
 
   private def optionalValue(lowerCaseName: String): HttpHeader => Option[String] = {
-    case HttpHeader(`lowerCaseName`, value) => Some(value)
-    case _                                  => None
+    case h: HttpHeader if h.is(lowerCaseName) => Some(h.value)
+    case _                                    => None
   }
 }
 
