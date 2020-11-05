@@ -31,8 +31,7 @@ private[http2] object RequestRendering {
 
       val headersFrame = ParsedHeadersFrame(streamId.getAndAdd(2), endStream = request.entity.isKnownEmpty, headerPairs.result(), None)
 
-      val substream = ResponseRendering.substreamFor(request.entity, headersFrame)
-      substream.withCorrelationAttributes(request.attributes.filter(_._2.isInstanceOf[RequestResponseAssociation]))
+      Http2SubStream(request.entity, headersFrame, request.attributes.filter(_._2.isInstanceOf[RequestResponseAssociation]))
     }
   }
 }
