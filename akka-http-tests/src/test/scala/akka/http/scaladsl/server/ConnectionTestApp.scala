@@ -56,7 +56,7 @@ object ConnectionTestApp {
 
   def sendSingle(uri: Uri, id: Int): Unit = {
     val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] =
-      Http().outgoingConnection(uri.authority.host.address, uri.effectivePort)
+      Http().connectionTo(uri.authority.host.address).toPort(uri.effectivePort).http()
     val responseFuture: Future[HttpResponse] =
       Source.single(buildRequest(uri))
         .via(connectionFlow)

@@ -117,15 +117,12 @@ class Http2ClientServerSpec extends AkkaSpecWithMaterializer(
     lazy val binding =
       Http().newServerAt("localhost", 0).enableHttps(ExampleHttpContexts.exampleServerContext).bind(handler).futureValue
 
-    // FIXME: use public API
     lazy val clientFlow = {
       val clientSettings = ClientConnectionSettings(system).withTransport(ExampleHttpContexts.proxyTransport(binding.localAddress))
-      Http2().outgoingConnection(
-        host = "akka.example.org",
-        port = 443,
-        connectionContext = ExampleHttpContexts.exampleClientContext,
-        settings = clientSettings
-      )
+      Http().connectionTo("akka.example.org")
+        .withCustomHttpsConnectionContext(ExampleHttpContexts.exampleClientContext)
+        .withClientConnectionSettings(clientSettings)
+        .http2()
     }
     lazy val clientRequestsOut = TestPublisher.probe[HttpRequest]()
     lazy val clientResponsesIn = TestSubscriber.probe[HttpResponse]()

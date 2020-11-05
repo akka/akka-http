@@ -10,6 +10,7 @@ import akka.http.impl.util.AkkaSpecWithMaterializer
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{ HttpProtocols, HttpRequest, HttpResponse, StatusCodes }
 import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.{ Keep, Source, Tcp }
 import akka.util.ByteString
 
@@ -57,6 +58,22 @@ class WithPriorKnowledgeSpec extends AkkaSpecWithMaterializer("""
 
       source.complete()
       fromServer.plainDataProbe.expectComplete()
+    }
+
+    "respond to cleartext HTTP/2 requests with cleartext HTTP/2 (connection level client API)" in {
+      val connectionFlow = Http().connectionTo(binding.localAddress.getHostName).toPort(binding.localAddress.getPort).http2WithPriorKnowledge()
+
+      val (queue, headFuture) = Source.queue(1000, OverflowStrategy.fail)
+        .via(connectionFlow)
+        .toMat(Sink.headOption)(Keep.both)
+        .run()
+      queue.offer(HttpRequest())
+      val head = headFuture.futureValue
+      head.isEmpty should be(false)
+      val response = head.get
+      response.entity.discardBytes()
+      response.status should ===(StatusCodes.ImATeapot)
+      queue.complete()
     }
   }
 }

@@ -7,10 +7,12 @@ package akka.http.javadsl;
 import akka.event.LoggingAdapter;
 import akka.http.javadsl.model.HttpRequest;
 import akka.http.javadsl.model.HttpResponse;
+import akka.http.javadsl.settings.ClientConnectionSettings;
 import akka.http.javadsl.testkit.JUnitRouteTest;
 import akka.http.scaladsl.settings.ConnectionPoolSettings;
 import akka.japi.function.Function;
 import akka.stream.javadsl.Flow;
+import com.typesafe.config.ConfigFactory;
 import org.junit.Test;
 
 import javax.net.ssl.SSLContext;
@@ -73,6 +75,17 @@ public class HttpAPIsTest extends JUnitRouteTest {
     http.outgoingConnection(toHostHttps("akka.io", 8081).withCustomHttpsContext(httpsContext));
     http.outgoingConnection(toHostHttps("akka.io", 8081).withCustomHttpsContext(httpsContext).withDefaultHttpsContext());
     http.outgoingConnection(toHostHttps("akka.io", 8081).withCustomHttpsContext(httpsContext).withDefaultHttpsContext());
+
+    http.connectionTo("akka.io").http();
+    http.connectionTo("akka.io").https();
+    http.connectionTo("akka.io").http2();
+    http.connectionTo("akka.io").http2WithPriorKnowledge();
+    http.connectionTo("akka.io")
+        .toPort(8081)
+        .withCustomHttpsConnectionContext(httpsContext)
+        .withClientConnectionSettings(ClientConnectionSettings.create(ConfigFactory.empty()))
+        .logTo(system().log())
+        .https();
 
     // in future we can add modify(context -> Context) to "keep ssl-config defaults, but tweak them in code)
 

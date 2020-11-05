@@ -16,6 +16,7 @@ import akka.event.{ Logging, LoggingAdapter }
 import akka.http.impl.engine.HttpConnectionIdleTimeoutBidi
 import akka.http.impl.engine.client._
 import akka.http.impl.engine.http2.Http2
+import akka.http.impl.engine.http2.OutgoingConnectionBuilderImpl
 import akka.http.impl.engine.server._
 import akka.http.impl.engine.ws.WebSocketClientBlueprint
 import akka.http.impl.settings.{ ConnectionPoolSetup, HostConnectionPoolSetup }
@@ -387,11 +388,22 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
   private[this] val systemMaterializer = SystemMaterializer(system).materializer
 
   /**
+   * Creates a builder which will create a single connection to a host every time the built flow is materialized. There
+   * is no pooling and you are yourself responsible for lifecycle management of the connection. For a more convenient
+   * Request level API see [[singleRequest()]]
+   *
+   * @return A builder to configure more specific setup for the connection and then build a `Flow[Request, Response, Future[OutgoingConnection]]`.
+   */
+  def connectionTo(host: String): OutgoingConnectionBuilder = OutgoingConnectionBuilderImpl(host, system)
+
+  /**
    * Creates a [[akka.stream.scaladsl.Flow]] representing a prospective HTTP client connection to the given endpoint.
    * Every materialization of the produced flow will attempt to establish a new outgoing connection.
    *
    * To configure additional settings for requests made using this method,
    * use the `akka.http.client` config section or pass in a [[akka.http.scaladsl.settings.ClientConnectionSettings]] explicitly.
+   *
+   * Prefer [[connectionTo]] over this method.
    */
   def outgoingConnection(host: String, port: Int = 80,
                          localAddress: Option[InetSocketAddress] = None,
@@ -407,6 +419,8 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    *
    * To configure additional settings for requests made using this method,
    * use the `akka.http.client` config section or pass in a [[akka.http.scaladsl.settings.ClientConnectionSettings]] explicitly.
+   *
+   * Prefer [[connectionTo]] over this method.
    */
   def outgoingConnectionHttps(host: String, port: Int = 443,
                               connectionContext: HttpsConnectionContext    = defaultClientHttpsContext,
@@ -423,6 +437,8 @@ class HttpExt private[http] (private val config: Config)(implicit val system: Ex
    *
    * To configure additional settings for requests made using this method,
    * use the `akka.http.client` config section or pass in a [[akka.http.scaladsl.settings.ClientConnectionSettings]] explicitly.
+   *
+   * Prefer [[connectionTo]] over this method.
    */
   def outgoingConnectionUsingContext(
     host:              String,

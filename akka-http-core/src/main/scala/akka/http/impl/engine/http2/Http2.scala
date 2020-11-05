@@ -10,16 +10,19 @@ import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.server.{ MasterServerTerminator, UpgradeToOtherProtocolResponseHeader }
 import akka.http.impl.util.LogByteStringTools
+import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.{ ConnectionContext, Http, HttpsConnectionContext }
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{ Connection, RawHeader, Upgrade, UpgradeProtocol }
 import akka.http.scaladsl.model.http2.Http2SettingsHeader
-import akka.http.scaladsl.settings.{ ClientConnectionSettings, ServerSettings }
+import akka.http.scaladsl.settings.ClientConnectionSettings
+import akka.http.scaladsl.settings.ServerSettings
+import akka.stream.TLSClosing
 import akka.stream.TLSProtocol.{ SslTlsInbound, SslTlsOutbound }
 import akka.stream.impl.io.TlsUtils
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source, TLS, TLSPlacebo, Tcp }
-import akka.stream.{ IgnoreComplete, Materializer, TLSClosing }
+import akka.stream.{ IgnoreComplete, Materializer }
 import akka.util.ByteString
 import akka.{ Done, NotUsed }
 import com.typesafe.config.Config
@@ -186,12 +189,7 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
       tls
   }
 
-  def outgoingConnection(
-    host:              String,
-    port:              Int                      = 443,
-    settings:          ClientConnectionSettings = ClientConnectionSettings(system),
-    connectionContext: HttpsConnectionContext   = Http().defaultClientHttpsContext,
-    log:               LoggingAdapter           = system.log): Flow[HttpRequest, HttpResponse, Any] = {
+  def outgoingConnection(host: String, port: Int, connectionContext: HttpsConnectionContext, clientConnectionSettings: ClientConnectionSettings, log: LoggingAdapter): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
     def createEngine(): SSLEngine = {
       val engine = connectionContext.sslContextData match {
         // TODO FIXME configure hostname verification for this case
@@ -206,12 +204,23 @@ private[http] final class Http2Ext(private val config: Config)(implicit val syst
       engine
     }
 
-    Http2Blueprint.clientStack(settings, log) atop
+    val stack = Http2Blueprint.clientStack(clientConnectionSettings, log) atop
       Http2Blueprint.unwrapTls atop
-      LogByteStringTools.logTLSBidiBySetting("client-plain-text", settings.logUnencryptedNetworkBytes) atop
-      TLS(createEngine _, closing = TLSClosing.eagerClose) join
-      settings.transport.connectTo(host, port, settings)
+      LogByteStringTools.logTLSBidiBySetting("client-plain-text", clientConnectionSettings.logUnencryptedNetworkBytes) atop
+      TLS(createEngine _, closing = TLSClosing.eagerClose)
+
+    stack.joinMat(clientConnectionSettings.transport.connectTo(host, port, clientConnectionSettings)(system.classicSystem))(Keep.right)
   }
+
+  def outgoingConnectionPriorKnowledge(host: String, port: Int, clientConnectionSettings: ClientConnectionSettings, log: LoggingAdapter): Flow[HttpRequest, HttpResponse, Future[OutgoingConnection]] = {
+    val stack = Http2Blueprint.clientStack(clientConnectionSettings, log) atop
+      Http2Blueprint.unwrapTls atop
+      LogByteStringTools.logTLSBidiBySetting("client-plain-text", clientConnectionSettings.logUnencryptedNetworkBytes) atop
+      TLSPlacebo()
+
+    stack.joinMat(clientConnectionSettings.transport.connectTo(host, port, clientConnectionSettings)(system.classicSystem))(Keep.right)
+  }
+
 }
 
 /** INTERNAL API */

@@ -39,7 +39,7 @@ public class HttpsExamplesDocTest {
       return engine;
     });
 
-    http.outgoingConnection(ConnectHttp.toHostHttps(unsafeHost).withCustomHttpsContext(badCtx));
+    http.connectionTo(unsafeHost).withCustomHttpsConnectionContext(badCtx).https();
     //#disable-hostname-verification-connection
   }
 

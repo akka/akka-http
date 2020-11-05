@@ -186,7 +186,7 @@ public class HttpClientExampleDocTest {
     final ActorSystem system = ActorSystem.create();
 
     final Flow<HttpRequest, HttpResponse, CompletionStage<OutgoingConnection>> connectionFlow =
-            Http.get(system).outgoingConnection(toHost("akka.io", 80));
+            Http.get(system).connectionTo("akka.io").http();
     final CompletionStage<HttpResponse> responseFuture =
             // This is actually a bad idea in general. Even if the `connectionFlow` was instantiated only once above,
             // a new connection is opened every single time, `runWith` is called. Materialization (the `runWith` call)

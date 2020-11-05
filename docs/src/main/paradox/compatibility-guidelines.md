@@ -38,6 +38,7 @@ Java
     akka.http.javadsl.server.directives.FileUploadDirectives#storeUploadedFiles
     akka.http.javadsl.server.directives.FileUploadDirectives#fileUploadAll
     akka.http.javadsl.server.HttpApp
+    akka.http.javadsl.model.RequestResponseAssociation
     ```    
 
 #### akka-http-caching
