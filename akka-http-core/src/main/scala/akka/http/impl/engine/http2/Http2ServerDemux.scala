@@ -9,9 +9,10 @@ import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.FLOW_CONTROL_ERROR
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
+import akka.http.impl.engine.http2.RequestParsing.parseHeaderPair
+import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.scaladsl.model.AttributeKey
 import akka.http.scaladsl.model.HttpEntity.{ Chunk, ChunkStreamPart, LastChunk }
-import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.settings.Http2CommonSettings
 import akka.macros.LogHelper
 import akka.stream.Attributes
@@ -31,17 +32,19 @@ import scala.collection.immutable
 import scala.util.control.NonFatal
 
 @InternalApi
-private[http2] class Http2ClientDemux(http2Settings: Http2CommonSettings, initialRemoteSettings: immutable.Seq[Setting])
-  extends Http2Demux[ChunkStreamPart, ChunkedHttp2SubStream](http2Settings, initialRemoteSettings, upgraded = false, isServer = false) {
+private[http2] class Http2ClientDemux(http2Settings: Http2CommonSettings, masterHttpHeaderParser: HttpHeaderParser)
+  extends Http2Demux[ChunkStreamPart, ChunkedHttp2SubStream](http2Settings, initialRemoteSettings = Nil, upgraded = false, isServer = false) {
 
   override def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ChunkStreamPart, Any], correlationAttributes: Map[AttributeKey[_], _]): ChunkedHttp2SubStream =
     ChunkedHttp2SubStream(initialHeaders, data, correlationAttributes)
 
   def wrapData(bytes: akka.util.ByteString): ChunkStreamPart = Chunk(bytes)
-  def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[ChunkStreamPart] = Some(LastChunk(extension = "", headers.keyValuePairs.map {
-    // TODO convert to modeled headers
-    case (k, v) => RawHeader(k, v)
-  }.toList))
+  def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[ChunkStreamPart] = {
+    val headerParser = masterHttpHeaderParser.createShallowCopy()
+    Some(LastChunk(extension = "", headers.keyValuePairs.map {
+      case (name, value) => parseHeaderPair(headerParser, name, value)
+    }.toList))
+  }
 
 }
 

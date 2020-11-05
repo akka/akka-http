@@ -90,7 +90,7 @@ private[http] object Http2Blueprint {
       initialDemuxerSettings: immutable.Seq[Setting] = Nil,
       upgraded: Boolean = false): BidiFlow[HttpResponse, ByteString, ByteString, HttpRequest, NotUsed] =
     httpLayer(settings, log) atop
-      demux(settings.http2Settings, initialDemuxerSettings, upgraded) atop
+      serverDemux(settings.http2Settings, initialDemuxerSettings, upgraded) atop
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
       hpackCoding() atop
       framing(log) atop
@@ -98,19 +98,20 @@ private[http] object Http2Blueprint {
   // LogByteStringTools.logToStringBidi("framing") atop // enable for debugging
   // format: ON
 
-  def clientStack(settings: ClientConnectionSettings, log: LoggingAdapter): BidiFlow[HttpRequest, ByteString, ByteString, HttpResponse, NotUsed] =
-    httpLayerClient(settings, log) atop
-      demux(settings.http2Settings, Nil) atop
-      FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
-      hpackCoding() atop
-      framingClient(log) atop
-      idleTimeoutIfConfigured(settings.idleTimeout)
-
-  def httpLayerClient(settings: ClientConnectionSettings, log: LoggingAdapter): BidiFlow[HttpRequest, Http2SubStream[Any], ChunkedHttp2SubStream, HttpResponse, NotUsed] = {
+  def clientStack(settings: ClientConnectionSettings, log: LoggingAdapter): BidiFlow[HttpRequest, ByteString, ByteString, HttpResponse, NotUsed] = {
     // This is master header parser, every other usage should do .createShallowCopy()
     // HttpHeaderParser is not thread safe and should not be called concurrently,
     // the internal trie, however, has built-in protection and will do copy-on-write
     val masterHttpHeaderParser = HttpHeaderParser(settings.parserSettings, log)
+    httpLayerClient(masterHttpHeaderParser, log) atop
+      clientDemux(settings.http2Settings, masterHttpHeaderParser) atop
+      FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
+      hpackCoding() atop
+      framingClient(log) atop
+      idleTimeoutIfConfigured(settings.idleTimeout)
+  }
+
+  def httpLayerClient(masterHttpHeaderParser: HttpHeaderParser, log: LoggingAdapter): BidiFlow[HttpRequest, Http2SubStream[Any], ChunkedHttp2SubStream, HttpResponse, NotUsed] = {
     BidiFlow.fromFlows(
       Flow[HttpRequest].statefulMapConcat { () =>
         val renderer = RequestRendering.createRenderer(log)
@@ -157,15 +158,15 @@ private[http] object Http2Blueprint {
    * Creates substreams for every stream and manages stream state machines
    * and handles priorization (TODO: later)
    */
-  def demux(settings: Http2CommonSettings, initialDemuxerSettings: immutable.Seq[Setting], upgraded: Boolean): BidiFlow[Http2SubStream[Any], FrameEvent, FrameEvent, Http2SubStream[ByteString], NotUsed] =
+  def serverDemux(settings: Http2CommonSettings, initialDemuxerSettings: immutable.Seq[Setting], upgraded: Boolean): BidiFlow[Http2SubStream[Any], FrameEvent, FrameEvent, Http2SubStream[ByteString], NotUsed] =
     BidiFlow.fromGraph(new Http2ServerDemux(settings, initialDemuxerSettings, upgraded))
 
   /**
    * Creates substreams for every stream and manages stream state machines
    * and handles priorization (TODO: later)
    */
-  def demux(settings: Http2CommonSettings, initialDemuxerSettings: immutable.Seq[Setting]): BidiFlow[Http2SubStream[Any], FrameEvent, FrameEvent, ChunkedHttp2SubStream, NotUsed] =
-    BidiFlow.fromGraph(new Http2ClientDemux(settings, initialDemuxerSettings))
+  def clientDemux(settings: Http2CommonSettings, masterHttpHeaderParser: HttpHeaderParser): BidiFlow[Http2SubStream[Any], FrameEvent, FrameEvent, ChunkedHttp2SubStream, NotUsed] =
+    BidiFlow.fromGraph(new Http2ClientDemux(settings, masterHttpHeaderParser))
 
   /**
    * Translation between substream frames and Http messages (both directions)
