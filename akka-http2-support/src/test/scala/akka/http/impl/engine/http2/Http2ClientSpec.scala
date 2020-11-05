@@ -280,7 +280,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
       }
     }
 
-    "support stream support for receiveing response entity data" should {
+    "support stream support for receiving response entity data" should {
       abstract class WaitingForResponseSetup extends TestSetup with NetProbes with Http2FrameHpackSupport {
         val streamId = 0x1
         emitRequest(streamId, Get("/"))

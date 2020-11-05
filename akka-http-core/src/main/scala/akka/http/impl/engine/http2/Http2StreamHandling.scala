@@ -492,9 +492,11 @@ private[http2] trait Http2StreamHandling[T] { self: GraphStageLogic with LogHelp
     }
     def onTrailingHeaders(headers: ParsedHeadersFrame): Unit = {
       trailingHeaders = wrapTrailingHeaders(headers)
-      if (headers.endStream) {
-        onDataFrame(DataFrame(headers.streamId, endStream = true, ByteString.empty)) // simulate end stream by empty dataframe
-      } else pushGOAWAY(Http2Protocol.ErrorCode.PROTOCOL_ERROR, "Got unexpected mid-stream HEADERS frame")
+      if (headers.endStream)
+        // simulate end stream by empty dataframe
+        onDataFrame(DataFrame(headers.streamId, endStream = true, ByteString.empty))
+      else
+        pushGOAWAY(Http2Protocol.ErrorCode.PROTOCOL_ERROR, "Got unexpected mid-stream HEADERS frame")
     }
     def onRstStreamFrame(rst: RstStreamFrame): Unit = {
       outlet.fail(new PeerClosedStreamException(rst.streamId, rst.errorCode))
