@@ -21,7 +21,6 @@ import akka.http.scaladsl.settings.{ ClientConnectionSettings, Http2CommonSettin
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl.{ BidiFlow, Flow, Source }
 import akka.util.ByteString
-import com.github.ghik.silencer.silent
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.concurrent.{ ExecutionContext, Future }
@@ -79,7 +78,6 @@ private[http2] final case class ChunkedHttp2SubStream(
   override def withCorrelationAttributes(attributes: Map[AttributeKey[_], _]): Http2SubStream =
     copy(correlationAttributes = attributes)
 
-  @silent("never used")
   def createResponseEntity(contentLength: Long, contentType: ContentType): RequestEntity =
     // Ignore trailing headers when content-length is defined
     if (contentLength == 0) HttpEntity.Empty
