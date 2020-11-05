@@ -30,7 +30,7 @@ private[http2] object ResponseRendering {
     cachedDateHeader._2
   }
 
-  def renderResponse(settings: ServerSettings, log: LoggingAdapter): HttpResponse => Http2SubStream[Any] = {
+  def renderResponse(settings: ServerSettings, log: LoggingAdapter): HttpResponse => Http2SubStream = {
     def failBecauseOfMissingAttribute: Nothing =
       // attribute is missing, shutting down because we will most likely otherwise miss a response and leak a substream
       // TODO: optionally a less drastic measure would be only resetting all the active substreams
@@ -61,7 +61,7 @@ private[http2] object ResponseRendering {
     entity.contentLengthOption.foreach(headerPairs += "content-length" -> _.toString)
   }
 
-  private[http2] def substreamFor(entity: HttpEntity, headers: ParsedHeadersFrame): Http2SubStream[Any] = entity match {
+  private[http2] def substreamFor(entity: HttpEntity, headers: ParsedHeadersFrame): Http2SubStream = entity match {
     case HttpEntity.Chunked(_, chunks) =>
       ChunkedHttp2SubStream(headers, chunks, Map.empty)
     case _ =>

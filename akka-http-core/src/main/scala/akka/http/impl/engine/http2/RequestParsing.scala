@@ -27,7 +27,7 @@ import scala.collection.immutable.VectorBuilder
 private[http2] object RequestParsing {
 
   @silent("use remote-address-attribute instead")
-  def parseRequest(httpHeaderParser: HttpHeaderParser, serverSettings: ServerSettings, attributes: Attributes): Http2SubStream[ByteString] => HttpRequest = {
+  def parseRequest(httpHeaderParser: HttpHeaderParser, serverSettings: ServerSettings, attributes: Attributes): Http2SubStream => HttpRequest = {
     val remoteAddressHeader: Option[`Remote-Address`] =
       if (serverSettings.remoteAddressHeader) {
         attributes.get[HttpAttributes.RemoteAddress].map(remote => model.headers.`Remote-Address`(RemoteAddress(remote.address)))

@@ -33,7 +33,8 @@ import scala.util.control.NonFatal
 
 @InternalApi
 private[http2] class Http2ClientDemux(http2Settings: Http2CommonSettings, masterHttpHeaderParser: HttpHeaderParser)
-  extends Http2Demux[ChunkStreamPart, ChunkedHttp2SubStream](http2Settings, initialRemoteSettings = Nil, upgraded = false, isServer = false) {
+  extends Http2Demux(http2Settings, initialRemoteSettings = Nil, upgraded = false, isServer = false) {
+  type T = ChunkStreamPart
 
   override def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ChunkStreamPart, Any], correlationAttributes: Map[AttributeKey[_], _]): ChunkedHttp2SubStream =
     ChunkedHttp2SubStream(initialHeaders, data, correlationAttributes)
@@ -49,7 +50,8 @@ private[http2] class Http2ClientDemux(http2Settings: Http2CommonSettings, master
 }
 
 private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initialRemoteSettings: immutable.Seq[Setting], upgraded: Boolean)
-  extends Http2Demux[ByteString, ByteHttp2SubStream](http2Settings, initialRemoteSettings, upgraded, isServer = true) {
+  extends Http2Demux(http2Settings, initialRemoteSettings, upgraded, isServer = true) {
+  type T = ByteString
 
   override def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], correlationAttributes: Map[AttributeKey[_], _]): ByteHttp2SubStream =
     ByteHttp2SubStream(initialHeaders, data, correlationAttributes)
@@ -113,24 +115,28 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
  *                              on the server end of a connection.
  */
 @InternalApi
-private[http2] abstract class Http2Demux[T, S <: Http2SubStream[T]](http2Settings: Http2CommonSettings, initialRemoteSettings: immutable.Seq[Setting], upgraded: Boolean, isServer: Boolean) extends GraphStage[BidiShape[Http2SubStream[Any], FrameEvent, FrameEvent, S]] {
+private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, initialRemoteSettings: immutable.Seq[Setting], upgraded: Boolean, isServer: Boolean) extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] {
   stage =>
+  type T
+
   val frameIn = Inlet[FrameEvent]("Demux.frameIn")
   val frameOut = Outlet[FrameEvent]("Demux.frameOut")
 
-  val substreamOut = Outlet[S]("Demux.substreamOut")
-  val substreamIn = Inlet[Http2SubStream[Any]]("Demux.substreamIn")
+  val substreamOut = Outlet[Http2SubStream]("Demux.substreamOut")
+  val substreamIn = Inlet[Http2SubStream]("Demux.substreamIn")
 
   override val shape =
     BidiShape(substreamIn, frameOut, frameIn, substreamOut)
 
-  def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[T, Any], correlationAttributes: Map[AttributeKey[_], _]): S
+  def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[T, Any], correlationAttributes: Map[AttributeKey[_], _]): Http2SubStream
   def wrapData(bytes: akka.util.ByteString): T
   def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[T]
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with Http2MultiplexerSupport with Http2StreamHandling[T] with GenericOutletSupport with StageLogging with LogHelper {
+    new GraphStageLogic(shape) with Http2MultiplexerSupport with Http2StreamHandling with GenericOutletSupport with StageLogging with LogHelper {
       logic =>
+
+      type T = stage.T
 
       override def isServer: Boolean = stage.isServer
       override def settings: Http2CommonSettings = http2Settings
@@ -253,7 +259,7 @@ private[http2] abstract class Http2Demux[T, S <: Http2SubStream[T]](http2Setting
       //        after a while or buffer only a limited amount? We should also be able to
       //        keep the buffer limited to the number of concurrent streams as negotiated
       //        with the other side.
-      val bufferedSubStreamOutput = new BufferedOutlet[S](substreamOut)
+      val bufferedSubStreamOutput = new BufferedOutlet[Http2SubStream](substreamOut)
       override def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[T, Any], correlationAttributes: Map[AttributeKey[_], _]): Unit =
         bufferedSubStreamOutput.push(createSubstream(initialHeaders, data, correlationAttributes))
 

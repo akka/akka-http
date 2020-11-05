@@ -16,7 +16,7 @@ import scala.collection.immutable.VectorBuilder
 
 @InternalApi
 private[http2] object RequestRendering {
-  def createRenderer(log: LoggingAdapter): HttpRequest => Http2SubStream[Any] = {
+  def createRenderer(log: LoggingAdapter): HttpRequest => Http2SubStream = {
     val streamId = new AtomicInteger(1)
 
     { request =>

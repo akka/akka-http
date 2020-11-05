@@ -30,13 +30,14 @@ import scala.collection.immutable
 /**
  * Represents one direction of an Http2 substream.
  */
-private[http2] sealed trait Http2SubStream[+T] {
+private[http2] sealed trait Http2SubStream {
+  type T
   val initialHeaders: ParsedHeadersFrame
   val data: Source[T, Any]
   val correlationAttributes: Map[AttributeKey[_], _]
   def streamId: Int = initialHeaders.streamId
 
-  def withCorrelationAttributes(attributes: Map[AttributeKey[_], _]): Http2SubStream[T]
+  def withCorrelationAttributes(attributes: Map[AttributeKey[_], _]): Http2SubStream
 
   def createRequestEntity(contentLength: Long, contentType: ContentType): RequestEntity =
     this match {
@@ -47,23 +48,35 @@ private[http2] sealed trait Http2SubStream[+T] {
       /* contentLength undefined */
       case c: ChunkedHttp2SubStream => HttpEntity.Chunked(contentType, c.data)
     }
+
+  def createResponseEntity(contentLength: Long, contentType: ContentType): RequestEntity
 }
 
 private[http2] final case class ByteHttp2SubStream(
   initialHeaders:        ParsedHeadersFrame,
   data:                  Source[ByteString, Any],
   correlationAttributes: Map[AttributeKey[_], _] = Map.empty
-) extends Http2SubStream[ByteString] {
-  override def withCorrelationAttributes(attributes: Map[AttributeKey[_], _]): Http2SubStream[ByteString] =
+) extends Http2SubStream {
+  type T = ByteString
+  override def withCorrelationAttributes(attributes: Map[AttributeKey[_], _]): Http2SubStream =
     copy(correlationAttributes = attributes)
+
+  def createResponseEntity(contentLength: Long, contentType: ContentType): RequestEntity = {
+    // Ignore trailing headers when content-length is defined
+    if (contentLength == 0) HttpEntity.Empty
+    else if (contentLength > 0) HttpEntity.Default(contentType, contentLength, data)
+    else HttpEntity.Chunked.fromData(contentType, data)
+  }
 }
 
 private[http2] final case class ChunkedHttp2SubStream(
   initialHeaders:        ParsedHeadersFrame,
   data:                  Source[HttpEntity.ChunkStreamPart, Any],
   correlationAttributes: Map[AttributeKey[_], _]                 = Map.empty
-) extends Http2SubStream[HttpEntity.ChunkStreamPart] {
-  override def withCorrelationAttributes(attributes: Map[AttributeKey[_], _]): Http2SubStream[HttpEntity.ChunkStreamPart] =
+) extends Http2SubStream {
+  type T = HttpEntity.ChunkStreamPart
+
+  override def withCorrelationAttributes(attributes: Map[AttributeKey[_], _]): Http2SubStream =
     copy(correlationAttributes = attributes)
 
   @silent("never used")
@@ -111,13 +124,13 @@ private[http] object Http2Blueprint {
       idleTimeoutIfConfigured(settings.idleTimeout)
   }
 
-  def httpLayerClient(masterHttpHeaderParser: HttpHeaderParser, log: LoggingAdapter): BidiFlow[HttpRequest, Http2SubStream[Any], ChunkedHttp2SubStream, HttpResponse, NotUsed] = {
+  def httpLayerClient(masterHttpHeaderParser: HttpHeaderParser, log: LoggingAdapter): BidiFlow[HttpRequest, Http2SubStream, Http2SubStream, HttpResponse, NotUsed] = {
     BidiFlow.fromFlows(
       Flow[HttpRequest].statefulMapConcat { () =>
         val renderer = RequestRendering.createRenderer(log)
         request => renderer(request) :: Nil
       },
-      Flow[ChunkedHttp2SubStream].statefulMapConcat { () =>
+      Flow[Http2SubStream].statefulMapConcat { () =>
         val headerParser = masterHttpHeaderParser.createShallowCopy()
         stream => ResponseParsing.parseResponse(headerParser)(stream) :: Nil
       }
@@ -158,14 +171,14 @@ private[http] object Http2Blueprint {
    * Creates substreams for every stream and manages stream state machines
    * and handles priorization (TODO: later)
    */
-  def serverDemux(settings: Http2CommonSettings, initialDemuxerSettings: immutable.Seq[Setting], upgraded: Boolean): BidiFlow[Http2SubStream[Any], FrameEvent, FrameEvent, Http2SubStream[ByteString], NotUsed] =
+  def serverDemux(settings: Http2CommonSettings, initialDemuxerSettings: immutable.Seq[Setting], upgraded: Boolean): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
     BidiFlow.fromGraph(new Http2ServerDemux(settings, initialDemuxerSettings, upgraded))
 
   /**
    * Creates substreams for every stream and manages stream state machines
    * and handles priorization (TODO: later)
    */
-  def clientDemux(settings: Http2CommonSettings, masterHttpHeaderParser: HttpHeaderParser): BidiFlow[Http2SubStream[Any], FrameEvent, FrameEvent, ChunkedHttp2SubStream, NotUsed] =
+  def clientDemux(settings: Http2CommonSettings, masterHttpHeaderParser: HttpHeaderParser): BidiFlow[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream, NotUsed] =
     BidiFlow.fromGraph(new Http2ClientDemux(settings, masterHttpHeaderParser))
 
   /**
@@ -176,7 +189,7 @@ private[http] object Http2Blueprint {
    * that must be reproduced in an HttpResponse. This can be done automatically for the `bind`` API but for
    * `bindFlow` the user needs to take of this manually.
    */
-  def httpLayer(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, Http2SubStream[Any], Http2SubStream[ByteString], HttpRequest, NotUsed] = {
+  def httpLayer(settings: ServerSettings, log: LoggingAdapter): BidiFlow[HttpResponse, Http2SubStream, Http2SubStream, HttpRequest, NotUsed] = {
     val parserSettings = settings.parserSettings
     // This is master header parser, every other usage should do .createShallowCopy()
     // HttpHeaderParser is not thread safe and should not be called concurrently,
@@ -184,7 +197,7 @@ private[http] object Http2Blueprint {
     val masterHttpHeaderParser = HttpHeaderParser(parserSettings, log)
     BidiFlow.fromFlows(
       Flow[HttpResponse].map(ResponseRendering.renderResponse(settings, log)),
-      Flow[Http2SubStream[ByteString]].via(StreamUtils.statefulAttrsMap { attrs =>
+      Flow[Http2SubStream].via(StreamUtils.statefulAttrsMap { attrs =>
         val headerParser = masterHttpHeaderParser.createShallowCopy()
         RequestParsing.parseRequest(headerParser, settings, attrs)
       }))

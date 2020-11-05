@@ -28,7 +28,9 @@ import scala.util.control.NoStackTrace
  * Mixed into the Http2ServerDemux graph logic.
  */
 @InternalApi
-private[http2] trait Http2StreamHandling[T] { self: GraphStageLogic with LogHelper =>
+private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper =>
+  type T
+
   // required API from demux
   def isServer: Boolean
   def multiplexer: Http2Multiplexer
@@ -100,7 +102,7 @@ private[http2] trait Http2StreamHandling[T] { self: GraphStageLogic with LogHelp
     updateState(e.streamId, _.handle(e))
 
   /** Called by Http2ServerDemux when a stream comes in from the user-handler */
-  def handleOutgoingCreated(stream: Http2SubStream[Any]): Unit = {
+  def handleOutgoingCreated(stream: Http2SubStream): Unit = {
     stream.initialHeaders.priorityInfo.foreach(multiplexer.updatePriority)
     if (streamFor(stream.streamId) != Closed) {
       multiplexer.pushControlFrame(stream.initialHeaders)
@@ -562,7 +564,7 @@ private[http2] trait Http2StreamHandling[T] { self: GraphStageLogic with LogHelp
     def isDone: Boolean
   }
   object OutStream {
-    def apply(sub: Http2SubStream[Any]): OutStream = {
+    def apply(sub: Http2SubStream): OutStream = {
       val subIn = new SubSinkInlet[Any](s"substream-in-${sub.streamId}")
       val info = new OutStreamImpl(sub.streamId, None, multiplexer.currentInitialWindow)
       info.registerIncomingData(subIn)

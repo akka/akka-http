@@ -16,7 +16,7 @@ import scala.collection.immutable.VectorBuilder
 
 @InternalApi
 private[http2] object ResponseParsing {
-  def parseResponse(httpHeaderParser: HttpHeaderParser): ChunkedHttp2SubStream => HttpResponse = { subStream =>
+  def parseResponse(httpHeaderParser: HttpHeaderParser): Http2SubStream => HttpResponse = { subStream =>
     @tailrec
     def rec(
       remainingHeaders:  Seq[(String, String)],
