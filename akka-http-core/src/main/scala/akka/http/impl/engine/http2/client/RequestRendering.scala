@@ -11,7 +11,6 @@ import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
 import akka.http.impl.engine.http2.FrameEvent.ParsedHeadersFrame
 import akka.http.scaladsl.model.{ HttpRequest, RequestResponseAssociation }
-import akka.util.ByteString
 
 import scala.collection.immutable.VectorBuilder
 
