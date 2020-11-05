@@ -11,8 +11,9 @@ import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
+import akka.http.scaladsl.client.RequestBuilding.Get
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.HttpEntity.Strict
+import akka.http.scaladsl.model.HttpEntity.{ Chunk, Chunked, LastChunk, Strict }
 import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.settings.ClientConnectionSettings
@@ -57,7 +58,11 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
           expectDecodedResponseHEADERSPairs(streamId) should contain theSameElementsAs (expectedHeaders.filter(_._1 != "date"))
           response.foreach(sendFrame)
 
-          expectResponse() shouldBe expectedResponse
+          val receivedResponse = expectResponse()
+          receivedResponse.status shouldBe expectedResponse.status
+          receivedResponse.headers shouldBe expectedResponse.headers
+          receivedResponse.entity.contentType shouldBe expectedResponse.entity.contentType
+          receivedResponse.entity.dataBytes.runFold(ByteString())(_ ++ _).futureValue shouldBe expectedResponse.entity.dataBytes.runFold(ByteString())(_ ++ _).futureValue
         }
       }
 
@@ -78,7 +83,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
           ),
           expectedResponse =
             HPackSpecExamples.FirstResponse
-              .withEntity(Strict(ContentTypes.NoContentType, ByteString.empty))
+              .withEntity(Chunked(ContentTypes.`application/octet-stream`, Source.empty))
         )
       }
 
@@ -112,7 +117,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
           ),
           expectedResponse =
             HPackSpecExamples.FirstResponse
-              .withEntity(Strict(ContentTypes.NoContentType, ByteString.empty))
+              .withEntity(Strict(ContentTypes.`application/octet-stream`, ByteString.empty))
         )
 
         emitRequest(3, HttpRequest(uri = "https://www.example.com/"))
@@ -143,7 +148,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
             HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None)
           ),
           expectedResponse = HPackSpecExamples.FirstResponse
-            .withEntity(Strict(ContentTypes.NoContentType, ByteString.empty))
+            .withEntity(Strict(ContentTypes.`application/octet-stream`, ByteString.empty))
         )
         requestResponseRoundtrip(
           streamId = 3,
@@ -153,7 +158,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
             HeadersFrame(streamId = 3, endStream = true, endHeaders = true, HPackSpecExamples.C62SecondResponseWithHuffman, None)
           ),
           expectedResponse = HPackSpecExamples.SecondResponse
-            .withEntity(Strict(ContentTypes.NoContentType, ByteString.empty))
+            .withEntity(Strict(ContentTypes.`application/octet-stream`, ByteString.empty))
         )
         requestResponseRoundtrip(
           streamId = 5,
@@ -163,7 +168,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
             HeadersFrame(streamId = 5, endStream = true, endHeaders = true, HPackSpecExamples.C63ThirdResponseWithHuffman, None)
           ),
           expectedResponse = HPackSpecExamples.ThirdResponseModeled
-            .withEntity(Strict(ContentTypes.NoContentType, ByteString.empty))
+            .withEntity(Strict(ContentTypes.`application/octet-stream`, ByteString.empty))
         )
       }
 
@@ -273,6 +278,31 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         expectNoBytes(100.millis)
 
       }
+    }
+
+    "support stream support for receiving response entity data" should {
+      abstract class WaitingForResponseSetup extends TestSetup with NetProbes with Http2FrameHpackSupport {
+        val streamId = 0x1
+        emitRequest(streamId, Get("/"))
+        expectDecodedHEADERS(streamId, endStream = true)
+      }
+      "support trailing headers for responses" in new WaitingForResponseSetup {
+        sendHEADERS(streamId, endStream = false, Seq(
+          RawHeader(":status", "200"),
+          RawHeader("content-type", "application/octet-stream")
+        ))
+
+        val response = expectResponse()
+        response.entity shouldBe a[Chunked]
+
+        sendDATA(streamId, endStream = false, ByteString("asdf"))
+        sendHEADERS(streamId, endStream = true, Seq(RawHeader("grpc-status", "0")))
+
+        val chunks = response.entity.asInstanceOf[Chunked].chunks.runWith(Sink.seq).futureValue
+        chunks(0) should be(Chunk("asdf"))
+        chunks(1) should be(LastChunk(extension = "", List(RawHeader("grpc-status", "0"))))
+      }
+
     }
   }
 
