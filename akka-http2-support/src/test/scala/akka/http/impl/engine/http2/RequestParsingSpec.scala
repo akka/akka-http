@@ -97,7 +97,7 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
       // ...any message containing connection-specific header fields MUST
       // be treated as malformed...
 
-      "not accept connection-specific headers" in pendingUntilFixed {
+      "not accept connection-specific headers" in {
         shouldThrowMalformedRequest {
           // Add Connection header to indicate that Foo is a connection-specific header
           parse(Vector(
@@ -108,6 +108,29 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
             "Foo" -> "bar"
           ))
         }
+      }
+
+      "not accept TE with other values than 'trailers'" in {
+        shouldThrowMalformedRequest {
+          // The only exception to this is the TE header field, which MAY be
+          // present in an HTTP/2 request; when it is, it MUST NOT contain any
+          // value other than "trailers".
+          parse(Vector(
+            ":method" -> "GET",
+            ":scheme" -> "https",
+            ":path" -> "/",
+            "TE" -> "chunked",
+          ))
+        }
+      }
+
+      "accept TE with 'trailers' as value" in {
+        parse(Vector(
+          ":method" -> "GET",
+          ":scheme" -> "https",
+          ":path" -> "/",
+          "TE" -> "trailers",
+        ))
       }
 
       // 8.1.2.3.  Request Pseudo-Header Fields
@@ -545,5 +568,36 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
       request.protocol should ===(HttpProtocols.`HTTP/2.0`)
     }
 
+    "reject requests with multiple content length headers" in {
+      val thrown = shouldThrowMalformedRequest(parse(
+        keyValuePairs = Vector(
+          ":method" -> "GET",
+          ":scheme" -> "https",
+          ":authority" -> "localhost:8000",
+          ":path" -> "/",
+          "content-length" -> "123",
+          "content-length" -> "124",
+        )))
+      thrown.getMessage should ===(s"Malformed request: HTTP message must not contain more than one content-length header")
+    }
+
+    "reject requests with multiple content type headers" in {
+      val thrown = shouldThrowMalformedRequest(parse(
+        keyValuePairs = Vector(
+          ":method" -> "GET",
+          ":scheme" -> "https",
+          ":authority" -> "localhost:8000",
+          ":path" -> "/",
+          "content-type" -> "text/json",
+          "content-type" -> "text/json",
+        )))
+      thrown.getMessage should ===(s"Malformed request: HTTP message must not contain more than one content-type header")
+    }
+
+    "reject requests with too many headers" in {
+      val maxHeaderCount = ServerSettings(system).parserSettings.maxHeaderCount
+      val thrown = shouldThrowMalformedRequest(parse((0 to (maxHeaderCount + 1)).map(n => s"x-my-header-$n" -> n.toString).toVector))
+      thrown.getMessage should ===(s"Malformed request: HTTP message contains more than the configured limit of $maxHeaderCount headers")
+    }
   }
 }
