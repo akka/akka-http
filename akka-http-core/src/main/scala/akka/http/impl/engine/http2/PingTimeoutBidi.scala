@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.http.impl.engine.http2
 
 import akka.NotUsed
@@ -44,7 +48,7 @@ object PingTimeoutBidi extends {
       private var lastPingTimestamp = 0L
       private var pingsWithoutData = 0L
 
-      override def preStart() {
+      override def preStart(): Unit = {
         // to limit overhead rather than constantly rescheduling a timer and looking at system time we use a constant timer
         // FIXME does that really matter (I think the idle timeout logic touches nanotime for every frame)?
         schedulePeriodically(tick, 1.second)

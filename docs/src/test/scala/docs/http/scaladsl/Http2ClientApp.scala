@@ -29,7 +29,7 @@ object Http2ClientApp extends App {
          akka.loglevel = debug
          akka.http.client.http2.log-frames = true
          akka.http.client.parsing.max-content-length = 20m
-         # FIXME don't leave like this, just for testing out configured ping
+         # FIXME don't leave like this, just for testing out configured ping, the sleeps below as well
          akka.http.client.http2.ping-interval = 2s
          akka.http.client.http2.ping-timeout = 1s
          akka.http.client.http2.max-pings-without-data = 20
