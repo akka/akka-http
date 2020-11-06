@@ -16,6 +16,7 @@ import akka.http.impl.engine.parsing.HttpHeaderParser
 import akka.http.impl.util.LogByteStringTools.logTLSBidiBySetting
 import akka.http.impl.util.StreamUtils
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.settings.Http2ClientSettings
 import akka.http.scaladsl.settings.{ ClientConnectionSettings, Http2CommonSettings, ParserSettings, ServerSettings }
 import akka.stream.TLSProtocol._
 import akka.stream.scaladsl.{ BidiFlow, Flow, Source }
@@ -105,6 +106,7 @@ private[http] object Http2Blueprint {
     val masterHttpHeaderParser = HttpHeaderParser(settings.parserSettings, log)
     httpLayerClient(masterHttpHeaderParser, log) atop
       clientDemux(settings.http2Settings, masterHttpHeaderParser) atop
+      periodicPingIfEnabled(settings.http2Settings) atop
       FrameLogger.logFramesIfEnabled(settings.http2Settings.logFrames) atop // enable for debugging
       hpackCoding() atop
       framingClient(log) atop
@@ -123,6 +125,10 @@ private[http] object Http2Blueprint {
       }
     )
   }
+
+  def periodicPingIfEnabled(settings: Http2ClientSettings): BidiFlow[FrameEvent, FrameEvent, FrameEvent, FrameEvent, NotUsed] =
+    if (settings.pingInterval == Duration.Zero) BidiFlow.identity[FrameEvent, FrameEvent]
+    else PingTimeoutBidi(settings)
 
   def idleTimeoutIfConfigured(timeout: Duration): BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
     timeout match {
