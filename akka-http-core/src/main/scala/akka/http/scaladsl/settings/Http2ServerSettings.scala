@@ -11,6 +11,8 @@ import akka.http.impl.util._
 import akka.http.javadsl
 import com.typesafe.config.Config
 
+import scala.concurrent.duration.FiniteDuration
+
 /**
  * INTERNAL API
  *
@@ -125,6 +127,9 @@ trait Http2ClientSettings extends /*FIXME: javadsl.settings.Http2ClientSettings 
   def logFrames: Boolean
   def withLogFrames(shouldLog: Boolean): Http2ClientSettings = copy(logFrames = shouldLog)
 
+  def pingInterval: FiniteDuration
+  def pingTimeout: FiniteDuration
+
   @InternalApi
   private[http] def internalSettings: Option[Http2InternalClientSettings]
   @InternalApi
@@ -144,6 +149,8 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
     incomingStreamLevelBufferSize:     Int,
     outgoingControlFrameBufferSize:    Int,
     logFrames:                         Boolean,
+    pingInterval:                      FiniteDuration,
+    pingTimeout:                       FiniteDuration,
     internalSettings:                  Option[Http2InternalClientSettings])
     extends Http2ClientSettings {
     require(maxConcurrentStreams >= 0, "max-concurrent-streams must be >= 0")
@@ -161,7 +168,9 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
       incomingStreamLevelBufferSize = c.getIntBytes("incoming-stream-level-buffer-size"),
       outgoingControlFrameBufferSize = c.getIntBytes("outgoing-control-frame-buffer-size"),
       logFrames = c.getBoolean("log-frames"),
-      None // no possibility to configure internal settings with config
+      pingInterval = c.getFiniteDuration("ping-interval"),
+      pingTimeout = c.getFiniteDuration("ping-timeout"),
+      internalSettings = None // no possibility to configure internal settings with config
     )
   }
 }
