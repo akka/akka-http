@@ -1,14 +1,9 @@
 package akka.http.impl.engine.http2
 
 import akka.NotUsed
+import akka.http.impl.engine.HttpIdleTimeoutException
 import akka.http.impl.engine.http2.FrameEvent.PingFrame
-import akka.http.impl.engine.ws.Protocol.Opcode.Ping
-import akka.http.impl.engine.ws.Protocol.Opcode.Ping
-import akka.http.impl.engine.ws.Protocol.Opcode.Ping
-import akka.http.impl.engine.ws.Protocol.Opcode.Ping
-import akka.http.impl.engine.ws.Protocol.Opcode.Ping
 import akka.http.scaladsl.settings.Http2ClientSettings
-import akka.stream
 import akka.stream.Attributes
 import akka.stream.BidiShape
 import akka.stream.Inlet
@@ -42,24 +37,33 @@ object PingTimeoutBidi extends {
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
       // FIXME this requires settings to be at least seconds, is that fine grained enough
-      private val maxPingsWithoutResponse = settings.pingTimeout.toSeconds
+      private val maxPingTimeNanos = settings.pingTimeout.toNanos
+      private def maxPingsWithoutData: Long = settings.maxPingsWithoutData
       private val pingEveryNTickWithoutData = settings.pingTimeout.toSeconds
       private var ticksWithoutData = 0L
-      private var outstandingPings = 0L
+      private var lastPingTimestamp = 0L
+      private var pingsWithoutData = 0L
 
-      // to limit overhead rather than constantly rescheduling a timer and looking at system time we use a constant timer
-      // FIXME does that really matter (I think the idle timeout logic touches nanotime for every frame)?
-      schedulePeriodically(tick, 1.second)
+      override def preStart() {
+        // to limit overhead rather than constantly rescheduling a timer and looking at system time we use a constant timer
+        // FIXME does that really matter (I think the idle timeout logic touches nanotime for every frame)?
+        schedulePeriodically(tick, 1.second)
+      }
 
       override protected def onTimer(timerKey: Any): Unit = {
         ticksWithoutData += 1L
-        if (outstandingPings > maxPingsWithoutResponse) {
-          ??? // FIXME what fail action, should this trigger a GOAWAY?
+        val now = System.nanoTime()
+        if (lastPingTimestamp > 0L && (lastPingTimestamp - now) > maxPingTimeNanos) {
+          // FIXME what fail action, should this rather trigger a GOAWAY?
+          throw new HttpIdleTimeoutException(
+            "HTTP/2 ping-timeout encountered, " +
+              "no ping response within " + settings.pingTimeout + ". " + "This is configurable by akka.http2.client.idle-timeout.",
+            settings.pingTimeout)
         }
-        if (ticksWithoutData % pingEveryNTickWithoutData == 0) {
+        if (ticksWithoutData > 0L && ticksWithoutData % pingEveryNTickWithoutData == 0) {
           // FIXME only emit when there are active calls/streams?
+          lastPingTimestamp = now
           emit(out1, Ping)
-          outstandingPings += 1
         }
       }
 
@@ -68,19 +72,26 @@ object PingTimeoutBidi extends {
           push(out1, grab(in1))
         }
         override def onPull(): Unit = {
-          pull(in1)
+          if (!hasBeenPulled(in1)) pull(in1)
         }
       })
       setHandlers(in2, out2, new InHandler with OutHandler {
         override def onPush(): Unit = {
           val frame = grab(in2)
           frame match {
-            case PingFrame(true, _) =>
-              // FIXME should we even reset here rather, or else a missed response will stay missed forever
-              // do we need something more elaborate than a counter - unique ping messages and a timestamp for each/or ordering they were sent?
-              outstandingPings -= 1
+            case ack @ PingFrame(true, _) =>
+              // FIXME here we could collect ping latency/log or something
+              lastPingTimestamp = 0L
+              if (maxPingsWithoutData > 0) {
+                pingsWithoutData += 1L
+                // FIXME fail with specific exception or some more graceful failure?
+                if (pingsWithoutData > maxPingsWithoutData)
+                  throw new RuntimeException("HTTP/2 more than " + maxPingsWithoutData + " pings exchanged without any data frames. This is configureable by akka.http2.client.max-pings-without-data")
+              }
+              push(out2, ack) // pass downstream for logging
             case other =>
-              ticksWithoutData = 0 // reset on any data, not only pings?
+              ticksWithoutData = 0
+              if (maxPingsWithoutData > 0) pingsWithoutData = 0L
               push(out2, other)
           }
 

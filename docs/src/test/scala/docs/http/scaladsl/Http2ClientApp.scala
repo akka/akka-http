@@ -26,9 +26,13 @@ object Http2ClientApp extends App {
   val config =
     ConfigFactory.parseString(
       """
-         # akka.loglevel = debug
+         akka.loglevel = debug
          akka.http.client.http2.log-frames = true
          akka.http.client.parsing.max-content-length = 20m
+         # FIXME don't leave like this, just for testing out configured ping
+         akka.http.client.http2.ping-interval = 2s
+         akka.http.client.http2.ping-timeout = 1s
+         akka.http.client.http2.max-pings-without-data = 20
       """
     ).withFallback(ConfigFactory.defaultApplication())
 
@@ -47,6 +51,7 @@ object Http2ClientApp extends App {
       res.get.entity.dataBytes.runWith(Sink.ignore).onComplete(res => println(s"Finished reading [1] $res"))
     }
 
+  Thread.sleep(4000)
   // #response-future-association
 
   dispatch(
@@ -57,9 +62,13 @@ object Http2ClientApp extends App {
       println(s"[2] Got index.js: $res")
       res.get.entity.dataBytes.runWith(Sink.ignore).onComplete(res => println(s"Finished reading [2] $res"))
     }
+
+  Thread.sleep(4000)
   dispatch(HttpRequest(uri = "https://doc.akka.io/api/akka/current/lib/MaterialIcons-Regular.woff"))
     .flatMap(_.toStrict(1.second))
     .onComplete(res => println(s"[3] Got font: $res"))
+
+  Thread.sleep(4000)
   dispatch(HttpRequest(uri = "https://doc.akka.io/favicon.ico"))
     .flatMap(_.toStrict(1.second))
     .onComplete(res => println(s"[4] Got favicon: $res"))
