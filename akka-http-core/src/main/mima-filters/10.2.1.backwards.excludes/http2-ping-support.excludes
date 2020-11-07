@@ -1,9 +1,18 @@
-# New settings added
+# New settings added for keepalive
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.Http2ClientSettings#Http2ClientSettingsImpl.apply")
 ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.settings.Http2ClientSettings#Http2ClientSettingsImpl.unapply")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.Http2ClientSettings#Http2ClientSettingsImpl.copy")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.settings.Http2ClientSettings#Http2ClientSettingsImpl.copy$default$7")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.Http2ClientSettings#Http2ClientSettingsImpl.this")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ClientSettings.pingInterval")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ClientSettings.pingTimeout")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ClientSettings.maxPingsWithoutData")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ClientSettings.keepaliveTime")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ClientSettings.keepaliveTimeout")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ClientSettings.maxKeepalivesWithoutData")
+
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.unapply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.copy")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.copy$default$7")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings#Http2ServerSettingsImpl.apply")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.keepaliveTime")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.keepaliveTimeout")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.http.scaladsl.settings.Http2ServerSettings.maxKeepalivesWithoutData")
