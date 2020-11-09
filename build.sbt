@@ -30,7 +30,10 @@ inThisBuild(Def.settings(
   //  test in assembly := {},
   licenses := Seq("Apache-2.0" -> url("https://opensource.org/licenses/Apache-2.0")),
   description := "Akka Http: Modern, fast, asynchronous, streaming-first HTTP server and client.",
-  testOptions += Tests.Argument(TestFrameworks.JUnit, "-q", "-v"),
+  testOptions ++= Seq(
+    Tests.Argument(TestFrameworks.JUnit, "-q", "-v"),
+    Tests.Argument(TestFrameworks.ScalaTest, "-oDF")
+  ),
   Dependencies.Versions,
   Formatting.formatSettings,
   shellPrompt := { s => Project.extract(s).currentProject.id + " > " },
