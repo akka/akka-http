@@ -409,8 +409,10 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         // trigger a connection-level WINDOW_UPDATE
         sendDATA(TheStreamId, endStream = false, ByteString("0000"))
         expectWindowUpdate()
+        entityDataIn.expectUtf8EncodedString("0000")
+        expectWindowUpdate() // window resize/update triggered
 
-        sendFrame(DataFrame(TheStreamId, endStream = false, ByteString("0" * 100000)))
+        sendFrame(DataFrame(TheStreamId, endStream = false, ByteString("0" * 512001)))
         expectRST_STREAM(TheStreamId, ErrorCode.FLOW_CONTROL_ERROR)
       }
       "fail entity stream if advertised content-length doesn't match" in pending
