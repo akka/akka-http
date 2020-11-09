@@ -2,7 +2,7 @@
 
 The request-level API is the recommended and most convenient way of using Akka HTTP's client-side functionality. It internally builds upon the
 @ref[Host-Level Client-Side API](host-level.md) to provide you with a simple and easy-to-use way of retrieving HTTP responses from remote servers.
-Depending on your preference you can pick the flow-based or the future-based variant.
+Depending on your preference you can pick the [Future-based variant](#future-based-variant) or [Flow-based variant](#flow-based-variant).
 
 @@@ note
 It is recommended to first read the @ref[Implications of the streaming nature of Request/Response Entities](../implications-of-streaming-http-entity.md) section,
@@ -40,8 +40,8 @@ Java
 ### Using the Future-Based API in Actors
 
 When using the @scala[`Future`]@java[`CompletionStage`] based API from inside a classic Akka @apidoc[Actor], all the usual caveats apply to how one should deal
-with the futures completion. For example you should not access the actor's state from within the @scala[`Future`]@java[`CompletionStage`]'s callbacks
-(such as `map`, `onComplete`, ...) and instead you should use the @scala[`pipeTo`]@java[`pipe`] pattern to pipe the result back
+with the futures completion. For example, you should not access the actor's state from within the @scala[`Future`]@java[`CompletionStage`]'s callbacks
+(such as `map`, `onComplete`, ...) and, instead, you should use the @scala[`pipeTo`]@java[`pipe`] pattern to pipe the result back
 to the actor as a message:
 
 Scala
@@ -52,35 +52,36 @@ Java
 
 @@@ warning
 
-Always make sure you consume the response entity streams (of type @scala[@apidoc[Source[ByteString,Unit]]]@java[@apidoc[Source[ByteString, Object]]]) 
-by for example connecting it to a @apidoc[Sink] or by calling @scala[`response.discardEntityBytes()`]@java[`response.discardEntityBytes(Materializer)`] 
-if you don't care about the response entity. Otherwise Akka HTTP (and the underlying Streams infrastructure) will understand the
-lack of entity consumption as a back-pressure signal and stop reading from the underlying TCP connection!
+Always make sure you consume the response entity streams (of type @scala[@apidoc[Source[ByteString,Unit]]]@java[@apidoc[Source[ByteString, Object]]]).
+Connect the response entity `Source` to a @apidoc[Sink], or call @scala[`response.discardEntityBytes()`]@java[`response.discardEntityBytes(Materializer)`] 
+if you don't care about the response entity. 
 
-This is a feature of Akka HTTP that allows consuming entities (and pulling them through the network) in
-a streaming fashion, and only *on demand* when the client is ready to consume the bytes -
-it may be a bit surprising at first though.
+Read the @ref[Implications of the streaming nature of Request/Response Entities](../implications-of-streaming-http-entity.md) section for more details.
 
-When response entities are not subscribed to within `akka.http.host-connection-pool.response-entity-subscription-timeout`, the stream will fail with a `TimeoutException: Response entity was not subscribed after ...`.
-
+If the application doesn't subscribe to the response entity within 
+`akka.http.host-connection-pool.response-entity-subscription-timeout`, the stream will fail with a 
+`TimeoutException: Response entity was not subscribed after ...`.
 @@@
 
 ## Flow-Based Variant
 
-The flow-based variant of the request-level client-side API is presented by the @scala[`Http().superPool(...)`]@java[`Http.get(system).superPool(...)`] method.
+The Flow-based variant of the request-level client-side API is presented by the @scala[`Http().superPool(...)`]@java[`Http.get(system).superPool(...)`] method.
 It creates a new "super connection pool flow", which routes incoming requests to a (cached) host connection pool
 depending on their respective effective URIs.
 
-The @apidoc[Flow] returned by @scala[`Http().superPool(...)`]@java[`Http.get(system).superPool(...)`] is very similar to the one from the @ref[Host-Level Client-Side API](host-level.md), so the
-@ref[Using a Host Connection Pool](host-level.md#using-a-host-connection-pool) section also applies here.
+The @apidoc[Flow] returned by @scala[`Http().superPool(...)`]@java[`Http.get(system).superPool(...)`] is very similar to the one from the @ref[Host-Level Client-Side API](host-level.md), so the section on 
+@ref[Using a Host Connection Pool](host-level.md#using-a-host-connection-pool) also applies here.
 
-However, there is one notable difference between a "host connection pool client flow" for the host-level API and a
-"super-pool flow":
-Since in the former case the flow has an implicit target host context the requests it takes don't need to have absolute
-URIs or a valid `Host` header. The host connection pool will automatically add a `Host` header if required.
+However, there is one notable difference between a "host connection pool client flow" for the Host-Level API and a
+"super-pool flow" from the Request-Level API:
 
-For a super-pool flow this is not the case. All requests to a super-pool must either have an absolute URI or a valid
-`Host` header, because otherwise it'd be impossible to find out which target endpoint to direct the request to.
+* In a "host connection pool client flow" the flow has an implicit target host context. Therefore, the requests it 
+takes don't need to have absolute URIs or a valid `Host` header because the host connection pool will automatically 
+add a `Host` header if required.
+
+For a "super-pool flow" in the Request-Level API this is not the case. All requests to a super-pool must either 
+have an absolute URI or a valid `Host` header, because otherwise it'd be impossible to find out which target endpoint 
+to direct the request to.
 
 
 ## Collecting headers from a server response

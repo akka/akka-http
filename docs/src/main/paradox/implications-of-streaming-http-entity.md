@@ -9,6 +9,14 @@ Specifically it means that: "*lack of consumption of the HTTP Entity, is signale
 side of the connection*". This is a feature, as it allows one only to consume the entity, and back-pressure servers/clients
 from overwhelming our application, possibly causing un-necessary buffering of the entity in memory.
 
+Put another way: Streaming *all the way through* is a feature of Akka HTTP that allows consuming 
+entities (and pulling them through the network) in a streaming fashion, and only *on demand* when the client is 
+ready to consume the bytes. Therefore, you have to explicitly consume or discard the entity. 
+
+On a client, for example, if the application doesn't subscribe to the response entity within 
+`akka.http.host-connection-pool.response-entity-subscription-timeout`, the stream will fail with a 
+`TimeoutException: Response entity was not subscribed after ...`.
+
 @@@ warning
 
 Consuming (or discarding) the Entity of a request is mandatory!
@@ -22,8 +30,13 @@ A client should consume the Entity regardless of the status of the @apidoc[HttpR
 
 ### Consuming the HTTP Response Entity (Client)
 
-The most common use-case of course is consuming the response entity, which can be done via
-running the underlying `dataBytes` Source (or on the server-side using directives such as `BasicDirectives.extractDataBytes`).
+There are two use-cases to consume the entity of a response:
+
+1. process the bytes as the response arrives from the network buffer
+2. load all the bytes in memory first, and process them afterwards
+
+The most common use-case, and recommended, of course, is consuming the response entity as a stream, 
+which can be done via running the underlying `dataBytes` Source.
 
 It is encouraged to use various streaming techniques to utilise the underlying infrastructure to its fullest,
 for example by framing the incoming chunks, parsing them line-by-line and then connecting the flow into another
@@ -35,9 +48,9 @@ Scala
 Java
 :   @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #manual-entity-consume-example-1 }
 
-however sometimes the need may arise to consume the entire entity as `Strict` entity (which means that it is
+However, sometimes the need may arise to consume the entire entity as `Strict` entity (which means that it is
 completely loaded into memory). Akka HTTP provides a special @scala[`toStrict(timeout)`]@java[`toStrict(timeout, materializer)`] method which can be used to
-eagerly consume the entity and make it available in memory:
+eagerly consume the entity and make it available in memory. Once in memory, data can be consumed as a `ByteString` or as a `Source`:
 
 Scala
 :   @@snip [HttpClientExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpClientExampleSpec.scala) { #manual-entity-consume-example-2 }
@@ -46,6 +59,7 @@ Java
 :   @@snip [HttpClientExampleDocTest.java]($test$/java/docs/http/javadsl/HttpClientExampleDocTest.java) { #manual-entity-consume-example-2 }
 
 ### Integrating with Akka Streams
+
 In some cases, it is necessary to process the results of a series of Akka HTTP calls as Akka Streams. In order
 to ensure that the HTTP Response Entity is consumed in a timely manner, the Akka HTTP stream for each request must
 be executed and completely consumed, then sent along for further processing.
@@ -95,15 +109,16 @@ Java
 
 ## Server-Side handling of streaming HTTP Entities
 
-Similarly as with the Client-side, HTTP Entities are directly linked to Streams which are fed by the underlying
+HTTP Entities of a request are directly linked to Streams fed by the underlying
 TCP connection. Thus, if request entities remain not consumed, the server will back-pressure the connection, expecting
-that the user-code will eventually decide what to do with the incoming data.
+the user-code to eventually decide what to do with the incoming data.
 
-Note that some directives force an implicit `toStrict` operation, such as @scala[`entity(as[String])`]@java[`entity(exampleUnmarshaller, example -> {})`] and similar ones.
+The most common use-case is to consume the request entity using directives such as `BasicDirectives.extractDataBytes`. Some 
+directives force an implicit `toStrict` operation, such as @scala[`entity(as[String])`]@java[`entity(exampleUnmarshaller, example -> {})`].
 
 ### Consuming the HTTP Request Entity (Server)
 
-The simplest way of consuming the incoming request entity is to simply transform it into an actual domain object,
+The simplest way of consuming the incoming request entity is to transform it into an actual domain object,
 for example by using the @ref[entity](routing-dsl/directives/marshalling-directives/entity.md) directive:
 
 Scala
@@ -112,8 +127,9 @@ Scala
 Java
 :   @@snip [HttpServerExampleDocTest.java]($test$/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #consume-entity-directive }
 
-Of course you can access the raw dataBytes as well and run the underlying stream, for example piping it into an
-FileIO Sink, that signals completion via a @scala[`Future[IoResult]`]@java[`CompletionStage<IoResult>`] once all the data has been written into the file:
+You can also access the raw `dataBytes` and run the underlying stream. For example, you could pipe the raw `dataBytes` into a
+FileIO `Sink`. The FileIO `Sink` signals completion via a @scala[`Future[IoResult]`]@java[`CompletionStage<IoResult>`] 
+once all the data has been written into the file:
 
 Scala
 :   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #consume-raw-dataBytes }
@@ -123,15 +139,12 @@ Java
 
 ### Discarding the HTTP Request Entity (Server)
 
-Sometimes, depending on some validation (e.g. checking if given user is allowed to perform uploads or not)
-you may want to decide to discard the uploaded entity.
+You may want to discard the uploaded entity. For example, depending on some validation (e.g. "is user authorized to upload files?").
 
-Please note that discarding means that the entire upload will proceed, even though you are not interested in the data
-being streamed to the server - this may be useful if you are simply not interested in the given entity, however
-you don't want to abort the entire connection (which we'll demonstrate as well), since there may be more requests
-pending on the same connection still.
+Please note that "discarding the HTTP Request Entity" means that the entire upload will proceed, even though you are not interested in the data
+being streamed to the server. This is useful if you are simply not interested in the entity. 
 
-In order to discard the databytes explicitly you can invoke the `discardEntityBytes` bytes of the incoming `HTTPRequest`:
+In order to discard the `dataBytes` explicitly you can invoke the `discardEntityBytes` bytes of the incoming `HttpRequest`:
 
 Scala
 :   @@snip [HttpServerExampleSpec.scala]($test$/scala/docs/http/scaladsl/HttpServerExampleSpec.scala) { #discard-discardEntityBytes }
@@ -139,7 +152,7 @@ Scala
 Java
 :   @@snip [HttpServerExampleDocTest.java]($test$/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #discard-discardEntityBytes }
 
-A related concept is *cancelling* the incoming @scala[`entity.dataBytes`]@java[`entity.getDataBytes()`] stream, which results in Akka HTTP
+A related concept is *cancelling* the incoming @scala[`entity.dataBytes`]@java[`entity.getDataBytes()`] stream. Cancellation results in Akka HTTP
 *abruptly closing the connection from the Client*. This may be useful when you detect that the given user should not be allowed to make any
 uploads at all, and you want to drop the connection (instead of reading and ignoring the incoming data).
 This can be done by attaching the incoming @scala[`entity.dataBytes`]@java[`entity.getDataBytes()`] to a `Sink.cancelled()` which will cancel
@@ -152,8 +165,8 @@ Scala
 Java
 :   @@snip [HttpServerExampleDocTest.java]($test$/java/docs/http/javadsl/server/HttpServerExampleDocTest.java) { #discard-close-connections }
 
-Closing connections is also explained in depth in the @ref[Closing a connection](server-side/low-level-api.md#http-closing-connection-low-level)
-section of the docs.
+See also the @ref[Closing a connection](server-side/low-level-api.md#http-closing-connection-low-level) section for an 
+in-depth explanation on closing connection.
 
 ### Pending: Automatic discarding of not used entities
 
