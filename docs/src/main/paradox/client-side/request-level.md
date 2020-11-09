@@ -1,4 +1,3 @@
-
 # Request-Level Client-Side API
 
 The request-level API is the recommended and most convenient way of using Akka HTTP's client-side functionality. It internally builds upon the
