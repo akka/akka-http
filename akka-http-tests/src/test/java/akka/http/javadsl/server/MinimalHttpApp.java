@@ -36,6 +36,12 @@ public class MinimalHttpApp extends HttpApp {
   }
 
   @Override
+  protected void postHttpBindingFailure(Throwable cause) {
+    super.postHttpBindingFailure(cause);
+    bindingPromise.completeExceptionally(cause);
+  }
+
+  @Override
   protected CompletionStage<Done> waitForShutdownSignal(ActorSystem system) {
     return shutdownTrigger;
   }
