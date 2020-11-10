@@ -25,6 +25,7 @@ object TransferEncodings {
   case object compress extends Predefined
   case object deflate extends Predefined
   case object gzip extends Predefined
+  case object trailers extends Predefined
   final case class Extension(name: String, params: Map[String, String] = Map.empty) extends TransferEncoding {
     def render[R <: Rendering](r: R): r.type = {
       r ~~ name

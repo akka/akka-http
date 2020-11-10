@@ -154,6 +154,7 @@ class HeaderSpec extends AnyFreeSpec with Matchers {
         `Sec-WebSocket-Protocol`(Vector("chat", "superchat")),
         `Sec-WebSocket-Key`("dGhlIHNhbXBsZSBub25jZQ"),
         `Sec-WebSocket-Version`(Vector(13)),
+        TE(TransferEncodings.trailers),
         `Transfer-Encoding`(TransferEncodings.chunked),
         Upgrade(Vector(UpgradeProtocol("HTTP", Some("2.0")))),
         `User-Agent`("Akka HTTP Client 2.4"),
