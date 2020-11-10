@@ -4,27 +4,18 @@
 
 package akka.http.impl.engine.http2
 
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 
 import akka.actor.ClassicActorSystemProvider
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
-import akka.http.impl.util.LogByteStringTools
 import akka.http.scaladsl.Http.OutgoingConnection
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.settings.ClientConnectionSettings
-import akka.stream.TLSClosing
-import akka.stream.impl.io.TlsUtils
 import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.Keep
-import akka.stream.scaladsl.TLS
-import akka.stream.scaladsl.TLSPlacebo
-import javax.net.ssl.SSLEngine
 import akka.http.javadsl
-import akka.http.javadsl.model
 import akka.http.javadsl.{ OutgoingConnectionBuilder => JOutgoingConnectionBuilder }
 import akka.http.scaladsl.ConnectionContext
 import akka.http.scaladsl.Http
