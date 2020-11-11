@@ -72,7 +72,7 @@ private[http2] object Keepalive {
   val Ping = PingFrame(false, ByteString("abcdefgh"))
   final class PingState(val maxKeepaliveTimeoutNanos: Long, val pingEveryNTickWithoutData: Long) {
     def this(settings: Http2CommonSettings) =
-      this(settings.keepaliveTime.toNanos, settings.keepaliveTimeout.toSeconds)
+      this(settings.pingInterval.toNanos, settings.pingTimeout.toSeconds)
     var ticksWithoutData = 0L
     var lastPingTimestamp = 0L
     var pingsWithoutData = 0L
@@ -174,7 +174,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       frameOut.setHandler(multiplexer)
 
       val pingState: OptionVal[Keepalive.PingState] =
-        if (http2Settings.keepaliveTime.toSeconds > 0L) OptionVal.Some(new Keepalive.PingState(http2Settings))
+        if (http2Settings.pingInterval.toSeconds > 0L) OptionVal.Some(new Keepalive.PingState(http2Settings))
         else OptionVal.None
 
       // Send initial settings based on the local application.conf. For simplicity, these settings are
@@ -263,10 +263,10 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
               pingState match {
                 case OptionVal.Some(state) =>
                   state.pingsWithoutData += 1L
-                  if (settings.maxKeepalivesWithoutData > 0) {
+                  if (settings.maxPingsWithoutData > 0) {
                     // FIXME fail with specific exception or some more graceful failure?
-                    if (state.pingsWithoutData > settings.maxKeepalivesWithoutData)
-                      throw new RuntimeException("HTTP/2 more than " + settings.maxKeepalivesWithoutData + " pings exchanged without any data frames. This is configureable by akka.http2.[client, server].max-keepalives-without-data")
+                    if (state.pingsWithoutData > settings.maxPingsWithoutData)
+                      throw new RuntimeException("HTTP/2 more than " + settings.maxPingsWithoutData + " pings exchanged without any data frames. This is configureable by akka.http2.[client, server].max-keepalives-without-data")
                   }
                 // FIXME also fail if too much time passed since last ping was sent?
                 case _ =>
@@ -367,8 +367,8 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
                   // FIXME what fail action, should this rather trigger a GOAWAY?
                   throw new HttpIdleTimeoutException(
                     "HTTP/2 ping-timeout encountered, " +
-                      "no ping response within " + http2Settings.keepaliveTimeout + ". " + "This is configurable by akka.http2.[client, server].keepalive-timeout.",
-                    settings.keepaliveTimeout)
+                      "no ping response within " + http2Settings.pingTimeout + ". " + "This is configurable by akka.http2.[client, server].keepalive-timeout.",
+                    settings.pingTimeout)
                 }
                 if (state.ticksWithoutData > 0L && state.ticksWithoutData % state.pingEveryNTickWithoutData == 0) {
                   state.lastPingTimestamp = now

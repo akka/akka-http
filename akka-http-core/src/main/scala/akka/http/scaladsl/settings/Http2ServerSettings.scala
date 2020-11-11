@@ -11,7 +11,7 @@ import akka.http.impl.util._
 import akka.http.javadsl
 import com.typesafe.config.Config
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.DurationLong
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -30,9 +30,25 @@ private[http] trait Http2CommonSettings {
   def maxConcurrentStreams: Int
   def outgoingControlFrameBufferSize: Int
 
-  def keepaliveTime: FiniteDuration
-  def keepaliveTimeout: FiniteDuration
-  def maxKeepalivesWithoutData: Long
+  def pingInterval: FiniteDuration
+  def pingTimeout: FiniteDuration
+  def maxPingsWithoutData: Long
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[http] object Http2CommonSettings {
+  def validate(settings: Http2CommonSettings): Unit = {
+    import settings._
+    if (pingInterval.toSeconds > 0) {
+      require(pingInterval.toSeconds.seconds == pingInterval, s"ping-interval must be whole seconds, was $pingInterval")
+      require(pingTimeout < pingInterval && pingInterval > 0.seconds, "ping-timeout must be positive and smaller than ping-interval")
+      require(pingTimeout.toSeconds.seconds == pingTimeout, s"ping-interval must be whole seconds, was $pingTimeout")
+    }
+    require(maxPingsWithoutData >= 0, "max-pings-without-data must be 0 for disabled or positive for enforcing limit")
+  }
 }
 
 /**
@@ -63,14 +79,14 @@ trait Http2ServerSettings extends javadsl.settings.Http2ServerSettings with Http
   def logFrames: Boolean
   override def withLogFrames(shouldLog: Boolean): Http2ServerSettings = copy(logFrames = shouldLog)
 
-  def keepaliveTime: FiniteDuration
-  def withKeepaliveTime(time: FiniteDuration): Http2ServerSettings = copy(keepaliveTime = time)
+  def pingInterval: FiniteDuration
+  def withPingInterval(time: FiniteDuration): Http2ServerSettings = copy(pingInterval = time)
 
-  def keepaliveTimeout: FiniteDuration
-  def withKeepaliveTimeout(timeout: FiniteDuration): Http2ServerSettings = copy(keepaliveTimeout = timeout)
+  def pingTimeout: FiniteDuration
+  def withPingTimeout(timeout: FiniteDuration): Http2ServerSettings = copy(pingTimeout = timeout)
 
-  def maxKeepalivesWithoutData: Long
-  def withMaxKeepalivesWithoutData(max: Long): Http2ServerSettings = copy(maxKeepalivesWithoutData = max)
+  def maxPingsWithoutData: Long
+  def withMaxPingsWithoutData(max: Long): Http2ServerSettings = copy(maxPingsWithoutData = max)
 
   @InternalApi
   private[http] def internalSettings: Option[Http2InternalServerSettings]
@@ -91,9 +107,9 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
     incomingStreamLevelBufferSize:     Int,
     outgoingControlFrameBufferSize:    Int,
     logFrames:                         Boolean,
-    keepaliveTime:                     FiniteDuration,
-    keepaliveTimeout:                  FiniteDuration,
-    maxKeepalivesWithoutData:          Long,
+    pingInterval:                      FiniteDuration,
+    pingTimeout:                       FiniteDuration,
+    maxPingsWithoutData:               Long,
     internalSettings:                  Option[Http2InternalServerSettings])
     extends Http2ServerSettings {
     require(maxConcurrentStreams >= 0, "max-concurrent-streams must be >= 0")
@@ -101,6 +117,7 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
     require(incomingConnectionLevelBufferSize > 0, "incoming-connection-level-buffer-size must be > 0")
     require(incomingStreamLevelBufferSize > 0, "incoming-stream-level-buffer-size must be > 0")
     require(outgoingControlFrameBufferSize > 0, "outgoing-control-frame-buffer-size must be > 0")
+    Http2CommonSettings.validate(this)
   }
 
   private[http] object Http2ServerSettingsImpl extends akka.http.impl.util.SettingsCompanionImpl[Http2ServerSettingsImpl]("akka.http.server.http2") {
@@ -111,9 +128,9 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
       incomingStreamLevelBufferSize = c.getIntBytes("incoming-stream-level-buffer-size"),
       outgoingControlFrameBufferSize = c.getIntBytes("outgoing-control-frame-buffer-size"),
       logFrames = c.getBoolean("log-frames"),
-      keepaliveTime = c.getFiniteDuration("keepalive-time"),
-      keepaliveTimeout = c.getFiniteDuration("keepalive-timeout"),
-      maxKeepalivesWithoutData = c.getLong("max-keepalives-without-data"),
+      pingInterval = c.getFiniteDuration("keepalive-time"),
+      pingTimeout = c.getFiniteDuration("keepalive-timeout"),
+      maxPingsWithoutData = c.getLong("max-keepalives-without-data"),
       None // no possibility to configure internal settings with config
     )
   }
@@ -147,14 +164,14 @@ trait Http2ClientSettings extends /*FIXME: javadsl.settings.Http2ClientSettings 
   def logFrames: Boolean
   def withLogFrames(shouldLog: Boolean): Http2ClientSettings = copy(logFrames = shouldLog)
 
-  def keepaliveTime: FiniteDuration
-  def withKeepaliveTime(time: FiniteDuration): Http2ClientSettings = copy(keepaliveTime = time)
+  def pingInterval: FiniteDuration
+  def withPingInterval(time: FiniteDuration): Http2ClientSettings = copy(pingInterval = time)
 
-  def keepaliveTimeout: FiniteDuration
-  def withKeepaliveTimeout(timeout: FiniteDuration): Http2ClientSettings = copy(keepaliveTimeout = timeout)
+  def pingTimeout: FiniteDuration
+  def withPingTimeout(timeout: FiniteDuration): Http2ClientSettings = copy(pingTimeout = timeout)
 
-  def maxKeepalivesWithoutData: Long
-  def withMaxKeepalivesWithoutData(max: Long): Http2ClientSettings = copy(maxKeepalivesWithoutData = max)
+  def maxPingsWithoutData: Long
+  def withMaxPingsWithoutData(max: Long): Http2ClientSettings = copy(maxPingsWithoutData = max)
 
   @InternalApi
   private[http] def internalSettings: Option[Http2InternalClientSettings]
@@ -175,9 +192,9 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
     incomingStreamLevelBufferSize:     Int,
     outgoingControlFrameBufferSize:    Int,
     logFrames:                         Boolean,
-    keepaliveTime:                     FiniteDuration,
-    keepaliveTimeout:                  FiniteDuration,
-    maxKeepalivesWithoutData:          Long,
+    pingInterval:                      FiniteDuration,
+    pingTimeout:                       FiniteDuration,
+    maxPingsWithoutData:               Long,
     internalSettings:                  Option[Http2InternalClientSettings])
     extends Http2ClientSettings {
     require(maxConcurrentStreams >= 0, "max-concurrent-streams must be >= 0")
@@ -185,7 +202,7 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
     require(incomingConnectionLevelBufferSize > 0, "incoming-connection-level-buffer-size must be > 0")
     require(incomingStreamLevelBufferSize > 0, "incoming-stream-level-buffer-size must be > 0")
     require(outgoingControlFrameBufferSize > 0, "outgoing-control-frame-buffer-size must be > 0")
-    require(keepaliveTime == Duration.Zero || keepaliveTime > keepaliveTimeout, "ping-timeout must be less than ping-interval")
+    Http2CommonSettings.validate(this)
   }
 
   private[http] object Http2ClientSettingsImpl extends akka.http.impl.util.SettingsCompanionImpl[Http2ClientSettingsImpl]("akka.http.client.http2") {
@@ -196,9 +213,9 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
       incomingStreamLevelBufferSize = c.getIntBytes("incoming-stream-level-buffer-size"),
       outgoingControlFrameBufferSize = c.getIntBytes("outgoing-control-frame-buffer-size"),
       logFrames = c.getBoolean("log-frames"),
-      keepaliveTime = c.getFiniteDuration("keepalive-time"),
-      keepaliveTimeout = c.getFiniteDuration("keepalive-timeout"),
-      maxKeepalivesWithoutData = c.getLong("max-keepalives-without-data"),
+      pingInterval = c.getFiniteDuration("ping-interval"),
+      pingTimeout = c.getFiniteDuration("ping-timeout"),
+      maxPingsWithoutData = c.getLong("max-pings-without-data"),
       internalSettings = None // no possibility to configure internal settings with config
     )
   }

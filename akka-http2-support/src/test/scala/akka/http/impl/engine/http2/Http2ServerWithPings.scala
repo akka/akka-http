@@ -22,9 +22,9 @@ object Http2ServerWithPings {
          akka.loglevel = debug
          akka.http.server.preview.enable-http2 = on
          akka.http.server.http2.log-frames = true
-         akka.http.server.http2.keepalive-time = 2s
-         akka.http.server.http2.keepalive-timeout = 1s
-         akka.http.server.http2.max-keepalives-without-data = 20
+         akka.http.server.http2.ping-interval = 2s
+         akka.http.server.http2.ping-timeout = 1s
+         akka.http.server.http2.max-pings-without-data = 20
         """)
 
     implicit val system = ActorSystem("HttpServer", config)
