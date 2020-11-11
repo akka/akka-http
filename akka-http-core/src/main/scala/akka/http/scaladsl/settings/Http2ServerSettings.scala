@@ -128,9 +128,9 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
       incomingStreamLevelBufferSize = c.getIntBytes("incoming-stream-level-buffer-size"),
       outgoingControlFrameBufferSize = c.getIntBytes("outgoing-control-frame-buffer-size"),
       logFrames = c.getBoolean("log-frames"),
-      pingInterval = c.getFiniteDuration("keepalive-time"),
-      pingTimeout = c.getFiniteDuration("keepalive-timeout"),
-      maxPingsWithoutData = c.getLong("max-keepalives-without-data"),
+      pingInterval = c.getFiniteDuration("ping-interval"),
+      pingTimeout = c.getFiniteDuration("ping-timeout"),
+      maxPingsWithoutData = c.getLong("max-pings-without-data"),
       None // no possibility to configure internal settings with config
     )
   }

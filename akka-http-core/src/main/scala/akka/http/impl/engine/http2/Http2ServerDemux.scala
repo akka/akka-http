@@ -367,7 +367,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
                   // FIXME what fail action, should this rather trigger a GOAWAY?
                   throw new HttpIdleTimeoutException(
                     "HTTP/2 ping-timeout encountered, " +
-                      "no ping response within " + http2Settings.pingTimeout + ". " + "This is configurable by akka.http2.[client, server].keepalive-timeout.",
+                      "no ping response within " + http2Settings.pingTimeout + ". " + "This is configurable by akka.http2.[client, server].ping-timeout.",
                     settings.pingTimeout)
                 }
                 if (state.ticksWithoutData > 0L && state.ticksWithoutData % state.pingEveryNTickWithoutData == 0) {
