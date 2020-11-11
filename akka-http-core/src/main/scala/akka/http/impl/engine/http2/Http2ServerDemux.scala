@@ -5,6 +5,7 @@
 package akka.http.impl.engine.http2
 
 import akka.annotation.InternalApi
+import akka.http.impl.engine.HttpIdleTimeoutException
 import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.FLOW_CONTROL_ERROR
@@ -25,12 +26,18 @@ import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.StageLogging
+import akka.stream.stage.TimerGraphStageLogic
 import akka.util.ByteString
+import akka.util.OptionVal
 import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
+import scala.concurrent.duration.DurationInt
 import scala.util.control.NonFatal
 
+/**
+ * INTERNAL API
+ */
 @InternalApi
 private[http2] class Http2ClientDemux(http2Settings: Http2CommonSettings, masterHttpHeaderParser: HttpHeaderParser)
   extends Http2Demux(http2Settings, initialRemoteSettings = Nil, upgraded = false, isServer = false) {
@@ -44,12 +51,32 @@ private[http2] class Http2ClientDemux(http2Settings: Http2CommonSettings, master
 
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initialRemoteSettings: immutable.Seq[Setting], upgraded: Boolean)
   extends Http2Demux(http2Settings, initialRemoteSettings, upgraded, isServer = true) {
   // We don't provide access to incoming trailing request headers on the server side
   @silent("not used")
   def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[ChunkStreamPart] = None
 
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[http2] object Keepalive {
+  case object Tick
+  val Ping = PingFrame(false, ByteString("abcdefgh"))
+  final class PingState(val maxKeepaliveTimeoutNanos: Long, val pingEveryNTickWithoutData: Long) {
+    def this(settings: Http2CommonSettings) =
+      this(settings.keepaliveTime.toNanos, settings.keepaliveTimeout.toSeconds)
+    var ticksWithoutData = 0L
+    var lastPingTimestamp = 0L
+    var pingsWithoutData = 0L
+  }
 }
 
 /**
@@ -118,7 +145,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
   def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[HttpEntity.ChunkStreamPart]
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    new GraphStageLogic(shape) with Http2MultiplexerSupport with Http2StreamHandling with GenericOutletSupport with StageLogging with LogHelper {
+    new TimerGraphStageLogic(shape) with Http2MultiplexerSupport with Http2StreamHandling with GenericOutletSupport with StageLogging with LogHelper {
       logic =>
 
       def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[HttpEntity.ChunkStreamPart] = stage.wrapTrailingHeaders(headers)
@@ -130,6 +157,9 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       override protected def logSource: Class[_] = if (isServer) classOf[Http2ServerDemux] else classOf[Http2ClientDemux]
 
       val multiplexer = createMultiplexer(frameOut, StreamPrioritizer.first())
+      val pingState: OptionVal[Keepalive.PingState] =
+        if (http2Settings.keepaliveTime.toSeconds > 0L) OptionVal.Some(new Keepalive.PingState(http2Settings))
+        else OptionVal.None
 
       // Send initial settings based on the local application.conf. For simplicity, these settings are
       // enforced immediately even before the acknowledgement is received.
@@ -150,6 +180,13 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
         // both client and server must send a settings frame as first frame
         multiplexer.pushControlFrame(SettingsFrame(initialLocalSettings))
+
+        if (pingState.isDefined) {
+          // to limit overhead rather than constantly rescheduling a timer and looking at system time we use a constant timer
+          // FIXME does that really matter (I think the idle timeout logic touches nanotime for every frame)?
+          debug("Enabling periodic ping")
+          schedulePeriodically(Keepalive.Tick, 1.second)
+        }
       }
 
       override def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit = {
@@ -183,7 +220,15 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           grab(frameIn) match {
             case WindowUpdateFrame(streamId, increment) if streamId == 0 /* else fall through to StreamFrameEvent */ => multiplexer.updateConnectionLevelWindow(increment)
             case p: PriorityFrame => multiplexer.updatePriority(p)
-            case s: StreamFrameEvent => handleStreamEvent(s)
+            case s: StreamFrameEvent =>
+              pingState match {
+                case OptionVal.Some(state) =>
+                  // FIXME how do we detect data frames in streams only in the other direction (slow response entity stream to short request for example)?
+                  state.ticksWithoutData = 0L
+                  state.pingsWithoutData = 0L
+                case _ =>
+              }
+              handleStreamEvent(s)
 
             case SettingsFrame(settings) =>
               if (settings.nonEmpty) debug(s"Got ${settings.length} settings!")
@@ -200,8 +245,17 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
             // are enforced from the start of the connection so there's no need to invoke
             // `enforceSettings(initialLocalSettings)`
 
-            case PingFrame(true, _)  =>
-            // ignore for now (we don't send any pings)
+            case PingFrame(true, _) =>
+              pingState match {
+                case OptionVal.Some(state) =>
+                  state.pingsWithoutData += 1L
+                  if (settings.maxKeepalivesWithoutData > 0) {
+                    // FIXME fail with specific exception or some more graceful failure?
+                    if (state.pingsWithoutData > settings.maxKeepalivesWithoutData)
+                      throw new RuntimeException("HTTP/2 more than " + settings.maxKeepalivesWithoutData + " pings exchanged without any data frames. This is configureable by akka.http2.[client, server].max-keepalives-without-data")
+                  }
+                case _ =>
+              }
             case PingFrame(false, data) =>
               multiplexer.pushControlFrame(PingFrame(ack = true, data))
 
@@ -284,6 +338,36 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
             debug(s"Ignoring setting $id -> $value (in Demux)")
         }
         settingsAppliedOk
+      }
+
+      override protected def onTimer(timerKey: Any): Unit = timerKey match {
+        case Keepalive.Tick =>
+          pingState match {
+            case OptionVal.Some(state) =>
+              // don't do anything unless there are active streams
+              debug(s"keepalive tick, activeStreamCount: ${activeStreamCount()}, ticksWithoutData: ${state.ticksWithoutData}, pingsWithoutData: ${state.pingsWithoutData}, pingEveryN: ${state.pingEveryNTickWithoutData}")
+              if (activeStreamCount() > 0) {
+                state.ticksWithoutData += 1
+                val now = System.nanoTime()
+                if (state.lastPingTimestamp > 0L && (state.lastPingTimestamp - now) > state.maxKeepaliveTimeoutNanos) {
+                  // FIXME what fail action, should this rather trigger a GOAWAY?
+                  throw new HttpIdleTimeoutException(
+                    "HTTP/2 ping-timeout encountered, " +
+                      "no ping response within " + http2Settings.keepaliveTimeout + ". " + "This is configurable by akka.http2.[client, server].keepalive-timeout.",
+                    settings.keepaliveTimeout)
+                }
+                if (state.ticksWithoutData > 0L && state.ticksWithoutData % state.pingEveryNTickWithoutData == 0) {
+                  state.lastPingTimestamp = now
+                  debug("pushing configured ping")
+                  multiplexer.pushControlFrame(Keepalive.Ping)
+                }
+              } else {
+                debug("No active streams on tick")
+                // FIXME reset counters when there are no active streams?
+                state.pingsWithoutData = 0L
+                state.ticksWithoutData = 0L
+              }
+          }
       }
 
       override def postStop(): Unit = {

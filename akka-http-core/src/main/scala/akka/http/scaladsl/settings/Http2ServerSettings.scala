@@ -29,6 +29,10 @@ private[http] trait Http2CommonSettings {
   def logFrames: Boolean
   def maxConcurrentStreams: Int
   def outgoingControlFrameBufferSize: Int
+
+  def keepaliveTime: FiniteDuration
+  def keepaliveTimeout: FiniteDuration
+  def maxKeepalivesWithoutData: Long
 }
 
 /**

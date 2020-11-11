@@ -94,6 +94,9 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
         }
     }
 
+  def activeStreamCount(): Int =
+    streamStates.size // FIXME is this good enough?
+
   /** Called by Http2ServerDemux to let the state machine handle StreamFrameEvents */
   def handleStreamEvent(e: StreamFrameEvent): Unit =
     updateState(e.streamId, _.handle(e))
