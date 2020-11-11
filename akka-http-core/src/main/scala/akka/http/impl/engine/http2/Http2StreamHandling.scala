@@ -333,7 +333,13 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     override def handleOutgoingEnded(): StreamState = HalfClosedLocalWaitingForPeerStream(correlationAttributes)
   }
   case class HalfClosedLocalWaitingForPeerStream(correlationAttributes: Map[AttributeKey[_], _]) extends StreamState {
-    override def handle(event: StreamFrameEvent): StreamState = expectIncomingStream(event, Closed, HalfClosedLocal, correlationAttributes)
+    override def handle(event: StreamFrameEvent): StreamState = event match {
+      case _: WindowUpdateFrame =>
+        // We're not planning on sending any data on this stream anymore, so we don't care about window updates.
+        this
+      case _ =>
+        expectIncomingStream(event, Closed, HalfClosedLocal, correlationAttributes)
+    }
   }
   sealed abstract class ReceivingData(afterEndStreamReceived: StreamState) extends StreamState { _: Product =>
     protected def buffer: IncomingStreamBuffer
