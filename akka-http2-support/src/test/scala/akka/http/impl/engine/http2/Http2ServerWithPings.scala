@@ -35,7 +35,7 @@ object Http2ServerWithPings {
       Future.successful(HttpResponse(entity = HttpEntity.Chunked(
         ContentTypes.`text/plain(UTF-8)`,
         // slow stream to allow for some pinging inbetween
-        Source.unfold(1L)(n => Some(n + 1, n)).map(n => HttpEntity.ChunkStreamPart(ByteString(n.toString)))
+        Source.unfold(1L)(n => Some((n + 1, n))).map(n => HttpEntity.ChunkStreamPart(ByteString(n.toString)))
           .throttle(1, 5.seconds))
       ))
     }

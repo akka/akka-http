@@ -156,7 +156,23 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
 
       override protected def logSource: Class[_] = if (isServer) classOf[Http2ServerDemux] else classOf[Http2ClientDemux]
 
-      val multiplexer = createMultiplexer(frameOut, StreamPrioritizer.first())
+      def pushFrameOut(event: FrameEvent): Unit = {
+        pingState match {
+          case OptionVal.None =>
+          case OptionVal.Some(state) =>
+            event match {
+              case _: StreamFrameEvent =>
+                state.pingsWithoutData = 0L
+                state.ticksWithoutData = 0L
+              case _ =>
+            }
+        }
+        frameOut.push(event)
+      }
+
+      val multiplexer = createMultiplexer(pushFrameOut, StreamPrioritizer.first())
+      frameOut.setHandler(multiplexer)
+
       val pingState: OptionVal[Keepalive.PingState] =
         if (http2Settings.keepaliveTime.toSeconds > 0L) OptionVal.Some(new Keepalive.PingState(http2Settings))
         else OptionVal.None
@@ -184,7 +200,6 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
         if (pingState.isDefined) {
           // to limit overhead rather than constantly rescheduling a timer and looking at system time we use a constant timer
           // FIXME does that really matter (I think the idle timeout logic touches nanotime for every frame)?
-          debug("Enabling periodic ping")
           schedulePeriodically(Keepalive.Tick, 1.second)
         }
       }
@@ -223,7 +238,6 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
             case s: StreamFrameEvent =>
               pingState match {
                 case OptionVal.Some(state) =>
-                  // FIXME how do we detect data frames in streams only in the other direction (slow response entity stream to short request for example)?
                   state.ticksWithoutData = 0L
                   state.pingsWithoutData = 0L
                 case _ =>
@@ -254,6 +268,7 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
                     if (state.pingsWithoutData > settings.maxKeepalivesWithoutData)
                       throw new RuntimeException("HTTP/2 more than " + settings.maxKeepalivesWithoutData + " pings exchanged without any data frames. This is configureable by akka.http2.[client, server].max-keepalives-without-data")
                   }
+                // FIXME also fail if too much time passed since last ping was sent?
                 case _ =>
               }
             case PingFrame(false, data) =>
@@ -345,11 +360,10 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
           pingState match {
             case OptionVal.Some(state) =>
               // don't do anything unless there are active streams
-              debug(s"keepalive tick, activeStreamCount: ${activeStreamCount()}, ticksWithoutData: ${state.ticksWithoutData}, pingsWithoutData: ${state.pingsWithoutData}, pingEveryN: ${state.pingEveryNTickWithoutData}")
               if (activeStreamCount() > 0) {
                 state.ticksWithoutData += 1
                 val now = System.nanoTime()
-                if (state.lastPingTimestamp > 0L && (state.lastPingTimestamp - now) > state.maxKeepaliveTimeoutNanos) {
+                if (state.lastPingTimestamp > 0L && (now - state.lastPingTimestamp) > state.maxKeepaliveTimeoutNanos) {
                   // FIXME what fail action, should this rather trigger a GOAWAY?
                   throw new HttpIdleTimeoutException(
                     "HTTP/2 ping-timeout encountered, " +
@@ -358,11 +372,9 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
                 }
                 if (state.ticksWithoutData > 0L && state.ticksWithoutData % state.pingEveryNTickWithoutData == 0) {
                   state.lastPingTimestamp = now
-                  debug("pushing configured ping")
                   multiplexer.pushControlFrame(Keepalive.Ping)
                 }
               } else {
-                debug("No active streams on tick")
                 // FIXME reset counters when there are no active streams?
                 state.pingsWithoutData = 0L
                 state.ticksWithoutData = 0L
