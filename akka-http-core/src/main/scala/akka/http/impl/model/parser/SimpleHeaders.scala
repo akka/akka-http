@@ -218,6 +218,10 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
     }
   }
 
+  def te = rule {
+    oneOrMore(`transfer-coding`).separatedBy(listSep) ~ EOI ~> (TE(_))
+  }
+
   // http://tools.ietf.org/html/rfc7230#section-3.3.1
   def `transfer-encoding` = rule {
     oneOrMore(`transfer-coding`).separatedBy(listSep) ~ EOI ~> (`Transfer-Encoding`(_))

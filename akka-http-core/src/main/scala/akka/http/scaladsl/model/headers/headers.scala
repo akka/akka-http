@@ -980,11 +980,14 @@ final case class `Set-Cookie`(cookie: HttpCookie) extends jm.headers.SetCookie w
 object TE extends ModeledCompanion[TE] {
   def apply(first: TransferEncoding, more: TransferEncoding*): TE = apply(immutable.Seq(first +: more: _*))
 }
-final case class TE(acceptableEncodings: immutable.Seq[TransferEncoding]) extends RequestHeader {
+final case class TE(acceptableEncodings: immutable.Seq[TransferEncoding]) extends jm.headers.TE with RequestHeader {
   def append(encodings: immutable.Seq[TransferEncoding]) = TE(this.acceptableEncodings ++ encodings)
   import `Transfer-Encoding`.encodingsRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ acceptableEncodings
   protected def companion = TE
+
+  /** Java API */
+  def getAcceptableEncodings: Iterable[jm.TransferEncoding] = acceptableEncodings.asJava
 }
 
 object `Timeout-Access` extends ModeledCompanion[`Timeout-Access`]
