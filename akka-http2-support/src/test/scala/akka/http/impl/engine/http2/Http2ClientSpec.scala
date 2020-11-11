@@ -174,6 +174,19 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
 
     }
 
+    "respect flow-control" should {
+      "accept window updates when done sending the request" in new TestSetup with Http2FrameHpackSupport {
+        emitRequest(0x1, Get("/"))
+        expectDecodedHEADERS(0x1, endStream = true)
+
+        // Server randomly sends a window update even though we're already done sending the request,
+        // which may happen since window updating is asynchronous:
+        sendWINDOW_UPDATE(0x1, 20)
+        sendHEADERS(0x1, endStream = true, endHeaders = true, encodeHeaderPairs(Seq((":status", "200"))))
+        expectResponse()
+      }
+    }
+
     "send settings" should {
       abstract class SettingsSetup extends TestSetupWithoutHandshake with NetProbes with Http2FrameSending {
         def expectSetting(expected: Setting): Unit = {
