@@ -447,9 +447,18 @@ class HttpHeaderSpec extends AnyFreeSpec with Matchers {
       "Strict-Transport-Security: max-age=31536000; includeSubDomains" =!= `Strict-Transport-Security`(maxAge = 31536000, includeSubDomains = true)
     }
 
+    "TE" in {
+      "TE: chunked" =!= TE(TransferEncodings.chunked)
+      "TE: gzip" =!= TE(TransferEncodings.gzip)
+      "TE: trailers" =!= TE(TransferEncodings.trailers)
+      "TE: someextension" =!= TE(TransferEncodings.Extension("someextension"))
+    }
+
     "Transfer-Encoding" in {
       "Transfer-Encoding: chunked" =!= `Transfer-Encoding`(TransferEncodings.chunked)
       "Transfer-Encoding: gzip" =!= `Transfer-Encoding`(TransferEncodings.gzip)
+      "Transfer-Encoding: trailers" =!= `Transfer-Encoding`(TransferEncodings.trailers)
+      "Transfer-Encoding: someextension" =!= `Transfer-Encoding`(TransferEncodings.Extension("someextension"))
     }
 
     "Range" in {

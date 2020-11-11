@@ -11,4 +11,5 @@ public final class TransferEncodings {
     public static final TransferEncoding COMPRESS = akka.http.scaladsl.model.TransferEncodings.compress$.MODULE$;
     public static final TransferEncoding DEFLATE  = akka.http.scaladsl.model.TransferEncodings.deflate$.MODULE$;
     public static final TransferEncoding GZIP     = akka.http.scaladsl.model.TransferEncodings.gzip$.MODULE$;
+    public static final TransferEncoding TRAILERS = akka.http.scaladsl.model.TransferEncodings.trailers$.MODULE$;
 }

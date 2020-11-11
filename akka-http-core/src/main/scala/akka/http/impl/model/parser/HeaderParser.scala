@@ -177,6 +177,7 @@ private[http] object HeaderParser {
     "sec-websocket-version",
     "set-cookie",
     "strict-transport-security",
+    "te",
     "transfer-encoding",
     "upgrade",
     "user-agent",

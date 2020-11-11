@@ -411,6 +411,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding =>
       | ignoreCase("gzip") ~ OWS ~ push(TransferEncodings.gzip)
       | ignoreCase("deflate") ~ OWS ~ push(TransferEncodings.deflate)
       | ignoreCase("compress") ~ OWS ~ push(TransferEncodings.compress)
+      | ignoreCase("trailers") ~ OWS ~ push(TransferEncodings.trailers)
       | `transfer-extension`)
 
   def `transfer-extension` = rule {
