@@ -1319,6 +1319,9 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         sendDATA(1, endStream = true, ByteString.empty)
         requestIn.cancel()
       })
+
+      "send GOAWAY when ping times out" in pending
+
     }
   }
 

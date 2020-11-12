@@ -337,6 +337,39 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
       }
 
     }
+
+    "support for configurable ping" should {
+      "send pings when there is an active but slow stream from client" in new TestSetup with NetProbes with Http2FrameHpackSupport {
+        override def settings = {
+          val default = super.settings
+          default.withHttp2Settings(default.http2Settings.withPingInterval(2.seconds).withPingTimeout(1.second))
+        }
+        val streamId = 0x1
+        val requestStream = TestPublisher.probe[ByteString]()
+        emitRequest(streamId, HttpRequest(
+          protocol = HttpProtocols.`HTTP/2.0`,
+          entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(requestStream))))
+        expectDecodedHEADERS(streamId, endStream = false)
+        Thread.sleep(2000) // no data for this interval should trigger ping
+        expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
+      }
+      "send pings when there is an active but slow stream to client" in pendingUntilFixed(new TestSetup with NetProbes with Http2FrameHpackSupport {
+        override def settings = {
+          val default = super.settings
+          default.withHttp2Settings(default.http2Settings.withPingInterval(2.seconds).withPingTimeout(1.second))
+        }
+        val streamId = 0x1
+        emitRequest(streamId, HttpRequest(
+          protocol = HttpProtocols.`HTTP/2.0`,
+        ))
+        expectDecodedHEADERS(streamId)
+
+        // FIXME I haven't figured out how to stream the response slowly to trigger pings yet
+        fail()
+      })
+
+      "send GOAWAY when ping times out" in pending
+    }
   }
 
   protected /* To make ByteFlag warnings go away */ abstract class TestSetupWithoutHandshake {
