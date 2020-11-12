@@ -72,7 +72,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
   def hasCapacityToCreateStreams: Boolean = {
     // StreamStates only contains streams in active states (active states are any variation
     // of Open, HalfClosed) so using the `size` works fine to compute the capacity
-    streamStates.size < maxConcurrentStreams
+    activeStreamCount() < maxConcurrentStreams
   }
 
   private def streamFor(streamId: Int): StreamState =
@@ -94,8 +94,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
         }
     }
 
-  def activeStreamCount(): Int =
-    streamStates.size // FIXME is this good enough?
+  def activeStreamCount(): Int = streamStates.size
 
   /** Called by Http2ServerDemux to let the state machine handle StreamFrameEvents */
   def handleStreamEvent(e: StreamFrameEvent): Unit =
@@ -269,7 +268,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
 
   case object Idle extends StreamState {
     def handle(event: StreamFrameEvent): StreamState =
-      if (event.isInstanceOf[ParsedHeadersFrame] && streamStates.size > settings.maxConcurrentStreams) {
+      if (event.isInstanceOf[ParsedHeadersFrame] && activeStreamCount() > settings.maxConcurrentStreams) {
         // When trying to open a new Stream, if that op would exceed the maxConcurrentStreams, then refuse the op
         debug("Peer trying to open stream that would exceed `maxConcurrentStreams`, refusing stream")
         multiplexer.pushControlFrame(RstStreamFrame(event.streamId, ErrorCode.REFUSED_STREAM))
