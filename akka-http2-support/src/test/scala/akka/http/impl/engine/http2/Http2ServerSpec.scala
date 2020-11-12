@@ -1275,6 +1275,11 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     }
 
     "must not swallow errors / warnings" in pending
+
+    "support configurable pings" should {
+      "when there is an active but slow stream to server" in pending
+      "when there is an active but slow stream from server" in pending
+    }
   }
 
   implicit class InWithStoppedStages(name: String) {
