@@ -11,6 +11,7 @@ import akka.http.scaladsl.model.headers.HttpEncodings
 import akka.http.scaladsl.settings.ClientConnectionSettings
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.testkit.TestProbe
@@ -19,6 +20,7 @@ import org.scalatest.concurrent.ScalaFutures
 
 import scala.collection.immutable
 import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration._
 
 class Http2ClientServerSpec extends AkkaSpecWithMaterializer(
   """akka.http.server.remote-address-header = on
@@ -87,6 +89,44 @@ class Http2ClientServerSpec extends AkkaSpecWithMaterializer(
       response1.attribute(requestIdAttr).get.id shouldBe "request-1"
       Unmarshal(response1.entity).to[String].futureValue shouldBe "pong"
     }
+    "support configurable pings in the server" in new TestSetup {
+      override lazy val serverSettings = {
+        val default = ServerSettings(system)
+        Some(default.withHttp2Settings(default.http2Settings
+          .withPingInterval(2.seconds)
+          .withPingTimeout(1.second)
+          .withMaxPingsWithoutData(1)))
+      }
+      val reqPub = sendClientRequestWithEntityStream("request-1")
+      reqPub.sendNext(ByteString("data1"))
+      val serverReq = expectServerRequest()
+      val serverEntityStream = serverReq.expectRequestEntityStream()
+      serverEntityStream.expectBytes(ByteString("data1"))
+      // FIXME this is one slow test, but whole seconds plus timeout < interval requirements makes this the lowest possible
+      Thread.sleep(2010) // no data for more than ping interval * 2 should fail the request
+      // FIXME no obviouos way to verify it is actually the ping that made it fail
+      reqPub.expectCancellation()
+      serverEntityStream.expectError()
+    }
+    "support configurable pings in the client" in new TestSetup {
+      override lazy val clientSettings = {
+        val default = ClientConnectionSettings(system)
+        Some(default.withHttp2Settings(default.http2Settings
+          .withPingInterval(2.seconds)
+          .withPingTimeout(1.second)
+          .withMaxPingsWithoutData(1)))
+      }
+      val reqPub = sendClientRequestWithEntityStream("request-1")
+      reqPub.sendNext(ByteString("data1"))
+      val serverReq = expectServerRequest()
+      val serverEntityStream = serverReq.expectRequestEntityStream()
+      serverEntityStream.expectBytes(ByteString("data1"))
+      // FIXME this is one slow test
+      Thread.sleep(2010) // no data for more than ping interval * 2 should fail the request
+      // FIXME no obviouos way to verify it is actually the ping that made it fail
+      reqPub.expectCancellation()
+      serverEntityStream.expectError()
+    }
   }
 
   case class ServerRequest(request: HttpRequest, promise: Promise[HttpResponse]) {
@@ -108,20 +148,31 @@ class Http2ClientServerSpec extends AkkaSpecWithMaterializer(
     }
   }
   class TestSetup {
+    def serverSettings: Option[ServerSettings] = None
+    def clientSettings: Option[ClientConnectionSettings] = None
     private lazy val serverRequestProbe = TestProbe()
     private lazy val handler: HttpRequest => Future[HttpResponse] = { req =>
       val p = Promise[HttpResponse]()
       serverRequestProbe.ref ! ServerRequest(req, p)
       p.future
     }
-    lazy val binding =
-      Http().newServerAt("localhost", 0).enableHttps(ExampleHttpContexts.exampleServerContext).bind(handler).futureValue
+    lazy val binding = {
+      val a = Http().newServerAt("localhost", 0).enableHttps(ExampleHttpContexts.exampleServerContext)
+      val b = serverSettings match {
+        case Some(settings) => a.withSettings(settings)
+        case None           => a
+      }
+      b.bind(handler).futureValue
+    }
 
     lazy val clientFlow = {
-      val clientSettings = ClientConnectionSettings(system).withTransport(ExampleHttpContexts.proxyTransport(binding.localAddress))
+      val actualClientSettings = (clientSettings match {
+        case Some(custom) => custom
+        case None         => ClientConnectionSettings(system)
+      }).withTransport(ExampleHttpContexts.proxyTransport(binding.localAddress))
       Http().connectionTo("akka.example.org")
         .withCustomHttpsConnectionContext(ExampleHttpContexts.exampleClientContext)
-        .withClientConnectionSettings(clientSettings)
+        .withClientConnectionSettings(actualClientSettings)
         .http2()
     }
     lazy val clientRequestsOut = TestPublisher.probe[HttpRequest]()
