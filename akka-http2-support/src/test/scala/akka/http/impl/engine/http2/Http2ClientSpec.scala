@@ -13,7 +13,7 @@ import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
 import akka.http.scaladsl.client.RequestBuilding.Get
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.HttpEntity.{ Chunk, Chunked, LastChunk, Strict }
+import akka.http.scaladsl.model.HttpEntity.{ Chunk, Chunked, LastChunk }
 import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.settings.ClientConnectionSettings
@@ -81,9 +81,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
             // TODO shouldn't this produce an error since stream '1' is already the outgoing stream?
             HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None)
           ),
-          expectedResponse =
-            HPackSpecExamples.FirstResponse
-              .withEntity(Chunked(ContentTypes.`application/octet-stream`, Source.empty))
+          expectedResponse = HPackSpecExamples.FirstResponse
         )
       }
 
@@ -115,9 +113,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
           response = Seq(
             HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None)
           ),
-          expectedResponse =
-            HPackSpecExamples.FirstResponse
-              .withEntity(Strict(ContentTypes.`application/octet-stream`, ByteString.empty))
+          expectedResponse = HPackSpecExamples.FirstResponse
         )
 
         emitRequest(3, HttpRequest(uri = "https://www.example.com/"))
@@ -148,7 +144,6 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
             HeadersFrame(streamId = 1, endStream = true, endHeaders = true, HPackSpecExamples.C61FirstResponseWithHuffman, None)
           ),
           expectedResponse = HPackSpecExamples.FirstResponse
-            .withEntity(Strict(ContentTypes.`application/octet-stream`, ByteString.empty))
         )
         requestResponseRoundtrip(
           streamId = 3,
@@ -158,7 +153,6 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
             HeadersFrame(streamId = 3, endStream = true, endHeaders = true, HPackSpecExamples.C62SecondResponseWithHuffman, None)
           ),
           expectedResponse = HPackSpecExamples.SecondResponse
-            .withEntity(Strict(ContentTypes.`application/octet-stream`, ByteString.empty))
         )
         requestResponseRoundtrip(
           streamId = 5,
@@ -168,7 +162,6 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
             HeadersFrame(streamId = 5, endStream = true, endHeaders = true, HPackSpecExamples.C63ThirdResponseWithHuffman, None)
           ),
           expectedResponse = HPackSpecExamples.ThirdResponseModeled
-            .withEntity(Strict(ContentTypes.`application/octet-stream`, ByteString.empty))
         )
       }
 

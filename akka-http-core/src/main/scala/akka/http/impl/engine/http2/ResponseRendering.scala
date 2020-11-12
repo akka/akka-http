@@ -51,7 +51,7 @@ private[http2] object ResponseRendering {
       renderHeaders(response.headers, headerPairs, serverHeader, log, isServer = true)
 
       val headers = ParsedHeadersFrame(streamId, endStream = response.entity.isKnownEmpty, headerPairs.result(), None)
-      substreamFor(response.entity, headers)
+      Http2SubStream(response.entity, headers)
     }
   }
 
@@ -59,13 +59,6 @@ private[http2] object ResponseRendering {
     if (entity.contentType != ContentTypes.NoContentType)
       headerPairs += "content-type" -> entity.contentType.toString
     entity.contentLengthOption.foreach(headerPairs += "content-length" -> _.toString)
-  }
-
-  private[http2] def substreamFor(entity: HttpEntity, headers: ParsedHeadersFrame): Http2SubStream = entity match {
-    case HttpEntity.Chunked(_, chunks) =>
-      ChunkedHttp2SubStream(headers, chunks, Map.empty)
-    case _ =>
-      ByteHttp2SubStream(headers, entity.dataBytes)
   }
 
   private[http2] def renderHeaders(

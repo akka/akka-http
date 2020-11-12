@@ -29,18 +29,15 @@ import scala.util.control.NoStackTrace
  */
 @InternalApi
 private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper =>
-  type T
-
   // required API from demux
   def isServer: Boolean
   def multiplexer: Http2Multiplexer
   def settings: Http2CommonSettings
   def pushGOAWAY(errorCode: ErrorCode, debug: String): Unit
-  def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[T, Any], correlationAttributes: Map[AttributeKey[_], _]): Unit
+  def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[Any, Any], correlationAttributes: Map[AttributeKey[_], _]): Unit
   def isUpgraded: Boolean
 
-  def wrapData(bytes: ByteString): T
-  def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[T]
+  def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[HttpEntity.ChunkStreamPart]
 
   def flowController: IncomingFlowController = IncomingFlowController.default(settings)
 
@@ -244,7 +241,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
             if (endStream)
               (Source.empty, nextStateEmpty)
             else {
-              val subSource = new SubSourceOutlet[T](s"substream-out-$streamId")
+              val subSource = new SubSourceOutlet[Any](s"substream-out-$streamId")
               (Source.fromGraph(subSource.source), nextStateStream(new IncomingStreamBuffer(streamId, subSource)))
             }
 
@@ -466,9 +463,9 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     }
   }
 
-  class IncomingStreamBuffer(streamId: Int, outlet: SubSourceOutlet[T]) extends OutHandler {
+  class IncomingStreamBuffer(streamId: Int, outlet: SubSourceOutlet[Any]) extends OutHandler {
     private var buffer: ByteString = ByteString.empty
-    private var trailingHeaders: Option[T] = None
+    private var trailingHeaders: Option[HttpEntity.ChunkStreamPart] = None
     private var wasClosed: Boolean = false
     private var outstandingStreamWindow: Int = Http2Protocol.InitialWindowSize // adapt if we negotiate greater sizes by settings
     outlet.setHandler(this)
@@ -516,7 +513,7 @@ private[http2] trait Http2StreamHandling { self: GraphStageLogic with LogHelper 
     private def dispatchNextChunk(): Unit = {
       if (buffer.nonEmpty && outlet.isAvailable) {
         val dataSize = buffer.size min settings.requestEntityChunkSize
-        outlet.push(wrapData(buffer.take(dataSize)))
+        outlet.push(buffer.take(dataSize))
         buffer = buffer.drop(dataSize)
 
         totalBufferedData -= dataSize

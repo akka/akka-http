@@ -27,14 +27,15 @@ class RequestParsingSpec extends AkkaSpec() with Inside with Inspectors {
       uriParsingMode: Uri.ParsingMode         = Uri.ParsingMode.Relaxed
     ): HttpRequest = {
       // Stream containing the request
-      val subStream = ByteHttp2SubStream(
+      val subStream = Http2SubStream(
         initialHeaders = ParsedHeadersFrame(
           streamId = 1,
-          endStream = true,
+          endStream = data == Source.empty,
           keyValuePairs = keyValuePairs,
           priorityInfo = None
         ),
-        data = data
+        data = data,
+        correlationAttributes = Map.empty
       )
       // Create the parsing function
       val parseRequest: Http2SubStream => HttpRequest = {

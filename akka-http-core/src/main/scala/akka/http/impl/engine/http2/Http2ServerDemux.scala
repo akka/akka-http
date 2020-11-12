@@ -11,8 +11,8 @@ import akka.http.impl.engine.http2.Http2Protocol.ErrorCode.FLOW_CONTROL_ERROR
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.http2.RequestParsing.parseHeaderPair
 import akka.http.impl.engine.parsing.HttpHeaderParser
-import akka.http.scaladsl.model.AttributeKey
-import akka.http.scaladsl.model.HttpEntity.{ Chunk, ChunkStreamPart, LastChunk }
+import akka.http.scaladsl.model.{ AttributeKey, HttpEntity }
+import akka.http.scaladsl.model.HttpEntity.{ ChunkStreamPart, LastChunk }
 import akka.http.scaladsl.settings.Http2CommonSettings
 import akka.macros.LogHelper
 import akka.stream.Attributes
@@ -34,12 +34,7 @@ import scala.util.control.NonFatal
 @InternalApi
 private[http2] class Http2ClientDemux(http2Settings: Http2CommonSettings, masterHttpHeaderParser: HttpHeaderParser)
   extends Http2Demux(http2Settings, initialRemoteSettings = Nil, upgraded = false, isServer = false) {
-  type T = ChunkStreamPart
 
-  override def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ChunkStreamPart, Any], correlationAttributes: Map[AttributeKey[_], _]): ChunkedHttp2SubStream =
-    ChunkedHttp2SubStream(initialHeaders, data, correlationAttributes)
-
-  def wrapData(bytes: akka.util.ByteString): ChunkStreamPart = Chunk(bytes)
   def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[ChunkStreamPart] = {
     val headerParser = masterHttpHeaderParser.createShallowCopy()
     Some(LastChunk(extension = "", headers.keyValuePairs.map {
@@ -51,16 +46,10 @@ private[http2] class Http2ClientDemux(http2Settings: Http2CommonSettings, master
 
 private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initialRemoteSettings: immutable.Seq[Setting], upgraded: Boolean)
   extends Http2Demux(http2Settings, initialRemoteSettings, upgraded, isServer = true) {
-  type T = ByteString
-
-  override def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[ByteString, Any], correlationAttributes: Map[AttributeKey[_], _]): ByteHttp2SubStream =
-    ByteHttp2SubStream(initialHeaders, data, correlationAttributes)
-
-  def wrapData(bytes: akka.util.ByteString): ByteString = bytes
-
   // We don't provide access to incoming trailing request headers on the server side
   @silent("not used")
-  def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[ByteString] = None
+  def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[ChunkStreamPart] = None
+
 }
 
 /**
@@ -117,8 +106,6 @@ private[http2] class Http2ServerDemux(http2Settings: Http2CommonSettings, initia
 @InternalApi
 private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, initialRemoteSettings: immutable.Seq[Setting], upgraded: Boolean, isServer: Boolean) extends GraphStage[BidiShape[Http2SubStream, FrameEvent, FrameEvent, Http2SubStream]] {
   stage =>
-  type T
-
   val frameIn = Inlet[FrameEvent]("Demux.frameIn")
   val frameOut = Outlet[FrameEvent]("Demux.frameOut")
 
@@ -128,22 +115,17 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
   override val shape =
     BidiShape(substreamIn, frameOut, frameIn, substreamOut)
 
-  def createSubstream(initialHeaders: ParsedHeadersFrame, data: Source[T, Any], correlationAttributes: Map[AttributeKey[_], _]): Http2SubStream
-  def wrapData(bytes: akka.util.ByteString): T
-  def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[T]
+  def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[HttpEntity.ChunkStreamPart]
 
   def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with Http2MultiplexerSupport with Http2StreamHandling with GenericOutletSupport with StageLogging with LogHelper {
       logic =>
 
-      type T = stage.T
+      def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[HttpEntity.ChunkStreamPart] = stage.wrapTrailingHeaders(headers)
 
       override def isServer: Boolean = stage.isServer
       override def settings: Http2CommonSettings = http2Settings
       override def isUpgraded: Boolean = upgraded
-
-      override def wrapData(bytes: akka.util.ByteString): T = Http2Demux.this.wrapData(bytes)
-      override def wrapTrailingHeaders(headers: ParsedHeadersFrame): Option[T] = Http2Demux.this.wrapTrailingHeaders(headers)
 
       override protected def logSource: Class[_] = if (isServer) classOf[Http2ServerDemux] else classOf[Http2ClientDemux]
 
@@ -260,8 +242,8 @@ private[http2] abstract class Http2Demux(http2Settings: Http2CommonSettings, ini
       //        keep the buffer limited to the number of concurrent streams as negotiated
       //        with the other side.
       val bufferedSubStreamOutput = new BufferedOutlet[Http2SubStream](substreamOut)
-      override def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[T, Any], correlationAttributes: Map[AttributeKey[_], _]): Unit =
-        bufferedSubStreamOutput.push(createSubstream(initialHeaders, data, correlationAttributes))
+      override def dispatchSubstream(initialHeaders: ParsedHeadersFrame, data: Source[Any, Any], correlationAttributes: Map[AttributeKey[_], _]): Unit =
+        bufferedSubStreamOutput.push(Http2SubStream(initialHeaders, data, correlationAttributes))
 
       setHandler(substreamIn, new InHandler {
         def onPush(): Unit = {
