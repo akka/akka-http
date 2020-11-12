@@ -20,7 +20,6 @@ import org.scalatest.concurrent.ScalaFutures
 
 import scala.collection.immutable
 import scala.concurrent.{ Future, Promise }
-import scala.concurrent.duration._
 
 class Http2ClientServerSpec extends AkkaSpecWithMaterializer(
   """akka.http.server.remote-address-header = on
@@ -88,44 +87,6 @@ class Http2ClientServerSpec extends AkkaSpecWithMaterializer(
       val response1 = expectClientResponse()
       response1.attribute(requestIdAttr).get.id shouldBe "request-1"
       Unmarshal(response1.entity).to[String].futureValue shouldBe "pong"
-    }
-    "support configurable pings in the server" in new TestSetup {
-      override lazy val serverSettings = {
-        val default = ServerSettings(system)
-        Some(default.withHttp2Settings(default.http2Settings
-          .withPingInterval(2.seconds)
-          .withPingTimeout(1.second)
-          .withMaxPingsWithoutData(1)))
-      }
-      val reqPub = sendClientRequestWithEntityStream("request-1")
-      reqPub.sendNext(ByteString("data1"))
-      val serverReq = expectServerRequest()
-      val serverEntityStream = serverReq.expectRequestEntityStream()
-      serverEntityStream.expectBytes(ByteString("data1"))
-      // FIXME this is one slow test, but whole seconds plus timeout < interval requirements makes this the lowest possible
-      Thread.sleep(2010) // no data for more than ping interval * 2 should fail the request
-      // FIXME no obviouos way to verify it is actually the ping that made it fail
-      reqPub.expectCancellation()
-      serverEntityStream.expectError()
-    }
-    "support configurable pings in the client" in new TestSetup {
-      override lazy val clientSettings = {
-        val default = ClientConnectionSettings(system)
-        Some(default.withHttp2Settings(default.http2Settings
-          .withPingInterval(2.seconds)
-          .withPingTimeout(1.second)
-          .withMaxPingsWithoutData(1)))
-      }
-      val reqPub = sendClientRequestWithEntityStream("request-1")
-      reqPub.sendNext(ByteString("data1"))
-      val serverReq = expectServerRequest()
-      val serverEntityStream = serverReq.expectRequestEntityStream()
-      serverEntityStream.expectBytes(ByteString("data1"))
-      // FIXME this is one slow test
-      Thread.sleep(2010) // no data for more than ping interval * 2 should fail the request
-      // FIXME no obviouos way to verify it is actually the ping that made it fail
-      reqPub.expectCancellation()
-      serverEntityStream.expectError()
     }
   }
 

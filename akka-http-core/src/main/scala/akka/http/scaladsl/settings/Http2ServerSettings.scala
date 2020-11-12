@@ -32,7 +32,6 @@ private[http] trait Http2CommonSettings {
 
   def pingInterval: FiniteDuration
   def pingTimeout: FiniteDuration
-  def maxPingsWithoutData: Long
 }
 
 /**
@@ -47,7 +46,6 @@ private[http] object Http2CommonSettings {
       require(pingTimeout < pingInterval && pingInterval > 0.seconds, "ping-timeout must be positive and smaller than ping-interval")
       require(pingTimeout.toSeconds.seconds == pingTimeout, s"ping-interval must be whole seconds, was $pingTimeout")
     }
-    require(maxPingsWithoutData >= 0, "max-pings-without-data must be 0 for disabled or positive for enforcing limit")
   }
 }
 
@@ -85,9 +83,6 @@ trait Http2ServerSettings extends javadsl.settings.Http2ServerSettings with Http
   def pingTimeout: FiniteDuration
   def withPingTimeout(timeout: FiniteDuration): Http2ServerSettings = copy(pingTimeout = timeout)
 
-  def maxPingsWithoutData: Long
-  def withMaxPingsWithoutData(max: Long): Http2ServerSettings = copy(maxPingsWithoutData = max)
-
   @InternalApi
   private[http] def internalSettings: Option[Http2InternalServerSettings]
   @InternalApi
@@ -109,7 +104,6 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
     logFrames:                         Boolean,
     pingInterval:                      FiniteDuration,
     pingTimeout:                       FiniteDuration,
-    maxPingsWithoutData:               Long,
     internalSettings:                  Option[Http2InternalServerSettings])
     extends Http2ServerSettings {
     require(maxConcurrentStreams >= 0, "max-concurrent-streams must be >= 0")
@@ -130,7 +124,6 @@ object Http2ServerSettings extends SettingsCompanion[Http2ServerSettings] {
       logFrames = c.getBoolean("log-frames"),
       pingInterval = c.getFiniteDuration("ping-interval"),
       pingTimeout = c.getFiniteDuration("ping-timeout"),
-      maxPingsWithoutData = c.getLong("max-pings-without-data"),
       None // no possibility to configure internal settings with config
     )
   }
@@ -170,9 +163,6 @@ trait Http2ClientSettings extends /*FIXME: javadsl.settings.Http2ClientSettings 
   def pingTimeout: FiniteDuration
   def withPingTimeout(timeout: FiniteDuration): Http2ClientSettings = copy(pingTimeout = timeout)
 
-  def maxPingsWithoutData: Long
-  def withMaxPingsWithoutData(max: Long): Http2ClientSettings = copy(maxPingsWithoutData = max)
-
   @InternalApi
   private[http] def internalSettings: Option[Http2InternalClientSettings]
   @InternalApi
@@ -194,7 +184,6 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
     logFrames:                         Boolean,
     pingInterval:                      FiniteDuration,
     pingTimeout:                       FiniteDuration,
-    maxPingsWithoutData:               Long,
     internalSettings:                  Option[Http2InternalClientSettings])
     extends Http2ClientSettings {
     require(maxConcurrentStreams >= 0, "max-concurrent-streams must be >= 0")
@@ -215,7 +204,6 @@ object Http2ClientSettings extends SettingsCompanion[Http2ClientSettings] {
       logFrames = c.getBoolean("log-frames"),
       pingInterval = c.getFiniteDuration("ping-interval"),
       pingTimeout = c.getFiniteDuration("ping-timeout"),
-      maxPingsWithoutData = c.getLong("max-pings-without-data"),
       internalSettings = None // no possibility to configure internal settings with config
     )
   }
