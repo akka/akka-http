@@ -1277,8 +1277,25 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
     "must not swallow errors / warnings" in pending
 
     "support configurable pings" should {
-      "when there is an active but slow stream to server" in pending
-      "when there is an active but slow stream from server" in StreamTestKit.assertAllStagesStopped(new TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
+      "send pings when there is an active but slow stream to server" in StreamTestKit.assertAllStagesStopped(new TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
+        override def settings: ServerSettings = {
+          val default = super.settings
+          default.withHttp2Settings(default.http2Settings.withPingInterval(2.seconds).withPingTimeout(1.second))
+        }
+
+        sendRequestHEADERS(1, HttpRequest(protocol = HttpProtocols.`HTTP/2.0`), endStream = false)
+        expectRequest()
+
+        // No data for 2s to trigger the ping
+        Thread.sleep(2000) // slow test but 2s is current minimum :(
+        expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
+
+        // FIXME how to actually shut the connection down?
+        sendDATA(1, endStream = true, ByteString.empty)
+        requestIn.cancel()
+      })
+
+      "send pings when there is an active but slow stream from server" in StreamTestKit.assertAllStagesStopped(new TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
 
         override def settings: ServerSettings = {
           val default = super.settings
@@ -1289,8 +1306,8 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         sendRequest(1, theRequest)
         expectRequest() shouldBe theRequest
 
-        val entity1DataOut = TestPublisher.probe[ByteString]()
-        val response1 = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(entity1DataOut)))
+        val responseStream = TestPublisher.probe[ByteString]()
+        val response1 = HttpResponse(entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(responseStream)))
         emitResponse(1, response1)
         expectDecodedHEADERS(streamId = 1, endStream = false) shouldBe response1.withEntity(HttpEntity.Empty.withContentType(ContentTypes.`application/octet-stream`))
         // No data for 2s to trigger the ping
@@ -1298,7 +1315,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
 
         // FIXME how to actually shut the connection down?
-        entity1DataOut.sendComplete()
+        responseStream.sendComplete()
         sendDATA(1, endStream = true, ByteString.empty)
         requestIn.cancel()
       })
