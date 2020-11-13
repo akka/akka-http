@@ -1290,9 +1290,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         Thread.sleep(2000) // slow test but 2s is current minimum :(
         expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
 
-        // FIXME how to actually shut the connection down?
-        sendDATA(1, endStream = true, ByteString.empty)
-        requestIn.cancel()
+        fromNet.sendComplete()
       })
 
       "send pings when there is an active but slow stream from server" in StreamTestKit.assertAllStagesStopped(new TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
@@ -1314,10 +1312,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         Thread.sleep(2000) // slow test but 2s is current minimum :(
         expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
 
-        // FIXME how to actually shut the connection down?
-        responseStream.sendComplete()
-        sendDATA(1, endStream = true, ByteString.empty)
-        requestIn.cancel()
+        fromNet.sendComplete()
       })
 
       "send GOAWAY when ping times out" in StreamTestKit.assertAllStagesStopped(new TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
@@ -1338,9 +1333,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
         // FIXME should also verify close of connection, but it isn't implemented yet
 
-        // FIXME how to actually shut the connection down?
-        sendDATA(1, endStream = true, ByteString.empty)
-        requestIn.cancel()
+        fromNet.sendComplete()
       })
 
     }

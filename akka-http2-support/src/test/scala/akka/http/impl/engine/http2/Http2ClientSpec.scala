@@ -353,7 +353,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         Thread.sleep(2000) // no data for this interval should trigger ping
         expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
 
-        // FIXME no connection cleanup in these tests?
+        fromNet.sendComplete()
       }
       "send pings when there is an active but slow stream to client" in new TestSetup with NetProbes with Http2FrameHpackSupport {
         override def settings = {
@@ -374,7 +374,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         Thread.sleep(2000) // no data for this interval should trigger ping
         expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
 
-        // FIXME no connection cleanup in these tests?
+        fromNet.sendComplete()
       }
 
       "send GOAWAY when ping ack times out" in new TestSetup with NetProbes with Http2FrameHpackSupport {
@@ -394,7 +394,7 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         // no ack sent back
         expectGOAWAY(streamId)
 
-        // FIXME should also verify close of connection, but it isn't implemented yet
+        fromNet.sendComplete()
       }
     }
   }
