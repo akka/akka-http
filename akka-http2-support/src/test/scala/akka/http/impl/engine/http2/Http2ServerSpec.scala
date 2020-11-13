@@ -17,9 +17,14 @@ import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.AkkaSpecWithMaterializer
 import akka.http.impl.util.LogByteStringTools
+import akka.http.javadsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.CacheDirectives
+import akka.http.scaladsl.model.headers.CacheDirectives.`max-age`
+import akka.http.scaladsl.model.headers.CacheDirectives.`no-cache`
 import akka.http.scaladsl.model.headers.RawHeader
+import akka.http.scaladsl.model.headers.`Access-Control-Allow-Origin`
+import akka.http.scaladsl.model.headers.`Cache-Control`
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.Attributes
 import akka.stream.Attributes.LogLevels
@@ -198,6 +203,24 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
       "fail if Http2StreamIdHeader missing" in pending
       "automatically add `Date` header" in pending
+
+      "support custom methods" inAssertAllStagesStopped new TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
+        lazy val customMethod = HttpMethod.custom("BANANA")
+        override def settings = {
+          val default = super.settings
+          default.withParserSettings(default.parserSettings.withCustomMethods(customMethod))
+        }
+
+        val request = HttpRequest(
+          method = customMethod,
+          uri = "http://www.example.com/",
+          headers = Vector(),
+          protocol = HttpProtocols.`HTTP/2.0`)
+        val streamId = 1
+        val requestHeaderBlock = encodeRequestHeaders(request)
+        sendHEADERS(streamId, endStream = true, endHeaders = true, requestHeaderBlock)
+        expectRequest().method shouldBe customMethod
+      }
 
       "parse headers to modeled headers" inAssertAllStagesStopped new TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
         import CacheDirectives._
