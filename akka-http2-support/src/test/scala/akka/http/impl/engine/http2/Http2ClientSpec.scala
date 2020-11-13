@@ -126,6 +126,19 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         errorCode should ===(ErrorCode.COMPRESSION_ERROR)
       }
 
+      "GOAWAY when the response has headers mid stream" in new SimpleRequestResponseRoundtripSetup {
+        val streamId = 0x1
+        emitRequest(streamId, HttpRequest(uri = "http://www.example.com/"))
+        expect[HeadersFrame]()
+
+        sendDATA(streamId, endStream = false, ByteString("wowdata"))
+        val headerBlock = encodeHeaders(Seq(RawHeader("X-Mid-Stream", "Wowsuchmid")))
+        sendFrame(HeadersFrame(streamId, endStream = false, endHeaders = true, headerBlock, None))
+
+        val (_, error) = expectGOAWAY(1)
+        error should ===(ErrorCode.PROTOCOL_ERROR)
+      }
+
       "Three consecutive GET requests" in new SimpleRequestResponseRoundtripSetup {
         import akka.http.scaladsl.model.headers.CacheDirectives._
         import headers.`Cache-Control`

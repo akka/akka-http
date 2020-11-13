@@ -324,7 +324,7 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
 
       // Reproducing https://github.com/akka/akka-http/issues/2957
       "close the stream when we receive a RST after we have half-closed ourselves as well" inAssertAllStagesStopped new WaitingForRequestData {
-        // Client sends the request, but doesn't close the stream yet. This is a bit weird, but it's whet grpcurl does ;)
+        // Client sends the request, but doesn't close the stream yet. This is a bit weird, but it's what grpcurl does ;)
         sendDATA(streamId = TheStreamId, endStream = false, ByteString(0, 0, 0, 0, 0x10, 0x22, 0x0e) ++ ByteString.fromString("GreeterService"))
 
         // We emit a 404 response, half-closing the stream.
@@ -335,6 +335,13 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         entityDataIn.expectError()
         // Wait to give the warning (that we hope not to see) time to pop up.
         Thread.sleep(100)
+      }
+      "fail if headers are sent mid request stream" inAssertAllStagesStopped new WaitingForRequestData {
+        sendDATA(TheStreamId, endStream = false, data = ByteString("such data"))
+        pollForWindowUpdates(500.millis) // window resize/update triggered
+        sendHEADERS(TheStreamId, endStream = false, headers = Seq(RawHeader("X-Mid-Stream", "such value")))
+        val (_, errorCode) = expectGOAWAY(TheStreamId)
+        errorCode should ===(ErrorCode.PROTOCOL_ERROR)
       }
       "not fail the whole connection when one stream is RST twice" inAssertAllStagesStopped new WaitingForRequestData {
         sendRST_STREAM(TheStreamId, ErrorCode.STREAM_CLOSED)
