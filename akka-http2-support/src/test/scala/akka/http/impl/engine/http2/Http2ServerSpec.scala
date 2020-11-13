@@ -1320,7 +1320,28 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         requestIn.cancel()
       })
 
-      "send GOAWAY when ping times out" in pending
+      "send GOAWAY when ping times out" in StreamTestKit.assertAllStagesStopped(new TestSetup with RequestResponseProbes with Http2FrameHpackSupport {
+        override def settings: ServerSettings = {
+          val default = super.settings
+          default.withHttp2Settings(default.http2Settings.withPingInterval(2.seconds).withPingTimeout(1.second))
+        }
+
+        sendRequestHEADERS(1, HttpRequest(protocol = HttpProtocols.`HTTP/2.0`), endStream = false)
+        expectRequest()
+
+        // No data for 2s to trigger the ping
+        Thread.sleep(2000) // slow test but 2s is current minimum :(
+        expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
+        // no ack to make it time out
+        Thread.sleep(1000)
+        expectGOAWAY(1)
+
+        // FIXME should also verify close of connection, but it isn't implemented yet
+
+        // FIXME how to actually shut the connection down?
+        sendDATA(1, endStream = true, ByteString.empty)
+        requestIn.cancel()
+      })
 
     }
   }

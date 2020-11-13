@@ -352,8 +352,10 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         expectDecodedHEADERS(streamId, endStream = false)
         Thread.sleep(2000) // no data for this interval should trigger ping
         expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
+
+        // FIXME no connection cleanup in these tests?
       }
-      "send pings when there is an active but slow stream to client" in pendingUntilFixed(new TestSetup with NetProbes with Http2FrameHpackSupport {
+      "send pings when there is an active but slow stream to client" in new TestSetup with NetProbes with Http2FrameHpackSupport {
         override def settings = {
           val default = super.settings
           default.withHttp2Settings(default.http2Settings.withPingInterval(2.seconds).withPingTimeout(1.second))
@@ -364,11 +366,36 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         ))
         expectDecodedHEADERS(streamId)
 
-        // FIXME I haven't figured out how to stream the response slowly to trigger pings yet
-        fail()
-      })
+        sendHEADERS(streamId, endStream = false, Seq(
+          RawHeader(":status", "200"),
+          RawHeader("content-type", "application/octet-stream")
+        ))
+        val response = expectResponse()
+        Thread.sleep(2000) // no data for this interval should trigger ping
+        expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
 
-      "send GOAWAY when ping times out" in pending
+        // FIXME no connection cleanup in these tests?
+      }
+
+      "send GOAWAY when ping ack times out" in new TestSetup with NetProbes with Http2FrameHpackSupport {
+        override def settings = {
+          val default = super.settings
+          default.withHttp2Settings(default.http2Settings.withPingInterval(2.seconds).withPingTimeout(1.second))
+        }
+        val streamId = 0x1
+        val requestStream = TestPublisher.probe[ByteString]()
+        emitRequest(streamId, HttpRequest(
+          protocol = HttpProtocols.`HTTP/2.0`,
+          entity = HttpEntity(ContentTypes.`application/octet-stream`, Source.fromPublisher(requestStream))))
+        expectDecodedHEADERS(streamId, endStream = false)
+        Thread.sleep(2000) // no data for this interval should trigger ping
+        expectFrame(FrameType.PING, ByteFlag.Zero, 0, ConfigurablePing.Ping.data)
+        Thread.sleep(1000)
+        // no ack sent back
+        expectGOAWAY(streamId)
+
+        // FIXME should also verify close of connection, but it isn't implemented yet
+      }
     }
   }
 
