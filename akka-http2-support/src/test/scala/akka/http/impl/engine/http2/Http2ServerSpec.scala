@@ -17,14 +17,9 @@ import akka.http.impl.engine.server.HttpAttributes
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.AkkaSpecWithMaterializer
 import akka.http.impl.util.LogByteStringTools
-import akka.http.javadsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.CacheDirectives
-import akka.http.scaladsl.model.headers.CacheDirectives.`max-age`
-import akka.http.scaladsl.model.headers.CacheDirectives.`no-cache`
 import akka.http.scaladsl.model.headers.RawHeader
-import akka.http.scaladsl.model.headers.`Access-Control-Allow-Origin`
-import akka.http.scaladsl.model.headers.`Cache-Control`
 import akka.http.scaladsl.settings.ServerSettings
 import akka.stream.Attributes
 import akka.stream.Attributes.LogLevels
