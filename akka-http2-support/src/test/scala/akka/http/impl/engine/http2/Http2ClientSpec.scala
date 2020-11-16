@@ -23,6 +23,7 @@ import akka.stream.scaladsl.{ BidiFlow, Flow, Sink, Source }
 import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.util.ByteString
 import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.PatienceConfiguration
 
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -41,6 +42,8 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
     akka.http.client.http2.log-frames = on
   """)
   with WithInPendingUntilFixed with Eventually {
+
+  override implicit val patience = PatienceConfig(5.seconds, 5.seconds)
   override def failOnSevereMessages: Boolean = true
 
   "The Http/2 client implementation" should {
