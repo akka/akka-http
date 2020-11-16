@@ -336,13 +336,6 @@ class Http2ServerSpec extends AkkaSpecWithMaterializer("""
         // Wait to give the warning (that we hope not to see) time to pop up.
         Thread.sleep(100)
       }
-      "fail if headers are sent mid request stream" inAssertAllStagesStopped new WaitingForRequestData {
-        sendDATA(TheStreamId, endStream = false, data = ByteString("such data"))
-        pollForWindowUpdates(500.millis) // window resize/update triggered
-        sendHEADERS(TheStreamId, endStream = false, headers = Seq(RawHeader("X-Mid-Stream", "such value")))
-        val (_, errorCode) = expectGOAWAY(TheStreamId)
-        errorCode should ===(ErrorCode.PROTOCOL_ERROR)
-      }
       "not fail the whole connection when one stream is RST twice" inAssertAllStagesStopped new WaitingForRequestData {
         sendRST_STREAM(TheStreamId, ErrorCode.STREAM_CLOSED)
         val error = entityDataIn.expectError()

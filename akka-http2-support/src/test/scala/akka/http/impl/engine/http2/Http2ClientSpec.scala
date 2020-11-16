@@ -8,6 +8,7 @@ import akka.NotUsed
 import akka.event.Logging
 import akka.http.impl.engine.http2.FrameEvent._
 import akka.http.impl.engine.http2.Http2Protocol.ErrorCode
+import akka.http.impl.engine.http2.Http2Protocol.FrameType
 import akka.http.impl.engine.http2.Http2Protocol.SettingIdentifier
 import akka.http.impl.engine.ws.ByteStringSinkProbe
 import akka.http.impl.util.{ AkkaSpecWithMaterializer, LogByteStringTools }
@@ -126,16 +127,26 @@ class Http2ClientSpec extends AkkaSpecWithMaterializer("""
         errorCode should ===(ErrorCode.COMPRESSION_ERROR)
       }
 
-      "GOAWAY when the response has headers mid stream" in new SimpleRequestResponseRoundtripSetup {
+      "GOAWAY when the response has headers mid stream" in new TestSetup with NetProbes with Http2FrameHpackSupport {
         val streamId = 0x1
-        emitRequest(streamId, HttpRequest(uri = "http://www.example.com/"))
-        expect[HeadersFrame]()
+        emitRequest(streamId, Get("/"))
+        expectDecodedHEADERS(streamId, endStream = true)
 
-        sendDATA(streamId, endStream = false, ByteString("wowdata"))
-        val headerBlock = encodeHeaders(Seq(RawHeader("X-Mid-Stream", "Wowsuchmid")))
-        sendFrame(HeadersFrame(streamId, endStream = false, endHeaders = true, headerBlock, None))
+        sendHEADERS(streamId, endStream = false, Seq(
+          RawHeader(":status", "200"),
+          RawHeader("content-type", "application/octet-stream")
+        ))
 
-        val (_, error) = expectGOAWAY(1)
+        val response = expectResponse()
+        response.entity shouldBe a[Chunked]
+
+        sendDATA(streamId, endStream = false, ByteString("asdf"))
+        sendHEADERS(streamId, endStream = false, Seq(RawHeader("X-mid-stream", "badvalue")))
+
+        // FIXME need something like the Http2ServerSpec.expectWindowUpdate() here
+        expectFrameFlagsStreamIdAndPayload(FrameType.WINDOW_UPDATE)
+        
+        val (_, error) = expectGOAWAY(streamId)
         error should ===(ErrorCode.PROTOCOL_ERROR)
       }
 
